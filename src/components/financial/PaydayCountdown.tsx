@@ -1,8 +1,13 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { PlusIcon, CalendarDaysIcon, BanknotesIcon, ClockIcon } from '@heroicons/react/24/outline';
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import {
+  PlusIcon,
+  CalendarDaysIcon,
+  BanknotesIcon,
+  ClockIcon,
+} from "@heroicons/react/24/outline";
 
 interface PaydayCountdownProps {
   daysUntilPayday?: number;
@@ -16,19 +21,19 @@ interface PaydayCountdownProps {
 }
 
 function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value);
 }
 
 function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
   }).format(date);
 }
 
@@ -131,7 +136,7 @@ export function PaydayCountdown({
   daysUntilPayday = 0,
   nextPayDate,
   expectedAmount = 0,
-  sourceName = 'Paycheck',
+  sourceName = "Paycheck",
   percentComplete = 0,
   isLoading = false,
   hasIncomeSources = true,
@@ -166,7 +171,19 @@ export function PaydayCountdown({
           <div className="text-center">
             {isPayday ? (
               <>
-                <svg className="w-7 h-7 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" /></svg>
+                <svg
+                  className="w-7 h-7 text-emerald-500"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z"
+                  />
+                </svg>
                 <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                   Payday!
                 </p>
@@ -177,7 +194,7 @@ export function PaydayCountdown({
                   {animatedDays}
                 </span>
                 <p className="text-sm text-gray-500 dark:text-slate-400">
-                  {isTomorrow ? 'day' : 'days'}
+                  {isTomorrow ? "day" : "days"}
                 </p>
               </>
             )}
@@ -187,7 +204,11 @@ export function PaydayCountdown({
         {/* Details */}
         <div className="flex-1">
           <h3 className="text-sm font-medium text-gray-500 dark:text-slate-400 mb-1">
-            {isPayday ? "Today's payday!" : isTomorrow ? 'Payday tomorrow!' : 'Days until payday'}
+            {isPayday
+              ? "Today's payday!"
+              : isTomorrow
+                ? "Payday tomorrow!"
+                : "Days until payday"}
           </h3>
 
           <p className="text-xl font-bold text-gray-900 dark:text-white mb-1">

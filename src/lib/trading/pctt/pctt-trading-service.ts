@@ -1,25 +1,32 @@
 /**
  * PCTT Native Trading Service
- * 
+ *
  * Core trading service that executes PCTT signals directly through broker APIs.
  * This is the PRIMARY execution path - no external dependencies required.
- * 
+ *
  * Flow: Your Charts → PCTT Engine → Broker API → Trade Executed
- * 
+ *
  * TradingView integration is NOT required - it's an optional export feature
  * for users who want to visualize signals on TV separately.
  */
 
-import { createClient } from '@/lib/supabase/server';
-import { PCTTEngine, createPCTTEngine, PCTTSignal, PCTTConfig, OHLCV, StructureObject } from './pctt-core';
+import { createClient } from "@/lib/supabase/server";
+import {
+  PCTTEngine,
+  createPCTTEngine,
+  PCTTSignal,
+  PCTTConfig,
+  OHLCV,
+  StructureObject,
+} from "./pctt-core";
 import {
   BrokerInterface,
   BracketOrderRequest,
   BracketOrderResult,
   Position,
   AccountInfo,
-} from '../brokers/broker-interface';
-import { AlpacaBroker } from '../brokers/alpaca-broker';
+} from "../brokers/broker-interface";
+import { AlpacaBroker } from "../brokers/alpaca-broker";
 
 // ============================================================================
 // TYPES
@@ -28,21 +35,21 @@ import { AlpacaBroker } from '../brokers/alpaca-broker';
 export interface PCTTTradingConfig {
   // Risk Management
   accountSize: number;
-  riskPerTrade: number;        // 0.01 = 1%
-  maxDailyLoss: number;        // 0.05 = 5%
+  riskPerTrade: number; // 0.01 = 1%
+  maxDailyLoss: number; // 0.05 = 5%
   maxOpenPositions: number;
-  
+
   // Signal Filters
-  minQScore: number;           // Minimum Q-score to trade (0.65 recommended)
-  allowedRegimes: ('trend' | 'range' | 'transition')[];
+  minQScore: number; // Minimum Q-score to trade (0.65 recommended)
+  allowedRegimes: ("trend" | "range" | "transition")[];
   tradingHoursOnly: boolean;
-  
+
   // PCTT Engine Config
   pcttConfig: Partial<PCTTConfig>;
-  
+
   // Execution
-  autoExecute: boolean;        // Auto-execute or require confirmation
-  useBracketOrders: boolean;   // Use bracket orders with built-in SL/TP
+  autoExecute: boolean; // Auto-execute or require confirmation
+  useBracketOrders: boolean; // Use bracket orders with built-in SL/TP
   paperTrading: boolean;
 }
 
@@ -50,18 +57,18 @@ export interface TradeSetup {
   symbol: string;
   signal: PCTTSignal;
   structure: StructureObject;
-  
+
   // Position sizing
   shares: number;
   dollarAmount: number;
   riskAmount: number;
-  
+
   // Order levels
   entryPrice: number;
   stopLossPrice: number;
   takeProfitTargets: number[];
   riskRewardRatio: number;
-  
+
   // Validation
   isValid: boolean;
   validationErrors: string[];
@@ -71,15 +78,15 @@ export interface ExecutionResult {
   success: boolean;
   tradeId?: string;
   orderId?: string;
-  
+
   // Order details
   symbol?: string;
-  side?: 'buy' | 'sell';
+  side?: "buy" | "sell";
   quantity?: number;
   entryPrice?: number;
   stopLoss?: number;
   takeProfit?: number;
-  
+
   error?: string;
   timestamp: Date;
 }
@@ -87,30 +94,30 @@ export interface ExecutionResult {
 export interface ActivePosition {
   id: string;
   symbol: string;
-  side: 'long' | 'short';
+  side: "long" | "short";
   quantity: number;
   entryPrice: number;
   currentPrice: number;
   stopLoss: number;
   takeProfit?: number;
-  
+
   // PCTT context
   qScore: number;
   regime: string;
   actionLine: number;
   safetyLine: number;
-  
+
   // P&L
   unrealizedPL: number;
   unrealizedPLPercent: number;
-  
+
   // Orders
   entryOrderId: string;
   stopLossOrderId?: string;
   takeProfitOrderId?: string;
-  
+
   entryTime: Date;
-  status: 'open' | 'partial' | 'closing';
+  status: "open" | "partial" | "closing";
 }
 
 export interface TradingStats {
@@ -133,7 +140,7 @@ export const DEFAULT_TRADING_CONFIG: PCTTTradingConfig = {
   maxDailyLoss: 0.05,
   maxOpenPositions: 5,
   minQScore: 0.65,
-  allowedRegimes: ['trend'],
+  allowedRegimes: ["trend"],
   tradingHoursOnly: true,
   pcttConfig: {},
   autoExecute: false,
@@ -168,11 +175,11 @@ export class PCTTTradingService {
    * Connect to broker for live/paper trading
    */
   async connectBroker(
-    brokerType: 'alpaca',
-    credentials: { apiKey: string; apiSecret: string }
+    brokerType: "alpaca",
+    credentials: { apiKey: string; apiSecret: string },
   ): Promise<boolean> {
     try {
-      if (brokerType === 'alpaca') {
+      if (brokerType === "alpaca") {
         this.broker = new AlpacaBroker();
         await this.broker.connect({
           apiKey: credentials.apiKey,
@@ -216,36 +223,41 @@ export class PCTTTradingService {
   analyzeForTrade(symbol: string, candles: OHLCV[]): TradeSetup | null {
     // Reset engine and process all candles
     this.pcttEngine.reset();
-    
-    let latestResult: { structure: StructureObject; signal: PCTTSignal | null } | null = null;
-    
+
+    let latestResult: {
+      structure: StructureObject;
+      signal: PCTTSignal | null;
+    } | null = null;
+
     for (const candle of candles) {
       latestResult = this.pcttEngine.update(candle);
     }
-    
+
     if (!latestResult || !latestResult.signal) return null;
-    
+
     const { structure, signal } = latestResult;
-    
+
     // Only process entry signals (long or short)
-    if (signal.type === 'none') return null;
+    if (signal.type === "none") return null;
 
     // Validate signal
     const validationErrors: string[] = [];
-    
+
     if (signal.qScore < this.config.minQScore) {
-      validationErrors.push(`Q-score ${signal.qScore.toFixed(2)} below minimum ${this.config.minQScore}`);
+      validationErrors.push(
+        `Q-score ${signal.qScore.toFixed(2)} below minimum ${this.config.minQScore}`,
+      );
     }
-    
+
     // Map regime for filtering
-    const regimeMap: Record<string, 'trend' | 'range' | 'transition'> = {
-      'trend_up': 'trend',
-      'trend_down': 'trend',
-      'range': 'range',
-      'transition': 'transition',
+    const regimeMap: Record<string, "trend" | "range" | "transition"> = {
+      trend_up: "trend",
+      trend_down: "trend",
+      range: "range",
+      transition: "transition",
     };
-    const mappedRegime = regimeMap[signal.regime] || 'transition';
-    
+    const mappedRegime = regimeMap[signal.regime] || "transition";
+
     if (!this.config.allowedRegimes.includes(mappedRegime)) {
       validationErrors.push(`Regime '${signal.regime}' not in allowed list`);
     }
@@ -255,9 +267,9 @@ export class PCTTTradingService {
     const entryPrice = signal.entryPrice || currentPrice;
     const stopLossPrice = signal.stopPrice;
     const stopDistance = Math.abs(entryPrice - stopLossPrice);
-    
+
     if (stopDistance === 0) {
-      validationErrors.push('Invalid stop distance (zero)');
+      validationErrors.push("Invalid stop distance (zero)");
       return null;
     }
 
@@ -266,22 +278,25 @@ export class PCTTTradingService {
     const dollarAmount = shares * entryPrice;
 
     if (shares < 1) {
-      validationErrors.push('Position size too small (< 1 share)');
+      validationErrors.push("Position size too small (< 1 share)");
     }
 
     // Calculate targets (1R, 2R, 3R)
-    const direction = signal.type === 'long' ? 1 : -1;
-    const takeProfitTargets = signal.targetPrices.length > 0 
-      ? signal.targetPrices 
-      : [
-          entryPrice + (stopDistance * 1 * direction),
-          entryPrice + (stopDistance * 2 * direction),
-          entryPrice + (stopDistance * 3 * direction),
-        ];
+    const direction = signal.type === "long" ? 1 : -1;
+    const takeProfitTargets =
+      signal.targetPrices.length > 0
+        ? signal.targetPrices
+        : [
+            entryPrice + stopDistance * 1 * direction,
+            entryPrice + stopDistance * 2 * direction,
+            entryPrice + stopDistance * 3 * direction,
+          ];
 
-    const riskRewardRatio = signal.riskReward || (stopDistance > 0 
-      ? Math.abs(takeProfitTargets[1] - entryPrice) / stopDistance 
-      : 0);
+    const riskRewardRatio =
+      signal.riskReward ||
+      (stopDistance > 0
+        ? Math.abs(takeProfitTargets[1] - entryPrice) / stopDistance
+        : 0);
 
     return {
       symbol,
@@ -311,60 +326,64 @@ export class PCTTTradingService {
 
     // Pre-flight checks
     if (!this.broker) {
-      return { success: false, error: 'Broker not connected', timestamp };
+      return { success: false, error: "Broker not connected", timestamp };
     }
 
     if (!setup.isValid) {
-      return { 
-        success: false, 
-        error: `Validation failed: ${setup.validationErrors.join(', ')}`, 
-        timestamp 
+      return {
+        success: false,
+        error: `Validation failed: ${setup.validationErrors.join(", ")}`,
+        timestamp,
       };
     }
 
     // Check trading conditions
     const stats = await this.getTradingStats();
     if (!stats.canTrade) {
-      return { success: false, error: stats.reason || 'Trading not allowed', timestamp };
+      return {
+        success: false,
+        error: stats.reason || "Trading not allowed",
+        timestamp,
+      };
     }
 
     // Check market hours if required
     if (this.config.tradingHoursOnly) {
       const isOpen = await this.broker.isMarketOpen();
       if (!isOpen) {
-        return { success: false, error: 'Market is closed', timestamp };
+        return { success: false, error: "Market is closed", timestamp };
       }
     }
 
     // Execute order
-    const side = setup.signal.type === 'long' ? 'buy' : 'sell';
-    const positionSide = setup.signal.type as 'long' | 'short';
-    
+    const side = setup.signal.type === "long" ? "buy" : "sell";
+    const positionSide = setup.signal.type as "long" | "short";
+
     let result: BracketOrderResult;
-    
+
     if (this.config.useBracketOrders) {
       // Bracket order with built-in stop loss and take profit
       const bracketRequest: BracketOrderRequest = {
         symbol: setup.symbol,
         side,
         quantity: setup.shares,
-        entryType: 'market',
+        entryType: "market",
         stopLossPrice: setup.stopLossPrice,
         takeProfitPrice: setup.takeProfitTargets[0], // First target (1R)
-        timeInForce: 'gtc',
+        timeInForce: "gtc",
       };
-      
+
       result = await this.broker.placeBracketOrder(bracketRequest);
     } else {
       // Simple market order (manage stops separately)
       const orderResult = await this.broker.placeOrder({
         symbol: setup.symbol,
         side,
-        type: 'market',
+        type: "market",
         quantity: setup.shares,
-        timeInForce: 'day',
+        timeInForce: "day",
       });
-      
+
       result = {
         success: orderResult.success,
         entryOrder: orderResult.order,
@@ -393,7 +412,7 @@ export class PCTTTradingService {
         stopLossOrderId: result.stopLossOrder?.id,
         takeProfitOrderId: result.takeProfitOrder?.id,
         entryTime: new Date(),
-        status: 'open',
+        status: "open",
       };
 
       this.activePositions.set(position.id, position);
@@ -418,7 +437,7 @@ export class PCTTTradingService {
 
     return {
       success: false,
-      error: result.error || 'Order execution failed',
+      error: result.error || "Order execution failed",
       timestamp,
     };
   }
@@ -426,16 +445,19 @@ export class PCTTTradingService {
   /**
    * Close an active position
    */
-  async closePosition(positionId: string, reason: string = 'manual'): Promise<ExecutionResult> {
+  async closePosition(
+    positionId: string,
+    reason: string = "manual",
+  ): Promise<ExecutionResult> {
     const timestamp = new Date();
-    
+
     if (!this.broker) {
-      return { success: false, error: 'Broker not connected', timestamp };
+      return { success: false, error: "Broker not connected", timestamp };
     }
 
     const position = this.activePositions.get(positionId);
     if (!position) {
-      return { success: false, error: 'Position not found', timestamp };
+      return { success: false, error: "Position not found", timestamp };
     }
 
     const result = await this.broker.closePosition(position.symbol);
@@ -443,9 +465,10 @@ export class PCTTTradingService {
     if (result.success) {
       // Update P&L
       const exitPrice = result.order?.filledAvgPrice || position.currentPrice;
-      const pl = position.side === 'long'
-        ? (exitPrice - position.entryPrice) * position.quantity
-        : (position.entryPrice - exitPrice) * position.quantity;
+      const pl =
+        position.side === "long"
+          ? (exitPrice - position.entryPrice) * position.quantity
+          : (position.entryPrice - exitPrice) * position.quantity;
 
       this.dailyPL += pl;
       this.activePositions.delete(positionId);
@@ -464,7 +487,7 @@ export class PCTTTradingService {
 
     return {
       success: false,
-      error: result.error || 'Failed to close position',
+      error: result.error || "Failed to close position",
       timestamp,
     };
   }
@@ -480,9 +503,11 @@ export class PCTTTradingService {
     if (!this.broker) return;
 
     const brokerPositions = await this.broker.getPositions();
-    
+
     for (const [id, position] of this.activePositions) {
-      const brokerPos = brokerPositions.find(p => p.symbol === position.symbol);
+      const brokerPos = brokerPositions.find(
+        (p) => p.symbol === position.symbol,
+      );
       if (brokerPos) {
         position.currentPrice = brokerPos.currentPrice;
         position.unrealizedPL = brokerPos.unrealizedPL;
@@ -516,17 +541,17 @@ export class PCTTTradingService {
     }
 
     const openPositionCount = this.activePositions.size;
-    
+
     // Check if trading is allowed
     let canTrade = true;
     let reason: string | undefined;
 
     if (this.dailyPL <= -(this.config.accountSize * this.config.maxDailyLoss)) {
       canTrade = false;
-      reason = 'Daily loss limit reached';
+      reason = "Daily loss limit reached";
     } else if (openPositionCount >= this.config.maxOpenPositions) {
       canTrade = false;
-      reason = 'Maximum positions reached';
+      reason = "Maximum positions reached";
     }
 
     return {
@@ -547,7 +572,7 @@ export class PCTTTradingService {
   private async savePosition(position: ActivePosition): Promise<void> {
     const supabase = await createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any).from('pctt_positions').upsert({
+    await (supabase as any).from("pctt_positions").upsert({
       id: position.id,
       user_id: this.userId,
       symbol: position.symbol,
@@ -569,30 +594,33 @@ export class PCTTTradingService {
   }
 
   private async closePositionInDb(
-    positionId: string, 
-    exitPrice: number, 
+    positionId: string,
+    exitPrice: number,
     realizedPL: number,
-    exitReason: string
+    exitReason: string,
   ): Promise<void> {
     const supabase = await createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any).from('pctt_positions').update({
-      exit_price: exitPrice,
-      exit_time: new Date().toISOString(),
-      realized_pl: realizedPL,
-      exit_reason: exitReason,
-      status: 'closed',
-    }).eq('id', positionId);
+    await (supabase as any)
+      .from("pctt_positions")
+      .update({
+        exit_price: exitPrice,
+        exit_time: new Date().toISOString(),
+        realized_pl: realizedPL,
+        exit_reason: exitReason,
+        status: "closed",
+      })
+      .eq("id", positionId);
   }
 
   async loadPositions(): Promise<void> {
     const supabase = await createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data } = await (supabase as any)
-      .from('pctt_positions')
-      .select('*')
-      .eq('user_id', this.userId)
-      .eq('status', 'open');
+      .from("pctt_positions")
+      .select("*")
+      .eq("user_id", this.userId)
+      .eq("status", "open");
 
     if (data) {
       for (const row of data) {
@@ -658,7 +686,7 @@ export class PCTTTradingService {
 
 export function createPCTTTradingService(
   userId: string,
-  config?: Partial<PCTTTradingConfig>
+  config?: Partial<PCTTTradingConfig>,
 ): PCTTTradingService {
   return new PCTTTradingService(userId, config);
 }

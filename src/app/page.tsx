@@ -13,68 +13,68 @@
  * - Conversion-focused with compelling CTAs
  */
 
-import Link from 'next/link';
-import type { Metadata } from 'next';
-import Header from '@/components/ui/Header';
+import Link from "next/link";
+import type { Metadata } from "next";
+import Header from "@/components/ui/Header";
 
 export const metadata: Metadata = {
   title:
-    'Fynvita - The Premier Financial Wellness Platform | AI-Powered Credit, Wealth & Investment Intelligence',
+    "Fynvita - The Premier Financial Wellness Platform | AI-Powered Credit, Wealth & Investment Intelligence",
   description:
-    'Industry-leading financial wellness technology. AI-powered credit optimization, real-time financial health monitoring, and institutional-grade investment intelligence. Trusted by 50,000+ users.',
+    "Industry-leading financial wellness technology. AI-powered credit optimization, real-time financial health monitoring, and institutional-grade investment intelligence. Trusted by 50,000+ users.",
   openGraph: {
-    title: 'Fynvita - Your Financial Vitality',
+    title: "Fynvita - Your Financial Vitality",
     description:
-      'The only platform combining credit health, financial wellness, and investment intelligence with 300+ AI models.',
-    type: 'website',
-    url: 'https://fynvita.com',
-    images: [{ url: '/og-image.png', width: 1200, height: 630 }],
+      "The only platform combining credit health, financial wellness, and investment intelligence with 300+ AI models.",
+    type: "website",
+    url: "https://fynvita.com",
+    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
   },
 };
 
 // Product cards — restricted to brand palette (green, blue, navy variants)
 const products = [
   {
-    title: 'Credit Health',
-    subtitle: 'Monitor. Repair. Optimize.',
+    title: "Credit Health",
+    subtitle: "Monitor. Repair. Optimize.",
     description:
-      'AI-powered credit health management across all three bureaus.',
-    gradient: 'from-emerald-600 to-emerald-800',
+      "AI-powered credit health management across all three bureaus.",
+    gradient: "from-emerald-600 to-emerald-800",
     light: false,
-    href: '/credit',
+    href: "/credit",
   },
   {
-    title: 'Financial Wellness',
-    subtitle: 'Budget. Save. Thrive.',
+    title: "Financial Wellness",
+    subtitle: "Budget. Save. Thrive.",
     description:
-      'Complete financial wellness with intelligent insights and guidance.',
-    gradient: 'from-blue-600 to-blue-800',
+      "Complete financial wellness with intelligent insights and guidance.",
+    gradient: "from-blue-600 to-blue-800",
     light: false,
-    href: '/financial-hub',
+    href: "/financial-hub",
   },
   {
-    title: 'Investment Intelligence',
-    subtitle: 'Analyze. Grow. Prosper.',
-    description: 'Professional investment intelligence powered by AI.',
-    gradient: 'from-emerald-600 to-blue-700',
+    title: "Investment Intelligence",
+    subtitle: "Analyze. Grow. Prosper.",
+    description: "Professional investment intelligence powered by AI.",
+    gradient: "from-emerald-600 to-blue-700",
     light: false,
-    href: '/invest',
+    href: "/invest",
   },
   {
-    title: 'Tax Optimization',
-    subtitle: 'Plan. Save. Prosper.',
-    description: 'AI-powered tax strategies to maximize your savings legally.',
-    gradient: 'from-blue-700 to-blue-800',
+    title: "Tax Optimization",
+    subtitle: "Plan. Save. Prosper.",
+    description: "AI-powered tax strategies to maximize your savings legally.",
+    gradient: "from-blue-700 to-blue-800",
     light: false,
-    href: '/tax',
+    href: "/tax",
   },
   {
-    title: 'Student Loans',
-    subtitle: 'Navigate. Optimize. Forgive.',
-    description: 'Smart strategies for federal loan repayment and forgiveness.',
-    gradient: 'from-emerald-700 to-emerald-900',
+    title: "Student Loans",
+    subtitle: "Navigate. Optimize. Forgive.",
+    description: "Smart strategies for federal loan repayment and forgiveness.",
+    gradient: "from-emerald-700 to-emerald-900",
     light: false,
-    href: '/loans',
+    href: "/loans",
   },
 ];
 
@@ -82,48 +82,48 @@ const products = [
 const features = {
   credit: [
     {
-      title: 'Real-time Monitoring',
-      desc: 'Track changes across Experian, Equifax, and TransUnion',
+      title: "Real-time Monitoring",
+      desc: "Track changes across Experian, Equifax, and TransUnion",
     },
     {
-      title: 'AI Dispute Letters',
-      desc: 'Legally-crafted letters that get results',
+      title: "AI Dispute Letters",
+      desc: "Legally-crafted letters that get results",
     },
-    { title: 'Score Simulator', desc: 'See the impact before you act' },
-    { title: 'Credit Building', desc: 'Strategic plans to improve your score' },
+    { title: "Score Simulator", desc: "See the impact before you act" },
+    { title: "Credit Building", desc: "Strategic plans to improve your score" },
   ],
   financial: [
-    { title: 'Smart Budgets', desc: 'AI learns your spending patterns' },
+    { title: "Smart Budgets", desc: "AI learns your spending patterns" },
     {
-      title: 'Debt Strategies',
-      desc: 'Avalanche or snowball — optimized for you',
+      title: "Debt Strategies",
+      desc: "Avalanche or snowball — optimized for you",
     },
-    { title: 'Savings Goals', desc: 'Automated tracking and recommendations' },
-    { title: 'Cash Flow', desc: 'Predict and plan with confidence' },
+    { title: "Savings Goals", desc: "Automated tracking and recommendations" },
+    { title: "Cash Flow", desc: "Predict and plan with confidence" },
   ],
   invest: [
-    { title: 'Portfolio Analytics', desc: 'Deep insights into your holdings' },
-    { title: 'Risk Assessment', desc: 'Understand your exposure' },
-    { title: 'Rebalancing', desc: 'Keep your allocation on target' },
-    { title: 'Market Intelligence', desc: 'AI-powered market analysis' },
+    { title: "Portfolio Analytics", desc: "Deep insights into your holdings" },
+    { title: "Risk Assessment", desc: "Understand your exposure" },
+    { title: "Rebalancing", desc: "Keep your allocation on target" },
+    { title: "Market Intelligence", desc: "AI-powered market analysis" },
   ],
   loans: [
-    { title: 'PSLF Tracker', desc: 'Track qualifying payments automatically' },
-    { title: 'IDR Optimizer', desc: 'Find the best repayment plan' },
-    { title: 'Forgiveness Calculator', desc: 'See your potential savings' },
-    { title: 'Federal Programs', desc: 'Never miss an opportunity' },
+    { title: "PSLF Tracker", desc: "Track qualifying payments automatically" },
+    { title: "IDR Optimizer", desc: "Find the best repayment plan" },
+    { title: "Forgiveness Calculator", desc: "See your potential savings" },
+    { title: "Federal Programs", desc: "Never miss an opportunity" },
   ],
   tax: [
     {
-      title: 'Tax Bracket Optimizer',
-      desc: 'Minimize your effective tax rate',
+      title: "Tax Bracket Optimizer",
+      desc: "Minimize your effective tax rate",
     },
-    { title: 'Retirement Maximizer', desc: '401(k), IRA, HSA optimization' },
+    { title: "Retirement Maximizer", desc: "401(k), IRA, HSA optimization" },
     {
-      title: 'Tax-Loss Harvesting',
-      desc: 'Offset gains with strategic losses',
+      title: "Tax-Loss Harvesting",
+      desc: "Offset gains with strategic losses",
     },
-    { title: 'Scenario Modeler', desc: 'What-if analysis for tax decisions' },
+    { title: "Scenario Modeler", desc: "What-if analysis for tax decisions" },
   ],
 };
 
@@ -131,67 +131,67 @@ const features = {
 // Annual discounts: Standard 3%, Pro 8%, Family tiers 18%
 const pricing = [
   {
-    name: 'Free',
-    price: '$0',
-    description: 'Get started with the basics',
+    name: "Free",
+    price: "$0",
+    description: "Get started with the basics",
     features: [
-      'Credit score (1 bureau)',
-      'Basic budgeting',
-      '10 AI chat messages/mo',
+      "Credit score (1 bureau)",
+      "Basic budgeting",
+      "10 AI chat messages/mo",
     ],
-    cta: 'Get Started',
+    cta: "Get Started",
     featured: false,
-    href: '/auth/signup',
+    href: "/auth/signup",
   },
   {
-    name: 'Standard',
-    price: '$29.99',
-    description: 'Credit health & wellness',
+    name: "Standard",
+    price: "$29.99",
+    description: "Credit health & wellness",
     features: [
-      'All 3 credit bureaus',
-      '10 AI disputes/month',
-      'Smart budgeting',
+      "All 3 credit bureaus",
+      "10 AI disputes/month",
+      "Smart budgeting",
     ],
-    cta: 'Start Free Trial',
+    cta: "Start Free Trial",
     featured: false,
-    href: '/auth/signup?plan=standard',
+    href: "/auth/signup?plan=standard",
   },
   {
-    name: 'Pro',
-    price: '$99.99',
-    description: 'Complete financial vitality',
-    features: ['Unlimited disputes', 'Bill negotiation', '24/7 AI coach'],
-    cta: 'Start Free Trial',
+    name: "Pro",
+    price: "$99.99",
+    description: "Complete financial vitality",
+    features: ["Unlimited disputes", "Bill negotiation", "24/7 AI coach"],
+    cta: "Start Free Trial",
     featured: true,
-    href: '/auth/signup?plan=pro',
+    href: "/auth/signup?plan=pro",
   },
   {
-    name: 'Family Duo',
-    price: '$159.99',
-    description: '2 members',
-    features: ['Everything in Pro', 'For couples', 'Shared dashboard'],
-    cta: 'Start Free Trial',
+    name: "Family Duo",
+    price: "$159.99",
+    description: "2 members",
+    features: ["Everything in Pro", "For couples", "Shared dashboard"],
+    cta: "Start Free Trial",
     featured: false,
-    href: '/auth/signup?plan=family-duo',
+    href: "/auth/signup?plan=family-duo",
   },
   {
-    name: 'Family',
-    price: '$199.99',
-    description: '3 members',
-    features: ['Everything in Pro', 'Kids education', 'Family goals'],
-    cta: 'Start Free Trial',
+    name: "Family",
+    price: "$199.99",
+    description: "3 members",
+    features: ["Everything in Pro", "Kids education", "Family goals"],
+    cta: "Start Free Trial",
     featured: false,
-    href: '/auth/signup?plan=family',
+    href: "/auth/signup?plan=family",
   },
   {
-    name: 'Family Plus',
-    price: '$399.99',
-    description: '5 members',
-    features: ['Dedicated manager', 'Estate planning', 'API access'],
-    cta: 'Start Free Trial',
+    name: "Family Plus",
+    price: "$399.99",
+    description: "5 members",
+    features: ["Dedicated manager", "Estate planning", "API access"],
+    cta: "Start Free Trial",
     featured: false,
-    badge: 'Best Value',
-    href: '/auth/signup?plan=family-plus',
+    badge: "Best Value",
+    href: "/auth/signup?plan=family-plus",
   },
 ];
 
@@ -217,12 +217,18 @@ export default function LandingPage() {
               </span>
             </h1>
             <p className="mt-6 text-xl sm:text-2xl text-gray-600 dark:text-slate-300 max-w-3xl mx-auto leading-relaxed">
-              Industry-leading AI combines{' '}
-              <strong className="text-emerald-600 dark:text-emerald-400">credit optimization</strong>,{' '}
-              <strong className="text-blue-600 dark:text-blue-400">financial wellness</strong>, and{' '}
+              Industry-leading AI combines{" "}
+              <strong className="text-emerald-600 dark:text-emerald-400">
+                credit optimization
+              </strong>
+              ,{" "}
+              <strong className="text-blue-600 dark:text-blue-400">
+                financial wellness
+              </strong>
+              , and{" "}
               <strong className="text-blue-600 dark:text-blue-400">
                 investment intelligence
-              </strong>{' '}
+              </strong>{" "}
               into one holistic platform that competitors can&apos;t match.
             </p>
             <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
@@ -258,8 +264,12 @@ export default function LandingPage() {
                   </svg>
                 </div>
                 <div className="text-left">
-                  <p className="font-bold text-gray-900 dark:text-white">300+ AI Models</p>
-                  <p className="text-xs text-gray-500 dark:text-slate-400">Proprietary routing</p>
+                  <p className="font-bold text-gray-900 dark:text-white">
+                    300+ AI Models
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400">
+                    Proprietary routing
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-2.5">
@@ -277,7 +287,9 @@ export default function LandingPage() {
                   </svg>
                 </div>
                 <div className="text-left">
-                  <p className="font-bold text-gray-900 dark:text-white">Bank-Level Security</p>
+                  <p className="font-bold text-gray-900 dark:text-white">
+                    Bank-Level Security
+                  </p>
                   <p className="text-xs text-gray-500 dark:text-slate-400">
                     SOC 2 Type II Certified
                   </p>
@@ -294,8 +306,12 @@ export default function LandingPage() {
                   </svg>
                 </div>
                 <div className="text-left">
-                  <p className="font-bold text-gray-900 dark:text-white">50,000+ Users</p>
-                  <p className="text-xs text-gray-500 dark:text-slate-400">Trusted worldwide</p>
+                  <p className="font-bold text-gray-900 dark:text-white">
+                    50,000+ Users
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400">
+                    Trusted worldwide
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-2.5">
@@ -309,8 +325,12 @@ export default function LandingPage() {
                   </svg>
                 </div>
                 <div className="text-left">
-                  <p className="font-bold text-gray-900 dark:text-white">4.9/5 Rating</p>
-                  <p className="text-xs text-gray-500 dark:text-slate-400">12,000+ reviews</p>
+                  <p className="font-bold text-gray-900 dark:text-white">
+                    4.9/5 Rating
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400">
+                    12,000+ reviews
+                  </p>
                 </div>
               </div>
             </div>
@@ -326,7 +346,9 @@ export default function LandingPage() {
                 <p className="text-gray-300 text-sm mt-2 font-medium">
                   Avg. Credit Score Increase
                 </p>
-                <p className="text-gray-500 dark:text-slate-400 text-xs mt-1">In first 6 months</p>
+                <p className="text-gray-500 dark:text-slate-400 text-xs mt-1">
+                  In first 6 months
+                </p>
               </div>
               <div>
                 <p className="text-4xl sm:text-5xl font-bold text-blue-400">
@@ -335,7 +357,9 @@ export default function LandingPage() {
                 <p className="text-gray-300 text-sm mt-2 font-medium">
                   Avg. Wealth Increase
                 </p>
-                <p className="text-gray-500 dark:text-slate-400 text-xs mt-1">Per user annually</p>
+                <p className="text-gray-500 dark:text-slate-400 text-xs mt-1">
+                  Per user annually
+                </p>
               </div>
               <div>
                 <p className="text-4xl sm:text-5xl font-bold text-emerald-400">
@@ -355,7 +379,9 @@ export default function LandingPage() {
                 <p className="text-gray-300 text-sm mt-2 font-medium">
                   AI Response Time
                 </p>
-                <p className="text-gray-500 dark:text-slate-400 text-xs mt-1">Real-time insights</p>
+                <p className="text-gray-500 dark:text-slate-400 text-xs mt-1">
+                  Real-time insights
+                </p>
               </div>
             </div>
           </div>
@@ -858,7 +884,9 @@ export default function LandingPage() {
             <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white tracking-tight">
               Your credit health,
               <br />
-              <span className="text-emerald-600 dark:text-emerald-400">optimized.</span>
+              <span className="text-emerald-600 dark:text-emerald-400">
+                optimized.
+              </span>
             </h2>
             <p className="mt-4 text-lg text-gray-600 dark:text-slate-400 max-w-xl mx-auto">
               Monitor all three bureaus, repair errors with AI-powered
@@ -872,7 +900,9 @@ export default function LandingPage() {
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                   {feature.title}
                 </h3>
-                <p className="text-sm text-gray-600 dark:text-slate-400">{feature.desc}</p>
+                <p className="text-sm text-gray-600 dark:text-slate-400">
+                  {feature.desc}
+                </p>
               </div>
             ))}
           </div>
@@ -884,7 +914,9 @@ export default function LandingPage() {
                 <p className="text-sm text-emerald-700 dark:text-emerald-400 mb-1 font-medium">
                   Your Credit Health Score
                 </p>
-                <p className="text-7xl font-bold text-emerald-600 dark:text-emerald-400">742</p>
+                <p className="text-7xl font-bold text-emerald-600 dark:text-emerald-400">
+                  742
+                </p>
                 <p className="text-emerald-700 dark:text-emerald-400 text-sm font-medium mt-2 flex items-center gap-1">
                   <svg
                     className="w-4 h-4"
@@ -902,19 +934,25 @@ export default function LandingPage() {
               </div>
               <div className="flex gap-8">
                 <div className="text-center">
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white">738</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                    738
+                  </p>
                   <p className="text-xs text-gray-600 dark:text-slate-400 mt-1 font-medium">
                     Experian
                   </p>
                 </div>
                 <div className="text-center">
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white">745</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                    745
+                  </p>
                   <p className="text-xs text-gray-600 dark:text-slate-400 mt-1 font-medium">
                     Equifax
                   </p>
                 </div>
                 <div className="text-center">
-                  <p className="text-3xl font-bold text-gray-900 dark:text-white">743</p>
+                  <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                    743
+                  </p>
                   <p className="text-xs text-gray-600 dark:text-slate-400 mt-1 font-medium">
                     TransUnion
                   </p>
@@ -938,7 +976,9 @@ export default function LandingPage() {
             <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white tracking-tight">
               Every dollar,
               <br />
-              <span className="text-blue-600 dark:text-blue-400">working for you.</span>
+              <span className="text-blue-600 dark:text-blue-400">
+                working for you.
+              </span>
             </h2>
             <p className="mt-4 text-lg text-gray-600 dark:text-slate-400 max-w-xl mx-auto">
               Intelligent budgeting that learns your habits. Wellness strategies
@@ -952,7 +992,9 @@ export default function LandingPage() {
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                   {feature.title}
                 </h3>
-                <p className="text-sm text-gray-600 dark:text-slate-400">{feature.desc}</p>
+                <p className="text-sm text-gray-600 dark:text-slate-400">
+                  {feature.desc}
+                </p>
               </div>
             ))}
           </div>
@@ -964,7 +1006,9 @@ export default function LandingPage() {
                 <p className="text-sm text-blue-700 dark:text-blue-400 mb-1 font-medium">
                   Financial Wellness Score
                 </p>
-                <p className="text-5xl font-bold text-blue-600 dark:text-blue-400">$124,350</p>
+                <p className="text-5xl font-bold text-blue-600 dark:text-blue-400">
+                  $124,350
+                </p>
                 <p className="text-blue-700 dark:text-blue-400 text-sm font-medium mt-2 flex items-center gap-1">
                   <svg
                     className="w-4 h-4"
@@ -982,19 +1026,25 @@ export default function LandingPage() {
               </div>
               <div className="flex gap-8">
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">$8,420</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                    $8,420
+                  </p>
                   <p className="text-xs text-gray-600 dark:text-slate-400 mt-1 font-medium">
                     Income
                   </p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">$5,180</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                    $5,180
+                  </p>
                   <p className="text-xs text-gray-600 dark:text-slate-400 mt-1 font-medium">
                     Spending
                   </p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">$3,240</p>
+                  <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                    $3,240
+                  </p>
                   <p className="text-xs text-gray-600 dark:text-slate-400 mt-1 font-medium">
                     Saved
                   </p>
@@ -1015,7 +1065,9 @@ export default function LandingPage() {
             <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white tracking-tight">
               Your portfolio,
               <br />
-              <span className="text-blue-600 dark:text-blue-400">intelligently managed.</span>
+              <span className="text-blue-600 dark:text-blue-400">
+                intelligently managed.
+              </span>
             </h2>
             <p className="mt-4 text-lg text-gray-600 dark:text-slate-400 max-w-xl mx-auto">
               Track, analyze, and optimize your investments with AI-powered
@@ -1029,7 +1081,9 @@ export default function LandingPage() {
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                   {feature.title}
                 </h3>
-                <p className="text-sm text-gray-600 dark:text-slate-400">{feature.desc}</p>
+                <p className="text-sm text-gray-600 dark:text-slate-400">
+                  {feature.desc}
+                </p>
               </div>
             ))}
           </div>
@@ -1060,7 +1114,9 @@ export default function LandingPage() {
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                   {feature.title}
                 </h3>
-                <p className="text-sm text-gray-600 dark:text-slate-400">{feature.desc}</p>
+                <p className="text-sm text-gray-600 dark:text-slate-400">
+                  {feature.desc}
+                </p>
               </div>
             ))}
           </div>
@@ -1095,8 +1151,12 @@ export default function LandingPage() {
                   SJ
                 </div>
                 <div>
-                  <p className="font-bold text-gray-900 dark:text-white">Sarah Johnson</p>
-                  <p className="text-sm text-gray-500 dark:text-slate-400">Small Business Owner</p>
+                  <p className="font-bold text-gray-900 dark:text-white">
+                    Sarah Johnson
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-slate-400">
+                    Small Business Owner
+                  </p>
                 </div>
               </div>
               <div className="space-y-4 mb-6">
@@ -1139,8 +1199,12 @@ export default function LandingPage() {
                   MC
                 </div>
                 <div>
-                  <p className="font-bold text-gray-900 dark:text-white">Michael Chen</p>
-                  <p className="text-sm text-gray-500 dark:text-slate-400">Software Engineer</p>
+                  <p className="font-bold text-gray-900 dark:text-white">
+                    Michael Chen
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-slate-400">
+                    Software Engineer
+                  </p>
                 </div>
               </div>
               <div className="space-y-4 mb-6">
@@ -1183,8 +1247,12 @@ export default function LandingPage() {
                   ER
                 </div>
                 <div>
-                  <p className="font-bold text-gray-900 dark:text-white">Emily Rodriguez</p>
-                  <p className="text-sm text-gray-500 dark:text-slate-400">Teacher</p>
+                  <p className="font-bold text-gray-900 dark:text-white">
+                    Emily Rodriguez
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-slate-400">
+                    Teacher
+                  </p>
                 </div>
               </div>
               <div className="space-y-4 mb-6">
@@ -1247,8 +1315,12 @@ export default function LandingPage() {
                   DM
                 </div>
                 <div>
-                  <p className="font-bold text-gray-900 dark:text-white">David Martinez</p>
-                  <p className="text-sm text-gray-600 dark:text-slate-400">Real Estate Investor</p>
+                  <p className="font-bold text-gray-900 dark:text-white">
+                    David Martinez
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-slate-400">
+                    Real Estate Investor
+                  </p>
                 </div>
               </div>
             </div>
@@ -1276,8 +1348,12 @@ export default function LandingPage() {
                   LT
                 </div>
                 <div>
-                  <p className="font-bold text-gray-900 dark:text-white">Lisa Thompson</p>
-                  <p className="text-sm text-gray-600 dark:text-slate-400">Marketing Director</p>
+                  <p className="font-bold text-gray-900 dark:text-white">
+                    Lisa Thompson
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-slate-400">
+                    Marketing Director
+                  </p>
                 </div>
               </div>
             </div>
@@ -1305,8 +1381,12 @@ export default function LandingPage() {
                   JK
                 </div>
                 <div>
-                  <p className="font-bold text-gray-900 dark:text-white">James Kim</p>
-                  <p className="text-sm text-gray-600 dark:text-slate-400">Financial Analyst</p>
+                  <p className="font-bold text-gray-900 dark:text-white">
+                    James Kim
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-slate-400">
+                    Financial Analyst
+                  </p>
                 </div>
               </div>
             </div>
@@ -1334,7 +1414,9 @@ export default function LandingPage() {
                   AP
                 </div>
                 <div>
-                  <p className="font-bold text-gray-900 dark:text-white">Amanda Patel</p>
+                  <p className="font-bold text-gray-900 dark:text-white">
+                    Amanda Patel
+                  </p>
                   <p className="text-sm text-gray-600 dark:text-slate-400">
                     CFP®, Financial Advisor
                   </p>
@@ -1524,7 +1606,9 @@ export default function LandingPage() {
                     <path d="M18.71 19.5C17.88 20.74 17 21.95 15.66 21.97C14.32 22 13.89 21.18 12.37 21.18C10.84 21.18 10.37 21.95 9.09997 22C7.78997 22.05 6.79997 20.68 5.95997 19.47C4.24997 17 2.93997 12.45 4.69997 9.39C5.56997 7.87 7.12997 6.91 8.81997 6.88C10.1 6.86 11.32 7.75 12.11 7.75C12.89 7.75 14.37 6.68 15.92 6.84C16.57 6.87 18.39 7.1 19.56 8.82C19.47 8.88 17.39 10.1 17.41 12.63C17.44 15.65 20.06 16.66 20.09 16.67C20.06 16.74 19.67 18.11 18.71 19.5ZM13 3.5C13.73 2.67 14.94 2.04 15.94 2C16.07 3.17 15.6 4.35 14.9 5.19C14.21 6.04 13.07 6.7 11.95 6.61C11.8 5.46 12.36 4.26 13 3.5Z" />
                   </svg>
                   <div className="text-left">
-                    <p className="text-[10px] text-gray-400 dark:text-slate-500">Download on the</p>
+                    <p className="text-[10px] text-gray-400 dark:text-slate-500">
+                      Download on the
+                    </p>
                     <p className="text-sm font-medium">App Store</p>
                   </div>
                 </button>
@@ -1537,7 +1621,9 @@ export default function LandingPage() {
                     <path d="M3 20.5V3.5C3 2.91 3.34 2.39 3.84 2.15L13.69 12L3.84 21.85C3.34 21.6 3 21.09 3 20.5ZM16.81 15.12L6.05 21.34L14.54 12.85L16.81 15.12ZM20.16 10.81C20.5 11.08 20.75 11.5 20.75 12C20.75 12.5 20.53 12.9 20.18 13.18L17.89 14.5L15.39 12L17.89 9.5L20.16 10.81ZM6.05 2.66L16.81 8.88L14.54 11.15L6.05 2.66Z" />
                   </svg>
                   <div className="text-left">
-                    <p className="text-[10px] text-gray-400 dark:text-slate-500">Get it on</p>
+                    <p className="text-[10px] text-gray-400 dark:text-slate-500">
+                      Get it on
+                    </p>
                     <p className="text-sm font-medium">Google Play</p>
                   </div>
                 </button>
@@ -1639,7 +1725,7 @@ export default function LandingPage() {
                     Holistic Integration
                   </h3>
                   <p className="text-gray-700 dark:text-slate-300 leading-relaxed mb-4">
-                    While competitors offer fragmented solutions, Fynvita is the{' '}
+                    While competitors offer fragmented solutions, Fynvita is the{" "}
                     <strong>only platform</strong> that seamlessly integrates
                     credit optimization, financial wellness, and investment
                     intelligence.
@@ -1945,8 +2031,8 @@ export default function LandingPage() {
                 key={plan.name}
                 className={`rounded-xl p-5 flex flex-col ${
                   plan.featured
-                    ? 'bg-gradient-to-br from-gray-900 to-slate-800 text-white ring-2 ring-emerald-500 scale-[1.02] shadow-xl'
-                    : 'bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-lg transition-shadow'
+                    ? "bg-gradient-to-br from-gray-900 to-slate-800 text-white ring-2 ring-emerald-500 scale-[1.02] shadow-xl"
+                    : "bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-lg transition-shadow"
                 }`}
               >
                 {plan.featured && (
@@ -1954,32 +2040,32 @@ export default function LandingPage() {
                     Most Popular
                   </span>
                 )}
-                {'badge' in plan && plan.badge && !plan.featured && (
+                {"badge" in plan && plan.badge && !plan.featured && (
                   <span className="inline-block self-start bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full mb-3">
                     {plan.badge}
                   </span>
                 )}
                 <h3
-                  className={`text-lg font-bold ${plan.featured ? 'text-white' : 'text-gray-900 dark:text-white'}`}
+                  className={`text-lg font-bold ${plan.featured ? "text-white" : "text-gray-900 dark:text-white"}`}
                 >
                   {plan.name}
                 </h3>
                 <div className="mt-3">
                   <span
-                    className={`text-3xl font-bold ${plan.featured ? 'text-white' : 'text-gray-900 dark:text-white'}`}
+                    className={`text-3xl font-bold ${plan.featured ? "text-white" : "text-gray-900 dark:text-white"}`}
                   >
                     {plan.price}
                   </span>
-                  {plan.price !== '$0' && (
+                  {plan.price !== "$0" && (
                     <span
-                      className={`text-sm ${plan.featured ? 'text-gray-400' : 'text-gray-500 dark:text-slate-400'}`}
+                      className={`text-sm ${plan.featured ? "text-gray-400" : "text-gray-500 dark:text-slate-400"}`}
                     >
                       /mo
                     </span>
                   )}
                 </div>
                 <p
-                  className={`mt-2 text-sm ${plan.featured ? 'text-gray-300' : 'text-gray-600 dark:text-slate-400'}`}
+                  className={`mt-2 text-sm ${plan.featured ? "text-gray-300" : "text-gray-600 dark:text-slate-400"}`}
                 >
                   {plan.description}
                 </p>
@@ -1989,11 +2075,13 @@ export default function LandingPage() {
                     <li
                       key={feature}
                       className={`flex items-start gap-2 text-sm ${
-                        plan.featured ? 'text-gray-200' : 'text-gray-600 dark:text-slate-400'
+                        plan.featured
+                          ? "text-gray-200"
+                          : "text-gray-600 dark:text-slate-400"
                       }`}
                     >
                       <svg
-                        className={`w-4 h-4 mt-0.5 flex-shrink-0 ${plan.featured ? 'text-emerald-400' : 'text-emerald-500'}`}
+                        className={`w-4 h-4 mt-0.5 flex-shrink-0 ${plan.featured ? "text-emerald-400" : "text-emerald-500"}`}
                         fill="currentColor"
                         viewBox="0 0 20 20"
                       >
@@ -2010,7 +2098,7 @@ export default function LandingPage() {
 
                 <Link
                   href={plan.href}
-                  className={`mt-6 block w-full py-3 text-center text-sm font-semibold rounded-lg transition-all ${ plan.featured ? 'bg-white text-gray-900 hover:bg-gray-100' : plan.name === 'Free' ? 'bg-gray-100 text-gray-900 dark:text-white hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600' : 'bg-gradient-to-r from-emerald-500 to-blue-500 text-white hover:from-emerald-600 hover:to-blue-600' }`}
+                  className={`mt-6 block w-full py-3 text-center text-sm font-semibold rounded-lg transition-all ${plan.featured ? "bg-white text-gray-900 hover:bg-gray-100" : plan.name === "Free" ? "bg-gray-100 text-gray-900 dark:text-white hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600" : "bg-gradient-to-r from-emerald-500 to-blue-500 text-white hover:from-emerald-600 hover:to-blue-600"}`}
                 >
                   {plan.cta}
                 </Link>
@@ -2154,7 +2242,9 @@ export default function LandingPage() {
               </ul>
             </div>
             <div>
-              <p className="text-xs font-semibold text-gray-900 dark:text-white mb-3">Legal</p>
+              <p className="text-xs font-semibold text-gray-900 dark:text-white mb-3">
+                Legal
+              </p>
               <ul className="space-y-2">
                 <li>
                   <Link

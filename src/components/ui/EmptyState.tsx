@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Empty State Component
@@ -6,16 +6,16 @@
  * A reusable empty state component with illustration and call-to-action
  */
 
-import React from 'react';
+import React from "react";
 
 type IllustrationType =
-  | 'no-data'
-  | 'no-subscriptions'
-  | 'no-rules'
-  | 'no-transactions'
-  | 'no-spending'
-  | 'search-empty'
-  | 'error';
+  | "no-data"
+  | "no-subscriptions"
+  | "no-rules"
+  | "no-transactions"
+  | "no-spending"
+  | "search-empty"
+  | "error";
 
 interface EmptyStateProps {
   type?: IllustrationType;
@@ -38,62 +38,190 @@ function Illustration({ type }: { type: IllustrationType }) {
   const baseClasses = "w-24 h-24 mx-auto mb-6";
 
   switch (type) {
-    case 'no-subscriptions':
+    case "no-subscriptions":
       return (
         <div className={baseClasses}>
-          <svg viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="48" cy="48" r="44" className="fill-emerald-50 dark:fill-emerald-900/20" />
-            <rect x="24" y="32" width="48" height="32" rx="4" className="fill-emerald-100 dark:fill-emerald-800/40 stroke-emerald-500" strokeWidth="2" />
-            <line x1="24" y1="44" x2="72" y2="44" className="stroke-emerald-500" strokeWidth="2" />
+          <svg
+            viewBox="0 0 96 96"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <circle
+              cx="48"
+              cy="48"
+              r="44"
+              className="fill-emerald-50 dark:fill-emerald-900/20"
+            />
+            <rect
+              x="24"
+              y="32"
+              width="48"
+              height="32"
+              rx="4"
+              className="fill-emerald-100 dark:fill-emerald-800/40 stroke-emerald-500"
+              strokeWidth="2"
+            />
+            <line
+              x1="24"
+              y1="44"
+              x2="72"
+              y2="44"
+              className="stroke-emerald-500"
+              strokeWidth="2"
+            />
             <circle cx="32" cy="52" r="4" className="fill-emerald-500" />
-            <rect x="40" y="50" width="24" height="4" rx="2" className="fill-emerald-300 dark:fill-emerald-600" />
+            <rect
+              x="40"
+              y="50"
+              width="24"
+              height="4"
+              rx="2"
+              className="fill-emerald-300 dark:fill-emerald-600"
+            />
           </svg>
         </div>
       );
 
-    case 'no-rules':
+    case "no-rules":
       return (
         <div className={baseClasses}>
-          <svg viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="48" cy="48" r="44" className="fill-blue-50 dark:fill-blue-900/20" />
-            <path d="M30 36h36M30 48h24M30 60h28" className="stroke-blue-500" strokeWidth="3" strokeLinecap="round" />
-            <circle cx="64" cy="60" r="8" className="fill-blue-100 dark:fill-blue-800/40 stroke-blue-500" strokeWidth="2" />
-            <path d="M62 60l2 2 4-4" className="stroke-blue-500" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <svg
+            viewBox="0 0 96 96"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <circle
+              cx="48"
+              cy="48"
+              r="44"
+              className="fill-blue-50 dark:fill-blue-900/20"
+            />
+            <path
+              d="M30 36h36M30 48h24M30 60h28"
+              className="stroke-blue-500"
+              strokeWidth="3"
+              strokeLinecap="round"
+            />
+            <circle
+              cx="64"
+              cy="60"
+              r="8"
+              className="fill-blue-100 dark:fill-blue-800/40 stroke-blue-500"
+              strokeWidth="2"
+            />
+            <path
+              d="M62 60l2 2 4-4"
+              className="stroke-blue-500"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </div>
       );
 
-    case 'no-transactions':
-    case 'no-spending':
+    case "no-transactions":
+    case "no-spending":
       return (
         <div className={baseClasses}>
-          <svg viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="48" cy="48" r="44" className="fill-purple-50 dark:fill-purple-900/20" />
-            <rect x="28" y="28" width="40" height="40" rx="4" className="fill-purple-100 dark:fill-purple-800/40 stroke-purple-500" strokeWidth="2" />
-            <path d="M38 48l6 6 14-14" className="stroke-purple-500" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+          <svg
+            viewBox="0 0 96 96"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <circle
+              cx="48"
+              cy="48"
+              r="44"
+              className="fill-purple-50 dark:fill-purple-900/20"
+            />
+            <rect
+              x="28"
+              y="28"
+              width="40"
+              height="40"
+              rx="4"
+              className="fill-purple-100 dark:fill-purple-800/40 stroke-purple-500"
+              strokeWidth="2"
+            />
+            <path
+              d="M38 48l6 6 14-14"
+              className="stroke-purple-500"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </div>
       );
 
-    case 'search-empty':
+    case "search-empty":
       return (
         <div className={baseClasses}>
-          <svg viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="48" cy="48" r="44" className="fill-amber-50 dark:fill-amber-900/20" />
-            <circle cx="42" cy="42" r="16" className="fill-amber-100 dark:fill-amber-800/40 stroke-amber-500" strokeWidth="2" />
-            <line x1="54" y1="54" x2="66" y2="66" className="stroke-amber-500" strokeWidth="4" strokeLinecap="round" />
-            <path d="M38 42h8M42 38v8" className="stroke-amber-400" strokeWidth="2" strokeLinecap="round" />
+          <svg
+            viewBox="0 0 96 96"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <circle
+              cx="48"
+              cy="48"
+              r="44"
+              className="fill-amber-50 dark:fill-amber-900/20"
+            />
+            <circle
+              cx="42"
+              cy="42"
+              r="16"
+              className="fill-amber-100 dark:fill-amber-800/40 stroke-amber-500"
+              strokeWidth="2"
+            />
+            <line
+              x1="54"
+              y1="54"
+              x2="66"
+              y2="66"
+              className="stroke-amber-500"
+              strokeWidth="4"
+              strokeLinecap="round"
+            />
+            <path
+              d="M38 42h8M42 38v8"
+              className="stroke-amber-400"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
           </svg>
         </div>
       );
 
-    case 'error':
+    case "error":
       return (
         <div className={baseClasses}>
-          <svg viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="48" cy="48" r="44" className="fill-red-50 dark:fill-red-900/20" />
-            <circle cx="48" cy="48" r="20" className="fill-red-100 dark:fill-red-800/40 stroke-red-500" strokeWidth="2" />
-            <path d="M48 40v12M48 56h.01" className="stroke-red-500" strokeWidth="3" strokeLinecap="round" />
+          <svg
+            viewBox="0 0 96 96"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <circle
+              cx="48"
+              cy="48"
+              r="44"
+              className="fill-red-50 dark:fill-red-900/20"
+            />
+            <circle
+              cx="48"
+              cy="48"
+              r="20"
+              className="fill-red-100 dark:fill-red-800/40 stroke-red-500"
+              strokeWidth="2"
+            />
+            <path
+              d="M48 40v12M48 56h.01"
+              className="stroke-red-500"
+              strokeWidth="3"
+              strokeLinecap="round"
+            />
           </svg>
         </div>
       );
@@ -101,10 +229,31 @@ function Illustration({ type }: { type: IllustrationType }) {
     default:
       return (
         <div className={baseClasses}>
-          <svg viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="48" cy="48" r="44" className="fill-gray-100 dark:fill-gray-800" />
-            <rect x="28" y="36" width="40" height="24" rx="4" className="fill-gray-200 dark:fill-gray-700" />
-            <circle cx="48" cy="48" r="8" className="fill-gray-300 dark:fill-gray-600" />
+          <svg
+            viewBox="0 0 96 96"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <circle
+              cx="48"
+              cy="48"
+              r="44"
+              className="fill-gray-100 dark:fill-gray-800"
+            />
+            <rect
+              x="28"
+              y="36"
+              width="40"
+              height="24"
+              rx="4"
+              className="fill-gray-200 dark:fill-gray-700"
+            />
+            <circle
+              cx="48"
+              cy="48"
+              r="8"
+              className="fill-gray-300 dark:fill-gray-600"
+            />
           </svg>
         </div>
       );
@@ -112,12 +261,12 @@ function Illustration({ type }: { type: IllustrationType }) {
 }
 
 export function EmptyState({
-  type = 'no-data',
+  type = "no-data",
   title,
   description,
   primaryAction,
   secondaryAction,
-  className = '',
+  className = "",
 }: EmptyStateProps) {
   return (
     <div className={`text-center py-12 px-4 ${className}`}>

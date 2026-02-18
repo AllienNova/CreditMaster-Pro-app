@@ -4,10 +4,10 @@
  * POST /api/gamification/badges - Award a badge
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { getGamificationEngine } from '@/lib/gamification';
-import type { BadgesResponse, BadgeCategory } from '@/lib/gamification';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { getGamificationEngine } from "@/lib/gamification";
+import type { BadgesResponse, BadgeCategory } from "@/lib/gamification";
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const engine = getGamificationEngine();
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
 
     const response: BadgesResponse = {
       earned: earned.map((b) => ({
-        id: '',
+        id: "",
         badgeId: b.id,
         badge: b,
         earnedAt: new Date().toISOString(),
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
         userId: user.id,
       })),
       inProgress: inProgress.map((b) => ({
-        id: '',
+        id: "",
         userId: user.id,
         badgeId: b.id,
         currentValue: 0,
@@ -72,10 +72,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error('Error fetching badges:', error);
+    console.error("Error fetching badges:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch badges' },
-      { status: 500 }
+      { error: "Failed to fetch badges" },
+      { status: 500 },
     );
   }
 }
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
@@ -97,8 +97,8 @@ export async function POST(request: NextRequest) {
 
     if (!badgeCode) {
       return NextResponse.json(
-        { error: 'Badge code required' },
-        { status: 400 }
+        { error: "Badge code required" },
+        { status: 400 },
       );
     }
 
@@ -114,10 +114,10 @@ export async function POST(request: NextRequest) {
       badge: result.badge,
     });
   } catch (error) {
-    console.error('Error awarding badge:', error);
+    console.error("Error awarding badge:", error);
     return NextResponse.json(
-      { error: 'Failed to award badge' },
-      { status: 500 }
+      { error: "Failed to award badge" },
+      { status: 500 },
     );
   }
 }

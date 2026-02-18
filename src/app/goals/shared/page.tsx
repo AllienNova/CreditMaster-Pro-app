@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState } from "react";
+import { motion } from "framer-motion";
 import {
   Users,
   Plus,
@@ -24,7 +24,7 @@ import {
   Zap,
   Trophy,
   AlertTriangle,
-} from 'lucide-react';
+} from "lucide-react";
 
 interface Member {
   name: string;
@@ -56,31 +56,31 @@ interface SharedGoal {
 }
 
 const MEMBER_COLORS = [
-  'from-blue-400 to-blue-500',
-  'from-blue-400 to-blue-500',
-  'from-green-400 to-emerald-500',
-  'from-orange-400 to-amber-500',
-  'from-emerald-400 to-rose-500',
-  'from-blue-400 to-blue-500',
+  "from-blue-400 to-blue-500",
+  "from-blue-400 to-blue-500",
+  "from-green-400 to-emerald-500",
+  "from-orange-400 to-amber-500",
+  "from-emerald-400 to-rose-500",
+  "from-blue-400 to-blue-500",
 ];
 
 const MOCK_GOALS: SharedGoal[] = [
   {
-    id: '1',
-    name: 'Dream Home Down Payment',
-    emoji: '',
+    id: "1",
+    name: "Dream Home Down Payment",
+    emoji: "",
     targetAmount: 60000,
     currentAmount: 42500,
     members: [
       {
-        name: 'You',
+        name: "You",
         contributed: 24000,
         lastContribution: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
         streak: 12,
         color: MEMBER_COLORS[0],
       },
       {
-        name: 'Sarah',
+        name: "Sarah",
         contributed: 18500,
         lastContribution: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
         streak: 8,
@@ -89,46 +89,46 @@ const MOCK_GOALS: SharedGoal[] = [
     ],
     daysLeft: 180,
     totalDays: 365,
-    recentActivity: 'Sarah contributed $500 yesterday',
+    recentActivity: "Sarah contributed $500 yesterday",
     milestones: [
-      { percent: 25, label: 'Quarter Way', reached: true },
-      { percent: 50, label: 'Halfway!', reached: true },
-      { percent: 75, label: 'Almost There', reached: false },
-      { percent: 100, label: 'Goal!', reached: false },
+      { percent: 25, label: "Quarter Way", reached: true },
+      { percent: 50, label: "Halfway!", reached: true },
+      { percent: 75, label: "Almost There", reached: false },
+      { percent: 100, label: "Goal!", reached: false },
     ],
     weeklyTarget: 1200,
     lastWeekSaved: 1450,
   },
   {
-    id: '2',
-    name: 'Family Vacation to Hawaii',
-    emoji: '',
+    id: "2",
+    name: "Family Vacation to Hawaii",
+    emoji: "",
     targetAmount: 8000,
     currentAmount: 5200,
     members: [
       {
-        name: 'You',
+        name: "You",
         contributed: 1800,
         lastContribution: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
         streak: 4,
         color: MEMBER_COLORS[0],
       },
       {
-        name: 'Mom',
+        name: "Mom",
         contributed: 1500,
         lastContribution: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
         streak: 6,
         color: MEMBER_COLORS[2],
       },
       {
-        name: 'Dad',
+        name: "Dad",
         contributed: 1500,
         lastContribution: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
         streak: 6,
         color: MEMBER_COLORS[3],
       },
       {
-        name: 'Sis',
+        name: "Sis",
         contributed: 400,
         lastContribution: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
         streak: 0,
@@ -137,39 +137,39 @@ const MOCK_GOALS: SharedGoal[] = [
     ],
     daysLeft: 120,
     totalDays: 240,
-    recentActivity: 'Mom sent a nudge!',
+    recentActivity: "Mom sent a nudge!",
     milestones: [
-      { percent: 25, label: 'Started', reached: true },
-      { percent: 50, label: 'Halfway', reached: true },
-      { percent: 75, label: '3/4 Done', reached: false },
-      { percent: 100, label: 'Hawaii!', reached: false },
+      { percent: 25, label: "Started", reached: true },
+      { percent: 50, label: "Halfway", reached: true },
+      { percent: 75, label: "3/4 Done", reached: false },
+      { percent: 100, label: "Hawaii!", reached: false },
     ],
     weeklyTarget: 350,
     lastWeekSaved: 200,
   },
   {
-    id: '3',
+    id: "3",
     name: "Parents' 50th Anniversary",
-    emoji: '',
+    emoji: "",
     targetAmount: 2500,
     currentAmount: 1875,
     members: [
       {
-        name: 'You',
+        name: "You",
         contributed: 625,
         lastContribution: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
         streak: 3,
         color: MEMBER_COLORS[0],
       },
       {
-        name: 'Mike',
+        name: "Mike",
         contributed: 625,
         lastContribution: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
         streak: 5,
         color: MEMBER_COLORS[1],
       },
       {
-        name: 'Lisa',
+        name: "Lisa",
         contributed: 625,
         lastContribution: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
         streak: 7,
@@ -178,12 +178,12 @@ const MOCK_GOALS: SharedGoal[] = [
     ],
     daysLeft: 45,
     totalDays: 90,
-    recentActivity: 'Lisa joined the goal',
+    recentActivity: "Lisa joined the goal",
     milestones: [
-      { percent: 25, label: 'Started', reached: true },
-      { percent: 50, label: 'Halfway', reached: true },
-      { percent: 75, label: 'Almost', reached: true },
-      { percent: 100, label: 'Party!', reached: false },
+      { percent: 25, label: "Started", reached: true },
+      { percent: 50, label: "Halfway", reached: true },
+      { percent: 75, label: "Almost", reached: true },
+      { percent: 100, label: "Party!", reached: false },
     ],
     weeklyTarget: 180,
     lastWeekSaved: 250,
@@ -191,16 +191,16 @@ const MOCK_GOALS: SharedGoal[] = [
 ];
 
 const TEMPLATES = [
-  { id: 'home', name: 'House Down Payment', emoji: '', icon: Home },
-  { id: 'vacation', name: 'Group Vacation', emoji: '', icon: Plane },
-  { id: 'gift', name: 'Special Gift', emoji: '', icon: Gift },
-  { id: 'emergency', name: 'Family Emergency Fund', emoji: '', icon: Heart },
+  { id: "home", name: "House Down Payment", emoji: "", icon: Home },
+  { id: "vacation", name: "Group Vacation", emoji: "", icon: Plane },
+  { id: "gift", name: "Special Gift", emoji: "", icon: Gift },
+  { id: "emergency", name: "Family Emergency Fund", emoji: "", icon: Heart },
 ];
 
 const formatCurrency = (n: number) =>
-  new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
+  new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
     maximumFractionDigits: 0,
   }).format(n);
 
@@ -255,33 +255,33 @@ function ContributionDonut({
               <stop
                 offset="0%"
                 stopColor={
-                  member.color.includes('purple')
-                    ? '#a855f7'
-                    : member.color.includes('blue')
-                      ? '#3b82f6'
-                      : member.color.includes('green')
-                        ? '#22c55e'
-                        : member.color.includes('orange')
-                          ? '#f97316'
-                          : member.color.includes('pink')
-                            ? '#ec4899'
-                            : '#6366f1'
+                  member.color.includes("purple")
+                    ? "#a855f7"
+                    : member.color.includes("blue")
+                      ? "#3b82f6"
+                      : member.color.includes("green")
+                        ? "#22c55e"
+                        : member.color.includes("orange")
+                          ? "#f97316"
+                          : member.color.includes("pink")
+                            ? "#ec4899"
+                            : "#6366f1"
                 }
               />
               <stop
                 offset="100%"
                 stopColor={
-                  member.color.includes('purple')
-                    ? '#8b5cf6'
-                    : member.color.includes('blue')
-                      ? '#06b6d4'
-                      : member.color.includes('green')
-                        ? '#10b981'
-                        : member.color.includes('orange')
-                          ? '#f59e0b'
-                          : member.color.includes('pink')
-                            ? '#f43f5e'
-                            : '#3b82f6'
+                  member.color.includes("purple")
+                    ? "#8b5cf6"
+                    : member.color.includes("blue")
+                      ? "#06b6d4"
+                      : member.color.includes("green")
+                        ? "#10b981"
+                        : member.color.includes("orange")
+                          ? "#f59e0b"
+                          : member.color.includes("pink")
+                            ? "#f43f5e"
+                            : "#3b82f6"
                 }
               />
             </linearGradient>
@@ -320,12 +320,12 @@ function ProgressThermometer({
             className="flex flex-col items-center"
             style={{
               left: `${m.percent}%`,
-              position: 'absolute',
-              transform: 'translateX(-50%)',
+              position: "absolute",
+              transform: "translateX(-50%)",
             }}
           >
             <span
-              className={`text-xs font-medium ${m.reached ? 'text-green-600' : 'text-gray-400 dark:text-slate-500'}`}
+              className={`text-xs font-medium ${m.reached ? "text-green-600" : "text-gray-400 dark:text-slate-500"}`}
             >
               {m.label}
             </span>
@@ -341,14 +341,14 @@ function ProgressThermometer({
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${progress}%` }}
-          transition={{ duration: 1, ease: 'easeOut' }}
+          transition={{ duration: 1, ease: "easeOut" }}
           className="h-full bg-gradient-to-r from-blue-500 via-violet-500 to-fuchsia-500 rounded-full"
         />
         {/* Milestone ticks */}
         {milestones.map((m, i) => (
           <div
             key={i}
-            className={`absolute top-0 h-full w-0.5 ${m.reached ? 'bg-green-400' : 'bg-gray-400'}`}
+            className={`absolute top-0 h-full w-0.5 ${m.reached ? "bg-green-400" : "bg-gray-400"}`}
             style={{ left: `${m.percent}%` }}
           />
         ))}
@@ -359,7 +359,9 @@ function ProgressThermometer({
         <span className="text-lg font-bold text-gray-900 dark:text-white">
           {formatCurrency(current)}
         </span>
-        <span className="text-sm text-gray-500 dark:text-slate-400">{formatCurrency(target)}</span>
+        <span className="text-sm text-gray-500 dark:text-slate-400">
+          {formatCurrency(target)}
+        </span>
       </div>
     </div>
   );
@@ -383,7 +385,7 @@ function PaceIndicator({
 
   return (
     <div
-      className={`p-3 rounded-lg ${isAhead ? 'bg-green-50 border border-green-200' : 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800'}`}
+      className={`p-3 rounded-lg ${isAhead ? "bg-green-50 border border-green-200" : "bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800"}`}
     >
       <div className="flex items-center gap-2 mb-2">
         {isAhead ? (
@@ -409,19 +411,21 @@ function PaceIndicator({
 
       <div className="flex items-baseline gap-1">
         <span
-          className={`text-xl font-bold ${isAhead ? 'text-green-600' : 'text-amber-600'}`}
+          className={`text-xl font-bold ${isAhead ? "text-green-600" : "text-amber-600"}`}
         >
-          {isAhead ? '+' : ''}
+          {isAhead ? "+" : ""}
           {formatCurrency(diff)}
         </span>
-        <span className="text-xs text-gray-500 dark:text-slate-400">vs weekly target</span>
+        <span className="text-xs text-gray-500 dark:text-slate-400">
+          vs weekly target
+        </span>
       </div>
 
       <div className="mt-2 text-xs text-gray-600 dark:text-slate-400">
-        Need{' '}
+        Need{" "}
         <span className="font-semibold">
           {formatCurrency(weeklyTarget)}/week
-        </span>{' '}
+        </span>{" "}
         to reach goal
       </div>
     </div>
@@ -490,12 +494,12 @@ function MemberContributions({
             {/* Last contribution info */}
             <div className="flex items-center justify-between text-xs">
               <span
-                className={`${needsNudge ? 'text-amber-600' : 'text-gray-500 dark:text-slate-400'}`}
+                className={`${needsNudge ? "text-amber-600" : "text-gray-500 dark:text-slate-400"}`}
               >
                 {daysSince === 0
-                  ? 'Today'
+                  ? "Today"
                   : daysSince === 1
-                    ? 'Yesterday'
+                    ? "Yesterday"
                     : `${daysSince} days ago`}
               </span>
               {needsNudge && (
@@ -514,12 +518,12 @@ function MemberContributions({
 
 export default function SharedGoalsPage() {
   const [goals] = useState<SharedGoal[]>(MOCK_GOALS);
-  const [expandedGoal, setExpandedGoal] = useState<string | null>('1');
+  const [expandedGoal, setExpandedGoal] = useState<string | null>("1");
 
   const totalSaved = goals.reduce((sum, g) => sum + g.currentAmount, 0);
   const totalTarget = goals.reduce((sum, g) => sum + g.targetAmount, 0);
   const goalsOnTrack = goals.filter(
-    (g) => g.lastWeekSaved >= g.weeklyTarget
+    (g) => g.lastWeekSaved >= g.weeklyTarget,
   ).length;
 
   return (
@@ -598,7 +602,7 @@ export default function SharedGoalsPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className={`rounded-xl p-5 text-white ${goalsOnTrack === goals.length ? 'bg-gradient-to-br from-emerald-500 to-teal-600' : 'bg-gradient-to-br from-amber-500 to-orange-600'}`}
+            className={`rounded-xl p-5 text-white ${goalsOnTrack === goals.length ? "bg-gradient-to-br from-emerald-500 to-teal-600" : "bg-gradient-to-br from-amber-500 to-orange-600"}`}
           >
             <div className="flex items-center gap-2 mb-2">
               <Trophy className="w-5 h-5" />
@@ -609,8 +613,8 @@ export default function SharedGoalsPage() {
             </p>
             <p className="text-sm opacity-80 mt-1">
               {goalsOnTrack === goals.length
-                ? 'All goals on pace!'
-                : 'Some need attention'}
+                ? "All goals on pace!"
+                : "Some need attention"}
             </p>
           </motion.div>
         </div>
@@ -694,7 +698,7 @@ export default function SharedGoalsPage() {
                           </span>
                         </div>
                         <ChevronRight
-                          className={`w-5 h-5 text-gray-400 dark:text-slate-500 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                          className={`w-5 h-5 text-gray-400 dark:text-slate-500 transition-transform ${isExpanded ? "rotate-90" : ""}`}
                         />
                       </div>
                     </div>
@@ -705,7 +709,7 @@ export default function SharedGoalsPage() {
                 {isExpanded && (
                   <motion.div
                     initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
+                    animate={{ height: "auto", opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
                     className="border-t border-gray-100 dark:border-slate-700 p-5 bg-gray-50 dark:bg-slate-800/50"
                   >

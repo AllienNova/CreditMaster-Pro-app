@@ -1,6 +1,6 @@
 /**
  * AI Financial Coach Types
- * 
+ *
  * Comprehensive type definitions for the AI Financial Coach system including:
  * - Recommendation Engine
  * - Goal Planning System
@@ -13,18 +13,23 @@
 // ============================================================================
 
 export type RecommendationType =
-  | 'savings_strategy'
-  | 'debt_payoff'
-  | 'investment_suggestion'
-  | 'budget_adjustment'
-  | 'account_optimization'
-  | 'credit_improvement'
-  | 'insurance_needs'
-  | 'tax_optimization';
+  | "savings_strategy"
+  | "debt_payoff"
+  | "investment_suggestion"
+  | "budget_adjustment"
+  | "account_optimization"
+  | "credit_improvement"
+  | "insurance_needs"
+  | "tax_optimization";
 
-export type RecommendationPriority = 'critical' | 'high' | 'medium' | 'low';
+export type RecommendationPriority = "critical" | "high" | "medium" | "low";
 
-export type RecommendationStatus = 'pending' | 'in_progress' | 'completed' | 'dismissed' | 'expired';
+export type RecommendationStatus =
+  | "pending"
+  | "in_progress"
+  | "completed"
+  | "dismissed"
+  | "expired";
 
 export interface Recommendation {
   id: string;
@@ -32,28 +37,28 @@ export interface Recommendation {
   type: RecommendationType;
   priority: RecommendationPriority;
   status: RecommendationStatus;
-  
+
   // Content
   title: string;
   description: string;
   rationale: string;
   aiInsight?: string;
-  
+
   // Impact metrics
   potentialSavings?: number;
   potentialReturn?: number;
-  riskLevel: 'low' | 'medium' | 'high';
-  timeframe: 'immediate' | 'short_term' | 'medium_term' | 'long_term';
-  estimatedEffort: 'minimal' | 'moderate' | 'significant';
-  
+  riskLevel: "low" | "medium" | "high";
+  timeframe: "immediate" | "short_term" | "medium_term" | "long_term";
+  estimatedEffort: "minimal" | "moderate" | "significant";
+
   // Action items
   actionSteps: RecommendationStep[];
   relatedResources?: RelatedResource[];
-  
+
   // Personalization
   confidenceScore: number; // 0-100
   personalizedFactors: string[];
-  
+
   // Tracking
   createdAt: Date;
   expiresAt?: Date;
@@ -67,14 +72,14 @@ export interface RecommendationStep {
   order: number;
   title: string;
   description: string;
-  actionType: 'manual' | 'automated' | 'link' | 'in_app';
+  actionType: "manual" | "automated" | "link" | "in_app";
   actionUrl?: string;
   isCompleted: boolean;
   completedAt?: Date;
 }
 
 export interface RelatedResource {
-  type: 'article' | 'tool' | 'calculator' | 'external_link';
+  type: "article" | "tool" | "calculator" | "external_link";
   title: string;
   url: string;
   description?: string;
@@ -85,18 +90,25 @@ export interface RelatedResource {
 // ============================================================================
 
 export type GoalType =
-  | 'emergency_fund'
-  | 'debt_payoff'
-  | 'savings'
-  | 'investment'
-  | 'major_purchase'
-  | 'retirement'
-  | 'education'
-  | 'vacation'
-  | 'home_down_payment'
-  | 'custom';
+  | "emergency_fund"
+  | "debt_payoff"
+  | "savings"
+  | "investment"
+  | "major_purchase"
+  | "retirement"
+  | "education"
+  | "vacation"
+  | "home_down_payment"
+  | "custom";
 
-export type GoalStatus = 'not_started' | 'in_progress' | 'on_track' | 'behind' | 'ahead' | 'completed' | 'paused';
+export type GoalStatus =
+  | "not_started"
+  | "in_progress"
+  | "on_track"
+  | "behind"
+  | "ahead"
+  | "completed"
+  | "paused";
 
 export interface FinancialGoalPlan {
   id: string;
@@ -104,37 +116,37 @@ export interface FinancialGoalPlan {
   type: GoalType;
   name: string;
   description?: string;
-  
+
   // Financial targets
   targetAmount: number;
   currentAmount: number;
   startingAmount: number;
-  
+
   // Timeline
   targetDate: Date;
   startDate: Date;
   projectedCompletionDate?: Date;
-  
+
   // Progress
   progress: number; // 0-100 percentage
   status: GoalStatus;
   milestones: GoalMilestone[];
-  
+
   // Strategy
   monthlyContribution: number;
   suggestedContribution: number;
-  contributionFrequency: 'weekly' | 'biweekly' | 'monthly';
+  contributionFrequency: "weekly" | "biweekly" | "monthly";
   linkedAccountId?: string;
   autoSaveEnabled: boolean;
-  
+
   // AI coaching
   aiRecommendations: string[];
   adjustmentSuggestions: GoalAdjustment[];
   riskFactors: string[];
-  
+
   // Priority
   priority: number; // 1-5, higher is more important
-  
+
   // Metadata
   createdAt: Date;
   updatedAt: Date;
@@ -151,7 +163,7 @@ export interface GoalMilestone {
 }
 
 export interface GoalAdjustment {
-  type: 'increase_contribution' | 'extend_timeline' | 'reduce_target' | 'pause';
+  type: "increase_contribution" | "extend_timeline" | "reduce_target" | "pause";
   reason: string;
   suggestedValue?: number;
   impact: string;
@@ -208,19 +220,19 @@ export interface BudgetCategorySummary {
   budgeted: number;
   spent: number;
   percentUsed: number;
-  trend: 'increasing' | 'decreasing' | 'stable';
+  trend: "increasing" | "decreasing" | "stable";
   benchmarkComparison?: number; // vs average for income level
 }
 
 export interface BudgetOptimization {
   id: string;
   category: string;
-  type: 'reduce' | 'increase' | 'reallocate' | 'eliminate';
+  type: "reduce" | "increase" | "reallocate" | "eliminate";
   currentAmount: number;
   suggestedAmount: number;
   potentialSavings: number;
   reason: string;
-  difficulty: 'easy' | 'moderate' | 'hard';
+  difficulty: "easy" | "moderate" | "hard";
   priorityScore: number;
   actionSteps: string[];
 }
@@ -264,7 +276,7 @@ export interface BudgetImpact {
   annualSavings: number;
   goalAccelerationDays: number;
   debtPayoffAcceleration: number;
-  lifestyleImpact: 'minimal' | 'moderate' | 'significant';
+  lifestyleImpact: "minimal" | "moderate" | "significant";
 }
 
 // ============================================================================
@@ -298,7 +310,7 @@ export interface DebtStrategyAnalysis {
 
 export interface DebtStrategyPlan {
   id: string;
-  strategy: 'avalanche' | 'snowball' | 'hybrid' | 'consolidation';
+  strategy: "avalanche" | "snowball" | "hybrid" | "consolidation";
   name: string;
   description: string;
 
@@ -346,7 +358,7 @@ export interface RefinancingOpportunity {
   currentBalance: number;
   monthlySavings: number;
   totalSavings: number;
-  lenderType: 'bank' | 'credit_union' | 'online_lender' | 'balance_transfer';
+  lenderType: "bank" | "credit_union" | "online_lender" | "balance_transfer";
   requirements: string[];
   considerations: string[];
 }
@@ -362,7 +374,7 @@ export interface CoachSession {
   endedAt?: Date;
 
   // Focus area
-  focusArea: RecommendationType | 'general';
+  focusArea: RecommendationType | "general";
 
   // Interactions
   interactions: CoachInteraction[];
@@ -378,11 +390,11 @@ export interface CoachSession {
 export interface CoachInteraction {
   id: string;
   timestamp: Date;
-  type: 'question' | 'recommendation' | 'action' | 'feedback';
+  type: "question" | "recommendation" | "action" | "feedback";
   userInput?: string;
   coachResponse: string;
   relatedRecommendationId?: string;
-  sentiment?: 'positive' | 'neutral' | 'negative';
+  sentiment?: "positive" | "neutral" | "negative";
 }
 
 // ============================================================================
@@ -469,7 +481,7 @@ export interface CoachDashboard {
 
   // Financial health summary
   healthScore: number;
-  healthTrend: 'improving' | 'stable' | 'declining';
+  healthTrend: "improving" | "stable" | "declining";
 
   // Top recommendations
   topRecommendations: Recommendation[];
@@ -481,7 +493,7 @@ export interface CoachDashboard {
   nextMilestone?: GoalMilestone & { goalName: string };
 
   // Budget status
-  budgetHealth: 'healthy' | 'warning' | 'critical';
+  budgetHealth: "healthy" | "warning" | "critical";
   monthlyUnallocated: number;
   potentialSavings: number;
 
@@ -497,7 +509,7 @@ export interface CoachDashboard {
 
 export interface CoachProgress {
   userId: string;
-  period: 'week' | 'month' | 'quarter' | 'year';
+  period: "week" | "month" | "quarter" | "year";
 
   // Recommendation progress
   recommendationsReceived: number;
@@ -526,7 +538,6 @@ export interface CoachAchievement {
   name: string;
   description: string;
   earnedAt: Date;
-  category: 'savings' | 'debt' | 'budget' | 'goals' | 'engagement';
+  category: "savings" | "debt" | "budget" | "goals" | "engagement";
   icon: string;
 }
-

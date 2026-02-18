@@ -5,12 +5,14 @@ node_modules/
 
 # Testing
 coverage/
+coverage-*/
 .nyc_output
 test-output.txt
 test-results*.txt
 test-results/
 savings-test-output.txt
 *.junit.xml
+playwright-report/
 
 # Cypress
 cypress/screenshots/
@@ -54,6 +56,10 @@ nul
 
 # Supabase temp
 supabase/.temp/
+
+# Temp/artifacts
+*ts-errors.txt
+tmpclaude-*
 
 # Misc
 *.pem

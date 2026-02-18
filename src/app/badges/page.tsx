@@ -1,15 +1,14 @@
-'use client';
+"use client";
 
-
-import { Icon } from '@/components/ui/Icon';
+import { Icon } from "@/components/ui/Icon";
 /**
  * Badges & Achievements Page
  * Full view of all badges, earned and locked
  */
 
-import React, { useEffect, useState } from 'react';
-import { BadgeCard } from '@/components/gamification';
-import type { BadgeDefinition, BadgeCategory } from '@/lib/gamification';
+import React, { useEffect, useState } from "react";
+import { BadgeCard } from "@/components/gamification";
+import type { BadgeDefinition, BadgeCategory } from "@/lib/gamification";
 
 interface BadgeData {
   earned: { badge: BadgeDefinition; earnedAt: string }[];
@@ -18,16 +17,16 @@ interface BadgeData {
 }
 
 const categoryLabels: Record<BadgeCategory, { label: string; icon: string }> = {
-  savings: { label: 'Savings', icon: "wallet" },
-  debt: { label: 'Debt Freedom', icon: "scissors" },
-  budget: { label: 'Budget Master', icon: "calculator" },
-  credit: { label: 'Credit Building', icon: "credit-card" },
-  investing: { label: 'Investing', icon: "trending-up" },
-  trading: { label: 'Trading', icon: "chart-bar" },
-  streak: { label: 'Streaks', icon: "fire" },
-  community: { label: 'Community', icon: "users" },
-  special: { label: 'Special', icon: "star" },
-  tax: { label: 'Tax Optimization', icon: "document-chart" },
+  savings: { label: "Savings", icon: "wallet" },
+  debt: { label: "Debt Freedom", icon: "scissors" },
+  budget: { label: "Budget Master", icon: "calculator" },
+  credit: { label: "Credit Building", icon: "credit-card" },
+  investing: { label: "Investing", icon: "trending-up" },
+  trading: { label: "Trading", icon: "chart-bar" },
+  streak: { label: "Streaks", icon: "fire" },
+  community: { label: "Community", icon: "users" },
+  special: { label: "Special", icon: "star" },
+  tax: { label: "Tax Optimization", icon: "document-chart" },
 };
 
 export default function BadgesPage() {
@@ -38,10 +37,10 @@ export default function BadgesPage() {
   });
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<
-    BadgeCategory | 'all'
-  >('all');
+    BadgeCategory | "all"
+  >("all");
   const [selectedBadge, setSelectedBadge] = useState<BadgeDefinition | null>(
-    null
+    null,
   );
 
   useEffect(() => {
@@ -50,7 +49,7 @@ export default function BadgesPage() {
 
   const fetchBadges = async () => {
     try {
-      const res = await fetch('/api/gamification/badges');
+      const res = await fetch("/api/gamification/badges");
       if (res.ok) {
         const data = await res.json();
         setBadges({
@@ -60,14 +59,14 @@ export default function BadgesPage() {
         });
       }
     } catch (err) {
-      console.error('Failed to fetch badges:', err);
+      console.error("Failed to fetch badges:", err);
     } finally {
       setLoading(false);
     }
   };
 
   const filterByCategory = (items: BadgeDefinition[]) => {
-    if (selectedCategory === 'all') return items;
+    if (selectedCategory === "all") return items;
     return items.filter((b) => b.category === selectedCategory);
   };
 
@@ -103,10 +102,10 @@ export default function BadgesPage() {
               </h1>
             </div>
             <div className="text-sm text-gray-500 dark:text-slate-400">
-              {badges.earned.length} /{' '}
+              {badges.earned.length} /{" "}
               {badges.earned.length +
                 badges.inProgress.length +
-                badges.locked.length}{' '}
+                badges.locked.length}{" "}
               earned
             </div>
           </div>
@@ -119,11 +118,11 @@ export default function BadgesPage() {
         <div className="mb-8 overflow-x-auto">
           <div className="flex gap-2 min-w-max pb-2">
             <button
-              onClick={() => setSelectedCategory('all')}
+              onClick={() => setSelectedCategory("all")}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                selectedCategory === 'all'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700'
+                selectedCategory === "all"
+                  ? "bg-blue-600 text-white"
+                  : "bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700"
               }`}
             >
               All Badges
@@ -134,11 +133,14 @@ export default function BadgesPage() {
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors flex items-center gap-1 ${
                   selectedCategory === cat
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700'
+                    ? "bg-blue-600 text-white"
+                    : "bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700"
                 }`}
               >
-                <Icon name={categoryLabels[cat].icon} className="w-4 h-4 inline-block" />
+                <Icon
+                  name={categoryLabels[cat].icon}
+                  className="w-4 h-4 inline-block"
+                />
                 {categoryLabels[cat].label}
               </button>
             ))}
@@ -165,7 +167,7 @@ export default function BadgesPage() {
                     onClick={() => setSelectedBadge(badge)}
                     size="sm"
                   />
-                )
+                ),
               )}
             </div>
           </section>
@@ -181,7 +183,7 @@ export default function BadgesPage() {
               {filterByCategory(badges.inProgress.map((e) => e.badge)).map(
                 (badge) => {
                   const prog = badges.inProgress.find(
-                    (e) => e.badge.id === badge.id
+                    (e) => e.badge.id === badge.id,
                   );
                   return (
                     <BadgeCard
@@ -193,7 +195,7 @@ export default function BadgesPage() {
                       size="sm"
                     />
                   );
-                }
+                },
               )}
             </div>
           </section>
@@ -252,21 +254,24 @@ export default function BadgesPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="text-center">
-              <Icon name={selectedBadge.icon} className="text-6xl block mb-4 inline-block" />
+              <Icon
+                name={selectedBadge.icon}
+                className="text-6xl block mb-4 inline-block"
+              />
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
                 {selectedBadge.name}
               </h3>
               <p
                 className={`text-sm capitalize mb-2 ${
-                  selectedBadge.rarity === 'legendary'
-                    ? 'text-yellow-600'
-                    : selectedBadge.rarity === 'epic'
-                      ? 'text-blue-600'
-                      : selectedBadge.rarity === 'rare'
-                        ? 'text-blue-600'
-                        : selectedBadge.rarity === 'uncommon'
-                          ? 'text-green-600'
-                          : 'text-gray-500 dark:text-slate-400'
+                  selectedBadge.rarity === "legendary"
+                    ? "text-yellow-600"
+                    : selectedBadge.rarity === "epic"
+                      ? "text-blue-600"
+                      : selectedBadge.rarity === "rare"
+                        ? "text-blue-600"
+                        : selectedBadge.rarity === "uncommon"
+                          ? "text-green-600"
+                          : "text-gray-500 dark:text-slate-400"
                 }`}
               >
                 {selectedBadge.rarity}
@@ -275,7 +280,10 @@ export default function BadgesPage() {
                 {selectedBadge.description}
               </p>
               <div className="flex items-center justify-center gap-2 text-sm text-gray-500 dark:text-slate-400 mb-4">
-                <Icon name={categoryLabels[selectedBadge.category].icon} className="w-4 h-4 inline-block" />
+                <Icon
+                  name={categoryLabels[selectedBadge.category].icon}
+                  className="w-4 h-4 inline-block"
+                />
                 <span>{categoryLabels[selectedBadge.category].label}</span>
               </div>
               <p className="text-lg font-semibold text-blue-600 dark:text-blue-400">

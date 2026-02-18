@@ -14,11 +14,11 @@
  * - Audit logging
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { negotiationService } from '@/lib/credit-repair';
-import { db } from '@/lib/credit-repair/db';
-import { auditLogger } from '@/lib/security/audit-logging';
+import { NextRequest, NextResponse } from "next/server";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { negotiationService } from "@/lib/credit-repair";
+import { db } from "@/lib/credit-repair/db";
+import { auditLogger } from "@/lib/security/audit-logging";
 
 interface NegotiationScripts {
   phoneScript: string;
@@ -41,48 +41,48 @@ export async function GET(request: NextRequest) {
     // 1. Authenticate
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = validation.user;
 
     // 2. Parse query parameters
     const { searchParams } = new URL(request.url);
-    const statusParam = searchParams.get('status');
+    const statusParam = searchParams.get("status");
     const statusMap: Record<
       string,
-      'pending' | 'negotiating' | 'agreed' | 'paid' | 'completed' | 'failed'
+      "pending" | "negotiating" | "agreed" | "paid" | "completed" | "failed"
     > = {
-      pending: 'pending',
-      draft: 'pending',
-      sent: 'pending',
-      negotiating: 'negotiating',
-      accepted: 'agreed',
-      agreed: 'agreed',
-      paid: 'paid',
-      completed: 'completed',
-      failed: 'failed',
-      rejected: 'failed',
+      pending: "pending",
+      draft: "pending",
+      sent: "pending",
+      negotiating: "negotiating",
+      accepted: "agreed",
+      agreed: "agreed",
+      paid: "paid",
+      completed: "completed",
+      failed: "failed",
+      rejected: "failed",
     };
     let statusFilter:
-      | 'pending'
-      | 'negotiating'
-      | 'agreed'
-      | 'paid'
-      | 'completed'
-      | 'failed'
+      | "pending"
+      | "negotiating"
+      | "agreed"
+      | "paid"
+      | "completed"
+      | "failed"
       | undefined;
     if (statusParam) {
       statusFilter = statusMap[statusParam];
       if (!statusFilter) {
         return NextResponse.json(
-          { error: 'Invalid status', validStatuses: Object.keys(statusMap) },
-          { status: 400 }
+          { error: "Invalid status", validStatuses: Object.keys(statusMap) },
+          { status: 400 },
         );
       }
     }
-    const limit = Number.parseInt(searchParams.get('limit') || '50');
-    const offset = Number.parseInt(searchParams.get('offset') || '0');
+    const limit = Number.parseInt(searchParams.get("limit") || "50");
+    const offset = Number.parseInt(searchParams.get("offset") || "0");
 
     // 3. Get negotiations from database
     const { negotiations, total } = await db.negotiations.getNegotiationsByUser(
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
         status: statusFilter,
         limit,
         offset,
-      }
+      },
     );
 
     // 4. Get statistics
@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
     // 5. Audit log
     await auditLogger.logAIInteraction({
       userId: user.id,
-      action: 'get_negotiations',
+      action: "get_negotiations",
       input: { status: statusParam, limit, offset },
       output: { count: negotiations.length },
       success: true,
@@ -125,17 +125,17 @@ export async function GET(request: NextRequest) {
     // Audit log error
     try {
       await auditLogger.logSecurityEvent({
-        type: 'api_error',
+        type: "api_error",
         message: `Failed to get negotiations: ${(error as Error).message}`,
-        severity: 'medium',
+        severity: "medium",
       });
     } catch {
       // NegotiateAPI error: Failed to log audit event
     }
 
     return NextResponse.json(
-      { error: 'Failed to get negotiations' },
-      { status: 500 }
+      { error: "Failed to get negotiations" },
+      { status: 500 },
     );
   }
 }
@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
     // 1. Authenticate
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = validation.user;
@@ -172,10 +172,10 @@ export async function POST(request: NextRequest) {
     if (!collectionId || !collectionAgency || !currentBalance) {
       return NextResponse.json(
         {
-          error: 'Missing required fields',
-          required: ['collectionId', 'collectionAgency', 'currentBalance'],
+          error: "Missing required fields",
+          required: ["collectionId", "collectionAgency", "currentBalance"],
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -185,16 +185,16 @@ export async function POST(request: NextRequest) {
     const settlement: SettlementSummary =
       negotiationService.calculateSettlement(
         currentBalance,
-        settlementPercentage
+        settlementPercentage,
       );
     if (generateScript) {
       const result = await negotiationService.generateNegotiationScript(
         collectionId,
         collectionAgency,
-        originalCreditor || 'Unknown',
+        originalCreditor || "Unknown",
         originalBalance || currentBalance,
         currentBalance,
-        { name: user.name || 'User', email: user.email }
+        { name: user.name || "User", email: user.email },
       );
       // result contains phoneScript, emailScript, letterScript directly
       scripts = result;
@@ -219,14 +219,14 @@ export async function POST(request: NextRequest) {
       settlementPercentage,
       settlementAmount: settlement.settlementAmount,
       scripts: scriptRecord,
-      status: 'pending',
+      status: "pending",
       notes,
     });
 
     // 5. Audit log
     await auditLogger.logAIInteraction({
       userId: user.id,
-      action: 'create_negotiation',
+      action: "create_negotiation",
       input: { collectionId, collectionAgency },
       output: { negotiationId: negotiation.id },
       success: true,
@@ -241,7 +241,7 @@ export async function POST(request: NextRequest) {
           settlement,
         },
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     // NegotiateAPI error: Error creating negotiation
@@ -249,17 +249,17 @@ export async function POST(request: NextRequest) {
     // Audit log error
     try {
       await auditLogger.logSecurityEvent({
-        type: 'api_error',
+        type: "api_error",
         message: `Failed to create negotiation: ${(error as Error).message}`,
-        severity: 'high',
+        severity: "high",
       });
     } catch {
       // NegotiateAPI error: Failed to log audit event
     }
 
     return NextResponse.json(
-      { error: 'Failed to create negotiation' },
-      { status: 500 }
+      { error: "Failed to create negotiation" },
+      { status: 500 },
     );
   }
 }

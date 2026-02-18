@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Header Component with Mobile Hamburger Menu
@@ -8,10 +8,10 @@
  * Includes theme toggle for dark/light mode switching.
  */
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { ThemeToggle } from './ThemeToggle';
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface NavLink {
   href: string;
@@ -20,28 +20,40 @@ interface NavLink {
 }
 
 interface HeaderProps {
-  variant?: 'landing' | 'app';
+  variant?: "landing" | "app";
   showAuth?: boolean;
 }
 
 const navLinks: NavLink[] = [
-  { href: '/credit', label: 'Credit Health', color: 'hover:text-emerald-600 dark:hover:text-emerald-400' },
   {
-    href: '/financial-hub',
-    label: 'Financial Wellness',
-    color: 'hover:text-blue-600 dark:hover:text-blue-400',
+    href: "/credit",
+    label: "Credit Health",
+    color: "hover:text-emerald-600 dark:hover:text-emerald-400",
   },
   {
-    href: '/invest',
-    label: 'Investment Intelligence',
-    color: 'hover:text-blue-600 dark:hover:text-blue-400',
+    href: "/financial-hub",
+    label: "Financial Wellness",
+    color: "hover:text-blue-600 dark:hover:text-blue-400",
   },
-  { href: '/tax', label: 'Tax Optimization', color: 'hover:text-emerald-600 dark:hover:text-emerald-400' },
-  { href: '/pricing', label: 'Pricing', color: 'hover:text-gray-900 dark:hover:text-white' },
+  {
+    href: "/invest",
+    label: "Investment Intelligence",
+    color: "hover:text-blue-600 dark:hover:text-blue-400",
+  },
+  {
+    href: "/tax",
+    label: "Tax Optimization",
+    color: "hover:text-emerald-600 dark:hover:text-emerald-400",
+  },
+  {
+    href: "/pricing",
+    label: "Pricing",
+    color: "hover:text-gray-900 dark:hover:text-white",
+  },
 ];
 
 export default function Header({
-  variant = 'landing',
+  variant = "landing",
   showAuth = true,
 }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -55,12 +67,12 @@ export default function Header({
   // Prevent body scroll when menu is open
   useEffect(() => {
     if (isMenuOpen) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     }
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     };
   }, [isMenuOpen]);
 
@@ -120,7 +132,7 @@ export default function Header({
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
-                aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
+                aria-label={isMenuOpen ? "Close menu" : "Open menu"}
                 aria-expanded={isMenuOpen}
               >
                 <svg
@@ -162,7 +174,7 @@ export default function Header({
       {/* Mobile Menu Panel */}
       <div
         className={`fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white dark:bg-slate-900 shadow-xl z-50 transform transition-transform duration-300 ease-in-out md:hidden ${
-          isMenuOpen ? 'translate-x-0' : 'translate-x-full'
+          isMenuOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
         <div className="p-6 border-b border-gray-200 dark:border-slate-700">
@@ -207,7 +219,7 @@ export default function Header({
               <Link
                 key={link.href}
                 href={link.href}
-                className={`block py-3 text-lg font-medium text-gray-700 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors ${ pathname === link.href ? 'text-emerald-600 dark:text-emerald-400' : '' }`}
+                className={`block py-3 text-lg font-medium text-gray-700 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors ${pathname === link.href ? "text-emerald-600 dark:text-emerald-400" : ""}`}
                 onClick={() => setIsMenuOpen(false)}
               >
                 {link.label}

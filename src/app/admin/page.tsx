@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { useState, useEffect } from "react";
+import Link from "next/link";
 
 interface Metrics {
   totalUsers: number;
@@ -22,7 +22,7 @@ interface Activity {
 
 interface SystemService {
   name: string;
-  status: 'operational' | 'degraded' | 'down';
+  status: "operational" | "degraded" | "down";
   uptime: string;
 }
 
@@ -32,11 +32,11 @@ export default function AdminDashboardPage() {
   const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
   // Using systemStatus directly as it's only needed for display
   const systemStatus: SystemService[] = [
-    { name: 'API Server', status: 'operational', uptime: '99.99%' },
-    { name: 'Database', status: 'operational', uptime: '99.95%' },
-    { name: 'Experian API', status: 'operational', uptime: '99.8%' },
-    { name: 'Stripe', status: 'operational', uptime: '100%' },
-    { name: 'Email Service', status: 'operational', uptime: '99.9%' },
+    { name: "API Server", status: "operational", uptime: "99.99%" },
+    { name: "Database", status: "operational", uptime: "99.95%" },
+    { name: "Experian API", status: "operational", uptime: "99.8%" },
+    { name: "Stripe", status: "operational", uptime: "100%" },
+    { name: "Email Service", status: "operational", uptime: "99.9%" },
   ];
 
   interface LogEntry {
@@ -50,26 +50,26 @@ export default function AdminDashboardPage() {
     async function fetchData() {
       try {
         // Fetch metrics from admin API
-        const metricsRes = await fetch('/api/admin/metrics?period=30d');
+        const metricsRes = await fetch("/api/admin/metrics?period=30d");
         if (metricsRes.ok) {
           const data = await metricsRes.json();
           setMetrics(data.metrics);
         }
 
         // Fetch recent activity from logs API
-        const logsRes = await fetch('/api/admin/logs?limit=5');
+        const logsRes = await fetch("/api/admin/logs?limit=5");
         if (logsRes.ok) {
           const data = await logsRes.json();
           setRecentActivity(
             data.logs?.map((log: LogEntry) => ({
-              type: log.type || 'info',
+              type: log.type || "info",
               message: log.message || log.action,
               time: formatTimeAgo(new Date(log.created_at)),
-            })) || []
+            })) || [],
           );
         }
       } catch (error) {
-        console.error('Failed to fetch admin data:', error);
+        console.error("Failed to fetch admin data:", error);
       } finally {
         setLoading(false);
       }
@@ -90,9 +90,9 @@ export default function AdminDashboardPage() {
   }
 
   function formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
@@ -101,28 +101,28 @@ export default function AdminDashboardPage() {
   const stats = metrics
     ? [
         {
-          label: 'Total Users',
+          label: "Total Users",
           value: metrics.totalUsers.toLocaleString(),
           change: `+${metrics.newUsers} new`,
-          trend: 'up',
+          trend: "up",
         },
         {
-          label: 'Active Subscriptions',
+          label: "Active Subscriptions",
           value: metrics.activeSubscriptions.toLocaleString(),
-          change: '',
-          trend: 'up',
+          change: "",
+          trend: "up",
         },
         {
-          label: 'Monthly Revenue',
+          label: "Monthly Revenue",
           value: formatCurrency(metrics.mrr),
-          change: '',
-          trend: 'up',
+          change: "",
+          trend: "up",
         },
         {
-          label: 'Dispute Success Rate',
+          label: "Dispute Success Rate",
           value: metrics.disputeSuccessRate,
           change: `${metrics.successfulDisputes}/${metrics.totalDisputes}`,
-          trend: 'up',
+          trend: "up",
         },
       ]
     : [];
@@ -137,7 +137,9 @@ export default function AdminDashboardPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          Admin Dashboard
+        </h1>
         <div className="flex gap-3">
           <button
             type="button"
@@ -162,12 +164,14 @@ export default function AdminDashboardPage() {
             key={stat.label}
             className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-700"
           >
-            <p className="text-sm text-gray-500 dark:text-slate-400">{stat.label}</p>
+            <p className="text-sm text-gray-500 dark:text-slate-400">
+              {stat.label}
+            </p>
             <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
               {stat.value}
             </p>
             <p
-              className={`text-sm mt-2 ${stat.trend === 'up' ? 'text-emerald-500' : 'text-red-500'}`}
+              className={`text-sm mt-2 ${stat.trend === "up" ? "text-emerald-500" : "text-red-500"}`}
             >
               {stat.change} from last month
             </p>
@@ -187,14 +191,18 @@ export default function AdminDashboardPage() {
             {recentActivity.map((activity, i) => (
               <div key={i} className="p-4 flex items-center gap-4">
                 <span className="text-xl">
-                  {activity.type === 'user' && ''}
-                  {activity.type === 'payment' && ''}
-                  {activity.type === 'dispute' && ''}
-                  {activity.type === 'alert' && ''}
+                  {activity.type === "user" && ""}
+                  {activity.type === "payment" && ""}
+                  {activity.type === "dispute" && ""}
+                  {activity.type === "alert" && ""}
                 </span>
                 <div className="flex-1">
-                  <p className="text-sm text-gray-900 dark:text-white">{activity.message}</p>
-                  <p className="text-xs text-gray-500 dark:text-slate-400">{activity.time}</p>
+                  <p className="text-sm text-gray-900 dark:text-white">
+                    {activity.message}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400">
+                    {activity.time}
+                  </p>
                 </div>
               </div>
             ))}
@@ -224,13 +232,15 @@ export default function AdminDashboardPage() {
               >
                 <div className="flex items-center gap-3">
                   <span
-                    className={`w-3 h-3 rounded-full ${service.status === 'operational' ? 'bg-emerald-500' : 'bg-yellow-500'}`}
+                    className={`w-3 h-3 rounded-full ${service.status === "operational" ? "bg-emerald-500" : "bg-yellow-500"}`}
                   />
-                  <span className="text-sm text-gray-900 dark:text-white">{service.name}</span>
+                  <span className="text-sm text-gray-900 dark:text-white">
+                    {service.name}
+                  </span>
                 </div>
                 <div className="text-right">
                   <span
-                    className={`text-xs px-2 py-1 rounded-full ${service.status === 'operational' ? 'bg-emerald-100 text-emerald-700' : 'bg-yellow-100 text-yellow-700'}`}
+                    className={`text-xs px-2 py-1 rounded-full ${service.status === "operational" ? "bg-emerald-100 text-emerald-700" : "bg-yellow-100 text-yellow-700"}`}
                   >
                     {service.status}
                   </span>

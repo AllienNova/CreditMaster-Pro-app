@@ -3,16 +3,18 @@
  * Manages investment portfolios and holdings with Supabase database integration
  */
 
-import { getSupabase } from '@/lib/supabase/client';
-import type { Database } from '@/lib/supabase/types';
+import { getSupabase } from "@/lib/supabase/client";
+import type { Database } from "@/lib/supabase/types";
 
 // Type aliases for Supabase rows
-type PortfolioRow = Database['public']['Tables']['portfolios']['Row'];
-type PortfolioInsert = Database['public']['Tables']['portfolios']['Insert'];
-type PortfolioUpdate = Database['public']['Tables']['portfolios']['Update'];
-type HoldingRow = Database['public']['Tables']['portfolio_holdings']['Row'];
-type HoldingInsert = Database['public']['Tables']['portfolio_holdings']['Insert'];
-type HoldingUpdate = Database['public']['Tables']['portfolio_holdings']['Update'];
+type PortfolioRow = Database["public"]["Tables"]["portfolios"]["Row"];
+type PortfolioInsert = Database["public"]["Tables"]["portfolios"]["Insert"];
+type PortfolioUpdate = Database["public"]["Tables"]["portfolios"]["Update"];
+type HoldingRow = Database["public"]["Tables"]["portfolio_holdings"]["Row"];
+type HoldingInsert =
+  Database["public"]["Tables"]["portfolio_holdings"]["Insert"];
+type HoldingUpdate =
+  Database["public"]["Tables"]["portfolio_holdings"]["Update"];
 
 // Helper to get typed supabase client with any type assertion for table operations
 // This is needed because Supabase's strict generic types don't play well with our Database type
@@ -76,13 +78,13 @@ class PortfolioService {
 
     // Fetch portfolio
     const { data: portfolioData, error: portfolioError } = await supabase
-      .from('portfolios')
-      .select('*')
-      .eq('id', portfolioId)
+      .from("portfolios")
+      .select("*")
+      .eq("id", portfolioId)
       .single();
 
     if (portfolioError) {
-      if (portfolioError.code === 'PGRST116') {
+      if (portfolioError.code === "PGRST116") {
         return null; // Not found
       }
       // PortfolioService error: Failed to fetch portfolio
@@ -99,10 +101,11 @@ class PortfolioService {
    * Get holdings for a portfolio
    */
   async getPortfolioHoldings(portfolioId: string): Promise<PortfolioHolding[]> {
-    const { data, error } = await supabase().from('portfolio_holdings')
-      .select('*')
-      .eq('portfolio_id', portfolioId)
-      .order('current_value', { ascending: false });
+    const { data, error } = await supabase()
+      .from("portfolio_holdings")
+      .select("*")
+      .eq("portfolio_id", portfolioId)
+      .order("current_value", { ascending: false });
 
     if (error) {
       // PortfolioService error: Failed to fetch portfolio holdings
@@ -123,11 +126,12 @@ class PortfolioService {
    * Get all portfolios for a user
    */
   async getUserPortfolios(userId: string): Promise<Portfolio[]> {
-    const { data: portfolioData, error } = await supabase().from('portfolios')
-      .select('*')
-      .eq('user_id', userId)
-      .order('is_default', { ascending: false })
-      .order('created_at', { ascending: false });
+    const { data: portfolioData, error } = await supabase()
+      .from("portfolios")
+      .select("*")
+      .eq("user_id", userId)
+      .order("is_default", { ascending: false })
+      .order("created_at", { ascending: false });
 
     if (error) {
       // PortfolioService error: Failed to fetch user portfolios
@@ -139,7 +143,7 @@ class PortfolioService {
       (portfolioData || []).map(async (p: any) => {
         const holdings = await this.getPortfolioHoldings(p.id);
         return this.mapToPortfolio(p as PortfolioRow, holdings);
-      })
+      }),
     );
 
     return portfoliosWithHoldings;
@@ -149,19 +153,21 @@ class PortfolioService {
    * Get user's default portfolio
    */
   async getDefaultPortfolio(userId: string): Promise<Portfolio | null> {
-    const { data, error } = await supabase().from('portfolios')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('is_default', true)
+    const { data, error } = await supabase()
+      .from("portfolios")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("is_default", true)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
+      if (error.code === "PGRST116") {
         // No default portfolio, get the first one
-        const { data: firstPortfolio } = await supabase().from('portfolios')
-          .select('*')
-          .eq('user_id', userId)
-          .order('created_at', { ascending: true })
+        const { data: firstPortfolio } = await supabase()
+          .from("portfolios")
+          .select("*")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: true })
           .limit(1)
           .single();
 
@@ -184,9 +190,10 @@ class PortfolioService {
   async createPortfolio(input: CreatePortfolioInput): Promise<Portfolio> {
     // If this is the default portfolio, unset any existing default
     if (input.isDefault) {
-      await supabase().from('portfolios')
+      await supabase()
+        .from("portfolios")
         .update({ is_default: false })
-        .eq('user_id', input.userId);
+        .eq("user_id", input.userId);
     }
 
     const insertData: PortfolioInsert = {
@@ -198,7 +205,8 @@ class PortfolioService {
       total_value: 0,
     };
 
-    const { data, error } = await supabase().from('portfolios')
+    const { data, error } = await supabase()
+      .from("portfolios")
       .insert(insertData)
       .select()
       .single();
@@ -216,17 +224,21 @@ class PortfolioService {
    */
   async updatePortfolio(
     portfolioId: string,
-    updates: Partial<CreatePortfolioInput>
+    updates: Partial<CreatePortfolioInput>,
   ): Promise<Portfolio> {
     const updateData: PortfolioUpdate = {};
     if (updates.name !== undefined) updateData.name = updates.name;
-    if (updates.description !== undefined) updateData.description = updates.description;
-    if (updates.benchmark !== undefined) updateData.benchmark = updates.benchmark;
-    if (updates.isDefault !== undefined) updateData.is_default = updates.isDefault;
+    if (updates.description !== undefined)
+      updateData.description = updates.description;
+    if (updates.benchmark !== undefined)
+      updateData.benchmark = updates.benchmark;
+    if (updates.isDefault !== undefined)
+      updateData.is_default = updates.isDefault;
 
-    const { data, error } = await supabase().from('portfolios')
+    const { data, error } = await supabase()
+      .from("portfolios")
       .update(updateData)
-      .eq('id', portfolioId)
+      .eq("id", portfolioId)
       .select()
       .single();
 
@@ -244,14 +256,16 @@ class PortfolioService {
    */
   async deletePortfolio(portfolioId: string): Promise<boolean> {
     // Delete holdings first
-    await supabase().from('portfolio_holdings')
+    await supabase()
+      .from("portfolio_holdings")
       .delete()
-      .eq('portfolio_id', portfolioId);
+      .eq("portfolio_id", portfolioId);
 
     // Delete portfolio
-    const { error } = await supabase().from('portfolios')
+    const { error } = await supabase()
+      .from("portfolios")
       .delete()
-      .eq('id', portfolioId);
+      .eq("id", portfolioId);
 
     if (error) {
       // PortfolioService error: Failed to delete portfolio
@@ -265,7 +279,8 @@ class PortfolioService {
    * Add a holding to a portfolio
    */
   async addHolding(input: AddHoldingInput): Promise<PortfolioHolding> {
-    const currentValue = (input.currentPrice || input.costBasis / input.shares) * input.shares;
+    const currentValue =
+      (input.currentPrice || input.costBasis / input.shares) * input.shares;
 
     const insertData: HoldingInsert = {
       portfolio_id: input.portfolioId,
@@ -279,7 +294,8 @@ class PortfolioService {
       purchase_date: input.purchaseDate?.toISOString() || null,
     };
 
-    const { data, error } = await supabase().from('portfolio_holdings')
+    const { data, error } = await supabase()
+      .from("portfolio_holdings")
       .insert(insertData)
       .select()
       .single();
@@ -300,22 +316,28 @@ class PortfolioService {
    */
   async updateHolding(
     holdingId: string,
-    updates: Partial<Omit<AddHoldingInput, 'portfolioId'>>
+    updates: Partial<Omit<AddHoldingInput, "portfolioId">>,
   ): Promise<PortfolioHolding> {
     const updateData: HoldingUpdate = {};
-    if (updates.symbol !== undefined) updateData.symbol = updates.symbol.toUpperCase();
+    if (updates.symbol !== undefined)
+      updateData.symbol = updates.symbol.toUpperCase();
     if (updates.shares !== undefined) updateData.shares = updates.shares;
-    if (updates.costBasis !== undefined) updateData.cost_basis = updates.costBasis;
-    if (updates.currentPrice !== undefined) updateData.current_price = updates.currentPrice;
+    if (updates.costBasis !== undefined)
+      updateData.cost_basis = updates.costBasis;
+    if (updates.currentPrice !== undefined)
+      updateData.current_price = updates.currentPrice;
     if (updates.sector !== undefined) updateData.sector = updates.sector;
-    if (updates.assetClass !== undefined) updateData.asset_class = updates.assetClass;
-    if (updates.purchaseDate !== undefined) updateData.purchase_date = updates.purchaseDate.toISOString();
+    if (updates.assetClass !== undefined)
+      updateData.asset_class = updates.assetClass;
+    if (updates.purchaseDate !== undefined)
+      updateData.purchase_date = updates.purchaseDate.toISOString();
 
     // Recalculate current value if shares or price changed
     if (updates.shares !== undefined || updates.currentPrice !== undefined) {
-      const { data: existing } = await supabase().from('portfolio_holdings')
-        .select('shares, current_price')
-        .eq('id', holdingId)
+      const { data: existing } = await supabase()
+        .from("portfolio_holdings")
+        .select("shares, current_price")
+        .eq("id", holdingId)
         .single();
 
       if (existing) {
@@ -325,9 +347,10 @@ class PortfolioService {
       }
     }
 
-    const { data, error } = await supabase().from('portfolio_holdings')
+    const { data, error } = await supabase()
+      .from("portfolio_holdings")
       .update(updateData)
-      .eq('id', holdingId)
+      .eq("id", holdingId)
       .select()
       .single();
 
@@ -348,14 +371,16 @@ class PortfolioService {
    */
   async deleteHolding(holdingId: string): Promise<boolean> {
     // Get portfolio ID before deleting
-    const { data: holding } = await supabase().from('portfolio_holdings')
-      .select('portfolio_id')
-      .eq('id', holdingId)
+    const { data: holding } = await supabase()
+      .from("portfolio_holdings")
+      .select("portfolio_id")
+      .eq("id", holdingId)
       .single();
 
-    const { error } = await supabase().from('portfolio_holdings')
+    const { error } = await supabase()
+      .from("portfolio_holdings")
       .delete()
-      .eq('id', holdingId);
+      .eq("id", holdingId);
 
     if (error) {
       // PortfolioService error: Failed to delete holding
@@ -375,7 +400,7 @@ class PortfolioService {
    */
   async updateHoldingPrices(
     portfolioId: string,
-    prices: Record<string, number>
+    prices: Record<string, number>,
   ): Promise<void> {
     const holdings = await this.getPortfolioHoldings(portfolioId);
 
@@ -384,12 +409,13 @@ class PortfolioService {
         const newPrice = prices[holding.symbol];
         const newValue = holding.shares * newPrice;
 
-        await supabase().from('portfolio_holdings')
+        await supabase()
+          .from("portfolio_holdings")
           .update({
             current_price: newPrice,
             current_value: newValue,
           })
-          .eq('id', holding.id);
+          .eq("id", holding.id);
       }
     }
 
@@ -400,30 +426,34 @@ class PortfolioService {
    * Update portfolio total value based on holdings
    */
   private async updatePortfolioTotalValue(portfolioId: string): Promise<void> {
-    const { data: holdings } = await supabase().from('portfolio_holdings')
-      .select('current_value')
-      .eq('portfolio_id', portfolioId);
+    const { data: holdings } = await supabase()
+      .from("portfolio_holdings")
+      .select("current_value")
+      .eq("portfolio_id", portfolioId);
 
     const totalValue = (holdings || []).reduce(
       (sum: number, h: any) => sum + (h.current_value || 0),
-      0
+      0,
     );
 
-    await supabase().from('portfolios')
+    await supabase()
+      .from("portfolios")
       .update({ total_value: totalValue })
-      .eq('id', portfolioId);
+      .eq("id", portfolioId);
   }
 
   /**
    * Map database row to Portfolio interface
    */
-  private mapToPortfolio(row: PortfolioRow, holdings: PortfolioHolding[]): Portfolio {
+  private mapToPortfolio(
+    row: PortfolioRow,
+    holdings: PortfolioHolding[],
+  ): Portfolio {
     const totalCostBasis = holdings.reduce((sum, h) => sum + h.costBasis, 0);
     const totalValue = holdings.reduce((sum, h) => sum + h.currentValue, 0);
     const totalGainLoss = totalValue - totalCostBasis;
-    const totalGainLossPercent = totalCostBasis > 0
-      ? (totalGainLoss / totalCostBasis) * 100
-      : 0;
+    const totalGainLossPercent =
+      totalCostBasis > 0 ? (totalGainLoss / totalCostBasis) * 100 : 0;
 
     return {
       id: row.id,
@@ -447,9 +477,8 @@ class PortfolioService {
    */
   private mapToHolding(row: HoldingRow): PortfolioHolding {
     const gainLoss = row.current_value - row.cost_basis;
-    const gainLossPercent = row.cost_basis > 0
-      ? (gainLoss / row.cost_basis) * 100
-      : 0;
+    const gainLossPercent =
+      row.cost_basis > 0 ? (gainLoss / row.cost_basis) * 100 : 0;
 
     return {
       id: row.id,

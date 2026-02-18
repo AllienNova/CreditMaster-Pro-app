@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { creditMonitoringService } from '@/lib/credit-monitoring/credit-monitoring-service';
+import { NextRequest, NextResponse } from "next/server";
+import { creditMonitoringService } from "@/lib/credit-monitoring/credit-monitoring-service";
 
 /**
  * GET /api/credit-monitoring/scores
@@ -8,12 +8,12 @@ import { creditMonitoringService } from '@/lib/credit-monitoring/credit-monitori
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
+    const userId = searchParams.get("userId");
 
     if (!userId) {
       return NextResponse.json(
-        { error: 'User ID is required' },
-        { status: 400 }
+        { error: "User ID is required" },
+        { status: 400 },
       );
     }
 
@@ -26,9 +26,8 @@ export async function GET(request: NextRequest) {
   } catch (_error) {
     // Error silently caught
     return NextResponse.json(
-      { error: 'Failed to fetch credit scores' },
-      { status: 500 }
+      { error: "Failed to fetch credit scores" },
+      { status: 500 },
     );
   }
 }
-

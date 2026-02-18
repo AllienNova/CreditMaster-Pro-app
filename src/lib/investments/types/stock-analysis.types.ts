@@ -49,14 +49,14 @@ export interface OHLCV {
 }
 
 export type DataInterval =
-  | '1m'
-  | '5m'
-  | '15m'
-  | '30m'
-  | '1h'
-  | '1d'
-  | '1w'
-  | '1M';
+  | "1m"
+  | "5m"
+  | "15m"
+  | "30m"
+  | "1h"
+  | "1d"
+  | "1w"
+  | "1M";
 
 // ============================================================================
 // TECHNICAL ANALYSIS TYPES
@@ -134,9 +134,9 @@ export interface TrendAnalysis {
   description: string;
 }
 
-export type SignalType = 'strong_buy' | 'buy' | 'hold' | 'sell' | 'strong_sell';
-export type SignalStrength = 'weak' | 'moderate' | 'strong';
-export type TrendDirection = 'bullish' | 'bearish' | 'neutral';
+export type SignalType = "strong_buy" | "buy" | "hold" | "sell" | "strong_sell";
+export type SignalStrength = "weak" | "moderate" | "strong";
+export type TrendDirection = "bullish" | "bearish" | "neutral";
 
 // ============================================================================
 // FUNDAMENTAL ANALYSIS TYPES
@@ -201,11 +201,11 @@ export interface DividendMetrics {
   yearsOfDividendGrowth: number;
   exDividendDate: Date | null;
   dividendFrequency:
-    | 'monthly'
-    | 'quarterly'
-    | 'semi-annual'
-    | 'annual'
-    | 'none';
+    | "monthly"
+    | "quarterly"
+    | "semi-annual"
+    | "annual"
+    | "none";
 }
 
 export interface PeerComparison {
@@ -215,7 +215,7 @@ export interface PeerComparison {
   sectorAvgPE: number;
   sectorAvgPB: number;
   sectorAvgDividendYield: number;
-  relativeValuation: 'undervalued' | 'fairly_valued' | 'overvalued';
+  relativeValuation: "undervalued" | "fairly_valued" | "overvalued";
 }
 
 export interface PeerStock {
@@ -227,15 +227,15 @@ export interface PeerStock {
 }
 
 export type FundamentalRating =
-  | 'excellent'
-  | 'good'
-  | 'fair'
-  | 'poor'
-  | 'very_poor';
+  | "excellent"
+  | "good"
+  | "fair"
+  | "poor"
+  | "very_poor";
 
 export interface FairValueEstimate {
   value: number;
-  method: 'dcf' | 'comparable' | 'dividend_discount' | 'earnings_multiple';
+  method: "dcf" | "comparable" | "dividend_discount" | "earnings_multiple";
   upside: number;
   confidence: number;
 }
@@ -257,7 +257,7 @@ export interface SentimentAnalysis {
 
 export interface SentimentScore {
   score: number; // -100 to 100
-  label: 'very_bearish' | 'bearish' | 'neutral' | 'bullish' | 'very_bullish';
+  label: "very_bearish" | "bearish" | "neutral" | "bullish" | "very_bullish";
   confidence: number;
 }
 
@@ -276,7 +276,7 @@ export interface NewsHeadline {
   source: string;
   url: string;
   publishedAt: Date;
-  sentiment: 'positive' | 'negative' | 'neutral';
+  sentiment: "positive" | "negative" | "neutral";
   relevanceScore: number;
 }
 
@@ -299,7 +299,7 @@ export interface PlatformSentiment {
 }
 
 export interface AnalystSentiment {
-  consensusRating: 'strong_buy' | 'buy' | 'hold' | 'sell' | 'strong_sell';
+  consensusRating: "strong_buy" | "buy" | "hold" | "sell" | "strong_sell";
   targetPrice: number;
   targetPriceHigh: number;
   targetPriceLow: number;
@@ -316,7 +316,7 @@ export interface AnalystSentiment {
 }
 
 export interface InsiderActivity {
-  netActivity: 'buying' | 'selling' | 'neutral';
+  netActivity: "buying" | "selling" | "neutral";
   buyCount: number;
   sellCount: number;
   netShares: number;
@@ -327,7 +327,7 @@ export interface InsiderActivity {
 export interface InsiderTransaction {
   name: string;
   title: string;
-  transactionType: 'buy' | 'sell' | 'exercise';
+  transactionType: "buy" | "sell" | "exercise";
   shares: number;
   price: number;
   value: number;
@@ -383,15 +383,15 @@ export interface AIStockAnalysis {
 }
 
 export interface Catalyst {
-  type: 'earnings' | 'product' | 'regulatory' | 'macro' | 'technical' | 'other';
+  type: "earnings" | "product" | "regulatory" | "macro" | "technical" | "other";
   description: string;
   expectedDate?: Date;
-  potentialImpact: 'high' | 'medium' | 'low';
-  direction: 'positive' | 'negative' | 'uncertain';
+  potentialImpact: "high" | "medium" | "low";
+  direction: "positive" | "negative" | "uncertain";
 }
 
 export interface PriceTarget {
-  scenario: 'bull' | 'base' | 'bear';
+  scenario: "bull" | "base" | "bear";
   price: number;
   probability: number;
   timeframe: string;
@@ -412,7 +412,7 @@ export interface RiskAssessment {
   riskFactors: RiskFactor[];
 }
 
-export type RiskLevel = 'very_low' | 'low' | 'moderate' | 'high' | 'very_high';
+export type RiskLevel = "very_low" | "low" | "moderate" | "high" | "very_high";
 
 export interface RiskFactor {
   factor: string;
@@ -424,7 +424,7 @@ export interface RiskFactor {
 export interface StockRecommendation {
   action: SignalType;
   confidence: number;
-  timeHorizon: 'short_term' | 'medium_term' | 'long_term';
+  timeHorizon: "short_term" | "medium_term" | "long_term";
   entryPrice?: number;
   targetPrice: number;
   stopLoss?: number;
@@ -437,7 +437,7 @@ export interface StockRecommendation {
 export interface KeyMetric {
   name: string;
   value: string | number;
-  interpretation: 'positive' | 'negative' | 'neutral';
+  interpretation: "positive" | "negative" | "neutral";
   weight: number;
 }
 
@@ -454,7 +454,7 @@ export interface MarketDataProvider {
 
 export interface MarketDataRequest {
   symbol: string;
-  dataType: 'quote' | 'historical' | 'fundamentals' | 'news' | 'options';
+  dataType: "quote" | "historical" | "fundamentals" | "news" | "options";
   interval?: DataInterval;
   startDate?: Date;
   endDate?: Date;
@@ -477,16 +477,16 @@ export interface StockAnalysisRequest {
   symbol: string;
   analysisTypes?: AnalysisType[];
   includeAI?: boolean;
-  timeframe?: 'short' | 'medium' | 'long';
-  riskTolerance?: 'conservative' | 'moderate' | 'aggressive';
+  timeframe?: "short" | "medium" | "long";
+  riskTolerance?: "conservative" | "moderate" | "aggressive";
 }
 
 export type AnalysisType =
-  | 'technical'
-  | 'fundamental'
-  | 'sentiment'
-  | 'risk'
-  | 'ai';
+  | "technical"
+  | "fundamental"
+  | "sentiment"
+  | "risk"
+  | "ai";
 
 export interface StockAnalysisResponse {
   success: boolean;
@@ -528,19 +528,19 @@ export interface StockAlert {
 }
 
 export type AlertType =
-  | 'price_above'
-  | 'price_below'
-  | 'percent_change'
-  | 'volume_spike'
-  | 'rsi_overbought'
-  | 'rsi_oversold'
-  | 'macd_crossover'
-  | 'earnings_date'
-  | 'analyst_upgrade'
-  | 'analyst_downgrade';
+  | "price_above"
+  | "price_below"
+  | "percent_change"
+  | "volume_spike"
+  | "rsi_overbought"
+  | "rsi_oversold"
+  | "macd_crossover"
+  | "earnings_date"
+  | "analyst_upgrade"
+  | "analyst_downgrade";
 
 export interface AlertCondition {
-  operator: '>' | '<' | '>=' | '<=' | '==' | 'crosses_above' | 'crosses_below';
+  operator: ">" | "<" | ">=" | "<=" | "==" | "crosses_above" | "crosses_below";
   threshold: number;
   timeframe?: string;
 }

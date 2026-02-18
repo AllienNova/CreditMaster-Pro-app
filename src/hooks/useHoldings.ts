@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * useHoldings Hook
@@ -11,9 +11,9 @@
  * - Optimistic updates with rollback
  */
 
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { useAuth } from './useAuth';
-import type { Holding } from '@/lib/investments/types/portfolio.types';
+import { useEffect, useState, useCallback, useRef } from "react";
+import { useAuth } from "./useAuth";
+import type { Holding } from "@/lib/investments/types/portfolio.types";
 
 export interface UseHoldingsOptions {
   enabled?: boolean;
@@ -25,13 +25,17 @@ export interface UseHoldingsReturn {
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
-  addHolding: (holding: Omit<Holding, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<boolean>;
+  addHolding: (
+    holding: Omit<Holding, "id" | "userId" | "createdAt" | "updatedAt">,
+  ) => Promise<boolean>;
   updateHolding: (id: string, updates: Partial<Holding>) => Promise<boolean>;
   deleteHolding: (id: string) => Promise<boolean>;
   isUpdating: boolean;
 }
 
-export function useHoldings(options: UseHoldingsOptions = {}): UseHoldingsReturn {
+export function useHoldings(
+  options: UseHoldingsOptions = {},
+): UseHoldingsReturn {
   const { enabled = true, refreshInterval = 0 } = options;
 
   const { user, loading: authLoading } = useAuth();
@@ -57,16 +61,16 @@ export function useHoldings(options: UseHoldingsOptions = {}): UseHoldingsReturn
       setLoading(true);
       setError(null);
 
-      const response = await fetch('/api/investments/holdings', {
+      const response = await fetch("/api/investments/holdings", {
         signal: abortControllerRef.current.signal,
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch holdings');
+        throw new Error(errorData.error || "Failed to fetch holdings");
       }
 
       const result = await response.json();
@@ -75,14 +79,15 @@ export function useHoldings(options: UseHoldingsOptions = {}): UseHoldingsReturn
         setHoldings(result.data);
         setError(null);
       } else {
-        throw new Error(result.error || 'Invalid holdings data');
+        throw new Error(result.error || "Invalid holdings data");
       }
     } catch (err) {
-      if (err instanceof Error && err.name === 'AbortError') {
+      if (err instanceof Error && err.name === "AbortError") {
         return;
       }
 
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load holdings';
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to load holdings";
       setError(errorMessage);
       // Holdings fetch error - state updated
     } finally {
@@ -95,24 +100,26 @@ export function useHoldings(options: UseHoldingsOptions = {}): UseHoldingsReturn
   }, [fetchHoldings]);
 
   const addHolding = useCallback(
-    async (holding: Omit<Holding, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<boolean> => {
+    async (
+      holding: Omit<Holding, "id" | "userId" | "createdAt" | "updatedAt">,
+    ): Promise<boolean> => {
       if (!user) return false;
 
       try {
         setIsUpdating(true);
         setError(null);
 
-        const response = await fetch('/api/investments/holdings', {
-          method: 'POST',
+        const response = await fetch("/api/investments/holdings", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify(holding),
         });
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to add holding');
+          throw new Error(errorData.error || "Failed to add holding");
         }
 
         const result = await response.json();
@@ -123,9 +130,10 @@ export function useHoldings(options: UseHoldingsOptions = {}): UseHoldingsReturn
           return true;
         }
 
-        throw new Error(result.error || 'Failed to add holding');
+        throw new Error(result.error || "Failed to add holding");
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to add holding';
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to add holding";
         setError(errorMessage);
         // Add holding error - state updated
         return false;
@@ -133,7 +141,7 @@ export function useHoldings(options: UseHoldingsOptions = {}): UseHoldingsReturn
         setIsUpdating(false);
       }
     },
-    [user]
+    [user],
   );
 
   const updateHolding = useCallback(
@@ -149,20 +157,20 @@ export function useHoldings(options: UseHoldingsOptions = {}): UseHoldingsReturn
 
         // Optimistic update
         setHoldings((prev) =>
-          prev.map((h) => (h.id === id ? { ...h, ...updates } : h))
+          prev.map((h) => (h.id === id ? { ...h, ...updates } : h)),
         );
 
         const response = await fetch(`/api/investments/holdings/${id}`, {
-          method: 'PATCH',
+          method: "PATCH",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify(updates),
         });
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to update holding');
+          throw new Error(errorData.error || "Failed to update holding");
         }
 
         const result = await response.json();
@@ -171,11 +179,12 @@ export function useHoldings(options: UseHoldingsOptions = {}): UseHoldingsReturn
           return true;
         }
 
-        throw new Error(result.error || 'Failed to update holding');
+        throw new Error(result.error || "Failed to update holding");
       } catch (err) {
         // Rollback on error
         setHoldings(previousHoldings);
-        const errorMessage = err instanceof Error ? err.message : 'Failed to update holding';
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to update holding";
         setError(errorMessage);
         // Update holding error - rolled back
         return false;
@@ -183,7 +192,7 @@ export function useHoldings(options: UseHoldingsOptions = {}): UseHoldingsReturn
         setIsUpdating(false);
       }
     },
-    [user, holdings]
+    [user, holdings],
   );
 
   const deleteHolding = useCallback(
@@ -201,15 +210,15 @@ export function useHoldings(options: UseHoldingsOptions = {}): UseHoldingsReturn
         setHoldings((prev) => prev.filter((h) => h.id !== id));
 
         const response = await fetch(`/api/investments/holdings/${id}`, {
-          method: 'DELETE',
+          method: "DELETE",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
         });
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to delete holding');
+          throw new Error(errorData.error || "Failed to delete holding");
         }
 
         const result = await response.json();
@@ -218,11 +227,12 @@ export function useHoldings(options: UseHoldingsOptions = {}): UseHoldingsReturn
           return true;
         }
 
-        throw new Error(result.error || 'Failed to delete holding');
+        throw new Error(result.error || "Failed to delete holding");
       } catch (err) {
         // Rollback on error
         setHoldings(previousHoldings);
-        const errorMessage = err instanceof Error ? err.message : 'Failed to delete holding';
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to delete holding";
         setError(errorMessage);
         // Delete holding error - rolled back
         return false;
@@ -230,7 +240,7 @@ export function useHoldings(options: UseHoldingsOptions = {}): UseHoldingsReturn
         setIsUpdating(false);
       }
     },
-    [user, holdings]
+    [user, holdings],
   );
 
   // Initial fetch
@@ -280,4 +290,3 @@ export function useHoldings(options: UseHoldingsOptions = {}): UseHoldingsReturn
     isUpdating,
   };
 }
-

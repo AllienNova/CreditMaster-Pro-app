@@ -5,13 +5,13 @@
  * and experiment results with statistical significance analysis.
  */
 
-import { supabaseAdmin } from '@/lib/supabase/server';
+import { supabaseAdmin } from "@/lib/supabase/server";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-export type ExperimentStatus = 'active' | 'paused' | 'completed';
+export type ExperimentStatus = "active" | "paused" | "completed";
 
 export interface Variant {
   /** Unique name for this variant (e.g. "control", "variant_a") */
@@ -84,7 +84,7 @@ function normalCdf(z: number): number {
     d *
     Math.exp(-0.5 * z * z) *
     (t *
-      (0.319381530 +
+      (0.31938153 +
         t *
           (-0.356563782 +
             t * (1.781477937 + t * (-1.821255978 + t * 1.330274429)))));
@@ -107,8 +107,7 @@ function twoProportionZTest(
 
   const p1 = conversions1 / impressions1;
   const p2 = conversions2 / impressions2;
-  const pPooled =
-    (conversions1 + conversions2) / (impressions1 + impressions2);
+  const pPooled = (conversions1 + conversions2) / (impressions1 + impressions2);
 
   if (pPooled === 0 || pPooled === 1) {
     return 1;
@@ -146,7 +145,9 @@ export class OnboardingABTest {
    */
   registerExperiment(experiment: Experiment): void {
     if (experiment.variants.length === 0) {
-      throw new Error(`Experiment "${experiment.id}" must have at least one variant`);
+      throw new Error(
+        `Experiment "${experiment.id}" must have at least one variant`,
+      );
     }
 
     const hasInvalidWeight = experiment.variants.some((v) => v.weight <= 0);
@@ -190,7 +191,10 @@ export class OnboardingABTest {
 
     // Deterministic hash-based selection
     const hash = hashString(`${userId}:${experimentId}`);
-    const totalWeight = experiment.variants.reduce((sum, v) => sum + v.weight, 0);
+    const totalWeight = experiment.variants.reduce(
+      (sum, v) => sum + v.weight,
+      0,
+    );
     const bucket = hash % totalWeight;
 
     let cumulative = 0;
@@ -255,17 +259,23 @@ export class OnboardingABTest {
     // The ab_test_conversions table is not yet in the generated Database
     // types, so we use a generic from() call via type assertion.
     try {
-      await (supabaseAdmin as unknown as {
-        from: (table: string) => {
-          insert: (row: Record<string, unknown>) => Promise<{ error: unknown }>;
-        };
-      }).from('ab_test_conversions').insert({
-        user_id: userId,
-        experiment_id: experimentId,
-        variant,
-        metric,
-        created_at: event.timestamp,
-      });
+      await (
+        supabaseAdmin as unknown as {
+          from: (table: string) => {
+            insert: (
+              row: Record<string, unknown>,
+            ) => Promise<{ error: unknown }>;
+          };
+        }
+      )
+        .from("ab_test_conversions")
+        .insert({
+          user_id: userId,
+          experiment_id: experimentId,
+          variant,
+          metric,
+          created_at: event.timestamp,
+        });
     } catch {
       // Persistence failure should not break the application
     }
@@ -290,7 +300,8 @@ export class OnboardingABTest {
       throw new Error(`Experiment "${experimentId}" is not registered`);
     }
 
-    const expImpressions = this.impressionCounts.get(experimentId) ?? new Map<string, number>();
+    const expImpressions =
+      this.impressionCounts.get(experimentId) ?? new Map<string, number>();
     const expConversions = this.conversions.filter(
       (c) => c.experimentId === experimentId,
     );

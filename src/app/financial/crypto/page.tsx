@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState } from "react";
+import { motion } from "framer-motion";
 import {
   Coins,
   TrendingUp,
@@ -14,9 +14,9 @@ import {
   PieChart,
   ArrowUpRight,
   ArrowDownRight,
-} from 'lucide-react';
+} from "lucide-react";
 
-type WalletType = 'hot' | 'cold' | 'exchange';
+type WalletType = "hot" | "cold" | "exchange";
 
 interface CryptoHolding {
   symbol: string;
@@ -54,16 +54,16 @@ interface PortfolioSummary {
 
 const MOCK_WALLETS: CryptoWallet[] = [
   {
-    id: '1',
-    name: 'Coinbase',
-    type: 'exchange',
-    exchange: 'Coinbase',
+    id: "1",
+    name: "Coinbase",
+    type: "exchange",
+    exchange: "Coinbase",
     totalValue: 45230,
     lastSync: new Date(),
     holdings: [
       {
-        symbol: 'BTC',
-        name: 'Bitcoin',
+        symbol: "BTC",
+        name: "Bitcoin",
         quantity: 0.35,
         priceUsd: 97500,
         valueUsd: 34125,
@@ -73,8 +73,8 @@ const MOCK_WALLETS: CryptoWallet[] = [
         gainLossPercent: 21.9,
       },
       {
-        symbol: 'ETH',
-        name: 'Ethereum',
+        symbol: "ETH",
+        name: "Ethereum",
         quantity: 2.8,
         priceUsd: 3250,
         valueUsd: 9100,
@@ -84,8 +84,8 @@ const MOCK_WALLETS: CryptoWallet[] = [
         gainLossPercent: 21.3,
       },
       {
-        symbol: 'LINK',
-        name: 'Chainlink',
+        symbol: "LINK",
+        name: "Chainlink",
         quantity: 91,
         priceUsd: 22,
         valueUsd: 2005,
@@ -97,16 +97,16 @@ const MOCK_WALLETS: CryptoWallet[] = [
     ],
   },
   {
-    id: '2',
-    name: 'Ledger Nano',
-    type: 'cold',
-    address: '0x1234...5678',
+    id: "2",
+    name: "Ledger Nano",
+    type: "cold",
+    address: "0x1234...5678",
     totalValue: 28450,
     lastSync: new Date(Date.now() - 3600000),
     holdings: [
       {
-        symbol: 'BTC',
-        name: 'Bitcoin',
+        symbol: "BTC",
+        name: "Bitcoin",
         quantity: 0.22,
         priceUsd: 97500,
         valueUsd: 21450,
@@ -116,8 +116,8 @@ const MOCK_WALLETS: CryptoWallet[] = [
         gainLossPercent: 19.2,
       },
       {
-        symbol: 'SOL',
-        name: 'Solana',
+        symbol: "SOL",
+        name: "Solana",
         quantity: 38,
         priceUsd: 185,
         valueUsd: 7000,
@@ -129,16 +129,16 @@ const MOCK_WALLETS: CryptoWallet[] = [
     ],
   },
   {
-    id: '3',
-    name: 'MetaMask',
-    type: 'hot',
-    address: '0xabcd...efgh',
+    id: "3",
+    name: "MetaMask",
+    type: "hot",
+    address: "0xabcd...efgh",
     totalValue: 12850,
     lastSync: new Date(Date.now() - 7200000),
     holdings: [
       {
-        symbol: 'ETH',
-        name: 'Ethereum',
+        symbol: "ETH",
+        name: "Ethereum",
         quantity: 3.2,
         priceUsd: 3250,
         valueUsd: 10400,
@@ -148,8 +148,8 @@ const MOCK_WALLETS: CryptoWallet[] = [
         gainLossPercent: 22.4,
       },
       {
-        symbol: 'UNI',
-        name: 'Uniswap',
+        symbol: "UNI",
+        name: "Uniswap",
         quantity: 120,
         priceUsd: 12.5,
         valueUsd: 1500,
@@ -159,8 +159,8 @@ const MOCK_WALLETS: CryptoWallet[] = [
         gainLossPercent: 25.0,
       },
       {
-        symbol: 'AAVE',
-        name: 'Aave',
+        symbol: "AAVE",
+        name: "Aave",
         quantity: 3.3,
         priceUsd: 285,
         valueUsd: 950,
@@ -186,11 +186,11 @@ const MOCK_SUMMARY: PortfolioSummary = {
 
 const getWalletIcon = (type: WalletType) => {
   switch (type) {
-    case 'exchange':
+    case "exchange":
       return Coins;
-    case 'cold':
+    case "cold":
       return Wallet;
-    case 'hot':
+    case "hot":
       return Wallet;
     default:
       return Wallet;
@@ -199,27 +199,27 @@ const getWalletIcon = (type: WalletType) => {
 
 const getWalletColor = (type: WalletType) => {
   switch (type) {
-    case 'exchange':
-      return 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400';
-    case 'cold':
-      return 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400';
-    case 'hot':
-      return 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400';
+    case "exchange":
+      return "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400";
+    case "cold":
+      return "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400";
+    case "hot":
+      return "bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400";
     default:
-      return 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300';
+      return "bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300";
   }
 };
 
 const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
     maximumFractionDigits: 2,
   }).format(value);
 };
 
 const formatPercent = (value: number) => {
-  const prefix = value >= 0 ? '+' : '';
+  const prefix = value >= 0 ? "+" : "";
   return `${prefix}${value.toFixed(2)}%`;
 };
 
@@ -293,7 +293,7 @@ export default function CryptoPortfolioPage() {
                 {formatCurrency(summary.totalValue)}
               </p>
               <div
-                className={`flex items-center gap-1 mt-1 ${summary.change24h >= 0 ? 'text-green-200' : 'text-red-200'}`}
+                className={`flex items-center gap-1 mt-1 ${summary.change24h >= 0 ? "text-green-200" : "text-red-200"}`}
               >
                 {summary.change24h >= 0 ? (
                   <ArrowUpRight className="w-4 h-4" />
@@ -309,7 +309,7 @@ export default function CryptoPortfolioPage() {
             <div>
               <p className="text-orange-100 text-sm mb-1">Unrealized P&L</p>
               <p
-                className={`text-2xl font-bold ${summary.unrealizedGainLoss >= 0 ? 'text-green-200' : 'text-red-200'}`}
+                className={`text-2xl font-bold ${summary.unrealizedGainLoss >= 0 ? "text-green-200" : "text-red-200"}`}
               >
                 {formatCurrency(summary.unrealizedGainLoss)}
               </p>
@@ -369,7 +369,7 @@ export default function CryptoPortfolioPage() {
                           </span>
                         </div>
                         <p className="text-sm text-gray-500 dark:text-slate-400">
-                          {holding.quantity.toFixed(4)} {holding.symbol} @{' '}
+                          {holding.quantity.toFixed(4)} {holding.symbol} @{" "}
                           {formatCurrency(holding.priceUsd)}
                         </p>
                       </div>
@@ -378,7 +378,7 @@ export default function CryptoPortfolioPage() {
                           {formatCurrency(holding.valueUsd)}
                         </p>
                         <p
-                          className={`text-sm flex items-center justify-end gap-1 ${holding.change24h >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                          className={`text-sm flex items-center justify-end gap-1 ${holding.change24h >= 0 ? "text-green-600" : "text-red-600"}`}
                         >
                           {holding.change24h >= 0 ? (
                             <TrendingUp className="w-3 h-3" />
@@ -390,7 +390,7 @@ export default function CryptoPortfolioPage() {
                       </div>
                       <div className="text-right min-w-[100px]">
                         <p
-                          className={`font-semibold ${holding.gainLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                          className={`font-semibold ${holding.gainLoss >= 0 ? "text-green-600" : "text-red-600"}`}
                         >
                           {formatCurrency(holding.gainLoss)}
                         </p>
@@ -421,13 +421,13 @@ export default function CryptoPortfolioPage() {
                   transition={{ delay: index * 0.1 }}
                   onClick={() =>
                     setSelectedWallet(
-                      selectedWallet === wallet.id ? null : wallet.id
+                      selectedWallet === wallet.id ? null : wallet.id,
                     )
                   }
                   className={`bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm cursor-pointer transition-all ${
                     selectedWallet === wallet.id
-                      ? 'ring-2 ring-orange-500'
-                      : 'hover:shadow-md'
+                      ? "ring-2 ring-orange-500"
+                      : "hover:shadow-md"
                   }`}
                 >
                   <div className="flex items-center gap-3 mb-3">

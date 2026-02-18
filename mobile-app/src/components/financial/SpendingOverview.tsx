@@ -3,12 +3,12 @@
  * A compact widget showing spending summary for the dashboard
  */
 
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { lightTheme as theme } from '../../constants/theme';
-import Svg, { G, Path } from 'react-native-svg';
+import React from "react";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { lightTheme as theme } from "../../constants/theme";
+import Svg, { G, Path } from "react-native-svg";
 
 interface SpendingCategory {
   name: string;
@@ -26,14 +26,14 @@ interface SpendingOverviewProps {
 
 // Category colors
 const CATEGORY_COLORS: Record<string, string> = {
-  'Food & Dining': '#22C55E',
-  'Shopping': '#3B82F6',
-  'Transportation': '#F59E0B',
-  'Entertainment': '#EC4899',
-  'Bills & Utilities': '#EF4444',
-  'Health & Fitness': '#8B5CF6',
-  'Travel': '#06B6D4',
-  'Other': '#9CA3AF',
+  "Food & Dining": "#22C55E",
+  Shopping: "#3B82F6",
+  Transportation: "#F59E0B",
+  Entertainment: "#EC4899",
+  "Bills & Utilities": "#EF4444",
+  "Health & Fitness": "#8B5CF6",
+  Travel: "#06B6D4",
+  Other: "#9CA3AF",
 };
 
 function formatCurrency(value: number): string {
@@ -41,7 +41,13 @@ function formatCurrency(value: number): string {
 }
 
 // Mini donut chart for the widget
-function MiniDonutChart({ categories, size = 60 }: { categories: SpendingCategory[]; size?: number }) {
+function MiniDonutChart({
+  categories,
+  size = 60,
+}: {
+  categories: SpendingCategory[];
+  size?: number;
+}) {
   const cx = size / 2;
   const cy = size / 2;
   const radius = size / 2 - 4;
@@ -110,7 +116,11 @@ function MiniDonutChart({ categories, size = 60 }: { categories: SpendingCategor
               <Path
                 d={`M ${cx} ${cy - radius} A ${radius} ${radius} 0 1 1 ${cx - 0.01} ${cy - radius}
                     L ${cx - 0.01} ${cy - innerRadius} A ${innerRadius} ${innerRadius} 0 1 0 ${cx} ${cy - innerRadius} Z`}
-                fill={segment.color || CATEGORY_COLORS[segment.name] || CATEGORY_COLORS.Other}
+                fill={
+                  segment.color ||
+                  CATEGORY_COLORS[segment.name] ||
+                  CATEGORY_COLORS.Other
+                }
               />
             </G>
           );
@@ -120,7 +130,11 @@ function MiniDonutChart({ categories, size = 60 }: { categories: SpendingCategor
           <G key={index}>
             <Path
               d={getArcPath(segment.startAngle, segment.endAngle)}
-              fill={segment.color || CATEGORY_COLORS[segment.name] || CATEGORY_COLORS.Other}
+              fill={
+                segment.color ||
+                CATEGORY_COLORS[segment.name] ||
+                CATEGORY_COLORS.Other
+              }
             />
           </G>
         );
@@ -152,9 +166,10 @@ export function SpendingOverview({
   }
 
   const changeAmount = totalSpent - lastMonthSpent;
-  const changePercent = lastMonthSpent > 0
-    ? Math.abs((changeAmount / lastMonthSpent) * 100).toFixed(1)
-    : '0';
+  const changePercent =
+    lastMonthSpent > 0
+      ? Math.abs((changeAmount / lastMonthSpent) * 100).toFixed(1)
+      : "0";
 
   const isUp = changeAmount > 0;
   const isDown = changeAmount < 0;
@@ -164,7 +179,7 @@ export function SpendingOverview({
   return (
     <TouchableOpacity
       style={styles.container}
-      onPress={() => router.push('/dashboard/spending')}
+      onPress={() => router.push("/dashboard/spending")}
       activeOpacity={0.7}
     >
       <View style={styles.header}>
@@ -174,7 +189,11 @@ export function SpendingOverview({
           <View style={styles.changeRow}>
             {isUp && (
               <>
-                <Ionicons name="trending-up" size={14} color={theme.colors.error} />
+                <Ionicons
+                  name="trending-up"
+                  size={14}
+                  color={theme.colors.error}
+                />
                 <Text style={[styles.changeText, styles.changeUp]}>
                   {changePercent}% vs last month
                 </Text>
@@ -182,7 +201,11 @@ export function SpendingOverview({
             )}
             {isDown && (
               <>
-                <Ionicons name="trending-down" size={14} color={theme.colors.success} />
+                <Ionicons
+                  name="trending-down"
+                  size={14}
+                  color={theme.colors.success}
+                />
                 <Text style={[styles.changeText, styles.changeDown]}>
                   {changePercent}% vs last month
                 </Text>
@@ -190,7 +213,11 @@ export function SpendingOverview({
             )}
             {!isUp && !isDown && (
               <>
-                <Ionicons name="remove" size={14} color={theme.colors.textSecondary} />
+                <Ionicons
+                  name="remove"
+                  size={14}
+                  color={theme.colors.textSecondary}
+                />
                 <Text style={styles.changeText}>Same as last month</Text>
               </>
             )}
@@ -202,9 +229,19 @@ export function SpendingOverview({
 
       {topCategory && (
         <View style={styles.topCategory}>
-          <View style={[styles.categoryDot, { backgroundColor: topCategory.color || CATEGORY_COLORS[topCategory.name] }]} />
+          <View
+            style={[
+              styles.categoryDot,
+              {
+                backgroundColor:
+                  topCategory.color || CATEGORY_COLORS[topCategory.name],
+              },
+            ]}
+          />
           <Text style={styles.categoryName}>{topCategory.name}</Text>
-          <Text style={styles.categoryValue}>{formatCurrency(topCategory.value)}</Text>
+          <Text style={styles.categoryValue}>
+            {formatCurrency(topCategory.value)}
+          </Text>
         </View>
       )}
 
@@ -217,7 +254,10 @@ export function SpendingOverview({
               styles.categorySegment,
               {
                 flex: category.percentage,
-                backgroundColor: category.color || CATEGORY_COLORS[category.name] || CATEGORY_COLORS.Other,
+                backgroundColor:
+                  category.color ||
+                  CATEGORY_COLORS[category.name] ||
+                  CATEGORY_COLORS.Other,
               },
             ]}
           />
@@ -226,7 +266,11 @@ export function SpendingOverview({
 
       <View style={styles.footer}>
         <Text style={styles.seeDetails}>See details</Text>
-        <Ionicons name="chevron-forward" size={16} color={theme.colors.primary} />
+        <Ionicons
+          name="chevron-forward"
+          size={16}
+          color={theme.colors.primary}
+        />
       </View>
     </TouchableOpacity>
   );
@@ -241,9 +285,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     marginBottom: 12,
   },
   headerLeft: {
@@ -256,12 +300,12 @@ const styles = StyleSheet.create({
   },
   value: {
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
   },
   changeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
     marginTop: 4,
   },
@@ -276,8 +320,8 @@ const styles = StyleSheet.create({
     color: theme.colors.success,
   },
   topCategory: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 12,
   },
   categoryDot: {
@@ -293,31 +337,31 @@ const styles = StyleSheet.create({
   },
   categoryValue: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   categoryBar: {
-    flexDirection: 'row',
+    flexDirection: "row",
     height: 6,
     borderRadius: 3,
-    overflow: 'hidden',
+    overflow: "hidden",
     backgroundColor: theme.colors.border,
     marginBottom: 12,
   },
   categorySegment: {
-    height: '100%',
+    height: "100%",
   },
   footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
   },
   seeDetails: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     color: theme.colors.primary,
     marginRight: 4,
   },
@@ -343,7 +387,7 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 30,
     backgroundColor: theme.colors.border,
-    position: 'absolute',
+    position: "absolute",
     right: 16,
     top: 16,
   },

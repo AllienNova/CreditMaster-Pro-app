@@ -5,11 +5,11 @@
  * trend detection, and seasonal pattern recognition.
  */
 
-import { spendingAnalysisService } from './spending-analysis-service';
+import { spendingAnalysisService } from "./spending-analysis-service";
 import {
   CATEGORY_DISPLAY_NAMES,
   BudgetCategoryValue,
-} from './types/budget.types';
+} from "./types/budget.types";
 import type {
   SpendingForecast,
   ForecastPeriod,
@@ -23,7 +23,7 @@ import type {
   SeasonalPattern,
   ForecastComparison,
   ForecastValidation,
-} from './types/forecast.types';
+} from "./types/forecast.types";
 
 // ============================================================================
 // CONSTANTS
@@ -43,7 +43,7 @@ class SpendingForecastService {
    */
   async generateForecast(
     userId: string,
-    options: ForecastOptions = {}
+    options: ForecastOptions = {},
   ): Promise<SpendingForecast> {
     const {
       months = 3,
@@ -56,7 +56,7 @@ class SpendingForecastService {
     // Get historical data
     const historicalData = await this.getHistoricalData(
       userId,
-      historicalMonths
+      historicalMonths,
     );
 
     // Calculate forecast accuracy based on data quality
@@ -67,7 +67,7 @@ class SpendingForecastService {
       historicalData,
       months,
       includeSeasonality,
-      confidenceLevel
+      confidenceLevel,
     );
 
     // Generate category forecasts if requested
@@ -79,13 +79,13 @@ class SpendingForecastService {
     const insights = this.generateInsights(
       predictions,
       categoryForecasts,
-      historicalData
+      historicalData,
     );
 
     // Generate recommendations
     const recommendations = this.generateRecommendations(
       predictions,
-      categoryForecasts
+      categoryForecasts,
     );
 
     const now = new Date();
@@ -93,7 +93,7 @@ class SpendingForecastService {
     const forecastEnd = new Date(
       now.getFullYear(),
       now.getMonth() + months + 1,
-      0
+      0,
     );
 
     return {
@@ -118,7 +118,7 @@ class SpendingForecastService {
    */
   private async getHistoricalData(
     userId: string,
-    months: number
+    months: number,
   ): Promise<HistoricalSpendingData[]> {
     const data: HistoricalSpendingData[] = [];
     const now = new Date();
@@ -146,11 +146,11 @@ class SpendingForecastService {
           byCategory,
           transactionCount: analysis.byCategory.reduce(
             (sum, c) => sum + c.transactionCount,
-            0
+            0,
           ),
           dayOfWeekPattern: this.calculateDayOfWeekPattern(analysis.byCategory),
           weekOfMonthPattern: this.calculateWeekOfMonthPattern(
-            analysis.byCategory
+            analysis.byCategory,
           ),
         });
       } catch {
@@ -191,18 +191,18 @@ class SpendingForecastService {
    * Calculate forecast accuracy based on data quality
    */
   private calculateAccuracy(
-    historicalData: HistoricalSpendingData[]
+    historicalData: HistoricalSpendingData[],
   ): ForecastAccuracy {
     const validMonths = historicalData.filter(
-      (d) => d.totalSpending > 0
+      (d) => d.totalSpending > 0,
     ).length;
     const totalMonths = historicalData.length;
 
-    let dataQuality: 'excellent' | 'good' | 'fair' | 'poor';
-    if (validMonths >= 12) dataQuality = 'excellent';
-    else if (validMonths >= 6) dataQuality = 'good';
-    else if (validMonths >= 3) dataQuality = 'fair';
-    else dataQuality = 'poor';
+    let dataQuality: "excellent" | "good" | "fair" | "poor";
+    if (validMonths >= 12) dataQuality = "excellent";
+    else if (validMonths >= 6) dataQuality = "good";
+    else if (validMonths >= 3) dataQuality = "fair";
+    else dataQuality = "poor";
 
     const { mape, rmse } = this.calculateErrorMetrics(historicalData);
     const dataQualityScore = (validMonths / Math.max(totalMonths, 12)) * 50;
@@ -235,7 +235,7 @@ class SpendingForecastService {
       const trainingData = validData.slice(0, i);
       const actual = validData[i].totalSpending;
       const predicted = this.simpleMovingAverage(
-        trainingData.map((d) => d.totalSpending)
+        trainingData.map((d) => d.totalSpending),
       );
 
       if (actual > 0) {
@@ -252,7 +252,7 @@ class SpendingForecastService {
     const rmse =
       squaredErrors.length > 0
         ? Math.sqrt(
-            squaredErrors.reduce((a, b) => a + b, 0) / squaredErrors.length
+            squaredErrors.reduce((a, b) => a + b, 0) / squaredErrors.length,
           )
         : 1000;
 
@@ -287,22 +287,22 @@ class SpendingForecastService {
 
   private calculateSeasonalIndex(
     monthOfYear: number,
-    historicalData: HistoricalSpendingData[]
+    historicalData: HistoricalSpendingData[],
   ): number {
     const monthData = historicalData.filter((d) => {
-      const month = new Date(d.month + '-01').getMonth() + 1;
+      const month = new Date(d.month + "-01").getMonth() + 1;
       return month === monthOfYear;
     });
 
     if (monthData.length === 0) return 1.0;
 
     const avgMonthSpending = this.simpleMovingAverage(
-      monthData.map((d) => d.totalSpending)
+      monthData.map((d) => d.totalSpending),
     );
     const avgOverallSpending = this.simpleMovingAverage(
       historicalData
         .filter((d) => d.totalSpending > 0)
-        .map((d) => d.totalSpending)
+        .map((d) => d.totalSpending),
     );
 
     if (avgOverallSpending === 0) return 1.0;
@@ -332,17 +332,17 @@ class SpendingForecastService {
     historicalData: HistoricalSpendingData[],
     months: number,
     includeSeasonality: boolean,
-    confidenceLevel: number
+    confidenceLevel: number,
   ): MonthlyPrediction[] {
     const predictions: MonthlyPrediction[] = [];
     const validData = historicalData.filter((d) => d.totalSpending > 0);
 
     if (validData.length < MIN_HISTORICAL_MONTHS) {
       const avgSpending = this.simpleMovingAverage(
-        validData.map((d) => d.totalSpending)
+        validData.map((d) => d.totalSpending),
       );
       const avgIncome = this.simpleMovingAverage(
-        validData.map((d) => d.totalIncome)
+        validData.map((d) => d.totalIncome),
       );
 
       const now = new Date();
@@ -350,9 +350,9 @@ class SpendingForecastService {
         const forecastDate = new Date(now.getFullYear(), now.getMonth() + i, 1);
         predictions.push({
           month: forecastDate.toISOString().slice(0, 7),
-          monthLabel: forecastDate.toLocaleDateString('en-US', {
-            month: 'short',
-            year: 'numeric',
+          monthLabel: forecastDate.toLocaleDateString("en-US", {
+            month: "short",
+            year: "numeric",
           }),
           predictedSpending: Math.round(avgSpending * 100) / 100,
           predictedIncome: Math.round(avgIncome * 100) / 100,
@@ -362,7 +362,7 @@ class SpendingForecastService {
             high: avgSpending * 1.3,
             confidence: 0.5,
           },
-          trend: 'stable',
+          trend: "stable",
           seasonalFactor: 1.0,
         });
       }
@@ -393,7 +393,7 @@ class SpendingForecastService {
       if (includeSeasonality) {
         seasonalFactor = this.calculateSeasonalIndex(
           monthOfYear,
-          historicalData
+          historicalData,
         );
         if (HOLIDAY_MONTHS.includes(monthOfYear)) {
           seasonalFactor *= 1.15;
@@ -414,16 +414,16 @@ class SpendingForecastService {
 
       const trend =
         spendingSlope > spendingStdDev * 0.1
-          ? 'increasing'
+          ? "increasing"
           : spendingSlope < -spendingStdDev * 0.1
-            ? 'decreasing'
-            : 'stable';
+            ? "decreasing"
+            : "stable";
 
       predictions.push({
         month: forecastDate.toISOString().slice(0, 7),
-        monthLabel: forecastDate.toLocaleDateString('en-US', {
-          month: 'short',
-          year: 'numeric',
+        monthLabel: forecastDate.toLocaleDateString("en-US", {
+          month: "short",
+          year: "numeric",
         }),
         predictedSpending: Math.round(predictedSpending * 100) / 100,
         predictedIncome: Math.round(predictedIncome * 100) / 100,
@@ -444,7 +444,7 @@ class SpendingForecastService {
   private generateCategoryForecasts(
     historicalData: HistoricalSpendingData[],
     months: number,
-    confidenceLevel: number
+    confidenceLevel: number,
   ): CategoryForecast[] {
     const categoryForecasts: CategoryForecast[] = [];
     const validData = historicalData.filter((d) => d.totalSpending > 0);
@@ -474,17 +474,17 @@ class SpendingForecastService {
 
       const trend =
         slope > stdDev * 0.1
-          ? 'increasing'
+          ? "increasing"
           : slope < -stdDev * 0.1
-            ? 'decreasing'
-            : 'stable';
+            ? "decreasing"
+            : "stable";
 
       const zScore = this.getZScore(confidenceLevel);
       const margin = zScore * stdDev;
       const confidenceInterval: ConfidenceInterval = {
         low: Math.max(
           0,
-          Math.round((predictedMonthlyAvg - margin) * 100) / 100
+          Math.round((predictedMonthlyAvg - margin) * 100) / 100,
         ),
         high: Math.round((predictedMonthlyAvg + margin) * 100) / 100,
         confidence: confidenceLevel,
@@ -504,7 +504,7 @@ class SpendingForecastService {
     }
 
     return categoryForecasts.sort(
-      (a, b) => b.predictedMonthlyAvg - a.predictedMonthlyAvg
+      (a, b) => b.predictedMonthlyAvg - a.predictedMonthlyAvg,
     );
   }
 
@@ -514,7 +514,7 @@ class SpendingForecastService {
   private generateInsights(
     predictions: MonthlyPrediction[],
     categoryForecasts: CategoryForecast[],
-    historicalData: HistoricalSpendingData[]
+    historicalData: HistoricalSpendingData[],
   ): ForecastInsight[] {
     const insights: ForecastInsight[] = [];
     let insightId = 0;
@@ -522,59 +522,59 @@ class SpendingForecastService {
     const avgHistorical = this.simpleMovingAverage(
       historicalData
         .filter((d) => d.totalSpending > 0)
-        .map((d) => d.totalSpending)
+        .map((d) => d.totalSpending),
     );
 
     predictions.forEach((pred) => {
       if (pred.predictedSpending > avgHistorical * 1.2) {
         insights.push({
           id: `insight_${++insightId}`,
-          type: 'spending_spike_predicted',
+          type: "spending_spike_predicted",
           title: `Higher spending expected in ${pred.monthLabel}`,
           description: `Predicted spending of $${pred.predictedSpending.toFixed(0)} is ${Math.round(((pred.predictedSpending - avgHistorical) / avgHistorical) * 100)}% above your average.`,
-          impact: 'negative',
+          impact: "negative",
           confidence: pred.confidenceInterval.confidence,
         });
       }
     });
 
     categoryForecasts.forEach((cat) => {
-      if (cat.trend === 'increasing' && cat.percentChange > 15) {
+      if (cat.trend === "increasing" && cat.percentChange > 15) {
         insights.push({
           id: `insight_${++insightId}`,
-          type: 'trend_change',
+          type: "trend_change",
           title: `${cat.displayName} spending is trending up`,
           description: `Expected to increase by ${cat.percentChange.toFixed(0)}% based on recent patterns.`,
-          impact: 'negative',
+          impact: "negative",
           confidence: cat.confidenceInterval.confidence,
           relatedCategory: cat.category,
         });
-      } else if (cat.trend === 'decreasing' && cat.percentChange < -15) {
+      } else if (cat.trend === "decreasing" && cat.percentChange < -15) {
         insights.push({
           id: `insight_${++insightId}`,
-          type: 'savings_opportunity',
+          type: "savings_opportunity",
           title: `${cat.displayName} spending is decreasing`,
           description: `You're on track to save ${Math.abs(cat.percentChange).toFixed(0)}% in this category.`,
-          impact: 'positive',
+          impact: "positive",
           confidence: cat.confidenceInterval.confidence,
           relatedCategory: cat.category,
           potentialSavings: Math.abs(
-            cat.currentMonthlyAvg - cat.predictedMonthlyAvg
+            cat.currentMonthlyAvg - cat.predictedMonthlyAvg,
           ),
         });
       }
     });
 
     const negativeFlowMonths = predictions.filter(
-      (p) => p.predictedNetFlow < 0
+      (p) => p.predictedNetFlow < 0,
     );
     if (negativeFlowMonths.length > 0) {
       insights.push({
         id: `insight_${++insightId}`,
-        type: 'budget_risk',
-        title: 'Negative cash flow predicted',
+        type: "budget_risk",
+        title: "Negative cash flow predicted",
         description: `${negativeFlowMonths.length} month(s) may have expenses exceeding income.`,
-        impact: 'negative',
+        impact: "negative",
         confidence: 0.85,
       });
     }
@@ -587,12 +587,12 @@ class SpendingForecastService {
    */
   private generateRecommendations(
     predictions: MonthlyPrediction[],
-    categoryForecasts: CategoryForecast[]
+    categoryForecasts: CategoryForecast[],
   ): string[] {
     const recommendations: string[] = [];
 
     const avgPredictedSpending = this.simpleMovingAverage(
-      predictions.map((p) => p.predictedSpending)
+      predictions.map((p) => p.predictedSpending),
     );
     const firstPrediction = predictions[0];
     const lastPrediction = predictions[predictions.length - 1];
@@ -602,49 +602,49 @@ class SpendingForecastService {
         lastPrediction.predictedSpending - firstPrediction.predictedSpending;
       if (spendingTrend > avgPredictedSpending * 0.1) {
         recommendations.push(
-          'Your spending is trending upward. Review discretionary expenses to maintain your budget.'
+          "Your spending is trending upward. Review discretionary expenses to maintain your budget.",
         );
       }
     }
 
     const highGrowthCategories = categoryForecasts.filter(
-      (c) => c.trend === 'increasing' && c.percentChange > 20
+      (c) => c.trend === "increasing" && c.percentChange > 20,
     );
     if (highGrowthCategories.length > 0) {
       const categoryNames = highGrowthCategories
         .slice(0, 2)
         .map((c) => c.displayName)
-        .join(' and ');
+        .join(" and ");
       recommendations.push(
-        `Consider setting stricter budgets for ${categoryNames} to control spending growth.`
+        `Consider setting stricter budgets for ${categoryNames} to control spending growth.`,
       );
     }
 
     const holidayPredictions = predictions.filter((p) => {
-      const month = new Date(p.month + '-01').getMonth() + 1;
+      const month = new Date(p.month + "-01").getMonth() + 1;
       return HOLIDAY_MONTHS.includes(month);
     });
     if (holidayPredictions.length > 0) {
       recommendations.push(
-        'Holiday season spending is typically higher. Start saving now to prepare for increased expenses.'
+        "Holiday season spending is typically higher. Start saving now to prepare for increased expenses.",
       );
     }
 
     const negativeFlowMonths = predictions.filter(
-      (p) => p.predictedNetFlow < 0
+      (p) => p.predictedNetFlow < 0,
     );
     if (negativeFlowMonths.length > 0) {
       recommendations.push(
-        'Some months show predicted negative cash flow. Build an emergency fund or reduce planned expenses.'
+        "Some months show predicted negative cash flow. Build an emergency fund or reduce planned expenses.",
       );
     }
 
     const avgNetFlow = this.simpleMovingAverage(
-      predictions.map((p) => p.predictedNetFlow)
+      predictions.map((p) => p.predictedNetFlow),
     );
     if (avgNetFlow > 0) {
       recommendations.push(
-        `You're projected to save $${avgNetFlow.toFixed(0)}/month on average. Consider automating transfers to savings.`
+        `You're projected to save $${avgNetFlow.toFixed(0)}/month on average. Consider automating transfers to savings.`,
       );
     }
 
@@ -656,7 +656,7 @@ class SpendingForecastService {
    */
   async getForecastSummary(userId: string): Promise<{
     nextMonthPredicted: number;
-    trend: 'increasing' | 'decreasing' | 'stable';
+    trend: "increasing" | "decreasing" | "stable";
     confidence: number;
     topGrowingCategory: string | null;
     potentialSavings: number;
@@ -668,19 +668,19 @@ class SpendingForecastService {
 
     const nextMonth = forecast.predictions[0];
     const topGrowing = forecast.categoryForecasts.find(
-      (c) => c.trend === 'increasing'
+      (c) => c.trend === "increasing",
     );
     const savingsOpportunities = forecast.categoryForecasts.filter(
-      (c) => c.trend === 'decreasing'
+      (c) => c.trend === "decreasing",
     );
     const potentialSavings = savingsOpportunities.reduce(
       (sum, c) => sum + Math.abs(c.currentMonthlyAvg - c.predictedMonthlyAvg),
-      0
+      0,
     );
 
     return {
       nextMonthPredicted: nextMonth?.predictedSpending || 0,
-      trend: nextMonth?.trend || 'stable',
+      trend: nextMonth?.trend || "stable",
       confidence: forecast.accuracy.overallScore / 100,
       topGrowingCategory: topGrowing?.displayName || null,
       potentialSavings: Math.round(potentialSavings * 100) / 100,

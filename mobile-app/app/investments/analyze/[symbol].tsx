@@ -3,7 +3,7 @@
  * AI-powered stock analysis with technical indicators and recommendations
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -12,22 +12,22 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   TextInput,
-} from 'react-native';
-import { useLocalSearchParams, router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { lightTheme as theme } from '../../../src/constants/theme';
-import { Card } from '../../../src/components/Card';
+} from "react-native";
+import { useLocalSearchParams, router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { lightTheme as theme } from "../../../src/constants/theme";
+import { Card } from "../../../src/components/Card";
 import {
   useInvestmentStore,
   selectCurrentRecommendation,
   selectInvestmentLoading,
   selectInvestmentError,
-} from '../../../src/store';
+} from "../../../src/store";
 
 export default function StockAnalysisScreen() {
   const { symbol: paramSymbol } = useLocalSearchParams<{ symbol: string }>();
-  const [searchSymbol, setSearchSymbol] = useState(paramSymbol || '');
+  const [searchSymbol, setSearchSymbol] = useState(paramSymbol || "");
 
   const recommendation = useInvestmentStore(selectCurrentRecommendation);
   const isLoading = useInvestmentStore(selectInvestmentLoading);
@@ -64,28 +64,28 @@ export default function StockAnalysisScreen() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 2,
     }).format(amount);
   };
 
   const formatPercent = (value: number) => {
-    const sign = value >= 0 ? '+' : '';
+    const sign = value >= 0 ? "+" : "";
     return `${sign}${value.toFixed(2)}%`;
   };
 
   const getRecommendationColor = (rec: string) => {
     switch (rec?.toLowerCase()) {
-      case 'strong_buy':
-      case 'buy':
-        return '#10B981';
-      case 'hold':
-        return '#F59E0B';
-      case 'sell':
-      case 'strong_sell':
-        return '#EF4444';
+      case "strong_buy":
+      case "buy":
+        return "#10B981";
+      case "hold":
+        return "#F59E0B";
+      case "sell":
+      case "strong_sell":
+        return "#EF4444";
       default:
         return theme.colors.textSecondary;
     }
@@ -93,35 +93,38 @@ export default function StockAnalysisScreen() {
 
   const getRecommendationLabel = (rec: string) => {
     switch (rec?.toLowerCase()) {
-      case 'strong_buy':
-        return 'Strong Buy';
-      case 'buy':
-        return 'Buy';
-      case 'hold':
-        return 'Hold';
-      case 'sell':
-        return 'Sell';
-      case 'strong_sell':
-        return 'Strong Sell';
+      case "strong_buy":
+        return "Strong Buy";
+      case "buy":
+        return "Buy";
+      case "hold":
+        return "Hold";
+      case "sell":
+        return "Sell";
+      case "strong_sell":
+        return "Strong Sell";
       default:
-        return 'N/A';
+        return "N/A";
     }
   };
 
   const getSignalIcon = (signal: string) => {
     switch (signal?.toLowerCase()) {
-      case 'bullish':
-        return { name: 'arrow-up-circle', color: '#10B981' };
-      case 'bearish':
-        return { name: 'arrow-down-circle', color: '#EF4444' };
+      case "bullish":
+        return { name: "arrow-up-circle", color: "#10B981" };
+      case "bearish":
+        return { name: "arrow-down-circle", color: "#EF4444" };
       default:
-        return { name: 'remove-circle', color: '#F59E0B' };
+        return { name: "remove-circle", color: "#F59E0B" };
     }
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={styles.container} edges={["bottom"]}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Search Bar */}
         <View style={styles.searchContainer}>
           <View style={styles.searchBar}>
@@ -134,7 +137,10 @@ export default function StockAnalysisScreen() {
               autoCapitalize="characters"
               onSubmitEditing={handleSearch}
             />
-            <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
+            <TouchableOpacity
+              style={styles.searchButton}
+              onPress={handleSearch}
+            >
               <Ionicons name="search" size={20} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
@@ -161,15 +167,17 @@ export default function StockAnalysisScreen() {
               <View style={styles.headerTop}>
                 <View style={styles.stockInfo}>
                   <Text style={styles.symbol}>{rec.symbol}</Text>
-                  <Text style={styles.companyName}>
-                    {rec.symbol}
-                  </Text>
+                  <Text style={styles.companyName}>{rec.symbol}</Text>
                 </View>
                 <TouchableOpacity
                   style={styles.watchlistButton}
                   onPress={handleAddToWatchlist}
                 >
-                  <Ionicons name="star-outline" size={24} color={theme.colors.primary} />
+                  <Ionicons
+                    name="star-outline"
+                    size={24}
+                    color={theme.colors.primary}
+                  />
                 </TouchableOpacity>
               </View>
               <View style={styles.priceContainer}>
@@ -182,22 +190,28 @@ export default function StockAnalysisScreen() {
                     {
                       backgroundColor:
                         (rec.expectedReturn || 0) >= 0
-                          ? '#10B98120'
-                          : '#EF444420',
+                          ? "#10B98120"
+                          : "#EF444420",
                     },
                   ]}
                 >
                   <Ionicons
-                    name={(rec.expectedReturn || 0) >= 0 ? 'arrow-up' : 'arrow-down'}
+                    name={
+                      (rec.expectedReturn || 0) >= 0 ? "arrow-up" : "arrow-down"
+                    }
                     size={14}
-                    color={(rec.expectedReturn || 0) >= 0 ? '#10B981' : '#EF4444'}
+                    color={
+                      (rec.expectedReturn || 0) >= 0 ? "#10B981" : "#EF4444"
+                    }
                   />
                   <Text
                     style={[
                       styles.changeText,
                       {
                         color:
-                          (rec.expectedReturn || 0) >= 0 ? '#10B981' : '#EF4444',
+                          (rec.expectedReturn || 0) >= 0
+                            ? "#10B981"
+                            : "#EF4444",
                       },
                     ]}
                   >
@@ -221,11 +235,11 @@ export default function StockAnalysisScreen() {
                 >
                   <Ionicons
                     name={
-                      rec.action?.includes('buy')
-                        ? 'trending-up'
-                        : rec.action?.includes('sell')
-                        ? 'trending-down'
-                        : 'remove'
+                      rec.action?.includes("buy")
+                        ? "trending-up"
+                        : rec.action?.includes("sell")
+                          ? "trending-down"
+                          : "remove"
                     }
                     size={32}
                     color={getRecommendationColor(rec.action)}
@@ -259,7 +273,9 @@ export default function StockAnalysisScreen() {
                         styles.recDetailValue,
                         {
                           color:
-                            (rec.expectedReturn || 0) >= 0 ? '#10B981' : '#EF4444',
+                            (rec.expectedReturn || 0) >= 0
+                              ? "#10B981"
+                              : "#EF4444",
                         },
                       ]}
                     >
@@ -269,7 +285,9 @@ export default function StockAnalysisScreen() {
                 </View>
               </View>
               {rec.reasons && rec.reasons.length > 0 && (
-                <Text style={styles.summary}>{rec.reasons[0]?.description}</Text>
+                <Text style={styles.summary}>
+                  {rec.reasons[0]?.description}
+                </Text>
               )}
             </Card>
 
@@ -278,20 +296,38 @@ export default function StockAnalysisScreen() {
               <Text style={styles.sectionTitle}>Technical Analysis</Text>
               <View style={styles.indicatorGrid}>
                 {[
-                  { label: 'RSI (14)', value: technicalSummary?.rsi, signal: getRsiSignal(technicalSummary?.rsi) },
-                  { label: 'Technical Score', value: rec.technicalScore, signal: rec.technicalScore > 50 ? 'bullish' : 'bearish' },
-                  { label: 'Fundamental Score', value: rec.fundamentalScore, signal: rec.fundamentalScore > 50 ? 'bullish' : 'bearish' },
-                  { label: 'Trend', value: technicalSummary?.trend, signal: technicalSummary?.trend },
+                  {
+                    label: "RSI (14)",
+                    value: technicalSummary?.rsi,
+                    signal: getRsiSignal(technicalSummary?.rsi),
+                  },
+                  {
+                    label: "Technical Score",
+                    value: rec.technicalScore,
+                    signal: rec.technicalScore > 50 ? "bullish" : "bearish",
+                  },
+                  {
+                    label: "Fundamental Score",
+                    value: rec.fundamentalScore,
+                    signal: rec.fundamentalScore > 50 ? "bullish" : "bearish",
+                  },
+                  {
+                    label: "Trend",
+                    value: technicalSummary?.trend,
+                    signal: technicalSummary?.trend,
+                  },
                 ].map((indicator, index) => {
-                  const iconData = getSignalIcon(indicator.signal || '');
+                  const iconData = getSignalIcon(indicator.signal || "");
                   return (
                     <View key={index} style={styles.indicatorItem}>
-                      <Text style={styles.indicatorLabel}>{indicator.label}</Text>
+                      <Text style={styles.indicatorLabel}>
+                        {indicator.label}
+                      </Text>
                       <View style={styles.indicatorValue}>
                         <Text style={styles.indicatorValueText}>
-                          {typeof indicator.value === 'number'
+                          {typeof indicator.value === "number"
                             ? indicator.value.toFixed(2)
-                            : indicator.value || 'N/A'}
+                            : indicator.value || "N/A"}
                         </Text>
                         <Ionicons
                           name={iconData.name as any}
@@ -317,7 +353,9 @@ export default function StockAnalysisScreen() {
                         styles.riskFill,
                         {
                           width: `${Math.min(rec.riskScore || 0, 100)}%`,
-                          backgroundColor: getRiskColor((rec.riskScore || 0) / 100),
+                          backgroundColor: getRiskColor(
+                            (rec.riskScore || 0) / 100,
+                          ),
                         },
                       ]}
                     />
@@ -328,14 +366,16 @@ export default function StockAnalysisScreen() {
                 </View>
                 <View style={styles.riskItem}>
                   <Text style={styles.riskLabel}>Time Horizon</Text>
-                  <Text style={styles.riskMetric}>{rec.timeHorizon?.replace('_', ' ') || 'N/A'}</Text>
+                  <Text style={styles.riskMetric}>
+                    {rec.timeHorizon?.replace("_", " ") || "N/A"}
+                  </Text>
                 </View>
                 <View style={styles.riskItem}>
                   <Text style={styles.riskLabel}>Stop Loss</Text>
                   <View
                     style={[
                       styles.riskLevelBadge,
-                      { backgroundColor: '#EF444420' },
+                      { backgroundColor: "#EF444420" },
                     ]}
                   >
                     <Text style={styles.riskLevelText}>
@@ -353,9 +393,21 @@ export default function StockAnalysisScreen() {
                 {rec.reasons.map((reason, index) => (
                   <View key={index} style={styles.reasonItem}>
                     <Ionicons
-                      name={reason.impact === 'positive' ? 'checkmark-circle' : reason.impact === 'negative' ? 'close-circle' : 'remove-circle'}
+                      name={
+                        reason.impact === "positive"
+                          ? "checkmark-circle"
+                          : reason.impact === "negative"
+                            ? "close-circle"
+                            : "remove-circle"
+                      }
                       size={18}
-                      color={reason.impact === 'positive' ? '#10B981' : reason.impact === 'negative' ? '#EF4444' : '#F59E0B'}
+                      color={
+                        reason.impact === "positive"
+                          ? "#10B981"
+                          : reason.impact === "negative"
+                            ? "#EF4444"
+                            : "#F59E0B"
+                      }
                     />
                     <Text style={styles.reasonText}>{reason.description}</Text>
                   </View>
@@ -373,26 +425,26 @@ export default function StockAnalysisScreen() {
 }
 
 function getRsiSignal(rsi: number | undefined): string {
-  if (!rsi) return 'neutral';
-  if (rsi > 70) return 'bearish';
-  if (rsi < 30) return 'bullish';
-  return 'neutral';
+  if (!rsi) return "neutral";
+  if (rsi > 70) return "bearish";
+  if (rsi < 30) return "bullish";
+  return "neutral";
 }
 
 function getRiskColor(volatility: number): string {
-  if (volatility < 0.15) return '#10B981';
-  if (volatility < 0.25) return '#F59E0B';
-  return '#EF4444';
+  if (volatility < 0.15) return "#10B981";
+  if (volatility < 0.25) return "#F59E0B";
+  return "#EF4444";
 }
 
 function getRiskLevelColor(level: string | undefined): string {
   switch (level?.toLowerCase()) {
-    case 'low':
-      return '#10B98120';
-    case 'high':
-      return '#EF444420';
+    case "low":
+      return "#10B98120";
+    case "high":
+      return "#EF444420";
     default:
-      return '#F59E0B20';
+      return "#F59E0B20";
   }
 }
 
@@ -409,7 +461,7 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.md,
   },
   searchBar: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
   },
   searchInput: {
@@ -426,12 +478,12 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: theme.borderRadius.lg,
     backgroundColor: theme.colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingContainer: {
     padding: theme.spacing.xl * 2,
-    alignItems: 'center',
+    alignItems: "center",
   },
   loadingText: {
     marginTop: theme.spacing.md,
@@ -441,14 +493,14 @@ const styles = StyleSheet.create({
   errorCard: {
     marginHorizontal: theme.spacing.lg,
     padding: theme.spacing.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   errorText: {
     flex: 1,
     fontSize: 14,
-    color: '#EF4444',
+    color: "#EF4444",
   },
   headerCard: {
     marginHorizontal: theme.spacing.lg,
@@ -456,16 +508,16 @@ const styles = StyleSheet.create({
     padding: theme.spacing.lg,
   },
   headerTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
   },
   stockInfo: {
     flex: 1,
   },
   symbol: {
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
   },
   companyName: {
@@ -477,19 +529,19 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   priceContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: theme.spacing.md,
     gap: 12,
   },
   price: {
     fontSize: 32,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
   },
   changeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: theme.borderRadius.md,
@@ -497,7 +549,7 @@ const styles = StyleSheet.create({
   },
   changeText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   recommendationCard: {
     marginHorizontal: theme.spacing.lg,
@@ -506,34 +558,34 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: theme.spacing.md,
   },
   recContent: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: theme.spacing.lg,
   },
   recBadge: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   recText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
     marginTop: 4,
   },
   recDetails: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     gap: 8,
   },
   recDetailItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   recDetailLabel: {
     fontSize: 13,
@@ -541,7 +593,7 @@ const styles = StyleSheet.create({
   },
   recDetailValue: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   summary: {
@@ -556,12 +608,12 @@ const styles = StyleSheet.create({
     padding: theme.spacing.lg,
   },
   indicatorGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: theme.spacing.md,
   },
   indicatorItem: {
-    width: '47%',
+    width: "47%",
     backgroundColor: theme.colors.background,
     borderRadius: theme.borderRadius.md,
     padding: theme.spacing.md,
@@ -572,13 +624,13 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   indicatorValue: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   indicatorValueText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   riskCard: {
@@ -590,8 +642,8 @@ const styles = StyleSheet.create({
     gap: theme.spacing.md,
   },
   riskItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: theme.spacing.md,
   },
   riskLabel: {
@@ -604,22 +656,22 @@ const styles = StyleSheet.create({
     height: 8,
     backgroundColor: theme.colors.background,
     borderRadius: 4,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   riskFill: {
-    height: '100%',
+    height: "100%",
     borderRadius: 4,
   },
   riskValue: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     width: 40,
-    textAlign: 'right',
+    textAlign: "right",
   },
   riskMetric: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   riskLevelBadge: {
@@ -629,7 +681,7 @@ const styles = StyleSheet.create({
   },
   riskLevelText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   reasonsCard: {
@@ -638,8 +690,8 @@ const styles = StyleSheet.create({
     padding: theme.spacing.lg,
   },
   reasonItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     gap: 8,
     marginBottom: 8,
   },

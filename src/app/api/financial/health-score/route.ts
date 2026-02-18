@@ -59,12 +59,12 @@
  *         description: Internal server error
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { rbac } from '@/lib/auth/rbac';
-import { healthScoreCalculatorV2 } from '@/lib/financial/health-score-calculator-v2';
-import { financialAggregationService } from '@/lib/financial/financial-aggregation-service';
-import { getSupabase } from '@/lib/supabase/client';
+import { NextRequest, NextResponse } from "next/server";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { rbac } from "@/lib/auth/rbac";
+import { healthScoreCalculatorV2 } from "@/lib/financial/health-score-calculator-v2";
+import { financialAggregationService } from "@/lib/financial/financial-aggregation-service";
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
 
@@ -81,9 +81,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Unauthorized - Invalid or missing JWT token',
+          error: "Unauthorized - Invalid or missing JWT token",
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -91,15 +91,15 @@ export async function GET(request: NextRequest) {
     if (
       !rbac.hasPermission(
         validation.user as Parameters<typeof rbac.hasPermission>[0],
-        'financial:read'
+        "financial:read",
       )
     ) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Forbidden - Insufficient permissions to read health score',
+          error: "Forbidden - Insufficient permissions to read health score",
         },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -107,12 +107,12 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
 
     // Check if requesting history
-    const includeHistory = searchParams.get('history') === 'true';
+    const includeHistory = searchParams.get("history") === "true";
     if (includeHistory) {
-      const days = parseInt(searchParams.get('days') || '30', 10);
+      const days = parseInt(searchParams.get("days") || "30", 10);
       const historicalScores = await healthScoreCalculatorV2.getScoreHistory(
         userId,
-        days
+        days,
       );
 
       return NextResponse.json({
@@ -130,23 +130,22 @@ export async function GET(request: NextRequest) {
 
     // Check for cached score (within last hour)
     const { data: cachedScore } = await supabase
-      .from('financial_health_scores')
-      .select('*')
-      .eq('user_id', userId)
-      .order('calculated_at', { ascending: false })
+      .from("financial_health_scores")
+      .select("*")
+      .eq("user_id", userId)
+      .order("calculated_at", { ascending: false })
       .limit(1)
       .single();
 
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
     const isCacheValid =
-      cachedScore &&
-      new Date(cachedScore.calculated_at) > oneHourAgo;
+      cachedScore && new Date(cachedScore.calculated_at) > oneHourAgo;
 
     if (isCacheValid) {
       // Return cached score
       const headers = new Headers();
-      headers.set('Content-Type', 'application/json');
-      headers.set('Cache-Control', 'private, max-age=3600');
+      headers.set("Content-Type", "application/json");
+      headers.set("Cache-Control", "private, max-age=3600");
 
       return NextResponse.json(
         {
@@ -170,12 +169,13 @@ export async function GET(request: NextRequest) {
             calculatedAt: cachedScore.calculated_at,
           },
         },
-        { headers }
+        { headers },
       );
     }
 
     // No valid cache, calculate new score
-    const context = await financialAggregationService.getAggregatedContext(userId);
+    const context =
+      await financialAggregationService.getAggregatedContext(userId);
     const healthScore = await healthScoreCalculatorV2.calculateScore({
       context,
       options: {
@@ -204,7 +204,12 @@ export async function GET(request: NextRequest) {
         recommendations: healthScore.quickWins.map((qw) => ({
           title: qw.action,
           description: qw.timeframe,
-          priority: qw.estimatedImprovement > 15 ? 'high' : qw.estimatedImprovement > 8 ? 'medium' : 'low',
+          priority:
+            qw.estimatedImprovement > 15
+              ? "high"
+              : qw.estimatedImprovement > 8
+                ? "medium"
+                : "low",
           expectedImpact: qw.estimatedImprovement,
           effort: qw.effort,
         })),
@@ -223,7 +228,8 @@ export async function GET(request: NextRequest) {
   } catch (_error) {
     // HealthScoreRoute error: Failed to fetch score
 
-    const errorMessage = _error instanceof Error ? _error.message : 'Failed to fetch health score';
+    const errorMessage =
+      _error instanceof Error ? _error.message : "Failed to fetch health score";
 
     return NextResponse.json(
       {
@@ -233,7 +239,7 @@ export async function GET(request: NextRequest) {
           timestamp: new Date().toISOString(),
         },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -252,9 +258,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Unauthorized - Invalid or missing JWT token',
+          error: "Unauthorized - Invalid or missing JWT token",
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -262,15 +268,16 @@ export async function POST(request: NextRequest) {
     if (
       !rbac.hasPermission(
         validation.user as Parameters<typeof rbac.hasPermission>[0],
-        'financial:write'
+        "financial:write",
       )
     ) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Forbidden - Insufficient permissions to calculate health score',
+          error:
+            "Forbidden - Insufficient permissions to calculate health score",
         },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -283,17 +290,16 @@ export async function POST(request: NextRequest) {
     // Check for recent calculation if not forcing recalculation
     if (!forceRecalculate) {
       const { data: recentScore } = await supabase
-        .from('financial_health_scores')
-        .select('*')
-        .eq('user_id', userId)
-        .order('calculated_at', { ascending: false })
+        .from("financial_health_scores")
+        .select("*")
+        .eq("user_id", userId)
+        .order("calculated_at", { ascending: false })
         .limit(1)
         .single();
 
       const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
       const hasRecentScore =
-        recentScore &&
-        new Date(recentScore.calculated_at) > oneHourAgo;
+        recentScore && new Date(recentScore.calculated_at) > oneHourAgo;
 
       if (hasRecentScore) {
         // Return cached score
@@ -313,7 +319,8 @@ export async function POST(request: NextRequest) {
             recommendations: recentScore.recommendations || [],
             lastCalculated: recentScore.calculated_at,
           },
-          message: 'Returning cached health score (calculated within last hour)',
+          message:
+            "Returning cached health score (calculated within last hour)",
           _meta: {
             cached: true,
             calculatedAt: recentScore.calculated_at,
@@ -324,7 +331,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate new score
-    const context = await financialAggregationService.getAggregatedContext(userId);
+    const context =
+      await financialAggregationService.getAggregatedContext(userId);
     const healthScore = await healthScoreCalculatorV2.calculateScore({
       context,
       options: {
@@ -353,7 +361,12 @@ export async function POST(request: NextRequest) {
         recommendations: healthScore.quickWins.map((qw) => ({
           title: qw.action,
           description: qw.timeframe,
-          priority: qw.estimatedImprovement > 15 ? 'high' : qw.estimatedImprovement > 8 ? 'medium' : 'low',
+          priority:
+            qw.estimatedImprovement > 15
+              ? "high"
+              : qw.estimatedImprovement > 8
+                ? "medium"
+                : "low",
           expectedImpact: qw.estimatedImprovement,
           effort: qw.effort,
           category: qw.component,
@@ -371,7 +384,7 @@ export async function POST(request: NextRequest) {
         },
         lastCalculated: healthScore.calculatedAt.toISOString(),
       },
-      message: 'Health score calculated and saved successfully',
+      message: "Health score calculated and saved successfully",
       _meta: {
         cached: false,
         calculatedAt: healthScore.calculatedAt.toISOString(),
@@ -381,7 +394,10 @@ export async function POST(request: NextRequest) {
   } catch (_error) {
     // HealthScoreRoute error: Failed to calculate score
 
-    const errorMessage = _error instanceof Error ? _error.message : 'Failed to calculate health score';
+    const errorMessage =
+      _error instanceof Error
+        ? _error.message
+        : "Failed to calculate health score";
 
     return NextResponse.json(
       {
@@ -391,7 +407,7 @@ export async function POST(request: NextRequest) {
           timestamp: new Date().toISOString(),
         },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

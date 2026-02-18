@@ -4,9 +4,12 @@
  * Handles CRUD operations for income sources
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { incomeTrackingService, CreateIncomeSourceInput } from '@/lib/financial/income-tracking-service';
-import { createClient } from '@/lib/supabase/server';
+import { NextRequest, NextResponse } from "next/server";
+import {
+  incomeTrackingService,
+  CreateIncomeSourceInput,
+} from "@/lib/financial/income-tracking-service";
+import { createClient } from "@/lib/supabase/server";
 
 /**
  * GET /api/financial/income
@@ -15,13 +18,13 @@ import { createClient } from '@/lib/supabase/server';
 export async function GET() {
   try {
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const sources = await incomeTrackingService.getIncomeSources(user.id);
@@ -37,8 +40,8 @@ export async function GET() {
     // IncomeAPI error: Error fetching income sources
     void _error;
     return NextResponse.json(
-      { error: 'Failed to fetch income sources' },
-      { status: 500 }
+      { error: "Failed to fetch income sources" },
+      { status: 500 },
     );
   }
 }
@@ -50,13 +53,13 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
@@ -64,25 +67,31 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (!body.name || !body.amount || !body.frequency || !body.nextPayDate) {
       return NextResponse.json(
-        { error: 'Missing required fields: name, amount, frequency, nextPayDate' },
-        { status: 400 }
+        {
+          error:
+            "Missing required fields: name, amount, frequency, nextPayDate",
+        },
+        { status: 400 },
       );
     }
 
     // Validate frequency
-    const validFrequencies = ['weekly', 'biweekly', 'semimonthly', 'monthly'];
+    const validFrequencies = ["weekly", "biweekly", "semimonthly", "monthly"];
     if (!validFrequencies.includes(body.frequency)) {
       return NextResponse.json(
-        { error: 'Invalid frequency. Must be: weekly, biweekly, semimonthly, or monthly' },
-        { status: 400 }
+        {
+          error:
+            "Invalid frequency. Must be: weekly, biweekly, semimonthly, or monthly",
+        },
+        { status: 400 },
       );
     }
 
     // Validate amount
-    if (typeof body.amount !== 'number' || body.amount <= 0) {
+    if (typeof body.amount !== "number" || body.amount <= 0) {
       return NextResponse.json(
-        { error: 'Amount must be a positive number' },
-        { status: 400 }
+        { error: "Amount must be a positive number" },
+        { status: 400 },
       );
     }
 
@@ -95,15 +104,18 @@ export async function POST(request: NextRequest) {
       isAutoDetected: body.isAutoDetected || false,
     };
 
-    const source = await incomeTrackingService.createIncomeSource(user.id, input);
+    const source = await incomeTrackingService.createIncomeSource(
+      user.id,
+      input,
+    );
 
     return NextResponse.json({ source }, { status: 201 });
   } catch (_error) {
     // IncomeAPI error: Error creating income source
     void _error;
     return NextResponse.json(
-      { error: 'Failed to create income source' },
-      { status: 500 }
+      { error: "Failed to create income source" },
+      { status: 500 },
     );
   }
 }
@@ -115,58 +127,68 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
 
     if (!body.id) {
       return NextResponse.json(
-        { error: 'Missing required field: id' },
-        { status: 400 }
+        { error: "Missing required field: id" },
+        { status: 400 },
       );
     }
 
     // Validate frequency if provided
     if (body.frequency) {
-      const validFrequencies = ['weekly', 'biweekly', 'semimonthly', 'monthly'];
+      const validFrequencies = ["weekly", "biweekly", "semimonthly", "monthly"];
       if (!validFrequencies.includes(body.frequency)) {
         return NextResponse.json(
-          { error: 'Invalid frequency. Must be: weekly, biweekly, semimonthly, or monthly' },
-          { status: 400 }
+          {
+            error:
+              "Invalid frequency. Must be: weekly, biweekly, semimonthly, or monthly",
+          },
+          { status: 400 },
         );
       }
     }
 
     // Validate amount if provided
-    if (body.amount !== undefined && (typeof body.amount !== 'number' || body.amount <= 0)) {
+    if (
+      body.amount !== undefined &&
+      (typeof body.amount !== "number" || body.amount <= 0)
+    ) {
       return NextResponse.json(
-        { error: 'Amount must be a positive number' },
-        { status: 400 }
+        { error: "Amount must be a positive number" },
+        { status: 400 },
       );
     }
 
-    const source = await incomeTrackingService.updateIncomeSource(user.id, body.id, {
-      name: body.name,
-      amount: body.amount,
-      frequency: body.frequency,
-      nextPayDate: body.nextPayDate ? new Date(body.nextPayDate) : undefined,
-      accountId: body.accountId,
-    });
+    const source = await incomeTrackingService.updateIncomeSource(
+      user.id,
+      body.id,
+      {
+        name: body.name,
+        amount: body.amount,
+        frequency: body.frequency,
+        nextPayDate: body.nextPayDate ? new Date(body.nextPayDate) : undefined,
+        accountId: body.accountId,
+      },
+    );
 
     return NextResponse.json({ source });
   } catch (_error) {
     // IncomeAPI error: Error updating income source
     void _error;
     return NextResponse.json(
-      { error: 'Failed to update income source' },
-      { status: 500 }
+      { error: "Failed to update income source" },
+      { status: 500 },
     );
   }
 }
@@ -178,22 +200,22 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
+    const id = searchParams.get("id");
 
     if (!id) {
       return NextResponse.json(
-        { error: 'Missing required parameter: id' },
-        { status: 400 }
+        { error: "Missing required parameter: id" },
+        { status: 400 },
       );
     }
 
@@ -204,8 +226,8 @@ export async function DELETE(request: NextRequest) {
     // IncomeAPI error: Error deleting income source
     void _error;
     return NextResponse.json(
-      { error: 'Failed to delete income source' },
-      { status: 500 }
+      { error: "Failed to delete income source" },
+      { status: 500 },
     );
   }
 }

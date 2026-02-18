@@ -6,11 +6,11 @@
  * and provides the foundation for AI-powered insights and recommendations.
  */
 
-import { getSupabase } from '@/lib/supabase/client';
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
-import { plaidService } from './plaid-service';
-import { CreditBureauService } from '@/lib/credit-bureau';
+import { plaidService } from "./plaid-service";
+import { CreditBureauService } from "@/lib/credit-bureau";
 import {
   FinancialContext,
   UserProfile,
@@ -36,8 +36,8 @@ import {
   FinancialAlert,
   ContextMetadata,
   FinancialSummary,
-} from './types/financial-context.types';
-import { healthScoreCalculator } from './health-score-calculator';
+} from "./types/financial-context.types";
+import { healthScoreCalculator } from "./health-score-calculator";
 
 // Cache for financial context (5 minute TTL)
 const contextCache = new Map<
@@ -55,7 +55,7 @@ export class FinancialContextEngine {
    */
   async getFinancialContext(
     userId: string,
-    forceRefresh = false
+    forceRefresh = false,
   ): Promise<FinancialContext> {
     // Check cache first
     if (!forceRefresh) {
@@ -126,25 +126,25 @@ export class FinancialContextEngine {
    */
   private async getUserProfile(userId: string): Promise<UserProfile> {
     const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
       .single();
 
     if (error || !data) {
-      throw new Error('Failed to fetch user profile');
+      throw new Error("Failed to fetch user profile");
     }
 
     return {
       id: data.id,
-      email: data.email || '',
-      fullName: data.full_name || '',
-      subscriptionTier: data.subscription_tier || 'free',
+      email: data.email || "",
+      fullName: data.full_name || "",
+      subscriptionTier: data.subscription_tier || "free",
       createdAt: new Date(data.created_at),
       onboardingCompleted: data.onboarding_completed || false,
       preferences: {
-        currency: data.preferences?.currency || 'USD',
-        timezone: data.preferences?.timezone || 'America/New_York',
+        currency: data.preferences?.currency || "USD",
+        timezone: data.preferences?.timezone || "America/New_York",
         budgetAlertThreshold: data.preferences?.budget_alert_threshold || 80,
         goalRemindersEnabled: data.preferences?.goal_reminders_enabled ?? true,
         insightNotificationsEnabled:
@@ -157,7 +157,7 @@ export class FinancialContextEngine {
    * Get aggregated accounts from all linked sources
    */
   private async getAggregatedAccounts(
-    userId: string
+    userId: string,
   ): Promise<AggregatedAccounts> {
     try {
       const plaidAccounts = await plaidService.getAccounts(userId);
@@ -178,7 +178,7 @@ export class FinancialContextEngine {
       for (const account of plaidAccounts) {
         const summary: AccountSummary = {
           id: account.accountId,
-          institutionName: account.institutionName || 'Unknown',
+          institutionName: account.institutionName || "Unknown",
           accountName: account.accountName,
           accountType: this.mapAccountType(account.accountType),
           currentBalance: account.currentBalance,
@@ -188,24 +188,24 @@ export class FinancialContextEngine {
         };
         // Categorize and calculate totals
         switch (summary.accountType) {
-          case 'checking':
+          case "checking":
             categorized.checking.push(summary);
             categorized.totalAssets += summary.currentBalance;
             break;
-          case 'savings':
+          case "savings":
             categorized.savings.push(summary);
             categorized.totalAssets += summary.currentBalance;
             categorized.totalSavings += summary.currentBalance;
             break;
-          case 'credit':
+          case "credit":
             categorized.credit.push(summary);
             categorized.totalLiabilities += Math.abs(summary.currentBalance);
             break;
-          case 'investment':
+          case "investment":
             categorized.investment.push(summary);
             categorized.totalAssets += summary.currentBalance;
             break;
-          case 'loan':
+          case "loan":
             categorized.loan.push(summary);
             categorized.totalLiabilities += Math.abs(summary.currentBalance);
             break;
@@ -235,7 +235,7 @@ export class FinancialContextEngine {
    * Get categorized transactions
    */
   private async getCategorizedTransactions(
-    userId: string
+    userId: string,
   ): Promise<CategorizedTransactions> {
     try {
       const accounts = await plaidService.getAccounts(userId);
@@ -248,7 +248,7 @@ export class FinancialContextEngine {
         const txns = await plaidService.getTransactions(
           account.accountId,
           thirtyDaysAgo,
-          new Date()
+          new Date(),
         );
         allTransactions.push(
           ...txns.map((t) => ({
@@ -258,11 +258,11 @@ export class FinancialContextEngine {
             amount: t.amount,
             merchantName: t.merchantName,
             description: t.name,
-            category: t.category[0] || 'Uncategorized',
+            category: t.category[0] || "Uncategorized",
             subcategory: t.category[1],
             isPending: t.pending,
             isRecurring: false,
-          }))
+          })),
         );
       }
 
@@ -294,7 +294,7 @@ export class FinancialContextEngine {
           percentage:
             totalExpenses > 0 ? (data.amount / totalExpenses) * 100 : 0,
           transactionCount: data.count,
-          trend: 'stable' as const,
+          trend: "stable" as const,
           changeFromLastPeriod: 0,
         }))
         .sort((a, b) => b.amount - a.amount);
@@ -332,10 +332,10 @@ export class FinancialContextEngine {
    */
   private async getBudgetStatuses(userId: string): Promise<BudgetStatus[]> {
     const { data, error } = await supabase
-      .from('budgets')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('status', 'active');
+      .from("budgets")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", "active");
 
     if (error || !data) return [];
 
@@ -344,8 +344,8 @@ export class FinancialContextEngine {
       const daysRemaining = Math.max(
         0,
         Math.ceil(
-          (new Date(b.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-        )
+          (new Date(b.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+        ),
       );
 
       return {
@@ -358,10 +358,10 @@ export class FinancialContextEngine {
         period: b.period,
         status:
           percentUsed >= 100
-            ? 'over_budget'
+            ? "over_budget"
             : percentUsed >= 80
-              ? 'warning'
-              : 'on_track',
+              ? "warning"
+              : "on_track",
         daysRemaining,
         projectedOverage: 0,
         rolloverEnabled: b.rollover_enabled || false,
@@ -375,10 +375,10 @@ export class FinancialContextEngine {
    */
   private async getFinancialGoals(userId: string): Promise<FinancialGoal[]> {
     const { data, error } = await supabase
-      .from('financial_goals')
-      .select('*')
-      .eq('user_id', userId)
-      .order('priority', { ascending: true });
+      .from("financial_goals")
+      .select("*")
+      .eq("user_id", userId)
+      .order("priority", { ascending: true });
 
     if (error || !data) return [];
 
@@ -423,7 +423,7 @@ export class FinancialContextEngine {
       debts.push({
         id: credit.id,
         name: credit.accountName,
-        type: 'credit_card',
+        type: "credit_card",
         balance,
         interestRate: credit.interestRate || 18.99,
         minimumPayment: Math.max(25, balance * 0.02),
@@ -438,7 +438,7 @@ export class FinancialContextEngine {
       debts.push({
         id: loan.id,
         name: loan.accountName,
-        type: 'personal_loan',
+        type: "personal_loan",
         balance,
         interestRate: loan.interestRate || 7.5,
         minimumPayment: balance * 0.03,
@@ -471,9 +471,9 @@ export class FinancialContextEngine {
    */
   private async getPortfolioSummary(userId: string): Promise<PortfolioSummary> {
     const { data } = await supabase
-      .from('investment_portfolios')
-      .select('*, investment_holdings(*)')
-      .eq('user_id', userId);
+      .from("investment_portfolios")
+      .select("*, investment_holdings(*)")
+      .eq("user_id", userId);
 
     if (!data || data.length === 0) {
       return {
@@ -527,13 +527,13 @@ export class FinancialContextEngine {
     try {
       const creditResponse = await CreditBureauService.getCreditReport(
         userId,
-        'experian'
+        "experian",
       );
       const creditScore = creditResponse?.data?.credit_score || 0;
       return {
         currentScore: creditScore,
         scoreChange: 0,
-        scoreChangeDirection: 'stable',
+        scoreChangeDirection: "stable",
         lastUpdated: new Date(),
         scoreHistory: [],
         factors: [],
@@ -545,7 +545,7 @@ export class FinancialContextEngine {
       return {
         currentScore: 0,
         scoreChange: 0,
-        scoreChangeDirection: 'stable',
+        scoreChangeDirection: "stable",
         lastUpdated: new Date(),
         scoreHistory: [],
         factors: [],
@@ -561,11 +561,11 @@ export class FinancialContextEngine {
    */
   private async getInsights(userId: string): Promise<AIInsight[]> {
     const { data } = await supabase
-      .from('financial_insights')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('dismissed', false)
-      .order('created_at', { ascending: false })
+      .from("financial_insights")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("dismissed", false)
+      .order("created_at", { ascending: false })
       .limit(10);
 
     return (data || []).map((i) => ({
@@ -595,18 +595,18 @@ export class FinancialContextEngine {
   /**
    * Map Plaid account type to our account type
    */
-  private mapAccountType(plaidType: string): AccountSummary['accountType'] {
+  private mapAccountType(plaidType: string): AccountSummary["accountType"] {
     switch (plaidType) {
-      case 'depository':
-        return 'checking';
-      case 'credit':
-        return 'credit';
-      case 'investment':
-        return 'investment';
-      case 'loan':
-        return 'loan';
+      case "depository":
+        return "checking";
+      case "credit":
+        return "credit";
+      case "investment":
+        return "investment";
+      case "loan":
+        return "loan";
       default:
-        return 'other';
+        return "other";
     }
   }
 
@@ -615,11 +615,11 @@ export class FinancialContextEngine {
    */
   async getRecurringBills(userId: string): Promise<RecurringBill[]> {
     const { data } = await supabase
-      .from('recurring_bills')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('status', 'active')
-      .order('next_due_at', { ascending: true });
+      .from("recurring_bills")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .order("next_due_at", { ascending: true });
 
     return (data || []).map((b) => ({
       id: b.id,
@@ -645,7 +645,7 @@ export class FinancialContextEngine {
    */
   async getEnhancedFinancialContext(
     userId: string,
-    options: FinancialContextOptions = {}
+    options: FinancialContextOptions = {},
   ): Promise<EnhancedFinancialContext> {
     const startTime = Date.now();
     const mergedOptions = { ...DEFAULT_CONTEXT_OPTIONS, ...options };
@@ -660,7 +660,7 @@ export class FinancialContextEngine {
     // Get base context
     const baseContext = await this.getFinancialContext(
       userId,
-      mergedOptions.forceRefresh
+      mergedOptions.forceRefresh,
     );
 
     // Get additional data in parallel
@@ -683,7 +683,7 @@ export class FinancialContextEngine {
       cacheExpiresAt: cached
         ? new Date(cached.timestamp + CACHE_TTL)
         : undefined,
-      apiVersion: '2.0.0',
+      apiVersion: "2.0.0",
     };
 
     return {
@@ -702,7 +702,7 @@ export class FinancialContextEngine {
   async getFinancialSummary(userId: string): Promise<FinancialSummary> {
     const context = await this.getFinancialContext(userId);
 
-    const activeGoals = context.goals.filter((g) => g.status === 'active');
+    const activeGoals = context.goals.filter((g) => g.status === "active");
     const totalGoalProgress =
       activeGoals.length > 0
         ? activeGoals.reduce((sum, g) => sum + g.progress, 0) /
@@ -737,7 +737,7 @@ export class FinancialContextEngine {
    */
   private async calculateDataQuality(
     userId: string,
-    context: FinancialContext
+    context: FinancialContext,
   ): Promise<DataQuality> {
     const missingData: string[] = [];
     let score = 100;
@@ -751,43 +751,43 @@ export class FinancialContextEngine {
       context.accounts.loan.length;
 
     if (totalAccounts === 0) {
-      missingData.push('No bank accounts connected');
+      missingData.push("No bank accounts connected");
       score -= 30;
     }
 
     // Check for transactions
     if (context.transactions.recentTransactions.length === 0) {
-      missingData.push('No recent transactions');
+      missingData.push("No recent transactions");
       score -= 20;
     }
 
     // Check for credit score
     if (context.creditProfile.currentScore === 0) {
-      missingData.push('Credit score not available');
+      missingData.push("Credit score not available");
       score -= 15;
     }
 
     // Check for budgets
     if (context.budgets.length === 0) {
-      missingData.push('No budgets configured');
+      missingData.push("No budgets configured");
       score -= 10;
     }
 
     // Check for goals
     if (context.goals.length === 0) {
-      missingData.push('No financial goals set');
+      missingData.push("No financial goals set");
       score -= 10;
     }
 
     // Determine freshness
     const lastSync = context.accounts.lastSyncedAt;
     const hoursSinceSync = (Date.now() - lastSync.getTime()) / (1000 * 60 * 60);
-    let freshness: DataQuality['freshness'] = 'fresh';
+    let freshness: DataQuality["freshness"] = "fresh";
     if (hoursSinceSync > 24) {
-      freshness = 'outdated';
+      freshness = "outdated";
       score -= 15;
     } else if (hoursSinceSync > 6) {
-      freshness = 'stale';
+      freshness = "stale";
       score -= 5;
     }
 
@@ -800,19 +800,19 @@ export class FinancialContextEngine {
       missingData,
       dataSources: [
         {
-          name: 'Plaid',
-          type: 'plaid',
+          name: "Plaid",
+          type: "plaid",
           lastUpdated: lastSync,
-          status: totalAccounts > 0 ? 'connected' : 'disconnected',
+          status: totalAccounts > 0 ? "connected" : "disconnected",
         },
         {
-          name: 'Credit Bureau',
-          type: 'credit_bureau',
+          name: "Credit Bureau",
+          type: "credit_bureau",
           lastUpdated: context.creditProfile.lastUpdated,
           status:
             context.creditProfile.currentScore > 0
-              ? 'connected'
-              : 'disconnected',
+              ? "connected"
+              : "disconnected",
         },
       ],
     };
@@ -856,12 +856,12 @@ export class FinancialContextEngine {
    */
   private async getFinancialAlerts(userId: string): Promise<FinancialAlert[]> {
     const { data } = await supabase
-      .from('financial_alerts')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('dismissed', false)
+      .from("financial_alerts")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("dismissed", false)
       .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
-      .order('severity', { ascending: false })
+      .order("severity", { ascending: false })
       .limit(20);
 
     return (data || []).map((a) => ({

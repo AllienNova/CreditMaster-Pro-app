@@ -3,36 +3,36 @@
  * Shows current streak with fire emoji intensity
  */
 
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { lightTheme as theme } from '../../constants/theme';
+import React from "react";
+import { View, Text, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { lightTheme as theme } from "../../constants/theme";
 
 interface StreakDisplayProps {
   streak: number;
   multiplier?: number;
   longestStreak?: number;
-  size?: 'sm' | 'md' | 'lg';
+  size?: "sm" | "md" | "lg";
 }
 
 export function StreakDisplay({
   streak,
   multiplier = 1,
   longestStreak,
-  size = 'md',
+  size = "md",
 }: StreakDisplayProps) {
   const getFireIntensity = (): string => {
-    if (streak >= 30) return '🔥🔥🔥';
-    if (streak >= 14) return '🔥🔥';
-    if (streak >= 7) return '🔥';
-    return '🔥';
+    if (streak >= 30) return "🔥🔥🔥";
+    if (streak >= 14) return "🔥🔥";
+    if (streak >= 7) return "🔥";
+    return "🔥";
   };
 
   const getFireColor = (): string => {
-    if (streak >= 30) return '#EF4444';
-    if (streak >= 14) return '#F97316';
-    if (streak >= 7) return '#F59E0B';
-    return '#FCD34D';
+    if (streak >= 30) return "#EF4444";
+    if (streak >= 14) return "#F97316";
+    if (streak >= 7) return "#F59E0B";
+    return "#FCD34D";
   };
 
   const sizeStyles = {
@@ -56,7 +56,7 @@ export function StreakDisplay({
         >
           {streak}
         </Text>
-        <Text style={styles.dayLabel}>day{streak !== 1 ? 's' : ''}</Text>
+        <Text style={styles.dayLabel}>day{streak !== 1 ? "s" : ""}</Text>
       </View>
 
       {multiplier > 1 && (
@@ -83,8 +83,8 @@ export function StreakDisplay({
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   containerSm: {
     padding: 8,
@@ -96,14 +96,14 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   mainDisplay: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   fireEmoji: {
     fontSize: 24,
     marginBottom: 4,
   },
   streakNumber: {
-    fontWeight: '800',
+    fontWeight: "800",
   },
   textSm: {
     fontSize: 20,
@@ -127,12 +127,12 @@ const styles = StyleSheet.create({
   },
   multiplierText: {
     fontSize: 11,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: "700",
+    color: "#fff",
   },
   bestStreak: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
     marginTop: 8,
   },

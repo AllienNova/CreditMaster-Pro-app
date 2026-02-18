@@ -11,21 +11,21 @@ import {
   BehaviorSubject,
   timer,
   Subscription,
-} from 'rxjs';
-import { retry, takeUntil, filter } from 'rxjs/operators';
+} from "rxjs";
+import { retry, takeUntil, filter } from "rxjs/operators";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 export type ConnectionState =
-  | 'disconnected'
-  | 'connecting'
-  | 'connected'
-  | 'reconnecting'
-  | 'error';
+  | "disconnected"
+  | "connecting"
+  | "connected"
+  | "reconnecting"
+  | "error";
 
-export type MarketDataType = 'quote' | 'trade' | 'bar' | 'orderbook';
+export type MarketDataType = "quote" | "trade" | "bar" | "orderbook";
 
 export interface RealtimeQuote {
   symbol: string;
@@ -60,7 +60,7 @@ export interface OrderUpdate {
   orderId: string;
   clientOrderId?: string;
   symbol: string;
-  side: 'buy' | 'sell';
+  side: "buy" | "sell";
   type: string;
   status: OrderUpdateStatus;
   quantity: number;
@@ -73,39 +73,39 @@ export interface OrderUpdate {
 }
 
 export type OrderUpdateStatus =
-  | 'new'
-  | 'partially_filled'
-  | 'filled'
-  | 'done_for_day'
-  | 'canceled'
-  | 'expired'
-  | 'replaced'
-  | 'pending_cancel'
-  | 'pending_replace'
-  | 'accepted'
-  | 'pending_new'
-  | 'accepted_for_bidding'
-  | 'stopped'
-  | 'rejected'
-  | 'suspended'
-  | 'calculated';
+  | "new"
+  | "partially_filled"
+  | "filled"
+  | "done_for_day"
+  | "canceled"
+  | "expired"
+  | "replaced"
+  | "pending_cancel"
+  | "pending_replace"
+  | "accepted"
+  | "pending_new"
+  | "accepted_for_bidding"
+  | "stopped"
+  | "rejected"
+  | "suspended"
+  | "calculated";
 
 export type OrderEvent =
-  | 'new'
-  | 'fill'
-  | 'partial_fill'
-  | 'canceled'
-  | 'expired'
-  | 'replaced'
-  | 'rejected'
-  | 'pending_new'
-  | 'stopped'
-  | 'suspended'
-  | 'order_replace_rejected'
-  | 'order_cancel_rejected';
+  | "new"
+  | "fill"
+  | "partial_fill"
+  | "canceled"
+  | "expired"
+  | "replaced"
+  | "rejected"
+  | "pending_new"
+  | "stopped"
+  | "suspended"
+  | "order_replace_rejected"
+  | "order_cancel_rejected";
 
 export interface TradeUpdate {
-  event: 'trade_update';
+  event: "trade_update";
   order: OrderUpdate;
   executionId?: string;
   positionQuantity?: number;
@@ -117,7 +117,7 @@ export interface RealtimeConfig {
   apiKey: string;
   apiSecret: string;
   paperTrading: boolean;
-  dataFeed: 'iex' | 'sip';
+  dataFeed: "iex" | "sip";
   reconnectAttempts: number;
   reconnectDelayMs: number;
   heartbeatIntervalMs: number;
@@ -136,10 +136,10 @@ export interface SubscriptionStatus {
 // ============================================================================
 
 export const DEFAULT_REALTIME_CONFIG: RealtimeConfig = {
-  apiKey: '',
-  apiSecret: '',
+  apiKey: "",
+  apiSecret: "",
   paperTrading: true,
-  dataFeed: 'iex',
+  dataFeed: "iex",
   reconnectAttempts: 10,
   reconnectDelayMs: 1000,
   heartbeatIntervalMs: 30000,
@@ -159,10 +159,10 @@ export class RealtimeTradingService {
 
   // Connection state
   private dataConnectionState = new BehaviorSubject<ConnectionState>(
-    'disconnected'
+    "disconnected",
   );
   private tradingConnectionState = new BehaviorSubject<ConnectionState>(
-    'disconnected'
+    "disconnected",
   );
   private reconnectAttempts = 0;
 
@@ -211,7 +211,7 @@ export class RealtimeTradingService {
     }
 
     if (!this.config.apiKey || !this.config.apiSecret) {
-      throw new Error('API credentials required for real-time connection');
+      throw new Error("API credentials required for real-time connection");
     }
 
     await Promise.all([this.connectDataStream(), this.connectTradingStream()]);
@@ -224,17 +224,17 @@ export class RealtimeTradingService {
    */
   private async connectDataStream(): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.dataConnectionState.next('connecting');
+      this.dataConnectionState.next("connecting");
 
       const wsUrl =
-        this.config.dataFeed === 'sip'
-          ? 'wss://stream.data.alpaca.markets/v2/sip'
-          : 'wss://stream.data.alpaca.markets/v2/iex';
+        this.config.dataFeed === "sip"
+          ? "wss://stream.data.alpaca.markets/v2/sip"
+          : "wss://stream.data.alpaca.markets/v2/iex";
 
       this.dataWs = new WebSocket(wsUrl);
 
       const timeout = setTimeout(() => {
-        reject(new Error('Data stream connection timeout'));
+        reject(new Error("Data stream connection timeout"));
       }, 10000);
 
       this.dataWs.onopen = () => {
@@ -248,29 +248,29 @@ export class RealtimeTradingService {
         // Resolve on successful auth
         const messages = JSON.parse(event.data);
         for (const msg of messages) {
-          if (msg.T === 'success' && msg.msg === 'authenticated') {
+          if (msg.T === "success" && msg.msg === "authenticated") {
             clearTimeout(timeout);
-            this.dataConnectionState.next('connected');
+            this.dataConnectionState.next("connected");
             this.reconnectAttempts = 0;
             this.resubscribeAll();
             resolve();
-          } else if (msg.T === 'error') {
+          } else if (msg.T === "error") {
             clearTimeout(timeout);
-            this.dataConnectionState.next('error');
-            reject(new Error(msg.msg || 'Authentication failed'));
+            this.dataConnectionState.next("error");
+            reject(new Error(msg.msg || "Authentication failed"));
           }
         }
       };
 
       this.dataWs.onerror = (error) => {
         // RealTime error:('[RealtimeTrading] Data WebSocket error:', error);
-        this.errorSubject.next(new Error('Data stream connection error'));
+        this.errorSubject.next(new Error("Data stream connection error"));
       };
 
       this.dataWs.onclose = () => {
         // RealTime:('[RealtimeTrading] Data WebSocket closed');
-        this.dataConnectionState.next('disconnected');
-        this.handleReconnect('data');
+        this.dataConnectionState.next("disconnected");
+        this.handleReconnect("data");
       };
     });
   }
@@ -280,16 +280,16 @@ export class RealtimeTradingService {
    */
   private async connectTradingStream(): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.tradingConnectionState.next('connecting');
+      this.tradingConnectionState.next("connecting");
 
       const wsUrl = this.config.paperTrading
-        ? 'wss://paper-api.alpaca.markets/stream'
-        : 'wss://api.alpaca.markets/stream';
+        ? "wss://paper-api.alpaca.markets/stream"
+        : "wss://api.alpaca.markets/stream";
 
       this.tradingWs = new WebSocket(wsUrl);
 
       const timeout = setTimeout(() => {
-        reject(new Error('Trading stream connection timeout'));
+        reject(new Error("Trading stream connection timeout"));
       }, 10000);
 
       this.tradingWs.onopen = () => {
@@ -303,32 +303,32 @@ export class RealtimeTradingService {
         // Resolve on successful auth
         const data = JSON.parse(event.data);
         if (
-          data.stream === 'authorization' &&
-          data.data?.status === 'authorized'
+          data.stream === "authorization" &&
+          data.data?.status === "authorized"
         ) {
           clearTimeout(timeout);
-          this.tradingConnectionState.next('connected');
+          this.tradingConnectionState.next("connected");
           this.subscribeToTradeUpdates();
           resolve();
         } else if (
-          data.stream === 'authorization' &&
-          data.data?.status === 'unauthorized'
+          data.stream === "authorization" &&
+          data.data?.status === "unauthorized"
         ) {
           clearTimeout(timeout);
-          this.tradingConnectionState.next('error');
-          reject(new Error('Trading stream authentication failed'));
+          this.tradingConnectionState.next("error");
+          reject(new Error("Trading stream authentication failed"));
         }
       };
 
       this.tradingWs.onerror = (error) => {
         // RealTime error:('[RealtimeTrading] Trading WebSocket error:', error);
-        this.errorSubject.next(new Error('Trading stream connection error'));
+        this.errorSubject.next(new Error("Trading stream connection error"));
       };
 
       this.tradingWs.onclose = () => {
         // RealTime:('[RealtimeTrading] Trading WebSocket closed');
-        this.tradingConnectionState.next('disconnected');
-        this.handleReconnect('trading');
+        this.tradingConnectionState.next("disconnected");
+        this.handleReconnect("trading");
       };
     });
   }
@@ -340,10 +340,10 @@ export class RealtimeTradingService {
     if (this.dataWs?.readyState === WebSocket.OPEN) {
       this.dataWs.send(
         JSON.stringify({
-          action: 'auth',
+          action: "auth",
           key: this.config.apiKey,
           secret: this.config.apiSecret,
-        })
+        }),
       );
     }
   }
@@ -355,12 +355,12 @@ export class RealtimeTradingService {
     if (this.tradingWs?.readyState === WebSocket.OPEN) {
       this.tradingWs.send(
         JSON.stringify({
-          action: 'authenticate',
+          action: "authenticate",
           data: {
             key_id: this.config.apiKey,
             secret_key: this.config.apiSecret,
           },
-        })
+        }),
       );
     }
   }
@@ -368,20 +368,20 @@ export class RealtimeTradingService {
   /**
    * Handle reconnection with exponential backoff
    */
-  private handleReconnect(streamType: 'data' | 'trading'): void {
+  private handleReconnect(streamType: "data" | "trading"): void {
     if (this.reconnectAttempts >= this.config.reconnectAttempts) {
       // Max reconnect attempts reached for stream
       this.errorSubject.next(
-        new Error(`Max reconnect attempts reached for ${streamType} stream`)
+        new Error(`Max reconnect attempts reached for ${streamType} stream`),
       );
       return;
     }
 
     const state =
-      streamType === 'data'
+      streamType === "data"
         ? this.dataConnectionState
         : this.tradingConnectionState;
-    state.next('reconnecting');
+    state.next("reconnecting");
     this.reconnectAttempts++;
 
     const delay =
@@ -390,7 +390,7 @@ export class RealtimeTradingService {
 
     setTimeout(async () => {
       try {
-        if (streamType === 'data') {
+        if (streamType === "data") {
           await this.connectDataStream();
         } else {
           await this.connectTradingStream();
@@ -418,8 +418,8 @@ export class RealtimeTradingService {
       this.tradingWs = null;
     }
 
-    this.dataConnectionState.next('disconnected');
-    this.tradingConnectionState.next('disconnected');
+    this.dataConnectionState.next("disconnected");
+    this.tradingConnectionState.next("disconnected");
     this.subscriptions = {
       quotes: [],
       trades: [],
@@ -442,7 +442,7 @@ export class RealtimeTradingService {
 
       for (const msg of messages) {
         switch (msg.T) {
-          case 'q': // Quote
+          case "q": // Quote
             this.quoteSubject.next({
               symbol: msg.S,
               bid: msg.bp,
@@ -453,7 +453,7 @@ export class RealtimeTradingService {
             });
             break;
 
-          case 't': // Trade
+          case "t": // Trade
             this.tradeSubject.next({
               symbol: msg.S,
               price: msg.p,
@@ -464,7 +464,7 @@ export class RealtimeTradingService {
             });
             break;
 
-          case 'b': // Bar
+          case "b": // Bar
             this.barSubject.next({
               symbol: msg.S,
               open: msg.o,
@@ -477,13 +477,13 @@ export class RealtimeTradingService {
             });
             break;
 
-          case 'subscription':
+          case "subscription":
             // RealTime:('[RealtimeTrading] Subscription updated:', msg);
             break;
 
-          case 'error':
+          case "error":
             // RealTime error:('[RealtimeTrading] Data stream error:', msg);
-            this.errorSubject.next(new Error(msg.msg || 'Data stream error'));
+            this.errorSubject.next(new Error(msg.msg || "Data stream error"));
             break;
         }
       }
@@ -500,7 +500,7 @@ export class RealtimeTradingService {
       const message = JSON.parse(data);
       this.lastTradingHeartbeat = new Date();
 
-      if (message.stream === 'trade_updates') {
+      if (message.stream === "trade_updates") {
         const update = message.data;
 
         const orderUpdate: OrderUpdate = {
@@ -528,7 +528,7 @@ export class RealtimeTradingService {
         this.orderUpdateSubject.next(orderUpdate);
 
         const tradeUpdate: TradeUpdate = {
-          event: 'trade_update',
+          event: "trade_update",
           order: orderUpdate,
           executionId: update.execution_id,
           positionQuantity: update.position_qty
@@ -554,7 +554,7 @@ export class RealtimeTradingService {
    */
   subscribeQuotes(symbols: string[]): void {
     const newSymbols = symbols.filter(
-      (s) => !this.subscriptions.quotes.includes(s)
+      (s) => !this.subscriptions.quotes.includes(s),
     );
     if (newSymbols.length === 0) return;
 
@@ -569,13 +569,13 @@ export class RealtimeTradingService {
       ) {
         const batch = newSymbols.slice(
           i,
-          i + this.config.subscriptionBatchSize
+          i + this.config.subscriptionBatchSize,
         );
         this.dataWs.send(
           JSON.stringify({
-            action: 'subscribe',
+            action: "subscribe",
             quotes: batch,
-          })
+          }),
         );
       }
     }
@@ -586,7 +586,7 @@ export class RealtimeTradingService {
    */
   subscribeTrades(symbols: string[]): void {
     const newSymbols = symbols.filter(
-      (s) => !this.subscriptions.trades.includes(s)
+      (s) => !this.subscriptions.trades.includes(s),
     );
     if (newSymbols.length === 0) return;
 
@@ -600,13 +600,13 @@ export class RealtimeTradingService {
       ) {
         const batch = newSymbols.slice(
           i,
-          i + this.config.subscriptionBatchSize
+          i + this.config.subscriptionBatchSize,
         );
         this.dataWs.send(
           JSON.stringify({
-            action: 'subscribe',
+            action: "subscribe",
             trades: batch,
-          })
+          }),
         );
       }
     }
@@ -617,7 +617,7 @@ export class RealtimeTradingService {
    */
   subscribeBars(symbols: string[]): void {
     const newSymbols = symbols.filter(
-      (s) => !this.subscriptions.bars.includes(s)
+      (s) => !this.subscriptions.bars.includes(s),
     );
     if (newSymbols.length === 0) return;
 
@@ -631,13 +631,13 @@ export class RealtimeTradingService {
       ) {
         const batch = newSymbols.slice(
           i,
-          i + this.config.subscriptionBatchSize
+          i + this.config.subscriptionBatchSize,
         );
         this.dataWs.send(
           JSON.stringify({
-            action: 'subscribe',
+            action: "subscribe",
             bars: batch,
-          })
+          }),
         );
       }
     }
@@ -650,11 +650,11 @@ export class RealtimeTradingService {
     if (this.tradingWs?.readyState === WebSocket.OPEN) {
       this.tradingWs.send(
         JSON.stringify({
-          action: 'listen',
+          action: "listen",
           data: {
-            streams: ['trade_updates'],
+            streams: ["trade_updates"],
           },
-        })
+        }),
       );
       this.subscriptions.orderUpdates = true;
     }
@@ -665,15 +665,15 @@ export class RealtimeTradingService {
    */
   unsubscribeQuotes(symbols: string[]): void {
     this.subscriptions.quotes = this.subscriptions.quotes.filter(
-      (s) => !symbols.includes(s)
+      (s) => !symbols.includes(s),
     );
 
     if (this.dataWs?.readyState === WebSocket.OPEN) {
       this.dataWs.send(
         JSON.stringify({
-          action: 'unsubscribe',
+          action: "unsubscribe",
           quotes: symbols,
-        })
+        }),
       );
     }
   }
@@ -683,15 +683,15 @@ export class RealtimeTradingService {
    */
   unsubscribeTrades(symbols: string[]): void {
     this.subscriptions.trades = this.subscriptions.trades.filter(
-      (s) => !symbols.includes(s)
+      (s) => !symbols.includes(s),
     );
 
     if (this.dataWs?.readyState === WebSocket.OPEN) {
       this.dataWs.send(
         JSON.stringify({
-          action: 'unsubscribe',
+          action: "unsubscribe",
           trades: symbols,
-        })
+        }),
       );
     }
   }
@@ -701,15 +701,15 @@ export class RealtimeTradingService {
    */
   unsubscribeBars(symbols: string[]): void {
     this.subscriptions.bars = this.subscriptions.bars.filter(
-      (s) => !symbols.includes(s)
+      (s) => !symbols.includes(s),
     );
 
     if (this.dataWs?.readyState === WebSocket.OPEN) {
       this.dataWs.send(
         JSON.stringify({
-          action: 'unsubscribe',
+          action: "unsubscribe",
           bars: symbols,
-        })
+        }),
       );
     }
   }
@@ -749,7 +749,7 @@ export class RealtimeTradingService {
 
     this.heartbeatSubscription = timer(
       this.config.heartbeatIntervalMs,
-      this.config.heartbeatIntervalMs
+      this.config.heartbeatIntervalMs,
     )
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
@@ -763,7 +763,7 @@ export class RealtimeTradingService {
 
         if (
           dataTimeout &&
-          this.dataConnectionState.getValue() === 'connected'
+          this.dataConnectionState.getValue() === "connected"
         ) {
           // RealTime warning:('[RealtimeTrading] Data stream heartbeat timeout');
           this.dataWs?.close();
@@ -771,7 +771,7 @@ export class RealtimeTradingService {
 
         if (
           tradingTimeout &&
-          this.tradingConnectionState.getValue() === 'connected'
+          this.tradingConnectionState.getValue() === "connected"
         ) {
           // RealTime warning:('[RealtimeTrading] Trading stream heartbeat timeout');
           this.tradingWs?.close();
@@ -861,7 +861,7 @@ export class RealtimeTradingService {
    */
   getOrderUpdates(orderId: string): Observable<OrderUpdate> {
     return this.orderUpdateSubject.pipe(
-      filter((update) => update.orderId === orderId)
+      filter((update) => update.orderId === orderId),
     );
   }
 
@@ -870,7 +870,7 @@ export class RealtimeTradingService {
    */
   getOrderUpdatesForSymbol(symbol: string): Observable<OrderUpdate> {
     return this.orderUpdateSubject.pipe(
-      filter((update) => update.symbol === symbol)
+      filter((update) => update.symbol === symbol),
     );
   }
 
@@ -902,8 +902,8 @@ export class RealtimeTradingService {
    */
   isConnected(): boolean {
     return (
-      this.dataConnectionState.getValue() === 'connected' &&
-      this.tradingConnectionState.getValue() === 'connected'
+      this.dataConnectionState.getValue() === "connected" &&
+      this.tradingConnectionState.getValue() === "connected"
     );
   }
 }
@@ -915,7 +915,7 @@ export class RealtimeTradingService {
 let realtimeTradingServiceInstance: RealtimeTradingService | null = null;
 
 export function getRealtimeTradingService(
-  config?: Partial<RealtimeConfig>
+  config?: Partial<RealtimeConfig>,
 ): RealtimeTradingService {
   if (!realtimeTradingServiceInstance) {
     realtimeTradingServiceInstance = new RealtimeTradingService(config);
@@ -924,7 +924,7 @@ export function getRealtimeTradingService(
 }
 
 export function createRealtimeTradingService(
-  config?: Partial<RealtimeConfig>
+  config?: Partial<RealtimeConfig>,
 ): RealtimeTradingService {
   return new RealtimeTradingService(config);
 }

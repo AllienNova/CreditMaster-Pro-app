@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   PlusIcon,
   PencilIcon,
@@ -12,16 +12,26 @@ import {
   XMarkIcon,
   ArrowPathIcon,
   PlayIcon,
-} from '@heroicons/react/24/outline';
-import { EmptyState } from '@/components/ui/EmptyState';
-import { PullToRefresh } from '@/components/ui/PullToRefresh';
+} from "@heroicons/react/24/outline";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { PullToRefresh } from "@/components/ui/PullToRefresh";
 
 // ============================================================================
 // Types
 // ============================================================================
 
-type ConditionType = 'merchant_contains' | 'merchant_equals' | 'amount_equals' | 'amount_greater_than' | 'amount_less_than' | 'category_equals';
-type ActionType = 'set_category' | 'add_tag' | 'mark_tax_deductible' | 'rename_merchant';
+type ConditionType =
+  | "merchant_contains"
+  | "merchant_equals"
+  | "amount_equals"
+  | "amount_greater_than"
+  | "amount_less_than"
+  | "category_equals";
+type ActionType =
+  | "set_category"
+  | "add_tag"
+  | "mark_tax_deductible"
+  | "rename_merchant";
 
 interface RuleCondition {
   type: ConditionType;
@@ -38,7 +48,7 @@ interface TransactionRule {
   name: string;
   description?: string;
   conditions: RuleCondition[];
-  conditionLogic: 'AND' | 'OR';
+  conditionLogic: "AND" | "OR";
   actions: RuleAction[];
   isActive: boolean;
   priority: number;
@@ -51,34 +61,46 @@ interface TransactionRule {
 
 const mockRules: TransactionRule[] = [
   {
-    id: '1',
-    name: 'Coffee Shops → Food & Dining',
-    description: 'Categorize all coffee shop purchases',
-    conditions: [{ type: 'merchant_contains', value: 'starbucks' }, { type: 'merchant_contains', value: 'coffee' }],
-    conditionLogic: 'OR',
-    actions: [{ type: 'set_category', value: 'Food & Dining' }],
+    id: "1",
+    name: "Coffee Shops → Food & Dining",
+    description: "Categorize all coffee shop purchases",
+    conditions: [
+      { type: "merchant_contains", value: "starbucks" },
+      { type: "merchant_contains", value: "coffee" },
+    ],
+    conditionLogic: "OR",
+    actions: [{ type: "set_category", value: "Food & Dining" }],
     isActive: true,
     priority: 1,
     matchCount: 47,
   },
   {
-    id: '2',
-    name: 'Amazon → Shopping',
-    description: 'All Amazon purchases are shopping',
-    conditions: [{ type: 'merchant_contains', value: 'amazon' }],
-    conditionLogic: 'AND',
-    actions: [{ type: 'set_category', value: 'Shopping' }, { type: 'add_tag', value: 'online' }],
+    id: "2",
+    name: "Amazon → Shopping",
+    description: "All Amazon purchases are shopping",
+    conditions: [{ type: "merchant_contains", value: "amazon" }],
+    conditionLogic: "AND",
+    actions: [
+      { type: "set_category", value: "Shopping" },
+      { type: "add_tag", value: "online" },
+    ],
     isActive: true,
     priority: 2,
     matchCount: 23,
   },
   {
-    id: '3',
-    name: 'Tax Deductible Expenses',
-    description: 'Mark work-related expenses as tax deductible',
-    conditions: [{ type: 'merchant_contains', value: 'office' }, { type: 'amount_greater_than', value: 25 }],
-    conditionLogic: 'AND',
-    actions: [{ type: 'mark_tax_deductible', value: true }, { type: 'add_tag', value: 'business' }],
+    id: "3",
+    name: "Tax Deductible Expenses",
+    description: "Mark work-related expenses as tax deductible",
+    conditions: [
+      { type: "merchant_contains", value: "office" },
+      { type: "amount_greater_than", value: 25 },
+    ],
+    conditionLogic: "AND",
+    actions: [
+      { type: "mark_tax_deductible", value: true },
+      { type: "add_tag", value: "business" },
+    ],
     isActive: false,
     priority: 3,
     matchCount: 8,
@@ -86,32 +108,32 @@ const mockRules: TransactionRule[] = [
 ];
 
 const categories = [
-  'Food & Dining',
-  'Shopping',
-  'Transportation',
-  'Entertainment',
-  'Bills & Utilities',
-  'Health & Fitness',
-  'Travel',
-  'Income',
-  'Transfer',
-  'Uncategorized',
+  "Food & Dining",
+  "Shopping",
+  "Transportation",
+  "Entertainment",
+  "Bills & Utilities",
+  "Health & Fitness",
+  "Travel",
+  "Income",
+  "Transfer",
+  "Uncategorized",
 ];
 
 const conditionLabels: Record<ConditionType, string> = {
-  merchant_contains: 'Merchant contains',
-  merchant_equals: 'Merchant equals',
-  amount_equals: 'Amount equals',
-  amount_greater_than: 'Amount greater than',
-  amount_less_than: 'Amount less than',
-  category_equals: 'Category equals',
+  merchant_contains: "Merchant contains",
+  merchant_equals: "Merchant equals",
+  amount_equals: "Amount equals",
+  amount_greater_than: "Amount greater than",
+  amount_less_than: "Amount less than",
+  category_equals: "Category equals",
 };
 
 const actionLabels: Record<ActionType, string> = {
-  set_category: 'Set category to',
-  add_tag: 'Add tag',
-  mark_tax_deductible: 'Mark as tax deductible',
-  rename_merchant: 'Rename merchant to',
+  set_category: "Set category to",
+  add_tag: "Add tag",
+  mark_tax_deductible: "Mark as tax deductible",
+  rename_merchant: "Rename merchant to",
 };
 
 // ============================================================================
@@ -132,7 +154,11 @@ function ActionBadge({ action }: { action: RuleAction }) {
     <span className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 rounded text-xs">
       <span className="font-medium">{actionLabels[action.type]}</span>
       <span className="text-emerald-500">
-        {typeof action.value === 'boolean' ? (action.value ? 'Yes' : 'No') : `"${action.value}"`}
+        {typeof action.value === "boolean"
+          ? action.value
+            ? "Yes"
+            : "No"
+          : `"${action.value}"`}
       </span>
     </span>
   );
@@ -158,37 +184,47 @@ function RuleCard({
   isLast: boolean;
 }) {
   return (
-    <div className={`bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4 ${!rule.isActive ? 'opacity-60' : ''}`}>
+    <div
+      className={`bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4 ${!rule.isActive ? "opacity-60" : ""}`}
+    >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
             <button
               onClick={onToggle}
-              className={`w-10 h-6 rounded-full transition-colors relative ${rule.isActive ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-slate-600'}`}
+              className={`w-10 h-6 rounded-full transition-colors relative ${rule.isActive ? "bg-emerald-500" : "bg-gray-300 dark:bg-slate-600"}`}
             >
               <span
-                className={`absolute top-1 w-4 h-4 bg-white dark:bg-slate-800 rounded-full transition-transform ${rule.isActive ? 'left-5' : 'left-1'}`}
+                className={`absolute top-1 w-4 h-4 bg-white dark:bg-slate-800 rounded-full transition-transform ${rule.isActive ? "left-5" : "left-1"}`}
               />
             </button>
-            <h3 className="font-semibold text-gray-900 dark:text-white">{rule.name}</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white">
+              {rule.name}
+            </h3>
             <span className="text-xs text-gray-500 dark:text-slate-400 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded">
               {rule.matchCount} matches
             </span>
           </div>
 
           {rule.description && (
-            <p className="text-sm text-gray-500 dark:text-slate-400 mb-3">{rule.description}</p>
+            <p className="text-sm text-gray-500 dark:text-slate-400 mb-3">
+              {rule.description}
+            </p>
           )}
 
           {/* Conditions */}
           <div className="mb-2">
-            <span className="text-xs text-gray-500 dark:text-slate-400 mr-2">IF</span>
+            <span className="text-xs text-gray-500 dark:text-slate-400 mr-2">
+              IF
+            </span>
             <div className="inline-flex flex-wrap gap-1">
               {rule.conditions.map((condition, i) => (
                 <React.Fragment key={i}>
                   <ConditionBadge condition={condition} />
                   {i < rule.conditions.length - 1 && (
-                    <span className="text-xs text-gray-400 dark:text-slate-500 self-center px-1">{rule.conditionLogic}</span>
+                    <span className="text-xs text-gray-400 dark:text-slate-500 self-center px-1">
+                      {rule.conditionLogic}
+                    </span>
                   )}
                 </React.Fragment>
               ))}
@@ -197,7 +233,9 @@ function RuleCard({
 
           {/* Actions */}
           <div>
-            <span className="text-xs text-gray-500 dark:text-slate-400 mr-2">THEN</span>
+            <span className="text-xs text-gray-500 dark:text-slate-400 mr-2">
+              THEN
+            </span>
             <div className="inline-flex flex-wrap gap-1">
               {rule.actions.map((action, i) => (
                 <ActionBadge key={i} action={action} />
@@ -251,20 +289,22 @@ function RuleBuilder({
   onCancel: () => void;
   initialRule?: TransactionRule;
 }) {
-  const [name, setName] = useState(initialRule?.name || '');
-  const [description, setDescription] = useState(initialRule?.description || '');
-  const [conditions, setConditions] = useState<RuleCondition[]>(
-    initialRule?.conditions || [{ type: 'merchant_contains', value: '' }]
+  const [name, setName] = useState(initialRule?.name || "");
+  const [description, setDescription] = useState(
+    initialRule?.description || "",
   );
-  const [conditionLogic, setConditionLogic] = useState<'AND' | 'OR'>(
-    initialRule?.conditionLogic || 'AND'
+  const [conditions, setConditions] = useState<RuleCondition[]>(
+    initialRule?.conditions || [{ type: "merchant_contains", value: "" }],
+  );
+  const [conditionLogic, setConditionLogic] = useState<"AND" | "OR">(
+    initialRule?.conditionLogic || "AND",
   );
   const [actions, setActions] = useState<RuleAction[]>(
-    initialRule?.actions || [{ type: 'set_category', value: 'Uncategorized' }]
+    initialRule?.actions || [{ type: "set_category", value: "Uncategorized" }],
   );
 
   const addCondition = () => {
-    setConditions([...conditions, { type: 'merchant_contains', value: '' }]);
+    setConditions([...conditions, { type: "merchant_contains", value: "" }]);
   };
 
   const removeCondition = (index: number) => {
@@ -272,11 +312,13 @@ function RuleBuilder({
   };
 
   const updateCondition = (index: number, updates: Partial<RuleCondition>) => {
-    setConditions(conditions.map((c, i) => (i === index ? { ...c, ...updates } : c)));
+    setConditions(
+      conditions.map((c, i) => (i === index ? { ...c, ...updates } : c)),
+    );
   };
 
   const addAction = () => {
-    setActions([...actions, { type: 'add_tag', value: '' }]);
+    setActions([...actions, { type: "add_tag", value: "" }]);
   };
 
   const removeAction = (index: number) => {
@@ -303,7 +345,7 @@ function RuleBuilder({
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-6">
       <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-        {initialRule ? 'Edit Rule' : 'Create New Rule'}
+        {initialRule ? "Edit Rule" : "Create New Rule"}
       </h2>
 
       {/* Name & Description */}
@@ -315,7 +357,7 @@ function RuleBuilder({
           <input
             type="text"
             value={name}
-            onChange={e => setName(e.target.value)}
+            onChange={(e) => setName(e.target.value)}
             placeholder="e.g., Coffee Shops → Food & Dining"
             className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
           />
@@ -327,7 +369,7 @@ function RuleBuilder({
           <input
             type="text"
             value={description}
-            onChange={e => setDescription(e.target.value)}
+            onChange={(e) => setDescription(e.target.value)}
             placeholder="Describe what this rule does"
             className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
           />
@@ -337,12 +379,18 @@ function RuleBuilder({
       {/* Conditions */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-medium text-gray-900 dark:text-white">Conditions</h3>
+          <h3 className="font-medium text-gray-900 dark:text-white">
+            Conditions
+          </h3>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500 dark:text-slate-400">Match</span>
+            <span className="text-sm text-gray-500 dark:text-slate-400">
+              Match
+            </span>
             <select
               value={conditionLogic}
-              onChange={e => setConditionLogic(e.target.value as 'AND' | 'OR')}
+              onChange={(e) =>
+                setConditionLogic(e.target.value as "AND" | "OR")
+              }
               className="px-2 py-1 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded text-sm"
             >
               <option value="AND">ALL conditions</option>
@@ -353,35 +401,52 @@ function RuleBuilder({
 
         <div className="space-y-3">
           {conditions.map((condition, index) => (
-            <div key={index} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <div
+              key={index}
+              className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2"
+            >
               <select
                 value={condition.type}
-                onChange={e => updateCondition(index, { type: e.target.value as ConditionType })}
+                onChange={(e) =>
+                  updateCondition(index, {
+                    type: e.target.value as ConditionType,
+                  })
+                }
                 className="px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg text-sm flex-shrink-0"
               >
                 {Object.entries(conditionLabels).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
                 ))}
               </select>
 
               <div className="flex items-center gap-2 flex-1 min-w-0">
-                {condition.type === 'category_equals' ? (
+                {condition.type === "category_equals" ? (
                   <select
                     value={condition.value as string}
-                    onChange={e => updateCondition(index, { value: e.target.value })}
+                    onChange={(e) =>
+                      updateCondition(index, { value: e.target.value })
+                    }
                     className="flex-1 px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg text-sm min-w-0"
                   >
-                    {categories.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
+                    {categories.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
                     ))}
                   </select>
                 ) : (
                   <input
-                    type={condition.type.includes('amount') ? 'number' : 'text'}
+                    type={condition.type.includes("amount") ? "number" : "text"}
                     value={condition.value}
-                    onChange={e => updateCondition(index, {
-                      value: condition.type.includes('amount') ? parseFloat(e.target.value) || 0 : e.target.value
-                    })}
+                    onChange={(e) =>
+                      updateCondition(index, {
+                        value: condition.type.includes("amount")
+                          ? parseFloat(e.target.value) || 0
+                          : e.target.value,
+                      })
+                    }
                     placeholder="Value"
                     className="flex-1 px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg text-sm min-w-0"
                   />
@@ -411,35 +476,50 @@ function RuleBuilder({
 
       {/* Actions */}
       <div className="mb-6">
-        <h3 className="font-medium text-gray-900 dark:text-white mb-3">Actions</h3>
+        <h3 className="font-medium text-gray-900 dark:text-white mb-3">
+          Actions
+        </h3>
 
         <div className="space-y-3">
           {actions.map((action, index) => (
             <div key={index} className="flex items-center gap-2">
               <select
                 value={action.type}
-                onChange={e => updateAction(index, { type: e.target.value as ActionType, value: '' })}
+                onChange={(e) =>
+                  updateAction(index, {
+                    type: e.target.value as ActionType,
+                    value: "",
+                  })
+                }
                 className="px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg text-sm"
               >
                 {Object.entries(actionLabels).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
                 ))}
               </select>
 
-              {action.type === 'set_category' ? (
+              {action.type === "set_category" ? (
                 <select
                   value={action.value as string}
-                  onChange={e => updateAction(index, { value: e.target.value })}
+                  onChange={(e) =>
+                    updateAction(index, { value: e.target.value })
+                  }
                   className="flex-1 px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg text-sm"
                 >
-                  {categories.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
                   ))}
                 </select>
-              ) : action.type === 'mark_tax_deductible' ? (
+              ) : action.type === "mark_tax_deductible" ? (
                 <select
-                  value={action.value ? 'true' : 'false'}
-                  onChange={e => updateAction(index, { value: e.target.value === 'true' })}
+                  value={action.value ? "true" : "false"}
+                  onChange={(e) =>
+                    updateAction(index, { value: e.target.value === "true" })
+                  }
                   className="flex-1 px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg text-sm"
                 >
                   <option value="true">Yes</option>
@@ -449,7 +529,9 @@ function RuleBuilder({
                 <input
                   type="text"
                   value={action.value as string}
-                  onChange={e => updateAction(index, { value: e.target.value })}
+                  onChange={(e) =>
+                    updateAction(index, { value: e.target.value })
+                  }
                   placeholder="Value"
                   className="flex-1 px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg text-sm"
                 />
@@ -489,7 +571,7 @@ function RuleBuilder({
           disabled={!name.trim()}
           className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {initialRule ? 'Update Rule' : 'Create Rule'}
+          {initialRule ? "Update Rule" : "Create Rule"}
         </button>
       </div>
     </div>
@@ -507,7 +589,7 @@ export default function TransactionRulesPage() {
   const [editingRule, setEditingRule] = useState<TransactionRule | null>(null);
 
   const loadData = useCallback(async () => {
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 500));
     setRules(mockRules);
   }, []);
 
@@ -517,10 +599,16 @@ export default function TransactionRulesPage() {
 
   const handleSave = (ruleData: Partial<TransactionRule>) => {
     if (editingRule) {
-      setRules(rules.map(r => (r.id === editingRule.id ? { ...r, ...ruleData } as TransactionRule : r)));
+      setRules(
+        rules.map((r) =>
+          r.id === editingRule.id
+            ? ({ ...r, ...ruleData } as TransactionRule)
+            : r,
+        ),
+      );
     } else {
       const newRule: TransactionRule = {
-        ...ruleData as TransactionRule,
+        ...(ruleData as TransactionRule),
         id: Date.now().toString(),
         matchCount: 0,
         priority: rules.length,
@@ -537,24 +625,32 @@ export default function TransactionRulesPage() {
   };
 
   const handleDelete = (ruleId: string) => {
-    setRules(rules.filter(r => r.id !== ruleId));
+    setRules(rules.filter((r) => r.id !== ruleId));
   };
 
   const handleToggle = (ruleId: string) => {
-    setRules(rules.map(r => (r.id === ruleId ? { ...r, isActive: !r.isActive } : r)));
+    setRules(
+      rules.map((r) => (r.id === ruleId ? { ...r, isActive: !r.isActive } : r)),
+    );
   };
 
   const handleMoveUp = (index: number) => {
     if (index === 0) return;
     const newRules = [...rules];
-    [newRules[index - 1], newRules[index]] = [newRules[index], newRules[index - 1]];
+    [newRules[index - 1], newRules[index]] = [
+      newRules[index],
+      newRules[index - 1],
+    ];
     setRules(newRules.map((r, i) => ({ ...r, priority: i })));
   };
 
   const handleMoveDown = (index: number) => {
     if (index === rules.length - 1) return;
     const newRules = [...rules];
-    [newRules[index], newRules[index + 1]] = [newRules[index + 1], newRules[index]];
+    [newRules[index], newRules[index + 1]] = [
+      newRules[index + 1],
+      newRules[index],
+    ];
     setRules(newRules.map((r, i) => ({ ...r, priority: i })));
   };
 
@@ -575,8 +671,11 @@ export default function TransactionRulesPage() {
             <div className="h-10 bg-gray-200 dark:bg-slate-700 rounded-lg w-32"></div>
           </div>
           {/* Rule cards skeleton */}
-          {[1, 2, 3].map(i => (
-            <div key={i} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5"
+            >
               <div className="flex items-start gap-4">
                 <div className="w-10 h-10 bg-gray-200 dark:bg-slate-700 rounded-lg"></div>
                 <div className="flex-1">
@@ -596,12 +695,17 @@ export default function TransactionRulesPage() {
   }
 
   return (
-    <PullToRefresh onRefresh={handleRefresh} className="min-h-screen bg-gray-50 dark:bg-slate-900 p-6">
+    <PullToRefresh
+      onRefresh={handleRefresh}
+      className="min-h-screen bg-gray-50 dark:bg-slate-900 p-6"
+    >
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Transaction Rules</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Transaction Rules
+            </h1>
             <p className="text-gray-500 dark:text-slate-400">
               Automatically categorize and tag transactions
             </p>
@@ -639,7 +743,8 @@ export default function TransactionRulesPage() {
                 <div>
                   <h3 className="font-semibold text-lg">AI-Suggested Rules</h3>
                   <p className="text-white/80 text-sm">
-                    We found 3 patterns in your transactions that could save you time
+                    We found 3 patterns in your transactions that could save you
+                    time
                   </p>
                 </div>
               </div>
@@ -701,10 +806,13 @@ export default function TransactionRulesPage() {
         {/* Info */}
         {!showBuilder && rules.length > 0 && (
           <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-            <h4 className="font-medium text-blue-800 dark:text-blue-300 mb-1">How rules work</h4>
+            <h4 className="font-medium text-blue-800 dark:text-blue-300 mb-1">
+              How rules work
+            </h4>
             <p className="text-sm text-blue-700 dark:text-blue-400">
-              Rules are applied in priority order (top to bottom). The first matching rule wins.
-              Drag rules to reorder them, or use the arrows to adjust priority.
+              Rules are applied in priority order (top to bottom). The first
+              matching rule wins. Drag rules to reorder them, or use the arrows
+              to adjust priority.
             </p>
           </div>
         )}

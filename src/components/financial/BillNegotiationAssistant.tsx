@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useToast } from '@/components/ui/Toast';
+import React, { useState, useEffect } from "react";
+import { useToast } from "@/components/ui/Toast";
 import type {
   NegotiationSummary,
   NegotiationOpportunity,
   NegotiationInsight,
   BillNegotiation,
   NegotiationType,
-} from '@/lib/financial/types/bill-negotiation.types';
+} from "@/lib/financial/types/bill-negotiation.types";
 
 // ============================================================================
 // TYPES
@@ -31,8 +31,8 @@ export default function BillNegotiationAssistant() {
   const [selectedNegotiation, setSelectedNegotiation] =
     useState<BillNegotiation | null>(null);
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'opportunities' | 'active' | 'scripts'
-  >('overview');
+    "overview" | "opportunities" | "active" | "scripts"
+  >("overview");
   const [loading, setLoading] = useState(true);
   const [showStartModal, setShowStartModal] = useState(false);
   const [selectedOpportunity, setSelectedOpportunity] =
@@ -47,8 +47,8 @@ export default function BillNegotiationAssistant() {
     try {
       setLoading(true);
       const [summaryRes, activeRes] = await Promise.all([
-        fetch('/api/financial/bills/negotiate'),
-        fetch('/api/financial/bills/negotiate?view=active'),
+        fetch("/api/financial/bills/negotiate"),
+        fetch("/api/financial/bills/negotiate?view=active"),
       ]);
 
       if (summaryRes.ok) {
@@ -61,7 +61,7 @@ export default function BillNegotiationAssistant() {
         setActiveNegotiations(activeData.negotiations || []);
       }
     } catch (_err) {
-      showError('Failed to load negotiation data');
+      showError("Failed to load negotiation data");
       // BillNegotiationAssistant error: Failed to load negotiation data
       void _err;
     } finally {
@@ -71,12 +71,12 @@ export default function BillNegotiationAssistant() {
 
   const startNegotiation = async (
     opportunity: NegotiationOpportunity,
-    negotiationType: NegotiationType
+    negotiationType: NegotiationType,
   ) => {
     try {
-      const response = await fetch('/api/financial/bills/negotiate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/financial/bills/negotiate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           billId: opportunity.billId,
           negotiationType,
@@ -85,16 +85,16 @@ export default function BillNegotiationAssistant() {
         }),
       });
 
-      if (!response.ok) throw new Error('Failed to start negotiation');
+      if (!response.ok) throw new Error("Failed to start negotiation");
 
       const result = await response.json();
       setSelectedNegotiation(result.negotiation);
-      setActiveTab('scripts');
+      setActiveTab("scripts");
       setShowStartModal(false);
-      showSuccess('Negotiation started! Check out your scripts.');
+      showSuccess("Negotiation started! Check out your scripts.");
       fetchData();
     } catch (_err) {
-      showError('Failed to start negotiation');
+      showError("Failed to start negotiation");
       // BillNegotiationAssistant error: Failed to start negotiation
       void _err;
     }
@@ -102,32 +102,32 @@ export default function BillNegotiationAssistant() {
 
   const recordAttempt = async (
     negotiationId: string,
-    method: 'phone' | 'email' | 'chat',
-    outcome: 'success' | 'partial_success' | 'rejected' | 'pending',
+    method: "phone" | "email" | "chat",
+    outcome: "success" | "partial_success" | "rejected" | "pending",
     offeredAmount?: number,
-    notes?: string
+    notes?: string,
   ) => {
     try {
       const response = await fetch(
         `/api/financial/bills/negotiate/${negotiationId}`,
         {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ method, outcome, offeredAmount, notes }),
-        }
+        },
       );
 
-      if (!response.ok) throw new Error('Failed to record attempt');
+      if (!response.ok) throw new Error("Failed to record attempt");
 
       const result = await response.json();
       setSelectedNegotiation(result.negotiation);
 
-      if (outcome === 'success') {
-        showSuccess('Congratulations on your successful negotiation!');
+      if (outcome === "success") {
+        showSuccess("Congratulations on your successful negotiation!");
       }
       fetchData();
     } catch (_err) {
-      showError('Failed to record attempt');
+      showError("Failed to record attempt");
       // BillNegotiationAssistant error: Failed to record attempt
       void _err;
     }
@@ -151,21 +151,21 @@ export default function BillNegotiationAssistant() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <SummaryCard
           title="Total Savings"
-          value={`$${summary?.totalSavings?.toFixed(2) || '0.00'}`}
+          value={`$${summary?.totalSavings?.toFixed(2) || "0.00"}`}
           subtitle="All time"
           icon=""
           gradient="from-green-500 to-emerald-600"
         />
         <SummaryCard
           title="Monthly Savings"
-          value={`$${summary?.monthlySavings?.toFixed(2) || '0.00'}`}
+          value={`$${summary?.monthlySavings?.toFixed(2) || "0.00"}`}
           subtitle="Per month"
           icon=""
           gradient="from-blue-500 to-blue-600"
         />
         <SummaryCard
           title="Success Rate"
-          value={`${summary?.successRate?.toFixed(0) || '0'}%`}
+          value={`${summary?.successRate?.toFixed(0) || "0"}%`}
           subtitle={`${summary?.completedNegotiations || 0} completed`}
           icon=""
           gradient="from-blue-500 to-emerald-600"
@@ -182,29 +182,29 @@ export default function BillNegotiationAssistant() {
       {/* Tabs */}
       <div className="border-b border-gray-200 dark:border-slate-700">
         <nav className="flex space-x-8">
-          {(['overview', 'opportunities', 'active', 'scripts'] as const).map(
+          {(["overview", "opportunities", "active", "scripts"] as const).map(
             (tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm capitalize ${ activeTab === tab ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-gray-300' }`}
+                className={`py-4 px-1 border-b-2 font-medium text-sm capitalize ${activeTab === tab ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-gray-300"}`}
               >
                 {tab}
               </button>
-            )
+            ),
           )}
         </nav>
       </div>
 
       {/* Tab Content */}
-      {activeTab === 'overview' && (
+      {activeTab === "overview" && (
         <OverviewTab
           insights={insights}
           recentSuccesses={summary?.recentSuccesses || []}
         />
       )}
 
-      {activeTab === 'opportunities' && (
+      {activeTab === "opportunities" && (
         <OpportunitiesTab
           opportunities={opportunities}
           onStartNegotiation={(opp) => {
@@ -214,17 +214,17 @@ export default function BillNegotiationAssistant() {
         />
       )}
 
-      {activeTab === 'active' && (
+      {activeTab === "active" && (
         <ActiveNegotiationsTab
           negotiations={activeNegotiations}
           onSelect={(n) => {
             setSelectedNegotiation(n);
-            setActiveTab('scripts');
+            setActiveTab("scripts");
           }}
         />
       )}
 
-      {activeTab === 'scripts' && selectedNegotiation && (
+      {activeTab === "scripts" && selectedNegotiation && (
         <ScriptsTab
           negotiation={selectedNegotiation}
           onRecordAttempt={recordAttempt}
@@ -292,7 +292,7 @@ function OverviewTab({
           {insights.map((insight, idx) => (
             <div
               key={idx}
-              className={`p-4 rounded-lg ${ insight.type === 'success_story' ? 'bg-green-50 border-l-4 border-green-500' : insight.type === 'opportunity' ? 'bg-blue-50 border-l-4 border-blue-500' : insight.type === 'warning' ? 'bg-yellow-50 border-l-4 border-yellow-500' : 'bg-gray-50 dark:bg-slate-700 border-l-4 border-gray-400' }`}
+              className={`p-4 rounded-lg ${insight.type === "success_story" ? "bg-green-50 border-l-4 border-green-500" : insight.type === "opportunity" ? "bg-blue-50 border-l-4 border-blue-500" : insight.type === "warning" ? "bg-yellow-50 border-l-4 border-yellow-500" : "bg-gray-50 dark:bg-slate-700 border-l-4 border-gray-400"}`}
             >
               <h4 className="font-medium text-gray-900 dark:text-white">
                 {insight.title}
@@ -463,13 +463,13 @@ function ActiveNegotiationsTab({
                 {neg.merchantName}
               </h4>
               <p className="text-sm text-gray-500 dark:text-slate-400 capitalize">
-                {neg.negotiationType.replace('_', ' ')}
+                {neg.negotiationType.replace("_", " ")}
               </p>
             </div>
             <span
-              className={`px-3 py-1 rounded-full text-xs font-medium ${ neg.status === 'in_progress' ? 'bg-blue-100 text-blue-700' : neg.status === 'awaiting_response' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300' }`}
+              className={`px-3 py-1 rounded-full text-xs font-medium ${neg.status === "in_progress" ? "bg-blue-100 text-blue-700" : neg.status === "awaiting_response" ? "bg-yellow-100 text-yellow-700" : "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300"}`}
             >
-              {neg.status.replace('_', ' ')}
+              {neg.status.replace("_", " ")}
             </span>
           </div>
           <div className="mt-4 flex justify-between text-sm">
@@ -493,15 +493,15 @@ function ScriptsTab({
   negotiation: BillNegotiation;
   onRecordAttempt: (
     id: string,
-    method: 'phone' | 'email' | 'chat',
-    outcome: 'success' | 'partial_success' | 'rejected' | 'pending',
+    method: "phone" | "email" | "chat",
+    outcome: "success" | "partial_success" | "rejected" | "pending",
     offeredAmount?: number,
-    notes?: string
+    notes?: string,
   ) => void;
 }) {
   const [activeScript, setActiveScript] = useState<
-    'phone' | 'email' | 'chat' | 'retention'
-  >('phone');
+    "phone" | "email" | "chat" | "retention"
+  >("phone");
   const [showRecordModal, setShowRecordModal] = useState(false);
 
   const scripts = negotiation.scripts;
@@ -587,42 +587,42 @@ function ScriptsTab({
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm overflow-hidden">
           <div className="border-b border-gray-200 dark:border-slate-700">
             <nav className="flex">
-              {(['phone', 'email', 'chat', 'retention'] as const).map(
+              {(["phone", "email", "chat", "retention"] as const).map(
                 (type) => (
                   <button
                     key={type}
                     type="button"
                     onClick={() => setActiveScript(type)}
-                    className={`flex-1 py-3 px-4 text-sm font-medium capitalize ${ activeScript === type ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 border-b-2 border-blue-500' : 'text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700' }`}
+                    className={`flex-1 py-3 px-4 text-sm font-medium capitalize ${activeScript === type ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 border-b-2 border-blue-500" : "text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700"}`}
                   >
-                    {type === 'retention'
-                      ? 'Retention'
-                      : type === 'phone'
-                        ? 'Phone'
-                        : type === 'email'
-                          ? 'Email'
-                          : 'Chat'}
+                    {type === "retention"
+                      ? "Retention"
+                      : type === "phone"
+                        ? "Phone"
+                        : type === "email"
+                          ? "Email"
+                          : "Chat"}
                   </button>
-                )
+                ),
               )}
             </nav>
           </div>
           <div className="p-6">
             <pre className="whitespace-pre-wrap text-sm text-gray-700 dark:text-slate-300 font-sans leading-relaxed">
-              {activeScript === 'phone' && scripts.phoneScript}
-              {activeScript === 'email' && scripts.emailScript}
-              {activeScript === 'chat' && scripts.chatScript}
-              {activeScript === 'retention' && scripts.retentionScript}
+              {activeScript === "phone" && scripts.phoneScript}
+              {activeScript === "email" && scripts.emailScript}
+              {activeScript === "chat" && scripts.chatScript}
+              {activeScript === "retention" && scripts.retentionScript}
             </pre>
             <button
               type="button"
               onClick={() => {
                 const text =
-                  activeScript === 'phone'
+                  activeScript === "phone"
                     ? scripts.phoneScript
-                    : activeScript === 'email'
+                    : activeScript === "email"
                       ? scripts.emailScript
-                      : activeScript === 'chat'
+                      : activeScript === "chat"
                         ? scripts.chatScript
                         : scripts.retentionScript;
                 navigator.clipboard.writeText(text);
@@ -666,19 +666,19 @@ function RecordAttemptModal({
   negotiationId: string;
   onRecord: (
     id: string,
-    method: 'phone' | 'email' | 'chat',
-    outcome: 'success' | 'partial_success' | 'rejected' | 'pending',
+    method: "phone" | "email" | "chat",
+    outcome: "success" | "partial_success" | "rejected" | "pending",
     offeredAmount?: number,
-    notes?: string
+    notes?: string,
   ) => void;
   onClose: () => void;
 }) {
-  const [method, setMethod] = useState<'phone' | 'email' | 'chat'>('phone');
+  const [method, setMethod] = useState<"phone" | "email" | "chat">("phone");
   const [outcome, setOutcome] = useState<
-    'success' | 'partial_success' | 'rejected' | 'pending'
-  >('pending');
-  const [offeredAmount, setOfferedAmount] = useState('');
-  const [notes, setNotes] = useState('');
+    "success" | "partial_success" | "rejected" | "pending"
+  >("pending");
+  const [offeredAmount, setOfferedAmount] = useState("");
+  const [notes, setNotes] = useState("");
 
   const handleSubmit = () => {
     onRecord(
@@ -686,7 +686,7 @@ function RecordAttemptModal({
       method,
       outcome,
       offeredAmount ? parseFloat(offeredAmount) : undefined,
-      notes || undefined
+      notes || undefined,
     );
     onClose();
   };
@@ -710,7 +710,7 @@ function RecordAttemptModal({
               id="attempt-method"
               value={method}
               onChange={(e) =>
-                setMethod(e.target.value as 'phone' | 'email' | 'chat')
+                setMethod(e.target.value as "phone" | "email" | "chat")
               }
               className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
             >
@@ -733,10 +733,10 @@ function RecordAttemptModal({
               onChange={(e) =>
                 setOutcome(
                   e.target.value as
-                    | 'success'
-                    | 'partial_success'
-                    | 'rejected'
-                    | 'pending'
+                    | "success"
+                    | "partial_success"
+                    | "rejected"
+                    | "pending",
                 )
               }
               className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
@@ -750,7 +750,7 @@ function RecordAttemptModal({
             </select>
           </div>
 
-          {(outcome === 'success' || outcome === 'partial_success') && (
+          {(outcome === "success" || outcome === "partial_success") && (
             <div>
               <label
                 htmlFor="offered-amount"
@@ -818,7 +818,7 @@ function StartNegotiationModal({
   onClose: () => void;
 }) {
   const [selectedType, setSelectedType] = useState<NegotiationType>(
-    opportunity.suggestedApproach
+    opportunity.suggestedApproach,
   );
 
   const negotiationTypes: {
@@ -827,29 +827,29 @@ function StartNegotiationModal({
     description: string;
   }[] = [
     {
-      value: 'rate_reduction',
-      label: 'Rate Reduction',
-      description: 'Ask for a lower monthly rate',
+      value: "rate_reduction",
+      label: "Rate Reduction",
+      description: "Ask for a lower monthly rate",
     },
     {
-      value: 'loyalty_discount',
-      label: 'Loyalty Discount',
-      description: 'Request a discount for being a long-term customer',
+      value: "loyalty_discount",
+      label: "Loyalty Discount",
+      description: "Request a discount for being a long-term customer",
     },
     {
-      value: 'price_match',
-      label: 'Price Match',
+      value: "price_match",
+      label: "Price Match",
       description: "Match a competitor's lower price",
     },
     {
-      value: 'cancellation',
-      label: 'Cancellation Threat',
-      description: 'Threaten to cancel to get retention offers',
+      value: "cancellation",
+      label: "Cancellation Threat",
+      description: "Threaten to cancel to get retention offers",
     },
     {
-      value: 'bundle_discount',
-      label: 'Bundle Discount',
-      description: 'Combine services for a discount',
+      value: "bundle_discount",
+      label: "Bundle Discount",
+      description: "Combine services for a discount",
     },
   ];
 
@@ -869,8 +869,8 @@ function StartNegotiationModal({
               key={type.value}
               className={`flex items-start gap-3 p-4 rounded-lg border cursor-pointer ${
                 selectedType === type.value
-                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                  : 'border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700'
+                  ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                  : "border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700"
               }`}
             >
               <input

@@ -1,49 +1,55 @@
-'use client';
+"use client";
 
-import { useState, useEffect, Suspense, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
-import StrategyRecommendation from '@/components/ai-strategies/StrategyRecommendation';
-import ExecutionPlan from '@/components/ai-strategies/ExecutionPlan';
-import PredictiveAnalysis from '@/components/ai-strategies/PredictiveAnalysis';
+import { useState, useEffect, Suspense, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
+import StrategyRecommendation from "@/components/ai-strategies/StrategyRecommendation";
+import ExecutionPlan from "@/components/ai-strategies/ExecutionPlan";
+import PredictiveAnalysis from "@/components/ai-strategies/PredictiveAnalysis";
 import type {
   AIStrategySummary,
   StrategyExecutionPlanSummary,
-} from '@/types/ai-strategy';
+} from "@/types/ai-strategy";
 
 function AIStrategiesContent() {
   const searchParams = useSearchParams();
-  const loanId = searchParams.get('loan');
+  const loanId = searchParams.get("loan");
 
   const [strategies, setStrategies] = useState<AIStrategySummary[]>([]);
-  const [selectedStrategy, setSelectedStrategy] = useState<AIStrategySummary | null>(null);
-  const [executionPlan, setExecutionPlan] = useState<StrategyExecutionPlanSummary | null>(null);
+  const [selectedStrategy, setSelectedStrategy] =
+    useState<AIStrategySummary | null>(null);
+  const [executionPlan, setExecutionPlan] =
+    useState<StrategyExecutionPlanSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'recommendations' | 'execution' | 'predictions'>('recommendations');
+  const [activeTab, setActiveTab] = useState<
+    "recommendations" | "execution" | "predictions"
+  >("recommendations");
 
   const fetchStrategies = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch('/api/ai/recommend-strategy', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/ai/recommend-strategy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ loan_id: loanId }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch strategies');
+        throw new Error("Failed to fetch strategies");
       }
 
-      const data = (await response.json()) as { strategies?: AIStrategySummary[] };
+      const data = (await response.json()) as {
+        strategies?: AIStrategySummary[];
+      };
       const strategyList = data.strategies ?? [];
       setStrategies(strategyList);
       if (strategyList.length > 0) {
         setSelectedStrategy(strategyList[0]);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setLoading(false);
     }
@@ -57,9 +63,9 @@ function AIStrategiesContent() {
 
   const handleGenerateExecutionPlan = async (strategy: AIStrategySummary) => {
     try {
-      const response = await fetch('/api/ai/orchestrate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/ai/orchestrate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           strategy_id: strategy.recommendation_id,
           loan_id: strategy.loan_id,
@@ -67,14 +73,20 @@ function AIStrategiesContent() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate execution plan');
+        throw new Error("Failed to generate execution plan");
       }
 
-      const data = (await response.json()) as { execution_plan: StrategyExecutionPlanSummary };
+      const data = (await response.json()) as {
+        execution_plan: StrategyExecutionPlanSummary;
+      };
       setExecutionPlan(data.execution_plan);
-      setActiveTab('execution');
+      setActiveTab("execution");
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate execution plan');
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to generate execution plan",
+      );
     }
   };
 
@@ -96,12 +108,25 @@ function AIStrategiesContent() {
       <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-8">
         <div className="max-w-7xl mx-auto">
           <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-12 text-center">
-            <svg className="w-16 h-16 text-gray-400 dark:text-slate-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            <svg
+              className="w-16 h-16 text-gray-400 dark:text-slate-500 mx-auto mb-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+              />
             </svg>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">No Loan Selected</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              No Loan Selected
+            </h2>
             <p className="text-gray-600 dark:text-slate-300 mb-6">
-              Please select a loan from your portfolio to view AI-powered strategies
+              Please select a loan from your portfolio to view AI-powered
+              strategies
             </p>
             <a
               href="/student-loans"
@@ -121,11 +146,15 @@ function AIStrategiesContent() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-300 mb-2">
-            <a href="/student-loans" className="hover:text-blue-600">Student Loans</a>
+            <a href="/student-loans" className="hover:text-blue-600">
+              Student Loans
+            </a>
             <span>/</span>
             <span>AI Strategies</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">AI-Powered Strategies</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            AI-Powered Strategies
+          </h1>
           <p className="text-gray-600 dark:text-slate-300 mt-2">
             Personalized recommendations powered by 300+ AI models
           </p>
@@ -143,21 +172,21 @@ function AIStrategiesContent() {
           <div className="border-b border-gray-200 dark:border-slate-700">
             <nav className="flex -mb-px">
               <button
-                onClick={() => setActiveTab('recommendations')}
-                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${ activeTab === 'recommendations' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-slate-200 dark:text-slate-200 hover:border-gray-300 dark:border-slate-600' }`}
+                onClick={() => setActiveTab("recommendations")}
+                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === "recommendations" ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-slate-200 dark:text-slate-200 hover:border-gray-300 dark:border-slate-600"}`}
               >
                 Strategy Recommendations
               </button>
               <button
-                onClick={() => setActiveTab('execution')}
-                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${ activeTab === 'execution' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-slate-200 dark:text-slate-200 hover:border-gray-300 dark:border-slate-600' }`}
+                onClick={() => setActiveTab("execution")}
+                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === "execution" ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-slate-200 dark:text-slate-200 hover:border-gray-300 dark:border-slate-600"}`}
                 disabled={!executionPlan}
               >
                 Execution Plan
               </button>
               <button
-                onClick={() => setActiveTab('predictions')}
-                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${ activeTab === 'predictions' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-slate-200 dark:text-slate-200 hover:border-gray-300 dark:border-slate-600' }`}
+                onClick={() => setActiveTab("predictions")}
+                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === "predictions" ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-slate-200 dark:text-slate-200 hover:border-gray-300 dark:border-slate-600"}`}
                 disabled={!selectedStrategy}
               >
                 Predictive Analysis
@@ -167,11 +196,13 @@ function AIStrategiesContent() {
 
           {/* Tab Content */}
           <div className="p-6">
-            {activeTab === 'recommendations' && (
+            {activeTab === "recommendations" && (
               <div className="space-y-6">
                 {strategies.length === 0 ? (
                   <div className="text-center py-12">
-                    <p className="text-gray-500 dark:text-slate-400">No strategies available for this loan</p>
+                    <p className="text-gray-500 dark:text-slate-400">
+                      No strategies available for this loan
+                    </p>
                   </div>
                 ) : (
                   strategies.map((strategy, index) => (
@@ -179,21 +210,28 @@ function AIStrategiesContent() {
                       key={strategy.recommendation_id}
                       strategy={strategy}
                       rank={index + 1}
-                      isSelected={selectedStrategy?.recommendation_id === strategy.recommendation_id}
+                      isSelected={
+                        selectedStrategy?.recommendation_id ===
+                        strategy.recommendation_id
+                      }
                       onSelect={() => setSelectedStrategy(strategy)}
-                      onGenerateExecutionPlan={() => handleGenerateExecutionPlan(strategy)}
+                      onGenerateExecutionPlan={() =>
+                        handleGenerateExecutionPlan(strategy)
+                      }
                     />
                   ))
                 )}
               </div>
             )}
 
-            {activeTab === 'execution' && executionPlan && (
+            {activeTab === "execution" && executionPlan && (
               <ExecutionPlan plan={executionPlan} />
             )}
 
-            {activeTab === 'predictions' && selectedStrategy && (
-              <PredictiveAnalysis analysis={selectedStrategy.predictive_analysis} />
+            {activeTab === "predictions" && selectedStrategy && (
+              <PredictiveAnalysis
+                analysis={selectedStrategy.predictive_analysis}
+              />
             )}
           </div>
         </div>
@@ -210,10 +248,14 @@ function AIStrategiesContent() {
                 </div>
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">AI Confidence Score</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                  AI Confidence Score
+                </h3>
                 <p className="text-sm text-gray-700 dark:text-slate-200">
-                  Our AI models are {Math.round(selectedStrategy.ai_confidence_score * 100)}% confident in this strategy
-                  based on analysis of similar cases and federal regulations.
+                  Our AI models are{" "}
+                  {Math.round(selectedStrategy.ai_confidence_score * 100)}%
+                  confident in this strategy based on analysis of similar cases
+                  and federal regulations.
                 </p>
               </div>
             </div>
@@ -226,7 +268,13 @@ function AIStrategiesContent() {
 
 export default function AIStrategiesPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="text-lg">Loading...</div></div>}>
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-lg">Loading...</div>
+        </div>
+      }
+    >
       <AIStrategiesContent />
     </Suspense>
   );

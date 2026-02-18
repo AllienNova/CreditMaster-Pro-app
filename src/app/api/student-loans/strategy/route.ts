@@ -1,49 +1,59 @@
 /**
  * Student Loan Strategy API
- * 
+ *
  * Generates optimal student loan repayment strategies using AIML API
  * (DeepSeek V3.1 Terminus for advanced mathematical reasoning)
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getAIOrchestrator, LoanStrategyInput } from '@/lib/ai-orchestrator';
+import { NextRequest, NextResponse } from "next/server";
+import { getAIOrchestrator, LoanStrategyInput } from "@/lib/ai-orchestrator";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
+
     // Validate required fields
     const { loanData, financialSituation } = body;
-    
+
     if (!loanData || !financialSituation) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Missing required fields: loanData, financialSituation',
+          error: "Missing required fields: loanData, financialSituation",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Validate loanData fields
-    if (!loanData.totalBalance || !loanData.interestRate || !loanData.loanType) {
+    if (
+      !loanData.totalBalance ||
+      !loanData.interestRate ||
+      !loanData.loanType
+    ) {
       return NextResponse.json(
         {
           success: false,
-          error: 'loanData must include totalBalance, interestRate, and loanType',
+          error:
+            "loanData must include totalBalance, interestRate, and loanType",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Validate financialSituation fields
-    if (!financialSituation.income || !financialSituation.familySize || !financialSituation.state) {
+    if (
+      !financialSituation.income ||
+      !financialSituation.familySize ||
+      !financialSituation.state
+    ) {
       return NextResponse.json(
         {
           success: false,
-          error: 'financialSituation must include income, familySize, and state',
+          error:
+            "financialSituation must include income, familySize, and state",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -61,31 +71,33 @@ export async function POST(request: NextRequest) {
       success: true,
       data: {
         strategy,
-        model: 'deepseek/deepseek-v3.1-terminus',
+        model: "deepseek/deepseek-v3.1-terminus",
         timestamp: new Date().toISOString(),
       },
     });
   } catch (error) {
-    console.error('Loan strategy generation error:', error);
-    
+    console.error("Loan strategy generation error:", error);
+
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to generate loan strategy',
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to generate loan strategy",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function GET() {
   return NextResponse.json({
-    message: 'Student Loan Strategy API',
-    method: 'POST',
-    endpoint: '/api/student-loans/strategy',
-    requiredFields: ['loanData', 'financialSituation'],
-    optionalFields: ['goals'],
-    model: 'deepseek/deepseek-v3.1-terminus',
+    message: "Student Loan Strategy API",
+    method: "POST",
+    endpoint: "/api/student-loans/strategy",
+    requiredFields: ["loanData", "financialSituation"],
+    optionalFields: ["goals"],
+    model: "deepseek/deepseek-v3.1-terminus",
   });
 }
-

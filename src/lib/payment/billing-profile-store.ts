@@ -1,7 +1,7 @@
-import { getSupabase } from '@/lib/supabase/client';
-import { SUBSCRIPTION_PLANS } from './stripe-service';
+import { getSupabase } from "@/lib/supabase/client";
+import { SUBSCRIPTION_PLANS } from "./stripe-service";
 
-const TABLE = 'billing_profiles';
+const TABLE = "billing_profiles";
 
 export interface BillingPaymentMethod {
   id: string;
@@ -15,7 +15,7 @@ export interface BillingPaymentMethod {
 export interface BillingInvoice {
   id: string;
   amount: number;
-  status: 'paid' | 'open' | 'void' | 'uncollectible';
+  status: "paid" | "open" | "void" | "uncollectible";
   created: Date;
   dueDate?: Date;
   pdfUrl?: string;
@@ -24,7 +24,7 @@ export interface BillingInvoice {
 export interface BillingProfile {
   customerId: string;
   currentPlanId: string;
-  status: 'active' | 'trialing' | 'canceled' | 'past_due';
+  status: "active" | "trialing" | "canceled" | "past_due";
   currentPeriodStart: Date;
   currentPeriodEnd: Date;
   cancelAtPeriodEnd: boolean;
@@ -48,15 +48,15 @@ const createSeedProfile = (userId: string): BillingProfile => {
   return {
     customerId: `cus_${userId}`,
     currentPlanId: defaultPlan.id,
-    status: 'trialing',
+    status: "trialing",
     currentPeriodStart: now,
     currentPeriodEnd: nextMonth,
     cancelAtPeriodEnd: false,
     paymentMethods: [
       {
         id: `pm_${userId}`,
-        brand: 'visa',
-        last4: '4242',
+        brand: "visa",
+        last4: "4242",
         expMonth: 12,
         expYear: new Date().getFullYear() + 3,
         isDefault: true,
@@ -66,9 +66,9 @@ const createSeedProfile = (userId: string): BillingProfile => {
       {
         id: `inv_${Date.now() - 86400000}`,
         amount: defaultPlan.price,
-        status: 'paid',
+        status: "paid",
         created: new Date(now.getTime() - 86400000),
-        pdfUrl: '#',
+        pdfUrl: "#",
       },
     ],
   };
@@ -79,12 +79,12 @@ const repository = {
     try {
       const { data, error } = await getSupabase()
         .from(TABLE)
-        .select('profile')
-        .eq('user_id', userId)
+        .select("profile")
+        .eq("user_id", userId)
         .single();
 
       if (error) {
-        if (error.code !== 'PGRST116') {
+        if (error.code !== "PGRST116") {
           // BillingProfileStore warning: Failed to load billing profile
         }
         return null;
@@ -114,7 +114,9 @@ const repository = {
         user_id: userId,
         profile,
       };
-      const { error } = await getSupabase().from(TABLE).upsert(row, { onConflict: 'user_id' });
+      const { error } = await getSupabase()
+        .from(TABLE)
+        .upsert(row, { onConflict: "user_id" });
       if (error) {
         // BillingProfileStore warning: Repository save failed
       }
@@ -151,18 +153,19 @@ export const billingProfileStore = {
 
   async updatePlan(userId: string, planId: string): Promise<BillingProfile> {
     const profile = await this.getProfile(userId);
-    const plan = SUBSCRIPTION_PLANS.find((p) => p.id === planId) ?? SUBSCRIPTION_PLANS[0];
+    const plan =
+      SUBSCRIPTION_PLANS.find((p) => p.id === planId) ?? SUBSCRIPTION_PLANS[0];
     profile.currentPlanId = plan.id;
-    profile.status = 'active';
+    profile.status = "active";
     profile.cancelAtPeriodEnd = false;
     profile.currentPeriodStart = new Date();
     profile.currentPeriodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     profile.invoices.unshift({
       id: `inv_${Date.now()}`,
       amount: plan.price,
-      status: 'paid',
+      status: "paid",
       created: new Date(),
-      pdfUrl: '#',
+      pdfUrl: "#",
     });
     profiles.set(userId, profile);
     await repository.save(userId, profile);
@@ -177,4 +180,3 @@ export const billingProfileStore = {
     return cloneProfile(profile);
   },
 };
-

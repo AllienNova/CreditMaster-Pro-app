@@ -3,8 +3,8 @@
  * React hook for managing push notifications
  */
 
-import { useEffect, useState, useCallback } from 'react';
-import { pushNotificationService } from '../services/notifications';
+import { useEffect, useState, useCallback } from "react";
+import { pushNotificationService } from "../services/notifications";
 
 interface UsePushNotificationsReturn {
   isEnabled: boolean;
@@ -17,7 +17,7 @@ interface UsePushNotificationsReturn {
   scheduleNotification: (
     title: string,
     body: string,
-    data?: Record<string, unknown>
+    data?: Record<string, unknown>,
   ) => Promise<string>;
 }
 
@@ -32,10 +32,10 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     const checkStatus = async () => {
       const enabled = await pushNotificationService.areNotificationsEnabled();
       setIsEnabled(enabled);
-      
+
       const count = await pushNotificationService.getBadgeCount();
       setBadgeCountState(count);
-      
+
       const currentToken = pushNotificationService.getToken();
       setToken(currentToken);
     };
@@ -52,11 +52,11 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     const success = await pushNotificationService.initialize();
     setIsInitialized(true);
     setIsEnabled(success);
-    
+
     if (success) {
       setToken(pushNotificationService.getToken());
     }
-    
+
     return success;
   }, []);
 
@@ -72,9 +72,13 @@ export function usePushNotifications(): UsePushNotificationsReturn {
 
   const scheduleNotification = useCallback(
     async (title: string, body: string, data?: Record<string, unknown>) => {
-      return await pushNotificationService.scheduleLocalNotification(title, body, data);
+      return await pushNotificationService.scheduleLocalNotification(
+        title,
+        body,
+        data,
+      );
     },
-    []
+    [],
   );
 
   return {
@@ -88,4 +92,3 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     scheduleNotification,
   };
 }
-

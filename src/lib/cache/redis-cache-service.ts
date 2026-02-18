@@ -1,11 +1,11 @@
 /**
  * Redis Cache Service (Vercel KV / Upstash)
- * 
+ *
  * Distributed caching using Redis for production scalability
  * Falls back to in-memory cache if Redis is unavailable
  */
 
-import { CacheService } from './cache-service';
+import { CacheService } from "./cache-service";
 
 // Types
 export interface RedisCacheOptions {
@@ -14,8 +14,10 @@ export interface RedisCacheOptions {
 }
 
 // Check if we're using Vercel KV
-const REDIS_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-const REDIS_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+const REDIS_URL =
+  process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+const REDIS_TOKEN =
+  process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
 
 /**
  * Redis Cache Service using REST API
@@ -28,11 +30,11 @@ export class RedisCacheService {
   private redisAvailable: boolean;
 
   constructor(options?: RedisCacheOptions) {
-    this.prefix = options?.prefix || 'cache:';
+    this.prefix = options?.prefix || "cache:";
     this.defaultTTL = options?.ttl || 300; // 5 minutes default
     this.fallbackCache = new CacheService({ ttl: this.defaultTTL * 1000 });
     this.redisAvailable = !!(REDIS_URL && REDIS_TOKEN);
-    
+
     if (!this.redisAvailable) {
       // RedisCacheService: Redis not configured, using in-memory fallback cache
     }
@@ -40,16 +42,19 @@ export class RedisCacheService {
 
   private async redisRequest(
     command: string,
-    args: string[] = []
+    args: string[] = [],
   ): Promise<any> {
     if (!this.redisAvailable) return null;
 
     try {
-      const response = await fetch(`${REDIS_URL}/${command}/${args.join('/')}`, {
-        headers: {
-          Authorization: `Bearer ${REDIS_TOKEN}`,
+      const response = await fetch(
+        `${REDIS_URL}/${command}/${args.join("/")}`,
+        {
+          headers: {
+            Authorization: `Bearer ${REDIS_TOKEN}`,
+          },
         },
-      });
+      );
 
       if (!response.ok) {
         throw new Error(`Redis request failed: ${response.status}`);
@@ -68,13 +73,13 @@ export class RedisCacheService {
    */
   async get<T>(key: string): Promise<T | null> {
     const fullKey = `${this.prefix}${key}`;
-    
+
     if (!this.redisAvailable) {
       return this.fallbackCache.get<T>(key);
     }
 
     try {
-      const result = await this.redisRequest('get', [fullKey]);
+      const result = await this.redisRequest("get", [fullKey]);
       if (result === null) return null;
       return JSON.parse(result) as T;
     } catch {
@@ -88,15 +93,15 @@ export class RedisCacheService {
   async set<T>(key: string, value: T, ttl?: number): Promise<void> {
     const fullKey = `${this.prefix}${key}`;
     const expiry = ttl || this.defaultTTL;
-    
+
     // Always set in fallback cache
     this.fallbackCache.set(key, value, expiry * 1000);
-    
+
     if (!this.redisAvailable) return;
 
     try {
       const serialized = JSON.stringify(value);
-      await this.redisRequest('setex', [fullKey, String(expiry), serialized]);
+      await this.redisRequest("setex", [fullKey, String(expiry), serialized]);
     } catch (error) {
       // RedisCacheService error: Redis set failed
     }
@@ -107,13 +112,13 @@ export class RedisCacheService {
    */
   async delete(key: string): Promise<void> {
     const fullKey = `${this.prefix}${key}`;
-    
+
     this.fallbackCache.delete(key);
-    
+
     if (!this.redisAvailable) return;
 
     try {
-      await this.redisRequest('del', [fullKey]);
+      await this.redisRequest("del", [fullKey]);
     } catch (error) {
       // RedisCacheService error: Redis delete failed
     }
@@ -124,13 +129,13 @@ export class RedisCacheService {
    */
   async has(key: string): Promise<boolean> {
     const fullKey = `${this.prefix}${key}`;
-    
+
     if (!this.redisAvailable) {
       return this.fallbackCache.has(key);
     }
 
     try {
-      const result = await this.redisRequest('exists', [fullKey]);
+      const result = await this.redisRequest("exists", [fullKey]);
       return result === 1;
     } catch {
       return this.fallbackCache.has(key);
@@ -152,14 +157,22 @@ export class RedisCacheService {
   getStats() {
     return {
       redisAvailable: this.redisAvailable,
-      fallbackStats: this.fallbackCache.getStats()
+      fallbackStats: this.fallbackCache.getStats(),
     };
   }
 }
 
 // Export singleton instances with different TTLs
-export const redisCache = new RedisCacheService({ ttl: 300, prefix: 'app:' });
-export const shortRedisCache = new RedisCacheService({ ttl: 60, prefix: 'short:' });
-export const longRedisCache = new RedisCacheService({ ttl: 3600, prefix: 'long:' });
-export const userRedisCache = new RedisCacheService({ ttl: 1800, prefix: 'user:' });
-
+export const redisCache = new RedisCacheService({ ttl: 300, prefix: "app:" });
+export const shortRedisCache = new RedisCacheService({
+  ttl: 60,
+  prefix: "short:",
+});
+export const longRedisCache = new RedisCacheService({
+  ttl: 3600,
+  prefix: "long:",
+});
+export const userRedisCache = new RedisCacheService({
+  ttl: 1800,
+  prefix: "user:",
+});

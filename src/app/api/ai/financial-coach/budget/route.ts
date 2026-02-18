@@ -5,9 +5,9 @@
  * POST /api/ai/financial-coach/budget/optimize - Generate optimization recommendations
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { budgetOptimizer } from '@/lib/financial/budget-optimizer';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { budgetOptimizer } from "@/lib/financial/budget-optimizer";
 
 async function getUser() {
   const supabase = await createClient();
@@ -22,14 +22,14 @@ export async function GET(request: NextRequest) {
     const user = await getUser();
 
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const searchParams = request.nextUrl.searchParams;
-    const includeTemplates = searchParams.get('includeTemplates') !== 'false';
-    const includeScenarios = searchParams.get('includeScenarios') !== 'false';
-    const targetSavingsRate = searchParams.get('targetSavingsRate')
-      ? parseFloat(searchParams.get('targetSavingsRate')!)
+    const includeTemplates = searchParams.get("includeTemplates") !== "false";
+    const includeScenarios = searchParams.get("includeScenarios") !== "false";
+    const targetSavingsRate = searchParams.get("targetSavingsRate")
+      ? parseFloat(searchParams.get("targetSavingsRate")!)
       : undefined;
 
     const result = await budgetOptimizer.optimizeBudget({
@@ -44,8 +44,8 @@ export async function GET(request: NextRequest) {
     // FinancialCoachBudgetRoute error: Failed to fetch optimization
     void _error;
     return NextResponse.json(
-      { error: 'Failed to fetch budget optimization' },
-      { status: 500 }
+      { error: "Failed to fetch budget optimization" },
+      { status: 500 },
     );
   }
 }
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     const user = await getUser();
 
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
@@ -79,8 +79,8 @@ export async function POST(request: NextRequest) {
     // FinancialCoachBudgetRoute error: Optimization failed
     void _error;
     return NextResponse.json(
-      { error: 'Failed to optimize budget' },
-      { status: 500 }
+      { error: "Failed to optimize budget" },
+      { status: 500 },
     );
   }
 }

@@ -4,8 +4,8 @@
  * Endpoints for chart pattern detection and analysis
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
+import { NextRequest, NextResponse } from "next/server";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
 
 // ============================================================================
 // POST - Scan for patterns
@@ -15,19 +15,19 @@ export async function POST(request: NextRequest) {
   try {
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
-    const { symbol, timeframe = '1d', data } = body;
+    const { symbol, timeframe = "1d", data } = body;
 
     if (!symbol) {
-      return NextResponse.json({ error: 'Symbol required' }, { status: 400 });
+      return NextResponse.json({ error: "Symbol required" }, { status: 400 });
     }
 
     // Import pattern recognition service dynamically for server
     const { PatternRecognitionService } =
-      await import('@/lib/investments/services/PatternRecognitionService');
+      await import("@/lib/investments/services/PatternRecognitionService");
     const patternService = new PatternRecognitionService();
 
     // If data is provided, scan it directly
@@ -37,20 +37,20 @@ export async function POST(request: NextRequest) {
     if (!candleData) {
       // Fetch market data
       const { MarketDataService } =
-        await import('@/lib/investments/services/MarketDataService');
+        await import("@/lib/investments/services/MarketDataService");
       const marketService = new MarketDataService();
 
       candleData = await marketService.getHistoricalData(
         symbol,
         timeframe,
-        200
+        200,
       );
     }
 
     if (!candleData || candleData.length === 0) {
       return NextResponse.json(
-        { error: 'No data available for pattern scan' },
-        { status: 400 }
+        { error: "No data available for pattern scan" },
+        { status: 400 },
       );
     }
 
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     const scanResult = patternService.scanForPatterns(
       candleData,
       symbol,
-      timeframe
+      timeframe,
     );
 
     return NextResponse.json({
@@ -72,21 +72,21 @@ export async function POST(request: NextRequest) {
       summary: {
         totalPatterns: scanResult.patterns.length,
         bullishPatterns: scanResult.patterns.filter(
-          (p) => p.direction === 'bullish'
+          (p) => p.direction === "bullish",
         ).length,
         bearishPatterns: scanResult.patterns.filter(
-          (p) => p.direction === 'bearish'
+          (p) => p.direction === "bearish",
         ).length,
         highReliabilityPatterns: scanResult.patterns.filter(
-          (p) => p.reliability >= 70
+          (p) => p.reliability >= 70,
         ).length,
       },
     });
   } catch (error) {
-    console.error('Pattern scan error:', error);
+    console.error("Pattern scan error:", error);
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: "Internal server error" },
+      { status: 500 },
     );
   }
 }
@@ -98,17 +98,17 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const patternType = searchParams.get('type');
+    const patternType = searchParams.get("type");
 
     const { PATTERN_INFO } =
-      await import('@/lib/investments/services/PatternRecognitionService');
+      await import("@/lib/investments/services/PatternRecognitionService");
 
     if (patternType) {
       const info = PATTERN_INFO[patternType as keyof typeof PATTERN_INFO];
       if (!info) {
         return NextResponse.json(
-          { error: 'Unknown pattern type' },
-          { status: 404 }
+          { error: "Unknown pattern type" },
+          { status: 404 },
         );
       }
       return NextResponse.json({ pattern: { type: patternType, ...info } });
@@ -125,10 +125,10 @@ export async function GET(request: NextRequest) {
       total: patterns.length,
     });
   } catch (error) {
-    console.error('Pattern GET error:', error);
+    console.error("Pattern GET error:", error);
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: "Internal server error" },
+      { status: 500 },
     );
   }
 }

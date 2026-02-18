@@ -1,27 +1,29 @@
 /**
  * useOfflineQueue Hook
- * 
+ *
  * React hook for managing offline action queue
  */
 
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { getOfflineQueue, QueuedAction } from '@/lib/offline/OfflineQueue';
-import { useOnline } from './useOnline';
+import { useState, useEffect, useCallback } from "react";
+import { getOfflineQueue, QueuedAction } from "@/lib/offline/OfflineQueue";
+import { useOnline } from "./useOnline";
 
 export interface UseOfflineQueueReturn {
   queue: QueuedAction[];
   pendingCount: number;
   isProcessing: boolean;
-  addToQueue: (action: Omit<QueuedAction, 'id' | 'timestamp' | 'retryCount' | 'status'>) => string;
+  addToQueue: (
+    action: Omit<QueuedAction, "id" | "timestamp" | "retryCount" | "status">,
+  ) => string;
   processQueue: () => Promise<void>;
   clearCompleted: () => void;
 }
 
 /**
  * Hook to manage offline action queue
- * 
+ *
  * Automatically processes queue when coming back online
  */
 export function useOfflineQueue(): UseOfflineQueueReturn {
@@ -51,10 +53,12 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
   }, [isOnline, wasOffline]);
 
   const addToQueue = useCallback(
-    (action: Omit<QueuedAction, 'id' | 'timestamp' | 'retryCount' | 'status'>): string => {
+    (
+      action: Omit<QueuedAction, "id" | "timestamp" | "retryCount" | "status">,
+    ): string => {
       return offlineQueue.add(action);
     },
-    [offlineQueue]
+    [offlineQueue],
   );
 
   const processQueue = useCallback(async () => {
@@ -72,7 +76,7 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
     offlineQueue.clearCompleted();
   }, [offlineQueue]);
 
-  const pendingCount = queue.filter((a) => a.status === 'pending').length;
+  const pendingCount = queue.filter((a) => a.status === "pending").length;
 
   return {
     queue,
@@ -83,4 +87,3 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
     clearCompleted,
   };
 }
-

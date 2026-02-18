@@ -1,6 +1,6 @@
 /**
  * Database Types for Credit Repair System
- * 
+ *
  * These types match the database schema exactly.
  * They are separate from the application types to maintain clear separation.
  */
@@ -9,48 +9,54 @@
 // ENUMS AND CONSTANTS
 // ============================================================================
 
-export type Bureau = 'experian' | 'equifax' | 'transunion';
+export type Bureau = "experian" | "equifax" | "transunion";
 
-type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
 type JsonRecord = Record<string, JsonValue>;
 
 export type ActionType =
-  | 'dispute_inaccuracy'
-  | 'pay_down_utilization'
-  | 'goodwill_letter'
-  | 'pay_for_delete'
-  | 'remove_inquiry'
-  | 'optimize_payment_timing'
-  | 'piggybacking'
-  | 'credit_builder_loan'
-  | 'secured_card'
-  | 'other';
+  | "dispute_inaccuracy"
+  | "pay_down_utilization"
+  | "goodwill_letter"
+  | "pay_for_delete"
+  | "remove_inquiry"
+  | "optimize_payment_timing"
+  | "piggybacking"
+  | "credit_builder_loan"
+  | "secured_card"
+  | "other";
 
 export type ActionStatus =
-  | 'pending'
-  | 'in_progress'
-  | 'completed'
-  | 'failed'
-  | 'cancelled';
+  | "pending"
+  | "in_progress"
+  | "completed"
+  | "failed"
+  | "cancelled";
 
 export type DisputeStrategy =
-  | 'basic_dispute'
-  | 'debt_validation'
-  | 'method_of_verification'
-  | 'procedural_violation'
-  | 'statute_of_limitations'
-  | 'identity_theft'
-  | 'mixed_file'
-  | 'creditor_direct'
-  | 'goodwill'
-  | 'pay_for_delete';
+  | "basic_dispute"
+  | "debt_validation"
+  | "method_of_verification"
+  | "procedural_violation"
+  | "statute_of_limitations"
+  | "identity_theft"
+  | "mixed_file"
+  | "creditor_direct"
+  | "goodwill"
+  | "pay_for_delete";
 
 export type DisputeStatus =
-  | 'draft'
-  | 'sent'
-  | 'under_review'
-  | 'resolved'
-  | 'rejected';
+  | "draft"
+  | "sent"
+  | "under_review"
+  | "resolved"
+  | "rejected";
 
 // ============================================================================
 // DATABASE ENTITY TYPES
@@ -149,7 +155,7 @@ export interface Dispute {
   bureau: Bureau;
   sentAt?: Date;
   responseReceivedAt?: Date;
-  outcome?: 'removed' | 'updated' | 'verified' | 'pending';
+  outcome?: "removed" | "updated" | "verified" | "pending";
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -167,10 +173,10 @@ export interface GoodwillLetter {
   latePaymentDate: Date;
   reason: string;
   letterContent: string;
-  status: 'draft' | 'sent' | 'response_received' | 'approved' | 'denied';
+  status: "draft" | "sent" | "response_received" | "approved" | "denied";
   sentAt?: Date;
   responseReceivedAt?: Date;
-  outcome?: 'removed' | 'denied' | 'pending';
+  outcome?: "removed" | "denied" | "pending";
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -191,7 +197,13 @@ export interface Negotiation {
   settlementPercentage?: number;
   settlementAmount?: number;
   scripts?: Record<string, string>;
-  status: 'pending' | 'negotiating' | 'agreed' | 'paid' | 'completed' | 'failed';
+  status:
+    | "pending"
+    | "negotiating"
+    | "agreed"
+    | "paid"
+    | "completed"
+    | "failed";
   agreedAt?: Date;
   paidAt?: Date;
   deletionConfirmedAt?: Date;

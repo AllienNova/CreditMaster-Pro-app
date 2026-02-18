@@ -5,10 +5,10 @@
  * PROTECTED: Requires authentication
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { getChatEngine } from '@/lib/ai/chat-engine';
-import type { SendMessageRequest } from '@/lib/ai/types/chat.types';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { getChatEngine } from "@/lib/ai/chat-engine";
+import type { SendMessageRequest } from "@/lib/ai/types/chat.types";
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,9 +23,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
+          error: { code: "UNAUTHORIZED", message: "Authentication required" },
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -37,15 +37,15 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (!body.sessionId) {
       return NextResponse.json(
-        { error: 'sessionId is required' },
-        { status: 400 }
+        { error: "sessionId is required" },
+        { status: 400 },
       );
     }
 
     if (!body.message || body.message.trim().length === 0) {
       return NextResponse.json(
-        { error: 'message is required' },
-        { status: 400 }
+        { error: "message is required" },
+        { status: 400 },
       );
     }
 
@@ -64,18 +64,18 @@ export async function POST(request: NextRequest) {
       data: response,
     });
   } catch (error) {
-    console.error('Chat message API error:', error);
+    console.error("Chat message API error:", error);
 
     return NextResponse.json(
       {
         success: false,
         error: {
-          code: 'CHAT_ERROR',
+          code: "CHAT_ERROR",
           message:
-            error instanceof Error ? error.message : 'Unknown error occurred',
+            error instanceof Error ? error.message : "Unknown error occurred",
         },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

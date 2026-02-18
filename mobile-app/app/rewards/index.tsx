@@ -3,7 +3,7 @@
  * Main hub for XP, levels, badges, and quests
  */
 
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -12,19 +12,19 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
-} from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { lightTheme as theme } from '../../src/constants/theme';
-import { Card } from '../../src/components/Card';
+} from "react-native";
+import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { lightTheme as theme } from "../../src/constants/theme";
+import { Card } from "../../src/components/Card";
 import {
   XpBar,
   StreakDisplay,
   BadgeCard,
   QuestCard,
-} from '../../src/components/gamification';
-import { useGamificationStore } from '../../src/store/gamificationStore';
+} from "../../src/components/gamification";
+import { useGamificationStore } from "../../src/store/gamificationStore";
 
 export default function RewardsScreen() {
   const {
@@ -77,7 +77,7 @@ export default function RewardsScreen() {
     title: q.quest.name,
     description: q.quest.description,
     xpReward: q.quest.xpReward,
-    type: 'daily' as const,
+    type: "daily" as const,
     progress: q.progressValue,
     target: 100,
     completed: q.isCompleted,
@@ -87,7 +87,7 @@ export default function RewardsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={["top"]}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={styles.loadingText}>Loading rewards...</Text>
@@ -97,7 +97,7 @@ export default function RewardsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -118,7 +118,7 @@ export default function RewardsScreen() {
             <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
           </TouchableOpacity>
           <Text style={styles.title}>Rewards</Text>
-          <TouchableOpacity onPress={() => router.push('/rewards/leaderboard')}>
+          <TouchableOpacity onPress={() => router.push("/rewards/leaderboard")}>
             <Ionicons name="trophy" size={24} color={theme.colors.primary} />
           </TouchableOpacity>
         </View>
@@ -151,7 +151,7 @@ export default function RewardsScreen() {
                 showDetails={false}
               />
               <Text style={styles.xpText}>
-                {progress.xp.current.toLocaleString()} /{' '}
+                {progress.xp.current.toLocaleString()} /{" "}
                 {progress.xp.toNextLevel.toLocaleString()} XP
               </Text>
             </View>
@@ -162,7 +162,7 @@ export default function RewardsScreen() {
         <View style={styles.quickActions}>
           <TouchableOpacity
             style={styles.actionCard}
-            onPress={() => router.push('/rewards/quests')}
+            onPress={() => router.push("/rewards/quests")}
           >
             <Ionicons name="list" size={24} color="#F59E0B" />
             <Text style={styles.actionTitle}>Quests</Text>
@@ -172,7 +172,7 @@ export default function RewardsScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.actionCard}
-            onPress={() => router.push('/rewards/badges')}
+            onPress={() => router.push("/rewards/badges")}
           >
             <Ionicons name="ribbon" size={24} color="#A855F7" />
             <Text style={styles.actionTitle}>Badges</Text>
@@ -182,7 +182,7 @@ export default function RewardsScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.actionCard}
-            onPress={() => router.push('/rewards/leaderboard')}
+            onPress={() => router.push("/rewards/leaderboard")}
           >
             <Ionicons name="trophy" size={24} color="#22C55E" />
             <Text style={styles.actionTitle}>Ranks</Text>
@@ -194,7 +194,7 @@ export default function RewardsScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>🎯 Daily Quests</Text>
-            <TouchableOpacity onPress={() => router.push('/rewards/quests')}>
+            <TouchableOpacity onPress={() => router.push("/rewards/quests")}>
               <Text style={styles.viewAll}>View All</Text>
             </TouchableOpacity>
           </View>
@@ -222,7 +222,7 @@ export default function RewardsScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>🏅 Recent Badges</Text>
-            <TouchableOpacity onPress={() => router.push('/rewards/badges')}>
+            <TouchableOpacity onPress={() => router.push("/rewards/badges")}>
               <Text style={styles.viewAll}>View All</Text>
             </TouchableOpacity>
           </View>
@@ -250,7 +250,7 @@ export default function RewardsScreen() {
                   isEarned
                   earnedDate={earnedAt}
                   size="md"
-                  onPress={() => router.push('/rewards/badges')}
+                  onPress={() => router.push("/rewards/badges")}
                 />
               ))}
             </ScrollView>
@@ -264,7 +264,7 @@ export default function RewardsScreen() {
             <View style={styles.statItem}>
               <Ionicons name="star" size={24} color="#F59E0B" />
               <Text style={styles.statValue}>
-                {progress?.xp.totalEarned?.toLocaleString() || '0'}
+                {progress?.xp.totalEarned?.toLocaleString() || "0"}
               </Text>
               <Text style={styles.statLabel}>Total XP</Text>
             </View>
@@ -305,24 +305,24 @@ export default function RewardsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1 },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   loadingText: { marginTop: 12, color: theme.colors.textSecondary },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.md,
   },
   backButton: { padding: 4 },
-  title: { fontSize: 20, fontWeight: '700', color: theme.colors.text },
+  title: { fontSize: 20, fontWeight: "700", color: theme.colors.text },
   levelCard: {
     marginHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.md,
   },
   levelHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: theme.spacing.md,
   },
   levelBadge: {
@@ -330,27 +330,27 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     backgroundColor: theme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 12,
   },
   levelNumber: {
     fontSize: 20,
-    fontWeight: '800',
-    color: '#fff',
+    fontWeight: "800",
+    color: "#fff",
   },
   levelInfo: { flex: 1 },
-  levelTitle: { fontSize: 18, fontWeight: '700', color: theme.colors.text },
+  levelTitle: { fontSize: 18, fontWeight: "700", color: theme.colors.text },
   levelLabel: { fontSize: 13, color: theme.colors.textSecondary },
   xpSection: { marginTop: 8 },
   xpText: {
     fontSize: 12,
     color: theme.colors.textSecondary,
-    textAlign: 'right',
+    textAlign: "right",
     marginTop: 6,
   },
   quickActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.lg,
     gap: 12,
@@ -360,13 +360,13 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface,
     borderRadius: 12,
     padding: 14,
-    alignItems: 'center',
+    alignItems: "center",
     borderWidth: 1,
     borderColor: theme.colors.border,
   },
   actionTitle: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginTop: 8,
   },
@@ -380,21 +380,21 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.lg,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: theme.spacing.md,
   },
-  sectionTitle: { fontSize: 18, fontWeight: '600', color: theme.colors.text },
+  sectionTitle: { fontSize: 18, fontWeight: "600", color: theme.colors.text },
   questCount: {
     fontSize: 14,
     color: theme.colors.textSecondary,
-    fontWeight: '500',
+    fontWeight: "500",
   },
-  viewAll: { fontSize: 14, color: theme.colors.primary, fontWeight: '500' },
+  viewAll: { fontSize: 14, color: theme.colors.primary, fontWeight: "500" },
   badgesRow: { gap: 12, paddingRight: theme.spacing.lg },
   emptyCard: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 24,
   },
   emptyText: {
@@ -405,33 +405,33 @@ const styles = StyleSheet.create({
   statsCard: { marginHorizontal: theme.spacing.lg },
   statsTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: theme.spacing.md,
   },
-  statsGrid: { flexDirection: 'row', justifyContent: 'space-between' },
-  statItem: { alignItems: 'center', flex: 1 },
+  statsGrid: { flexDirection: "row", justifyContent: "space-between" },
+  statItem: { alignItems: "center", flex: 1 },
   statValue: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
     marginTop: 6,
   },
   statLabel: { fontSize: 11, color: theme.colors.textSecondary, marginTop: 2 },
   checkInOverlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0,0,0,0.7)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   checkInText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
+    fontWeight: "600",
+    color: "#fff",
     marginTop: 12,
   },
 });

@@ -1,17 +1,29 @@
 /**
  * Charting & Visualization Type Definitions
- * 
+ *
  * Types for interactive charts and data visualization
  */
 
-import { Timeframe, PriceData } from './investment.types';
-import { IndicatorConfig, ChartPattern, PriceLevel } from './technical-analysis.types';
+import { Timeframe, PriceData } from "./investment.types";
+import {
+  IndicatorConfig,
+  ChartPattern,
+  PriceLevel,
+} from "./technical-analysis.types";
 
 // ============================================================================
 // CHART TYPES
 // ============================================================================
 
-export type ChartType = 'candlestick' | 'line' | 'bar' | 'area' | 'heikin_ashi' | 'renko' | 'kagi' | 'point_figure';
+export type ChartType =
+  | "candlestick"
+  | "line"
+  | "bar"
+  | "area"
+  | "heikin_ashi"
+  | "renko"
+  | "kagi"
+  | "point_figure";
 
 export interface ChartConfig {
   symbol: string;
@@ -22,7 +34,7 @@ export interface ChartConfig {
   drawings: ChartDrawing[];
   showVolume: boolean;
   showGrid: boolean;
-  theme: 'light' | 'dark';
+  theme: "light" | "dark";
   colors: ChartColors;
 }
 
@@ -41,17 +53,17 @@ export interface ChartColors {
 
 export interface ChartOverlay {
   id: string;
-  type: 'indicator' | 'pattern' | 'level' | 'annotation';
+  type: "indicator" | "pattern" | "level" | "annotation";
   config: IndicatorConfig | ChartPattern | PriceLevel | Annotation;
   visible: boolean;
   color?: string;
   lineWidth?: number;
-  lineStyle?: 'solid' | 'dashed' | 'dotted';
+  lineStyle?: "solid" | "dashed" | "dotted";
 }
 
 export interface Annotation {
   id: string;
-  type: 'text' | 'arrow' | 'label' | 'shape';
+  type: "text" | "arrow" | "label" | "shape";
   x: number | Date;
   y: number;
   text?: string;
@@ -63,13 +75,26 @@ export interface Annotation {
 // DRAWING TOOLS
 // ============================================================================
 
-export type DrawingToolType = 
-  | 'trendline' | 'horizontal_line' | 'vertical_line' | 'ray'
-  | 'channel' | 'pitchfork' | 'gann_fan'
-  | 'fibonacci_retracement' | 'fibonacci_extension' | 'fibonacci_fan'
-  | 'rectangle' | 'ellipse' | 'triangle'
-  | 'text' | 'callout' | 'price_label'
-  | 'measure' | 'date_range' | 'price_range';
+export type DrawingToolType =
+  | "trendline"
+  | "horizontal_line"
+  | "vertical_line"
+  | "ray"
+  | "channel"
+  | "pitchfork"
+  | "gann_fan"
+  | "fibonacci_retracement"
+  | "fibonacci_extension"
+  | "fibonacci_fan"
+  | "rectangle"
+  | "ellipse"
+  | "triangle"
+  | "text"
+  | "callout"
+  | "price_label"
+  | "measure"
+  | "date_range"
+  | "price_range";
 
 export interface ChartDrawing {
   id: string;
@@ -92,13 +117,13 @@ export interface ChartPoint {
 export interface DrawingStyle {
   color: string;
   lineWidth: number;
-  lineStyle: 'solid' | 'dashed' | 'dotted';
+  lineStyle: "solid" | "dashed" | "dotted";
   fillColor?: string;
   fillOpacity?: number;
   fontSize?: number;
   fontColor?: string;
   showLabels?: boolean;
-  extend?: 'none' | 'left' | 'right' | 'both';
+  extend?: "none" | "left" | "right" | "both";
 }
 
 // ============================================================================
@@ -130,7 +155,7 @@ export interface IndicatorData {
   id: string;
   type: string;
   values: Array<{ timestamp: number; value: number | number[] }>;
-  pane: 'main' | 'separate';
+  pane: "main" | "separate";
   color: string | string[];
   lineWidth: number;
 }
@@ -148,10 +173,10 @@ export interface PatternHighlight {
 
 export interface LevelHighlight {
   id: string;
-  type: 'support' | 'resistance' | 'pivot';
+  type: "support" | "resistance" | "pivot";
   price: number;
   color: string;
-  lineStyle: 'solid' | 'dashed';
+  lineStyle: "solid" | "dashed";
   label?: string;
   strength?: number;
 }
@@ -160,7 +185,7 @@ export interface SignalMarker {
   id: string;
   timestamp: number;
   price: number;
-  type: 'buy' | 'sell' | 'alert';
+  type: "buy" | "sell" | "alert";
   label: string;
   color: string;
   icon: string;
@@ -182,7 +207,7 @@ export interface ComparisonChart {
   timeframe: Timeframe;
   startDate: Date;
   endDate: Date;
-  normalizeType: 'percent' | 'price' | 'indexed';
+  normalizeType: "percent" | "price" | "indexed";
   series: ComparisonSeries[];
 }
 
@@ -193,4 +218,3 @@ export interface ComparisonSeries {
   returnPercent: number;
   correlation: number;
 }
-

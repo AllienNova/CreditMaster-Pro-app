@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
 /**
  * Marketplace Error State
- * 
+ *
  * Error boundary UI for marketplace pages.
  */
 
-import { useEffect } from 'react';
+import { useEffect } from "react";
 
 interface ErrorProps {
   error: Error & { digest?: string };
@@ -16,7 +16,7 @@ interface ErrorProps {
 export default function MarketplaceError({ error, reset }: ErrorProps) {
   useEffect(() => {
     // Log the error to an error reporting service
-    console.error('Marketplace error:', error);
+    console.error("Marketplace error:", error);
   }, [error]);
 
   return (
@@ -27,7 +27,8 @@ export default function MarketplaceError({ error, reset }: ErrorProps) {
           Something went wrong
         </h2>
         <p className="text-gray-600 dark:text-slate-300 mb-6">
-          We encountered an error loading this marketplace page. Please try again.
+          We encountered an error loading this marketplace page. Please try
+          again.
         </p>
         <div className="flex gap-4 justify-center">
           <button
@@ -53,4 +54,3 @@ export default function MarketplaceError({ error, reset }: ErrorProps) {
     </div>
   );
 }
-

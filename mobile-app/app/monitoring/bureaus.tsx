@@ -3,8 +3,8 @@
  * Manage credit bureau connections and monitoring status
  */
 
-import React from 'react';
-import { PlaceholderScreen } from '../../src/components';
+import React from "react";
+import { PlaceholderScreen } from "../../src/components";
 
 export default function BureauConnectionsScreen() {
   return (
@@ -14,17 +14,17 @@ export default function BureauConnectionsScreen() {
       icon="link-outline"
       estimatedRelease="Phase 1 - Week 2"
       features={[
-        'Connect to Experian, Equifax, and TransUnion',
-        'OAuth-based secure authentication',
-        'View connection status for each bureau',
-        'Enable/disable monitoring per bureau',
-        'Reconnect expired connections',
-        'View last sync timestamp',
+        "Connect to Experian, Equifax, and TransUnion",
+        "OAuth-based secure authentication",
+        "View connection status for each bureau",
+        "Enable/disable monitoring per bureau",
+        "Reconnect expired connections",
+        "View last sync timestamp",
       ]}
       relatedScreens={[
-        { title: 'Credit Monitoring Dashboard', route: '/monitoring' },
-        { title: 'Monitoring Settings', route: '/monitoring/settings' },
-        { title: 'Credit Score', route: '/(tabs)/credit' },
+        { title: "Credit Monitoring Dashboard", route: "/monitoring" },
+        { title: "Monitoring Settings", route: "/monitoring/settings" },
+        { title: "Credit Score", route: "/(tabs)/credit" },
       ]}
     />
   );

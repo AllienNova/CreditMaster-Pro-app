@@ -5,11 +5,11 @@
  * Endpoints for managing individual trading signals
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { SignalGenerator } from '@/lib/investments/signal-generator';
-import { getUser } from '@/lib/auth/session';
-import { rateLimit } from '@/lib/rate-limit';
-import { z } from 'zod';
+import { NextRequest, NextResponse } from "next/server";
+import { SignalGenerator } from "@/lib/investments/signal-generator";
+import { getUser } from "@/lib/auth/session";
+import { rateLimit } from "@/lib/rate-limit";
+import { z } from "zod";
 
 // Initialize signal generator
 const signalGenerator = new SignalGenerator();
@@ -24,7 +24,7 @@ const limiter = rateLimit({
 const TrackOutcomeSchema = z.object({
   entryPrice: z.number().positive(),
   exitPrice: z.number().positive().optional(),
-  status: z.enum(['executed', 'expired', 'cancelled']),
+  status: z.enum(["executed", "expired", "cancelled"]),
 });
 
 /**
@@ -33,12 +33,12 @@ const TrackOutcomeSchema = z.object({
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const user = await getUser();
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Rate limiting
@@ -46,24 +46,28 @@ export async function GET(
       await limiter.check(100, user.id); // 100 requests per hour
     } catch {
       return NextResponse.json(
-        { error: 'Rate limit exceeded. Maximum 100 requests per hour.' },
-        { status: 429 }
+        { error: "Rate limit exceeded. Maximum 100 requests per hour." },
+        { status: 429 },
       );
     }
 
     const { id } = await params;
 
     // Validate UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(id)) {
-      return NextResponse.json({ error: 'Invalid signal ID format' }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid signal ID format" },
+        { status: 400 },
+      );
     }
 
     const signals = await signalGenerator.getSignalHistory(user.id);
     const signal = signals.find((s) => s.id === id);
 
     if (!signal) {
-      return NextResponse.json({ error: 'Signal not found' }, { status: 404 });
+      return NextResponse.json({ error: "Signal not found" }, { status: 404 });
     }
 
     // Evaluate current strength
@@ -77,10 +81,10 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error('Error fetching signal:', error);
+    console.error("Error fetching signal:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch signal' },
-      { status: 500 }
+      { error: "Failed to fetch signal" },
+      { status: 500 },
     );
   }
 }
@@ -98,12 +102,12 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const user = await getUser();
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Rate limiting
@@ -111,17 +115,21 @@ export async function PATCH(
       await limiter.check(100, user.id); // 100 requests per hour
     } catch {
       return NextResponse.json(
-        { error: 'Rate limit exceeded. Maximum 100 requests per hour.' },
-        { status: 429 }
+        { error: "Rate limit exceeded. Maximum 100 requests per hour." },
+        { status: 429 },
       );
     }
 
     const { id } = await params;
 
     // Validate UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(id)) {
-      return NextResponse.json({ error: 'Invalid signal ID format' }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid signal ID format" },
+        { status: 400 },
+      );
     }
 
     const body = await request.json();
@@ -137,22 +145,21 @@ export async function PATCH(
       message: `Signal ${validatedData.status}`,
     });
   } catch (error) {
-    console.error('Error updating signal:', error);
+    console.error("Error updating signal:", error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Invalid request body', details: error.errors },
-        { status: 400 }
+        { error: "Invalid request body", details: error.errors },
+        { status: 400 },
       );
     }
 
     return NextResponse.json(
       {
-        error: 'Failed to update signal',
-        details: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to update signal",
+        details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-

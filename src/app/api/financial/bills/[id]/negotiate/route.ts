@@ -5,10 +5,13 @@
  * Phase 2.4: Bill Negotiation Assistant
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
-import { getBillNegotiator } from '@/lib/financial/bill-negotiator';
-import { applyFinancialAPIMiddleware, finalizeResponse } from '@/lib/api/financial-api-middleware';
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { getBillNegotiator } from "@/lib/financial/bill-negotiator";
+import {
+  applyFinancialAPIMiddleware,
+  finalizeResponse,
+} from "@/lib/api/financial-api-middleware";
 
 // ============================================================================
 // VALIDATION SCHEMAS
@@ -16,9 +19,9 @@ import { applyFinancialAPIMiddleware, finalizeResponse } from '@/lib/api/financi
 
 const generateScriptSchema = z.object({
   userTenure: z.number().int().positive().optional(),
-  paymentHistory: z.enum(['excellent', 'good', 'fair', 'poor']).optional(),
+  paymentHistory: z.enum(["excellent", "good", "fair", "poor"]).optional(),
   loyaltyScore: z.number().min(0).max(100).optional(),
-  strategy: z.enum(['aggressive', 'balanced', 'conservative']).optional(),
+  strategy: z.enum(["aggressive", "balanced", "conservative"]).optional(),
 });
 
 // ============================================================================
@@ -27,7 +30,7 @@ const generateScriptSchema = z.object({
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const startTime = Date.now();
 
@@ -56,38 +59,48 @@ export async function POST(
 
     // Get all negotiable bills for the user
     const bills = await billNegotiator.identifyNegotiableBills(userId!);
-    const bill = bills.find(b => b.id === billId);
+    const bill = bills.find((b) => b.id === billId);
 
     if (!bill) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Bill not found',
+          error: "Bill not found",
           message: `No negotiable bill found with ID: ${billId}`,
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     // Build user profile if provided
-    const userProfile = validatedBody.userTenure || validatedBody.paymentHistory || validatedBody.loyaltyScore
-      ? {
-          userId: userId!,
-          tenure: validatedBody.userTenure || 0,
-          paymentHistory: (validatedBody.paymentHistory || 'good') as 'excellent' | 'good' | 'fair' | 'poor',
-          loyaltyScore: validatedBody.loyaltyScore || 75,
-          previousNegotiations: 0,
-          successRate: 0,
-        }
-      : undefined;
+    const userProfile =
+      validatedBody.userTenure ||
+      validatedBody.paymentHistory ||
+      validatedBody.loyaltyScore
+        ? {
+            userId: userId!,
+            tenure: validatedBody.userTenure || 0,
+            paymentHistory: (validatedBody.paymentHistory || "good") as
+              | "excellent"
+              | "good"
+              | "fair"
+              | "poor",
+            loyaltyScore: validatedBody.loyaltyScore || 75,
+            previousNegotiations: 0,
+            successRate: 0,
+          }
+        : undefined;
 
     // Generate negotiation script
-    const script = await billNegotiator.generateNegotiationScript(bill, userProfile);
+    const script = await billNegotiator.generateNegotiationScript(
+      bill,
+      userProfile,
+    );
 
     // Get market analysis for additional context
     const marketAnalysis = await billNegotiator.analyzeMarketRates(
       bill.billType,
-      bill.provider
+      bill.provider,
     );
 
     return finalizeResponse(
@@ -127,30 +140,29 @@ export async function POST(
         },
       }),
       middlewareStartTime,
-      userId
+      userId,
     );
   } catch (error) {
-    console.error('Error in POST /api/financial/bills/[id]/negotiate:', error);
+    console.error("Error in POST /api/financial/bills/[id]/negotiate:", error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Validation error',
+          error: "Validation error",
           details: error.errors,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     return NextResponse.json(
       {
         success: false,
-        error: 'Internal server error',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Internal server error",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-

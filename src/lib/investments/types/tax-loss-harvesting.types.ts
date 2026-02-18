@@ -4,13 +4,13 @@
  * Type definitions for tax-loss harvesting optimization
  */
 
-import { Holding } from './portfolio.types';
+import { Holding } from "./portfolio.types";
 
 /**
  * Federal Tax Brackets (2024 IRS rates)
  */
 export enum TaxBracket {
-  BRACKET_10 = 0.10,
+  BRACKET_10 = 0.1,
   BRACKET_12 = 0.12,
   BRACKET_22 = 0.22,
   BRACKET_24 = 0.24,
@@ -23,8 +23,8 @@ export enum TaxBracket {
  * Capital Gains Tax Treatment
  */
 export enum CapitalGainsTreatment {
-  SHORT_TERM = 'short_term', // Held < 1 year, taxed as ordinary income
-  LONG_TERM = 'long_term',   // Held >= 1 year, preferential rates (0%, 15%, 20%)
+  SHORT_TERM = "short_term", // Held < 1 year, taxed as ordinary income
+  LONG_TERM = "long_term", // Held >= 1 year, preferential rates (0%, 15%, 20%)
 }
 
 /**
@@ -40,10 +40,10 @@ export interface TaxLossOpportunity {
   holdingPeriodDays: number;
   capitalGainsTreatment: CapitalGainsTreatment;
   estimatedTaxSavings: number;
-  washSaleRisk: 'none' | 'low' | 'medium' | 'high';
+  washSaleRisk: "none" | "low" | "medium" | "high";
   washSaleViolations: WashSaleViolation[];
-  priority: 'high' | 'medium' | 'low';
-  recommendedAction: 'sell' | 'hold' | 'review';
+  priority: "high" | "medium" | "low";
+  recommendedAction: "sell" | "hold" | "review";
 }
 
 /**
@@ -51,12 +51,15 @@ export interface TaxLossOpportunity {
  * IRS 30-day wash sale rule violation
  */
 export interface WashSaleViolation {
-  violationType: 'purchase_before' | 'purchase_after' | 'substantially_identical';
+  violationType:
+    | "purchase_before"
+    | "purchase_after"
+    | "substantially_identical";
   symbol: string;
   transactionDate: Date;
   daysFromSale: number;
   description: string;
-  severity: 'warning' | 'error';
+  severity: "warning" | "error";
 }
 
 /**
@@ -64,7 +67,7 @@ export interface WashSaleViolation {
  */
 export interface TaxOptimizedRecommendation {
   symbol: string;
-  action: 'sell' | 'buy' | 'hold';
+  action: "sell" | "buy" | "hold";
   quantity: number;
   estimatedProceeds?: number;
   taxImpact: number; // Positive = savings, Negative = liability
@@ -145,4 +148,3 @@ export interface TaxLossHarvestingTransaction {
   washSaleCompliant: boolean;
   notes?: string;
 }
-

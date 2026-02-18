@@ -6,9 +6,9 @@
  * intelligent fallback and consensus-based field resolution.
  */
 
-export * from './types';
-export * from './providers';
+export * from "./types";
+export * from "./providers";
 export {
   TaxDocumentProcessor,
   taxDocumentProcessor,
-} from './TaxDocumentProcessor';
+} from "./TaxDocumentProcessor";

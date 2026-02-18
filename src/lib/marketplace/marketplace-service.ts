@@ -4,11 +4,11 @@
  * Core marketplace operations: getProducts, getCategories, search, filter
  */
 
-import { getSupabase } from '../supabase/client';
-import type { Database } from '../supabase/types';
+import { getSupabase } from "../supabase/client";
+import type { Database } from "../supabase/types";
 
-type ProductRow = Database['public']['Tables']['marketplace_products']['Row'];
-type ProviderRow = Database['public']['Tables']['marketplace_providers']['Row'];
+type ProductRow = Database["public"]["Tables"]["marketplace_products"]["Row"];
+type ProviderRow = Database["public"]["Tables"]["marketplace_providers"]["Row"];
 
 export interface MarketplaceProduct {
   id: string;
@@ -17,7 +17,7 @@ export interface MarketplaceProduct {
   description: string | null;
   category: string;
   price: number;
-  priceType: 'one_time' | 'monthly' | 'yearly';
+  priceType: "one_time" | "monthly" | "yearly";
   rating: number;
   reviewCount: number;
   features: Record<string, unknown>;
@@ -48,33 +48,33 @@ export interface ProductFilters {
   search?: string;
 }
 
-const products = () => getSupabase().from('marketplace_products');
-const providers = () => getSupabase().from('marketplace_providers');
+const products = () => getSupabase().from("marketplace_products");
+const providers = () => getSupabase().from("marketplace_providers");
 
 class MarketplaceService {
   async getProducts(filters?: ProductFilters): Promise<MarketplaceProduct[]> {
-    let query = products().select('*').eq('active', true);
+    let query = products().select("*").eq("active", true);
 
     if (filters?.category) {
-      query = query.eq('category', filters.category);
+      query = query.eq("category", filters.category);
     }
     if (filters?.minPrice !== undefined) {
-      query = query.gte('price', filters.minPrice);
+      query = query.gte("price", filters.minPrice);
     }
     if (filters?.maxPrice !== undefined) {
-      query = query.lte('price', filters.maxPrice);
+      query = query.lte("price", filters.maxPrice);
     }
     if (filters?.minRating !== undefined) {
-      query = query.gte('rating', filters.minRating);
+      query = query.gte("rating", filters.minRating);
     }
     if (filters?.providerId) {
-      query = query.eq('provider_id', filters.providerId);
+      query = query.eq("provider_id", filters.providerId);
     }
     if (filters?.search) {
-      query = query.ilike('name', `%${filters.search}%`);
+      query = query.ilike("name", `%${filters.search}%`);
     }
 
-    const { data, error } = await query.order('rating', { ascending: false });
+    const { data, error } = await query.order("rating", { ascending: false });
 
     if (error) {
       // MarketplaceService error: Error fetching products
@@ -85,7 +85,7 @@ class MarketplaceService {
   }
 
   async getProductById(id: string): Promise<MarketplaceProduct | null> {
-    const { data, error } = await products().select('*').eq('id', id).single();
+    const { data, error } = await products().select("*").eq("id", id).single();
 
     if (error || !data) {
       return null;
@@ -96,15 +96,15 @@ class MarketplaceService {
 
   async getCategories(): Promise<string[]> {
     const { data, error } = await products()
-      .select('category')
-      .eq('active', true);
+      .select("category")
+      .eq("active", true);
 
     if (error || !data) {
       return [];
     }
 
     const categorySet = new Set<string>(
-      data.map((p: { category: string }) => p.category)
+      data.map((p: { category: string }) => p.category),
     );
     const categories = Array.from(categorySet);
     return categories.sort();
@@ -112,10 +112,10 @@ class MarketplaceService {
 
   async searchProducts(query: string): Promise<MarketplaceProduct[]> {
     const { data, error } = await products()
-      .select('*')
-      .eq('active', true)
+      .select("*")
+      .eq("active", true)
       .or(`name.ilike.%${query}%,description.ilike.%${query}%`)
-      .order('rating', { ascending: false })
+      .order("rating", { ascending: false })
       .limit(20);
 
     if (error) {
@@ -128,10 +128,10 @@ class MarketplaceService {
 
   async getFeaturedProducts(limit: number = 6): Promise<MarketplaceProduct[]> {
     const { data, error } = await products()
-      .select('*')
-      .eq('active', true)
-      .gte('rating', 4.0)
-      .order('review_count', { ascending: false })
+      .select("*")
+      .eq("active", true)
+      .gte("rating", 4.0)
+      .order("review_count", { ascending: false })
       .limit(limit);
 
     if (error) {

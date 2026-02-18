@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   LineChart,
   Wallet,
@@ -19,7 +19,7 @@ import {
   Clock,
   X,
   Check,
-} from 'lucide-react';
+} from "lucide-react";
 
 interface PaperAccount {
   id: string;
@@ -40,13 +40,13 @@ interface PaperPosition {
   marketValue: number;
   unrealizedPL: number;
   unrealizedPLPercent: number;
-  side: 'long' | 'short';
+  side: "long" | "short";
 }
 
 interface PaperOrder {
   id: string;
   symbol: string;
-  side: 'buy' | 'sell';
+  side: "buy" | "sell";
   type: string;
   quantity: number;
   price?: number;
@@ -56,15 +56,15 @@ interface PaperOrder {
 
 interface OrderFormData {
   symbol: string;
-  side: 'buy' | 'sell';
-  type: 'market' | 'limit';
+  side: "buy" | "sell";
+  type: "market" | "limit";
   quantity: number;
   limitPrice?: number;
 }
 
 const MOCK_ACCOUNT: PaperAccount = {
-  id: '1',
-  name: 'Paper Trading Account',
+  id: "1",
+  name: "Paper Trading Account",
   cashBalance: 85432.5,
   portfolioValue: 14567.5,
   totalValue: 100000,
@@ -74,38 +74,38 @@ const MOCK_ACCOUNT: PaperAccount = {
 
 const MOCK_POSITIONS: PaperPosition[] = [
   {
-    id: '1',
-    symbol: 'AAPL',
+    id: "1",
+    symbol: "AAPL",
     quantity: 50,
     avgEntryPrice: 175.0,
     currentPrice: 182.5,
     marketValue: 9125.0,
     unrealizedPL: 375.0,
     unrealizedPLPercent: 4.29,
-    side: 'long',
+    side: "long",
   },
   {
-    id: '2',
-    symbol: 'MSFT',
+    id: "2",
+    symbol: "MSFT",
     quantity: 15,
     avgEntryPrice: 380.0,
     currentPrice: 362.83,
     marketValue: 5442.5,
     unrealizedPL: -257.5,
     unrealizedPLPercent: -4.51,
-    side: 'long',
+    side: "long",
   },
 ];
 
 const MOCK_ORDERS: PaperOrder[] = [
   {
-    id: '1',
-    symbol: 'NVDA',
-    side: 'buy',
-    type: 'limit',
+    id: "1",
+    symbol: "NVDA",
+    side: "buy",
+    type: "limit",
     quantity: 10,
     price: 850.0,
-    status: 'pending',
+    status: "pending",
     createdAt: new Date(),
   },
 ];
@@ -116,26 +116,26 @@ export default function PaperTradingPage() {
   const [orders, setOrders] = useState<PaperOrder[]>(MOCK_ORDERS);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    'positions' | 'orders' | 'history'
-  >('positions');
+    "positions" | "orders" | "history"
+  >("positions");
   const [isResetting, setIsResetting] = useState(false);
 
   const [orderForm, setOrderForm] = useState<OrderFormData>({
-    symbol: '',
-    side: 'buy',
-    type: 'market',
+    symbol: "",
+    side: "buy",
+    type: "market",
     quantity: 1,
   });
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(amount);
   };
 
   const formatPercent = (value: number) => {
-    const sign = value >= 0 ? '+' : '';
+    const sign = value >= 0 ? "+" : "";
     return `${sign}${value.toFixed(2)}%`;
   };
 
@@ -148,13 +148,13 @@ export default function PaperTradingPage() {
       type: orderForm.type,
       quantity: orderForm.quantity,
       price: orderForm.limitPrice,
-      status: orderForm.type === 'market' ? 'filled' : 'pending',
+      status: orderForm.type === "market" ? "filled" : "pending",
       createdAt: new Date(),
     };
 
     setOrders([newOrder, ...orders]);
     setShowOrderModal(false);
-    setOrderForm({ symbol: '', side: 'buy', type: 'market', quantity: 1 });
+    setOrderForm({ symbol: "", side: "buy", type: "market", quantity: 1 });
   };
 
   const handleResetAccount = async () => {
@@ -216,7 +216,7 @@ export default function PaperTradingPage() {
               className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
             >
               <RefreshCw
-                className={`w-4 h-4 ${isResetting ? 'animate-spin' : ''}`}
+                className={`w-4 h-4 ${isResetting ? "animate-spin" : ""}`}
               />
               Reset Account
             </button>
@@ -283,7 +283,7 @@ export default function PaperTradingPage() {
           <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm">
             <div className="flex items-center gap-3">
               <div
-                className={`p-2 rounded-lg ${ account.dayChange >= 0 ? 'bg-green-100' : 'bg-red-100 dark:bg-red-900' }`}
+                className={`p-2 rounded-lg ${account.dayChange >= 0 ? "bg-green-100" : "bg-red-100 dark:bg-red-900"}`}
               >
                 {account.dayChange >= 0 ? (
                   <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />
@@ -297,7 +297,7 @@ export default function PaperTradingPage() {
                 </p>
                 <p
                   className={`text-xl font-bold ${
-                    account.dayChange >= 0 ? 'text-green-600' : 'text-red-600'
+                    account.dayChange >= 0 ? "text-green-600" : "text-red-600"
                   }`}
                 >
                   {formatCurrency(account.dayChange)} (
@@ -314,23 +314,23 @@ export default function PaperTradingPage() {
             <div className="flex">
               {[
                 {
-                  id: 'positions',
-                  label: 'Positions',
+                  id: "positions",
+                  label: "Positions",
                   icon: Target,
                   count: positions.length,
                 },
                 {
-                  id: 'orders',
-                  label: 'Open Orders',
+                  id: "orders",
+                  label: "Open Orders",
                   icon: Clock,
-                  count: orders.filter((o) => o.status === 'pending').length,
+                  count: orders.filter((o) => o.status === "pending").length,
                 },
-                { id: 'history', label: 'Trade History', icon: History },
+                { id: "history", label: "Trade History", icon: History },
               ].map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                  className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors border-b-2 ${ activeTab === tab.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-200 dark:hover:text-gray-300' }`}
+                  className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors border-b-2 ${activeTab === tab.id ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-200 dark:hover:text-gray-300"}`}
                 >
                   <tab.icon className="w-4 h-4" />
                   {tab.label}
@@ -346,7 +346,7 @@ export default function PaperTradingPage() {
 
           {/* Tab Content */}
           <div className="p-6">
-            {activeTab === 'positions' && (
+            {activeTab === "positions" && (
               <div>
                 {positions.length === 0 ? (
                   <div className="text-center py-12">
@@ -390,7 +390,7 @@ export default function PaperTradingPage() {
                                   {pos.symbol}
                                 </span>
                                 <span
-                                  className={`text-xs px-1.5 py-0.5 rounded ${ pos.side === 'long' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300' }`}
+                                  className={`text-xs px-1.5 py-0.5 rounded ${pos.side === "long" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300"}`}
                                 >
                                   {pos.side.toUpperCase()}
                                 </span>
@@ -412,8 +412,8 @@ export default function PaperTradingPage() {
                               <div
                                 className={
                                   pos.unrealizedPL >= 0
-                                    ? 'text-green-600'
-                                    : 'text-red-600'
+                                    ? "text-green-600"
+                                    : "text-red-600"
                                 }
                               >
                                 <div className="font-medium">
@@ -438,9 +438,9 @@ export default function PaperTradingPage() {
               </div>
             )}
 
-            {activeTab === 'orders' && (
+            {activeTab === "orders" && (
               <div>
-                {orders.filter((o) => o.status === 'pending').length === 0 ? (
+                {orders.filter((o) => o.status === "pending").length === 0 ? (
                   <div className="text-center py-12">
                     <Clock className="w-12 h-12 text-gray-400 dark:text-slate-500 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
@@ -453,7 +453,7 @@ export default function PaperTradingPage() {
                 ) : (
                   <div className="space-y-3">
                     {orders
-                      .filter((o) => o.status === 'pending')
+                      .filter((o) => o.status === "pending")
                       .map((order) => (
                         <div
                           key={order.id}
@@ -461,7 +461,7 @@ export default function PaperTradingPage() {
                         >
                           <div className="flex items-center gap-4">
                             <div
-                              className={`px-2 py-1 rounded text-sm font-medium ${ order.side === 'buy' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300' }`}
+                              className={`px-2 py-1 rounded text-sm font-medium ${order.side === "buy" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300"}`}
                             >
                               {order.side.toUpperCase()}
                             </div>
@@ -470,10 +470,10 @@ export default function PaperTradingPage() {
                                 {order.symbol}
                               </div>
                               <div className="text-sm text-gray-500 dark:text-slate-400">
-                                {order.quantity} shares @{' '}
+                                {order.quantity} shares @{" "}
                                 {order.price
                                   ? formatCurrency(order.price)
-                                  : 'Market'}
+                                  : "Market"}
                               </div>
                             </div>
                           </div>
@@ -496,7 +496,7 @@ export default function PaperTradingPage() {
               </div>
             )}
 
-            {activeTab === 'history' && (
+            {activeTab === "history" && (
               <div className="text-center py-12">
                 <History className="w-12 h-12 text-gray-400 dark:text-slate-500 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
@@ -552,14 +552,18 @@ export default function PaperTradingPage() {
                   Best Trade
                 </p>
                 <p className="text-lg font-semibold text-green-600">+$450.00</p>
-                <p className="text-xs text-gray-500 dark:text-slate-400">AAPL</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400">
+                  AAPL
+                </p>
               </div>
               <div>
                 <p className="text-sm text-gray-500 dark:text-slate-400">
                   Worst Trade
                 </p>
                 <p className="text-lg font-semibold text-red-600">-$180.00</p>
-                <p className="text-xs text-gray-500 dark:text-slate-400">TSLA</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400">
+                  TSLA
+                </p>
               </div>
               <div>
                 <p className="text-sm text-gray-500 dark:text-slate-400">
@@ -642,12 +646,12 @@ export default function PaperTradingPage() {
                     <button
                       type="button"
                       onClick={() =>
-                        setOrderForm({ ...orderForm, side: 'buy' })
+                        setOrderForm({ ...orderForm, side: "buy" })
                       }
                       className={`py-2 rounded-lg font-medium transition-colors ${
-                        orderForm.side === 'buy'
-                          ? 'bg-green-600 text-white'
-                          : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300'
+                        orderForm.side === "buy"
+                          ? "bg-green-600 text-white"
+                          : "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300"
                       }`}
                     >
                       Buy
@@ -655,12 +659,12 @@ export default function PaperTradingPage() {
                     <button
                       type="button"
                       onClick={() =>
-                        setOrderForm({ ...orderForm, side: 'sell' })
+                        setOrderForm({ ...orderForm, side: "sell" })
                       }
                       className={`py-2 rounded-lg font-medium transition-colors ${
-                        orderForm.side === 'sell'
-                          ? 'bg-red-600 text-white'
-                          : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300'
+                        orderForm.side === "sell"
+                          ? "bg-red-600 text-white"
+                          : "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300"
                       }`}
                     >
                       Sell
@@ -678,14 +682,14 @@ export default function PaperTradingPage() {
                       onClick={() =>
                         setOrderForm({
                           ...orderForm,
-                          type: 'market',
+                          type: "market",
                           limitPrice: undefined,
                         })
                       }
                       className={`py-2 rounded-lg font-medium transition-colors ${
-                        orderForm.type === 'market'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300'
+                        orderForm.type === "market"
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300"
                       }`}
                     >
                       Market
@@ -693,12 +697,12 @@ export default function PaperTradingPage() {
                     <button
                       type="button"
                       onClick={() =>
-                        setOrderForm({ ...orderForm, type: 'limit' })
+                        setOrderForm({ ...orderForm, type: "limit" })
                       }
                       className={`py-2 rounded-lg font-medium transition-colors ${
-                        orderForm.type === 'limit'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300'
+                        orderForm.type === "limit"
+                          ? "bg-blue-600 text-white"
+                          : "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300"
                       }`}
                     >
                       Limit
@@ -729,7 +733,7 @@ export default function PaperTradingPage() {
                   />
                 </div>
 
-                {orderForm.type === 'limit' && (
+                {orderForm.type === "limit" && (
                   <div>
                     <label
                       htmlFor="limitPrice"
@@ -742,7 +746,7 @@ export default function PaperTradingPage() {
                       type="number"
                       step="0.01"
                       min="0.01"
-                      value={orderForm.limitPrice || ''}
+                      value={orderForm.limitPrice || ""}
                       onChange={(e) =>
                         setOrderForm({
                           ...orderForm,
@@ -751,7 +755,7 @@ export default function PaperTradingPage() {
                       }
                       placeholder="0.00"
                       className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                      required={orderForm.type === 'limit'}
+                      required={orderForm.type === "limit"}
                     />
                   </div>
                 )}
@@ -778,13 +782,13 @@ export default function PaperTradingPage() {
                   <button
                     type="submit"
                     className={`flex-1 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
-                      orderForm.side === 'buy'
-                        ? 'bg-green-600 text-white hover:bg-green-700'
-                        : 'bg-red-600 text-white hover:bg-red-700'
+                      orderForm.side === "buy"
+                        ? "bg-green-600 text-white hover:bg-green-700"
+                        : "bg-red-600 text-white hover:bg-red-700"
                     }`}
                   >
                     <Check className="w-4 h-4" />
-                    {orderForm.side === 'buy' ? 'Buy' : 'Sell'}
+                    {orderForm.side === "buy" ? "Buy" : "Sell"}
                   </button>
                 </div>
               </form>

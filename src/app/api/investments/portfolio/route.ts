@@ -4,9 +4,9 @@
  * GET /api/investments/portfolio - Get user's portfolio overview
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { getSupabase } from '@/lib/supabase/client';
+import { NextRequest, NextResponse } from "next/server";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
 import type {
@@ -14,7 +14,7 @@ import type {
   Holding,
   AllocationItem,
   PerformancePoint,
-} from '@/lib/investments/types/portfolio.types';
+} from "@/lib/investments/types/portfolio.types";
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,26 +22,26 @@ export async function GET(request: NextRequest) {
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user?.id) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
       );
     }
 
     const userId = validation.user.id;
     const searchParams = request.nextUrl.searchParams;
-    const period = searchParams.get('period') || '1M'; // 1M, 3M, 6M, 1Y, ALL
+    const period = searchParams.get("period") || "1M"; // 1M, 3M, 6M, 1Y, ALL
 
     // Fetch holdings from database
     const { data: holdingsData, error: holdingsError } = await supabase
-      .from('investment_holdings')
-      .select('*')
-      .eq('user_id', userId);
+      .from("investment_holdings")
+      .select("*")
+      .eq("user_id", userId);
 
     if (holdingsError) {
       // PortfolioRoute error: Failed to fetch holdings
       return NextResponse.json(
-        { success: false, error: 'Failed to fetch holdings' },
-        { status: 500 }
+        { success: false, error: "Failed to fetch holdings" },
+        { status: 500 },
       );
     }
 
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
     // Generate performance history based on period
     const performanceHistory = generatePerformanceHistory(
       totalValue,
-      period as '1M' | '3M' | '6M' | '1Y' | 'ALL'
+      period as "1M" | "3M" | "6M" | "1Y" | "ALL",
     );
 
     const portfolio: Portfolio = {
@@ -119,31 +119,31 @@ export async function GET(request: NextRequest) {
     // PortfolioRoute error: API failed
     void _error;
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
+      { success: false, error: "Internal server error" },
+      { status: 500 },
     );
   }
 }
 
 function formatAssetType(type: string): string {
   const map: Record<string, string> = {
-    stock: 'Stocks',
-    etf: 'ETFs',
-    mutual_fund: 'Mutual Funds',
-    bond: 'Bonds',
-    crypto: 'Cryptocurrency',
-    option: 'Options',
-    other: 'Other',
+    stock: "Stocks",
+    etf: "ETFs",
+    mutual_fund: "Mutual Funds",
+    bond: "Bonds",
+    crypto: "Cryptocurrency",
+    option: "Options",
+    other: "Other",
   };
   return map[type] || type;
 }
 
 function generatePerformanceHistory(
   currentValue: number,
-  period: '1M' | '3M' | '6M' | '1Y' | 'ALL'
+  period: "1M" | "3M" | "6M" | "1Y" | "ALL",
 ): PerformancePoint[] {
   const points: PerformancePoint[] = [];
-  const periodDays = { '1M': 30, '3M': 90, '6M': 180, '1Y': 365, ALL: 730 };
+  const periodDays = { "1M": 30, "3M": 90, "6M": 180, "1Y": 365, ALL: 730 };
   const days = periodDays[period];
   const volatility = 0.02;
   let value = currentValue * (1 - Math.random() * 0.15); // Start 0-15% lower
@@ -154,13 +154,13 @@ function generatePerformanceHistory(
     const change = (Math.random() - 0.48) * volatility * value;
     value = Math.max(value + change, value * 0.9);
     points.push({
-      date: date.toISOString().split('T')[0],
+      date: date.toISOString().split("T")[0],
       value: Math.round(value * 100) / 100,
     });
   }
   // Ensure last point is current value
   points[points.length - 1] = {
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toISOString().split("T")[0],
     value: currentValue,
   };
   return points;

@@ -8,8 +8,8 @@ This document provides ready-to-use code examples for implementing the key onboa
 
 ```typescript
 // hooks/useOnboardingProgress.ts
-import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface OnboardingProgress {
   currentStep: number;
@@ -24,7 +24,7 @@ export const useOnboardingProgress = () => {
     currentStep: 1,
     completedSteps: [],
     formData: {},
-    lastUpdated: new Date().toISOString()
+    lastUpdated: new Date().toISOString(),
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -33,7 +33,7 @@ export const useOnboardingProgress = () => {
   useEffect(() => {
     const loadProgress = async () => {
       if (!user?.id) return;
-      
+
       try {
         const response = await fetch(`/api/onboarding/progress/${user.id}`);
         if (response.ok) {
@@ -43,7 +43,7 @@ export const useOnboardingProgress = () => {
           }
         }
       } catch (error) {
-        console.error('Failed to load progress:', error);
+        console.error("Failed to load progress:", error);
       } finally {
         setIsLoading(false);
       }
@@ -60,15 +60,15 @@ export const useOnboardingProgress = () => {
       setIsSaving(true);
       try {
         await fetch(`/api/onboarding/progress/${user.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             ...progress,
-            lastUpdated: new Date().toISOString()
-          })
+            lastUpdated: new Date().toISOString(),
+          }),
         });
       } catch (error) {
-        console.error('Failed to save progress:', error);
+        console.error("Failed to save progress:", error);
       } finally {
         setIsSaving(false);
       }
@@ -79,21 +79,21 @@ export const useOnboardingProgress = () => {
   }, [user?.id, progress, isLoading]);
 
   const updateProgress = useCallback((updates: Partial<OnboardingProgress>) => {
-    setProgress(prev => ({ ...prev, ...updates }));
+    setProgress((prev) => ({ ...prev, ...updates }));
   }, []);
 
   const completeStep = useCallback((step: number) => {
-    setProgress(prev => ({
+    setProgress((prev) => ({
       ...prev,
       completedSteps: [...new Set([...prev.completedSteps, step])],
-      currentStep: step + 1
+      currentStep: step + 1,
     }));
   }, []);
 
   const updateFormData = useCallback((field: string, value: any) => {
-    setProgress(prev => ({
+    setProgress((prev) => ({
       ...prev,
-      formData: { ...prev.formData, [field]: value }
+      formData: { ...prev.formData, [field]: value },
     }));
   }, []);
 
@@ -103,7 +103,7 @@ export const useOnboardingProgress = () => {
     isSaving,
     updateProgress,
     completeStep,
-    updateFormData
+    updateFormData,
   };
 };
 ```
@@ -112,12 +112,12 @@ export const useOnboardingProgress = () => {
 
 ```typescript
 // hooks/useOnboardingProgress.ts
-import { useState, useEffect, useCallback } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useAuthStore } from '@/store/authStore';
-import NetInfo from '@react-native-community/netinfo';
+import { useState, useEffect, useCallback } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAuthStore } from "@/store/authStore";
+import NetInfo from "@react-native-community/netinfo";
 
-const STORAGE_KEY = '@onboarding_progress';
+const STORAGE_KEY = "@onboarding_progress";
 
 export const useOnboardingProgress = () => {
   const { user } = useAuthStore();
@@ -125,14 +125,14 @@ export const useOnboardingProgress = () => {
     currentStep: 1,
     completedSteps: [],
     formData: {},
-    lastUpdated: new Date().toISOString()
+    lastUpdated: new Date().toISOString(),
   });
   const [isOnline, setIsOnline] = useState(true);
   const [needsSync, setNeedsSync] = useState(false);
 
   // Monitor network status
   useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener(state => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
       setIsOnline(state.isConnected ?? false);
     });
     return () => unsubscribe();
@@ -147,7 +147,7 @@ export const useOnboardingProgress = () => {
           setProgress(JSON.parse(stored));
         }
       } catch (error) {
-        console.error('Failed to load local progress:', error);
+        console.error("Failed to load local progress:", error);
       }
     };
     loadLocal();
@@ -159,7 +159,7 @@ export const useOnboardingProgress = () => {
       try {
         await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
       } catch (error) {
-        console.error('Failed to save local progress:', error);
+        console.error("Failed to save local progress:", error);
       }
     };
     saveLocal();
@@ -172,13 +172,13 @@ export const useOnboardingProgress = () => {
     const syncWithServer = async () => {
       try {
         await fetch(`/api/onboarding/progress/${user.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(progress)
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(progress),
         });
         setNeedsSync(false);
       } catch (error) {
-        console.error('Failed to sync progress:', error);
+        console.error("Failed to sync progress:", error);
       }
     };
 
@@ -186,7 +186,7 @@ export const useOnboardingProgress = () => {
   }, [isOnline, needsSync, user?.id, progress]);
 
   const updateProgress = useCallback((updates) => {
-    setProgress(prev => ({ ...prev, ...updates }));
+    setProgress((prev) => ({ ...prev, ...updates }));
     setNeedsSync(true);
   }, []);
 
@@ -510,5 +510,3 @@ const styles = StyleSheet.create({
   }
 });
 ```
-
-

@@ -3,24 +3,25 @@
  * Handles database operations for credit reports and related data
  */
 
-import { createClient } from '@supabase/supabase-js';
-import type { Database } from '@/lib/supabase/types';
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/supabase/types";
 
-type CreditReportRow = Database['public']['Tables']['credit_reports']['Row'];
-type CreditReportInsert = Database['public']['Tables']['credit_reports']['Insert'];
+type CreditReportRow = Database["public"]["Tables"]["credit_reports"]["Row"];
+type CreditReportInsert =
+  Database["public"]["Tables"]["credit_reports"]["Insert"];
 
 // Create a typed Supabase client for credit repair operations
 function getTypedSupabase() {
   return createClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   );
 }
 
 export interface CreditReport {
   id: string;
   userId: string;
-  bureau: 'experian' | 'equifax' | 'transunion';
+  bureau: "experian" | "equifax" | "transunion";
   reportDate: Date;
   score: number;
   reportData: Record<string, unknown>;
@@ -42,14 +43,14 @@ const creditReports = {
    */
   async getCreditReportsByUser(
     userId: string,
-    options: PaginationOptions = { limit: 50, offset: 0 }
+    options: PaginationOptions = { limit: 50, offset: 0 },
   ): Promise<CreditReport[]> {
     const supabase = getTypedSupabase();
     const { data, error } = await supabase
-      .from('credit_reports')
-      .select('*')
-      .eq('user_id', userId)
-      .order('report_date', { ascending: false })
+      .from("credit_reports")
+      .select("*")
+      .eq("user_id", userId)
+      .order("report_date", { ascending: false })
       .range(options.offset, options.offset + options.limit - 1);
 
     if (error) throw error;
@@ -62,15 +63,15 @@ const creditReports = {
   async getCreditReportsByBureau(
     userId: string,
     bureau: string,
-    options: PaginationOptions = { limit: 50, offset: 0 }
+    options: PaginationOptions = { limit: 50, offset: 0 },
   ): Promise<CreditReport[]> {
     const supabase = getTypedSupabase();
     const { data, error } = await supabase
-      .from('credit_reports')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('bureau', bureau as CreditReportRow['bureau'])
-      .order('report_date', { ascending: false })
+      .from("credit_reports")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("bureau", bureau as CreditReportRow["bureau"])
+      .order("report_date", { ascending: false })
       .range(options.offset, options.offset + options.limit - 1);
 
     if (error) throw error;
@@ -83,14 +84,14 @@ const creditReports = {
   async getLatestCreditReport(userId: string): Promise<CreditReport | null> {
     const supabase = getTypedSupabase();
     const { data, error } = await supabase
-      .from('credit_reports')
-      .select('*')
-      .eq('user_id', userId)
-      .order('report_date', { ascending: false })
+      .from("credit_reports")
+      .select("*")
+      .eq("user_id", userId)
+      .order("report_date", { ascending: false })
       .limit(1)
       .single();
 
-    if (error && error.code !== 'PGRST116') throw error;
+    if (error && error.code !== "PGRST116") throw error;
     return data ? mapToCreditReport(data) : null;
   },
 
@@ -104,7 +105,7 @@ const creditReports = {
       reportDate: string;
       score: number;
       reportData?: Record<string, unknown>;
-    }
+    },
   ): Promise<CreditReport> {
     const supabase = getTypedSupabase();
     const insertData = {
@@ -116,8 +117,9 @@ const creditReports = {
     };
 
     // Use type assertion to work around TypeScript cache issues
-    const { data: report, error } = await (supabase
-      .from('credit_reports') as ReturnType<typeof supabase.from>)
+    const { data: report, error } = await (
+      supabase.from("credit_reports") as ReturnType<typeof supabase.from>
+    )
       .insert(insertData as CreditReportInsert)
       .select()
       .single();
@@ -145,4 +147,3 @@ export const db = {
 };
 
 export default db;
-

@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 
 interface DisputeGeneratorProps {
   onGenerate?: (disputeLetter: string) => void;
@@ -12,38 +12,40 @@ interface UserInfo {
   accountNumber?: string;
 }
 
-export default function DisputeGenerator({ onGenerate }: DisputeGeneratorProps) {
-  const [disputeReason, setDisputeReason] = useState('');
+export default function DisputeGenerator({
+  onGenerate,
+}: DisputeGeneratorProps) {
+  const [disputeReason, setDisputeReason] = useState("");
   const [userInfo, setUserInfo] = useState<UserInfo>({
-    name: '',
-    address: '',
-    accountNumber: '',
+    name: "",
+    address: "",
+    accountNumber: "",
   });
-  const [additionalContext, setAdditionalContext] = useState('');
+  const [additionalContext, setAdditionalContext] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [disputeLetter, setDisputeLetter] = useState('');
+  const [error, setError] = useState("");
+  const [disputeLetter, setDisputeLetter] = useState("");
   const [complianceReview, setComplianceReview] = useState<any>(null);
 
   const handleGenerate = async () => {
     setLoading(true);
-    setError('');
-    setDisputeLetter('');
+    setError("");
+    setDisputeLetter("");
     setComplianceReview(null);
 
     try {
       // Validate inputs
       if (!disputeReason.trim()) {
-        throw new Error('Please provide a dispute reason');
+        throw new Error("Please provide a dispute reason");
       }
       if (!userInfo.name.trim() || !userInfo.address.trim()) {
-        throw new Error('Please provide your name and address');
+        throw new Error("Please provide your name and address");
       }
 
-      const response = await fetch('/api/disputes/generate', {
-        method: 'POST',
+      const response = await fetch("/api/disputes/generate", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           creditReport: {
@@ -63,17 +65,17 @@ export default function DisputeGenerator({ onGenerate }: DisputeGeneratorProps) 
       const data = await response.json();
 
       if (!data.success) {
-        throw new Error(data.error || 'Failed to generate dispute letter');
+        throw new Error(data.error || "Failed to generate dispute letter");
       }
 
       setDisputeLetter(data.data.disputeLetter);
       setComplianceReview(data.data.complianceReview);
-      
+
       if (onGenerate) {
         onGenerate(data.data.disputeLetter);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setLoading(false);
     }
@@ -81,15 +83,15 @@ export default function DisputeGenerator({ onGenerate }: DisputeGeneratorProps) 
 
   const handleCopy = () => {
     navigator.clipboard.writeText(disputeLetter);
-    alert('Dispute letter copied to clipboard!');
+    alert("Dispute letter copied to clipboard!");
   };
 
   const handleDownload = () => {
-    const blob = new Blob([disputeLetter], { type: 'text/plain' });
+    const blob = new Blob([disputeLetter], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = 'dispute-letter.txt';
+    a.download = "dispute-letter.txt";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -99,9 +101,12 @@ export default function DisputeGenerator({ onGenerate }: DisputeGeneratorProps) 
   return (
     <div className="dispute-generator">
       <div className="max-w-4xl mx-auto p-6">
-        <h2 className="text-3xl font-bold mb-6">AI-Powered Dispute Letter Generator</h2>
+        <h2 className="text-3xl font-bold mb-6">
+          AI-Powered Dispute Letter Generator
+        </h2>
         <p className="text-gray-600 dark:text-slate-300 mb-8">
-          Generate professional, legally compliant credit dispute letters using Claude 4.5 Sonnet
+          Generate professional, legally compliant credit dispute letters using
+          Claude 4.5 Sonnet
         </p>
 
         <div className="space-y-6">
@@ -110,31 +115,43 @@ export default function DisputeGenerator({ onGenerate }: DisputeGeneratorProps) 
             <h3 className="text-xl font-semibold mb-4">Your Information</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Full Name *</label>
+                <label className="block text-sm font-medium mb-2">
+                  Full Name *
+                </label>
                 <input
                   type="text"
                   value={userInfo.name}
-                  onChange={(e) => setUserInfo({ ...userInfo, name: e.target.value })}
+                  onChange={(e) =>
+                    setUserInfo({ ...userInfo, name: e.target.value })
+                  }
                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                   placeholder="John Doe"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Address *</label>
+                <label className="block text-sm font-medium mb-2">
+                  Address *
+                </label>
                 <textarea
                   value={userInfo.address}
-                  onChange={(e) => setUserInfo({ ...userInfo, address: e.target.value })}
+                  onChange={(e) =>
+                    setUserInfo({ ...userInfo, address: e.target.value })
+                  }
                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                   rows={3}
                   placeholder="123 Main St, City, ST 12345"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Account Number (Optional)</label>
+                <label className="block text-sm font-medium mb-2">
+                  Account Number (Optional)
+                </label>
                 <input
                   type="text"
                   value={userInfo.accountNumber}
-                  onChange={(e) => setUserInfo({ ...userInfo, accountNumber: e.target.value })}
+                  onChange={(e) =>
+                    setUserInfo({ ...userInfo, accountNumber: e.target.value })
+                  }
                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                   placeholder="1234567890"
                 />
@@ -147,7 +164,9 @@ export default function DisputeGenerator({ onGenerate }: DisputeGeneratorProps) 
             <h3 className="text-xl font-semibold mb-4">Dispute Details</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Dispute Reason *</label>
+                <label className="block text-sm font-medium mb-2">
+                  Dispute Reason *
+                </label>
                 <textarea
                   value={disputeReason}
                   onChange={(e) => setDisputeReason(e.target.value)}
@@ -157,7 +176,9 @@ export default function DisputeGenerator({ onGenerate }: DisputeGeneratorProps) 
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Additional Context (Optional)</label>
+                <label className="block text-sm font-medium mb-2">
+                  Additional Context (Optional)
+                </label>
                 <textarea
                   value={additionalContext}
                   onChange={(e) => setAdditionalContext(e.target.value)}
@@ -175,7 +196,7 @@ export default function DisputeGenerator({ onGenerate }: DisputeGeneratorProps) 
             disabled={loading}
             className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
           >
-            {loading ? 'Generating...' : 'Generate Dispute Letter'}
+            {loading ? "Generating..." : "Generate Dispute Letter"}
           </button>
 
           {/* Error Message */}
@@ -187,15 +208,19 @@ export default function DisputeGenerator({ onGenerate }: DisputeGeneratorProps) 
 
           {/* Compliance Review */}
           {complianceReview && (
-            <div className={`rounded-lg p-4 ${
-              complianceReview.compliant 
-                ? 'bg-green-50 border border-green-200' 
-                : 'bg-yellow-50 border border-yellow-200'
-            }`}>
+            <div
+              className={`rounded-lg p-4 ${
+                complianceReview.compliant
+                  ? "bg-green-50 border border-green-200"
+                  : "bg-yellow-50 border border-yellow-200"
+              }`}
+            >
               <h4 className="font-semibold mb-2">
-                {complianceReview.compliant ? 'Compliant' : 'Compliance Review'}
+                {complianceReview.compliant ? "Compliant" : "Compliance Review"}
               </h4>
-              <p className="text-sm mb-2">Risk Level: {complianceReview.risk_level.toUpperCase()}</p>
+              <p className="text-sm mb-2">
+                Risk Level: {complianceReview.risk_level.toUpperCase()}
+              </p>
               {complianceReview.issues.length > 0 && (
                 <div className="mb-2">
                   <p className="text-sm font-medium">Issues:</p>
@@ -210,9 +235,11 @@ export default function DisputeGenerator({ onGenerate }: DisputeGeneratorProps) 
                 <div>
                   <p className="text-sm font-medium">Recommendations:</p>
                   <ul className="list-disc list-inside text-sm">
-                    {complianceReview.recommendations.map((rec: string, i: number) => (
-                      <li key={i}>{rec}</li>
-                    ))}
+                    {complianceReview.recommendations.map(
+                      (rec: string, i: number) => (
+                        <li key={i}>{rec}</li>
+                      ),
+                    )}
                   </ul>
                 </div>
               )}
@@ -223,7 +250,9 @@ export default function DisputeGenerator({ onGenerate }: DisputeGeneratorProps) 
           {disputeLetter && (
             <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-semibold">Generated Dispute Letter</h3>
+                <h3 className="text-xl font-semibold">
+                  Generated Dispute Letter
+                </h3>
                 <div className="space-x-2">
                   <button
                     onClick={handleCopy}
@@ -240,7 +269,9 @@ export default function DisputeGenerator({ onGenerate }: DisputeGeneratorProps) 
                 </div>
               </div>
               <div className="bg-gray-50 dark:bg-slate-900 p-4 rounded-lg">
-                <pre className="whitespace-pre-wrap font-sans text-sm">{disputeLetter}</pre>
+                <pre className="whitespace-pre-wrap font-sans text-sm">
+                  {disputeLetter}
+                </pre>
               </div>
               <p className="text-xs text-gray-500 dark:text-slate-400 mt-4">
                 Generated using Claude 4.5 Sonnet • Powered by AIML API
@@ -252,4 +283,3 @@ export default function DisputeGenerator({ onGenerate }: DisputeGeneratorProps) 
     </div>
   );
 }
-

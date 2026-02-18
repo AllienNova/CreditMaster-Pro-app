@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Tax Document Upload Component
@@ -7,7 +7,7 @@
  * Supports W-2, 1099s, 1098s, and other tax documents.
  */
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef } from "react";
 
 interface ExtractedData {
   type: string;
@@ -36,17 +36,17 @@ interface TaxDocumentUploadProps {
 }
 
 const DOCUMENT_TYPE_LABELS: Record<string, string> = {
-  w2: 'W-2 (Wage Statement)',
-  '1099_div': '1099-DIV (Dividends)',
-  '1099_int': '1099-INT (Interest)',
-  '1099_b': '1099-B (Broker)',
-  '1099_nec': '1099-NEC (Non-Employee)',
-  '1099_misc': '1099-MISC (Miscellaneous)',
-  '1099_r': '1099-R (Retirement)',
-  '1098': '1098 (Mortgage Interest)',
-  '1098_e': '1098-E (Student Loan)',
-  charitable_receipt: 'Charitable Donation Receipt',
-  unknown: 'Unknown Document',
+  w2: "W-2 (Wage Statement)",
+  "1099_div": "1099-DIV (Dividends)",
+  "1099_int": "1099-INT (Interest)",
+  "1099_b": "1099-B (Broker)",
+  "1099_nec": "1099-NEC (Non-Employee)",
+  "1099_misc": "1099-MISC (Miscellaneous)",
+  "1099_r": "1099-R (Retirement)",
+  "1098": "1098 (Mortgage Interest)",
+  "1098_e": "1098-E (Student Loan)",
+  charitable_receipt: "Charitable Donation Receipt",
+  unknown: "Unknown Document",
 };
 
 export function TaxDocumentUpload({
@@ -88,20 +88,20 @@ export function TaxDocumentUpload({
         processFile(files[0]);
       }
     },
-    []
+    [],
   );
 
   const processFile = async (file: File) => {
     // Validate file type
     const allowedTypes = [
-      'application/pdf',
-      'image/png',
-      'image/jpeg',
-      'image/jpg',
+      "application/pdf",
+      "image/png",
+      "image/jpeg",
+      "image/jpg",
     ];
     if (!allowedTypes.includes(file.type)) {
       const errorMsg =
-        'Invalid file type. Please upload a PDF, PNG, or JPG file.';
+        "Invalid file type. Please upload a PDF, PNG, or JPG file.";
       setError(errorMsg);
       onError?.(errorMsg);
       return;
@@ -109,7 +109,7 @@ export function TaxDocumentUpload({
 
     // Validate file size (10MB max)
     if (file.size > 10 * 1024 * 1024) {
-      const errorMsg = 'File too large. Maximum size is 10MB.';
+      const errorMsg = "File too large. Maximum size is 10MB.";
       setError(errorMsg);
       onError?.(errorMsg);
       return;
@@ -127,11 +127,11 @@ export function TaxDocumentUpload({
       }, 200);
 
       const formData = new FormData();
-      formData.append('file', file);
-      formData.append('taxYear', String(taxYear));
+      formData.append("file", file);
+      formData.append("taxYear", String(taxYear));
 
-      const response = await fetch('/api/tax/documents/upload', {
-        method: 'POST',
+      const response = await fetch("/api/tax/documents/upload", {
+        method: "POST",
         body: formData,
       });
 
@@ -140,14 +140,14 @@ export function TaxDocumentUpload({
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Upload failed');
+        throw new Error(errorData.message || "Upload failed");
       }
 
       const data = await response.json();
       setResult(data.data);
       onUploadComplete?.(data.data);
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Upload failed';
+      const errorMsg = err instanceof Error ? err.message : "Upload failed";
       setError(errorMsg);
       onError?.(errorMsg);
     } finally {
@@ -160,14 +160,14 @@ export function TaxDocumentUpload({
     setError(null);
     setUploadProgress(0);
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 2,
     }).format(amount);
   };
@@ -186,8 +186,8 @@ export function TaxDocumentUpload({
             transition-all duration-200
             ${
               isDragging
-                ? 'border-amber-500 bg-amber-50'
-                : 'border-gray-300 dark:border-slate-600 hover:border-amber-400 hover:bg-amber-50/50'
+                ? "border-amber-500 bg-amber-50"
+                : "border-gray-300 dark:border-slate-600 hover:border-amber-400 hover:bg-amber-50/50"
             }
           `}
         >
@@ -222,7 +222,9 @@ export function TaxDocumentUpload({
               <p className="text-lg font-medium text-gray-900 dark:text-white">
                 Drop your tax document here
               </p>
-              <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">or click to browse</p>
+              <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
+                or click to browse
+              </p>
             </div>
 
             <div className="flex flex-wrap justify-center gap-2 mt-2">
@@ -273,14 +275,14 @@ export function TaxDocumentUpload({
                 />
               </div>
               <p className="text-xs text-gray-500 dark:text-slate-400 text-center mt-2">
-                {uploadProgress < 30 && 'Uploading...'}
+                {uploadProgress < 30 && "Uploading..."}
                 {uploadProgress >= 30 &&
                   uploadProgress < 60 &&
-                  'Analyzing document...'}
+                  "Analyzing document..."}
                 {uploadProgress >= 60 &&
                   uploadProgress < 90 &&
-                  'Extracting fields...'}
-                {uploadProgress >= 90 && 'Finalizing...'}
+                  "Extracting fields..."}
+                {uploadProgress >= 90 && "Finalizing..."}
               </p>
             </div>
           </div>
@@ -325,13 +327,13 @@ export function TaxDocumentUpload({
         <div className="border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
           {/* Header */}
           <div
-            className={`px-6 py-4 ${result.requiresReview ? 'bg-amber-50' : 'bg-green-50'}`}
+            className={`px-6 py-4 ${result.requiresReview ? "bg-amber-50" : "bg-green-50"}`}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    result.requiresReview ? 'bg-amber-100' : 'bg-green-100'
+                    result.requiresReview ? "bg-amber-100" : "bg-green-100"
                   }`}
                 >
                   {result.requiresReview ? (
@@ -370,7 +372,7 @@ export function TaxDocumentUpload({
                       result.documentType}
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-slate-300">
-                    Tax Year {result.taxYear} •{' '}
+                    Tax Year {result.taxYear} •{" "}
                     {(result.overallConfidence * 100).toFixed(0)}% confidence
                   </p>
                 </div>
@@ -385,8 +387,8 @@ export function TaxDocumentUpload({
 
             {result.requiresReview && (
               <div className="mt-3 text-sm text-amber-700">
-                <strong>Review needed:</strong>{' '}
-                {result.reviewReasons.join(', ')}
+                <strong>Review needed:</strong>{" "}
+                {result.reviewReasons.join(", ")}
               </div>
             )}
           </div>
@@ -403,34 +405,39 @@ export function TaxDocumentUpload({
                   if (value === null || value === undefined) return null;
 
                   const label = key
-                    .replace(/([A-Z])/g, ' $1')
+                    .replace(/([A-Z])/g, " $1")
                     .replace(/^./, (str) => str.toUpperCase());
                   let displayValue: string;
 
-                  if (typeof value === 'number') {
+                  if (typeof value === "number") {
                     displayValue =
-                      key.toLowerCase().includes('rate') ||
-                      key.toLowerCase().includes('percent')
+                      key.toLowerCase().includes("rate") ||
+                      key.toLowerCase().includes("percent")
                         ? `${(value * 100).toFixed(1)}%`
                         : formatCurrency(value);
-                  } else if (typeof value === 'boolean') {
-                    displayValue = value ? 'Yes' : 'No';
+                  } else if (typeof value === "boolean") {
+                    displayValue = value ? "Yes" : "No";
                   } else if (Array.isArray(value)) {
                     displayValue =
-                      value.length > 0 ? `${value.length} items` : 'None';
+                      value.length > 0 ? `${value.length} items` : "None";
                   } else {
                     displayValue = String(value);
                   }
 
                   return (
-                    <div key={key} className="border-b border-gray-100 dark:border-slate-700 pb-2">
-                      <p className="text-xs text-gray-500 dark:text-slate-400">{label}</p>
+                    <div
+                      key={key}
+                      className="border-b border-gray-100 dark:border-slate-700 pb-2"
+                    >
+                      <p className="text-xs text-gray-500 dark:text-slate-400">
+                        {label}
+                      </p>
                       <p className="text-sm font-medium text-gray-900 dark:text-white">
                         {displayValue}
                       </p>
                     </div>
                   );
-                }
+                },
               )}
             </div>
 
@@ -445,9 +452,9 @@ export function TaxDocumentUpload({
                     <div
                       key={idx}
                       className={`text-sm p-2 rounded ${
-                        error.severity === 'error'
-                          ? 'bg-red-50 text-red-700'
-                          : 'bg-yellow-50 text-yellow-700'
+                        error.severity === "error"
+                          ? "bg-red-50 text-red-700"
+                          : "bg-yellow-50 text-yellow-700"
                       }`}
                     >
                       <strong>{error.field}:</strong> {error.error}
@@ -459,7 +466,7 @@ export function TaxDocumentUpload({
 
             {/* Processing Info */}
             <div className="mt-6 pt-4 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between text-xs text-gray-400 dark:text-slate-500">
-              <span>Processed by: {result.providersUsed.join(', ')}</span>
+              <span>Processed by: {result.providersUsed.join(", ")}</span>
               <span>{result.processingTimeMs}ms</span>
             </div>
           </div>

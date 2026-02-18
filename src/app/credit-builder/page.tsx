@@ -6,18 +6,18 @@
  * and quick access to all credit building tools.
  */
 
-import Link from 'next/link';
-import { getSupabase } from '@/lib/supabase/client';
-import { redirect } from 'next/navigation';
-import AICreditRoadmap from '@/components/credit-builder/AICreditRoadmap';
-import { ProgressBar } from '@/components/ui/ProgressBar';
+import Link from "next/link";
+import { getSupabase } from "@/lib/supabase/client";
+import { redirect } from "next/navigation";
+import AICreditRoadmap from "@/components/credit-builder/AICreditRoadmap";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 
 // Force dynamic rendering to prevent build-time prerendering (requires auth)
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: 'Credit Builder | Fynvita',
-  description: 'Build your credit with AI-powered tools and recommendations',
+  title: "Credit Builder | Fynvita",
+  description: "Build your credit with AI-powered tools and recommendations",
 };
 
 export default async function CreditBuilderDashboard() {
@@ -28,7 +28,7 @@ export default async function CreditBuilderDashboard() {
   } = await supabase.auth.getUser();
 
   if (error || !user) {
-    redirect('/auth/login');
+    redirect("/auth/login");
   }
 
   return (
@@ -65,7 +65,9 @@ export default async function CreditBuilderDashboard() {
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
               Credit Builder Score
             </h2>
-            <span className="text-sm text-gray-500 dark:text-slate-400">Updated today</span>
+            <span className="text-sm text-gray-500 dark:text-slate-400">
+              Updated today
+            </span>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -94,8 +96,12 @@ export default async function CreditBuilderDashboard() {
                   />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-5xl font-bold text-gray-900 dark:text-white">72</span>
-                  <span className="text-sm text-gray-600 dark:text-slate-300">out of 100</span>
+                  <span className="text-5xl font-bold text-gray-900 dark:text-white">
+                    72
+                  </span>
+                  <span className="text-sm text-gray-600 dark:text-slate-300">
+                    out of 100
+                  </span>
                 </div>
               </div>
               <div className="mt-4 flex items-center space-x-2">
@@ -225,32 +231,48 @@ export default async function CreditBuilderDashboard() {
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div className="text-center">
-              <div className="text-3xl font-bold text-gray-900 dark:text-white">580</div>
-              <div className="text-sm text-gray-600 dark:text-slate-300">Starting Score</div>
+              <div className="text-3xl font-bold text-gray-900 dark:text-white">
+                580
+              </div>
+              <div className="text-sm text-gray-600 dark:text-slate-300">
+                Starting Score
+              </div>
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-blue-600">650</div>
-              <div className="text-sm text-gray-600 dark:text-slate-300">Current Score</div>
+              <div className="text-sm text-gray-600 dark:text-slate-300">
+                Current Score
+              </div>
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-green-600">+70</div>
-              <div className="text-sm text-gray-600 dark:text-slate-300">Points Gained</div>
+              <div className="text-sm text-gray-600 dark:text-slate-300">
+                Points Gained
+              </div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-gray-900 dark:text-white">90</div>
-              <div className="text-sm text-gray-600 dark:text-slate-300">Days Active</div>
+              <div className="text-3xl font-bold text-gray-900 dark:text-white">
+                90
+              </div>
+              <div className="text-sm text-gray-600 dark:text-slate-300">
+                Days Active
+              </div>
             </div>
           </div>
 
           <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-900 dark:text-white">Actions Completed</h3>
-              <span className="text-sm text-gray-600 dark:text-slate-300">8 of 12</span>
+              <h3 className="font-semibold text-gray-900 dark:text-white">
+                Actions Completed
+              </h3>
+              <span className="text-sm text-gray-600 dark:text-slate-300">
+                8 of 12
+              </span>
             </div>
             <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-3 mb-2">
               <div
                 className="bg-blue-600 h-3 rounded-full"
-                style={{ width: '67%' }}
+                style={{ width: "67%" }}
               ></div>
             </div>
             <p className="text-sm text-gray-600 dark:text-slate-300">
@@ -299,7 +321,9 @@ export default async function CreditBuilderDashboard() {
                 <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
                   +25 points
                 </span>
-                <span className="text-xs text-gray-500 dark:text-slate-400">1 month</span>
+                <span className="text-xs text-gray-500 dark:text-slate-400">
+                  1 month
+                </span>
               </div>
             </Link>
 
@@ -336,7 +360,9 @@ export default async function CreditBuilderDashboard() {
                 <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
                   +30 points
                 </span>
-                <span className="text-xs text-gray-500 dark:text-slate-400">2 weeks</span>
+                <span className="text-xs text-gray-500 dark:text-slate-400">
+                  2 weeks
+                </span>
               </div>
             </Link>
 
@@ -373,7 +399,9 @@ export default async function CreditBuilderDashboard() {
                 <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
                   +40 points
                 </span>
-                <span className="text-xs text-gray-500 dark:text-slate-400">3-6 months</span>
+                <span className="text-xs text-gray-500 dark:text-slate-400">
+                  3-6 months
+                </span>
               </div>
             </Link>
 
@@ -410,7 +438,9 @@ export default async function CreditBuilderDashboard() {
                 <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">
                   High Impact
                 </span>
-                <span className="text-xs text-gray-500 dark:text-slate-400">Immediate</span>
+                <span className="text-xs text-gray-500 dark:text-slate-400">
+                  Immediate
+                </span>
               </div>
             </Link>
 
@@ -447,7 +477,9 @@ export default async function CreditBuilderDashboard() {
                 <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">
                   Save Interest
                 </span>
-                <span className="text-xs text-gray-500 dark:text-slate-400">Ongoing</span>
+                <span className="text-xs text-gray-500 dark:text-slate-400">
+                  Ongoing
+                </span>
               </div>
             </Link>
 
@@ -484,7 +516,9 @@ export default async function CreditBuilderDashboard() {
                 <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
                   +15 points
                 </span>
-                <span className="text-xs text-gray-500 dark:text-slate-400">2-3 months</span>
+                <span className="text-xs text-gray-500 dark:text-slate-400">
+                  2-3 months
+                </span>
               </div>
             </Link>
 
@@ -521,7 +555,9 @@ export default async function CreditBuilderDashboard() {
                 <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded">
                   Long-term
                 </span>
-                <span className="text-xs text-gray-500 dark:text-slate-400">Ongoing</span>
+                <span className="text-xs text-gray-500 dark:text-slate-400">
+                  Ongoing
+                </span>
               </div>
             </Link>
 
@@ -558,7 +594,9 @@ export default async function CreditBuilderDashboard() {
                 <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
                   What-If
                 </span>
-                <span className="text-xs text-gray-500 dark:text-slate-400">Interactive</span>
+                <span className="text-xs text-gray-500 dark:text-slate-400">
+                  Interactive
+                </span>
               </div>
             </Link>
 
@@ -595,7 +633,9 @@ export default async function CreditBuilderDashboard() {
                 <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">
                   Milestones
                 </span>
-                <span className="text-xs text-gray-500 dark:text-slate-400">Track Progress</span>
+                <span className="text-xs text-gray-500 dark:text-slate-400">
+                  Track Progress
+                </span>
               </div>
             </Link>
           </div>
@@ -627,7 +667,9 @@ export default async function CreditBuilderDashboard() {
                   <h3 className="font-semibold text-gray-900 dark:text-white">
                     Fair Credit Achieved
                   </h3>
-                  <span className="text-sm text-gray-500 dark:text-slate-400">Oct 15, 2025</span>
+                  <span className="text-sm text-gray-500 dark:text-slate-400">
+                    Oct 15, 2025
+                  </span>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-slate-300 mt-1">
                   Reached 600+ credit score
@@ -644,7 +686,9 @@ export default async function CreditBuilderDashboard() {
                   <h3 className="font-semibold text-gray-900 dark:text-white">
                     Good Credit (In Progress)
                   </h3>
-                  <span className="text-sm text-gray-500 dark:text-slate-400">Target: 670+</span>
+                  <span className="text-sm text-gray-500 dark:text-slate-400">
+                    Target: 670+
+                  </span>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-slate-300 mt-1">
                   20 points away from good credit
@@ -661,9 +705,13 @@ export default async function CreditBuilderDashboard() {
                   <h3 className="font-semibold text-gray-500 dark:text-slate-400">
                     Excellent Credit
                   </h3>
-                  <span className="text-sm text-gray-500 dark:text-slate-400">Target: 740+</span>
+                  <span className="text-sm text-gray-500 dark:text-slate-400">
+                    Target: 740+
+                  </span>
                 </div>
-                <p className="text-sm text-gray-600 dark:text-slate-300 mt-1">Future milestone</p>
+                <p className="text-sm text-gray-600 dark:text-slate-300 mt-1">
+                  Future milestone
+                </p>
               </div>
             </div>
           </div>

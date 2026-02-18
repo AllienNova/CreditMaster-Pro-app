@@ -8,13 +8,13 @@
  * - Circuit breaker pattern
  */
 
-import { ConnectorRegistry, getConnectorRegistry } from './registry';
+import { ConnectorRegistry, getConnectorRegistry } from "./registry";
 import {
   ConnectorHealth,
   HealthStatus,
   ConnectorEvent,
   ConnectorType,
-} from './types';
+} from "./types";
 
 // =============================================================================
 // Types
@@ -35,13 +35,13 @@ interface HealthMonitorConfig {
   };
   notifications: {
     enabled: boolean;
-    channels: ('console' | 'webhook' | 'email')[];
+    channels: ("console" | "webhook" | "email")[];
     webhookUrl?: string;
   };
 }
 
 interface CircuitBreakerState {
-  state: 'closed' | 'open' | 'half-open';
+  state: "closed" | "open" | "half-open";
   failures: number;
   lastFailure: Date | null;
   lastStateChange: Date;
@@ -73,7 +73,7 @@ interface HealthMetrics {
 interface HealthAlert {
   id: string;
   provider: string;
-  severity: 'warning' | 'error' | 'critical';
+  severity: "warning" | "error" | "critical";
   type: string;
   message: string;
   timestamp: Date;
@@ -100,7 +100,7 @@ const DEFAULT_CONFIG: HealthMonitorConfig = {
   },
   notifications: {
     enabled: true,
-    channels: ['console'],
+    channels: ["console"],
   },
 };
 
@@ -114,7 +114,8 @@ export class HealthMonitor {
   private checkInterval: NodeJS.Timeout | null = null;
   private circuitBreakers: Map<string, CircuitBreakerState> = new Map();
   private latencyHistory: Map<string, number[]> = new Map();
-  private requestCounts: Map<string, { success: number; failure: number }> = new Map();
+  private requestCounts: Map<string, { success: number; failure: number }> =
+    new Map();
   private alerts: HealthAlert[] = [];
   private unsubscribe: (() => void) | null = null;
 
@@ -141,7 +142,9 @@ export class HealthMonitor {
 
     // Register circuit breaker check with registry for enforcement
     if (this.config.circuitBreaker.enabled) {
-      this.registry.setCircuitBreakerCheck((provider: string) => this.isRequestAllowed(provider));
+      this.registry.setCircuitBreakerCheck((provider: string) =>
+        this.isRequestAllowed(provider),
+      );
     }
 
     // Start periodic health checks
@@ -243,14 +246,22 @@ export class HealthMonitor {
 
     // Check latency thresholds
     if (health.latencyMs > alertThresholds.criticalLatencyMs) {
-      this.createAlert(provider, 'critical', 'high_latency',
-        `Latency is critically high: ${health.latencyMs}ms`);
+      this.createAlert(
+        provider,
+        "critical",
+        "high_latency",
+        `Latency is critically high: ${health.latencyMs}ms`,
+      );
     } else if (health.latencyMs > alertThresholds.degradedLatencyMs) {
-      this.createAlert(provider, 'warning', 'high_latency',
-        `Latency is elevated: ${health.latencyMs}ms`);
+      this.createAlert(
+        provider,
+        "warning",
+        "high_latency",
+        `Latency is elevated: ${health.latencyMs}ms`,
+      );
     } else {
       // Resolve latency alerts
-      this.resolveAlerts(provider, 'high_latency');
+      this.resolveAlerts(provider, "high_latency");
     }
 
     // Check error rate
@@ -260,24 +271,36 @@ export class HealthMonitor {
       if (total > 10) {
         const errorRate = (counts.failure / total) * 100;
         if (errorRate > alertThresholds.errorRatePercent) {
-          this.createAlert(provider, 'error', 'high_error_rate',
-            `Error rate is high: ${errorRate.toFixed(1)}%`);
+          this.createAlert(
+            provider,
+            "error",
+            "high_error_rate",
+            `Error rate is high: ${errorRate.toFixed(1)}%`,
+          );
         } else {
-          this.resolveAlerts(provider, 'high_error_rate');
+          this.resolveAlerts(provider, "high_error_rate");
         }
       }
     }
 
     // Check health status
-    if (health.status === 'down') {
-      this.createAlert(provider, 'critical', 'provider_down',
-        `Provider is down: ${health.errorMessage || 'Unknown error'}`);
-    } else if (health.status === 'degraded') {
-      this.createAlert(provider, 'warning', 'provider_degraded',
-        `Provider is degraded: ${health.consecutiveFailures} consecutive failures`);
+    if (health.status === "down") {
+      this.createAlert(
+        provider,
+        "critical",
+        "provider_down",
+        `Provider is down: ${health.errorMessage || "Unknown error"}`,
+      );
+    } else if (health.status === "degraded") {
+      this.createAlert(
+        provider,
+        "warning",
+        "provider_degraded",
+        `Provider is degraded: ${health.consecutiveFailures} consecutive failures`,
+      );
     } else {
-      this.resolveAlerts(provider, 'provider_down');
-      this.resolveAlerts(provider, 'provider_degraded');
+      this.resolveAlerts(provider, "provider_down");
+      this.resolveAlerts(provider, "provider_degraded");
     }
   }
 
@@ -288,27 +311,36 @@ export class HealthMonitor {
   /**
    * Update circuit breaker state based on health
    */
-  private updateCircuitBreaker(provider: string, health: ConnectorHealth): void {
+  private updateCircuitBreaker(
+    provider: string,
+    health: ConnectorHealth,
+  ): void {
     const state = this.getCircuitBreakerState(provider);
     const { circuitBreaker } = this.config;
 
     switch (state.state) {
-      case 'closed':
-        if (health.status === 'down' || health.consecutiveFailures >= circuitBreaker.failureThreshold) {
+      case "closed":
+        if (
+          health.status === "down" ||
+          health.consecutiveFailures >= circuitBreaker.failureThreshold
+        ) {
           this.openCircuit(provider);
         }
         break;
 
-      case 'open':
+      case "open":
         // Check if reset timeout has passed
-        if (state.lastStateChange &&
-            Date.now() - state.lastStateChange.getTime() >= circuitBreaker.resetTimeoutMs) {
+        if (
+          state.lastStateChange &&
+          Date.now() - state.lastStateChange.getTime() >=
+            circuitBreaker.resetTimeoutMs
+        ) {
           this.halfOpenCircuit(provider);
         }
         break;
 
-      case 'half-open':
-        if (health.status === 'healthy') {
+      case "half-open":
+        if (health.status === "healthy") {
           state.halfOpenAttempts++;
           if (state.halfOpenAttempts >= circuitBreaker.halfOpenRequests) {
             this.closeCircuit(provider);
@@ -326,7 +358,7 @@ export class HealthMonitor {
   private getCircuitBreakerState(provider: string): CircuitBreakerState {
     if (!this.circuitBreakers.has(provider)) {
       this.circuitBreakers.set(provider, {
-        state: 'closed',
+        state: "closed",
         failures: 0,
         lastFailure: null,
         lastStateChange: new Date(),
@@ -338,16 +370,16 @@ export class HealthMonitor {
 
   private openCircuit(provider: string): void {
     const state = this.getCircuitBreakerState(provider);
-    state.state = 'open';
+    state.state = "open";
     state.lastStateChange = new Date();
     state.halfOpenAttempts = 0;
     // Health monitor warning:(`Circuit breaker OPENED for ${provider}`);
-    this.notify('warning', `Circuit breaker opened for ${provider}`);
+    this.notify("warning", `Circuit breaker opened for ${provider}`);
   }
 
   private halfOpenCircuit(provider: string): void {
     const state = this.getCircuitBreakerState(provider);
-    state.state = 'half-open';
+    state.state = "half-open";
     state.lastStateChange = new Date();
     state.halfOpenAttempts = 0;
     // Health monitor:(`Circuit breaker HALF-OPEN for ${provider}`);
@@ -355,12 +387,12 @@ export class HealthMonitor {
 
   private closeCircuit(provider: string): void {
     const state = this.getCircuitBreakerState(provider);
-    state.state = 'closed';
+    state.state = "closed";
     state.lastStateChange = new Date();
     state.failures = 0;
     state.halfOpenAttempts = 0;
     // Health monitor:(`Circuit breaker CLOSED for ${provider}`);
-    this.notify('info', `Circuit breaker closed for ${provider}`);
+    this.notify("info", `Circuit breaker closed for ${provider}`);
   }
 
   /**
@@ -374,11 +406,13 @@ export class HealthMonitor {
     const state = this.getCircuitBreakerState(provider);
 
     switch (state.state) {
-      case 'closed':
+      case "closed":
         return true;
-      case 'half-open':
-        return state.halfOpenAttempts < this.config.circuitBreaker.halfOpenRequests;
-      case 'open':
+      case "half-open":
+        return (
+          state.halfOpenAttempts < this.config.circuitBreaker.halfOpenRequests
+        );
+      case "open":
         return false;
       default:
         return true;
@@ -401,13 +435,13 @@ export class HealthMonitor {
    */
   private createAlert(
     provider: string,
-    severity: 'warning' | 'error' | 'critical',
+    severity: "warning" | "error" | "critical",
     type: string,
-    message: string
+    message: string,
   ): void {
     // Check if alert already exists
     const existing = this.alerts.find(
-      (a) => a.provider === provider && a.type === type && !a.resolved
+      (a) => a.provider === provider && a.type === type && !a.resolved,
     );
 
     if (existing) {
@@ -440,7 +474,11 @@ export class HealthMonitor {
    */
   private resolveAlerts(provider: string, type: string): void {
     for (const alert of this.alerts) {
-      if (alert.provider === provider && alert.type === type && !alert.resolved) {
+      if (
+        alert.provider === provider &&
+        alert.type === type &&
+        !alert.resolved
+      ) {
         alert.resolved = true;
         alert.resolvedAt = new Date();
       }
@@ -491,9 +529,10 @@ export class HealthMonitor {
         failed: counts?.failure || 0,
       },
       latency: {
-        avg: sortedLatency.length > 0
-          ? sortedLatency.reduce((a, b) => a + b, 0) / sortedLatency.length
-          : 0,
+        avg:
+          sortedLatency.length > 0
+            ? sortedLatency.reduce((a, b) => a + b, 0) / sortedLatency.length
+            : 0,
         p50: this.percentile(sortedLatency, 50),
         p95: this.percentile(sortedLatency, 95),
         p99: this.percentile(sortedLatency, 99),
@@ -542,25 +581,25 @@ export class HealthMonitor {
    * Send notification
    */
   private notify(
-    level: 'info' | 'warning' | 'error' | 'critical',
-    message: string
+    level: "info" | "warning" | "error" | "critical",
+    message: string,
   ): void {
     if (!this.config.notifications.enabled) return;
 
     for (const channel of this.config.notifications.channels) {
       switch (channel) {
-        case 'console':
+        case "console":
           this.notifyConsole(level, message);
           break;
-        case 'webhook':
+        case "webhook":
           this.notifyWebhook(level, message).catch(() => {
             // Webhook notification error silently caught
           });
           break;
-        case 'email':
+        case "email":
           // Email notifications require RESEND_API_KEY configuration
           // Integration available via notification-service when configured
-          if (level === 'critical' || level === 'error') {
+          if (level === "critical" || level === "error") {
             // Health monitor:(`[HealthMonitor] Email notification queued: ${level} - ${message}`);
           }
           break;
@@ -573,15 +612,15 @@ export class HealthMonitor {
     const prefix = `[HealthMonitor] [${level.toUpperCase()}]`;
 
     switch (level) {
-      case 'critical':
-      case 'error':
+      case "critical":
+      case "error":
         // Health monitor error:(`${prefix} ${timestamp}: ${message}`);
         break;
-      case 'warning':
+      case "warning":
         // Health monitor warning:(`${prefix} ${timestamp}: ${message}`);
         break;
       default:
-        // Health monitor:(`${prefix} ${timestamp}: ${message}`);
+      // Health monitor:(`${prefix} ${timestamp}: ${message}`);
     }
   }
 
@@ -590,13 +629,13 @@ export class HealthMonitor {
 
     try {
       await fetch(this.config.notifications.webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           level,
           message,
           timestamp: new Date().toISOString(),
-          service: 'fynvita-health-monitor',
+          service: "fynvita-health-monitor",
         }),
       });
     } catch (error) {
@@ -613,18 +652,20 @@ export class HealthMonitor {
    */
   private handleEvent(event: ConnectorEvent): void {
     switch (event.type) {
-      case 'health_degraded':
-        this.notify('warning', `Connector ${event.connector} health degraded`);
+      case "health_degraded":
+        this.notify("warning", `Connector ${event.connector} health degraded`);
         break;
-      case 'health_recovered':
-        this.notify('info', `Connector ${event.connector} health recovered`);
+      case "health_recovered":
+        this.notify("info", `Connector ${event.connector} health recovered`);
         break;
-      case 'error':
+      case "error":
         this.recordRequest(event.connector, false);
         break;
-      case 'fallback_triggered':
-        this.notify('warning',
-          `Fallback triggered from ${event.connector} to ${event.data.nextProvider}`);
+      case "fallback_triggered":
+        this.notify(
+          "warning",
+          `Fallback triggered from ${event.connector} to ${event.data.nextProvider}`,
+        );
         break;
     }
   }
@@ -664,13 +705,13 @@ export class HealthMonitor {
 
     for (const [, h] of health) {
       switch (h.status) {
-        case 'healthy':
+        case "healthy":
           healthy++;
           break;
-        case 'degraded':
+        case "degraded":
           degraded++;
           break;
-        case 'down':
+        case "down":
           down++;
           break;
       }
@@ -696,7 +737,8 @@ export class HealthMonitor {
         degraded,
         down,
         avgLatencyMs: latencyCount > 0 ? totalLatency / latencyCount : 0,
-        errorRate: totalRequests > 0 ? (failedRequests / totalRequests) * 100 : 0,
+        errorRate:
+          totalRequests > 0 ? (failedRequests / totalRequests) * 100 : 0,
       },
     };
   }
@@ -705,7 +747,9 @@ export class HealthMonitor {
 // Export singleton
 let healthMonitorInstance: HealthMonitor | null = null;
 
-export function getHealthMonitor(config?: Partial<HealthMonitorConfig>): HealthMonitor {
+export function getHealthMonitor(
+  config?: Partial<HealthMonitorConfig>,
+): HealthMonitor {
   if (!healthMonitorInstance) {
     healthMonitorInstance = new HealthMonitor(config);
   }

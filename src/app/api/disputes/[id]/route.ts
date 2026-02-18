@@ -5,20 +5,20 @@
  * DELETE /api/disputes/[id] - Delete dispute
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { disputeService } from '@/lib/disputes/dispute-service';
+import { NextRequest, NextResponse } from "next/server";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { disputeService } from "@/lib/disputes/dispute-service";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user?.id) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
       );
     }
 
@@ -27,15 +27,15 @@ export async function GET(
 
     if (!dispute) {
       return NextResponse.json(
-        { success: false, error: 'Dispute not found' },
-        { status: 404 }
+        { success: false, error: "Dispute not found" },
+        { status: 404 },
       );
     }
 
     if (dispute.userId !== validation.user.id) {
       return NextResponse.json(
-        { success: false, error: 'Forbidden' },
-        { status: 403 }
+        { success: false, error: "Forbidden" },
+        { status: 403 },
       );
     }
 
@@ -44,22 +44,22 @@ export async function GET(
     // DisputeByIdRoute error: Failed to get dispute
     void _error;
     return NextResponse.json(
-      { success: false, error: 'Failed to get dispute' },
-      { status: 500 }
+      { success: false, error: "Failed to get dispute" },
+      { status: 500 },
     );
   }
 }
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user?.id) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
       );
     }
 
@@ -69,15 +69,15 @@ export async function PATCH(
     const existingDispute = disputeService.getDispute(id);
     if (!existingDispute) {
       return NextResponse.json(
-        { success: false, error: 'Dispute not found' },
-        { status: 404 }
+        { success: false, error: "Dispute not found" },
+        { status: 404 },
       );
     }
 
     if (existingDispute.userId !== validation.user.id) {
       return NextResponse.json(
-        { success: false, error: 'Forbidden' },
-        { status: 403 }
+        { success: false, error: "Forbidden" },
+        { status: 403 },
       );
     }
 
@@ -98,22 +98,22 @@ export async function PATCH(
     // DisputeByIdRoute error: Failed to update dispute
     void _error;
     return NextResponse.json(
-      { success: false, error: 'Failed to update dispute' },
-      { status: 500 }
+      { success: false, error: "Failed to update dispute" },
+      { status: 500 },
     );
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user?.id) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
       );
     }
 
@@ -122,15 +122,15 @@ export async function DELETE(
 
     if (!existingDispute) {
       return NextResponse.json(
-        { success: false, error: 'Dispute not found' },
-        { status: 404 }
+        { success: false, error: "Dispute not found" },
+        { status: 404 },
       );
     }
 
     if (existingDispute.userId !== validation.user.id) {
       return NextResponse.json(
-        { success: false, error: 'Forbidden' },
-        { status: 403 }
+        { success: false, error: "Forbidden" },
+        { status: 403 },
       );
     }
 
@@ -140,8 +140,8 @@ export async function DELETE(
     // DisputeByIdRoute error: Failed to delete dispute
     void _error;
     return NextResponse.json(
-      { success: false, error: 'Failed to delete dispute' },
-      { status: 500 }
+      { success: false, error: "Failed to delete dispute" },
+      { status: 500 },
     );
   }
 }

@@ -11,6 +11,7 @@ type: always
 ## CRITICAL: ANTI-SKIP ENFORCEMENT
 
 ### FORBIDDEN BEHAVIORS (CAUSES PRODUCTION BUGS):
+
 1. **NEVER** leave `// TODO` or `// FIXME` - implement NOW or STOP
 2. **NEVER** say "I'll add this later" or "we can implement this next"
 3. **NEVER** skip items in your task list - complete ALL or explain blocker
@@ -23,7 +24,9 @@ type: always
 10. **NEVER** move to next subtask until current one VERIFIED working
 
 ### MANDATORY COMPLETION CHECKS:
+
 Before saying "done" or "complete", you MUST:
+
 ```bash
 # 1. Search for incomplete code
 grep -rn "TODO\|FIXME\|implement\|placeholder\|stub" src/
@@ -37,9 +40,11 @@ npm test
 # 4. Lint check
 npm run lint
 ```
+
 **Show the output. If ANY fails, FIX before completing.**
 
 ### IF BLOCKED:
+
 1. STOP immediately
 2. Explain EXACTLY what is blocking you
 3. Ask user for help
@@ -49,6 +54,7 @@ npm run lint
 ## Task Decomposition (MANDATORY)
 
 For EVERY task:
+
 1. Break into atomic subtasks BEFORE starting any code
 2. Create explicit checklist with [ ] markers
 3. Complete EACH subtask fully before moving on
@@ -57,6 +63,7 @@ For EVERY task:
 6. NEVER skip a subtask
 
 ### Required Subtask Pattern:
+
 ```
 ## Task: [Feature Name]
 
@@ -84,6 +91,7 @@ For EVERY task:
 ## Zero Trust Verification
 
 Before any code suggestion:
+
 - [ ] Verify import paths exist (actually import and run)
 - [ ] Check function signatures match source (read the actual file)
 - [ ] Validate API endpoints are real (test the endpoint)

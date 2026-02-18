@@ -3,7 +3,7 @@
  * Track stocks you're interested in
  */
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -13,40 +13,38 @@ import {
   TextInput,
   Modal,
   Alert,
-} from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { lightTheme as theme } from '../../src/constants/theme';
-import { Card } from '../../src/components/Card';
-import {
-  useInvestmentStore,
-  selectWatchlist,
-} from '../../src/store';
+} from "react-native";
+import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { lightTheme as theme } from "../../src/constants/theme";
+import { Card } from "../../src/components/Card";
+import { useInvestmentStore, selectWatchlist } from "../../src/store";
 
 export default function WatchlistScreen() {
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newSymbol, setNewSymbol] = useState('');
+  const [newSymbol, setNewSymbol] = useState("");
 
   const watchlist = useInvestmentStore(selectWatchlist);
-  const { addToWatchlist, removeFromWatchlist, getRecommendation } = useInvestmentStore();
+  const { addToWatchlist, removeFromWatchlist, getRecommendation } =
+    useInvestmentStore();
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 2,
     }).format(amount);
   };
 
   const formatPercent = (value: number) => {
-    const sign = value >= 0 ? '+' : '';
+    const sign = value >= 0 ? "+" : "";
     return `${sign}${value.toFixed(2)}%`;
   };
 
   const handleAddSymbol = () => {
     if (!newSymbol.trim()) {
-      Alert.alert('Error', 'Please enter a stock symbol');
+      Alert.alert("Error", "Please enter a stock symbol");
       return;
     }
 
@@ -54,7 +52,7 @@ export default function WatchlistScreen() {
 
     // Check if already in watchlist
     if (watchlist.some((item) => item.symbol === symbol)) {
-      Alert.alert('Already Added', `${symbol} is already in your watchlist`);
+      Alert.alert("Already Added", `${symbol} is already in your watchlist`);
       return;
     }
 
@@ -70,26 +68,26 @@ export default function WatchlistScreen() {
     // Fetch real data
     getRecommendation(symbol);
 
-    setNewSymbol('');
+    setNewSymbol("");
     setShowAddModal(false);
   };
 
   const handleRemoveFromWatchlist = (symbol: string) => {
     Alert.alert(
-      'Remove from Watchlist',
+      "Remove from Watchlist",
       `Remove ${symbol} from your watchlist?`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Remove',
-          style: 'destructive',
+          text: "Remove",
+          style: "destructive",
           onPress: () => removeFromWatchlist(symbol),
         },
-      ]
+      ],
     );
   };
 
-  const renderWatchlistItem = ({ item }: { item: typeof watchlist[0] }) => (
+  const renderWatchlistItem = ({ item }: { item: (typeof watchlist)[0] }) => (
     <TouchableOpacity
       style={styles.watchlistCard}
       onPress={() => router.push(`/investments/analyze/${item.symbol}`)}
@@ -110,13 +108,13 @@ export default function WatchlistScreen() {
       <View style={styles.itemRight}>
         <View style={styles.itemValues}>
           <Text style={styles.itemPrice}>
-            {item.price > 0 ? formatCurrency(item.price) : '...'}
+            {item.price > 0 ? formatCurrency(item.price) : "..."}
           </Text>
           {item.price > 0 && (
             <Text
               style={[
                 styles.itemChange,
-                { color: item.changePercent >= 0 ? '#10B981' : '#EF4444' },
+                { color: item.changePercent >= 0 ? "#10B981" : "#EF4444" },
               ]}
             >
               {formatPercent(item.changePercent)}
@@ -127,17 +125,30 @@ export default function WatchlistScreen() {
           style={styles.removeButton}
           onPress={() => handleRemoveFromWatchlist(item.symbol)}
         >
-          <Ionicons name="close-circle" size={22} color={theme.colors.textSecondary} />
+          <Ionicons
+            name="close-circle"
+            size={22}
+            color={theme.colors.textSecondary}
+          />
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
 
   // Default watchlist suggestions
-  const suggestions = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA', 'META', 'JPM'];
+  const suggestions = [
+    "AAPL",
+    "MSFT",
+    "GOOGL",
+    "AMZN",
+    "TSLA",
+    "NVDA",
+    "META",
+    "JPM",
+  ];
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={["bottom"]}>
       {/* Quick Add Suggestions */}
       {watchlist.length === 0 && (
         <View style={styles.suggestionsContainer}>
@@ -274,7 +285,7 @@ const styles = StyleSheet.create({
   },
   suggestionsTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   suggestionsSubtitle: {
@@ -284,13 +295,13 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   suggestionsList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
   },
   suggestionChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: theme.colors.surface,
     paddingHorizontal: 14,
     paddingVertical: 10,
@@ -299,7 +310,7 @@ const styles = StyleSheet.create({
   },
   suggestionText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   listContent: {
@@ -307,17 +318,17 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   watchlistCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     backgroundColor: theme.colors.surface,
     borderRadius: theme.borderRadius.lg,
     padding: theme.spacing.md,
     marginBottom: theme.spacing.sm,
   },
   itemInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
   },
   itemIcon: {
@@ -325,13 +336,13 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     backgroundColor: `${theme.colors.primary}20`,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: theme.spacing.md,
   },
   itemIconText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.primary,
   },
   itemDetails: {
@@ -339,7 +350,7 @@ const styles = StyleSheet.create({
   },
   itemSymbol: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   itemName: {
@@ -348,33 +359,33 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   itemRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   itemValues: {
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   itemPrice: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   itemChange: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: "500",
     marginTop: 2,
   },
   removeButton: {
     padding: 4,
   },
   emptyState: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: theme.spacing.xl * 3,
   },
   emptyTitle: {
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginTop: theme.spacing.lg,
   },
@@ -382,28 +393,28 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: theme.colors.textSecondary,
     marginTop: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   fab: {
-    position: 'absolute',
+    position: "absolute",
     right: theme.spacing.lg,
     bottom: theme.spacing.lg,
     width: 56,
     height: 56,
     borderRadius: 28,
     backgroundColor: theme.colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     elevation: 4,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
   },
   modalContent: {
     backgroundColor: theme.colors.surface,
@@ -413,14 +424,14 @@ const styles = StyleSheet.create({
     paddingBottom: theme.spacing.xl * 2,
   },
   modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: theme.spacing.sm,
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   modalSubtitle: {
@@ -438,34 +449,34 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.lg,
   },
   modalButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
   },
   modalButtonSecondary: {
     flex: 1,
     height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     borderRadius: theme.borderRadius.lg,
     backgroundColor: theme.colors.background,
   },
   modalButtonSecondaryText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   modalButtonPrimary: {
     flex: 1,
     height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     borderRadius: theme.borderRadius.lg,
     backgroundColor: theme.colors.primary,
   },
   modalButtonPrimaryText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
   modalQuickAdd: {
     marginTop: theme.spacing.lg,
@@ -475,12 +486,12 @@ const styles = StyleSheet.create({
   },
   quickAddTitle: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     color: theme.colors.textSecondary,
     marginBottom: theme.spacing.sm,
   },
   quickAddList: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
   },
   quickAddChip: {
@@ -491,7 +502,7 @@ const styles = StyleSheet.create({
   },
   quickAddText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
 });

@@ -7,7 +7,7 @@
 // ---------------------------------------------------------------------------
 // Bureau API Environment
 // ---------------------------------------------------------------------------
-export type BureauApiEnvironment = 'sandbox' | 'production';
+export type BureauApiEnvironment = "sandbox" | "production";
 
 // ---------------------------------------------------------------------------
 // Per-Bureau Credential Shape
@@ -64,17 +64,17 @@ export interface BureauCredentials {
   equifax: {
     api_key: string;
     client_id: string;
-    environment: 'sandbox' | 'production';
+    environment: "sandbox" | "production";
   };
   transunion: {
     subscriber_id: string;
     api_key: string;
-    environment: 'test' | 'production';
+    environment: "test" | "production";
   };
 }
 
-export type Bureau = 'experian' | 'equifax' | 'transunion';
-export type ReportType = 'full' | 'monitoring' | 'score_only';
+export type Bureau = "experian" | "equifax" | "transunion";
+export type ReportType = "full" | "monitoring" | "score_only";
 export type CreditBureauRawPayload = Record<string, unknown>;
 
 export interface CreditReportRequest {
@@ -101,11 +101,17 @@ export interface CreditReport {
 export interface CreditAccount {
   id: string;
   account_number: string;
-  account_type: 'credit_card' | 'mortgage' | 'auto_loan' | 'student_loan' | 'personal_loan' | 'other';
+  account_type:
+    | "credit_card"
+    | "mortgage"
+    | "auto_loan"
+    | "student_loan"
+    | "personal_loan"
+    | "other";
   creditor_name: string;
   balance: number;
   credit_limit?: number;
-  payment_status: 'current' | 'late' | 'charged_off' | 'collection' | 'closed';
+  payment_status: "current" | "late" | "charged_off" | "collection" | "closed";
   opened_date: string;
   last_payment_date?: string;
   payment_history: PaymentHistory[];
@@ -113,21 +119,21 @@ export interface CreditAccount {
 
 export interface PaymentHistory {
   month: string;
-  status: 'OK' | '30' | '60' | '90' | '120' | 'CO' | 'NA';
+  status: "OK" | "30" | "60" | "90" | "120" | "CO" | "NA";
 }
 
 export interface CreditInquiry {
   id: string;
   inquiry_date: string;
   creditor_name: string;
-  inquiry_type: 'hard' | 'soft';
+  inquiry_type: "hard" | "soft";
 }
 
 export interface PublicRecord {
   id: string;
-  record_type: 'bankruptcy' | 'tax_lien' | 'judgment' | 'foreclosure';
+  record_type: "bankruptcy" | "tax_lien" | "judgment" | "foreclosure";
   filing_date: string;
-  status: 'filed' | 'discharged' | 'satisfied' | 'dismissed';
+  status: "filed" | "discharged" | "satisfied" | "dismissed";
   amount?: number;
   court_name?: string;
 }
@@ -154,9 +160,14 @@ export interface CreditMonitoringAlert {
   id: string;
   user_id: string;
   bureau: string;
-  alert_type: 'new_account' | 'score_change' | 'inquiry' | 'address_change' | 'fraud_alert';
+  alert_type:
+    | "new_account"
+    | "score_change"
+    | "inquiry"
+    | "address_change"
+    | "fraud_alert";
   description: string;
-  severity: 'low' | 'medium' | 'high' | 'critical';
+  severity: "low" | "medium" | "high" | "critical";
   created_at: string;
   acknowledged: boolean;
 }
@@ -196,7 +207,7 @@ export interface CreditAnalysis {
   negative_items: Array<{
     type: string;
     description: string;
-    impact: 'high' | 'medium' | 'low';
+    impact: "high" | "medium" | "low";
     recommendation: string;
   }>;
   positive_factors: string[];

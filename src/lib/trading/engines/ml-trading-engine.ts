@@ -1,6 +1,6 @@
 /**
  * ML Trading Engine
- * 
+ *
  * Machine learning-based trading signal generation using:
  * - Random Forest / Gradient Boosting for classification
  * - LSTM for time series prediction
@@ -11,39 +11,48 @@
 // TYPES
 // ============================================================================
 
-export type MLModelType = 'classification' | 'regression';
-export type MLArchitecture = 
-  | 'random_forest' 
-  | 'gradient_boosting' 
-  | 'neural_network' 
-  | 'lstm' 
-  | 'transformer'
-  | 'ensemble';
+export type MLModelType = "classification" | "regression";
+export type MLArchitecture =
+  | "random_forest"
+  | "gradient_boosting"
+  | "neural_network"
+  | "lstm"
+  | "transformer"
+  | "ensemble";
 
-export type FeatureCategory = 'technical' | 'fundamental' | 'sentiment' | 'alternative';
-export type Transformation = 'log' | 'diff' | 'pct_change' | 'normalize' | 'standardize';
+export type FeatureCategory =
+  | "technical"
+  | "fundamental"
+  | "sentiment"
+  | "alternative";
+export type Transformation =
+  | "log"
+  | "diff"
+  | "pct_change"
+  | "normalize"
+  | "standardize";
 
 export interface FeatureConfig {
   name: string;
   category: FeatureCategory;
-  
+
   // Technical features
   indicator?: string;
   period?: number;
-  
+
   // Transformations
   transformations?: Transformation[];
-  
+
   // Lag features
   lags?: number[];
-  
+
   // Rolling stats
   rollingWindow?: number;
-  rollingStats?: ('mean' | 'std' | 'min' | 'max')[];
+  rollingStats?: ("mean" | "std" | "min" | "max")[];
 }
 
 export interface TargetConfig {
-  type: 'direction' | 'return' | 'volatility' | 'price';
+  type: "direction" | "return" | "volatility" | "price";
   horizon: number; // Bars ahead
   threshold?: number; // For classification
   classes?: string[]; // For multi-class
@@ -67,10 +76,10 @@ export interface MLModelConfig {
   features: FeatureConfig[];
   target: TargetConfig;
   training: TrainingConfig;
-  
+
   // Architecture-specific params
   hyperparameters?: Record<string, number | string | boolean>;
-  
+
   // Ensemble config
   ensembleModels?: string[];
   ensembleWeights?: number[];
@@ -95,7 +104,7 @@ export interface ModelEvaluation {
 
 export interface MLPrediction {
   symbol: string;
-  signal: 'buy' | 'sell' | 'hold';
+  signal: "buy" | "sell" | "hold";
   confidence: number;
   predictedReturn?: number;
   predictedVolatility?: number;
@@ -119,7 +128,8 @@ export interface FeatureVector {
 export class MLTradingEngine {
   private models: Map<string, MLModelConfig> = new Map();
   private modelWeights: Map<string, Float32Array> = new Map();
-  private featureScalers: Map<string, { mean: number; std: number }[]> = new Map();
+  private featureScalers: Map<string, { mean: number; std: number }[]> =
+    new Map();
   private lastPredictions: Map<string, MLPrediction> = new Map();
 
   // ============================================================================
@@ -152,10 +162,10 @@ export class MLTradingEngine {
       close: number;
       volume: number;
     }[],
-    config: FeatureConfig[]
+    config: FeatureConfig[],
   ): Promise<FeatureVector[]> {
     const features: FeatureVector[] = [];
-    
+
     for (let i = 50; i < historicalData.length; i++) {
       const row = historicalData[i];
       const featureValues: Record<string, number> = {};
@@ -163,9 +173,9 @@ export class MLTradingEngine {
       for (const featureConfig of config) {
         const value = await this.computeFeature(
           featureConfig,
-          historicalData.slice(0, i + 1)
+          historicalData.slice(0, i + 1),
         );
-        
+
         // Apply transformations
         let transformedValue = value;
         if (featureConfig.transformations) {
@@ -173,11 +183,11 @@ export class MLTradingEngine {
             transformedValue = this.applyTransformation(
               transformedValue,
               transform,
-              historicalData.slice(0, i + 1)
+              historicalData.slice(0, i + 1),
             );
           }
         }
-        
+
         featureValues[featureConfig.name] = transformedValue;
 
         // Add lag features
@@ -186,7 +196,7 @@ export class MLTradingEngine {
             if (i - lag >= 0) {
               const lagValue = await this.computeFeature(
                 featureConfig,
-                historicalData.slice(0, i - lag + 1)
+                historicalData.slice(0, i - lag + 1),
               );
               featureValues[`${featureConfig.name}_lag${lag}`] = lagValue;
             }
@@ -206,36 +216,43 @@ export class MLTradingEngine {
 
   private async computeFeature(
     config: FeatureConfig,
-    data: { open: number; high: number; low: number; close: number; volume: number }[]
+    data: {
+      open: number;
+      high: number;
+      low: number;
+      close: number;
+      volume: number;
+    }[],
   ): Promise<number> {
-    const closes = data.map(d => d.close);
-    const highs = data.map(d => d.high);
-    const lows = data.map(d => d.low);
-    const volumes = data.map(d => d.volume);
+    const closes = data.map((d) => d.close);
+    const highs = data.map((d) => d.high);
+    const lows = data.map((d) => d.low);
+    const volumes = data.map((d) => d.volume);
     const period = config.period || 14;
 
     switch (config.indicator) {
-      case 'sma':
+      case "sma":
         return this.calculateSMA(closes, period);
-      case 'ema':
+      case "ema":
         return this.calculateEMA(closes, period);
-      case 'rsi':
+      case "rsi":
         return this.calculateRSI(closes, period);
-      case 'macd':
+      case "macd":
         return this.calculateMACD(closes).macd;
-      case 'atr':
+      case "atr":
         return this.calculateATR(highs, lows, closes, period);
-      case 'bbands_upper':
+      case "bbands_upper":
         return this.calculateBollingerBands(closes, period).upper;
-      case 'bbands_lower':
+      case "bbands_lower":
         return this.calculateBollingerBands(closes, period).lower;
-      case 'volume_sma':
+      case "volume_sma":
         return this.calculateSMA(volumes, period);
-      case 'returns':
-        return closes.length > 1 
-          ? (closes[closes.length - 1] - closes[closes.length - 2]) / closes[closes.length - 2]
+      case "returns":
+        return closes.length > 1
+          ? (closes[closes.length - 1] - closes[closes.length - 2]) /
+              closes[closes.length - 2]
           : 0;
-      case 'volatility':
+      case "volatility":
         return this.calculateVolatility(closes, period);
       default:
         return closes[closes.length - 1];
@@ -245,21 +262,21 @@ export class MLTradingEngine {
   private applyTransformation(
     value: number,
     transform: Transformation,
-    data: { close: number }[]
+    data: { close: number }[],
   ): number {
     switch (transform) {
-      case 'log':
+      case "log":
         return value > 0 ? Math.log(value) : 0;
-      case 'diff':
+      case "diff":
         return data.length > 1 ? value - data[data.length - 2].close : 0;
-      case 'pct_change':
-        return data.length > 1 
-          ? (value - data[data.length - 2].close) / data[data.length - 2].close 
+      case "pct_change":
+        return data.length > 1
+          ? (value - data[data.length - 2].close) / data[data.length - 2].close
           : 0;
-      case 'normalize':
+      case "normalize":
         // Min-max normalization (simplified)
         return value;
-      case 'standardize':
+      case "standardize":
         // Z-score (simplified)
         return value;
       default:
@@ -289,25 +306,29 @@ export class MLTradingEngine {
 
   private calculateRSI(data: number[], period: number): number {
     if (data.length < period + 1) return 50;
-    
+
     let gains = 0;
     let losses = 0;
-    
+
     for (let i = data.length - period; i < data.length; i++) {
       const change = data[i] - data[i - 1];
       if (change > 0) gains += change;
       else losses -= change;
     }
-    
+
     const avgGain = gains / period;
     const avgLoss = losses / period;
-    
+
     if (avgLoss === 0) return 100;
     const rs = avgGain / avgLoss;
-    return 100 - (100 / (1 + rs));
+    return 100 - 100 / (1 + rs);
   }
 
-  private calculateMACD(data: number[]): { macd: number; signal: number; histogram: number } {
+  private calculateMACD(data: number[]): {
+    macd: number;
+    signal: number;
+    histogram: number;
+  } {
     const ema12 = this.calculateEMA(data, 12);
     const ema26 = this.calculateEMA(data, 26);
     const macd = ema12 - ema26;
@@ -315,26 +336,34 @@ export class MLTradingEngine {
     return { macd, signal, histogram: macd - signal };
   }
 
-  private calculateATR(highs: number[], lows: number[], closes: number[], period: number): number {
+  private calculateATR(
+    highs: number[],
+    lows: number[],
+    closes: number[],
+    period: number,
+  ): number {
     if (highs.length < 2) return highs[0] - lows[0];
-    
+
     let atrSum = 0;
     for (let i = highs.length - period; i < highs.length; i++) {
       const tr = Math.max(
         highs[i] - lows[i],
         Math.abs(highs[i] - closes[i - 1]),
-        Math.abs(lows[i] - closes[i - 1])
+        Math.abs(lows[i] - closes[i - 1]),
       );
       atrSum += tr;
     }
     return atrSum / period;
   }
 
-  private calculateBollingerBands(data: number[], period: number): { upper: number; middle: number; lower: number } {
+  private calculateBollingerBands(
+    data: number[],
+    period: number,
+  ): { upper: number; middle: number; lower: number } {
     const sma = this.calculateSMA(data, period);
     const slice = data.slice(-period);
     const std = Math.sqrt(
-      slice.reduce((sum, val) => sum + Math.pow(val - sma, 2), 0) / period
+      slice.reduce((sum, val) => sum + Math.pow(val - sma, 2), 0) / period,
     );
     return {
       upper: sma + 2 * std,
@@ -350,7 +379,9 @@ export class MLTradingEngine {
       returns.push((data[i] - data[i - 1]) / data[i - 1]);
     }
     const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
-    const variance = returns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / returns.length;
+    const variance =
+      returns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) /
+      returns.length;
     return Math.sqrt(variance);
   }
 
@@ -360,31 +391,38 @@ export class MLTradingEngine {
 
   async predict(
     modelId: string,
-    featureVector: FeatureVector
+    featureVector: FeatureVector,
   ): Promise<MLPrediction> {
     const model = this.models.get(modelId);
     if (!model) throw new Error(`Model ${modelId} not found`);
 
     // Normalize features
-    const normalizedFeatures = this.normalizeFeatures(modelId, featureVector.features);
+    const normalizedFeatures = this.normalizeFeatures(
+      modelId,
+      featureVector.features,
+    );
 
     // Get prediction based on architecture
-    let prediction: { signal: 'buy' | 'sell' | 'hold'; confidence: number; predictedReturn?: number };
-    
+    let prediction: {
+      signal: "buy" | "sell" | "hold";
+      confidence: number;
+      predictedReturn?: number;
+    };
+
     switch (model.architecture) {
-      case 'random_forest':
-      case 'gradient_boosting':
+      case "random_forest":
+      case "gradient_boosting":
         prediction = this.predictTreeEnsemble(modelId, normalizedFeatures);
         break;
-      case 'neural_network':
-      case 'lstm':
+      case "neural_network":
+      case "lstm":
         prediction = this.predictNeuralNetwork(modelId, normalizedFeatures);
         break;
-      case 'ensemble':
+      case "ensemble":
         prediction = await this.predictEnsemble(model, featureVector);
         break;
       default:
-        prediction = { signal: 'hold', confidence: 0.5 };
+        prediction = { signal: "hold", confidence: 0.5 };
     }
 
     const result: MLPrediction = {
@@ -403,13 +441,13 @@ export class MLTradingEngine {
 
   private normalizeFeatures(
     modelId: string,
-    features: Record<string, number>
+    features: Record<string, number>,
   ): number[] {
     const scalers = this.featureScalers.get(modelId);
     const values = Object.values(features);
-    
+
     if (!scalers) return values;
-    
+
     return values.map((val, i) => {
       const scaler = scalers[i];
       if (!scaler || scaler.std === 0) return val;
@@ -419,12 +457,16 @@ export class MLTradingEngine {
 
   private predictTreeEnsemble(
     modelId: string,
-    features: number[]
-  ): { signal: 'buy' | 'sell' | 'hold'; confidence: number; predictedReturn?: number } {
+    features: number[],
+  ): {
+    signal: "buy" | "sell" | "hold";
+    confidence: number;
+    predictedReturn?: number;
+  } {
     const weights = this.modelWeights.get(modelId);
 
     if (!weights) {
-      return { signal: 'hold', confidence: 0.5 };
+      return { signal: "hold", confidence: 0.5 };
     }
 
     // Linear model with trained weights + bias
@@ -438,19 +480,25 @@ export class MLTradingEngine {
     const sigmoid = 1 / (1 + Math.exp(-Math.abs(score) * 5));
     const confidence = Math.min(0.95, Math.max(0.5, sigmoid));
 
-    if (score > 0.1) return { signal: 'buy', confidence, predictedReturn: score };
-    if (score < -0.1) return { signal: 'sell', confidence, predictedReturn: score };
-    return { signal: 'hold', confidence: 0.5, predictedReturn: score };
+    if (score > 0.1)
+      return { signal: "buy", confidence, predictedReturn: score };
+    if (score < -0.1)
+      return { signal: "sell", confidence, predictedReturn: score };
+    return { signal: "hold", confidence: 0.5, predictedReturn: score };
   }
 
   private predictNeuralNetwork(
     modelId: string,
-    features: number[]
-  ): { signal: 'buy' | 'sell' | 'hold'; confidence: number; predictedReturn?: number } {
+    features: number[],
+  ): {
+    signal: "buy" | "sell" | "hold";
+    confidence: number;
+    predictedReturn?: number;
+  } {
     const weights = this.modelWeights.get(modelId);
 
     if (!weights) {
-      return { signal: 'hold', confidence: 0.5 };
+      return { signal: "hold", confidence: 0.5 };
     }
 
     // Two-layer forward pass: tanh activation → linear output
@@ -463,18 +511,27 @@ export class MLTradingEngine {
     // Scale output
     output = Math.tanh(output);
 
-    const confidence = Math.min(0.95, Math.max(0.5, 0.5 + Math.abs(output) * 0.45));
-    if (output > 0.1) return { signal: 'buy', confidence, predictedReturn: output };
-    if (output < -0.1) return { signal: 'sell', confidence, predictedReturn: output };
-    return { signal: 'hold', confidence: 0.5, predictedReturn: output };
+    const confidence = Math.min(
+      0.95,
+      Math.max(0.5, 0.5 + Math.abs(output) * 0.45),
+    );
+    if (output > 0.1)
+      return { signal: "buy", confidence, predictedReturn: output };
+    if (output < -0.1)
+      return { signal: "sell", confidence, predictedReturn: output };
+    return { signal: "hold", confidence: 0.5, predictedReturn: output };
   }
 
   private async predictEnsemble(
     config: MLModelConfig,
-    featureVector: FeatureVector
-  ): Promise<{ signal: 'buy' | 'sell' | 'hold'; confidence: number; predictedReturn?: number }> {
+    featureVector: FeatureVector,
+  ): Promise<{
+    signal: "buy" | "sell" | "hold";
+    confidence: number;
+    predictedReturn?: number;
+  }> {
     if (!config.ensembleModels?.length) {
-      return { signal: 'hold', confidence: 0.5 };
+      return { signal: "hold", confidence: 0.5 };
     }
 
     const predictions: MLPrediction[] = [];
@@ -484,22 +541,25 @@ export class MLTradingEngine {
     }
 
     // Weighted voting
-    const weights = config.ensembleWeights || predictions.map(() => 1 / predictions.length);
-    let buyScore = 0, sellScore = 0, holdScore = 0;
+    const weights =
+      config.ensembleWeights || predictions.map(() => 1 / predictions.length);
+    let buyScore = 0,
+      sellScore = 0,
+      holdScore = 0;
     let totalReturn = 0;
 
     predictions.forEach((pred, i) => {
       const weight = weights[i];
-      if (pred.signal === 'buy') buyScore += weight * pred.confidence;
-      else if (pred.signal === 'sell') sellScore += weight * pred.confidence;
+      if (pred.signal === "buy") buyScore += weight * pred.confidence;
+      else if (pred.signal === "sell") sellScore += weight * pred.confidence;
       else holdScore += weight * pred.confidence;
       totalReturn += (pred.predictedReturn || 0) * weight;
     });
 
     const maxScore = Math.max(buyScore, sellScore, holdScore);
-    let signal: 'buy' | 'sell' | 'hold' = 'hold';
-    if (maxScore === buyScore) signal = 'buy';
-    else if (maxScore === sellScore) signal = 'sell';
+    let signal: "buy" | "sell" | "hold" = "hold";
+    if (maxScore === buyScore) signal = "buy";
+    else if (maxScore === sellScore) signal = "sell";
 
     return {
       signal,
@@ -541,15 +601,16 @@ export class MLTradingEngine {
 
   async train(
     modelId: string,
-    trainingData: FeatureVector[]
+    trainingData: FeatureVector[],
   ): Promise<ModelEvaluation> {
     const model = this.models.get(modelId);
     if (!model) throw new Error(`Model ${modelId} not found`);
-    if (trainingData.length < 10) throw new Error('Insufficient training data (minimum 10 samples)');
+    if (trainingData.length < 10)
+      throw new Error("Insufficient training data (minimum 10 samples)");
 
     const featureNames = Object.keys(trainingData[0]?.features || {});
     const numFeatures = featureNames.length;
-    if (numFeatures === 0) throw new Error('No features in training data');
+    if (numFeatures === 0) throw new Error("No features in training data");
 
     // Compute and store feature scalers (z-score normalization)
     const scalers = this.computeScalers(trainingData, featureNames);
@@ -561,7 +622,9 @@ export class MLTradingEngine {
     // Split data: train / validation / test
     const { trainSplit, validationSplit } = model.training;
     const trainEnd = Math.floor(trainingData.length * trainSplit);
-    const valEnd = Math.floor(trainingData.length * (trainSplit + validationSplit));
+    const valEnd = Math.floor(
+      trainingData.length * (trainSplit + validationSplit),
+    );
 
     const trainX = trainingData.slice(0, trainEnd);
     const trainY = targets.slice(0, trainEnd);
@@ -600,7 +663,8 @@ export class MLTradingEngine {
         trainLoss += error * error;
 
         for (let j = 0; j < numFeatures; j++) {
-          gradW[j] += (2 * error * (x[j] || 0)) / trainX.length + lambda * weights[j];
+          gradW[j] +=
+            (2 * error * (x[j] || 0)) / trainX.length + lambda * weights[j];
         }
         gradB += (2 * error) / trainX.length;
       }
@@ -640,15 +704,24 @@ export class MLTradingEngine {
     this.modelWeights.set(modelId, finalWeights);
 
     // Evaluate on all splits
-    const trainEval = this.evaluatePredictions(trainX, trainY, modelId, model.type);
+    const trainEval = this.evaluatePredictions(
+      trainX,
+      trainY,
+      modelId,
+      model.type,
+    );
     const valEval = this.evaluatePredictions(valX, valY, modelId, model.type);
-    const testEval = testX.length > 0
-      ? this.evaluatePredictions(testX, testY, modelId, model.type)
-      : undefined;
+    const testEval =
+      testX.length > 0
+        ? this.evaluatePredictions(testX, testY, modelId, model.type)
+        : undefined;
 
     // Permutation feature importance (stored for prediction-time access)
     const featureImportance = this.computeFeatureImportance(
-      valX, valY, modelId, featureNames
+      valX,
+      valY,
+      modelId,
+      featureNames,
     );
     this.storedImportance.set(modelId, featureImportance);
 
@@ -661,7 +734,8 @@ export class MLTradingEngine {
       mae: valEval.mae,
       r2: valEval.r2,
       sharpeRatio: this.computeSharpe(valX, valY, modelId),
-      confusionMatrix: model.type === 'classification' ? valEval.confusionMatrix : undefined,
+      confusionMatrix:
+        model.type === "classification" ? valEval.confusionMatrix : undefined,
       featureImportance,
       trainScore: trainEval.score,
       validationScore: valEval.score,
@@ -671,28 +745,34 @@ export class MLTradingEngine {
 
   private computeScalers(
     data: FeatureVector[],
-    featureNames: string[]
+    featureNames: string[],
   ): { mean: number; std: number }[] {
-    return featureNames.map(name => {
-      const values = data.map(d => d.features[name]);
+    return featureNames.map((name) => {
+      const values = data.map((d) => d.features[name]);
       const mean = values.reduce((a, b) => a + b, 0) / values.length;
-      const variance = values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / values.length;
+      const variance =
+        values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / values.length;
       return { mean, std: Math.sqrt(variance) || 1 };
     });
   }
 
-  private computeTargets(data: FeatureVector[], target: TargetConfig): number[] {
+  private computeTargets(
+    data: FeatureVector[],
+    target: TargetConfig,
+  ): number[] {
     return data.map((fv, i) => {
       if (fv.target !== undefined) return fv.target;
       // Compute forward return as target if not provided
       if (i + target.horizon < data.length) {
         const futureFeatures = data[i + target.horizon].features;
         const currentFeatures = fv.features;
-        const currentClose = currentFeatures['close'] ?? currentFeatures['price'] ?? 0;
-        const futureClose = futureFeatures['close'] ?? futureFeatures['price'] ?? 0;
+        const currentClose =
+          currentFeatures["close"] ?? currentFeatures["price"] ?? 0;
+        const futureClose =
+          futureFeatures["close"] ?? futureFeatures["price"] ?? 0;
         if (currentClose === 0) return 0;
         const ret = (futureClose - currentClose) / currentClose;
-        if (target.type === 'direction') {
+        if (target.type === "direction") {
           const threshold = target.threshold || 0;
           return ret > threshold ? 1 : ret < -threshold ? -1 : 0;
         }
@@ -702,7 +782,11 @@ export class MLTradingEngine {
     });
   }
 
-  private linearForward(features: number[], weights: Float32Array, bias: number): number {
+  private linearForward(
+    features: number[],
+    weights: Float32Array,
+    bias: number,
+  ): number {
     let sum = bias;
     for (let i = 0; i < Math.min(features.length, weights.length); i++) {
       sum += (features[i] || 0) * weights[i];
@@ -714,23 +798,33 @@ export class MLTradingEngine {
     data: FeatureVector[],
     targets: number[],
     modelId: string,
-    modelType: MLModelType
+    modelType: MLModelType,
   ): {
-    accuracy?: number; precision?: number; recall?: number; f1?: number;
-    mse: number; mae: number; r2?: number; score: number;
+    accuracy?: number;
+    precision?: number;
+    recall?: number;
+    f1?: number;
+    mse: number;
+    mae: number;
+    r2?: number;
+    score: number;
     confusionMatrix?: number[][];
   } {
     const predictions: number[] = [];
     for (let i = 0; i < data.length; i++) {
       const x = this.normalizeFeatures(modelId, data[i].features);
       const weights = this.modelWeights.get(modelId);
-      if (!weights) { predictions.push(0); continue; }
+      if (!weights) {
+        predictions.push(0);
+        continue;
+      }
       const bias = weights[weights.length - 1];
       predictions.push(this.linearForward(x, weights, bias));
     }
 
     // MSE & MAE
-    let mse = 0, mae = 0;
+    let mse = 0,
+      mae = 0;
     for (let i = 0; i < predictions.length; i++) {
       const err = predictions[i] - targets[i];
       mse += err * err;
@@ -740,18 +834,33 @@ export class MLTradingEngine {
     mae /= Math.max(predictions.length, 1);
 
     // R²
-    const meanTarget = targets.reduce((a, b) => a + b, 0) / Math.max(targets.length, 1);
-    const ssRes = predictions.reduce((sum, p, i) => sum + (p - targets[i]) ** 2, 0);
+    const meanTarget =
+      targets.reduce((a, b) => a + b, 0) / Math.max(targets.length, 1);
+    const ssRes = predictions.reduce(
+      (sum, p, i) => sum + (p - targets[i]) ** 2,
+      0,
+    );
     const ssTot = targets.reduce((sum, t) => sum + (t - meanTarget) ** 2, 0);
     const r2 = ssTot > 0 ? 1 - ssRes / ssTot : 0;
 
-    if (modelType === 'classification') {
+    if (modelType === "classification") {
       // Convert regression output to class predictions
-      const predClasses = predictions.map(p => p > 0.2 ? 1 : p < -0.2 ? -1 : 0);
-      const actualClasses = targets.map(t => t > 0.2 ? 1 : t < -0.2 ? -1 : 0);
+      const predClasses = predictions.map((p) =>
+        p > 0.2 ? 1 : p < -0.2 ? -1 : 0,
+      );
+      const actualClasses = targets.map((t) =>
+        t > 0.2 ? 1 : t < -0.2 ? -1 : 0,
+      );
 
-      let correct = 0, tp = 0, fp = 0, fn = 0;
-      const cm = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]; // -1, 0, 1
+      let correct = 0,
+        tp = 0,
+        fp = 0,
+        fn = 0;
+      const cm = [
+        [0, 0, 0],
+        [0, 0, 0],
+        [0, 0, 0],
+      ]; // -1, 0, 1
 
       for (let i = 0; i < predClasses.length; i++) {
         const pi = predClasses[i] + 1; // index 0,1,2
@@ -766,9 +875,22 @@ export class MLTradingEngine {
       const accuracy = correct / Math.max(predClasses.length, 1);
       const precision = tp + fp > 0 ? tp / (tp + fp) : 0;
       const recall = tp + fn > 0 ? tp / (tp + fn) : 0;
-      const f1 = precision + recall > 0 ? 2 * precision * recall / (precision + recall) : 0;
+      const f1 =
+        precision + recall > 0
+          ? (2 * precision * recall) / (precision + recall)
+          : 0;
 
-      return { accuracy, precision, recall, f1, mse, mae, r2, score: accuracy, confusionMatrix: cm };
+      return {
+        accuracy,
+        precision,
+        recall,
+        f1,
+        mse,
+        mae,
+        r2,
+        score: accuracy,
+        confusionMatrix: cm,
+      };
     }
 
     return { mse, mae, r2, score: Math.max(0, r2) };
@@ -778,7 +900,7 @@ export class MLTradingEngine {
     valData: FeatureVector[],
     valTargets: number[],
     modelId: string,
-    featureNames: string[]
+    featureNames: string[],
   ): Record<string, number> {
     // Permutation importance: shuffle each feature and measure score degradation
     const baseScore = this.scoreDataset(valData, valTargets, modelId);
@@ -786,17 +908,19 @@ export class MLTradingEngine {
 
     for (const name of featureNames) {
       // Create shuffled copy
-      const shuffled = valData.map(fv => ({
+      const shuffled = valData.map((fv) => ({
         ...fv,
         features: { ...fv.features },
       }));
-      const values = shuffled.map(fv => fv.features[name]);
+      const values = shuffled.map((fv) => fv.features[name]);
       // Fisher-Yates shuffle
       for (let i = values.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [values[i], values[j]] = [values[j], values[i]];
       }
-      shuffled.forEach((fv, idx) => { fv.features[name] = values[idx]; });
+      shuffled.forEach((fv, idx) => {
+        fv.features[name] = values[idx];
+      });
 
       const shuffledScore = this.scoreDataset(shuffled, valTargets, modelId);
       importance[name] = Math.max(0, baseScore - shuffledScore);
@@ -812,13 +936,19 @@ export class MLTradingEngine {
     return importance;
   }
 
-  private scoreDataset(data: FeatureVector[], targets: number[], modelId: string): number {
+  private scoreDataset(
+    data: FeatureVector[],
+    targets: number[],
+    modelId: string,
+  ): number {
     const weights = this.modelWeights.get(modelId);
     if (!weights) return 0;
     const bias = weights[weights.length - 1];
 
-    let ssRes = 0, ssTot = 0;
-    const mean = targets.reduce((a, b) => a + b, 0) / Math.max(targets.length, 1);
+    let ssRes = 0,
+      ssTot = 0;
+    const mean =
+      targets.reduce((a, b) => a + b, 0) / Math.max(targets.length, 1);
     for (let i = 0; i < data.length; i++) {
       const x = this.normalizeFeatures(modelId, data[i].features);
       const pred = this.linearForward(x, weights, bias);
@@ -828,7 +958,11 @@ export class MLTradingEngine {
     return ssTot > 0 ? 1 - ssRes / ssTot : 0;
   }
 
-  private computeSharpe(data: FeatureVector[], targets: number[], modelId: string): number {
+  private computeSharpe(
+    data: FeatureVector[],
+    targets: number[],
+    modelId: string,
+  ): number {
     const weights = this.modelWeights.get(modelId);
     if (!weights) return 0;
     const bias = weights[weights.length - 1];
@@ -844,7 +978,8 @@ export class MLTradingEngine {
     if (returns.length === 0) return 0;
 
     const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
-    const variance = returns.reduce((s, r) => s + (r - mean) ** 2, 0) / returns.length;
+    const variance =
+      returns.reduce((s, r) => s + (r - mean) ** 2, 0) / returns.length;
     const std = Math.sqrt(variance);
     return std > 0 ? (mean / std) * Math.sqrt(252) : 0; // Annualized
   }
@@ -856,7 +991,17 @@ export class MLTradingEngine {
   async predictBatch(
     modelId: string,
     symbols: string[],
-    historicalDataMap: Map<string, { timestamp: Date; open: number; high: number; low: number; close: number; volume: number }[]>
+    historicalDataMap: Map<
+      string,
+      {
+        timestamp: Date;
+        open: number;
+        high: number;
+        low: number;
+        close: number;
+        volume: number;
+      }[]
+    >,
   ): Promise<MLPrediction[]> {
     const model = this.models.get(modelId);
     if (!model) throw new Error(`Model ${modelId} not found`);
@@ -870,7 +1015,10 @@ export class MLTradingEngine {
       const features = await this.extractFeatures(symbol, data, model.features);
       if (features.length === 0) continue;
 
-      const prediction = await this.predict(modelId, features[features.length - 1]);
+      const prediction = await this.predict(
+        modelId,
+        features[features.length - 1],
+      );
       predictions.push(prediction);
     }
 

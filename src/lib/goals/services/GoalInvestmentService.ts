@@ -5,7 +5,7 @@
  * automated contributions, allocations, and progress tracking.
  */
 
-import { getSupabase } from '@/lib/supabase/client';
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
 
@@ -14,21 +14,21 @@ const supabase = getSupabase();
 // ============================================================================
 
 export type GoalType =
-  | 'retirement'
-  | 'house'
-  | 'education'
-  | 'emergency'
-  | 'vacation'
-  | 'car'
-  | 'wedding'
-  | 'custom';
-export type RiskTolerance = 'conservative' | 'moderate' | 'aggressive';
+  | "retirement"
+  | "house"
+  | "education"
+  | "emergency"
+  | "vacation"
+  | "car"
+  | "wedding"
+  | "custom";
+export type RiskTolerance = "conservative" | "moderate" | "aggressive";
 export type ContributionFrequency =
-  | 'weekly'
-  | 'biweekly'
-  | 'monthly'
-  | 'quarterly';
-export type GoalStatus = 'active' | 'paused' | 'completed' | 'cancelled';
+  | "weekly"
+  | "biweekly"
+  | "monthly"
+  | "quarterly";
+export type GoalStatus = "active" | "paused" | "completed" | "cancelled";
 
 export interface FinancialGoal {
   id: string;
@@ -65,7 +65,7 @@ export interface ContributionSchedule {
   autoIncrease?: {
     enabled: boolean;
     percent: number;
-    frequency: 'annually' | 'quarterly';
+    frequency: "annually" | "quarterly";
   };
 }
 
@@ -131,42 +131,42 @@ const GOAL_TYPE_DEFAULTS: Record<
 > = {
   retirement: {
     defaultTimelineYears: 30,
-    suggestedRisk: 'aggressive',
+    suggestedRisk: "aggressive",
     defaultPriority: 1,
   },
   house: {
     defaultTimelineYears: 5,
-    suggestedRisk: 'moderate',
+    suggestedRisk: "moderate",
     defaultPriority: 2,
   },
   education: {
     defaultTimelineYears: 18,
-    suggestedRisk: 'moderate',
+    suggestedRisk: "moderate",
     defaultPriority: 3,
   },
   emergency: {
     defaultTimelineYears: 1,
-    suggestedRisk: 'conservative',
+    suggestedRisk: "conservative",
     defaultPriority: 1,
   },
   vacation: {
     defaultTimelineYears: 1,
-    suggestedRisk: 'conservative',
+    suggestedRisk: "conservative",
     defaultPriority: 5,
   },
   car: {
     defaultTimelineYears: 3,
-    suggestedRisk: 'conservative',
+    suggestedRisk: "conservative",
     defaultPriority: 4,
   },
   wedding: {
     defaultTimelineYears: 2,
-    suggestedRisk: 'conservative',
+    suggestedRisk: "conservative",
     defaultPriority: 3,
   },
   custom: {
     defaultTimelineYears: 5,
-    suggestedRisk: 'moderate',
+    suggestedRisk: "moderate",
     defaultPriority: 5,
   },
 };
@@ -174,50 +174,50 @@ const GOAL_TYPE_DEFAULTS: Record<
 const RISK_ALLOCATIONS: Record<RiskTolerance, RecommendedAllocation[]> = {
   conservative: [
     {
-      assetClass: 'bonds',
+      assetClass: "bonds",
       percent: 60,
-      rationale: 'Stable income with lower volatility',
+      rationale: "Stable income with lower volatility",
     },
     {
-      assetClass: 'stocks',
+      assetClass: "stocks",
       percent: 25,
-      rationale: 'Growth potential with moderate risk',
+      rationale: "Growth potential with moderate risk",
     },
     {
-      assetClass: 'cash',
+      assetClass: "cash",
       percent: 15,
-      rationale: 'Liquidity and capital preservation',
+      rationale: "Liquidity and capital preservation",
     },
   ],
   moderate: [
     {
-      assetClass: 'stocks',
+      assetClass: "stocks",
       percent: 50,
-      rationale: 'Balanced growth opportunity',
+      rationale: "Balanced growth opportunity",
     },
-    { assetClass: 'bonds', percent: 35, rationale: 'Income and stability' },
+    { assetClass: "bonds", percent: 35, rationale: "Income and stability" },
     {
-      assetClass: 'alternatives',
+      assetClass: "alternatives",
       percent: 10,
-      rationale: 'Diversification benefits',
+      rationale: "Diversification benefits",
     },
-    { assetClass: 'cash', percent: 5, rationale: 'Emergency reserves' },
+    { assetClass: "cash", percent: 5, rationale: "Emergency reserves" },
   ],
   aggressive: [
     {
-      assetClass: 'stocks',
+      assetClass: "stocks",
       percent: 80,
-      rationale: 'Maximum growth potential',
+      rationale: "Maximum growth potential",
     },
     {
-      assetClass: 'alternatives',
+      assetClass: "alternatives",
       percent: 15,
-      rationale: 'Higher risk/return assets',
+      rationale: "Higher risk/return assets",
     },
     {
-      assetClass: 'bonds',
+      assetClass: "bonds",
       percent: 5,
-      rationale: 'Minimal fixed income for stability',
+      rationale: "Minimal fixed income for stability",
     },
   ],
 };
@@ -247,13 +247,13 @@ export class GoalInvestmentService {
       priority?: number;
       icon?: string;
       color?: string;
-    }
+    },
   ): Promise<FinancialGoal | null> {
     try {
       const defaults = GOAL_TYPE_DEFAULTS[data.type];
 
       const { data: result, error } = await supabase
-        .from('financial_goals')
+        .from("financial_goals")
         .insert({
           user_id: userId,
           name: data.name,
@@ -261,7 +261,7 @@ export class GoalInvestmentService {
           target_amount: data.targetAmount,
           current_amount: data.initialAmount || 0,
           target_date: data.targetDate.toISOString(),
-          status: 'active',
+          status: "active",
           priority: data.priority ?? defaults.defaultPriority,
           icon: data.icon,
           color: data.color,
@@ -289,10 +289,10 @@ export class GoalInvestmentService {
   async getGoals(userId: string): Promise<FinancialGoal[]> {
     try {
       const { data, error } = await supabase
-        .from('financial_goals')
-        .select('*')
-        .eq('user_id', userId)
-        .order('priority', { ascending: true });
+        .from("financial_goals")
+        .select("*")
+        .eq("user_id", userId)
+        .order("priority", { ascending: true });
 
       if (error) {
         // GoalInvestmentService error: Failed to get goals
@@ -310,16 +310,16 @@ export class GoalInvestmentService {
    */
   async updateGoalProgress(
     goalId: string,
-    currentAmount: number
+    currentAmount: number,
   ): Promise<boolean> {
     try {
       const { error } = await supabase
-        .from('financial_goals')
+        .from("financial_goals")
         .update({
           current_amount: currentAmount,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', goalId);
+        .eq("id", goalId);
 
       return !error;
     } catch {
@@ -337,11 +337,11 @@ export class GoalInvestmentService {
   async linkGoalToInvestment(
     goalId: string,
     investmentAccountId: string,
-    allocationPercent: number
+    allocationPercent: number,
   ): Promise<GoalInvestmentLink | null> {
     try {
       const { data, error } = await supabase
-        .from('goal_investment_links')
+        .from("goal_investment_links")
         .insert({
           goal_id: goalId,
           investment_account_id: investmentAccountId,
@@ -376,10 +376,10 @@ export class GoalInvestmentService {
   async getLinkedInvestments(goalId: string): Promise<GoalInvestmentLink[]> {
     try {
       const { data, error } = await supabase
-        .from('goal_investment_links')
-        .select('*')
-        .eq('goal_id', goalId)
-        .eq('is_active', true);
+        .from("goal_investment_links")
+        .select("*")
+        .eq("goal_id", goalId)
+        .eq("is_active", true);
 
       if (error) return [];
 
@@ -413,9 +413,9 @@ export class GoalInvestmentService {
       autoIncrease?: {
         enabled: boolean;
         percent: number;
-        frequency: 'annually' | 'quarterly';
+        frequency: "annually" | "quarterly";
       };
-    }
+    },
   ): Promise<ContributionSchedule | null> {
     try {
       const nextDate =
@@ -423,7 +423,7 @@ export class GoalInvestmentService {
         this.calculateNextContributionDate(new Date(), data.frequency);
 
       const { data: result, error } = await supabase
-        .from('contribution_schedules')
+        .from("contribution_schedules")
         .insert({
           goal_id: goalId,
           amount: data.amount,
@@ -461,14 +461,14 @@ export class GoalInvestmentService {
    * Get contribution schedule for a goal
    */
   async getContributionSchedule(
-    goalId: string
+    goalId: string,
   ): Promise<ContributionSchedule | null> {
     try {
       const { data, error } = await supabase
-        .from('contribution_schedules')
-        .select('*')
-        .eq('goal_id', goalId)
-        .eq('is_active', true)
+        .from("contribution_schedules")
+        .select("*")
+        .eq("goal_id", goalId)
+        .eq("is_active", true)
         .single();
 
       if (error || !data) return null;
@@ -494,16 +494,16 @@ export class GoalInvestmentService {
   async processContribution(scheduleId: string): Promise<boolean> {
     try {
       const { data: schedule, error: fetchError } = await supabase
-        .from('contribution_schedules')
-        .select('*')
-        .eq('id', scheduleId)
+        .from("contribution_schedules")
+        .select("*")
+        .eq("id", scheduleId)
         .single();
 
       if (fetchError || !schedule) return false;
 
       // Record the contribution
       const { error: contribError } = await supabase
-        .from('goal_contributions')
+        .from("goal_contributions")
         .insert({
           goal_id: schedule.goal_id,
           amount: schedule.amount,
@@ -515,34 +515,34 @@ export class GoalInvestmentService {
 
       // Update goal current amount
       const { data: goal } = await supabase
-        .from('financial_goals')
-        .select('current_amount')
-        .eq('id', schedule.goal_id)
+        .from("financial_goals")
+        .select("current_amount")
+        .eq("id", schedule.goal_id)
         .single();
 
       if (goal) {
         await supabase
-          .from('financial_goals')
+          .from("financial_goals")
           .update({
             current_amount: goal.current_amount + schedule.amount,
             updated_at: new Date().toISOString(),
           })
-          .eq('id', schedule.goal_id);
+          .eq("id", schedule.goal_id);
       }
 
       // Update next contribution date
       const nextDate = this.calculateNextContributionDate(
         new Date(schedule.next_contribution_date),
-        schedule.frequency
+        schedule.frequency,
       );
 
       await supabase
-        .from('contribution_schedules')
+        .from("contribution_schedules")
         .update({
           next_contribution_date: nextDate.toISOString(),
           last_contribution_date: new Date().toISOString(),
         })
-        .eq('id', scheduleId);
+        .eq("id", scheduleId);
 
       return true;
     } catch {
@@ -552,21 +552,21 @@ export class GoalInvestmentService {
 
   private calculateNextContributionDate(
     from: Date,
-    frequency: ContributionFrequency
+    frequency: ContributionFrequency,
   ): Date {
     const next = new Date(from);
 
     switch (frequency) {
-      case 'weekly':
+      case "weekly":
         next.setDate(next.getDate() + 7);
         break;
-      case 'biweekly':
+      case "biweekly":
         next.setDate(next.getDate() + 14);
         break;
-      case 'monthly':
+      case "monthly":
         next.setMonth(next.getMonth() + 1);
         break;
-      case 'quarterly':
+      case "quarterly":
         next.setMonth(next.getMonth() + 3);
         break;
     }
@@ -584,16 +584,16 @@ export class GoalInvestmentService {
   getRecommendedAllocation(
     goalType: GoalType,
     yearsToGoal: number,
-    riskTolerance?: RiskTolerance
+    riskTolerance?: RiskTolerance,
   ): RecommendedAllocation[] {
     // Determine risk based on timeline if not provided
     let risk = riskTolerance;
 
     if (!risk) {
       if (yearsToGoal <= 2) {
-        risk = 'conservative';
+        risk = "conservative";
       } else if (yearsToGoal <= 5) {
-        risk = 'moderate';
+        risk = "moderate";
       } else {
         risk = GOAL_TYPE_DEFAULTS[goalType].suggestedRisk;
       }
@@ -603,7 +603,7 @@ export class GoalInvestmentService {
     const baseAllocation = RISK_ALLOCATIONS[risk];
 
     // For shorter timelines, shift towards more conservative
-    if (yearsToGoal <= 1 && risk !== 'conservative') {
+    if (yearsToGoal <= 1 && risk !== "conservative") {
       return RISK_ALLOCATIONS.conservative;
     }
 
@@ -616,7 +616,7 @@ export class GoalInvestmentService {
   calculateGlidePath(
     goalType: GoalType,
     totalYears: number,
-    currentYear: number
+    currentYear: number,
   ): RecommendedAllocation[] {
     const yearsRemaining = totalYears - currentYear;
     const progressPercent = (currentYear / totalYears) * 100;
@@ -626,13 +626,13 @@ export class GoalInvestmentService {
       return this.getRecommendedAllocation(
         goalType,
         yearsRemaining,
-        'aggressive'
+        "aggressive",
       );
     } else if (progressPercent < 50) {
       return this.getRecommendedAllocation(
         goalType,
         yearsRemaining,
-        'moderate'
+        "moderate",
       );
     } else if (progressPercent < 75) {
       // Blend between moderate and conservative
@@ -643,7 +643,7 @@ export class GoalInvestmentService {
       return this.getRecommendedAllocation(
         goalType,
         yearsRemaining,
-        'conservative'
+        "conservative",
       );
     }
   }
@@ -651,7 +651,7 @@ export class GoalInvestmentService {
   private blendAllocations(
     a: RecommendedAllocation[],
     b: RecommendedAllocation[],
-    weight: number
+    weight: number,
   ): RecommendedAllocation[] {
     const allClasses = new Set([
       ...a.map((x) => x.assetClass),
@@ -667,7 +667,7 @@ export class GoalInvestmentService {
       return {
         assetClass,
         percent: Math.round(aPercent * (1 - weight) + bPercent * weight),
-        rationale: aItem?.rationale || bItem?.rationale || '',
+        rationale: aItem?.rationale || bItem?.rationale || "",
       };
     });
   }
@@ -685,13 +685,13 @@ export class GoalInvestmentService {
     targetAmount: number,
     targetDate: Date,
     expectedReturn: number = 0.07,
-    volatility: number = 0.15
+    volatility: number = 0.15,
   ): GoalProjection {
     const now = new Date();
     const monthsRemaining = Math.max(
       0,
       (targetDate.getFullYear() - now.getFullYear()) * 12 +
-        (targetDate.getMonth() - now.getMonth())
+        (targetDate.getMonth() - now.getMonth()),
     );
 
     const monthlyReturn = expectedReturn / 12;
@@ -725,13 +725,13 @@ export class GoalInvestmentService {
       currentAmount,
       targetAmount,
       monthsRemaining,
-      expectedReturn
+      expectedReturn,
     );
 
     // Confidence level based on how much expected exceeds target
     const confidenceLevel = Math.min(
       100,
-      Math.round((expected / targetAmount) * 100)
+      Math.round((expected / targetAmount) * 100),
     );
 
     return {
@@ -756,7 +756,7 @@ export class GoalInvestmentService {
     current: number,
     target: number,
     months: number,
-    annualReturn: number
+    annualReturn: number,
   ): number {
     if (months <= 0) return target - current;
 
@@ -778,21 +778,21 @@ export class GoalInvestmentService {
   async getGoalProgress(goalId: string): Promise<GoalProgress | null> {
     try {
       const { data: goal, error } = await supabase
-        .from('financial_goals')
-        .select('*')
-        .eq('id', goalId)
+        .from("financial_goals")
+        .select("*")
+        .eq("id", goalId)
         .single();
 
       if (error || !goal) return null;
 
       const { data: contributions } = await supabase
-        .from('goal_contributions')
-        .select('amount')
-        .eq('goal_id', goalId);
+        .from("goal_contributions")
+        .select("amount")
+        .eq("goal_id", goalId);
 
       const totalContributed = (contributions || []).reduce(
         (sum, c) => sum + c.amount,
-        0
+        0,
       );
 
       const targetDate = new Date(goal.target_date);
@@ -800,12 +800,12 @@ export class GoalInvestmentService {
       const monthsRemaining = Math.max(
         0,
         (targetDate.getFullYear() - now.getFullYear()) * 12 +
-          (targetDate.getMonth() - now.getMonth())
+          (targetDate.getMonth() - now.getMonth()),
       );
 
       const percentComplete = Math.min(
         100,
-        (goal.current_amount / goal.target_amount) * 100
+        (goal.current_amount / goal.target_amount) * 100,
       );
 
       const totalGrowth = goal.current_amount - totalContributed;
@@ -829,7 +829,7 @@ export class GoalInvestmentService {
           const monthsToComplete = remainingAmount / avgMonthlyContribution;
           projectedCompletion = new Date();
           projectedCompletion.setMonth(
-            projectedCompletion.getMonth() + Math.ceil(monthsToComplete)
+            projectedCompletion.getMonth() + Math.ceil(monthsToComplete),
           );
         }
       }

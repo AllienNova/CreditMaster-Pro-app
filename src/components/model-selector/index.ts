@@ -1,3 +1,2 @@
-export { default as ModelSelector } from './ModelSelector';
-export type { AIModel } from './ModelSelector';
-
+export { default as ModelSelector } from "./ModelSelector";
+export type { AIModel } from "./ModelSelector";

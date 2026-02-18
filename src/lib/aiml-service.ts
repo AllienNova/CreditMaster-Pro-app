@@ -9,8 +9,8 @@
  */
 
 // Import OpenAI shims for Node.js environment (required before OpenAI import)
-import 'openai/shims/node';
-import OpenAI from 'openai';
+import "openai/shims/node";
+import OpenAI from "openai";
 
 export interface AIMLConfig {
   apiKey?: string;
@@ -19,7 +19,7 @@ export interface AIMLConfig {
 }
 
 export interface ChatMessage {
-  role: 'system' | 'user' | 'assistant';
+  role: "system" | "user" | "assistant";
   content: string;
 }
 
@@ -33,8 +33,8 @@ export interface ChatOptions {
 }
 
 export interface ImageGenerationOptions {
-  size?: '256x256' | '512x512' | '1024x1024' | '1792x1024' | '1024x1792';
-  quality?: 'standard' | 'hd';
+  size?: "256x256" | "512x512" | "1024x1024" | "1792x1024" | "1024x1792";
+  quality?: "standard" | "hd";
   n?: number;
 }
 
@@ -44,7 +44,7 @@ export interface EmbeddingOptions {
 
 /**
  * AIML Service Class
- * 
+ *
  * Provides methods to interact with AIML API's 300+ models
  */
 export class AIMLService {
@@ -53,13 +53,21 @@ export class AIMLService {
 
   constructor(config?: AIMLConfig) {
     this.config = {
-      apiKey: config?.apiKey || process.env.AIML_API_KEY || '',
-      baseURL: config?.baseURL || process.env.AIML_BASE_URL || 'https://api.aimlapi.com/v1',
-      defaultModel: config?.defaultModel || process.env.AIML_DEFAULT_CHAT_MODEL || 'anthropic/claude-4.5-sonnet',
+      apiKey: config?.apiKey || process.env.AIML_API_KEY || "",
+      baseURL:
+        config?.baseURL ||
+        process.env.AIML_BASE_URL ||
+        "https://api.aimlapi.com/v1",
+      defaultModel:
+        config?.defaultModel ||
+        process.env.AIML_DEFAULT_CHAT_MODEL ||
+        "anthropic/claude-4.5-sonnet",
     };
 
     if (!this.config.apiKey) {
-      throw new Error('AIML API key is required. Set AIML_API_KEY environment variable.');
+      throw new Error(
+        "AIML API key is required. Set AIML_API_KEY environment variable.",
+      );
     }
 
     this.client = new OpenAI({
@@ -70,7 +78,7 @@ export class AIMLService {
 
   /**
    * Chat completion with specified model
-   * 
+   *
    * @param model - Model ID (e.g., 'anthropic/claude-4.5-sonnet', 'openai/gpt-5-pro')
    * @param messages - Array of chat messages
    * @param options - Optional chat parameters
@@ -79,7 +87,7 @@ export class AIMLService {
   async chat(
     model: string,
     messages: ChatMessage[],
-    options?: ChatOptions
+    options?: ChatOptions,
   ): Promise<OpenAI.Chat.Completions.ChatCompletion> {
     try {
       const response = await this.client.chat.completions.create({
@@ -96,13 +104,15 @@ export class AIMLService {
       return response as OpenAI.Chat.Completions.ChatCompletion;
     } catch (error) {
       // AIML error: Chat Error
-      throw new Error(`AIML chat failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `AIML chat failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
   /**
    * Chat completion with streaming
-   * 
+   *
    * @param model - Model ID
    * @param messages - Array of chat messages
    * @param options - Optional chat parameters
@@ -111,7 +121,7 @@ export class AIMLService {
   async chatStream(
     model: string,
     messages: ChatMessage[],
-    options?: ChatOptions
+    options?: ChatOptions,
   ): Promise<AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>> {
     try {
       const stream = await this.client.chat.completions.create({
@@ -125,13 +135,15 @@ export class AIMLService {
       return stream as AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>;
     } catch (error) {
       // AIML error: Chat Stream Error
-      throw new Error(`AIML chat stream failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `AIML chat stream failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
   /**
    * Generate image from text prompt
-   * 
+   *
    * @param prompt - Text description of the image
    * @param model - Image generation model (e.g., 'flux-pro', 'stable-diffusion-xl')
    * @param options - Optional image generation parameters
@@ -139,28 +151,30 @@ export class AIMLService {
    */
   async generateImage(
     prompt: string,
-    model: string = 'flux-pro',
-    options?: ImageGenerationOptions
+    model: string = "flux-pro",
+    options?: ImageGenerationOptions,
   ): Promise<OpenAI.Images.ImagesResponse> {
     try {
       const response = await this.client.images.generate({
         model,
         prompt,
-        size: options?.size ?? '1024x1024',
-        quality: options?.quality ?? 'standard',
+        size: options?.size ?? "1024x1024",
+        quality: options?.quality ?? "standard",
         n: options?.n ?? 1,
       });
 
       return response;
     } catch (error) {
       // AIML error: Image Generation Error
-      throw new Error(`AIML image generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `AIML image generation failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
   /**
    * Generate embeddings for text
-   * 
+   *
    * @param text - Text to generate embeddings for
    * @param model - Embedding model (e.g., 'text-embedding-3-large')
    * @param options - Optional embedding parameters
@@ -168,8 +182,8 @@ export class AIMLService {
    */
   async createEmbedding(
     text: string | string[],
-    model: string = 'text-embedding-3-large',
-    options?: EmbeddingOptions
+    model: string = "text-embedding-3-large",
+    options?: EmbeddingOptions,
   ): Promise<OpenAI.Embeddings.CreateEmbeddingResponse> {
     try {
       const response = await this.client.embeddings.create({
@@ -181,20 +195,22 @@ export class AIMLService {
       return response;
     } catch (error) {
       // AIML error: Embedding Error
-      throw new Error(`AIML embedding failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `AIML embedding failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
   /**
    * Transcribe audio to text
-   * 
+   *
    * @param audioFile - Audio file to transcribe
    * @param model - Speech-to-text model (e.g., 'whisper-1')
    * @returns Transcription response
    */
   async transcribe(
     audioFile: File,
-    model: string = 'whisper-1'
+    model: string = "whisper-1",
   ): Promise<OpenAI.Audio.Transcription> {
     try {
       const response = await this.client.audio.transcriptions.create({
@@ -205,13 +221,15 @@ export class AIMLService {
       return response;
     } catch (error) {
       // AIML error: Transcription Error
-      throw new Error(`AIML transcription failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `AIML transcription failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
   /**
    * Generate speech from text
-   * 
+   *
    * @param text - Text to convert to speech
    * @param model - Text-to-speech model (e.g., 'tts-1', 'tts-1-hd')
    * @param voice - Voice to use (alloy, echo, fable, onyx, nova, shimmer)
@@ -219,8 +237,8 @@ export class AIMLService {
    */
   async generateSpeech(
     text: string,
-    model: string = 'tts-1-hd',
-    voice: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer' = 'alloy'
+    model: string = "tts-1-hd",
+    voice: "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer" = "alloy",
   ): Promise<ArrayBuffer> {
     try {
       const response = await this.client.audio.speech.create({
@@ -232,17 +250,21 @@ export class AIMLService {
       return await response.arrayBuffer();
     } catch (error) {
       // AIML error: Speech Generation Error
-      throw new Error(`AIML speech generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `AIML speech generation failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
   /**
    * Moderate content for safety
-   * 
+   *
    * @param text - Text to moderate
    * @returns Moderation response
    */
-  async moderate(text: string): Promise<OpenAI.Moderations.ModerationCreateResponse> {
+  async moderate(
+    text: string,
+  ): Promise<OpenAI.Moderations.ModerationCreateResponse> {
     try {
       const response = await this.client.moderations.create({
         input: text,
@@ -251,13 +273,15 @@ export class AIMLService {
       return response;
     } catch (error) {
       // AIML error: Moderation Error
-      throw new Error(`AIML moderation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `AIML moderation failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
   /**
    * Get the underlying OpenAI client for advanced usage
-   * 
+   *
    * @returns OpenAI client instance
    */
   getClient(): OpenAI {
@@ -266,7 +290,7 @@ export class AIMLService {
 
   /**
    * Get current configuration
-   * 
+   *
    * @returns AIML configuration
    */
   getConfig(): AIMLConfig {
@@ -294,4 +318,3 @@ export function resetAIMLService(): void {
 }
 
 export default AIMLService;
-

@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState } from "react";
+import { motion } from "framer-motion";
 import {
   PiggyBank,
   Plus,
@@ -16,15 +16,15 @@ import {
   DollarSign,
   RefreshCw,
   ChevronRight,
-} from 'lucide-react';
+} from "lucide-react";
 
 type RuleType =
-  | 'round_up'
-  | 'percentage'
-  | 'fixed_amount'
-  | 'paycheck_split'
-  | 'surplus_sweep';
-type RuleStatus = 'active' | 'paused' | 'disabled';
+  | "round_up"
+  | "percentage"
+  | "fixed_amount"
+  | "paycheck_split"
+  | "surplus_sweep";
+type RuleStatus = "active" | "paused" | "disabled";
 
 interface SaveRule {
   id: string;
@@ -54,48 +54,48 @@ interface RuleSummary {
 
 const MOCK_RULES: SaveRule[] = [
   {
-    id: '1',
-    name: 'Round-Up Savings',
-    type: 'round_up',
-    status: 'active',
+    id: "1",
+    name: "Round-Up Savings",
+    type: "round_up",
+    status: "active",
     description:
-      'Round up every purchase to nearest $1 and save the difference',
+      "Round up every purchase to nearest $1 and save the difference",
     totalSaved: 847.32,
     transferCount: 245,
-    lastTriggered: new Date('2026-01-20'),
+    lastTriggered: new Date("2026-01-20"),
     config: { roundTo: 1, multiplier: 1 },
   },
   {
-    id: '2',
-    name: 'Paycheck Split',
-    type: 'paycheck_split',
-    status: 'active',
-    description: 'Save 10% of every paycheck automatically',
+    id: "2",
+    name: "Paycheck Split",
+    type: "paycheck_split",
+    status: "active",
+    description: "Save 10% of every paycheck automatically",
     totalSaved: 2400.0,
     transferCount: 24,
-    lastTriggered: new Date('2026-01-15'),
+    lastTriggered: new Date("2026-01-15"),
     config: { percentage: 10 },
   },
   {
-    id: '3',
-    name: 'Weekly Transfer',
-    type: 'fixed_amount',
-    status: 'active',
-    description: 'Transfer $50 every Friday',
+    id: "3",
+    name: "Weekly Transfer",
+    type: "fixed_amount",
+    status: "active",
+    description: "Transfer $50 every Friday",
     totalSaved: 1200.0,
     transferCount: 24,
-    lastTriggered: new Date('2026-01-17'),
-    config: { amount: 50, frequency: 'weekly' },
+    lastTriggered: new Date("2026-01-17"),
+    config: { amount: 50, frequency: "weekly" },
   },
   {
-    id: '4',
-    name: 'Monthly Surplus Sweep',
-    type: 'surplus_sweep',
-    status: 'paused',
-    description: 'Move 50% of checking balance over $1000 to savings',
+    id: "4",
+    name: "Monthly Surplus Sweep",
+    type: "surplus_sweep",
+    status: "paused",
+    description: "Move 50% of checking balance over $1000 to savings",
     totalSaved: 650.0,
     transferCount: 3,
-    lastTriggered: new Date('2025-12-01'),
+    lastTriggered: new Date("2025-12-01"),
     config: { percentage: 50 },
   },
 ];
@@ -109,23 +109,23 @@ const MOCK_SUMMARY: RuleSummary = {
 };
 
 const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
   }).format(amount);
 };
 
 const getRuleIcon = (type: RuleType) => {
   switch (type) {
-    case 'round_up':
+    case "round_up":
       return RefreshCw;
-    case 'percentage':
+    case "percentage":
       return TrendingUp;
-    case 'fixed_amount':
+    case "fixed_amount":
       return DollarSign;
-    case 'paycheck_split':
+    case "paycheck_split":
       return Zap;
-    case 'surplus_sweep':
+    case "surplus_sweep":
       return ArrowRight;
     default:
       return PiggyBank;
@@ -134,18 +134,18 @@ const getRuleIcon = (type: RuleType) => {
 
 const getRuleColor = (type: RuleType) => {
   switch (type) {
-    case 'round_up':
-      return 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400';
-    case 'percentage':
-      return 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400';
-    case 'fixed_amount':
-      return 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400';
-    case 'paycheck_split':
-      return 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400';
-    case 'surplus_sweep':
-      return 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400';
+    case "round_up":
+      return "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400";
+    case "percentage":
+      return "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400";
+    case "fixed_amount":
+      return "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400";
+    case "paycheck_split":
+      return "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400";
+    case "surplus_sweep":
+      return "bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400";
     default:
-      return 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300';
+      return "bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300";
   }
 };
 
@@ -159,11 +159,11 @@ export default function AutoSavePage() {
         if (rule.id === ruleId) {
           return {
             ...rule,
-            status: rule.status === 'active' ? 'paused' : 'active',
+            status: rule.status === "active" ? "paused" : "active",
           };
         }
         return rule;
-      })
+      }),
     );
   };
 
@@ -226,7 +226,9 @@ export default function AutoSavePage() {
             <p className="text-2xl font-bold text-gray-900 dark:text-white">
               {summary.activeRules}/{summary.totalRules}
             </p>
-            <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Rules running</p>
+            <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
+              Rules running
+            </p>
           </div>
 
           <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm">
@@ -236,7 +238,9 @@ export default function AutoSavePage() {
             <p className="text-2xl font-bold text-emerald-600">
               {formatCurrency(summary.projectedMonthlySavings)}
             </p>
-            <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Per month</p>
+            <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
+              Per month
+            </p>
           </div>
         </div>
 
@@ -245,27 +249,27 @@ export default function AutoSavePage() {
           {[
             {
               icon: RefreshCw,
-              label: 'Round-Up',
-              desc: 'Save spare change',
-              type: 'round_up' as RuleType,
+              label: "Round-Up",
+              desc: "Save spare change",
+              type: "round_up" as RuleType,
             },
             {
               icon: Zap,
-              label: 'Paycheck Split',
-              desc: 'Auto % from income',
-              type: 'paycheck_split' as RuleType,
+              label: "Paycheck Split",
+              desc: "Auto % from income",
+              type: "paycheck_split" as RuleType,
             },
             {
               icon: DollarSign,
-              label: 'Fixed Transfer',
-              desc: 'Recurring amount',
-              type: 'fixed_amount' as RuleType,
+              label: "Fixed Transfer",
+              desc: "Recurring amount",
+              type: "fixed_amount" as RuleType,
             },
             {
               icon: Target,
-              label: 'Goal-Based',
-              desc: 'Save for a goal',
-              type: 'percentage' as RuleType,
+              label: "Goal-Based",
+              desc: "Save for a goal",
+              type: "percentage" as RuleType,
             },
           ].map((action) => (
             <button
@@ -280,7 +284,9 @@ export default function AutoSavePage() {
               <span className="font-medium text-gray-900 dark:text-white">
                 {action.label}
               </span>
-              <span className="text-xs text-gray-500 dark:text-slate-400">{action.desc}</span>
+              <span className="text-xs text-gray-500 dark:text-slate-400">
+                {action.desc}
+              </span>
             </button>
           ))}
         </div>
@@ -314,9 +320,9 @@ export default function AutoSavePage() {
                             {rule.name}
                           </h3>
                           <span
-                            className={`px-2 py-0.5 rounded-full text-xs font-medium ${ rule.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-slate-400' }`}
+                            className={`px-2 py-0.5 rounded-full text-xs font-medium ${rule.status === "active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-slate-400"}`}
                           >
-                            {rule.status === 'active' ? 'Active' : 'Paused'}
+                            {rule.status === "active" ? "Active" : "Paused"}
                           </span>
                         </div>
                         <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
@@ -326,13 +332,17 @@ export default function AutoSavePage() {
                           <span className="text-emerald-600 font-medium">
                             {formatCurrency(rule.totalSaved)} saved
                           </span>
-                          <span className="text-gray-400 dark:text-slate-500">•</span>
+                          <span className="text-gray-400 dark:text-slate-500">
+                            •
+                          </span>
                           <span className="text-gray-500 dark:text-slate-400">
                             {rule.transferCount} transfers
                           </span>
                           {rule.lastTriggered && (
                             <>
-                              <span className="text-gray-400 dark:text-slate-500">•</span>
+                              <span className="text-gray-400 dark:text-slate-500">
+                                •
+                              </span>
                               <span className="text-gray-500 dark:text-slate-400">
                                 Last: {rule.lastTriggered.toLocaleDateString()}
                               </span>
@@ -345,14 +355,14 @@ export default function AutoSavePage() {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => toggleRuleStatus(rule.id)}
-                        className={`p-2 rounded-lg transition-colors ${ rule.status === 'active' ? 'bg-amber-100 text-amber-600 hover:bg-amber-200' : 'bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400' }`}
+                        className={`p-2 rounded-lg transition-colors ${rule.status === "active" ? "bg-amber-100 text-amber-600 hover:bg-amber-200" : "bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400"}`}
                         title={
-                          rule.status === 'active'
-                            ? 'Pause rule'
-                            : 'Resume rule'
+                          rule.status === "active"
+                            ? "Pause rule"
+                            : "Resume rule"
                         }
                       >
-                        {rule.status === 'active' ? (
+                        {rule.status === "active" ? (
                           <Pause className="w-4 h-4" />
                         ) : (
                           <Play className="w-4 h-4" />

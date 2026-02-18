@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * useRealTimePrice Hook
@@ -11,8 +11,8 @@
  * - Automatic reconnection
  */
 
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { useAuth } from './useAuth';
+import { useEffect, useState, useCallback, useRef } from "react";
+import { useAuth } from "./useAuth";
 
 export interface PriceUpdate {
   symbol: string;
@@ -39,7 +39,7 @@ export interface UseRealTimePriceReturn {
 }
 
 export function useRealTimePrice(
-  options: UseRealTimePriceOptions
+  options: UseRealTimePriceOptions,
 ): UseRealTimePriceReturn {
   const {
     symbols: initialSymbols = [],
@@ -75,15 +75,18 @@ export function useRealTimePrice(
     if (!user || symbols.size === 0) return;
 
     try {
-      const symbolList = Array.from(symbols).join(',');
-      const response = await fetch(`/api/investments/quotes?symbols=${symbolList}`, {
-        headers: {
-          'Content-Type': 'application/json',
+      const symbolList = Array.from(symbols).join(",");
+      const response = await fetch(
+        `/api/investments/quotes?symbols=${symbolList}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
         },
-      });
+      );
 
       if (!response.ok) {
-        throw new Error('Failed to fetch prices');
+        throw new Error("Failed to fetch prices");
       }
 
       const result = await response.json();
@@ -104,7 +107,8 @@ export function useRealTimePrice(
         setError(null);
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch prices';
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to fetch prices";
       setError(errorMessage);
       // Error already captured in state
     }
@@ -119,7 +123,7 @@ export function useRealTimePrice(
         wsRef.current.close();
       }
 
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       const wsUrl = `${protocol}//${window.location.host}/api/investments/ws`;
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
@@ -133,9 +137,9 @@ export function useRealTimePrice(
         // Subscribe to symbols
         ws.send(
           JSON.stringify({
-            type: 'subscribe',
+            type: "subscribe",
             symbols: Array.from(symbols),
-          })
+          }),
         );
       };
 
@@ -143,7 +147,7 @@ export function useRealTimePrice(
         try {
           const data = JSON.parse(event.data);
 
-          if (data.type === 'price_update') {
+          if (data.type === "price_update") {
             setPrices((prev) => {
               const next = new Map(prev);
               next.set(data.symbol, {
@@ -164,7 +168,7 @@ export function useRealTimePrice(
 
       ws.onerror = (error) => {
         // WebSocket error - state updated below
-        setError('WebSocket connection error');
+        setError("WebSocket connection error");
       };
 
       ws.onclose = () => {
@@ -173,7 +177,10 @@ export function useRealTimePrice(
 
         // Attempt to reconnect with exponential backoff
         if (enabled && reconnectAttemptsRef.current < 5) {
-          const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 30000);
+          const delay = Math.min(
+            1000 * Math.pow(2, reconnectAttemptsRef.current),
+            30000,
+          );
           reconnectAttemptsRef.current++;
 
           reconnectTimeoutRef.current = setTimeout(() => {
@@ -188,7 +195,7 @@ export function useRealTimePrice(
       };
     } catch (err) {
       // WebSocket connection failed
-      setError('Failed to connect WebSocket');
+      setError("Failed to connect WebSocket");
       startPolling();
     }
   }, [user, enabled, useWebSocket, symbols]);
@@ -230,7 +237,14 @@ export function useRealTimePrice(
         clearTimeout(reconnectTimeoutRef.current);
       }
     };
-  }, [authLoading, enabled, symbols, useWebSocket, connectWebSocket, startPolling]);
+  }, [
+    authLoading,
+    enabled,
+    symbols,
+    useWebSocket,
+    connectWebSocket,
+    startPolling,
+  ]);
 
   // Update subscriptions when symbols change
   useEffect(() => {
@@ -238,9 +252,9 @@ export function useRealTimePrice(
 
     wsRef.current.send(
       JSON.stringify({
-        type: 'subscribe',
+        type: "subscribe",
         symbols: Array.from(symbols),
-      })
+      }),
     );
   }, [symbols, isConnected]);
 
@@ -252,4 +266,3 @@ export function useRealTimePrice(
     unsubscribe,
   };
 }
-

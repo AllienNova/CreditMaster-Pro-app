@@ -3,7 +3,7 @@
  * Main credit score overview with navigation to detailed screens
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -11,17 +11,22 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-} from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTheme } from '../../src/hooks/useTheme';
-import { ScoreGauge } from '../../src/components/ScoreGauge';
-import { Card, LastUpdated } from '../../src/components';
-import { useCreditStore, selectLastScoreFetch, selectIsBackgroundSyncEnabled } from '../../src/store/creditStore';
+} from "react-native";
+import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useTheme } from "../../src/hooks/useTheme";
+import { ScoreGauge } from "../../src/components/ScoreGauge";
+import { Card, LastUpdated } from "../../src/components";
+import {
+  useCreditStore,
+  selectLastScoreFetch,
+  selectIsBackgroundSyncEnabled,
+} from "../../src/store/creditStore";
 
 export default function CreditScreen() {
-  const { colors, spacing, borderRadius, fontSize, fontWeight, withOpacity } = useTheme();
+  const { colors, spacing, borderRadius, fontSize, fontWeight, withOpacity } =
+    useTheme();
 
   const [refreshing, setRefreshing] = useState(false);
   const {
@@ -55,44 +60,44 @@ export default function CreditScreen() {
     setRefreshing(false);
   };
 
-  const primaryScore = scores.find((s) => s.bureau === 'experian') || scores[0];
+  const primaryScore = scores.find((s) => s.bureau === "experian") || scores[0];
 
   const menuItems = [
     {
-      icon: 'speedometer',
-      title: 'Score Details',
-      subtitle: 'View detailed score breakdown',
-      route: '/credit/score-detail',
+      icon: "speedometer",
+      title: "Score Details",
+      subtitle: "View detailed score breakdown",
+      route: "/credit/score-detail",
     },
     {
-      icon: 'analytics',
-      title: 'Score History',
-      subtitle: 'Track your progress over time',
-      route: '/credit/history',
+      icon: "analytics",
+      title: "Score History",
+      subtitle: "Track your progress over time",
+      route: "/credit/history",
     },
     {
-      icon: 'pie-chart',
-      title: 'Credit Factors',
-      subtitle: 'What affects your score',
-      route: '/credit/factors',
+      icon: "pie-chart",
+      title: "Credit Factors",
+      subtitle: "What affects your score",
+      route: "/credit/factors",
     },
     {
-      icon: 'notifications',
-      title: 'Monitoring',
-      subtitle: 'Alerts and bureau connections',
-      route: '/monitoring',
+      icon: "notifications",
+      title: "Monitoring",
+      subtitle: "Alerts and bureau connections",
+      route: "/monitoring",
     },
     {
-      icon: 'calculator',
-      title: 'Score Simulator',
-      subtitle: 'See how actions affect your score',
-      route: '/credit-builder/simulator',
+      icon: "calculator",
+      title: "Score Simulator",
+      subtitle: "See how actions affect your score",
+      route: "/credit-builder/simulator",
     },
     {
-      icon: 'build',
-      title: 'Credit Builder',
-      subtitle: '18 tools to improve your score',
-      route: '/credit-builder',
+      icon: "build",
+      title: "Credit Builder",
+      subtitle: "18 tools to improve your score",
+      route: "/credit-builder",
     },
   ];
 
@@ -102,27 +107,27 @@ export default function CreditScreen() {
         container: { flex: 1, backgroundColor: colors.background },
         scrollView: { flex: 1 },
         header: {
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
           padding: spacing.lg,
         },
-        title: { fontSize: 28, fontWeight: '700', color: colors.text },
+        title: { fontSize: 28, fontWeight: "700", color: colors.text },
         scoreCard: {
           marginHorizontal: spacing.lg,
           marginBottom: spacing.lg,
         },
-        scoreContainer: { alignItems: 'center', paddingVertical: spacing.lg },
+        scoreContainer: { alignItems: "center", paddingVertical: spacing.lg },
         lastUpdatedContainer: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "center",
           marginBottom: spacing.md,
           gap: 12,
         },
         syncBadge: {
-          flexDirection: 'row',
-          alignItems: 'center',
+          flexDirection: "row",
+          alignItems: "center",
           backgroundColor: withOpacity(colors.primary, 0.08),
           paddingHorizontal: 8,
           paddingVertical: 4,
@@ -132,40 +137,40 @@ export default function CreditScreen() {
         syncBadgeText: {
           fontSize: 10,
           color: colors.primary,
-          fontWeight: '600',
+          fontWeight: "600",
         },
         lastUpdated: {
-          textAlign: 'center',
+          textAlign: "center",
           fontSize: 12,
           color: colors.textSecondary,
           marginBottom: spacing.md,
         },
         bureauScores: {
-          flexDirection: 'row',
-          justifyContent: 'space-around',
+          flexDirection: "row",
+          justifyContent: "space-around",
           paddingTop: spacing.md,
           borderTopWidth: 1,
           borderTopColor: colors.border,
         },
-        bureauItem: { alignItems: 'center' },
+        bureauItem: { alignItems: "center" },
         bureauName: {
           fontSize: 12,
           color: colors.textSecondary,
-          textTransform: 'capitalize',
+          textTransform: "capitalize",
           marginBottom: 4,
         },
-        bureauScore: { fontSize: 20, fontWeight: '700', color: colors.text },
+        bureauScore: { fontSize: 20, fontWeight: "700", color: colors.text },
         changeBadge: {
-          flexDirection: 'row',
-          alignItems: 'center',
+          flexDirection: "row",
+          alignItems: "center",
           paddingHorizontal: 6,
           paddingVertical: 2,
           borderRadius: 10,
           marginTop: 4,
         },
-        changeText: { fontSize: 11, fontWeight: '600', marginLeft: 2 },
+        changeText: { fontSize: 11, fontWeight: "600", marginLeft: 2 },
         loadingContainer: {
-          alignItems: 'center',
+          alignItems: "center",
           paddingVertical: spacing.xl * 2,
         },
         loadingText: {
@@ -174,12 +179,12 @@ export default function CreditScreen() {
           marginTop: spacing.md,
         },
         emptyContainer: {
-          alignItems: 'center',
+          alignItems: "center",
           paddingVertical: spacing.xl * 2,
         },
         emptyTitle: {
           fontSize: 18,
-          fontWeight: '600',
+          fontWeight: "600",
           color: colors.text,
           marginTop: spacing.md,
         },
@@ -187,7 +192,7 @@ export default function CreditScreen() {
           fontSize: 14,
           color: colors.textSecondary,
           marginTop: spacing.sm,
-          textAlign: 'center',
+          textAlign: "center",
           paddingHorizontal: spacing.xl,
         },
         connectButton: {
@@ -200,12 +205,12 @@ export default function CreditScreen() {
         connectButtonText: {
           color: colors.textInverse,
           fontSize: 16,
-          fontWeight: '600',
+          fontWeight: "600",
         },
         menuSection: { paddingHorizontal: spacing.lg },
         menuItem: {
-          flexDirection: 'row',
-          alignItems: 'center',
+          flexDirection: "row",
+          alignItems: "center",
           backgroundColor: colors.surface,
           borderRadius: borderRadius.lg,
           padding: spacing.md,
@@ -216,12 +221,12 @@ export default function CreditScreen() {
           height: 44,
           borderRadius: 22,
           backgroundColor: withOpacity(colors.primary, 0.08),
-          justifyContent: 'center',
-          alignItems: 'center',
+          justifyContent: "center",
+          alignItems: "center",
           marginRight: spacing.md,
         },
         menuContent: { flex: 1 },
-        menuTitle: { fontSize: 16, fontWeight: '600', color: colors.text },
+        menuTitle: { fontSize: 16, fontWeight: "600", color: colors.text },
         menuSubtitle: {
           fontSize: 13,
           color: colors.textSecondary,
@@ -232,7 +237,7 @@ export default function CreditScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView
         style={styles.scrollView}
         refreshControl={
@@ -246,7 +251,7 @@ export default function CreditScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Credit Score</Text>
-          <TouchableOpacity onPress={() => router.push('/notifications')}>
+          <TouchableOpacity onPress={() => router.push("/notifications")}>
             <Ionicons
               name="notifications-outline"
               size={24}
@@ -277,7 +282,7 @@ export default function CreditScreen() {
               </Text>
               <TouchableOpacity
                 style={styles.connectButton}
-                onPress={() => router.push('/monitoring/bureaus')}
+                onPress={() => router.push("/monitoring/bureaus")}
               >
                 <Text style={styles.connectButtonText}>Connect Bureau</Text>
               </TouchableOpacity>
@@ -331,14 +336,21 @@ export default function CreditScreen() {
                         ]}
                       >
                         <Ionicons
-                          name={score.change > 0 ? 'arrow-up' : 'arrow-down'}
+                          name={score.change > 0 ? "arrow-up" : "arrow-down"}
                           size={12}
-                          color={score.change > 0 ? colors.secondary : colors.error}
+                          color={
+                            score.change > 0 ? colors.secondary : colors.error
+                          }
                         />
                         <Text
                           style={[
                             styles.changeText,
-                            { color: score.change > 0 ? colors.secondary : colors.error },
+                            {
+                              color:
+                                score.change > 0
+                                  ? colors.secondary
+                                  : colors.error,
+                            },
                           ]}
                         >
                           {Math.abs(score.change)}

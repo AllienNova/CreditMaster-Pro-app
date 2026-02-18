@@ -7,24 +7,27 @@
  * Phase 2.3: Spending Intelligence
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getSpendingAnalyzer } from '@/lib/financial/spending-analyzer';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { rbac } from '@/lib/auth/rbac';
+import { NextRequest, NextResponse } from "next/server";
+import { getSpendingAnalyzer } from "@/lib/financial/spending-analyzer";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { rbac } from "@/lib/auth/rbac";
 import {
   applyFinancialAPIMiddleware,
   finalizeResponse,
-} from '@/lib/api/financial-api-middleware';
-import { z } from 'zod';
+} from "@/lib/api/financial-api-middleware";
+import { z } from "zod";
 
 // ============================================================================
 // VALIDATION SCHEMA
 // ============================================================================
 
 const TrendsQuerySchema = z.object({
-  period: z.string().optional().default('3m'), // e.g., "3m", "6m", "1y"
+  period: z.string().optional().default("3m"), // e.g., "3m", "6m", "1y"
   categories: z.string().optional(), // Comma-separated list
-  compareWith: z.enum(['previous', 'average', 'budget']).optional().default('previous'),
+  compareWith: z
+    .enum(["previous", "average", "budget"])
+    .optional()
+    .default("previous"),
 });
 
 // ============================================================================
@@ -100,16 +103,16 @@ export async function GET(request: NextRequest) {
     // Validate query parameters
     const { searchParams } = new URL(request.url);
     const queryParams = {
-      period: searchParams.get('period') || '3m',
-      categories: searchParams.get('categories') || undefined,
-      compareWith: searchParams.get('compareWith') || 'previous',
+      period: searchParams.get("period") || "3m",
+      categories: searchParams.get("categories") || undefined,
+      compareWith: searchParams.get("compareWith") || "previous",
     };
 
     const validatedParams = TrendsQuerySchema.parse(queryParams);
 
     // Parse categories
     const categories = validatedParams.categories
-      ? validatedParams.categories.split(',').map(c => c.trim())
+      ? validatedParams.categories.split(",").map((c) => c.trim())
       : undefined;
 
     // Get spending analyzer
@@ -119,7 +122,7 @@ export async function GET(request: NextRequest) {
     const trends = await analyzer.getSpendingTrends(
       userId!,
       validatedParams.period,
-      categories
+      categories,
     );
 
     return finalizeResponse(
@@ -130,17 +133,17 @@ export async function GET(request: NextRequest) {
         meta: {
           userId,
           period: validatedParams.period,
-          categoriesAnalyzed: categories?.length || 'all',
+          categoriesAnalyzed: categories?.length || "all",
           compareWith: validatedParams.compareWith,
           generatedAt: new Date().toISOString(),
           processingTimeMs: Date.now() - middlewareStartTime,
         },
       }),
       middlewareStartTime,
-      userId
+      userId,
     );
   } catch (error) {
-    console.error('Error analyzing spending trends:', error);
+    console.error("Error analyzing spending trends:", error);
 
     return finalizeResponse(
       request,
@@ -148,15 +151,15 @@ export async function GET(request: NextRequest) {
         {
           success: false,
           error: {
-            code: 'INTERNAL_ERROR',
-            message: 'Failed to analyze spending trends',
-            details: error instanceof Error ? error.message : 'Unknown error',
+            code: "INTERNAL_ERROR",
+            message: "Failed to analyze spending trends",
+            details: error instanceof Error ? error.message : "Unknown error",
           },
         },
-        { status: 500 }
+        { status: 500 },
       ),
       middlewareStartTime,
-      userId
+      userId,
     );
   }
 }

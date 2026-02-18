@@ -1,15 +1,18 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { MonitoringSettings as Settings } from '@/lib/credit-monitoring/credit-monitoring-service';
-import { useAuth } from '@/hooks/useAuth';
+import { useState, useEffect } from "react";
+import { MonitoringSettings as Settings } from "@/lib/credit-monitoring/credit-monitoring-service";
+import { useAuth } from "@/hooks/useAuth";
 
 interface MonitoringSettingsProps {
   onClose: () => void;
   onSave: () => void;
 }
 
-export default function MonitoringSettings({ onClose, onSave }: MonitoringSettingsProps) {
+export default function MonitoringSettings({
+  onClose,
+  onSave,
+}: MonitoringSettingsProps) {
   const { user, loading: authLoading } = useAuth();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -24,22 +27,24 @@ export default function MonitoringSettings({ onClose, onSave }: MonitoringSettin
 
   const fetchSettings = async () => {
     if (!user) {
-      setError('You must be logged in to view settings');
+      setError("You must be logged in to view settings");
       setLoading(false);
       return;
     }
 
     try {
-      const response = await fetch(`/api/credit-monitoring/settings?userId=${user.id}`);
-      
+      const response = await fetch(
+        `/api/credit-monitoring/settings?userId=${user.id}`,
+      );
+
       if (!response.ok) {
-        throw new Error('Failed to fetch settings');
+        throw new Error("Failed to fetch settings");
       }
-      
+
       const data = await response.json();
       setSettings(data.data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load settings');
+      setError(err instanceof Error ? err.message : "Failed to load settings");
     } finally {
       setLoading(false);
     }
@@ -52,19 +57,19 @@ export default function MonitoringSettings({ onClose, onSave }: MonitoringSettin
     setError(null);
 
     try {
-      const response = await fetch('/api/credit-monitoring/settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/credit-monitoring/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(settings),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to save settings');
+        throw new Error("Failed to save settings");
       }
 
       onSave();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save settings');
+      setError(err instanceof Error ? err.message : "Failed to save settings");
     } finally {
       setSaving(false);
     }
@@ -94,7 +99,9 @@ export default function MonitoringSettings({ onClose, onSave }: MonitoringSettin
         {/* Header */}
         <div className="p-6 border-b border-gray-200 dark:border-slate-700">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Monitoring Settings</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Monitoring Settings
+            </h2>
             <button
               type="button"
               onClick={onClose}
@@ -118,18 +125,29 @@ export default function MonitoringSettings({ onClose, onSave }: MonitoringSettin
 
           {/* Bureau Monitoring */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Bureau Monitoring</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Bureau Monitoring
+            </h3>
             <div className="space-y-3">
               <label className="flex items-center gap-3 p-3 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={settings.experianEnabled}
-                  onChange={(e) => setSettings({ ...settings, experianEnabled: e.target.checked })}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      experianEnabled: e.target.checked,
+                    })
+                  }
                   className="w-5 h-5 text-blue-600 rounded"
                 />
                 <div className="flex-1">
-                  <div className="font-semibold text-gray-900 dark:text-white">Experian</div>
-                  <div className="text-sm text-gray-600 dark:text-slate-300">Monitor Experian credit reports</div>
+                  <div className="font-semibold text-gray-900 dark:text-white">
+                    Experian
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-slate-300">
+                    Monitor Experian credit reports
+                  </div>
                 </div>
               </label>
 
@@ -137,12 +155,21 @@ export default function MonitoringSettings({ onClose, onSave }: MonitoringSettin
                 <input
                   type="checkbox"
                   checked={settings.equifaxEnabled}
-                  onChange={(e) => setSettings({ ...settings, equifaxEnabled: e.target.checked })}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      equifaxEnabled: e.target.checked,
+                    })
+                  }
                   className="w-5 h-5 text-blue-600 rounded"
                 />
                 <div className="flex-1">
-                  <div className="font-semibold text-gray-900 dark:text-white">Equifax</div>
-                  <div className="text-sm text-gray-600 dark:text-slate-300">Monitor Equifax credit reports</div>
+                  <div className="font-semibold text-gray-900 dark:text-white">
+                    Equifax
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-slate-300">
+                    Monitor Equifax credit reports
+                  </div>
                 </div>
               </label>
 
@@ -150,12 +177,21 @@ export default function MonitoringSettings({ onClose, onSave }: MonitoringSettin
                 <input
                   type="checkbox"
                   checked={settings.transunionEnabled}
-                  onChange={(e) => setSettings({ ...settings, transunionEnabled: e.target.checked })}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      transunionEnabled: e.target.checked,
+                    })
+                  }
                   className="w-5 h-5 text-blue-600 rounded"
                 />
                 <div className="flex-1">
-                  <div className="font-semibold text-gray-900 dark:text-white">TransUnion</div>
-                  <div className="text-sm text-gray-600 dark:text-slate-300">Monitor TransUnion credit reports</div>
+                  <div className="font-semibold text-gray-900 dark:text-white">
+                    TransUnion
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-slate-300">
+                    Monitor TransUnion credit reports
+                  </div>
                 </div>
               </label>
             </div>
@@ -163,21 +199,32 @@ export default function MonitoringSettings({ onClose, onSave }: MonitoringSettin
 
           {/* Alert Preferences */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Alert Preferences</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Alert Preferences
+            </h3>
             <div className="space-y-3">
               <label className="flex items-center gap-3 p-3 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={settings.alertPreferences.scoreChanges}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    alertPreferences: { ...settings.alertPreferences, scoreChanges: e.target.checked }
-                  })}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      alertPreferences: {
+                        ...settings.alertPreferences,
+                        scoreChanges: e.target.checked,
+                      },
+                    })
+                  }
                   className="w-5 h-5 text-blue-600 rounded"
                 />
                 <div className="flex-1">
-                  <div className="font-semibold text-gray-900 dark:text-white">Score Changes</div>
-                  <div className="text-sm text-gray-600 dark:text-slate-300">Get notified when your credit score changes</div>
+                  <div className="font-semibold text-gray-900 dark:text-white">
+                    Score Changes
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-slate-300">
+                    Get notified when your credit score changes
+                  </div>
                 </div>
               </label>
 
@@ -185,15 +232,24 @@ export default function MonitoringSettings({ onClose, onSave }: MonitoringSettin
                 <input
                   type="checkbox"
                   checked={settings.alertPreferences.newAccounts}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    alertPreferences: { ...settings.alertPreferences, newAccounts: e.target.checked }
-                  })}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      alertPreferences: {
+                        ...settings.alertPreferences,
+                        newAccounts: e.target.checked,
+                      },
+                    })
+                  }
                   className="w-5 h-5 text-blue-600 rounded"
                 />
                 <div className="flex-1">
-                  <div className="font-semibold text-gray-900 dark:text-white">New Accounts</div>
-                  <div className="text-sm text-gray-600 dark:text-slate-300">Alert when new accounts are opened</div>
+                  <div className="font-semibold text-gray-900 dark:text-white">
+                    New Accounts
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-slate-300">
+                    Alert when new accounts are opened
+                  </div>
                 </div>
               </label>
 
@@ -201,15 +257,24 @@ export default function MonitoringSettings({ onClose, onSave }: MonitoringSettin
                 <input
                   type="checkbox"
                   checked={settings.alertPreferences.inquiries}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    alertPreferences: { ...settings.alertPreferences, inquiries: e.target.checked }
-                  })}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      alertPreferences: {
+                        ...settings.alertPreferences,
+                        inquiries: e.target.checked,
+                      },
+                    })
+                  }
                   className="w-5 h-5 text-blue-600 rounded"
                 />
                 <div className="flex-1">
-                  <div className="font-semibold text-gray-900 dark:text-white">Credit Inquiries</div>
-                  <div className="text-sm text-gray-600 dark:text-slate-300">Alert when new inquiries appear</div>
+                  <div className="font-semibold text-gray-900 dark:text-white">
+                    Credit Inquiries
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-slate-300">
+                    Alert when new inquiries appear
+                  </div>
                 </div>
               </label>
 
@@ -217,15 +282,24 @@ export default function MonitoringSettings({ onClose, onSave }: MonitoringSettin
                 <input
                   type="checkbox"
                   checked={settings.alertPreferences.addressChanges}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    alertPreferences: { ...settings.alertPreferences, addressChanges: e.target.checked }
-                  })}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      alertPreferences: {
+                        ...settings.alertPreferences,
+                        addressChanges: e.target.checked,
+                      },
+                    })
+                  }
                   className="w-5 h-5 text-blue-600 rounded"
                 />
                 <div className="flex-1">
-                  <div className="font-semibold text-gray-900 dark:text-white">Address Changes</div>
-                  <div className="text-sm text-gray-600 dark:text-slate-300">Alert when address changes are detected</div>
+                  <div className="font-semibold text-gray-900 dark:text-white">
+                    Address Changes
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-slate-300">
+                    Alert when address changes are detected
+                  </div>
                 </div>
               </label>
 
@@ -233,15 +307,24 @@ export default function MonitoringSettings({ onClose, onSave }: MonitoringSettin
                 <input
                   type="checkbox"
                   checked={settings.alertPreferences.fraudAlerts}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    alertPreferences: { ...settings.alertPreferences, fraudAlerts: e.target.checked }
-                  })}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      alertPreferences: {
+                        ...settings.alertPreferences,
+                        fraudAlerts: e.target.checked,
+                      },
+                    })
+                  }
                   className="w-5 h-5 text-blue-600 rounded"
                 />
                 <div className="flex-1">
-                  <div className="font-semibold text-gray-900 dark:text-white">Fraud Alerts</div>
-                  <div className="text-sm text-gray-600 dark:text-slate-300">Alert for potential fraud activity</div>
+                  <div className="font-semibold text-gray-900 dark:text-white">
+                    Fraud Alerts
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-slate-300">
+                    Alert for potential fraud activity
+                  </div>
                 </div>
               </label>
             </div>
@@ -249,21 +332,32 @@ export default function MonitoringSettings({ onClose, onSave }: MonitoringSettin
 
           {/* Notification Methods */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Notification Methods</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Notification Methods
+            </h3>
             <div className="space-y-3">
               <label className="flex items-center gap-3 p-3 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={settings.alertPreferences.emailNotifications}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    alertPreferences: { ...settings.alertPreferences, emailNotifications: e.target.checked }
-                  })}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      alertPreferences: {
+                        ...settings.alertPreferences,
+                        emailNotifications: e.target.checked,
+                      },
+                    })
+                  }
                   className="w-5 h-5 text-blue-600 rounded"
                 />
                 <div className="flex-1">
-                  <div className="font-semibold text-gray-900 dark:text-white">Email Notifications</div>
-                  <div className="text-sm text-gray-600 dark:text-slate-300">Receive alerts via email</div>
+                  <div className="font-semibold text-gray-900 dark:text-white">
+                    Email Notifications
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-slate-300">
+                    Receive alerts via email
+                  </div>
                 </div>
               </label>
 
@@ -271,15 +365,24 @@ export default function MonitoringSettings({ onClose, onSave }: MonitoringSettin
                 <input
                   type="checkbox"
                   checked={settings.alertPreferences.smsNotifications}
-                  onChange={(e) => setSettings({
-                    ...settings,
-                    alertPreferences: { ...settings.alertPreferences, smsNotifications: e.target.checked }
-                  })}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      alertPreferences: {
+                        ...settings.alertPreferences,
+                        smsNotifications: e.target.checked,
+                      },
+                    })
+                  }
                   className="w-5 h-5 text-blue-600 rounded"
                 />
                 <div className="flex-1">
-                  <div className="font-semibold text-gray-900 dark:text-white">SMS Notifications</div>
-                  <div className="text-sm text-gray-600 dark:text-slate-300">Receive alerts via text message</div>
+                  <div className="font-semibold text-gray-900 dark:text-white">
+                    SMS Notifications
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-slate-300">
+                    Receive alerts via text message
+                  </div>
                 </div>
               </label>
             </div>
@@ -287,7 +390,9 @@ export default function MonitoringSettings({ onClose, onSave }: MonitoringSettin
 
           {/* Score Change Threshold */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Score Change Threshold</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Score Change Threshold
+            </h3>
             <div className="p-4 border border-gray-200 dark:border-slate-700 rounded-lg">
               <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
                 Minimum points to trigger alert: {settings.scoreChangeThreshold}
@@ -297,7 +402,12 @@ export default function MonitoringSettings({ onClose, onSave }: MonitoringSettin
                 min="1"
                 max="50"
                 value={settings.scoreChangeThreshold}
-                onChange={(e) => setSettings({ ...settings, scoreChangeThreshold: parseInt(e.target.value) })}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    scoreChangeThreshold: parseInt(e.target.value),
+                  })
+                }
                 className="w-full"
               />
               <div className="flex justify-between text-xs text-gray-500 dark:text-slate-400 mt-1">
@@ -323,11 +433,10 @@ export default function MonitoringSettings({ onClose, onSave }: MonitoringSettin
             disabled={saving}
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
           >
-            {saving ? 'Saving...' : 'Save Settings'}
+            {saving ? "Saving..." : "Save Settings"}
           </button>
         </div>
       </div>
     </div>
   );
 }
-

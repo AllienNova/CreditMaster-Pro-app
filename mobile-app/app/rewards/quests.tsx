@@ -3,7 +3,7 @@
  * View and complete daily, weekly, and challenge quests
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -12,19 +12,19 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
-} from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { lightTheme as theme } from '../../src/constants/theme';
-import { Card } from '../../src/components/Card';
-import { QuestCard } from '../../src/components/gamification';
-import { useGamificationStore } from '../../src/store/gamificationStore';
+} from "react-native";
+import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { lightTheme as theme } from "../../src/constants/theme";
+import { Card } from "../../src/components/Card";
+import { QuestCard } from "../../src/components/gamification";
+import { useGamificationStore } from "../../src/store/gamificationStore";
 
-type TabType = 'daily' | 'weekly' | 'challenge';
+type TabType = "daily" | "weekly" | "challenge";
 
 export default function QuestsScreen() {
-  const [activeTab, setActiveTab] = useState<TabType>('daily');
+  const [activeTab, setActiveTab] = useState<TabType>("daily");
   const [refreshing, setRefreshing] = useState(false);
 
   const {
@@ -65,10 +65,10 @@ export default function QuestsScreen() {
     title: q.quest.name,
     description: q.quest.description,
     xpReward: q.quest.xpReward,
-    type: (q.quest.questType === 'engagement' ? 'daily' : 'daily') as
-      | 'daily'
-      | 'weekly'
-      | 'challenge',
+    type: (q.quest.questType === "engagement" ? "daily" : "daily") as
+      | "daily"
+      | "weekly"
+      | "challenge",
     progress: q.progressValue,
     target: 100, // API returns percent
     completed: q.isCompleted,
@@ -77,15 +77,19 @@ export default function QuestsScreen() {
   // Filter quests by tab
   const filteredQuests = transformedQuests.filter((q) => q.type === activeTab);
 
-  const tabs: { key: TabType; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-    { key: 'daily', label: 'Daily', icon: 'sunny' },
-    { key: 'weekly', label: 'Weekly', icon: 'calendar' },
-    { key: 'challenge', label: 'Challenges', icon: 'trophy' },
+  const tabs: {
+    key: TabType;
+    label: string;
+    icon: keyof typeof Ionicons.glyphMap;
+  }[] = [
+    { key: "daily", label: "Daily", icon: "sunny" },
+    { key: "weekly", label: "Weekly", icon: "calendar" },
+    { key: "challenge", label: "Challenges", icon: "trophy" },
   ];
 
   if (isLoadingQuests && quests.length === 0) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={["top"]}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={styles.loadingText}>Loading quests...</Text>
@@ -95,7 +99,7 @@ export default function QuestsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -109,7 +113,10 @@ export default function QuestsScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
             <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
           </TouchableOpacity>
           <Text style={styles.title}>Quests</Text>
@@ -127,14 +134,14 @@ export default function QuestsScreen() {
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: '#F59E0B' }]}>
+              <Text style={[styles.statValue, { color: "#F59E0B" }]}>
                 {availableXp}
               </Text>
               <Text style={styles.statLabel}>XP Available</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: '#EF4444' }]}>
+              <Text style={[styles.statValue, { color: "#EF4444" }]}>
                 {progress?.streak.days || 0}
               </Text>
               <Text style={styles.statLabel}>Day Streak</Text>
@@ -199,7 +206,10 @@ export default function QuestsScreen() {
                 color={theme.colors.error}
               />
               <Text style={styles.errorText}>{questsError}</Text>
-              <TouchableOpacity style={styles.retryButton} onPress={fetchQuests}>
+              <TouchableOpacity
+                style={styles.retryButton}
+                onPress={fetchQuests}
+              >
                 <Text style={styles.retryText}>Retry</Text>
               </TouchableOpacity>
             </View>
@@ -234,9 +244,10 @@ export default function QuestsScreen() {
             <Text style={styles.bonusTitle}>Streak Bonus Active!</Text>
           </View>
           <Text style={styles.bonusText}>
-            You're earning {((progress?.streak.multiplier || 1) * 100 - 100).toFixed(0)}% extra XP
-            on all completed quests thanks to your {progress?.streak.days || 0}-day
-            streak!
+            You're earning{" "}
+            {((progress?.streak.multiplier || 1) * 100 - 100).toFixed(0)}% extra
+            XP on all completed quests thanks to your{" "}
+            {progress?.streak.days || 0}-day streak!
           </Text>
         </Card>
 
@@ -280,30 +291,30 @@ export default function QuestsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1 },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   loadingText: { marginTop: 12, color: theme.colors.textSecondary },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.md,
   },
   backButton: { padding: 4 },
-  title: { fontSize: 20, fontWeight: '700', color: theme.colors.text },
+  title: { fontSize: 20, fontWeight: "700", color: theme.colors.text },
   statsCard: {
     marginHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.md,
   },
   statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
-  statItem: { flex: 1, alignItems: 'center' },
+  statItem: { flex: 1, alignItems: "center" },
   statValue: {
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.primary,
   },
   statLabel: {
@@ -326,15 +337,15 @@ const styles = StyleSheet.create({
     height: 8,
     backgroundColor: theme.colors.border,
     borderRadius: 4,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   progressBarFill: {
-    height: '100%',
+    height: "100%",
     backgroundColor: theme.colors.primary,
     borderRadius: 4,
   },
   tabContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.md,
     backgroundColor: theme.colors.surface,
@@ -343,9 +354,9 @@ const styles = StyleSheet.create({
   },
   tab: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 10,
     borderRadius: 8,
     gap: 6,
@@ -355,12 +366,12 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: "500",
     color: theme.colors.textSecondary,
   },
   tabTextActive: {
     color: theme.colors.primary,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   questList: {
     paddingHorizontal: theme.spacing.lg,
@@ -368,14 +379,14 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.lg,
   },
   errorContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 40,
   },
   errorText: {
     fontSize: 14,
     color: theme.colors.error,
     marginTop: 12,
-    textAlign: 'center',
+    textAlign: "center",
   },
   retryButton: {
     marginTop: 16,
@@ -386,47 +397,47 @@ const styles = StyleSheet.create({
   },
   retryText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#fff',
+    fontWeight: "600",
+    color: "#fff",
   },
   emptyContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 40,
   },
   emptyTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
     marginTop: 16,
   },
   emptyText: {
     fontSize: 14,
     color: theme.colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 8,
     paddingHorizontal: 20,
   },
   bonusCard: {
     marginHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.md,
-    backgroundColor: '#FEF3C7',
-    borderColor: '#F59E0B',
+    backgroundColor: "#FEF3C7",
+    borderColor: "#F59E0B",
     borderWidth: 1,
   },
   bonusHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     marginBottom: 8,
   },
   bonusTitle: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#92400E',
+    fontWeight: "600",
+    color: "#92400E",
   },
   bonusText: {
     fontSize: 13,
-    color: '#78350F',
+    color: "#78350F",
     lineHeight: 20,
   },
   tipsCard: {
@@ -434,13 +445,13 @@ const styles = StyleSheet.create({
   },
   tipsTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: 12,
   },
   tipItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 10,
     marginBottom: 10,
   },
@@ -450,19 +461,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   completingOverlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0,0,0,0.7)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   completingText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
+    fontWeight: "600",
+    color: "#fff",
     marginTop: 12,
   },
 });

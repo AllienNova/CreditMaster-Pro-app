@@ -31,16 +31,21 @@ export interface CorrelationMatrix {
 }
 
 export interface RegimeChangeEvent {
-  type: 'correlation_spike' | 'correlation_breakdown' | 'structural_shift';
-  affectedPairs: { symbolA: string; symbolB: string; before: number; after: number }[];
-  severity: 'low' | 'medium' | 'high' | 'critical';
+  type: "correlation_spike" | "correlation_breakdown" | "structural_shift";
+  affectedPairs: {
+    symbolA: string;
+    symbolB: string;
+    before: number;
+    after: number;
+  }[];
+  severity: "low" | "medium" | "high" | "critical";
   detectedAt: Date;
   description: string;
 }
 
 export interface CorrelationAlert {
   pair: CorrelationPair;
-  alertType: 'high_correlation' | 'correlation_reversal' | 'spike';
+  alertType: "high_correlation" | "correlation_reversal" | "spike";
   threshold: number;
   message: string;
   timestamp: Date;
@@ -56,7 +61,8 @@ export interface ReturnSeries {
 // ============================================================================
 
 export class CorrelationMonitor {
-  private returnHistory: Map<string, { date: Date; value: number }[]> = new Map();
+  private returnHistory: Map<string, { date: Date; value: number }[]> =
+    new Map();
   private correlationCache: Map<string, CorrelationPair> = new Map();
   private regimeHistory: RegimeChangeEvent[] = [];
   private alerts: CorrelationAlert[] = [];
@@ -76,13 +82,12 @@ export class CorrelationMonitor {
   /**
    * Ingest price data and compute daily returns for a symbol.
    */
-  ingestPrices(
-    symbol: string,
-    prices: { date: Date; close: number }[]
-  ): void {
+  ingestPrices(symbol: string, prices: { date: Date; close: number }[]): void {
     if (prices.length < 2) return;
 
-    const sorted = [...prices].sort((a, b) => a.date.getTime() - b.date.getTime());
+    const sorted = [...prices].sort(
+      (a, b) => a.date.getTime() - b.date.getTime(),
+    );
     const returns: { date: Date; value: number }[] = [];
 
     for (let i = 1; i < sorted.length; i++) {
@@ -100,7 +105,10 @@ export class CorrelationMonitor {
   /**
    * Ingest pre-computed returns directly.
    */
-  ingestReturns(symbol: string, returns: { date: Date; value: number }[]): void {
+  ingestReturns(
+    symbol: string,
+    returns: { date: Date; value: number }[],
+  ): void {
     this.returnHistory.set(symbol, returns);
   }
 
@@ -119,21 +127,39 @@ export class CorrelationMonitor {
   calculateCorrelation(
     symbolA: string,
     symbolB: string,
-    windowDays: number = this.defaultWindow
+    windowDays: number = this.defaultWindow,
   ): CorrelationPair {
     const cacheKey = `${symbolA}:${symbolB}:${windowDays}`;
     const returnsA = this.returnHistory.get(symbolA);
     const returnsB = this.returnHistory.get(symbolB);
 
     if (!returnsA || !returnsB) {
-      return { symbolA, symbolB, correlation: NaN, pValue: 1, sampleSize: 0, updatedAt: new Date() };
+      return {
+        symbolA,
+        symbolB,
+        correlation: NaN,
+        pValue: 1,
+        sampleSize: 0,
+        updatedAt: new Date(),
+      };
     }
 
     // Align return series by date
-    const { alignedA, alignedB } = this.alignSeries(returnsA, returnsB, windowDays);
+    const { alignedA, alignedB } = this.alignSeries(
+      returnsA,
+      returnsB,
+      windowDays,
+    );
 
     if (alignedA.length < 10) {
-      return { symbolA, symbolB, correlation: NaN, pValue: 1, sampleSize: alignedA.length, updatedAt: new Date() };
+      return {
+        symbolA,
+        symbolB,
+        correlation: NaN,
+        pValue: 1,
+        sampleSize: alignedA.length,
+        updatedAt: new Date(),
+      };
     }
 
     const corr = this.pearsonCorrelation(alignedA, alignedB);
@@ -160,19 +186,37 @@ export class CorrelationMonitor {
   calculateEWCorrelation(
     symbolA: string,
     symbolB: string,
-    halfLife: number = 30
+    halfLife: number = 30,
   ): CorrelationPair {
     const returnsA = this.returnHistory.get(symbolA);
     const returnsB = this.returnHistory.get(symbolB);
 
     if (!returnsA || !returnsB) {
-      return { symbolA, symbolB, correlation: NaN, pValue: 1, sampleSize: 0, updatedAt: new Date() };
+      return {
+        symbolA,
+        symbolB,
+        correlation: NaN,
+        pValue: 1,
+        sampleSize: 0,
+        updatedAt: new Date(),
+      };
     }
 
-    const { alignedA, alignedB } = this.alignSeries(returnsA, returnsB, this.longWindow);
+    const { alignedA, alignedB } = this.alignSeries(
+      returnsA,
+      returnsB,
+      this.longWindow,
+    );
 
     if (alignedA.length < 10) {
-      return { symbolA, symbolB, correlation: NaN, pValue: 1, sampleSize: alignedA.length, updatedAt: new Date() };
+      return {
+        symbolA,
+        symbolB,
+        correlation: NaN,
+        pValue: 1,
+        sampleSize: alignedA.length,
+        updatedAt: new Date(),
+      };
     }
 
     // Exponential decay weights
@@ -182,7 +226,8 @@ export class CorrelationMonitor {
     const wSum = weights.reduce((a, b) => a + b, 0);
 
     // Weighted means
-    let wMeanA = 0, wMeanB = 0;
+    let wMeanA = 0,
+      wMeanB = 0;
     for (let i = 0; i < n; i++) {
       wMeanA += weights[i] * alignedA[i];
       wMeanB += weights[i] * alignedB[i];
@@ -191,7 +236,9 @@ export class CorrelationMonitor {
     wMeanB /= wSum;
 
     // Weighted covariance and variances
-    let wCov = 0, wVarA = 0, wVarB = 0;
+    let wCov = 0,
+      wVarA = 0,
+      wVarB = 0;
     for (let i = 0; i < n; i++) {
       const dA = alignedA[i] - wMeanA;
       const dB = alignedB[i] - wMeanB;
@@ -222,11 +269,13 @@ export class CorrelationMonitor {
    */
   getCorrelationMatrix(
     symbols?: string[],
-    windowDays: number = this.defaultWindow
+    windowDays: number = this.defaultWindow,
   ): CorrelationMatrix {
     const syms = symbols || this.getSymbols();
     const n = syms.length;
-    const matrix: number[][] = Array.from({ length: n }, () => new Array(n).fill(0));
+    const matrix: number[][] = Array.from({ length: n }, () =>
+      new Array(n).fill(0),
+    );
 
     for (let i = 0; i < n; i++) {
       matrix[i][i] = 1; // Self-correlation
@@ -289,7 +338,13 @@ export class CorrelationMonitor {
     const n = syms.length;
 
     // Collect all pairwise changes
-    const changes: { i: number; j: number; shortCorr: number; longCorr: number; delta: number }[] = [];
+    const changes: {
+      i: number;
+      j: number;
+      shortCorr: number;
+      longCorr: number;
+      delta: number;
+    }[] = [];
 
     for (let i = 0; i < n; i++) {
       for (let j = i + 1; j < n; j++) {
@@ -305,22 +360,35 @@ export class CorrelationMonitor {
     if (changes.length === 0) return events;
 
     // Compute z-scores of delta
-    const deltas = changes.map(c => c.delta);
+    const deltas = changes.map((c) => c.delta);
     const mean = deltas.reduce((a, b) => a + b, 0) / deltas.length;
     const std = Math.sqrt(
-      deltas.reduce((sum, d) => sum + (d - mean) ** 2, 0) / deltas.length
+      deltas.reduce((sum, d) => sum + (d - mean) ** 2, 0) / deltas.length,
     );
 
     if (std === 0) return events;
 
     // Find outlier pairs
-    const spikePairs: { symbolA: string; symbolB: string; before: number; after: number }[] = [];
-    const breakdownPairs: { symbolA: string; symbolB: string; before: number; after: number }[] = [];
+    const spikePairs: {
+      symbolA: string;
+      symbolB: string;
+      before: number;
+      after: number;
+    }[] = [];
+    const breakdownPairs: {
+      symbolA: string;
+      symbolB: string;
+      before: number;
+      after: number;
+    }[] = [];
 
     for (const change of changes) {
       const zScore = (change.delta - mean) / std;
 
-      if (Math.abs(zScore) >= this.regimeShiftZScore && Math.abs(change.delta) >= this.spikeThreshold) {
+      if (
+        Math.abs(zScore) >= this.regimeShiftZScore &&
+        Math.abs(change.delta) >= this.spikeThreshold
+      ) {
         const pair = {
           symbolA: syms[change.i],
           symbolB: syms[change.j],
@@ -340,11 +408,11 @@ export class CorrelationMonitor {
     if (spikePairs.length > 0) {
       const severity = this.assessSeverity(spikePairs.length, n);
       const event: RegimeChangeEvent = {
-        type: 'correlation_spike',
+        type: "correlation_spike",
         affectedPairs: spikePairs,
         severity,
         detectedAt: new Date(),
-        description: `Correlation spike detected in ${spikePairs.length} pair(s): ${spikePairs.map(p => `${p.symbolA}/${p.symbolB} (${p.before.toFixed(2)} → ${p.after.toFixed(2)})`).join(', ')}`,
+        description: `Correlation spike detected in ${spikePairs.length} pair(s): ${spikePairs.map((p) => `${p.symbolA}/${p.symbolB} (${p.before.toFixed(2)} → ${p.after.toFixed(2)})`).join(", ")}`,
       };
       events.push(event);
       this.regimeHistory.push(event);
@@ -354,31 +422,33 @@ export class CorrelationMonitor {
     if (breakdownPairs.length > 0) {
       const severity = this.assessSeverity(breakdownPairs.length, n);
       const event: RegimeChangeEvent = {
-        type: 'correlation_breakdown',
+        type: "correlation_breakdown",
         affectedPairs: breakdownPairs,
         severity,
         detectedAt: new Date(),
-        description: `Correlation breakdown in ${breakdownPairs.length} pair(s): ${breakdownPairs.map(p => `${p.symbolA}/${p.symbolB} (${p.before.toFixed(2)} → ${p.after.toFixed(2)})`).join(', ')}`,
+        description: `Correlation breakdown in ${breakdownPairs.length} pair(s): ${breakdownPairs.map((p) => `${p.symbolA}/${p.symbolB} (${p.before.toFixed(2)} → ${p.after.toFixed(2)})`).join(", ")}`,
       };
       events.push(event);
       this.regimeHistory.push(event);
     }
 
     // Structural shift: majority of pairs moved in the same direction
-    const positiveShifts = changes.filter(c => c.delta > this.spikeThreshold * 0.5).length;
+    const positiveShifts = changes.filter(
+      (c) => c.delta > this.spikeThreshold * 0.5,
+    ).length;
     const totalPairs = changes.length;
     if (totalPairs >= 3 && positiveShifts / totalPairs > 0.6) {
       const event: RegimeChangeEvent = {
-        type: 'structural_shift',
+        type: "structural_shift",
         affectedPairs: changes
-          .filter(c => c.delta > this.spikeThreshold * 0.5)
-          .map(c => ({
+          .filter((c) => c.delta > this.spikeThreshold * 0.5)
+          .map((c) => ({
             symbolA: syms[c.i],
             symbolB: syms[c.j],
             before: c.longCorr,
             after: c.shortCorr,
           })),
-        severity: 'high',
+        severity: "high",
         detectedAt: new Date(),
         description: `Structural regime shift detected: ${positiveShifts}/${totalPairs} pairs showing increased correlation (risk-on/risk-off convergence)`,
       };
@@ -397,13 +467,16 @@ export class CorrelationMonitor {
     symbolA: string,
     symbolB: string,
     windowDays: number = this.defaultWindow,
-    stepDays: number = 1
+    stepDays: number = 1,
   ): { date: Date; correlation: number }[] {
     const returnsA = this.returnHistory.get(symbolA);
     const returnsB = this.returnHistory.get(symbolB);
     if (!returnsA || !returnsB) return [];
 
-    const { alignedA, alignedB, dates } = this.alignSeriesWithDates(returnsA, returnsB);
+    const { alignedA, alignedB, dates } = this.alignSeriesWithDates(
+      returnsA,
+      returnsB,
+    );
     if (alignedA.length < windowDays) return [];
 
     const results: { date: Date; correlation: number }[] = [];
@@ -427,17 +500,17 @@ export class CorrelationMonitor {
    */
   estimatePortfolioVariance(
     positions: { symbol: string; weight: number }[],
-    windowDays: number = this.defaultWindow
+    windowDays: number = this.defaultWindow,
   ): number {
-    const symbols = positions.map(p => p.symbol);
-    const weights = positions.map(p => p.weight);
+    const symbols = positions.map((p) => p.symbol);
+    const weights = positions.map((p) => p.weight);
     const cm = this.getCorrelationMatrix(symbols, windowDays);
 
     // Need individual volatilities
-    const vols = symbols.map(s => {
+    const vols = symbols.map((s) => {
       const returns = this.returnHistory.get(s);
       if (!returns || returns.length < windowDays) return 0.02; // default 2% daily vol
-      const recent = returns.slice(-windowDays).map(r => r.value);
+      const recent = returns.slice(-windowDays).map((r) => r.value);
       return this.standardDeviation(recent);
     });
 
@@ -461,7 +534,7 @@ export class CorrelationMonitor {
   getHighlyCorrelatedPairs(
     symbols?: string[],
     threshold: number = this.highCorrelationThreshold,
-    windowDays: number = this.defaultWindow
+    windowDays: number = this.defaultWindow,
   ): CorrelationPair[] {
     const cm = this.getCorrelationMatrix(symbols, windowDays);
     const pairs: CorrelationPair[] = [];
@@ -482,7 +555,9 @@ export class CorrelationMonitor {
       }
     }
 
-    return pairs.sort((a, b) => Math.abs(b.correlation) - Math.abs(a.correlation));
+    return pairs.sort(
+      (a, b) => Math.abs(b.correlation) - Math.abs(a.correlation),
+    );
   }
 
   // ============================================================================
@@ -508,11 +583,11 @@ export class CorrelationMonitor {
   private alignSeries(
     seriesA: { date: Date; value: number }[],
     seriesB: { date: Date; value: number }[],
-    windowDays: number
+    windowDays: number,
   ): { alignedA: number[]; alignedB: number[] } {
     // Build date-keyed maps
-    const mapA = new Map(seriesA.map(r => [this.dateKey(r.date), r.value]));
-    const mapB = new Map(seriesB.map(r => [this.dateKey(r.date), r.value]));
+    const mapA = new Map(seriesA.map((r) => [this.dateKey(r.date), r.value]));
+    const mapB = new Map(seriesB.map((r) => [this.dateKey(r.date), r.value]));
 
     // Find common dates
     const commonDates: string[] = [];
@@ -525,17 +600,17 @@ export class CorrelationMonitor {
     const sliced = commonDates.slice(-windowDays);
 
     return {
-      alignedA: sliced.map(d => mapA.get(d)!),
-      alignedB: sliced.map(d => mapB.get(d)!),
+      alignedA: sliced.map((d) => mapA.get(d)!),
+      alignedB: sliced.map((d) => mapB.get(d)!),
     };
   }
 
   private alignSeriesWithDates(
     seriesA: { date: Date; value: number }[],
-    seriesB: { date: Date; value: number }[]
+    seriesB: { date: Date; value: number }[],
   ): { alignedA: number[]; alignedB: number[]; dates: Date[] } {
-    const mapA = new Map(seriesA.map(r => [this.dateKey(r.date), r]));
-    const mapB = new Map(seriesB.map(r => [this.dateKey(r.date), r]));
+    const mapA = new Map(seriesA.map((r) => [this.dateKey(r.date), r]));
+    const mapB = new Map(seriesB.map((r) => [this.dateKey(r.date), r]));
 
     const commonDates: string[] = [];
     for (const key of mapA.keys()) {
@@ -544,9 +619,9 @@ export class CorrelationMonitor {
     commonDates.sort();
 
     return {
-      alignedA: commonDates.map(d => mapA.get(d)!.value),
-      alignedB: commonDates.map(d => mapB.get(d)!.value),
-      dates: commonDates.map(d => mapA.get(d)!.date),
+      alignedA: commonDates.map((d) => mapA.get(d)!.value),
+      alignedB: commonDates.map((d) => mapB.get(d)!.value),
+      dates: commonDates.map((d) => mapA.get(d)!.date),
     };
   }
 
@@ -558,7 +633,11 @@ export class CorrelationMonitor {
     const n = x.length;
     if (n === 0) return 0;
 
-    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
+    let sumX = 0,
+      sumY = 0,
+      sumXY = 0,
+      sumX2 = 0,
+      sumY2 = 0;
     for (let i = 0; i < n; i++) {
       sumX += x[i];
       sumY += y[i];
@@ -569,7 +648,7 @@ export class CorrelationMonitor {
 
     const numerator = n * sumXY - sumX * sumY;
     const denominator = Math.sqrt(
-      (n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY)
+      (n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY),
     );
 
     if (denominator === 0) return 0;
@@ -615,7 +694,8 @@ export class CorrelationMonitor {
     const sign = z < 0 ? -1 : 1;
     const x = Math.abs(z) / Math.sqrt(2);
     const t = 1 / (1 + p * x);
-    const y = 1 - ((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+    const y =
+      1 - ((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
 
     return 0.5 * (1 + sign * y);
   }
@@ -630,13 +710,15 @@ export class CorrelationMonitor {
 
     // For our use case (correlation p-values), a reasonable approximation:
     const logBeta = this.logGamma(a) + this.logGamma(b) - this.logGamma(a + b);
-    const factor = Math.exp(a * Math.log(x) + b * Math.log(1 - x) - logBeta) / a;
+    const factor =
+      Math.exp(a * Math.log(x) + b * Math.log(1 - x) - logBeta) / a;
 
     // Continued fraction approximation (first few terms)
     let sum = 1;
     let term = 1;
     for (let i = 1; i <= 50; i++) {
-      term *= x * (a + b + i - 1) * (a + i - 1) / ((a + 2 * i - 1) * (a + 2 * i));
+      term *=
+        (x * (a + b + i - 1) * (a + i - 1)) / ((a + 2 * i - 1) * (a + 2 * i));
       sum += term;
       if (Math.abs(term) < 1e-10) break;
     }
@@ -647,9 +729,11 @@ export class CorrelationMonitor {
   private logGamma(z: number): number {
     // Stirling's approximation for log(Gamma(z))
     if (z <= 0) return 0;
-    const c = [76.18009172947146, -86.50532032941677, 24.01409824083091,
-      -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5];
-    let x = z;
+    const c = [
+      76.18009172947146, -86.50532032941677, 24.01409824083091,
+      -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5,
+    ];
+    const x = z;
     let y = z;
     let tmp = x + 5.5;
     tmp -= (x + 0.5) * Math.log(tmp);
@@ -658,33 +742,40 @@ export class CorrelationMonitor {
       y += 1;
       ser += c[j] / y;
     }
-    return -tmp + Math.log(2.5066282746310005 * ser / x);
+    return -tmp + Math.log((2.5066282746310005 * ser) / x);
   }
 
   private standardDeviation(values: number[]): number {
     if (values.length === 0) return 0;
     const mean = values.reduce((a, b) => a + b, 0) / values.length;
-    const variance = values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / values.length;
+    const variance =
+      values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / values.length;
     return Math.sqrt(variance);
   }
 
-  private assessSeverity(affectedCount: number, totalSymbols: number): RegimeChangeEvent['severity'] {
+  private assessSeverity(
+    affectedCount: number,
+    totalSymbols: number,
+  ): RegimeChangeEvent["severity"] {
     const totalPairs = (totalSymbols * (totalSymbols - 1)) / 2;
-    if (totalPairs === 0) return 'low';
+    if (totalPairs === 0) return "low";
     const ratio = affectedCount / totalPairs;
 
-    if (ratio > 0.5) return 'critical';
-    if (ratio > 0.3) return 'high';
-    if (ratio > 0.1) return 'medium';
-    return 'low';
+    if (ratio > 0.5) return "critical";
+    if (ratio > 0.3) return "high";
+    if (ratio > 0.1) return "medium";
+    return "low";
   }
 
   private checkForAlerts(pair: CorrelationPair): void {
     // High correlation alert
-    if (Math.abs(pair.correlation) >= this.highCorrelationThreshold && !isNaN(pair.correlation)) {
+    if (
+      Math.abs(pair.correlation) >= this.highCorrelationThreshold &&
+      !isNaN(pair.correlation)
+    ) {
       this.alerts.push({
         pair,
-        alertType: 'high_correlation',
+        alertType: "high_correlation",
         threshold: this.highCorrelationThreshold,
         message: `High correlation (${pair.correlation.toFixed(3)}) between ${pair.symbolA} and ${pair.symbolB}`,
         timestamp: new Date(),
@@ -699,17 +790,20 @@ export class CorrelationMonitor {
       if (delta >= this.spikeThreshold) {
         this.alerts.push({
           pair,
-          alertType: 'spike',
+          alertType: "spike",
           threshold: this.spikeThreshold,
           message: `Correlation spike for ${pair.symbolA}/${pair.symbolB}: ${prev.correlation.toFixed(3)} → ${pair.correlation.toFixed(3)} (Δ${delta.toFixed(3)})`,
           timestamp: new Date(),
         });
       }
 
-      if (Math.sign(prev.correlation) !== Math.sign(pair.correlation) && Math.abs(pair.correlation) > 0.2) {
+      if (
+        Math.sign(prev.correlation) !== Math.sign(pair.correlation) &&
+        Math.abs(pair.correlation) > 0.2
+      ) {
         this.alerts.push({
           pair,
-          alertType: 'correlation_reversal',
+          alertType: "correlation_reversal",
           threshold: 0,
           message: `Correlation reversal for ${pair.symbolA}/${pair.symbolB}: ${prev.correlation.toFixed(3)} → ${pair.correlation.toFixed(3)}`,
           timestamp: new Date(),

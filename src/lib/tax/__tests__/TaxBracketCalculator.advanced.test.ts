@@ -5,21 +5,23 @@
  *         itemized deductions, deduction savings, marginal rate
  */
 
-import { TaxBracketCalculator } from '../services/TaxBracketCalculator';
+import { TaxBracketCalculator } from "../services/TaxBracketCalculator";
 import {
   FilingStatus,
   BusinessType,
   OptimizationGoal,
   TaxProfile,
-} from '../types/tax-profile.types';
+} from "../types/tax-profile.types";
 
 // Reusable mock profile factory
-const createMockProfile = (overrides: Partial<TaxProfile> = {}): TaxProfile => ({
-  id: 'test-profile',
-  userId: 'test-user',
+const createMockProfile = (
+  overrides: Partial<TaxProfile> = {},
+): TaxProfile => ({
+  id: "test-profile",
+  userId: "test-user",
   taxYear: 2024,
   filingStatus: FilingStatus.SINGLE,
-  stateOfResidence: 'CA',
+  stateOfResidence: "CA",
   grossIncome: 100000,
   w2Income: 100000,
   selfEmploymentIncome: 0,
@@ -46,7 +48,7 @@ const createMockProfile = (overrides: Partial<TaxProfile> = {}): TaxProfile => (
   studentLoanInterest: 0,
   educatorExpenses: 0,
   hasHdhp: false,
-  healthInsuranceType: 'employer' as const,
+  healthInsuranceType: "employer" as const,
   ytd401kContribution: 0,
   ytdIraContribution: 0,
   ytdHsaContribution: 0,
@@ -54,13 +56,13 @@ const createMockProfile = (overrides: Partial<TaxProfile> = {}): TaxProfile => (
   ytdCharitableGiving: 0,
   accounts: [],
   optimizationGoal: OptimizationGoal.BALANCED,
-  riskTolerance: 'moderate' as const,
+  riskTolerance: "moderate" as const,
   createdAt: new Date(),
   updatedAt: new Date(),
   ...overrides,
 });
 
-describe('TaxBracketCalculator — Advanced Scenarios', () => {
+describe("TaxBracketCalculator — Advanced Scenarios", () => {
   let calculator: TaxBracketCalculator;
 
   beforeEach(() => {
@@ -70,28 +72,44 @@ describe('TaxBracketCalculator — Advanced Scenarios', () => {
   // =========================================================================
   // Filing Status Variations
   // =========================================================================
-  describe('Filing Status Variations', () => {
-    it('should calculate lower taxes for married filing jointly at same income', () => {
+  describe("Filing Status Variations", () => {
+    it("should calculate lower taxes for married filing jointly at same income", () => {
       const single = calculator.calculateTaxes(
-        createMockProfile({ filingStatus: FilingStatus.SINGLE, grossIncome: 150000, w2Income: 150000 }),
+        createMockProfile({
+          filingStatus: FilingStatus.SINGLE,
+          grossIncome: 150000,
+          w2Income: 150000,
+        }),
       );
       const married = calculator.calculateTaxes(
-        createMockProfile({ filingStatus: FilingStatus.MARRIED_FILING_JOINTLY, grossIncome: 150000, w2Income: 150000 }),
+        createMockProfile({
+          filingStatus: FilingStatus.MARRIED_FILING_JOINTLY,
+          grossIncome: 150000,
+          w2Income: 150000,
+        }),
       );
       expect(married.federalTax).toBeLessThan(single.federalTax);
     });
 
-    it('should calculate head of household between single and married', () => {
+    it("should calculate head of household between single and married", () => {
       const single = calculator.calculateTaxes(
-        createMockProfile({ filingStatus: FilingStatus.SINGLE, grossIncome: 100000, w2Income: 100000 }),
+        createMockProfile({
+          filingStatus: FilingStatus.SINGLE,
+          grossIncome: 100000,
+          w2Income: 100000,
+        }),
       );
       const hoh = calculator.calculateTaxes(
-        createMockProfile({ filingStatus: FilingStatus.HEAD_OF_HOUSEHOLD, grossIncome: 100000, w2Income: 100000 }),
+        createMockProfile({
+          filingStatus: FilingStatus.HEAD_OF_HOUSEHOLD,
+          grossIncome: 100000,
+          w2Income: 100000,
+        }),
       );
       expect(hoh.federalTax).toBeLessThan(single.federalTax);
     });
 
-    it('should calculate married filing separately', () => {
+    it("should calculate married filing separately", () => {
       const mfs = calculator.calculateTaxes(
         createMockProfile({
           filingStatus: FilingStatus.MARRIED_FILING_SEPARATELY,
@@ -103,7 +121,7 @@ describe('TaxBracketCalculator — Advanced Scenarios', () => {
       expect(mfs.totalTax).toBeGreaterThan(0);
     });
 
-    it('should calculate qualifying surviving spouse like married filing jointly', () => {
+    it("should calculate qualifying surviving spouse like married filing jointly", () => {
       const qss = calculator.calculateTaxes(
         createMockProfile({
           filingStatus: FilingStatus.QUALIFYING_SURVIVING_SPOUSE,
@@ -126,8 +144,8 @@ describe('TaxBracketCalculator — Advanced Scenarios', () => {
   // =========================================================================
   // Self-Employment Tax
   // =========================================================================
-  describe('Self-Employment Tax', () => {
-    it('should calculate SE tax for self-employed income', () => {
+  describe("Self-Employment Tax", () => {
+    it("should calculate SE tax for self-employed income", () => {
       const result = calculator.calculateTaxes(
         createMockProfile({
           grossIncome: 100000,
@@ -143,12 +161,12 @@ describe('TaxBracketCalculator — Advanced Scenarios', () => {
       expect(result.selfEmploymentTax).toBeLessThan(16000);
     });
 
-    it('should return 0 SE tax when not self-employed', () => {
+    it("should return 0 SE tax when not self-employed", () => {
       const result = calculator.calculateTaxes(createMockProfile());
       expect(result.selfEmploymentTax).toBe(0);
     });
 
-    it('should cap Social Security portion of SE tax at wage base', () => {
+    it("should cap Social Security portion of SE tax at wage base", () => {
       const result = calculator.calculateTaxes(
         createMockProfile({
           grossIncome: 250000,
@@ -164,7 +182,7 @@ describe('TaxBracketCalculator — Advanced Scenarios', () => {
       expect(result.selfEmploymentTax).toBeGreaterThan(0);
     });
 
-    it('should calculate SE tax for LLC single member', () => {
+    it("should calculate SE tax for LLC single member", () => {
       const result = calculator.calculateTaxes(
         createMockProfile({
           grossIncome: 80000,
@@ -182,8 +200,8 @@ describe('TaxBracketCalculator — Advanced Scenarios', () => {
   // =========================================================================
   // NIIT (Net Investment Income Tax)
   // =========================================================================
-  describe('Net Investment Income Tax (NIIT)', () => {
-    it('should apply NIIT for single filer over $200k with investment income', () => {
+  describe("Net Investment Income Tax (NIIT)", () => {
+    it("should apply NIIT for single filer over $200k with investment income", () => {
       const result = calculator.calculateTaxes(
         createMockProfile({
           grossIncome: 300000,
@@ -198,7 +216,7 @@ describe('TaxBracketCalculator — Advanced Scenarios', () => {
       expect(result.totalTax).toBeGreaterThan(0);
     });
 
-    it('should not apply NIIT for single filer under $200k', () => {
+    it("should not apply NIIT for single filer under $200k", () => {
       const result = calculator.calculateTaxes(
         createMockProfile({
           grossIncome: 150000,
@@ -212,7 +230,7 @@ describe('TaxBracketCalculator — Advanced Scenarios', () => {
       expect(result.totalTax).toBeGreaterThan(0);
     });
 
-    it('should apply NIIT for married joint filer over $250k', () => {
+    it("should apply NIIT for married joint filer over $250k", () => {
       const result = calculator.calculateTaxes(
         createMockProfile({
           grossIncome: 400000,
@@ -228,8 +246,8 @@ describe('TaxBracketCalculator — Advanced Scenarios', () => {
   // =========================================================================
   // Itemized Deductions
   // =========================================================================
-  describe('Itemized vs Standard Deductions', () => {
-    it('should use standard deduction when itemized is lower', () => {
+  describe("Itemized vs Standard Deductions", () => {
+    it("should use standard deduction when itemized is lower", () => {
       const result = calculator.calculateTaxes(
         createMockProfile({
           mortgageInterest: 5000,
@@ -242,7 +260,7 @@ describe('TaxBracketCalculator — Advanced Scenarios', () => {
       expect(result.federalTax).toBeGreaterThan(0);
     });
 
-    it('should use itemized deductions when higher than standard', () => {
+    it("should use itemized deductions when higher than standard", () => {
       const withItemized = calculator.calculateTaxes(
         createMockProfile({
           grossIncome: 200000,
@@ -261,7 +279,7 @@ describe('TaxBracketCalculator — Advanced Scenarios', () => {
       expect(withItemized.federalTax).toBeLessThan(withStandard.federalTax);
     });
 
-    it('should cap SALT deduction at $10,000', () => {
+    it("should cap SALT deduction at $10,000", () => {
       const highSalt = calculator.calculateTaxes(
         createMockProfile({
           grossIncome: 200000,
@@ -276,7 +294,7 @@ describe('TaxBracketCalculator — Advanced Scenarios', () => {
       expect(highSalt.federalTax).toBeGreaterThan(0);
     });
 
-    it('should include student loan interest deduction', () => {
+    it("should include student loan interest deduction", () => {
       const withDeduction = calculator.calculateTaxes(
         createMockProfile({
           studentLoanInterest: 2500,
@@ -291,55 +309,64 @@ describe('TaxBracketCalculator — Advanced Scenarios', () => {
   // =========================================================================
   // getMarginalRate
   // =========================================================================
-  describe('getMarginalRate', () => {
-    it('should return 10% for low income single filer', () => {
+  describe("getMarginalRate", () => {
+    it("should return 10% for low income single filer", () => {
       const rate = calculator.getMarginalRate(10000, FilingStatus.SINGLE);
-      expect(rate).toBe(0.10);
+      expect(rate).toBe(0.1);
     });
 
-    it('should return 12% for income in second bracket', () => {
+    it("should return 12% for income in second bracket", () => {
       const rate = calculator.getMarginalRate(30000, FilingStatus.SINGLE);
       expect(rate).toBe(0.12);
     });
 
-    it('should return 22% for income around $60k single', () => {
+    it("should return 22% for income around $60k single", () => {
       const rate = calculator.getMarginalRate(60000, FilingStatus.SINGLE);
       expect(rate).toBe(0.22);
     });
 
-    it('should return 24% for income around $120k single', () => {
+    it("should return 24% for income around $120k single", () => {
       const rate = calculator.getMarginalRate(120000, FilingStatus.SINGLE);
       expect(rate).toBe(0.24);
     });
 
-    it('should return 32% for income around $200k single', () => {
+    it("should return 32% for income around $200k single", () => {
       const rate = calculator.getMarginalRate(200000, FilingStatus.SINGLE);
       expect(rate).toBe(0.32);
     });
 
-    it('should return 35% for income around $300k single', () => {
+    it("should return 35% for income around $300k single", () => {
       const rate = calculator.getMarginalRate(300000, FilingStatus.SINGLE);
       expect(rate).toBe(0.35);
     });
 
-    it('should return 37% for income over $609,350 single', () => {
+    it("should return 37% for income over $609,350 single", () => {
       const rate = calculator.getMarginalRate(700000, FilingStatus.SINGLE);
       expect(rate).toBe(0.37);
     });
 
-    it('should return 10% for zero income (lowest bracket)', () => {
+    it("should return 10% for zero income (lowest bracket)", () => {
       const rate = calculator.getMarginalRate(0, FilingStatus.SINGLE);
       expect(rate).toBe(0.1);
     });
 
-    it('should return 10% for low income married filing jointly', () => {
-      const rate = calculator.getMarginalRate(20000, FilingStatus.MARRIED_FILING_JOINTLY);
-      expect(rate).toBe(0.10);
+    it("should return 10% for low income married filing jointly", () => {
+      const rate = calculator.getMarginalRate(
+        20000,
+        FilingStatus.MARRIED_FILING_JOINTLY,
+      );
+      expect(rate).toBe(0.1);
     });
 
-    it('should return lower marginal rate for married at same income as single', () => {
-      const singleRate = calculator.getMarginalRate(100000, FilingStatus.SINGLE);
-      const marriedRate = calculator.getMarginalRate(100000, FilingStatus.MARRIED_FILING_JOINTLY);
+    it("should return lower marginal rate for married at same income as single", () => {
+      const singleRate = calculator.getMarginalRate(
+        100000,
+        FilingStatus.SINGLE,
+      );
+      const marriedRate = calculator.getMarginalRate(
+        100000,
+        FilingStatus.MARRIED_FILING_JOINTLY,
+      );
       expect(marriedRate).toBeLessThanOrEqual(singleRate);
     });
   });
@@ -347,8 +374,8 @@ describe('TaxBracketCalculator — Advanced Scenarios', () => {
   // =========================================================================
   // calculateDeductionSavings
   // =========================================================================
-  describe('calculateDeductionSavings', () => {
-    it('should calculate federal savings from a deduction', () => {
+  describe("calculateDeductionSavings", () => {
+    it("should calculate federal savings from a deduction", () => {
       const savings = calculator.calculateDeductionSavings(
         10000, // deduction amount
         100000, // current income
@@ -358,7 +385,7 @@ describe('TaxBracketCalculator — Advanced Scenarios', () => {
       expect(savings.totalSavings).toBeGreaterThan(0);
     });
 
-    it('should calculate higher savings for higher income (higher bracket)', () => {
+    it("should calculate higher savings for higher income (higher bracket)", () => {
       const lowIncomeSavings = calculator.calculateDeductionSavings(
         10000,
         50000,
@@ -369,31 +396,33 @@ describe('TaxBracketCalculator — Advanced Scenarios', () => {
         300000,
         FilingStatus.SINGLE,
       );
-      expect(highIncomeSavings.federalSavings).toBeGreaterThan(lowIncomeSavings.federalSavings);
+      expect(highIncomeSavings.federalSavings).toBeGreaterThan(
+        lowIncomeSavings.federalSavings,
+      );
     });
 
-    it('should include state tax savings when state code provided', () => {
+    it("should include state tax savings when state code provided", () => {
       const savings = calculator.calculateDeductionSavings(
         10000,
         100000,
         FilingStatus.SINGLE,
-        'CA',
+        "CA",
       );
       expect(savings.stateSavings).toBeGreaterThan(0);
       expect(savings.totalSavings).toBeGreaterThan(savings.federalSavings);
     });
 
-    it('should have zero state savings for no-tax states', () => {
+    it("should have zero state savings for no-tax states", () => {
       const savings = calculator.calculateDeductionSavings(
         10000,
         100000,
         FilingStatus.SINGLE,
-        'TX',
+        "TX",
       );
       expect(savings.stateSavings).toBe(0);
     });
 
-    it('should return 0 savings for zero deduction', () => {
+    it("should return 0 savings for zero deduction", () => {
       const savings = calculator.calculateDeductionSavings(
         0,
         100000,
@@ -403,7 +432,7 @@ describe('TaxBracketCalculator — Advanced Scenarios', () => {
       expect(savings.totalSavings).toBe(0);
     });
 
-    it('should return savings based on marginal rate even for zero income', () => {
+    it("should return savings based on marginal rate even for zero income", () => {
       // At $0 income, the marginal rate is still 10% (lowest bracket),
       // so deduction savings = 10000 * 0.10 = 1000
       const savings = calculator.calculateDeductionSavings(
@@ -418,8 +447,8 @@ describe('TaxBracketCalculator — Advanced Scenarios', () => {
   // =========================================================================
   // Capital Gains
   // =========================================================================
-  describe('Capital Gains Tax', () => {
-    it('should calculate long-term capital gains at 0% for low income', () => {
+  describe("Capital Gains Tax", () => {
+    it("should calculate long-term capital gains at 0% for low income", () => {
       const result = calculator.calculateTaxes(
         createMockProfile({
           grossIncome: 40000,
@@ -431,7 +460,7 @@ describe('TaxBracketCalculator — Advanced Scenarios', () => {
       expect(result.capitalGainsTax).toBe(0);
     });
 
-    it('should calculate long-term capital gains at 15% for middle income', () => {
+    it("should calculate long-term capital gains at 15% for middle income", () => {
       const result = calculator.calculateTaxes(
         createMockProfile({
           grossIncome: 200000,
@@ -442,7 +471,7 @@ describe('TaxBracketCalculator — Advanced Scenarios', () => {
       expect(result.capitalGainsTax).toBeGreaterThan(0);
     });
 
-    it('should treat short-term capital gains as ordinary income', () => {
+    it("should treat short-term capital gains as ordinary income", () => {
       const withShortTerm = calculator.calculateTaxes(
         createMockProfile({
           grossIncome: 150000,
@@ -453,7 +482,7 @@ describe('TaxBracketCalculator — Advanced Scenarios', () => {
       expect(withShortTerm.federalTax).toBeGreaterThan(0);
     });
 
-    it('should handle both short and long-term capital gains', () => {
+    it("should handle both short and long-term capital gains", () => {
       const result = calculator.calculateTaxes(
         createMockProfile({
           grossIncome: 200000,
@@ -469,21 +498,21 @@ describe('TaxBracketCalculator — Advanced Scenarios', () => {
   // =========================================================================
   // Complete Tax Calculation Result Shape
   // =========================================================================
-  describe('TaxCalculationResult Shape', () => {
-    it('should return all expected fields', () => {
+  describe("TaxCalculationResult Shape", () => {
+    it("should return all expected fields", () => {
       const result = calculator.calculateTaxes(createMockProfile());
-      expect(result).toHaveProperty('federalTax');
-      expect(result).toHaveProperty('stateTax');
-      expect(result).toHaveProperty('fica');
-      expect(result).toHaveProperty('selfEmploymentTax');
-      expect(result).toHaveProperty('capitalGainsTax');
-      expect(result).toHaveProperty('totalTax');
-      expect(result).toHaveProperty('effectiveRate');
-      expect(result).toHaveProperty('marginalRate');
-      expect(result).toHaveProperty('takeHomePay');
+      expect(result).toHaveProperty("federalTax");
+      expect(result).toHaveProperty("stateTax");
+      expect(result).toHaveProperty("fica");
+      expect(result).toHaveProperty("selfEmploymentTax");
+      expect(result).toHaveProperty("capitalGainsTax");
+      expect(result).toHaveProperty("totalTax");
+      expect(result).toHaveProperty("effectiveRate");
+      expect(result).toHaveProperty("marginalRate");
+      expect(result).toHaveProperty("takeHomePay");
     });
 
-    it('should calculate total tax as sum of components', () => {
+    it("should calculate total tax as sum of components", () => {
       const result = calculator.calculateTaxes(createMockProfile());
       const expectedTotal =
         result.federalTax +
@@ -494,14 +523,23 @@ describe('TaxBracketCalculator — Advanced Scenarios', () => {
       expect(result.totalTax).toBeCloseTo(expectedTotal, 0);
     });
 
-    it('should calculate takeHomePay as grossIncome minus totalTax', () => {
-      const profile = createMockProfile({ grossIncome: 100000, w2Income: 100000 });
+    it("should calculate takeHomePay as grossIncome minus totalTax", () => {
+      const profile = createMockProfile({
+        grossIncome: 100000,
+        w2Income: 100000,
+      });
       const result = calculator.calculateTaxes(profile);
-      expect(result.takeHomePay).toBeCloseTo(profile.grossIncome - result.totalTax, 0);
+      expect(result.takeHomePay).toBeCloseTo(
+        profile.grossIncome - result.totalTax,
+        0,
+      );
     });
 
-    it('should calculate effective rate as totalTax / grossIncome', () => {
-      const profile = createMockProfile({ grossIncome: 100000, w2Income: 100000 });
+    it("should calculate effective rate as totalTax / grossIncome", () => {
+      const profile = createMockProfile({
+        grossIncome: 100000,
+        w2Income: 100000,
+      });
       const result = calculator.calculateTaxes(profile);
       const expectedRate = result.totalTax / profile.grossIncome;
       expect(result.effectiveRate).toBeCloseTo(expectedRate, 2);

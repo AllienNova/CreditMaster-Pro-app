@@ -18,7 +18,7 @@ import {
   TimeInterval,
   MarketStatus,
   MarketDataAPIError,
-} from '../investments/types/market-data.types';
+} from "../investments/types/market-data.types";
 
 // ============================================================================
 // TYPES
@@ -77,7 +77,7 @@ const RETRY_CONFIG = {
 
 export class AlphaVantageClient {
   private apiKey: string;
-  private baseUrl = 'https://www.alphavantage.co/query';
+  private baseUrl = "https://www.alphavantage.co/query";
   private cache: Map<string, CacheEntry<any>> = new Map();
   private rateLimitState: RateLimitState = {
     requests: [],
@@ -85,7 +85,7 @@ export class AlphaVantageClient {
   };
 
   constructor(apiKey?: string) {
-    this.apiKey = apiKey || process.env.ALPHA_VANTAGE_API_KEY || '';
+    this.apiKey = apiKey || process.env.ALPHA_VANTAGE_API_KEY || "";
     if (!this.apiKey) {
       // AlphaVantage warning: API key not configured
     }
@@ -104,20 +104,23 @@ export class AlphaVantageClient {
     if (cached) return cached;
 
     const data = await this.makeRequest({
-      function: 'GLOBAL_QUOTE',
+      function: "GLOBAL_QUOTE",
       symbol,
     });
 
-    if (!data['Global Quote'] || Object.keys(data['Global Quote']).length === 0) {
+    if (
+      !data["Global Quote"] ||
+      Object.keys(data["Global Quote"]).length === 0
+    ) {
       throw new MarketDataAPIError(
         `No quote data found for symbol: ${symbol}`,
-        'NO_DATA',
-        'AlphaVantage',
-        false
+        "NO_DATA",
+        "AlphaVantage",
+        false,
       );
     }
 
-    const quote = this.parseQuote(symbol, data['Global Quote']);
+    const quote = this.parseQuote(symbol, data["Global Quote"]);
     this.setCache(cacheKey, quote, CACHE_TTL.quote);
     return quote;
   }
@@ -128,7 +131,7 @@ export class AlphaVantageClient {
   async getHistory(
     symbol: string,
     interval: TimeInterval,
-    outputSize: 'compact' | 'full' = 'compact'
+    outputSize: "compact" | "full" = "compact",
   ): Promise<StockHistory> {
     const cacheKey = `history:${symbol}:${interval}:${outputSize}`;
     const cached = this.getFromCache<StockHistory>(cacheKey);
@@ -161,16 +164,16 @@ export class AlphaVantageClient {
     if (cached) return cached;
 
     const data = await this.makeRequest({
-      function: 'OVERVIEW',
+      function: "OVERVIEW",
       symbol,
     });
 
     if (!data.Symbol) {
       throw new MarketDataAPIError(
         `No company data found for symbol: ${symbol}`,
-        'NO_DATA',
-        'AlphaVantage',
-        false
+        "NO_DATA",
+        "AlphaVantage",
+        false,
       );
     }
 
@@ -188,16 +191,16 @@ export class AlphaVantageClient {
     if (cached) return cached;
 
     const data = await this.makeRequest({
-      function: 'EARNINGS',
+      function: "EARNINGS",
       symbol,
     });
 
     if (!data.quarterlyEarnings || data.quarterlyEarnings.length === 0) {
       throw new MarketDataAPIError(
         `No earnings data found for symbol: ${symbol}`,
-        'NO_DATA',
-        'AlphaVantage',
-        false
+        "NO_DATA",
+        "AlphaVantage",
+        false,
       );
     }
 
@@ -215,7 +218,7 @@ export class AlphaVantageClient {
     if (cached) return cached;
 
     const data = await this.makeRequest({
-      function: 'SYMBOL_SEARCH',
+      function: "SYMBOL_SEARCH",
       keywords: query,
     });
 
@@ -224,15 +227,15 @@ export class AlphaVantageClient {
     }
 
     const results = data.bestMatches.map((match: any) => ({
-      symbol: match['1. symbol'],
-      name: match['2. name'],
-      type: match['3. type'],
-      region: match['4. region'],
-      marketOpen: match['5. marketOpen'],
-      marketClose: match['6. marketClose'],
-      timezone: match['7. timezone'],
-      currency: match['8. currency'],
-      matchScore: parseFloat(match['9. matchScore']),
+      symbol: match["1. symbol"],
+      name: match["2. name"],
+      type: match["3. type"],
+      region: match["4. region"],
+      marketOpen: match["5. marketOpen"],
+      marketClose: match["6. marketClose"],
+      timezone: match["7. timezone"],
+      currency: match["8. currency"],
+      matchScore: parseFloat(match["9. matchScore"]),
     }));
 
     this.setCache(cacheKey, results, CACHE_TTL.search);
@@ -247,7 +250,7 @@ export class AlphaVantageClient {
     await this.checkRateLimit();
 
     const url = new URL(this.baseUrl);
-    url.searchParams.append('apikey', this.apiKey);
+    url.searchParams.append("apikey", this.apiKey);
     Object.entries(params).forEach(([key, value]) => {
       url.searchParams.append(key, value);
     });
@@ -261,32 +264,32 @@ export class AlphaVantageClient {
         const data = await response.json();
 
         // Check for API errors
-        if (data['Error Message']) {
+        if (data["Error Message"]) {
           throw new MarketDataAPIError(
-            data['Error Message'],
-            'API_ERROR',
-            'AlphaVantage',
-            false
+            data["Error Message"],
+            "API_ERROR",
+            "AlphaVantage",
+            false,
           );
         }
 
-        if (data['Note']) {
+        if (data["Note"]) {
           // Rate limit exceeded
           throw new MarketDataAPIError(
-            'API rate limit exceeded',
-            'RATE_LIMIT',
-            'AlphaVantage',
-            true
+            "API rate limit exceeded",
+            "RATE_LIMIT",
+            "AlphaVantage",
+            true,
           );
         }
 
-        if (data['Information']) {
+        if (data["Information"]) {
           // API limit message
           throw new MarketDataAPIError(
-            data['Information'],
-            'API_LIMIT',
-            'AlphaVantage',
-            true
+            data["Information"],
+            "API_LIMIT",
+            "AlphaVantage",
+            true,
           );
         }
 
@@ -301,19 +304,21 @@ export class AlphaVantageClient {
 
         if (attempt < RETRY_CONFIG.maxRetries) {
           await this.sleep(delay);
-          delay = Math.min(delay * RETRY_CONFIG.backoffMultiplier, RETRY_CONFIG.maxDelay);
+          delay = Math.min(
+            delay * RETRY_CONFIG.backoffMultiplier,
+            RETRY_CONFIG.maxDelay,
+          );
         }
       }
     }
 
     throw new MarketDataAPIError(
       `Failed after ${RETRY_CONFIG.maxRetries} retries: ${lastError?.message}`,
-      'MAX_RETRIES',
-      'AlphaVantage',
-      false
+      "MAX_RETRIES",
+      "AlphaVantage",
+      false,
     );
   }
-
 
   // ============================================================================
   // PRIVATE METHODS - RATE LIMITING
@@ -334,7 +339,7 @@ export class AlphaVantageClient {
 
     // Remove requests outside the current window
     this.rateLimitState.requests = this.rateLimitState.requests.filter(
-      (timestamp) => now - timestamp < RATE_LIMIT.windowMs
+      (timestamp) => now - timestamp < RATE_LIMIT.windowMs,
     );
 
     // Check if we've hit the rate limit
@@ -383,30 +388,36 @@ export class AlphaVantageClient {
   private parseQuote(symbol: string, data: any): StockQuote {
     return {
       symbol,
-      price: parseFloat(data['05. price']),
-      change: parseFloat(data['09. change']),
-      changePercent: parseFloat(data['10. change percent'].replace('%', '')),
-      volume: parseInt(data['06. volume']),
-      avgVolume: parseInt(data['06. volume']), // Alpha Vantage doesn't provide avg volume in quote
-      open: parseFloat(data['02. open']),
-      high: parseFloat(data['03. high']),
-      low: parseFloat(data['04. low']),
-      previousClose: parseFloat(data['08. previous close']),
-      week52High: parseFloat(data['03. high']), // Approximation
-      week52Low: parseFloat(data['04. low']), // Approximation
-      timestamp: new Date(data['07. latest trading day']),
+      price: parseFloat(data["05. price"]),
+      change: parseFloat(data["09. change"]),
+      changePercent: parseFloat(data["10. change percent"].replace("%", "")),
+      volume: parseInt(data["06. volume"]),
+      avgVolume: parseInt(data["06. volume"]), // Alpha Vantage doesn't provide avg volume in quote
+      open: parseFloat(data["02. open"]),
+      high: parseFloat(data["03. high"]),
+      low: parseFloat(data["04. low"]),
+      previousClose: parseFloat(data["08. previous close"]),
+      week52High: parseFloat(data["03. high"]), // Approximation
+      week52Low: parseFloat(data["04. low"]), // Approximation
+      timestamp: new Date(data["07. latest trading day"]),
       marketStatus: this.getMarketStatus(),
     };
   }
 
-  private parseHistory(symbol: string, interval: TimeInterval, data: any): StockHistory {
-    const timeSeriesKey = Object.keys(data).find((key) => key.includes('Time Series'));
+  private parseHistory(
+    symbol: string,
+    interval: TimeInterval,
+    data: any,
+  ): StockHistory {
+    const timeSeriesKey = Object.keys(data).find((key) =>
+      key.includes("Time Series"),
+    );
     if (!timeSeriesKey) {
       throw new MarketDataAPIError(
-        'No time series data found in response',
-        'PARSE_ERROR',
-        'AlphaVantage',
-        false
+        "No time series data found in response",
+        "PARSE_ERROR",
+        "AlphaVantage",
+        false,
       );
     }
 
@@ -416,11 +427,11 @@ export class AlphaVantageClient {
     for (const [timestamp, values] of Object.entries(timeSeries)) {
       ohlcvData.push({
         timestamp: new Date(timestamp),
-        open: parseFloat((values as any)['1. open']),
-        high: parseFloat((values as any)['2. high']),
-        low: parseFloat((values as any)['3. low']),
-        close: parseFloat((values as any)['4. close']),
-        volume: parseInt((values as any)['5. volume']),
+        open: parseFloat((values as any)["1. open"]),
+        high: parseFloat((values as any)["2. high"]),
+        low: parseFloat((values as any)["3. low"]),
+        close: parseFloat((values as any)["4. close"]),
+        volume: parseInt((values as any)["5. volume"]),
       });
     }
 
@@ -440,14 +451,16 @@ export class AlphaVantageClient {
     return {
       symbol: data.Symbol,
       name: data.Name,
-      description: data.Description || '',
-      sector: data.Sector || 'Unknown',
-      industry: data.Industry || 'Unknown',
-      exchange: data.Exchange || 'Unknown',
-      currency: data.Currency || 'USD',
-      country: data.Country || 'Unknown',
+      description: data.Description || "",
+      sector: data.Sector || "Unknown",
+      industry: data.Industry || "Unknown",
+      exchange: data.Exchange || "Unknown",
+      currency: data.Currency || "USD",
+      country: data.Country || "Unknown",
       marketCap: parseInt(data.MarketCapitalization) || 0,
-      employees: data.FullTimeEmployees ? parseInt(data.FullTimeEmployees) : undefined,
+      employees: data.FullTimeEmployees
+        ? parseInt(data.FullTimeEmployees)
+        : undefined,
       website: data.OfficialSite || undefined,
       fiscalYearEnd: data.FiscalYearEnd || undefined,
     };
@@ -471,29 +484,29 @@ export class AlphaVantageClient {
 
   private getFunctionName(interval: TimeInterval): string {
     if (this.isIntradayInterval(interval)) {
-      return 'TIME_SERIES_INTRADAY';
+      return "TIME_SERIES_INTRADAY";
     }
     if (interval === TimeInterval.ONE_DAY) {
-      return 'TIME_SERIES_DAILY';
+      return "TIME_SERIES_DAILY";
     }
     if (interval === TimeInterval.ONE_WEEK) {
-      return 'TIME_SERIES_WEEKLY';
+      return "TIME_SERIES_WEEKLY";
     }
     if (interval === TimeInterval.ONE_MONTH) {
-      return 'TIME_SERIES_MONTHLY';
+      return "TIME_SERIES_MONTHLY";
     }
-    return 'TIME_SERIES_DAILY';
+    return "TIME_SERIES_DAILY";
   }
 
   private getIntervalParam(interval: TimeInterval): string {
     const intervalMap: Record<string, string> = {
-      [TimeInterval.ONE_MIN]: '1min',
-      [TimeInterval.FIVE_MIN]: '5min',
-      [TimeInterval.FIFTEEN_MIN]: '15min',
-      [TimeInterval.THIRTY_MIN]: '30min',
-      [TimeInterval.ONE_HOUR]: '60min',
+      [TimeInterval.ONE_MIN]: "1min",
+      [TimeInterval.FIVE_MIN]: "5min",
+      [TimeInterval.FIFTEEN_MIN]: "15min",
+      [TimeInterval.THIRTY_MIN]: "30min",
+      [TimeInterval.ONE_HOUR]: "60min",
     };
-    return intervalMap[interval] || '5min';
+    return intervalMap[interval] || "5min";
   }
 
   private isIntradayInterval(interval: TimeInterval): boolean {
@@ -541,4 +554,3 @@ export class AlphaVantageClient {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
-

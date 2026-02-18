@@ -11,10 +11,10 @@
  * - Audit logging
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { db } from '@/lib/credit-repair/db';
-import { auditLogger } from '@/lib/security/audit-logging';
+import { NextRequest, NextResponse } from "next/server";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { db } from "@/lib/credit-repair/db";
+import { auditLogger } from "@/lib/security/audit-logging";
 
 /**
  * GET /api/credit-repair/reports/[id]
@@ -22,13 +22,13 @@ import { auditLogger } from '@/lib/security/audit-logging';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     // 1. Authenticate
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = validation.user;
@@ -39,15 +39,15 @@ export async function GET(
 
     if (!report) {
       return NextResponse.json(
-        { error: 'Credit report not found' },
-        { status: 404 }
+        { error: "Credit report not found" },
+        { status: 404 },
       );
     }
 
     // 3. Audit log
     await auditLogger.logAIInteraction({
       userId: user.id,
-      action: 'get_credit_report',
+      action: "get_credit_report",
       input: { reportId },
       output: { found: true },
       success: true,
@@ -61,8 +61,8 @@ export async function GET(
   } catch (_error) {
     // Error silently caught
     return NextResponse.json(
-      { error: 'Failed to get credit report' },
-      { status: 500 }
+      { error: "Failed to get credit report" },
+      { status: 500 },
     );
   }
 }
@@ -73,13 +73,13 @@ export async function GET(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     // 1. Authenticate
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = validation.user;
@@ -88,20 +88,20 @@ export async function DELETE(
     // 2. Delete credit report from database
     const deleted = await db.creditReports.deleteCreditReport(
       reportId,
-      user.id
+      user.id,
     );
 
     if (!deleted) {
       return NextResponse.json(
-        { error: 'Credit report not found' },
-        { status: 404 }
+        { error: "Credit report not found" },
+        { status: 404 },
       );
     }
 
     // 3. Audit log
     await auditLogger.logAIInteraction({
       userId: user.id,
-      action: 'delete_credit_report',
+      action: "delete_credit_report",
       input: { reportId },
       output: { deleted: true },
       success: true,
@@ -110,13 +110,13 @@ export async function DELETE(
     // 4. Return response
     return NextResponse.json({
       success: true,
-      message: 'Credit report deleted successfully',
+      message: "Credit report deleted successfully",
     });
   } catch (_error) {
     // Error silently caught
     return NextResponse.json(
-      { error: 'Failed to delete credit report' },
-      { status: 500 }
+      { error: "Failed to delete credit report" },
+      { status: 500 },
     );
   }
 }

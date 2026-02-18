@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
 /**
  * Credit Repair Dispute Dashboard
- * 
+ *
  * Comprehensive dispute management interface with:
  * - Active dispute tracking
  * - AI-powered recommendations
@@ -10,7 +10,7 @@
  * - Timeline visualization
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from "react";
 
 // ============================================================================
 // TYPES
@@ -18,15 +18,15 @@ import React, { useState, useMemo } from 'react';
 
 export interface Dispute {
   id: string;
-  itemType: 'account' | 'inquiry' | 'collection' | 'public_record';
+  itemType: "account" | "inquiry" | "collection" | "public_record";
   creditorName: string;
   accountNumber?: string;
-  bureau: 'experian' | 'equifax' | 'transunion';
-  status: 'draft' | 'pending' | 'in_review' | 'resolved' | 'rejected';
+  bureau: "experian" | "equifax" | "transunion";
+  status: "draft" | "pending" | "in_review" | "resolved" | "rejected";
   reason: string;
   submittedDate?: Date;
   responseDate?: Date;
-  resolution?: 'deleted' | 'corrected' | 'verified' | 'pending';
+  resolution?: "deleted" | "corrected" | "verified" | "pending";
   estimatedImpact: number;
   confidenceScore: number;
   notes?: string;
@@ -57,17 +57,37 @@ export interface DisputeDashboardProps {
 // ============================================================================
 
 const STATUS_CONFIG = {
-  draft: { label: 'Draft', color: 'bg-gray-500', textColor: 'text-gray-400 dark:text-slate-500' },
-  pending: { label: 'Pending', color: 'bg-yellow-500', textColor: 'text-yellow-400' },
-  in_review: { label: 'In Review', color: 'bg-blue-500', textColor: 'text-blue-400' },
-  resolved: { label: 'Resolved', color: 'bg-green-500', textColor: 'text-green-400' },
-  rejected: { label: 'Rejected', color: 'bg-red-500', textColor: 'text-red-400' },
+  draft: {
+    label: "Draft",
+    color: "bg-gray-500",
+    textColor: "text-gray-400 dark:text-slate-500",
+  },
+  pending: {
+    label: "Pending",
+    color: "bg-yellow-500",
+    textColor: "text-yellow-400",
+  },
+  in_review: {
+    label: "In Review",
+    color: "bg-blue-500",
+    textColor: "text-blue-400",
+  },
+  resolved: {
+    label: "Resolved",
+    color: "bg-green-500",
+    textColor: "text-green-400",
+  },
+  rejected: {
+    label: "Rejected",
+    color: "bg-red-500",
+    textColor: "text-red-400",
+  },
 };
 
 const BUREAU_COLORS = {
-  experian: '#1a4480',
-  equifax: '#c41230',
-  transunion: '#00a3e0',
+  experian: "#1a4480",
+  equifax: "#c41230",
+  transunion: "#00a3e0",
 };
 
 // ============================================================================
@@ -81,27 +101,32 @@ export function DisputeDashboard({
   onCreateDispute,
   onViewDispute,
   onSendDispute,
-  className = '',
+  className = "",
 }: DisputeDashboardProps) {
-  const [filter, setFilter] = useState<'all' | Dispute['status']>('all');
-  const [bureauFilter, setBureauFilter] = useState<'all' | Dispute['bureau']>('all');
+  const [filter, setFilter] = useState<"all" | Dispute["status"]>("all");
+  const [bureauFilter, setBureauFilter] = useState<"all" | Dispute["bureau"]>(
+    "all",
+  );
 
   // Filter disputes
   const filteredDisputes = useMemo(() => {
-    return disputes.filter(d => {
-      if (filter !== 'all' && d.status !== filter) return false;
-      if (bureauFilter !== 'all' && d.bureau !== bureauFilter) return false;
+    return disputes.filter((d) => {
+      if (filter !== "all" && d.status !== filter) return false;
+      if (bureauFilter !== "all" && d.bureau !== bureauFilter) return false;
       return true;
     });
   }, [disputes, filter, bureauFilter]);
 
   // Group by status for pipeline view
-  const pipelineData = useMemo(() => ({
-    draft: disputes.filter(d => d.status === 'draft'),
-    pending: disputes.filter(d => d.status === 'pending'),
-    in_review: disputes.filter(d => d.status === 'in_review'),
-    resolved: disputes.filter(d => d.status === 'resolved'),
-  }), [disputes]);
+  const pipelineData = useMemo(
+    () => ({
+      draft: disputes.filter((d) => d.status === "draft"),
+      pending: disputes.filter((d) => d.status === "pending"),
+      in_review: disputes.filter((d) => d.status === "in_review"),
+      resolved: disputes.filter((d) => d.status === "resolved"),
+    }),
+    [disputes],
+  );
 
   return (
     <div className={`dispute-dashboard bg-gray-900 rounded-lg ${className}`}>
@@ -170,7 +195,9 @@ export function DisputeDashboard({
 
       {/* Pipeline View */}
       <div className="p-6 border-b border-gray-800">
-        <h3 className="text-lg font-semibold text-white mb-4">Dispute Pipeline</h3>
+        <h3 className="text-lg font-semibold text-white mb-4">
+          Dispute Pipeline
+        </h3>
         <div className="grid grid-cols-4 gap-4">
           {Object.entries(pipelineData).map(([status, items]) => (
             <PipelineColumn
@@ -186,7 +213,9 @@ export function DisputeDashboard({
       {/* Filters */}
       <div className="px-6 py-4 border-b border-gray-800 flex items-center gap-4">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-400 dark:text-slate-500">Status:</span>
+          <span className="text-sm text-gray-400 dark:text-slate-500">
+            Status:
+          </span>
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value as typeof filter)}
@@ -201,10 +230,14 @@ export function DisputeDashboard({
           </select>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-400 dark:text-slate-500">Bureau:</span>
+          <span className="text-sm text-gray-400 dark:text-slate-500">
+            Bureau:
+          </span>
           <select
             value={bureauFilter}
-            onChange={(e) => setBureauFilter(e.target.value as typeof bureauFilter)}
+            onChange={(e) =>
+              setBureauFilter(e.target.value as typeof bureauFilter)
+            }
             className="bg-gray-800 text-white text-sm rounded px-3 py-1.5 border border-gray-700"
           >
             <option value="all">All Bureaus</option>
@@ -223,7 +256,9 @@ export function DisputeDashboard({
         {filteredDisputes.length === 0 ? (
           <div className="px-6 py-12 text-center">
             <div className="text-4xl mb-4"></div>
-            <p className="text-gray-400 dark:text-slate-500">No disputes found</p>
+            <p className="text-gray-400 dark:text-slate-500">
+              No disputes found
+            </p>
             <button
               onClick={onCreateDispute}
               className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
@@ -232,7 +267,7 @@ export function DisputeDashboard({
             </button>
           </div>
         ) : (
-          filteredDisputes.map(dispute => (
+          filteredDisputes.map((dispute) => (
             <DisputeRow
               key={dispute.id}
               dispute={dispute}
@@ -258,7 +293,13 @@ interface StatCardProps {
   valueColor?: string;
 }
 
-function StatCard({ label, value, subValue, icon, valueColor = 'text-white' }: StatCardProps) {
+function StatCard({
+  label,
+  value,
+  subValue,
+  icon,
+  valueColor = "text-white",
+}: StatCardProps) {
   return (
     <div className="bg-gray-800 rounded-lg p-4">
       <div className="flex items-start justify-between">
@@ -266,7 +307,11 @@ function StatCard({ label, value, subValue, icon, valueColor = 'text-white' }: S
       </div>
       <div className={`text-2xl font-bold mt-2 ${valueColor}`}>{value}</div>
       <div className="text-sm text-gray-400 dark:text-slate-500">{label}</div>
-      {subValue && <div className="text-xs text-gray-500 dark:text-slate-400 mt-1">{subValue}</div>}
+      {subValue && (
+        <div className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+          {subValue}
+        </div>
+      )}
     </div>
   );
 }
@@ -276,41 +321,50 @@ function StatCard({ label, value, subValue, icon, valueColor = 'text-white' }: S
 // ============================================================================
 
 interface PipelineColumnProps {
-  status: 'draft' | 'pending' | 'in_review' | 'resolved';
+  status: "draft" | "pending" | "in_review" | "resolved";
   items: Dispute[];
   onItemClick?: (id: string) => void;
 }
 
 function PipelineColumn({ status, items, onItemClick }: PipelineColumnProps) {
   const config = STATUS_CONFIG[status];
-  
+
   return (
     <div className="bg-gray-800/50 rounded-lg p-3">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <div className={`w-2 h-2 rounded-full ${config.color}`} />
-          <span className="text-sm font-medium text-gray-300">{config.label}</span>
+          <span className="text-sm font-medium text-gray-300">
+            {config.label}
+          </span>
         </div>
         <span className="text-xs bg-gray-700 text-gray-400 dark:text-slate-500 px-2 py-0.5 rounded-full">
           {items.length}
         </span>
       </div>
       <div className="space-y-2 max-h-48 overflow-y-auto">
-        {items.slice(0, 5).map(item => (
+        {items.slice(0, 5).map((item) => (
           <div
             key={item.id}
             onClick={() => onItemClick?.(item.id)}
             className="bg-gray-800 rounded p-2 cursor-pointer hover:bg-gray-700 transition"
           >
-            <div className="text-sm text-white font-medium truncate">{item.creditorName}</div>
+            <div className="text-sm text-white font-medium truncate">
+              {item.creditorName}
+            </div>
             <div className="flex items-center justify-between mt-1">
               <span
                 className="text-xs px-1.5 py-0.5 rounded"
-                style={{ backgroundColor: `${BUREAU_COLORS[item.bureau]}30`, color: BUREAU_COLORS[item.bureau] }}
+                style={{
+                  backgroundColor: `${BUREAU_COLORS[item.bureau]}30`,
+                  color: BUREAU_COLORS[item.bureau],
+                }}
               >
                 {item.bureau.charAt(0).toUpperCase() + item.bureau.slice(1)}
               </span>
-              <span className="text-xs text-gray-500 dark:text-slate-400">+{item.estimatedImpact} pts</span>
+              <span className="text-xs text-gray-500 dark:text-slate-400">
+                +{item.estimatedImpact} pts
+              </span>
             </div>
           </div>
         ))}
@@ -336,7 +390,7 @@ interface DisputeRowProps {
 
 function DisputeRow({ dispute, onView, onSend }: DisputeRowProps) {
   const statusConfig = STATUS_CONFIG[dispute.status];
-  
+
   return (
     <div className="px-6 py-4 hover:bg-gray-800/30 transition">
       <div className="flex items-center justify-between">
@@ -352,14 +406,20 @@ function DisputeRow({ dispute, onView, onSend }: DisputeRowProps) {
           {/* Info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3">
-              <span className="text-white font-medium">{dispute.creditorName}</span>
-              <span className={`text-xs px-2 py-0.5 rounded-full ${statusConfig.color}/20 ${statusConfig.textColor}`}>
+              <span className="text-white font-medium">
+                {dispute.creditorName}
+              </span>
+              <span
+                className={`text-xs px-2 py-0.5 rounded-full ${statusConfig.color}/20 ${statusConfig.textColor}`}
+              >
                 {statusConfig.label}
               </span>
             </div>
             <div className="flex items-center gap-3 mt-1 text-sm text-gray-400 dark:text-slate-500">
-              <span>{dispute.itemType.replace('_', ' ')}</span>
-              {dispute.accountNumber && <span>•••{dispute.accountNumber.slice(-4)}</span>}
+              <span>{dispute.itemType.replace("_", " ")}</span>
+              {dispute.accountNumber && (
+                <span>•••{dispute.accountNumber.slice(-4)}</span>
+              )}
               <span>• {dispute.reason}</span>
             </div>
           </div>
@@ -367,7 +427,10 @@ function DisputeRow({ dispute, onView, onSend }: DisputeRowProps) {
           {/* Metrics */}
           <div className="text-right hidden md:block">
             <div className="text-sm text-gray-300">
-              Est. Impact: <span className="text-green-400 font-medium">+{dispute.estimatedImpact} pts</span>
+              Est. Impact:{" "}
+              <span className="text-green-400 font-medium">
+                +{dispute.estimatedImpact} pts
+              </span>
             </div>
             <div className="text-xs text-gray-500 dark:text-slate-400 mt-1">
               Confidence: {(dispute.confidenceScore * 100).toFixed(0)}%
@@ -381,7 +444,9 @@ function DisputeRow({ dispute, onView, onSend }: DisputeRowProps) {
                 Submitted {formatDate(dispute.submittedDate)}
               </div>
             ) : (
-              <div className="text-sm text-gray-500 dark:text-slate-400">Not submitted</div>
+              <div className="text-sm text-gray-500 dark:text-slate-400">
+                Not submitted
+              </div>
             )}
             {dispute.responseDate && (
               <div className="text-xs text-gray-500 dark:text-slate-400 mt-1">
@@ -399,7 +464,7 @@ function DisputeRow({ dispute, onView, onSend }: DisputeRowProps) {
           >
             View
           </button>
-          {dispute.status === 'draft' && (
+          {dispute.status === "draft" && (
             <button
               onClick={onSend}
               className="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded transition"
@@ -418,10 +483,10 @@ function DisputeRow({ dispute, onView, onSend }: DisputeRowProps) {
 // ============================================================================
 
 function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
   }).format(date);
 }
 

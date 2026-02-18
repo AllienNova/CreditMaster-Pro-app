@@ -3,7 +3,7 @@
  * Manage recurring subscriptions with AI-assisted cancellation
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -14,10 +14,10 @@ import {
   ActivityIndicator,
   TextInput,
   Modal,
-} from 'react-native';
-import { Stack, router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { lightTheme as theme } from '../../src/constants/theme';
+} from "react-native";
+import { Stack, router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { lightTheme as theme } from "../../src/constants/theme";
 
 // ============================================================================
 // Types
@@ -28,9 +28,9 @@ interface Subscription {
   name: string;
   merchantName: string;
   amount: number;
-  frequency: 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+  frequency: "weekly" | "monthly" | "quarterly" | "yearly";
   category: string;
-  status: 'active' | 'paused' | 'pending_cancellation' | 'cancelled';
+  status: "active" | "paused" | "pending_cancellation" | "cancelled";
   nextBillingDate: Date;
   logoUrl?: string;
   annualCost: number;
@@ -47,12 +47,72 @@ interface SubscriptionStats {
 // ============================================================================
 
 const mockSubscriptions: Subscription[] = [
-  { id: '1', name: 'Netflix', merchantName: 'Netflix Inc', amount: 15.99, frequency: 'monthly', category: 'Entertainment', status: 'active', nextBillingDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000), annualCost: 191.88 },
-  { id: '2', name: 'Spotify Premium', merchantName: 'Spotify AB', amount: 10.99, frequency: 'monthly', category: 'Entertainment', status: 'active', nextBillingDate: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000), annualCost: 131.88 },
-  { id: '3', name: 'Adobe CC', merchantName: 'Adobe Inc', amount: 54.99, frequency: 'monthly', category: 'Software', status: 'active', nextBillingDate: new Date(Date.now() + 22 * 24 * 60 * 60 * 1000), annualCost: 659.88 },
-  { id: '4', name: 'Planet Fitness', merchantName: 'Planet Fitness', amount: 24.99, frequency: 'monthly', category: 'Health', status: 'pending_cancellation', nextBillingDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), annualCost: 299.88 },
-  { id: '5', name: 'Amazon Prime', merchantName: 'Amazon.com', amount: 139.00, frequency: 'yearly', category: 'Shopping', status: 'active', nextBillingDate: new Date(Date.now() + 120 * 24 * 60 * 60 * 1000), annualCost: 139.00 },
-  { id: '6', name: 'Disney+', merchantName: 'Disney Plus', amount: 7.99, frequency: 'monthly', category: 'Entertainment', status: 'active', nextBillingDate: new Date(Date.now() + 18 * 24 * 60 * 60 * 1000), annualCost: 95.88 },
+  {
+    id: "1",
+    name: "Netflix",
+    merchantName: "Netflix Inc",
+    amount: 15.99,
+    frequency: "monthly",
+    category: "Entertainment",
+    status: "active",
+    nextBillingDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
+    annualCost: 191.88,
+  },
+  {
+    id: "2",
+    name: "Spotify Premium",
+    merchantName: "Spotify AB",
+    amount: 10.99,
+    frequency: "monthly",
+    category: "Entertainment",
+    status: "active",
+    nextBillingDate: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000),
+    annualCost: 131.88,
+  },
+  {
+    id: "3",
+    name: "Adobe CC",
+    merchantName: "Adobe Inc",
+    amount: 54.99,
+    frequency: "monthly",
+    category: "Software",
+    status: "active",
+    nextBillingDate: new Date(Date.now() + 22 * 24 * 60 * 60 * 1000),
+    annualCost: 659.88,
+  },
+  {
+    id: "4",
+    name: "Planet Fitness",
+    merchantName: "Planet Fitness",
+    amount: 24.99,
+    frequency: "monthly",
+    category: "Health",
+    status: "pending_cancellation",
+    nextBillingDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+    annualCost: 299.88,
+  },
+  {
+    id: "5",
+    name: "Amazon Prime",
+    merchantName: "Amazon.com",
+    amount: 139.0,
+    frequency: "yearly",
+    category: "Shopping",
+    status: "active",
+    nextBillingDate: new Date(Date.now() + 120 * 24 * 60 * 60 * 1000),
+    annualCost: 139.0,
+  },
+  {
+    id: "6",
+    name: "Disney+",
+    merchantName: "Disney Plus",
+    amount: 7.99,
+    frequency: "monthly",
+    category: "Entertainment",
+    status: "active",
+    nextBillingDate: new Date(Date.now() + 18 * 24 * 60 * 60 * 1000),
+    annualCost: 95.88,
+  },
 ];
 
 const mockStats: SubscriptionStats = {
@@ -70,7 +130,7 @@ function formatCurrency(value: number): string {
 }
 
 function formatDate(date: Date): string {
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 function getDaysUntil(date: Date): number {
@@ -80,23 +140,28 @@ function getDaysUntil(date: Date): number {
 
 function getFrequencyLabel(frequency: string): string {
   switch (frequency) {
-    case 'weekly': return '/wk';
-    case 'monthly': return '/mo';
-    case 'quarterly': return '/qtr';
-    case 'yearly': return '/yr';
-    default: return '';
+    case "weekly":
+      return "/wk";
+    case "monthly":
+      return "/mo";
+    case "quarterly":
+      return "/qtr";
+    case "yearly":
+      return "/yr";
+    default:
+      return "";
   }
 }
 
 function getCategoryColor(category: string): string {
   const colors: Record<string, string> = {
-    'Entertainment': '#EC4899',
-    'Software': '#3B82F6',
-    'Health': '#22C55E',
-    'Shopping': '#F59E0B',
-    'Storage': '#8B5CF6',
+    Entertainment: "#EC4899",
+    Software: "#3B82F6",
+    Health: "#22C55E",
+    Shopping: "#F59E0B",
+    Storage: "#8B5CF6",
   };
-  return colors[category] || '#9CA3AF';
+  return colors[category] || "#9CA3AF";
 }
 
 // ============================================================================
@@ -142,12 +207,24 @@ function SubscriptionCard({
 
   const getStatusBadge = () => {
     switch (subscription.status) {
-      case 'active':
-        return { text: 'Active', bg: `${theme.colors.success}20`, color: theme.colors.success };
-      case 'pending_cancellation':
-        return { text: 'Pending', bg: `${theme.colors.warning}20`, color: theme.colors.warning };
-      case 'cancelled':
-        return { text: 'Cancelled', bg: `${theme.colors.textSecondary}20`, color: theme.colors.textSecondary };
+      case "active":
+        return {
+          text: "Active",
+          bg: `${theme.colors.success}20`,
+          color: theme.colors.success,
+        };
+      case "pending_cancellation":
+        return {
+          text: "Pending",
+          bg: `${theme.colors.warning}20`,
+          color: theme.colors.warning,
+        };
+      case "cancelled":
+        return {
+          text: "Cancelled",
+          bg: `${theme.colors.textSecondary}20`,
+          color: theme.colors.textSecondary,
+        };
       default:
         return null;
     }
@@ -156,10 +233,19 @@ function SubscriptionCard({
   const badge = getStatusBadge();
 
   return (
-    <TouchableOpacity style={styles.subscriptionCard} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity
+      style={styles.subscriptionCard}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
       <View style={styles.subscriptionContent}>
         {/* Logo */}
-        <View style={[styles.logo, { backgroundColor: getCategoryColor(subscription.category) }]}>
+        <View
+          style={[
+            styles.logo,
+            { backgroundColor: getCategoryColor(subscription.category) },
+          ]}
+        >
           <Text style={styles.logoText}>{subscription.name.charAt(0)}</Text>
         </View>
 
@@ -169,7 +255,9 @@ function SubscriptionCard({
             <Text style={styles.subscriptionName}>{subscription.name}</Text>
             {badge && (
               <View style={[styles.badge, { backgroundColor: badge.bg }]}>
-                <Text style={[styles.badgeText, { color: badge.color }]}>{badge.text}</Text>
+                <Text style={[styles.badgeText, { color: badge.color }]}>
+                  {badge.text}
+                </Text>
               </View>
             )}
           </View>
@@ -177,17 +265,30 @@ function SubscriptionCard({
           <View style={styles.infoRow}>
             <Text style={styles.amount}>
               {formatCurrency(subscription.amount)}
-              <Text style={styles.frequency}>{getFrequencyLabel(subscription.frequency)}</Text>
+              <Text style={styles.frequency}>
+                {getFrequencyLabel(subscription.frequency)}
+              </Text>
             </Text>
-            {subscription.status === 'active' && (
+            {subscription.status === "active" && (
               <View style={styles.dateRow}>
                 <Ionicons
                   name="time-outline"
                   size={14}
-                  color={isUpcoming ? theme.colors.warning : theme.colors.textSecondary}
+                  color={
+                    isUpcoming
+                      ? theme.colors.warning
+                      : theme.colors.textSecondary
+                  }
                 />
-                <Text style={[styles.dateText, isUpcoming && { color: theme.colors.warning }]}>
-                  {isUpcoming ? `${daysUntil}d` : formatDate(subscription.nextBillingDate)}
+                <Text
+                  style={[
+                    styles.dateText,
+                    isUpcoming && { color: theme.colors.warning },
+                  ]}
+                >
+                  {isUpcoming
+                    ? `${daysUntil}d`
+                    : formatDate(subscription.nextBillingDate)}
                 </Text>
               </View>
             )}
@@ -195,13 +296,17 @@ function SubscriptionCard({
         </View>
 
         {/* Actions */}
-        {subscription.status === 'active' && (
+        {subscription.status === "active" && (
           <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
             <Text style={styles.cancelButtonText}>Cancel</Text>
           </TouchableOpacity>
         )}
 
-        <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
+        <Ionicons
+          name="chevron-forward"
+          size={20}
+          color={theme.colors.textSecondary}
+        />
       </View>
     </TouchableOpacity>
   );
@@ -216,13 +321,16 @@ export default function SubscriptionsScreen() {
   const [stats, setStats] = useState<SubscriptionStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState<'all' | 'active' | 'pending'>('all');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedFilter, setSelectedFilter] = useState<
+    "all" | "active" | "pending"
+  >("all");
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
-  const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
+  const [selectedSubscription, setSelectedSubscription] =
+    useState<Subscription | null>(null);
 
   const loadData = useCallback(async () => {
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await new Promise((resolve) => setTimeout(resolve, 800));
     setSubscriptions(mockSubscriptions);
     setStats(mockStats);
   }, []);
@@ -238,13 +346,22 @@ export default function SubscriptionsScreen() {
   }, [loadData]);
 
   const filteredSubscriptions = subscriptions
-    .filter(s => {
-      if (selectedFilter === 'active' && s.status !== 'active') return false;
-      if (selectedFilter === 'pending' && s.status !== 'pending_cancellation') return false;
-      if (searchQuery && !s.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    .filter((s) => {
+      if (selectedFilter === "active" && s.status !== "active") return false;
+      if (selectedFilter === "pending" && s.status !== "pending_cancellation")
+        return false;
+      if (
+        searchQuery &&
+        !s.name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+        return false;
       return true;
     })
-    .sort((a, b) => new Date(a.nextBillingDate).getTime() - new Date(b.nextBillingDate).getTime());
+    .sort(
+      (a, b) =>
+        new Date(a.nextBillingDate).getTime() -
+        new Date(b.nextBillingDate).getTime(),
+    );
 
   const handleCancel = (subscription: Subscription) => {
     setSelectedSubscription(subscription);
@@ -264,7 +381,7 @@ export default function SubscriptionsScreen() {
     <>
       <Stack.Screen
         options={{
-          title: 'Subscriptions',
+          title: "Subscriptions",
           headerStyle: { backgroundColor: theme.colors.background },
           headerTintColor: theme.colors.text,
           headerRight: () => (
@@ -279,7 +396,11 @@ export default function SubscriptionsScreen() {
         style={styles.container}
         contentContainerStyle={styles.content}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.colors.primary}
+          />
         }
       >
         {/* Stats */}
@@ -324,7 +445,11 @@ export default function SubscriptionsScreen() {
 
         {/* Search */}
         <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color={theme.colors.textSecondary} />
+          <Ionicons
+            name="search"
+            size={20}
+            color={theme.colors.textSecondary}
+          />
           <TextInput
             style={styles.searchInput}
             placeholder="Search subscriptions..."
@@ -336,13 +461,21 @@ export default function SubscriptionsScreen() {
 
         {/* Filters */}
         <View style={styles.filterRow}>
-          {(['all', 'active', 'pending'] as const).map(filter => (
+          {(["all", "active", "pending"] as const).map((filter) => (
             <TouchableOpacity
               key={filter}
-              style={[styles.filterButton, selectedFilter === filter && styles.filterButtonActive]}
+              style={[
+                styles.filterButton,
+                selectedFilter === filter && styles.filterButtonActive,
+              ]}
               onPress={() => setSelectedFilter(filter)}
             >
-              <Text style={[styles.filterText, selectedFilter === filter && styles.filterTextActive]}>
+              <Text
+                style={[
+                  styles.filterText,
+                  selectedFilter === filter && styles.filterTextActive,
+                ]}
+              >
                 {filter.charAt(0).toUpperCase() + filter.slice(1)}
               </Text>
             </TouchableOpacity>
@@ -352,13 +485,16 @@ export default function SubscriptionsScreen() {
         {/* Subscription List */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
-            {filteredSubscriptions.length} Subscription{filteredSubscriptions.length !== 1 ? 's' : ''}
+            {filteredSubscriptions.length} Subscription
+            {filteredSubscriptions.length !== 1 ? "s" : ""}
           </Text>
-          {filteredSubscriptions.map(subscription => (
+          {filteredSubscriptions.map((subscription) => (
             <SubscriptionCard
               key={subscription.id}
               subscription={subscription}
-              onPress={() => router.push(`/billing/subscription?id=${subscription.id}`)}
+              onPress={() =>
+                router.push(`/billing/subscription?id=${subscription.id}`)
+              }
               onCancel={() => handleCancel(subscription)}
             />
           ))}
@@ -377,13 +513,16 @@ export default function SubscriptionsScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Cancel {selectedSubscription?.name}?</Text>
+              <Text style={styles.modalTitle}>
+                Cancel {selectedSubscription?.name}?
+              </Text>
               <TouchableOpacity onPress={() => setCancelModalVisible(false)}>
                 <Ionicons name="close" size={24} color={theme.colors.text} />
               </TouchableOpacity>
             </View>
             <Text style={styles.modalText}>
-              We'll guide you through the cancellation process with AI-powered assistance.
+              We'll guide you through the cancellation process with AI-powered
+              assistance.
             </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity
@@ -399,7 +538,9 @@ export default function SubscriptionsScreen() {
                   // Navigate to cancellation flow
                 }}
               >
-                <Text style={styles.modalButtonPrimaryText}>Start Cancellation</Text>
+                <Text style={styles.modalButtonPrimaryText}>
+                  Start Cancellation
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -423,8 +564,8 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: theme.colors.background,
   },
   loadingText: {
@@ -437,7 +578,7 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   statsRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
     marginBottom: 16,
   },
@@ -446,19 +587,19 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface,
     borderRadius: 12,
     padding: 14,
-    alignItems: 'center',
+    alignItems: "center",
   },
   statIcon: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 8,
   },
   statValue: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
   },
   statTitle: {
@@ -471,40 +612,40 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   savingsBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     backgroundColor: theme.colors.success,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
   },
   savingsContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   savingsIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(255,255,255,0.2)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   savingsText: {},
   savingsTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
   savingsSubtitle: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.8)',
+    color: "rgba(255,255,255,0.8)",
   },
   searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: theme.colors.surface,
     borderRadius: 12,
     paddingHorizontal: 14,
@@ -518,7 +659,7 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
   },
   filterRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
     marginBottom: 16,
   },
@@ -533,18 +674,18 @@ const styles = StyleSheet.create({
   },
   filterText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     color: theme.colors.textSecondary,
   },
   filterTextActive: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
   section: {
     marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: 12,
   },
@@ -555,34 +696,34 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   subscriptionContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   logo: {
     width: 44,
     height: 44,
     borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   logoText: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
   details: {
     flex: 1,
   },
   nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     marginBottom: 2,
   },
   subscriptionName: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   badge: {
@@ -592,7 +733,7 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   category: {
     fontSize: 12,
@@ -600,22 +741,22 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   amount: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   frequency: {
-    fontWeight: '400',
+    fontWeight: "400",
     color: theme.colors.textSecondary,
   },
   dateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   dateText: {
@@ -630,13 +771,13 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.error,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
   },
   modalContent: {
     backgroundColor: theme.colors.surface,
@@ -646,14 +787,14 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 12,
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
   },
   modalText: {
@@ -663,7 +804,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   modalButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
   },
   modalButtonSecondary: {
@@ -671,11 +812,11 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
     backgroundColor: theme.colors.border,
-    alignItems: 'center',
+    alignItems: "center",
   },
   modalButtonSecondaryText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   modalButtonPrimary: {
@@ -683,11 +824,11 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
     backgroundColor: theme.colors.error,
-    alignItems: 'center',
+    alignItems: "center",
   },
   modalButtonPrimaryText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
 });

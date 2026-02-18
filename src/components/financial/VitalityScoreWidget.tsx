@@ -1,25 +1,51 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Link from 'next/link';
-import { ArrowTrendingUpIcon, ArrowTrendingDownIcon, MinusIcon, SparklesIcon } from '@heroicons/react/24/solid';
+import React from "react";
+import Link from "next/link";
+import {
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
+  MinusIcon,
+  SparklesIcon,
+} from "@heroicons/react/24/solid";
 
 interface VitalityScoreWidgetProps {
   score: number;
-  grade: 'A' | 'B' | 'C' | 'D' | 'F';
-  trend: 'improving' | 'stable' | 'declining';
+  grade: "A" | "B" | "C" | "D" | "F";
+  trend: "improving" | "stable" | "declining";
   trendPercentage: number;
   percentile: number;
   isLoading?: boolean;
 }
 
-const gradeColors: Record<string, { bg: string; text: string; ring: string }> = {
-  A: { bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-600 dark:text-emerald-400', ring: '#22C55E' },
-  B: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400', ring: '#3B82F6' },
-  C: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-600 dark:text-amber-400', ring: '#F59E0B' },
-  D: { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-600 dark:text-orange-400', ring: '#F97316' },
-  F: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-600 dark:text-red-400', ring: '#EF4444' },
-};
+const gradeColors: Record<string, { bg: string; text: string; ring: string }> =
+  {
+    A: {
+      bg: "bg-emerald-100 dark:bg-emerald-900/30",
+      text: "text-emerald-600 dark:text-emerald-400",
+      ring: "#22C55E",
+    },
+    B: {
+      bg: "bg-blue-100 dark:bg-blue-900/30",
+      text: "text-blue-600 dark:text-blue-400",
+      ring: "#3B82F6",
+    },
+    C: {
+      bg: "bg-amber-100 dark:bg-amber-900/30",
+      text: "text-amber-600 dark:text-amber-400",
+      ring: "#F59E0B",
+    },
+    D: {
+      bg: "bg-orange-100 dark:bg-orange-900/30",
+      text: "text-orange-600 dark:text-orange-400",
+      ring: "#F97316",
+    },
+    F: {
+      bg: "bg-red-100 dark:bg-red-900/30",
+      text: "text-red-600 dark:text-red-400",
+      ring: "#EF4444",
+    },
+  };
 
 function CircularProgress({
   value,
@@ -76,10 +102,10 @@ function TrendIndicator({
   trend,
   percentage,
 }: {
-  trend: 'improving' | 'stable' | 'declining';
+  trend: "improving" | "stable" | "declining";
   percentage: number;
 }) {
-  if (trend === 'improving') {
+  if (trend === "improving") {
     return (
       <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
         <ArrowTrendingUpIcon className="w-4 h-4" />
@@ -87,7 +113,7 @@ function TrendIndicator({
       </div>
     );
   }
-  if (trend === 'declining') {
+  if (trend === "declining") {
     return (
       <div className="flex items-center gap-1 text-red-500">
         <ArrowTrendingDownIcon className="w-4 h-4" />
@@ -138,7 +164,9 @@ export function VitalityScoreWidget({
         {/* Score Ring */}
         <CircularProgress value={score} size={120} color={colors.ring}>
           <div className="text-center">
-            <span className="text-3xl font-bold text-gray-900 dark:text-white">{score}</span>
+            <span className="text-3xl font-bold text-gray-900 dark:text-white">
+              {score}
+            </span>
             <span
               className={`block text-lg font-bold ${colors.text} mt-1 px-2 py-0.5 rounded ${colors.bg}`}
             >
@@ -161,11 +189,26 @@ export function VitalityScoreWidget({
 
           {/* Mini component bars */}
           <div className="flex gap-1 mt-3">
-            <div className="flex-1 h-1.5 bg-emerald-500 rounded-full" title="Credit" />
-            <div className="flex-1 h-1.5 bg-blue-500 rounded-full" title="Spending" />
-            <div className="flex-1 h-1.5 bg-amber-500 rounded-full" title="Savings" />
-            <div className="flex-1 h-1.5 bg-red-400 rounded-full" title="Debt" />
-            <div className="flex-1 h-1.5 bg-teal-500 rounded-full" title="Investments" />
+            <div
+              className="flex-1 h-1.5 bg-emerald-500 rounded-full"
+              title="Credit"
+            />
+            <div
+              className="flex-1 h-1.5 bg-blue-500 rounded-full"
+              title="Spending"
+            />
+            <div
+              className="flex-1 h-1.5 bg-amber-500 rounded-full"
+              title="Savings"
+            />
+            <div
+              className="flex-1 h-1.5 bg-red-400 rounded-full"
+              title="Debt"
+            />
+            <div
+              className="flex-1 h-1.5 bg-teal-500 rounded-full"
+              title="Investments"
+            />
           </div>
         </div>
       </div>

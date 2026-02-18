@@ -3,19 +3,19 @@
  * Core database operations and business logic for student loans
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 import type {
   StudentLoan,
   ServicerProfile,
   FederalProgramApplication,
-  ServicerAnalysisResult
-} from '../types/student-loan';
+  ServicerAnalysisResult,
+} from "../types/student-loan";
 
 // Create a Supabase client for student loan operations
 function getStudentLoanSupabase() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   );
 }
 
@@ -86,11 +86,13 @@ export class StudentLoanService {
   /**
    * Create a new student loan record
    */
-  async createStudentLoan(loan: Omit<StudentLoan, 'id' | 'created_at' | 'updated_at'>): Promise<StudentLoan> {
+  async createStudentLoan(
+    loan: Omit<StudentLoan, "id" | "created_at" | "updated_at">,
+  ): Promise<StudentLoan> {
     const supabase = getStudentLoanSupabase();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
-      .from('student_loans')
+      .from("student_loans")
       .insert(loan)
       .select()
       .single();
@@ -106,9 +108,9 @@ export class StudentLoanService {
     const supabase = getStudentLoanSupabase();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
-      .from('student_loans')
-      .select('*')
-      .eq('user_id', userId);
+      .from("student_loans")
+      .select("*")
+      .eq("user_id", userId);
 
     if (error) throw error;
     return (data || []) as StudentLoan[];
@@ -121,9 +123,9 @@ export class StudentLoanService {
     const supabase = getStudentLoanSupabase();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
-      .from('student_loans')
-      .select('*')
-      .eq('id', loanId)
+      .from("student_loans")
+      .select("*")
+      .eq("id", loanId)
       .single();
 
     if (error) return null;
@@ -133,13 +135,16 @@ export class StudentLoanService {
   /**
    * Update a student loan
    */
-  async updateStudentLoan(loanId: string, updates: Partial<StudentLoan>): Promise<StudentLoan> {
+  async updateStudentLoan(
+    loanId: string,
+    updates: Partial<StudentLoan>,
+  ): Promise<StudentLoan> {
     const supabase = getStudentLoanSupabase();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
-      .from('student_loans')
+      .from("student_loans")
       .update(updates)
-      .eq('id', loanId)
+      .eq("id", loanId)
       .select()
       .single();
 
@@ -154,9 +159,9 @@ export class StudentLoanService {
     const supabase = getStudentLoanSupabase();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
-      .from('student_loans')
+      .from("student_loans")
       .delete()
-      .eq('id', loanId);
+      .eq("id", loanId);
 
     if (error) throw error;
   }
@@ -166,29 +171,38 @@ export class StudentLoanService {
    */
   async analyzeLoans(userId: string): Promise<StudentLoanAnalysisResponse> {
     const loans = await this.getStudentLoans(userId);
-    const totalBalance = loans.reduce((sum, loan) => sum + (loan.balance || 0), 0);
-    
+    const totalBalance = loans.reduce(
+      (sum, loan) => sum + (loan.balance || 0),
+      0,
+    );
+
     return {
       loans,
       total_balance: totalBalance,
-      recommendations: ['Review repayment options', 'Check for forgiveness eligibility'],
-      risk_assessment: 'moderate'
+      recommendations: [
+        "Review repayment options",
+        "Check for forgiveness eligibility",
+      ],
+      risk_assessment: "moderate",
     };
   }
 
   /**
    * Get strategy recommendations
    */
-  async getStrategyRecommendations(loanId: string): Promise<StrategyRecommendation[]> {
-    return [{
-      strategy_id: 'strat_1',
-      strategy_name: 'Income-Driven Repayment',
-      confidence: 0.85,
-      rationale: 'Based on loan type and balance'
-    }];
+  async getStrategyRecommendations(
+    loanId: string,
+  ): Promise<StrategyRecommendation[]> {
+    return [
+      {
+        strategy_id: "strat_1",
+        strategy_name: "Income-Driven Repayment",
+        confidence: 0.85,
+        rationale: "Based on loan type and balance",
+      },
+    ];
   }
 }
 
 export const studentLoanService = new StudentLoanService();
 export default studentLoanService;
-

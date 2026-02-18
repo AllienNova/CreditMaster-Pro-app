@@ -5,8 +5,8 @@
  * POST /api/marketplace/products - Create a new product (admin only)
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { marketplaceService, type ProductFilters } from '@/lib/marketplace';
+import { NextRequest, NextResponse } from "next/server";
+import { marketplaceService, type ProductFilters } from "@/lib/marketplace";
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,28 +15,28 @@ export async function GET(request: NextRequest) {
     // Parse filters from query params
     const filters: ProductFilters = {};
 
-    const category = searchParams.get('category');
+    const category = searchParams.get("category");
     if (category) filters.category = category;
 
-    const minPrice = searchParams.get('minPrice');
+    const minPrice = searchParams.get("minPrice");
     if (minPrice) filters.minPrice = parseFloat(minPrice);
 
-    const maxPrice = searchParams.get('maxPrice');
+    const maxPrice = searchParams.get("maxPrice");
     if (maxPrice) filters.maxPrice = parseFloat(maxPrice);
 
-    const minRating = searchParams.get('minRating');
+    const minRating = searchParams.get("minRating");
     if (minRating) filters.minRating = parseFloat(minRating);
 
-    const providerId = searchParams.get('providerId');
+    const providerId = searchParams.get("providerId");
     if (providerId) filters.providerId = providerId;
 
-    const search = searchParams.get('search');
+    const search = searchParams.get("search");
     if (search) filters.search = search;
 
     // Check if featured products requested
-    const featured = searchParams.get('featured');
-    if (featured === 'true') {
-      const limit = parseInt(searchParams.get('limit') || '6');
+    const featured = searchParams.get("featured");
+    if (featured === "true") {
+      const limit = parseInt(searchParams.get("limit") || "6");
       const products = await marketplaceService.getFeaturedProducts(limit);
       return NextResponse.json({
         success: true,
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
 
     // Get filtered products
     const products = await marketplaceService.getProducts(
-      Object.keys(filters).length > 0 ? filters : undefined
+      Object.keys(filters).length > 0 ? filters : undefined,
     );
 
     return NextResponse.json({
@@ -62,14 +62,14 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching products:', error);
+    console.error("Error fetching products:", error);
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to fetch products',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to fetch products",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -81,20 +81,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: 'Product creation not implemented',
-        message: 'Contact admin to add products',
+        error: "Product creation not implemented",
+        message: "Contact admin to add products",
       },
-      { status: 501 }
+      { status: 501 },
     );
   } catch (error) {
-    console.error('Error creating product:', error);
+    console.error("Error creating product:", error);
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to create product',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to create product",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

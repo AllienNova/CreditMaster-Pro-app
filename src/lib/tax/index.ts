@@ -16,10 +16,10 @@
  */
 
 // Types
-export * from './types';
+export * from "./types";
 
 // Services
-export * from './services';
+export * from "./services";
 
 // Document Processing
-export * from './documents';
+export * from "./documents";

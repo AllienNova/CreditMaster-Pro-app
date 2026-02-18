@@ -12,24 +12,24 @@
  * with in-memory buffer for batch writes.
  */
 
-import { supabaseAdmin } from '@/lib/supabase/server';
+import { supabaseAdmin } from "@/lib/supabase/server";
 
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'critical';
+export type LogLevel = "debug" | "info" | "warn" | "error" | "critical";
 
-export type EventType = 
-  | 'ai_request'
-  | 'ai_response'
-  | 'auth_success'
-  | 'auth_failure'
-  | 'permission_denied'
-  | 'rate_limit_exceeded'
-  | 'input_validation_failed'
-  | 'output_validation_failed'
-  | 'pii_detected'
-  | 'harmful_content_detected'
-  | 'cost_limit_exceeded'
-  | 'api_error'
-  | 'system_error';
+export type EventType =
+  | "ai_request"
+  | "ai_response"
+  | "auth_success"
+  | "auth_failure"
+  | "permission_denied"
+  | "rate_limit_exceeded"
+  | "input_validation_failed"
+  | "output_validation_failed"
+  | "pii_detected"
+  | "harmful_content_detected"
+  | "cost_limit_exceeded"
+  | "api_error"
+  | "system_error";
 
 export interface LogEntry {
   id: string;
@@ -54,7 +54,7 @@ export interface LogEntry {
 }
 
 export interface AIInteractionLog extends LogEntry {
-  eventType: 'ai_request' | 'ai_response';
+  eventType: "ai_request" | "ai_response";
   model: string;
   prompt?: string;
   response?: string;
@@ -69,14 +69,14 @@ export interface AIInteractionLog extends LogEntry {
 }
 
 export interface SecurityEventLog extends LogEntry {
-  eventType: 
-    | 'auth_failure'
-    | 'permission_denied'
-    | 'rate_limit_exceeded'
-    | 'input_validation_failed'
-    | 'harmful_content_detected';
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  action: 'blocked' | 'allowed' | 'flagged';
+  eventType:
+    | "auth_failure"
+    | "permission_denied"
+    | "rate_limit_exceeded"
+    | "input_validation_failed"
+    | "harmful_content_detected";
+  severity: "low" | "medium" | "high" | "critical";
+  action: "blocked" | "allowed" | "flagged";
 }
 
 /**
@@ -116,7 +116,7 @@ class LogStore {
     if (this.writeBuffer.length === 0) return;
 
     const batch = this.writeBuffer.splice(0, this.FLUSH_BATCH_SIZE);
-    const rows = batch.map(entry => ({
+    const rows = batch.map((entry) => ({
       id: entry.id,
       created_at: entry.timestamp.toISOString(),
       level: entry.level,
@@ -137,7 +137,7 @@ class LogStore {
     }));
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabaseAdmin.from as any)('audit_logs')
+    (supabaseAdmin.from as any)("audit_logs")
       .insert(rows)
       .then(() => {})
       .catch(() => {
@@ -154,7 +154,7 @@ class LogStore {
   }
 
   query(filter: Partial<LogEntry>): LogEntry[] {
-    return this.logs.filter(log => {
+    return this.logs.filter((log) => {
       for (const [key, value] of Object.entries(filter)) {
         if (value !== undefined && log[key as keyof LogEntry] !== value) {
           return false;
@@ -188,16 +188,18 @@ class LogStore {
   }): Promise<LogEntry[]> {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let query = (supabaseAdmin.from as any)('audit_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
+      let query = (supabaseAdmin.from as any)("audit_logs")
+        .select("*")
+        .order("created_at", { ascending: false })
         .limit(filter.limit ?? 100);
 
-      if (filter.userId) query = query.eq('user_id', filter.userId);
-      if (filter.eventType) query = query.eq('event_type', filter.eventType);
-      if (filter.level) query = query.eq('level', filter.level);
-      if (filter.startDate) query = query.gte('created_at', filter.startDate.toISOString());
-      if (filter.endDate) query = query.lte('created_at', filter.endDate.toISOString());
+      if (filter.userId) query = query.eq("user_id", filter.userId);
+      if (filter.eventType) query = query.eq("event_type", filter.eventType);
+      if (filter.level) query = query.eq("level", filter.level);
+      if (filter.startDate)
+        query = query.gte("created_at", filter.startDate.toISOString());
+      if (filter.endDate)
+        query = query.lte("created_at", filter.endDate.toISOString());
 
       const { data } = await query;
       if (!data) return [];
@@ -218,7 +220,7 @@ class LogStore {
         cost: row.cost ? Number(row.cost) : undefined,
         tokens: row.tokens ?? undefined,
         model: row.model ?? undefined,
-        error: row.error as LogEntry['error'],
+        error: row.error as LogEntry["error"],
       }));
     } catch {
       return [];
@@ -242,7 +244,7 @@ export function createLogEntry(
   level: LogLevel,
   eventType: EventType,
   message: string,
-  metadata?: Record<string, any>
+  metadata?: Record<string, any>,
 ): LogEntry {
   return {
     id: generateLogId(),
@@ -279,13 +281,18 @@ export function logAIInteraction(data: {
   const entry: AIInteractionLog = {
     id: generateLogId(),
     timestamp: new Date(),
-    level: 'info',
-    eventType: 'ai_request',
-    message: data.model ? `AI request to ${data.model}` : `Action: ${data.action || 'unknown'}`,
+    level: "info",
+    eventType: "ai_request",
+    message: data.model
+      ? `AI request to ${data.model}`
+      : `Action: ${data.action || "unknown"}`,
     userId: data.userId,
-    model: data.model || 'api_action',
+    model: data.model || "api_action",
     prompt: (data.prompt || JSON.stringify(data.input || {})).substring(0, 500),
-    response: (data.response || JSON.stringify(data.output || {})).substring(0, 500),
+    response: (data.response || JSON.stringify(data.output || {})).substring(
+      0,
+      500,
+    ),
     tokens: data.tokens || 0,
     cost: data.cost || 0,
     duration: data.duration || 0,
@@ -306,37 +313,45 @@ export function logAIInteraction(data: {
  * Supports both eventType and type (alias used by API routes)
  */
 export function logSecurityEvent(data: {
-  eventType?: SecurityEventLog['eventType'];
-  type?: string;  // Alias for eventType, used by API routes
+  eventType?: SecurityEventLog["eventType"];
+  type?: string; // Alias for eventType, used by API routes
   message: string;
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  action?: 'blocked' | 'allowed' | 'flagged';
+  severity: "low" | "medium" | "high" | "critical";
+  action?: "blocked" | "allowed" | "flagged";
   userId?: string;
   ipAddress?: string;
   metadata?: Record<string, any>;
 }): void {
   // Support both eventType and type (alias)
-  const eventType = data.eventType || (data.type as SecurityEventLog['eventType']) || 'input_validation_failed';
+  const eventType =
+    data.eventType ||
+    (data.type as SecurityEventLog["eventType"]) ||
+    "input_validation_failed";
 
   const entry: SecurityEventLog = {
     id: generateLogId(),
     timestamp: new Date(),
-    level: data.severity === 'critical' ? 'critical' :
-           data.severity === 'high' ? 'error' :
-           data.severity === 'medium' ? 'warn' : 'info',
+    level:
+      data.severity === "critical"
+        ? "critical"
+        : data.severity === "high"
+          ? "error"
+          : data.severity === "medium"
+            ? "warn"
+            : "info",
     eventType: eventType,
     message: data.message,
     userId: data.userId,
     ipAddress: data.ipAddress,
     severity: data.severity,
-    action: data.action || 'flagged',
+    action: data.action || "flagged",
     metadata: data.metadata,
   };
 
   logStore.add(entry);
 
   // In production, send critical events to alerting system
-  if (data.severity === 'critical') {
+  if (data.severity === "critical") {
     // sendAlert(entry);
   }
 }
@@ -355,11 +370,11 @@ export function logAuthEvent(data: {
   const entry: LogEntry = {
     id: generateLogId(),
     timestamp: new Date(),
-    level: data.success ? 'info' : 'warn',
-    eventType: data.success ? 'auth_success' : 'auth_failure',
-    message: data.success 
+    level: data.success ? "info" : "warn",
+    eventType: data.success ? "auth_success" : "auth_failure",
+    message: data.success
       ? `Authentication successful for ${data.email || data.userId}`
-      : `Authentication failed: ${data.reason || 'Unknown'}`,
+      : `Authentication failed: ${data.reason || "Unknown"}`,
     userId: data.userId,
     ipAddress: data.ipAddress,
     userAgent: data.userAgent,
@@ -368,23 +383,26 @@ export function logAuthEvent(data: {
       reason: data.reason,
     },
   };
-  
+
   logStore.add(entry);
 }
 
 /**
  * Log error
  */
-export function logError(error: Error, context?: {
-  userId?: string;
-  eventType?: EventType;
-  metadata?: Record<string, any>;
-}): void {
+export function logError(
+  error: Error,
+  context?: {
+    userId?: string;
+    eventType?: EventType;
+    metadata?: Record<string, any>;
+  },
+): void {
   const entry: LogEntry = {
     id: generateLogId(),
     timestamp: new Date(),
-    level: 'error',
-    eventType: context?.eventType || 'system_error',
+    level: "error",
+    eventType: context?.eventType || "system_error",
     message: error.message,
     userId: context?.userId,
     metadata: context?.metadata,
@@ -394,7 +412,7 @@ export function logError(error: Error, context?: {
       stack: error.stack,
     },
   };
-  
+
   logStore.add(entry);
 }
 
@@ -402,15 +420,18 @@ export function logError(error: Error, context?: {
  * Log info message
  */
 export function logInfo(message: string, metadata?: Record<string, any>): void {
-  const entry = createLogEntry('info', 'ai_request', message, metadata);
+  const entry = createLogEntry("info", "ai_request", message, metadata);
   logStore.add(entry);
 }
 
 /**
  * Log warning
  */
-export function logWarning(message: string, metadata?: Record<string, any>): void {
-  const entry = createLogEntry('warn', 'ai_request', message, metadata);
+export function logWarning(
+  message: string,
+  metadata?: Record<string, any>,
+): void {
+  const entry = createLogEntry("warn", "ai_request", message, metadata);
   logStore.add(entry);
 }
 
@@ -430,20 +451,20 @@ export function queryLogs(filter: {
     eventType: filter.eventType,
     level: filter.level,
   });
-  
+
   // Filter by date range
   if (filter.startDate) {
-    results = results.filter(log => log.timestamp >= filter.startDate!);
+    results = results.filter((log) => log.timestamp >= filter.startDate!);
   }
   if (filter.endDate) {
-    results = results.filter(log => log.timestamp <= filter.endDate!);
+    results = results.filter((log) => log.timestamp <= filter.endDate!);
   }
-  
+
   // Limit results
   if (filter.limit) {
     results = results.slice(-filter.limit);
   }
-  
+
   return results;
 }
 
@@ -466,16 +487,16 @@ export function getUserLogs(userId: string, limit: number = 100): LogEntry[] {
  */
 export function getSecurityEvents(limit: number = 100): SecurityEventLog[] {
   const securityEventTypes: EventType[] = [
-    'auth_failure',
-    'permission_denied',
-    'rate_limit_exceeded',
-    'input_validation_failed',
-    'harmful_content_detected',
+    "auth_failure",
+    "permission_denied",
+    "rate_limit_exceeded",
+    "input_validation_failed",
+    "harmful_content_detected",
   ];
-  
+
   const logs = logStore.getRecent(limit);
-  return logs.filter(log => 
-    securityEventTypes.includes(log.eventType)
+  return logs.filter((log) =>
+    securityEventTypes.includes(log.eventType),
   ) as SecurityEventLog[];
 }
 
@@ -483,9 +504,9 @@ export function getSecurityEvents(limit: number = 100): SecurityEventLog[] {
  * Get AI interaction logs
  */
 export function getAIInteractionLogs(limit: number = 100): AIInteractionLog[] {
-  return queryLogs({ 
-    eventType: 'ai_request', 
-    limit 
+  return queryLogs({
+    eventType: "ai_request",
+    limit,
   }) as AIInteractionLog[];
 }
 
@@ -499,14 +520,12 @@ export function getUsageStats(userId?: string): {
   avgDuration: number;
   modelUsage: Record<string, number>;
 } {
-  const logs = userId 
-    ? getUserLogs(userId, 10000)
-    : getRecentLogs(10000);
-  
-  const aiLogs = logs.filter(log => 
-    log.eventType === 'ai_request'
+  const logs = userId ? getUserLogs(userId, 10000) : getRecentLogs(10000);
+
+  const aiLogs = logs.filter(
+    (log) => log.eventType === "ai_request",
   ) as AIInteractionLog[];
-  
+
   const stats = {
     totalRequests: aiLogs.length,
     totalCost: 0,
@@ -514,21 +533,21 @@ export function getUsageStats(userId?: string): {
     avgDuration: 0,
     modelUsage: {} as Record<string, number>,
   };
-  
+
   let totalDuration = 0;
-  
+
   for (const log of aiLogs) {
     stats.totalCost += log.cost || 0;
     stats.totalTokens += log.tokens || 0;
     totalDuration += log.duration || 0;
-    
+
     if (log.model) {
       stats.modelUsage[log.model] = (stats.modelUsage[log.model] || 0) + 1;
     }
   }
-  
+
   stats.avgDuration = aiLogs.length > 0 ? totalDuration / aiLogs.length : 0;
-  
+
   return stats;
 }
 
@@ -544,7 +563,7 @@ export function exportLogs(filter?: {
     ...filter,
     limit: 100000, // Export all matching logs
   });
-  
+
   return JSON.stringify(logs, null, 2);
 }
 
@@ -570,7 +589,7 @@ export function logAPIRequest(
   path: string,
   userId: string,
   statusCode: number,
-  metadata?: Record<string, any>
+  metadata?: Record<string, any>,
 ): void {
   logInfo(`API ${method} ${path} - ${statusCode}`, {
     userId,

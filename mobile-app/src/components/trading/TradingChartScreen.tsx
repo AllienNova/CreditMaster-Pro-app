@@ -3,7 +3,7 @@
  * Full-featured mobile trading interface with candlestick charts and indicators
  */
 
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import {
   View,
   Text,
@@ -12,17 +12,17 @@ import {
   TouchableOpacity,
   Dimensions,
   ActivityIndicator,
-} from 'react-native';
-import { CandlestickChart, type OHLCV } from '../charts/CandlestickChart';
-import { RSIChart, type RSIData } from '../charts/RSIChart';
-import { MACDChart, type MACDData } from '../charts/MACDChart';
-import { lightTheme as theme } from '../../constants/theme';
+} from "react-native";
+import { CandlestickChart, type OHLCV } from "../charts/CandlestickChart";
+import { RSIChart, type RSIData } from "../charts/RSIChart";
+import { MACDChart, type MACDData } from "../charts/MACDChart";
+import { lightTheme as theme } from "../../constants/theme";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type Timeframe = '1m' | '5m' | '15m' | '1h' | '4h' | '1d' | '1w';
+export type Timeframe = "1m" | "5m" | "15m" | "1h" | "4h" | "1d" | "1w";
 
 export interface TradingChartScreenProps {
   symbol: string;
@@ -43,16 +43,16 @@ interface IndicatorState {
 // CONSTANTS
 // ============================================================================
 
-const { width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get("window");
 
 const TIMEFRAMES: { value: Timeframe; label: string }[] = [
-  { value: '1m', label: '1m' },
-  { value: '5m', label: '5m' },
-  { value: '15m', label: '15m' },
-  { value: '1h', label: '1H' },
-  { value: '4h', label: '4H' },
-  { value: '1d', label: '1D' },
-  { value: '1w', label: '1W' },
+  { value: "1m", label: "1m" },
+  { value: "5m", label: "5m" },
+  { value: "15m", label: "15m" },
+  { value: "1h", label: "1H" },
+  { value: "4h", label: "4H" },
+  { value: "1d", label: "1D" },
+  { value: "1w", label: "1W" },
 ];
 
 // ============================================================================
@@ -63,8 +63,12 @@ function generateMockOHLCV(symbol: string, count: number = 100): OHLCV[] {
   const data: OHLCV[] = [];
   const now = Date.now();
   const interval = 60000 * 60; // 1 hour
-  
-  let price = symbol.includes('BTC') ? 45000 : symbol.includes('ETH') ? 2500 : 175;
+
+  let price = symbol.includes("BTC")
+    ? 45000
+    : symbol.includes("ETH")
+      ? 2500
+      : 175;
   const volatility = price * 0.015;
 
   for (let i = count - 1; i >= 0; i--) {
@@ -97,7 +101,7 @@ function calculateRSI(data: OHLCV[], period: number = 14): RSIData[] {
       const avgGain = gains.slice(-period).reduce((a, b) => a + b, 0) / period;
       const avgLoss = losses.slice(-period).reduce((a, b) => a + b, 0) / period;
       const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
-      const rsi = 100 - (100 / (1 + rs));
+      const rsi = 100 - 100 / (1 + rs);
 
       result.push({ timestamp: data[i].timestamp, value: rsi });
     }
@@ -108,8 +112,10 @@ function calculateRSI(data: OHLCV[], period: number = 14): RSIData[] {
 
 function calculateMACD(data: OHLCV[]): MACDData[] {
   const result: MACDData[] = [];
-  const fast = 12, slow = 26, signal = 9;
-  
+  const fast = 12,
+    slow = 26,
+    signal = 9;
+
   // Calculate EMAs
   const calcEMA = (prices: number[], period: number): number[] => {
     const ema: number[] = [];
@@ -123,7 +129,7 @@ function calculateMACD(data: OHLCV[]): MACDData[] {
     return ema;
   };
 
-  const closes = data.map(d => d.close);
+  const closes = data.map((d) => d.close);
   const fastEMA = calcEMA(closes, fast);
   const slowEMA = calcEMA(closes, slow);
 
@@ -163,7 +169,7 @@ export function TradingChartScreen({
   onSell,
 }: TradingChartScreenProps) {
   // State
-  const [timeframe, setTimeframe] = useState<Timeframe>('1h');
+  const [timeframe, setTimeframe] = useState<Timeframe>("1h");
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<OHLCV[]>([]);
   const [selectedCandle, setSelectedCandle] = useState<OHLCV | null>(null);
@@ -196,18 +202,27 @@ export function TradingChartScreen({
     const prev = data.length > 1 ? data[data.length - 2] : latest;
     const change = latest.close - prev.close;
     const changePct = (change / prev.close) * 100;
-    return { price: latest.close, change, changePct, high: latest.high, low: latest.low };
+    return {
+      price: latest.close,
+      change,
+      changePct,
+      high: latest.high,
+      low: latest.low,
+    };
   }, [data]);
 
   // Handle timeframe change
-  const handleTimeframeChange = useCallback((tf: Timeframe) => {
-    setTimeframe(tf);
-    onTimeframeChange?.(tf);
-  }, [onTimeframeChange]);
+  const handleTimeframeChange = useCallback(
+    (tf: Timeframe) => {
+      setTimeframe(tf);
+      onTimeframeChange?.(tf);
+    },
+    [onTimeframeChange],
+  );
 
   // Toggle indicator
   const toggleIndicator = useCallback((key: keyof IndicatorState) => {
-    setIndicators(prev => ({ ...prev, [key]: !prev[key] }));
+    setIndicators((prev) => ({ ...prev, [key]: !prev[key] }));
   }, []);
 
   // Chart height calculation
@@ -223,15 +238,23 @@ export function TradingChartScreen({
           {priceInfo && (
             <View style={styles.priceContainer}>
               <Text style={styles.price}>${priceInfo.price.toFixed(2)}</Text>
-              <View style={[
-                styles.changeBadge,
-                { backgroundColor: priceInfo.change >= 0 ? '#26a69a20' : '#ef535020' }
-              ]}>
-                <Text style={[
-                  styles.changeText,
-                  { color: priceInfo.change >= 0 ? '#26a69a' : '#ef5350' }
-                ]}>
-                  {priceInfo.change >= 0 ? '+' : ''}{priceInfo.changePct.toFixed(2)}%
+              <View
+                style={[
+                  styles.changeBadge,
+                  {
+                    backgroundColor:
+                      priceInfo.change >= 0 ? "#26a69a20" : "#ef535020",
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.changeText,
+                    { color: priceInfo.change >= 0 ? "#26a69a" : "#ef5350" },
+                  ]}
+                >
+                  {priceInfo.change >= 0 ? "+" : ""}
+                  {priceInfo.changePct.toFixed(2)}%
                 </Text>
               </View>
             </View>
@@ -242,8 +265,10 @@ export function TradingChartScreen({
         {selectedCandle && (
           <View style={styles.ohlcvContainer}>
             <Text style={styles.ohlcvText}>
-              O: {selectedCandle.open.toFixed(2)}  H: {selectedCandle.high.toFixed(2)}  
-              L: {selectedCandle.low.toFixed(2)}  C: {selectedCandle.close.toFixed(2)}
+              O: {selectedCandle.open.toFixed(2)} H:{" "}
+              {selectedCandle.high.toFixed(2)}
+              L: {selectedCandle.low.toFixed(2)} C:{" "}
+              {selectedCandle.close.toFixed(2)}
             </Text>
           </View>
         )}
@@ -252,19 +277,21 @@ export function TradingChartScreen({
       {/* Timeframe Selector */}
       <View style={styles.timeframeContainer}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {TIMEFRAMES.map(tf => (
+          {TIMEFRAMES.map((tf) => (
             <TouchableOpacity
               key={tf.value}
               onPress={() => handleTimeframeChange(tf.value)}
               style={[
                 styles.timeframeButton,
-                timeframe === tf.value && styles.timeframeButtonActive
+                timeframe === tf.value && styles.timeframeButtonActive,
               ]}
             >
-              <Text style={[
-                styles.timeframeText,
-                timeframe === tf.value && styles.timeframeTextActive
-              ]}>
+              <Text
+                style={[
+                  styles.timeframeText,
+                  timeframe === tf.value && styles.timeframeTextActive,
+                ]}
+              >
                 {tf.label}
               </Text>
             </TouchableOpacity>
@@ -290,14 +317,18 @@ export function TradingChartScreen({
                 showVolume={true}
                 onCandleSelect={setSelectedCandle}
                 indicators={{
-                  sma: indicators.sma ? [
-                    { period: 20, color: '#2962FF' },
-                    { period: 50, color: '#FF6D00' },
-                  ] : undefined,
-                  ema: indicators.ema ? [
-                    { period: 12, color: '#00BCD4' },
-                    { period: 26, color: '#E91E63' },
-                  ] : undefined,
+                  sma: indicators.sma
+                    ? [
+                        { period: 20, color: "#2962FF" },
+                        { period: 50, color: "#FF6D00" },
+                      ]
+                    : undefined,
+                  ema: indicators.ema
+                    ? [
+                        { period: 12, color: "#00BCD4" },
+                        { period: 26, color: "#E91E63" },
+                      ]
+                    : undefined,
                 }}
               />
             </View>
@@ -337,23 +368,27 @@ export function TradingChartScreen({
       <View style={styles.indicatorToggleContainer}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {[
-            { key: 'sma', label: 'SMA' },
-            { key: 'ema', label: 'EMA' },
-            { key: 'rsi', label: 'RSI' },
-            { key: 'macd', label: 'MACD' },
+            { key: "sma", label: "SMA" },
+            { key: "ema", label: "EMA" },
+            { key: "rsi", label: "RSI" },
+            { key: "macd", label: "MACD" },
           ].map(({ key, label }) => (
             <TouchableOpacity
               key={key}
               onPress={() => toggleIndicator(key as keyof IndicatorState)}
               style={[
                 styles.indicatorToggle,
-                indicators[key as keyof IndicatorState] && styles.indicatorToggleActive
+                indicators[key as keyof IndicatorState] &&
+                  styles.indicatorToggleActive,
               ]}
             >
-              <Text style={[
-                styles.indicatorToggleText,
-                indicators[key as keyof IndicatorState] && styles.indicatorToggleTextActive
-              ]}>
+              <Text
+                style={[
+                  styles.indicatorToggleText,
+                  indicators[key as keyof IndicatorState] &&
+                    styles.indicatorToggleTextActive,
+                ]}
+              >
                 {label}
               </Text>
             </TouchableOpacity>
@@ -369,7 +404,9 @@ export function TradingChartScreen({
         >
           <Text style={styles.tradeButtonText}>BUY</Text>
           {priceInfo && (
-            <Text style={styles.tradeButtonPrice}>${priceInfo.price.toFixed(2)}</Text>
+            <Text style={styles.tradeButtonPrice}>
+              ${priceInfo.price.toFixed(2)}
+            </Text>
           )}
         </TouchableOpacity>
         <TouchableOpacity
@@ -378,7 +415,9 @@ export function TradingChartScreen({
         >
           <Text style={styles.tradeButtonText}>SELL</Text>
           {priceInfo && (
-            <Text style={styles.tradeButtonPrice}>${priceInfo.price.toFixed(2)}</Text>
+            <Text style={styles.tradeButtonPrice}>
+              ${priceInfo.price.toFixed(2)}
+            </Text>
           )}
         </TouchableOpacity>
       </View>
@@ -403,23 +442,23 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.border,
   },
   symbolContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   symbol: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
   },
   priceContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   price: {
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   changeBadge: {
@@ -429,7 +468,7 @@ const styles = StyleSheet.create({
   },
   changeText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   ohlcvContainer: {
     marginTop: 4,
@@ -437,7 +476,7 @@ const styles = StyleSheet.create({
   ohlcvText: {
     fontSize: 11,
     color: theme.colors.textSecondary,
-    fontFamily: 'monospace',
+    fontFamily: "monospace",
   },
   timeframeContainer: {
     paddingVertical: 8,
@@ -457,19 +496,19 @@ const styles = StyleSheet.create({
   },
   timeframeText: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: "500",
     color: theme.colors.textSecondary,
   },
   timeframeTextActive: {
-    color: '#fff',
+    color: "#fff",
   },
   chartContainer: {
     flex: 1,
   },
   loadingContainer: {
     height: 300,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     marginTop: 12,
@@ -485,7 +524,7 @@ const styles = StyleSheet.create({
   },
   indicatorLabel: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.textSecondary,
   },
   indicatorToggleContainer: {
@@ -509,14 +548,14 @@ const styles = StyleSheet.create({
   },
   indicatorToggleText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: "500",
     color: theme.colors.textSecondary,
   },
   indicatorToggleTextActive: {
-    color: '#fff',
+    color: "#fff",
   },
   tradeButtonContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingHorizontal: 16,
     paddingVertical: 12,
     gap: 12,
@@ -527,22 +566,22 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   buyButton: {
-    backgroundColor: '#26a69a',
+    backgroundColor: "#26a69a",
   },
   sellButton: {
-    backgroundColor: '#ef5350',
+    backgroundColor: "#ef5350",
   },
   tradeButtonText: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: "700",
+    color: "#fff",
   },
   tradeButtonPrice: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.8)',
+    color: "rgba(255,255,255,0.8)",
     marginTop: 2,
   },
 });

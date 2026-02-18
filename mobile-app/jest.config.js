@@ -9,43 +9,43 @@
 module.exports = {
   // Replicate jest-expo preset inline (skip broken setup.js)
   haste: {
-    defaultPlatform: 'ios',
-    platforms: ['android', 'ios', 'native'],
+    defaultPlatform: "ios",
+    platforms: ["android", "ios", "native"],
   },
   transform: {
-    '\\.[jt]sx?$': [
-      'babel-jest',
+    "\\.[jt]sx?$": [
+      "babel-jest",
       {
         caller: {
-          name: 'metro',
-          bundler: 'metro',
-          platform: 'ios',
+          name: "metro",
+          bundler: "metro",
+          platform: "ios",
         },
       },
     ],
-    '^.+\\.(bmp|gif|jpg|jpeg|mp4|png|psd|svg|webp|ttf|otf|m4v|mov|mp4|mpeg|mpg|webm|aac|aiff|caf|m4a|mp3|wav|html|pdf|obj)$':
-      require.resolve('jest-expo/src/preset/assetFileTransformer.js'),
+    "^.+\\.(bmp|gif|jpg|jpeg|mp4|png|psd|svg|webp|ttf|otf|m4v|mov|mp4|mpeg|mpg|webm|aac|aiff|caf|m4a|mp3|wav|html|pdf|obj)$":
+      require.resolve("jest-expo/src/preset/assetFileTransformer.js"),
   },
   globals: {
     __DEV__: true,
   },
   setupFiles: [
-    '<rootDir>/jest.globals.js',
-    require.resolve('react-native/jest/setup.js'),
+    "<rootDir>/jest.globals.js",
+    require.resolve("react-native/jest/setup.js"),
   ],
-  testEnvironment: 'node',
-  roots: ['<rootDir>/src'],
+  testEnvironment: "node",
+  roots: ["<rootDir>/src"],
   testMatch: [
-    '**/__tests__/**/*.test.ts',
-    '**/__tests__/**/*.test.tsx',
-    '**/*.test.ts',
-    '**/*.test.tsx',
+    "**/__tests__/**/*.test.ts",
+    "**/__tests__/**/*.test.tsx",
+    "**/*.test.ts",
+    "**/*.test.tsx",
   ],
   collectCoverageFrom: [
-    'src/**/*.{ts,tsx}',
-    '!src/**/*.d.ts',
-    '!src/**/index.ts',
-    '!src/**/__tests__/**',
+    "src/**/*.{ts,tsx}",
+    "!src/**/*.d.ts",
+    "!src/**/index.ts",
+    "!src/**/__tests__/**",
   ],
   coverageThreshold: {
     global: {
@@ -55,53 +55,52 @@ module.exports = {
       statements: 14,
     },
     // Enforce high coverage on files that have dedicated test suites
-    './src/store/dashboardStore.ts': {
+    "./src/store/dashboardStore.ts": {
       branches: 90,
       functions: 90,
       lines: 90,
       statements: 90,
     },
-    './src/store/notificationStore.ts': {
+    "./src/store/notificationStore.ts": {
       branches: 80,
       functions: 90,
       lines: 90,
       statements: 90,
     },
-    './src/store/syncStore.ts': {
+    "./src/store/syncStore.ts": {
       branches: 50,
       functions: 90,
       lines: 70,
       statements: 70,
     },
-    './src/store/creditStore.ts': {
+    "./src/store/creditStore.ts": {
       branches: 40,
       functions: 50,
       lines: 60,
       statements: 60,
     },
-    './src/store/disputeStore.ts': {
+    "./src/store/disputeStore.ts": {
       branches: 40,
       functions: 60,
       lines: 60,
       statements: 60,
     },
-    './src/services/notifications/pushNotificationService.ts': {
+    "./src/services/notifications/pushNotificationService.ts": {
       branches: 65,
       functions: 80,
       lines: 90,
       statements: 90,
     },
   },
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1',
+    "^@/(.*)$": "<rootDir>/src/$1",
   },
   transformIgnorePatterns: [
-    'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|zustand)',
+    "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|zustand)",
   ],
-  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+  moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
   clearMocks: true,
   resetMocks: true,
   restoreMocks: true,
 };
-

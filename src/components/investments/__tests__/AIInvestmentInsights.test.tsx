@@ -4,50 +4,67 @@
  * Tests for the Investments AI Insights component
  */
 
-import React from 'react';
-import { screen, waitFor, fireEvent } from '@testing-library/react';
-import { renderWithProviders, setupUser } from '@/__tests__/utils/test-utils';
-import AIInvestmentInsights from '../AIInvestmentInsights';
-import { server } from '@/__tests__/mocks/server';
-import { rest } from 'msw';
+import React from "react";
+import { screen, waitFor, fireEvent } from "@testing-library/react";
+import { renderWithProviders, setupUser } from "@/__tests__/utils/test-utils";
+import AIInvestmentInsights from "../AIInvestmentInsights";
+import { server } from "@/__tests__/mocks/server";
+import { rest } from "msw";
 
-describe('AIInvestmentInsights', () => {
-  describe('Component Rendering', () => {
-    it('should render loading state initially', () => {
+describe("AIInvestmentInsights", () => {
+  describe("Component Rendering", () => {
+    it("should render loading state initially", () => {
       renderWithProviders(<AIInvestmentInsights />);
 
       // Check for loading animation class
-      const loadingElements = document.querySelectorAll('.animate-pulse');
+      const loadingElements = document.querySelectorAll(".animate-pulse");
       expect(loadingElements.length).toBeGreaterThan(0);
     });
 
-    it('should render investment insights after data loads', async () => {
+    it("should render investment insights after data loads", async () => {
       renderWithProviders(<AIInvestmentInsights />);
 
-      await waitFor(() => {
-        expect(screen.getByText(/AI Investment Intelligence/i)).toBeInTheDocument();
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          expect(
+            screen.getByText(/AI Investment Intelligence/i),
+          ).toBeInTheDocument();
+        },
+        { timeout: 3000 },
+      );
 
-      expect(screen.getByText(/Powered by advanced market analysis/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Powered by advanced market analysis/i),
+      ).toBeInTheDocument();
     });
 
-    it('should display portfolio health score', async () => {
+    it("should display portfolio health score", async () => {
       renderWithProviders(<AIInvestmentInsights />);
 
-      await waitFor(() => {
-        expect(screen.getByText(/Portfolio Health Score/i)).toBeInTheDocument();
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          expect(
+            screen.getByText(/Portfolio Health Score/i),
+          ).toBeInTheDocument();
+        },
+        { timeout: 3000 },
+      );
 
       // Score of 78/100 from mock data
       expect(screen.getByText(/78\/100/)).toBeInTheDocument();
     });
 
-    it('should display investment recommendations', async () => {
+    it("should display investment recommendations", async () => {
       renderWithProviders(<AIInvestmentInsights />);
 
-      await waitFor(() => {
-        expect(screen.getByText(/AI Investment Recommendations/i)).toBeInTheDocument();
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          expect(
+            screen.getByText(/AI Investment Recommendations/i),
+          ).toBeInTheDocument();
+        },
+        { timeout: 3000 },
+      );
 
       // Check for stock symbol
       expect(screen.getByText(/AAPL/i)).toBeInTheDocument();
@@ -64,12 +81,17 @@ describe('AIInvestmentInsights', () => {
       expect(screen.getByText(/\+11\.1%/i)).toBeInTheDocument();
     });
 
-    it('should display risk analysis', async () => {
+    it("should display risk analysis", async () => {
       renderWithProviders(<AIInvestmentInsights />);
 
-      await waitFor(() => {
-        expect(screen.getByText(/Portfolio Risk Analysis/i)).toBeInTheDocument();
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          expect(
+            screen.getByText(/Portfolio Risk Analysis/i),
+          ).toBeInTheDocument();
+        },
+        { timeout: 3000 },
+      );
 
       // Check for overall risk - use getAllByText since "medium" appears multiple times
       const mediumElements = screen.getAllByText(/medium/i);
@@ -82,12 +104,17 @@ describe('AIInvestmentInsights', () => {
       expect(screen.getByText(/Market Volatility/i)).toBeInTheDocument();
     });
 
-    it('should display diversification suggestions', async () => {
+    it("should display diversification suggestions", async () => {
       renderWithProviders(<AIInvestmentInsights />);
 
-      await waitFor(() => {
-        expect(screen.getByText(/Diversification Suggestions/i)).toBeInTheDocument();
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          expect(
+            screen.getByText(/Diversification Suggestions/i),
+          ).toBeInTheDocument();
+        },
+        { timeout: 3000 },
+      );
 
       // Check for asset class - "Bonds" from mock data - use getAllByText since it appears multiple times
       const bondsElements = screen.getAllByText(/Bonds/i);
@@ -101,12 +128,15 @@ describe('AIInvestmentInsights', () => {
       expect(recommendedElements.length).toBeGreaterThan(0);
     });
 
-    it('should display market predictions', async () => {
+    it("should display market predictions", async () => {
       renderWithProviders(<AIInvestmentInsights />);
 
-      await waitFor(() => {
-        expect(screen.getByText(/Market Predictions/i)).toBeInTheDocument();
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          expect(screen.getByText(/Market Predictions/i)).toBeInTheDocument();
+        },
+        { timeout: 3000 },
+      );
 
       // Check for timeframe - "3 Months" from mock data
       expect(screen.getByText(/3 Months/i)).toBeInTheDocument();
@@ -119,12 +149,17 @@ describe('AIInvestmentInsights', () => {
       expect(confidenceElements.length).toBeGreaterThan(0);
     });
 
-    it('should display performance forecasts', async () => {
+    it("should display performance forecasts", async () => {
       renderWithProviders(<AIInvestmentInsights />);
 
-      await waitFor(() => {
-        expect(screen.getByText(/Performance Forecasts/i)).toBeInTheDocument();
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          expect(
+            screen.getByText(/Performance Forecasts/i),
+          ).toBeInTheDocument();
+        },
+        { timeout: 3000 },
+      );
 
       // Check for projected value - 105000 from mock data displays as "$105.0K"
       expect(screen.getByText(/\$105\.0K/i)).toBeInTheDocument();
@@ -134,20 +169,27 @@ describe('AIInvestmentInsights', () => {
     });
   });
 
-  describe('User Interactions', () => {
-    it('should toggle expand/collapse', async () => {
+  describe("User Interactions", () => {
+    it("should toggle expand/collapse", async () => {
       renderWithProviders(<AIInvestmentInsights />);
 
-      await waitFor(() => {
-        expect(screen.getByText(/AI Investment Intelligence/i)).toBeInTheDocument();
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          expect(
+            screen.getByText(/AI Investment Intelligence/i),
+          ).toBeInTheDocument();
+        },
+        { timeout: 3000 },
+      );
 
       // Content should be visible initially
       expect(screen.getByText(/Portfolio Health Score/i)).toBeInTheDocument();
 
       // Find the toggle button by its SVG icon
-      const toggleButtons = screen.getAllByRole('button');
-      const toggleButton = toggleButtons.find(btn => btn.querySelector('svg'));
+      const toggleButtons = screen.getAllByRole("button");
+      const toggleButton = toggleButtons.find((btn) =>
+        btn.querySelector("svg"),
+      );
 
       // Use fireEvent instead of user.click to avoid MouseEvent polyfill issues
       if (toggleButton) {
@@ -155,17 +197,24 @@ describe('AIInvestmentInsights', () => {
 
         // Content should be hidden after click
         await waitFor(() => {
-          expect(screen.queryByText(/Portfolio Health Score/i)).not.toBeInTheDocument();
+          expect(
+            screen.queryByText(/Portfolio Health Score/i),
+          ).not.toBeInTheDocument();
         });
       }
     });
 
-    it('should display risk level badges', async () => {
+    it("should display risk level badges", async () => {
       renderWithProviders(<AIInvestmentInsights />);
 
-      await waitFor(() => {
-        expect(screen.getByText(/AI Investment Recommendations/i)).toBeInTheDocument();
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          expect(
+            screen.getByText(/AI Investment Recommendations/i),
+          ).toBeInTheDocument();
+        },
+        { timeout: 3000 },
+      );
 
       // Check for risk level (medium from mock data) - use getAllByText since it appears multiple times
       const mediumElements = screen.getAllByText(/medium/i);
@@ -173,58 +222,77 @@ describe('AIInvestmentInsights', () => {
     });
   });
 
-  describe('Error Handling', () => {
-    it('should display error state when API fails', async () => {
+  describe("Error Handling", () => {
+    it("should display error state when API fails", async () => {
       server.use(
-        rest.get('http://localhost/api/financial/investments/ai-insights', (req, res, ctx) => {
-          return res(
-            ctx.status(500),
-            ctx.json({ error: 'Failed to fetch investment insights' })
-          );
-        })
+        rest.get(
+          "http://localhost/api/financial/investments/ai-insights",
+          (req, res, ctx) => {
+            return res(
+              ctx.status(500),
+              ctx.json({ error: "Failed to fetch investment insights" }),
+            );
+          },
+        ),
       );
 
       renderWithProviders(<AIInvestmentInsights />);
 
-      await waitFor(() => {
-        // Component shows error message
-        expect(screen.getByText(/Error loading AI insights/i)).toBeInTheDocument();
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          // Component shows error message
+          expect(
+            screen.getByText(/Error loading AI insights/i),
+          ).toBeInTheDocument();
+        },
+        { timeout: 3000 },
+      );
 
       // Check for error message
-      expect(screen.getByText(/Failed to fetch AI investment insights/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Failed to fetch AI investment insights/i),
+      ).toBeInTheDocument();
 
       // Check for retry button
-      expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /retry/i }),
+      ).toBeInTheDocument();
     });
 
-    it('should allow retry after error', async () => {
+    it("should allow retry after error", async () => {
       server.use(
-        rest.get('http://localhost/api/financial/investments/ai-insights', (req, res, ctx) => {
-          return res(
-            ctx.status(500),
-            ctx.json({ error: 'Failed to fetch investment insights' })
-          );
-        })
+        rest.get(
+          "http://localhost/api/financial/investments/ai-insights",
+          (req, res, ctx) => {
+            return res(
+              ctx.status(500),
+              ctx.json({ error: "Failed to fetch investment insights" }),
+            );
+          },
+        ),
       );
 
       renderWithProviders(<AIInvestmentInsights />);
 
-      await waitFor(() => {
-        expect(screen.getByText(/Error loading AI insights/i)).toBeInTheDocument();
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          expect(
+            screen.getByText(/Error loading AI insights/i),
+          ).toBeInTheDocument();
+        },
+        { timeout: 3000 },
+      );
 
-      const retryButton = screen.getByRole('button', { name: /retry/i });
+      const retryButton = screen.getByRole("button", { name: /retry/i });
 
       // Use fireEvent instead of user.click
       fireEvent.click(retryButton);
 
       // Loading state should appear
       await waitFor(() => {
-        const loadingElements = document.querySelectorAll('.animate-pulse');
+        const loadingElements = document.querySelectorAll(".animate-pulse");
         expect(loadingElements.length).toBeGreaterThan(0);
       });
     });
   });
 });
-

@@ -1,6 +1,6 @@
 /**
  * Pagination Utilities
- * 
+ *
  * Provides pagination helpers for API responses and database queries
  */
 
@@ -12,7 +12,7 @@ export interface PaginationParams {
   page?: number;
   limit?: number;
   sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
+  sortOrder?: "asc" | "desc";
 }
 
 export interface PaginatedResponse<T> {
@@ -32,7 +32,7 @@ export interface PaginationMeta {
   limit: number;
   offset: number;
   sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
+  sortOrder?: "asc" | "desc";
 }
 
 // ============================================================================
@@ -40,26 +40,30 @@ export interface PaginationMeta {
 // ============================================================================
 
 export class PaginationUtils {
-  
   /**
    * Parse pagination parameters from query string
    */
   static parseParams(searchParams: URLSearchParams): PaginationMeta {
-    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
-    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '10', 10)));
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const limit = Math.min(
+      100,
+      Math.max(1, parseInt(searchParams.get("limit") || "10", 10)),
+    );
     const offset = (page - 1) * limit;
-    const sortBy = searchParams.get('sort_by') || undefined;
-    const sortOrder = (searchParams.get('sort_order') || 'desc') as 'asc' | 'desc';
-    
+    const sortBy = searchParams.get("sort_by") || undefined;
+    const sortOrder = (searchParams.get("sort_order") || "desc") as
+      | "asc"
+      | "desc";
+
     return {
       page,
       limit,
       offset,
       sortBy,
-      sortOrder
+      sortOrder,
     };
   }
-  
+
   /**
    * Create paginated response
    */
@@ -67,10 +71,10 @@ export class PaginationUtils {
     data: T[],
     total: number,
     page: number,
-    limit: number
+    limit: number,
   ): PaginatedResponse<T> {
     const totalPages = Math.ceil(total / limit);
-    
+
     return {
       data,
       pagination: {
@@ -79,42 +83,45 @@ export class PaginationUtils {
         total,
         totalPages,
         hasNext: page < totalPages,
-        hasPrev: page > 1
-      }
+        hasPrev: page > 1,
+      },
     };
   }
-  
+
   /**
    * Paginate array in memory
    */
   static paginateArray<T>(
     array: T[],
     page: number,
-    limit: number
+    limit: number,
   ): PaginatedResponse<T> {
     const offset = (page - 1) * limit;
     const data = array.slice(offset, offset + limit);
-    
+
     return this.createResponse(data, array.length, page, limit);
   }
-  
+
   /**
    * Get Supabase pagination query
    */
-  static getSupabaseRange(page: number, limit: number): { from: number; to: number } {
+  static getSupabaseRange(
+    page: number,
+    limit: number,
+  ): { from: number; to: number } {
     const from = (page - 1) * limit;
     const to = from + limit - 1;
-    
+
     return { from, to };
   }
-  
+
   /**
    * Calculate offset for SQL queries
    */
   static calculateOffset(page: number, limit: number): number {
     return (page - 1) * limit;
   }
-  
+
   /**
    * Validate pagination parameters
    */
@@ -123,25 +130,28 @@ export class PaginationUtils {
     errors: string[];
   } {
     const errors: string[] = [];
-    
+
     if (params.page !== undefined && params.page < 1) {
-      errors.push('Page must be >= 1');
+      errors.push("Page must be >= 1");
     }
-    
-    if (params.limit !== undefined && (params.limit < 1 || params.limit > 100)) {
-      errors.push('Limit must be between 1 and 100');
+
+    if (
+      params.limit !== undefined &&
+      (params.limit < 1 || params.limit > 100)
+    ) {
+      errors.push("Limit must be between 1 and 100");
     }
-    
-    if (params.sortOrder && !['asc', 'desc'].includes(params.sortOrder)) {
+
+    if (params.sortOrder && !["asc", "desc"].includes(params.sortOrder)) {
       errors.push('Sort order must be "asc" or "desc"');
     }
-    
+
     return {
       valid: errors.length === 0,
-      errors
+      errors,
     };
   }
-  
+
   /**
    * Get pagination links for API responses
    */
@@ -149,7 +159,7 @@ export class PaginationUtils {
     baseUrl: string,
     page: number,
     limit: number,
-    totalPages: number
+    totalPages: number,
   ): {
     first: string;
     prev: string | null;
@@ -157,29 +167,29 @@ export class PaginationUtils {
     last: string;
   } {
     const createUrl = (p: number) => `${baseUrl}?page=${p}&limit=${limit}`;
-    
+
     return {
       first: createUrl(1),
       prev: page > 1 ? createUrl(page - 1) : null,
       next: page < totalPages ? createUrl(page + 1) : null,
-      last: createUrl(totalPages)
+      last: createUrl(totalPages),
     };
   }
-  
+
   /**
    * Create cursor-based pagination token
    */
   static createCursor(id: string, timestamp: string): string {
-    return Buffer.from(`${id}:${timestamp}`).toString('base64');
+    return Buffer.from(`${id}:${timestamp}`).toString("base64");
   }
-  
+
   /**
    * Parse cursor-based pagination token
    */
   static parseCursor(cursor: string): { id: string; timestamp: string } | null {
     try {
-      const decoded = Buffer.from(cursor, 'base64').toString('utf-8');
-      const [id, timestamp] = decoded.split(':');
+      const decoded = Buffer.from(cursor, "base64").toString("utf-8");
+      const [id, timestamp] = decoded.split(":");
       return { id, timestamp };
     } catch {
       return null;
@@ -188,4 +198,3 @@ export class PaginationUtils {
 }
 
 export default PaginationUtils;
-

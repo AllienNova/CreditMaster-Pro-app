@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { backupCodesService } from '@/lib/auth/backup-codes';
-import { useAuth } from '@/hooks/useAuth';
+import { useState, useEffect, useCallback } from "react";
+import { backupCodesService } from "@/lib/auth/backup-codes";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function BackupCodesManagement() {
   const { user } = useAuth();
@@ -35,7 +35,7 @@ export default function BackupCodesManagement() {
 
     if (remainingCount > 0) {
       if (
-        !confirm('This will invalidate your existing backup codes. Continue?')
+        !confirm("This will invalidate your existing backup codes. Continue?")
       ) {
         return;
       }
@@ -49,18 +49,18 @@ export default function BackupCodesManagement() {
       const response = await backupCodesService.generateBackupCodes(user.id);
 
       if (!response.success || !response.codes) {
-        throw new Error(response.error || 'Failed to generate backup codes');
+        throw new Error(response.error || "Failed to generate backup codes");
       }
 
       setBackupCodes(response.codes);
       setShowCodes(true);
       setSuccess(
-        'Backup codes generated successfully! Save them in a secure place.'
+        "Backup codes generated successfully! Save them in a secure place.",
       );
       await loadRemainingCount();
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : 'Failed to generate backup codes'
+        err instanceof Error ? err.message : "Failed to generate backup codes",
       );
     } finally {
       setLoading(false);
@@ -68,12 +68,12 @@ export default function BackupCodesManagement() {
   };
 
   const handleDownloadCodes = () => {
-    const text = backupCodes.join('\n');
-    const blob = new Blob([text], { type: 'text/plain' });
+    const text = backupCodes.join("\n");
+    const blob = new Blob([text], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = 'Fynvita-pro-backup-codes.txt';
+    a.download = "Fynvita-pro-backup-codes.txt";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -81,13 +81,13 @@ export default function BackupCodesManagement() {
   };
 
   const handleCopyToClipboard = () => {
-    const text = backupCodes.join('\n');
+    const text = backupCodes.join("\n");
     navigator.clipboard.writeText(text);
-    setSuccess('Backup codes copied to clipboard!');
+    setSuccess("Backup codes copied to clipboard!");
   };
 
   const handlePrint = () => {
-    const printWindow = window.open('', '', 'width=600,height=400');
+    const printWindow = window.open("", "", "width=600,height=400");
     if (printWindow) {
       printWindow.document.write(`
         <html>
@@ -108,7 +108,7 @@ export default function BackupCodesManagement() {
               <strong>Important:</strong> Store these codes in a secure place. Each code can only be used once.
             </div>
             <div class="codes">
-              ${backupCodes.map((code) => `<div class="code">${code}</div>`).join('')}
+              ${backupCodes.map((code) => `<div class="code">${code}</div>`).join("")}
             </div>
           </body>
         </html>
@@ -121,7 +121,9 @@ export default function BackupCodesManagement() {
   if (!user) {
     return (
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
-        <p className="text-gray-600 dark:text-slate-300">Please log in to manage backup codes.</p>
+        <p className="text-gray-600 dark:text-slate-300">
+          Please log in to manage backup codes.
+        </p>
       </div>
     );
   }
@@ -130,7 +132,9 @@ export default function BackupCodesManagement() {
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Backup Codes</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Backup Codes
+          </h3>
           <p className="text-sm text-gray-600 dark:text-slate-300 mt-1">
             Use backup codes to access your account if you lose your 2FA device
           </p>
@@ -173,8 +177,8 @@ export default function BackupCodesManagement() {
           {remainingCount === 0 ? (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
               <p className="text-sm text-yellow-800">
-                You don't have any backup codes. Generate them now to ensure
-                you can recover your account.
+                You don't have any backup codes. Generate them now to ensure you
+                can recover your account.
               </p>
             </div>
           ) : (
@@ -191,10 +195,10 @@ export default function BackupCodesManagement() {
             className="w-full bg-gradient-to-r from-blue-600 to-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading
-              ? 'Generating...'
+              ? "Generating..."
               : remainingCount > 0
-                ? 'Regenerate Backup Codes'
-                : 'Generate Backup Codes'}
+                ? "Regenerate Backup Codes"
+                : "Generate Backup Codes"}
           </button>
         </div>
       ) : (

@@ -3,7 +3,7 @@
  * Portfolio risk monitoring, settings, and kill switch controls
  */
 
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -15,12 +15,12 @@ import {
   Alert,
   Switch,
   TextInput,
-} from 'react-native';
-import { Stack } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { lightTheme as theme } from '../../src/constants/theme';
-import { useTradingStore } from '../../src/store/tradingStore';
-import type { RiskLevel } from '../../src/services/api/trading';
+} from "react-native";
+import { Stack } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { lightTheme as theme } from "../../src/constants/theme";
+import { useTradingStore } from "../../src/store/tradingStore";
+import type { RiskLevel } from "../../src/services/api/trading";
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -28,14 +28,14 @@ import type { RiskLevel } from '../../src/services/api/trading';
 
 const getRiskLevelColor = (level: RiskLevel): string => {
   switch (level) {
-    case 'low':
-      return '#10B981';
-    case 'medium':
-      return '#F59E0B';
-    case 'high':
-      return '#F97316';
-    case 'critical':
-      return '#EF4444';
+    case "low":
+      return "#10B981";
+    case "medium":
+      return "#F59E0B";
+    case "high":
+      return "#F97316";
+    case "critical":
+      return "#EF4444";
     default:
       return theme.colors.textSecondary;
   }
@@ -46,8 +46,8 @@ const formatPercent = (value: number): string => {
 };
 
 const formatCurrency = (amount: number): string => {
-  const sign = amount >= 0 ? '+' : '';
-  return `${sign}$${Math.abs(amount).toLocaleString('en-US', {
+  const sign = amount >= 0 ? "+" : "";
+  return `${sign}$${Math.abs(amount).toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
@@ -74,10 +74,17 @@ function RiskGauge({
     <View style={styles.gaugeContainer}>
       <View style={styles.gaugeHeader}>
         <Text style={styles.gaugeLabel}>{label}</Text>
-        <Text style={[styles.gaugeValue, { color }]}>{formatPercent(value)}</Text>
+        <Text style={[styles.gaugeValue, { color }]}>
+          {formatPercent(value)}
+        </Text>
       </View>
       <View style={styles.gaugeTrack}>
-        <View style={[styles.gaugeFill, { width: `${percentage}%`, backgroundColor: color }]} />
+        <View
+          style={[
+            styles.gaugeFill,
+            { width: `${percentage}%`, backgroundColor: color },
+          ]}
+        />
       </View>
       <Text style={styles.gaugeMax}>Max: {formatPercent(maxValue)}</Text>
     </View>
@@ -103,7 +110,9 @@ function MetricCard({
         <Ionicons name={icon} size={20} color={theme.colors.textSecondary} />
         <Text style={styles.metricTitle}>{title}</Text>
       </View>
-      <Text style={[styles.metricValue, valueColor ? { color: valueColor } : null]}>
+      <Text
+        style={[styles.metricValue, valueColor ? { color: valueColor } : null]}
+      >
         {value}
       </Text>
       {subtitle && <Text style={styles.metricSubtitle}>{subtitle}</Text>}
@@ -158,7 +167,8 @@ function SettingRow({
       ) : (
         <TouchableOpacity onPress={() => setEditing(true)}>
           <Text style={styles.settingValue}>
-            {(value * 100).toFixed(1)}{suffix}
+            {(value * 100).toFixed(1)}
+            {suffix}
           </Text>
         </TouchableOpacity>
       )}
@@ -180,52 +190,59 @@ function KillSwitchCard({
   const handleToggle = () => {
     if (active) {
       Alert.alert(
-        'Deactivate Kill Switch',
-        'Are you sure you want to resume trading?',
+        "Deactivate Kill Switch",
+        "Are you sure you want to resume trading?",
         [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Resume Trading', onPress: onDeactivate },
-        ]
+          { text: "Cancel", style: "cancel" },
+          { text: "Resume Trading", onPress: onDeactivate },
+        ],
       );
     } else {
       Alert.alert(
-        'Activate Kill Switch',
-        'This will immediately cancel all orders and prevent new trades. Continue?',
+        "Activate Kill Switch",
+        "This will immediately cancel all orders and prevent new trades. Continue?",
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: "Cancel", style: "cancel" },
           {
-            text: 'Activate',
-            style: 'destructive',
+            text: "Activate",
+            style: "destructive",
             onPress: onActivate,
           },
-        ]
+        ],
       );
     }
   };
 
   return (
-    <View style={[styles.killSwitchCard, active && styles.killSwitchCardActive]}>
+    <View
+      style={[styles.killSwitchCard, active && styles.killSwitchCardActive]}
+    >
       <View style={styles.killSwitchHeader}>
         <View style={styles.killSwitchTitle}>
           <Ionicons
-            name={active ? 'warning' : 'shield-checkmark'}
+            name={active ? "warning" : "shield-checkmark"}
             size={24}
-            color={active ? '#EF4444' : '#10B981'}
+            color={active ? "#EF4444" : "#10B981"}
           />
           <View>
-            <Text style={[styles.killSwitchLabel, active && styles.killSwitchLabelActive]}>
+            <Text
+              style={[
+                styles.killSwitchLabel,
+                active && styles.killSwitchLabelActive,
+              ]}
+            >
               Kill Switch
             </Text>
             <Text style={styles.killSwitchStatus}>
-              {active ? 'ACTIVE - Trading Halted' : 'Inactive'}
+              {active ? "ACTIVE - Trading Halted" : "Inactive"}
             </Text>
           </View>
         </View>
         <Switch
           value={active}
           onValueChange={handleToggle}
-          trackColor={{ false: '#E5E7EB', true: '#FECACA' }}
-          thumbColor={active ? '#EF4444' : '#9CA3AF'}
+          trackColor={{ false: "#E5E7EB", true: "#FECACA" }}
+          thumbColor={active ? "#EF4444" : "#9CA3AF"}
         />
       </View>
       {active && reason && (
@@ -266,7 +283,7 @@ export default function RiskScreen() {
   }, [fetchRiskMetrics, fetchRiskSettings]);
 
   const handleActivateKillSwitch = () => {
-    activateKillSwitch('Manual activation');
+    activateKillSwitch("Manual activation");
   };
 
   const handleSettingChange = (key: string, value: number) => {
@@ -276,7 +293,7 @@ export default function RiskScreen() {
   if (isLoading && !riskMetrics) {
     return (
       <View style={styles.container}>
-        <Stack.Screen options={{ title: 'Risk Management' }} />
+        <Stack.Screen options={{ title: "Risk Management" }} />
         <View style={styles.centerContent}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={styles.loadingText}>Loading risk data...</Text>
@@ -289,14 +306,14 @@ export default function RiskScreen() {
     <View style={styles.container}>
       <Stack.Screen
         options={{
-          title: 'Risk Management',
+          title: "Risk Management",
           headerRight: () => (
             <TouchableOpacity
               style={styles.headerButton}
               onPress={() => setShowSettings(!showSettings)}
             >
               <Ionicons
-                name={showSettings ? 'analytics' : 'settings-outline'}
+                name={showSettings ? "analytics" : "settings-outline"}
                 size={24}
                 color={theme.colors.primary}
               />
@@ -318,7 +335,9 @@ export default function RiskScreen() {
           <View
             style={[
               styles.riskBanner,
-              { backgroundColor: `${getRiskLevelColor(riskMetrics.riskLevel)}15` },
+              {
+                backgroundColor: `${getRiskLevelColor(riskMetrics.riskLevel)}15`,
+              },
             ]}
           >
             <View style={styles.riskBannerContent}>
@@ -348,7 +367,7 @@ export default function RiskScreen() {
               <View style={styles.tradingBlockedBanner}>
                 <Ionicons name="alert-circle" size={16} color="#EF4444" />
                 <Text style={styles.tradingBlockedText}>
-                  {riskMetrics.blockReasons[0] || 'Trading restricted'}
+                  {riskMetrics.blockReasons[0] || "Trading restricted"}
                 </Text>
               </View>
             )}
@@ -374,7 +393,7 @@ export default function RiskScreen() {
                     label="Max Portfolio Heat"
                     value={riskSettings.maxHeat}
                     suffix="%"
-                    onChangeValue={(v) => handleSettingChange('maxHeat', v)}
+                    onChangeValue={(v) => handleSettingChange("maxHeat", v)}
                     min={0.01}
                     max={0.2}
                     step={0.01}
@@ -383,7 +402,9 @@ export default function RiskScreen() {
                     label="Max Position Size"
                     value={riskSettings.maxPositionSize}
                     suffix="%"
-                    onChangeValue={(v) => handleSettingChange('maxPositionSize', v)}
+                    onChangeValue={(v) =>
+                      handleSettingChange("maxPositionSize", v)
+                    }
                     min={0.01}
                     max={0.5}
                     step={0.01}
@@ -392,7 +413,9 @@ export default function RiskScreen() {
                     label="Max Daily Loss"
                     value={riskSettings.maxDailyLoss}
                     suffix="%"
-                    onChangeValue={(v) => handleSettingChange('maxDailyLoss', v)}
+                    onChangeValue={(v) =>
+                      handleSettingChange("maxDailyLoss", v)
+                    }
                     min={0.01}
                     max={0.1}
                     step={0.005}
@@ -401,7 +424,7 @@ export default function RiskScreen() {
                     label="Max Drawdown"
                     value={riskSettings.maxDrawdown}
                     suffix="%"
-                    onChangeValue={(v) => handleSettingChange('maxDrawdown', v)}
+                    onChangeValue={(v) => handleSettingChange("maxDrawdown", v)}
                     min={0.05}
                     max={0.25}
                     step={0.01}
@@ -410,7 +433,9 @@ export default function RiskScreen() {
                     label="Max Gross Exposure"
                     value={riskSettings.maxGrossExposure}
                     suffix="x"
-                    onChangeValue={(v) => handleSettingChange('maxGrossExposure', v)}
+                    onChangeValue={(v) =>
+                      handleSettingChange("maxGrossExposure", v)
+                    }
                     min={0.5}
                     max={4}
                     step={0.1}
@@ -430,8 +455,11 @@ export default function RiskScreen() {
                   maxValue={riskMetrics.maxHeat}
                   label="Portfolio Heat"
                   color={
-                    riskMetrics.heatUtilization > 0.8 ? '#EF4444' :
-                    riskMetrics.heatUtilization > 0.6 ? '#F59E0B' : '#10B981'
+                    riskMetrics.heatUtilization > 0.8
+                      ? "#EF4444"
+                      : riskMetrics.heatUtilization > 0.6
+                        ? "#F59E0B"
+                        : "#10B981"
                   }
                 />
                 <RiskGauge
@@ -439,8 +467,11 @@ export default function RiskScreen() {
                   maxValue={riskMetrics.maxDrawdown}
                   label="Current Drawdown"
                   color={
-                    riskMetrics.currentDrawdown > 0.08 ? '#EF4444' :
-                    riskMetrics.currentDrawdown > 0.05 ? '#F59E0B' : '#10B981'
+                    riskMetrics.currentDrawdown > 0.08
+                      ? "#EF4444"
+                      : riskMetrics.currentDrawdown > 0.05
+                        ? "#F59E0B"
+                        : "#10B981"
                   }
                 />
               </View>
@@ -454,22 +485,22 @@ export default function RiskScreen() {
                   value={formatCurrency(riskMetrics.dailyPL)}
                   subtitle={formatPercent(riskMetrics.dailyPLPercent)}
                   icon="today-outline"
-                  valueColor={riskMetrics.dailyPL >= 0 ? '#10B981' : '#EF4444'}
+                  valueColor={riskMetrics.dailyPL >= 0 ? "#10B981" : "#EF4444"}
                 />
                 <MetricCard
                   title="Weekly P&L"
                   value={formatCurrency(riskMetrics.weeklyPL)}
                   icon="calendar-outline"
-                  valueColor={riskMetrics.weeklyPL >= 0 ? '#10B981' : '#EF4444'}
+                  valueColor={riskMetrics.weeklyPL >= 0 ? "#10B981" : "#EF4444"}
                 />
                 <MetricCard
                   title="Gross Exposure"
-                  value={`$${riskMetrics.grossExposure.toLocaleString('en-US', { maximumFractionDigits: 0 })}`}
+                  value={`$${riskMetrics.grossExposure.toLocaleString("en-US", { maximumFractionDigits: 0 })}`}
                   icon="expand-outline"
                 />
                 <MetricCard
                   title="Net Exposure"
-                  value={`$${riskMetrics.netExposure.toLocaleString('en-US', { maximumFractionDigits: 0 })}`}
+                  value={`$${riskMetrics.netExposure.toLocaleString("en-US", { maximumFractionDigits: 0 })}`}
                   icon="swap-horizontal-outline"
                 />
                 <MetricCard
@@ -483,8 +514,11 @@ export default function RiskScreen() {
                   subtitle="Position sizing"
                   icon="resize-outline"
                   valueColor={
-                    riskMetrics.drawdownScaleFactor < 0.5 ? '#EF4444' :
-                    riskMetrics.drawdownScaleFactor < 1 ? '#F59E0B' : '#10B981'
+                    riskMetrics.drawdownScaleFactor < 0.5
+                      ? "#EF4444"
+                      : riskMetrics.drawdownScaleFactor < 1
+                        ? "#F59E0B"
+                        : "#10B981"
                   }
                 />
               </View>
@@ -497,14 +531,20 @@ export default function RiskScreen() {
                 <View style={styles.exposureCard}>
                   <View style={styles.exposureRow}>
                     <Text style={styles.exposureLabel}>Long Exposure</Text>
-                    <Text style={[styles.exposureValue, { color: '#10B981' }]}>
-                      ${riskMetrics.longExposure.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                    <Text style={[styles.exposureValue, { color: "#10B981" }]}>
+                      $
+                      {riskMetrics.longExposure.toLocaleString("en-US", {
+                        maximumFractionDigits: 0,
+                      })}
                     </Text>
                   </View>
                   <View style={styles.exposureRow}>
                     <Text style={styles.exposureLabel}>Short Exposure</Text>
-                    <Text style={[styles.exposureValue, { color: '#EF4444' }]}>
-                      ${riskMetrics.shortExposure.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                    <Text style={[styles.exposureValue, { color: "#EF4444" }]}>
+                      $
+                      {riskMetrics.shortExposure.toLocaleString("en-US", {
+                        maximumFractionDigits: 0,
+                      })}
                     </Text>
                   </View>
                   <View style={styles.exposureDivider} />
@@ -515,7 +555,8 @@ export default function RiskScreen() {
                         {riskMetrics.largestPosition.symbol}
                       </Text>
                       <Text style={styles.largestPositionValue}>
-                        {(riskMetrics.largestPosition.percent * 100).toFixed(1)}% of portfolio
+                        {(riskMetrics.largestPosition.percent * 100).toFixed(1)}
+                        % of portfolio
                       </Text>
                     </View>
                   </View>
@@ -550,8 +591,8 @@ const styles = StyleSheet.create({
   },
   centerContent: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     marginTop: 12,
@@ -564,9 +605,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   riskBannerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   riskLevelBadge: {
     paddingHorizontal: 16,
@@ -575,11 +616,11 @@ const styles = StyleSheet.create({
   },
   riskLevelText: {
     fontSize: 14,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
   riskBannerInfo: {
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   riskScoreLabel: {
     fontSize: 12,
@@ -587,20 +628,20 @@ const styles = StyleSheet.create({
   },
   riskScoreValue: {
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   tradingBlockedBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     marginTop: 12,
     padding: 12,
-    backgroundColor: '#FEE2E2',
+    backgroundColor: "#FEE2E2",
     borderRadius: 8,
   },
   tradingBlockedText: {
     fontSize: 13,
-    color: '#DC2626',
+    color: "#DC2626",
     flex: 1,
   },
   killSwitchCard: {
@@ -610,27 +651,27 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   killSwitchCardActive: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: "#FEF2F2",
     borderWidth: 1,
-    borderColor: '#FECACA',
+    borderColor: "#FECACA",
   },
   killSwitchHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   killSwitchTitle: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   killSwitchLabel: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   killSwitchLabelActive: {
-    color: '#DC2626',
+    color: "#DC2626",
   },
   killSwitchStatus: {
     fontSize: 13,
@@ -639,12 +680,12 @@ const styles = StyleSheet.create({
   killSwitchReason: {
     marginTop: 12,
     padding: 12,
-    backgroundColor: '#FECACA',
+    backgroundColor: "#FECACA",
     borderRadius: 8,
   },
   killSwitchReasonText: {
     fontSize: 13,
-    color: '#B91C1C',
+    color: "#B91C1C",
   },
   gaugesSection: {
     gap: 16,
@@ -656,8 +697,8 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   gaugeHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 8,
   },
   gaugeLabel: {
@@ -666,40 +707,40 @@ const styles = StyleSheet.create({
   },
   gaugeValue: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   gaugeTrack: {
     height: 8,
     backgroundColor: theme.colors.border,
     borderRadius: 4,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   gaugeFill: {
-    height: '100%',
+    height: "100%",
     borderRadius: 4,
   },
   gaugeMax: {
     fontSize: 12,
     color: theme.colors.textSecondary,
     marginTop: 4,
-    textAlign: 'right',
+    textAlign: "right",
   },
   metricsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 12,
     marginBottom: 20,
   },
   metricCard: {
     flex: 1,
-    minWidth: '45%',
+    minWidth: "45%",
     backgroundColor: theme.colors.surface,
     borderRadius: 12,
     padding: 16,
   },
   metricHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     marginBottom: 8,
   },
@@ -709,7 +750,7 @@ const styles = StyleSheet.create({
   },
   metricValue: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
   },
   metricSubtitle: {
@@ -722,7 +763,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: 12,
   },
@@ -732,9 +773,9 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   exposureRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 12,
   },
   exposureLabel: {
@@ -743,7 +784,7 @@ const styles = StyleSheet.create({
   },
   exposureValue: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   exposureDivider: {
     height: 1,
@@ -751,11 +792,11 @@ const styles = StyleSheet.create({
     marginVertical: 12,
   },
   largestPosition: {
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   largestPositionSymbol: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   largestPositionValue: {
@@ -771,9 +812,9 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   settingRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
@@ -784,12 +825,12 @@ const styles = StyleSheet.create({
   },
   settingValue: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.primary,
   },
   settingInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   settingInput: {
@@ -798,9 +839,9 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
     borderRadius: 8,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
-    textAlign: 'right',
+    textAlign: "right",
   },
   settingSuffix: {
     fontSize: 14,

@@ -6,9 +6,9 @@
  * PATCH: Update credential name
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { createClient } from "@supabase/supabase-js";
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,19 +18,16 @@ export async function GET(request: NextRequest) {
 
     if (!supabaseUrl || !supabaseKey) {
       return NextResponse.json(
-        { error: 'Server configuration error' },
-        { status: 500 }
+        { error: "Server configuration error" },
+        { status: 500 },
       );
     }
 
     // Get access token from cookies
-    const accessToken = cookieStore.get('sb-access-token')?.value;
+    const accessToken = cookieStore.get("sb-access-token")?.value;
 
     if (!accessToken) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey, {
@@ -42,27 +39,29 @@ export async function GET(request: NextRequest) {
     });
 
     // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser(accessToken);
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser(accessToken);
 
     if (userError || !user) {
-      return NextResponse.json(
-        { error: 'Invalid session' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Invalid session" }, { status: 401 });
     }
 
     // Get all credentials for this user
     const { data: credentials, error: credentialsError } = await supabase
-      .from('webauthn_credentials')
-      .select('id, credential_id, name, type, transports, created_at, last_used_at')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+      .from("webauthn_credentials")
+      .select(
+        "id, credential_id, name, type, transports, created_at, last_used_at",
+      )
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
 
     if (credentialsError) {
       // CredentialsAPI error: Failed to fetch credentials
       return NextResponse.json(
-        { error: 'Failed to fetch credentials' },
-        { status: 500 }
+        { error: "Failed to fetch credentials" },
+        { status: 500 },
       );
     }
 
@@ -81,8 +80,8 @@ export async function GET(request: NextRequest) {
     // CredentialsAPI error: List credentials error
     void _error;
     return NextResponse.json(
-      { error: 'Failed to list credentials' },
-      { status: 500 }
+      { error: "Failed to list credentials" },
+      { status: 500 },
     );
   }
 }
@@ -95,19 +94,16 @@ export async function DELETE(request: NextRequest) {
 
     if (!supabaseUrl || !supabaseKey) {
       return NextResponse.json(
-        { error: 'Server configuration error' },
-        { status: 500 }
+        { error: "Server configuration error" },
+        { status: 500 },
       );
     }
 
     // Get access token from cookies
-    const accessToken = cookieStore.get('sb-access-token')?.value;
+    const accessToken = cookieStore.get("sb-access-token")?.value;
 
     if (!accessToken) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey, {
@@ -119,13 +115,13 @@ export async function DELETE(request: NextRequest) {
     });
 
     // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser(accessToken);
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser(accessToken);
 
     if (userError || !user) {
-      return NextResponse.json(
-        { error: 'Invalid session' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Invalid session" }, { status: 401 });
     }
 
     // Parse credential ID from request
@@ -134,36 +130,36 @@ export async function DELETE(request: NextRequest) {
 
     if (!credentialId) {
       return NextResponse.json(
-        { error: 'Credential ID is required' },
-        { status: 400 }
+        { error: "Credential ID is required" },
+        { status: 400 },
       );
     }
 
     // Delete the credential (only if it belongs to this user)
     const { error: deleteError } = await supabase
-      .from('webauthn_credentials')
+      .from("webauthn_credentials")
       .delete()
-      .eq('credential_id', credentialId)
-      .eq('user_id', user.id);
+      .eq("credential_id", credentialId)
+      .eq("user_id", user.id);
 
     if (deleteError) {
       // CredentialsAPI error: Failed to delete credential
       return NextResponse.json(
-        { error: 'Failed to delete credential' },
-        { status: 500 }
+        { error: "Failed to delete credential" },
+        { status: 500 },
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Credential deleted successfully',
+      message: "Credential deleted successfully",
     });
   } catch (_error) {
     // CredentialsAPI error: Delete credential error
     void _error;
     return NextResponse.json(
-      { error: 'Failed to delete credential' },
-      { status: 500 }
+      { error: "Failed to delete credential" },
+      { status: 500 },
     );
   }
 }
@@ -176,19 +172,16 @@ export async function PATCH(request: NextRequest) {
 
     if (!supabaseUrl || !supabaseKey) {
       return NextResponse.json(
-        { error: 'Server configuration error' },
-        { status: 500 }
+        { error: "Server configuration error" },
+        { status: 500 },
       );
     }
 
     // Get access token from cookies
-    const accessToken = cookieStore.get('sb-access-token')?.value;
+    const accessToken = cookieStore.get("sb-access-token")?.value;
 
     if (!accessToken) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey, {
@@ -200,13 +193,13 @@ export async function PATCH(request: NextRequest) {
     });
 
     // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser(accessToken);
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser(accessToken);
 
     if (userError || !user) {
-      return NextResponse.json(
-        { error: 'Invalid session' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Invalid session" }, { status: 401 });
     }
 
     // Parse request body
@@ -215,25 +208,25 @@ export async function PATCH(request: NextRequest) {
 
     if (!credentialId || !name) {
       return NextResponse.json(
-        { error: 'Credential ID and name are required' },
-        { status: 400 }
+        { error: "Credential ID and name are required" },
+        { status: 400 },
       );
     }
 
     // Update the credential name (only if it belongs to this user)
     const { data: updatedCredential, error: updateError } = await supabase
-      .from('webauthn_credentials')
+      .from("webauthn_credentials")
       .update({ name })
-      .eq('credential_id', credentialId)
-      .eq('user_id', user.id)
+      .eq("credential_id", credentialId)
+      .eq("user_id", user.id)
       .select()
       .single();
 
     if (updateError) {
       // CredentialsAPI error: Failed to update credential
       return NextResponse.json(
-        { error: 'Failed to update credential' },
-        { status: 500 }
+        { error: "Failed to update credential" },
+        { status: 500 },
       );
     }
 
@@ -252,8 +245,8 @@ export async function PATCH(request: NextRequest) {
     // CredentialsAPI error: Update credential error
     void _error;
     return NextResponse.json(
-      { error: 'Failed to update credential' },
-      { status: 500 }
+      { error: "Failed to update credential" },
+      { status: 500 },
     );
   }
 }

@@ -1,20 +1,20 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 
 interface BillingPlan {
   id: string;
   name: string;
   price: number;
-  interval: 'month' | 'year';
+  interval: "month" | "year";
   features: string[];
 }
 
 interface SubscriptionSummary {
   planId: string;
-  status: 'active' | 'trialing' | 'canceled' | 'past_due';
+  status: "active" | "trialing" | "canceled" | "past_due";
   cancelAtPeriodEnd: boolean;
 }
 
@@ -35,7 +35,7 @@ export default function SubscriptionManagement() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push('/auth/login');
+      router.push("/auth/login");
       return;
     }
 
@@ -48,15 +48,15 @@ export default function SubscriptionManagement() {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('/api/payment/billing');
+      const response = await fetch("/api/payment/billing");
       if (!response.ok) {
-        throw new Error('Unable to load plans');
+        throw new Error("Unable to load plans");
       }
       const payload: BillingResponse = await response.json();
       setData(payload);
       setSelectedPlan(payload.subscription.planId);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load plans');
+      setError(err instanceof Error ? err.message : "Failed to load plans");
     } finally {
       setLoading(false);
     }
@@ -67,20 +67,22 @@ export default function SubscriptionManagement() {
       setMutating(true);
       setError(null);
       setMessage(null);
-      const response = await fetch('/api/payment/billing/plan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/payment/billing/plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ planId }),
       });
       if (!response.ok) {
         const payload = await response.json();
-        throw new Error(payload.error || 'Failed to update subscription');
+        throw new Error(payload.error || "Failed to update subscription");
       }
       setSelectedPlan(planId);
-      setMessage('Plan updated successfully.');
+      setMessage("Plan updated successfully.");
       await fetchSubscription();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update subscription');
+      setError(
+        err instanceof Error ? err.message : "Failed to update subscription",
+      );
     } finally {
       setMutating(false);
     }
@@ -91,18 +93,20 @@ export default function SubscriptionManagement() {
       setMutating(true);
       setError(null);
       setMessage(null);
-      const response = await fetch('/api/payment/billing/plan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/payment/billing/plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ cancelSubscription: true }),
       });
       if (!response.ok) {
-        throw new Error('Unable to cancel subscription');
+        throw new Error("Unable to cancel subscription");
       }
-      setMessage('Subscription will end at the close of this billing period.');
+      setMessage("Subscription will end at the close of this billing period.");
       await fetchSubscription();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to cancel subscription');
+      setError(
+        err instanceof Error ? err.message : "Failed to cancel subscription",
+      );
     } finally {
       setMutating(false);
     }
@@ -111,7 +115,9 @@ export default function SubscriptionManagement() {
   if (authLoading || loading || !data) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
-        <div className="text-gray-600 dark:text-slate-300">Loading subscription manager…</div>
+        <div className="text-gray-600 dark:text-slate-300">
+          Loading subscription manager…
+        </div>
       </div>
     );
   }
@@ -120,11 +126,15 @@ export default function SubscriptionManagement() {
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         <header className="space-y-2">
-          <p className="text-sm text-gray-500 dark:text-slate-400 uppercase tracking-wide">Billing</p>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Manage subscription</h1>
+          <p className="text-sm text-gray-500 dark:text-slate-400 uppercase tracking-wide">
+            Billing
+          </p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Manage subscription
+          </h1>
           <p className="text-gray-600 dark:text-slate-300">
-            Choose the plan that best matches your workload. Changes take effect immediately and
-            sync to Stripe.
+            Choose the plan that best matches your workload. Changes take effect
+            immediately and sync to Stripe.
           </p>
         </header>
 
@@ -147,14 +157,20 @@ export default function SubscriptionManagement() {
               <div
                 key={plan.id}
                 className={`rounded-xl border ${
-                  isActive ? 'border-blue-500 shadow-lg' : 'border-gray-200 dark:border-slate-700 shadow'
+                  isActive
+                    ? "border-blue-500 shadow-lg"
+                    : "border-gray-200 dark:border-slate-700 shadow"
                 } bg-white dark:bg-slate-800 p-6 flex flex-col`}
               >
                 <div className="space-y-2">
-                  <p className="text-sm uppercase text-gray-500 dark:text-slate-400 tracking-wide">{plan.name}</p>
+                  <p className="text-sm uppercase text-gray-500 dark:text-slate-400 tracking-wide">
+                    {plan.name}
+                  </p>
                   <p className="text-3xl font-bold text-gray-900 dark:text-white">
                     ${plan.price}
-                    <span className="text-base font-normal text-gray-500 dark:text-slate-400">/{plan.interval}</span>
+                    <span className="text-base font-normal text-gray-500 dark:text-slate-400">
+                      /{plan.interval}
+                    </span>
                   </p>
                   <ul className="space-y-2 text-sm text-gray-700 dark:text-slate-200 mt-4">
                     {plan.features.map((feature) => (
@@ -172,11 +188,11 @@ export default function SubscriptionManagement() {
                     disabled={mutating || isActive}
                     className={`w-full px-4 py-2 rounded-lg ${
                       isActive
-                        ? 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 cursor-not-allowed'
-                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                        ? "bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 cursor-not-allowed"
+                        : "bg-blue-600 text-white hover:bg-blue-700"
                     } transition-colors`}
                   >
-                    {isActive ? 'Current plan' : 'Switch to this plan'}
+                    {isActive ? "Current plan" : "Switch to this plan"}
                   </button>
                 </div>
               </div>
@@ -186,10 +202,12 @@ export default function SubscriptionManagement() {
 
         <section className="bg-white dark:bg-slate-800 rounded-xl shadow p-6 space-y-4">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Need to pause?</h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              Need to pause?
+            </h2>
             <p className="text-gray-600 dark:text-slate-300">
-              Canceling will keep your access until the end of the billing cycle. You can reactivate
-              anytime.
+              Canceling will keep your access until the end of the billing
+              cycle. You can reactivate anytime.
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3">
@@ -203,7 +221,7 @@ export default function SubscriptionManagement() {
             </button>
             <button
               type="button"
-              onClick={() => router.push('/billing')}
+              onClick={() => router.push("/billing")}
               className="px-4 py-2 rounded-lg bg-gray-900 text-white hover:bg-gray-800 transition-colors"
             >
               Back to billing
@@ -214,4 +232,3 @@ export default function SubscriptionManagement() {
     </div>
   );
 }
-

@@ -48,7 +48,7 @@ export interface ConnectorConfig {
 // Health & Status
 // =============================================================================
 
-export type HealthStatus = 'healthy' | 'degraded' | 'down' | 'unknown';
+export type HealthStatus = "healthy" | "degraded" | "down" | "unknown";
 
 export interface ConnectorHealth {
   provider: string;
@@ -120,7 +120,9 @@ export interface BatchExecutionOptions extends ExecutionOptions {
 // Base Connector Interface
 // =============================================================================
 
-export abstract class BaseConnector<TConfig extends ConnectorConfig = ConnectorConfig> {
+export abstract class BaseConnector<
+  TConfig extends ConnectorConfig = ConnectorConfig,
+> {
   abstract readonly name: string;
   abstract readonly type: ConnectorType;
 
@@ -152,7 +154,9 @@ export abstract class BaseConnector<TConfig extends ConnectorConfig = ConnectorC
   }
 
   supportsRegion(region: string): boolean {
-    return this.config.regions.includes(region) || this.config.regions.includes('*');
+    return (
+      this.config.regions.includes(region) || this.config.regions.includes("*")
+    );
   }
 
   hasCapability(capability: string): boolean {
@@ -165,53 +169,53 @@ export abstract class BaseConnector<TConfig extends ConnectorConfig = ConnectorC
 // =============================================================================
 
 export type ConnectorType =
-  | 'banking'
-  | 'market_data'
-  | 'insurance'
-  | 'credit'
-  | 'identity'
-  | 'payments'
-  | 'affiliate';
+  | "banking"
+  | "market_data"
+  | "insurance"
+  | "credit"
+  | "identity"
+  | "payments"
+  | "affiliate";
 
 export type BankingCapability =
-  | 'accounts'
-  | 'transactions'
-  | 'balances'
-  | 'liabilities'
-  | 'investments'
-  | 'identity'
-  | 'income'
-  | 'assets'
-  | 'recurring';
+  | "accounts"
+  | "transactions"
+  | "balances"
+  | "liabilities"
+  | "investments"
+  | "identity"
+  | "income"
+  | "assets"
+  | "recurring";
 
 export type MarketDataCapability =
-  | 'quotes'
-  | 'historical'
-  | 'fundamentals'
-  | 'news'
-  | 'sentiment'
-  | 'insider'
-  | 'earnings'
-  | 'filings'
-  | 'crypto'
-  | 'forex'
-  | 'options';
+  | "quotes"
+  | "historical"
+  | "fundamentals"
+  | "news"
+  | "sentiment"
+  | "insider"
+  | "earnings"
+  | "filings"
+  | "crypto"
+  | "forex"
+  | "options";
 
 export type InsuranceCapability =
-  | 'policy_import'
-  | 'coverage_analysis'
-  | 'quotes'
-  | 'claims';
+  | "policy_import"
+  | "coverage_analysis"
+  | "quotes"
+  | "claims";
 
 export type PaymentCapability =
-  | 'card_payments'
-  | 'bank_payments'
-  | 'ach'
-  | 'sepa'
-  | 'instant'
-  | 'recurring'
-  | 'refunds'
-  | 'payouts';
+  | "card_payments"
+  | "bank_payments"
+  | "ach"
+  | "sepa"
+  | "instant"
+  | "recurring"
+  | "refunds"
+  | "payouts";
 
 // =============================================================================
 // Region Definitions
@@ -219,52 +223,83 @@ export type PaymentCapability =
 
 export const REGIONS = {
   // North America
-  US: 'US',
-  CA: 'CA',
-  MX: 'MX',
+  US: "US",
+  CA: "CA",
+  MX: "MX",
 
   // Europe
-  GB: 'GB',
-  DE: 'DE',
-  FR: 'FR',
-  ES: 'ES',
-  IT: 'IT',
-  NL: 'NL',
-  BE: 'BE',
-  AT: 'AT',
-  CH: 'CH',
-  IE: 'IE',
-  PT: 'PT',
-  PL: 'PL',
-  SE: 'SE',
-  NO: 'NO',
-  DK: 'DK',
-  FI: 'FI',
+  GB: "GB",
+  DE: "DE",
+  FR: "FR",
+  ES: "ES",
+  IT: "IT",
+  NL: "NL",
+  BE: "BE",
+  AT: "AT",
+  CH: "CH",
+  IE: "IE",
+  PT: "PT",
+  PL: "PL",
+  SE: "SE",
+  NO: "NO",
+  DK: "DK",
+  FI: "FI",
 
   // Asia-Pacific
-  AU: 'AU',
-  NZ: 'NZ',
-  JP: 'JP',
-  SG: 'SG',
-  HK: 'HK',
-  IN: 'IN',
+  AU: "AU",
+  NZ: "NZ",
+  JP: "JP",
+  SG: "SG",
+  HK: "HK",
+  IN: "IN",
 
   // Wildcards
-  ALL: '*',
-  EU: 'EU', // European Union
-  EEA: 'EEA', // European Economic Area
-  APAC: 'APAC',
-  NA: 'NA', // North America
+  ALL: "*",
+  EU: "EU", // European Union
+  EEA: "EEA", // European Economic Area
+  APAC: "APAC",
+  NA: "NA", // North America
 } as const;
 
 export type Region = (typeof REGIONS)[keyof typeof REGIONS];
 
 // Region groups for easy provider assignment
 export const REGION_GROUPS: Record<string, string[]> = {
-  EU: ['DE', 'FR', 'ES', 'IT', 'NL', 'BE', 'AT', 'IE', 'PT', 'PL', 'SE', 'DK', 'FI'],
-  EEA: ['DE', 'FR', 'ES', 'IT', 'NL', 'BE', 'AT', 'IE', 'PT', 'PL', 'SE', 'NO', 'DK', 'FI', 'IS', 'LI'],
-  APAC: ['AU', 'NZ', 'JP', 'SG', 'HK', 'IN'],
-  NA: ['US', 'CA', 'MX'],
+  EU: [
+    "DE",
+    "FR",
+    "ES",
+    "IT",
+    "NL",
+    "BE",
+    "AT",
+    "IE",
+    "PT",
+    "PL",
+    "SE",
+    "DK",
+    "FI",
+  ],
+  EEA: [
+    "DE",
+    "FR",
+    "ES",
+    "IT",
+    "NL",
+    "BE",
+    "AT",
+    "IE",
+    "PT",
+    "PL",
+    "SE",
+    "NO",
+    "DK",
+    "FI",
+    "IS",
+    "LI",
+  ],
+  APAC: ["AU", "NZ", "JP", "SG", "HK", "IN"],
+  NA: ["US", "CA", "MX"],
 };
 
 // =============================================================================
@@ -274,7 +309,7 @@ export const REGION_GROUPS: Record<string, string[]> = {
 export interface PlaidConfig extends ConnectorConfig {
   clientId: string;
   secret: string;
-  environment: 'sandbox' | 'development' | 'production';
+  environment: "sandbox" | "development" | "production";
   products: string[];
   countryCodes: string[];
   webhookUrl?: string;
@@ -283,20 +318,20 @@ export interface PlaidConfig extends ConnectorConfig {
 export interface TrueLayerConfig extends ConnectorConfig {
   clientId: string;
   clientSecret: string;
-  environment: 'sandbox' | 'live';
+  environment: "sandbox" | "live";
   redirectUri: string;
   scopes: string[];
 }
 
 export interface PolygonConfig extends ConnectorConfig {
   apiKey: string;
-  tier: 'free' | 'starter' | 'developer' | 'advanced';
+  tier: "free" | "starter" | "developer" | "advanced";
   websocketEnabled: boolean;
 }
 
 export interface FinnhubConfig extends ConnectorConfig {
   apiKey: string;
-  tier: 'free' | 'premium';
+  tier: "free" | "premium";
 }
 
 export interface CanopyConfig extends ConnectorConfig {
@@ -323,7 +358,7 @@ export interface UnifiedAccount {
   institutionName: string;
   name: string;
   officialName?: string;
-  type: 'depository' | 'credit' | 'loan' | 'investment' | 'other';
+  type: "depository" | "credit" | "loan" | "investment" | "other";
   subtype?: string;
   mask?: string;
   currency: string;
@@ -347,7 +382,7 @@ export interface UnifiedTransaction {
   merchantName?: string;
   category: string[];
   pending: boolean;
-  type: 'debit' | 'credit';
+  type: "debit" | "credit";
   paymentChannel?: string;
   location?: {
     address?: string;
@@ -372,7 +407,7 @@ export interface UnifiedQuote {
   changePercent: number;
   volume: number;
   timestamp: Date;
-  marketStatus: 'open' | 'closed' | 'pre' | 'post';
+  marketStatus: "open" | "closed" | "pre" | "post";
 }
 
 export interface UnifiedInsurancePolicy {
@@ -381,11 +416,11 @@ export interface UnifiedInsurancePolicy {
   providerPolicyId: string;
   carrier: string;
   policyNumber: string;
-  type: 'auto' | 'home' | 'renters' | 'life' | 'umbrella' | 'health' | 'other';
-  status: 'active' | 'expired' | 'cancelled';
+  type: "auto" | "home" | "renters" | "life" | "umbrella" | "health" | "other";
+  status: "active" | "expired" | "cancelled";
   premium: {
     amount: number;
-    frequency: 'monthly' | 'quarterly' | 'semi-annual' | 'annual';
+    frequency: "monthly" | "quarterly" | "semi-annual" | "annual";
   };
   coverage: {
     amount: number;
@@ -409,14 +444,16 @@ export interface ConnectorEvent {
 }
 
 export type ConnectorEventType =
-  | 'initialized'
-  | 'disconnected'
-  | 'health_check'
-  | 'health_degraded'
-  | 'health_recovered'
-  | 'rate_limited'
-  | 'error'
-  | 'fallback_triggered'
-  | 'circuit_open';
+  | "initialized"
+  | "disconnected"
+  | "health_check"
+  | "health_degraded"
+  | "health_recovered"
+  | "rate_limited"
+  | "error"
+  | "fallback_triggered"
+  | "circuit_open";
 
-export type ConnectorEventHandler = (event: ConnectorEvent) => void | Promise<void>;
+export type ConnectorEventHandler = (
+  event: ConnectorEvent,
+) => void | Promise<void>;

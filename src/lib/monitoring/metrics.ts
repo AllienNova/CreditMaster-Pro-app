@@ -11,19 +11,19 @@
  * with in-memory aggregation and periodic batch writes.
  */
 
-import { supabaseAdmin } from '@/lib/supabase/server';
+import { supabaseAdmin } from "@/lib/supabase/server";
 
 export interface Metric {
   name: string;
   value: number;
   timestamp: Date;
   tags?: Record<string, string>;
-  type: 'counter' | 'gauge' | 'histogram' | 'timer';
+  type: "counter" | "gauge" | "histogram" | "timer";
 }
 
 export interface HealthCheck {
   name: string;
-  status: 'healthy' | 'degraded' | 'unhealthy';
+  status: "healthy" | "degraded" | "unhealthy";
   message?: string;
   timestamp: Date;
   responseTime?: number;
@@ -42,7 +42,11 @@ class MetricsCollector {
   private readonly FLUSH_INTERVAL_MS = 10000;
   private readonly FLUSH_BATCH_SIZE = 100;
 
-  increment(name: string, value: number = 1, tags?: Record<string, string>): void {
+  increment(
+    name: string,
+    value: number = 1,
+    tags?: Record<string, string>,
+  ): void {
     const current = this.counters.get(name) || 0;
     this.counters.set(name, current + value);
 
@@ -51,11 +55,15 @@ class MetricsCollector {
       value: current + value,
       timestamp: new Date(),
       tags,
-      type: 'counter',
+      type: "counter",
     });
   }
 
-  decrement(name: string, value: number = 1, tags?: Record<string, string>): void {
+  decrement(
+    name: string,
+    value: number = 1,
+    tags?: Record<string, string>,
+  ): void {
     this.increment(name, -value, tags);
   }
 
@@ -67,7 +75,7 @@ class MetricsCollector {
       value,
       timestamp: new Date(),
       tags,
-      type: 'gauge',
+      type: "gauge",
     });
   }
 
@@ -77,7 +85,7 @@ class MetricsCollector {
       value,
       timestamp: new Date(),
       tags,
-      type: 'histogram',
+      type: "histogram",
     });
   }
 
@@ -87,7 +95,7 @@ class MetricsCollector {
       value: duration,
       timestamp: new Date(),
       tags,
-      type: 'timer',
+      type: "timer",
     });
   }
 
@@ -106,7 +114,10 @@ class MetricsCollector {
     if (this.writeBuffer.length >= this.FLUSH_BATCH_SIZE) {
       this.flushToDB();
     } else if (!this.flushTimer) {
-      this.flushTimer = setTimeout(() => this.flushToDB(), this.FLUSH_INTERVAL_MS);
+      this.flushTimer = setTimeout(
+        () => this.flushToDB(),
+        this.FLUSH_INTERVAL_MS,
+      );
     }
   }
 
@@ -119,7 +130,7 @@ class MetricsCollector {
     if (this.writeBuffer.length === 0) return;
 
     const batch = this.writeBuffer.splice(0, this.FLUSH_BATCH_SIZE);
-    const rows = batch.map(m => ({
+    const rows = batch.map((m) => ({
       name: m.name,
       value: m.value,
       recorded_at: m.timestamp.toISOString(),
@@ -128,7 +139,7 @@ class MetricsCollector {
     }));
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabaseAdmin.from as any)('metrics_data')
+    (supabaseAdmin.from as any)("metrics_data")
       .insert(rows)
       .then(() => {})
       .catch(() => {
@@ -138,26 +149,34 @@ class MetricsCollector {
       });
 
     if (this.writeBuffer.length > 0 && !this.flushTimer) {
-      this.flushTimer = setTimeout(() => this.flushToDB(), this.FLUSH_INTERVAL_MS);
+      this.flushTimer = setTimeout(
+        () => this.flushToDB(),
+        this.FLUSH_INTERVAL_MS,
+      );
     }
   }
 
   /** Query historical metrics from the database */
-  async queryFromDB(name: string, options?: {
-    startDate?: Date;
-    endDate?: Date;
-    limit?: number;
-  }): Promise<Metric[]> {
+  async queryFromDB(
+    name: string,
+    options?: {
+      startDate?: Date;
+      endDate?: Date;
+      limit?: number;
+    },
+  ): Promise<Metric[]> {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let query = (supabaseAdmin.from as any)('metrics_data')
-        .select('*')
-        .eq('name', name)
-        .order('recorded_at', { ascending: false })
+      let query = (supabaseAdmin.from as any)("metrics_data")
+        .select("*")
+        .eq("name", name)
+        .order("recorded_at", { ascending: false })
         .limit(options?.limit ?? 100);
 
-      if (options?.startDate) query = query.gte('recorded_at', options.startDate.toISOString());
-      if (options?.endDate) query = query.lte('recorded_at', options.endDate.toISOString());
+      if (options?.startDate)
+        query = query.gte("recorded_at", options.startDate.toISOString());
+      if (options?.endDate)
+        query = query.lte("recorded_at", options.endDate.toISOString());
 
       const { data } = await query;
       if (!data) return [];
@@ -168,34 +187,34 @@ class MetricsCollector {
         value: Number(row.value),
         timestamp: new Date(row.recorded_at),
         tags: row.tags as Record<string, string> | undefined,
-        type: row.metric_type as Metric['type'],
+        type: row.metric_type as Metric["type"],
       }));
     } catch {
       return [];
     }
   }
-  
+
   /**
    * Get counter value
    */
   getCounter(name: string): number {
     return this.counters.get(name) || 0;
   }
-  
+
   /**
    * Get gauge value
    */
   getGauge(name: string): number {
     return this.gauges.get(name) || 0;
   }
-  
+
   /**
    * Get metrics for a name
    */
   getMetrics(name: string): Metric[] {
     return this.metrics.get(name) || [];
   }
-  
+
   /**
    * Get all metrics
    */
@@ -206,7 +225,7 @@ class MetricsCollector {
     });
     return result;
   }
-  
+
   /**
    * Reset all metrics
    */
@@ -215,7 +234,7 @@ class MetricsCollector {
     this.counters.clear();
     this.gauges.clear();
   }
-  
+
   /**
    * Get statistics for a metric
    */
@@ -233,10 +252,10 @@ class MetricsCollector {
     if (metrics.length === 0) {
       return null;
     }
-    
-    const values = metrics.map(m => m.value).sort((a, b) => a - b);
+
+    const values = metrics.map((m) => m.value).sort((a, b) => a - b);
     const sum = values.reduce((a, b) => a + b, 0);
-    
+
     return {
       count: values.length,
       sum,
@@ -258,33 +277,33 @@ export const metrics = new MetricsCollector();
  */
 export const AppMetrics = {
   // API metrics
-  apiRequestTotal: 'api.request.total',
-  apiRequestDuration: 'api.request.duration',
-  apiRequestErrors: 'api.request.errors',
-  
+  apiRequestTotal: "api.request.total",
+  apiRequestDuration: "api.request.duration",
+  apiRequestErrors: "api.request.errors",
+
   // AI metrics
-  aiRequestTotal: 'ai.request.total',
-  aiRequestDuration: 'ai.request.duration',
-  aiRequestTokens: 'ai.request.tokens',
-  aiRequestCost: 'ai.request.cost',
-  aiRequestErrors: 'ai.request.errors',
-  
+  aiRequestTotal: "ai.request.total",
+  aiRequestDuration: "ai.request.duration",
+  aiRequestTokens: "ai.request.tokens",
+  aiRequestCost: "ai.request.cost",
+  aiRequestErrors: "ai.request.errors",
+
   // Security metrics
-  authAttempts: 'auth.attempts',
-  authFailures: 'auth.failures',
-  rateLimitExceeded: 'rate_limit.exceeded',
-  inputValidationFailed: 'input.validation.failed',
-  outputValidationFailed: 'output.validation.failed',
-  
+  authAttempts: "auth.attempts",
+  authFailures: "auth.failures",
+  rateLimitExceeded: "rate_limit.exceeded",
+  inputValidationFailed: "input.validation.failed",
+  outputValidationFailed: "output.validation.failed",
+
   // Business metrics
-  disputesGenerated: 'disputes.generated',
-  analysesCompleted: 'analyses.completed',
-  loansCalculated: 'loans.calculated',
-  
+  disputesGenerated: "disputes.generated",
+  analysesCompleted: "analyses.completed",
+  loansCalculated: "loans.calculated",
+
   // System metrics
-  memoryUsage: 'system.memory.usage',
-  cpuUsage: 'system.cpu.usage',
-  activeConnections: 'system.connections.active',
+  memoryUsage: "system.memory.usage",
+  cpuUsage: "system.cpu.usage",
+  activeConnections: "system.connections.active",
 };
 
 /**
@@ -294,13 +313,21 @@ export function trackAPIRequest(
   method: string,
   path: string,
   statusCode: number,
-  duration: number
+  duration: number,
 ): void {
-  metrics.increment(AppMetrics.apiRequestTotal, 1, { method, path, status: statusCode.toString() });
+  metrics.increment(AppMetrics.apiRequestTotal, 1, {
+    method,
+    path,
+    status: statusCode.toString(),
+  });
   metrics.timer(AppMetrics.apiRequestDuration, duration, { method, path });
-  
+
   if (statusCode >= 400) {
-    metrics.increment(AppMetrics.apiRequestErrors, 1, { method, path, status: statusCode.toString() });
+    metrics.increment(AppMetrics.apiRequestErrors, 1, {
+      method,
+      path,
+      status: statusCode.toString(),
+    });
   }
 }
 
@@ -312,13 +339,16 @@ export function trackAIRequest(
   duration: number,
   tokens: number,
   cost: number,
-  success: boolean
+  success: boolean,
 ): void {
-  metrics.increment(AppMetrics.aiRequestTotal, 1, { model, success: success.toString() });
+  metrics.increment(AppMetrics.aiRequestTotal, 1, {
+    model,
+    success: success.toString(),
+  });
   metrics.timer(AppMetrics.aiRequestDuration, duration, { model });
   metrics.histogram(AppMetrics.aiRequestTokens, tokens, { model });
   metrics.histogram(AppMetrics.aiRequestCost, cost, { model });
-  
+
   if (!success) {
     metrics.increment(AppMetrics.aiRequestErrors, 1, { model });
   }
@@ -328,23 +358,28 @@ export function trackAIRequest(
  * Track security event
  */
 export function trackSecurityEvent(
-  event: 'auth_attempt' | 'auth_failure' | 'rate_limit' | 'input_validation' | 'output_validation',
-  details?: Record<string, string>
+  event:
+    | "auth_attempt"
+    | "auth_failure"
+    | "rate_limit"
+    | "input_validation"
+    | "output_validation",
+  details?: Record<string, string>,
 ): void {
   switch (event) {
-    case 'auth_attempt':
+    case "auth_attempt":
       metrics.increment(AppMetrics.authAttempts, 1, details);
       break;
-    case 'auth_failure':
+    case "auth_failure":
       metrics.increment(AppMetrics.authFailures, 1, details);
       break;
-    case 'rate_limit':
+    case "rate_limit":
       metrics.increment(AppMetrics.rateLimitExceeded, 1, details);
       break;
-    case 'input_validation':
+    case "input_validation":
       metrics.increment(AppMetrics.inputValidationFailed, 1, details);
       break;
-    case 'output_validation':
+    case "output_validation":
       metrics.increment(AppMetrics.outputValidationFailed, 1, details);
       break;
   }
@@ -354,17 +389,17 @@ export function trackSecurityEvent(
  * Track business metric
  */
 export function trackBusinessMetric(
-  metric: 'dispute' | 'analysis' | 'loan',
-  details?: Record<string, string>
+  metric: "dispute" | "analysis" | "loan",
+  details?: Record<string, string>,
 ): void {
   switch (metric) {
-    case 'dispute':
+    case "dispute":
       metrics.increment(AppMetrics.disputesGenerated, 1, details);
       break;
-    case 'analysis':
+    case "analysis":
       metrics.increment(AppMetrics.analysesCompleted, 1, details);
       break;
-    case 'loan':
+    case "loan":
       metrics.increment(AppMetrics.loansCalculated, 1, details);
       break;
   }
@@ -374,7 +409,7 @@ export function trackBusinessMetric(
  * Track system metrics
  */
 export function trackSystemMetrics(): void {
-  if (typeof process !== 'undefined' && process.memoryUsage) {
+  if (typeof process !== "undefined" && process.memoryUsage) {
     const memory = process.memoryUsage();
     metrics.gauge(AppMetrics.memoryUsage, memory.heapUsed / 1024 / 1024); // MB
   }
@@ -385,56 +420,59 @@ export function trackSystemMetrics(): void {
  */
 class HealthCheckRegistry {
   private checks: Map<string, () => Promise<HealthCheck>> = new Map();
-  
+
   /**
    * Register a health check
    */
   register(name: string, check: () => Promise<HealthCheck>): void {
     this.checks.set(name, check);
   }
-  
+
   /**
    * Run all health checks
    */
   async runAll(): Promise<HealthCheck[]> {
     const results: HealthCheck[] = [];
     const promises: Promise<void>[] = [];
-    
+
     this.checks.forEach((check, name) => {
       promises.push(
         check()
-          .then(result => { results.push(result); })
-          .catch(error => {
+          .then((result) => {
+            results.push(result);
+          })
+          .catch((error) => {
             results.push({
               name,
-              status: 'unhealthy',
-              message: error instanceof Error ? error.message : 'Health check failed',
+              status: "unhealthy",
+              message:
+                error instanceof Error ? error.message : "Health check failed",
               timestamp: new Date(),
             });
-          })
+          }),
       );
     });
-    
+
     await Promise.all(promises);
     return results;
   }
-  
+
   /**
    * Get overall health status
    */
-  async getOverallStatus(): Promise<'healthy' | 'degraded' | 'unhealthy'> {
+  async getOverallStatus(): Promise<"healthy" | "degraded" | "unhealthy"> {
     const checks = await this.runAll();
-    
-    const unhealthy = checks.filter(c => c.status === 'unhealthy').length;
-    const degraded = checks.filter(c => c.status === 'degraded').length;
-    
+
+    const unhealthy = checks.filter((c) => c.status === "unhealthy").length;
+    const degraded = checks.filter((c) => c.status === "degraded").length;
+
     if (unhealthy > 0) {
-      return 'unhealthy';
+      return "unhealthy";
     }
     if (degraded > 0) {
-      return 'degraded';
+      return "degraded";
     }
-    return 'healthy';
+    return "healthy";
   }
 }
 
@@ -446,88 +484,90 @@ export const healthChecks = new HealthCheckRegistry();
  */
 export function registerDefaultHealthChecks(): void {
   // Database health check
-  healthChecks.register('database', async () => {
+  healthChecks.register("database", async () => {
     const start = Date.now();
     try {
       // In production, check database connection
       // For now, return healthy
       return {
-        name: 'database',
-        status: 'healthy',
+        name: "database",
+        status: "healthy",
         timestamp: new Date(),
         responseTime: Date.now() - start,
       };
     } catch (error) {
       return {
-        name: 'database',
-        status: 'unhealthy',
-        message: error instanceof Error ? error.message : 'Database check failed',
+        name: "database",
+        status: "unhealthy",
+        message:
+          error instanceof Error ? error.message : "Database check failed",
         timestamp: new Date(),
         responseTime: Date.now() - start,
       };
     }
   });
-  
+
   // AIML API health check
-  healthChecks.register('aiml_api', async () => {
+  healthChecks.register("aiml_api", async () => {
     const start = Date.now();
     try {
       // In production, ping AIML API
       // For now, return healthy
       return {
-        name: 'aiml_api',
-        status: 'healthy',
+        name: "aiml_api",
+        status: "healthy",
         timestamp: new Date(),
         responseTime: Date.now() - start,
       };
     } catch (error) {
       return {
-        name: 'aiml_api',
-        status: 'unhealthy',
-        message: error instanceof Error ? error.message : 'AIML API check failed',
+        name: "aiml_api",
+        status: "unhealthy",
+        message:
+          error instanceof Error ? error.message : "AIML API check failed",
         timestamp: new Date(),
         responseTime: Date.now() - start,
       };
     }
   });
-  
+
   // Memory health check
-  healthChecks.register('memory', async () => {
+  healthChecks.register("memory", async () => {
     const start = Date.now();
     try {
-      if (typeof process !== 'undefined' && process.memoryUsage) {
+      if (typeof process !== "undefined" && process.memoryUsage) {
         const memory = process.memoryUsage();
         const heapUsedMB = memory.heapUsed / 1024 / 1024;
         const heapTotalMB = memory.heapTotal / 1024 / 1024;
         const usagePercent = (heapUsedMB / heapTotalMB) * 100;
-        
-        let status: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
+
+        let status: "healthy" | "degraded" | "unhealthy" = "healthy";
         if (usagePercent > 90) {
-          status = 'unhealthy';
+          status = "unhealthy";
         } else if (usagePercent > 75) {
-          status = 'degraded';
+          status = "degraded";
         }
-        
+
         return {
-          name: 'memory',
+          name: "memory",
           status,
           message: `Heap usage: ${heapUsedMB.toFixed(2)}MB / ${heapTotalMB.toFixed(2)}MB (${usagePercent.toFixed(1)}%)`,
           timestamp: new Date(),
           responseTime: Date.now() - start,
         };
       }
-      
+
       return {
-        name: 'memory',
-        status: 'healthy',
+        name: "memory",
+        status: "healthy",
         timestamp: new Date(),
         responseTime: Date.now() - start,
       };
     } catch (error) {
       return {
-        name: 'memory',
-        status: 'unhealthy',
-        message: error instanceof Error ? error.message : 'Memory check failed',
+        name: "memory",
+        status: "unhealthy",
+        message: error instanceof Error ? error.message : "Memory check failed",
         timestamp: new Date(),
         responseTime: Date.now() - start,
       };
@@ -540,4 +580,3 @@ registerDefaultHealthChecks();
 
 // Auto-track system metrics every minute
 setInterval(trackSystemMetrics, 60 * 1000);
-

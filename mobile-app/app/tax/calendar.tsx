@@ -5,7 +5,7 @@
  * Helps users stay on track with their tax obligations and optimization opportunities.
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -17,159 +17,167 @@ import {
   Alert,
   Modal,
   TextInput,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useTaxStore } from '../../src/store/taxStore';
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { useTaxStore } from "../../src/store/taxStore";
 
-type EventType = 'deadline' | 'reminder' | 'recommendation' | 'payment';
-type PriorityType = 'critical' | 'high' | 'medium' | 'low';
+type EventType = "deadline" | "reminder" | "recommendation" | "payment";
+type PriorityType = "critical" | "high" | "medium" | "low";
 
 const eventTypeColors: Record<EventType, { bg: string; text: string }> = {
-  deadline: { bg: '#FEE2E2', text: '#991B1B' },
-  payment: { bg: '#F3E8FF', text: '#6B21A8' },
-  reminder: { bg: '#DBEAFE', text: '#1E40AF' },
-  recommendation: { bg: '#FEF3C7', text: '#92400E' },
+  deadline: { bg: "#FEE2E2", text: "#991B1B" },
+  payment: { bg: "#F3E8FF", text: "#6B21A8" },
+  reminder: { bg: "#DBEAFE", text: "#1E40AF" },
+  recommendation: { bg: "#FEF3C7", text: "#92400E" },
 };
 
 const priorityColors: Record<PriorityType, string> = {
-  critical: '#DC2626',
-  high: '#EA580C',
-  medium: '#3B82F6',
-  low: '#9CA3AF',
+  critical: "#DC2626",
+  high: "#EA580C",
+  medium: "#3B82F6",
+  low: "#9CA3AF",
 };
 
 // Mock data for tax events (would come from API in production)
 const TAX_EVENTS_2026 = [
   {
-    id: '1',
-    title: 'Q4 Estimated Tax Payment Due',
-    description: 'Final quarterly estimated tax payment for the prior year',
-    date: '2026-01-15',
-    type: 'payment' as EventType,
-    priority: 'critical' as PriorityType,
+    id: "1",
+    title: "Q4 Estimated Tax Payment Due",
+    description: "Final quarterly estimated tax payment for the prior year",
+    date: "2026-01-15",
+    type: "payment" as EventType,
+    priority: "critical" as PriorityType,
     isCompleted: false,
-    category: 'Estimated Taxes',
+    category: "Estimated Taxes",
   },
   {
-    id: '2',
-    title: 'Tax Filing Deadline',
-    description: 'Federal and state income tax returns due (or extension)',
-    date: '2026-04-15',
-    type: 'deadline' as EventType,
-    priority: 'critical' as PriorityType,
+    id: "2",
+    title: "Tax Filing Deadline",
+    description: "Federal and state income tax returns due (or extension)",
+    date: "2026-04-15",
+    type: "deadline" as EventType,
+    priority: "critical" as PriorityType,
     isCompleted: false,
-    category: 'Filing',
+    category: "Filing",
   },
   {
-    id: '3',
-    title: 'Q1 Estimated Tax Payment Due',
-    description: 'First quarterly estimated tax payment for current year',
-    date: '2026-04-15',
-    type: 'payment' as EventType,
-    priority: 'critical' as PriorityType,
+    id: "3",
+    title: "Q1 Estimated Tax Payment Due",
+    description: "First quarterly estimated tax payment for current year",
+    date: "2026-04-15",
+    type: "payment" as EventType,
+    priority: "critical" as PriorityType,
     isCompleted: false,
-    category: 'Estimated Taxes',
+    category: "Estimated Taxes",
   },
   {
-    id: '4',
-    title: 'Q2 Estimated Tax Payment Due',
-    description: 'Second quarterly estimated tax payment',
-    date: '2026-06-15',
-    type: 'payment' as EventType,
-    priority: 'critical' as PriorityType,
+    id: "4",
+    title: "Q2 Estimated Tax Payment Due",
+    description: "Second quarterly estimated tax payment",
+    date: "2026-06-15",
+    type: "payment" as EventType,
+    priority: "critical" as PriorityType,
     isCompleted: false,
-    category: 'Estimated Taxes',
+    category: "Estimated Taxes",
   },
   {
-    id: '5',
-    title: 'Q3 Estimated Tax Payment Due',
-    description: 'Third quarterly estimated tax payment',
-    date: '2026-09-15',
-    type: 'payment' as EventType,
-    priority: 'critical' as PriorityType,
+    id: "5",
+    title: "Q3 Estimated Tax Payment Due",
+    description: "Third quarterly estimated tax payment",
+    date: "2026-09-15",
+    type: "payment" as EventType,
+    priority: "critical" as PriorityType,
     isCompleted: false,
-    category: 'Estimated Taxes',
+    category: "Estimated Taxes",
   },
   {
-    id: '6',
-    title: 'Extended Tax Return Deadline',
-    description: 'Final deadline for extended returns',
-    date: '2026-10-15',
-    type: 'deadline' as EventType,
-    priority: 'critical' as PriorityType,
+    id: "6",
+    title: "Extended Tax Return Deadline",
+    description: "Final deadline for extended returns",
+    date: "2026-10-15",
+    type: "deadline" as EventType,
+    priority: "critical" as PriorityType,
     isCompleted: false,
-    category: 'Filing',
+    category: "Filing",
   },
   {
-    id: '7',
-    title: 'Review 401(k) Contributions',
+    id: "7",
+    title: "Review 401(k) Contributions",
     description: "Ensure you're on track to max out 401(k) by year-end",
-    date: '2026-11-01',
-    type: 'reminder' as EventType,
-    priority: 'high' as PriorityType,
+    date: "2026-11-01",
+    type: "reminder" as EventType,
+    priority: "high" as PriorityType,
     isCompleted: false,
-    category: 'Retirement',
+    category: "Retirement",
   },
   {
-    id: '8',
-    title: 'Tax-Loss Harvesting Review',
-    description: 'Review portfolio for tax-loss harvesting opportunities',
-    date: '2026-11-15',
-    type: 'recommendation' as EventType,
-    priority: 'high' as PriorityType,
+    id: "8",
+    title: "Tax-Loss Harvesting Review",
+    description: "Review portfolio for tax-loss harvesting opportunities",
+    date: "2026-11-15",
+    type: "recommendation" as EventType,
+    priority: "high" as PriorityType,
     isCompleted: false,
-    category: 'Investment',
+    category: "Investment",
   },
   {
-    id: '9',
-    title: 'Charitable Giving Deadline',
-    description: 'Make charitable donations for current year deduction',
-    date: '2026-12-31',
-    type: 'deadline' as EventType,
-    priority: 'medium' as PriorityType,
+    id: "9",
+    title: "Charitable Giving Deadline",
+    description: "Make charitable donations for current year deduction",
+    date: "2026-12-31",
+    type: "deadline" as EventType,
+    priority: "medium" as PriorityType,
     isCompleted: false,
-    category: 'Deductions',
+    category: "Deductions",
   },
   {
-    id: '10',
-    title: '401(k) Contribution Deadline',
-    description: 'Last day to make 401(k) contributions for the year',
-    date: '2026-12-31',
-    type: 'deadline' as EventType,
-    priority: 'critical' as PriorityType,
+    id: "10",
+    title: "401(k) Contribution Deadline",
+    description: "Last day to make 401(k) contributions for the year",
+    date: "2026-12-31",
+    type: "deadline" as EventType,
+    priority: "critical" as PriorityType,
     isCompleted: false,
-    category: 'Retirement',
+    category: "Retirement",
   },
 ];
 
 export default function TaxCalendarScreen() {
-  const { events: storeEvents, isLoadingCalendar, fetchEvents, completeEvent, createReminder } =
-    useTaxStore();
+  const {
+    events: storeEvents,
+    isLoadingCalendar,
+    fetchEvents,
+    completeEvent,
+    createReminder,
+  } = useTaxStore();
 
   const [events, setEvents] = useState(TAX_EVENTS_2026);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'upcoming' | 'completed'>('upcoming');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [filter, setFilter] = useState<"all" | "upcoming" | "completed">(
+    "upcoming",
+  );
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [showAddModal, setShowAddModal] = useState(false);
   const [newReminder, setNewReminder] = useState({
-    title: '',
-    description: '',
-    date: '',
-    category: 'Custom',
+    title: "",
+    description: "",
+    date: "",
+    category: "Custom",
   });
 
   const categories = useMemo(() => {
     const cats = new Set(events.map((e) => e.category));
-    return ['all', ...Array.from(cats)];
+    return ["all", ...Array.from(cats)];
   }, [events]);
 
   const filteredEvents = useMemo(() => {
     const now = new Date();
     return events
       .filter((event) => {
-        if (filter === 'upcoming' && event.isCompleted) return false;
-        if (filter === 'completed' && !event.isCompleted) return false;
-        if (categoryFilter !== 'all' && event.category !== categoryFilter) return false;
+        if (filter === "upcoming" && event.isCompleted) return false;
+        if (filter === "completed" && !event.isCompleted) return false;
+        if (categoryFilter !== "all" && event.category !== categoryFilter)
+          return false;
         return true;
       })
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -177,12 +185,16 @@ export default function TaxCalendarScreen() {
 
   const upcomingCritical = useMemo(() => {
     const now = new Date();
-    return events.filter(
-      (e) =>
-        !e.isCompleted &&
-        e.priority === 'critical' &&
-        new Date(e.date) >= now
-    ).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+    return events
+      .filter(
+        (e) =>
+          !e.isCompleted &&
+          e.priority === "critical" &&
+          new Date(e.date) >= now,
+      )
+      .sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+      )[0];
   }, [events]);
 
   const handleRefresh = async () => {
@@ -193,10 +205,10 @@ export default function TaxCalendarScreen() {
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
+    return date.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
     });
   };
 
@@ -205,11 +217,13 @@ export default function TaxCalendarScreen() {
     now.setHours(0, 0, 0, 0);
     const target = new Date(dateStr);
     target.setHours(0, 0, 0, 0);
-    const diff = Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const diff = Math.ceil(
+      (target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+    );
 
-    if (diff < 0) return 'Past';
-    if (diff === 0) return 'Today';
-    if (diff === 1) return 'Tomorrow';
+    if (diff < 0) return "Past";
+    if (diff === 0) return "Today";
+    if (diff === 1) return "Tomorrow";
     if (diff <= 7) return `${diff} days`;
     if (diff <= 30) return `${Math.ceil(diff / 7)} weeks`;
     return `${Math.ceil(diff / 30)} months`;
@@ -217,42 +231,55 @@ export default function TaxCalendarScreen() {
 
   const handleToggleComplete = (eventId: string) => {
     setEvents((prev) =>
-      prev.map((e) => (e.id === eventId ? { ...e, isCompleted: !e.isCompleted } : e))
+      prev.map((e) =>
+        e.id === eventId ? { ...e, isCompleted: !e.isCompleted } : e,
+      ),
     );
   };
 
   const handleAddReminder = () => {
     if (!newReminder.title || !newReminder.date) {
-      Alert.alert('Error', 'Please enter a title and date');
+      Alert.alert("Error", "Please enter a title and date");
       return;
     }
 
     const newEvent = {
       id: `custom-${Date.now()}`,
       title: newReminder.title,
-      description: newReminder.description || 'Custom reminder',
+      description: newReminder.description || "Custom reminder",
       date: newReminder.date,
-      type: 'reminder' as EventType,
-      priority: 'medium' as PriorityType,
+      type: "reminder" as EventType,
+      priority: "medium" as PriorityType,
       isCompleted: false,
-      category: newReminder.category || 'Custom',
+      category: newReminder.category || "Custom",
     };
 
     setEvents((prev) => [...prev, newEvent]);
     setShowAddModal(false);
-    setNewReminder({ title: '', description: '', date: '', category: 'Custom' });
-    Alert.alert('Success', 'Reminder added');
+    setNewReminder({
+      title: "",
+      description: "",
+      date: "",
+      category: "Custom",
+    });
+    Alert.alert("Success", "Reminder added");
   };
 
-  const handleSetNotification = (event: typeof events[0]) => {
+  const handleSetNotification = (event: (typeof events)[0]) => {
     Alert.alert(
-      'Set Reminder',
+      "Set Reminder",
       `Would you like to be reminded about "${event.title}"?`,
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: '1 day before', onPress: () => Alert.alert('Reminder set for 1 day before') },
-        { text: '1 week before', onPress: () => Alert.alert('Reminder set for 1 week before') },
-      ]
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "1 day before",
+          onPress: () => Alert.alert("Reminder set for 1 day before"),
+        },
+        {
+          text: "1 week before",
+          onPress: () => Alert.alert("Reminder set for 1 week before"),
+        },
+      ],
     );
   };
 
@@ -286,11 +313,14 @@ export default function TaxCalendarScreen() {
           <View style={styles.filterRow}>
             <Text style={styles.filterLabel}>Status:</Text>
             <View style={styles.filterButtons}>
-              {(['all', 'upcoming', 'completed'] as const).map((f) => (
+              {(["all", "upcoming", "completed"] as const).map((f) => (
                 <TouchableOpacity
                   key={f}
                   onPress={() => setFilter(f)}
-                  style={[styles.filterButton, filter === f && styles.filterButtonActive]}
+                  style={[
+                    styles.filterButton,
+                    filter === f && styles.filterButtonActive,
+                  ]}
                 >
                   <Text
                     style={[
@@ -325,7 +355,7 @@ export default function TaxCalendarScreen() {
                     categoryFilter === cat && styles.categoryChipTextActive,
                   ]}
                 >
-                  {cat === 'all' ? 'All Categories' : cat}
+                  {cat === "all" ? "All Categories" : cat}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -373,7 +403,9 @@ export default function TaxCalendarScreen() {
                       event.isCompleted && styles.checkboxChecked,
                     ]}
                   >
-                    {event.isCompleted && <Text style={styles.checkmark}>✓</Text>}
+                    {event.isCompleted && (
+                      <Text style={styles.checkmark}>✓</Text>
+                    )}
                   </View>
                 </TouchableOpacity>
 
@@ -405,15 +437,20 @@ export default function TaxCalendarScreen() {
                   >
                     {event.title}
                   </Text>
-                  <Text style={styles.eventDescription}>{event.description}</Text>
+                  <Text style={styles.eventDescription}>
+                    {event.description}
+                  </Text>
                 </View>
 
                 <View style={styles.eventDate}>
-                  <Text style={styles.eventDateText}>{formatDate(event.date)}</Text>
+                  <Text style={styles.eventDateText}>
+                    {formatDate(event.date)}
+                  </Text>
                   <Text
                     style={[
                       styles.eventDaysUntil,
-                      getDaysUntil(event.date) === 'Today' && styles.eventDaysUntilToday,
+                      getDaysUntil(event.date) === "Today" &&
+                        styles.eventDaysUntilToday,
                     ]}
                   >
                     {getDaysUntil(event.date)}
@@ -428,24 +465,31 @@ export default function TaxCalendarScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Event Types</Text>
           <View style={styles.legendGrid}>
-            {(Object.entries(eventTypeColors) as [EventType, { bg: string; text: string }][]).map(
-              ([type, colors]) => (
-                <View key={type} style={styles.legendItem}>
-                  <View style={[styles.legendBadge, { backgroundColor: colors.bg }]}>
-                    <Text style={[styles.legendBadgeText, { color: colors.text }]}>
-                      {type}
-                    </Text>
-                  </View>
+            {(
+              Object.entries(eventTypeColors) as [
+                EventType,
+                { bg: string; text: string },
+              ][]
+            ).map(([type, colors]) => (
+              <View key={type} style={styles.legendItem}>
+                <View
+                  style={[styles.legendBadge, { backgroundColor: colors.bg }]}
+                >
+                  <Text
+                    style={[styles.legendBadgeText, { color: colors.text }]}
+                  >
+                    {type}
+                  </Text>
                 </View>
-              )
-            )}
+              </View>
+            ))}
           </View>
         </View>
 
         {/* CTA Card */}
         <View style={styles.ctaCard}>
           <LinearGradient
-            colors={['#F59E0B', '#EA580C']}
+            colors={["#F59E0B", "#EA580C"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.ctaGradient}
@@ -484,7 +528,9 @@ export default function TaxCalendarScreen() {
               <TextInput
                 style={styles.input}
                 value={newReminder.title}
-                onChangeText={(v) => setNewReminder({ ...newReminder, title: v })}
+                onChangeText={(v) =>
+                  setNewReminder({ ...newReminder, title: v })
+                }
                 placeholder="e.g., Review estimated taxes"
               />
 
@@ -492,7 +538,9 @@ export default function TaxCalendarScreen() {
               <TextInput
                 style={[styles.input, styles.inputMultiline]}
                 value={newReminder.description}
-                onChangeText={(v) => setNewReminder({ ...newReminder, description: v })}
+                onChangeText={(v) =>
+                  setNewReminder({ ...newReminder, description: v })
+                }
                 placeholder="Optional description"
                 multiline
                 numberOfLines={3}
@@ -502,11 +550,16 @@ export default function TaxCalendarScreen() {
               <TextInput
                 style={styles.input}
                 value={newReminder.date}
-                onChangeText={(v) => setNewReminder({ ...newReminder, date: v })}
+                onChangeText={(v) =>
+                  setNewReminder({ ...newReminder, date: v })
+                }
                 placeholder="2026-04-15"
               />
 
-              <TouchableOpacity style={styles.modalButton} onPress={handleAddReminder}>
+              <TouchableOpacity
+                style={styles.modalButton}
+                onPress={handleAddReminder}
+              >
                 <Text style={styles.modalButtonText}>Add Reminder</Text>
               </TouchableOpacity>
             </View>
@@ -520,18 +573,18 @@ export default function TaxCalendarScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF7ED',
+    backgroundColor: "#FFF7ED",
   },
   alertBanner: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: '#FEE2E2',
+    flexDirection: "row",
+    alignItems: "flex-start",
+    backgroundColor: "#FEE2E2",
     padding: 16,
     margin: 16,
     marginBottom: 0,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#FECACA',
+    borderColor: "#FECACA",
   },
   alertIcon: {
     fontSize: 20,
@@ -542,20 +595,20 @@ const styles = StyleSheet.create({
   },
   alertTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#991B1B',
+    fontWeight: "600",
+    color: "#991B1B",
     marginBottom: 4,
   },
   alertText: {
     fontSize: 13,
-    color: '#B91C1C',
+    color: "#B91C1C",
   },
   filtersContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     padding: 16,
     margin: 16,
     borderRadius: 12,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
@@ -566,29 +619,29 @@ const styles = StyleSheet.create({
   },
   filterLabel: {
     fontSize: 12,
-    color: '#78716C',
+    color: "#78716C",
     marginBottom: 8,
   },
   filterButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
   },
   filterButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: "#F3F4F6",
   },
   filterButtonActive: {
-    backgroundColor: '#F59E0B',
+    backgroundColor: "#F59E0B",
   },
   filterButtonText: {
     fontSize: 14,
-    color: '#78716C',
-    fontWeight: '500',
+    color: "#78716C",
+    fontWeight: "500",
   },
   filterButtonTextActive: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
   categoryScroll: {
     marginTop: 8,
@@ -597,44 +650,44 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: "#F3F4F6",
     marginRight: 8,
   },
   categoryChipActive: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: "#FEF3C7",
     borderWidth: 1,
-    borderColor: '#F59E0B',
+    borderColor: "#F59E0B",
   },
   categoryChipText: {
     fontSize: 13,
-    color: '#78716C',
+    color: "#78716C",
   },
   categoryChipTextActive: {
-    color: '#92400E',
-    fontWeight: '500',
+    color: "#92400E",
+    fontWeight: "500",
   },
   section: {
     paddingHorizontal: 16,
     marginBottom: 16,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 12,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#1C1917',
+    fontWeight: "600",
+    color: "#1C1917",
   },
   addText: {
     fontSize: 14,
-    color: '#F59E0B',
-    fontWeight: '600',
+    color: "#F59E0B",
+    fontWeight: "600",
   },
   emptyState: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 40,
   },
   emptyIcon: {
@@ -643,16 +696,16 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#78716C',
+    color: "#78716C",
   },
   eventCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: '#FFFFFF',
+    flexDirection: "row",
+    alignItems: "flex-start",
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     marginBottom: 12,
-    overflow: 'hidden',
-    shadowColor: '#000',
+    overflow: "hidden",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
@@ -663,7 +716,7 @@ const styles = StyleSheet.create({
   },
   eventPriorityBar: {
     width: 4,
-    alignSelf: 'stretch',
+    alignSelf: "stretch",
   },
   checkbox: {
     padding: 16,
@@ -674,18 +727,18 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: '#D1D5DB',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: "#D1D5DB",
+    alignItems: "center",
+    justifyContent: "center",
   },
   checkboxChecked: {
-    backgroundColor: '#F59E0B',
-    borderColor: '#F59E0B',
+    backgroundColor: "#F59E0B",
+    borderColor: "#F59E0B",
   },
   checkmark: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   eventContent: {
     flex: 1,
@@ -693,8 +746,8 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   eventTags: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 6,
   },
   eventTypeBadge: {
@@ -705,54 +758,54 @@ const styles = StyleSheet.create({
   },
   eventTypeBadgeText: {
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   eventCategory: {
     fontSize: 11,
-    color: '#9CA3AF',
+    color: "#9CA3AF",
   },
   eventTitle: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#1C1917',
+    fontWeight: "600",
+    color: "#1C1917",
     marginBottom: 4,
   },
   eventTitleCompleted: {
-    textDecorationLine: 'line-through',
-    color: '#9CA3AF',
+    textDecorationLine: "line-through",
+    color: "#9CA3AF",
   },
   eventDescription: {
     fontSize: 13,
-    color: '#78716C',
+    color: "#78716C",
   },
   eventDate: {
     padding: 16,
     paddingLeft: 8,
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   eventDateText: {
     fontSize: 13,
-    fontWeight: '500',
-    color: '#1C1917',
+    fontWeight: "500",
+    color: "#1C1917",
   },
   eventDaysUntil: {
     fontSize: 11,
-    color: '#9CA3AF',
+    color: "#9CA3AF",
     marginTop: 2,
   },
   eventDaysUntilToday: {
-    color: '#DC2626',
-    fontWeight: 'bold',
+    color: "#DC2626",
+    fontWeight: "bold",
   },
   legendGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 12,
     marginTop: 8,
   },
   legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   legendBadge: {
     paddingHorizontal: 10,
@@ -761,104 +814,104 @@ const styles = StyleSheet.create({
   },
   legendBadgeText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   ctaCard: {
     margin: 16,
     borderRadius: 16,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   ctaGradient: {
     padding: 24,
-    alignItems: 'center',
+    alignItems: "center",
   },
   ctaTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
     marginBottom: 8,
   },
   ctaSubtitle: {
     fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
-    textAlign: 'center',
+    color: "rgba(255,255,255,0.8)",
+    textAlign: "center",
     marginBottom: 16,
   },
   ctaButton: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: "rgba(255,255,255,0.2)",
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
   },
   ctaButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   bottomPadding: {
     height: 40,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: '80%',
+    maxHeight: "80%",
   },
   modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: "#F3F4F6",
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#1C1917',
+    fontWeight: "600",
+    color: "#1C1917",
   },
   modalClose: {
     fontSize: 24,
-    color: '#9CA3AF',
+    color: "#9CA3AF",
   },
   modalBody: {
     padding: 20,
   },
   inputLabel: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
+    fontWeight: "500",
+    color: "#374151",
     marginBottom: 8,
     marginTop: 16,
   },
   input: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: "#F3F4F6",
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
-    color: '#1C1917',
+    color: "#1C1917",
   },
   inputMultiline: {
     height: 80,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
   },
   modalButton: {
-    backgroundColor: '#F59E0B',
+    backgroundColor: "#F59E0B",
     borderRadius: 12,
     paddingVertical: 16,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 24,
     marginBottom: 20,
   },
   modalButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

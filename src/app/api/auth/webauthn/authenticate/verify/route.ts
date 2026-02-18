@@ -5,9 +5,9 @@
  * and returns a session token if valid.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+import { cookies } from "next/headers";
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,8 +17,8 @@ export async function POST(request: NextRequest) {
 
     if (!supabaseUrl || !supabaseKey) {
       return NextResponse.json(
-        { error: 'Server configuration error' },
-        { status: 500 }
+        { error: "Server configuration error" },
+        { status: 500 },
       );
     }
 
@@ -33,24 +33,29 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { credential, sessionId } = body;
 
-    if (!credential || !credential.id || !credential.rawId || !credential.response) {
+    if (
+      !credential ||
+      !credential.id ||
+      !credential.rawId ||
+      !credential.response
+    ) {
       return NextResponse.json(
-        { error: 'Invalid credential data' },
-        { status: 400 }
+        { error: "Invalid credential data" },
+        { status: 400 },
       );
     }
 
     // Find the credential in the database
     const { data: storedCredential, error: credentialError } = await supabase
-      .from('webauthn_credentials')
-      .select('*, profiles!webauthn_credentials_user_id_fkey(*)')
-      .eq('credential_id', credential.id)
+      .from("webauthn_credentials")
+      .select("*, profiles!webauthn_credentials_user_id_fkey(*)")
+      .eq("credential_id", credential.id)
       .single();
 
     if (credentialError || !storedCredential) {
       return NextResponse.json(
-        { error: 'Credential not found' },
-        { status: 401 }
+        { error: "Credential not found" },
+        { status: 401 },
       );
     }
 
@@ -58,44 +63,48 @@ export async function POST(request: NextRequest) {
 
     // Retrieve and verify the challenge
     const challengeQuery = supabase
-      .from('webauthn_challenges')
-      .select('*')
-      .eq('type', 'authentication')
-      .gt('expires_at', new Date().toISOString());
+      .from("webauthn_challenges")
+      .select("*")
+      .eq("type", "authentication")
+      .gt("expires_at", new Date().toISOString());
 
     // If sessionId provided, use it; otherwise use user_id
     if (sessionId) {
-      challengeQuery.eq('user_id', sessionId);
+      challengeQuery.eq("user_id", sessionId);
     } else {
-      challengeQuery.eq('user_id', userId);
+      challengeQuery.eq("user_id", userId);
     }
 
-    const { data: challengeData, error: challengeError } = await challengeQuery.single();
+    const { data: challengeData, error: challengeError } =
+      await challengeQuery.single();
 
     if (challengeError || !challengeData) {
       return NextResponse.json(
-        { error: 'No valid authentication challenge found. Please try again.' },
-        { status: 400 }
+        { error: "No valid authentication challenge found. Please try again." },
+        { status: 400 },
       );
     }
 
     // Verify the client data
-    const clientDataJSON = Buffer.from(credential.response.clientDataJSON, 'base64url').toString('utf8');
+    const clientDataJSON = Buffer.from(
+      credential.response.clientDataJSON,
+      "base64url",
+    ).toString("utf8");
     const clientData = JSON.parse(clientDataJSON);
 
     // Verify the challenge matches
     if (clientData.challenge !== challengeData.challenge) {
       return NextResponse.json(
-        { error: 'Challenge mismatch' },
-        { status: 400 }
+        { error: "Challenge mismatch" },
+        { status: 400 },
       );
     }
 
     // Verify the type
-    if (clientData.type !== 'webauthn.get') {
+    if (clientData.type !== "webauthn.get") {
       return NextResponse.json(
-        { error: 'Invalid credential type' },
-        { status: 400 }
+        { error: "Invalid credential type" },
+        { status: 400 },
       );
     }
 
@@ -107,41 +116,40 @@ export async function POST(request: NextRequest) {
 
     // Clean up the challenge
     await supabase
-      .from('webauthn_challenges')
+      .from("webauthn_challenges")
       .delete()
-      .eq('challenge', challengeData.challenge);
+      .eq("challenge", challengeData.challenge);
 
     // Update last used timestamp
     await supabase
-      .from('webauthn_credentials')
+      .from("webauthn_credentials")
       .update({ last_used_at: new Date().toISOString() })
-      .eq('credential_id', credential.id);
+      .eq("credential_id", credential.id);
 
     // Get the user's email from auth.users or profiles
     let userEmail = storedCredential.profiles?.email;
 
     if (!userEmail) {
       // Try to get email from auth.users table using admin client
-      const { data: authUser } = await adminSupabase.auth.admin.getUserById(userId);
+      const { data: authUser } =
+        await adminSupabase.auth.admin.getUserById(userId);
       userEmail = authUser?.user?.email;
     }
 
     if (!userEmail) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "User not found" }, { status: 401 });
     }
 
     // Create a session for the user using a magic link approach
     // In production, you would use a more secure method
-    const { data: magicLinkData, error: magicLinkError } = await adminSupabase.auth.admin.generateLink({
-      type: 'magiclink',
-      email: userEmail,
-      options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/callback`,
-      },
-    });
+    const { data: magicLinkData, error: magicLinkError } =
+      await adminSupabase.auth.admin.generateLink({
+        type: "magiclink",
+        email: userEmail,
+        options: {
+          redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/auth/callback`,
+        },
+      });
 
     if (magicLinkError || !magicLinkData) {
       // Fallback: Return success with user info but without automatic session
@@ -152,7 +160,7 @@ export async function POST(request: NextRequest) {
           email: userEmail,
         },
         requiresManualLogin: true,
-        message: 'Passkey verified. Please complete sign-in.',
+        message: "Passkey verified. Please complete sign-in.",
       });
     }
 
@@ -171,7 +179,9 @@ export async function POST(request: NextRequest) {
           email: userEmail,
         },
         // Provide action URL for completing authentication
-        actionRequired: magicLinkData.properties?.action_link ? 'verify_link' : undefined,
+        actionRequired: magicLinkData.properties?.action_link
+          ? "verify_link"
+          : undefined,
         verificationUrl: magicLinkData.properties?.action_link,
       });
     }
@@ -184,10 +194,10 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('WebAuthn authentication verify error:', error);
+    console.error("WebAuthn authentication verify error:", error);
     return NextResponse.json(
-      { error: 'Failed to verify authentication' },
-      { status: 500 }
+      { error: "Failed to verify authentication" },
+      { status: 500 },
     );
   }
 }

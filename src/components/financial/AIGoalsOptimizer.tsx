@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/components/ui/Toast';
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/components/ui/Toast";
 
 interface GoalOptimization {
   goalId: string;
@@ -18,7 +18,7 @@ interface GoalOptimization {
 interface AutoSaveRule {
   id: string;
   name: string;
-  type: 'round_up' | 'percentage' | 'fixed';
+  type: "round_up" | "percentage" | "fixed";
   amount: number;
   linkedGoalId?: string;
   linkedGoalName?: string;
@@ -53,17 +53,20 @@ export default function AIGoalsOptimizer() {
 
     try {
       setLoading(true);
-      const response = await fetch('/api/financial/goals/optimizations');
-      
+      const response = await fetch("/api/financial/goals/optimizations");
+
       if (!response.ok) {
-        throw new Error('Failed to fetch goal optimizations');
+        throw new Error("Failed to fetch goal optimizations");
       }
-      
+
       const result = await response.json();
       setData(result.data);
     } catch (error) {
-      console.error('Error fetching goal optimizations:', error);
-      toast.error('Failed to load AI recommendations', 'Please try again later');
+      console.error("Error fetching goal optimizations:", error);
+      toast.error(
+        "Failed to load AI recommendations",
+        "Please try again later",
+      );
     } finally {
       setLoading(false);
     }
@@ -77,47 +80,49 @@ export default function AIGoalsOptimizer() {
 
   const handleToggleAutoSave = async () => {
     setEnablingAutoSave(true);
-    
+
     try {
-      const response = await fetch('/api/financial/savings/auto-save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/financial/savings/auto-save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           enabled: !data?.autoSaveEnabled,
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to toggle auto-save');
+        throw new Error("Failed to toggle auto-save");
       }
 
       toast.success(
-        data?.autoSaveEnabled ? 'Auto-save disabled' : 'Auto-save enabled!',
-        data?.autoSaveEnabled ? 'You can re-enable it anytime' : 'Your savings will grow automatically'
+        data?.autoSaveEnabled ? "Auto-save disabled" : "Auto-save enabled!",
+        data?.autoSaveEnabled
+          ? "You can re-enable it anytime"
+          : "Your savings will grow automatically",
       );
-      
+
       await fetchOptimizations();
     } catch (error) {
-      console.error('Error toggling auto-save:', error);
-      toast.error('Failed to update auto-save', 'Please try again');
+      console.error("Error toggling auto-save:", error);
+      toast.error("Failed to update auto-save", "Please try again");
     } finally {
       setEnablingAutoSave(false);
     }
   };
 
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
   };
 
   const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      year: 'numeric',
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      year: "numeric",
     });
   };
 
@@ -145,14 +150,16 @@ export default function AIGoalsOptimizer() {
           <div className="text-3xl"></div>
           <div>
             <h3 className="text-xl font-bold">AI Goals Optimizer</h3>
-            <p className="text-sm opacity-90">Auto-save and smart goal recommendations</p>
+            <p className="text-sm opacity-90">
+              Auto-save and smart goal recommendations
+            </p>
           </div>
         </div>
         <button
           onClick={() => setExpanded(!expanded)}
           className="px-4 py-2 bg-white hover:bg-white dark:bg-slate-800/30 rounded-lg transition-colors text-sm font-medium"
         >
-          {expanded ? 'Collapse' : 'Expand'}
+          {expanded ? "Collapse" : "Expand"}
         </button>
       </div>
 
@@ -164,37 +171,47 @@ export default function AIGoalsOptimizer() {
             <div className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-4">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <div className="text-sm font-medium opacity-90 mb-1">Auto-Save</div>
+                  <div className="text-sm font-medium opacity-90 mb-1">
+                    Auto-Save
+                  </div>
                   <div className="text-xs opacity-75">
-                    {data.autoSaveEnabled ? 'Actively saving' : 'Not enabled'}
+                    {data.autoSaveEnabled ? "Actively saving" : "Not enabled"}
                   </div>
                 </div>
                 <button
                   onClick={handleToggleAutoSave}
                   disabled={enablingAutoSave}
                   className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
-                    data.autoSaveEnabled ? 'bg-green-500' : 'bg-white dark:bg-slate-800/30'
-                  } ${enablingAutoSave ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    data.autoSaveEnabled
+                      ? "bg-green-500"
+                      : "bg-white dark:bg-slate-800/30"
+                  } ${enablingAutoSave ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   <span
                     className={`inline-block h-6 w-6 transform rounded-full bg-white dark:bg-slate-800 transition-transform ${
-                      data.autoSaveEnabled ? 'translate-x-7' : 'translate-x-1'
+                      data.autoSaveEnabled ? "translate-x-7" : "translate-x-1"
                     }`}
                   />
                 </button>
               </div>
               {data.autoSaveEnabled && (
                 <div className="text-sm">
-                  <span className="opacity-75">Active rules:</span>{' '}
-                  <span className="font-semibold">{data.autoSaveRules.filter(r => r.isActive).length}</span>
+                  <span className="opacity-75">Active rules:</span>{" "}
+                  <span className="font-semibold">
+                    {data.autoSaveRules.filter((r) => r.isActive).length}
+                  </span>
                 </div>
               )}
             </div>
 
             {/* Monthly Auto-Savings */}
             <div className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-4">
-              <div className="text-sm font-medium opacity-90 mb-2">Estimated Monthly Auto-Savings</div>
-              <div className="text-4xl font-bold">{formatCurrency(data.totalAutoSavings)}</div>
+              <div className="text-sm font-medium opacity-90 mb-2">
+                Estimated Monthly Auto-Savings
+              </div>
+              <div className="text-4xl font-bold">
+                {formatCurrency(data.totalAutoSavings)}
+              </div>
               <div className="text-xs opacity-75 mt-2">
                 Based on your spending patterns
               </div>
@@ -204,27 +221,39 @@ export default function AIGoalsOptimizer() {
           {/* Auto-Save Rules */}
           {data.autoSaveEnabled && data.autoSaveRules.length > 0 && (
             <div className="mb-6">
-              <h4 className="text-sm font-semibold mb-3 opacity-90">Active Auto-Save Rules</h4>
+              <h4 className="text-sm font-semibold mb-3 opacity-90">
+                Active Auto-Save Rules
+              </h4>
               <div className="space-y-2">
-                {data.autoSaveRules.filter(r => r.isActive).slice(0, 3).map((rule) => (
-                  <div key={rule.id} className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">{rule.name}</div>
-                        <div className="text-xs opacity-75 mt-1">
-                          {rule.type === 'round_up' && 'Round up purchases'}
-                          {rule.type === 'percentage' && `${rule.amount}% of income`}
-                          {rule.type === 'fixed' && `${formatCurrency(rule.amount)} per month`}
-                          {rule.linkedGoalName && ` → ${rule.linkedGoalName}`}
+                {data.autoSaveRules
+                  .filter((r) => r.isActive)
+                  .slice(0, 3)
+                  .map((rule) => (
+                    <div
+                      key={rule.id}
+                      className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="font-medium text-sm">{rule.name}</div>
+                          <div className="text-xs opacity-75 mt-1">
+                            {rule.type === "round_up" && "Round up purchases"}
+                            {rule.type === "percentage" &&
+                              `${rule.amount}% of income`}
+                            {rule.type === "fixed" &&
+                              `${formatCurrency(rule.amount)} per month`}
+                            {rule.linkedGoalName && ` → ${rule.linkedGoalName}`}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-semibold">
+                            {formatCurrency(rule.estimatedMonthlySavings)}
+                          </div>
+                          <div className="text-xs opacity-75">per month</div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="font-semibold">{formatCurrency(rule.estimatedMonthlySavings)}</div>
-                        <div className="text-xs opacity-75">per month</div>
-                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             </div>
           )}
@@ -232,29 +261,56 @@ export default function AIGoalsOptimizer() {
           {/* Goal Optimizations */}
           {data.optimizations.length > 0 && (
             <div className="mb-6">
-              <h4 className="text-sm font-semibold mb-3 opacity-90">Goal Optimization Recommendations</h4>
+              <h4 className="text-sm font-semibold mb-3 opacity-90">
+                Goal Optimization Recommendations
+              </h4>
               <div className="space-y-3">
                 {data.optimizations.slice(0, 3).map((optimization) => (
-                  <div key={optimization.goalId} className="bg-white dark:bg-slate-800 rounded-lg p-4 text-gray-900 dark:text-white">
+                  <div
+                    key={optimization.goalId}
+                    className="bg-white dark:bg-slate-800 rounded-lg p-4 text-gray-900 dark:text-white"
+                  >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
-                        <h5 className="font-semibold mb-2">{optimization.goalName}</h5>
+                        <h5 className="font-semibold mb-2">
+                          {optimization.goalName}
+                        </h5>
                         <div className="grid grid-cols-2 gap-4 text-sm mb-2">
                           <div>
-                            <span className="text-gray-500 dark:text-slate-400">Current:</span>{' '}
-                            <span className="font-semibold">{formatCurrency(optimization.currentContribution)}/mo</span>
+                            <span className="text-gray-500 dark:text-slate-400">
+                              Current:
+                            </span>{" "}
+                            <span className="font-semibold">
+                              {formatCurrency(optimization.currentContribution)}
+                              /mo
+                            </span>
                           </div>
                           <div>
-                            <span className="text-gray-500 dark:text-slate-400">Recommended:</span>{' '}
-                            <span className="font-semibold text-blue-600">{formatCurrency(optimization.recommendedContribution)}/mo</span>
+                            <span className="text-gray-500 dark:text-slate-400">
+                              Recommended:
+                            </span>{" "}
+                            <span className="font-semibold text-blue-600">
+                              {formatCurrency(
+                                optimization.recommendedContribution,
+                              )}
+                              /mo
+                            </span>
                           </div>
                           <div>
-                            <span className="text-gray-500 dark:text-slate-400">Current completion:</span>{' '}
-                            <span className="font-semibold">{formatDate(optimization.projectedCompletion)}</span>
+                            <span className="text-gray-500 dark:text-slate-400">
+                              Current completion:
+                            </span>{" "}
+                            <span className="font-semibold">
+                              {formatDate(optimization.projectedCompletion)}
+                            </span>
                           </div>
                           <div>
-                            <span className="text-gray-500 dark:text-slate-400">Optimized:</span>{' '}
-                            <span className="font-semibold text-green-600">{formatDate(optimization.optimizedCompletion)}</span>
+                            <span className="text-gray-500 dark:text-slate-400">
+                              Optimized:
+                            </span>{" "}
+                            <span className="font-semibold text-green-600">
+                              {formatDate(optimization.optimizedCompletion)}
+                            </span>
                           </div>
                         </div>
                         <div className="text-sm text-green-600 font-medium">
@@ -274,19 +330,30 @@ export default function AIGoalsOptimizer() {
           {/* Achievement Predictions */}
           {data.achievementPredictions.length > 0 && (
             <div>
-              <h4 className="text-sm font-semibold mb-3 opacity-90">Achievement Predictions</h4>
+              <h4 className="text-sm font-semibold mb-3 opacity-90">
+                Achievement Predictions
+              </h4>
               <div className="space-y-2">
                 {data.achievementPredictions.slice(0, 3).map((prediction) => (
-                  <div key={prediction.goalId} className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-3">
+                  <div
+                    key={prediction.goalId}
+                    className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-3"
+                  >
                     <div className="flex items-center justify-between mb-2">
-                      <div className="font-medium text-sm">{prediction.goalName}</div>
+                      <div className="font-medium text-sm">
+                        {prediction.goalName}
+                      </div>
                       <div className="flex items-center gap-2">
                         <div className="text-xs opacity-75">Probability:</div>
-                        <div className={`text-sm font-bold ${
-                          prediction.probability >= 80 ? 'text-green-300' :
-                          prediction.probability >= 60 ? 'text-yellow-300' :
-                          'text-red-300'
-                        }`}>
+                        <div
+                          className={`text-sm font-bold ${
+                            prediction.probability >= 80
+                              ? "text-green-300"
+                              : prediction.probability >= 60
+                                ? "text-yellow-300"
+                                : "text-red-300"
+                          }`}
+                        >
                           {prediction.probability}%
                         </div>
                       </div>
@@ -327,4 +394,3 @@ export default function AIGoalsOptimizer() {
     </div>
   );
 }
-

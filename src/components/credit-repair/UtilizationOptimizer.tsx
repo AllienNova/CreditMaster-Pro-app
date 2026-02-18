@@ -1,6 +1,6 @@
 /**
  * Utilization Optimizer Component
- * 
+ *
  * Helps users optimize credit utilization for maximum score impact:
  * - Calculate optimal payment amounts
  * - Payment timing strategy (pay BEFORE statement date)
@@ -8,9 +8,9 @@
  * - 20-50 point impact in 30 days
  */
 
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 
 interface CreditCard {
   id: string;
@@ -30,22 +30,22 @@ interface OptimizedPayment {
 
 type OptimizationPlan =
   | {
-      strategy: 'pay_off_all' | 'optimize_partial';
+      strategy: "pay_off_all" | "optimize_partial";
       payments: OptimizedPayment[];
       currentScore: number;
       newScore: number;
       scoreImpact: number;
     }
   | {
-      strategy: 'no_cash';
+      strategy: "no_cash";
       message: string;
     };
 
 export default function UtilizationOptimizer() {
   const [cards, setCards] = useState<CreditCard[]>([
     {
-      id: '1',
-      name: 'Card 1',
+      id: "1",
+      name: "Card 1",
       currentBalance: 0,
       creditLimit: 5000,
       statementDate: 15,
@@ -53,7 +53,9 @@ export default function UtilizationOptimizer() {
     },
   ]);
   const [availableCash, setAvailableCash] = useState<number>(0);
-  const [optimizedPlan, setOptimizedPlan] = useState<OptimizationPlan | null>(null);
+  const [optimizedPlan, setOptimizedPlan] = useState<OptimizationPlan | null>(
+    null,
+  );
 
   const addCard = () => {
     setCards([
@@ -69,14 +71,20 @@ export default function UtilizationOptimizer() {
     ]);
   };
 
-  const updateCard = <K extends keyof CreditCard>(id: string, field: K, value: CreditCard[K]) => {
-    setCards(cards.map(card =>
-      card.id === id ? { ...card, [field]: value } : card
-    ));
+  const updateCard = <K extends keyof CreditCard>(
+    id: string,
+    field: K,
+    value: CreditCard[K],
+  ) => {
+    setCards(
+      cards.map((card) =>
+        card.id === id ? { ...card, [field]: value } : card,
+      ),
+    );
   };
 
   const removeCard = (id: string) => {
-    setCards(cards.filter(card => card.id !== id));
+    setCards(cards.filter((card) => card.id !== id));
   };
 
   const calculateUtilization = (balance: number, limit: number) => {
@@ -85,20 +93,26 @@ export default function UtilizationOptimizer() {
   };
 
   const calculateOverallUtilization = () => {
-    const totalBalance = cards.reduce((sum, card) => sum + card.currentBalance, 0);
+    const totalBalance = cards.reduce(
+      (sum, card) => sum + card.currentBalance,
+      0,
+    );
     const totalLimit = cards.reduce((sum, card) => sum + card.creditLimit, 0);
     return calculateUtilization(totalBalance, totalLimit);
   };
 
   const optimizePayments = () => {
-    const totalBalance = cards.reduce((sum, card) => sum + card.currentBalance, 0);
+    const totalBalance = cards.reduce(
+      (sum, card) => sum + card.currentBalance,
+      0,
+    );
     const totalLimit = cards.reduce((sum, card) => sum + card.creditLimit, 0);
-    
+
     if (availableCash >= totalBalance) {
       // Can pay off everything
       setOptimizedPlan({
-        strategy: 'pay_off_all',
-        payments: cards.map(card => ({
+        strategy: "pay_off_all",
+        payments: cards.map((card) => ({
           cardName: card.name,
           paymentAmount: card.currentBalance,
           newBalance: 0,
@@ -118,39 +132,49 @@ export default function UtilizationOptimizer() {
       });
 
       let remainingCash = availableCash;
-      const payments = sortedCards.map(card => {
+      const payments = sortedCards.map((card) => {
         const targetUtilization = 10; // Target 10% or less
         const targetBalance = card.creditLimit * (targetUtilization / 100);
         const idealPayment = Math.max(0, card.currentBalance - targetBalance);
-        const actualPayment = Math.min(remainingCash, idealPayment, card.currentBalance);
-        
+        const actualPayment = Math.min(
+          remainingCash,
+          idealPayment,
+          card.currentBalance,
+        );
+
         remainingCash -= actualPayment;
-        
+
         return {
           cardName: card.name,
           paymentAmount: actualPayment,
           newBalance: card.currentBalance - actualPayment,
           newUtilization: calculateUtilization(
             card.currentBalance - actualPayment,
-            card.creditLimit
+            card.creditLimit,
           ),
         };
       });
 
       const newTotalBalance = totalBalance - availableCash;
-      const newOverallUtilization = calculateUtilization(newTotalBalance, totalLimit);
+      const newOverallUtilization = calculateUtilization(
+        newTotalBalance,
+        totalLimit,
+      );
 
       setOptimizedPlan({
-        strategy: 'optimize_partial',
+        strategy: "optimize_partial",
         payments,
         currentScore: calculateOverallUtilization(),
         newScore: newOverallUtilization,
-        scoreImpact: calculateScoreImpact(calculateOverallUtilization(), newOverallUtilization),
+        scoreImpact: calculateScoreImpact(
+          calculateOverallUtilization(),
+          newOverallUtilization,
+        ),
       });
     } else {
       setOptimizedPlan({
-        strategy: 'no_cash',
-        message: 'Enter available cash to see optimization plan',
+        strategy: "no_cash",
+        message: "Enter available cash to see optimization plan",
       });
     }
   };
@@ -162,15 +186,15 @@ export default function UtilizationOptimizer() {
   };
 
   const getUtilizationColor = (utilization: number) => {
-    if (utilization <= 10) return 'text-green-600';
-    if (utilization <= 30) return 'text-yellow-600';
-    return 'text-red-600';
+    if (utilization <= 10) return "text-green-600";
+    if (utilization <= 30) return "text-yellow-600";
+    return "text-red-600";
   };
 
   const getUtilizationBgColor = (utilization: number) => {
-    if (utilization <= 10) return 'bg-green-100';
-    if (utilization <= 30) return 'bg-yellow-100';
-    return 'bg-red-100';
+    if (utilization <= 10) return "bg-green-100";
+    if (utilization <= 30) return "bg-yellow-100";
+    return "bg-red-100";
   };
 
   const overallUtilization = calculateOverallUtilization();
@@ -196,19 +220,31 @@ export default function UtilizationOptimizer() {
               </span>
             </div>
             <p className="text-gray-600 dark:text-slate-300 mt-2">
-              {overallUtilization <= 10 && 'Excellent! Keep it under 10%'}
-              {overallUtilization > 10 && overallUtilization <= 30 && 'Good, but aim for under 10%'}
-              {overallUtilization > 30 && 'High utilization - pay down ASAP'}
+              {overallUtilization <= 10 && "Excellent! Keep it under 10%"}
+              {overallUtilization > 10 &&
+                overallUtilization <= 30 &&
+                "Good, but aim for under 10%"}
+              {overallUtilization > 30 && "High utilization - pay down ASAP"}
             </p>
           </div>
           <div className="text-right">
-            <div className="text-sm text-gray-600 dark:text-slate-300">Total Balance</div>
-            <div className="text-2xl font-bold text-gray-800 dark:text-slate-100">
-              ${cards.reduce((sum, card) => sum + card.currentBalance, 0).toLocaleString()}
+            <div className="text-sm text-gray-600 dark:text-slate-300">
+              Total Balance
             </div>
-            <div className="text-sm text-gray-600 dark:text-slate-300 mt-2">Total Limit</div>
+            <div className="text-2xl font-bold text-gray-800 dark:text-slate-100">
+              $
+              {cards
+                .reduce((sum, card) => sum + card.currentBalance, 0)
+                .toLocaleString()}
+            </div>
+            <div className="text-sm text-gray-600 dark:text-slate-300 mt-2">
+              Total Limit
+            </div>
             <div className="text-xl font-semibold text-gray-700 dark:text-slate-200">
-              ${cards.reduce((sum, card) => sum + card.creditLimit, 0).toLocaleString()}
+              $
+              {cards
+                .reduce((sum, card) => sum + card.creditLimit, 0)
+                .toLocaleString()}
             </div>
           </div>
         </div>
@@ -228,52 +264,92 @@ export default function UtilizationOptimizer() {
 
         <div className="space-y-4">
           {cards.map((card) => {
-            const utilization = calculateUtilization(card.currentBalance, card.creditLimit);
+            const utilization = calculateUtilization(
+              card.currentBalance,
+              card.creditLimit,
+            );
             return (
-              <div key={card.id} className="border border-gray-200 dark:border-slate-700 rounded-lg p-4">
+              <div
+                key={card.id}
+                className="border border-gray-200 dark:border-slate-700 rounded-lg p-4"
+              >
                 <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                   <div>
-                    <label className="block text-xs text-gray-600 dark:text-slate-300 mb-1">Card Name</label>
+                    <label className="block text-xs text-gray-600 dark:text-slate-300 mb-1">
+                      Card Name
+                    </label>
                     <input
                       type="text"
                       value={card.name}
-                      onChange={(e) => updateCard(card.id, 'name', e.target.value)}
+                      onChange={(e) =>
+                        updateCard(card.id, "name", e.target.value)
+                      }
                       className="w-full px-2 py-1 border border-gray-300 dark:border-slate-600 rounded text-sm"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-600 dark:text-slate-300 mb-1">Current Balance</label>
+                    <label className="block text-xs text-gray-600 dark:text-slate-300 mb-1">
+                      Current Balance
+                    </label>
                     <input
                       type="number"
                       value={card.currentBalance}
-                      onChange={(e) => updateCard(card.id, 'currentBalance', parseFloat(e.target.value) || 0)}
+                      onChange={(e) =>
+                        updateCard(
+                          card.id,
+                          "currentBalance",
+                          parseFloat(e.target.value) || 0,
+                        )
+                      }
                       className="w-full px-2 py-1 border border-gray-300 dark:border-slate-600 rounded text-sm"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-600 dark:text-slate-300 mb-1">Credit Limit</label>
+                    <label className="block text-xs text-gray-600 dark:text-slate-300 mb-1">
+                      Credit Limit
+                    </label>
                     <input
                       type="number"
                       value={card.creditLimit}
-                      onChange={(e) => updateCard(card.id, 'creditLimit', parseFloat(e.target.value) || 0)}
+                      onChange={(e) =>
+                        updateCard(
+                          card.id,
+                          "creditLimit",
+                          parseFloat(e.target.value) || 0,
+                        )
+                      }
                       className="w-full px-2 py-1 border border-gray-300 dark:border-slate-600 rounded text-sm"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-600 dark:text-slate-300 mb-1">Statement Date</label>
+                    <label className="block text-xs text-gray-600 dark:text-slate-300 mb-1">
+                      Statement Date
+                    </label>
                     <input
                       type="number"
                       min="1"
                       max="31"
                       value={card.statementDate}
-                      onChange={(e) => updateCard(card.id, 'statementDate', parseInt(e.target.value) || 1)}
+                      onChange={(e) =>
+                        updateCard(
+                          card.id,
+                          "statementDate",
+                          parseInt(e.target.value) || 1,
+                        )
+                      }
                       className="w-full px-2 py-1 border border-gray-300 dark:border-slate-600 rounded text-sm"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-600 dark:text-slate-300 mb-1">Utilization</label>
-                    <div className={`px-2 py-1 rounded text-center font-bold ${getUtilizationBgColor(utilization)}`}>
-                      <span className={getUtilizationColor(utilization)}>{utilization}%</span>
+                    <label className="block text-xs text-gray-600 dark:text-slate-300 mb-1">
+                      Utilization
+                    </label>
+                    <div
+                      className={`px-2 py-1 rounded text-center font-bold ${getUtilizationBgColor(utilization)}`}
+                    >
+                      <span className={getUtilizationColor(utilization)}>
+                        {utilization}%
+                      </span>
                     </div>
                   </div>
                   <div className="flex items-end">
@@ -294,7 +370,7 @@ export default function UtilizationOptimizer() {
       {/* Optimization */}
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6">
         <h2 className="text-2xl font-bold mb-4">Payment Optimization</h2>
-        
+
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
             Available Cash for Payments
@@ -315,35 +391,53 @@ export default function UtilizationOptimizer() {
           Optimize My Payments
         </button>
 
-        {optimizedPlan && optimizedPlan.strategy !== 'no_cash' && (
+        {optimizedPlan && optimizedPlan.strategy !== "no_cash" && (
           <div className="space-y-4">
             <div className="p-4 bg-blue-50 rounded-lg">
-              <h3 className="font-semibold text-blue-800 mb-2">Optimization Results</h3>
+              <h3 className="font-semibold text-blue-800 mb-2">
+                Optimization Results
+              </h3>
               <div className="grid grid-cols-3 gap-4 text-center">
                 <div>
-                  <div className="text-sm text-blue-600">Current Utilization</div>
-                  <div className="text-2xl font-bold text-blue-800">{optimizedPlan.currentScore}%</div>
+                  <div className="text-sm text-blue-600">
+                    Current Utilization
+                  </div>
+                  <div className="text-2xl font-bold text-blue-800">
+                    {optimizedPlan.currentScore}%
+                  </div>
                 </div>
                 <div>
                   <div className="text-sm text-green-600">New Utilization</div>
-                  <div className="text-2xl font-bold text-green-800">{optimizedPlan.newScore}%</div>
+                  <div className="text-2xl font-bold text-green-800">
+                    {optimizedPlan.newScore}%
+                  </div>
                 </div>
                 <div>
                   <div className="text-sm text-blue-600">Estimated Impact</div>
-                  <div className="text-2xl font-bold text-blue-800">+{optimizedPlan.scoreImpact} pts</div>
+                  <div className="text-2xl font-bold text-blue-800">
+                    +{optimizedPlan.scoreImpact} pts
+                  </div>
                 </div>
               </div>
             </div>
 
             <div className="space-y-2">
-              <h3 className="font-semibold text-gray-800 dark:text-slate-100">Recommended Payments:</h3>
+              <h3 className="font-semibold text-gray-800 dark:text-slate-100">
+                Recommended Payments:
+              </h3>
               {optimizedPlan.payments.map((payment, idx) => (
-                <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-900 rounded-lg">
+                <div
+                  key={idx}
+                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-900 rounded-lg"
+                >
                   <span className="font-medium">{payment.cardName}</span>
                   <div className="text-right">
-                    <div className="font-bold text-green-600">Pay ${payment.paymentAmount.toLocaleString()}</div>
+                    <div className="font-bold text-green-600">
+                      Pay ${payment.paymentAmount.toLocaleString()}
+                    </div>
                     <div className="text-sm text-gray-600 dark:text-slate-300">
-                      New balance: ${payment.newBalance.toLocaleString()} ({payment.newUtilization}%)
+                      New balance: ${payment.newBalance.toLocaleString()} (
+                      {payment.newUtilization}%)
                     </div>
                   </div>
                 </div>
@@ -353,13 +447,15 @@ export default function UtilizationOptimizer() {
             <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
               <h3 className="font-semibold text-yellow-800 mb-2">Pro Tip:</h3>
               <p className="text-sm text-yellow-700">
-                Make these payments <strong>BEFORE your statement closing date</strong>, not the due date! 
-                This ensures the lower balance is reported to credit bureaus.
+                Make these payments{" "}
+                <strong>BEFORE your statement closing date</strong>, not the due
+                date! This ensures the lower balance is reported to credit
+                bureaus.
               </p>
             </div>
           </div>
         )}
-        {optimizedPlan && optimizedPlan.strategy === 'no_cash' && (
+        {optimizedPlan && optimizedPlan.strategy === "no_cash" && (
           <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800">
             {optimizedPlan.message}
           </div>

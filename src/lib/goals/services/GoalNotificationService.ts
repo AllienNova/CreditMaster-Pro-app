@@ -5,25 +5,25 @@
  * generates adjustment recommendations when goals are off track.
  */
 
-import { getSupabase } from '@/lib/supabase/client';
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
-import { Subject, BehaviorSubject } from 'rxjs';
+import { Subject, BehaviorSubject } from "rxjs";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 export type NotificationType =
-  | 'milestone_reached'
-  | 'goal_on_track'
-  | 'goal_behind'
-  | 'goal_at_risk'
-  | 'contribution_reminder'
-  | 'adjustment_recommended'
-  | 'goal_completed';
+  | "milestone_reached"
+  | "goal_on_track"
+  | "goal_behind"
+  | "goal_at_risk"
+  | "contribution_reminder"
+  | "adjustment_recommended"
+  | "goal_completed";
 
-export type NotificationPriority = 'low' | 'medium' | 'high' | 'urgent';
+export type NotificationPriority = "low" | "medium" | "high" | "urgent";
 
 export interface GoalNotification {
   id: string;
@@ -55,10 +55,10 @@ export interface AdjustmentRecommendation {
   goalId: string;
   goalName: string;
   type:
-    | 'increase_contribution'
-    | 'extend_timeline'
-    | 'reduce_target'
-    | 'change_allocation';
+    | "increase_contribution"
+    | "extend_timeline"
+    | "reduce_target"
+    | "change_allocation";
   priority: NotificationPriority;
   title: string;
   description: string;
@@ -88,7 +88,7 @@ export interface NotificationPreferences {
   contributionReminders: boolean;
   emailNotifications: boolean;
   pushNotifications: boolean;
-  frequencySummary: 'daily' | 'weekly' | 'monthly';
+  frequencySummary: "daily" | "weekly" | "monthly";
 }
 
 // ============================================================================
@@ -106,7 +106,7 @@ const DEFAULT_PREFERENCES: NotificationPreferences = {
   contributionReminders: true,
   emailNotifications: false,
   pushNotifications: true,
-  frequencySummary: 'weekly',
+  frequencySummary: "weekly",
 };
 
 // ============================================================================
@@ -136,23 +136,23 @@ export class GoalNotificationService {
     options?: {
       unreadOnly?: boolean;
       limit?: number;
-    }
+    },
   ): Promise<GoalNotification[]> {
     try {
       let query = supabase
-        .from('goal_notifications')
+        .from("goal_notifications")
         .select(
           `
           *,
           financial_goals(name)
-        `
+        `,
         )
-        .eq('user_id', userId)
-        .is('dismissed_at', null)
-        .order('created_at', { ascending: false });
+        .eq("user_id", userId)
+        .is("dismissed_at", null)
+        .order("created_at", { ascending: false });
 
       if (options?.unreadOnly) {
-        query = query.is('read_at', null);
+        query = query.is("read_at", null);
       }
 
       if (options?.limit) {
@@ -169,7 +169,7 @@ export class GoalNotificationService {
       const notifications = (data || []).map((row) => ({
         id: row.id,
         goalId: row.goal_id,
-        goalName: row.financial_goals?.name || 'Unknown Goal',
+        goalName: row.financial_goals?.name || "Unknown Goal",
         type: row.type as NotificationType,
         priority: row.priority as NotificationPriority,
         title: row.title,
@@ -203,11 +203,11 @@ export class GoalNotificationService {
       actionUrl?: string;
       actionLabel?: string;
       metadata?: Record<string, unknown>;
-    }
+    },
   ): Promise<GoalNotification | null> {
     try {
       const { data: result, error } = await supabase
-        .from('goal_notifications')
+        .from("goal_notifications")
         .insert({
           user_id: userId,
           goal_id: goalId,
@@ -231,7 +231,7 @@ export class GoalNotificationService {
       const notification: GoalNotification = {
         id: result.id,
         goalId: result.goal_id,
-        goalName: result.financial_goals?.name || 'Unknown Goal',
+        goalName: result.financial_goals?.name || "Unknown Goal",
         type: result.type,
         priority: result.priority,
         title: result.title,
@@ -258,14 +258,14 @@ export class GoalNotificationService {
   async markAsRead(notificationId: string): Promise<boolean> {
     try {
       const { error } = await supabase
-        .from('goal_notifications')
+        .from("goal_notifications")
         .update({ read_at: new Date().toISOString() })
-        .eq('id', notificationId);
+        .eq("id", notificationId);
 
       if (!error) {
         const current = this.notificationsSubject.getValue();
         const updated = current.map((n) =>
-          n.id === notificationId ? { ...n, readAt: new Date() } : n
+          n.id === notificationId ? { ...n, readAt: new Date() } : n,
         );
         this.notificationsSubject.next(updated);
       }
@@ -282,14 +282,14 @@ export class GoalNotificationService {
   async dismissNotification(notificationId: string): Promise<boolean> {
     try {
       const { error } = await supabase
-        .from('goal_notifications')
+        .from("goal_notifications")
         .update({ dismissed_at: new Date().toISOString() })
-        .eq('id', notificationId);
+        .eq("id", notificationId);
 
       if (!error) {
         const current = this.notificationsSubject.getValue();
         this.notificationsSubject.next(
-          current.filter((n) => n.id !== notificationId)
+          current.filter((n) => n.id !== notificationId),
         );
       }
 
@@ -311,25 +311,25 @@ export class GoalNotificationService {
     goalId: string,
     goalName: string,
     currentAmount: number,
-    targetAmount: number
+    targetAmount: number,
   ): Promise<MilestoneEvent[]> {
     const currentPercent = (currentAmount / targetAmount) * 100;
     const achievedMilestones: MilestoneEvent[] = [];
 
     // Get previously achieved milestones
     const { data: existing } = await supabase
-      .from('goal_milestones')
-      .select('milestone_percent')
-      .eq('goal_id', goalId);
+      .from("goal_milestones")
+      .select("milestone_percent")
+      .eq("goal_id", goalId);
 
     const existingMilestones = new Set(
-      (existing || []).map((m) => m.milestone_percent)
+      (existing || []).map((m) => m.milestone_percent),
     );
 
     for (const threshold of MILESTONE_THRESHOLDS) {
       if (currentPercent >= threshold && !existingMilestones.has(threshold)) {
         // Record the milestone
-        await supabase.from('goal_milestones').insert({
+        await supabase.from("goal_milestones").insert({
           goal_id: goalId,
           milestone_percent: threshold,
           amount_at_milestone: currentAmount,
@@ -350,8 +350,8 @@ export class GoalNotificationService {
 
         // Create notification
         await this.createNotification(userId, goalId, {
-          type: threshold === 100 ? 'goal_completed' : 'milestone_reached',
-          priority: threshold === 100 ? 'high' : 'medium',
+          type: threshold === 100 ? "goal_completed" : "milestone_reached",
+          priority: threshold === 100 ? "high" : "medium",
           title:
             threshold === 100
               ? `Congratulations! Goal Completed!`
@@ -361,7 +361,7 @@ export class GoalNotificationService {
               ? `You've reached your goal of $${targetAmount.toLocaleString()} for "${goalName}"!`
               : `You've reached ${threshold}% of your "${goalName}" goal. Keep it up!`,
           actionUrl: `/goals/${goalId}`,
-          actionLabel: 'View Goal',
+          actionLabel: "View Goal",
           metadata: { milestonePercent: threshold },
         });
       }
@@ -388,7 +388,7 @@ export class GoalNotificationService {
       createdAt: Date;
       monthlyContribution: number;
       expectedReturn: number;
-    }
+    },
   ): Promise<GoalHealthCheck> {
     const now = new Date();
     const totalDuration = data.targetDate.getTime() - data.createdAt.getTime();
@@ -401,13 +401,13 @@ export class GoalNotificationService {
 
     // Determine if on track
     const progressRatioVsExpected = currentProgress / expectedProgress;
-    let isOnTrack = progressRatioVsExpected >= BEHIND_SCHEDULE_THRESHOLD;
+    const isOnTrack = progressRatioVsExpected >= BEHIND_SCHEDULE_THRESHOLD;
 
     // Calculate projected completion
     const monthsRemaining = Math.max(
       0,
       (data.targetDate.getFullYear() - now.getFullYear()) * 12 +
-        (data.targetDate.getMonth() - now.getMonth())
+        (data.targetDate.getMonth() - now.getMonth()),
     );
 
     const monthlyReturn = data.expectedReturn / 12;
@@ -423,7 +423,7 @@ export class GoalNotificationService {
             data.currentAmount,
             data.targetAmount,
             data.monthlyContribution,
-            data.expectedReturn
+            data.expectedReturn,
           )
         : null;
 
@@ -441,7 +441,7 @@ export class GoalNotificationService {
         data.currentAmount,
         data.targetAmount,
         monthsRemaining,
-        data.expectedReturn
+        data.expectedReturn,
       );
 
       if (requiredMonthly > data.monthlyContribution * 1.5) {
@@ -450,17 +450,17 @@ export class GoalNotificationService {
           id: `rec-${goalId}-extend`,
           goalId,
           goalName: data.goalName,
-          type: 'extend_timeline',
-          priority: 'high',
-          title: 'Consider Extending Your Timeline',
+          type: "extend_timeline",
+          priority: "high",
+          title: "Consider Extending Your Timeline",
           description: `Your goal may be difficult to achieve by ${data.targetDate.toLocaleDateString()}. Consider extending the target date.`,
           impact:
-            'Reduces monthly contribution requirement and investment risk',
+            "Reduces monthly contribution requirement and investment risk",
           suggestedValue: this.estimateRequiredMonths(
             data.currentAmount,
             data.targetAmount,
             data.monthlyContribution,
-            data.expectedReturn
+            data.expectedReturn,
           ),
           createdAt: new Date(),
         });
@@ -469,11 +469,11 @@ export class GoalNotificationService {
           id: `rec-${goalId}-reduce`,
           goalId,
           goalName: data.goalName,
-          type: 'reduce_target',
-          priority: 'medium',
-          title: 'Adjust Your Target Amount',
+          type: "reduce_target",
+          priority: "medium",
+          title: "Adjust Your Target Amount",
           description: `Consider setting a more achievable target based on your current savings rate.`,
-          impact: 'Makes goal more achievable with current contributions',
+          impact: "Makes goal more achievable with current contributions",
           suggestedValue: Math.round(projectedAmount * 0.95),
           currentValue: data.targetAmount,
           createdAt: new Date(),
@@ -484,10 +484,10 @@ export class GoalNotificationService {
         id: `rec-${goalId}-increase`,
         goalId,
         goalName: data.goalName,
-        type: 'increase_contribution',
+        type: "increase_contribution",
         priority:
-          requiredMonthly <= data.monthlyContribution * 1.5 ? 'high' : 'medium',
-        title: 'Increase Monthly Contribution',
+          requiredMonthly <= data.monthlyContribution * 1.5 ? "high" : "medium",
+        title: "Increase Monthly Contribution",
         description: `Increasing your monthly contribution would help you reach your goal on time.`,
         impact: `Projected to reach ${(((data.currentAmount + requiredMonthly * monthsRemaining) / data.targetAmount) * 100).toFixed(0)}% of goal`,
         suggestedValue: Math.round(requiredMonthly),
@@ -497,12 +497,12 @@ export class GoalNotificationService {
 
       // Create notification for at-risk goal
       await this.createNotification(userId, goalId, {
-        type: 'goal_at_risk',
-        priority: 'urgent',
-        title: 'Goal At Risk',
+        type: "goal_at_risk",
+        priority: "urgent",
+        title: "Goal At Risk",
         message: `Your "${data.goalName}" goal is significantly behind schedule. Review your options to get back on track.`,
         actionUrl: `/goals/${goalId}/adjust`,
-        actionLabel: 'Review Options',
+        actionLabel: "Review Options",
       });
     } else if (progressRatioVsExpected < BEHIND_SCHEDULE_THRESHOLD) {
       // Goal is behind
@@ -510,30 +510,30 @@ export class GoalNotificationService {
         data.currentAmount,
         data.targetAmount,
         monthsRemaining,
-        data.expectedReturn
+        data.expectedReturn,
       );
 
       recommendations.push({
         id: `rec-${goalId}-catchup`,
         goalId,
         goalName: data.goalName,
-        type: 'increase_contribution',
-        priority: 'medium',
-        title: 'Catch-Up Contribution',
+        type: "increase_contribution",
+        priority: "medium",
+        title: "Catch-Up Contribution",
         description: `A small increase in contributions can help you get back on track.`,
-        impact: 'Gets you back on schedule within 3 months',
+        impact: "Gets you back on schedule within 3 months",
         suggestedValue: Math.round(requiredMonthly),
         currentValue: data.monthlyContribution,
         createdAt: new Date(),
       });
 
       await this.createNotification(userId, goalId, {
-        type: 'goal_behind',
-        priority: 'medium',
-        title: 'Goal Progress Update',
+        type: "goal_behind",
+        priority: "medium",
+        title: "Goal Progress Update",
         message: `Your "${data.goalName}" goal is slightly behind schedule. A small adjustment can help.`,
         actionUrl: `/goals/${goalId}`,
-        actionLabel: 'View Details',
+        actionLabel: "View Details",
       });
     }
 
@@ -567,19 +567,19 @@ export class GoalNotificationService {
       if (!recommendation) return false;
 
       // Record acceptance
-      await supabase.from('recommendation_actions').insert({
+      await supabase.from("recommendation_actions").insert({
         recommendation_id: recommendationId,
         goal_id: recommendation.goalId,
-        action: 'accepted',
+        action: "accepted",
         acted_at: new Date().toISOString(),
       });
 
       // Update observable
       const updated = current.map((r) =>
-        r.id === recommendationId ? { ...r, acceptedAt: new Date() } : r
+        r.id === recommendationId ? { ...r, acceptedAt: new Date() } : r,
       );
       this.recommendationsSubject.next(
-        updated.filter((r) => !r.acceptedAt && !r.dismissedAt)
+        updated.filter((r) => !r.acceptedAt && !r.dismissedAt),
       );
 
       return true;
@@ -599,16 +599,16 @@ export class GoalNotificationService {
       if (!recommendation) return false;
 
       // Record dismissal
-      await supabase.from('recommendation_actions').insert({
+      await supabase.from("recommendation_actions").insert({
         recommendation_id: recommendationId,
         goal_id: recommendation.goalId,
-        action: 'dismissed',
+        action: "dismissed",
         acted_at: new Date().toISOString(),
       });
 
       // Update observable
       this.recommendationsSubject.next(
-        current.filter((r) => r.id !== recommendationId)
+        current.filter((r) => r.id !== recommendationId),
       );
 
       return true;
@@ -627,9 +627,9 @@ export class GoalNotificationService {
   async getPreferences(userId: string): Promise<NotificationPreferences> {
     try {
       const { data } = await supabase
-        .from('user_notification_preferences')
-        .select('*')
-        .eq('user_id', userId)
+        .from("user_notification_preferences")
+        .select("*")
+        .eq("user_id", userId)
         .single();
 
       if (!data) return DEFAULT_PREFERENCES;
@@ -641,7 +641,7 @@ export class GoalNotificationService {
         contributionReminders: data.contribution_reminders ?? true,
         emailNotifications: data.email_notifications ?? false,
         pushNotifications: data.push_notifications ?? true,
-        frequencySummary: data.frequency_summary ?? 'weekly',
+        frequencySummary: data.frequency_summary ?? "weekly",
       };
     } catch {
       return DEFAULT_PREFERENCES;
@@ -653,11 +653,11 @@ export class GoalNotificationService {
    */
   async updatePreferences(
     userId: string,
-    preferences: Partial<NotificationPreferences>
+    preferences: Partial<NotificationPreferences>,
   ): Promise<boolean> {
     try {
       const { error } = await supabase
-        .from('user_notification_preferences')
+        .from("user_notification_preferences")
         .upsert({
           user_id: userId,
           milestone_alerts: preferences.milestoneAlerts,
@@ -684,7 +684,7 @@ export class GoalNotificationService {
     current: number,
     target: number,
     months: number,
-    annualReturn: number
+    annualReturn: number,
   ): number {
     if (months <= 0) return target - current;
 
@@ -699,7 +699,7 @@ export class GoalNotificationService {
     current: number,
     target: number,
     monthlyContribution: number,
-    annualReturn: number
+    annualReturn: number,
   ): Date | null {
     if (current >= target) return new Date();
     if (monthlyContribution <= 0) return null;
@@ -725,19 +725,19 @@ export class GoalNotificationService {
     current: number,
     target: number,
     monthlyContribution: number,
-    annualReturn: number
+    annualReturn: number,
   ): number {
     const completion = this.estimateCompletionDate(
       current,
       target,
       monthlyContribution,
-      annualReturn
+      annualReturn,
     );
     if (!completion) return 600;
 
     const now = new Date();
     return Math.ceil(
-      (completion.getTime() - now.getTime()) / (30 * 24 * 60 * 60 * 1000)
+      (completion.getTime() - now.getTime()) / (30 * 24 * 60 * 60 * 1000),
     );
   }
 }

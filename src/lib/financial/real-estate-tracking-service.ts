@@ -9,23 +9,23 @@
  * - Market value estimates via Zillow/Redfin APIs
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 export type PropertyType =
-  | 'primary_residence'
-  | 'rental'
-  | 'vacation'
-  | 'investment'
-  | 'commercial'
-  | 'land'
-  | 'multi_family';
+  | "primary_residence"
+  | "rental"
+  | "vacation"
+  | "investment"
+  | "commercial"
+  | "land"
+  | "multi_family";
 
-export type PropertyStatus = 'owned' | 'under_contract' | 'sold' | 'listed';
-export type MortgageType = 'fixed' | 'arm' | 'interest_only' | 'balloon';
+export type PropertyStatus = "owned" | "under_contract" | "sold" | "listed";
+export type MortgageType = "fixed" | "arm" | "interest_only" | "balloon";
 
 export interface Property {
   id: string;
@@ -42,7 +42,7 @@ export interface Property {
   purchaseDate: Date;
   currentValue: number;
   lastValueUpdate: Date;
-  valueSource: 'manual' | 'zillow' | 'redfin' | 'appraisal';
+  valueSource: "manual" | "zillow" | "redfin" | "appraisal";
 
   // Property details
   details: PropertyDetails;
@@ -136,13 +136,13 @@ export interface PropertyDocument {
   id: string;
   name: string;
   type:
-    | 'deed'
-    | 'title'
-    | 'appraisal'
-    | 'insurance'
-    | 'tax'
-    | 'lease'
-    | 'other';
+    | "deed"
+    | "title"
+    | "appraisal"
+    | "insurance"
+    | "tax"
+    | "lease"
+    | "other";
   url: string;
   uploadedAt: Date;
 }
@@ -150,7 +150,7 @@ export interface PropertyDocument {
 export interface PropertyValuation {
   date: Date;
   value: number;
-  source: 'manual' | 'zillow' | 'redfin' | 'appraisal';
+  source: "manual" | "zillow" | "redfin" | "appraisal";
   notes?: string;
 }
 
@@ -210,7 +210,7 @@ export class RealEstateTrackingService {
   // ==========================================================================
 
   async addProperty(
-    property: Omit<Property, 'id' | 'createdAt' | 'updatedAt'>
+    property: Omit<Property, "id" | "createdAt" | "updatedAt">,
   ): Promise<Property> {
     const now = new Date();
     const newProperty: Property = {
@@ -221,7 +221,7 @@ export class RealEstateTrackingService {
     };
 
     const { data, error } = await this.supabase
-      .from('properties')
+      .from("properties")
       .insert(this.propertyToDb(newProperty))
       .select()
       .single();
@@ -232,15 +232,15 @@ export class RealEstateTrackingService {
 
   async updateProperty(
     propertyId: string,
-    updates: Partial<Property>
+    updates: Partial<Property>,
   ): Promise<Property> {
     const { data, error } = await this.supabase
-      .from('properties')
+      .from("properties")
       .update({
         ...this.propertyToDb(updates),
         updated_at: new Date().toISOString(),
       })
-      .eq('id', propertyId)
+      .eq("id", propertyId)
       .select()
       .single();
 
@@ -250,9 +250,9 @@ export class RealEstateTrackingService {
 
   async getProperty(propertyId: string): Promise<Property | null> {
     const { data } = await this.supabase
-      .from('properties')
-      .select('*')
-      .eq('id', propertyId)
+      .from("properties")
+      .select("*")
+      .eq("id", propertyId)
       .single();
 
     return data ? this.propertyFromDb(data) : null;
@@ -260,11 +260,11 @@ export class RealEstateTrackingService {
 
   async getUserProperties(userId: string): Promise<Property[]> {
     const { data, error } = await this.supabase
-      .from('properties')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('status', 'owned')
-      .order('created_at', { ascending: false });
+      .from("properties")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", "owned")
+      .order("created_at", { ascending: false });
 
     if (error) throw error;
     return (data || []).map(this.propertyFromDb);
@@ -272,9 +272,9 @@ export class RealEstateTrackingService {
 
   async deleteProperty(propertyId: string): Promise<void> {
     const { error } = await this.supabase
-      .from('properties')
+      .from("properties")
       .delete()
-      .eq('id', propertyId);
+      .eq("id", propertyId);
 
     if (error) throw error;
   }
@@ -286,12 +286,12 @@ export class RealEstateTrackingService {
   async updateValuation(
     propertyId: string,
     value: number,
-    source: PropertyValuation['source']
+    source: PropertyValuation["source"],
   ): Promise<Property> {
     const now = new Date();
 
     // Store valuation history
-    await this.supabase.from('property_valuations').insert({
+    await this.supabase.from("property_valuations").insert({
       id: crypto.randomUUID(),
       property_id: propertyId,
       value,
@@ -309,10 +309,10 @@ export class RealEstateTrackingService {
 
   async getValuationHistory(propertyId: string): Promise<PropertyValuation[]> {
     const { data, error } = await this.supabase
-      .from('property_valuations')
-      .select('*')
-      .eq('property_id', propertyId)
-      .order('date', { ascending: false });
+      .from("property_valuations")
+      .select("*")
+      .eq("property_id", propertyId)
+      .order("date", { ascending: false });
 
     if (error) throw error;
     return (data || []).map((row) => ({
@@ -324,7 +324,7 @@ export class RealEstateTrackingService {
   }
 
   async estimateValue(
-    address: PropertyAddress
+    address: PropertyAddress,
   ): Promise<{ estimate: number; range: { low: number; high: number } }> {
     // In production, this would call Zillow or Redfin API
     // For now, return mock estimate
@@ -342,14 +342,14 @@ export class RealEstateTrackingService {
   // MORTGAGE MANAGEMENT
   // ==========================================================================
 
-  async addMortgage(mortgage: Omit<Mortgage, 'id'>): Promise<Mortgage> {
+  async addMortgage(mortgage: Omit<Mortgage, "id">): Promise<Mortgage> {
     const newMortgage = {
       ...mortgage,
       id: crypto.randomUUID(),
     };
 
     const { data, error } = await this.supabase
-      .from('mortgages')
+      .from("mortgages")
       .insert(this.mortgageToDb(newMortgage))
       .select()
       .single();
@@ -360,20 +360,20 @@ export class RealEstateTrackingService {
 
   async updateMortgageBalance(
     mortgageId: string,
-    newBalance: number
+    newBalance: number,
   ): Promise<void> {
     await this.supabase
-      .from('mortgages')
+      .from("mortgages")
       .update({ current_balance: newBalance })
-      .eq('id', mortgageId);
+      .eq("id", mortgageId);
   }
 
   async getPropertyMortgages(propertyId: string): Promise<Mortgage[]> {
     const { data, error } = await this.supabase
-      .from('mortgages')
-      .select('*')
-      .eq('property_id', propertyId)
-      .eq('is_active', true);
+      .from("mortgages")
+      .select("*")
+      .eq("property_id", propertyId)
+      .eq("is_active", true);
 
     if (error) throw error;
     return (data || []).map(this.mortgageFromDb);
@@ -420,7 +420,7 @@ export class RealEstateTrackingService {
 
   async getPropertyAnalytics(propertyId: string): Promise<PropertyAnalytics> {
     const property = await this.getProperty(propertyId);
-    if (!property) throw new Error('Property not found');
+    if (!property) throw new Error("Property not found");
 
     const mortgages = await this.getPropertyMortgages(propertyId);
     const totalDebt = mortgages.reduce((sum, m) => sum + m.currentBalance, 0);
@@ -431,7 +431,7 @@ export class RealEstateTrackingService {
     // Monthly calculations
     const monthlyMortgagePayment = mortgages.reduce(
       (sum, m) => sum + m.monthlyPayment,
-      0
+      0,
     );
     const monthlyExpenses =
       monthlyMortgagePayment +
@@ -465,7 +465,7 @@ export class RealEstateTrackingService {
     // Total return = appreciation + cumulative cash flow (simplified)
     const holdingPeriodMonths = Math.floor(
       (Date.now() - property.purchaseDate.getTime()) /
-        (30 * 24 * 60 * 60 * 1000)
+        (30 * 24 * 60 * 60 * 1000),
     );
     const totalCashFlow = monthlyCashFlow * holdingPeriodMonths;
     const totalReturn = appreciation + totalCashFlow;
@@ -510,13 +510,13 @@ export class RealEstateTrackingService {
       const mortgages = await this.getPropertyMortgages(property.id);
       const propertyDebt = mortgages.reduce(
         (sum, m) => sum + m.currentBalance,
-        0
+        0,
       );
       totalDebt += propertyDebt;
 
       const mortgagePayment = mortgages.reduce(
         (sum, m) => sum + m.monthlyPayment,
-        0
+        0,
       );
       const monthlyExpenses =
         mortgagePayment +
@@ -602,7 +602,7 @@ export class RealEstateTrackingService {
       purchaseDate: new Date(data.purchase_date as string),
       currentValue: data.current_value as number,
       lastValueUpdate: new Date(data.last_value_update as string),
-      valueSource: data.value_source as Property['valueSource'],
+      valueSource: data.value_source as Property["valueSource"],
       details: data.details as PropertyDetails,
       mortgages: [],
       rental: data.rental as RentalInfo | undefined,
@@ -653,7 +653,7 @@ export class RealEstateTrackingService {
       monthlyPayment: data.monthly_payment as number,
       escrowAmount: data.escrow_amount as number | undefined,
       pmiAmount: data.pmi_amount as number | undefined,
-      armDetails: data.arm_details as Mortgage['armDetails'],
+      armDetails: data.arm_details as Mortgage["armDetails"],
       isActive: data.is_active as boolean,
     };
   }
@@ -671,7 +671,7 @@ export function getRealEstateTrackingService(): RealEstateTrackingService {
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     realEstateServiceInstance = new RealEstateTrackingService(
       supabaseUrl,
-      supabaseKey
+      supabaseKey,
     );
   }
   return realEstateServiceInstance;

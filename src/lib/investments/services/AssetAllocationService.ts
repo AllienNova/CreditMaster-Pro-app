@@ -16,82 +16,177 @@ import {
   RebalancingRecommendation,
   RebalancingStrategy,
   AssetAllocationAnalysis,
-} from '../types/asset-allocation.types';
-import { Portfolio, PortfolioHolding } from '../types/investment.types';
+} from "../types/asset-allocation.types";
+import { Portfolio, PortfolioHolding } from "../types/investment.types";
 
 /**
  * Predefined allocation models based on risk tolerance
  */
 const ALLOCATION_MODELS: Record<RiskTolerance, AllocationModel> = {
   [RiskTolerance.VERY_CONSERVATIVE]: {
-    name: 'Very Conservative',
-    description: 'Capital preservation with minimal risk',
+    name: "Very Conservative",
+    description: "Capital preservation with minimal risk",
     riskTolerance: RiskTolerance.VERY_CONSERVATIVE,
     timeHorizon: TimeHorizon.SHORT_TERM,
     allocations: [
-      { assetClass: AssetClass.BONDS, targetPercentage: 60, minPercentage: 50, maxPercentage: 70 },
-      { assetClass: AssetClass.CASH, targetPercentage: 30, minPercentage: 20, maxPercentage: 40 },
-      { assetClass: AssetClass.STOCKS, targetPercentage: 10, minPercentage: 5, maxPercentage: 15 },
+      {
+        assetClass: AssetClass.BONDS,
+        targetPercentage: 60,
+        minPercentage: 50,
+        maxPercentage: 70,
+      },
+      {
+        assetClass: AssetClass.CASH,
+        targetPercentage: 30,
+        minPercentage: 20,
+        maxPercentage: 40,
+      },
+      {
+        assetClass: AssetClass.STOCKS,
+        targetPercentage: 10,
+        minPercentage: 5,
+        maxPercentage: 15,
+      },
     ],
     expectedReturn: 0.03,
     expectedVolatility: 0.05,
     sharpeRatio: 0.6,
   },
   [RiskTolerance.CONSERVATIVE]: {
-    name: 'Conservative',
-    description: 'Income-focused with low risk',
+    name: "Conservative",
+    description: "Income-focused with low risk",
     riskTolerance: RiskTolerance.CONSERVATIVE,
     timeHorizon: TimeHorizon.MEDIUM_TERM,
     allocations: [
-      { assetClass: AssetClass.BONDS, targetPercentage: 50, minPercentage: 40, maxPercentage: 60 },
-      { assetClass: AssetClass.STOCKS, targetPercentage: 30, minPercentage: 20, maxPercentage: 40 },
-      { assetClass: AssetClass.CASH, targetPercentage: 15, minPercentage: 10, maxPercentage: 20 },
-      { assetClass: AssetClass.REAL_ESTATE, targetPercentage: 5, minPercentage: 0, maxPercentage: 10 },
+      {
+        assetClass: AssetClass.BONDS,
+        targetPercentage: 50,
+        minPercentage: 40,
+        maxPercentage: 60,
+      },
+      {
+        assetClass: AssetClass.STOCKS,
+        targetPercentage: 30,
+        minPercentage: 20,
+        maxPercentage: 40,
+      },
+      {
+        assetClass: AssetClass.CASH,
+        targetPercentage: 15,
+        minPercentage: 10,
+        maxPercentage: 20,
+      },
+      {
+        assetClass: AssetClass.REAL_ESTATE,
+        targetPercentage: 5,
+        minPercentage: 0,
+        maxPercentage: 10,
+      },
     ],
     expectedReturn: 0.05,
     expectedVolatility: 0.08,
     sharpeRatio: 0.625,
   },
   [RiskTolerance.MODERATE]: {
-    name: 'Moderate',
-    description: 'Balanced growth and income',
+    name: "Moderate",
+    description: "Balanced growth and income",
     riskTolerance: RiskTolerance.MODERATE,
     timeHorizon: TimeHorizon.MEDIUM_TERM,
     allocations: [
-      { assetClass: AssetClass.STOCKS, targetPercentage: 50, minPercentage: 40, maxPercentage: 60 },
-      { assetClass: AssetClass.BONDS, targetPercentage: 35, minPercentage: 25, maxPercentage: 45 },
-      { assetClass: AssetClass.REAL_ESTATE, targetPercentage: 10, minPercentage: 5, maxPercentage: 15 },
-      { assetClass: AssetClass.CASH, targetPercentage: 5, minPercentage: 0, maxPercentage: 10 },
+      {
+        assetClass: AssetClass.STOCKS,
+        targetPercentage: 50,
+        minPercentage: 40,
+        maxPercentage: 60,
+      },
+      {
+        assetClass: AssetClass.BONDS,
+        targetPercentage: 35,
+        minPercentage: 25,
+        maxPercentage: 45,
+      },
+      {
+        assetClass: AssetClass.REAL_ESTATE,
+        targetPercentage: 10,
+        minPercentage: 5,
+        maxPercentage: 15,
+      },
+      {
+        assetClass: AssetClass.CASH,
+        targetPercentage: 5,
+        minPercentage: 0,
+        maxPercentage: 10,
+      },
     ],
     expectedReturn: 0.07,
     expectedVolatility: 0.12,
     sharpeRatio: 0.583,
   },
   [RiskTolerance.AGGRESSIVE]: {
-    name: 'Aggressive',
-    description: 'Growth-focused with higher risk',
+    name: "Aggressive",
+    description: "Growth-focused with higher risk",
     riskTolerance: RiskTolerance.AGGRESSIVE,
     timeHorizon: TimeHorizon.LONG_TERM,
     allocations: [
-      { assetClass: AssetClass.STOCKS, targetPercentage: 70, minPercentage: 60, maxPercentage: 80 },
-      { assetClass: AssetClass.BONDS, targetPercentage: 15, minPercentage: 10, maxPercentage: 20 },
-      { assetClass: AssetClass.REAL_ESTATE, targetPercentage: 10, minPercentage: 5, maxPercentage: 15 },
-      { assetClass: AssetClass.ALTERNATIVES, targetPercentage: 5, minPercentage: 0, maxPercentage: 10 },
+      {
+        assetClass: AssetClass.STOCKS,
+        targetPercentage: 70,
+        minPercentage: 60,
+        maxPercentage: 80,
+      },
+      {
+        assetClass: AssetClass.BONDS,
+        targetPercentage: 15,
+        minPercentage: 10,
+        maxPercentage: 20,
+      },
+      {
+        assetClass: AssetClass.REAL_ESTATE,
+        targetPercentage: 10,
+        minPercentage: 5,
+        maxPercentage: 15,
+      },
+      {
+        assetClass: AssetClass.ALTERNATIVES,
+        targetPercentage: 5,
+        minPercentage: 0,
+        maxPercentage: 10,
+      },
     ],
     expectedReturn: 0.09,
     expectedVolatility: 0.18,
     sharpeRatio: 0.5,
   },
   [RiskTolerance.VERY_AGGRESSIVE]: {
-    name: 'Very Aggressive',
-    description: 'Maximum growth with high risk',
+    name: "Very Aggressive",
+    description: "Maximum growth with high risk",
     riskTolerance: RiskTolerance.VERY_AGGRESSIVE,
     timeHorizon: TimeHorizon.LONG_TERM,
     allocations: [
-      { assetClass: AssetClass.STOCKS, targetPercentage: 80, minPercentage: 70, maxPercentage: 90 },
-      { assetClass: AssetClass.ALTERNATIVES, targetPercentage: 10, minPercentage: 5, maxPercentage: 15 },
-      { assetClass: AssetClass.CRYPTO, targetPercentage: 5, minPercentage: 0, maxPercentage: 10 },
-      { assetClass: AssetClass.BONDS, targetPercentage: 5, minPercentage: 0, maxPercentage: 10 },
+      {
+        assetClass: AssetClass.STOCKS,
+        targetPercentage: 80,
+        minPercentage: 70,
+        maxPercentage: 90,
+      },
+      {
+        assetClass: AssetClass.ALTERNATIVES,
+        targetPercentage: 10,
+        minPercentage: 5,
+        maxPercentage: 15,
+      },
+      {
+        assetClass: AssetClass.CRYPTO,
+        targetPercentage: 5,
+        minPercentage: 0,
+        maxPercentage: 10,
+      },
+      {
+        assetClass: AssetClass.BONDS,
+        targetPercentage: 5,
+        minPercentage: 0,
+        maxPercentage: 10,
+      },
     ],
     expectedReturn: 0.12,
     expectedVolatility: 0.25,
@@ -116,17 +211,23 @@ export class AssetAllocationService {
   async analyzeAllocation(
     portfolio: Portfolio,
     riskTolerance: RiskTolerance,
-    constraints?: OptimizationConstraints
+    constraints?: OptimizationConstraints,
   ): Promise<AssetAllocationAnalysis> {
     const positions = portfolio.holdings;
     // Get recommended model
     const recommendedModel = this.getAllocationModel(riskTolerance);
 
     // Calculate current allocations
-    const currentAllocations = this.calculateCurrentAllocations(positions, portfolio.totalValue);
+    const currentAllocations = this.calculateCurrentAllocations(
+      positions,
+      portfolio.totalValue,
+    );
 
     // Calculate deviation from target
-    const deviationFromTarget = this.calculateDeviation(currentAllocations, recommendedModel);
+    const deviationFromTarget = this.calculateDeviation(
+      currentAllocations,
+      recommendedModel,
+    );
 
     // Determine if rebalancing is needed
     const needsRebalancing = deviationFromTarget > 5; // 5% threshold
@@ -137,19 +238,23 @@ export class AssetAllocationService {
       currentAllocations,
       recommendedModel,
       portfolio.totalValue,
-      constraints
+      constraints,
     );
 
     // Calculate diversification score
-    const diversificationScore = this.calculateDiversificationScore(currentAllocations);
+    const diversificationScore =
+      this.calculateDiversificationScore(currentAllocations);
 
     // Calculate risk metrics
-    const riskMetrics = this.calculateRiskMetrics(positions, portfolio.totalValue);
+    const riskMetrics = this.calculateRiskMetrics(
+      positions,
+      portfolio.totalValue,
+    );
 
     // Calculate performance metrics
     const performanceMetrics = this.calculatePerformanceMetrics(
       positions,
-      riskMetrics.portfolioVolatility
+      riskMetrics.portfolioVolatility,
     );
 
     return {
@@ -171,7 +276,7 @@ export class AssetAllocationService {
    */
   private calculateCurrentAllocations(
     positions: PortfolioHolding[],
-    totalValue: number
+    totalValue: number,
   ): AssetAllocation[] {
     const allocationMap = new Map<AssetClass, AssetAllocation>();
 
@@ -202,22 +307,34 @@ export class AssetAllocationService {
     const upperSymbol = symbol.toUpperCase();
 
     // Crypto
-    if (upperSymbol.includes('BTC') || upperSymbol.includes('ETH') || upperSymbol.includes('CRYPTO')) {
+    if (
+      upperSymbol.includes("BTC") ||
+      upperSymbol.includes("ETH") ||
+      upperSymbol.includes("CRYPTO")
+    ) {
       return AssetClass.CRYPTO;
     }
 
     // Bonds (ETFs)
-    if (upperSymbol.includes('AGG') || upperSymbol.includes('BND') || upperSymbol.includes('TLT')) {
+    if (
+      upperSymbol.includes("AGG") ||
+      upperSymbol.includes("BND") ||
+      upperSymbol.includes("TLT")
+    ) {
       return AssetClass.BONDS;
     }
 
     // Real Estate (REITs)
-    if (upperSymbol.includes('VNQ') || upperSymbol.includes('REIT')) {
+    if (upperSymbol.includes("VNQ") || upperSymbol.includes("REIT")) {
       return AssetClass.REAL_ESTATE;
     }
 
     // Commodities
-    if (upperSymbol.includes('GLD') || upperSymbol.includes('SLV') || upperSymbol.includes('COMMODITY')) {
+    if (
+      upperSymbol.includes("GLD") ||
+      upperSymbol.includes("SLV") ||
+      upperSymbol.includes("COMMODITY")
+    ) {
       return AssetClass.COMMODITIES;
     }
 
@@ -230,12 +347,14 @@ export class AssetAllocationService {
    */
   private calculateDeviation(
     currentAllocations: AssetAllocation[],
-    model: AllocationModel
+    model: AllocationModel,
   ): number {
     let totalDeviation = 0;
 
     model.allocations.forEach((target) => {
-      const current = currentAllocations.find((a) => a.assetClass === target.assetClass);
+      const current = currentAllocations.find(
+        (a) => a.assetClass === target.assetClass,
+      );
       const currentPercentage = current?.percentage || 0;
       const deviation = Math.abs(currentPercentage - target.targetPercentage);
       totalDeviation += deviation;
@@ -252,14 +371,16 @@ export class AssetAllocationService {
     currentAllocations: AssetAllocation[],
     model: AllocationModel,
     totalValue: number,
-    constraints?: OptimizationConstraints
+    constraints?: OptimizationConstraints,
   ): RebalancingRecommendation[] {
     const recommendations: RebalancingRecommendation[] = [];
     const minTradeSize = constraints?.minPositionSize || 0.01; // 1% minimum
 
     positions.forEach((position) => {
       const assetClass = this.getAssetClass(position.symbol);
-      const targetAllocation = model.allocations.find((a) => a.assetClass === assetClass);
+      const targetAllocation = model.allocations.find(
+        (a) => a.assetClass === assetClass,
+      );
 
       if (!targetAllocation) return;
 
@@ -281,11 +402,16 @@ export class AssetAllocationService {
           targetPercentage,
           targetValue,
           targetShares: position.quantity + sharesToTrade,
-          action: valueToTrade > 0 ? 'buy' : valueToTrade < 0 ? 'sell' : 'hold',
+          action: valueToTrade > 0 ? "buy" : valueToTrade < 0 ? "sell" : "hold",
           sharesToTrade: Math.abs(sharesToTrade),
           valueToTrade: Math.abs(valueToTrade),
           reason: `Rebalance ${assetClass} from ${currentPercentage.toFixed(1)}% to ${targetPercentage.toFixed(1)}%`,
-          priority: Math.abs(deviation) > 10 ? 'high' : Math.abs(deviation) > 5 ? 'medium' : 'low',
+          priority:
+            Math.abs(deviation) > 10
+              ? "high"
+              : Math.abs(deviation) > 5
+                ? "medium"
+                : "low",
           transactionCost: constraints?.transactionCostPerTrade || 0,
         });
       }
@@ -300,7 +426,9 @@ export class AssetAllocationService {
   /**
    * Calculate diversification score (0-100)
    */
-  private calculateDiversificationScore(allocations: AssetAllocation[]): number {
+  private calculateDiversificationScore(
+    allocations: AssetAllocation[],
+  ): number {
     // Herfindahl-Hirschman Index (HHI) based diversification
     const hhi = allocations.reduce((sum, allocation) => {
       return sum + Math.pow(allocation.percentage, 2);
@@ -316,14 +444,19 @@ export class AssetAllocationService {
   /**
    * Calculate portfolio risk metrics
    */
-  private calculateRiskMetrics(positions: PortfolioHolding[], totalValue: number) {
+  private calculateRiskMetrics(
+    positions: PortfolioHolding[],
+    totalValue: number,
+  ) {
     // Simplified risk calculations - in production, use historical data
     const weights = positions.map((p) => p.marketValue / totalValue);
-    const volatilities = positions.map((p) => this.estimateVolatility(p.symbol));
+    const volatilities = positions.map((p) =>
+      this.estimateVolatility(p.symbol),
+    );
 
     // Portfolio volatility (simplified)
     const portfolioVolatility = Math.sqrt(
-      weights.reduce((sum, w, i) => sum + Math.pow(w * volatilities[i], 2), 0)
+      weights.reduce((sum, w, i) => sum + Math.pow(w * volatilities[i], 2), 0),
     );
 
     return {
@@ -348,8 +481,8 @@ export class AssetAllocationService {
       [AssetClass.CASH]: 0.01,
       [AssetClass.REAL_ESTATE]: 0.15,
       [AssetClass.COMMODITIES]: 0.25,
-      [AssetClass.CRYPTO]: 0.80,
-      [AssetClass.ALTERNATIVES]: 0.20,
+      [AssetClass.CRYPTO]: 0.8,
+      [AssetClass.ALTERNATIVES]: 0.2,
     };
 
     return volatilityMap[assetClass] || 0.15;
@@ -358,9 +491,14 @@ export class AssetAllocationService {
   /**
    * Calculate performance metrics
    */
-  private calculatePerformanceMetrics(positions: PortfolioHolding[], volatility: number) {
+  private calculatePerformanceMetrics(
+    positions: PortfolioHolding[],
+    volatility: number,
+  ) {
     // Simplified calculations - in production, use historical returns
-    const avgReturn = positions.reduce((sum, p) => sum + (p.unrealizedGainPercent / 100), 0) / positions.length;
+    const avgReturn =
+      positions.reduce((sum, p) => sum + p.unrealizedGainPercent / 100, 0) /
+      positions.length;
     const riskFreeRate = 0.03; // 3% risk-free rate
 
     return {
@@ -431,9 +569,15 @@ export class AssetAllocationService {
         const upperPoint = points[Math.min(upperIndex, points.length - 1)];
 
         // Linear interpolation
-        const interpolatedVolatility = lowerPoint.volatility + (upperPoint.volatility - lowerPoint.volatility) * fraction;
-        const interpolatedReturn = lowerPoint.expectedReturn + (upperPoint.expectedReturn - lowerPoint.expectedReturn) * fraction;
-        const interpolatedSharpe = lowerPoint.sharpeRatio + (upperPoint.sharpeRatio - lowerPoint.sharpeRatio) * fraction;
+        const interpolatedVolatility =
+          lowerPoint.volatility +
+          (upperPoint.volatility - lowerPoint.volatility) * fraction;
+        const interpolatedReturn =
+          lowerPoint.expectedReturn +
+          (upperPoint.expectedReturn - lowerPoint.expectedReturn) * fraction;
+        const interpolatedSharpe =
+          lowerPoint.sharpeRatio +
+          (upperPoint.sharpeRatio - lowerPoint.sharpeRatio) * fraction;
 
         points.push({
           volatility: interpolatedVolatility,
@@ -459,4 +603,3 @@ export function getAssetAllocationService(): AssetAllocationService {
   }
   return assetAllocationServiceInstance;
 }
-

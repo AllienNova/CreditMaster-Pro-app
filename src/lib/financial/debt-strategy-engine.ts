@@ -10,22 +10,22 @@
  * - Payoff timeline projections
  */
 
-import { AIMLService } from '@/lib/aiml-service';
-import { financialContextEngine } from './financial-context-engine';
-import { FinancialContext, DebtSummary } from './types/financial-context.types';
+import { AIMLService } from "@/lib/aiml-service";
+import { financialContextEngine } from "./financial-context-engine";
+import { FinancialContext, DebtSummary } from "./types/financial-context.types";
 import {
   DebtStrategyAnalysis,
   DebtStrategyPlan,
   DebtMilestone,
   RefinancingOpportunity,
   AnalyzeDebtStrategyRequest,
-} from './types/ai-coach.types';
+} from "./types/ai-coach.types";
 
 // ============================================================================
 // CONSTANTS
 // ============================================================================
 
-const AI_MODEL = 'anthropic/claude-4.5-sonnet';
+const AI_MODEL = "anthropic/claude-4.5-sonnet";
 
 // Current average rates for refinancing comparison
 const REFINANCING_RATES = {
@@ -56,7 +56,7 @@ class DebtStrategyEngine {
    * Analyze debt and generate strategy recommendations
    */
   async analyzeDebtStrategy(
-    request: AnalyzeDebtStrategyRequest
+    request: AnalyzeDebtStrategyRequest,
   ): Promise<DebtStrategyAnalysis> {
     const {
       userId,
@@ -83,14 +83,14 @@ class DebtStrategyEngine {
     // Determine recommended strategy
     const { recommended, reason } = this.determineRecommendedStrategy(
       strategies,
-      context
+      context,
     );
 
     // Find refinancing opportunities
     const refinancingOpportunities = includeRefinancing
       ? this.findRefinancingOpportunities(
           debts,
-          context.creditProfile.currentScore
+          context.creditProfile.currentScore,
         )
       : [];
 
@@ -98,7 +98,7 @@ class DebtStrategyEngine {
     const aiInsights = await this.generateAIInsights(
       context,
       strategies,
-      refinancingOpportunities
+      refinancingOpportunities,
     );
 
     return {
@@ -124,18 +124,18 @@ class DebtStrategyEngine {
    */
   private calculateAvalancheStrategy(
     debts: DebtSummary,
-    extraPayment: number
+    extraPayment: number,
   ): DebtStrategyPlan {
     const sortedDebts = [...debts.debts].sort(
-      (a, b) => b.interestRate - a.interestRate
+      (a, b) => b.interestRate - a.interestRate,
     );
     return this.calculatePayoffPlan(
-      'avalanche',
-      'Avalanche Method',
-      'Pay off highest interest debt first to minimize total interest paid',
+      "avalanche",
+      "Avalanche Method",
+      "Pay off highest interest debt first to minimize total interest paid",
       sortedDebts,
       debts.monthlyPayments + extraPayment,
-      extraPayment
+      extraPayment,
     );
   }
 
@@ -144,16 +144,16 @@ class DebtStrategyEngine {
    */
   private calculateSnowballStrategy(
     debts: DebtSummary,
-    extraPayment: number
+    extraPayment: number,
   ): DebtStrategyPlan {
     const sortedDebts = [...debts.debts].sort((a, b) => a.balance - b.balance);
     return this.calculatePayoffPlan(
-      'snowball',
-      'Snowball Method',
-      'Pay off smallest balance first for quick wins and motivation',
+      "snowball",
+      "Snowball Method",
+      "Pay off smallest balance first for quick wins and motivation",
       sortedDebts,
       debts.monthlyPayments + extraPayment,
-      extraPayment
+      extraPayment,
     );
   }
 
@@ -162,13 +162,13 @@ class DebtStrategyEngine {
    */
   private calculateHybridStrategy(
     debts: DebtSummary,
-    extraPayment: number
+    extraPayment: number,
   ): DebtStrategyPlan {
     // Hybrid: Start with smallest debt for quick win, then switch to avalanche
     const sortedDebts = [...debts.debts];
     const smallest = sortedDebts.reduce(
       (min, d) => (d.balance < min.balance ? d : min),
-      sortedDebts[0]
+      sortedDebts[0],
     );
     const others = sortedDebts
       .filter((d) => d.id !== smallest.id)
@@ -176,12 +176,12 @@ class DebtStrategyEngine {
     const hybridOrder = [smallest, ...others];
 
     return this.calculatePayoffPlan(
-      'hybrid',
-      'Hybrid Method',
-      'Quick win first, then focus on high interest',
+      "hybrid",
+      "Hybrid Method",
+      "Quick win first, then focus on high interest",
       hybridOrder,
       debts.monthlyPayments + extraPayment,
-      extraPayment
+      extraPayment,
     );
   }
 
@@ -189,7 +189,7 @@ class DebtStrategyEngine {
    * Calculate payoff plan for a given debt order
    */
   private calculatePayoffPlan(
-    strategy: 'avalanche' | 'snowball' | 'hybrid' | 'consolidation',
+    strategy: "avalanche" | "snowball" | "hybrid" | "consolidation",
     name: string,
     description: string,
     orderedDebts: Array<{
@@ -200,7 +200,7 @@ class DebtStrategyEngine {
       minimumPayment: number;
     }>,
     totalMonthlyPayment: number,
-    extraPayment: number
+    extraPayment: number,
   ): DebtStrategyPlan {
     let remainingDebts = orderedDebts.map((d) => ({
       ...d,
@@ -249,7 +249,7 @@ class DebtStrategyEngine {
           remainingDebt:
             remainingDebts.reduce(
               (sum, d) => sum + Math.max(0, d.currentBalance),
-              0
+              0,
             ) - debt.balance,
           celebrationMessage: `${debt.name} is paid off! Keep going!`,
         });
@@ -278,16 +278,16 @@ class DebtStrategyEngine {
       disadvantages: this.getStrategyDisadvantages(strategy),
       quickWins,
       motivationScore:
-        strategy === 'snowball' ? 85 : strategy === 'hybrid' ? 75 : 65,
+        strategy === "snowball" ? 85 : strategy === "hybrid" ? 75 : 65,
     };
   }
 
   private determineRecommendedStrategy(
     strategies: DebtStrategyPlan[],
-    context: FinancialContext
+    context: FinancialContext,
   ): { recommended: string; reason: string } {
-    const avalanche = strategies.find((s) => s.strategy === 'avalanche')!;
-    const snowball = strategies.find((s) => s.strategy === 'snowball')!;
+    const avalanche = strategies.find((s) => s.strategy === "avalanche")!;
+    const snowball = strategies.find((s) => s.strategy === "snowball")!;
 
     const interestDiff =
       snowball.totalInterestPaid - avalanche.totalInterestPaid;
@@ -296,35 +296,35 @@ class DebtStrategyEngine {
     // If interest savings are significant, recommend avalanche
     if (interestDiff > 500) {
       return {
-        recommended: 'avalanche',
+        recommended: "avalanche",
         reason: `Saves $${interestDiff.toFixed(0)} in interest over snowball method`,
       };
     }
     // If user has high debt-to-income, recommend snowball for motivation
     if (context.debts.debtToIncomeRatio > 40) {
       return {
-        recommended: 'snowball',
-        reason: 'Quick wins help maintain motivation with high debt load',
+        recommended: "snowball",
+        reason: "Quick wins help maintain motivation with high debt load",
       };
     }
     // Default to hybrid
     return {
-      recommended: 'hybrid',
-      reason: 'Balances quick wins with interest savings',
+      recommended: "hybrid",
+      reason: "Balances quick wins with interest savings",
     };
   }
 
   private findRefinancingOpportunities(
     debts: DebtSummary,
-    creditScore: number
+    creditScore: number,
   ): RefinancingOpportunity[] {
     const opportunities: RefinancingOpportunity[] = [];
     const creditTier =
-      creditScore >= 740 ? 'excellent' : creditScore >= 670 ? 'good' : 'fair';
+      creditScore >= 740 ? "excellent" : creditScore >= 670 ? "good" : "fair";
 
     // Filter for high interest debts (above 10% APR)
     const highInterestDebts = debts.debts.filter(
-      (debt) => debt.interestRate > 10
+      (debt) => debt.interestRate > 10,
     );
 
     for (const debt of highInterestDebts) {
@@ -341,15 +341,15 @@ class DebtStrategyEngine {
           currentBalance: debt.balance,
           monthlySavings,
           totalSavings: monthlySavings * 36, // Assume 3 year term
-          lenderType: 'online_lender',
+          lenderType: "online_lender",
           requirements: [
-            'Good credit score',
-            'Stable income',
-            'Low debt-to-income ratio',
+            "Good credit score",
+            "Stable income",
+            "Low debt-to-income ratio",
           ],
           considerations: [
-            'May have origination fee',
-            'Fixed vs variable rate',
+            "May have origination fee",
+            "Fixed vs variable rate",
           ],
         });
       }
@@ -360,7 +360,7 @@ class DebtStrategyEngine {
   private async generateAIInsights(
     context: FinancialContext,
     strategies: DebtStrategyPlan[],
-    refinancing: RefinancingOpportunity[]
+    refinancing: RefinancingOpportunity[],
   ): Promise<string[]> {
     const aiService = this.getAIService();
     if (!aiService) return this.getDefaultInsights(context.debts);
@@ -371,15 +371,15 @@ class DebtStrategyEngine {
         AI_MODEL,
         [
           {
-            role: 'system',
+            role: "system",
             content:
-              'You are a debt counselor. Give 3 brief, actionable tips as a JSON array of strings.',
+              "You are a debt counselor. Give 3 brief, actionable tips as a JSON array of strings.",
           },
-          { role: 'user', content: prompt },
+          { role: "user", content: prompt },
         ],
-        { temperature: 0.3, max_tokens: 200 }
+        { temperature: 0.3, max_tokens: 200 },
       );
-      const content = response.choices[0]?.message?.content || '';
+      const content = response.choices[0]?.message?.content || "";
       const match = content.match(/\[[\s\S]*\]/);
       if (match) return JSON.parse(match[0]);
     } catch {
@@ -398,19 +398,19 @@ class DebtStrategyEngine {
   private getStrategyAdvantages(strategy: string): string[] {
     const advantages: Record<string, string[]> = {
       avalanche: [
-        'Minimizes total interest paid',
-        'Fastest debt-free date',
-        'Mathematically optimal',
+        "Minimizes total interest paid",
+        "Fastest debt-free date",
+        "Mathematically optimal",
       ],
       snowball: [
-        'Quick wins boost motivation',
-        'Simplifies finances faster',
-        'Psychological benefits',
+        "Quick wins boost motivation",
+        "Simplifies finances faster",
+        "Psychological benefits",
       ],
       hybrid: [
-        'Balance of savings and motivation',
-        'Flexible approach',
-        'Best of both methods',
+        "Balance of savings and motivation",
+        "Flexible approach",
+        "Best of both methods",
       ],
     };
     return advantages[strategy] || [];
@@ -419,16 +419,16 @@ class DebtStrategyEngine {
   private getStrategyDisadvantages(strategy: string): string[] {
     const disadvantages: Record<string, string[]> = {
       avalanche: [
-        'May take longer to see progress',
-        'Can be demotivating',
-        'Requires discipline',
+        "May take longer to see progress",
+        "Can be demotivating",
+        "Requires discipline",
       ],
       snowball: [
-        'Pays more interest overall',
-        'Slower debt-free date',
-        'Not mathematically optimal',
+        "Pays more interest overall",
+        "Slower debt-free date",
+        "Not mathematically optimal",
       ],
-      hybrid: ['More complex to follow', 'May not maximize either benefit'],
+      hybrid: ["More complex to follow", "May not maximize either benefit"],
     };
     return disadvantages[strategy] || [];
   }
@@ -442,18 +442,18 @@ class DebtStrategyEngine {
         : 0;
 
     return [
-      'Every payment brings you closer to freedom',
-      'Track your progress weekly',
-      'Celebrate each debt paid off',
+      "Every payment brings you closer to freedom",
+      "Track your progress weekly",
+      "Celebrate each debt paid off",
       monthsToPayoff > 0
         ? `You can be debt-free in ${monthsToPayoff} months or less!`
-        : 'Start making payments to see your payoff timeline',
+        : "Start making payments to see your payoff timeline",
     ];
   }
 
   private getWarningFlags(
     debts: DebtSummary,
-    context: FinancialContext
+    context: FinancialContext,
   ): string[] {
     const flags: string[] = [];
 
@@ -465,23 +465,23 @@ class DebtStrategyEngine {
 
     // Filter for high interest debts (above 10% APR)
     const highInterestDebts = debts.debts.filter(
-      (debt) => debt.interestRate > 10
+      (debt) => debt.interestRate > 10,
     );
 
     if (debtToIncomeRatio > 50)
-      flags.push('High debt-to-income ratio - consider debt counseling');
+      flags.push("High debt-to-income ratio - consider debt counseling");
     if (highInterestDebts.length > 0)
-      flags.push('High interest debt is costing you significantly');
+      flags.push("High interest debt is costing you significantly");
     if (context.accounts.totalSavings < 1000)
-      flags.push('Build small emergency fund to avoid new debt');
+      flags.push("Build small emergency fund to avoid new debt");
     return flags;
   }
 
   private getDefaultInsights(_debts: DebtSummary): string[] {
     return [
-      'Focus on one debt at a time',
-      'Avoid taking on new debt',
-      'Consider increasing income to accelerate payoff',
+      "Focus on one debt at a time",
+      "Avoid taking on new debt",
+      "Consider increasing income to accelerate payoff",
     ];
   }
 
@@ -495,14 +495,14 @@ class DebtStrategyEngine {
       monthlyPayments: 0,
       debtToIncomeRatio: 0,
       strategies: [],
-      recommendedStrategy: 'none',
-      recommendationReason: 'Congratulations! You are debt-free!',
+      recommendedStrategy: "none",
+      recommendationReason: "Congratulations! You are debt-free!",
       refinancingOpportunities: [],
       aiInsights: [
-        'Stay debt-free by building emergency fund',
-        'Invest your former debt payments',
+        "Stay debt-free by building emergency fund",
+        "Invest your former debt payments",
       ],
-      motivationalTips: ['Great job staying debt-free!'],
+      motivationalTips: ["Great job staying debt-free!"],
       warningFlags: [],
     };
   }

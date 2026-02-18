@@ -9,21 +9,21 @@
 // =============================================================================
 
 export type PartnerType =
-  | 'credit_card'
-  | 'personal_loan'
-  | 'mortgage'
-  | 'student_loan'
-  | 'auto_loan'
-  | 'insurance'
-  | 'broker'
-  | 'bank'
-  | 'other';
+  | "credit_card"
+  | "personal_loan"
+  | "mortgage"
+  | "student_loan"
+  | "auto_loan"
+  | "insurance"
+  | "broker"
+  | "bank"
+  | "other";
 
 export type CommissionType =
-  | 'cpa' // Cost per acquisition (fixed amount per conversion)
-  | 'cpl' // Cost per lead (fixed amount per qualified lead)
-  | 'revenue_share' // Percentage of revenue
-  | 'hybrid'; // Combination of fixed + percentage
+  | "cpa" // Cost per acquisition (fixed amount per conversion)
+  | "cpl" // Cost per lead (fixed amount per qualified lead)
+  | "revenue_share" // Percentage of revenue
+  | "hybrid"; // Combination of fixed + percentage
 
 export interface Partner {
   id: string;
@@ -38,8 +38,8 @@ export interface Partner {
   commissionRate?: number; // Percentage for revenue share
   commissionFixed?: number; // Fixed amount for CPA/CPL
   minPayout: number;
-  payoutFrequency: 'weekly' | 'biweekly' | 'monthly';
-  paymentMethod: 'stripe' | 'bank_transfer' | 'check';
+  payoutFrequency: "weekly" | "biweekly" | "monthly";
+  paymentMethod: "stripe" | "bank_transfer" | "check";
   stripeAccountId?: string;
   regions: string[];
   isActive: boolean;
@@ -60,8 +60,8 @@ export interface CreatePartnerInput {
   commissionRate?: number;
   commissionFixed?: number;
   minPayout?: number;
-  payoutFrequency?: 'weekly' | 'biweekly' | 'monthly';
-  paymentMethod?: 'stripe' | 'bank_transfer' | 'check';
+  payoutFrequency?: "weekly" | "biweekly" | "monthly";
+  paymentMethod?: "stripe" | "bank_transfer" | "check";
   stripeAccountId?: string;
   regions?: string[];
   metadata?: Record<string, unknown>;
@@ -77,8 +77,8 @@ export interface UpdatePartnerInput {
   commissionRate?: number;
   commissionFixed?: number;
   minPayout?: number;
-  payoutFrequency?: 'weekly' | 'biweekly' | 'monthly';
-  paymentMethod?: 'stripe' | 'bank_transfer' | 'check';
+  payoutFrequency?: "weekly" | "biweekly" | "monthly";
+  paymentMethod?: "stripe" | "bank_transfer" | "check";
   stripeAccountId?: string;
   regions?: string[];
   isActive?: boolean;
@@ -153,22 +153,22 @@ export interface ClickData {
 // =============================================================================
 
 export type ConversionType =
-  | 'click' // User clicked through
-  | 'lead' // User submitted application/form
-  | 'signup' // User created account
-  | 'application' // Full application submitted
-  | 'approval' // Application approved
-  | 'funded' // Loan/card funded/issued
-  | 'purchase' // User made purchase
-  | 'subscription'; // User subscribed
+  | "click" // User clicked through
+  | "lead" // User submitted application/form
+  | "signup" // User created account
+  | "application" // Full application submitted
+  | "approval" // Application approved
+  | "funded" // Loan/card funded/issued
+  | "purchase" // User made purchase
+  | "subscription"; // User subscribed
 
 export type ConversionStatus =
-  | 'pending' // Awaiting confirmation
-  | 'confirmed' // Confirmed by partner
-  | 'qualified' // Meets payout criteria
-  | 'paid' // Commission paid
-  | 'rejected' // Rejected by partner
-  | 'chargedback'; // Reversed due to fraud/chargeback
+  | "pending" // Awaiting confirmation
+  | "confirmed" // Confirmed by partner
+  | "qualified" // Meets payout criteria
+  | "paid" // Commission paid
+  | "rejected" // Rejected by partner
+  | "chargedback"; // Reversed due to fraud/chargeback
 
 export interface Conversion {
   id: string;
@@ -280,7 +280,7 @@ export interface PartnerPerformance {
 // =============================================================================
 
 export interface PartnerWebhookEvent {
-  type: 'conversion' | 'status_update' | 'payout';
+  type: "conversion" | "status_update" | "payout";
   partnerId: string;
   partnerReference: string;
   data: Record<string, unknown>;

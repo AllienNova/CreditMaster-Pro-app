@@ -2,11 +2,11 @@ import {
   CreditScoreSimulator,
   PSLFTracker,
   MortgageReadinessScore,
-} from '@/components/persona';
+} from "@/components/persona";
 
 export const metadata = {
-  title: 'Persona Features - Fynvita',
-  description: 'Specialized features for different user personas',
+  title: "Persona Features - Fynvita",
+  description: "Specialized features for different user personas",
 };
 
 export default function PersonaFeaturesPage() {
@@ -58,10 +58,10 @@ export default function PersonaFeaturesPage() {
                 Credit Score Simulator
               </h2>
               <p className="text-gray-600 dark:text-slate-300">
-                For{' '}
+                For{" "}
                 <span className="font-semibold text-blue-600">
                   Sarah Martinez
-                </span>{' '}
+                </span>{" "}
                 - The Credit Rebuilder
               </p>
               <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
@@ -78,8 +78,8 @@ export default function PersonaFeaturesPage() {
                 PSLF Tracker
               </h2>
               <p className="text-gray-600 dark:text-slate-300">
-                For{' '}
-                <span className="font-semibold text-blue-600">James Chen</span>{' '}
+                For{" "}
+                <span className="font-semibold text-blue-600">James Chen</span>{" "}
                 - The Student Loan Strategist
               </p>
               <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
@@ -96,10 +96,10 @@ export default function PersonaFeaturesPage() {
                 Mortgage Readiness Score
               </h2>
               <p className="text-gray-600 dark:text-slate-300">
-                For{' '}
+                For{" "}
                 <span className="font-semibold text-blue-600">
                   Emily Parker
-                </span>{' '}
+                </span>{" "}
                 - The Mortgage Applicant
               </p>
               <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
@@ -197,7 +197,9 @@ export default function PersonaFeaturesPage() {
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
                 Mortgage Applicant
               </h3>
-              <p className="text-gray-600 dark:text-slate-300 mb-4">Prepare for homeownership</p>
+              <p className="text-gray-600 dark:text-slate-300 mb-4">
+                Prepare for homeownership
+              </p>
               <ul className="space-y-2 text-sm text-gray-600 dark:text-slate-300">
                 <li className="flex items-start">
                   <span className="text-blue-500 mr-2"></span>

@@ -13,40 +13,40 @@
 // ============================================================================
 
 export type TaxDocumentType =
-  | 'w2'
-  | '1099_div'
-  | '1099_int'
-  | '1099_b'
-  | '1099_misc'
-  | '1099_nec'
-  | '1099_r'
-  | '1099_g'
-  | '1099_ssa'
-  | 'k1'
-  | '1098'
-  | '1098_e'
-  | '1098_t'
-  | '5498'
-  | 'charitable_receipt'
-  | 'medical_receipt'
-  | 'property_tax'
-  | 'business_expense'
-  | 'unknown';
+  | "w2"
+  | "1099_div"
+  | "1099_int"
+  | "1099_b"
+  | "1099_misc"
+  | "1099_nec"
+  | "1099_r"
+  | "1099_g"
+  | "1099_ssa"
+  | "k1"
+  | "1098"
+  | "1098_e"
+  | "1098_t"
+  | "5498"
+  | "charitable_receipt"
+  | "medical_receipt"
+  | "property_tax"
+  | "business_expense"
+  | "unknown";
 
 export type DocumentProcessingStatus =
-  | 'pending'
-  | 'processing'
-  | 'extracted'
-  | 'verified'
-  | 'failed'
-  | 'needs_review';
+  | "pending"
+  | "processing"
+  | "extracted"
+  | "verified"
+  | "failed"
+  | "needs_review";
 
 export type OCRProvider =
-  | 'openai_vision'
-  | 'google_vision'
-  | 'landing_ai'
-  | 'azure_di'
-  | 'tesseract';
+  | "openai_vision"
+  | "google_vision"
+  | "landing_ai"
+  | "azure_di"
+  | "tesseract";
 
 // ============================================================================
 // FIELD DEFINITIONS BY DOCUMENT TYPE
@@ -145,9 +145,9 @@ export interface Form1099BFields {
     costBasis: number; // Box 1e
     accruedMarketDiscount: number;
     washSaleLossDisallowed: number; // Box 1g
-    shortTermLongTerm: 'short' | 'long' | 'unknown';
+    shortTermLongTerm: "short" | "long" | "unknown";
     basisReportedToIRS: boolean;
-    type: 'covered' | 'noncovered';
+    type: "covered" | "noncovered";
   }[];
   totalProceeds: number;
   totalCostBasis: number;
@@ -257,7 +257,7 @@ export interface CharitableReceiptFields {
   donorName: string;
   donationDate: string;
   donationAmount: number;
-  donationType: 'cash' | 'property' | 'stock' | 'other';
+  donationType: "cash" | "property" | "stock" | "other";
   propertyDescription?: string;
   fairMarketValue?: number;
   goodsServicesProvided: boolean;
@@ -268,17 +268,17 @@ export interface CharitableReceiptFields {
 
 // Union type for all field types
 export type ExtractedFields =
-  | { type: 'w2'; fields: W2Fields }
-  | { type: '1099_div'; fields: Form1099DIVFields }
-  | { type: '1099_int'; fields: Form1099INTFields }
-  | { type: '1099_b'; fields: Form1099BFields }
-  | { type: '1099_nec'; fields: Form1099NECFields }
-  | { type: '1099_misc'; fields: Form1099MISCFields }
-  | { type: '1099_r'; fields: Form1099RFields }
-  | { type: '1098'; fields: Form1098Fields }
-  | { type: '1098_e'; fields: Form1098EFields }
-  | { type: 'charitable_receipt'; fields: CharitableReceiptFields }
-  | { type: 'unknown'; fields: Record<string, unknown> };
+  | { type: "w2"; fields: W2Fields }
+  | { type: "1099_div"; fields: Form1099DIVFields }
+  | { type: "1099_int"; fields: Form1099INTFields }
+  | { type: "1099_b"; fields: Form1099BFields }
+  | { type: "1099_nec"; fields: Form1099NECFields }
+  | { type: "1099_misc"; fields: Form1099MISCFields }
+  | { type: "1099_r"; fields: Form1099RFields }
+  | { type: "1098"; fields: Form1098Fields }
+  | { type: "1098_e"; fields: Form1098EFields }
+  | { type: "charitable_receipt"; fields: CharitableReceiptFields }
+  | { type: "unknown"; fields: Record<string, unknown> };
 
 // ============================================================================
 // EXTRACTION RESULTS
@@ -334,7 +334,7 @@ export interface ConsolidatedExtractionResult {
     fieldName: string;
     values: { provider: OCRProvider; value: unknown; confidence: number }[];
     resolvedValue: unknown;
-    resolutionMethod: 'highest_confidence' | 'consensus' | 'manual';
+    resolutionMethod: "highest_confidence" | "consensus" | "manual";
   }[];
 
   // Status
@@ -346,7 +346,7 @@ export interface ConsolidatedExtractionResult {
   validationErrors: {
     field: string;
     error: string;
-    severity: 'error' | 'warning';
+    severity: "error" | "warning";
   }[];
   isValid: boolean;
 
@@ -373,82 +373,82 @@ export interface OCRProviderConfig {
 
 export const DEFAULT_PROVIDER_CONFIG: OCRProviderConfig[] = [
   {
-    provider: 'openai_vision',
+    provider: "openai_vision",
     enabled: true,
     priority: 1,
     timeout: 30000,
     retries: 2,
     supportedDocuments: [
-      'w2',
-      '1099_div',
-      '1099_int',
-      '1099_b',
-      '1099_nec',
-      '1099_misc',
-      '1099_r',
-      '1098',
-      '1098_e',
-      'charitable_receipt',
-      'unknown',
+      "w2",
+      "1099_div",
+      "1099_int",
+      "1099_b",
+      "1099_nec",
+      "1099_misc",
+      "1099_r",
+      "1098",
+      "1098_e",
+      "charitable_receipt",
+      "unknown",
     ],
     costPerPage: 0.01,
   },
   {
-    provider: 'google_vision',
+    provider: "google_vision",
     enabled: true,
     priority: 2,
     timeout: 30000,
     retries: 2,
     supportedDocuments: [
-      'w2',
-      '1099_div',
-      '1099_int',
-      '1099_b',
-      '1099_nec',
-      '1099_misc',
-      '1099_r',
-      '1098',
-      '1098_e',
-      'charitable_receipt',
-      'unknown',
+      "w2",
+      "1099_div",
+      "1099_int",
+      "1099_b",
+      "1099_nec",
+      "1099_misc",
+      "1099_r",
+      "1098",
+      "1098_e",
+      "charitable_receipt",
+      "unknown",
     ],
     costPerPage: 0.0015,
   },
   {
-    provider: 'landing_ai',
+    provider: "landing_ai",
     enabled: true,
     priority: 3,
     timeout: 45000,
     retries: 2,
     supportedDocuments: [
-      'w2',
-      '1099_div',
-      '1099_int',
-      '1099_nec',
-      '1099_misc',
-      '1098',
-      'charitable_receipt',
+      "w2",
+      "1099_div",
+      "1099_int",
+      "1099_nec",
+      "1099_misc",
+      "1098",
+      "charitable_receipt",
     ],
     costPerPage: 0.02,
   },
   {
-    provider: 'azure_di',
+    provider: "azure_di",
     enabled: false,
     priority: 4,
     timeout: 30000,
     retries: 2,
     supportedDocuments: [
-      'w2',
-      '1099_div',
-      '1099_int',
-      '1099_b',
-      '1099_nec',
-      '1099_misc',
-      '1099_r',
-      '1098',
-      '1098_e',
-      'charitable_receipt',
-      'unknown',
+      "w2",
+      "1099_div",
+      "1099_int",
+      "1099_b",
+      "1099_nec",
+      "1099_misc",
+      "1099_r",
+      "1098",
+      "1098_e",
+      "charitable_receipt",
+      "unknown",
     ],
     costPerPage: 0.001,
   },

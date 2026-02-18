@@ -12,35 +12,35 @@
  * - Vital Green (#10B981) and Trust Blue (#3B82F6)
  */
 
-import Link from 'next/link';
-import type { Metadata } from 'next';
-import Header from '@/components/ui/Header';
+import Link from "next/link";
+import type { Metadata } from "next";
+import Header from "@/components/ui/Header";
 
 export const metadata: Metadata = {
-  title: 'About Fynvita | Your Financial Vitality Platform',
+  title: "About Fynvita | Your Financial Vitality Platform",
   description:
-    'Learn about Fynvita, the industry-leading financial wellness platform combining AI-powered credit health, financial wellness, and investment intelligence. Trusted by 50,000+ users.',
+    "Learn about Fynvita, the industry-leading financial wellness platform combining AI-powered credit health, financial wellness, and investment intelligence. Trusted by 50,000+ users.",
   keywords: [
-    'about fynvita',
-    'financial wellness platform',
-    'credit repair company',
-    'ai financial advisor',
-    'investment intelligence',
-    'fintech company',
+    "about fynvita",
+    "financial wellness platform",
+    "credit repair company",
+    "ai financial advisor",
+    "investment intelligence",
+    "fintech company",
   ],
   openGraph: {
-    title: 'About Fynvita | Your Financial Vitality Platform',
+    title: "About Fynvita | Your Financial Vitality Platform",
     description:
-      'Discover how Fynvita is revolutionizing personal finance with AI-powered credit health, financial wellness, and investment intelligence.',
-    type: 'website',
-    url: 'https://fynvita.com/about',
-    images: [{ url: '/og-about.png', width: 1200, height: 630 }],
+      "Discover how Fynvita is revolutionizing personal finance with AI-powered credit health, financial wellness, and investment intelligence.",
+    type: "website",
+    url: "https://fynvita.com/about",
+    images: [{ url: "/og-about.png", width: 1200, height: 630 }],
   },
   twitter: {
-    card: 'summary_large_image',
-    title: 'About Fynvita | Your Financial Vitality Platform',
+    card: "summary_large_image",
+    title: "About Fynvita | Your Financial Vitality Platform",
     description:
-      'Discover how Fynvita is revolutionizing personal finance with AI-powered technology.',
+      "Discover how Fynvita is revolutionizing personal finance with AI-powered technology.",
   },
 };
 
@@ -62,9 +62,9 @@ const values = [
         />
       </svg>
     ),
-    title: 'Trust & Transparency',
+    title: "Trust & Transparency",
     description:
-      'We believe in complete transparency with our users. Your data is yours, and we never sell it to third parties.',
+      "We believe in complete transparency with our users. Your data is yours, and we never sell it to third parties.",
   },
   {
     icon: (
@@ -82,9 +82,9 @@ const values = [
         />
       </svg>
     ),
-    title: 'Innovation First',
+    title: "Innovation First",
     description:
-      'We leverage cutting-edge AI technology to deliver personalized financial guidance that adapts to your unique situation.',
+      "We leverage cutting-edge AI technology to deliver personalized financial guidance that adapts to your unique situation.",
   },
   {
     icon: (
@@ -102,9 +102,9 @@ const values = [
         />
       </svg>
     ),
-    title: 'User Empowerment',
+    title: "User Empowerment",
     description:
-      'Our mission is to empower everyone to take control of their financial future with accessible, actionable insights.',
+      "Our mission is to empower everyone to take control of their financial future with accessible, actionable insights.",
   },
   {
     icon: (
@@ -122,20 +122,20 @@ const values = [
         />
       </svg>
     ),
-    title: 'Continuous Learning',
+    title: "Continuous Learning",
     description:
-      'Our AI systems learn and improve continuously, ensuring you always receive the most relevant and effective guidance.',
+      "Our AI systems learn and improve continuously, ensuring you always receive the most relevant and effective guidance.",
   },
 ];
 
 // Key platform features
 const platformFeatures = [
   {
-    title: 'Credit Health',
-    subtitle: 'Monitor. Repair. Optimize.',
+    title: "Credit Health",
+    subtitle: "Monitor. Repair. Optimize.",
     description:
-      'Real-time monitoring across all three bureaus, AI-powered dispute letters, and strategic credit building plans.',
-    gradient: 'from-emerald-500 to-teal-600',
+      "Real-time monitoring across all three bureaus, AI-powered dispute letters, and strategic credit building plans.",
+    gradient: "from-emerald-500 to-teal-600",
     icon: (
       <svg
         className="w-12 h-12"
@@ -153,11 +153,11 @@ const platformFeatures = [
     ),
   },
   {
-    title: 'Financial Wellness',
-    subtitle: 'Budget. Save. Thrive.',
+    title: "Financial Wellness",
+    subtitle: "Budget. Save. Thrive.",
     description:
-      'Smart budgeting that learns your patterns, automated savings goals, and personalized debt payoff strategies.',
-    gradient: 'from-blue-500 to-blue-600',
+      "Smart budgeting that learns your patterns, automated savings goals, and personalized debt payoff strategies.",
+    gradient: "from-blue-500 to-blue-600",
     icon: (
       <svg
         className="w-12 h-12"
@@ -175,11 +175,11 @@ const platformFeatures = [
     ),
   },
   {
-    title: 'Investment Intelligence',
-    subtitle: 'Analyze. Grow. Prosper.',
+    title: "Investment Intelligence",
+    subtitle: "Analyze. Grow. Prosper.",
     description:
-      'Portfolio analytics with institutional-grade insights, risk assessment, and AI-powered market intelligence.',
-    gradient: 'from-blue-600 to-blue-600',
+      "Portfolio analytics with institutional-grade insights, risk assessment, and AI-powered market intelligence.",
+    gradient: "from-blue-600 to-blue-600",
     icon: (
       <svg
         className="w-12 h-12"
@@ -200,18 +200,18 @@ const platformFeatures = [
 
 // Security and compliance features
 const securityFeatures = [
-  { title: 'Bank-Level Encryption', description: '256-bit AES encryption' },
-  { title: 'SOC 2 Type II Compliant', description: 'Audited annually' },
-  { title: 'GDPR & CCPA Compliant', description: 'Your data, your rights' },
-  { title: 'Zero Data Selling', description: 'We never sell your information' },
+  { title: "Bank-Level Encryption", description: "256-bit AES encryption" },
+  { title: "SOC 2 Type II Compliant", description: "Audited annually" },
+  { title: "GDPR & CCPA Compliant", description: "Your data, your rights" },
+  { title: "Zero Data Selling", description: "We never sell your information" },
 ];
 
 // Statistics
 const stats = [
-  { value: '50K+', label: 'Active Users' },
-  { value: '300+', label: 'AI Models' },
-  { value: '$2.1B+', label: 'Debt Analyzed' },
-  { value: '98%', label: 'User Satisfaction' },
+  { value: "50K+", label: "Active Users" },
+  { value: "300+", label: "AI Models" },
+  { value: "$2.1B+", label: "Debt Analyzed" },
+  { value: "98%", label: "User Satisfaction" },
 ];
 
 export default function AboutPage() {
@@ -251,8 +251,8 @@ export default function AboutPage() {
               <p className="text-lg text-gray-600 dark:text-slate-300 leading-relaxed mb-6">
                 At Fynvita, we believe everyone deserves access to sophisticated
                 financial tools that were once reserved for the wealthy. Our
-                mission is to democratize financial wellness by making
-                powerful, AI-driven insights accessible to everyone.
+                mission is to democratize financial wellness by making powerful,
+                AI-driven insights accessible to everyone.
               </p>
               <p className="text-lg text-gray-600 dark:text-slate-300 leading-relaxed">
                 We are building a future where financial stress is a thing of
@@ -268,7 +268,9 @@ export default function AboutPage() {
                 financial vitality by 2030.
               </p>
               <div className="mt-8 pt-8 border-t border-white/20">
-                <p className="text-sm font-medium opacity-80">Founded in 2024</p>
+                <p className="text-sm font-medium opacity-80">
+                  Founded in 2024
+                </p>
                 <p className="text-2xl font-bold mt-1">San Francisco, CA</p>
               </div>
             </div>
@@ -599,16 +601,28 @@ export default function AboutPage() {
               </span>
             </div>
             <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-600 dark:text-slate-400">
-              <Link href="/privacy" className="hover:text-emerald-600 transition-colors">
+              <Link
+                href="/privacy"
+                className="hover:text-emerald-600 transition-colors"
+              >
                 Privacy Policy
               </Link>
-              <Link href="/terms" className="hover:text-emerald-600 transition-colors">
+              <Link
+                href="/terms"
+                className="hover:text-emerald-600 transition-colors"
+              >
                 Terms of Service
               </Link>
-              <Link href="/help" className="hover:text-emerald-600 transition-colors">
+              <Link
+                href="/help"
+                className="hover:text-emerald-600 transition-colors"
+              >
                 Help Center
               </Link>
-              <Link href="/help/contact" className="hover:text-emerald-600 transition-colors">
+              <Link
+                href="/help/contact"
+                className="hover:text-emerald-600 transition-colors"
+              >
                 Contact Us
               </Link>
             </div>

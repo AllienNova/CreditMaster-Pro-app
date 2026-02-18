@@ -14,8 +14,8 @@ import {
   TaxLossHarvestingAnalysis,
   TaxLossHarvestingConfig,
   ReplacementSecuritySuggestion,
-} from '../types/tax-loss-harvesting.types';
-import { Holding, Transaction } from '../types/portfolio.types';
+} from "../types/tax-loss-harvesting.types";
+import { Holding, Transaction } from "../types/portfolio.types";
 
 /**
  * Default configuration for tax-loss harvesting
@@ -47,18 +47,31 @@ export class TaxLossHarvestingService {
   async analyzeTaxLossOpportunities(
     holdings: Holding[],
     transactions: Transaction[] = [],
-    portfolioId: string = 'default'
+    portfolioId: string = "default",
   ): Promise<TaxLossHarvestingAnalysis> {
-    const opportunities = this.identifyTaxLossOpportunities(holdings, transactions);
-    const totalUnrealizedLosses = opportunities.reduce((sum, opp) => sum + opp.unrealizedLoss, 0);
-    const totalEstimatedTaxSavings = opportunities.reduce((sum, opp) => sum + opp.estimatedTaxSavings, 0);
+    const opportunities = this.identifyTaxLossOpportunities(
+      holdings,
+      transactions,
+    );
+    const totalUnrealizedLosses = opportunities.reduce(
+      (sum, opp) => sum + opp.unrealizedLoss,
+      0,
+    );
+    const totalEstimatedTaxSavings = opportunities.reduce(
+      (sum, opp) => sum + opp.estimatedTaxSavings,
+      0,
+    );
 
     // Calculate current year usage and carryforward
     const currentYearLossesUsed = Math.min(
       totalUnrealizedLosses,
-      this.config.annualLossDeductionLimit - this.config.currentYearLossesAlreadyUsed
+      this.config.annualLossDeductionLimit -
+        this.config.currentYearLossesAlreadyUsed,
     );
-    const carryforwardLosses = Math.max(0, totalUnrealizedLosses - currentYearLossesUsed);
+    const carryforwardLosses = Math.max(
+      0,
+      totalUnrealizedLosses - currentYearLossesUsed,
+    );
 
     // Generate tax-optimized recommendations
     const recommendations = this.generateTaxOptimizedRebalancing(opportunities);
@@ -66,7 +79,7 @@ export class TaxLossHarvestingService {
     // Count wash sale warnings
     const washSaleWarnings = opportunities.reduce(
       (count, opp) => count + opp.washSaleViolations.length,
-      0
+      0,
     );
 
     return {
@@ -83,12 +96,16 @@ export class TaxLossHarvestingService {
       washSaleWarnings,
       summary: {
         opportunitiesCount: opportunities.length,
-        highPriorityCount: opportunities.filter((o) => o.priority === 'high').length,
+        highPriorityCount: opportunities.filter((o) => o.priority === "high")
+          .length,
         totalPotentialSavings: totalEstimatedTaxSavings,
         averageSavingsPerOpportunity:
-          opportunities.length > 0 ? totalEstimatedTaxSavings / opportunities.length : 0,
+          opportunities.length > 0
+            ? totalEstimatedTaxSavings / opportunities.length
+            : 0,
         estimatedNetBenefit:
-          totalEstimatedTaxSavings - opportunities.length * this.config.transactionCostPerTrade,
+          totalEstimatedTaxSavings -
+          opportunities.length * this.config.transactionCostPerTrade,
       },
     };
   }
@@ -98,7 +115,7 @@ export class TaxLossHarvestingService {
    */
   private identifyTaxLossOpportunities(
     holdings: Holding[],
-    transactions: Transaction[]
+    transactions: Transaction[],
   ): TaxLossOpportunity[] {
     const opportunities: TaxLossOpportunity[] = [];
 
@@ -116,7 +133,7 @@ export class TaxLossHarvestingService {
       // Calculate holding period (use createdAt as purchase date)
       const purchaseDate = new Date(holding.createdAt);
       const holdingPeriodDays = Math.floor(
-        (Date.now() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24)
+        (Date.now() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24),
       );
 
       // Determine capital gains treatment
@@ -126,17 +143,30 @@ export class TaxLossHarvestingService {
           : CapitalGainsTreatment.SHORT_TERM;
 
       // Calculate tax savings
-      const estimatedTaxSavings = this.calculateTaxSavings(unrealizedLoss, capitalGainsTreatment);
+      const estimatedTaxSavings = this.calculateTaxSavings(
+        unrealizedLoss,
+        capitalGainsTreatment,
+      );
 
       // Check for wash sale violations
-      const washSaleViolations = this.validateWashSaleRules(holding, transactions);
+      const washSaleViolations = this.validateWashSaleRules(
+        holding,
+        transactions,
+      );
       const washSaleRisk = this.assessWashSaleRisk(washSaleViolations);
 
       // Determine priority
-      const priority = this.determinePriority(unrealizedLoss, estimatedTaxSavings, washSaleRisk);
+      const priority = this.determinePriority(
+        unrealizedLoss,
+        estimatedTaxSavings,
+        washSaleRisk,
+      );
 
       // Determine recommended action
-      const recommendedAction = this.determineRecommendedAction(washSaleRisk, priority);
+      const recommendedAction = this.determineRecommendedAction(
+        washSaleRisk,
+        priority,
+      );
 
       opportunities.push({
         holding,
@@ -157,7 +187,8 @@ export class TaxLossHarvestingService {
     // Sort by priority and tax savings
     return opportunities.sort((a, b) => {
       const priorityOrder = { high: 3, medium: 2, low: 1 };
-      const priorityDiff = priorityOrder[b.priority] - priorityOrder[a.priority];
+      const priorityDiff =
+        priorityOrder[b.priority] - priorityOrder[a.priority];
       if (priorityDiff !== 0) return priorityDiff;
       return b.estimatedTaxSavings - a.estimatedTaxSavings;
     });
@@ -168,7 +199,7 @@ export class TaxLossHarvestingService {
    */
   calculateTaxSavings(
     unrealizedLoss: number,
-    capitalGainsTreatment: CapitalGainsTreatment
+    capitalGainsTreatment: CapitalGainsTreatment,
   ): number {
     // For short-term losses, use ordinary income tax rate
     // For long-term losses, use long-term capital gains rate (typically lower)
@@ -197,7 +228,7 @@ export class TaxLossHarvestingService {
     } else if (taxBracket <= TaxBracket.BRACKET_35) {
       return 0.15; // 15% for middle brackets
     } else {
-      return 0.20; // 20% for highest bracket
+      return 0.2; // 20% for highest bracket
     }
   }
 
@@ -206,7 +237,7 @@ export class TaxLossHarvestingService {
    */
   validateWashSaleRules(
     holding: Holding,
-    transactions: Transaction[]
+    transactions: Transaction[],
   ): WashSaleViolation[] {
     const violations: WashSaleViolation[] = [];
     const saleDate = new Date(); // Assume selling today
@@ -219,22 +250,23 @@ export class TaxLossHarvestingService {
 
       const transactionDate = new Date(transaction.date);
       const daysDiff = Math.floor(
-        (saleDate.getTime() - transactionDate.getTime()) / (1000 * 60 * 60 * 24)
+        (saleDate.getTime() - transactionDate.getTime()) /
+          (1000 * 60 * 60 * 24),
       );
 
       // Check 30 days before
       if (
         daysDiff >= 0 &&
         daysDiff <= this.config.washSaleLookbackDays &&
-        transaction.type === 'buy'
+        transaction.type === "buy"
       ) {
         violations.push({
-          violationType: 'purchase_before',
+          violationType: "purchase_before",
           symbol: transaction.symbol,
           transactionDate,
           daysFromSale: daysDiff,
           description: `Purchased ${transaction.shares} shares ${daysDiff} days before planned sale`,
-          severity: 'error',
+          severity: "error",
         });
       }
 
@@ -242,15 +274,15 @@ export class TaxLossHarvestingService {
       if (
         daysDiff < 0 &&
         Math.abs(daysDiff) <= this.config.washSaleLookforwardDays &&
-        transaction.type === 'buy'
+        transaction.type === "buy"
       ) {
         violations.push({
-          violationType: 'purchase_after',
+          violationType: "purchase_after",
           symbol: transaction.symbol,
           transactionDate,
           daysFromSale: Math.abs(daysDiff),
           description: `Planned purchase ${Math.abs(daysDiff)} days after sale may trigger wash sale`,
-          severity: 'warning',
+          severity: "warning",
         });
       }
     }
@@ -262,17 +294,19 @@ export class TaxLossHarvestingService {
    * Assess wash sale risk level
    */
   private assessWashSaleRisk(
-    violations: WashSaleViolation[]
-  ): 'none' | 'low' | 'medium' | 'high' {
-    if (violations.length === 0) return 'none';
+    violations: WashSaleViolation[],
+  ): "none" | "low" | "medium" | "high" {
+    if (violations.length === 0) return "none";
 
-    const errorCount = violations.filter((v) => v.severity === 'error').length;
-    const warningCount = violations.filter((v) => v.severity === 'warning').length;
+    const errorCount = violations.filter((v) => v.severity === "error").length;
+    const warningCount = violations.filter(
+      (v) => v.severity === "warning",
+    ).length;
 
-    if (errorCount > 0) return 'high';
-    if (warningCount > 2) return 'medium';
-    if (warningCount > 0) return 'low';
-    return 'none';
+    if (errorCount > 0) return "high";
+    if (warningCount > 2) return "medium";
+    if (warningCount > 0) return "low";
+    return "none";
   }
 
   /**
@@ -281,57 +315,61 @@ export class TaxLossHarvestingService {
   private determinePriority(
     unrealizedLoss: number,
     estimatedTaxSavings: number,
-    washSaleRisk: 'none' | 'low' | 'medium' | 'high'
-  ): 'high' | 'medium' | 'low' {
+    washSaleRisk: "none" | "low" | "medium" | "high",
+  ): "high" | "medium" | "low" {
     // High priority: Large losses, high savings, no wash sale risk
-    if (unrealizedLoss > 1000 && estimatedTaxSavings > 300 && washSaleRisk === 'none') {
-      return 'high';
+    if (
+      unrealizedLoss > 1000 &&
+      estimatedTaxSavings > 300 &&
+      washSaleRisk === "none"
+    ) {
+      return "high";
     }
 
     // Low priority: Small losses or high wash sale risk
-    if (unrealizedLoss < 500 || washSaleRisk === 'high') {
-      return 'low';
+    if (unrealizedLoss < 500 || washSaleRisk === "high") {
+      return "low";
     }
 
-    return 'medium';
+    return "medium";
   }
 
   /**
    * Determine recommended action
    */
   private determineRecommendedAction(
-    washSaleRisk: 'none' | 'low' | 'medium' | 'high',
-    priority: 'high' | 'medium' | 'low'
-  ): 'sell' | 'hold' | 'review' {
-    if (washSaleRisk === 'high') return 'hold';
-    if (washSaleRisk === 'medium') return 'review';
-    if (priority === 'high' || priority === 'medium') return 'sell';
-    return 'review';
+    washSaleRisk: "none" | "low" | "medium" | "high",
+    priority: "high" | "medium" | "low",
+  ): "sell" | "hold" | "review" {
+    if (washSaleRisk === "high") return "hold";
+    if (washSaleRisk === "medium") return "review";
+    if (priority === "high" || priority === "medium") return "sell";
+    return "review";
   }
-
-
 
   /**
    * Generate tax-optimized rebalancing recommendations
    */
   generateTaxOptimizedRebalancing(
-    opportunities: TaxLossOpportunity[]
+    opportunities: TaxLossOpportunity[],
   ): TaxOptimizedRecommendation[] {
     const recommendations: TaxOptimizedRecommendation[] = [];
 
     for (const opportunity of opportunities) {
-      if (opportunity.recommendedAction === 'hold') {
+      if (opportunity.recommendedAction === "hold") {
         continue; // Skip high wash sale risk positions
       }
 
       const recommendation: TaxOptimizedRecommendation = {
         symbol: opportunity.holding.symbol,
-        action: opportunity.recommendedAction === 'sell' ? 'sell' : 'hold',
+        action: opportunity.recommendedAction === "sell" ? "sell" : "hold",
         quantity: opportunity.holding.shares,
         estimatedProceeds: opportunity.currentValue,
         taxImpact: opportunity.estimatedTaxSavings,
-        washSaleCompliant: opportunity.washSaleRisk === 'none',
-        replacementSuggestions: this.getReplacementSuggestions(opportunity.holding),
+        washSaleCompliant: opportunity.washSaleRisk === "none",
+        replacementSuggestions: this.getReplacementSuggestions(
+          opportunity.holding,
+        ),
         notes: this.generateRecommendationNotes(opportunity),
       };
 
@@ -347,15 +385,15 @@ export class TaxLossHarvestingService {
   private getReplacementSuggestions(holding: Holding): string[] {
     // Simplified replacement suggestions based on asset type
     const suggestions: Record<string, string[]> = {
-      stock: ['VTI', 'VOO', 'SPY'], // Broad market ETFs
-      etf: ['VTI', 'VOO', 'SPY'], // Broad market ETFs
-      bond: ['AGG', 'BND', 'TLT'], // Bond ETFs
-      mutual_fund: ['VTSAX', 'VFIAX', 'FXAIX'], // Index funds
-      crypto: ['BTC', 'ETH'], // Major cryptocurrencies
-      other: ['VTI', 'VOO', 'SPY'], // Default to broad market
+      stock: ["VTI", "VOO", "SPY"], // Broad market ETFs
+      etf: ["VTI", "VOO", "SPY"], // Broad market ETFs
+      bond: ["AGG", "BND", "TLT"], // Bond ETFs
+      mutual_fund: ["VTSAX", "VFIAX", "FXAIX"], // Index funds
+      crypto: ["BTC", "ETH"], // Major cryptocurrencies
+      other: ["VTI", "VOO", "SPY"], // Default to broad market
     };
 
-    const assetType = holding.assetType || 'stock';
+    const assetType = holding.assetType || "stock";
     return suggestions[assetType] || suggestions.stock;
   }
 
@@ -366,26 +404,28 @@ export class TaxLossHarvestingService {
     const notes: string[] = [];
 
     notes.push(
-      `Unrealized loss: $${opportunity.unrealizedLoss.toFixed(2)} (${opportunity.lossPercentage.toFixed(1)}%)`
+      `Unrealized loss: $${opportunity.unrealizedLoss.toFixed(2)} (${opportunity.lossPercentage.toFixed(1)}%)`,
     );
-    notes.push(`Estimated tax savings: $${opportunity.estimatedTaxSavings.toFixed(2)}`);
     notes.push(
-      `Holding period: ${opportunity.holdingPeriodDays} days (${opportunity.capitalGainsTreatment})`
+      `Estimated tax savings: $${opportunity.estimatedTaxSavings.toFixed(2)}`,
+    );
+    notes.push(
+      `Holding period: ${opportunity.holdingPeriodDays} days (${opportunity.capitalGainsTreatment})`,
     );
 
     if (opportunity.washSaleViolations.length > 0) {
       notes.push(
-        `${opportunity.washSaleViolations.length} wash sale warning(s) - review before executing`
+        `${opportunity.washSaleViolations.length} wash sale warning(s) - review before executing`,
       );
     }
 
-    if (opportunity.recommendedAction === 'sell') {
-      notes.push('Recommended for immediate tax-loss harvesting');
-    } else if (opportunity.recommendedAction === 'review') {
-      notes.push('Review wash sale implications before proceeding');
+    if (opportunity.recommendedAction === "sell") {
+      notes.push("Recommended for immediate tax-loss harvesting");
+    } else if (opportunity.recommendedAction === "review") {
+      notes.push("Review wash sale implications before proceeding");
     }
 
-    return notes.join(' | ');
+    return notes.join(" | ");
   }
 }
 
@@ -393,7 +433,7 @@ export class TaxLossHarvestingService {
 let taxLossHarvestingServiceInstance: TaxLossHarvestingService | null = null;
 
 export function getTaxLossHarvestingService(
-  config?: Partial<TaxLossHarvestingConfig>
+  config?: Partial<TaxLossHarvestingConfig>,
 ): TaxLossHarvestingService {
   if (!taxLossHarvestingServiceInstance || config) {
     taxLossHarvestingServiceInstance = new TaxLossHarvestingService(config);

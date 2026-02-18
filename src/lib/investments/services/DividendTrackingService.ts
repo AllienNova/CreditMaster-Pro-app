@@ -10,24 +10,24 @@
  * - Tax reporting
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 export type DividendFrequency =
-  | 'monthly'
-  | 'quarterly'
-  | 'semi-annual'
-  | 'annual'
-  | 'irregular';
+  | "monthly"
+  | "quarterly"
+  | "semi-annual"
+  | "annual"
+  | "irregular";
 
 export type DividendType =
-  | 'qualified'
-  | 'ordinary'
-  | 'return_of_capital'
-  | 'capital_gain';
+  | "qualified"
+  | "ordinary"
+  | "return_of_capital"
+  | "capital_gain";
 
 export interface DividendPayment {
   id: string;
@@ -102,7 +102,7 @@ export interface DRIPSettings {
 
 export interface DividendCalendarEntry {
   date: Date;
-  type: 'ex_date' | 'pay_date' | 'record_date';
+  type: "ex_date" | "pay_date" | "record_date";
   symbol: string;
   companyName: string;
   amount: number;
@@ -126,10 +126,10 @@ export class DividendTrackingService {
   // ==========================================================================
 
   async recordDividendPayment(
-    payment: Omit<DividendPayment, 'id' | 'createdAt'>
+    payment: Omit<DividendPayment, "id" | "createdAt">,
   ): Promise<DividendPayment> {
     const { data, error } = await this.supabase
-      .from('dividend_payments')
+      .from("dividend_payments")
       .insert({
         user_id: payment.userId,
         account_id: payment.accountId,
@@ -162,22 +162,22 @@ export class DividendTrackingService {
       startDate?: Date;
       endDate?: Date;
       limit?: number;
-    }
+    },
   ): Promise<DividendPayment[]> {
     let query = this.supabase
-      .from('dividend_payments')
-      .select('*')
-      .eq('user_id', userId)
-      .order('pay_date', { ascending: false });
+      .from("dividend_payments")
+      .select("*")
+      .eq("user_id", userId)
+      .order("pay_date", { ascending: false });
 
     if (options?.symbol) {
-      query = query.eq('symbol', options.symbol);
+      query = query.eq("symbol", options.symbol);
     }
     if (options?.startDate) {
-      query = query.gte('pay_date', options.startDate.toISOString());
+      query = query.gte("pay_date", options.startDate.toISOString());
     }
     if (options?.endDate) {
-      query = query.lte('pay_date', options.endDate.toISOString());
+      query = query.lte("pay_date", options.endDate.toISOString());
     }
     if (options?.limit) {
       query = query.limit(options.limit);
@@ -198,10 +198,10 @@ export class DividendTrackingService {
   async getDividendStocks(userId: string): Promise<DividendStock[]> {
     // Get user's holdings
     const { data: holdings, error: holdingsError } = await this.supabase
-      .from('holdings')
-      .select('*')
-      .eq('user_id', userId)
-      .gt('shares', 0);
+      .from("holdings")
+      .select("*")
+      .eq("user_id", userId)
+      .gt("shares", 0);
 
     if (holdingsError)
       throw new Error(`Failed to get holdings: ${holdingsError.message}`);
@@ -211,9 +211,9 @@ export class DividendTrackingService {
 
     for (const holding of holdings || []) {
       const { data: dividendInfo } = await this.supabase
-        .from('stock_dividends')
-        .select('*')
-        .eq('symbol', holding.symbol)
+        .from("stock_dividends")
+        .select("*")
+        .eq("symbol", holding.symbol)
         .single();
 
       if (dividendInfo && dividendInfo.annual_dividend > 0) {
@@ -226,7 +226,7 @@ export class DividendTrackingService {
           annualDividend: dividendInfo.annual_dividend,
           dividendYield:
             (dividendInfo.annual_dividend / holding.current_price) * 100,
-          frequency: dividendInfo.frequency || 'quarterly',
+          frequency: dividendInfo.frequency || "quarterly",
           nextExDate: dividendInfo.next_ex_date
             ? new Date(dividendInfo.next_ex_date)
             : undefined,
@@ -263,7 +263,7 @@ export class DividendTrackingService {
 
     // Get last month's dividends
     const lastMonthDividends = ytdDividends.filter(
-      (d) => d.payDate >= startOfLastMonth && d.payDate <= endOfLastMonth
+      (d) => d.payDate >= startOfLastMonth && d.payDate <= endOfLastMonth,
     );
 
     // Get dividend stocks for projection
@@ -273,17 +273,17 @@ export class DividendTrackingService {
     const ytdIncome = ytdDividends.reduce((sum, d) => sum + d.totalAmount, 0);
     const lastMonthIncome = lastMonthDividends.reduce(
       (sum, d) => sum + d.totalAmount,
-      0
+      0,
     );
     const totalAnnualIncome = dividendStocks.reduce(
       (sum, s) => sum + s.annualDividend * s.sharesHeld,
-      0
+      0,
     );
 
     // Calculate portfolio value and yield
     const portfolioValue = dividendStocks.reduce(
       (sum, s) => sum + s.currentPrice * s.sharesHeld,
-      0
+      0,
     );
     const portfolioYield =
       portfolioValue > 0 ? (totalAnnualIncome / portfolioValue) * 100 : 0;
@@ -328,7 +328,7 @@ export class DividendTrackingService {
 
   async getIncomeProjections(
     userId: string,
-    months: number = 12
+    months: number = 12,
   ): Promise<DividendProjection[]> {
     const dividendStocks = await this.getDividendStocks(userId);
     const projections: DividendProjection[] = [];
@@ -337,18 +337,18 @@ export class DividendTrackingService {
     for (let i = 0; i < months; i++) {
       const month = new Date(now.getFullYear(), now.getMonth() + i, 1);
       const monthEnd = new Date(now.getFullYear(), now.getMonth() + i + 1, 0);
-      const monthLabel = month.toLocaleDateString('en-US', {
-        month: 'short',
-        year: 'numeric',
+      const monthLabel = month.toLocaleDateString("en-US", {
+        month: "short",
+        year: "numeric",
       });
 
-      const payments: DividendProjection['payments'] = [];
+      const payments: DividendProjection["payments"] = [];
 
       for (const stock of dividendStocks) {
         const expectedPayments = this.getExpectedPaymentsInPeriod(
           stock,
           month,
-          monthEnd
+          monthEnd,
         );
 
         for (const payment of expectedPayments) {
@@ -377,7 +377,7 @@ export class DividendTrackingService {
   async getDividendCalendar(
     userId: string,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
   ): Promise<DividendCalendarEntry[]> {
     const dividendStocks = await this.getDividendStocks(userId);
     const entries: DividendCalendarEntry[] = [];
@@ -396,7 +396,7 @@ export class DividendTrackingService {
 
         entries.push({
           date: stock.nextExDate,
-          type: 'ex_date',
+          type: "ex_date",
           symbol: stock.symbol,
           companyName: stock.companyName,
           amount:
@@ -419,7 +419,7 @@ export class DividendTrackingService {
 
         entries.push({
           date: stock.nextPayDate,
-          type: 'pay_date',
+          type: "pay_date",
           symbol: stock.symbol,
           companyName: stock.companyName,
           amount:
@@ -439,13 +439,13 @@ export class DividendTrackingService {
 
   async getDRIPSettings(
     userId: string,
-    accountId: string
+    accountId: string,
   ): Promise<DRIPSettings | null> {
     const { data, error } = await this.supabase
-      .from('drip_settings')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('account_id', accountId)
+      .from("drip_settings")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("account_id", accountId)
       .single();
 
     if (error) return null;
@@ -465,11 +465,11 @@ export class DividendTrackingService {
     userId: string,
     accountId: string,
     settings: Partial<
-      Pick<DRIPSettings, 'enabled' | 'symbols' | 'minReinvestAmount'>
-    >
+      Pick<DRIPSettings, "enabled" | "symbols" | "minReinvestAmount">
+    >,
   ): Promise<DRIPSettings> {
     const { data, error } = await this.supabase
-      .from('drip_settings')
+      .from("drip_settings")
       .upsert({
         user_id: userId,
         account_id: accountId,
@@ -501,7 +501,7 @@ export class DividendTrackingService {
 
   async getTaxReport(
     userId: string,
-    year: number
+    year: number,
   ): Promise<{
     year: number;
     totalDividends: number;
@@ -532,27 +532,27 @@ export class DividendTrackingService {
       // By account
       const acct = byAccount.get(div.accountId) || { total: 0, qualified: 0 };
       acct.total += div.totalAmount;
-      if (div.dividendType === 'qualified') acct.qualified += div.totalAmount;
+      if (div.dividendType === "qualified") acct.qualified += div.totalAmount;
       byAccount.set(div.accountId, acct);
 
       // By symbol
       const sym = bySymbol.get(div.symbol) || { total: 0, qualified: 0 };
       sym.total += div.totalAmount;
-      if (div.dividendType === 'qualified') sym.qualified += div.totalAmount;
+      if (div.dividendType === "qualified") sym.qualified += div.totalAmount;
       bySymbol.set(div.symbol, sym);
 
       // Totals by type
       switch (div.dividendType) {
-        case 'qualified':
+        case "qualified":
           qualifiedTotal += div.totalAmount;
           break;
-        case 'ordinary':
+        case "ordinary":
           ordinaryTotal += div.totalAmount;
           break;
-        case 'return_of_capital':
+        case "return_of_capital":
           rocTotal += div.totalAmount;
           break;
-        case 'capital_gain':
+        case "capital_gain":
           capGainTotal += div.totalAmount;
           break;
       }
@@ -580,14 +580,14 @@ export class DividendTrackingService {
   // ==========================================================================
 
   private calculateIncomeByMonth(
-    dividends: DividendPayment[]
+    dividends: DividendPayment[],
   ): { month: string; amount: number }[] {
     const byMonth = new Map<string, number>();
 
     for (const div of dividends) {
-      const monthKey = div.payDate.toLocaleDateString('en-US', {
-        month: 'short',
-        year: 'numeric',
+      const monthKey = div.payDate.toLocaleDateString("en-US", {
+        month: "short",
+        year: "numeric",
       });
       byMonth.set(monthKey, (byMonth.get(monthKey) || 0) + div.totalAmount);
     }
@@ -598,7 +598,7 @@ export class DividendTrackingService {
   }
 
   private calculateIncomeByStock(
-    dividends: DividendPayment[]
+    dividends: DividendPayment[],
   ): { symbol: string; amount: number }[] {
     const byStock = new Map<string, number>();
 
@@ -619,7 +619,7 @@ export class DividendTrackingService {
     let ordinary = 0;
 
     for (const div of dividends) {
-      if (div.dividendType === 'qualified') {
+      if (div.dividendType === "qualified") {
         qualified += div.totalAmount;
       } else {
         ordinary += div.totalAmount;
@@ -631,13 +631,13 @@ export class DividendTrackingService {
 
   private getFrequencyMultiplier(frequency: DividendFrequency): number {
     switch (frequency) {
-      case 'monthly':
+      case "monthly":
         return 1 / 12;
-      case 'quarterly':
+      case "quarterly":
         return 1 / 4;
-      case 'semi-annual':
+      case "semi-annual":
         return 1 / 2;
-      case 'annual':
+      case "annual":
         return 1;
       default:
         return 1 / 4; // Default to quarterly
@@ -647,7 +647,7 @@ export class DividendTrackingService {
   private getExpectedPaymentsInPeriod(
     stock: DividendStock,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
   ): { date: Date; amount: number }[] {
     const payments: { date: Date; amount: number }[] = [];
     const perPaymentAmount =
@@ -660,16 +660,16 @@ export class DividendTrackingService {
     let paymentsExpected = 0;
 
     switch (stock.frequency) {
-      case 'monthly':
+      case "monthly":
         paymentsExpected = monthsInPeriod;
         break;
-      case 'quarterly':
+      case "quarterly":
         paymentsExpected = monthsInPeriod >= 3 ? 1 : 0;
         break;
-      case 'semi-annual':
+      case "semi-annual":
         paymentsExpected = monthsInPeriod >= 6 ? 1 : 0;
         break;
-      case 'annual':
+      case "annual":
         paymentsExpected = monthsInPeriod >= 12 ? 1 : 0;
         break;
     }
@@ -726,7 +726,7 @@ export function getDividendTrackingService(): DividendTrackingService {
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     dividendTrackingServiceInstance = new DividendTrackingService(
       supabaseUrl,
-      supabaseKey
+      supabaseKey,
     );
   }
   return dividendTrackingServiceInstance;

@@ -1,6 +1,6 @@
 /**
  * Advanced Dispute Letter Prompts
- * 
+ *
  * Features:
  * - Few-shot learning examples
  * - Chain-of-thought prompting
@@ -8,7 +8,7 @@
  * - Version control
  */
 
-export const DISPUTE_PROMPT_VERSION = '2.0.0';
+export const DISPUTE_PROMPT_VERSION = "2.0.0";
 
 /**
  * System prompt with few-shot examples
@@ -236,7 +236,7 @@ Generate a professional dispute letter for the following situation:
 **Account Number:** ${data.accountNumber}
 **Issue:** ${data.issue}
 **Date:** ${data.date}
-${data.additionalDetails ? `**Additional Details:** ${data.additionalDetails}` : ''}
+${data.additionalDetails ? `**Additional Details:** ${data.additionalDetails}` : ""}
 
 ## Instructions:
 
@@ -267,7 +267,7 @@ export function generateComplexDisputePrompt(data: {
     issue: string;
     date: string;
   }>;
-  strategy: 'aggressive' | 'moderate' | 'conservative';
+  strategy: "aggressive" | "moderate" | "conservative";
 }): string {
   return `${DISPUTE_SYSTEM_PROMPT}
 
@@ -276,11 +276,15 @@ export function generateComplexDisputePrompt(data: {
 The user needs to dispute multiple items. Use chain-of-thought reasoning to develop the best strategy.
 
 **Items to Dispute:**
-${data.items.map((item, i) => `
+${data.items
+  .map(
+    (item, i) => `
 ${i + 1}. ${item.itemType} - ${item.creditor} (${item.accountNumber})
    Issue: ${item.issue}
    Date: ${item.date}
-`).join('\n')}
+`,
+  )
+  .join("\n")}
 
 **Strategy:** ${data.strategy}
 
@@ -354,29 +358,28 @@ Analysis:`;
  */
 export const DISPUTE_TEMPLATES = {
   late_payment: {
-    version: '2.0.0',
+    version: "2.0.0",
     systemPrompt: DISPUTE_SYSTEM_PROMPT,
     userPrompt: generateDisputePrompt,
   },
   fraudulent_account: {
-    version: '2.0.0',
+    version: "2.0.0",
     systemPrompt: DISPUTE_SYSTEM_PROMPT,
     userPrompt: generateDisputePrompt,
   },
   incorrect_balance: {
-    version: '2.0.0',
+    version: "2.0.0",
     systemPrompt: DISPUTE_SYSTEM_PROMPT,
     userPrompt: generateDisputePrompt,
   },
   duplicate_account: {
-    version: '2.0.0',
+    version: "2.0.0",
     systemPrompt: DISPUTE_SYSTEM_PROMPT,
     userPrompt: generateDisputePrompt,
   },
   account_not_mine: {
-    version: '2.0.0',
+    version: "2.0.0",
     systemPrompt: DISPUTE_SYSTEM_PROMPT,
     userPrompt: generateDisputePrompt,
   },
 };
-

@@ -3,9 +3,9 @@
  * Shows user's current XP and progress to next level
  */
 
-import React from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
-import { lightTheme as theme } from '../../constants/theme';
+import React from "react";
+import { View, Text, StyleSheet, Animated } from "react-native";
+import { lightTheme as theme } from "../../constants/theme";
 
 interface XpBarProps {
   currentXp: number;
@@ -41,7 +41,7 @@ export function XpBar({
 
   const widthInterpolated = animatedWidth.interpolate({
     inputRange: [0, 100],
-    outputRange: ['0%', '100%'],
+    outputRange: ["0%", "100%"],
   });
 
   return (
@@ -75,22 +75,22 @@ export function XpBar({
 
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
+    width: "100%",
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
     marginBottom: 8,
   },
   levelInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   levelText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
   },
   titleText: {
@@ -99,20 +99,20 @@ const styles = StyleSheet.create({
   },
   xpText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.primary,
   },
   barContainer: {
-    width: '100%',
+    width: "100%",
   },
   barBackground: {
     height: 10,
     backgroundColor: `${theme.colors.primary}20`,
     borderRadius: 5,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   barFill: {
-    height: '100%',
+    height: "100%",
     backgroundColor: theme.colors.primary,
     borderRadius: 5,
   },
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: theme.colors.textSecondary,
     marginTop: 4,
-    textAlign: 'right',
+    textAlign: "right",
   },
 });
 

@@ -18,13 +18,14 @@ describe("/api/federal-programs", () => {
       const applicationData = { loan_id: "123", user_id: "456" };
       req = createRequest({
         method: "POST",
-        json: () => Promise.resolve({ programType: "fresh-start", applicationData }),
+        json: () =>
+          Promise.resolve({ programType: "fresh-start", applicationData }),
       });
 
       await POST(req as NextRequest);
 
       expect(
-        FederalIntegrationService.prototype.submitFreshStartApplication
+        FederalIntegrationService.prototype.submitFreshStartApplication,
       ).toHaveBeenCalledWith(applicationData);
     });
 
@@ -39,7 +40,7 @@ describe("/api/federal-programs", () => {
       await POST(req as NextRequest);
 
       expect(
-        FederalIntegrationService.prototype.submitRehabilitationApplication
+        FederalIntegrationService.prototype.submitRehabilitationApplication,
       ).toHaveBeenCalledWith(applicationData);
     });
 
@@ -54,7 +55,7 @@ describe("/api/federal-programs", () => {
       await POST(req as NextRequest);
 
       expect(
-        FederalIntegrationService.prototype.submitConsolidationApplication
+        FederalIntegrationService.prototype.submitConsolidationApplication,
       ).toHaveBeenCalledWith(applicationData);
     });
 
@@ -85,7 +86,7 @@ describe("/api/federal-programs", () => {
       await GET(req as NextRequest);
 
       expect(
-        FederalIntegrationService.prototype.trackApplicationStatus
+        FederalIntegrationService.prototype.trackApplicationStatus,
       ).toHaveBeenCalledWith(applicationId);
     });
 

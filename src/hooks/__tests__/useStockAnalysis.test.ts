@@ -2,19 +2,19 @@
  * useStockAnalysis Hook Tests
  */
 
-import { renderHook, waitFor, act } from '@testing-library/react';
-import { useStockAnalysis } from '../useStockAnalysis';
+import { renderHook, waitFor, act } from "@testing-library/react";
+import { useStockAnalysis } from "../useStockAnalysis";
 import type {
   ComprehensiveStockAnalysis,
   TechnicalAnalysis,
-} from '@/lib/investments/types/stock-analysis.types';
+} from "@/lib/investments/types/stock-analysis.types";
 
 // Mock useAuth hook
-jest.mock('../useAuth', () => ({
+jest.mock("../useAuth", () => ({
   useAuth: jest.fn(),
 }));
 
-import { useAuth } from '../useAuth';
+import { useAuth } from "../useAuth";
 const mockUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
 
 // Mock fetch
@@ -23,17 +23,17 @@ const mockFetch = global.fetch as jest.Mock;
 // Helper to create proper Response objects with clone() method
 const createMockResponse = (
   data: any,
-  options: { ok?: boolean; status?: number } = {}
+  options: { ok?: boolean; status?: number } = {},
 ) => {
   const responseBody = JSON.stringify(data);
   return new Response(responseBody, {
     status: options.status || (options.ok !== false ? 200 : 500),
-    headers: { 'Content-Type': 'application/json' },
+    headers: { "Content-Type": "application/json" },
   });
 };
 
 const mockTechnicalAnalysis: TechnicalAnalysis = {
-  symbol: 'AAPL',
+  symbol: "AAPL",
   timestamp: new Date(),
   indicators: {
     sma20: 150,
@@ -63,20 +63,20 @@ const mockTechnicalAnalysis: TechnicalAnalysis = {
   support: [145, 140],
   resistance: [155, 160],
   trend: {
-    shortTerm: 'bullish',
-    mediumTerm: 'bullish',
-    longTerm: 'bullish',
+    shortTerm: "bullish",
+    mediumTerm: "bullish",
+    longTerm: "bullish",
     strength: 0.75,
-    description: 'Strong bullish trend across all timeframes',
+    description: "Strong bullish trend across all timeframes",
   },
   signals: [],
-  overallSignal: 'buy',
+  overallSignal: "buy",
   confidence: 0.8,
 };
 
 const mockComprehensiveAnalysis: ComprehensiveStockAnalysis = {
-  symbol: 'AAPL',
-  name: 'Apple Inc.',
+  symbol: "AAPL",
+  name: "Apple Inc.",
   timestamp: new Date(),
   quote: {} as any,
   technical: mockTechnicalAnalysis,
@@ -87,11 +87,11 @@ const mockComprehensiveAnalysis: ComprehensiveStockAnalysis = {
   recommendation: {} as any,
 };
 
-describe('useStockAnalysis', () => {
+describe("useStockAnalysis", () => {
   beforeEach(() => {
     mockFetch.mockClear();
     mockUseAuth.mockReturnValue({
-      user: { id: 'test-user-id', email: 'test@example.com' } as any,
+      user: { id: "test-user-id", email: "test@example.com" } as any,
       loading: false,
       error: null,
       signIn: jest.fn(),
@@ -99,12 +99,12 @@ describe('useStockAnalysis', () => {
       signOut: jest.fn(),
     });
     mockFetch.mockResolvedValue(
-      createMockResponse({ success: true, data: mockComprehensiveAnalysis })
+      createMockResponse({ success: true, data: mockComprehensiveAnalysis }),
     );
   });
 
-  it('should fetch comprehensive analysis on mount', async () => {
-    const { result } = renderHook(() => useStockAnalysis({ symbol: 'AAPL' }));
+  it("should fetch comprehensive analysis on mount", async () => {
+    const { result } = renderHook(() => useStockAnalysis({ symbol: "AAPL" }));
 
     expect(result.current.loading).toBe(true);
 
@@ -114,17 +114,17 @@ describe('useStockAnalysis', () => {
 
     // Dates are serialized to strings through JSON, compare key fields
     expect(result.current.analysis?.symbol).toBe(
-      mockComprehensiveAnalysis.symbol
+      mockComprehensiveAnalysis.symbol,
     );
     expect(result.current.analysis?.recommendation).toEqual(
-      mockComprehensiveAnalysis.recommendation
+      mockComprehensiveAnalysis.recommendation,
     );
     expect(result.current.error).toBeNull();
   });
 
-  it('should not fetch when disabled', async () => {
+  it("should not fetch when disabled", async () => {
     const { result } = renderHook(() =>
-      useStockAnalysis({ symbol: 'AAPL', enabled: false })
+      useStockAnalysis({ symbol: "AAPL", enabled: false }),
     );
 
     // Wait a bit to ensure no fetch is triggered
@@ -133,16 +133,16 @@ describe('useStockAnalysis', () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
-  it('should fetch technical analysis individually', async () => {
+  it("should fetch technical analysis individually", async () => {
     mockFetch
       .mockResolvedValueOnce(
-        createMockResponse({ success: true, data: mockComprehensiveAnalysis })
+        createMockResponse({ success: true, data: mockComprehensiveAnalysis }),
       )
       .mockResolvedValueOnce(
-        createMockResponse({ success: true, data: mockTechnicalAnalysis })
+        createMockResponse({ success: true, data: mockTechnicalAnalysis }),
       );
 
-    const { result } = renderHook(() => useStockAnalysis({ symbol: 'AAPL' }));
+    const { result } = renderHook(() => useStockAnalysis({ symbol: "AAPL" }));
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -153,29 +153,29 @@ describe('useStockAnalysis', () => {
     // Dates are serialized to strings through JSON, compare key fields
     expect(technical?.symbol).toBe(mockTechnicalAnalysis.symbol);
     expect(technical?.indicators.rsi).toBe(
-      mockTechnicalAnalysis.indicators.rsi
+      mockTechnicalAnalysis.indicators.rsi,
     );
     // Check the second call (first is comprehensive, second is technical)
     const technicalCall = mockFetch.mock.calls[1];
     const requestUrl =
-      typeof technicalCall[0] === 'string'
+      typeof technicalCall[0] === "string"
         ? technicalCall[0]
         : technicalCall[0].url;
-    expect(requestUrl).toBe('/api/investments/analyze/AAPL/technical');
+    expect(requestUrl).toBe("/api/investments/analyze/AAPL/technical");
   });
 
-  it('should cache analysis data', async () => {
+  it("should cache analysis data", async () => {
     // Mock both initial comprehensive analysis and technical analysis
     mockFetch
       .mockResolvedValueOnce(
-        createMockResponse({ success: true, data: mockComprehensiveAnalysis })
+        createMockResponse({ success: true, data: mockComprehensiveAnalysis }),
       )
       .mockResolvedValueOnce(
-        createMockResponse({ success: true, data: mockTechnicalAnalysis })
+        createMockResponse({ success: true, data: mockTechnicalAnalysis }),
       );
 
     const { result } = renderHook(() =>
-      useStockAnalysis({ symbol: 'AAPL', cacheTime: 60000 })
+      useStockAnalysis({ symbol: "AAPL", cacheTime: 60000 }),
     );
 
     await waitFor(() => {
@@ -191,26 +191,26 @@ describe('useStockAnalysis', () => {
     expect(mockFetch).toHaveBeenCalledTimes(2); // No additional call
   });
 
-  it('should handle fetch errors', async () => {
+  it("should handle fetch errors", async () => {
     mockFetch.mockResolvedValueOnce(
       createMockResponse(
-        { error: 'Analysis failed' },
-        { ok: false, status: 500 }
-      )
+        { error: "Analysis failed" },
+        { ok: false, status: 500 },
+      ),
     );
 
-    const { result } = renderHook(() => useStockAnalysis({ symbol: 'AAPL' }));
+    const { result } = renderHook(() => useStockAnalysis({ symbol: "AAPL" }));
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(result.current.error).toBe('Analysis failed');
+    expect(result.current.error).toBe("Analysis failed");
     expect(result.current.analysis).toBeNull();
   });
 
-  it('should refresh analysis data', async () => {
-    const { result } = renderHook(() => useStockAnalysis({ symbol: 'AAPL' }));
+  it("should refresh analysis data", async () => {
+    const { result } = renderHook(() => useStockAnalysis({ symbol: "AAPL" }));
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);

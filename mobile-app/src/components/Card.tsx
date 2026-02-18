@@ -1,24 +1,29 @@
-import React, { useMemo } from 'react';
-import { View, ViewStyle, StyleProp } from 'react-native';
-import { useTheme } from '../hooks/useTheme';
+import React, { useMemo } from "react";
+import { View, ViewStyle, StyleProp } from "react-native";
+import { useTheme } from "../hooks/useTheme";
 
 interface CardProps {
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
-  padding?: 'none' | 'sm' | 'md' | 'lg';
+  padding?: "none" | "sm" | "md" | "lg";
   shadow?: boolean;
 }
 
-export function Card({ children, style, padding = 'md', shadow = true }: CardProps) {
+export function Card({
+  children,
+  style,
+  padding = "md",
+  shadow = true,
+}: CardProps) {
   const { colors, spacing, borderRadius, shadow: themeShadow } = useTheme();
 
   const paddingValue = useMemo(() => {
     switch (padding) {
-      case 'none':
+      case "none":
         return 0;
-      case 'sm':
+      case "sm":
         return spacing.sm;
-      case 'lg':
+      case "lg":
         return spacing.lg;
       default:
         return spacing.md;
@@ -32,9 +37,5 @@ export function Card({ children, style, padding = 'md', shadow = true }: CardPro
     ...(shadow ? themeShadow.sm : {}),
   };
 
-  return (
-    <View style={[cardStyle, style]}>
-      {children}
-    </View>
-  );
+  return <View style={[cardStyle, style]}>{children}</View>;
 }

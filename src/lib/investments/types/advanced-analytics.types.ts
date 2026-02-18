@@ -5,7 +5,7 @@
  * Includes risk metrics, diversification scoring, correlation analysis, and rebalancing
  */
 
-import { z } from 'zod';
+import { z } from "zod";
 
 // ============================================================================
 // ENUMS
@@ -15,43 +15,43 @@ import { z } from 'zod';
  * Risk tolerance levels for portfolio optimization
  */
 export enum RiskLevel {
-  CONSERVATIVE = 'conservative',
-  MODERATE = 'moderate',
-  AGGRESSIVE = 'aggressive',
-  VERY_AGGRESSIVE = 'very_aggressive',
+  CONSERVATIVE = "conservative",
+  MODERATE = "moderate",
+  AGGRESSIVE = "aggressive",
+  VERY_AGGRESSIVE = "very_aggressive",
 }
 
 /**
  * GICS Sector Classification (11 sectors)
  */
 export enum SectorType {
-  TECHNOLOGY = 'technology',
-  HEALTHCARE = 'healthcare',
-  FINANCIALS = 'financials',
-  ENERGY = 'energy',
-  CONSUMER_DISCRETIONARY = 'consumer_discretionary',
-  CONSUMER_STAPLES = 'consumer_staples',
-  INDUSTRIALS = 'industrials',
-  MATERIALS = 'materials',
-  REAL_ESTATE = 'real_estate',
-  UTILITIES = 'utilities',
-  COMMUNICATION_SERVICES = 'communication_services',
+  TECHNOLOGY = "technology",
+  HEALTHCARE = "healthcare",
+  FINANCIALS = "financials",
+  ENERGY = "energy",
+  CONSUMER_DISCRETIONARY = "consumer_discretionary",
+  CONSUMER_STAPLES = "consumer_staples",
+  INDUSTRIALS = "industrials",
+  MATERIALS = "materials",
+  REAL_ESTATE = "real_estate",
+  UTILITIES = "utilities",
+  COMMUNICATION_SERVICES = "communication_services",
 }
 
 /**
  * Reasons for portfolio rebalancing
  */
 export enum RebalanceReason {
-  DRIFT_THRESHOLD = 'drift_threshold',
-  RISK_ADJUSTMENT = 'risk_adjustment',
-  OPPORTUNITY = 'opportunity',
-  CORRELATION_CHANGE = 'correlation_change',
+  DRIFT_THRESHOLD = "drift_threshold",
+  RISK_ADJUSTMENT = "risk_adjustment",
+  OPPORTUNITY = "opportunity",
+  CORRELATION_CHANGE = "correlation_change",
 }
 
 /**
  * Time horizons for analytics calculations
  */
-export type TimeHorizon = '1M' | '3M' | '6M' | '1Y' | '3Y' | '5Y';
+export type TimeHorizon = "1M" | "3M" | "6M" | "1Y" | "3Y" | "5Y";
 
 // ============================================================================
 // ZOD SCHEMAS
@@ -60,7 +60,7 @@ export type TimeHorizon = '1M' | '3M' | '6M' | '1Y' | '3Y' | '5Y';
 export const RiskLevelSchema = z.nativeEnum(RiskLevel);
 export const SectorTypeSchema = z.nativeEnum(SectorType);
 export const RebalanceReasonSchema = z.nativeEnum(RebalanceReason);
-export const TimeHorizonSchema = z.enum(['1M', '3M', '6M', '1Y', '3Y', '5Y']);
+export const TimeHorizonSchema = z.enum(["1M", "3M", "6M", "1Y", "3Y", "5Y"]);
 
 // ============================================================================
 // RISK METRICS
@@ -136,14 +136,15 @@ export const SectorExposureSchema = z.object({
   allocation: z.number().min(0).max(100), // Percentage
   value: z.number().nonnegative(),
   riskWeight: z.number().min(0).max(1), // Risk contribution
-  holdings: z.array(z.object({
-    symbol: z.string(),
-    allocation: z.number(),
-  })),
+  holdings: z.array(
+    z.object({
+      symbol: z.string(),
+      allocation: z.number(),
+    }),
+  ),
 });
 
 export type SectorExposure = z.infer<typeof SectorExposureSchema>;
-
 
 /**
  * Diversification score across multiple dimensions
@@ -170,20 +171,31 @@ export const DiversificationScoreSchema = z.object({
     numberOfCountries: z.number().nonnegative(),
     domesticAllocation: z.number().min(0).max(100),
     internationalAllocation: z.number().min(0).max(100),
-    regions: z.array(z.object({
-      region: z.string(),
-      allocation: z.number().min(0).max(100),
-    })),
+    regions: z.array(
+      z.object({
+        region: z.string(),
+        allocation: z.number().min(0).max(100),
+      }),
+    ),
   }),
 
   // Asset class diversification
   assetClassDiversification: z.object({
     score: z.number().min(0).max(100),
     numberOfAssetClasses: z.number().nonnegative(),
-    assetClasses: z.array(z.object({
-      assetClass: z.enum(['stock', 'etf', 'crypto', 'option', 'bond', 'commodity']),
-      allocation: z.number().min(0).max(100),
-    })),
+    assetClasses: z.array(
+      z.object({
+        assetClass: z.enum([
+          "stock",
+          "etf",
+          "crypto",
+          "option",
+          "bond",
+          "commodity",
+        ]),
+        allocation: z.number().min(0).max(100),
+      }),
+    ),
   }),
 
   // Concentration risk
@@ -212,12 +224,14 @@ export const CorrelationMatrixSchema = z.object({
   calculatedAt: z.date(),
 
   // Correlation pairs
-  correlations: z.array(z.object({
-    symbol1: z.string(),
-    symbol2: z.string(),
-    correlation: z.number().min(-1).max(1), // Pearson correlation coefficient
-    covariance: z.number(),
-  })),
+  correlations: z.array(
+    z.object({
+      symbol1: z.string(),
+      symbol2: z.string(),
+      correlation: z.number().min(-1).max(1), // Pearson correlation coefficient
+      covariance: z.number(),
+    }),
+  ),
 
   // Summary statistics
   averageCorrelation: z.number().min(-1).max(1),
@@ -225,11 +239,13 @@ export const CorrelationMatrixSchema = z.object({
   minCorrelation: z.number().min(-1).max(1),
 
   // Highly correlated pairs (|correlation| > 0.7)
-  highlyCorrelatedPairs: z.array(z.object({
-    symbol1: z.string(),
-    symbol2: z.string(),
-    correlation: z.number(),
-  })),
+  highlyCorrelatedPairs: z.array(
+    z.object({
+      symbol1: z.string(),
+      symbol2: z.string(),
+      correlation: z.number(),
+    }),
+  ),
 
   // Eigenvalues for principal component analysis
   eigenvalues: z.array(z.number()).optional(),
@@ -263,10 +279,12 @@ export const VolatilityAnalysisSchema = z.object({
   }),
 
   // Implied volatility (if options data available)
-  impliedVolatility: z.object({
-    average: z.number().nonnegative(),
-    vix: z.number().nonnegative().optional(), // Market volatility index
-  }).optional(),
+  impliedVolatility: z
+    .object({
+      average: z.number().nonnegative(),
+      vix: z.number().nonnegative().optional(), // Market volatility index
+    })
+    .optional(),
 
   // Volatility clustering metrics
   volatilityClustering: z.object({
@@ -276,13 +294,15 @@ export const VolatilityAnalysisSchema = z.object({
   }),
 
   // Rolling volatility
-  rollingVolatility: z.array(z.object({
-    date: z.date(),
-    volatility: z.number().nonnegative(),
-  })),
+  rollingVolatility: z.array(
+    z.object({
+      date: z.date(),
+      volatility: z.number().nonnegative(),
+    }),
+  ),
 
   // Volatility regime
-  currentRegime: z.enum(['low', 'normal', 'high', 'extreme']),
+  currentRegime: z.enum(["low", "normal", "high", "extreme"]),
   regimeThresholds: z.object({
     low: z.number(),
     normal: z.number(),
@@ -301,14 +321,14 @@ export type VolatilityAnalysis = z.infer<typeof VolatilityAnalysisSchema>;
  */
 export const TradeSuggestionSchema = z.object({
   symbol: z.string(),
-  action: z.enum(['buy', 'sell', 'hold']),
+  action: z.enum(["buy", "sell", "hold"]),
   currentAllocation: z.number().min(0).max(100),
   targetAllocation: z.number().min(0).max(100),
   currentShares: z.number().nonnegative(),
   targetShares: z.number().nonnegative(),
   sharesToTrade: z.number(), // Positive for buy, negative for sell
   estimatedCost: z.number(),
-  priority: z.enum(['high', 'medium', 'low']),
+  priority: z.enum(["high", "medium", "low"]),
   reason: z.string(),
 });
 
@@ -323,17 +343,21 @@ export const RebalancingRecommendationSchema = z.object({
   targetRiskLevel: RiskLevelSchema,
 
   // Current vs optimal allocations
-  currentAllocation: z.array(z.object({
-    symbol: z.string(),
-    allocation: z.number().min(0).max(100),
-    value: z.number().nonnegative(),
-  })),
+  currentAllocation: z.array(
+    z.object({
+      symbol: z.string(),
+      allocation: z.number().min(0).max(100),
+      value: z.number().nonnegative(),
+    }),
+  ),
 
-  targetAllocation: z.array(z.object({
-    symbol: z.string(),
-    allocation: z.number().min(0).max(100),
-    value: z.number().nonnegative(),
-  })),
+  targetAllocation: z.array(
+    z.object({
+      symbol: z.string(),
+      allocation: z.number().min(0).max(100),
+      value: z.number().nonnegative(),
+    }),
+  ),
 
   // Trade suggestions
   trades: z.array(TradeSuggestionSchema),
@@ -365,7 +389,9 @@ export const RebalancingRecommendationSchema = z.object({
   }),
 });
 
-export type RebalancingRecommendation = z.infer<typeof RebalancingRecommendationSchema>;
+export type RebalancingRecommendation = z.infer<
+  typeof RebalancingRecommendationSchema
+>;
 
 // ============================================================================
 // PORTFOLIO PERFORMANCE
@@ -383,14 +409,18 @@ export const PortfolioPerformanceSchema = z.object({
   returns: z.object({
     total: z.number(), // Total return percentage
     annualized: z.number(), // Annualized return
-    daily: z.array(z.object({
-      date: z.date(),
-      return: z.number(),
-    })),
-    cumulative: z.array(z.object({
-      date: z.date(),
-      cumulativeReturn: z.number(),
-    })),
+    daily: z.array(
+      z.object({
+        date: z.date(),
+        return: z.number(),
+      }),
+    ),
+    cumulative: z.array(
+      z.object({
+        date: z.date(),
+        cumulativeReturn: z.number(),
+      }),
+    ),
   }),
 
   // Risk-adjusted returns
@@ -402,32 +432,40 @@ export const PortfolioPerformanceSchema = z.object({
   }),
 
   // Benchmark comparison
-  benchmark: z.object({
-    symbol: z.string(),
-    returns: z.object({
-      total: z.number(),
-      annualized: z.number(),
-    }),
-    alpha: z.number(), // Excess return vs benchmark
-    beta: z.number(), // Volatility vs benchmark
-    trackingError: z.number(),
-    activeReturn: z.number(), // Portfolio return - Benchmark return
-  }).optional(),
+  benchmark: z
+    .object({
+      symbol: z.string(),
+      returns: z.object({
+        total: z.number(),
+        annualized: z.number(),
+      }),
+      alpha: z.number(), // Excess return vs benchmark
+      beta: z.number(), // Volatility vs benchmark
+      trackingError: z.number(),
+      activeReturn: z.number(), // Portfolio return - Benchmark return
+    })
+    .optional(),
 
   // Performance attribution
   attribution: z.object({
-    sectorContribution: z.array(z.object({
-      sector: SectorTypeSchema,
-      contribution: z.number(),
-    })),
-    topContributors: z.array(z.object({
-      symbol: z.string(),
-      contribution: z.number(),
-    })),
-    topDetractors: z.array(z.object({
-      symbol: z.string(),
-      contribution: z.number(),
-    })),
+    sectorContribution: z.array(
+      z.object({
+        sector: SectorTypeSchema,
+        contribution: z.number(),
+      }),
+    ),
+    topContributors: z.array(
+      z.object({
+        symbol: z.string(),
+        contribution: z.number(),
+      }),
+    ),
+    topDetractors: z.array(
+      z.object({
+        symbol: z.string(),
+        contribution: z.number(),
+      }),
+    ),
   }),
 
   // Drawdown analysis
@@ -456,7 +494,7 @@ export type PortfolioPerformance = z.infer<typeof PortfolioPerformanceSchema>;
  */
 export const AnalyticsFiltersSchema = z.object({
   portfolioId: z.string().uuid(),
-  timeHorizon: TimeHorizonSchema.default('1Y'),
+  timeHorizon: TimeHorizonSchema.default("1Y"),
   benchmark: z.string().optional(), // Benchmark symbol (e.g., 'SPY', '^GSPC')
   riskFreeRate: z.number().min(0).max(1).default(0.04), // Default 4% annual
   startDate: z.date().optional(),

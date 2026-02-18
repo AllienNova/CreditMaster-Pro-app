@@ -20,8 +20,13 @@ export interface SentryConfig {
 }
 
 // Error storage for development/fallback
-const errorLog: Array<{ error: Error; context?: Record<string, unknown>; timestamp: Date }> = [];
-let currentUser: { id: string; email?: string; subscription?: string } | null = null;
+const errorLog: Array<{
+  error: Error;
+  context?: Record<string, unknown>;
+  timestamp: Date;
+}> = [];
+let currentUser: { id: string; email?: string; subscription?: string } | null =
+  null;
 
 export function initSentry(): void {
   if (!SENTRY_DSN) {
@@ -38,7 +43,7 @@ export function initSentry(): void {
 // Capture errors - logs locally when Sentry not configured
 export function captureError(
   error: Error,
-  context?: Record<string, unknown>
+  context?: Record<string, unknown>,
 ): string {
   const errorId = `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -57,8 +62,8 @@ export function captureError(
 // Capture messages
 export function captureMessage(
   message: string,
-  level: 'info' | 'warning' | 'error' = 'info',
-  context?: Record<string, unknown>
+  level: "info" | "warning" | "error" = "info",
+  context?: Record<string, unknown>,
 ): string {
   void level;
   void message;
@@ -88,8 +93,8 @@ export function clearUser(): void {
 export function addBreadcrumb(
   category: string,
   message: string,
-  level: 'info' | 'warning' | 'error' = 'info',
-  data?: Record<string, unknown>
+  level: "info" | "warning" | "error" = "info",
+  data?: Record<string, unknown>,
 ): void {
   void category;
   void message;
@@ -99,10 +104,7 @@ export function addBreadcrumb(
 }
 
 // Performance transaction placeholder
-export function startTransaction(
-  name: string,
-  op: string
-): null {
+export function startTransaction(name: string, op: string): null {
   void name;
   void op;
   // Sentry: Transaction started
@@ -130,4 +132,3 @@ export default {
   getErrorLog,
   getCurrentUser,
 };
-

@@ -3,7 +3,7 @@
  * AI-powered spending analysis with interactive charts and insights
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -14,14 +14,14 @@ import {
   RefreshControl,
   Dimensions,
   Alert,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { LineChart, PieChart } from 'react-native-chart-kit';
-import { lightTheme as theme } from '../../src/constants/theme';
-import { Card } from '../../src/components/Card';
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { LineChart, PieChart } from "react-native-chart-kit";
+import { lightTheme as theme } from "../../src/constants/theme";
+import { Card } from "../../src/components/Card";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 // TypeScript Interfaces
 interface SpendingData {
@@ -35,14 +35,14 @@ interface CategoryBreakdownItem {
   amount: number;
   percentage: number;
   color: string;
-  trend: 'up' | 'down' | 'stable';
+  trend: "up" | "down" | "stable";
   transactionCount: number;
 }
 
 interface SpendingAlert {
   id: string;
-  type: 'anomaly' | 'budget_exceeded' | 'unusual_pattern' | 'high_spending';
-  severity: 'high' | 'medium' | 'low';
+  type: "anomaly" | "budget_exceeded" | "unusual_pattern" | "high_spending";
+  severity: "high" | "medium" | "low";
   category: string;
   message: string;
   amount: number;
@@ -55,7 +55,7 @@ interface AIInsight {
   title: string;
   description: string;
   category: string;
-  impact: 'high' | 'medium' | 'low';
+  impact: "high" | "medium" | "low";
   confidence: number;
   actionable: boolean;
   recommendation?: string;
@@ -72,7 +72,7 @@ interface SpendingAnalysis {
   insights: AIInsight[];
 }
 
-type TimeRange = '7d' | '30d' | '90d' | '1y';
+type TimeRange = "7d" | "30d" | "90d" | "1y";
 
 /**
  * TimeRangeSelector Component
@@ -83,13 +83,16 @@ interface TimeRangeSelectorProps {
   onSelect: (range: TimeRange) => void;
 }
 
-const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({ selected, onSelect }) => {
-  const ranges: TimeRange[] = ['7d', '30d', '90d', '1y'];
+const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({
+  selected,
+  onSelect,
+}) => {
+  const ranges: TimeRange[] = ["7d", "30d", "90d", "1y"];
   const labels: Record<TimeRange, string> = {
-    '7d': '7 Days',
-    '30d': '30 Days',
-    '90d': '90 Days',
-    '1y': '1 Year',
+    "7d": "7 Days",
+    "30d": "30 Days",
+    "90d": "90 Days",
+    "1y": "1 Year",
   };
 
   return (
@@ -129,13 +132,13 @@ interface SpendingChartProps {
 const SpendingChart: React.FC<SpendingChartProps> = ({ trends, timeRange }) => {
   const getLabels = (): string[] => {
     if (trends.length === 0) return [];
-    
+
     const step = Math.ceil(trends.length / 7);
     return trends
       .filter((_, index) => index % step === 0)
-      .map(t => {
+      .map((t) => {
         const date = new Date(t.date);
-        return timeRange === '7d' || timeRange === '30d'
+        return timeRange === "7d" || timeRange === "30d"
           ? date.getDate().toString()
           : `${date.getMonth() + 1}/${date.getDate()}`;
       });
@@ -143,9 +146,11 @@ const SpendingChart: React.FC<SpendingChartProps> = ({ trends, timeRange }) => {
 
   const chartData = {
     labels: getLabels(),
-    datasets: [{
-      data: trends.length > 0 ? trends.map(t => t.amount) : [0],
-    }],
+    datasets: [
+      {
+        data: trends.length > 0 ? trends.map((t) => t.amount) : [0],
+      },
+    ],
   };
 
   const formatCurrency = (value: number): string => {
@@ -175,8 +180,8 @@ const SpendingChart: React.FC<SpendingChartProps> = ({ trends, timeRange }) => {
             borderRadius: 16,
           },
           propsForDots: {
-            r: '5',
-            strokeWidth: '2',
+            r: "5",
+            strokeWidth: "2",
             stroke: theme.colors.error,
           },
           formatYLabel: formatCurrency,
@@ -203,9 +208,9 @@ const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({ breakdown }) => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
@@ -213,17 +218,23 @@ const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({ breakdown }) => {
 
   const getTrendIcon = (trend: string) => {
     switch (trend) {
-      case 'up': return 'trending-up';
-      case 'down': return 'trending-down';
-      default: return 'remove';
+      case "up":
+        return "trending-up";
+      case "down":
+        return "trending-down";
+      default:
+        return "remove";
     }
   };
 
   const getTrendColor = (trend: string): string => {
     switch (trend) {
-      case 'up': return theme.colors.error;
-      case 'down': return theme.colors.success;
-      default: return theme.colors.textSecondary;
+      case "up":
+        return theme.colors.error;
+      case "down":
+        return theme.colors.success;
+      default:
+        return theme.colors.textSecondary;
     }
   };
 
@@ -241,7 +252,11 @@ const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({ breakdown }) => {
       <Card style={styles.breakdownCard}>
         <Text style={styles.cardTitle}>Category Breakdown</Text>
         <View style={styles.emptyState}>
-          <Ionicons name="pie-chart-outline" size={48} color={theme.colors.textSecondary} />
+          <Ionicons
+            name="pie-chart-outline"
+            size={48}
+            color={theme.colors.textSecondary}
+          />
           <Text style={styles.emptyText}>No spending data available</Text>
         </View>
       </Card>
@@ -275,13 +290,20 @@ const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({ breakdown }) => {
               styles.categoryItem,
               selectedCategory === item.category && styles.categoryItemSelected,
             ]}
-            onPress={() => setSelectedCategory(
-              selectedCategory === item.category ? null : item.category
-            )}
+            onPress={() =>
+              setSelectedCategory(
+                selectedCategory === item.category ? null : item.category,
+              )
+            }
           >
             <View style={styles.categoryHeader}>
               <View style={styles.categoryTitleRow}>
-                <View style={[styles.categoryColorDot, { backgroundColor: item.color }]} />
+                <View
+                  style={[
+                    styles.categoryColorDot,
+                    { backgroundColor: item.color },
+                  ]}
+                />
                 <Text style={styles.categoryName}>{item.category}</Text>
                 <Ionicons
                   name={getTrendIcon(item.trend)}
@@ -289,7 +311,9 @@ const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({ breakdown }) => {
                   color={getTrendColor(item.trend)}
                 />
               </View>
-              <Text style={styles.categoryAmount}>{formatCurrency(item.amount)}</Text>
+              <Text style={styles.categoryAmount}>
+                {formatCurrency(item.amount)}
+              </Text>
             </View>
 
             <View style={styles.categoryMeta}>
@@ -305,10 +329,13 @@ const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({ breakdown }) => {
                     ]}
                   />
                 </View>
-                <Text style={styles.progressText}>{item.percentage.toFixed(1)}%</Text>
+                <Text style={styles.progressText}>
+                  {item.percentage.toFixed(1)}%
+                </Text>
               </View>
               <Text style={styles.transactionCount}>
-                {item.transactionCount} transaction{item.transactionCount !== 1 ? 's' : ''}
+                {item.transactionCount} transaction
+                {item.transactionCount !== 1 ? "s" : ""}
               </Text>
             </View>
           </TouchableOpacity>
@@ -330,33 +357,42 @@ interface AlertsProps {
 const Alerts: React.FC<AlertsProps> = ({ alerts, onDismiss }) => {
   const getSeverityColor = (severity: string): string => {
     switch (severity) {
-      case 'high': return theme.colors.error;
-      case 'medium': return theme.colors.warning;
-      case 'low': return theme.colors.primary;
-      default: return theme.colors.textSecondary;
+      case "high":
+        return theme.colors.error;
+      case "medium":
+        return theme.colors.warning;
+      case "low":
+        return theme.colors.primary;
+      default:
+        return theme.colors.textSecondary;
     }
   };
 
   const getAlertIcon = (type: string) => {
     switch (type) {
-      case 'anomaly': return 'alert-circle';
-      case 'budget_exceeded': return 'warning';
-      case 'unusual_pattern': return 'analytics';
-      case 'high_spending': return 'trending-up';
-      default: return 'information-circle';
+      case "anomaly":
+        return "alert-circle";
+      case "budget_exceeded":
+        return "warning";
+      case "unusual_pattern":
+        return "analytics";
+      case "high_spending":
+        return "trending-up";
+      default:
+        return "information-circle";
     }
   };
 
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
   };
 
-  const activeAlerts = alerts.filter(a => !a.dismissed);
+  const activeAlerts = alerts.filter((a) => !a.dismissed);
 
   if (activeAlerts.length === 0) {
     return null;
@@ -390,17 +426,22 @@ const Alerts: React.FC<AlertsProps> = ({ alerts, onDismiss }) => {
             <View style={styles.alertContent}>
               <View style={styles.alertTitleRow}>
                 <Text style={styles.alertCategory}>{alert.category}</Text>
-                <Text style={[styles.alertAmount, { color: getSeverityColor(alert.severity) }]}>
+                <Text
+                  style={[
+                    styles.alertAmount,
+                    { color: getSeverityColor(alert.severity) },
+                  ]}
+                >
                   {formatCurrency(alert.amount)}
                 </Text>
               </View>
               <Text style={styles.alertMessage}>{alert.message}</Text>
               <Text style={styles.alertDate}>
-                {new Date(alert.date).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
+                {new Date(alert.date).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
                 })}
               </Text>
             </View>
@@ -408,7 +449,11 @@ const Alerts: React.FC<AlertsProps> = ({ alerts, onDismiss }) => {
               style={styles.dismissButton}
               onPress={() => onDismiss(alert.id)}
             >
-              <Ionicons name="close" size={20} color={theme.colors.textSecondary} />
+              <Ionicons
+                name="close"
+                size={20}
+                color={theme.colors.textSecondary}
+              />
             </TouchableOpacity>
           </View>
         </View>
@@ -430,26 +475,34 @@ const Insights: React.FC<InsightsProps> = ({ insights }) => {
 
   const getImpactColor = (impact: string): string => {
     switch (impact) {
-      case 'high': return theme.colors.success;
-      case 'medium': return theme.colors.warning;
-      case 'low': return theme.colors.textSecondary;
-      default: return theme.colors.text;
+      case "high":
+        return theme.colors.success;
+      case "medium":
+        return theme.colors.warning;
+      case "low":
+        return theme.colors.textSecondary;
+      default:
+        return theme.colors.text;
     }
   };
 
   const getImpactIcon = (impact: string) => {
     switch (impact) {
-      case 'high': return 'flash';
-      case 'medium': return 'bulb';
-      case 'low': return 'information-circle';
-      default: return 'help-circle';
+      case "high":
+        return "flash";
+      case "medium":
+        return "bulb";
+      case "low":
+        return "information-circle";
+      default:
+        return "help-circle";
     }
   };
 
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
@@ -464,7 +517,11 @@ const Insights: React.FC<InsightsProps> = ({ insights }) => {
       <Card style={styles.insightsCard}>
         <Text style={styles.cardTitle}>AI Insights</Text>
         <View style={styles.emptyState}>
-          <Ionicons name="bulb-outline" size={48} color={theme.colors.textSecondary} />
+          <Ionicons
+            name="bulb-outline"
+            size={48}
+            color={theme.colors.textSecondary}
+          />
           <Text style={styles.emptyText}>No insights available yet</Text>
         </View>
       </Card>
@@ -490,7 +547,7 @@ const Insights: React.FC<InsightsProps> = ({ insights }) => {
             <View
               style={[
                 styles.insightIcon,
-                { backgroundColor: getImpactColor(insight.impact) + '20' },
+                { backgroundColor: getImpactColor(insight.impact) + "20" },
               ]}
             >
               <Ionicons
@@ -504,7 +561,7 @@ const Insights: React.FC<InsightsProps> = ({ insights }) => {
               <Text style={styles.insightCategory}>{insight.category}</Text>
             </View>
             <Ionicons
-              name={expandedId === insight.id ? 'chevron-up' : 'chevron-down'}
+              name={expandedId === insight.id ? "chevron-up" : "chevron-down"}
               size={20}
               color={theme.colors.textSecondary}
             />
@@ -512,12 +569,20 @@ const Insights: React.FC<InsightsProps> = ({ insights }) => {
 
           {expandedId === insight.id && (
             <View style={styles.insightExpanded}>
-              <Text style={styles.insightDescription}>{insight.description}</Text>
+              <Text style={styles.insightDescription}>
+                {insight.description}
+              </Text>
 
               {insight.recommendation && (
                 <View style={styles.recommendationBox}>
-                  <Ionicons name="checkmark-circle" size={20} color={theme.colors.success} />
-                  <Text style={styles.recommendationText}>{insight.recommendation}</Text>
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={20}
+                    color={theme.colors.success}
+                  />
+                  <Text style={styles.recommendationText}>
+                    {insight.recommendation}
+                  </Text>
                 </View>
               )}
 
@@ -529,7 +594,11 @@ const Insights: React.FC<InsightsProps> = ({ insights }) => {
                 </View>
                 {insight.potentialSavings && (
                   <View style={styles.savingsBadge}>
-                    <Ionicons name="cash" size={16} color={theme.colors.success} />
+                    <Ionicons
+                      name="cash"
+                      size={16}
+                      color={theme.colors.success}
+                    />
                     <Text style={styles.savingsText}>
                       Save {formatCurrency(insight.potentialSavings)}
                     </Text>
@@ -550,7 +619,7 @@ const Insights: React.FC<InsightsProps> = ({ insights }) => {
 export default function SpendingInsightsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [timeRange, setTimeRange] = useState<TimeRange>('30d');
+  const [timeRange, setTimeRange] = useState<TimeRange>("30d");
   const [analysis, setAnalysis] = useState<SpendingAnalysis | null>(null);
 
   const fetchSpendingData = useCallback(async () => {
@@ -558,12 +627,15 @@ export default function SpendingInsightsScreen() {
       setLoading(true);
 
       // Parallel API calls
-      const [analysisRes, trendsRes, insightsRes, anomaliesRes] = await Promise.all([
-        fetch(`/api/financial/spending/analysis?timeRange=${timeRange}`),
-        fetch(`/api/financial/spending/trends?period=daily&timeRange=${timeRange}`),
-        fetch(`/api/financial/spending/insights?timeRange=${timeRange}`),
-        fetch('/api/financial/spending/anomalies'),
-      ]);
+      const [analysisRes, trendsRes, insightsRes, anomaliesRes] =
+        await Promise.all([
+          fetch(`/api/financial/spending/analysis?timeRange=${timeRange}`),
+          fetch(
+            `/api/financial/spending/trends?period=daily&timeRange=${timeRange}`,
+          ),
+          fetch(`/api/financial/spending/insights?timeRange=${timeRange}`),
+          fetch("/api/financial/spending/anomalies"),
+        ]);
 
       const analysisData = analysisRes.ok ? await analysisRes.json() : null;
       const trendsData = trendsRes.ok ? await trendsRes.json() : null;
@@ -574,7 +646,7 @@ export default function SpendingInsightsScreen() {
       const combinedAnalysis: SpendingAnalysis = {
         totalSpent: analysisData?.totalSpent || 0,
         averageDaily: analysisData?.averageDaily || 0,
-        topCategory: analysisData?.topCategory || 'Unknown',
+        topCategory: analysisData?.topCategory || "Unknown",
         trends: trendsData?.trends || [],
         breakdown: analysisData?.categoryBreakdown || [],
         alerts: anomaliesData?.anomalies || [],
@@ -583,8 +655,11 @@ export default function SpendingInsightsScreen() {
 
       setAnalysis(combinedAnalysis);
     } catch (error) {
-      if (__DEV__) console.error('Error fetching spending data:', error);
-      Alert.alert('Error', 'Failed to load spending insights. Please try again.');
+      if (__DEV__) console.error("Error fetching spending data:", error);
+      Alert.alert(
+        "Error",
+        "Failed to load spending insights. Please try again.",
+      );
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -610,17 +685,20 @@ export default function SpendingInsightsScreen() {
     // Optimistically update UI
     setAnalysis({
       ...analysis,
-      alerts: analysis.alerts.map(a =>
-        a.id === alertId ? { ...a, dismissed: true } : a
+      alerts: analysis.alerts.map((a) =>
+        a.id === alertId ? { ...a, dismissed: true } : a,
       ),
     });
 
     // Persist dismissal to API
     try {
-      const response = await fetch(`/api/financial/spending/alerts/${alertId}/dismiss`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
+      const response = await fetch(
+        `/api/financial/spending/alerts/${alertId}/dismiss`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        },
+      );
       // Silently handle non-ok responses in production - dismissal already applied locally
     } catch (error) {
       // Don't revert UI - dismissal was already applied locally
@@ -652,16 +730,25 @@ export default function SpendingInsightsScreen() {
         )}
       </View>
 
-      <TimeRangeSelector selected={timeRange} onSelect={handleTimeRangeChange} />
+      <TimeRangeSelector
+        selected={timeRange}
+        onSelect={handleTimeRangeChange}
+      />
 
       <ScrollView
         style={styles.scrollView}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[theme.colors.primary]}
+          />
         }
       >
         {/* Alerts */}
-        {analysis && <Alerts alerts={analysis.alerts} onDismiss={handleDismissAlert} />}
+        {analysis && (
+          <Alerts alerts={analysis.alerts} onDismiss={handleDismissAlert} />
+        )}
 
         {/* Spending Chart */}
         {analysis && analysis.trends.length > 0 && (
@@ -689,8 +776,8 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     marginTop: theme.spacing.md,
@@ -706,14 +793,14 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: theme.colors.text,
     marginBottom: theme.spacing.sm,
   },
   headerStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   headerStatLabel: {
     fontSize: 14,
@@ -721,12 +808,12 @@ const styles = StyleSheet.create({
   },
   headerStatValue: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: theme.colors.error,
   },
   // TimeRangeSelector
   timeRangeContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     padding: theme.spacing.md,
     gap: theme.spacing.sm,
     backgroundColor: theme.colors.surface,
@@ -737,7 +824,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.sm,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    alignItems: 'center',
+    alignItems: "center",
     backgroundColor: theme.colors.surface,
   },
   timeRangeButtonActive: {
@@ -749,8 +836,8 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
   },
   timeRangeTextActive: {
-    color: '#FFF',
-    fontWeight: '600',
+    color: "#FFF",
+    fontWeight: "600",
   },
   // Chart styles
   chartCard: {
@@ -759,7 +846,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: theme.spacing.sm,
   },
@@ -794,14 +881,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.sm,
   },
   categoryHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: theme.spacing.sm,
   },
   categoryTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: theme.spacing.sm,
     flex: 1,
   },
@@ -812,21 +899,21 @@ const styles = StyleSheet.create({
   },
   categoryName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
-    textTransform: 'capitalize',
+    textTransform: "capitalize",
   },
   categoryAmount: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: theme.colors.text,
   },
   categoryMeta: {
     gap: theme.spacing.sm,
   },
   categoryProgress: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: theme.spacing.md,
   },
   progressBar: {
@@ -834,17 +921,17 @@ const styles = StyleSheet.create({
     height: 6,
     backgroundColor: theme.colors.border,
     borderRadius: 3,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   progressFill: {
-    height: '100%',
+    height: "100%",
     borderRadius: 3,
   },
   progressText: {
     fontSize: 12,
     color: theme.colors.textSecondary,
     minWidth: 40,
-    textAlign: 'right',
+    textAlign: "right",
   },
   transactionCount: {
     fontSize: 12,
@@ -856,9 +943,9 @@ const styles = StyleSheet.create({
     padding: theme.spacing.lg,
   },
   cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: theme.spacing.md,
   },
   alertBadge: {
@@ -867,12 +954,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: 2,
     minWidth: 24,
-    alignItems: 'center',
+    alignItems: "center",
   },
   alertBadgeText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#FFF',
+    fontWeight: "600",
+    color: "#FFF",
   },
   alertItem: {
     borderLeftWidth: 4,
@@ -883,8 +970,8 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.sm,
   },
   alertHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
   },
   alertIconContainer: {
     marginRight: theme.spacing.md,
@@ -893,20 +980,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   alertTitleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 4,
   },
   alertCategory: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
-    textTransform: 'capitalize',
+    textTransform: "capitalize",
   },
   alertAmount: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   alertMessage: {
     fontSize: 14,
@@ -933,12 +1020,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: 2,
     minWidth: 24,
-    alignItems: 'center',
+    alignItems: "center",
   },
   insightBadgeText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#FFF',
+    fontWeight: "600",
+    color: "#FFF",
   },
   insightItem: {
     paddingVertical: theme.spacing.md,
@@ -946,15 +1033,15 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.border,
   },
   insightHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   insightIcon: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: theme.spacing.md,
   },
   insightTitleContainer: {
@@ -962,14 +1049,14 @@ const styles = StyleSheet.create({
   },
   insightTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: 2,
   },
   insightCategory: {
     fontSize: 14,
     color: theme.colors.textSecondary,
-    textTransform: 'capitalize',
+    textTransform: "capitalize",
   },
   insightExpanded: {
     marginTop: theme.spacing.md,
@@ -982,10 +1069,10 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   recommendationBox: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     gap: theme.spacing.sm,
-    backgroundColor: theme.colors.success + '10',
+    backgroundColor: theme.colors.success + "10",
     padding: theme.spacing.md,
     borderRadius: theme.borderRadius.sm,
     marginBottom: theme.spacing.md,
@@ -997,7 +1084,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   insightMeta: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: theme.spacing.md,
   },
   confidenceBadge: {
@@ -1011,22 +1098,22 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   savingsBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
-    backgroundColor: theme.colors.success + '10',
+    backgroundColor: theme.colors.success + "10",
     borderRadius: theme.borderRadius.sm,
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: 4,
   },
   savingsText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.success,
   },
   // Empty state
   emptyState: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: theme.spacing.xl,
   },
   emptyText: {
@@ -1035,4 +1122,3 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.md,
   },
 });
-

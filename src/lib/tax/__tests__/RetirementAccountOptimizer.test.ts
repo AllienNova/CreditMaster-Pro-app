@@ -5,7 +5,7 @@
  *         Roth vs Traditional, contribution priority ordering
  */
 
-import { RetirementAccountOptimizer } from '../services/RetirementAccountOptimizer';
+import { RetirementAccountOptimizer } from "../services/RetirementAccountOptimizer";
 import {
   FilingStatus,
   BusinessType,
@@ -14,15 +14,17 @@ import {
   TaxAccountType,
   CONTRIBUTION_LIMITS_2024,
   INCOME_THRESHOLDS_2024,
-} from '../types/tax-profile.types';
+} from "../types/tax-profile.types";
 
 // Reusable mock profile factory
-const createMockProfile = (overrides: Partial<TaxProfile> = {}): TaxProfile => ({
-  id: 'test-profile',
-  userId: 'test-user',
+const createMockProfile = (
+  overrides: Partial<TaxProfile> = {},
+): TaxProfile => ({
+  id: "test-profile",
+  userId: "test-user",
   taxYear: 2024,
   filingStatus: FilingStatus.SINGLE,
-  stateOfResidence: 'CA',
+  stateOfResidence: "CA",
   grossIncome: 100000,
   w2Income: 100000,
   selfEmploymentIncome: 0,
@@ -49,7 +51,7 @@ const createMockProfile = (overrides: Partial<TaxProfile> = {}): TaxProfile => (
   studentLoanInterest: 0,
   educatorExpenses: 0,
   hasHdhp: false,
-  healthInsuranceType: 'employer' as const,
+  healthInsuranceType: "employer" as const,
   ytd401kContribution: 0,
   ytdIraContribution: 0,
   ytdHsaContribution: 0,
@@ -57,13 +59,13 @@ const createMockProfile = (overrides: Partial<TaxProfile> = {}): TaxProfile => (
   ytdCharitableGiving: 0,
   accounts: [],
   optimizationGoal: OptimizationGoal.BALANCED,
-  riskTolerance: 'moderate' as const,
+  riskTolerance: "moderate" as const,
   createdAt: new Date(),
   updatedAt: new Date(),
   ...overrides,
 });
 
-describe('RetirementAccountOptimizer', () => {
+describe("RetirementAccountOptimizer", () => {
   let optimizer: RetirementAccountOptimizer;
 
   beforeEach(() => {
@@ -73,26 +75,28 @@ describe('RetirementAccountOptimizer', () => {
   // =========================================================================
   // analyze — Overall
   // =========================================================================
-  describe('analyze', () => {
-    it('should return a complete result object', () => {
+  describe("analyze", () => {
+    it("should return a complete result object", () => {
       const result = optimizer.analyze(createMockProfile());
-      expect(result).toHaveProperty('recommendations');
-      expect(result).toHaveProperty('rothVsTraditionalRecommendation');
-      expect(result).toHaveProperty('totalPotentialTaxSavings');
-      expect(result).toHaveProperty('contributionPriorityOrder');
+      expect(result).toHaveProperty("recommendations");
+      expect(result).toHaveProperty("rothVsTraditionalRecommendation");
+      expect(result).toHaveProperty("totalPotentialTaxSavings");
+      expect(result).toHaveProperty("contributionPriorityOrder");
       expect(Array.isArray(result.recommendations)).toBe(true);
       expect(Array.isArray(result.contributionPriorityOrder)).toBe(true);
     });
 
-    it('should include 401k recommendation for employed users', () => {
+    it("should include 401k recommendation for employed users", () => {
       const result = optimizer.analyze(createMockProfile({ isEmployed: true }));
       const has401k = result.recommendations.some(
-        (r) => r.accountType === TaxAccountType.TRADITIONAL_401K || r.accountType === TaxAccountType.ROTH_401K,
+        (r) =>
+          r.accountType === TaxAccountType.TRADITIONAL_401K ||
+          r.accountType === TaxAccountType.ROTH_401K,
       );
       expect(has401k).toBe(true);
     });
 
-    it('should calculate total potential tax savings > 0', () => {
+    it("should calculate total potential tax savings > 0", () => {
       const result = optimizer.analyze(createMockProfile());
       expect(result.totalPotentialTaxSavings).toBeGreaterThanOrEqual(0);
     });
@@ -101,13 +105,15 @@ describe('RetirementAccountOptimizer', () => {
   // =========================================================================
   // 401(k) Analysis
   // =========================================================================
-  describe('401k Analysis', () => {
-    it('should recommend full 401k contribution for high earners', () => {
+  describe("401k Analysis", () => {
+    it("should recommend full 401k contribution for high earners", () => {
       const result = optimizer.analyze(
         createMockProfile({ grossIncome: 200000, w2Income: 200000 }),
       );
       const rec401k = result.recommendations.find(
-        (r) => r.accountType === TaxAccountType.TRADITIONAL_401K || r.accountType === TaxAccountType.ROTH_401K,
+        (r) =>
+          r.accountType === TaxAccountType.TRADITIONAL_401K ||
+          r.accountType === TaxAccountType.ROTH_401K,
       );
       expect(rec401k).toBeDefined();
       if (rec401k) {
@@ -115,14 +121,16 @@ describe('RetirementAccountOptimizer', () => {
       }
     });
 
-    it('should account for existing YTD contributions', () => {
+    it("should account for existing YTD contributions", () => {
       const result = optimizer.analyze(
         createMockProfile({
           ytd401kContribution: 15000,
         }),
       );
       const rec401k = result.recommendations.find(
-        (r) => r.accountType === TaxAccountType.TRADITIONAL_401K || r.accountType === TaxAccountType.ROTH_401K,
+        (r) =>
+          r.accountType === TaxAccountType.TRADITIONAL_401K ||
+          r.accountType === TaxAccountType.ROTH_401K,
       );
       if (rec401k) {
         // Remaining room = 23000 - 15000 = 8000
@@ -132,30 +140,32 @@ describe('RetirementAccountOptimizer', () => {
       }
     });
 
-    it('should recommend 0 when already maxed out', () => {
+    it("should recommend 0 when already maxed out", () => {
       const result = optimizer.analyze(
         createMockProfile({
           ytd401kContribution: CONTRIBUTION_LIMITS_2024.traditional401k,
         }),
       );
       const rec401k = result.recommendations.find(
-        (r) => r.accountType === TaxAccountType.TRADITIONAL_401K || r.accountType === TaxAccountType.ROTH_401K,
+        (r) =>
+          r.accountType === TaxAccountType.TRADITIONAL_401K ||
+          r.accountType === TaxAccountType.ROTH_401K,
       );
       if (rec401k) {
         expect(rec401k.recommendedContribution).toBe(0);
       }
     });
 
-    it('should factor in employer match for priority', () => {
+    it("should factor in employer match for priority", () => {
       const withMatch = optimizer.analyze(
         createMockProfile({
           accounts: [
             {
-              id: 'acct-1',
-              userId: 'test-user',
+              id: "acct-1",
+              userId: "test-user",
               accountType: TaxAccountType.TRADITIONAL_401K,
-              institutionName: 'Fidelity',
-              accountName: '401k',
+              institutionName: "Fidelity",
+              accountName: "401k",
               currentBalance: 50000,
               ytdContribution: 0,
               contributionLimit: CONTRIBUTION_LIMITS_2024.traditional401k,
@@ -176,8 +186,8 @@ describe('RetirementAccountOptimizer', () => {
   // =========================================================================
   // IRA Analysis
   // =========================================================================
-  describe('Traditional IRA Analysis', () => {
-    it('should recommend IRA contribution', () => {
+  describe("Traditional IRA Analysis", () => {
+    it("should recommend IRA contribution", () => {
       const result = optimizer.analyze(createMockProfile());
       const iraRec = result.recommendations.find(
         (r) => r.accountType === TaxAccountType.TRADITIONAL_IRA,
@@ -188,7 +198,7 @@ describe('RetirementAccountOptimizer', () => {
       }
     });
 
-    it('should account for existing YTD IRA contributions', () => {
+    it("should account for existing YTD IRA contributions", () => {
       const result = optimizer.analyze(
         createMockProfile({
           ytdIraContribution: 5000,
@@ -204,7 +214,7 @@ describe('RetirementAccountOptimizer', () => {
       }
     });
 
-    it('should consider income phase-out for deductibility', () => {
+    it("should consider income phase-out for deductibility", () => {
       // Single filer with workplace plan, income above phase-out
       const highIncome = optimizer.analyze(
         createMockProfile({
@@ -221,8 +231,8 @@ describe('RetirementAccountOptimizer', () => {
   // =========================================================================
   // Roth IRA Analysis
   // =========================================================================
-  describe('Roth IRA Analysis', () => {
-    it('should recommend Roth IRA for eligible income', () => {
+  describe("Roth IRA Analysis", () => {
+    it("should recommend Roth IRA for eligible income", () => {
       const result = optimizer.analyze(
         createMockProfile({ grossIncome: 80000, w2Income: 80000 }),
       );
@@ -236,7 +246,7 @@ describe('RetirementAccountOptimizer', () => {
       }
     });
 
-    it('should reduce Roth contribution in phase-out range', () => {
+    it("should reduce Roth contribution in phase-out range", () => {
       // Single phase-out: $146,000 - $161,000
       const result = optimizer.analyze(
         createMockProfile({ grossIncome: 155000, w2Income: 155000 }),
@@ -251,7 +261,7 @@ describe('RetirementAccountOptimizer', () => {
       }
     });
 
-    it('should recommend 0 Roth IRA above phase-out', () => {
+    it("should recommend 0 Roth IRA above phase-out", () => {
       // Single phase-out ends at $161,000
       const result = optimizer.analyze(
         createMockProfile({ grossIncome: 170000, w2Income: 170000 }),
@@ -264,7 +274,7 @@ describe('RetirementAccountOptimizer', () => {
       }
     });
 
-    it('should use married phase-out for MFJ', () => {
+    it("should use married phase-out for MFJ", () => {
       // Married phase-out: $230,000 - $240,000
       const result = optimizer.analyze(
         createMockProfile({
@@ -278,11 +288,13 @@ describe('RetirementAccountOptimizer', () => {
       );
       if (rothRec) {
         // Below $230k phase-out start — full contribution
-        expect(rothRec.recommendedContribution).toBe(CONTRIBUTION_LIMITS_2024.rothIra);
+        expect(rothRec.recommendedContribution).toBe(
+          CONTRIBUTION_LIMITS_2024.rothIra,
+        );
       }
     });
 
-    it('should account for existing Roth IRA contributions', () => {
+    it("should account for existing Roth IRA contributions", () => {
       const result = optimizer.analyze(
         createMockProfile({
           ytdRothIraContribution: 4000,
@@ -302,21 +314,17 @@ describe('RetirementAccountOptimizer', () => {
   // =========================================================================
   // HSA Analysis
   // =========================================================================
-  describe('HSA Analysis', () => {
-    it('should return null/skip HSA when no HDHP', () => {
-      const result = optimizer.analyze(
-        createMockProfile({ hasHdhp: false }),
-      );
+  describe("HSA Analysis", () => {
+    it("should return null/skip HSA when no HDHP", () => {
+      const result = optimizer.analyze(createMockProfile({ hasHdhp: false }));
       const hsaRec = result.recommendations.find(
         (r) => r.accountType === TaxAccountType.HSA,
       );
       expect(hsaRec).toBeUndefined();
     });
 
-    it('should recommend HSA when HDHP is present', () => {
-      const result = optimizer.analyze(
-        createMockProfile({ hasHdhp: true }),
-      );
+    it("should recommend HSA when HDHP is present", () => {
+      const result = optimizer.analyze(createMockProfile({ hasHdhp: true }));
       const hsaRec = result.recommendations.find(
         (r) => r.accountType === TaxAccountType.HSA,
       );
@@ -326,7 +334,7 @@ describe('RetirementAccountOptimizer', () => {
       }
     });
 
-    it('should use individual limit for single filer', () => {
+    it("should use individual limit for single filer", () => {
       const result = optimizer.analyze(
         createMockProfile({
           hasHdhp: true,
@@ -344,7 +352,7 @@ describe('RetirementAccountOptimizer', () => {
       }
     });
 
-    it('should use family limit for married filer or filer with dependents', () => {
+    it("should use family limit for married filer or filer with dependents", () => {
       const result = optimizer.analyze(
         createMockProfile({
           hasHdhp: true,
@@ -361,7 +369,7 @@ describe('RetirementAccountOptimizer', () => {
       }
     });
 
-    it('should account for existing HSA contributions', () => {
+    it("should account for existing HSA contributions", () => {
       const result = optimizer.analyze(
         createMockProfile({
           hasHdhp: true,
@@ -382,8 +390,8 @@ describe('RetirementAccountOptimizer', () => {
   // =========================================================================
   // SEP IRA Analysis
   // =========================================================================
-  describe('SEP IRA Analysis', () => {
-    it('should return null/skip SEP when not self-employed', () => {
+  describe("SEP IRA Analysis", () => {
+    it("should return null/skip SEP when not self-employed", () => {
       const result = optimizer.analyze(
         createMockProfile({ isSelfEmployed: false }),
       );
@@ -393,7 +401,7 @@ describe('RetirementAccountOptimizer', () => {
       expect(sepRec).toBeUndefined();
     });
 
-    it('should recommend SEP IRA for self-employed with income', () => {
+    it("should recommend SEP IRA for self-employed with income", () => {
       const result = optimizer.analyze(
         createMockProfile({
           isSelfEmployed: true,
@@ -416,7 +424,7 @@ describe('RetirementAccountOptimizer', () => {
       }
     });
 
-    it('should skip SEP when self-employed income is 0', () => {
+    it("should skip SEP when self-employed income is 0", () => {
       const result = optimizer.analyze(
         createMockProfile({
           isSelfEmployed: true,
@@ -429,7 +437,7 @@ describe('RetirementAccountOptimizer', () => {
       expect(sepRec).toBeUndefined();
     });
 
-    it('should cap SEP at 25% of net SE earnings', () => {
+    it("should cap SEP at 25% of net SE earnings", () => {
       const result = optimizer.analyze(
         createMockProfile({
           isSelfEmployed: true,
@@ -452,8 +460,8 @@ describe('RetirementAccountOptimizer', () => {
   // =========================================================================
   // Roth vs Traditional
   // =========================================================================
-  describe('Roth vs Traditional Analysis', () => {
-    it('should recommend Roth for low marginal rate (<= 22%)', () => {
+  describe("Roth vs Traditional Analysis", () => {
+    it("should recommend Roth for low marginal rate (<= 22%)", () => {
       // Income ~$50k single -> 22% marginal bracket
       const result = optimizer.analyze(
         createMockProfile({ grossIncome: 40000, w2Income: 40000 }),
@@ -463,7 +471,7 @@ describe('RetirementAccountOptimizer', () => {
       expect(result.rothVsTraditionalRecommendation).toMatch(/roth/i);
     });
 
-    it('should recommend Traditional for high marginal rate (>= 32%)', () => {
+    it("should recommend Traditional for high marginal rate (>= 32%)", () => {
       // Income ~$250k single -> 35% marginal bracket
       const result = optimizer.analyze(
         createMockProfile({ grossIncome: 250000, w2Income: 250000 }),
@@ -472,48 +480,46 @@ describe('RetirementAccountOptimizer', () => {
       expect(result.rothVsTraditionalRecommendation).toMatch(/traditional/i);
     });
 
-    it('should recommend split for middle marginal rate (24%)', () => {
+    it("should recommend split for middle marginal rate (24%)", () => {
       // Income ~$120k single -> 24% marginal bracket
       const result = optimizer.analyze(
         createMockProfile({ grossIncome: 120000, w2Income: 120000 }),
       );
       expect(result.rothVsTraditionalRecommendation).toBeDefined();
-      expect(result.rothVsTraditionalRecommendation).toMatch(/split|both|roth|traditional/i);
+      expect(result.rothVsTraditionalRecommendation).toMatch(
+        /split|both|roth|traditional/i,
+      );
     });
   });
 
   // =========================================================================
   // Contribution Priority Order
   // =========================================================================
-  describe('Contribution Priority Order', () => {
-    it('should start with 401k match', () => {
+  describe("Contribution Priority Order", () => {
+    it("should start with 401k match", () => {
       const result = optimizer.analyze(createMockProfile());
       expect(result.contributionPriorityOrder.length).toBeGreaterThan(0);
       // First priority should be 401k (for employer match)
       expect(result.contributionPriorityOrder[0]).toMatch(/401k|401\(k\)/i);
     });
 
-    it('should include HSA in priority when HDHP present', () => {
-      const result = optimizer.analyze(
-        createMockProfile({ hasHdhp: true }),
-      );
-      const hasHsa = result.contributionPriorityOrder.some(
-        (p) => p.toLowerCase().includes('hsa'),
+    it("should include HSA in priority when HDHP present", () => {
+      const result = optimizer.analyze(createMockProfile({ hasHdhp: true }));
+      const hasHsa = result.contributionPriorityOrder.some((p) =>
+        p.toLowerCase().includes("hsa"),
       );
       expect(hasHsa).toBe(true);
     });
 
-    it('should not include HSA when no HDHP', () => {
-      const result = optimizer.analyze(
-        createMockProfile({ hasHdhp: false }),
-      );
-      const hasHsa = result.contributionPriorityOrder.some(
-        (p) => p.toLowerCase().includes('hsa'),
+    it("should not include HSA when no HDHP", () => {
+      const result = optimizer.analyze(createMockProfile({ hasHdhp: false }));
+      const hasHsa = result.contributionPriorityOrder.some((p) =>
+        p.toLowerCase().includes("hsa"),
       );
       expect(hasHsa).toBe(false);
     });
 
-    it('should include SEP IRA for self-employed', () => {
+    it("should include SEP IRA for self-employed", () => {
       const result = optimizer.analyze(
         createMockProfile({
           isSelfEmployed: true,
@@ -523,15 +529,18 @@ describe('RetirementAccountOptimizer', () => {
           businessType: BusinessType.SOLE_PROPRIETORSHIP,
         }),
       );
-      const hasSep = result.contributionPriorityOrder.some(
-        (p) => p.toLowerCase().includes('sep'),
+      const hasSep = result.contributionPriorityOrder.some((p) =>
+        p.toLowerCase().includes("sep"),
       );
       expect(hasSep).toBe(true);
     });
 
-    it('should end with taxable brokerage', () => {
+    it("should end with taxable brokerage", () => {
       const result = optimizer.analyze(createMockProfile());
-      const last = result.contributionPriorityOrder[result.contributionPriorityOrder.length - 1];
+      const last =
+        result.contributionPriorityOrder[
+          result.contributionPriorityOrder.length - 1
+        ];
       expect(last).toMatch(/taxable|brokerage/i);
     });
   });

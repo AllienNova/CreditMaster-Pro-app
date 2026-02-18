@@ -16,13 +16,13 @@
  * 4. Fallback: Use best available result
  */
 
-import { getSupabase } from '@/lib/supabase/client';
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
-import { BaseOCRProvider, DocumentInput } from './providers/base-provider';
-import { OpenAIVisionProvider } from './providers/openai-vision-provider';
-import { GoogleVisionProvider } from './providers/google-vision-provider';
-import { LandingAIProvider } from './providers/landing-ai-provider';
+import { BaseOCRProvider, DocumentInput } from "./providers/base-provider";
+import { OpenAIVisionProvider } from "./providers/openai-vision-provider";
+import { GoogleVisionProvider } from "./providers/google-vision-provider";
+import { LandingAIProvider } from "./providers/landing-ai-provider";
 import type {
   TaxDocumentType,
   OCRProvider,
@@ -32,7 +32,7 @@ import type {
   FieldConfidence,
   DocumentProcessingStatus,
   ExtractedFields,
-} from './types';
+} from "./types";
 
 // ============================================================================
 // CONFIGURATION
@@ -63,61 +63,61 @@ export class TaxDocumentProcessor {
   private getDefaultConfigs(): OCRProviderConfig[] {
     return [
       {
-        provider: 'openai_vision',
+        provider: "openai_vision",
         enabled: true,
         priority: 1,
         timeout: 30000,
         retries: 2,
         supportedDocuments: [
-          'w2',
-          '1099_div',
-          '1099_int',
-          '1099_b',
-          '1099_nec',
-          '1099_misc',
-          '1099_r',
-          '1098',
-          '1098_e',
-          'charitable_receipt',
-          'unknown',
+          "w2",
+          "1099_div",
+          "1099_int",
+          "1099_b",
+          "1099_nec",
+          "1099_misc",
+          "1099_r",
+          "1098",
+          "1098_e",
+          "charitable_receipt",
+          "unknown",
         ],
         costPerPage: 0.01,
       },
       {
-        provider: 'google_vision',
+        provider: "google_vision",
         enabled: true,
         priority: 2,
         timeout: 30000,
         retries: 2,
         supportedDocuments: [
-          'w2',
-          '1099_div',
-          '1099_int',
-          '1099_b',
-          '1099_nec',
-          '1099_misc',
-          '1099_r',
-          '1098',
-          '1098_e',
-          'charitable_receipt',
-          'unknown',
+          "w2",
+          "1099_div",
+          "1099_int",
+          "1099_b",
+          "1099_nec",
+          "1099_misc",
+          "1099_r",
+          "1098",
+          "1098_e",
+          "charitable_receipt",
+          "unknown",
         ],
         costPerPage: 0.0015,
       },
       {
-        provider: 'landing_ai',
+        provider: "landing_ai",
         enabled: true,
         priority: 3,
         timeout: 45000,
         retries: 2,
         supportedDocuments: [
-          'w2',
-          '1099_div',
-          '1099_int',
-          '1099_nec',
-          '1099_misc',
-          '1098',
-          'charitable_receipt',
+          "w2",
+          "1099_div",
+          "1099_int",
+          "1099_nec",
+          "1099_misc",
+          "1098",
+          "charitable_receipt",
         ],
         costPerPage: 0.02,
       },
@@ -131,13 +131,13 @@ export class TaxDocumentProcessor {
       let provider: BaseOCRProvider;
 
       switch (config.provider) {
-        case 'openai_vision':
+        case "openai_vision":
           provider = new OpenAIVisionProvider(config);
           break;
-        case 'google_vision':
+        case "google_vision":
           provider = new GoogleVisionProvider(config);
           break;
-        case 'landing_ai':
+        case "landing_ai":
           provider = new LandingAIProvider(config);
           break;
         default:
@@ -153,7 +153,7 @@ export class TaxDocumentProcessor {
    */
   async processDocument(
     userId: string,
-    input: DocumentInput
+    input: DocumentInput,
   ): Promise<ConsolidatedExtractionResult> {
     const startTime = Date.now();
     const documentId = crypto.randomUUID();
@@ -162,19 +162,19 @@ export class TaxDocumentProcessor {
     const availableProviders = await this.getAvailableProviders();
 
     if (availableProviders.length === 0) {
-      throw new Error('No OCR providers available');
+      throw new Error("No OCR providers available");
     }
 
     // Step 2: Run extraction with primary provider first
     const providerResults: ProviderExtractionResult[] = [];
-    let documentType: TaxDocumentType = 'unknown';
+    let documentType: TaxDocumentType = "unknown";
     let documentTypeConfidence = 0;
 
     // Try primary provider first
     const primaryProvider = availableProviders[0];
     const primaryResult = await this.runProviderWithRetry(
       primaryProvider,
-      input
+      input,
     );
     providerResults.push(primaryResult);
 
@@ -191,14 +191,14 @@ export class TaxDocumentProcessor {
       const secondaryProviders = availableProviders.slice(1, 3); // Run up to 2 more
       const secondaryResults = await Promise.all(
         secondaryProviders.map((provider) =>
-          this.runProviderWithRetry(provider, input)
-        )
+          this.runProviderWithRetry(provider, input),
+        ),
       );
       providerResults.push(...secondaryResults);
 
       // Re-evaluate document type based on all results
       const typeVotes = this.consolidateDocumentTypes(providerResults);
-      if (typeVotes.bestType !== 'unknown') {
+      if (typeVotes.bestType !== "unknown") {
         documentType = typeVotes.bestType;
         documentTypeConfidence = typeVotes.confidence;
       }
@@ -211,7 +211,7 @@ export class TaxDocumentProcessor {
     // Step 5: Validate extracted data
     const validationErrors = this.validateExtractedData(
       documentType,
-      consolidatedFields.fields
+      consolidatedFields.fields,
     );
 
     // Step 6: Determine if manual review is needed
@@ -219,13 +219,13 @@ export class TaxDocumentProcessor {
       documentTypeConfidence,
       consolidatedFields.overallConfidence,
       consolidatedFields.conflictingFields,
-      validationErrors
+      validationErrors,
     );
 
     // Step 7: Extract tax year
     const taxYear = this.extractTaxYear(
       consolidatedFields.fields,
-      providerResults
+      providerResults,
     );
 
     // Step 8: Build result
@@ -241,7 +241,7 @@ export class TaxDocumentProcessor {
       taxYear,
 
       extractedData: {
-        type: documentType as ExtractedFields['type'],
+        type: documentType as ExtractedFields["type"],
         fields: consolidatedFields.fields as any,
       } as ExtractedFields,
       overallConfidence: consolidatedFields.overallConfidence,
@@ -257,7 +257,7 @@ export class TaxDocumentProcessor {
 
       validationErrors,
       isValid:
-        validationErrors.filter((e) => e.severity === 'error').length === 0,
+        validationErrors.filter((e) => e.severity === "error").length === 0,
 
       processedAt: new Date(),
       totalProcessingTimeMs: Date.now() - startTime,
@@ -299,7 +299,7 @@ export class TaxDocumentProcessor {
   private async runProviderWithRetry(
     provider: BaseOCRProvider,
     input: DocumentInput,
-    maxRetries = 2
+    maxRetries = 2,
   ): Promise<ProviderExtractionResult> {
     let lastError: Error | null = null;
 
@@ -309,15 +309,15 @@ export class TaxDocumentProcessor {
         if (result.success) {
           return result;
         }
-        lastError = new Error(result.errorMessage || 'Unknown error');
+        lastError = new Error(result.errorMessage || "Unknown error");
       } catch (error) {
-        lastError = error instanceof Error ? error : new Error('Unknown error');
+        lastError = error instanceof Error ? error : new Error("Unknown error");
       }
 
       // Wait before retry (exponential backoff)
       if (attempt < maxRetries) {
         await new Promise((resolve) =>
-          setTimeout(resolve, Math.pow(2, attempt) * 1000)
+          setTimeout(resolve, Math.pow(2, attempt) * 1000),
         );
       }
     }
@@ -325,12 +325,12 @@ export class TaxDocumentProcessor {
     return {
       provider: provider.getProviderName(),
       success: false,
-      documentType: 'unknown',
+      documentType: "unknown",
       documentTypeConfidence: 0,
       fields: {},
       fieldConfidences: [],
       processingTimeMs: 0,
-      errorMessage: lastError?.message || 'Max retries exceeded',
+      errorMessage: lastError?.message || "Max retries exceeded",
     };
   }
 
@@ -347,7 +347,7 @@ export class TaxDocumentProcessor {
     > = new Map();
 
     for (const result of results) {
-      if (!result.success || result.documentType === 'unknown') continue;
+      if (!result.success || result.documentType === "unknown") continue;
 
       const existing = votes.get(result.documentType) || {
         count: 0,
@@ -360,7 +360,7 @@ export class TaxDocumentProcessor {
       });
     }
 
-    let bestType: TaxDocumentType = 'unknown';
+    let bestType: TaxDocumentType = "unknown";
     let bestScore = 0;
 
     for (const [type, data] of votes) {
@@ -384,7 +384,7 @@ export class TaxDocumentProcessor {
     fields: Record<string, unknown>;
     overallConfidence: number;
     consensusFields: string[];
-    conflictingFields: ConsolidatedExtractionResult['conflictingFields'];
+    conflictingFields: ConsolidatedExtractionResult["conflictingFields"];
   } {
     if (results.length === 0) {
       return {
@@ -414,7 +414,7 @@ export class TaxDocumentProcessor {
       for (const [fieldName, value] of Object.entries(result.fields)) {
         const existing = fieldValues.get(fieldName) || [];
         const fieldConfidence = result.fieldConfidences.find(
-          (f) => f.fieldName === fieldName
+          (f) => f.fieldName === fieldName,
         );
         existing.push({
           provider: result.provider,
@@ -428,7 +428,7 @@ export class TaxDocumentProcessor {
     // Resolve each field
     const fields: Record<string, unknown> = {};
     const consensusFields: string[] = [];
-    const conflictingFields: ConsolidatedExtractionResult['conflictingFields'] =
+    const conflictingFields: ConsolidatedExtractionResult["conflictingFields"] =
       [];
 
     for (const [fieldName, values] of fieldValues) {
@@ -450,14 +450,14 @@ export class TaxDocumentProcessor {
           fieldName,
           values,
           resolvedValue: sorted[0].value,
-          resolutionMethod: 'highest_confidence',
+          resolutionMethod: "highest_confidence",
         });
       }
     }
 
     // Calculate overall confidence
     const allConfidences = results.flatMap((r) =>
-      r.fieldConfidences.map((f) => f.confidence)
+      r.fieldConfidences.map((f) => f.confidence),
     );
     const overallConfidence =
       allConfidences.length > 0
@@ -477,9 +477,9 @@ export class TaxDocumentProcessor {
    */
   private validateExtractedData(
     documentType: TaxDocumentType,
-    fields: Record<string, unknown>
-  ): ConsolidatedExtractionResult['validationErrors'] {
-    const errors: ConsolidatedExtractionResult['validationErrors'] = [];
+    fields: Record<string, unknown>,
+  ): ConsolidatedExtractionResult["validationErrors"] {
+    const errors: ConsolidatedExtractionResult["validationErrors"] = [];
 
     // Common validations
     if (fields.taxYear) {
@@ -487,25 +487,25 @@ export class TaxDocumentProcessor {
       const currentYear = new Date().getFullYear();
       if (year < 2000 || year > currentYear + 1) {
         errors.push({
-          field: 'taxYear',
+          field: "taxYear",
           error: `Tax year ${year} seems invalid`,
-          severity: 'warning',
+          severity: "warning",
         });
       }
     }
 
     // Document-specific validations
     switch (documentType) {
-      case 'w2':
+      case "w2":
         this.validateW2(fields, errors);
         break;
-      case '1099_div':
+      case "1099_div":
         this.validate1099DIV(fields, errors);
         break;
-      case '1099_nec':
+      case "1099_nec":
         this.validate1099NEC(fields, errors);
         break;
-      case '1098':
+      case "1098":
         this.validate1098(fields, errors);
         break;
     }
@@ -515,15 +515,15 @@ export class TaxDocumentProcessor {
 
   private validateW2(
     fields: Record<string, unknown>,
-    errors: ConsolidatedExtractionResult['validationErrors']
+    errors: ConsolidatedExtractionResult["validationErrors"],
   ): void {
     // Wages should be positive
     const wages = fields.wagesTipsOtherComp as number;
     if (wages !== undefined && wages < 0) {
       errors.push({
-        field: 'wagesTipsOtherComp',
-        error: 'Wages cannot be negative',
-        severity: 'error',
+        field: "wagesTipsOtherComp",
+        error: "Wages cannot be negative",
+        severity: "error",
       });
     }
 
@@ -531,9 +531,9 @@ export class TaxDocumentProcessor {
     const withheld = fields.federalIncomeTaxWithheld as number;
     if (withheld !== undefined && wages !== undefined && withheld > wages) {
       errors.push({
-        field: 'federalIncomeTaxWithheld',
-        error: 'Withholding exceeds wages',
-        severity: 'warning',
+        field: "federalIncomeTaxWithheld",
+        error: "Withholding exceeds wages",
+        severity: "warning",
       });
     }
 
@@ -541,16 +541,16 @@ export class TaxDocumentProcessor {
     const ein = fields.employerEIN as string;
     if (ein && !/^\d{2}-?\d{7}$/.test(ein)) {
       errors.push({
-        field: 'employerEIN',
-        error: 'Invalid EIN format',
-        severity: 'warning',
+        field: "employerEIN",
+        error: "Invalid EIN format",
+        severity: "warning",
       });
     }
   }
 
   private validate1099DIV(
     fields: Record<string, unknown>,
-    errors: ConsolidatedExtractionResult['validationErrors']
+    errors: ConsolidatedExtractionResult["validationErrors"],
   ): void {
     const ordinary = fields.ordinaryDividends as number;
     const qualified = fields.qualifiedDividends as number;
@@ -561,37 +561,37 @@ export class TaxDocumentProcessor {
       qualified > ordinary
     ) {
       errors.push({
-        field: 'qualifiedDividends',
-        error: 'Qualified dividends cannot exceed ordinary dividends',
-        severity: 'warning',
+        field: "qualifiedDividends",
+        error: "Qualified dividends cannot exceed ordinary dividends",
+        severity: "warning",
       });
     }
   }
 
   private validate1099NEC(
     fields: Record<string, unknown>,
-    errors: ConsolidatedExtractionResult['validationErrors']
+    errors: ConsolidatedExtractionResult["validationErrors"],
   ): void {
     const compensation = fields.nonemployeeCompensation as number;
     if (compensation !== undefined && compensation < 0) {
       errors.push({
-        field: 'nonemployeeCompensation',
-        error: 'Compensation cannot be negative',
-        severity: 'error',
+        field: "nonemployeeCompensation",
+        error: "Compensation cannot be negative",
+        severity: "error",
       });
     }
   }
 
   private validate1098(
     fields: Record<string, unknown>,
-    errors: ConsolidatedExtractionResult['validationErrors']
+    errors: ConsolidatedExtractionResult["validationErrors"],
   ): void {
     const interest = fields.mortgageInterestReceived as number;
     if (interest !== undefined && interest < 0) {
       errors.push({
-        field: 'mortgageInterestReceived',
-        error: 'Mortgage interest cannot be negative',
-        severity: 'error',
+        field: "mortgageInterestReceived",
+        error: "Mortgage interest cannot be negative",
+        severity: "error",
       });
     }
   }
@@ -602,33 +602,33 @@ export class TaxDocumentProcessor {
   private determineReviewRequirement(
     typeConfidence: number,
     fieldConfidence: number,
-    conflictingFields: ConsolidatedExtractionResult['conflictingFields'],
-    validationErrors: ConsolidatedExtractionResult['validationErrors']
+    conflictingFields: ConsolidatedExtractionResult["conflictingFields"],
+    validationErrors: ConsolidatedExtractionResult["validationErrors"],
   ): { requiresReview: boolean; reviewReasons: string[] } {
     const reviewReasons: string[] = [];
 
     if (typeConfidence < CONFIDENCE_THRESHOLDS.MEDIUM) {
       reviewReasons.push(
-        `Low document type confidence (${(typeConfidence * 100).toFixed(0)}%)`
+        `Low document type confidence (${(typeConfidence * 100).toFixed(0)}%)`,
       );
     }
 
     if (fieldConfidence < CONFIDENCE_THRESHOLDS.MEDIUM) {
       reviewReasons.push(
-        `Low field extraction confidence (${(fieldConfidence * 100).toFixed(0)}%)`
+        `Low field extraction confidence (${(fieldConfidence * 100).toFixed(0)}%)`,
       );
     }
 
     if (conflictingFields.length > 3) {
       reviewReasons.push(
-        `Multiple conflicting fields (${conflictingFields.length})`
+        `Multiple conflicting fields (${conflictingFields.length})`,
       );
     }
 
-    const errors = validationErrors.filter((e) => e.severity === 'error');
+    const errors = validationErrors.filter((e) => e.severity === "error");
     if (errors.length > 0) {
       reviewReasons.push(
-        `Validation errors: ${errors.map((e) => e.field).join(', ')}`
+        `Validation errors: ${errors.map((e) => e.field).join(", ")}`,
       );
     }
 
@@ -643,13 +643,13 @@ export class TaxDocumentProcessor {
    */
   private determineStatus(
     requiresReview: boolean,
-    validationErrors: ConsolidatedExtractionResult['validationErrors']
+    validationErrors: ConsolidatedExtractionResult["validationErrors"],
   ): DocumentProcessingStatus {
-    const hasErrors = validationErrors.some((e) => e.severity === 'error');
+    const hasErrors = validationErrors.some((e) => e.severity === "error");
 
-    if (hasErrors) return 'failed';
-    if (requiresReview) return 'needs_review';
-    return 'extracted';
+    if (hasErrors) return "failed";
+    if (requiresReview) return "needs_review";
+    return "extracted";
   }
 
   /**
@@ -657,16 +657,16 @@ export class TaxDocumentProcessor {
    */
   private extractTaxYear(
     fields: Record<string, unknown>,
-    results: ProviderExtractionResult[]
+    results: ProviderExtractionResult[],
   ): number {
     // Try from consolidated fields first
-    if (fields.taxYear && typeof fields.taxYear === 'number') {
+    if (fields.taxYear && typeof fields.taxYear === "number") {
       return fields.taxYear;
     }
 
     // Try from individual results
     for (const result of results) {
-      if (result.fields.taxYear && typeof result.fields.taxYear === 'number') {
+      if (result.fields.taxYear && typeof result.fields.taxYear === "number") {
         return result.fields.taxYear;
       }
     }
@@ -679,13 +679,13 @@ export class TaxDocumentProcessor {
    * Log processing to audit trail
    */
   private async logProcessing(
-    result: ConsolidatedExtractionResult
+    result: ConsolidatedExtractionResult,
   ): Promise<void> {
     try {
-      await supabase.from('tax_audit_log').insert({
+      await supabase.from("tax_audit_log").insert({
         user_id: result.userId,
-        action_type: 'document_processed',
-        entity_type: 'tax_document',
+        action_type: "document_processed",
+        entity_type: "tax_document",
         entity_id: result.documentId,
         new_values: {
           documentType: result.documentType,

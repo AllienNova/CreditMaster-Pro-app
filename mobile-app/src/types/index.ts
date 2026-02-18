@@ -8,7 +8,7 @@ export interface User {
   phone?: string;
   dateOfBirth?: string;
   avatar_url?: string;
-  subscription_tier: 'free' | 'basic' | 'premium' | 'enterprise';
+  subscription_tier: "free" | "basic" | "premium" | "enterprise";
   goals?: string[];
   created_at: string;
   updated_at: string;
@@ -17,7 +17,7 @@ export interface User {
 // Credit Score types
 export interface CreditScore {
   score: number;
-  bureau: 'experian' | 'equifax' | 'transunion';
+  bureau: "experian" | "equifax" | "transunion";
   date: string;
   change?: number;
 }
@@ -27,22 +27,22 @@ export interface CreditScoreHistory {
   averageScore: number;
   highestScore: number;
   lowestScore: number;
-  trend: 'up' | 'down' | 'stable';
+  trend: "up" | "down" | "stable";
 }
 
 // Dispute types
 export interface Dispute {
   id: string;
   user_id: string;
-  bureau: 'experian' | 'equifax' | 'transunion';
-  status: 'draft' | 'sent' | 'under_review' | 'resolved' | 'rejected';
+  bureau: "experian" | "equifax" | "transunion";
+  status: "draft" | "sent" | "under_review" | "resolved" | "rejected";
   item_type: string;
   item_description: string;
   dispute_reason: string;
   letter_content?: string;
   created_at: string;
   updated_at: string;
-  outcome?: 'removed' | 'updated' | 'verified' | 'pending';
+  outcome?: "removed" | "updated" | "verified" | "pending";
   response_date?: string;
 }
 
@@ -51,10 +51,10 @@ export interface Document {
   id: string;
   user_id: string;
   name: string;
-  type: 'credit_report' | 'dispute_response' | 'identity' | 'other';
+  type: "credit_report" | "dispute_response" | "identity" | "other";
   file_url: string;
   file_size: number;
-  status: 'processing' | 'analyzed' | 'error';
+  status: "processing" | "analyzed" | "error";
   uploaded_at: string;
   analysis_result?: DocumentAnalysis;
 }
@@ -71,7 +71,13 @@ export interface DocumentAnalysis {
 export interface Notification {
   id: string;
   user_id: string;
-  type: 'dispute_update' | 'score_change' | 'document_processed' | 'recommendation' | 'payment' | 'system';
+  type:
+    | "dispute_update"
+    | "score_change"
+    | "document_processed"
+    | "recommendation"
+    | "payment"
+    | "system";
   title: string;
   body: string;
   data?: Record<string, unknown>;
@@ -83,8 +89,8 @@ export interface Notification {
 export interface Subscription {
   id: string;
   user_id: string;
-  plan: 'free' | 'basic' | 'premium' | 'enterprise';
-  status: 'active' | 'canceled' | 'past_due' | 'trialing';
+  plan: "free" | "basic" | "premium" | "enterprise";
+  status: "active" | "canceled" | "past_due" | "trialing";
   current_period_start: string;
   current_period_end: string;
   cancel_at_period_end: boolean;
@@ -95,12 +101,12 @@ export interface StudentLoan {
   id: string;
   user_id: string;
   servicer: string;
-  loan_type: 'federal' | 'private';
+  loan_type: "federal" | "private";
   original_balance: number;
   current_balance: number;
   interest_rate: number;
   monthly_payment: number;
-  status: 'current' | 'delinquent' | 'default' | 'forbearance' | 'deferment';
+  status: "current" | "delinquent" | "default" | "forbearance" | "deferment";
 }
 
 // API Response types
@@ -113,13 +119,13 @@ export interface ApiResponse<T> {
 
 // Navigation types
 export type RootStackParamList = {
-  '(tabs)': undefined;
-  'login': undefined;
-  'register': undefined;
-  'onboarding': undefined;
-  'dispute/[id]': { id: string };
-  'document/[id]': { id: string };
-  'notification/[id]': { id: string };
+  "(tabs)": undefined;
+  login: undefined;
+  register: undefined;
+  onboarding: undefined;
+  "dispute/[id]": { id: string };
+  "document/[id]": { id: string };
+  "notification/[id]": { id: string };
 };
 
 // Theme types
@@ -194,10 +200,10 @@ export interface Theme {
     xxxl: number;
   };
   fontWeight: {
-    normal: '400';
-    medium: '500';
-    semibold: '600';
-    bold: '700';
+    normal: "400";
+    medium: "500";
+    semibold: "600";
+    bold: "700";
   };
   shadow: {
     none: ThemeShadow;

@@ -3,7 +3,7 @@
  * Order management with creation, viewing, and cancellation
  */
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -13,19 +13,19 @@ import {
   RefreshControl,
   ActivityIndicator,
   Alert,
-} from 'react-native';
-import { Stack } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { lightTheme as theme } from '../../src/constants/theme';
-import { useTradingStore } from '../../src/store/tradingStore';
-import { OrderEntrySheet } from '../../src/components/trading/OrderEntrySheet';
-import type { Order, OrderStatus } from '../../src/services/api/trading';
+} from "react-native";
+import { Stack } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { lightTheme as theme } from "../../src/constants/theme";
+import { useTradingStore } from "../../src/store/tradingStore";
+import { OrderEntrySheet } from "../../src/components/trading/OrderEntrySheet";
+import type { Order, OrderStatus } from "../../src/services/api/trading";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-type FilterTab = 'all' | 'open' | 'filled' | 'canceled';
+type FilterTab = "all" | "open" | "filled" | "canceled";
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -33,29 +33,29 @@ type FilterTab = 'all' | 'open' | 'filled' | 'canceled';
 
 const getStatusColor = (status: OrderStatus): string => {
   switch (status) {
-    case 'filled':
-      return '#10B981';
-    case 'partially_filled':
-      return '#3B82F6';
-    case 'canceled':
-    case 'rejected':
-    case 'expired':
-      return '#EF4444';
-    case 'pending':
-    case 'new':
-    case 'accepted':
+    case "filled":
+      return "#10B981";
+    case "partially_filled":
+      return "#3B82F6";
+    case "canceled":
+    case "rejected":
+    case "expired":
+      return "#EF4444";
+    case "pending":
+    case "new":
+    case "accepted":
     default:
-      return '#F59E0B';
+      return "#F59E0B";
   }
 };
 
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 };
 
@@ -73,10 +73,10 @@ function FilterTabs({
   counts: Record<FilterTab, number>;
 }) {
   const tabs: { id: FilterTab; label: string }[] = [
-    { id: 'all', label: 'All' },
-    { id: 'open', label: 'Open' },
-    { id: 'filled', label: 'Filled' },
-    { id: 'canceled', label: 'Canceled' },
+    { id: "all", label: "All" },
+    { id: "open", label: "Open" },
+    { id: "filled", label: "Filled" },
+    { id: "canceled", label: "Canceled" },
   ];
 
   return (
@@ -84,7 +84,10 @@ function FilterTabs({
       {tabs.map((tab) => (
         <TouchableOpacity
           key={tab.id}
-          style={[styles.filterTab, activeTab === tab.id && styles.filterTabActive]}
+          style={[
+            styles.filterTab,
+            activeTab === tab.id && styles.filterTabActive,
+          ]}
           onPress={() => onTabChange(tab.id)}
         >
           <Text
@@ -125,16 +128,20 @@ function OrderCard({
   order: Order;
   onCancel: (orderId: string) => void;
 }) {
-  const canCancel = ['new', 'pending', 'accepted'].includes(order.status);
+  const canCancel = ["new", "pending", "accepted"].includes(order.status);
 
   const handleCancel = () => {
     Alert.alert(
-      'Cancel Order',
+      "Cancel Order",
       `Are you sure you want to cancel this ${order.side} order for ${order.symbol}?`,
       [
-        { text: 'No', style: 'cancel' },
-        { text: 'Yes, Cancel', style: 'destructive', onPress: () => onCancel(order.id) },
-      ]
+        { text: "No", style: "cancel" },
+        {
+          text: "Yes, Cancel",
+          style: "destructive",
+          onPress: () => onCancel(order.id),
+        },
+      ],
     );
   };
 
@@ -146,13 +153,16 @@ function OrderCard({
           <View
             style={[
               styles.orderSideBadge,
-              { backgroundColor: order.side === 'buy' ? '#10B98120' : '#EF444420' },
+              {
+                backgroundColor:
+                  order.side === "buy" ? "#10B98120" : "#EF444420",
+              },
             ]}
           >
             <Text
               style={[
                 styles.orderSideBadgeText,
-                { color: order.side === 'buy' ? '#10B981' : '#EF4444' },
+                { color: order.side === "buy" ? "#10B981" : "#EF4444" },
               ]}
             >
               {order.side.toUpperCase()}
@@ -166,9 +176,12 @@ function OrderCard({
           ]}
         >
           <Text
-            style={[styles.orderStatusText, { color: getStatusColor(order.status) }]}
+            style={[
+              styles.orderStatusText,
+              { color: getStatusColor(order.status) },
+            ]}
           >
-            {order.status.toUpperCase().replace('_', ' ')}
+            {order.status.toUpperCase().replace("_", " ")}
           </Text>
         </View>
       </View>
@@ -176,7 +189,9 @@ function OrderCard({
       <View style={styles.orderDetails}>
         <View style={styles.orderDetailRow}>
           <Text style={styles.orderDetailLabel}>Type</Text>
-          <Text style={styles.orderDetailValue}>{order.type.toUpperCase()}</Text>
+          <Text style={styles.orderDetailValue}>
+            {order.type.toUpperCase()}
+          </Text>
         </View>
         <View style={styles.orderDetailRow}>
           <Text style={styles.orderDetailLabel}>Quantity</Text>
@@ -189,7 +204,7 @@ function OrderCard({
         <View style={styles.orderDetailRow}>
           <Text style={styles.orderDetailLabel}>Price</Text>
           <Text style={styles.orderDetailValue}>
-            {order.limitPrice ? `$${order.limitPrice.toFixed(2)}` : 'Market'}
+            {order.limitPrice ? `$${order.limitPrice.toFixed(2)}` : "Market"}
           </Text>
         </View>
         {order.avgFilledPrice && (
@@ -220,7 +235,7 @@ function OrderCard({
 // ============================================================================
 
 export default function OrdersScreen() {
-  const [activeTab, setActiveTab] = useState<FilterTab>('all');
+  const [activeTab, setActiveTab] = useState<FilterTab>("all");
   const [showOrderEntry, setShowOrderEntry] = useState(false);
 
   const {
@@ -246,12 +261,14 @@ export default function OrdersScreen() {
   // Filter orders based on active tab
   const filteredOrders = orders.filter((order) => {
     switch (activeTab) {
-      case 'open':
-        return ['new', 'pending', 'accepted', 'partially_filled'].includes(order.status);
-      case 'filled':
-        return order.status === 'filled';
-      case 'canceled':
-        return ['canceled', 'rejected', 'expired'].includes(order.status);
+      case "open":
+        return ["new", "pending", "accepted", "partially_filled"].includes(
+          order.status,
+        );
+      case "filled":
+        return order.status === "filled";
+      case "canceled":
+        return ["canceled", "rejected", "expired"].includes(order.status);
       default:
         return true;
     }
@@ -261,11 +278,11 @@ export default function OrdersScreen() {
   const counts: Record<FilterTab, number> = {
     all: orders.length,
     open: orders.filter((o) =>
-      ['new', 'pending', 'accepted', 'partially_filled'].includes(o.status)
+      ["new", "pending", "accepted", "partially_filled"].includes(o.status),
     ).length,
-    filled: orders.filter((o) => o.status === 'filled').length,
+    filled: orders.filter((o) => o.status === "filled").length,
     canceled: orders.filter((o) =>
-      ['canceled', 'rejected', 'expired'].includes(o.status)
+      ["canceled", "rejected", "expired"].includes(o.status),
     ).length,
   };
 
@@ -273,12 +290,16 @@ export default function OrdersScreen() {
     if (openOrders.length === 0) return;
 
     Alert.alert(
-      'Cancel All Orders',
+      "Cancel All Orders",
       `Are you sure you want to cancel all ${openOrders.length} open orders?`,
       [
-        { text: 'No', style: 'cancel' },
-        { text: 'Yes, Cancel All', style: 'destructive', onPress: cancelAllOrders },
-      ]
+        { text: "No", style: "cancel" },
+        {
+          text: "Yes, Cancel All",
+          style: "destructive",
+          onPress: cancelAllOrders,
+        },
+      ],
     );
   };
 
@@ -286,30 +307,43 @@ export default function OrdersScreen() {
     <View style={styles.container}>
       <Stack.Screen
         options={{
-          title: 'Orders',
+          title: "Orders",
           headerRight: () => (
             <TouchableOpacity
               style={styles.headerButton}
               onPress={() => setShowOrderEntry(true)}
             >
-              <Ionicons name="add-circle-outline" size={24} color={theme.colors.primary} />
+              <Ionicons
+                name="add-circle-outline"
+                size={24}
+                color={theme.colors.primary}
+              />
             </TouchableOpacity>
           ),
         }}
       />
 
       {/* Filter Tabs */}
-      <FilterTabs activeTab={activeTab} onTabChange={setActiveTab} counts={counts} />
+      <FilterTabs
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        counts={counts}
+      />
 
       {/* Cancel All Button */}
-      {openOrders.length > 0 && activeTab !== 'filled' && activeTab !== 'canceled' && (
-        <TouchableOpacity style={styles.cancelAllButton} onPress={handleCancelAll}>
-          <Ionicons name="close-circle" size={18} color="#EF4444" />
-          <Text style={styles.cancelAllButtonText}>
-            Cancel All ({openOrders.length})
-          </Text>
-        </TouchableOpacity>
-      )}
+      {openOrders.length > 0 &&
+        activeTab !== "filled" &&
+        activeTab !== "canceled" && (
+          <TouchableOpacity
+            style={styles.cancelAllButton}
+            onPress={handleCancelAll}
+          >
+            <Ionicons name="close-circle" size={18} color="#EF4444" />
+            <Text style={styles.cancelAllButtonText}>
+              Cancel All ({openOrders.length})
+            </Text>
+          </TouchableOpacity>
+        )}
 
       {/* Orders List */}
       <ScrollView
@@ -327,14 +361,18 @@ export default function OrdersScreen() {
           </View>
         ) : filteredOrders.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name="document-text-outline" size={64} color={theme.colors.textSecondary} />
+            <Ionicons
+              name="document-text-outline"
+              size={64}
+              color={theme.colors.textSecondary}
+            />
             <Text style={styles.emptyStateTitle}>No Orders</Text>
             <Text style={styles.emptyStateText}>
-              {activeTab === 'all'
+              {activeTab === "all"
                 ? "You haven't placed any orders yet"
                 : `No ${activeTab} orders`}
             </Text>
-            {activeTab === 'all' && (
+            {activeTab === "all" && (
               <TouchableOpacity
                 style={styles.emptyStateButton}
                 onPress={() => setShowOrderEntry(true)}
@@ -378,7 +416,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   filterTabs: {
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingHorizontal: 16,
     paddingVertical: 12,
     gap: 8,
@@ -387,8 +425,8 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.border,
   },
   filterTab: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
@@ -400,47 +438,47 @@ const styles = StyleSheet.create({
   },
   filterTabText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     color: theme.colors.textSecondary,
   },
   filterTabTextActive: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
   filterTabBadge: {
     minWidth: 20,
     height: 20,
     borderRadius: 10,
     backgroundColor: theme.colors.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 4,
   },
   filterTabBadgeActive: {
-    backgroundColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: "rgba(255,255,255,0.3)",
   },
   filterTabBadgeText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.textSecondary,
   },
   filterTabBadgeTextActive: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
   cancelAllButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 6,
     paddingVertical: 12,
     marginHorizontal: 16,
     marginTop: 8,
-    backgroundColor: '#FEE2E2',
+    backgroundColor: "#FEE2E2",
     borderRadius: 8,
   },
   cancelAllButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#EF4444',
+    fontWeight: "600",
+    color: "#EF4444",
   },
   scrollView: {
     flex: 1,
@@ -450,8 +488,8 @@ const styles = StyleSheet.create({
   },
   centerContent: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingTop: 100,
   },
   loadingText: {
@@ -461,21 +499,21 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingTop: 80,
     paddingHorizontal: 32,
   },
   emptyStateTitle: {
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginTop: 16,
   },
   emptyStateText: {
     fontSize: 14,
     color: theme.colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 8,
   },
   emptyStateButton: {
@@ -487,8 +525,8 @@ const styles = StyleSheet.create({
   },
   emptyStateButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
   ordersList: {
     padding: 16,
@@ -502,19 +540,19 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border,
   },
   orderHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 12,
   },
   orderSymbolContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   orderSymbol: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   orderSideBadge: {
@@ -524,7 +562,7 @@ const styles = StyleSheet.create({
   },
   orderSideBadgeText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   orderStatusBadge: {
     paddingHorizontal: 10,
@@ -533,7 +571,7 @@ const styles = StyleSheet.create({
   },
   orderStatusText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   orderDetails: {
     backgroundColor: theme.colors.background,
@@ -542,8 +580,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   orderDetailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 6,
   },
   orderDetailLabel: {
@@ -552,30 +590,30 @@ const styles = StyleSheet.create({
   },
   orderDetailValue: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: "500",
     color: theme.colors.text,
   },
   orderFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   orderTime: {
     fontSize: 12,
     color: theme.colors.textSecondary,
   },
   cancelButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#FEE2E2',
+    backgroundColor: "#FEE2E2",
     borderRadius: 6,
   },
   cancelButtonText: {
     fontSize: 13,
-    fontWeight: '500',
-    color: '#EF4444',
+    fontWeight: "500",
+    color: "#EF4444",
   },
 });

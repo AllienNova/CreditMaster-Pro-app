@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Drift Alert Panel
@@ -7,8 +7,8 @@
  * threshold configuration with visual indicators.
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useCallback, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   AlertTriangle,
   Bell,
@@ -20,24 +20,24 @@ import {
   Settings,
   RefreshCw,
   ChevronRight,
-} from 'lucide-react';
+} from "lucide-react";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 export type AssetClass =
-  | 'us_stocks'
-  | 'international_stocks'
-  | 'emerging_markets'
-  | 'bonds'
-  | 'real_estate'
-  | 'commodities'
-  | 'cash'
-  | 'crypto'
-  | 'alternatives';
+  | "us_stocks"
+  | "international_stocks"
+  | "emerging_markets"
+  | "bonds"
+  | "real_estate"
+  | "commodities"
+  | "cash"
+  | "crypto"
+  | "alternatives";
 
-export type AlertPriority = 'low' | 'medium' | 'high';
+export type AlertPriority = "low" | "medium" | "high";
 
 export interface DriftData {
   assetClass: AssetClass;
@@ -87,15 +87,15 @@ export interface DriftAlertPanelProps {
 // ============================================================================
 
 const ASSET_CLASS_LABELS: Record<AssetClass, string> = {
-  us_stocks: 'US Stocks',
-  international_stocks: 'Intl Stocks',
-  emerging_markets: 'Emerging Mkts',
-  bonds: 'Bonds',
-  real_estate: 'Real Estate',
-  commodities: 'Commodities',
-  cash: 'Cash',
-  crypto: 'Crypto',
-  alternatives: 'Alternatives',
+  us_stocks: "US Stocks",
+  international_stocks: "Intl Stocks",
+  emerging_markets: "Emerging Mkts",
+  bonds: "Bonds",
+  real_estate: "Real Estate",
+  commodities: "Commodities",
+  cash: "Cash",
+  crypto: "Crypto",
+  alternatives: "Alternatives",
 };
 
 const PRIORITY_CONFIG: Record<
@@ -103,18 +103,18 @@ const PRIORITY_CONFIG: Record<
   { color: string; bgColor: string; icon: React.ReactNode }
 > = {
   low: {
-    color: 'text-yellow-400',
-    bgColor: 'bg-yellow-500/10',
+    color: "text-yellow-400",
+    bgColor: "bg-yellow-500/10",
     icon: <AlertTriangle className="w-4 h-4" />,
   },
   medium: {
-    color: 'text-orange-400',
-    bgColor: 'bg-orange-500/10',
+    color: "text-orange-400",
+    bgColor: "bg-orange-500/10",
     icon: <AlertTriangle className="w-5 h-5" />,
   },
   high: {
-    color: 'text-red-400',
-    bgColor: 'bg-red-500/10',
+    color: "text-red-400",
+    bgColor: "bg-red-500/10",
     icon: <XCircle className="w-5 h-5" />,
   },
 };
@@ -156,16 +156,16 @@ export function DriftAlertPanel({
           const priorityOrder = { high: 0, medium: 1, low: 2 };
           return priorityOrder[a.priority] - priorityOrder[b.priority];
         }),
-    [alerts]
+    [alerts],
   );
 
   const alertCounts = useMemo(
     () => ({
-      high: activeAlerts.filter((a) => a.priority === 'high').length,
-      medium: activeAlerts.filter((a) => a.priority === 'medium').length,
-      low: activeAlerts.filter((a) => a.priority === 'low').length,
+      high: activeAlerts.filter((a) => a.priority === "high").length,
+      medium: activeAlerts.filter((a) => a.priority === "medium").length,
+      low: activeAlerts.filter((a) => a.priority === "low").length,
     }),
-    [activeAlerts]
+    [activeAlerts],
   );
 
   const handleSaveSettings = useCallback(() => {
@@ -200,15 +200,15 @@ export function DriftAlertPanel({
             className="p-2 text-gray-400 dark:text-slate-500 hover:text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
           >
             <RefreshCw
-              className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`}
+              className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
             />
           </button>
           <button
             onClick={() => setShowSettings(!showSettings)}
             className={`p-2 rounded-lg transition-colors ${
               showSettings
-                ? 'text-blue-400 bg-blue-500/10'
-                : 'text-gray-400 dark:text-slate-500 hover:text-white hover:bg-gray-800'
+                ? "text-blue-400 bg-blue-500/10"
+                : "text-gray-400 dark:text-slate-500 hover:text-white hover:bg-gray-800"
             }`}
           >
             <Settings className="w-4 h-4" />
@@ -253,7 +253,7 @@ export function DriftAlertPanel({
         {showSettings && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
+            animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             className="border-b border-gray-800 overflow-hidden"
           >
@@ -270,12 +270,12 @@ export function DriftAlertPanel({
                     }))
                   }
                   className={`w-12 h-6 rounded-full transition-colors ${
-                    localConfig.enabled ? 'bg-blue-600' : 'bg-gray-700'
+                    localConfig.enabled ? "bg-blue-600" : "bg-gray-700"
                   }`}
                 >
                   <div
                     className={`w-5 h-5 bg-white dark:bg-slate-800 rounded-full transition-transform ${
-                      localConfig.enabled ? 'translate-x-6' : 'translate-x-0.5'
+                      localConfig.enabled ? "translate-x-6" : "translate-x-0.5"
                     }`}
                   />
                 </button>
@@ -302,7 +302,9 @@ export function DriftAlertPanel({
                       max="100"
                       step="0.5"
                     />
-                    <span className="text-sm text-gray-500 dark:text-slate-400">%</span>
+                    <span className="text-sm text-gray-500 dark:text-slate-400">
+                      %
+                    </span>
                     <button
                       onClick={() =>
                         setLocalConfig((prev) => ({
@@ -310,7 +312,7 @@ export function DriftAlertPanel({
                           notifyOnLow: !prev.notifyOnLow,
                         }))
                       }
-                      className={`p-1.5 rounded ${localConfig.notifyOnLow ? 'text-yellow-400' : 'text-gray-600 dark:text-slate-300'}`}
+                      className={`p-1.5 rounded ${localConfig.notifyOnLow ? "text-yellow-400" : "text-gray-600 dark:text-slate-300"}`}
                     >
                       {localConfig.notifyOnLow ? (
                         <Bell className="w-4 h-4" />
@@ -343,7 +345,9 @@ export function DriftAlertPanel({
                       max="100"
                       step="0.5"
                     />
-                    <span className="text-sm text-gray-500 dark:text-slate-400">%</span>
+                    <span className="text-sm text-gray-500 dark:text-slate-400">
+                      %
+                    </span>
                     <button
                       onClick={() =>
                         setLocalConfig((prev) => ({
@@ -351,7 +355,7 @@ export function DriftAlertPanel({
                           notifyOnMedium: !prev.notifyOnMedium,
                         }))
                       }
-                      className={`p-1.5 rounded ${localConfig.notifyOnMedium ? 'text-orange-400' : 'text-gray-600 dark:text-slate-300'}`}
+                      className={`p-1.5 rounded ${localConfig.notifyOnMedium ? "text-orange-400" : "text-gray-600 dark:text-slate-300"}`}
                     >
                       {localConfig.notifyOnMedium ? (
                         <Bell className="w-4 h-4" />
@@ -384,7 +388,9 @@ export function DriftAlertPanel({
                       max="100"
                       step="0.5"
                     />
-                    <span className="text-sm text-gray-500 dark:text-slate-400">%</span>
+                    <span className="text-sm text-gray-500 dark:text-slate-400">
+                      %
+                    </span>
                     <button
                       onClick={() =>
                         setLocalConfig((prev) => ({
@@ -392,7 +398,7 @@ export function DriftAlertPanel({
                           notifyOnHigh: !prev.notifyOnHigh,
                         }))
                       }
-                      className={`p-1.5 rounded ${localConfig.notifyOnHigh ? 'text-red-400' : 'text-gray-600 dark:text-slate-300'}`}
+                      className={`p-1.5 rounded ${localConfig.notifyOnHigh ? "text-red-400" : "text-gray-600 dark:text-slate-300"}`}
                     >
                       {localConfig.notifyOnHigh ? (
                         <Bell className="w-4 h-4" />
@@ -474,7 +480,7 @@ export function DriftAlertPanel({
                       </div>
                     </div>
                     <ChevronRight
-                      className={`w-5 h-5 text-gray-500 dark:text-slate-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                      className={`w-5 h-5 text-gray-500 dark:text-slate-400 transition-transform ${isExpanded ? "rotate-90" : ""}`}
                     />
                   </div>
                 </div>
@@ -484,7 +490,7 @@ export function DriftAlertPanel({
                   {isExpanded && (
                     <motion.div
                       initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
+                      animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       className="overflow-hidden"
                     >
@@ -505,7 +511,7 @@ export function DriftAlertPanel({
                                 </span>
                                 <div className="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden">
                                   <div
-                                    className={`h-full ${item.drift > 0 ? 'bg-emerald-500' : 'bg-red-500'}`}
+                                    className={`h-full ${item.drift > 0 ? "bg-emerald-500" : "bg-red-500"}`}
                                     style={{
                                       width: `${Math.min(Math.abs(item.drift) * 5, 100)}%`,
                                     }}
@@ -514,11 +520,11 @@ export function DriftAlertPanel({
                                 <span
                                   className={`text-xs font-medium w-16 text-right ${
                                     item.drift > 0
-                                      ? 'text-emerald-400'
-                                      : 'text-red-400'
+                                      ? "text-emerald-400"
+                                      : "text-red-400"
                                   }`}
                                 >
-                                  {item.drift > 0 ? '+' : ''}
+                                  {item.drift > 0 ? "+" : ""}
                                   {item.drift.toFixed(1)}%
                                 </span>
                                 <div className="flex items-center gap-1 w-20">

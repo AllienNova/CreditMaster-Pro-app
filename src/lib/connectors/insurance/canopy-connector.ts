@@ -10,7 +10,7 @@ import {
   ConnectorConfig,
   HealthCheckResult,
   Region,
-} from '../types';
+} from "../types";
 
 // =============================================================================
 // Configuration
@@ -28,17 +28,22 @@ interface CanopyConfig extends ConnectorConfig {
 // =============================================================================
 
 export type InsuranceType =
-  | 'auto'
-  | 'home'
-  | 'renters'
-  | 'life'
-  | 'health'
-  | 'umbrella'
-  | 'pet'
-  | 'travel'
-  | 'other';
+  | "auto"
+  | "home"
+  | "renters"
+  | "life"
+  | "health"
+  | "umbrella"
+  | "pet"
+  | "travel"
+  | "other";
 
-export type PolicyStatus = 'active' | 'pending' | 'cancelled' | 'expired' | 'lapsed';
+export type PolicyStatus =
+  | "active"
+  | "pending"
+  | "cancelled"
+  | "expired"
+  | "lapsed";
 
 export interface CanopySession {
   sessionId: string;
@@ -74,7 +79,7 @@ export interface InsurancePolicy {
   expirationDate: Date;
   premium: {
     amount: number;
-    frequency: 'monthly' | 'quarterly' | 'semi-annual' | 'annual';
+    frequency: "monthly" | "quarterly" | "semi-annual" | "annual";
     currency: string;
   };
   deductible?: number;
@@ -110,7 +115,7 @@ export interface Vehicle {
 }
 
 export interface Property {
-  type: 'primary_residence' | 'rental' | 'vacation' | 'other';
+  type: "primary_residence" | "rental" | "vacation" | "other";
   address: {
     street: string;
     city: string;
@@ -130,7 +135,7 @@ export interface InsuranceClaim {
   policyId: string;
   claimNumber: string;
   type: string;
-  status: 'open' | 'closed' | 'pending' | 'denied';
+  status: "open" | "closed" | "pending" | "denied";
   filedDate: Date;
   closedDate?: Date;
   amount?: number;
@@ -141,7 +146,12 @@ export interface InsuranceClaim {
 export interface InsuranceDocument {
   id: string;
   policyId: string;
-  type: 'declarations_page' | 'policy_document' | 'id_card' | 'claim_document' | 'other';
+  type:
+    | "declarations_page"
+    | "policy_document"
+    | "id_card"
+    | "claim_document"
+    | "other";
   name: string;
   url: string;
   mimeType: string;
@@ -153,7 +163,7 @@ export interface InsuranceScore {
   score: number;
   factors: Array<{
     name: string;
-    impact: 'positive' | 'negative' | 'neutral';
+    impact: "positive" | "negative" | "neutral";
     description: string;
   }>;
   recommendations: string[];
@@ -165,7 +175,7 @@ export interface InsuranceScore {
 
 export interface UnifiedInsurancePolicy {
   id: string;
-  provider: 'canopy';
+  provider: "canopy";
   providerId: string;
   carrierName: string;
   policyNumber: string;
@@ -202,9 +212,9 @@ export interface UnifiedInsurancePolicy {
 // =============================================================================
 
 export class CanopyConnector extends BaseConnector<CanopyConfig> {
-  readonly name = 'canopy';
-  readonly type = 'insurance' as const;
-  readonly supportedRegions: Region[] = ['US'];
+  readonly name = "canopy";
+  readonly type = "insurance" as const;
+  readonly supportedRegions: Region[] = ["US"];
 
   private baseUrl: string;
   private accessToken?: string;
@@ -213,8 +223,8 @@ export class CanopyConnector extends BaseConnector<CanopyConfig> {
   constructor(config: CanopyConfig) {
     super(config);
     this.baseUrl = config.sandbox
-      ? 'https://sandbox.usecanopy.com/api/v1'
-      : 'https://api.usecanopy.com/api/v1';
+      ? "https://sandbox.usecanopy.com/api/v1"
+      : "https://api.usecanopy.com/api/v1";
   }
 
   // ===========================================================================
@@ -244,7 +254,7 @@ export class CanopyConnector extends BaseConnector<CanopyConfig> {
       return {
         success: false,
         latencyMs: 0,
-        error: error instanceof Error ? error : new Error('Unknown error'),
+        error: error instanceof Error ? error : new Error("Unknown error"),
       };
     }
   }
@@ -259,14 +269,14 @@ export class CanopyConnector extends BaseConnector<CanopyConfig> {
     }
 
     const response = await fetch(`${this.baseUrl}/auth/token`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         client_id: this.config.clientId,
         client_secret: this.config.clientSecret,
-        grant_type: 'client_credentials',
+        grant_type: "client_credentials",
       }),
     });
 
@@ -281,7 +291,7 @@ export class CanopyConnector extends BaseConnector<CanopyConfig> {
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
   ): Promise<T> {
     await this.authenticate();
 
@@ -290,7 +300,7 @@ export class CanopyConnector extends BaseConnector<CanopyConfig> {
       headers: {
         ...options.headers,
         Authorization: `Bearer ${this.accessToken}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
 
@@ -316,14 +326,14 @@ export class CanopyConnector extends BaseConnector<CanopyConfig> {
       carriers?: string[];
       redirectUri?: string;
       webhookUrl?: string;
-    }
+    },
   ): Promise<CanopySession> {
     const response = await this.request<{
       session_id: string;
       url: string;
       expires_at: string;
-    }>('/sessions', {
-      method: 'POST',
+    }>("/sessions", {
+      method: "POST",
       body: JSON.stringify({
         user_id: userId,
         insurance_types: options?.insuranceTypes,
@@ -344,10 +354,8 @@ export class CanopyConnector extends BaseConnector<CanopyConfig> {
   /**
    * Get session status
    */
-  async getSessionStatus(
-    sessionId: string
-  ): Promise<{
-    status: 'pending' | 'completed' | 'failed' | 'expired';
+  async getSessionStatus(sessionId: string): Promise<{
+    status: "pending" | "completed" | "failed" | "expired";
     policiesCount?: number;
     error?: string;
   }> {
@@ -358,7 +366,7 @@ export class CanopyConnector extends BaseConnector<CanopyConfig> {
     }>(`/sessions/${sessionId}`);
 
     return {
-      status: response.status as 'pending' | 'completed' | 'failed' | 'expired',
+      status: response.status as "pending" | "completed" | "failed" | "expired",
       policiesCount: response.policies_count,
       error: response.error,
     };
@@ -372,9 +380,9 @@ export class CanopyConnector extends BaseConnector<CanopyConfig> {
    * Get all policies for a user
    */
   async getPolicies(userId: string): Promise<InsurancePolicy[]> {
-    const response = await this.request<{ policies: Record<string, unknown>[] }>(
-      `/users/${userId}/policies`
-    );
+    const response = await this.request<{
+      policies: Record<string, unknown>[];
+    }>(`/users/${userId}/policies`);
 
     return (response.policies || []).map(this.mapPolicy);
   }
@@ -382,10 +390,13 @@ export class CanopyConnector extends BaseConnector<CanopyConfig> {
   /**
    * Get a specific policy
    */
-  async getPolicy(userId: string, policyId: string): Promise<InsurancePolicy | null> {
+  async getPolicy(
+    userId: string,
+    policyId: string,
+  ): Promise<InsurancePolicy | null> {
     try {
       const response = await this.request<{ policy: Record<string, unknown> }>(
-        `/users/${userId}/policies/${policyId}`
+        `/users/${userId}/policies/${policyId}`,
       );
       return this.mapPolicy(response.policy);
     } catch {
@@ -396,9 +407,12 @@ export class CanopyConnector extends BaseConnector<CanopyConfig> {
   /**
    * Get policies by type
    */
-  async getPoliciesByType(userId: string, type: InsuranceType): Promise<InsurancePolicy[]> {
+  async getPoliciesByType(
+    userId: string,
+    type: InsuranceType,
+  ): Promise<InsurancePolicy[]> {
     const allPolicies = await this.getPolicies(userId);
-    return allPolicies.filter(p => p.type === type);
+    return allPolicies.filter((p) => p.type === type);
   }
 
   /**
@@ -406,16 +420,19 @@ export class CanopyConnector extends BaseConnector<CanopyConfig> {
    */
   async getActivePolicies(userId: string): Promise<InsurancePolicy[]> {
     const allPolicies = await this.getPolicies(userId);
-    return allPolicies.filter(p => p.status === 'active');
+    return allPolicies.filter((p) => p.status === "active");
   }
 
   /**
    * Refresh policy data from carrier
    */
-  async refreshPolicy(userId: string, policyId: string): Promise<InsurancePolicy> {
+  async refreshPolicy(
+    userId: string,
+    policyId: string,
+  ): Promise<InsurancePolicy> {
     const response = await this.request<{ policy: Record<string, unknown> }>(
       `/users/${userId}/policies/${policyId}/refresh`,
-      { method: 'POST' }
+      { method: "POST" },
     );
 
     return this.mapPolicy(response.policy);
@@ -430,7 +447,7 @@ export class CanopyConnector extends BaseConnector<CanopyConfig> {
    */
   async getClaims(userId: string, policyId: string): Promise<InsuranceClaim[]> {
     const response = await this.request<{ claims: Record<string, unknown>[] }>(
-      `/users/${userId}/policies/${policyId}/claims`
+      `/users/${userId}/policies/${policyId}/claims`,
     );
 
     return (response.claims || []).map(this.mapClaim);
@@ -458,10 +475,13 @@ export class CanopyConnector extends BaseConnector<CanopyConfig> {
   /**
    * Get documents for a policy
    */
-  async getDocuments(userId: string, policyId: string): Promise<InsuranceDocument[]> {
-    const response = await this.request<{ documents: Record<string, unknown>[] }>(
-      `/users/${userId}/policies/${policyId}/documents`
-    );
+  async getDocuments(
+    userId: string,
+    policyId: string,
+  ): Promise<InsuranceDocument[]> {
+    const response = await this.request<{
+      documents: Record<string, unknown>[];
+    }>(`/users/${userId}/policies/${policyId}/documents`);
 
     return (response.documents || []).map(this.mapDocument);
   }
@@ -472,12 +492,14 @@ export class CanopyConnector extends BaseConnector<CanopyConfig> {
   async downloadDocument(
     userId: string,
     policyId: string,
-    documentId: string
+    documentId: string,
   ): Promise<{ url: string; expiresAt: Date }> {
     const response = await this.request<{
       download_url: string;
       expires_at: string;
-    }>(`/users/${userId}/policies/${policyId}/documents/${documentId}/download`);
+    }>(
+      `/users/${userId}/policies/${policyId}/documents/${documentId}/download`,
+    );
 
     return {
       url: response.download_url,
@@ -497,78 +519,91 @@ export class CanopyConnector extends BaseConnector<CanopyConfig> {
 
     // Calculate score based on coverage
     let score = 50; // Base score
-    const factors: InsuranceScore['factors'] = [];
+    const factors: InsuranceScore["factors"] = [];
     const recommendations: string[] = [];
 
     // Check for essential coverages
-    const hasAuto = policies.some(p => p.type === 'auto' && p.status === 'active');
-    const hasHome = policies.some(
-      p => (p.type === 'home' || p.type === 'renters') && p.status === 'active'
+    const hasAuto = policies.some(
+      (p) => p.type === "auto" && p.status === "active",
     );
-    const hasLife = policies.some(p => p.type === 'life' && p.status === 'active');
-    const hasUmbrella = policies.some(p => p.type === 'umbrella' && p.status === 'active');
+    const hasHome = policies.some(
+      (p) =>
+        (p.type === "home" || p.type === "renters") && p.status === "active",
+    );
+    const hasLife = policies.some(
+      (p) => p.type === "life" && p.status === "active",
+    );
+    const hasUmbrella = policies.some(
+      (p) => p.type === "umbrella" && p.status === "active",
+    );
 
     if (hasAuto) {
       score += 15;
       factors.push({
-        name: 'Auto Insurance',
-        impact: 'positive',
-        description: 'You have active auto insurance coverage',
+        name: "Auto Insurance",
+        impact: "positive",
+        description: "You have active auto insurance coverage",
       });
     } else {
       factors.push({
-        name: 'Auto Insurance',
-        impact: 'negative',
-        description: 'No auto insurance detected',
+        name: "Auto Insurance",
+        impact: "negative",
+        description: "No auto insurance detected",
       });
-      recommendations.push('Consider adding auto insurance if you own or drive a vehicle');
+      recommendations.push(
+        "Consider adding auto insurance if you own or drive a vehicle",
+      );
     }
 
     if (hasHome) {
       score += 15;
       factors.push({
-        name: 'Property Insurance',
-        impact: 'positive',
-        description: 'You have active home or renters insurance',
+        name: "Property Insurance",
+        impact: "positive",
+        description: "You have active home or renters insurance",
       });
     } else {
       factors.push({
-        name: 'Property Insurance',
-        impact: 'negative',
-        description: 'No home or renters insurance detected',
+        name: "Property Insurance",
+        impact: "negative",
+        description: "No home or renters insurance detected",
       });
-      recommendations.push('Consider home or renters insurance to protect your belongings');
+      recommendations.push(
+        "Consider home or renters insurance to protect your belongings",
+      );
     }
 
     if (hasLife) {
       score += 10;
       factors.push({
-        name: 'Life Insurance',
-        impact: 'positive',
-        description: 'You have life insurance coverage',
+        name: "Life Insurance",
+        impact: "positive",
+        description: "You have life insurance coverage",
       });
     } else {
       factors.push({
-        name: 'Life Insurance',
-        impact: 'neutral',
-        description: 'No life insurance detected',
+        name: "Life Insurance",
+        impact: "neutral",
+        description: "No life insurance detected",
       });
-      recommendations.push('Consider life insurance to protect your family\'s financial future');
+      recommendations.push(
+        "Consider life insurance to protect your family's financial future",
+      );
     }
 
     if (hasUmbrella) {
       score += 10;
       factors.push({
-        name: 'Umbrella Insurance',
-        impact: 'positive',
-        description: 'You have umbrella liability coverage',
+        name: "Umbrella Insurance",
+        impact: "positive",
+        description: "You have umbrella liability coverage",
       });
     }
 
     // Check for expiring policies
-    const expiringPolicies = policies.filter(p => {
+    const expiringPolicies = policies.filter((p) => {
       const daysUntil = Math.floor(
-        (p.expirationDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+        (p.expirationDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
       );
       return daysUntil <= 30 && daysUntil > 0;
     });
@@ -576,11 +611,13 @@ export class CanopyConnector extends BaseConnector<CanopyConfig> {
     if (expiringPolicies.length > 0) {
       score -= 5;
       factors.push({
-        name: 'Policy Renewals',
-        impact: 'negative',
+        name: "Policy Renewals",
+        impact: "negative",
         description: `${expiringPolicies.length} policy(s) expiring within 30 days`,
       });
-      recommendations.push('Review and renew your expiring policies to maintain continuous coverage');
+      recommendations.push(
+        "Review and renew your expiring policies to maintain continuous coverage",
+      );
     }
 
     return {
@@ -596,7 +633,7 @@ export class CanopyConnector extends BaseConnector<CanopyConfig> {
   async getCoverageGaps(userId: string): Promise<{
     gaps: Array<{
       type: InsuranceType;
-      severity: 'high' | 'medium' | 'low';
+      severity: "high" | "medium" | "low";
       description: string;
       recommendation: string;
     }>;
@@ -606,7 +643,7 @@ export class CanopyConnector extends BaseConnector<CanopyConfig> {
     const policies = await this.getActivePolicies(userId);
     const gaps: Array<{
       type: InsuranceType;
-      severity: 'high' | 'medium' | 'low';
+      severity: "high" | "medium" | "low";
       description: string;
       recommendation: string;
     }> = [];
@@ -630,7 +667,7 @@ export class CanopyConnector extends BaseConnector<CanopyConfig> {
       coverageSummary[policy.type] = true;
       const annualPremium = this.calculateAnnualPremium(
         policy.premium.amount,
-        policy.premium.frequency
+        policy.premium.frequency,
       );
       totalAnnualPremium += annualPremium;
     }
@@ -638,28 +675,30 @@ export class CanopyConnector extends BaseConnector<CanopyConfig> {
     // Check for common gaps
     if (!coverageSummary.auto) {
       gaps.push({
-        type: 'auto',
-        severity: 'high',
-        description: 'No auto insurance coverage found',
-        recommendation: 'Auto insurance is legally required in most states',
+        type: "auto",
+        severity: "high",
+        description: "No auto insurance coverage found",
+        recommendation: "Auto insurance is legally required in most states",
       });
     }
 
     if (!coverageSummary.home && !coverageSummary.renters) {
       gaps.push({
-        type: 'home',
-        severity: 'medium',
-        description: 'No property coverage found',
-        recommendation: 'Protect your home or belongings with property insurance',
+        type: "home",
+        severity: "medium",
+        description: "No property coverage found",
+        recommendation:
+          "Protect your home or belongings with property insurance",
       });
     }
 
     if (!coverageSummary.umbrella && totalAnnualPremium > 3000) {
       gaps.push({
-        type: 'umbrella',
-        severity: 'low',
-        description: 'No umbrella liability coverage',
-        recommendation: 'Consider umbrella insurance for additional liability protection',
+        type: "umbrella",
+        severity: "low",
+        description: "No umbrella liability coverage",
+        recommendation:
+          "Consider umbrella insurance for additional liability protection",
       });
     }
 
@@ -680,14 +719,14 @@ export class CanopyConnector extends BaseConnector<CanopyConfig> {
   async getUnifiedPolicies(userId: string): Promise<UnifiedInsurancePolicy[]> {
     const policies = await this.getPolicies(userId);
 
-    return policies.map(policy => {
+    return policies.map((policy) => {
       const daysUntilRenewal = Math.floor(
-        (policy.expirationDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+        (policy.expirationDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
       );
 
       return {
         id: `canopy_${policy.id}`,
-        provider: 'canopy' as const,
+        provider: "canopy" as const,
         providerId: policy.id,
         carrierName: policy.carrierName,
         policyNumber: policy.policyNumber,
@@ -698,7 +737,7 @@ export class CanopyConnector extends BaseConnector<CanopyConfig> {
           frequency: policy.premium.frequency,
           annualized: this.calculateAnnualPremium(
             policy.premium.amount,
-            policy.premium.frequency
+            policy.premium.frequency,
           ),
         },
         coverage: {
@@ -733,14 +772,14 @@ export class CanopyConnector extends BaseConnector<CanopyConfig> {
    */
   verifyWebhookSignature(payload: string, signature: string): boolean {
     if (!this.config.webhookSecret) {
-      throw new Error('Webhook secret not configured');
+      throw new Error("Webhook secret not configured");
     }
 
-    const crypto = require('crypto');
+    const crypto = require("crypto");
     const expectedSignature = crypto
-      .createHmac('sha256', this.config.webhookSecret)
+      .createHmac("sha256", this.config.webhookSecret)
       .update(payload)
-      .digest('hex');
+      .digest("hex");
 
     return signature === expectedSignature;
   }
@@ -749,7 +788,11 @@ export class CanopyConnector extends BaseConnector<CanopyConfig> {
    * Parse webhook event
    */
   parseWebhookEvent(payload: string): {
-    type: 'policy.created' | 'policy.updated' | 'policy.deleted' | 'session.completed';
+    type:
+      | "policy.created"
+      | "policy.updated"
+      | "policy.deleted"
+      | "session.completed";
     userId: string;
     policyId?: string;
     data: Record<string, unknown>;
@@ -769,13 +812,13 @@ export class CanopyConnector extends BaseConnector<CanopyConfig> {
 
   private calculateAnnualPremium(amount: number, frequency: string): number {
     switch (frequency) {
-      case 'monthly':
+      case "monthly":
         return amount * 12;
-      case 'quarterly':
+      case "quarterly":
         return amount * 4;
-      case 'semi-annual':
+      case "semi-annual":
         return amount * 2;
-      case 'annual':
+      case "annual":
         return amount;
       default:
         return amount * 12;
@@ -795,20 +838,37 @@ export class CanopyConnector extends BaseConnector<CanopyConfig> {
       expirationDate: new Date(data.expiration_date as string),
       premium: {
         amount: (data.premium as Record<string, unknown>)?.amount as number,
-        frequency: (data.premium as Record<string, unknown>)?.frequency as 'monthly' | 'quarterly' | 'semi-annual' | 'annual',
-        currency: (data.premium as Record<string, unknown>)?.currency as string || 'USD',
+        frequency: (data.premium as Record<string, unknown>)?.frequency as
+          | "monthly"
+          | "quarterly"
+          | "semi-annual"
+          | "annual",
+        currency:
+          ((data.premium as Record<string, unknown>)?.currency as string) ||
+          "USD",
       },
       deductible: data.deductible as number | undefined,
       coverageLimit: data.coverage_limit as number | undefined,
       policyHolder: {
-        firstName: (data.policy_holder as Record<string, unknown>)?.first_name as string,
-        lastName: (data.policy_holder as Record<string, unknown>)?.last_name as string,
-        email: (data.policy_holder as Record<string, unknown>)?.email as string | undefined,
-        phone: (data.policy_holder as Record<string, unknown>)?.phone as string | undefined,
-        dateOfBirth: (data.policy_holder as Record<string, unknown>)?.date_of_birth as string | undefined,
-        address: (data.policy_holder as Record<string, unknown>)?.address as PolicyHolder['address'] | undefined,
+        firstName: (data.policy_holder as Record<string, unknown>)
+          ?.first_name as string,
+        lastName: (data.policy_holder as Record<string, unknown>)
+          ?.last_name as string,
+        email: (data.policy_holder as Record<string, unknown>)?.email as
+          | string
+          | undefined,
+        phone: (data.policy_holder as Record<string, unknown>)?.phone as
+          | string
+          | undefined,
+        dateOfBirth: (data.policy_holder as Record<string, unknown>)
+          ?.date_of_birth as string | undefined,
+        address: (data.policy_holder as Record<string, unknown>)?.address as
+          | PolicyHolder["address"]
+          | undefined,
       },
-      additionalInsureds: data.additional_insureds as PolicyHolder[] | undefined,
+      additionalInsureds: data.additional_insureds as
+        | PolicyHolder[]
+        | undefined,
       coverages: data.coverages as Coverage[] | undefined,
       vehicles: data.vehicles as Vehicle[] | undefined,
       properties: data.properties as Property[] | undefined,
@@ -824,9 +884,11 @@ export class CanopyConnector extends BaseConnector<CanopyConfig> {
       policyId: data.policy_id as string,
       claimNumber: data.claim_number as string,
       type: data.type as string,
-      status: data.status as InsuranceClaim['status'],
+      status: data.status as InsuranceClaim["status"],
       filedDate: new Date(data.filed_date as string),
-      closedDate: data.closed_date ? new Date(data.closed_date as string) : undefined,
+      closedDate: data.closed_date
+        ? new Date(data.closed_date as string)
+        : undefined,
       amount: data.amount as number | undefined,
       amountPaid: data.amount_paid as number | undefined,
       description: data.description as string | undefined,
@@ -837,7 +899,7 @@ export class CanopyConnector extends BaseConnector<CanopyConfig> {
     return {
       id: data.id as string,
       policyId: data.policy_id as string,
-      type: data.type as InsuranceDocument['type'],
+      type: data.type as InsuranceDocument["type"],
       name: data.name as string,
       url: data.url as string,
       mimeType: data.mime_type as string,
@@ -851,14 +913,16 @@ export class CanopyConnector extends BaseConnector<CanopyConfig> {
 // Factory Function
 // =============================================================================
 
-export function createCanopyConnector(config?: Partial<CanopyConfig>): CanopyConnector {
+export function createCanopyConnector(
+  config?: Partial<CanopyConfig>,
+): CanopyConnector {
   return new CanopyConnector({
-    name: 'canopy',
-    provider: 'canopy',
-    version: '1.0.0',
+    name: "canopy",
+    provider: "canopy",
+    version: "1.0.0",
     priority: 20,
-    regions: ['US'],
-    capabilities: ['policy_import', 'coverage_analysis', 'claims'],
+    regions: ["US"],
+    capabilities: ["policy_import", "coverage_analysis", "claims"],
     rateLimits: {
       requestsPerMinute: 60,
       requestsPerHour: 600,
@@ -876,9 +940,10 @@ export function createCanopyConnector(config?: Partial<CanopyConfig>): CanopyCon
     healthCheckInterval: 60000,
     timeout: 30000,
     enabled: true,
-    clientId: config?.clientId || process.env.CANOPY_CLIENT_ID || '',
-    clientSecret: config?.clientSecret || process.env.CANOPY_CLIENT_SECRET || '',
+    clientId: config?.clientId || process.env.CANOPY_CLIENT_ID || "",
+    clientSecret:
+      config?.clientSecret || process.env.CANOPY_CLIENT_SECRET || "",
     webhookSecret: config?.webhookSecret || process.env.CANOPY_WEBHOOK_SECRET,
-    sandbox: config?.sandbox ?? process.env.NODE_ENV !== 'production',
+    sandbox: config?.sandbox ?? process.env.NODE_ENV !== "production",
   });
 }

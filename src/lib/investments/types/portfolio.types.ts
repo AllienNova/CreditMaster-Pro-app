@@ -27,13 +27,13 @@ export interface Holding {
 }
 
 export type AssetType =
-  | 'stock'
-  | 'etf'
-  | 'mutual_fund'
-  | 'bond'
-  | 'crypto'
-  | 'option'
-  | 'other';
+  | "stock"
+  | "etf"
+  | "mutual_fund"
+  | "bond"
+  | "crypto"
+  | "option"
+  | "other";
 
 export interface HoldingCreateInput {
   symbol: string;
@@ -69,11 +69,11 @@ export interface Transaction {
 }
 
 export type TransactionType =
-  | 'buy'
-  | 'sell'
-  | 'dividend'
-  | 'split'
-  | 'transfer';
+  | "buy"
+  | "sell"
+  | "dividend"
+  | "split"
+  | "transfer";
 
 export interface TransactionCreateInput {
   holdingId?: string;
@@ -169,12 +169,12 @@ export interface TransactionsResponse {
 // ============================================================================
 
 export type HoldingSortField =
-  | 'symbol'
-  | 'value'
-  | 'gainLoss'
-  | 'gainLossPercent'
-  | 'shares';
-export type SortDirection = 'asc' | 'desc';
+  | "symbol"
+  | "value"
+  | "gainLoss"
+  | "gainLossPercent"
+  | "shares";
+export type SortDirection = "asc" | "desc";
 
 export interface HoldingsFilter {
   assetType?: AssetType;

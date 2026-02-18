@@ -9,17 +9,17 @@
  * - Navigation to all credit intelligence tools
  */
 
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { createBrowserClient } from '@supabase/ssr';
-import CreditRepairDashboard from '@/components/credit-repair/CreditRepairDashboard';
-import AICreditRepairStrategy from '@/components/credit-repair/AICreditRepairStrategy';
-import Link from 'next/link';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { createBrowserClient } from "@supabase/ssr";
+import CreditRepairDashboard from "@/components/credit-repair/CreditRepairDashboard";
+import AICreditRepairStrategy from "@/components/credit-repair/AICreditRepairStrategy";
+import Link from "next/link";
 
 // Force dynamic rendering
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 interface User {
   id: string;
@@ -35,7 +35,7 @@ export default function CreditRepairPage() {
   const router = useRouter();
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   );
 
   useEffect(() => {
@@ -45,7 +45,7 @@ export default function CreditRepairPage() {
       } = await supabase.auth.getSession();
 
       if (!session) {
-        router.push('/auth/login');
+        router.push("/auth/login");
         return;
       }
 
@@ -58,7 +58,7 @@ export default function CreditRepairPage() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    router.push('/auth/login');
+    router.push("/auth/login");
   };
 
   if (loading) {
@@ -66,7 +66,9 @@ export default function CreditRepairPage() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-blue-50 to-blue-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-slate-300">Loading credit repair dashboard...</p>
+          <p className="text-gray-600 dark:text-slate-300">
+            Loading credit repair dashboard...
+          </p>
         </div>
       </div>
     );
@@ -86,7 +88,9 @@ export default function CreditRepairPage() {
                 <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 via-blue-600 to-blue-600 bg-clip-text text-transparent">
                   Fynvita
                 </h1>
-                <p className="text-sm text-gray-500 dark:text-slate-400">Credit Repair System</p>
+                <p className="text-sm text-gray-500 dark:text-slate-400">
+                  Credit Repair System
+                </p>
               </div>
             </div>
 
@@ -215,7 +219,9 @@ export default function CreditRepairPage() {
 
         {/* Additional Tools */}
         <div className="mt-8">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">More Tools</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+            More Tools
+          </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <Link
               href="/credit-repair/inquiries"
@@ -224,8 +230,12 @@ export default function CreditRepairPage() {
               <div className="flex items-center space-x-3">
                 <div className="text-2xl"></div>
                 <div>
-                  <h3 className="font-bold text-gray-900 dark:text-white">Inquiry Removal</h3>
-                  <p className="text-xs text-gray-600 dark:text-slate-300">Remove hard inquiries</p>
+                  <h3 className="font-bold text-gray-900 dark:text-white">
+                    Inquiry Removal
+                  </h3>
+                  <p className="text-xs text-gray-600 dark:text-slate-300">
+                    Remove hard inquiries
+                  </p>
                 </div>
               </div>
             </Link>
@@ -237,7 +247,9 @@ export default function CreditRepairPage() {
               <div className="flex items-center space-x-3">
                 <div className="text-2xl"></div>
                 <div>
-                  <h3 className="font-bold text-gray-900 dark:text-white">Payment Timing</h3>
+                  <h3 className="font-bold text-gray-900 dark:text-white">
+                    Payment Timing
+                  </h3>
                   <p className="text-xs text-gray-600 dark:text-slate-300">
                     Optimize payment dates
                   </p>
@@ -252,7 +264,9 @@ export default function CreditRepairPage() {
               <div className="flex items-center space-x-3">
                 <div className="text-2xl"></div>
                 <div>
-                  <h3 className="font-bold text-gray-900 dark:text-white">Credit Building</h3>
+                  <h3 className="font-bold text-gray-900 dark:text-white">
+                    Credit Building
+                  </h3>
                   <p className="text-xs text-gray-600 dark:text-slate-300">
                     Build credit from scratch
                   </p>

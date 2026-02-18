@@ -1,6 +1,6 @@
 /**
  * Environment Variable Validation
- * 
+ *
  * Validates all required environment variables at application startup
  * to prevent runtime errors and security misconfigurations.
  */
@@ -14,22 +14,22 @@ export interface EnvConfig {
   aimlFastModel: string;
   aimlImageModel: string;
   aimlVoiceModel: string;
-  
+
   // Supabase
   supabaseUrl: string;
   supabaseAnonKey: string;
   supabaseServiceRoleKey?: string;
-  
+
   // Application
   appUrl: string;
   nodeEnv: string;
-  
+
   // Feature Flags
   enableMultiModel: boolean;
   enableVoiceAssistant: boolean;
   enableImageGeneration: boolean;
   enableSemanticSearch: boolean;
-  
+
   // Encryption
   encryptionKey?: string;
 }
@@ -39,8 +39,8 @@ export interface EnvConfig {
  */
 export class EnvValidationError extends Error {
   constructor(public errors: string[]) {
-    super(`Environment validation failed:\n${errors.join('\n')}`);
-    this.name = 'EnvValidationError';
+    super(`Environment validation failed:\n${errors.join("\n")}`);
+    this.name = "EnvValidationError";
   }
 }
 
@@ -48,7 +48,7 @@ export class EnvValidationError extends Error {
  * Validate a required environment variable
  */
 function validateRequired(name: string, value: string | undefined): string {
-  if (!value || value.trim() === '') {
+  if (!value || value.trim() === "") {
     throw new Error(`Missing required environment variable: ${name}`);
   }
   return value;
@@ -57,18 +57,26 @@ function validateRequired(name: string, value: string | undefined): string {
 /**
  * Validate an optional environment variable
  */
-function validateOptional(name: string, value: string | undefined, defaultValue: string): string {
-  return value && value.trim() !== '' ? value : defaultValue;
+function validateOptional(
+  name: string,
+  value: string | undefined,
+  defaultValue: string,
+): string {
+  return value && value.trim() !== "" ? value : defaultValue;
 }
 
 /**
  * Validate a boolean environment variable
  */
-function validateBoolean(name: string, value: string | undefined, defaultValue: boolean): boolean {
-  if (!value || value.trim() === '') {
+function validateBoolean(
+  name: string,
+  value: string | undefined,
+  defaultValue: boolean,
+): boolean {
+  if (!value || value.trim() === "") {
     return defaultValue;
   }
-  return value.toLowerCase() === 'true';
+  return value.toLowerCase() === "true";
 }
 
 /**
@@ -79,7 +87,7 @@ function validateUrl(name: string, value: string): string {
     new URL(value);
     return value;
   } catch (error) {
-    const reason = error instanceof Error ? error.message : 'unknown error';
+    const reason = error instanceof Error ? error.message : "unknown error";
     throw new Error(`Invalid URL for ${name}: ${value} (${reason})`);
   }
 }
@@ -91,12 +99,12 @@ function validateEncryptionKey(key: string | undefined): string | undefined {
   if (!key) {
     return undefined;
   }
-  
+
   // Check key length (should be 32 bytes for AES-256)
   if (key.length < 32) {
-    throw new Error('Encryption key must be at least 32 characters long');
+    throw new Error("Encryption key must be at least 32 characters long");
   }
-  
+
   return key;
 }
 
@@ -105,64 +113,101 @@ function validateEncryptionKey(key: string | undefined): string | undefined {
  */
 export function validateEnv(): EnvConfig {
   const errors: string[] = [];
-  
+
   try {
     // AIML API
-    const aimlApiKey = validateRequired('AIML_API_KEY', process.env.AIML_API_KEY);
-    const aimlBaseUrl = validateUrl('AIML_BASE_URL', 
-      validateOptional('AIML_BASE_URL', process.env.AIML_BASE_URL, 'https://api.aimlapi.com/v1')
+    const aimlApiKey = validateRequired(
+      "AIML_API_KEY",
+      process.env.AIML_API_KEY,
+    );
+    const aimlBaseUrl = validateUrl(
+      "AIML_BASE_URL",
+      validateOptional(
+        "AIML_BASE_URL",
+        process.env.AIML_BASE_URL,
+        "https://api.aimlapi.com/v1",
+      ),
     );
     const aimlDefaultChatModel = validateOptional(
-      'AIML_DEFAULT_CHAT_MODEL',
+      "AIML_DEFAULT_CHAT_MODEL",
       process.env.AIML_DEFAULT_CHAT_MODEL,
-      'anthropic/claude-4.5-sonnet'
+      "anthropic/claude-4.5-sonnet",
     );
     const aimlReasoningModel = validateOptional(
-      'AIML_REASONING_MODEL',
+      "AIML_REASONING_MODEL",
       process.env.AIML_REASONING_MODEL,
-      'deepseek/deepseek-r1'
+      "deepseek/deepseek-r1",
     );
     const aimlFastModel = validateOptional(
-      'AIML_FAST_MODEL',
+      "AIML_FAST_MODEL",
       process.env.AIML_FAST_MODEL,
-      'openai/gpt-4o-mini'
+      "openai/gpt-4o-mini",
     );
     const aimlImageModel = validateOptional(
-      'AIML_IMAGE_MODEL',
+      "AIML_IMAGE_MODEL",
       process.env.AIML_IMAGE_MODEL,
-      'flux-pro'
+      "flux-pro",
     );
     const aimlVoiceModel = validateOptional(
-      'AIML_VOICE_MODEL',
+      "AIML_VOICE_MODEL",
       process.env.AIML_VOICE_MODEL,
-      'tts-1-hd'
+      "tts-1-hd",
     );
-    
+
     // Supabase
-    const supabaseUrl = validateUrl('NEXT_PUBLIC_SUPABASE_URL',
-      validateRequired('NEXT_PUBLIC_SUPABASE_URL', process.env.NEXT_PUBLIC_SUPABASE_URL)
+    const supabaseUrl = validateUrl(
+      "NEXT_PUBLIC_SUPABASE_URL",
+      validateRequired(
+        "NEXT_PUBLIC_SUPABASE_URL",
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+      ),
     );
     const supabaseAnonKey = validateRequired(
-      'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     );
     const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    
+
     // Application
-    const appUrl = validateUrl('NEXT_PUBLIC_APP_URL',
-      validateOptional('NEXT_PUBLIC_APP_URL', process.env.NEXT_PUBLIC_APP_URL, 'http://localhost:3000')
+    const appUrl = validateUrl(
+      "NEXT_PUBLIC_APP_URL",
+      validateOptional(
+        "NEXT_PUBLIC_APP_URL",
+        process.env.NEXT_PUBLIC_APP_URL,
+        "http://localhost:3000",
+      ),
     );
-    const nodeEnv = validateOptional('NODE_ENV', process.env.NODE_ENV, 'development');
-    
+    const nodeEnv = validateOptional(
+      "NODE_ENV",
+      process.env.NODE_ENV,
+      "development",
+    );
+
     // Feature Flags
-    const enableMultiModel = validateBoolean('ENABLE_MULTI_MODEL', process.env.ENABLE_MULTI_MODEL, true);
-    const enableVoiceAssistant = validateBoolean('ENABLE_VOICE_ASSISTANT', process.env.ENABLE_VOICE_ASSISTANT, true);
-    const enableImageGeneration = validateBoolean('ENABLE_IMAGE_GENERATION', process.env.ENABLE_IMAGE_GENERATION, true);
-    const enableSemanticSearch = validateBoolean('ENABLE_SEMANTIC_SEARCH', process.env.ENABLE_SEMANTIC_SEARCH, true);
-    
+    const enableMultiModel = validateBoolean(
+      "ENABLE_MULTI_MODEL",
+      process.env.ENABLE_MULTI_MODEL,
+      true,
+    );
+    const enableVoiceAssistant = validateBoolean(
+      "ENABLE_VOICE_ASSISTANT",
+      process.env.ENABLE_VOICE_ASSISTANT,
+      true,
+    );
+    const enableImageGeneration = validateBoolean(
+      "ENABLE_IMAGE_GENERATION",
+      process.env.ENABLE_IMAGE_GENERATION,
+      true,
+    );
+    const enableSemanticSearch = validateBoolean(
+      "ENABLE_SEMANTIC_SEARCH",
+      process.env.ENABLE_SEMANTIC_SEARCH,
+      true,
+    );
+
     // Encryption
     const encryptionKey = validateEncryptionKey(process.env.ENCRYPTION_KEY);
-    
+
     // Warn about missing optional variables
     if (!supabaseServiceRoleKey) {
       // EnvValidation: SUPABASE_SERVICE_ROLE_KEY not set - admin operations will not work
@@ -171,26 +216,26 @@ export function validateEnv(): EnvConfig {
     if (!encryptionKey) {
       // EnvValidation: ENCRYPTION_KEY not set - PII encryption will not work
     }
-    
+
     // Production-specific validations
-    if (nodeEnv === 'production') {
-      if (appUrl.includes('localhost')) {
-        errors.push('NEXT_PUBLIC_APP_URL must not be localhost in production');
+    if (nodeEnv === "production") {
+      if (appUrl.includes("localhost")) {
+        errors.push("NEXT_PUBLIC_APP_URL must not be localhost in production");
       }
-      
+
       if (!encryptionKey) {
-        errors.push('ENCRYPTION_KEY is required in production');
+        errors.push("ENCRYPTION_KEY is required in production");
       }
-      
+
       if (!supabaseServiceRoleKey) {
-        errors.push('SUPABASE_SERVICE_ROLE_KEY is required in production');
+        errors.push("SUPABASE_SERVICE_ROLE_KEY is required in production");
       }
     }
-    
+
     if (errors.length > 0) {
       throw new EnvValidationError(errors);
     }
-    
+
     return {
       aimlApiKey,
       aimlBaseUrl,
@@ -214,11 +259,11 @@ export function validateEnv(): EnvConfig {
     if (error instanceof EnvValidationError) {
       throw error;
     }
-    
+
     if (error instanceof Error) {
       errors.push(error.message);
     }
-    
+
     throw new EnvValidationError(errors);
   }
 }
@@ -241,25 +286,25 @@ export function getEnvConfig(): EnvConfig {
  * Check if running in production
  */
 export function isProduction(): boolean {
-  return getEnvConfig().nodeEnv === 'production';
+  return getEnvConfig().nodeEnv === "production";
 }
 
 /**
  * Check if running in development
  */
 export function isDevelopment(): boolean {
-  return getEnvConfig().nodeEnv === 'development';
+  return getEnvConfig().nodeEnv === "development";
 }
 
 /**
  * Check if running in test
  */
 export function isTest(): boolean {
-  return getEnvConfig().nodeEnv === 'test';
+  return getEnvConfig().nodeEnv === "test";
 }
 
 // Validate on module load (but only in Node.js environment)
-if (typeof window === 'undefined') {
+if (typeof window === "undefined") {
   try {
     getEnvConfig();
   } catch (error) {

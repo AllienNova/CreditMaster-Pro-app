@@ -7,15 +7,15 @@
  * Phase 2.2: Savings Optimizer
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getSavingsOptimizer } from '@/lib/financial/savings-optimizer';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { rbac } from '@/lib/auth/rbac';
+import { NextRequest, NextResponse } from "next/server";
+import { getSavingsOptimizer } from "@/lib/financial/savings-optimizer";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { rbac } from "@/lib/auth/rbac";
 import {
   applyFinancialAPIMiddleware,
   finalizeResponse,
-} from '@/lib/api/financial-api-middleware';
-import { z } from 'zod';
+} from "@/lib/api/financial-api-middleware";
+import { z } from "zod";
 
 // ============================================================================
 // VALIDATION SCHEMA
@@ -97,22 +97,22 @@ export async function GET(request: NextRequest) {
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
       );
     }
 
-    if (!rbac.hasPermission(validation.user, 'financial:read')) {
+    if (!rbac.hasPermission(validation.user, "financial:read")) {
       return NextResponse.json(
-        { success: false, error: 'Forbidden - Insufficient permissions' },
-        { status: 403 }
+        { success: false, error: "Forbidden - Insufficient permissions" },
+        { status: 403 },
       );
     }
 
     // Parse and validate query parameters
     const { searchParams } = new URL(request.url);
     const queryParams = {
-      minAmount: searchParams.get('minAmount') || '0',
+      minAmount: searchParams.get("minAmount") || "0",
     };
 
     const validationResult = SubscriptionsQuerySchema.safeParse(queryParams);
@@ -120,10 +120,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Invalid query parameters',
+          error: "Invalid query parameters",
           details: validationResult.error.errors,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -131,23 +131,32 @@ export async function GET(request: NextRequest) {
 
     // Find recurring charges and subscriptions
     const savingsOptimizer = getSavingsOptimizer();
-    const recurringCharges = await savingsOptimizer.findRecurringCharges(userId, minAmount);
-    const subscriptions = recurringCharges.filter((charge) => charge.isSubscription);
-    const recommendations = await savingsOptimizer.suggestCancelableSubscriptions(userId);
+    const recurringCharges = await savingsOptimizer.findRecurringCharges(
+      userId,
+      minAmount,
+    );
+    const subscriptions = recurringCharges.filter(
+      (charge) => charge.isSubscription,
+    );
+    const recommendations =
+      await savingsOptimizer.suggestCancelableSubscriptions(userId);
 
     // Calculate total subscription spending
-    const totalMonthlySubscriptionSpending = subscriptions.reduce((sum, sub) => {
-      let monthlyAmount = sub.amount;
-      if (sub.frequency === 'weekly') monthlyAmount *= 4.33;
-      else if (sub.frequency === 'biweekly') monthlyAmount *= 2.17;
-      else if (sub.frequency === 'quarterly') monthlyAmount /= 3;
-      else if (sub.frequency === 'annually') monthlyAmount /= 12;
-      return sum + monthlyAmount;
-    }, 0);
+    const totalMonthlySubscriptionSpending = subscriptions.reduce(
+      (sum, sub) => {
+        let monthlyAmount = sub.amount;
+        if (sub.frequency === "weekly") monthlyAmount *= 4.33;
+        else if (sub.frequency === "biweekly") monthlyAmount *= 2.17;
+        else if (sub.frequency === "quarterly") monthlyAmount /= 3;
+        else if (sub.frequency === "annually") monthlyAmount /= 12;
+        return sum + monthlyAmount;
+      },
+      0,
+    );
 
     const totalPotentialSavings = recommendations.reduce(
       (sum, rec) => sum + rec.potentialMonthlySavings,
-      0
+      0,
     );
 
     const response = NextResponse.json(
@@ -161,7 +170,8 @@ export async function GET(request: NextRequest) {
             totalRecurringCharges: recurringCharges.length,
             totalSubscriptions: subscriptions.length,
             totalMonthlySubscriptionSpending,
-            totalAnnualSubscriptionSpending: totalMonthlySubscriptionSpending * 12,
+            totalAnnualSubscriptionSpending:
+              totalMonthlySubscriptionSpending * 12,
             potentialMonthlySavings: totalPotentialSavings,
             potentialAnnualSavings: totalPotentialSavings * 12,
             recommendationsCount: recommendations.length,
@@ -172,20 +182,19 @@ export async function GET(request: NextRequest) {
           minAmount,
         },
       },
-      { status: 200 }
+      { status: 200 },
     );
 
     return finalizeResponse(request, response, startTime, userId);
   } catch (error) {
-    console.error('Subscription audit error:', error);
+    console.error("Subscription audit error:", error);
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to audit subscriptions',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to audit subscriptions",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-

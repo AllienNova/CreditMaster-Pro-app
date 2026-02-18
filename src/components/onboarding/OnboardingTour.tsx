@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { createPortal } from 'react-dom';
+import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 
 export interface TourStep {
   target: string; // CSS selector
   title: string;
   content: string;
-  placement?: 'top' | 'bottom' | 'left' | 'right';
+  placement?: "top" | "bottom" | "left" | "right";
   action?: () => void;
   disableBeacon?: boolean;
 }
@@ -38,38 +38,43 @@ export default function OnboardingTour({
     setMounted(true);
   }, []);
 
-  const calculatePosition = useCallback((element: HTMLElement, placement: string = 'bottom') => {
-    const rect = element.getBoundingClientRect();
-    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+  const calculatePosition = useCallback(
+    (element: HTMLElement, placement: string = "bottom") => {
+      const rect = element.getBoundingClientRect();
+      const scrollTop =
+        window.pageYOffset || document.documentElement.scrollTop;
+      const scrollLeft =
+        window.pageXOffset || document.documentElement.scrollLeft;
 
-    let top = 0;
-    let left = 0;
+      let top = 0;
+      let left = 0;
 
-    switch (placement) {
-      case 'top':
-        top = rect.top + scrollTop - 20;
-        left = rect.left + scrollLeft + rect.width / 2;
-        break;
-      case 'bottom':
-        top = rect.bottom + scrollTop + 20;
-        left = rect.left + scrollLeft + rect.width / 2;
-        break;
-      case 'left':
-        top = rect.top + scrollTop + rect.height / 2;
-        left = rect.left + scrollLeft - 20;
-        break;
-      case 'right':
-        top = rect.top + scrollTop + rect.height / 2;
-        left = rect.right + scrollLeft + 20;
-        break;
-      default:
-        top = rect.bottom + scrollTop + 20;
-        left = rect.left + scrollLeft + rect.width / 2;
-    }
+      switch (placement) {
+        case "top":
+          top = rect.top + scrollTop - 20;
+          left = rect.left + scrollLeft + rect.width / 2;
+          break;
+        case "bottom":
+          top = rect.bottom + scrollTop + 20;
+          left = rect.left + scrollLeft + rect.width / 2;
+          break;
+        case "left":
+          top = rect.top + scrollTop + rect.height / 2;
+          left = rect.left + scrollLeft - 20;
+          break;
+        case "right":
+          top = rect.top + scrollTop + rect.height / 2;
+          left = rect.right + scrollLeft + 20;
+          break;
+        default:
+          top = rect.bottom + scrollTop + 20;
+          left = rect.left + scrollLeft + rect.width / 2;
+      }
 
-    return { top, left };
-  }, []);
+      return { top, left };
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!isOpen || !mounted) return;
@@ -81,10 +86,10 @@ export default function OnboardingTour({
     const element = document.querySelector(step.target) as HTMLElement;
     if (element) {
       setTargetElement(element);
-      
+
       // Scroll element into view
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+
       // Calculate tooltip position
       setTimeout(() => {
         const position = calculatePosition(element, step.placement);
@@ -127,17 +132,23 @@ export default function OnboardingTour({
       <div className="fixed inset-0 z-[9998]">
         {/* Dark overlay with hole for target element */}
         <div className="absolute inset-0 bg-black/50" />
-        
+
         {/* Highlight target element */}
         {targetElement && (
           <div
             className="absolute border-4 border-blue-500 rounded-lg shadow-xl pointer-events-none animate-pulse"
             style={{
-              top: targetElement.getBoundingClientRect().top + window.pageYOffset - 8,
-              left: targetElement.getBoundingClientRect().left + window.pageXOffset - 8,
+              top:
+                targetElement.getBoundingClientRect().top +
+                window.pageYOffset -
+                8,
+              left:
+                targetElement.getBoundingClientRect().left +
+                window.pageXOffset -
+                8,
               width: targetElement.offsetWidth + 16,
               height: targetElement.offsetHeight + 16,
-              boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.5)',
+              boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.5)",
             }}
           />
         )}
@@ -149,9 +160,10 @@ export default function OnboardingTour({
         style={{
           top: tooltipPosition.top,
           left: tooltipPosition.left,
-          transform: step.placement === 'left' || step.placement === 'right' 
-            ? 'translateY(-50%)' 
-            : 'translateX(-50%)',
+          transform:
+            step.placement === "left" || step.placement === "right"
+              ? "translateY(-50%)"
+              : "translateX(-50%)",
         }}
       >
         {/* Progress bar */}
@@ -161,7 +173,9 @@ export default function OnboardingTour({
               <span className="text-xs font-medium text-gray-600 dark:text-slate-300">
                 Step {currentStep + 1} of {steps.length}
               </span>
-              <span className="text-xs text-gray-500 dark:text-slate-400">{Math.round(progress)}%</span>
+              <span className="text-xs text-gray-500 dark:text-slate-400">
+                {Math.round(progress)}%
+              </span>
             </div>
             <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
               <div
@@ -174,8 +188,12 @@ export default function OnboardingTour({
 
         {/* Content */}
         <div className="mb-6">
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{step.title}</h3>
-          <p className="text-gray-600 dark:text-slate-300 leading-relaxed">{step.content}</p>
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+            {step.title}
+          </h3>
+          <p className="text-gray-600 dark:text-slate-300 leading-relaxed">
+            {step.content}
+          </p>
         </div>
 
         {/* Actions */}
@@ -204,7 +222,7 @@ export default function OnboardingTour({
               onClick={handleNext}
               className="px-6 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-600 rounded-lg hover:from-blue-700 hover:to-blue-700 transition-all shadow-lg hover:shadow-xl"
             >
-              {currentStep < steps.length - 1 ? 'Next' : 'Finish'}
+              {currentStep < steps.length - 1 ? "Next" : "Finish"}
             </button>
           </div>
         </div>
@@ -212,15 +230,17 @@ export default function OnboardingTour({
         {/* Arrow indicator */}
         <div
           className={`absolute w-4 h-4 bg-white dark:bg-slate-800 transform rotate-45 ${
-            step.placement === 'top' ? 'bottom-[-8px] left-1/2 -translate-x-1/2' :
-            step.placement === 'bottom' ? 'top-[-8px] left-1/2 -translate-x-1/2' :
-            step.placement === 'left' ? 'right-[-8px] top-1/2 -translate-y-1/2' :
-            'left-[-8px] top-1/2 -translate-y-1/2'
+            step.placement === "top"
+              ? "bottom-[-8px] left-1/2 -translate-x-1/2"
+              : step.placement === "bottom"
+                ? "top-[-8px] left-1/2 -translate-x-1/2"
+                : step.placement === "left"
+                  ? "right-[-8px] top-1/2 -translate-y-1/2"
+                  : "left-[-8px] top-1/2 -translate-y-1/2"
           }`}
         />
       </div>
     </>,
-    document.body
+    document.body,
   );
 }
-

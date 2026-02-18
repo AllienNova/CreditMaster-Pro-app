@@ -8,28 +8,28 @@
  * - Progress monitoring
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 export type LoanProvider =
-  | 'self'
-  | 'chime'
-  | 'moneyLion'
-  | 'dave'
-  | 'brigit'
-  | 'current'
-  | 'varo'
-  | 'credit_strong'
-  | 'local_credit_union';
+  | "self"
+  | "chime"
+  | "moneyLion"
+  | "dave"
+  | "brigit"
+  | "current"
+  | "varo"
+  | "credit_strong"
+  | "local_credit_union";
 
 export type LoanType =
-  | 'traditional'
-  | 'share_secured'
-  | 'passbook'
-  | 'cd_secured';
+  | "traditional"
+  | "share_secured"
+  | "passbook"
+  | "cd_secured";
 
 export interface CreditBuilderLoan {
   id: string;
@@ -51,7 +51,7 @@ export interface CreditBuilderLoan {
   earlyPayoffPenalty: boolean;
 
   // Features
-  reportsToBureaus: ('equifax' | 'experian' | 'transunion')[];
+  reportsToBureaus: ("equifax" | "experian" | "transunion")[];
   noHardPull: boolean;
   savingsComponent: boolean;
   payoutAtEnd: boolean;
@@ -79,17 +79,17 @@ export interface UserLoanProfile {
   bankAccountAgeMonths: number;
   hasBankruptcy: boolean;
   primaryGoal:
-    | 'build_credit'
-    | 'establish_history'
-    | 'improve_score'
-    | 'build_savings';
+    | "build_credit"
+    | "establish_history"
+    | "improve_score"
+    | "build_savings";
   preferredTerm: number;
 }
 
 export interface LoanRecommendation {
   loan: CreditBuilderLoan;
   matchScore: number;
-  approvalLikelihood: 'high' | 'medium' | 'low';
+  approvalLikelihood: "high" | "medium" | "low";
   reasons: string[];
   warnings?: string[];
   suggestedAmount: number;
@@ -106,13 +106,13 @@ export interface LoanApplication {
   loanId: string;
   provider: LoanProvider;
   status:
-    | 'started'
-    | 'submitted'
-    | 'approved'
-    | 'denied'
-    | 'active'
-    | 'completed'
-    | 'defaulted';
+    | "started"
+    | "submitted"
+    | "approved"
+    | "denied"
+    | "active"
+    | "completed"
+    | "defaulted";
   appliedDate: Date;
   approvedDate?: Date;
   loanAmount?: number;
@@ -134,10 +134,10 @@ export interface LoanApplication {
 
 const CREDIT_BUILDER_LOANS: CreditBuilderLoan[] = [
   {
-    id: 'self-credit-builder',
-    provider: 'self',
-    name: 'Self Credit Builder Account',
-    type: 'traditional',
+    id: "self-credit-builder",
+    provider: "self",
+    name: "Self Credit Builder Account",
+    type: "traditional",
     loanAmountMin: 520,
     loanAmountMax: 1800,
     termMonths: [12, 24],
@@ -147,29 +147,29 @@ const CREDIT_BUILDER_LOANS: CreditBuilderLoan[] = [
     monthlyFee: 0,
     lateFee: 0,
     earlyPayoffPenalty: false,
-    reportsToBureaus: ['equifax', 'experian', 'transunion'],
+    reportsToBureaus: ["equifax", "experian", "transunion"],
     noHardPull: true,
     savingsComponent: true,
     payoutAtEnd: true,
     noBankruptcy: false,
     description:
-      'Build credit while building savings. Your payments are held in a CD and returned when complete.',
+      "Build credit while building savings. Your payments are held in a CD and returned when complete.",
     pros: [
-      'Reports to all 3 bureaus',
-      'No hard credit check',
-      'Get your money back at end',
-      'Low starting payments',
+      "Reports to all 3 bureaus",
+      "No hard credit check",
+      "Get your money back at end",
+      "Low starting payments",
     ],
-    cons: ['Takes time to build credit', 'Funds locked during term'],
-    bestFor: ['First-time credit builders', 'Those wanting forced savings'],
-    applicationUrl: 'https://www.self.inc',
+    cons: ["Takes time to build credit", "Funds locked during term"],
+    bestFor: ["First-time credit builders", "Those wanting forced savings"],
+    applicationUrl: "https://www.self.inc",
     rating: 4.5,
   },
   {
-    id: 'chime-credit-builder',
-    provider: 'chime',
-    name: 'Chime Credit Builder Visa',
-    type: 'share_secured',
+    id: "chime-credit-builder",
+    provider: "chime",
+    name: "Chime Credit Builder Visa",
+    type: "share_secured",
     loanAmountMin: 0,
     loanAmountMax: 10000,
     termMonths: [0], // No set term - revolving
@@ -179,29 +179,29 @@ const CREDIT_BUILDER_LOANS: CreditBuilderLoan[] = [
     monthlyFee: 0,
     lateFee: 0,
     earlyPayoffPenalty: false,
-    reportsToBureaus: ['equifax', 'experian', 'transunion'],
+    reportsToBureaus: ["equifax", "experian", "transunion"],
     noHardPull: true,
     savingsComponent: false,
     payoutAtEnd: false,
     noBankruptcy: false,
     description:
-      'Secured credit card that reports like a regular card. Move money from Chime account to use.',
+      "Secured credit card that reports like a regular card. Move money from Chime account to use.",
     pros: [
-      'No fees',
-      'No interest',
-      'Reports to all bureaus',
-      'Easy to qualify',
+      "No fees",
+      "No interest",
+      "Reports to all bureaus",
+      "Easy to qualify",
     ],
-    cons: ['Requires Chime checking account', 'Must fund before use'],
-    bestFor: ['Existing Chime members', 'Those who want no fees'],
-    applicationUrl: 'https://www.chime.com',
+    cons: ["Requires Chime checking account", "Must fund before use"],
+    bestFor: ["Existing Chime members", "Those who want no fees"],
+    applicationUrl: "https://www.chime.com",
     rating: 4.7,
   },
   {
-    id: 'moneylion-credit-builder',
-    provider: 'moneyLion',
-    name: 'MoneyLion Credit Builder Plus',
-    type: 'traditional',
+    id: "moneylion-credit-builder",
+    provider: "moneyLion",
+    name: "MoneyLion Credit Builder Plus",
+    type: "traditional",
     loanAmountMin: 500,
     loanAmountMax: 1000,
     termMonths: [12],
@@ -211,24 +211,24 @@ const CREDIT_BUILDER_LOANS: CreditBuilderLoan[] = [
     monthlyFee: 19.99,
     lateFee: 15,
     earlyPayoffPenalty: false,
-    reportsToBureaus: ['equifax', 'experian', 'transunion'],
+    reportsToBureaus: ["equifax", "experian", "transunion"],
     noHardPull: false,
     savingsComponent: true,
     payoutAtEnd: true,
     noBankruptcy: true,
     description:
-      'Credit builder loan with membership perks including cash advances and financial tracking.',
-    pros: ['Quick approval', 'Membership includes extras', 'Rewards program'],
-    cons: ['Monthly membership fee', 'Hard credit pull'],
-    bestFor: ['Those who want additional banking features'],
-    applicationUrl: 'https://www.moneylion.com',
+      "Credit builder loan with membership perks including cash advances and financial tracking.",
+    pros: ["Quick approval", "Membership includes extras", "Rewards program"],
+    cons: ["Monthly membership fee", "Hard credit pull"],
+    bestFor: ["Those who want additional banking features"],
+    applicationUrl: "https://www.moneylion.com",
     rating: 4.2,
   },
   {
-    id: 'credit-strong-builder',
-    provider: 'credit_strong',
-    name: 'Credit Strong Instal Loan',
-    type: 'cd_secured',
+    id: "credit-strong-builder",
+    provider: "credit_strong",
+    name: "Credit Strong Instal Loan",
+    type: "cd_secured",
     loanAmountMin: 1000,
     loanAmountMax: 2500,
     termMonths: [12, 24, 36, 48, 60, 120],
@@ -238,30 +238,30 @@ const CREDIT_BUILDER_LOANS: CreditBuilderLoan[] = [
     monthlyFee: 0,
     lateFee: 10,
     earlyPayoffPenalty: false,
-    reportsToBureaus: ['equifax', 'experian', 'transunion'],
+    reportsToBureaus: ["equifax", "experian", "transunion"],
     noHardPull: true,
     savingsComponent: true,
     payoutAtEnd: true,
     minIncome: 0,
     noBankruptcy: false,
     description:
-      'Flexible terms from 1-10 years. Payments as low as $15/month build credit and savings.',
+      "Flexible terms from 1-10 years. Payments as low as $15/month build credit and savings.",
     pros: [
-      'Very flexible terms',
-      'Low payment options',
-      'No credit check',
-      'Reports to all bureaus',
+      "Very flexible terms",
+      "Low payment options",
+      "No credit check",
+      "Reports to all bureaus",
     ],
-    cons: ['Longer terms mean more interest', 'Funds locked'],
-    bestFor: ['Those wanting low payments', 'Long-term credit building'],
-    applicationUrl: 'https://www.creditstrong.com',
+    cons: ["Longer terms mean more interest", "Funds locked"],
+    bestFor: ["Those wanting low payments", "Long-term credit building"],
+    applicationUrl: "https://www.creditstrong.com",
     rating: 4.4,
   },
   {
-    id: 'local-cu-share-secured',
-    provider: 'local_credit_union',
-    name: 'Credit Union Share-Secured Loan',
-    type: 'share_secured',
+    id: "local-cu-share-secured",
+    provider: "local_credit_union",
+    name: "Credit Union Share-Secured Loan",
+    type: "share_secured",
     loanAmountMin: 250,
     loanAmountMax: 5000,
     termMonths: [6, 12, 24, 36],
@@ -271,17 +271,17 @@ const CREDIT_BUILDER_LOANS: CreditBuilderLoan[] = [
     monthlyFee: 0,
     lateFee: 15,
     earlyPayoffPenalty: false,
-    reportsToBureaus: ['equifax', 'experian', 'transunion'],
+    reportsToBureaus: ["equifax", "experian", "transunion"],
     noHardPull: false,
     savingsComponent: true,
     payoutAtEnd: true,
     noBankruptcy: false,
     description:
-      'Traditional credit builder loan from local credit unions. Requires membership and deposit.',
-    pros: ['Lowest rates available', 'Personal service', 'Community focused'],
-    cons: ['Requires CU membership', 'May require deposit upfront'],
-    bestFor: ['Those with CU membership', 'Seeking lowest cost option'],
-    applicationUrl: 'https://www.ncua.gov/consumers/share-insurance-estimator',
+      "Traditional credit builder loan from local credit unions. Requires membership and deposit.",
+    pros: ["Lowest rates available", "Personal service", "Community focused"],
+    cons: ["Requires CU membership", "May require deposit upfront"],
+    bestFor: ["Those with CU membership", "Seeking lowest cost option"],
+    applicationUrl: "https://www.ncua.gov/consumers/share-insurance-estimator",
     rating: 4.6,
   },
 ];
@@ -302,7 +302,7 @@ export class CreditBuilderLoanService {
   // ==========================================================================
 
   async getRecommendations(
-    profile: UserLoanProfile
+    profile: UserLoanProfile,
   ): Promise<LoanRecommendation[]> {
     const recommendations: LoanRecommendation[] = [];
 
@@ -315,7 +315,7 @@ export class CreditBuilderLoanService {
       const estimatedMonthlyPayment = this.estimateMonthlyPayment(
         loan,
         suggestedAmount,
-        suggestedTerm
+        suggestedTerm,
       );
 
       recommendations.push({
@@ -331,7 +331,7 @@ export class CreditBuilderLoanService {
         totalCost: this.calculateTotalCost(
           loan,
           suggestedAmount,
-          suggestedTerm
+          suggestedTerm,
         ),
         savingsAtEnd: loan.payoutAtEnd ? suggestedAmount : undefined,
       });
@@ -342,7 +342,7 @@ export class CreditBuilderLoanService {
 
   private calculateMatchScore(
     loan: CreditBuilderLoan,
-    profile: UserLoanProfile
+    profile: UserLoanProfile,
   ): number {
     let score = 50; // Base score
 
@@ -368,7 +368,7 @@ export class CreditBuilderLoanService {
     }
 
     // Match savings component with goal
-    if (loan.savingsComponent && profile.primaryGoal === 'build_savings') {
+    if (loan.savingsComponent && profile.primaryGoal === "build_savings") {
       score += 15;
     }
 
@@ -389,7 +389,7 @@ export class CreditBuilderLoanService {
 
   private suggestLoanAmount(
     loan: CreditBuilderLoan,
-    profile: UserLoanProfile
+    profile: UserLoanProfile,
   ): number {
     // Start with a reasonable amount based on monthly payment capacity
     const monthlyCapacity = profile.availableMonthlyPayment;
@@ -397,13 +397,13 @@ export class CreditBuilderLoanService {
 
     return Math.max(
       loan.loanAmountMin,
-      Math.min(loan.loanAmountMax, estimatedAmount)
+      Math.min(loan.loanAmountMax, estimatedAmount),
     );
   }
 
   private suggestTerm(
     loan: CreditBuilderLoan,
-    profile: UserLoanProfile
+    profile: UserLoanProfile,
   ): number {
     if (loan.termMonths.length === 0 || loan.termMonths[0] === 0) {
       return 0; // Revolving credit
@@ -425,7 +425,7 @@ export class CreditBuilderLoanService {
   private estimateMonthlyPayment(
     loan: CreditBuilderLoan,
     amount: number,
-    term: number
+    term: number,
   ): number {
     if (term === 0) return 0; // Revolving
 
@@ -444,52 +444,52 @@ export class CreditBuilderLoanService {
 
   private assessApprovalLikelihood(
     loan: CreditBuilderLoan,
-    profile: UserLoanProfile
-  ): 'high' | 'medium' | 'low' {
+    profile: UserLoanProfile,
+  ): "high" | "medium" | "low" {
     if (loan.noBankruptcy && profile.hasBankruptcy) {
-      return 'low';
+      return "low";
     }
 
     if (loan.noHardPull) {
-      return 'high';
+      return "high";
     }
 
     if (profile.creditScore && profile.creditScore >= 580) {
-      return 'high';
+      return "high";
     }
 
     if (profile.hasBankAccount && profile.bankAccountAgeMonths >= 3) {
-      return 'medium';
+      return "medium";
     }
 
-    return 'low';
+    return "low";
   }
 
   private generateReasons(
     loan: CreditBuilderLoan,
-    profile: UserLoanProfile
+    profile: UserLoanProfile,
   ): string[] {
     const reasons: string[] = [];
 
     if (loan.reportsToBureaus.length === 3) {
-      reasons.push('Reports to all 3 credit bureaus for maximum impact');
+      reasons.push("Reports to all 3 credit bureaus for maximum impact");
     }
 
     if (loan.noHardPull) {
-      reasons.push('No hard credit inquiry protects your current score');
+      reasons.push("No hard credit inquiry protects your current score");
     }
 
     if (loan.savingsComponent && loan.payoutAtEnd) {
-      reasons.push('Build savings while building credit - get funds at end');
+      reasons.push("Build savings while building credit - get funds at end");
     }
 
     if (loan.monthlyFee === 0 && loan.applicationFee === 0) {
-      reasons.push('No fees keeps more money in your pocket');
+      reasons.push("No fees keeps more money in your pocket");
     }
 
     if (loan.monthlyPaymentRange.min <= profile.availableMonthlyPayment) {
       reasons.push(
-        `Monthly payment fits your budget of $${profile.availableMonthlyPayment}`
+        `Monthly payment fits your budget of $${profile.availableMonthlyPayment}`,
       );
     }
 
@@ -498,7 +498,7 @@ export class CreditBuilderLoanService {
 
   private generateWarnings(
     loan: CreditBuilderLoan,
-    profile: UserLoanProfile
+    profile: UserLoanProfile,
   ): string[] | undefined {
     const warnings: string[] = [];
 
@@ -507,11 +507,11 @@ export class CreditBuilderLoanService {
     }
 
     if (!loan.noHardPull) {
-      warnings.push('Application may temporarily lower your credit score');
+      warnings.push("Application may temporarily lower your credit score");
     }
 
     if (loan.earlyPayoffPenalty) {
-      warnings.push('Early payoff penalty applies');
+      warnings.push("Early payoff penalty applies");
     }
 
     return warnings.length > 0 ? warnings : undefined;
@@ -519,7 +519,7 @@ export class CreditBuilderLoanService {
 
   private estimateScoreImpact(
     loan: CreditBuilderLoan,
-    profile: UserLoanProfile
+    profile: UserLoanProfile,
   ): number {
     let impact = 20; // Base impact for on-time payments
 
@@ -537,7 +537,7 @@ export class CreditBuilderLoanService {
   private calculateTotalCost(
     loan: CreditBuilderLoan,
     amount: number,
-    term: number
+    term: number,
   ): number {
     if (term === 0) return 0;
 
@@ -553,7 +553,7 @@ export class CreditBuilderLoanService {
   // ==========================================================================
 
   async trackApplication(
-    application: Omit<LoanApplication, 'id' | 'createdAt' | 'updatedAt'>
+    application: Omit<LoanApplication, "id" | "createdAt" | "updatedAt">,
   ): Promise<LoanApplication> {
     const now = new Date();
     const newApp: LoanApplication = {
@@ -564,7 +564,7 @@ export class CreditBuilderLoanService {
     };
 
     const { data, error } = await this.supabase
-      .from('credit_builder_applications')
+      .from("credit_builder_applications")
       .insert(this.toDbFormat(newApp))
       .select()
       .single();
@@ -575,15 +575,15 @@ export class CreditBuilderLoanService {
 
   async updateApplication(
     applicationId: string,
-    updates: Partial<LoanApplication>
+    updates: Partial<LoanApplication>,
   ): Promise<LoanApplication> {
     const { data, error } = await this.supabase
-      .from('credit_builder_applications')
+      .from("credit_builder_applications")
       .update({
         ...updates,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', applicationId)
+      .eq("id", applicationId)
       .select()
       .single();
 
@@ -593,10 +593,10 @@ export class CreditBuilderLoanService {
 
   async getUserApplications(userId: string): Promise<LoanApplication[]> {
     const { data, error } = await this.supabase
-      .from('credit_builder_applications')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .from("credit_builder_applications")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
     if (error) throw error;
     return (data || []).map(this.fromDbFormat);
@@ -651,7 +651,7 @@ export class CreditBuilderLoanService {
       userId: data.user_id as string,
       loanId: data.loan_id as string,
       provider: data.provider as LoanProvider,
-      status: data.status as LoanApplication['status'],
+      status: data.status as LoanApplication["status"],
       appliedDate: new Date(data.applied_date as string),
       approvedDate: data.approved_date
         ? new Date(data.approved_date as string)
@@ -685,7 +685,7 @@ export function getCreditBuilderLoanService(): CreditBuilderLoanService {
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     creditBuilderLoanServiceInstance = new CreditBuilderLoanService(
       supabaseUrl,
-      supabaseKey
+      supabaseKey,
     );
   }
   return creditBuilderLoanServiceInstance;

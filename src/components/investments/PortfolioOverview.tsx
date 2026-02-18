@@ -1,19 +1,19 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 import {
   PieChartComponent,
   AreaChartComponent,
   ChartContainer,
-} from '@/components/charts';
+} from "@/components/charts";
 import type {
   Portfolio,
   Holding,
-} from '@/lib/investments/types/portfolio.types';
+} from "@/lib/investments/types/portfolio.types";
 
-type DateRange = '1M' | '3M' | '6M' | '1Y' | 'ALL';
+type DateRange = "1M" | "3M" | "6M" | "1Y" | "ALL";
 
 export default function PortfolioOverview() {
   const router = useRouter();
@@ -21,25 +21,25 @@ export default function PortfolioOverview() {
   const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [dateRange, setDateRange] = useState<DateRange>('1M');
+  const [dateRange, setDateRange] = useState<DateRange>("1M");
 
   const fetchPortfolio = useCallback(async () => {
     if (!user) return;
     try {
       setLoading(true);
       const response = await fetch(
-        `/api/investments/portfolio?period=${dateRange}`
+        `/api/investments/portfolio?period=${dateRange}`,
       );
-      if (!response.ok) throw new Error('Failed to fetch portfolio');
+      if (!response.ok) throw new Error("Failed to fetch portfolio");
       const result = await response.json();
       if (result.success) {
         setPortfolio(result.data);
         setError(null);
       } else {
-        throw new Error(result.error || 'Failed to fetch portfolio');
+        throw new Error(result.error || "Failed to fetch portfolio");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load portfolio');
+      setError(err instanceof Error ? err.message : "Failed to load portfolio");
     } finally {
       setLoading(false);
     }
@@ -52,16 +52,16 @@ export default function PortfolioOverview() {
   }, [authLoading, user, fetchPortfolio]);
 
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
   };
 
   const formatPercent = (value: number): string => {
-    const sign = value >= 0 ? '+' : '';
+    const sign = value >= 0 ? "+" : "";
     return `${sign}${value.toFixed(2)}%`;
   };
 
@@ -88,7 +88,7 @@ export default function PortfolioOverview() {
   if (!portfolio) {
     return (
       <EmptyPortfolio
-        onAddHolding={() => router.push('/investments/holdings')}
+        onAddHolding={() => router.push("/investments/holdings")}
       />
     );
   }
@@ -130,21 +130,21 @@ export default function PortfolioOverview() {
       <div className="flex flex-wrap gap-3">
         <button
           type="button"
-          onClick={() => router.push('/investments/holdings')}
+          onClick={() => router.push("/investments/holdings")}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
         >
           <span></span> Add Holding
         </button>
         <button
           type="button"
-          onClick={() => router.push('/investments/analyze/AAPL')}
+          onClick={() => router.push("/investments/analyze/AAPL")}
           className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
         >
           <span></span> Analyze Stock
         </button>
         <button
           type="button"
-          onClick={() => router.push('/investments/signals')}
+          onClick={() => router.push("/investments/signals")}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
         >
           <span></span> View Signals
@@ -181,7 +181,7 @@ export default function PortfolioOverview() {
                 value: p.value,
               }))}
               areas={[
-                { dataKey: 'value', name: 'Portfolio Value', color: '#3B82F6' },
+                { dataKey: "value", name: "Portfolio Value", color: "#3B82F6" },
               ]}
               height={280}
               currency
@@ -220,21 +220,24 @@ function SummaryCard({
   icon,
 }: SummaryCardProps) {
   const valueTestId =
-    title === 'Total Value'
-      ? 'portfolio-value'
-      : title === 'Total Return'
-        ? 'total-gain-loss'
+    title === "Total Value"
+      ? "portfolio-value"
+      : title === "Total Return"
+        ? "total-gain-loss"
         : undefined;
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6" data-testid="summary-card">
+    <div
+      className="bg-white dark:bg-slate-800 rounded-lg shadow p-6"
+      data-testid="summary-card"
+    >
       <div className="flex items-center justify-between">
         <span className="text-2xl">{icon}</span>
         {isPositive !== undefined && (
           <span
-            className={`text-sm font-medium ${isPositive ? 'text-green-600' : 'text-red-600 dark:text-red-400'}`}
+            className={`text-sm font-medium ${isPositive ? "text-green-600" : "text-red-600 dark:text-red-400"}`}
           >
-            {isPositive ? '▲' : '▼'}
+            {isPositive ? "▲" : "▼"}
           </span>
         )}
       </div>
@@ -247,7 +250,7 @@ function SummaryCard({
       </p>
       {subValue && (
         <p
-          className={`text-sm mt-1 ${ isPositive !== undefined ? (isPositive ? 'text-green-600' : 'text-red-600') : 'text-gray-500 dark:text-slate-400' }`}
+          className={`text-sm mt-1 ${isPositive !== undefined ? (isPositive ? "text-green-600" : "text-red-600") : "text-gray-500 dark:text-slate-400"}`}
         >
           {subValue}
         </p>
@@ -262,7 +265,7 @@ interface DateRangeSelectorProps {
 }
 
 function DateRangeSelector({ selected, onSelect }: DateRangeSelectorProps) {
-  const ranges: DateRange[] = ['1M', '3M', '6M', '1Y', 'ALL'];
+  const ranges: DateRange[] = ["1M", "3M", "6M", "1Y", "ALL"];
   return (
     <div className="flex gap-1 mb-4">
       {ranges.map((range) => (
@@ -270,7 +273,7 @@ function DateRangeSelector({ selected, onSelect }: DateRangeSelectorProps) {
           type="button"
           key={range}
           onClick={() => onSelect(range)}
-          className={`px-3 py-1 text-sm rounded ${ selected === range ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600' }`}
+          className={`px-3 py-1 text-sm rounded ${selected === range ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600"}`}
         >
           {range}
         </button>
@@ -285,38 +288,38 @@ interface HoldingsTableProps {
 }
 
 function HoldingsTable({ holdings, onAnalyze }: HoldingsTableProps) {
-  const [sortField, setSortField] = useState<keyof Holding>('totalValue');
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const [sortField, setSortField] = useState<keyof Holding>("totalValue");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   const sortedHoldings = [...holdings].sort((a, b) => {
     const aVal = a[sortField];
     const bVal = b[sortField];
-    if (typeof aVal === 'number' && typeof bVal === 'number') {
-      return sortDir === 'asc' ? aVal - bVal : bVal - aVal;
+    if (typeof aVal === "number" && typeof bVal === "number") {
+      return sortDir === "asc" ? aVal - bVal : bVal - aVal;
     }
-    return sortDir === 'asc'
+    return sortDir === "asc"
       ? String(aVal).localeCompare(String(bVal))
       : String(bVal).localeCompare(String(aVal));
   });
 
   const handleSort = (field: keyof Holding) => {
     if (sortField === field) {
-      setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
     } else {
       setSortField(field);
-      setSortDir('desc');
+      setSortDir("desc");
     }
   };
 
   const formatCurrency = (n: number) =>
-    new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(n);
 
   const SortIcon = ({ field }: { field: keyof Holding }) => {
     if (sortField !== field) return <span className="text-gray-300">↕</span>;
-    return <span>{sortDir === 'asc' ? '↑' : '↓'}</span>;
+    return <span>{sortDir === "asc" ? "↑" : "↓"}</span>;
   };
 
   return (
@@ -335,7 +338,7 @@ function HoldingsTable({ holdings, onAnalyze }: HoldingsTableProps) {
             <tr>
               <th
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600"
-                onClick={() => handleSort('symbol')}
+                onClick={() => handleSort("symbol")}
               >
                 Symbol <SortIcon field="symbol" />
               </th>
@@ -344,7 +347,7 @@ function HoldingsTable({ holdings, onAnalyze }: HoldingsTableProps) {
               </th>
               <th
                 className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600"
-                onClick={() => handleSort('shares')}
+                onClick={() => handleSort("shares")}
               >
                 Shares <SortIcon field="shares" />
               </th>
@@ -353,13 +356,13 @@ function HoldingsTable({ holdings, onAnalyze }: HoldingsTableProps) {
               </th>
               <th
                 className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600"
-                onClick={() => handleSort('totalValue')}
+                onClick={() => handleSort("totalValue")}
               >
                 Value <SortIcon field="totalValue" />
               </th>
               <th
                 className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600"
-                onClick={() => handleSort('gainLoss')}
+                onClick={() => handleSort("gainLoss")}
               >
                 Gain/Loss <SortIcon field="gainLoss" />
               </th>
@@ -395,13 +398,13 @@ function HoldingsTable({ holdings, onAnalyze }: HoldingsTableProps) {
                   <div
                     className={
                       holding.gainLoss >= 0
-                        ? 'text-green-600 dark:text-green-400'
-                        : 'text-red-600 dark:text-red-400'
+                        ? "text-green-600 dark:text-green-400"
+                        : "text-red-600 dark:text-red-400"
                     }
                   >
                     <div>{formatCurrency(holding.gainLoss)}</div>
                     <div className="text-sm">
-                      {holding.gainLoss >= 0 ? '+' : ''}
+                      {holding.gainLoss >= 0 ? "+" : ""}
                       {holding.gainLossPercent.toFixed(2)}%
                     </div>
                   </div>

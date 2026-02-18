@@ -2,8 +2,8 @@
  * Fynvita Disputes Layout
  */
 
-import { Stack } from 'expo-router';
-import { lightTheme as theme } from '../../src/constants/theme';
+import { Stack } from "expo-router";
+import { lightTheme as theme } from "../../src/constants/theme";
 
 export default function DisputesLayout() {
   return (
@@ -20,4 +20,3 @@ export default function DisputesLayout() {
     </Stack>
   );
 }
-

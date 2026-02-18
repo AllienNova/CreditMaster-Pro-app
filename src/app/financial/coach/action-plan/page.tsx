@@ -1,15 +1,15 @@
-import { Suspense } from 'react';
-import { Metadata } from 'next';
-import ActionPlanManager from '@/components/financial/ActionPlanManager';
-import Link from 'next/link';
+import { Suspense } from "react";
+import { Metadata } from "next";
+import ActionPlanManager from "@/components/financial/ActionPlanManager";
+import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: 'Action Plan | Fynvita',
-  description: 'Track and manage your personalized financial action plans',
+  title: "Action Plan | Fynvita",
+  description: "Track and manage your personalized financial action plans",
   openGraph: {
-    title: 'Action Plan | Fynvita',
-    description: 'Track and manage your personalized financial action plans',
-    type: 'website',
+    title: "Action Plan | Fynvita",
+    description: "Track and manage your personalized financial action plans",
+    type: "website",
   },
 };
 

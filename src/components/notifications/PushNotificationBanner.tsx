@@ -5,11 +5,11 @@
  * Shows at the top of the page when notifications are not enabled.
  */
 
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useWebPushNotifications } from '@/hooks/useWebPushNotifications';
-import { Bell, X, Check, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { useWebPushNotifications } from "@/hooks/useWebPushNotifications";
+import { Bell, X, Check, AlertCircle } from "lucide-react";
 
 interface PushNotificationBannerProps {
   userId?: string;
@@ -17,28 +17,22 @@ interface PushNotificationBannerProps {
   className?: string;
 }
 
-const DISMISSED_KEY = 'fynvita_push_banner_dismissed';
+const DISMISSED_KEY = "fynvita_push_banner_dismissed";
 
 export function PushNotificationBanner({
   userId,
   onDismiss,
-  className = '',
+  className = "",
 }: PushNotificationBannerProps) {
   const [isDismissed, setIsDismissed] = useState(true); // Start hidden
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const {
-    isSupported,
-    permission,
-    isSubscribed,
-    isLoading,
-    error,
-    subscribe,
-  } = useWebPushNotifications(userId);
+  const { isSupported, permission, isSubscribed, isLoading, error, subscribe } =
+    useWebPushNotifications(userId);
 
   // Check if banner was previously dismissed
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const dismissed = localStorage.getItem(DISMISSED_KEY);
       const dismissedDate = dismissed ? new Date(dismissed) : null;
       const daysSinceDismissed = dismissedDate
@@ -51,7 +45,7 @@ export function PushNotificationBanner({
   }, []);
 
   // Don't show if not supported, already subscribed, or dismissed
-  if (!isSupported || isSubscribed || isDismissed || permission === 'denied') {
+  if (!isSupported || isSubscribed || isDismissed || permission === "denied") {
     return null;
   }
 
@@ -98,7 +92,8 @@ export function PushNotificationBanner({
               Stay updated with push notifications
             </p>
             <p className="text-xs text-blue-700">
-              Get instant alerts for credit score changes, dispute updates, and more.
+              Get instant alerts for credit score changes, dispute updates, and
+              more.
             </p>
           </div>
         </div>
@@ -116,7 +111,7 @@ export function PushNotificationBanner({
             disabled={isLoading}
             className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {isLoading ? 'Enabling...' : 'Enable Notifications'}
+            {isLoading ? "Enabling..." : "Enable Notifications"}
           </button>
 
           <button

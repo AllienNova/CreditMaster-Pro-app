@@ -9,8 +9,8 @@
 // ============================================================================
 
 export type ForexPair = string; // e.g., 'EUR/USD', 'GBP/JPY'
-export type ForexSession = 'sydney' | 'tokyo' | 'london' | 'new_york';
-export type EconomicImpact = 'low' | 'medium' | 'high';
+export type ForexSession = "sydney" | "tokyo" | "london" | "new_york";
+export type EconomicImpact = "low" | "medium" | "high";
 
 export interface ForexAnalysis {
   pair: ForexPair;
@@ -23,7 +23,7 @@ export interface ForexAnalysis {
 
   // Technical analysis
   technicalScore: number; // 0-100
-  trend: 'bullish' | 'bearish' | 'neutral';
+  trend: "bullish" | "bearish" | "neutral";
   support: number[];
   resistance: number[];
   pivotPoints: PivotPoints;
@@ -35,11 +35,11 @@ export interface ForexAnalysis {
 
   // Market conditions
   volatility: number;
-  liquidity: 'high' | 'medium' | 'low';
+  liquidity: "high" | "medium" | "low";
   activeSession: ForexSession;
 
   // AI insights
-  aiRecommendation: 'buy' | 'sell' | 'hold';
+  aiRecommendation: "buy" | "sell" | "hold";
   confidence: number;
   reasoning: string[];
 
@@ -70,7 +70,7 @@ export interface EconomicEvent {
 
 export interface CentralBankSentiment {
   bank: string;
-  stance: 'hawkish' | 'dovish' | 'neutral';
+  stance: "hawkish" | "dovish" | "neutral";
   interestRate: number;
   nextMeetingDate: Date;
   recentStatements: string[];
@@ -80,7 +80,14 @@ export interface CentralBankSentiment {
 // CRYPTO TYPES
 // ============================================================================
 
-export type CryptoCategory = 'layer1' | 'layer2' | 'defi' | 'nft' | 'meme' | 'exchange' | 'stablecoin';
+export type CryptoCategory =
+  | "layer1"
+  | "layer2"
+  | "defi"
+  | "nft"
+  | "meme"
+  | "exchange"
+  | "stablecoin";
 
 export interface CryptoAnalysis {
   coinId: string;
@@ -119,7 +126,7 @@ export interface CryptoAnalysis {
 
   // AI analysis
   aiScore: number; // 0-100
-  aiRecommendation: 'strong_buy' | 'buy' | 'hold' | 'sell' | 'strong_sell';
+  aiRecommendation: "strong_buy" | "buy" | "hold" | "sell" | "strong_sell";
   risks: string[];
   opportunities: string[];
 
@@ -147,7 +154,6 @@ export interface DeFiMetrics {
   users24h: number;
   protocolRevenue: number;
 }
-
 
 export interface OptionsAnalysis {
   symbol: string;
@@ -186,7 +192,7 @@ export interface OptionsAnalysis {
   unusualActivity: UnusualOptionsActivity;
 
   // AI analysis
-  aiRecommendation: 'buy' | 'sell' | 'hold';
+  aiRecommendation: "buy" | "sell" | "hold";
   strategy: string; // e.g., 'covered call', 'protective put', 'iron condor'
   riskReward: number;
 
@@ -206,7 +212,7 @@ export interface UnusualOptionsActivity {
   isUnusual: boolean;
   sweepDetected: boolean;
   blockTradesCount: number;
-  sentiment: 'bullish' | 'bearish' | 'neutral';
+  sentiment: "bullish" | "bearish" | "neutral";
   institutionalFlow: number; // Net premium flow
 }
 
@@ -214,12 +220,22 @@ export interface UnusualOptionsActivity {
 // COMMODITIES TYPES
 // ============================================================================
 
-export type CommodityType = 'energy' | 'metals' | 'agriculture' | 'livestock';
+export type CommodityType = "energy" | "metals" | "agriculture" | "livestock";
 export type CommoditySubtype =
-  | 'crude_oil' | 'natural_gas' | 'gasoline'
-  | 'gold' | 'silver' | 'copper' | 'platinum'
-  | 'wheat' | 'corn' | 'soybeans' | 'coffee' | 'sugar'
-  | 'cattle' | 'hogs';
+  | "crude_oil"
+  | "natural_gas"
+  | "gasoline"
+  | "gold"
+  | "silver"
+  | "copper"
+  | "platinum"
+  | "wheat"
+  | "corn"
+  | "soybeans"
+  | "coffee"
+  | "sugar"
+  | "cattle"
+  | "hogs";
 
 export interface CommodityAnalysis {
   symbol: string;
@@ -244,7 +260,7 @@ export interface CommodityAnalysis {
 
   // Technical analysis
   technicalScore: number;
-  trend: 'bullish' | 'bearish' | 'neutral';
+  trend: "bullish" | "bearish" | "neutral";
 
   // Fundamental factors
   inventoryLevels: number;
@@ -252,10 +268,10 @@ export interface CommodityAnalysis {
   consumptionRate: number;
 
   // AI insights
-  aiRecommendation: 'buy' | 'sell' | 'hold';
+  aiRecommendation: "buy" | "sell" | "hold";
   confidence: number;
   priceTarget: number;
-  timeframe: '1w' | '1m' | '3m' | '6m';
+  timeframe: "1w" | "1m" | "3m" | "6m";
 
   analyzedAt: Date;
 }
@@ -263,7 +279,7 @@ export interface CommodityAnalysis {
 export interface SupplyDemandAnalysis {
   supplyScore: number; // 0-100 (higher = oversupply)
   demandScore: number; // 0-100 (higher = high demand)
-  balance: 'surplus' | 'balanced' | 'deficit';
+  balance: "surplus" | "balanced" | "deficit";
   majorProducers: string[];
   majorConsumers: string[];
   supplyDisruptions: string[];
@@ -271,7 +287,7 @@ export interface SupplyDemandAnalysis {
 
 export interface SeasonalityAnalysis {
   currentSeason: string;
-  seasonalTrend: 'bullish' | 'bearish' | 'neutral';
+  seasonalTrend: "bullish" | "bearish" | "neutral";
   historicalPattern: string;
   peakMonths: string[];
   troughMonths: string[];
@@ -279,7 +295,7 @@ export interface SeasonalityAnalysis {
 
 export interface GeopoliticalRisk {
   region: string;
-  riskLevel: 'low' | 'medium' | 'high' | 'critical';
+  riskLevel: "low" | "medium" | "high" | "critical";
   description: string;
   impact: string;
   probability: number; // 0-100
@@ -289,7 +305,12 @@ export interface GeopoliticalRisk {
 // UNIFIED MULTI-ASSET ANALYSIS
 // ============================================================================
 
-export type MultiAssetType = 'stock' | 'forex' | 'crypto' | 'options' | 'commodity';
+export type MultiAssetType =
+  | "stock"
+  | "forex"
+  | "crypto"
+  | "options"
+  | "commodity";
 
 export interface MultiAssetAnalysis {
   assetType: MultiAssetType;
@@ -303,9 +324,9 @@ export interface MultiAssetAnalysis {
 
   // Common fields
   overallScore: number; // 0-100
-  recommendation: 'strong_buy' | 'buy' | 'hold' | 'sell' | 'strong_sell';
+  recommendation: "strong_buy" | "buy" | "hold" | "sell" | "strong_sell";
   confidence: number; // 0-100
-  riskLevel: 'low' | 'medium' | 'high';
+  riskLevel: "low" | "medium" | "high";
 
   analyzedAt: Date;
 }
@@ -316,7 +337,7 @@ export interface TokenomicsAnalysis {
   vestingSchedule?: VestingSchedule[];
   burnMechanism: boolean;
   stakingRewards?: number;
-  distributionFairness: 'fair' | 'moderate' | 'centralized';
+  distributionFairness: "fair" | "moderate" | "centralized";
 }
 
 export interface VestingSchedule {
@@ -331,7 +352,7 @@ export interface CryptoSentiment {
   twitterMentions24h: number;
   redditPosts24h: number;
   githubCommits30d: number;
-  developerActivity: 'high' | 'medium' | 'low';
+  developerActivity: "high" | "medium" | "low";
   communityGrowth: number; // % change in followers
   fearGreedIndex: number; // 0-100
 }
@@ -340,6 +361,5 @@ export interface CryptoSentiment {
 // OPTIONS TYPES
 // ============================================================================
 
-export type OptionType = 'call' | 'put';
-export type OptionStyle = 'american' | 'european';
-
+export type OptionType = "call" | "put";
+export type OptionStyle = "american" | "european";

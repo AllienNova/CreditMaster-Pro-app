@@ -3,12 +3,12 @@
  * Phase 6.2: Header bar with session info and user profile
  */
 
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { ChatSession } from '@/lib/ai/types/financial-chat.types';
-import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import React, { useState } from "react";
+import { ChatSession } from "@/lib/ai/types/financial-chat.types";
+import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
 
 interface ChatHeaderProps {
   currentSessionId: string | null;
@@ -23,22 +23,25 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   const router = useRouter();
   const supabase = createClient();
 
-  const currentSession = sessions.find(s => s.id === currentSessionId);
+  const currentSession = sessions.find((s) => s.id === currentSessionId);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    router.push('/auth/login');
+    router.push("/auth/login");
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-6 py-4" data-testid="mobile-chat-header">
+    <div
+      className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-6 py-4"
+      data-testid="mobile-chat-header"
+    >
       <div className="flex items-center justify-between">
         {/* Session Info */}
         <div className="flex-1">
           {currentSession ? (
             <div>
               <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-                {currentSession.title || 'Untitled Chat'}
+                {currentSession.title || "Untitled Chat"}
               </h1>
               <p className="text-sm text-gray-500 dark:text-slate-400">
                 AI Financial Advisor • Secure & Private
@@ -64,7 +67,12 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 dark:bg-slate-800 transition-colors"
           >
             <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg
+                className="w-5 h-5 text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -74,12 +82,17 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               </svg>
             </div>
             <svg
-              className={`w-4 h-4 text-gray-500 dark:text-slate-400 transition-transform ${showUserMenu ? 'rotate-180' : ''}`}
+              className={`w-4 h-4 text-gray-500 dark:text-slate-400 transition-transform ${showUserMenu ? "rotate-180" : ""}`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
             </svg>
           </button>
 
@@ -88,12 +101,17 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 py-1 z-10">
               <button
                 onClick={() => {
-                  router.push('/dashboard');
+                  router.push("/dashboard");
                   setShowUserMenu(false);
                 }}
                 className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700 dark:bg-slate-800 flex items-center space-x-2"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -106,12 +124,17 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
 
               <button
                 onClick={() => {
-                  router.push('/settings');
+                  router.push("/settings");
                   setShowUserMenu(false);
                 }}
                 className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700 dark:bg-slate-800 flex items-center space-x-2"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -135,7 +158,12 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 data-testid="logout-button"
                 className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"

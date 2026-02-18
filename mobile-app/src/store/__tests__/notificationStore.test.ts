@@ -3,7 +3,7 @@
  * Tests notification management, preferences, and push token registration
  */
 
-import { act } from '@testing-library/react-native';
+import { act } from "@testing-library/react-native";
 import {
   useNotificationStore,
   selectNotifications,
@@ -11,7 +11,7 @@ import {
   selectUnreadCount,
   selectNotificationsByType,
   selectPushEnabled,
-} from '../notificationStore';
+} from "../notificationStore";
 
 // Mock notification API
 const mockGetAll = jest.fn();
@@ -22,7 +22,7 @@ const mockGetPreferences = jest.fn();
 const mockUpdatePreferences = jest.fn();
 const mockRegisterPushToken = jest.fn();
 
-jest.mock('../../services/api', () => ({
+jest.mock("../../services/api", () => ({
   notificationApi: {
     getAll: (...args: unknown[]) => mockGetAll(...args),
     markAsRead: (...args: unknown[]) => mockMarkAsRead(...args),
@@ -36,31 +36,31 @@ jest.mock('../../services/api', () => ({
 
 const mockNotifications = [
   {
-    id: 'n1',
-    userId: 'user-1',
-    type: 'score_change' as const,
-    title: 'Score Update',
-    body: 'Your score increased by 15 points',
+    id: "n1",
+    userId: "user-1",
+    type: "score_change" as const,
+    title: "Score Update",
+    body: "Your score increased by 15 points",
     read: false,
-    createdAt: '2024-01-01T00:00:00Z',
+    createdAt: "2024-01-01T00:00:00Z",
   },
   {
-    id: 'n2',
-    userId: 'user-1',
-    type: 'dispute_update' as const,
-    title: 'Dispute Resolved',
-    body: 'Your dispute has been resolved',
+    id: "n2",
+    userId: "user-1",
+    type: "dispute_update" as const,
+    title: "Dispute Resolved",
+    body: "Your dispute has been resolved",
     read: true,
-    createdAt: '2024-01-02T00:00:00Z',
+    createdAt: "2024-01-02T00:00:00Z",
   },
   {
-    id: 'n3',
-    userId: 'user-1',
-    type: 'alert' as const,
-    title: 'New Inquiry',
-    body: 'A new hard inquiry was detected',
+    id: "n3",
+    userId: "user-1",
+    type: "alert" as const,
+    title: "New Inquiry",
+    body: "A new hard inquiry was detected",
     read: false,
-    createdAt: '2024-01-03T00:00:00Z',
+    createdAt: "2024-01-03T00:00:00Z",
   },
 ];
 
@@ -78,7 +78,7 @@ const mockPreferences = {
   },
 };
 
-describe('Notification Store', () => {
+describe("Notification Store", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     useNotificationStore.setState({
@@ -94,8 +94,8 @@ describe('Notification Store', () => {
     });
   });
 
-  describe('Initial State', () => {
-    it('should have correct initial state', () => {
+  describe("Initial State", () => {
+    it("should have correct initial state", () => {
       const state = useNotificationStore.getState();
       expect(state.notifications).toEqual([]);
       expect(state.unreadCount).toBe(0);
@@ -109,8 +109,8 @@ describe('Notification Store', () => {
     });
   });
 
-  describe('fetchNotifications', () => {
-    it('should fetch and store notifications successfully', async () => {
+  describe("fetchNotifications", () => {
+    it("should fetch and store notifications successfully", async () => {
       mockGetAll.mockResolvedValue({
         success: true,
         data: { items: mockNotifications, total: 3 },
@@ -128,10 +128,13 @@ describe('Notification Store', () => {
       expect(state.error).toBeNull();
     });
 
-    it('should set isLoading while fetching', async () => {
+    it("should set isLoading while fetching", async () => {
       let resolvePromise: (value: unknown) => void;
       mockGetAll.mockImplementation(
-        () => new Promise((resolve) => { resolvePromise = resolve; })
+        () =>
+          new Promise((resolve) => {
+            resolvePromise = resolve;
+          }),
       );
 
       const fetchPromise = useNotificationStore.getState().fetchNotifications();
@@ -145,23 +148,25 @@ describe('Notification Store', () => {
       expect(useNotificationStore.getState().isLoading).toBe(false);
     });
 
-    it('should pass params to API call', async () => {
+    it("should pass params to API call", async () => {
       mockGetAll.mockResolvedValue({
         success: true,
         data: { items: [], total: 0 },
       });
 
       await act(async () => {
-        await useNotificationStore.getState().fetchNotifications({ page: 2, unreadOnly: true });
+        await useNotificationStore
+          .getState()
+          .fetchNotifications({ page: 2, unreadOnly: true });
       });
 
       expect(mockGetAll).toHaveBeenCalledWith({ page: 2, unreadOnly: true });
     });
 
-    it('should handle API error response', async () => {
+    it("should handle API error response", async () => {
       mockGetAll.mockResolvedValue({
         success: false,
-        error: { message: 'Server error', code: 'HTTP_500' },
+        error: { message: "Server error", code: "HTTP_500" },
       });
 
       await act(async () => {
@@ -169,34 +174,36 @@ describe('Notification Store', () => {
       });
 
       const state = useNotificationStore.getState();
-      expect(state.error).toBe('Server error');
+      expect(state.error).toBe("Server error");
       expect(state.isLoading).toBe(false);
     });
 
-    it('should handle thrown exception', async () => {
-      mockGetAll.mockRejectedValue(new Error('Network failure'));
+    it("should handle thrown exception", async () => {
+      mockGetAll.mockRejectedValue(new Error("Network failure"));
 
       await act(async () => {
         await useNotificationStore.getState().fetchNotifications();
       });
 
       const state = useNotificationStore.getState();
-      expect(state.error).toBe('Network failure');
+      expect(state.error).toBe("Network failure");
       expect(state.isLoading).toBe(false);
     });
 
-    it('should handle non-Error exception', async () => {
-      mockGetAll.mockRejectedValue('string error');
+    it("should handle non-Error exception", async () => {
+      mockGetAll.mockRejectedValue("string error");
 
       await act(async () => {
         await useNotificationStore.getState().fetchNotifications();
       });
 
-      expect(useNotificationStore.getState().error).toBe('Failed to fetch notifications');
+      expect(useNotificationStore.getState().error).toBe(
+        "Failed to fetch notifications",
+      );
     });
   });
 
-  describe('markAsRead', () => {
+  describe("markAsRead", () => {
     beforeEach(() => {
       useNotificationStore.setState({
         notifications: [...mockNotifications],
@@ -204,56 +211,59 @@ describe('Notification Store', () => {
       });
     });
 
-    it('should mark a notification as read', async () => {
+    it("should mark a notification as read", async () => {
       mockMarkAsRead.mockResolvedValue({ success: true });
 
       await act(async () => {
-        await useNotificationStore.getState().markAsRead('n1');
+        await useNotificationStore.getState().markAsRead("n1");
       });
 
       const state = useNotificationStore.getState();
-      const n1 = state.notifications.find((n) => n.id === 'n1');
+      const n1 = state.notifications.find((n) => n.id === "n1");
       expect(n1?.read).toBe(true);
       expect(state.unreadCount).toBe(1);
     });
 
-    it('should not modify state when API returns failure', async () => {
+    it("should not modify state when API returns failure", async () => {
       mockMarkAsRead.mockResolvedValue({ success: false });
 
       await act(async () => {
-        await useNotificationStore.getState().markAsRead('n1');
+        await useNotificationStore.getState().markAsRead("n1");
       });
 
       const state = useNotificationStore.getState();
-      const n1 = state.notifications.find((n) => n.id === 'n1');
+      const n1 = state.notifications.find((n) => n.id === "n1");
       expect(n1?.read).toBe(false);
       expect(state.unreadCount).toBe(2);
     });
 
-    it('should not go below 0 for unreadCount', async () => {
+    it("should not go below 0 for unreadCount", async () => {
       useNotificationStore.setState({ unreadCount: 0 });
       mockMarkAsRead.mockResolvedValue({ success: true });
 
       await act(async () => {
-        await useNotificationStore.getState().markAsRead('n1');
+        await useNotificationStore.getState().markAsRead("n1");
       });
 
       expect(useNotificationStore.getState().unreadCount).toBe(0);
     });
 
-    it('should handle API exception silently', async () => {
-      mockMarkAsRead.mockRejectedValue(new Error('Network error'));
+    it("should handle API exception silently", async () => {
+      mockMarkAsRead.mockRejectedValue(new Error("Network error"));
 
       await act(async () => {
-        await useNotificationStore.getState().markAsRead('n1');
+        await useNotificationStore.getState().markAsRead("n1");
       });
 
       // Should not throw, notification stays unread
-      expect(useNotificationStore.getState().notifications.find((n) => n.id === 'n1')?.read).toBe(false);
+      expect(
+        useNotificationStore.getState().notifications.find((n) => n.id === "n1")
+          ?.read,
+      ).toBe(false);
     });
   });
 
-  describe('markAllAsRead', () => {
+  describe("markAllAsRead", () => {
     beforeEach(() => {
       useNotificationStore.setState({
         notifications: [...mockNotifications],
@@ -261,7 +271,7 @@ describe('Notification Store', () => {
       });
     });
 
-    it('should mark all notifications as read', async () => {
+    it("should mark all notifications as read", async () => {
       mockMarkAllAsRead.mockResolvedValue({ success: true });
 
       await act(async () => {
@@ -273,7 +283,7 @@ describe('Notification Store', () => {
       expect(state.unreadCount).toBe(0);
     });
 
-    it('should not modify state when API returns failure', async () => {
+    it("should not modify state when API returns failure", async () => {
       mockMarkAllAsRead.mockResolvedValue({ success: false });
 
       await act(async () => {
@@ -283,8 +293,8 @@ describe('Notification Store', () => {
       expect(useNotificationStore.getState().unreadCount).toBe(2);
     });
 
-    it('should handle exception silently', async () => {
-      mockMarkAllAsRead.mockRejectedValue(new Error('Failure'));
+    it("should handle exception silently", async () => {
+      mockMarkAllAsRead.mockRejectedValue(new Error("Failure"));
 
       await act(async () => {
         await useNotificationStore.getState().markAllAsRead();
@@ -294,7 +304,7 @@ describe('Notification Store', () => {
     });
   });
 
-  describe('deleteNotification', () => {
+  describe("deleteNotification", () => {
     beforeEach(() => {
       useNotificationStore.setState({
         notifications: [...mockNotifications],
@@ -303,25 +313,25 @@ describe('Notification Store', () => {
       });
     });
 
-    it('should delete a notification and update counts', async () => {
+    it("should delete a notification and update counts", async () => {
       mockDeleteNotification.mockResolvedValue({ success: true });
 
       await act(async () => {
-        await useNotificationStore.getState().deleteNotification('n1');
+        await useNotificationStore.getState().deleteNotification("n1");
       });
 
       const state = useNotificationStore.getState();
-      expect(state.notifications.find((n) => n.id === 'n1')).toBeUndefined();
+      expect(state.notifications.find((n) => n.id === "n1")).toBeUndefined();
       expect(state.notifications.length).toBe(2);
       expect(state.unreadCount).toBe(1); // n1 was unread, so decrement
       expect(state.totalNotifications).toBe(2);
     });
 
-    it('should not decrement unreadCount when deleting a read notification', async () => {
+    it("should not decrement unreadCount when deleting a read notification", async () => {
       mockDeleteNotification.mockResolvedValue({ success: true });
 
       await act(async () => {
-        await useNotificationStore.getState().deleteNotification('n2'); // n2 is read
+        await useNotificationStore.getState().deleteNotification("n2"); // n2 is read
       });
 
       const state = useNotificationStore.getState();
@@ -329,29 +339,29 @@ describe('Notification Store', () => {
       expect(state.unreadCount).toBe(2); // unchanged since n2 was already read
     });
 
-    it('should not modify state when API returns failure', async () => {
+    it("should not modify state when API returns failure", async () => {
       mockDeleteNotification.mockResolvedValue({ success: false });
 
       await act(async () => {
-        await useNotificationStore.getState().deleteNotification('n1');
+        await useNotificationStore.getState().deleteNotification("n1");
       });
 
       expect(useNotificationStore.getState().notifications.length).toBe(3);
     });
 
-    it('should handle exception silently', async () => {
-      mockDeleteNotification.mockRejectedValue(new Error('Failure'));
+    it("should handle exception silently", async () => {
+      mockDeleteNotification.mockRejectedValue(new Error("Failure"));
 
       await act(async () => {
-        await useNotificationStore.getState().deleteNotification('n1');
+        await useNotificationStore.getState().deleteNotification("n1");
       });
 
       expect(useNotificationStore.getState().notifications.length).toBe(3);
     });
   });
 
-  describe('fetchPreferences', () => {
-    it('should fetch and store preferences', async () => {
+  describe("fetchPreferences", () => {
+    it("should fetch and store preferences", async () => {
       mockGetPreferences.mockResolvedValue({
         success: true,
         data: mockPreferences,
@@ -366,10 +376,13 @@ describe('Notification Store', () => {
       expect(state.isLoadingPreferences).toBe(false);
     });
 
-    it('should set isLoadingPreferences while loading', async () => {
+    it("should set isLoadingPreferences while loading", async () => {
       let resolvePromise: (value: unknown) => void;
       mockGetPreferences.mockImplementation(
-        () => new Promise((resolve) => { resolvePromise = resolve; })
+        () =>
+          new Promise((resolve) => {
+            resolvePromise = resolve;
+          }),
       );
 
       const fetchPromise = useNotificationStore.getState().fetchPreferences();
@@ -383,7 +396,7 @@ describe('Notification Store', () => {
       expect(useNotificationStore.getState().isLoadingPreferences).toBe(false);
     });
 
-    it('should handle failure response', async () => {
+    it("should handle failure response", async () => {
       mockGetPreferences.mockResolvedValue({ success: false });
 
       await act(async () => {
@@ -394,8 +407,8 @@ describe('Notification Store', () => {
       expect(useNotificationStore.getState().isLoadingPreferences).toBe(false);
     });
 
-    it('should handle exception', async () => {
-      mockGetPreferences.mockRejectedValue(new Error('Network error'));
+    it("should handle exception", async () => {
+      mockGetPreferences.mockRejectedValue(new Error("Network error"));
 
       await act(async () => {
         await useNotificationStore.getState().fetchPreferences();
@@ -405,8 +418,8 @@ describe('Notification Store', () => {
     });
   });
 
-  describe('updatePreferences', () => {
-    it('should update preferences successfully', async () => {
+  describe("updatePreferences", () => {
+    it("should update preferences successfully", async () => {
       const updated = { ...mockPreferences, smsEnabled: true };
       mockUpdatePreferences.mockResolvedValue({
         success: true,
@@ -415,99 +428,112 @@ describe('Notification Store', () => {
 
       let result: boolean = false;
       await act(async () => {
-        result = await useNotificationStore.getState().updatePreferences({ smsEnabled: true });
+        result = await useNotificationStore
+          .getState()
+          .updatePreferences({ smsEnabled: true });
       });
 
       expect(result).toBe(true);
       expect(useNotificationStore.getState().preferences).toEqual(updated);
     });
 
-    it('should return false on failure', async () => {
+    it("should return false on failure", async () => {
       mockUpdatePreferences.mockResolvedValue({ success: false });
 
       let result: boolean = false;
       await act(async () => {
-        result = await useNotificationStore.getState().updatePreferences({ smsEnabled: true });
+        result = await useNotificationStore
+          .getState()
+          .updatePreferences({ smsEnabled: true });
       });
 
       expect(result).toBe(false);
     });
 
-    it('should return false on exception', async () => {
-      mockUpdatePreferences.mockRejectedValue(new Error('Failure'));
+    it("should return false on exception", async () => {
+      mockUpdatePreferences.mockRejectedValue(new Error("Failure"));
 
       let result: boolean = false;
       await act(async () => {
-        result = await useNotificationStore.getState().updatePreferences({ smsEnabled: true });
+        result = await useNotificationStore
+          .getState()
+          .updatePreferences({ smsEnabled: true });
       });
 
       expect(result).toBe(false);
     });
   });
 
-  describe('setPushToken', () => {
-    it('should set push token', () => {
+  describe("setPushToken", () => {
+    it("should set push token", () => {
       act(() => {
-        useNotificationStore.getState().setPushToken('ExponentPushToken[xxx]');
+        useNotificationStore.getState().setPushToken("ExponentPushToken[xxx]");
       });
 
-      expect(useNotificationStore.getState().pushToken).toBe('ExponentPushToken[xxx]');
+      expect(useNotificationStore.getState().pushToken).toBe(
+        "ExponentPushToken[xxx]",
+      );
     });
   });
 
-  describe('registerPushToken', () => {
-    it('should register push token with backend', async () => {
-      useNotificationStore.setState({ pushToken: 'ExponentPushToken[xxx]' });
+  describe("registerPushToken", () => {
+    it("should register push token with backend", async () => {
+      useNotificationStore.setState({ pushToken: "ExponentPushToken[xxx]" });
       mockRegisterPushToken.mockResolvedValue({ success: true });
 
       let result: boolean = false;
       await act(async () => {
-        result = await useNotificationStore.getState().registerPushToken('ios');
+        result = await useNotificationStore.getState().registerPushToken("ios");
       });
 
       expect(result).toBe(true);
-      expect(mockRegisterPushToken).toHaveBeenCalledWith('ExponentPushToken[xxx]', 'ios');
+      expect(mockRegisterPushToken).toHaveBeenCalledWith(
+        "ExponentPushToken[xxx]",
+        "ios",
+      );
     });
 
-    it('should return false when no push token exists', async () => {
+    it("should return false when no push token exists", async () => {
       useNotificationStore.setState({ pushToken: null });
 
       let result: boolean = false;
       await act(async () => {
-        result = await useNotificationStore.getState().registerPushToken('android');
+        result = await useNotificationStore
+          .getState()
+          .registerPushToken("android");
       });
 
       expect(result).toBe(false);
       expect(mockRegisterPushToken).not.toHaveBeenCalled();
     });
 
-    it('should return false on API failure', async () => {
-      useNotificationStore.setState({ pushToken: 'token' });
+    it("should return false on API failure", async () => {
+      useNotificationStore.setState({ pushToken: "token" });
       mockRegisterPushToken.mockResolvedValue({ success: false });
 
       let result: boolean = false;
       await act(async () => {
-        result = await useNotificationStore.getState().registerPushToken('ios');
+        result = await useNotificationStore.getState().registerPushToken("ios");
       });
 
       expect(result).toBe(false);
     });
 
-    it('should return false on exception', async () => {
-      useNotificationStore.setState({ pushToken: 'token' });
-      mockRegisterPushToken.mockRejectedValue(new Error('Network error'));
+    it("should return false on exception", async () => {
+      useNotificationStore.setState({ pushToken: "token" });
+      mockRegisterPushToken.mockRejectedValue(new Error("Network error"));
 
       let result: boolean = false;
       await act(async () => {
-        result = await useNotificationStore.getState().registerPushToken('ios');
+        result = await useNotificationStore.getState().registerPushToken("ios");
       });
 
       expect(result).toBe(false);
     });
   });
 
-  describe('setPushPermissionGranted', () => {
-    it('should set push permission granted', () => {
+  describe("setPushPermissionGranted", () => {
+    it("should set push permission granted", () => {
       act(() => {
         useNotificationStore.getState().setPushPermissionGranted(true);
       });
@@ -515,7 +541,7 @@ describe('Notification Store', () => {
       expect(useNotificationStore.getState().pushPermissionGranted).toBe(true);
     });
 
-    it('should set push permission denied', () => {
+    it("should set push permission denied", () => {
       useNotificationStore.setState({ pushPermissionGranted: true });
 
       act(() => {
@@ -526,9 +552,9 @@ describe('Notification Store', () => {
     });
   });
 
-  describe('clearError', () => {
-    it('should clear error', () => {
-      useNotificationStore.setState({ error: 'Some error' });
+  describe("clearError", () => {
+    it("should clear error", () => {
+      useNotificationStore.setState({ error: "Some error" });
 
       act(() => {
         useNotificationStore.getState().clearError();
@@ -538,18 +564,18 @@ describe('Notification Store', () => {
     });
   });
 
-  describe('resetStore', () => {
-    it('should reset all state to initial values', () => {
+  describe("resetStore", () => {
+    it("should reset all state to initial values", () => {
       useNotificationStore.setState({
         notifications: mockNotifications,
         unreadCount: 5,
         totalNotifications: 10,
         preferences: mockPreferences,
-        pushToken: 'token',
+        pushToken: "token",
         pushPermissionGranted: true,
         isLoading: true,
         isLoadingPreferences: true,
-        error: 'error',
+        error: "error",
       });
 
       act(() => {
@@ -569,51 +595,57 @@ describe('Notification Store', () => {
     });
   });
 
-  describe('Selectors', () => {
+  describe("Selectors", () => {
     beforeEach(() => {
       useNotificationStore.setState({
         notifications: mockNotifications,
         unreadCount: 2,
-        pushToken: 'token',
+        pushToken: "token",
         pushPermissionGranted: true,
       });
     });
 
-    it('selectNotifications returns all notifications', () => {
-      expect(selectNotifications(useNotificationStore.getState())).toEqual(mockNotifications);
+    it("selectNotifications returns all notifications", () => {
+      expect(selectNotifications(useNotificationStore.getState())).toEqual(
+        mockNotifications,
+      );
     });
 
-    it('selectUnreadNotifications returns only unread', () => {
+    it("selectUnreadNotifications returns only unread", () => {
       const unread = selectUnreadNotifications(useNotificationStore.getState());
       expect(unread.length).toBe(2);
       expect(unread.every((n) => !n.read)).toBe(true);
     });
 
-    it('selectUnreadCount returns unread count', () => {
+    it("selectUnreadCount returns unread count", () => {
       expect(selectUnreadCount(useNotificationStore.getState())).toBe(2);
     });
 
-    it('selectNotificationsByType filters by type', () => {
-      const scoreChanges = selectNotificationsByType('score_change')(useNotificationStore.getState());
+    it("selectNotificationsByType filters by type", () => {
+      const scoreChanges = selectNotificationsByType("score_change")(
+        useNotificationStore.getState(),
+      );
       expect(scoreChanges.length).toBe(1);
-      expect(scoreChanges[0].id).toBe('n1');
+      expect(scoreChanges[0].id).toBe("n1");
     });
 
-    it('selectNotificationsByType returns empty for unknown type', () => {
-      const payment = selectNotificationsByType('payment')(useNotificationStore.getState());
+    it("selectNotificationsByType returns empty for unknown type", () => {
+      const payment = selectNotificationsByType("payment")(
+        useNotificationStore.getState(),
+      );
       expect(payment.length).toBe(0);
     });
 
-    it('selectPushEnabled returns true when token and permission are set', () => {
+    it("selectPushEnabled returns true when token and permission are set", () => {
       expect(selectPushEnabled(useNotificationStore.getState())).toBe(true);
     });
 
-    it('selectPushEnabled returns false when permission not granted', () => {
+    it("selectPushEnabled returns false when permission not granted", () => {
       useNotificationStore.setState({ pushPermissionGranted: false });
       expect(selectPushEnabled(useNotificationStore.getState())).toBe(false);
     });
 
-    it('selectPushEnabled returns false when no token', () => {
+    it("selectPushEnabled returns false when no token", () => {
       useNotificationStore.setState({ pushToken: null });
       expect(selectPushEnabled(useNotificationStore.getState())).toBe(false);
     });

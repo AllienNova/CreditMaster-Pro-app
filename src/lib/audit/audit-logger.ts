@@ -1,36 +1,36 @@
 /**
  * Audit Logger Service
- * 
+ *
  * Tracks sensitive admin operations for security and compliance
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 
 // Audit event types
 export type AuditAction =
-  | 'user.view'
-  | 'user.update'
-  | 'user.delete'
-  | 'user.suspend'
-  | 'user.role_change'
-  | 'subscription.update'
-  | 'subscription.cancel'
-  | 'subscription.refund'
-  | 'dispute.view'
-  | 'dispute.update'
-  | 'dispute.delete'
-  | 'settings.update'
-  | 'feature_flag.update'
-  | 'config.update'
-  | 'export.data'
-  | 'login.success'
-  | 'login.failed'
-  | 'logout'
-  | 'password.change'
-  | 'mfa.enable'
-  | 'mfa.disable'
-  | 'api_key.create'
-  | 'api_key.revoke';
+  | "user.view"
+  | "user.update"
+  | "user.delete"
+  | "user.suspend"
+  | "user.role_change"
+  | "subscription.update"
+  | "subscription.cancel"
+  | "subscription.refund"
+  | "dispute.view"
+  | "dispute.update"
+  | "dispute.delete"
+  | "settings.update"
+  | "feature_flag.update"
+  | "config.update"
+  | "export.data"
+  | "login.success"
+  | "login.failed"
+  | "logout"
+  | "password.change"
+  | "mfa.enable"
+  | "mfa.disable"
+  | "api_key.create"
+  | "api_key.revoke";
 
 export interface AuditEvent {
   action: AuditAction;
@@ -54,7 +54,7 @@ interface AuditLogEntry extends AuditEvent {
 function getSupabaseClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 }
 
@@ -76,12 +76,10 @@ export async function logAuditEvent(event: AuditEvent): Promise<void> {
       user_agent: event.userAgent,
       success: event.success,
       error_message: event.errorMessage,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
     };
 
-    const { error } = await supabase
-      .from('audit_logs')
-      .insert(entry);
+    const { error } = await supabase.from("audit_logs").insert(entry);
 
     if (error) {
       // AuditLogger error: Failed to log audit event
@@ -105,36 +103,37 @@ export async function queryAuditLogs(filters: {
   offset?: number;
 }): Promise<{ logs: AuditLogEntry[]; total: number }> {
   const supabase = getSupabaseClient();
-  let query = supabase
-    .from('audit_logs')
-    .select('*', { count: 'exact' });
+  let query = supabase.from("audit_logs").select("*", { count: "exact" });
 
   if (filters.actorId) {
-    query = query.eq('actor_id', filters.actorId);
+    query = query.eq("actor_id", filters.actorId);
   }
   if (filters.targetId) {
-    query = query.eq('target_id', filters.targetId);
+    query = query.eq("target_id", filters.targetId);
   }
   if (filters.action) {
-    query = query.eq('action', filters.action);
+    query = query.eq("action", filters.action);
   }
   if (filters.startDate) {
-    query = query.gte('created_at', filters.startDate.toISOString());
+    query = query.gte("created_at", filters.startDate.toISOString());
   }
   if (filters.endDate) {
-    query = query.lte('created_at', filters.endDate.toISOString());
+    query = query.lte("created_at", filters.endDate.toISOString());
   }
 
   query = query
-    .order('created_at', { ascending: false })
-    .range(filters.offset || 0, (filters.offset || 0) + (filters.limit || 50) - 1);
+    .order("created_at", { ascending: false })
+    .range(
+      filters.offset || 0,
+      (filters.offset || 0) + (filters.limit || 50) - 1,
+    );
 
   const { data, error, count } = await query;
 
   if (error) throw error;
 
   return {
-    logs: (data || []).map(row => ({
+    logs: (data || []).map((row) => ({
       id: row.id,
       action: row.action,
       actorId: row.actor_id,
@@ -147,25 +146,47 @@ export async function queryAuditLogs(filters: {
       userAgent: row.user_agent,
       success: row.success,
       errorMessage: row.error_message,
-      timestamp: row.created_at
+      timestamp: row.created_at,
     })),
-    total: count || 0
+    total: count || 0,
   };
 }
 
 /**
  * Helper to create audit logger for a specific actor
  */
-export function createAuditLogger(actorId: string, actorEmail?: string, actorRole?: string) {
+export function createAuditLogger(
+  actorId: string,
+  actorEmail?: string,
+  actorRole?: string,
+) {
   return {
-    log: (event: Omit<AuditEvent, 'actorId' | 'actorEmail' | 'actorRole'>) =>
+    log: (event: Omit<AuditEvent, "actorId" | "actorEmail" | "actorRole">) =>
       logAuditEvent({ ...event, actorId, actorEmail, actorRole }),
-    
+
     success: (action: AuditAction, details?: Record<string, any>) =>
-      logAuditEvent({ action, actorId, actorEmail, actorRole, details, success: true }),
-    
-    failure: (action: AuditAction, errorMessage: string, details?: Record<string, any>) =>
-      logAuditEvent({ action, actorId, actorEmail, actorRole, details, success: false, errorMessage })
+      logAuditEvent({
+        action,
+        actorId,
+        actorEmail,
+        actorRole,
+        details,
+        success: true,
+      }),
+
+    failure: (
+      action: AuditAction,
+      errorMessage: string,
+      details?: Record<string, any>,
+    ) =>
+      logAuditEvent({
+        action,
+        actorId,
+        actorEmail,
+        actorRole,
+        details,
+        success: false,
+        errorMessage,
+      }),
   };
 }
-

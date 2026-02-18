@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
 /**
  * Debt Payoff Planner Component
  * Comprehensive debt management with payoff strategies, projections, and tracking
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/components/ui/Toast';
-import AreaChartComponent from '@/components/charts/AreaChart';
-import { Icon } from '@/components/ui/Icon';
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/components/ui/Toast";
+import AreaChartComponent from "@/components/charts/AreaChart";
+import { Icon } from "@/components/ui/Icon";
 import type {
   Debt,
   DebtType,
@@ -19,28 +19,28 @@ import type {
   DebtOverview,
   PayoffMilestone,
   PayoffInsight,
-} from '@/lib/financial/types/debt-payoff.types';
+} from "@/lib/financial/types/debt-payoff.types";
 
-type TabType = 'overview' | 'debts' | 'strategies' | 'timeline' | 'milestones';
+type TabType = "overview" | "debts" | "strategies" | "timeline" | "milestones";
 
 const DEBT_TYPE_LABELS: Record<DebtType, string> = {
-  credit_card: 'Credit Card',
-  student_loan: 'Student Loan',
-  auto_loan: 'Auto Loan',
-  mortgage: 'Mortgage',
-  personal_loan: 'Personal Loan',
-  medical: 'Medical',
-  other: 'Other',
+  credit_card: "Credit Card",
+  student_loan: "Student Loan",
+  auto_loan: "Auto Loan",
+  mortgage: "Mortgage",
+  personal_loan: "Personal Loan",
+  medical: "Medical",
+  other: "Other",
 };
 
 const DEBT_TYPE_ICONS: Record<DebtType, string> = {
-  credit_card: '',
-  student_loan: '',
-  auto_loan: '',
-  mortgage: '',
-  personal_loan: '',
-  medical: '',
-  other: '',
+  credit_card: "",
+  student_loan: "",
+  auto_loan: "",
+  mortgage: "",
+  personal_loan: "",
+  medical: "",
+  other: "",
 };
 
 const STRATEGY_INFO: Record<
@@ -48,23 +48,23 @@ const STRATEGY_INFO: Record<
   { name: string; description: string; icon: string }
 > = {
   avalanche: {
-    name: 'Avalanche',
-    description: 'Pay highest interest first - saves the most money',
+    name: "Avalanche",
+    description: "Pay highest interest first - saves the most money",
     icon: "wallet",
   },
   snowball: {
-    name: 'Snowball',
-    description: 'Pay smallest balance first - quick wins for motivation',
+    name: "Snowball",
+    description: "Pay smallest balance first - quick wins for motivation",
     icon: "wallet",
   },
   hybrid: {
-    name: 'Hybrid',
-    description: 'Balanced approach considering both factors',
+    name: "Hybrid",
+    description: "Balanced approach considering both factors",
     icon: "sparkles",
   },
   ai_optimized: {
-    name: 'AI-Optimized',
-    description: 'AI-powered strategy balancing math and psychology',
+    name: "AI-Optimized",
+    description: "AI-powered strategy balancing math and psychology",
     icon: "sparkles",
   },
 };
@@ -83,9 +83,9 @@ export default function DebtPayoffPlanner() {
   const { error: showError } = useToast();
   const [data, setData] = useState<DebtPayoffData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [selectedStrategy, setSelectedStrategy] =
-    useState<PayoffStrategy>('avalanche');
+    useState<PayoffStrategy>("avalanche");
   const [extraPayment, setExtraPayment] = useState(0);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [showAddDebtModal, setShowAddDebtModal] = useState(false);
@@ -96,28 +96,31 @@ export default function DebtPayoffPlanner() {
       setLoading(true);
 
       // First, get the list of debts from the existing API
-      const debtsResponse = await fetch('/api/financial/debt');
-      if (!debtsResponse.ok) throw new Error('Failed to fetch debts');
+      const debtsResponse = await fetch("/api/financial/debt");
+      if (!debtsResponse.ok) throw new Error("Failed to fetch debts");
       const debtsResult = await debtsResponse.json();
 
       // If user has debts, use the new debt strategy optimizer API
       if (debtsResult.data?.debts && debtsResult.data.debts.length > 0) {
-        const strategyResponse = await fetch('/api/ai/financial-coach/debt-strategy', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            debts: debtsResult.data.debts.map((d: Debt) => ({
-              id: d.id,
-              name: d.name,
-              balance: d.balance,
-              interestRate: d.interestRate,
-              minimumPayment: d.minimumPayment,
-              type: d.type,
-            })),
-            extraPayment: extraPayment,
-            includeAIOptimization: true,
-          }),
-        });
+        const strategyResponse = await fetch(
+          "/api/ai/financial-coach/debt-strategy",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              debts: debtsResult.data.debts.map((d: Debt) => ({
+                id: d.id,
+                name: d.name,
+                balance: d.balance,
+                interestRate: d.interestRate,
+                minimumPayment: d.minimumPayment,
+                type: d.type,
+              })),
+              extraPayment: extraPayment,
+              includeAIOptimization: true,
+            }),
+          },
+        );
 
         if (strategyResponse.ok) {
           const strategyResult = await strategyResponse.json();
@@ -127,9 +130,10 @@ export default function DebtPayoffPlanner() {
               method: PayoffStrategy;
             }
             const comparison = strategyResult.data;
-            const selectedPlan = comparison.strategies.find(
-              (s: StrategyPlan) => s.method === selectedStrategy
-            ) || comparison.strategies[0];
+            const selectedPlan =
+              comparison.strategies.find(
+                (s: StrategyPlan) => s.method === selectedStrategy,
+              ) || comparison.strategies[0];
 
             setData({
               overview: debtsResult.data.overview,
@@ -148,15 +152,15 @@ export default function DebtPayoffPlanner() {
       const params = new URLSearchParams({
         strategy: selectedStrategy,
         extraPayment: extraPayment.toString(),
-        compare: 'true',
+        compare: "true",
       });
       const response = await fetch(`/api/financial/debt?${params}`);
-      if (!response.ok) throw new Error('Failed to fetch debt data');
+      if (!response.ok) throw new Error("Failed to fetch debt data");
       const result = await response.json();
       setData(result.data);
     } catch (error) {
-      console.error('Error fetching debt data:', error);
-      showError('Failed to load debt data');
+      console.error("Error fetching debt data:", error);
+      showError("Failed to load debt data");
     } finally {
       setLoading(false);
     }
@@ -169,17 +173,17 @@ export default function DebtPayoffPlanner() {
   }, [authLoading, user, fetchDebtData]);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
   };
 
   const formatDate = (date: Date | string) => {
-    const d = typeof date === 'string' ? new Date(date) : date;
-    return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    const d = typeof date === "string" ? new Date(date) : date;
+    return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
   };
 
   if (authLoading || loading) {
@@ -214,11 +218,11 @@ export default function DebtPayoffPlanner() {
     data;
 
   const tabs: { id: TabType; label: string; icon: string }[] = [
-    { id: 'overview', label: 'Overview', icon: "chart-bar" },
-    { id: 'debts', label: 'My Debts', icon: "chart-bar" },
-    { id: 'strategies', label: 'Strategies', icon: "chart-bar" },
-    { id: 'timeline', label: 'Timeline', icon: "chart-bar" },
-    { id: 'milestones', label: 'Milestones', icon: "sparkles" },
+    { id: "overview", label: "Overview", icon: "chart-bar" },
+    { id: "debts", label: "My Debts", icon: "chart-bar" },
+    { id: "strategies", label: "Strategies", icon: "chart-bar" },
+    { id: "timeline", label: "Timeline", icon: "chart-bar" },
+    { id: "milestones", label: "Milestones", icon: "sparkles" },
   ];
 
   return (
@@ -237,7 +241,7 @@ export default function DebtPayoffPlanner() {
           subtitle={
             extraPayment > 0
               ? `+${formatCurrency(extraPayment)} extra`
-              : 'Minimum only'
+              : "Minimum only"
           }
           gradient="from-blue-500 to-blue-500"
         />
@@ -296,7 +300,7 @@ export default function DebtPayoffPlanner() {
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
                 data-testid={`debt-tab-${tab.id}`}
-                className={`flex items-center gap-2 px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${ activeTab === tab.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-200 dark:hover:text-gray-300' }`}
+                className={`flex items-center gap-2 px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${activeTab === tab.id ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-200 dark:hover:text-gray-300"}`}
               >
                 <span>{tab.icon}</span>
                 {tab.label}
@@ -307,7 +311,7 @@ export default function DebtPayoffPlanner() {
 
         <div className="p-6">
           {/* Overview Tab */}
-          {activeTab === 'overview' && (
+          {activeTab === "overview" && (
             <div className="space-y-6">
               {/* Insights */}
               {insights.length > 0 && (
@@ -318,7 +322,7 @@ export default function DebtPayoffPlanner() {
                   {insights.map((insight, i) => (
                     <div
                       key={i}
-                      className={`p-4 rounded-lg border ${ insight.type === 'warning' ? 'bg-yellow-50 border-yellow-200' : insight.type === 'tip' ? 'bg-blue-50 border-blue-200' : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' }`}
+                      className={`p-4 rounded-lg border ${insight.type === "warning" ? "bg-yellow-50 border-yellow-200" : insight.type === "tip" ? "bg-blue-50 border-blue-200" : "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"}`}
                     >
                       <h4 className="font-medium text-gray-900 dark:text-white">
                         {insight.title}
@@ -349,9 +353,9 @@ export default function DebtPayoffPlanner() {
                     }))}
                     areas={[
                       {
-                        dataKey: 'balance',
-                        name: 'Remaining Balance',
-                        color: '#EF4444',
+                        dataKey: "balance",
+                        name: "Remaining Balance",
+                        color: "#EF4444",
                       },
                     ]}
                     height={256}
@@ -387,7 +391,7 @@ export default function DebtPayoffPlanner() {
                           </div>
                         </div>
                       </div>
-                    )
+                    ),
                   )}
                 </div>
               </div>
@@ -395,7 +399,7 @@ export default function DebtPayoffPlanner() {
           )}
 
           {/* Debts Tab */}
-          {activeTab === 'debts' && (
+          {activeTab === "debts" && (
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -443,7 +447,7 @@ export default function DebtPayoffPlanner() {
                   <div className="mt-3">
                     <div className="flex justify-between text-xs text-gray-500 dark:text-slate-400 mb-1">
                       <span>
-                        Paid:{' '}
+                        Paid:{" "}
                         {formatCurrency(debt.originalBalance - debt.balance)}
                       </span>
                       <span>
@@ -469,14 +473,24 @@ export default function DebtPayoffPlanner() {
           )}
 
           {/* Strategies Tab */}
-          {activeTab === 'strategies' && comparison && (
+          {activeTab === "strategies" && comparison && (
             <div className="space-y-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 Compare Payoff Strategies
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {(['avalanche', 'snowball', 'hybrid', 'ai_optimized'] as PayoffStrategy[])
-                  .filter((strategy) => strategy !== 'ai_optimized' || comparison.ai_optimized)
+                {(
+                  [
+                    "avalanche",
+                    "snowball",
+                    "hybrid",
+                    "ai_optimized",
+                  ] as PayoffStrategy[]
+                )
+                  .filter(
+                    (strategy) =>
+                      strategy !== "ai_optimized" || comparison.ai_optimized,
+                  )
                   .map((strategy) => {
                     const plan = comparison[strategy];
                     if (!plan) return null;
@@ -489,7 +503,7 @@ export default function DebtPayoffPlanner() {
                         key={strategy}
                         type="button"
                         onClick={() => setSelectedStrategy(strategy)}
-                        className={`p-4 rounded-xl border-2 text-left transition-all ${ isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 hover:border-gray-300 dark:border-slate-600' }`}
+                        className={`p-4 rounded-xl border-2 text-left transition-all ${isSelected ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20" : "border-gray-200 hover:border-gray-300 dark:border-slate-600"}`}
                       >
                         {isRecommended && (
                           <span className="inline-block px-2 py-1 text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded mb-2">
@@ -546,7 +560,7 @@ export default function DebtPayoffPlanner() {
           )}
 
           {/* Timeline Tab */}
-          {activeTab === 'timeline' && (
+          {activeTab === "timeline" && (
             <div className="space-y-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 Payoff Order ({STRATEGY_INFO[selectedStrategy].name})
@@ -586,7 +600,7 @@ export default function DebtPayoffPlanner() {
           )}
 
           {/* Milestones Tab */}
-          {activeTab === 'milestones' && (
+          {activeTab === "milestones" && (
             <div className="space-y-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 Payoff Milestones
@@ -595,20 +609,20 @@ export default function DebtPayoffPlanner() {
                 {milestones.map((milestone) => (
                   <div
                     key={milestone.id}
-                    className={`flex items-center gap-4 p-4 rounded-lg border ${ milestone.achieved ? 'bg-green-50 border-green-200' : 'bg-gray-50 dark:bg-slate-700 border-gray-200 dark:border-slate-600' }`}
+                    className={`flex items-center gap-4 p-4 rounded-lg border ${milestone.achieved ? "bg-green-50 border-green-200" : "bg-gray-50 dark:bg-slate-700 border-gray-200 dark:border-slate-600"}`}
                   >
                     <div
                       className={`w-10 h-10 rounded-full flex items-center justify-center ${
                         milestone.achieved
-                          ? 'bg-green-500 text-white'
-                          : 'bg-gray-200 dark:bg-slate-600 text-gray-500 dark:text-slate-400'
+                          ? "bg-green-500 text-white"
+                          : "bg-gray-200 dark:bg-slate-600 text-gray-500 dark:text-slate-400"
                       }`}
                     >
                       {milestone.achieved
-                        ? ''
-                        : milestone.type === 'percentage'
+                        ? ""
+                        : milestone.type === "percentage"
                           ? `${milestone.target}%`
-                          : ''}
+                          : ""}
                     </div>
                     <div className="flex-1">
                       <p className="font-medium text-gray-900 dark:text-white">
@@ -616,7 +630,7 @@ export default function DebtPayoffPlanner() {
                       </p>
                       <p className="text-sm text-gray-500 dark:text-slate-400">
                         {milestone.achieved
-                          ? 'Achieved!'
+                          ? "Achieved!"
                           : `Projected: ${formatDate(milestone.projectedDate)}`}
                       </p>
                     </div>

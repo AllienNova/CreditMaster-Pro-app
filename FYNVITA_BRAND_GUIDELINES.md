@@ -23,24 +23,30 @@
 ## 🎯 Brand Overview
 
 ### Name
+
 **Fynvita**
 
 ### Pronunciation
+
 **fin-VEE-tah**
 
 ### Tagline
+
 **"Your Financial Vitality"**
 
 ### Alternative Taglines
+
 - "Financial Health, For Life"
 - "Where Credit Meets Wellness"
 - "Vital Financial Intelligence"
 - "Complete Financial Health Platform"
 
 ### Category
+
 Holistic Financial Health Platform
 
 ### Target Audience
+
 Health-conscious millennials & Gen Z (25-45 years old)
 
 ---
@@ -54,7 +60,9 @@ We combine AI-powered credit repair, financial wellness tools, and investment in
 Just as you care for your physical health, Fynvita helps you care for your financial health - with intelligence, compassion, and a focus on long-term wellness.
 
 ### Core Value Proposition
+
 Complete financial vitality through:
+
 - **Credit Health** - Repair and optimize your credit
 - **Financial Wellness** - Manage money with confidence
 - **Investment Intelligence** - Grow your wealth smartly
@@ -66,11 +74,13 @@ Complete financial vitality through:
 ### Primary Colors
 
 **Vital Green** - Health, growth, vitality
+
 - HEX: `#10B981`
 - RGB: `rgb(16, 185, 129)`
 - Usage: Primary CTAs, success states, health indicators
 
 **Trust Blue** - Intelligence, stability, trust
+
 - HEX: `#3B82F6`
 - RGB: `rgb(59, 130, 246)`
 - Usage: Headers, links, primary UI elements
@@ -78,11 +88,13 @@ Complete financial vitality through:
 ### Secondary Colors
 
 **Deep Navy** - Professional, trustworthy
+
 - HEX: `#1E40AF`
 - RGB: `rgb(30, 64, 175)`
 - Usage: Text, backgrounds, professional contexts
 
 **Emerald** - Wellness, prosperity
+
 - HEX: `#059669`
 - RGB: `rgb(5, 150, 105)`
 - Usage: Accents, highlights, positive indicators
@@ -90,11 +102,13 @@ Complete financial vitality through:
 ### Accent Colors
 
 **Energy Gold** - Prosperity, warmth, achievement
+
 - HEX: `#F59E0B`
 - RGB: `rgb(245, 158, 11)`
 - Usage: Highlights, achievements, premium features
 
 **Purple** - Innovation, premium, intelligence
+
 - HEX: `#A855F7`
 - RGB: `rgb(168, 85, 247)`
 - Usage: AI features, premium tiers, innovation
@@ -102,14 +116,17 @@ Complete financial vitality through:
 ### Neutral Colors
 
 **Dark Gray** - Primary text
+
 - HEX: `#1F2937`
 - RGB: `rgb(31, 41, 55)`
 
 **Light Gray** - Backgrounds, borders
+
 - HEX: `#F3F4F6`
 - RGB: `rgb(243, 244, 246)`
 
 **White** - Backgrounds, cards
+
 - HEX: `#FFFFFF`
 - RGB: `rgb(255, 255, 255)`
 
@@ -118,20 +135,24 @@ Complete financial vitality through:
 ## ✍️ Typography
 
 ### Primary Font Family
+
 **Inter** (sans-serif)
 
 ### Font Weights & Usage
+
 - **Headings:** Inter Bold (700)
 - **Subheadings:** Inter SemiBold (600)
 - **Body Text:** Inter Regular (400)
 - **Captions:** Inter Medium (500)
 
 ### Alternative Fonts
+
 - Poppins
 - SF Pro Display
 - System UI fallbacks
 
 ### Font Sizes (Web)
+
 - H1: 48px / 3rem
 - H2: 36px / 2.25rem
 - H3: 30px / 1.875rem
@@ -145,12 +166,13 @@ Complete financial vitality through:
 ## 🎨 Logo Guidelines
 
 ### Logo Concept
+
 - **Icon:** Heart + Growth arrow (symbolizing financial health & vitality)
 - **Style:** Modern, clean, approachable
 - **Wordmark:** "Fynvita" in Inter Bold
 
-
 ### Logo Don'ts
+
 - ❌ Don't distort or stretch the logo
 - ❌ Don't change logo colors outside approved palette
 - ❌ Don't add effects (shadows, gradients, outlines)
@@ -162,6 +184,7 @@ Complete financial vitality through:
 ## 🗣️ Voice & Tone
 
 ### Brand Voice
+
 **Caring, Intelligent, Empowering, Holistic**
 
 Fynvita speaks like a trusted health advisor for your finances - knowledgeable but never condescending, supportive but never patronizing, professional but never cold.
@@ -169,6 +192,7 @@ Fynvita speaks like a trusted health advisor for your finances - knowledgeable b
 ### Tone Attributes
 
 **We ARE:**
+
 - ✅ Caring and supportive
 - ✅ Intelligent and informed
 - ✅ Empowering and motivating
@@ -178,6 +202,7 @@ Fynvita speaks like a trusted health advisor for your finances - knowledgeable b
 - ✅ Professional and trustworthy
 
 **We are NOT:**
+
 - ❌ Stuffy or corporate
 - ❌ Complicated or jargon-heavy
 - ❌ Intimidating or judgmental
@@ -188,18 +213,21 @@ Fynvita speaks like a trusted health advisor for your finances - knowledgeable b
 ### Writing Style
 
 **Clarity First**
+
 - Use simple, clear language
 - Avoid financial jargon when possible
 - Explain complex concepts simply
 - Use active voice
 
 **Health-Focused Metaphors**
+
 - "Financial health" not "financial status"
 - "Vitality" not "performance"
 - "Wellness" not "management"
 - "Healing" not "fixing"
 
 **Empowering Language**
+
 - "You can" not "You should"
 - "Let's" not "You must"
 - "Your journey" not "Our process"
@@ -210,9 +238,11 @@ Fynvita speaks like a trusted health advisor for your finances - knowledgeable b
 ## 💬 Messaging
 
 ### Elevator Pitch (30 seconds)
+
 "Fynvita is your complete financial health platform. We combine AI-powered credit repair, financial wellness tools, and investment intelligence to help you achieve total financial vitality. Just as you care for your physical health, we help you care for your financial health."
 
 ### One-Liner
+
 "Your Financial Vitality - Credit health, financial wellness, and investment intelligence in one platform."
 
 ### Key Messages
@@ -232,18 +262,21 @@ Fynvita speaks like a trusted health advisor for your finances - knowledgeable b
 ### Value Propositions
 
 **Credit Health**
+
 - AI-powered credit report analysis
 - Automated dispute letter generation
 - Real-time credit score tracking
 - Personalized credit improvement plans
 
 **Financial Wellness**
+
 - Smart budgeting and expense tracking
 - Financial goal setting and monitoring
 - Debt management strategies
 - Emergency fund building
 
 **Investment Intelligence**
+
 - AI-driven investment recommendations
 - Portfolio optimization
 - Risk assessment and management
@@ -256,11 +289,13 @@ Fynvita speaks like a trusted health advisor for your finances - knowledgeable b
 ### Brand Name Usage
 
 **Correct:**
+
 - ✅ Fynvita (always capitalize the F)
 - ✅ "Fynvita platform"
 - ✅ "the Fynvita app"
 
 **Incorrect:**
+
 - ❌ fynvita (lowercase)
 - ❌ FynVita (camelCase)
 - ❌ FYNVITA (all caps, except in logos)
@@ -269,6 +304,7 @@ Fynvita speaks like a trusted health advisor for your finances - knowledgeable b
 ### Tagline Usage
 
 **Primary Tagline:** "Your Financial Vitality"
+
 - Always use with initial caps
 - Can be used standalone or with brand name
 - Example: "Fynvita - Your Financial Vitality"
@@ -280,6 +316,7 @@ Fynvita speaks like a trusted health advisor for your finances - knowledgeable b
 **Social Handles:** @fynvita (all platforms)
 
 ### Hashtags
+
 - #Fynvita
 - #FinancialVitality
 - #CreditHealth
@@ -291,9 +328,11 @@ Fynvita speaks like a trusted health advisor for your finances - knowledgeable b
 ## 🎯 Positioning
 
 ### Market Position
+
 **The holistic financial health platform**
 
 We position ourselves uniquely at the intersection of:
+
 - Credit repair (traditional fintech)
 - Financial wellness (modern money management)
 - Investment intelligence (wealth building)
@@ -312,6 +351,7 @@ We're not just wealth building - we're holistic wellness.
 ### Brand Personality
 
 If Fynvita were a person:
+
 - **Profession:** Holistic financial health advisor
 - **Age:** 30-35 (experienced but modern)
 - **Style:** Professional yet approachable
@@ -323,6 +363,7 @@ If Fynvita were a person:
 ## 📱 Digital Presence
 
 ### Website
+
 - Clean, health-focused design
 - Vital Green and Trust Blue as primary colors
 - Clear hierarchy and whitespace
@@ -330,12 +371,14 @@ If Fynvita were a person:
 - User testimonials focused on "health journey"
 
 ### Mobile App
+
 - Icon: Heart + growth arrow in Vital Green
 - Splash screen: Fynvita wordmark on white
 - Primary navigation: Bottom tab bar
 - Health-focused UI (progress rings, vitality scores)
 
 ### Social Media
+
 - Profile image: Fynvita icon (heart + arrow)
 - Cover images: Brand colors with tagline
 - Post style: Educational, empowering, health-focused
@@ -370,24 +413,26 @@ Before publishing any Fynvita content, verify:
 
 **© 2026 Fynvita. All rights reserved.**
 
-*This document is the official brand guidelines for Fynvita. All team members, partners, and vendors must follow these guidelines when representing the Fynvita brand.*
-
+_This document is the official brand guidelines for Fynvita. All team members, partners, and vendors must follow these guidelines when representing the Fynvita brand._
 
 ### Logo Variations
+
 1. **Full Logo** - Icon + Wordmark (primary use)
 2. **Icon Only** - For app icons, favicons, small spaces
 3. **Wordmark Only** - For headers, minimal contexts
 
 ### Clear Space
+
 Maintain clear space around logo equal to the height of the "F" in Fynvita
 
 ### Minimum Sizes
+
 - Full Logo: 120px width minimum
 - Icon Only: 32px × 32px minimum
 - Wordmark: 80px width minimum
 
 ### Logo Colors
+
 - **Primary:** Vital Green (#10B981) icon + Deep Navy (#1E40AF) wordmark
 - **Reversed:** White on dark backgrounds
 - **Monochrome:** Single color when needed
-

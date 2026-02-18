@@ -1,12 +1,12 @@
 /**
  * Lazy Component Loader
  * Phase 6.5.4: Lazy loading implementation for components
- * 
+ *
  * Centralized lazy loading configuration for heavy components
  */
 
-import dynamic from 'next/dynamic';
-import { ComponentType, ReactElement } from 'react';
+import dynamic from "next/dynamic";
+import { ComponentType, ReactElement } from "react";
 
 // Loading component for lazy-loaded components
 const LoadingSpinner = () => (
@@ -20,25 +20,29 @@ const LoadingSpinner = () => (
 // ============================================================================
 
 export const ChatInterface = dynamic(
-  () => import('@/components/chat/ChatInterface').then((mod) => mod.ChatInterface),
+  () =>
+    import("@/components/chat/ChatInterface").then((mod) => mod.ChatInterface),
   {
     loading: () => <LoadingSpinner />,
     ssr: false, // Disable SSR for chat interface (requires client-side auth)
-  }
+  },
 );
 
 export const ChatMessageList = dynamic(
-  () => import('@/components/chat/ChatMessageList').then((mod) => mod.ChatMessageList),
+  () =>
+    import("@/components/chat/ChatMessageList").then(
+      (mod) => mod.ChatMessageList,
+    ),
   {
     loading: () => <LoadingSpinner />,
-  }
+  },
 );
 
 export const ChatSidebar = dynamic(
-  () => import('@/components/chat/ChatSidebar').then((mod) => mod.ChatSidebar),
+  () => import("@/components/chat/ChatSidebar").then((mod) => mod.ChatSidebar),
   {
     loading: () => <LoadingSpinner />,
-  }
+  },
 );
 
 // ============================================================================
@@ -46,19 +50,25 @@ export const ChatSidebar = dynamic(
 // ============================================================================
 
 export const ComprehensiveAnalysisPanel = dynamic(
-  () => import('@/components/investments/analysis/ComprehensiveAnalysisPanel').then((mod) => mod.ComprehensiveAnalysisPanel),
+  () =>
+    import("@/components/investments/analysis/ComprehensiveAnalysisPanel").then(
+      (mod) => mod.ComprehensiveAnalysisPanel,
+    ),
   {
     loading: () => <LoadingSpinner />,
     ssr: false, // Heavy component with charts
-  }
+  },
 );
 
 export const AssetAllocationPanel = dynamic(
-  () => import('@/components/investments/allocation/AssetAllocationPanel').then((mod) => mod.default),
+  () =>
+    import("@/components/investments/allocation/AssetAllocationPanel").then(
+      (mod) => mod.default,
+    ),
   {
     loading: () => <LoadingSpinner />,
     ssr: false, // Heavy component with charts
-  }
+  },
 );
 
 // ============================================================================
@@ -72,28 +82,22 @@ export const AssetAllocationPanel = dynamic(
 // ============================================================================
 
 export const LineChart = dynamic(
-  () => import('@/components/charts/LineChart'),
+  () => import("@/components/charts/LineChart"),
   {
     loading: () => <LoadingSpinner />,
     ssr: false,
-  }
+  },
 );
 
-export const PieChart = dynamic(
-  () => import('@/components/charts/PieChart'),
-  {
-    loading: () => <LoadingSpinner />,
-    ssr: false,
-  }
-);
+export const PieChart = dynamic(() => import("@/components/charts/PieChart"), {
+  loading: () => <LoadingSpinner />,
+  ssr: false,
+});
 
-export const BarChart = dynamic(
-  () => import('@/components/charts/BarChart'),
-  {
-    loading: () => <LoadingSpinner />,
-    ssr: false,
-  }
-);
+export const BarChart = dynamic(() => import("@/components/charts/BarChart"), {
+  loading: () => <LoadingSpinner />,
+  ssr: false,
+});
 
 // ============================================================================
 // UTILITY FUNCTIONS
@@ -107,11 +111,10 @@ export function createLazyComponent<T extends ComponentType<any>>(
   options?: {
     loading?: () => ReactElement;
     ssr?: boolean;
-  }
+  },
 ) {
   return dynamic(importFn, {
     loading: options?.loading || (() => <LoadingSpinner />),
     ssr: options?.ssr ?? true,
   });
 }
-

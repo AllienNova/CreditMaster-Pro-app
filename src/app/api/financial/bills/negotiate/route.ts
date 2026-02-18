@@ -5,38 +5,38 @@
  * POST /api/financial/bills/negotiate - Create a new negotiation
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { billNegotiationService } from '@/lib/financial/bill-negotiation-service';
-import { billDetectionService } from '@/lib/financial/bill-detection-service';
-import type { NegotiationCreateInput } from '@/lib/financial/types/bill-negotiation.types';
+import { NextRequest, NextResponse } from "next/server";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { billNegotiationService } from "@/lib/financial/bill-negotiation-service";
+import { billDetectionService } from "@/lib/financial/bill-detection-service";
+import type { NegotiationCreateInput } from "@/lib/financial/types/bill-negotiation.types";
 
 export async function GET(request: NextRequest) {
   try {
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const userId = validation.user.id;
     const { searchParams } = new URL(request.url);
-    const view = searchParams.get('view') || 'summary';
+    const view = searchParams.get("view") || "summary";
 
-    if (view === 'opportunities') {
+    if (view === "opportunities") {
       const opportunities =
         await billNegotiationService.identifyOpportunities(userId);
       return NextResponse.json({ opportunities });
     }
 
-    if (view === 'insights') {
+    if (view === "insights") {
       const insights = await billNegotiationService.getInsights(userId);
       return NextResponse.json({ insights });
     }
 
-    if (view === 'active') {
+    if (view === "active") {
       const negotiations = await billNegotiationService.getUserNegotiations(
         userId,
-        'in_progress'
+        "in_progress",
       );
       return NextResponse.json({ negotiations });
     }
@@ -50,10 +50,10 @@ export async function GET(request: NextRequest) {
       insights,
     });
   } catch (error) {
-    console.error('Bill negotiation GET error:', error);
+    console.error("Bill negotiation GET error:", error);
     return NextResponse.json(
-      { error: 'Failed to get negotiation data' },
-      { status: 500 }
+      { error: "Failed to get negotiation data" },
+      { status: 500 },
     );
   }
 }
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
   try {
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const userId = validation.user.id;
@@ -71,15 +71,15 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (!body.billId || !body.negotiationType) {
       return NextResponse.json(
-        { error: 'Missing required fields: billId, negotiationType' },
-        { status: 400 }
+        { error: "Missing required fields: billId, negotiationType" },
+        { status: 400 },
       );
     }
 
     // Get the bill
     const bill = await billDetectionService.getBillById(body.billId, userId);
     if (!bill) {
-      return NextResponse.json({ error: 'Bill not found' }, { status: 404 });
+      return NextResponse.json({ error: "Bill not found" }, { status: 404 });
     }
 
     const input: NegotiationCreateInput = {
@@ -93,15 +93,15 @@ export async function POST(request: NextRequest) {
     const negotiation = await billNegotiationService.createNegotiation(
       userId,
       input,
-      bill
+      bill,
     );
 
     return NextResponse.json({ negotiation }, { status: 201 });
   } catch (error) {
-    console.error('Bill negotiation POST error:', error);
+    console.error("Bill negotiation POST error:", error);
     return NextResponse.json(
-      { error: 'Failed to create negotiation' },
-      { status: 500 }
+      { error: "Failed to create negotiation" },
+      { status: 500 },
     );
   }
 }

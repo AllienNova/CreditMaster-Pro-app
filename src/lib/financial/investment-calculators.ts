@@ -21,7 +21,12 @@
 // TYPES — Compound Interest
 // ============================================================================
 
-type CompoundingFrequency = 'annually' | 'semi-annually' | 'quarterly' | 'monthly' | 'daily';
+type CompoundingFrequency =
+  | "annually"
+  | "semi-annually"
+  | "quarterly"
+  | "monthly"
+  | "daily";
 
 interface CompoundInterestParams {
   /** Initial deposit (principal) in dollars */
@@ -271,15 +276,15 @@ interface RiskAdjustedReturnResult {
 
 function compoundingPeriodsPerYear(freq: CompoundingFrequency): number {
   switch (freq) {
-    case 'annually':
+    case "annually":
       return 1;
-    case 'semi-annually':
+    case "semi-annually":
       return 2;
-    case 'quarterly':
+    case "quarterly":
       return 4;
-    case 'monthly':
+    case "monthly":
       return 12;
-    case 'daily':
+    case "daily":
       return 365;
   }
 }
@@ -308,12 +313,20 @@ class InvestmentCalculators {
    *
    * When rate is 0 the formulas degenerate to simple addition.
    */
-  calculateCompoundInterest(params: CompoundInterestParams): CompoundInterestResult {
-    const { principal, rate, time, compoundingFrequency, monthlyContribution = 0 } = params;
+  calculateCompoundInterest(
+    params: CompoundInterestParams,
+  ): CompoundInterestResult {
+    const {
+      principal,
+      rate,
+      time,
+      compoundingFrequency,
+      monthlyContribution = 0,
+    } = params;
 
-    if (principal < 0) throw new Error('Principal must be non-negative');
-    if (rate < 0) throw new Error('Rate must be non-negative');
-    if (time <= 0) throw new Error('Time must be positive');
+    if (principal < 0) throw new Error("Principal must be non-negative");
+    if (rate < 0) throw new Error("Rate must be non-negative");
+    if (time <= 0) throw new Error("Time must be positive");
 
     const n = compoundingPeriodsPerYear(compoundingFrequency);
 
@@ -333,7 +346,8 @@ class InvestmentCalculators {
       const fvPrincipal = principal * Math.pow(1 + ratePerPeriod, totalPeriods);
       // FV of annuity (contributions at end of each period)
       const fvContributions =
-        contributionPerPeriod * ((Math.pow(1 + ratePerPeriod, totalPeriods) - 1) / ratePerPeriod);
+        contributionPerPeriod *
+        ((Math.pow(1 + ratePerPeriod, totalPeriods) - 1) / ratePerPeriod);
       futureValue = fvPrincipal + fvContributions;
     }
 
@@ -341,14 +355,16 @@ class InvestmentCalculators {
     const totalInterest = futureValue - totalContributed;
 
     // Effective annual rate: (1 + r/n)^n - 1
-    const effectiveAnnualRate = rate === 0 ? 0 : Math.pow(1 + ratePerPeriod, n) - 1;
+    const effectiveAnnualRate =
+      rate === 0 ? 0 : Math.pow(1 + ratePerPeriod, n) - 1;
 
     // Year-by-year breakdown
     const yearlyBreakdown: YearlyBreakdownEntry[] = [];
     let prevBalance = principal;
 
     for (let year = 1; year <= Math.ceil(time); year++) {
-      const periodsThisYear = year <= time ? n : Math.round((time - Math.floor(time)) * n);
+      const periodsThisYear =
+        year <= time ? n : Math.round((time - Math.floor(time)) * n);
       const cumulativePeriods = Math.min(year, time) * n;
 
       let balance: number;
@@ -358,13 +374,18 @@ class InvestmentCalculators {
         const fvP = principal * Math.pow(1 + ratePerPeriod, cumulativePeriods);
         const fvC =
           contributionPerPeriod *
-          ((Math.pow(1 + ratePerPeriod, cumulativePeriods) - 1) / ratePerPeriod);
+          ((Math.pow(1 + ratePerPeriod, cumulativePeriods) - 1) /
+            ratePerPeriod);
         balance = fvP + fvC;
       }
 
-      const yearContributed = principal + monthlyContribution * 12 * Math.min(year, time);
+      const yearContributed =
+        principal + monthlyContribution * 12 * Math.min(year, time);
       const yearTotalInterest = balance - yearContributed;
-      const yearInterest = balance - prevBalance - (monthlyContribution * 12 * (year <= time ? 1 : time - Math.floor(time)));
+      const yearInterest =
+        balance -
+        prevBalance -
+        monthlyContribution * 12 * (year <= time ? 1 : time - Math.floor(time));
 
       yearlyBreakdown.push({
         year,
@@ -397,17 +418,25 @@ class InvestmentCalculators {
    * Annualized ROI (CAGR) = ((finalValue + dividends - fees) / initialInvestment)^(1/t) - 1
    */
   calculateROI(params: ROIParams): ROIResult {
-    const { initialInvestment, finalValue, dividends = 0, fees = 0, timeYears } = params;
+    const {
+      initialInvestment,
+      finalValue,
+      dividends = 0,
+      fees = 0,
+      timeYears,
+    } = params;
 
-    if (initialInvestment <= 0) throw new Error('Initial investment must be positive');
-    if (timeYears <= 0) throw new Error('Time must be positive');
+    if (initialInvestment <= 0)
+      throw new Error("Initial investment must be positive");
+    if (timeYears <= 0) throw new Error("Time must be positive");
 
     const totalReturn = finalValue + dividends - fees;
     const netProfit = totalReturn - initialInvestment;
     const totalROI = netProfit / initialInvestment;
 
     // CAGR: Compound Annual Growth Rate
-    const annualizedROI = Math.pow(totalReturn / initialInvestment, 1 / timeYears) - 1;
+    const annualizedROI =
+      Math.pow(totalReturn / initialInvestment, 1 / timeYears) - 1;
 
     const profitRatio = totalReturn / initialInvestment;
 
@@ -432,7 +461,7 @@ class InvestmentCalculators {
    * Portfolio lifespan estimated via systematic withdrawal simulation.
    */
   calculateRetirementProjection(
-    params: RetirementProjectionParams
+    params: RetirementProjectionParams,
   ): RetirementProjectionResult {
     const {
       currentAge,
@@ -444,8 +473,10 @@ class InvestmentCalculators {
       desiredAnnualIncome,
     } = params;
 
-    if (retirementAge <= currentAge) throw new Error('Retirement age must exceed current age');
-    if (currentSavings < 0) throw new Error('Current savings must be non-negative');
+    if (retirementAge <= currentAge)
+      throw new Error("Retirement age must exceed current age");
+    if (currentSavings < 0)
+      throw new Error("Current savings must be non-negative");
 
     const yearsToRetirement = retirementAge - currentAge;
     const monthlyRate = expectedReturn / 12;
@@ -480,12 +511,19 @@ class InvestmentCalculators {
     let requiredMonthlyContribution: number;
     const targetFV = requiredSavings;
     if (expectedReturn === 0) {
-      requiredMonthlyContribution = Math.max(0, (targetFV - currentSavings) / totalMonths);
+      requiredMonthlyContribution = Math.max(
+        0,
+        (targetFV - currentSavings) / totalMonths,
+      );
     } else {
-      const fvLumpAlready = currentSavings * Math.pow(1 + monthlyRate, totalMonths);
+      const fvLumpAlready =
+        currentSavings * Math.pow(1 + monthlyRate, totalMonths);
       const annuityFactor =
         (Math.pow(1 + monthlyRate, totalMonths) - 1) / monthlyRate;
-      requiredMonthlyContribution = Math.max(0, (targetFV - fvLumpAlready) / annuityFactor);
+      requiredMonthlyContribution = Math.max(
+        0,
+        (targetFV - fvLumpAlready) / annuityFactor,
+      );
     }
 
     // Estimate portfolio lifespan in retirement via withdrawal simulation.
@@ -504,7 +542,8 @@ class InvestmentCalculators {
       if (retirementMonths > 0 && retirementMonths % 12 === 0) {
         annualWithdrawal *= 1 + inflationRate;
       }
-      retirementBalance = retirementBalance * (1 + monthlyRealReturn) - annualWithdrawal;
+      retirementBalance =
+        retirementBalance * (1 + monthlyRealReturn) - annualWithdrawal;
       retirementMonths++;
     }
 
@@ -518,7 +557,8 @@ class InvestmentCalculators {
     for (let y = 1; y <= yearsToRetirement; y++) {
       // Grow balance monthly for this year
       for (let m = 0; m < 12; m++) {
-        runningBalance = runningBalance * (1 + monthlyRate) + monthlyContribution;
+        runningBalance =
+          runningBalance * (1 + monthlyRate) + monthlyContribution;
       }
       runningContributed += monthlyContribution * 12;
 
@@ -543,7 +583,8 @@ class InvestmentCalculators {
       onTrack,
       requiredMonthlyContribution: roundCents(requiredMonthlyContribution),
       yearsToRetirement,
-      estimatedPortfolioLifespan: Math.round(estimatedPortfolioLifespan * 100) / 100,
+      estimatedPortfolioLifespan:
+        Math.round(estimatedPortfolioLifespan * 100) / 100,
       yearlyProjection,
     };
   }
@@ -562,11 +603,12 @@ class InvestmentCalculators {
    */
   calculateFIRENumber(
     annualExpenses: number,
-    withdrawalRate: number = 0.04
+    withdrawalRate: number = 0.04,
   ): FIREResult {
-    if (annualExpenses <= 0) throw new Error('Annual expenses must be positive');
+    if (annualExpenses <= 0)
+      throw new Error("Annual expenses must be positive");
     if (withdrawalRate <= 0 || withdrawalRate > 1)
-      throw new Error('Withdrawal rate must be between 0 and 1');
+      throw new Error("Withdrawal rate must be between 0 and 1");
 
     const fireNumber = annualExpenses / withdrawalRate;
 
@@ -575,7 +617,8 @@ class InvestmentCalculators {
     const horizonYears = 30;
     const monthlyRate = assumedRealReturn / 12;
     const totalMonths = horizonYears * 12;
-    const annuityFactor = (Math.pow(1 + monthlyRate, totalMonths) - 1) / monthlyRate;
+    const annuityFactor =
+      (Math.pow(1 + monthlyRate, totalMonths) - 1) / monthlyRate;
     const monthlySavingsNeeded = fireNumber / annuityFactor;
 
     return {
@@ -597,11 +640,12 @@ class InvestmentCalculators {
    */
   calculateDollarCostAverage(
     monthlyAmount: number,
-    prices: number[]
+    prices: number[],
   ): DCAResult {
-    if (monthlyAmount <= 0) throw new Error('Monthly amount must be positive');
-    if (prices.length === 0) throw new Error('Prices array must not be empty');
-    if (prices.some((p) => p <= 0)) throw new Error('All prices must be positive');
+    if (monthlyAmount <= 0) throw new Error("Monthly amount must be positive");
+    if (prices.length === 0) throw new Error("Prices array must not be empty");
+    if (prices.some((p) => p <= 0))
+      throw new Error("All prices must be positive");
 
     const purchases: DCAPurchase[] = [];
     let totalUnits = 0;
@@ -655,14 +699,16 @@ class InvestmentCalculators {
    */
   calculateBreakEvenPoint(
     investment: number,
-    monthlyReturn: number
+    monthlyReturn: number,
   ): BreakEvenResult {
-    if (investment <= 0) throw new Error('Investment must be positive');
-    if (monthlyReturn <= 0) throw new Error('Monthly return must be positive');
+    if (investment <= 0) throw new Error("Investment must be positive");
+    if (monthlyReturn <= 0) throw new Error("Monthly return must be positive");
 
     const monthsToBreakEven = Math.ceil(investment / monthlyReturn);
     const yearsToBreakEven = Math.round((monthsToBreakEven / 12) * 100) / 100;
-    const totalReturnAtBreakEven = roundCents(monthlyReturn * monthsToBreakEven);
+    const totalReturnAtBreakEven = roundCents(
+      monthlyReturn * monthsToBreakEven,
+    );
 
     return {
       monthsToBreakEven,
@@ -683,7 +729,7 @@ class InvestmentCalculators {
    * This is more accurate than the simple subtraction approximation.
    */
   calculateRealReturn(nominalReturn: number, inflationRate: number): number {
-    if (inflationRate === -1) throw new Error('Inflation rate cannot be -100%');
+    if (inflationRate === -1) throw new Error("Inflation rate cannot be -100%");
     const realReturn = (1 + nominalReturn) / (1 + inflationRate) - 1;
     return Math.round(realReturn * 1e8) / 1e8;
   }
@@ -703,9 +749,10 @@ class InvestmentCalculators {
    */
   calculateRiskAdjustedReturn(
     returns: number[],
-    riskFreeRate: number
+    riskFreeRate: number,
   ): RiskAdjustedReturnResult {
-    if (returns.length < 2) throw new Error('At least two return observations are required');
+    if (returns.length < 2)
+      throw new Error("At least two return observations are required");
 
     const n = returns.length;
     const meanReturn = returns.reduce((sum, r) => sum + r, 0) / n;
@@ -716,7 +763,8 @@ class InvestmentCalculators {
     const standardDeviation = Math.sqrt(variance);
 
     const excessReturn = meanReturn - riskFreeRate;
-    const sharpeRatio = standardDeviation === 0 ? 0 : excessReturn / standardDeviation;
+    const sharpeRatio =
+      standardDeviation === 0 ? 0 : excessReturn / standardDeviation;
 
     return {
       sharpeRatio: Math.round(sharpeRatio * 1e6) / 1e6,
@@ -743,11 +791,11 @@ class InvestmentCalculators {
   calculateMortgagePayment(
     principal: number,
     annualRate: number,
-    termYears: number
+    termYears: number,
   ): MortgagePaymentResult {
-    if (principal <= 0) throw new Error('Principal must be positive');
-    if (annualRate < 0) throw new Error('Annual rate must be non-negative');
-    if (termYears <= 0) throw new Error('Term must be positive');
+    if (principal <= 0) throw new Error("Principal must be positive");
+    if (annualRate < 0) throw new Error("Annual rate must be non-negative");
+    if (termYears <= 0) throw new Error("Term must be positive");
 
     const monthlyRate = annualRate / 12;
     const totalPayments = termYears * 12;
@@ -757,7 +805,7 @@ class InvestmentCalculators {
       monthlyPayment = principal / totalPayments;
     } else {
       const factor = Math.pow(1 + monthlyRate, totalPayments);
-      monthlyPayment = principal * (monthlyRate * factor) / (factor - 1);
+      monthlyPayment = (principal * (monthlyRate * factor)) / (factor - 1);
     }
 
     const totalPaid = monthlyPayment * totalPayments;
@@ -786,11 +834,11 @@ class InvestmentCalculators {
   calculateLoanAmortization(
     principal: number,
     annualRate: number,
-    termYears: number
+    termYears: number,
   ): LoanAmortizationResult {
-    if (principal <= 0) throw new Error('Principal must be positive');
-    if (annualRate < 0) throw new Error('Annual rate must be non-negative');
-    if (termYears <= 0) throw new Error('Term must be positive');
+    if (principal <= 0) throw new Error("Principal must be positive");
+    if (annualRate < 0) throw new Error("Annual rate must be non-negative");
+    if (termYears <= 0) throw new Error("Term must be positive");
 
     const monthlyRate = annualRate / 12;
     const totalPayments = termYears * 12;
@@ -800,7 +848,7 @@ class InvestmentCalculators {
       monthlyPayment = principal / totalPayments;
     } else {
       const factor = Math.pow(1 + monthlyRate, totalPayments);
-      monthlyPayment = principal * (monthlyRate * factor) / (factor - 1);
+      monthlyPayment = (principal * (monthlyRate * factor)) / (factor - 1);
     }
 
     const schedule: LoanAmortizationEntry[] = [];

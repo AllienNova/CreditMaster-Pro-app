@@ -5,8 +5,8 @@
  * to improve initial page load performance.
  */
 
-import React, { ComponentType } from 'react';
-import dynamic from 'next/dynamic';
+import React, { ComponentType } from "react";
+import dynamic from "next/dynamic";
 
 // Loading placeholder component
 const LoadingSpinner = () => (
@@ -29,7 +29,7 @@ export function createDynamicComponent<P extends object>(
   options?: {
     loading?: () => React.ReactNode;
     ssr?: boolean;
-  }
+  },
 ) {
   return dynamic(importFn, {
     loading: options?.loading || (() => <LoadingSpinner />),
@@ -39,4 +39,3 @@ export function createDynamicComponent<P extends object>(
 
 // Export loading components for use in other files
 export { LoadingSpinner, LoadingCard };
-

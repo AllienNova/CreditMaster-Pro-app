@@ -6,7 +6,7 @@
  * including on-chain metrics, DeFi analytics, tokenomics, and sentiment
  */
 
-import { z } from 'zod';
+import { z } from "zod";
 
 // ============================================================================
 // ENUMS
@@ -16,36 +16,36 @@ import { z } from 'zod';
  * Cryptocurrency categories
  */
 export enum CryptoCategory {
-  LAYER1 = 'layer1',
-  LAYER2 = 'layer2',
-  DEFI = 'defi',
-  NFT = 'nft',
-  MEME = 'meme',
-  STABLECOIN = 'stablecoin',
-  EXCHANGE = 'exchange',
-  GAMING = 'gaming',
+  LAYER1 = "layer1",
+  LAYER2 = "layer2",
+  DEFI = "defi",
+  NFT = "nft",
+  MEME = "meme",
+  STABLECOIN = "stablecoin",
+  EXCHANGE = "exchange",
+  GAMING = "gaming",
 }
 
 /**
  * On-chain data sources
  */
 export enum OnChainDataSource {
-  ETHEREUM = 'ethereum',
-  BITCOIN = 'bitcoin',
-  POLYGON = 'polygon',
-  BSC = 'bsc',
-  AVALANCHE = 'avalanche',
+  ETHEREUM = "ethereum",
+  BITCOIN = "bitcoin",
+  POLYGON = "polygon",
+  BSC = "bsc",
+  AVALANCHE = "avalanche",
 }
 
 /**
  * DeFi protocol types
  */
 export enum DeFiProtocolType {
-  DEX = 'dex',
-  LENDING = 'lending',
-  YIELD_FARMING = 'yield_farming',
-  DERIVATIVES = 'derivatives',
-  INSURANCE = 'insurance',
+  DEX = "dex",
+  LENDING = "lending",
+  YIELD_FARMING = "yield_farming",
+  DERIVATIVES = "derivatives",
+  INSURANCE = "insurance",
 }
 
 // ============================================================================
@@ -79,20 +79,24 @@ export const OnChainMetricsSchema = z.object({
   }),
 
   // Network security (for PoW chains)
-  networkSecurity: z.object({
-    hashRate: z.number().nonnegative().optional(), // For PoW chains
-    difficulty: z.number().nonnegative().optional(),
-    blockTime: z.number().positive().optional(), // Seconds
-    blockHeight: z.number().nonnegative().optional(),
-  }).optional(),
+  networkSecurity: z
+    .object({
+      hashRate: z.number().nonnegative().optional(), // For PoW chains
+      difficulty: z.number().nonnegative().optional(),
+      blockTime: z.number().positive().optional(), // Seconds
+      blockHeight: z.number().nonnegative().optional(),
+    })
+    .optional(),
 
   // Validator metrics (for PoS chains)
-  validatorMetrics: z.object({
-    totalValidators: z.number().nonnegative().optional(),
-    activeValidators: z.number().nonnegative().optional(),
-    stakingRatio: z.number().min(0).max(100).optional(), // Percentage
-    averageStakingReward: z.number().nonnegative().optional(), // APY
-  }).optional(),
+  validatorMetrics: z
+    .object({
+      totalValidators: z.number().nonnegative().optional(),
+      activeValidators: z.number().nonnegative().optional(),
+      stakingRatio: z.number().min(0).max(100).optional(), // Percentage
+      averageStakingReward: z.number().nonnegative().optional(), // APY
+    })
+    .optional(),
 });
 
 export type OnChainMetrics = z.infer<typeof OnChainMetricsSchema>;
@@ -127,21 +131,25 @@ export const DeFiMetricsSchema = z.object({
   }),
 
   // Yield farming data
-  yieldFarming: z.object({
-    averageAPY: z.number().nonnegative(),
-    maxAPY: z.number().nonnegative(),
-    totalFarms: z.number().nonnegative(),
-    activeFarmers: z.number().nonnegative().optional(),
-  }).optional(),
+  yieldFarming: z
+    .object({
+      averageAPY: z.number().nonnegative(),
+      maxAPY: z.number().nonnegative(),
+      totalFarms: z.number().nonnegative(),
+      activeFarmers: z.number().nonnegative().optional(),
+    })
+    .optional(),
 
   // Protocol revenue
-  protocolRevenue: z.object({
-    revenue24h: z.number().nonnegative(),
-    revenue7d: z.number().nonnegative(),
-    revenue30d: z.number().nonnegative(),
-    fees24h: z.number().nonnegative(),
-    protocolFeeShare: z.number().min(0).max(100), // Percentage
-  }).optional(),
+  protocolRevenue: z
+    .object({
+      revenue24h: z.number().nonnegative(),
+      revenue7d: z.number().nonnegative(),
+      revenue30d: z.number().nonnegative(),
+      fees24h: z.number().nonnegative(),
+      protocolFeeShare: z.number().min(0).max(100), // Percentage
+    })
+    .optional(),
 });
 
 export type DeFiMetrics = z.infer<typeof DeFiMetricsSchema>;
@@ -177,13 +185,15 @@ export const TokenomicsAnalysisSchema = z.object({
   }),
 
   // Vesting schedules
-  vestingSchedule: z.object({
-    totalVested: z.number().nonnegative(),
-    totalUnlocked: z.number().nonnegative(),
-    nextUnlockDate: z.date().optional(),
-    nextUnlockAmount: z.number().nonnegative().optional(),
-    vestingPeriodMonths: z.number().nonnegative().optional(),
-  }).optional(),
+  vestingSchedule: z
+    .object({
+      totalVested: z.number().nonnegative(),
+      totalUnlocked: z.number().nonnegative(),
+      nextUnlockDate: z.date().optional(),
+      nextUnlockAmount: z.number().nonnegative().optional(),
+      vestingPeriodMonths: z.number().nonnegative().optional(),
+    })
+    .optional(),
 
   // Token utility
   tokenUtility: z.object({
@@ -209,13 +219,25 @@ export const CryptoSentimentSchema = z.object({
   timestamp: z.date(),
 
   // Overall sentiment
-  overallSentiment: z.enum(['very_bearish', 'bearish', 'neutral', 'bullish', 'very_bullish']),
+  overallSentiment: z.enum([
+    "very_bearish",
+    "bearish",
+    "neutral",
+    "bullish",
+    "very_bullish",
+  ]),
   sentimentScore: z.number().min(0).max(100), // 0 = very bearish, 100 = very bullish
 
   // Fear & Greed Index
   fearGreedIndex: z.object({
     value: z.number().min(0).max(100),
-    classification: z.enum(['extreme_fear', 'fear', 'neutral', 'greed', 'extreme_greed']),
+    classification: z.enum([
+      "extreme_fear",
+      "fear",
+      "neutral",
+      "greed",
+      "extreme_greed",
+    ]),
     change24h: z.number(),
   }),
 
@@ -244,7 +266,13 @@ export const CryptoSentimentSchema = z.object({
     engagementScore: z.number().min(0).max(100),
     communityGrowth7d: z.number(), // Percentage
     communityGrowth30d: z.number(), // Percentage
-    developerActivity: z.enum(['very_low', 'low', 'moderate', 'high', 'very_high']),
+    developerActivity: z.enum([
+      "very_low",
+      "low",
+      "moderate",
+      "high",
+      "very_high",
+    ]),
   }),
 });
 
@@ -266,8 +294,20 @@ export const CryptoAnalysisSchema = z.object({
 
   // Overall assessment
   overallScore: z.number().min(0).max(100),
-  riskLevel: z.enum(['very_low', 'low', 'moderate', 'high', 'very_high']),
-  investmentGrade: z.enum(['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F']),
+  riskLevel: z.enum(["very_low", "low", "moderate", "high", "very_high"]),
+  investmentGrade: z.enum([
+    "A+",
+    "A",
+    "A-",
+    "B+",
+    "B",
+    "B-",
+    "C+",
+    "C",
+    "C-",
+    "D",
+    "F",
+  ]),
 
   // Price and market data
   priceData: z.object({

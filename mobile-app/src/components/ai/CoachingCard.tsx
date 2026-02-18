@@ -3,18 +3,18 @@
  * Displays behavioral coaching sessions and tips
  */
 
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { lightTheme as theme } from '../../constants/theme';
+import React from "react";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { lightTheme as theme } from "../../constants/theme";
 
 type CoachingTopic =
-  | 'budgeting'
-  | 'saving'
-  | 'investing'
-  | 'debt'
-  | 'credit'
-  | 'mindset';
+  | "budgeting"
+  | "saving"
+  | "investing"
+  | "debt"
+  | "credit"
+  | "mindset";
 
 interface CoachingSession {
   id: string;
@@ -37,12 +37,12 @@ const topicConfig: Record<
   CoachingTopic,
   { icon: keyof typeof Ionicons.glyphMap; color: string; label: string }
 > = {
-  budgeting: { icon: 'calculator', color: '#3B82F6', label: 'Budgeting' },
-  saving: { icon: 'wallet', color: '#22C55E', label: 'Saving' },
-  investing: { icon: 'trending-up', color: '#8B5CF6', label: 'Investing' },
-  debt: { icon: 'card', color: '#EF4444', label: 'Debt Management' },
-  credit: { icon: 'analytics', color: '#F59E0B', label: 'Credit Building' },
-  mindset: { icon: 'bulb', color: '#06B6D4', label: 'Money Mindset' },
+  budgeting: { icon: "calculator", color: "#3B82F6", label: "Budgeting" },
+  saving: { icon: "wallet", color: "#22C55E", label: "Saving" },
+  investing: { icon: "trending-up", color: "#8B5CF6", label: "Investing" },
+  debt: { icon: "card", color: "#EF4444", label: "Debt Management" },
+  credit: { icon: "analytics", color: "#F59E0B", label: "Credit Building" },
+  mindset: { icon: "bulb", color: "#06B6D4", label: "Money Mindset" },
 };
 
 export function CoachingCard({
@@ -69,7 +69,7 @@ export function CoachingCard({
             {session.title}
           </Text>
           <Text style={styles.compactMeta}>
-            {config.label} • {session.duration || '5 min'}
+            {config.label} • {session.duration || "5 min"}
           </Text>
         </View>
         {session.completed ? (
@@ -131,12 +131,12 @@ export function CoachingCard({
         onPress={session.completed ? onContinue : onStart}
       >
         <Ionicons
-          name={session.completed ? 'refresh' : 'play'}
+          name={session.completed ? "refresh" : "play"}
           size={18}
           color="#fff"
         />
         <Text style={styles.actionButtonText}>
-          {session.completed ? 'Review Session' : 'Start Session'}
+          {session.completed ? "Review Session" : "Start Session"}
         </Text>
       </TouchableOpacity>
     </View>
@@ -149,21 +149,21 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 3,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 12,
   },
   topicBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 16,
@@ -171,20 +171,20 @@ const styles = StyleSheet.create({
   },
   topicLabel: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   durationBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   durationText: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: "#9CA3AF",
   },
   title: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
     marginBottom: 8,
   },
@@ -202,27 +202,27 @@ const styles = StyleSheet.create({
   },
   stepsTitle: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: 10,
   },
   stepItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 8,
   },
   stepNumber: {
     width: 20,
     height: 20,
     borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 10,
   },
   stepNumberText: {
     fontSize: 11,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: "700",
+    color: "#fff",
   },
   stepText: {
     flex: 1,
@@ -232,25 +232,25 @@ const styles = StyleSheet.create({
   moreSteps: {
     fontSize: 12,
     color: theme.colors.textSecondary,
-    fontStyle: 'italic',
+    fontStyle: "italic",
     marginLeft: 30,
   },
   actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 14,
     borderRadius: 12,
     gap: 8,
   },
   actionButtonText: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#fff',
+    fontWeight: "600",
+    color: "#fff",
   },
   compactContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: theme.colors.surface,
     borderRadius: 12,
     padding: 14,
@@ -260,8 +260,8 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 12,
   },
   compactContent: {
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
   },
   compactTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   compactMeta: {

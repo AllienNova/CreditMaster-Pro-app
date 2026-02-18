@@ -4,9 +4,15 @@
  * Used for spending patterns by day/time, activity heatmaps, etc.
  */
 
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { lightTheme as theme } from '../../constants/theme';
+import React, { useMemo } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+} from "react-native";
+import { lightTheme as theme } from "../../constants/theme";
 
 export interface HeatmapDataPoint {
   x: string | number;
@@ -20,7 +26,7 @@ export interface HeatmapProps {
   yLabels: string[];
   width?: number;
   height?: number;
-  colorScale?: 'blue' | 'green' | 'red' | 'purple' | 'custom';
+  colorScale?: "blue" | "green" | "red" | "purple" | "custom";
   customColors?: { low: string; mid: string; high: string };
   showValues?: boolean;
   currency?: boolean;
@@ -30,12 +36,13 @@ export interface HeatmapProps {
   formatValue?: (value: number) => string;
 }
 
-const COLOR_SCALES: Record<string, { low: string; mid: string; high: string }> = {
-  blue: { low: '#EFF6FF', mid: '#60A5FA', high: '#1D4ED8' },
-  green: { low: '#ECFDF5', mid: '#34D399', high: '#059669' },
-  red: { low: '#FEF2F2', mid: '#F87171', high: '#DC2626' },
-  purple: { low: '#FAF5FF', mid: '#A78BFA', high: '#7C3AED' },
-};
+const COLOR_SCALES: Record<string, { low: string; mid: string; high: string }> =
+  {
+    blue: { low: "#EFF6FF", mid: "#60A5FA", high: "#1D4ED8" },
+    green: { low: "#ECFDF5", mid: "#34D399", high: "#059669" },
+    red: { low: "#FEF2F2", mid: "#F87171", high: "#DC2626" },
+    purple: { low: "#FAF5FF", mid: "#A78BFA", high: "#7C3AED" },
+  };
 
 // Helper to convert hex to RGB
 function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
@@ -50,7 +57,11 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
 }
 
 // Interpolate between two colors
-function interpolateColor(color1: string, color2: string, ratio: number): string {
+function interpolateColor(
+  color1: string,
+  color2: string,
+  ratio: number,
+): string {
   const rgb1 = hexToRgb(color1);
   const rgb2 = hexToRgb(color2);
   if (!rgb1 || !rgb2) return color1;
@@ -59,15 +70,15 @@ function interpolateColor(color1: string, color2: string, ratio: number): string
   const g = Math.round(rgb1.g + (rgb2.g - rgb1.g) * ratio);
   const b = Math.round(rgb1.b + (rgb2.b - rgb1.b) * ratio);
 
-  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
 }
 
 // Get text color based on background luminance
 function getTextColor(bgColor: string): string {
   const rgb = hexToRgb(bgColor);
-  if (!rgb) return '#000000';
+  if (!rgb) return "#000000";
   const luminance = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
-  return luminance > 0.5 ? '#374151' : '#FFFFFF';
+  return luminance > 0.5 ? "#374151" : "#FFFFFF";
 }
 
 export function Heatmap({
@@ -76,7 +87,7 @@ export function Heatmap({
   yLabels,
   width,
   height,
-  colorScale = 'blue',
+  colorScale = "blue",
   customColors,
   showValues = true,
   currency = false,
@@ -123,7 +134,8 @@ export function Heatmap({
   const valueFormatter = formatValue || defaultFormatValue;
 
   const labelWidth = 60;
-  const totalWidth = width || labelWidth + xLabels.length * (cellSize + cellGap) + 20;
+  const totalWidth =
+    width || labelWidth + xLabels.length * (cellSize + cellGap) + 20;
 
   return (
     <ScrollView
@@ -138,7 +150,10 @@ export function Heatmap({
           {xLabels.map((label, index) => (
             <View
               key={`x-${index}`}
-              style={[styles.xLabelContainer, { width: cellSize, marginRight: cellGap }]}
+              style={[
+                styles.xLabelContainer,
+                { width: cellSize, marginRight: cellGap },
+              ]}
             >
               <Text style={styles.xLabel} numberOfLines={1}>
                 {label}
@@ -201,9 +216,15 @@ export function Heatmap({
         <View style={styles.legend}>
           <Text style={styles.legendText}>Low</Text>
           <View style={styles.legendGradient}>
-            <View style={[styles.legendSegment, { backgroundColor: colors.low }]} />
-            <View style={[styles.legendSegment, { backgroundColor: colors.mid }]} />
-            <View style={[styles.legendSegment, { backgroundColor: colors.high }]} />
+            <View
+              style={[styles.legendSegment, { backgroundColor: colors.low }]}
+            />
+            <View
+              style={[styles.legendSegment, { backgroundColor: colors.mid }]}
+            />
+            <View
+              style={[styles.legendSegment, { backgroundColor: colors.high }]}
+            />
           </View>
           <Text style={styles.legendText}>High</Text>
         </View>
@@ -220,24 +241,24 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   xLabelsRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: 4,
   },
   xLabelContainer: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   xLabel: {
     fontSize: 10,
     color: theme.colors.textSecondary,
-    fontWeight: '500',
-    textAlign: 'center',
+    fontWeight: "500",
+    textAlign: "center",
   },
   gridContainer: {
     marginTop: 4,
   },
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   yLabelContainer: {
     paddingRight: 8,
@@ -245,25 +266,25 @@ const styles = StyleSheet.create({
   yLabel: {
     fontSize: 11,
     color: theme.colors.textSecondary,
-    fontWeight: '500',
-    textAlign: 'right',
+    fontWeight: "500",
+    textAlign: "right",
   },
   cellsContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   cell: {
     borderRadius: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   cellValue: {
     fontSize: 9,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   legend: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     marginTop: 16,
     gap: 8,
   },
@@ -272,9 +293,9 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   legendGradient: {
-    flexDirection: 'row',
+    flexDirection: "row",
     borderRadius: 4,
-    overflow: 'hidden',
+    overflow: "hidden",
     height: 12,
     width: 100,
   },

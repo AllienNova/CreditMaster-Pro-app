@@ -1,17 +1,23 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import type { Document, DocumentShareLink } from '@/lib/documents/document-service';
+import { useEffect, useState } from "react";
+import type {
+  Document,
+  DocumentShareLink,
+} from "@/lib/documents/document-service";
 
 interface DocumentShareModalProps {
   document: Document;
   onClose: () => void;
 }
 
-export default function DocumentShareModal({ document, onClose }: DocumentShareModalProps) {
-  const [recipients, setRecipients] = useState<string>('');
+export default function DocumentShareModal({
+  document,
+  onClose,
+}: DocumentShareModalProps) {
+  const [recipients, setRecipients] = useState<string>("");
   const [expiration, setExpiration] = useState(24);
-  const [permission, setPermission] = useState<'view' | 'download'>('view');
+  const [permission, setPermission] = useState<"view" | "download">("view");
   const [links, setLinks] = useState<DocumentShareLink[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +26,9 @@ export default function DocumentShareModal({ document, onClose }: DocumentShareM
   useEffect(() => {
     const loadLinks = async () => {
       try {
-        const response = await fetch(`/api/documents/share?documentId=${document.id}`);
+        const response = await fetch(
+          `/api/documents/share?documentId=${document.id}`,
+        );
         if (response.ok) {
           const data = await response.json();
           setLinks(data.links || []);
@@ -35,12 +43,12 @@ export default function DocumentShareModal({ document, onClose }: DocumentShareM
 
   const handleCreateLink = async () => {
     const emails = recipients
-      .split(',')
+      .split(",")
       .map((email) => email.trim())
       .filter(Boolean);
 
     if (emails.length === 0) {
-      setError('Please add at least one email address.');
+      setError("Please add at least one email address.");
       return;
     }
 
@@ -49,9 +57,9 @@ export default function DocumentShareModal({ document, onClose }: DocumentShareM
     setSuccessMessage(null);
 
     try {
-      const response = await fetch('/api/documents/share', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/documents/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           documentId: document.id,
           recipients: emails,
@@ -62,16 +70,18 @@ export default function DocumentShareModal({ document, onClose }: DocumentShareM
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Failed to create share link');
+        throw new Error(data.error || "Failed to create share link");
       }
 
       const data = await response.json();
       setLinks((prev) => [data.link, ...prev]);
-      setRecipients('');
-      setSuccessMessage('Secure link created and copied to your clipboard.');
+      setRecipients("");
+      setSuccessMessage("Secure link created and copied to your clipboard.");
       await navigator.clipboard.writeText(data.link.url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create share link');
+      setError(
+        err instanceof Error ? err.message : "Failed to create share link",
+      );
     } finally {
       setLoading(false);
     }
@@ -79,12 +89,12 @@ export default function DocumentShareModal({ document, onClose }: DocumentShareM
 
   const handleCopy = async (url: string) => {
     await navigator.clipboard.writeText(url);
-    setSuccessMessage('Link copied to clipboard.');
+    setSuccessMessage("Link copied to clipboard.");
   };
 
   const handleRevoke = async (shareId: string) => {
     const response = await fetch(`/api/documents/share?shareId=${shareId}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
 
     if (response.ok) {
@@ -97,8 +107,12 @@ export default function DocumentShareModal({ document, onClose }: DocumentShareM
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-2xl">
         <div className="p-6 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
           <div>
-            <p className="text-sm text-gray-500 dark:text-slate-400">Share document</p>
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white truncate">{document.originalName}</h3>
+            <p className="text-sm text-gray-500 dark:text-slate-400">
+              Share document
+            </p>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white truncate">
+              {document.originalName}
+            </h3>
           </div>
           <button
             type="button"
@@ -124,7 +138,9 @@ export default function DocumentShareModal({ document, onClose }: DocumentShareM
           )}
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-slate-200">Recipients</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-200">
+              Recipients
+            </label>
             <textarea
               value={recipients}
               onChange={(e) => setRecipients(e.target.value)}
@@ -137,10 +153,14 @@ export default function DocumentShareModal({ document, onClose }: DocumentShareM
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Permission</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
+                Permission
+              </label>
               <select
                 value={permission}
-                onChange={(e) => setPermission(e.target.value as 'view' | 'download')}
+                onChange={(e) =>
+                  setPermission(e.target.value as "view" | "download")
+                }
                 className="w-full rounded-lg border border-gray-300 dark:border-slate-600 px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 disabled={loading}
               >
@@ -150,7 +170,9 @@ export default function DocumentShareModal({ document, onClose }: DocumentShareM
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Expires in</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
+                Expires in
+              </label>
               <select
                 value={expiration}
                 onChange={(e) => setExpiration(Number(e.target.value))}
@@ -159,7 +181,9 @@ export default function DocumentShareModal({ document, onClose }: DocumentShareM
               >
                 {[1, 6, 12, 24, 48, 72, 168].map((hours) => (
                   <option key={hours} value={hours}>
-                    {hours < 24 ? `${hours} hour${hours === 1 ? '' : 's'}` : `${hours / 24} day(s)`}
+                    {hours < 24
+                      ? `${hours} hour${hours === 1 ? "" : "s"}`
+                      : `${hours / 24} day(s)`}
                   </option>
                 ))}
               </select>
@@ -172,13 +196,17 @@ export default function DocumentShareModal({ document, onClose }: DocumentShareM
             disabled={loading}
             className="w-full rounded-lg bg-blue-600 px-4 py-3 text-white font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50"
           >
-            {loading ? 'Creating secure link…' : 'Create secure link'}
+            {loading ? "Creating secure link…" : "Create secure link"}
           </button>
 
           <div>
-            <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Active links</h4>
+            <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+              Active links
+            </h4>
             {links.length === 0 && (
-              <p className="text-sm text-gray-500 dark:text-slate-400">No active links yet. Create one above.</p>
+              <p className="text-sm text-gray-500 dark:text-slate-400">
+                No active links yet. Create one above.
+              </p>
             )}
             <div className="space-y-3">
               {links.map((link) => (
@@ -188,10 +216,10 @@ export default function DocumentShareModal({ document, onClose }: DocumentShareM
                 >
                   <div>
                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      {link.recipients.join(', ')}
+                      {link.recipients.join(", ")}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-slate-400">
-                      {permissionLabel(link.permissions)} · Expires{' '}
+                      {permissionLabel(link.permissions)} · Expires{" "}
                       {link.expiresAt.toLocaleString()}
                     </p>
                   </div>
@@ -221,6 +249,5 @@ export default function DocumentShareModal({ document, onClose }: DocumentShareM
   );
 }
 
-const permissionLabel = (value: 'view' | 'download') =>
-  value === 'download' ? 'Can view & download' : 'View only';
-
+const permissionLabel = (value: "view" | "download") =>
+  value === "download" ? "Can view & download" : "View only";

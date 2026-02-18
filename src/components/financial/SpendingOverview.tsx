@@ -1,8 +1,12 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Link from 'next/link';
-import { ArrowUpIcon, ArrowDownIcon, MinusIcon } from '@heroicons/react/24/solid';
+import React from "react";
+import Link from "next/link";
+import {
+  ArrowUpIcon,
+  ArrowDownIcon,
+  MinusIcon,
+} from "@heroicons/react/24/solid";
 
 interface SpendingCategory {
   name: string;
@@ -20,25 +24,25 @@ interface SpendingOverviewProps {
 
 // Category colors for donut segments
 const CATEGORY_COLORS: Record<string, string> = {
-  'Food & Dining': '#22C55E',
-  'Shopping': '#3B82F6',
-  'Transportation': '#F59E0B',
-  'Entertainment': '#EC4899',
-  'Bills & Utilities': '#EF4444',
-  'Health & Fitness': '#8B5CF6',
-  'Travel': '#06B6D4',
-  'Education': '#84CC16',
-  'Personal Care': '#F97316',
-  'Groceries': '#10B981',
-  'Gas & Fuel': '#6366F1',
-  'Home': '#14B8A6',
-  'Other': '#9CA3AF',
+  "Food & Dining": "#22C55E",
+  Shopping: "#3B82F6",
+  Transportation: "#F59E0B",
+  Entertainment: "#EC4899",
+  "Bills & Utilities": "#EF4444",
+  "Health & Fitness": "#8B5CF6",
+  Travel: "#06B6D4",
+  Education: "#84CC16",
+  "Personal Care": "#F97316",
+  Groceries: "#10B981",
+  "Gas & Fuel": "#6366F1",
+  Home: "#14B8A6",
+  Other: "#9CA3AF",
 };
 
 function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value);
@@ -81,13 +85,19 @@ function DonutSegment({
     `A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2}`,
     `L ${x3} ${y3}`,
     `A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${x4} ${y4}`,
-    'Z',
-  ].join(' ');
+    "Z",
+  ].join(" ");
 
   return <path d={d} fill={color} />;
 }
 
-function MiniDonutChart({ categories, size = 80 }: { categories: SpendingCategory[]; size?: number }) {
+function MiniDonutChart({
+  categories,
+  size = 80,
+}: {
+  categories: SpendingCategory[];
+  size?: number;
+}) {
   const cx = size / 2;
   const cy = size / 2;
   const radius = size / 2 - 4;
@@ -133,7 +143,11 @@ function MiniDonutChart({ categories, size = 80 }: { categories: SpendingCategor
           radius={radius}
           startAngle={segment.startAngle}
           endAngle={segment.endAngle}
-          color={segment.color || CATEGORY_COLORS[segment.name] || CATEGORY_COLORS.Other}
+          color={
+            segment.color ||
+            CATEGORY_COLORS[segment.name] ||
+            CATEGORY_COLORS.Other
+          }
         />
       ))}
     </svg>
@@ -170,9 +184,10 @@ export function SpendingOverview({
   }
 
   const changeAmount = totalSpent - lastMonthSpent;
-  const changePercent = lastMonthSpent > 0
-    ? ((changeAmount / lastMonthSpent) * 100).toFixed(1)
-    : '0';
+  const changePercent =
+    lastMonthSpent > 0
+      ? ((changeAmount / lastMonthSpent) * 100).toFixed(1)
+      : "0";
 
   const isUp = changeAmount > 0;
   const isDown = changeAmount < 0;
@@ -225,11 +240,18 @@ export function SpendingOverview({
       {topCategory && (
         <div className="mb-4">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600 dark:text-slate-400">Top category</span>
+            <span className="text-gray-600 dark:text-slate-400">
+              Top category
+            </span>
             <div className="flex items-center gap-2">
               <span
                 className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: topCategory.color || CATEGORY_COLORS[topCategory.name] || CATEGORY_COLORS.Other }}
+                style={{
+                  backgroundColor:
+                    topCategory.color ||
+                    CATEGORY_COLORS[topCategory.name] ||
+                    CATEGORY_COLORS.Other,
+                }}
               />
               <span className="font-medium text-gray-900 dark:text-white">
                 {topCategory.name}
@@ -250,7 +272,10 @@ export function SpendingOverview({
             className="h-full transition-all duration-300"
             style={{
               width: `${category.percentage}%`,
-              backgroundColor: category.color || CATEGORY_COLORS[category.name] || CATEGORY_COLORS.Other,
+              backgroundColor:
+                category.color ||
+                CATEGORY_COLORS[category.name] ||
+                CATEGORY_COLORS.Other,
             }}
           />
         ))}
@@ -262,7 +287,12 @@ export function SpendingOverview({
             <div key={index} className="flex items-center gap-1 min-w-0">
               <span
                 className="w-2 h-2 rounded-full flex-shrink-0"
-                style={{ backgroundColor: category.color || CATEGORY_COLORS[category.name] || CATEGORY_COLORS.Other }}
+                style={{
+                  backgroundColor:
+                    category.color ||
+                    CATEGORY_COLORS[category.name] ||
+                    CATEGORY_COLORS.Other,
+                }}
               />
               <span className="text-xs text-gray-500 dark:text-slate-400 truncate max-w-[60px] sm:max-w-none">
                 {category.name}

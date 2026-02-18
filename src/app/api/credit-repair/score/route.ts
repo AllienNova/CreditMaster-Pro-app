@@ -12,14 +12,14 @@
  * - Audit logging
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { creditRepairService } from '@/lib/credit-repair';
-import { db } from '@/lib/credit-repair/db';
-import { auditLogger } from '@/lib/security/audit-logging';
+import { NextRequest, NextResponse } from "next/server";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { creditRepairService } from "@/lib/credit-repair";
+import { db } from "@/lib/credit-repair/db";
+import { auditLogger } from "@/lib/security/audit-logging";
 
 const toFactorRecord = (
-  factors: Array<{ category: string; currentScore: number }>
+  factors: Array<{ category: string; currentScore: number }>,
 ): Record<string, number> =>
   factors.reduce<Record<string, number>>((acc, factor) => {
     acc[factor.category] = factor.currentScore;
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     // 1. Authenticate
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = validation.user;
@@ -45,7 +45,9 @@ export async function GET(request: NextRequest) {
 
     // 3. If no score exists, calculate new one
     if (!score) {
-      const calculatedScore = await creditRepairService.getCreditRepairScore(user.id);
+      const calculatedScore = await creditRepairService.getCreditRepairScore(
+        user.id,
+      );
 
       // Save to database
       score = await db.creditRepair.saveCreditRepairScore({
@@ -61,7 +63,7 @@ export async function GET(request: NextRequest) {
     // 4. Audit log
     await auditLogger.logAIInteraction({
       userId: user.id,
-      action: 'get_credit_repair_score',
+      action: "get_credit_repair_score",
       input: { userId: user.id },
       output: { score: score.score },
       success: true,
@@ -78,17 +80,17 @@ export async function GET(request: NextRequest) {
     // Audit log error
     try {
       await auditLogger.logSecurityEvent({
-        type: 'api_error',
+        type: "api_error",
         message: `Failed to get credit repair score: ${(error as Error).message}`,
-        severity: 'medium',
+        severity: "medium",
       });
     } catch {
       // CreditRepairScoreAPI error: Failed to log audit event
     }
 
     return NextResponse.json(
-      { error: 'Failed to get credit repair score' },
-      { status: 500 }
+      { error: "Failed to get credit repair score" },
+      { status: 500 },
     );
   }
 }
@@ -102,13 +104,15 @@ export async function POST(request: NextRequest) {
     // 1. Authenticate
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = validation.user;
 
     // 2. Calculate new score
-    const calculatedScore = await creditRepairService.getCreditRepairScore(user.id);
+    const calculatedScore = await creditRepairService.getCreditRepairScore(
+      user.id,
+    );
 
     // 3. Save to database
     const score = await db.creditRepair.saveCreditRepairScore({
@@ -123,7 +127,7 @@ export async function POST(request: NextRequest) {
     // 4. Audit log
     await auditLogger.logAIInteraction({
       userId: user.id,
-      action: 'calculate_credit_repair_score',
+      action: "calculate_credit_repair_score",
       input: { userId: user.id },
       output: { score: score.score },
       success: true,
@@ -140,17 +144,17 @@ export async function POST(request: NextRequest) {
     // Audit log error
     try {
       await auditLogger.logSecurityEvent({
-        type: 'api_error',
+        type: "api_error",
         message: `Failed to calculate credit repair score: ${(error as Error).message}`,
-        severity: 'medium',
+        severity: "medium",
       });
     } catch {
       // CreditRepairScoreAPI error: Failed to log audit event
     }
 
     return NextResponse.json(
-      { error: 'Failed to calculate credit repair score' },
-      { status: 500 }
+      { error: "Failed to calculate credit repair score" },
+      { status: 500 },
     );
   }
 }

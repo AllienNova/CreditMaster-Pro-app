@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Order Confirmation Modal
@@ -7,8 +7,8 @@
  * estimated costs, and execution controls.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
   AlertTriangle,
@@ -21,7 +21,7 @@ import {
   XCircle,
   Loader2,
   RefreshCw,
-} from 'lucide-react';
+} from "lucide-react";
 
 // ============================================================================
 // TYPES
@@ -29,12 +29,12 @@ import {
 
 export interface OrderDetails {
   symbol: string;
-  side: 'buy' | 'sell';
+  side: "buy" | "sell";
   quantity: number;
-  type: 'market' | 'limit' | 'stop' | 'stop_limit';
+  type: "market" | "limit" | "stop" | "stop_limit";
   limitPrice?: number;
   stopPrice?: number;
-  timeInForce: 'day' | 'gtc' | 'ioc' | 'fok';
+  timeInForce: "day" | "gtc" | "ioc" | "fok";
   takeProfitPrice?: number;
   stopLossPrice?: number;
 }
@@ -60,7 +60,7 @@ export interface OrderConfirmationModalProps {
   buyingPower?: number;
 }
 
-type ConfirmationState = 'preview' | 'confirming' | 'success' | 'error';
+type ConfirmationState = "preview" | "confirming" | "success" | "error";
 
 // ============================================================================
 // COMPONENT
@@ -77,14 +77,14 @@ export function OrderConfirmationModal({
   accountBalance,
   buyingPower,
 }: OrderConfirmationModalProps) {
-  const [state, setState] = useState<ConfirmationState>('preview');
+  const [state, setState] = useState<ConfirmationState>("preview");
   const [error, setError] = useState<string | null>(null);
   const [priceAtConfirm, setPriceAtConfirm] = useState<number | null>(null);
 
   // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
-      setState('preview');
+      setState("preview");
       setError(null);
       setPriceAtConfirm(null);
     }
@@ -93,7 +93,7 @@ export function OrderConfirmationModal({
   // Calculate estimated values
   const estimatedPrice = order.limitPrice || livePrice?.mid || 0;
   const estimatedTotal = estimatedPrice * order.quantity;
-  const executionPrice = order.side === 'buy' ? livePrice?.ask : livePrice?.bid;
+  const executionPrice = order.side === "buy" ? livePrice?.ask : livePrice?.bid;
   const marketImpact =
     executionPrice && estimatedPrice
       ? ((executionPrice - estimatedPrice) / estimatedPrice) * 100
@@ -107,21 +107,21 @@ export function OrderConfirmationModal({
   const priceWarning = priceDeviation > 0.5; // 0.5% threshold
 
   const handleConfirm = useCallback(async () => {
-    setState('confirming');
+    setState("confirming");
     setPriceAtConfirm(livePrice?.mid || null);
     setError(null);
 
     try {
       await onConfirm();
-      setState('success');
+      setState("success");
     } catch (err) {
-      setState('error');
-      setError(err instanceof Error ? err.message : 'Order execution failed');
+      setState("error");
+      setError(err instanceof Error ? err.message : "Order execution failed");
     }
   }, [onConfirm, livePrice?.mid]);
 
   const handleClose = useCallback(() => {
-    if (state !== 'confirming') {
+    if (state !== "confirming") {
       onCancel();
     }
   }, [state, onCancel]);
@@ -150,28 +150,28 @@ export function OrderConfirmationModal({
           {/* Header */}
           <div
             className={`px-6 py-4 border-b border-gray-800 ${
-              order.side === 'buy' ? 'bg-emerald-500/10' : 'bg-red-500/10'
+              order.side === "buy" ? "bg-emerald-500/10" : "bg-red-500/10"
             }`}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                {order.side === 'buy' ? (
+                {order.side === "buy" ? (
                   <TrendingUp className="w-6 h-6 text-emerald-500" />
                 ) : (
                   <TrendingDown className="w-6 h-6 text-red-500" />
                 )}
                 <div>
                   <h2 className="text-lg font-semibold text-white">
-                    {order.side === 'buy' ? 'Buy' : 'Sell'} {order.symbol}
+                    {order.side === "buy" ? "Buy" : "Sell"} {order.symbol}
                   </h2>
                   <p className="text-sm text-gray-400 dark:text-slate-500">
-                    {order.type.replace('_', ' ').toUpperCase()} Order
+                    {order.type.replace("_", " ").toUpperCase()} Order
                   </p>
                 </div>
               </div>
               <button
                 onClick={handleClose}
-                disabled={state === 'confirming'}
+                disabled={state === "confirming"}
                 className="p-2 text-gray-400 dark:text-slate-500 hover:text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
               >
                 <X className="w-5 h-5" />
@@ -184,7 +184,9 @@ export function OrderConfirmationModal({
             {/* Live Price Display */}
             <div className="bg-gray-800/50 rounded-lg p-4">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-sm text-gray-400 dark:text-slate-500">Live Market Price</span>
+                <span className="text-sm text-gray-400 dark:text-slate-500">
+                  Live Market Price
+                </span>
                 <div className="flex items-center gap-2">
                   {isLoadingPrice ? (
                     <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
@@ -198,7 +200,7 @@ export function OrderConfirmationModal({
                       className="p-1 text-gray-400 dark:text-slate-500 hover:text-white rounded transition-colors"
                     >
                       <RefreshCw
-                        className={`w-4 h-4 ${isLoadingPrice ? 'animate-spin' : ''}`}
+                        className={`w-4 h-4 ${isLoadingPrice ? "animate-spin" : ""}`}
                       />
                     </button>
                   )}
@@ -208,19 +210,25 @@ export function OrderConfirmationModal({
               {livePrice ? (
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Bid</p>
+                    <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">
+                      Bid
+                    </p>
                     <p className="text-lg font-mono text-red-400">
                       ${livePrice.bid.toFixed(2)}
                     </p>
                   </div>
                   <div className="text-center">
-                    <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Mid</p>
+                    <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">
+                      Mid
+                    </p>
                     <p className="text-lg font-mono text-white">
                       ${livePrice.mid.toFixed(2)}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Ask</p>
+                    <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">
+                      Ask
+                    </p>
                     <p className="text-lg font-mono text-emerald-400">
                       ${livePrice.ask.toFixed(2)}
                     </p>
@@ -228,7 +236,9 @@ export function OrderConfirmationModal({
                 </div>
               ) : (
                 <div className="text-center py-2">
-                  <p className="text-gray-500 dark:text-slate-400">Price unavailable</p>
+                  <p className="text-gray-500 dark:text-slate-400">
+                    Price unavailable
+                  </p>
                 </div>
               )}
 
@@ -248,7 +258,9 @@ export function OrderConfirmationModal({
             {/* Order Details */}
             <div className="space-y-3">
               <div className="flex justify-between py-2 border-b border-gray-800">
-                <span className="text-gray-400 dark:text-slate-500">Quantity</span>
+                <span className="text-gray-400 dark:text-slate-500">
+                  Quantity
+                </span>
                 <span className="text-white font-medium">
                   {order.quantity} shares
                 </span>
@@ -256,7 +268,9 @@ export function OrderConfirmationModal({
 
               {order.limitPrice && (
                 <div className="flex justify-between py-2 border-b border-gray-800">
-                  <span className="text-gray-400 dark:text-slate-500">Limit Price</span>
+                  <span className="text-gray-400 dark:text-slate-500">
+                    Limit Price
+                  </span>
                   <span className="text-white font-medium">
                     ${order.limitPrice.toFixed(2)}
                   </span>
@@ -265,7 +279,9 @@ export function OrderConfirmationModal({
 
               {order.stopPrice && (
                 <div className="flex justify-between py-2 border-b border-gray-800">
-                  <span className="text-gray-400 dark:text-slate-500">Stop Price</span>
+                  <span className="text-gray-400 dark:text-slate-500">
+                    Stop Price
+                  </span>
                   <span className="text-white font-medium">
                     ${order.stopPrice.toFixed(2)}
                   </span>
@@ -273,7 +289,9 @@ export function OrderConfirmationModal({
               )}
 
               <div className="flex justify-between py-2 border-b border-gray-800">
-                <span className="text-gray-400 dark:text-slate-500">Time in Force</span>
+                <span className="text-gray-400 dark:text-slate-500">
+                  Time in Force
+                </span>
                 <span className="text-white font-medium">
                   {order.timeInForce.toUpperCase()}
                 </span>
@@ -281,7 +299,9 @@ export function OrderConfirmationModal({
 
               {order.takeProfitPrice && (
                 <div className="flex justify-between py-2 border-b border-gray-800">
-                  <span className="text-gray-400 dark:text-slate-500">Take Profit</span>
+                  <span className="text-gray-400 dark:text-slate-500">
+                    Take Profit
+                  </span>
                   <span className="text-emerald-400 font-medium">
                     ${order.takeProfitPrice.toFixed(2)}
                   </span>
@@ -290,7 +310,9 @@ export function OrderConfirmationModal({
 
               {order.stopLossPrice && (
                 <div className="flex justify-between py-2 border-b border-gray-800">
-                  <span className="text-gray-400 dark:text-slate-500">Stop Loss</span>
+                  <span className="text-gray-400 dark:text-slate-500">
+                    Stop Loss
+                  </span>
                   <span className="text-red-400 font-medium">
                     ${order.stopLossPrice.toFixed(2)}
                   </span>
@@ -303,7 +325,7 @@ export function OrderConfirmationModal({
                 </span>
                 <span className="text-xl font-bold text-white">
                   $
-                  {estimatedTotal.toLocaleString('en-US', {
+                  {estimatedTotal.toLocaleString("en-US", {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   })}
@@ -312,7 +334,7 @@ export function OrderConfirmationModal({
             </div>
 
             {/* Warnings */}
-            {priceWarning && state === 'preview' && (
+            {priceWarning && state === "preview" && (
               <div className="flex items-start gap-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
                 <AlertTriangle className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
                 <div>
@@ -329,7 +351,7 @@ export function OrderConfirmationModal({
 
             {buyingPower !== undefined &&
               estimatedTotal > buyingPower &&
-              order.side === 'buy' && (
+              order.side === "buy" && (
                 <div className="flex items-start gap-3 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
                   <XCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
                   <div>
@@ -345,7 +367,7 @@ export function OrderConfirmationModal({
               )}
 
             {/* Status Messages */}
-            {state === 'success' && (
+            {state === "success" && (
               <div className="flex items-center gap-3 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
                 <CheckCircle className="w-6 h-6 text-emerald-500" />
                 <div>
@@ -359,7 +381,7 @@ export function OrderConfirmationModal({
               </div>
             )}
 
-            {state === 'error' && error && (
+            {state === "error" && error && (
               <div className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
                 <XCircle className="w-6 h-6 text-red-500 shrink-0" />
                 <div>
@@ -372,7 +394,7 @@ export function OrderConfirmationModal({
 
           {/* Footer */}
           <div className="px-6 py-4 bg-gray-800/50 border-t border-gray-800">
-            {state === 'preview' && (
+            {state === "preview" && (
               <div className="flex gap-3">
                 <button
                   onClick={handleClose}
@@ -386,28 +408,28 @@ export function OrderConfirmationModal({
                     isLoadingPrice ||
                     (buyingPower !== undefined &&
                       estimatedTotal > buyingPower &&
-                      order.side === 'buy')
+                      order.side === "buy")
                   }
                   className={`flex-1 px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
-                    order.side === 'buy'
-                      ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
-                      : 'bg-red-600 hover:bg-red-500 text-white'
+                    order.side === "buy"
+                      ? "bg-emerald-600 hover:bg-emerald-500 text-white"
+                      : "bg-red-600 hover:bg-red-500 text-white"
                   }`}
                 >
                   <DollarSign className="w-5 h-5" />
-                  Confirm {order.side === 'buy' ? 'Buy' : 'Sell'}
+                  Confirm {order.side === "buy" ? "Buy" : "Sell"}
                 </button>
               </div>
             )}
 
-            {state === 'confirming' && (
+            {state === "confirming" && (
               <div className="flex items-center justify-center gap-3 py-3">
                 <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
                 <span className="text-gray-300">Processing order...</span>
               </div>
             )}
 
-            {(state === 'success' || state === 'error') && (
+            {(state === "success" || state === "error") && (
               <button
                 onClick={handleClose}
                 className="w-full px-4 py-3 text-white bg-gray-700 hover:bg-gray-600 rounded-lg font-medium transition-colors"

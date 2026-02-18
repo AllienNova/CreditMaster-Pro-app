@@ -3,7 +3,7 @@
  * Shows detailed information about a specific loan with edit/delete options
  */
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -14,24 +14,24 @@ import {
   ActivityIndicator,
   TextInput,
   Modal,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { lightTheme as theme } from '../../src/constants/theme';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useLocalSearchParams, useRouter, Stack } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { lightTheme as theme } from "../../src/constants/theme";
 import {
   useStudentLoanStore,
   selectSelectedLoan,
   selectStudentLoanLoading,
   UpdateLoanInput,
   LoanStatus,
-} from '../../src/store';
+} from "../../src/store";
 
 // Format currency
 const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
     minimumFractionDigits: 2,
   }).format(amount);
 };
@@ -43,23 +43,23 @@ const formatPercent = (value: number): string => {
 
 // Format date
 const formatDate = (dateStr: string): string => {
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 };
 
 // Get loan type display name
 const getLoanTypeLabel = (type: string): string => {
   const labels: Record<string, string> = {
-    federal_direct_subsidized: 'Federal Direct Subsidized',
-    federal_direct_unsubsidized: 'Federal Direct Unsubsidized',
-    federal_plus_parent: 'Parent PLUS',
-    federal_plus_grad: 'Grad PLUS',
-    federal_perkins: 'Federal Perkins',
-    private: 'Private',
-    consolidated: 'Consolidated',
+    federal_direct_subsidized: "Federal Direct Subsidized",
+    federal_direct_unsubsidized: "Federal Direct Unsubsidized",
+    federal_plus_parent: "Parent PLUS",
+    federal_plus_grad: "Grad PLUS",
+    federal_perkins: "Federal Perkins",
+    private: "Private",
+    consolidated: "Consolidated",
   };
   return labels[type] || type;
 };
@@ -67,13 +67,13 @@ const getLoanTypeLabel = (type: string): string => {
 // Get status display name
 const getStatusLabel = (status: string): string => {
   const labels: Record<string, string> = {
-    in_repayment: 'In Repayment',
-    in_grace: 'Grace Period',
-    deferment: 'Deferment',
-    forbearance: 'Forbearance',
-    default: 'Default',
-    cancelled: 'Cancelled',
-    paid_in_full: 'Paid in Full',
+    in_repayment: "In Repayment",
+    in_grace: "Grace Period",
+    deferment: "Deferment",
+    forbearance: "Forbearance",
+    default: "Default",
+    cancelled: "Cancelled",
+    paid_in_full: "Paid in Full",
   };
   return labels[status] || status;
 };
@@ -93,13 +93,13 @@ const getStatusColor = (status: string): string => {
 };
 
 const statusOptions: LoanStatus[] = [
-  'in_repayment',
-  'in_grace',
-  'deferment',
-  'forbearance',
-  'default',
-  'cancelled',
-  'paid_in_full',
+  "in_repayment",
+  "in_grace",
+  "deferment",
+  "forbearance",
+  "default",
+  "cancelled",
+  "paid_in_full",
 ];
 
 export default function LoanDetailScreen() {
@@ -148,33 +148,33 @@ export default function LoanDetailScreen() {
     const result = await updateLoan(id, editData);
     if (result) {
       setIsEditing(false);
-      Alert.alert('Success', 'Loan updated successfully');
+      Alert.alert("Success", "Loan updated successfully");
     } else {
-      Alert.alert('Error', 'Failed to update loan');
+      Alert.alert("Error", "Failed to update loan");
     }
   }, [id, editData, updateLoan]);
 
   // Handle delete
   const handleDelete = useCallback(() => {
     Alert.alert(
-      'Delete Loan',
-      'Are you sure you want to delete this loan? This action cannot be undone.',
+      "Delete Loan",
+      "Are you sure you want to delete this loan? This action cannot be undone.",
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Delete',
-          style: 'destructive',
+          text: "Delete",
+          style: "destructive",
           onPress: async () => {
             if (!id) return;
             const success = await deleteLoan(id);
             if (success) {
               router.back();
             } else {
-              Alert.alert('Error', 'Failed to delete loan');
+              Alert.alert("Error", "Failed to delete loan");
             }
           },
         },
-      ]
+      ],
     );
   }, [id, deleteLoan, router]);
 
@@ -201,7 +201,10 @@ export default function LoanDetailScreen() {
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle" size={48} color={theme.colors.error} />
           <Text style={styles.errorTitle}>Loan Not Found</Text>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
             <Text style={styles.backButtonText}>Go Back</Text>
           </TouchableOpacity>
         </View>
@@ -218,20 +221,40 @@ export default function LoanDetailScreen() {
             <View style={styles.headerButtons}>
               {isEditing ? (
                 <>
-                  <TouchableOpacity onPress={() => setIsEditing(false)} style={styles.headerButton}>
+                  <TouchableOpacity
+                    onPress={() => setIsEditing(false)}
+                    style={styles.headerButton}
+                  >
                     <Text style={styles.cancelText}>Cancel</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={handleSave} style={styles.headerButton}>
+                  <TouchableOpacity
+                    onPress={handleSave}
+                    style={styles.headerButton}
+                  >
                     <Text style={styles.saveText}>Save</Text>
                   </TouchableOpacity>
                 </>
               ) : (
                 <>
-                  <TouchableOpacity onPress={() => setIsEditing(true)} style={styles.headerButton}>
-                    <Ionicons name="pencil" size={20} color={theme.colors.primary} />
+                  <TouchableOpacity
+                    onPress={() => setIsEditing(true)}
+                    style={styles.headerButton}
+                  >
+                    <Ionicons
+                      name="pencil"
+                      size={20}
+                      color={theme.colors.primary}
+                    />
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={handleDelete} style={styles.headerButton}>
-                    <Ionicons name="trash" size={20} color={theme.colors.error} />
+                  <TouchableOpacity
+                    onPress={handleDelete}
+                    style={styles.headerButton}
+                  >
+                    <Ionicons
+                      name="trash"
+                      size={20}
+                      color={theme.colors.error}
+                    />
                   </TouchableOpacity>
                 </>
               )}
@@ -239,7 +262,7 @@ export default function LoanDetailScreen() {
           ),
         }}
       />
-      <SafeAreaView style={styles.container} edges={['bottom']}>
+      <SafeAreaView style={styles.container} edges={["bottom"]}>
         <ScrollView style={styles.scrollView}>
           {/* Balance Card */}
           <View style={styles.balanceCard}>
@@ -249,17 +272,24 @@ export default function LoanDetailScreen() {
                 style={styles.balanceInput}
                 value={editData.currentBalance?.toString()}
                 onChangeText={(text) =>
-                  setEditData((prev) => ({ ...prev, currentBalance: parseFloat(text) || 0 }))
+                  setEditData((prev) => ({
+                    ...prev,
+                    currentBalance: parseFloat(text) || 0,
+                  }))
                 }
                 keyboardType="decimal-pad"
                 placeholder="0.00"
                 placeholderTextColor={theme.colors.textSecondary}
               />
             ) : (
-              <Text style={styles.balanceAmount}>{formatCurrency(loan.currentBalance)}</Text>
+              <Text style={styles.balanceAmount}>
+                {formatCurrency(loan.currentBalance)}
+              </Text>
             )}
             <View style={styles.originalBalance}>
-              <Text style={styles.originalBalanceLabel}>Original Principal: </Text>
+              <Text style={styles.originalBalanceLabel}>
+                Original Principal:{" "}
+              </Text>
               <Text style={styles.originalBalanceValue}>
                 {formatCurrency(loan.originalPrincipal)}
               </Text>
@@ -275,7 +305,11 @@ export default function LoanDetailScreen() {
               />
             </View>
             <Text style={styles.progressText}>
-              {((1 - loan.currentBalance / loan.originalPrincipal) * 100).toFixed(1)}% paid off
+              {(
+                (1 - loan.currentBalance / loan.originalPrincipal) *
+                100
+              ).toFixed(1)}
+              % paid off
             </Text>
           </View>
 
@@ -290,7 +324,10 @@ export default function LoanDetailScreen() {
                 <View
                   style={[
                     styles.statusBadge,
-                    { backgroundColor: getStatusColor(editData.status || loan.status) + '20' },
+                    {
+                      backgroundColor:
+                        getStatusColor(editData.status || loan.status) + "20",
+                    },
                   ]}
                 >
                   <Text
@@ -302,16 +339,25 @@ export default function LoanDetailScreen() {
                     {getStatusLabel(editData.status || loan.status)}
                   </Text>
                 </View>
-                <Ionicons name="chevron-down" size={20} color={theme.colors.textSecondary} />
+                <Ionicons
+                  name="chevron-down"
+                  size={20}
+                  color={theme.colors.textSecondary}
+                />
               </TouchableOpacity>
             ) : (
               <View
                 style={[
                   styles.statusBadge,
-                  { backgroundColor: getStatusColor(loan.status) + '20' },
+                  { backgroundColor: getStatusColor(loan.status) + "20" },
                 ]}
               >
-                <Text style={[styles.statusText, { color: getStatusColor(loan.status) }]}>
+                <Text
+                  style={[
+                    styles.statusText,
+                    { color: getStatusColor(loan.status) },
+                  ]}
+                >
                   {getStatusLabel(loan.status)}
                 </Text>
               </View>
@@ -324,7 +370,9 @@ export default function LoanDetailScreen() {
             <View style={styles.detailsCard}>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Loan Type</Text>
-                <Text style={styles.detailValue}>{getLoanTypeLabel(loan.loanType)}</Text>
+                <Text style={styles.detailValue}>
+                  {getLoanTypeLabel(loan.loanType)}
+                </Text>
               </View>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Servicer</Text>
@@ -332,7 +380,9 @@ export default function LoanDetailScreen() {
                   <TextInput
                     style={styles.detailInput}
                     value={editData.servicer}
-                    onChangeText={(text) => setEditData((prev) => ({ ...prev, servicer: text }))}
+                    onChangeText={(text) =>
+                      setEditData((prev) => ({ ...prev, servicer: text }))
+                    }
                     placeholder="Enter servicer"
                     placeholderTextColor={theme.colors.textSecondary}
                   />
@@ -343,7 +393,9 @@ export default function LoanDetailScreen() {
               {loan.accountNumber && (
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Account Number</Text>
-                  <Text style={styles.detailValue}>****{loan.accountNumber.slice(-4)}</Text>
+                  <Text style={styles.detailValue}>
+                    ****{loan.accountNumber.slice(-4)}
+                  </Text>
                 </View>
               )}
               <View style={styles.detailRow}>
@@ -353,14 +405,19 @@ export default function LoanDetailScreen() {
                     style={styles.detailInput}
                     value={editData.interestRate?.toString()}
                     onChangeText={(text) =>
-                      setEditData((prev) => ({ ...prev, interestRate: parseFloat(text) || 0 }))
+                      setEditData((prev) => ({
+                        ...prev,
+                        interestRate: parseFloat(text) || 0,
+                      }))
                     }
                     keyboardType="decimal-pad"
                     placeholder="0.00"
                     placeholderTextColor={theme.colors.textSecondary}
                   />
                 ) : (
-                  <Text style={styles.detailValue}>{formatPercent(loan.interestRate)}</Text>
+                  <Text style={styles.detailValue}>
+                    {formatPercent(loan.interestRate)}
+                  </Text>
                 )}
               </View>
               <View style={styles.detailRow}>
@@ -370,19 +427,26 @@ export default function LoanDetailScreen() {
                     style={styles.detailInput}
                     value={editData.monthlyPayment?.toString()}
                     onChangeText={(text) =>
-                      setEditData((prev) => ({ ...prev, monthlyPayment: parseFloat(text) || 0 }))
+                      setEditData((prev) => ({
+                        ...prev,
+                        monthlyPayment: parseFloat(text) || 0,
+                      }))
                     }
                     keyboardType="decimal-pad"
                     placeholder="0.00"
                     placeholderTextColor={theme.colors.textSecondary}
                   />
                 ) : (
-                  <Text style={styles.detailValue}>{formatCurrency(loan.monthlyPayment)}</Text>
+                  <Text style={styles.detailValue}>
+                    {formatCurrency(loan.monthlyPayment)}
+                  </Text>
                 )}
               </View>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Origination Date</Text>
-                <Text style={styles.detailValue}>{formatDate(loan.originationDate)}</Text>
+                <Text style={styles.detailValue}>
+                  {formatDate(loan.originationDate)}
+                </Text>
               </View>
               {loan.repaymentPlan && (
                 <View style={styles.detailRow}>
@@ -392,7 +456,10 @@ export default function LoanDetailScreen() {
                       style={styles.detailInput}
                       value={editData.repaymentPlan}
                       onChangeText={(text) =>
-                        setEditData((prev) => ({ ...prev, repaymentPlan: text }))
+                        setEditData((prev) => ({
+                          ...prev,
+                          repaymentPlan: text,
+                        }))
                       }
                       placeholder="Enter plan"
                       placeholderTextColor={theme.colors.textSecondary}
@@ -405,7 +472,9 @@ export default function LoanDetailScreen() {
               {loan.remainingPayments && (
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Remaining Payments</Text>
-                  <Text style={styles.detailValue}>{loan.remainingPayments}</Text>
+                  <Text style={styles.detailValue}>
+                    {loan.remainingPayments}
+                  </Text>
                 </View>
               )}
             </View>
@@ -418,24 +487,40 @@ export default function LoanDetailScreen() {
               <View style={styles.eligibilityRow}>
                 <View style={styles.eligibilityItem}>
                   <Ionicons
-                    name={loan.pslf_eligible ? 'checkmark-circle' : 'close-circle'}
+                    name={
+                      loan.pslf_eligible ? "checkmark-circle" : "close-circle"
+                    }
                     size={24}
-                    color={loan.pslf_eligible ? theme.colors.success : theme.colors.error}
+                    color={
+                      loan.pslf_eligible
+                        ? theme.colors.success
+                        : theme.colors.error
+                    }
                   />
                   <View>
                     <Text style={styles.eligibilityLabel}>PSLF</Text>
-                    <Text style={styles.eligibilityDesc}>Public Service Loan Forgiveness</Text>
+                    <Text style={styles.eligibilityDesc}>
+                      Public Service Loan Forgiveness
+                    </Text>
                   </View>
                 </View>
                 <View style={styles.eligibilityItem}>
                   <Ionicons
-                    name={loan.idr_eligible ? 'checkmark-circle' : 'close-circle'}
+                    name={
+                      loan.idr_eligible ? "checkmark-circle" : "close-circle"
+                    }
                     size={24}
-                    color={loan.idr_eligible ? theme.colors.success : theme.colors.error}
+                    color={
+                      loan.idr_eligible
+                        ? theme.colors.success
+                        : theme.colors.error
+                    }
                   />
                   <View>
                     <Text style={styles.eligibilityLabel}>IDR</Text>
-                    <Text style={styles.eligibilityDesc}>Income-Driven Repayment</Text>
+                    <Text style={styles.eligibilityDesc}>
+                      Income-Driven Repayment
+                    </Text>
                   </View>
                 </View>
               </View>
@@ -447,19 +532,35 @@ export default function LoanDetailScreen() {
             <View style={styles.actionsSection}>
               <TouchableOpacity
                 style={styles.actionButton}
-                onPress={() => router.push('/student-loans/strategies')}
+                onPress={() => router.push("/student-loans/strategies")}
               >
                 <Ionicons name="bulb" size={20} color={theme.colors.primary} />
-                <Text style={styles.actionButtonText}>View Repayment Strategies</Text>
-                <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
+                <Text style={styles.actionButtonText}>
+                  View Repayment Strategies
+                </Text>
+                <Ionicons
+                  name="chevron-forward"
+                  size={20}
+                  color={theme.colors.textSecondary}
+                />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.actionButton}
-                onPress={() => router.push('/student-loans/eligibility')}
+                onPress={() => router.push("/student-loans/eligibility")}
               >
-                <Ionicons name="shield-checkmark" size={20} color={theme.colors.success} />
-                <Text style={styles.actionButtonText}>Check Program Eligibility</Text>
-                <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
+                <Ionicons
+                  name="shield-checkmark"
+                  size={20}
+                  color={theme.colors.success}
+                />
+                <Text style={styles.actionButtonText}>
+                  Check Program Eligibility
+                </Text>
+                <Ionicons
+                  name="chevron-forward"
+                  size={20}
+                  color={theme.colors.textSecondary}
+                />
               </TouchableOpacity>
             </View>
           )}
@@ -493,11 +594,20 @@ export default function LoanDetailScreen() {
                   onPress={() => handleStatusChange(status)}
                 >
                   <View
-                    style={[styles.statusDot, { backgroundColor: getStatusColor(status) }]}
+                    style={[
+                      styles.statusDot,
+                      { backgroundColor: getStatusColor(status) },
+                    ]}
                   />
-                  <Text style={styles.modalOptionText}>{getStatusLabel(status)}</Text>
+                  <Text style={styles.modalOptionText}>
+                    {getStatusLabel(status)}
+                  </Text>
                   {editData.status === status && (
-                    <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
+                    <Ionicons
+                      name="checkmark"
+                      size={20}
+                      color={theme.colors.primary}
+                    />
                   )}
                 </TouchableOpacity>
               ))}
@@ -519,8 +629,8 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     marginTop: 16,
@@ -529,13 +639,13 @@ const styles = StyleSheet.create({
   },
   errorContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 32,
   },
   errorTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginTop: 16,
     marginBottom: 24,
@@ -548,11 +658,11 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#fff',
+    fontWeight: "600",
+    color: "#fff",
   },
   headerButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
   },
   headerButton: {
@@ -564,7 +674,7 @@ const styles = StyleSheet.create({
   },
   saveText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.primary,
   },
   balanceCard: {
@@ -575,52 +685,52 @@ const styles = StyleSheet.create({
   },
   balanceLabel: {
     fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
+    color: "rgba(255,255,255,0.8)",
     marginBottom: 4,
   },
   balanceAmount: {
     fontSize: 36,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: "700",
+    color: "#fff",
   },
   balanceInput: {
     fontSize: 36,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: "700",
+    color: "#fff",
     borderBottomWidth: 2,
-    borderBottomColor: 'rgba(255,255,255,0.5)',
+    borderBottomColor: "rgba(255,255,255,0.5)",
     paddingVertical: 4,
   },
   originalBalance: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginTop: 12,
   },
   originalBalanceLabel: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.7)',
+    color: "rgba(255,255,255,0.7)",
   },
   originalBalanceValue: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#fff',
+    fontWeight: "600",
+    color: "#fff",
   },
   progressBar: {
     height: 6,
-    backgroundColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: "rgba(255,255,255,0.3)",
     borderRadius: 3,
     marginTop: 12,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   progressFill: {
-    height: '100%',
-    backgroundColor: '#fff',
+    height: "100%",
+    backgroundColor: "#fff",
     borderRadius: 3,
   },
   progressText: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.8)',
+    color: "rgba(255,255,255,0.8)",
     marginTop: 8,
-    textAlign: 'right',
+    textAlign: "right",
   },
   section: {
     paddingHorizontal: 20,
@@ -628,14 +738,14 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: 12,
   },
   statusSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: 12,
     backgroundColor: theme.colors.surface,
     borderRadius: 8,
@@ -644,21 +754,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
   },
   statusText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   detailsCard: {
     backgroundColor: theme.colors.surface,
     borderRadius: 12,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
@@ -669,14 +779,14 @@ const styles = StyleSheet.create({
   },
   detailValue: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     color: theme.colors.text,
   },
   detailInput: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     color: theme.colors.text,
-    textAlign: 'right',
+    textAlign: "right",
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.primary,
     paddingVertical: 4,
@@ -688,17 +798,17 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   eligibilityRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    flexDirection: "row",
+    justifyContent: "space-around",
   },
   eligibilityItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   eligibilityLabel: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   eligibilityDesc: {
@@ -710,8 +820,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 16,
     backgroundColor: theme.colors.surface,
     borderRadius: 12,
@@ -720,41 +830,41 @@ const styles = StyleSheet.create({
   actionButtonText: {
     flex: 1,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     color: theme.colors.text,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
   },
   modalContent: {
     backgroundColor: theme.colors.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
-    maxHeight: '80%',
+    maxHeight: "80%",
   },
   modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 16,
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   modalOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 16,
     borderRadius: 8,
     gap: 12,
   },
   modalOptionSelected: {
-    backgroundColor: theme.colors.primary + '10',
+    backgroundColor: theme.colors.primary + "10",
   },
   modalOptionText: {
     flex: 1,

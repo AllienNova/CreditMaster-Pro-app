@@ -4,26 +4,26 @@
  * Automatically switches between light/dark based on system preference.
  */
 
-import { useColorScheme } from 'react-native';
-import { lightTheme, darkTheme, withOpacity } from '../constants/theme';
-import type { Theme } from '../types';
+import { useColorScheme } from "react-native";
+import { lightTheme, darkTheme, withOpacity } from "../constants/theme";
+import type { Theme } from "../types";
 
 export interface UseThemeReturn {
   theme: Theme;
   isDark: boolean;
-  colors: Theme['colors'];
-  spacing: Theme['spacing'];
-  borderRadius: Theme['borderRadius'];
-  fontSize: Theme['fontSize'];
-  fontWeight: Theme['fontWeight'];
-  shadow: Theme['shadow'];
-  iconSize: Theme['iconSize'];
+  colors: Theme["colors"];
+  spacing: Theme["spacing"];
+  borderRadius: Theme["borderRadius"];
+  fontSize: Theme["fontSize"];
+  fontWeight: Theme["fontWeight"];
+  shadow: Theme["shadow"];
+  iconSize: Theme["iconSize"];
   withOpacity: (hex: string, opacity: number) => string;
 }
 
 export function useTheme(): UseThemeReturn {
   const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const isDark = colorScheme === "dark";
   const theme = isDark ? darkTheme : lightTheme;
 
   return {

@@ -1,6 +1,6 @@
 /**
  * PCTT Portfolio Risk Management
- * 
+ *
  * Implements production-grade portfolio risk controls:
  * - Portfolio heat calculation (aggregate risk)
  * - Correlation controls (diversification enforcement)
@@ -14,15 +14,15 @@
 
 export interface PositionRisk {
   symbol: string;
-  side: 'long' | 'short';
+  side: "long" | "short";
   quantity: number;
   entryPrice: number;
   currentPrice: number;
   stopPrice: number;
-  
+
   // Calculated risk
-  dollarRisk: number;       // Worst-case loss at stop
-  percentRisk: number;      // Risk as % of account
+  dollarRisk: number; // Worst-case loss at stop
+  percentRisk: number; // Risk as % of account
   unrealizedPL: number;
   unrealizedPLPercent: number;
 }
@@ -36,29 +36,29 @@ export interface CorrelationPair {
 
 export interface PortfolioRiskMetrics {
   // Heat metrics
-  totalHeat: number;          // Sum of all position risks / account
-  maxHeat: number;            // Configured maximum heat
-  heatUtilization: number;    // totalHeat / maxHeat
-  
+  totalHeat: number; // Sum of all position risks / account
+  maxHeat: number; // Configured maximum heat
+  heatUtilization: number; // totalHeat / maxHeat
+
   // Exposure metrics
-  grossExposure: number;      // Sum of absolute position values
-  netExposure: number;        // Long - Short exposure
+  grossExposure: number; // Sum of absolute position values
+  netExposure: number; // Long - Short exposure
   longExposure: number;
   shortExposure: number;
-  
+
   // Concentration
-  largestPosition: number;    // Largest single position %
+  largestPosition: number; // Largest single position %
   sectorConcentration: Record<string, number>;
-  
+
   // Correlation risk
   correlatedGroups: string[][];
   maxCorrelatedExposure: number;
-  
+
   // Drawdown
   currentDrawdown: number;
   maxDrawdown: number;
   drawdownScaleFactor: number;
-  
+
   // Status
   canTrade: boolean;
   blockReasons: string[];
@@ -68,26 +68,26 @@ export interface PortfolioRiskMetrics {
 
 export interface PortfolioRiskConfig {
   // Heat limits
-  maxHeat: number;              // Max aggregate risk (default: 0.06 = 6%)
-  maxPositionHeat: number;      // Max single position risk (default: 0.02 = 2%)
-  
+  maxHeat: number; // Max aggregate risk (default: 0.06 = 6%)
+  maxPositionHeat: number; // Max single position risk (default: 0.02 = 2%)
+
   // Exposure limits
-  maxGrossExposure: number;     // Max total exposure (default: 2.0 = 200%)
-  maxNetExposure: number;       // Max directional bias (default: 1.0 = 100%)
-  maxPositionSize: number;      // Max single position (default: 0.20 = 20%)
-  
+  maxGrossExposure: number; // Max total exposure (default: 2.0 = 200%)
+  maxNetExposure: number; // Max directional bias (default: 1.0 = 100%)
+  maxPositionSize: number; // Max single position (default: 0.20 = 20%)
+
   // Correlation
   correlationThreshold: number; // Threshold for "correlated" (default: 0.7)
   maxCorrelatedExposure: number; // Max exposure in correlated group (default: 0.30)
-  correlationLookback: number;  // Days for correlation calc (default: 60)
-  
+  correlationLookback: number; // Days for correlation calc (default: 60)
+
   // Drawdown scaling
-  drawdownLevel1: number;       // First scaling threshold (default: 0.05 = 5%)
-  drawdownScale1: number;       // Scale factor at level 1 (default: 0.5)
-  drawdownLevel2: number;       // Second threshold (default: 0.10 = 10%)
-  drawdownScale2: number;       // Scale at level 2 (default: 0.25)
-  drawdownKillLevel: number;    // Kill switch threshold (default: 0.15 = 15%)
-  
+  drawdownLevel1: number; // First scaling threshold (default: 0.05 = 5%)
+  drawdownScale1: number; // Scale factor at level 1 (default: 0.5)
+  drawdownLevel2: number; // Second threshold (default: 0.10 = 10%)
+  drawdownScale2: number; // Scale at level 2 (default: 0.25)
+  drawdownKillLevel: number; // Kill switch threshold (default: 0.15 = 15%)
+
   // Kill switch
   enableKillSwitch: boolean;
   killSwitchCooldownMinutes: number;
@@ -95,7 +95,7 @@ export interface PortfolioRiskConfig {
 
 export interface TradeProposal {
   symbol: string;
-  side: 'long' | 'short';
+  side: "long" | "short";
   quantity: number;
   entryPrice: number;
   stopPrice: number;
@@ -122,13 +122,13 @@ export const DEFAULT_PORTFOLIO_RISK_CONFIG: PortfolioRiskConfig = {
   maxPositionHeat: 0.02,
   maxGrossExposure: 2.0,
   maxNetExposure: 1.0,
-  maxPositionSize: 0.20,
+  maxPositionSize: 0.2,
   correlationThreshold: 0.7,
-  maxCorrelatedExposure: 0.30,
+  maxCorrelatedExposure: 0.3,
   correlationLookback: 60,
   drawdownLevel1: 0.05,
   drawdownScale1: 0.5,
-  drawdownLevel2: 0.10,
+  drawdownLevel2: 0.1,
   drawdownScale2: 0.25,
   drawdownKillLevel: 0.15,
   enableKillSwitch: true,
@@ -152,7 +152,7 @@ export class PortfolioRiskManager {
 
   constructor(
     accountEquity: number,
-    config: Partial<PortfolioRiskConfig> = {}
+    config: Partial<PortfolioRiskConfig> = {},
   ) {
     this.accountEquity = accountEquity;
     this.peakEquity = accountEquity;
@@ -168,11 +168,15 @@ export class PortfolioRiskManager {
    */
   updatePosition(position: PositionRisk): void {
     // Calculate derived risk metrics
-    const dollarRisk = Math.abs(position.entryPrice - position.stopPrice) * position.quantity;
+    const dollarRisk =
+      Math.abs(position.entryPrice - position.stopPrice) * position.quantity;
     const percentRisk = dollarRisk / this.accountEquity;
-    const unrealizedPL = (position.currentPrice - position.entryPrice) * position.quantity * 
-      (position.side === 'long' ? 1 : -1);
-    const unrealizedPLPercent = unrealizedPL / (position.entryPrice * position.quantity);
+    const unrealizedPL =
+      (position.currentPrice - position.entryPrice) *
+      position.quantity *
+      (position.side === "long" ? 1 : -1);
+    const unrealizedPLPercent =
+      unrealizedPL / (position.entryPrice * position.quantity);
 
     this.positions.set(position.symbol, {
       ...position,
@@ -198,11 +202,16 @@ export class PortfolioRiskManager {
     if (newEquity > this.peakEquity) {
       this.peakEquity = newEquity;
     }
-    
+
     // Check drawdown kill switch
     const drawdown = this.calculateDrawdown();
-    if (this.config.enableKillSwitch && drawdown >= this.config.drawdownKillLevel) {
-      this.triggerKillSwitch(`Drawdown exceeded ${this.config.drawdownKillLevel * 100}%`);
+    if (
+      this.config.enableKillSwitch &&
+      drawdown >= this.config.drawdownKillLevel
+    ) {
+      this.triggerKillSwitch(
+        `Drawdown exceeded ${this.config.drawdownKillLevel * 100}%`,
+      );
     }
   }
 
@@ -216,8 +225,12 @@ export class PortfolioRiskManager {
   /**
    * Update correlation between two symbols
    */
-  updateCorrelation(symbol1: string, symbol2: string, correlation: number): void {
-    const key = [symbol1, symbol2].sort().join(':');
+  updateCorrelation(
+    symbol1: string,
+    symbol2: string,
+    correlation: number,
+  ): void {
+    const key = [symbol1, symbol2].sort().join(":");
     this.correlationMatrix.set(key, correlation);
   }
 
@@ -230,11 +243,11 @@ export class PortfolioRiskManager {
    */
   calculateHeat(): number {
     let totalHeat = 0;
-    
+
     for (const position of this.positions.values()) {
       totalHeat += position.percentRisk;
     }
-    
+
     return totalHeat;
   }
 
@@ -255,7 +268,7 @@ export class PortfolioRiskManager {
    * Get correlation between two symbols
    */
   getCorrelation(symbol1: string, symbol2: string): number {
-    const key = [symbol1, symbol2].sort().join(':');
+    const key = [symbol1, symbol2].sort().join(":");
     return this.correlationMatrix.get(key) ?? 0;
   }
 
@@ -275,7 +288,7 @@ export class PortfolioRiskManager {
 
       for (const other of symbols) {
         if (visited.has(other)) continue;
-        
+
         const correlation = this.getCorrelation(symbol, other);
         if (Math.abs(correlation) >= this.config.correlationThreshold) {
           group.push(other);
@@ -303,7 +316,8 @@ export class PortfolioRiskManager {
       for (const symbol of group) {
         const position = this.positions.get(symbol);
         if (position) {
-          groupExposure += position.currentPrice * position.quantity / this.accountEquity;
+          groupExposure +=
+            (position.currentPrice * position.quantity) / this.accountEquity;
         }
       }
       maxGroupExposure = Math.max(maxGroupExposure, groupExposure);
@@ -329,7 +343,7 @@ export class PortfolioRiskManager {
    */
   getDrawdownScaleFactor(): number {
     const drawdown = this.calculateDrawdown();
-    
+
     if (drawdown >= this.config.drawdownKillLevel) {
       return 0; // No trading
     } else if (drawdown >= this.config.drawdownLevel2) {
@@ -337,7 +351,7 @@ export class PortfolioRiskManager {
     } else if (drawdown >= this.config.drawdownLevel1) {
       return this.config.drawdownScale1;
     }
-    
+
     return 1.0; // Full capacity
   }
 
@@ -368,7 +382,7 @@ export class PortfolioRiskManager {
    */
   isKillSwitchCooldownPassed(): boolean {
     if (!this.killSwitchTriggeredAt) return true;
-    
+
     const cooldownMs = this.config.killSwitchCooldownMinutes * 60 * 1000;
     return Date.now() - this.killSwitchTriggeredAt.getTime() > cooldownMs;
   }
@@ -383,9 +397,10 @@ export class PortfolioRiskManager {
   checkTradeProposal(proposal: TradeProposal): RiskCheckResult {
     const reasons: string[] = [];
     let approved = true;
-    
+
     // Calculate proposed position risk
-    const proposedDollarRisk = Math.abs(proposal.entryPrice - proposal.stopPrice) * proposal.quantity;
+    const proposedDollarRisk =
+      Math.abs(proposal.entryPrice - proposal.stopPrice) * proposal.quantity;
     const proposedPercentRisk = proposedDollarRisk / this.accountEquity;
     const proposedValue = proposal.entryPrice * proposal.quantity;
     const proposedExposure = proposedValue / this.accountEquity;
@@ -400,14 +415,16 @@ export class PortfolioRiskManager {
     const scaleFactor = this.getDrawdownScaleFactor();
     if (scaleFactor === 0) {
       approved = false;
-      reasons.push('Trading halted due to drawdown');
+      reasons.push("Trading halted due to drawdown");
     }
 
     // Check single position heat
     const scaledMaxPositionHeat = this.config.maxPositionHeat * scaleFactor;
     if (proposedPercentRisk > scaledMaxPositionHeat) {
       approved = false;
-      reasons.push(`Position heat ${(proposedPercentRisk * 100).toFixed(2)}% exceeds max ${(scaledMaxPositionHeat * 100).toFixed(2)}%`);
+      reasons.push(
+        `Position heat ${(proposedPercentRisk * 100).toFixed(2)}% exceeds max ${(scaledMaxPositionHeat * 100).toFixed(2)}%`,
+      );
     }
 
     // Check total heat
@@ -415,13 +432,17 @@ export class PortfolioRiskManager {
     const scaledMaxHeat = this.config.maxHeat * scaleFactor;
     if (currentHeat + proposedPercentRisk > scaledMaxHeat) {
       approved = false;
-      reasons.push(`Total heat would exceed ${(scaledMaxHeat * 100).toFixed(2)}%`);
+      reasons.push(
+        `Total heat would exceed ${(scaledMaxHeat * 100).toFixed(2)}%`,
+      );
     }
 
     // Check position size
     if (proposedExposure > this.config.maxPositionSize) {
       approved = false;
-      reasons.push(`Position size ${(proposedExposure * 100).toFixed(2)}% exceeds max ${(this.config.maxPositionSize * 100).toFixed(2)}%`);
+      reasons.push(
+        `Position size ${(proposedExposure * 100).toFixed(2)}% exceeds max ${(this.config.maxPositionSize * 100).toFixed(2)}%`,
+      );
     }
 
     // Check correlation exposure
@@ -429,20 +450,28 @@ export class PortfolioRiskManager {
     for (const [symbol, position] of this.positions) {
       const correlation = this.getCorrelation(proposal.symbol, symbol);
       if (Math.abs(correlation) >= this.config.correlationThreshold) {
-        correlationImpact += position.currentPrice * position.quantity / this.accountEquity;
+        correlationImpact +=
+          (position.currentPrice * position.quantity) / this.accountEquity;
       }
     }
-    
-    if (correlationImpact + proposedExposure > this.config.maxCorrelatedExposure) {
+
+    if (
+      correlationImpact + proposedExposure >
+      this.config.maxCorrelatedExposure
+    ) {
       approved = false;
-      reasons.push(`Correlated exposure ${((correlationImpact + proposedExposure) * 100).toFixed(2)}% exceeds max ${(this.config.maxCorrelatedExposure * 100).toFixed(2)}%`);
+      reasons.push(
+        `Correlated exposure ${((correlationImpact + proposedExposure) * 100).toFixed(2)}% exceeds max ${(this.config.maxCorrelatedExposure * 100).toFixed(2)}%`,
+      );
     }
 
     // Check gross exposure
     const currentGross = this.calculateGrossExposure();
     if (currentGross + proposedExposure > this.config.maxGrossExposure) {
       approved = false;
-      reasons.push(`Gross exposure would exceed ${(this.config.maxGrossExposure * 100).toFixed(2)}%`);
+      reasons.push(
+        `Gross exposure would exceed ${(this.config.maxGrossExposure * 100).toFixed(2)}%`,
+      );
     }
 
     // Calculate adjusted quantity if partially approved
@@ -450,11 +479,13 @@ export class PortfolioRiskManager {
     if (!approved && reasons.length > 0) {
       const maxAllowedRisk = Math.min(
         scaledMaxHeat - currentHeat,
-        scaledMaxPositionHeat
+        scaledMaxPositionHeat,
       );
       if (maxAllowedRisk > 0) {
         const riskPerShare = Math.abs(proposal.entryPrice - proposal.stopPrice);
-        adjustedQuantity = Math.floor((maxAllowedRisk * this.accountEquity) / riskPerShare);
+        adjustedQuantity = Math.floor(
+          (maxAllowedRisk * this.accountEquity) / riskPerShare,
+        );
       }
     }
 
@@ -491,16 +522,16 @@ export class PortfolioRiskManager {
   calculateNetExposure(): number {
     let long = 0;
     let short = 0;
-    
+
     for (const position of this.positions.values()) {
       const value = position.currentPrice * position.quantity;
-      if (position.side === 'long') {
+      if (position.side === "long") {
         long += value;
       } else {
         short += value;
       }
     }
-    
+
     return (long - short) / this.accountEquity;
   }
 
@@ -509,13 +540,14 @@ export class PortfolioRiskManager {
    */
   calculateSectorConcentration(): Record<string, number> {
     const concentration: Record<string, number> = {};
-    
+
     for (const [symbol, position] of this.positions) {
-      const sector = this.sectorMap.get(symbol) || 'Unknown';
-      const value = position.currentPrice * position.quantity / this.accountEquity;
+      const sector = this.sectorMap.get(symbol) || "Unknown";
+      const value =
+        (position.currentPrice * position.quantity) / this.accountEquity;
       concentration[sector] = (concentration[sector] || 0) + value;
     }
-    
+
     return concentration;
   }
 
@@ -539,12 +571,13 @@ export class PortfolioRiskManager {
     let longExposure = 0;
     let shortExposure = 0;
     let largestPosition = 0;
-    
+
     for (const position of this.positions.values()) {
-      const exposure = position.currentPrice * position.quantity / this.accountEquity;
+      const exposure =
+        (position.currentPrice * position.quantity) / this.accountEquity;
       largestPosition = Math.max(largestPosition, exposure);
-      
-      if (position.side === 'long') {
+
+      if (position.side === "long") {
         longExposure += exposure;
       } else {
         shortExposure += exposure;
@@ -553,18 +586,18 @@ export class PortfolioRiskManager {
 
     // Determine if trading is allowed
     const blockReasons: string[] = [];
-    
+
     if (this.killSwitchActive) {
       blockReasons.push(`Kill switch: ${this.killSwitchReason}`);
     }
     if (totalHeat >= this.config.maxHeat * this.getDrawdownScaleFactor()) {
-      blockReasons.push('Max heat reached');
+      blockReasons.push("Max heat reached");
     }
     if (grossExposure >= this.config.maxGrossExposure) {
-      blockReasons.push('Max gross exposure reached');
+      blockReasons.push("Max gross exposure reached");
     }
     if (drawdown >= this.config.drawdownKillLevel) {
-      blockReasons.push('Drawdown kill level reached');
+      blockReasons.push("Drawdown kill level reached");
     }
 
     return {
@@ -596,7 +629,7 @@ export class PortfolioRiskManager {
 
 export function createPortfolioRiskManager(
   accountEquity: number,
-  config?: Partial<PortfolioRiskConfig>
+  config?: Partial<PortfolioRiskConfig>,
 ): PortfolioRiskManager {
   return new PortfolioRiskManager(accountEquity, config);
 }

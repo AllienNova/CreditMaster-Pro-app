@@ -1,17 +1,22 @@
 /**
  * Sentiment Analysis Type Definitions
- * 
+ *
  * Types for news, social media, analyst ratings, and market sentiment
  */
 
-import { SignalStrength } from './investment.types';
+import { SignalStrength } from "./investment.types";
 
 // ============================================================================
 // NEWS SENTIMENT
 // ============================================================================
 
 export type SentimentScore = -1 | -0.5 | 0 | 0.5 | 1;
-export type SentimentLabel = 'very_negative' | 'negative' | 'neutral' | 'positive' | 'very_positive';
+export type SentimentLabel =
+  | "very_negative"
+  | "negative"
+  | "neutral"
+  | "positive"
+  | "very_positive";
 
 export interface NewsArticle {
   id: string;
@@ -25,7 +30,7 @@ export interface NewsArticle {
   sentimentLabel: SentimentLabel;
   relevanceScore: number;
   topics: string[];
-  impactLevel: 'low' | 'medium' | 'high';
+  impactLevel: "low" | "medium" | "high";
 }
 
 export interface NewsSentiment {
@@ -42,7 +47,7 @@ export interface NewsSentiment {
   topPositiveNews: NewsArticle[];
   topNegativeNews: NewsArticle[];
   recentNews: NewsArticle[];
-  sentimentTrend: 'improving' | 'stable' | 'declining';
+  sentimentTrend: "improving" | "stable" | "declining";
   signal: SignalStrength;
 }
 
@@ -52,7 +57,7 @@ export interface NewsSentiment {
 
 export interface SocialMention {
   id: string;
-  platform: 'twitter' | 'reddit' | 'stocktwits' | 'youtube' | 'other';
+  platform: "twitter" | "reddit" | "stocktwits" | "youtube" | "other";
   content: string;
   author: string;
   authorFollowers?: number;
@@ -80,7 +85,7 @@ export interface SocialSentiment {
   influencerMentions: SocialMention[];
   viralPosts: SocialMention[];
   trendingTopics: string[];
-  sentimentTrend: 'improving' | 'stable' | 'declining';
+  sentimentTrend: "improving" | "stable" | "declining";
   signal: SignalStrength;
 }
 
@@ -88,7 +93,12 @@ export interface SocialSentiment {
 // ANALYST RATINGS
 // ============================================================================
 
-export type AnalystRating = 'strong_buy' | 'buy' | 'hold' | 'sell' | 'strong_sell';
+export type AnalystRating =
+  | "strong_buy"
+  | "buy"
+  | "hold"
+  | "sell"
+  | "strong_sell";
 
 export interface AnalystRecommendation {
   id: string;
@@ -120,7 +130,7 @@ export interface AnalystConsensus {
   currentPrice: number;
   upside: number;
   recentChanges: AnalystRecommendation[];
-  ratingTrend: 'upgrading' | 'stable' | 'downgrading';
+  ratingTrend: "upgrading" | "stable" | "downgrading";
   signal: SignalStrength;
 }
 
@@ -130,7 +140,7 @@ export interface AnalystConsensus {
 
 export interface FearGreedIndex {
   value: number;
-  label: 'extreme_fear' | 'fear' | 'neutral' | 'greed' | 'extreme_greed';
+  label: "extreme_fear" | "fear" | "neutral" | "greed" | "extreme_greed";
   previousClose: number;
   oneWeekAgo: number;
   oneMonthAgo: number;
@@ -139,7 +149,7 @@ export interface FearGreedIndex {
     name: string;
     value: number;
     weight: number;
-    signal: 'fear' | 'neutral' | 'greed';
+    signal: "fear" | "neutral" | "greed";
   }[];
   updatedAt: Date;
 }
@@ -157,7 +167,7 @@ export interface MarketBreadth {
   percentAbove200MA: number;
   mcclellanOscillator: number;
   mcclellanSummation: number;
-  breadthSignal: 'bullish' | 'neutral' | 'bearish';
+  breadthSignal: "bullish" | "neutral" | "bearish";
 }
 
 export interface VIXData {
@@ -168,7 +178,7 @@ export interface VIXData {
   low: number;
   avg30Day: number;
   percentile: number;
-  level: 'low' | 'normal' | 'elevated' | 'high' | 'extreme';
+  level: "low" | "normal" | "elevated" | "high" | "extreme";
   signal: SignalStrength;
 }
 
@@ -176,7 +186,7 @@ export interface VIXData {
 // INSIDER TRADING
 // ============================================================================
 
-export type InsiderTransactionType = 'buy' | 'sell' | 'exercise' | 'gift';
+export type InsiderTransactionType = "buy" | "sell" | "exercise" | "gift";
 
 export interface InsiderTransaction {
   id: string;
@@ -203,7 +213,7 @@ export interface InsiderActivity {
   netSellValue: number;
   buyersCount: number;
   sellersCount: number;
-  insiderSentiment: 'bullish' | 'neutral' | 'bearish';
+  insiderSentiment: "bullish" | "neutral" | "bearish";
   significantTransactions: InsiderTransaction[];
   clusterBuying: boolean;
   clusterSelling: boolean;
@@ -236,7 +246,7 @@ export interface InstitutionalOwnership {
   increasedPositions: InstitutionalHolder[];
   decreasedPositions: InstitutionalHolder[];
   soldOut: InstitutionalHolder[];
-  ownershipTrend: 'increasing' | 'stable' | 'decreasing';
+  ownershipTrend: "increasing" | "stable" | "decreasing";
   signal: SignalStrength;
 }
 
@@ -272,4 +282,3 @@ export interface SentimentAnalysis {
   risks: string[];
   opportunities: string[];
 }
-

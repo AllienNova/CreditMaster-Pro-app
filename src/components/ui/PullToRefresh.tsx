@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Pull to Refresh Component
@@ -7,8 +7,8 @@
  * Provides visual feedback during pull gesture and refresh operation.
  */
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { ArrowPathIcon } from '@heroicons/react/24/outline';
+import React, { useState, useRef, useCallback, useEffect } from "react";
+import { ArrowPathIcon } from "@heroicons/react/24/outline";
 
 interface PullToRefreshProps {
   onRefresh: () => Promise<void>;
@@ -23,7 +23,7 @@ export function PullToRefresh({
   children,
   disabled = false,
   threshold = 80,
-  className = '',
+  className = "",
 }: PullToRefreshProps) {
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -32,41 +32,47 @@ export function PullToRefresh({
   const startY = useRef(0);
   const currentY = useRef(0);
 
-  const handleTouchStart = useCallback((e: TouchEvent) => {
-    if (disabled || isRefreshing) return;
+  const handleTouchStart = useCallback(
+    (e: TouchEvent) => {
+      if (disabled || isRefreshing) return;
 
-    const container = containerRef.current;
-    if (!container) return;
+      const container = containerRef.current;
+      if (!container) return;
 
-    // Only activate if at the top of the scroll container
-    if (container.scrollTop > 0) return;
+      // Only activate if at the top of the scroll container
+      if (container.scrollTop > 0) return;
 
-    startY.current = e.touches[0].clientY;
-    setIsPulling(true);
-  }, [disabled, isRefreshing]);
+      startY.current = e.touches[0].clientY;
+      setIsPulling(true);
+    },
+    [disabled, isRefreshing],
+  );
 
-  const handleTouchMove = useCallback((e: TouchEvent) => {
-    if (!isPulling || disabled || isRefreshing) return;
+  const handleTouchMove = useCallback(
+    (e: TouchEvent) => {
+      if (!isPulling || disabled || isRefreshing) return;
 
-    const container = containerRef.current;
-    if (!container || container.scrollTop > 0) {
-      setIsPulling(false);
-      setPullDistance(0);
-      return;
-    }
+      const container = containerRef.current;
+      if (!container || container.scrollTop > 0) {
+        setIsPulling(false);
+        setPullDistance(0);
+        return;
+      }
 
-    currentY.current = e.touches[0].clientY;
-    const distance = Math.max(0, currentY.current - startY.current);
+      currentY.current = e.touches[0].clientY;
+      const distance = Math.max(0, currentY.current - startY.current);
 
-    // Apply resistance for a more natural feel
-    const resistedDistance = Math.min(distance * 0.5, threshold * 1.5);
-    setPullDistance(resistedDistance);
+      // Apply resistance for a more natural feel
+      const resistedDistance = Math.min(distance * 0.5, threshold * 1.5);
+      setPullDistance(resistedDistance);
 
-    // Prevent default scroll when pulling
-    if (distance > 0) {
-      e.preventDefault();
-    }
-  }, [isPulling, disabled, isRefreshing, threshold]);
+      // Prevent default scroll when pulling
+      if (distance > 0) {
+        e.preventDefault();
+      }
+    },
+    [isPulling, disabled, isRefreshing, threshold],
+  );
 
   const handleTouchEnd = useCallback(async () => {
     if (!isPulling || disabled) return;
@@ -80,7 +86,7 @@ export function PullToRefresh({
       try {
         await onRefresh();
       } catch (error) {
-        console.error('Refresh failed:', error);
+        console.error("Refresh failed:", error);
       } finally {
         setIsRefreshing(false);
         setPullDistance(0);
@@ -94,14 +100,18 @@ export function PullToRefresh({
     const container = containerRef.current;
     if (!container) return;
 
-    container.addEventListener('touchstart', handleTouchStart, { passive: true });
-    container.addEventListener('touchmove', handleTouchMove, { passive: false });
-    container.addEventListener('touchend', handleTouchEnd, { passive: true });
+    container.addEventListener("touchstart", handleTouchStart, {
+      passive: true,
+    });
+    container.addEventListener("touchmove", handleTouchMove, {
+      passive: false,
+    });
+    container.addEventListener("touchend", handleTouchEnd, { passive: true });
 
     return () => {
-      container.removeEventListener('touchstart', handleTouchStart);
-      container.removeEventListener('touchmove', handleTouchMove);
-      container.removeEventListener('touchend', handleTouchEnd);
+      container.removeEventListener("touchstart", handleTouchStart);
+      container.removeEventListener("touchmove", handleTouchMove);
+      container.removeEventListener("touchend", handleTouchEnd);
     };
   }, [handleTouchStart, handleTouchMove, handleTouchEnd]);
 
@@ -113,7 +123,7 @@ export function PullToRefresh({
     <div
       ref={containerRef}
       className={`relative overflow-auto ${className}`}
-      style={{ touchAction: isPulling ? 'none' : 'auto' }}
+      style={{ touchAction: isPulling ? "none" : "auto" }}
     >
       {/* Pull indicator */}
       <div
@@ -126,7 +136,7 @@ export function PullToRefresh({
         <div className="bg-white dark:bg-slate-800 rounded-full p-2 shadow-lg border border-gray-200 dark:border-slate-700">
           <ArrowPathIcon
             className={`w-6 h-6 text-emerald-600 dark:text-emerald-400 transition-transform ${
-              isRefreshing ? 'animate-spin' : ''
+              isRefreshing ? "animate-spin" : ""
             }`}
             style={{
               transform: isRefreshing ? undefined : `rotate(${rotation}deg)`,
@@ -139,7 +149,8 @@ export function PullToRefresh({
       <div
         className="transition-transform duration-200"
         style={{
-          transform: pullDistance > 0 ? `translateY(${pullDistance}px)` : undefined,
+          transform:
+            pullDistance > 0 ? `translateY(${pullDistance}px)` : undefined,
         }}
       >
         {children}

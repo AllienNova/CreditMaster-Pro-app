@@ -9,32 +9,32 @@
 // ============================================================================
 
 export type InsightType =
-  | 'spending_anomaly'
-  | 'savings_opportunity'
-  | 'bill_reminder'
-  | 'budget_alert'
-  | 'income_pattern'
-  | 'account_optimization'
-  | 'credit_improvement'
-  | 'investment_opportunity'
-  | 'debt_strategy'
-  | 'goal_progress';
+  | "spending_anomaly"
+  | "savings_opportunity"
+  | "bill_reminder"
+  | "budget_alert"
+  | "income_pattern"
+  | "account_optimization"
+  | "credit_improvement"
+  | "investment_opportunity"
+  | "debt_strategy"
+  | "goal_progress";
 
-export type InsightPriority = 'critical' | 'high' | 'medium' | 'low' | 'info';
+export type InsightPriority = "critical" | "high" | "medium" | "low" | "info";
 
 export type InsightCategory =
-  | 'spending'
-  | 'savings'
-  | 'bills'
-  | 'budget'
-  | 'income'
-  | 'accounts'
-  | 'credit'
-  | 'investments'
-  | 'debt'
-  | 'goals';
+  | "spending"
+  | "savings"
+  | "bills"
+  | "budget"
+  | "income"
+  | "accounts"
+  | "credit"
+  | "investments"
+  | "debt"
+  | "goals";
 
-export type InsightImpact = 'positive' | 'negative' | 'neutral' | 'warning';
+export type InsightImpact = "positive" | "negative" | "neutral" | "warning";
 
 // ============================================================================
 // CORE INSIGHT INTERFACE
@@ -61,7 +61,7 @@ export interface FinancialInsight {
   amount?: number;
   percentage?: number;
   comparisonValue?: number;
-  trend?: 'up' | 'down' | 'stable';
+  trend?: "up" | "down" | "stable";
 
   // Related entities
   relatedAccountIds?: string[];
@@ -86,7 +86,7 @@ export interface FinancialInsight {
 export interface InsightAction {
   id: string;
   label: string;
-  type: 'link' | 'button' | 'dismiss' | 'snooze';
+  type: "link" | "button" | "dismiss" | "snooze";
   href?: string;
   data?: Record<string, unknown>;
 }
@@ -121,22 +121,30 @@ export interface InsightGenerationResult {
 // ============================================================================
 
 export interface SpendingAnomalyInsight extends FinancialInsight {
-  type: 'spending_anomaly';
-  anomalyType: 'unusual_large' | 'unusual_merchant' | 'unusual_category' | 'duplicate';
+  type: "spending_anomaly";
+  anomalyType:
+    | "unusual_large"
+    | "unusual_merchant"
+    | "unusual_category"
+    | "duplicate";
   transactionId: string;
   merchantName: string;
   expectedAmount?: number;
 }
 
 export interface SavingsOpportunityInsight extends FinancialInsight {
-  type: 'savings_opportunity';
-  opportunityType: 'subscription_cancel' | 'negotiate_bill' | 'switch_provider' | 'reduce_spending';
+  type: "savings_opportunity";
+  opportunityType:
+    | "subscription_cancel"
+    | "negotiate_bill"
+    | "switch_provider"
+    | "reduce_spending";
   potentialSavings: number;
-  timeframe: 'monthly' | 'yearly';
+  timeframe: "monthly" | "yearly";
 }
 
 export interface BillReminderInsight extends FinancialInsight {
-  type: 'bill_reminder';
+  type: "bill_reminder";
   billId: string;
   billName: string;
   dueDate: Date;
@@ -145,7 +153,7 @@ export interface BillReminderInsight extends FinancialInsight {
 }
 
 export interface BudgetAlertInsight extends FinancialInsight {
-  type: 'budget_alert';
+  type: "budget_alert";
   budgetId: string;
   budgetCategory: string;
   budgetedAmount: number;
@@ -155,16 +163,19 @@ export interface BudgetAlertInsight extends FinancialInsight {
 }
 
 export interface IncomePatternInsight extends FinancialInsight {
-  type: 'income_pattern';
-  patternType: 'irregular' | 'declining' | 'increasing' | 'new_source';
+  type: "income_pattern";
+  patternType: "irregular" | "declining" | "increasing" | "new_source";
   averageIncome: number;
   currentIncome: number;
 }
 
 export interface AccountOptimizationInsight extends FinancialInsight {
-  type: 'account_optimization';
-  optimizationType: 'high_fees' | 'low_interest' | 'better_rewards' | 'consolidation';
+  type: "account_optimization";
+  optimizationType:
+    | "high_fees"
+    | "low_interest"
+    | "better_rewards"
+    | "consolidation";
   accountId: string;
   potentialBenefit: number;
 }
-

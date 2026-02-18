@@ -4,8 +4,8 @@
  * Handles click tracking, conversion tracking, and analytics for the affiliate system.
  */
 
-import { createClient } from '@supabase/supabase-js';
-import { createHash, randomUUID } from 'crypto';
+import { createClient } from "@supabase/supabase-js";
+import { createHash, randomUUID } from "crypto";
 import {
   Click,
   ClickData,
@@ -16,7 +16,7 @@ import {
   ConversionStatus,
   DateRange,
   PartnerPerformance,
-} from './types';
+} from "./types";
 
 // =============================================================================
 // Configuration
@@ -52,7 +52,7 @@ class TrackingService {
       data.userId,
       data.partnerId,
       data.offerId,
-      ipHash
+      ipHash,
     );
 
     if (isDuplicate) {
@@ -61,7 +61,7 @@ class TrackingService {
         data.userId,
         data.partnerId,
         data.offerId,
-        ipHash
+        ipHash,
       );
       if (existingClick) return existingClick;
     }
@@ -81,7 +81,7 @@ class TrackingService {
     };
 
     const { data: result, error } = await supabase
-      .from('affiliate_clicks')
+      .from("affiliate_clicks")
       .insert(clickRecord)
       .select()
       .single();
@@ -98,13 +98,13 @@ class TrackingService {
    */
   async getClick(clickId: string): Promise<Click | null> {
     const { data, error } = await supabase
-      .from('affiliate_clicks')
+      .from("affiliate_clicks")
       .select()
-      .eq('click_id', clickId)
+      .eq("click_id", clickId)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') return null;
+      if (error.code === "PGRST116") return null;
       throw new Error(`Failed to get click: ${error.message}`);
     }
 
@@ -114,22 +114,21 @@ class TrackingService {
   /**
    * Get clicks for a user
    */
-  async getUserClicks(
-    userId: string,
-    dateRange?: DateRange
-  ): Promise<Click[]> {
+  async getUserClicks(userId: string, dateRange?: DateRange): Promise<Click[]> {
     let query = supabase
-      .from('affiliate_clicks')
+      .from("affiliate_clicks")
       .select()
-      .eq('user_id', userId);
+      .eq("user_id", userId);
 
     if (dateRange) {
       query = query
-        .gte('clicked_at', dateRange.from.toISOString())
-        .lte('clicked_at', dateRange.to.toISOString());
+        .gte("clicked_at", dateRange.from.toISOString())
+        .lte("clicked_at", dateRange.to.toISOString());
     }
 
-    const { data, error } = await query.order('clicked_at', { ascending: false });
+    const { data, error } = await query.order("clicked_at", {
+      ascending: false,
+    });
 
     if (error) {
       throw new Error(`Failed to get user clicks: ${error.message}`);
@@ -141,31 +140,36 @@ class TrackingService {
   /**
    * Get click statistics for a partner
    */
-  async getClickStats(partnerId: string, dateRange: DateRange): Promise<ClickStats> {
+  async getClickStats(
+    partnerId: string,
+    dateRange: DateRange,
+  ): Promise<ClickStats> {
     const { data: clicks, error } = await supabase
-      .from('affiliate_clicks')
-      .select('*')
-      .eq('partner_id', partnerId)
-      .gte('clicked_at', dateRange.from.toISOString())
-      .lte('clicked_at', dateRange.to.toISOString());
+      .from("affiliate_clicks")
+      .select("*")
+      .eq("partner_id", partnerId)
+      .gte("clicked_at", dateRange.from.toISOString())
+      .lte("clicked_at", dateRange.to.toISOString());
 
     if (error) {
       throw new Error(`Failed to get click stats: ${error.message}`);
     }
 
     const clickList = clicks || [];
-    const uniqueUsers = new Set(clickList.filter(c => c.user_id).map(c => c.user_id));
+    const uniqueUsers = new Set(
+      clickList.filter((c) => c.user_id).map((c) => c.user_id),
+    );
 
     // Group by source page
     const clicksBySource: Record<string, number> = {};
-    clickList.forEach(click => {
-      const source = click.source_page || 'unknown';
+    clickList.forEach((click) => {
+      const source = click.source_page || "unknown";
       clicksBySource[source] = (clicksBySource[source] || 0) + 1;
     });
 
     // Group by day
     const clicksByDay = this.groupByDay(
-      clickList.map(c => new Date(c.clicked_at))
+      clickList.map((c) => new Date(c.clicked_at)),
     );
 
     return {
@@ -190,7 +194,7 @@ class TrackingService {
     const commission = await this.calculateCommission(
       data.partnerId,
       data.type,
-      data.value || 0
+      data.value || 0,
     );
 
     const conversionRecord = {
@@ -199,7 +203,7 @@ class TrackingService {
       partner_id: data.partnerId,
       offer_id: data.offerId,
       type: data.type,
-      status: 'pending' as ConversionStatus,
+      status: "pending" as ConversionStatus,
       value: data.value || 0,
       commission_earned: commission,
       partner_reference: data.partnerReference,
@@ -208,7 +212,7 @@ class TrackingService {
     };
 
     const { data: result, error } = await supabase
-      .from('affiliate_conversions')
+      .from("affiliate_conversions")
       .insert(conversionRecord)
       .select()
       .single();
@@ -226,22 +230,22 @@ class TrackingService {
   async updateConversionStatus(
     conversionId: string,
     status: ConversionStatus,
-    rejectionReason?: string
+    rejectionReason?: string,
   ): Promise<Conversion> {
     const updateData: Record<string, unknown> = { status };
 
-    if (status === 'confirmed') {
+    if (status === "confirmed") {
       updateData.confirmed_at = new Date().toISOString();
-    } else if (status === 'paid') {
+    } else if (status === "paid") {
       updateData.paid_at = new Date().toISOString();
-    } else if (status === 'rejected' && rejectionReason) {
+    } else if (status === "rejected" && rejectionReason) {
       updateData.rejection_reason = rejectionReason;
     }
 
     const { data, error } = await supabase
-      .from('affiliate_conversions')
+      .from("affiliate_conversions")
       .update(updateData)
-      .eq('id', conversionId)
+      .eq("id", conversionId)
       .select()
       .single();
 
@@ -257,13 +261,13 @@ class TrackingService {
    */
   async getConversion(conversionId: string): Promise<Conversion | null> {
     const { data, error } = await supabase
-      .from('affiliate_conversions')
+      .from("affiliate_conversions")
       .select()
-      .eq('id', conversionId)
+      .eq("id", conversionId)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') return null;
+      if (error.code === "PGRST116") return null;
       throw new Error(`Failed to get conversion: ${error.message}`);
     }
 
@@ -275,20 +279,22 @@ class TrackingService {
    */
   async getUserConversions(
     userId: string,
-    dateRange?: DateRange
+    dateRange?: DateRange,
   ): Promise<Conversion[]> {
     let query = supabase
-      .from('affiliate_conversions')
+      .from("affiliate_conversions")
       .select()
-      .eq('user_id', userId);
+      .eq("user_id", userId);
 
     if (dateRange) {
       query = query
-        .gte('converted_at', dateRange.from.toISOString())
-        .lte('converted_at', dateRange.to.toISOString());
+        .gte("converted_at", dateRange.from.toISOString())
+        .lte("converted_at", dateRange.to.toISOString());
     }
 
-    const { data, error } = await query.order('converted_at', { ascending: false });
+    const { data, error } = await query.order("converted_at", {
+      ascending: false,
+    });
 
     if (error) {
       throw new Error(`Failed to get user conversions: ${error.message}`);
@@ -302,14 +308,14 @@ class TrackingService {
    */
   async getConversionStats(
     partnerId: string,
-    dateRange: DateRange
+    dateRange: DateRange,
   ): Promise<ConversionStats> {
     const { data: conversions, error: convError } = await supabase
-      .from('affiliate_conversions')
-      .select('*')
-      .eq('partner_id', partnerId)
-      .gte('converted_at', dateRange.from.toISOString())
-      .lte('converted_at', dateRange.to.toISOString());
+      .from("affiliate_conversions")
+      .select("*")
+      .eq("partner_id", partnerId)
+      .gte("converted_at", dateRange.from.toISOString())
+      .lte("converted_at", dateRange.to.toISOString());
 
     if (convError) {
       throw new Error(`Failed to get conversion stats: ${convError.message}`);
@@ -317,11 +323,11 @@ class TrackingService {
 
     // Get click count for conversion rate
     const { count: clickCount, error: clickError } = await supabase
-      .from('affiliate_clicks')
-      .select('*', { count: 'exact', head: true })
-      .eq('partner_id', partnerId)
-      .gte('clicked_at', dateRange.from.toISOString())
-      .lte('clicked_at', dateRange.to.toISOString());
+      .from("affiliate_clicks")
+      .select("*", { count: "exact", head: true })
+      .eq("partner_id", partnerId)
+      .gte("clicked_at", dateRange.from.toISOString())
+      .lte("clicked_at", dateRange.to.toISOString());
 
     if (clickError) {
       throw new Error(`Failed to get click count: ${clickError.message}`);
@@ -332,29 +338,33 @@ class TrackingService {
 
     // Group by type
     const conversionsByType: Record<string, number> = {};
-    conversionList.forEach(conv => {
+    conversionList.forEach((conv) => {
       conversionsByType[conv.type] = (conversionsByType[conv.type] || 0) + 1;
     });
 
     // Group by status
     const conversionsByStatus: Record<string, number> = {};
-    conversionList.forEach(conv => {
-      conversionsByStatus[conv.status] = (conversionsByStatus[conv.status] || 0) + 1;
+    conversionList.forEach((conv) => {
+      conversionsByStatus[conv.status] =
+        (conversionsByStatus[conv.status] || 0) + 1;
     });
 
     // Calculate totals
-    const totalValue = conversionList.reduce((sum, c) => sum + (c.value || 0), 0);
+    const totalValue = conversionList.reduce(
+      (sum, c) => sum + (c.value || 0),
+      0,
+    );
     const totalCommission = conversionList.reduce(
       (sum, c) => sum + (c.commission_earned || 0),
-      0
+      0,
     );
 
     // Group by day
     const conversionsByDay = this.groupConversionsByDay(
-      conversionList.map(c => ({
+      conversionList.map((c) => ({
         date: new Date(c.converted_at),
         value: c.value || 0,
-      }))
+      })),
     );
 
     return {
@@ -379,12 +389,14 @@ class TrackingService {
   /**
    * Get performance metrics for all partners
    */
-  async getPartnerPerformance(dateRange: DateRange): Promise<PartnerPerformance[]> {
+  async getPartnerPerformance(
+    dateRange: DateRange,
+  ): Promise<PartnerPerformance[]> {
     // Get all active partners
     const { data: partners, error: partnerError } = await supabase
-      .from('affiliate_partners')
-      .select('id, name')
-      .eq('is_active', true);
+      .from("affiliate_partners")
+      .select("id, name")
+      .eq("is_active", true);
 
     if (partnerError) {
       throw new Error(`Failed to get partners: ${partnerError.message}`);
@@ -394,7 +406,10 @@ class TrackingService {
 
     for (const partner of partners || []) {
       const clickStats = await this.getClickStats(partner.id, dateRange);
-      const conversionStats = await this.getConversionStats(partner.id, dateRange);
+      const conversionStats = await this.getConversionStats(
+        partner.id,
+        dateRange,
+      );
 
       performance.push({
         partnerId: partner.id,
@@ -423,27 +438,32 @@ class TrackingService {
   async getTopOffers(
     partnerId: string,
     dateRange: DateRange,
-    limit = 10
-  ): Promise<Array<{ offerId: string; clicks: number; conversions: number; revenue: number }>> {
+    limit = 10,
+  ): Promise<
+    Array<{
+      offerId: string;
+      clicks: number;
+      conversions: number;
+      revenue: number;
+    }>
+  > {
     const { data: conversions, error } = await supabase
-      .from('affiliate_conversions')
-      .select('offer_id, value')
-      .eq('partner_id', partnerId)
-      .not('offer_id', 'is', null)
-      .gte('converted_at', dateRange.from.toISOString())
-      .lte('converted_at', dateRange.to.toISOString());
+      .from("affiliate_conversions")
+      .select("offer_id, value")
+      .eq("partner_id", partnerId)
+      .not("offer_id", "is", null)
+      .gte("converted_at", dateRange.from.toISOString())
+      .lte("converted_at", dateRange.to.toISOString());
 
     if (error) {
       throw new Error(`Failed to get top offers: ${error.message}`);
     }
 
     // Group by offer
-    const offerStats: Record<
-      string,
-      { conversions: number; revenue: number }
-    > = {};
+    const offerStats: Record<string, { conversions: number; revenue: number }> =
+      {};
 
-    (conversions || []).forEach(conv => {
+    (conversions || []).forEach((conv) => {
       const offerId = conv.offer_id;
       if (!offerStats[offerId]) {
         offerStats[offerId] = { conversions: 0, revenue: 0 };
@@ -463,12 +483,12 @@ class TrackingService {
 
     for (const offerId of offerIds) {
       const { count } = await supabase
-        .from('affiliate_clicks')
-        .select('*', { count: 'exact', head: true })
-        .eq('partner_id', partnerId)
-        .eq('offer_id', offerId)
-        .gte('clicked_at', dateRange.from.toISOString())
-        .lte('clicked_at', dateRange.to.toISOString());
+        .from("affiliate_clicks")
+        .select("*", { count: "exact", head: true })
+        .eq("partner_id", partnerId)
+        .eq("offer_id", offerId)
+        .gte("clicked_at", dateRange.from.toISOString())
+        .lte("clicked_at", dateRange.to.toISOString());
 
       results.push({
         offerId,
@@ -478,9 +498,7 @@ class TrackingService {
       });
     }
 
-    return results
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, limit);
+    return results.sort((a, b) => b.revenue - a.revenue).slice(0, limit);
   }
 
   // ===========================================================================
@@ -495,7 +513,7 @@ class TrackingService {
     clickId: string,
     type: string,
     value?: number,
-    partnerReference?: string
+    partnerReference?: string,
   ): Promise<Conversion | null> {
     // Get the original click
     const click = await this.getClick(clickId);
@@ -510,7 +528,7 @@ class TrackingService {
       userId: click.userId,
       partnerId,
       offerId: click.offerId,
-      type: type as ConversionData['type'],
+      type: type as ConversionData["type"],
       value,
       partnerReference,
     });
@@ -524,17 +542,17 @@ class TrackingService {
    * Generate a unique click ID
    */
   private generateClickId(): string {
-    return `clk_${randomUUID().replace(/-/g, '')}`;
+    return `clk_${randomUUID().replace(/-/g, "")}`;
   }
 
   /**
    * Hash IP address for privacy
    */
   private hashIp(ipAddress: string): string {
-    const salt = process.env.IP_HASH_SALT || 'fynvita';
-    return createHash('sha256')
+    const salt = process.env.IP_HASH_SALT || "fynvita";
+    return createHash("sha256")
       .update(ipAddress + salt)
-      .digest('hex')
+      .digest("hex")
       .substring(0, 16);
   }
 
@@ -545,27 +563,27 @@ class TrackingService {
     userId: string | undefined,
     partnerId: string,
     offerId: string | undefined,
-    ipHash: string | undefined
+    ipHash: string | undefined,
   ): Promise<boolean> {
     const windowStart = new Date(Date.now() - CLICK_DEDUP_WINDOW_MS);
 
     let query = supabase
-      .from('affiliate_clicks')
-      .select('id')
-      .eq('partner_id', partnerId)
-      .gte('clicked_at', windowStart.toISOString())
+      .from("affiliate_clicks")
+      .select("id")
+      .eq("partner_id", partnerId)
+      .gte("clicked_at", windowStart.toISOString())
       .limit(1);
 
     if (userId) {
-      query = query.eq('user_id', userId);
+      query = query.eq("user_id", userId);
     } else if (ipHash) {
-      query = query.eq('ip_hash', ipHash);
+      query = query.eq("ip_hash", ipHash);
     } else {
       return false; // Can't check for duplicates without user or IP
     }
 
     if (offerId) {
-      query = query.eq('offer_id', offerId);
+      query = query.eq("offer_id", offerId);
     }
 
     const { data } = await query;
@@ -579,26 +597,26 @@ class TrackingService {
     userId: string | undefined,
     partnerId: string,
     offerId: string | undefined,
-    ipHash: string | undefined
+    ipHash: string | undefined,
   ): Promise<Click | null> {
     const windowStart = new Date(Date.now() - CLICK_DEDUP_WINDOW_MS);
 
     let query = supabase
-      .from('affiliate_clicks')
+      .from("affiliate_clicks")
       .select()
-      .eq('partner_id', partnerId)
-      .gte('clicked_at', windowStart.toISOString())
-      .order('clicked_at', { ascending: false })
+      .eq("partner_id", partnerId)
+      .gte("clicked_at", windowStart.toISOString())
+      .order("clicked_at", { ascending: false })
       .limit(1);
 
     if (userId) {
-      query = query.eq('user_id', userId);
+      query = query.eq("user_id", userId);
     } else if (ipHash) {
-      query = query.eq('ip_hash', ipHash);
+      query = query.eq("ip_hash", ipHash);
     }
 
     if (offerId) {
-      query = query.eq('offer_id', offerId);
+      query = query.eq("offer_id", offerId);
     }
 
     const { data } = await query;
@@ -611,28 +629,28 @@ class TrackingService {
   private async calculateCommission(
     partnerId: string,
     type: string,
-    value: number
+    value: number,
   ): Promise<number> {
     // Get partner commission settings
     const { data: partner } = await supabase
-      .from('affiliate_partners')
-      .select('commission_type, commission_rate, commission_fixed')
-      .eq('id', partnerId)
+      .from("affiliate_partners")
+      .select("commission_type, commission_rate, commission_fixed")
+      .eq("id", partnerId)
       .single();
 
     if (!partner) return 0;
 
     switch (partner.commission_type) {
-      case 'cpa':
+      case "cpa":
         return partner.commission_fixed || 0;
-      case 'cpl':
-        if (['lead', 'signup', 'application'].includes(type)) {
+      case "cpl":
+        if (["lead", "signup", "application"].includes(type)) {
           return partner.commission_fixed || 0;
         }
         return 0;
-      case 'revenue_share':
+      case "revenue_share":
         return value * ((partner.commission_rate || 0) / 100);
-      case 'hybrid':
+      case "hybrid":
         return (
           (partner.commission_fixed || 0) +
           value * ((partner.commission_rate || 0) / 100)
@@ -648,8 +666,8 @@ class TrackingService {
   private groupByDay(dates: Date[]): Array<{ date: string; count: number }> {
     const groups: Record<string, number> = {};
 
-    dates.forEach(date => {
-      const day = date.toISOString().split('T')[0];
+    dates.forEach((date) => {
+      const day = date.toISOString().split("T")[0];
       groups[day] = (groups[day] || 0) + 1;
     });
 
@@ -662,12 +680,12 @@ class TrackingService {
    * Group conversions by day with value
    */
   private groupConversionsByDay(
-    items: Array<{ date: Date; value: number }>
+    items: Array<{ date: Date; value: number }>,
   ): Array<{ date: string; count: number; value: number }> {
     const groups: Record<string, { count: number; value: number }> = {};
 
-    items.forEach(item => {
-      const day = item.date.toISOString().split('T')[0];
+    items.forEach((item) => {
+      const day = item.date.toISOString().split("T")[0];
       if (!groups[day]) {
         groups[day] = { count: 0, value: 0 };
       }
@@ -710,7 +728,7 @@ class TrackingService {
       userId: row.user_id as string | undefined,
       partnerId: row.partner_id as string,
       offerId: row.offer_id as string | undefined,
-      type: row.type as Conversion['type'],
+      type: row.type as Conversion["type"],
       status: row.status as ConversionStatus,
       value: row.value as number,
       commissionEarned: row.commission_earned as number,

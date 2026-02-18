@@ -1,17 +1,22 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 interface RepairAction {
   id: string;
   title: string;
   description: string;
-  category: 'dispute' | 'negotiation' | 'utilization' | 'payment_history' | 'credit_building';
+  category:
+    | "dispute"
+    | "negotiation"
+    | "utilization"
+    | "payment_history"
+    | "credit_building";
   impact: number; // credit score points
   successProbability: number; // 0-100
   timeframe: string;
-  difficulty: 'easy' | 'medium' | 'hard';
-  priority: 'critical' | 'high' | 'medium' | 'low';
+  difficulty: "easy" | "medium" | "hard";
+  priority: "critical" | "high" | "medium" | "low";
   steps: string[];
   estimatedCost: string;
 }
@@ -40,7 +45,7 @@ interface SuccessMetrics {
   overallSuccessProbability: number; // 0-100
   estimatedScoreIncrease: number;
   estimatedTimeframe: string;
-  confidenceLevel: 'high' | 'medium' | 'low';
+  confidenceLevel: "high" | "medium" | "low";
   riskFactors: string[];
 }
 
@@ -79,46 +84,61 @@ export default function AICreditRepairStrategy() {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('/api/financial/credit-repair/ai-strategy');
-      
+      const response = await fetch("/api/financial/credit-repair/ai-strategy");
+
       if (!response.ok) {
-        throw new Error('Failed to fetch AI credit repair strategy');
+        throw new Error("Failed to fetch AI credit repair strategy");
       }
-      
+
       const result = await response.json();
       setData(result.data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setLoading(false);
     }
   };
 
-  const getPriorityColor = (priority: 'critical' | 'high' | 'medium' | 'low') => {
+  const getPriorityColor = (
+    priority: "critical" | "high" | "medium" | "low",
+  ) => {
     switch (priority) {
-      case 'critical': return 'text-red-700 bg-red-100';
-      case 'high': return 'text-orange-600 bg-orange-100';
-      case 'medium': return 'text-yellow-600 bg-yellow-100';
-      case 'low': return 'text-blue-600 bg-blue-100';
+      case "critical":
+        return "text-red-700 bg-red-100";
+      case "high":
+        return "text-orange-600 bg-orange-100";
+      case "medium":
+        return "text-yellow-600 bg-yellow-100";
+      case "low":
+        return "text-blue-600 bg-blue-100";
     }
   };
 
-  const getDifficultyColor = (difficulty: 'easy' | 'medium' | 'hard') => {
+  const getDifficultyColor = (difficulty: "easy" | "medium" | "hard") => {
     switch (difficulty) {
-      case 'easy': return 'text-green-600 bg-green-100';
-      case 'medium': return 'text-yellow-600 bg-yellow-100';
-      case 'hard': return 'text-red-600 bg-red-100';
+      case "easy":
+        return "text-green-600 bg-green-100";
+      case "medium":
+        return "text-yellow-600 bg-yellow-100";
+      case "hard":
+        return "text-red-600 bg-red-100";
     }
   };
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
-      case 'dispute': return '';
-      case 'negotiation': return '';
-      case 'utilization': return '';
-      case 'payment_history': return '';
-      case 'credit_building': return '';
-      default: return '';
+      case "dispute":
+        return "";
+      case "negotiation":
+        return "";
+      case "utilization":
+        return "";
+      case "payment_history":
+        return "";
+      case "credit_building":
+        return "";
+      default:
+        return "";
     }
   };
 
@@ -134,7 +154,9 @@ export default function AICreditRepairStrategy() {
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-xl p-6 mb-6">
-        <p className="text-red-800 font-medium">Error loading AI repair strategy</p>
+        <p className="text-red-800 font-medium">
+          Error loading AI repair strategy
+        </p>
         <p className="text-red-600 text-sm mt-1">{error}</p>
         <button
           onClick={fetchData}
@@ -153,11 +175,12 @@ export default function AICreditRepairStrategy() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-white dark:bg-slate-800/20 rounded-lg flex items-center justify-center text-2xl">
-                      </div>
+          <div className="w-10 h-10 bg-white dark:bg-slate-800/20 rounded-lg flex items-center justify-center text-2xl"></div>
           <div>
             <h2 className="text-xl font-bold">AI Credit Repair Strategy</h2>
-            <p className="text-blue-100 text-sm">Optimized plan for maximum score improvement</p>
+            <p className="text-blue-100 text-sm">
+              Optimized plan for maximum score improvement
+            </p>
           </div>
         </div>
         <button
@@ -165,12 +188,32 @@ export default function AICreditRepairStrategy() {
           className="p-2 hover:bg-white dark:bg-slate-800/10 rounded-lg transition-colors"
         >
           {isExpanded ? (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 15l7-7 7 7"
+              />
             </svg>
           ) : (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
             </svg>
           )}
         </button>
@@ -196,23 +239,33 @@ export default function AICreditRepairStrategy() {
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
               <div>
                 <div className="text-blue-100">Success Probability</div>
-                <div className="text-xl font-bold">{data.successMetrics.overallSuccessProbability}%</div>
+                <div className="text-xl font-bold">
+                  {data.successMetrics.overallSuccessProbability}%
+                </div>
               </div>
               <div>
                 <div className="text-blue-100">Expected Increase</div>
-                <div className="text-xl font-bold text-green-300">+{data.successMetrics.estimatedScoreIncrease} pts</div>
+                <div className="text-xl font-bold text-green-300">
+                  +{data.successMetrics.estimatedScoreIncrease} pts
+                </div>
               </div>
               <div>
                 <div className="text-blue-100">Timeframe</div>
-                <div className="text-xl font-bold">{data.successMetrics.estimatedTimeframe}</div>
+                <div className="text-xl font-bold">
+                  {data.successMetrics.estimatedTimeframe}
+                </div>
               </div>
             </div>
             <div className="mt-3 flex items-center space-x-2">
-              <span className={`px-2 py-1 rounded text-xs font-medium ${
-                data.successMetrics.confidenceLevel === 'high' ? 'bg-green-100 text-green-700' :
-                data.successMetrics.confidenceLevel === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                'bg-red-100 text-red-700'
-              }`}>
+              <span
+                className={`px-2 py-1 rounded text-xs font-medium ${
+                  data.successMetrics.confidenceLevel === "high"
+                    ? "bg-green-100 text-green-700"
+                    : data.successMetrics.confidenceLevel === "medium"
+                      ? "bg-yellow-100 text-yellow-700"
+                      : "bg-red-100 text-red-700"
+                }`}
+              >
                 {data.successMetrics.confidenceLevel.toUpperCase()} CONFIDENCE
               </span>
             </div>
@@ -226,7 +279,10 @@ export default function AICreditRepairStrategy() {
             </h3>
             <ul className="space-y-2">
               {data.quickWins.map((win, idx) => (
-                <li key={idx} className="text-sm text-blue-100 flex items-start space-x-2 bg-white dark:bg-slate-800/10 rounded-lg p-2">
+                <li
+                  key={idx}
+                  className="text-sm text-blue-100 flex items-start space-x-2 bg-white dark:bg-slate-800/10 rounded-lg p-2"
+                >
                   <span className="text-green-300 flex-shrink-0"></span>
                   <span>{win}</span>
                 </li>
@@ -242,40 +298,62 @@ export default function AICreditRepairStrategy() {
             </h3>
             <div className="space-y-3">
               {data.prioritizedActions.slice(0, 4).map((action) => (
-                <div key={action.id} className="bg-white dark:bg-slate-800/10 rounded-lg p-3">
+                <div
+                  key={action.id}
+                  className="bg-white dark:bg-slate-800/10 rounded-lg p-3"
+                >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-start space-x-2 flex-1">
-                      <span className="text-xl">{getCategoryIcon(action.category)}</span>
+                      <span className="text-xl">
+                        {getCategoryIcon(action.category)}
+                      </span>
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-1 flex-wrap">
                           <span className="font-semibold">{action.title}</span>
-                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${getPriorityColor(action.priority)}`}>
+                          <span
+                            className={`px-2 py-0.5 rounded text-xs font-medium ${getPriorityColor(action.priority)}`}
+                          >
                             {action.priority}
                           </span>
-                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${getDifficultyColor(action.difficulty)}`}>
+                          <span
+                            className={`px-2 py-0.5 rounded text-xs font-medium ${getDifficultyColor(action.difficulty)}`}
+                          >
                             {action.difficulty}
                           </span>
                         </div>
-                        <p className="text-sm text-blue-100">{action.description}</p>
+                        <p className="text-sm text-blue-100">
+                          {action.description}
+                        </p>
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0 ml-3">
-                      <div className="text-sm font-bold text-green-300">+{action.impact} pts</div>
-                      <div className="text-xs text-blue-200">{action.successProbability}% success</div>
-                      <div className="text-xs text-blue-200">{action.timeframe}</div>
+                      <div className="text-sm font-bold text-green-300">
+                        +{action.impact} pts
+                      </div>
+                      <div className="text-xs text-blue-200">
+                        {action.successProbability}% success
+                      </div>
+                      <div className="text-xs text-blue-200">
+                        {action.timeframe}
+                      </div>
                     </div>
                   </div>
                   <div className="mt-2 pl-7">
                     <p className="text-xs text-blue-200 mb-1">Steps:</p>
                     <ul className="space-y-1">
                       {action.steps.slice(0, 2).map((step, idx) => (
-                        <li key={idx} className="text-xs text-blue-100 flex items-start space-x-1">
+                        <li
+                          key={idx}
+                          className="text-xs text-blue-100 flex items-start space-x-1"
+                        >
                           <span>{idx + 1}.</span>
                           <span>{step}</span>
                         </li>
                       ))}
                     </ul>
-                    <p className="text-xs text-blue-200 mt-2">Cost: {action.estimatedCost}</p>
+                    <p className="text-xs text-blue-200 mt-2">
+                      Cost: {action.estimatedCost}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -290,13 +368,20 @@ export default function AICreditRepairStrategy() {
             </h3>
             <div className="space-y-2">
               {data.impactPredictions.slice(0, 4).map((pred, idx) => (
-                <div key={idx} className="bg-white dark:bg-slate-800/10 rounded-lg p-3">
+                <div
+                  key={idx}
+                  className="bg-white dark:bg-slate-800/10 rounded-lg p-3"
+                >
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-medium text-sm">{pred.action}</span>
-                    <span className="text-sm font-bold text-green-300">+{pred.scoreIncrease} pts</span>
+                    <span className="text-sm font-bold text-green-300">
+                      +{pred.scoreIncrease} pts
+                    </span>
                   </div>
                   <div className="flex items-center justify-between text-xs text-blue-200">
-                    <span>{pred.currentScore} → {pred.predictedScore}</span>
+                    <span>
+                      {pred.currentScore} → {pred.predictedScore}
+                    </span>
                     <span>{pred.confidence}% confidence</span>
                     <span>{pred.timeToImpact}</span>
                   </div>
@@ -313,15 +398,23 @@ export default function AICreditRepairStrategy() {
             </h3>
             <div className="space-y-3">
               {data.timelineEstimates.map((timeline, idx) => (
-                <div key={idx} className="bg-white dark:bg-slate-800/10 rounded-lg p-3">
+                <div
+                  key={idx}
+                  className="bg-white dark:bg-slate-800/10 rounded-lg p-3"
+                >
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-semibold">{timeline.phase}</span>
-                    <span className="text-sm text-blue-200">{timeline.duration}</span>
+                    <span className="text-sm text-blue-200">
+                      {timeline.duration}
+                    </span>
                   </div>
                   <div className="mb-2">
-                    <span className="text-xs text-blue-200">Expected Score Range: </span>
+                    <span className="text-xs text-blue-200">
+                      Expected Score Range:{" "}
+                    </span>
                     <span className="text-sm font-medium">
-                      {timeline.expectedScoreRange.min} - {timeline.expectedScoreRange.max}
+                      {timeline.expectedScoreRange.min} -{" "}
+                      {timeline.expectedScoreRange.max}
                     </span>
                   </div>
                   <div className="text-xs text-blue-100">
@@ -342,12 +435,19 @@ export default function AICreditRepairStrategy() {
             <h3 className="font-semibold mb-3">Recommended Strategies</h3>
             <div className="space-y-3">
               {data.strategyOptimizations.slice(0, 2).map((strategy) => (
-                <div key={strategy.id} className="bg-white dark:bg-slate-800/10 rounded-lg p-3">
+                <div
+                  key={strategy.id}
+                  className="bg-white dark:bg-slate-800/10 rounded-lg p-3"
+                >
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-medium">{strategy.strategy}</span>
-                    <span className="text-sm font-bold text-green-300">{strategy.successRate}% success</span>
+                    <span className="text-sm font-bold text-green-300">
+                      {strategy.successRate}% success
+                    </span>
                   </div>
-                  <p className="text-sm text-blue-100 mb-2">{strategy.description}</p>
+                  <p className="text-sm text-blue-100 mb-2">
+                    {strategy.description}
+                  </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
                     <div>
                       <p className="text-blue-200 mb-1">Pros:</p>
@@ -366,7 +466,9 @@ export default function AICreditRepairStrategy() {
                       </ul>
                     </div>
                   </div>
-                  <p className="text-xs text-blue-200 mt-2">Expected: {strategy.expectedOutcome}</p>
+                  <p className="text-xs text-blue-200 mt-2">
+                    Expected: {strategy.expectedOutcome}
+                  </p>
                 </div>
               ))}
             </div>
@@ -381,7 +483,10 @@ export default function AICreditRepairStrategy() {
               </h3>
               <ul className="space-y-2">
                 {data.successMetrics.riskFactors.map((risk, idx) => (
-                  <li key={idx} className="text-sm text-blue-100 flex items-start space-x-2">
+                  <li
+                    key={idx}
+                    className="text-sm text-blue-100 flex items-start space-x-2"
+                  >
                     <span className="text-yellow-300"></span>
                     <span>{risk}</span>
                   </li>
@@ -394,4 +499,3 @@ export default function AICreditRepairStrategy() {
     </div>
   );
 }
-

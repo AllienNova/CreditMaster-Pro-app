@@ -23,16 +23,20 @@ export interface Debt {
   updatedAt: string;
 }
 
-export type DebtType = 
-  | 'credit_card'
-  | 'student_loan'
-  | 'auto_loan'
-  | 'mortgage'
-  | 'personal_loan'
-  | 'medical'
-  | 'other';
+export type DebtType =
+  | "credit_card"
+  | "student_loan"
+  | "auto_loan"
+  | "mortgage"
+  | "personal_loan"
+  | "medical"
+  | "other";
 
-export type PayoffStrategy = 'avalanche' | 'snowball' | 'hybrid' | 'ai_optimized';
+export type PayoffStrategy =
+  | "avalanche"
+  | "snowball"
+  | "hybrid"
+  | "ai_optimized";
 
 // Payoff calculation result
 export interface PayoffPlan {
@@ -97,7 +101,7 @@ export interface DebtOverview {
 // Payoff milestone
 export interface PayoffMilestone {
   id: string;
-  type: 'percentage' | 'debt_paid' | 'amount';
+  type: "percentage" | "debt_paid" | "amount";
   target: number | string;
   achieved: boolean;
   achievedDate?: Date;
@@ -119,7 +123,7 @@ export interface DebtPayment {
 
 // Payoff insight
 export interface PayoffInsight {
-  type: 'tip' | 'warning' | 'achievement' | 'recommendation';
+  type: "tip" | "warning" | "achievement" | "recommendation";
   title: string;
   description: string;
   impact?: string;
@@ -154,4 +158,3 @@ export interface DebtFormData {
   creditorName?: string;
   accountNumber?: string;
 }
-

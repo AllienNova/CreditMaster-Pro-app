@@ -3,29 +3,29 @@
  * Displays when data was last fetched/updated with relative time
  */
 
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { lightTheme as theme } from '../constants/theme';
+import React, { useEffect, useState } from "react";
+import { View, Text, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { lightTheme as theme } from "../constants/theme";
 
 interface LastUpdatedProps {
   timestamp: string | null;
   label?: string;
   showIcon?: boolean;
-  size?: 'small' | 'medium';
+  size?: "small" | "medium";
 }
 
-export function LastUpdated({ 
-  timestamp, 
-  label = 'Last updated', 
+export function LastUpdated({
+  timestamp,
+  label = "Last updated",
   showIcon = true,
-  size = 'small' 
+  size = "small",
 }: LastUpdatedProps) {
-  const [relativeTime, setRelativeTime] = useState<string>('');
+  const [relativeTime, setRelativeTime] = useState<string>("");
 
   useEffect(() => {
     if (!timestamp) {
-      setRelativeTime('Never');
+      setRelativeTime("Never");
       return;
     }
 
@@ -35,7 +35,7 @@ export function LastUpdated({
 
       // Check if date is invalid
       if (isNaN(then.getTime())) {
-        setRelativeTime('Never');
+        setRelativeTime("Never");
         return;
       }
 
@@ -46,40 +46,42 @@ export function LastUpdated({
       const diffDays = Math.floor(diffHours / 24);
 
       if (diffSecs < 60) {
-        setRelativeTime('Just now');
+        setRelativeTime("Just now");
       } else if (diffMins < 60) {
         setRelativeTime(`${diffMins}m ago`);
       } else if (diffHours < 24) {
         setRelativeTime(`${diffHours}h ago`);
       } else if (diffDays === 1) {
-        setRelativeTime('Yesterday');
+        setRelativeTime("Yesterday");
       } else if (diffDays < 7) {
         setRelativeTime(`${diffDays}d ago`);
       } else {
-        setRelativeTime(then.toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric'
-        }));
+        setRelativeTime(
+          then.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          }),
+        );
       }
     };
 
     updateRelativeTime();
-    
+
     // Update every minute
     const interval = setInterval(updateRelativeTime, 60000);
-    
+
     return () => clearInterval(interval);
   }, [timestamp]);
 
-  const styles = size === 'small' ? smallStyles : mediumStyles;
+  const styles = size === "small" ? smallStyles : mediumStyles;
 
   return (
     <View style={styles.container}>
       {showIcon && (
-        <Ionicons 
-          name="time-outline" 
-          size={size === 'small' ? 12 : 14} 
-          color={theme.colors.textSecondary} 
+        <Ionicons
+          name="time-outline"
+          size={size === "small" ? 12 : 14}
+          color={theme.colors.textSecondary}
         />
       )}
       <Text style={styles.text}>
@@ -91,8 +93,8 @@ export function LastUpdated({
 
 const smallStyles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   text: {
@@ -103,8 +105,8 @@ const smallStyles = StyleSheet.create({
 
 const mediumStyles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
   },
   text: {
@@ -112,4 +114,3 @@ const mediumStyles = StyleSheet.create({
     color: theme.colors.textSecondary,
   },
 });
-

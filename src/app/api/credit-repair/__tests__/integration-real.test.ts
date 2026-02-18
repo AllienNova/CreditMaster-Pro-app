@@ -14,19 +14,19 @@ import {
   teardownTestEnvironment,
   makeAuthenticatedRequest,
   measureTime,
-} from '@/lib/test-utils/test-setup';
+} from "@/lib/test-utils/test-setup";
 
 // Check if we have REAL credentials (not jest test dummies)
 const hasCredentials =
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
-  !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('localhost:54321') &&
+  !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("localhost:54321") &&
   process.env.SUPABASE_SERVICE_ROLE_KEY &&
-  !process.env.SUPABASE_SERVICE_ROLE_KEY.startsWith('test-');
+  !process.env.SUPABASE_SERVICE_ROLE_KEY.startsWith("test-");
 
 // Skip these tests if real credentials are not available
 const describeOrSkip = hasCredentials ? describe : describe.skip;
 
-describeOrSkip('Real Integration Tests - Credit Repair API', () => {
+describeOrSkip("Real Integration Tests - Credit Repair API", () => {
   let userId: string;
   let token: string;
 
@@ -47,33 +47,39 @@ describeOrSkip('Real Integration Tests - Credit Repair API', () => {
     await teardownTestEnvironment(userId);
   });
 
-  describe('Complete Dispute Lifecycle', () => {
-    it('should handle full dispute flow: create → fetch → update → delete', async () => {
+  describe("Complete Dispute Lifecycle", () => {
+    it("should handle full dispute flow: create → fetch → update → delete", async () => {
       // Step 1: Create dispute
-      const createResponse = await makeAuthenticatedRequest('/api/credit-repair/disputes', {
-        method: 'POST',
-        token,
-        body: {
-          bureau: 'experian',
-          itemType: 'late_payment',
-          itemDescription: 'Late payment on credit card',
-          reason: 'not_mine',
-          generateLetter: false,
+      const createResponse = await makeAuthenticatedRequest(
+        "/api/credit-repair/disputes",
+        {
+          method: "POST",
+          token,
+          body: {
+            bureau: "experian",
+            itemType: "late_payment",
+            itemDescription: "Late payment on credit card",
+            reason: "not_mine",
+            generateLetter: false,
+          },
         },
-      });
+      );
 
       expect(createResponse.status).toBe(201);
       const createData = await createResponse.json();
       expect(createData.success).toBe(true);
       expect(createData.data.id).toBeDefined();
-      expect(createData.data.status).toBe('draft');
+      expect(createData.data.status).toBe("draft");
 
       const disputeId = createData.data.id;
 
       // Step 2: Fetch disputes
-      const fetchResponse = await makeAuthenticatedRequest('/api/credit-repair/disputes', {
-        token,
-      });
+      const fetchResponse = await makeAuthenticatedRequest(
+        "/api/credit-repair/disputes",
+        {
+          token,
+        },
+      );
 
       expect(fetchResponse.status).toBe(200);
       const fetchData = await fetchResponse.json();
@@ -85,28 +91,28 @@ describeOrSkip('Real Integration Tests - Credit Repair API', () => {
       const updateResponse = await makeAuthenticatedRequest(
         `/api/credit-repair/disputes/${disputeId}`,
         {
-          method: 'PUT',
+          method: "PUT",
           token,
           body: {
-            status: 'sent',
+            status: "sent",
             version: createData.data.version,
           },
-        }
+        },
       );
 
       expect(updateResponse.status).toBe(200);
       const updateData = await updateResponse.json();
       expect(updateData.success).toBe(true);
-      expect(updateData.data.status).toBe('sent');
+      expect(updateData.data.status).toBe("sent");
       expect(updateData.data.version).toBe(createData.data.version + 1);
 
       // Step 4: Delete dispute
       const deleteResponse = await makeAuthenticatedRequest(
         `/api/credit-repair/disputes/${disputeId}`,
         {
-          method: 'DELETE',
+          method: "DELETE",
           token,
-        }
+        },
       );
 
       expect(deleteResponse.status).toBe(200);
@@ -114,27 +120,33 @@ describeOrSkip('Real Integration Tests - Credit Repair API', () => {
       expect(deleteData.success).toBe(true);
 
       // Step 5: Verify deletion
-      const verifyResponse = await makeAuthenticatedRequest('/api/credit-repair/disputes', {
-        token,
-      });
+      const verifyResponse = await makeAuthenticatedRequest(
+        "/api/credit-repair/disputes",
+        {
+          token,
+        },
+      );
 
       const verifyData = await verifyResponse.json();
       expect(verifyData.data).toHaveLength(0);
     }, 15000);
 
-    it('should handle optimistic locking correctly', async () => {
+    it("should handle optimistic locking correctly", async () => {
       // Create dispute
-      const createResponse = await makeAuthenticatedRequest('/api/credit-repair/disputes', {
-        method: 'POST',
-        token,
-        body: {
-          bureau: 'experian',
-          itemType: 'late_payment',
-          itemDescription: 'Test dispute',
-          reason: 'not_mine',
-          generateLetter: false,
+      const createResponse = await makeAuthenticatedRequest(
+        "/api/credit-repair/disputes",
+        {
+          method: "POST",
+          token,
+          body: {
+            bureau: "experian",
+            itemType: "late_payment",
+            itemDescription: "Test dispute",
+            reason: "not_mine",
+            generateLetter: false,
+          },
         },
-      });
+      );
 
       const createData = await createResponse.json();
       const disputeId = createData.data.id;
@@ -144,13 +156,13 @@ describeOrSkip('Real Integration Tests - Credit Repair API', () => {
       const update1Response = await makeAuthenticatedRequest(
         `/api/credit-repair/disputes/${disputeId}`,
         {
-          method: 'PUT',
+          method: "PUT",
           token,
           body: {
-            status: 'sent',
+            status: "sent",
             version,
           },
-        }
+        },
       );
 
       expect(update1Response.status).toBe(200);
@@ -159,33 +171,36 @@ describeOrSkip('Real Integration Tests - Credit Repair API', () => {
       const update2Response = await makeAuthenticatedRequest(
         `/api/credit-repair/disputes/${disputeId}`,
         {
-          method: 'PUT',
+          method: "PUT",
           token,
           body: {
-            status: 'under_review',
+            status: "under_review",
             version, // Using old version
           },
-        }
+        },
       );
 
       expect(update2Response.status).toBe(409);
       const update2Data = await update2Response.json();
-      expect(update2Data.error).toContain('modified by another process');
+      expect(update2Data.error).toContain("modified by another process");
     }, 10000);
   });
 
-  describe('Credit Card Management', () => {
-    it('should handle complete credit card lifecycle', async () => {
+  describe("Credit Card Management", () => {
+    it("should handle complete credit card lifecycle", async () => {
       // Create card
-      const createResponse = await makeAuthenticatedRequest('/api/credit-repair/cards', {
-        method: 'POST',
-        token,
-        body: {
-          name: 'Test Card',
-          creditLimit: 5000,
-          currentBalance: 1000,
+      const createResponse = await makeAuthenticatedRequest(
+        "/api/credit-repair/cards",
+        {
+          method: "POST",
+          token,
+          body: {
+            name: "Test Card",
+            creditLimit: 5000,
+            currentBalance: 1000,
+          },
         },
-      });
+      );
 
       expect(createResponse.status).toBe(201);
       const createData = await createResponse.json();
@@ -197,13 +212,13 @@ describeOrSkip('Real Integration Tests - Credit Repair API', () => {
       const updateResponse = await makeAuthenticatedRequest(
         `/api/credit-repair/cards/${cardId}`,
         {
-          method: 'PUT',
+          method: "PUT",
           token,
           body: {
             currentBalance: 2500,
             version: createData.data.version,
           },
-        }
+        },
       );
 
       expect(updateResponse.status).toBe(200);
@@ -214,32 +229,35 @@ describeOrSkip('Real Integration Tests - Credit Repair API', () => {
       const deleteResponse = await makeAuthenticatedRequest(
         `/api/credit-repair/cards/${cardId}`,
         {
-          method: 'DELETE',
+          method: "DELETE",
           token,
-        }
+        },
       );
 
       expect(deleteResponse.status).toBe(200);
     }, 10000);
   });
 
-  describe('Goodwill Letter Flow', () => {
-    it('should create and update goodwill letter', async () => {
+  describe("Goodwill Letter Flow", () => {
+    it("should create and update goodwill letter", async () => {
       // Create goodwill letter
-      const createResponse = await makeAuthenticatedRequest('/api/credit-repair/goodwill', {
-        method: 'POST',
-        token,
-        body: {
-          creditorName: 'Test Bank',
-          accountNumber: '1234567890',
-          issueDescription: 'Late payment due to medical emergency',
-          generateLetter: false,
+      const createResponse = await makeAuthenticatedRequest(
+        "/api/credit-repair/goodwill",
+        {
+          method: "POST",
+          token,
+          body: {
+            creditorName: "Test Bank",
+            accountNumber: "1234567890",
+            issueDescription: "Late payment due to medical emergency",
+            generateLetter: false,
+          },
         },
-      });
+      );
 
       expect(createResponse.status).toBe(201);
       const createData = await createResponse.json();
-      expect(createData.data.status).toBe('draft');
+      expect(createData.data.status).toBe("draft");
 
       const letterId = createData.data.id;
 
@@ -247,51 +265,51 @@ describeOrSkip('Real Integration Tests - Credit Repair API', () => {
       const updateResponse = await makeAuthenticatedRequest(
         `/api/credit-repair/goodwill/${letterId}`,
         {
-          method: 'PUT',
+          method: "PUT",
           token,
           body: {
-            status: 'sent',
+            status: "sent",
             version: createData.data.version,
           },
-        }
+        },
       );
 
       expect(updateResponse.status).toBe(200);
       const updateData = await updateResponse.json();
-      expect(updateData.data.status).toBe('sent');
+      expect(updateData.data.status).toBe("sent");
     }, 10000);
   });
 
-  describe('Performance Benchmarks', () => {
-    it('should respond to GET requests within 200ms', async () => {
+  describe("Performance Benchmarks", () => {
+    it("should respond to GET requests within 200ms", async () => {
       const { duration } = await measureTime(() =>
-        makeAuthenticatedRequest('/api/credit-repair/disputes', { token })
+        makeAuthenticatedRequest("/api/credit-repair/disputes", { token }),
       );
 
       expect(duration).toBeLessThan(200);
     });
 
-    it('should respond to POST requests within 500ms', async () => {
+    it("should respond to POST requests within 500ms", async () => {
       const { duration } = await measureTime(() =>
-        makeAuthenticatedRequest('/api/credit-repair/disputes', {
-          method: 'POST',
+        makeAuthenticatedRequest("/api/credit-repair/disputes", {
+          method: "POST",
           token,
           body: {
-            bureau: 'experian',
-            itemType: 'late_payment',
-            itemDescription: 'Test',
-            reason: 'not_mine',
+            bureau: "experian",
+            itemType: "late_payment",
+            itemDescription: "Test",
+            reason: "not_mine",
             generateLetter: false,
           },
-        })
+        }),
       );
 
       expect(duration).toBeLessThan(500);
     });
 
-    it('should handle 10 concurrent requests efficiently', async () => {
+    it("should handle 10 concurrent requests efficiently", async () => {
       const requests = Array.from({ length: 10 }, () =>
-        makeAuthenticatedRequest('/api/credit-repair/disputes', { token })
+        makeAuthenticatedRequest("/api/credit-repair/disputes", { token }),
       );
 
       const { duration } = await measureTime(() => Promise.all(requests));
@@ -300,36 +318,41 @@ describeOrSkip('Real Integration Tests - Credit Repair API', () => {
     });
   });
 
-  describe('Error Handling', () => {
-    it('should return 401 for unauthenticated requests', async () => {
-      const response = await makeAuthenticatedRequest('/api/credit-repair/disputes', {
-        token: 'invalid-token',
-      });
+  describe("Error Handling", () => {
+    it("should return 401 for unauthenticated requests", async () => {
+      const response = await makeAuthenticatedRequest(
+        "/api/credit-repair/disputes",
+        {
+          token: "invalid-token",
+        },
+      );
 
       expect(response.status).toBe(401);
     });
 
-    it('should return 400 for invalid input', async () => {
-      const response = await makeAuthenticatedRequest('/api/credit-repair/disputes', {
-        method: 'POST',
-        token,
-        body: {
-          // Missing required fields
-          bureau: 'experian',
+    it("should return 400 for invalid input", async () => {
+      const response = await makeAuthenticatedRequest(
+        "/api/credit-repair/disputes",
+        {
+          method: "POST",
+          token,
+          body: {
+            // Missing required fields
+            bureau: "experian",
+          },
         },
-      });
+      );
 
       expect(response.status).toBe(400);
     });
 
-    it('should return 404 for non-existent resources', async () => {
+    it("should return 404 for non-existent resources", async () => {
       const response = await makeAuthenticatedRequest(
-        '/api/credit-repair/disputes/non-existent-id',
-        { token }
+        "/api/credit-repair/disputes/non-existent-id",
+        { token },
       );
 
       expect(response.status).toBe(404);
     });
   });
 });
-

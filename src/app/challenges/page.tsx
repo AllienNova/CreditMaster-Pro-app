@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState } from "react";
+import { motion } from "framer-motion";
 import {
   Trophy,
   Users,
@@ -14,16 +14,16 @@ import {
   Flame,
   Medal,
   Zap,
-} from 'lucide-react';
+} from "lucide-react";
 
 type ChallengeType =
-  | 'savings'
-  | 'no_spend'
-  | 'budget'
-  | 'debt_payoff'
-  | 'investment'
-  | 'streak';
-type ChallengeStatus = 'upcoming' | 'active' | 'completed';
+  | "savings"
+  | "no_spend"
+  | "budget"
+  | "debt_payoff"
+  | "investment"
+  | "streak";
+type ChallengeStatus = "upcoming" | "active" | "completed";
 
 interface Challenge {
   id: string;
@@ -50,73 +50,73 @@ interface LeaderboardEntry {
 
 const MOCK_CHALLENGES: Challenge[] = [
   {
-    id: '1',
-    name: 'No-Spend Week',
-    description: 'Go 7 days without any non-essential spending',
-    type: 'no_spend',
-    status: 'active',
-    startDate: new Date('2026-01-18'),
-    endDate: new Date('2026-01-25'),
+    id: "1",
+    name: "No-Spend Week",
+    description: "Go 7 days without any non-essential spending",
+    type: "no_spend",
+    status: "active",
+    startDate: new Date("2026-01-18"),
+    endDate: new Date("2026-01-25"),
     goalValue: 7,
-    goalUnit: 'days',
+    goalUnit: "days",
     participants: 1247,
     xpReward: 500,
     userProgress: 4,
     userJoined: true,
   },
   {
-    id: '2',
-    name: 'Save $500 Challenge',
-    description: 'Save $500 in one month',
-    type: 'savings',
-    status: 'active',
-    startDate: new Date('2026-01-01'),
-    endDate: new Date('2026-01-31'),
+    id: "2",
+    name: "Save $500 Challenge",
+    description: "Save $500 in one month",
+    type: "savings",
+    status: "active",
+    startDate: new Date("2026-01-01"),
+    endDate: new Date("2026-01-31"),
     goalValue: 500,
-    goalUnit: 'dollars',
+    goalUnit: "dollars",
     participants: 3892,
     xpReward: 750,
     userProgress: 320,
     userJoined: true,
   },
   {
-    id: '3',
-    name: '21-Day Budget Streak',
-    description: 'Stay within budget for 21 consecutive days',
-    type: 'streak',
-    status: 'active',
-    startDate: new Date('2026-01-10'),
-    endDate: new Date('2026-01-31'),
+    id: "3",
+    name: "21-Day Budget Streak",
+    description: "Stay within budget for 21 consecutive days",
+    type: "streak",
+    status: "active",
+    startDate: new Date("2026-01-10"),
+    endDate: new Date("2026-01-31"),
     goalValue: 21,
-    goalUnit: 'days',
+    goalUnit: "days",
     participants: 2156,
     xpReward: 600,
     userJoined: false,
   },
   {
-    id: '4',
-    name: '30-Day Debt Blitz',
-    description: 'Pay off as much debt as possible in 30 days',
-    type: 'debt_payoff',
-    status: 'upcoming',
-    startDate: new Date('2026-02-01'),
-    endDate: new Date('2026-03-01'),
+    id: "4",
+    name: "30-Day Debt Blitz",
+    description: "Pay off as much debt as possible in 30 days",
+    type: "debt_payoff",
+    status: "upcoming",
+    startDate: new Date("2026-02-01"),
+    endDate: new Date("2026-03-01"),
     goalValue: 1000,
-    goalUnit: 'dollars',
+    goalUnit: "dollars",
     participants: 892,
     xpReward: 1000,
     userJoined: false,
   },
   {
-    id: '5',
-    name: 'First Investment Challenge',
-    description: 'Make your first investment of at least $100',
-    type: 'investment',
-    status: 'upcoming',
-    startDate: new Date('2026-02-01'),
-    endDate: new Date('2026-02-28'),
+    id: "5",
+    name: "First Investment Challenge",
+    description: "Make your first investment of at least $100",
+    type: "investment",
+    status: "upcoming",
+    startDate: new Date("2026-02-01"),
+    endDate: new Date("2026-02-28"),
     goalValue: 100,
-    goalUnit: 'dollars',
+    goalUnit: "dollars",
     participants: 567,
     xpReward: 800,
     userJoined: false,
@@ -124,26 +124,26 @@ const MOCK_CHALLENGES: Challenge[] = [
 ];
 
 const MOCK_LEADERBOARD: LeaderboardEntry[] = [
-  { rank: 1, displayName: 'SavingsChamp', progress: 100, isCurrentUser: false },
-  { rank: 2, displayName: 'BudgetBoss', progress: 95, isCurrentUser: false },
-  { rank: 3, displayName: 'DebtSlayer', progress: 88, isCurrentUser: false },
-  { rank: 4, displayName: 'You', progress: 64, isCurrentUser: true },
-  { rank: 5, displayName: 'MoneyMaven', progress: 60, isCurrentUser: false },
+  { rank: 1, displayName: "SavingsChamp", progress: 100, isCurrentUser: false },
+  { rank: 2, displayName: "BudgetBoss", progress: 95, isCurrentUser: false },
+  { rank: 3, displayName: "DebtSlayer", progress: 88, isCurrentUser: false },
+  { rank: 4, displayName: "You", progress: 64, isCurrentUser: true },
+  { rank: 5, displayName: "MoneyMaven", progress: 60, isCurrentUser: false },
 ];
 
 const getChallengeIcon = (type: ChallengeType) => {
   switch (type) {
-    case 'savings':
+    case "savings":
       return Target;
-    case 'no_spend':
+    case "no_spend":
       return Zap;
-    case 'budget':
+    case "budget":
       return TrendingUp;
-    case 'debt_payoff':
+    case "debt_payoff":
       return Flame;
-    case 'investment':
+    case "investment":
       return TrendingUp;
-    case 'streak':
+    case "streak":
       return Flame;
     default:
       return Trophy;
@@ -152,20 +152,20 @@ const getChallengeIcon = (type: ChallengeType) => {
 
 const getChallengeColor = (type: ChallengeType) => {
   switch (type) {
-    case 'savings':
-      return 'from-emerald-500 to-green-600';
-    case 'no_spend':
-      return 'from-blue-500 to-blue-600';
-    case 'budget':
-      return 'from-blue-500 to-blue-600';
-    case 'debt_payoff':
-      return 'from-orange-500 to-red-600';
-    case 'investment':
-      return 'from-blue-500 to-blue-600';
-    case 'streak':
-      return 'from-amber-500 to-orange-600';
+    case "savings":
+      return "from-emerald-500 to-green-600";
+    case "no_spend":
+      return "from-blue-500 to-blue-600";
+    case "budget":
+      return "from-blue-500 to-blue-600";
+    case "debt_payoff":
+      return "from-orange-500 to-red-600";
+    case "investment":
+      return "from-blue-500 to-blue-600";
+    case "streak":
+      return "from-amber-500 to-orange-600";
     default:
-      return 'from-gray-500 to-gray-600';
+      return "from-gray-500 to-gray-600";
   }
 };
 
@@ -176,14 +176,14 @@ const formatTimeRemaining = (endDate: Date) => {
   if (days > 0) return `${days} days left`;
   const hours = Math.floor(diff / (1000 * 60 * 60));
   if (hours > 0) return `${hours} hours left`;
-  return 'Ending soon';
+  return "Ending soon";
 };
 
 export default function ChallengesPage() {
   const [challenges] = useState<Challenge[]>(MOCK_CHALLENGES);
   const [activeTab, setActiveTab] = useState<
-    'active' | 'upcoming' | 'completed'
-  >('active');
+    "active" | "upcoming" | "completed"
+  >("active");
 
   const filteredChallenges = challenges.filter((c) => c.status === activeTab);
   const userChallenges = challenges.filter((c) => c.userJoined);
@@ -247,7 +247,7 @@ export default function ChallengesPage() {
                     <div className="mb-2">
                       <div className="flex justify-between text-sm mb-1">
                         <span>
-                          {challenge.userProgress} / {challenge.goalValue}{' '}
+                          {challenge.userProgress} / {challenge.goalValue}{" "}
                           {challenge.goalUnit}
                         </span>
                         <span>{progress.toFixed(0)}%</span>
@@ -282,14 +282,14 @@ export default function ChallengesPage() {
           <div className="lg:col-span-2">
             {/* Tabs */}
             <div className="flex gap-2 mb-4">
-              {(['active', 'upcoming', 'completed'] as const).map((tab) => (
+              {(["active", "upcoming", "completed"] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                     activeTab === tab
-                      ? 'bg-amber-600 text-white'
-                      : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700'
+                      ? "bg-amber-600 text-white"
+                      : "bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700"
                   }`}
                 >
                   {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -344,7 +344,7 @@ export default function ChallengesPage() {
                           </div>
                           <div className="flex items-center gap-1">
                             <Calendar className="w-4 h-4" />
-                            {challenge.status === 'upcoming'
+                            {challenge.status === "upcoming"
                               ? `Starts ${challenge.startDate.toLocaleDateString()}`
                               : formatTimeRemaining(challenge.endDate)}
                           </div>
@@ -380,24 +380,24 @@ export default function ChallengesPage() {
                   key={entry.rank}
                   className={`flex items-center gap-3 p-2 rounded-lg ${
                     entry.isCurrentUser
-                      ? 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800'
-                      : ''
+                      ? "bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800"
+                      : ""
                   }`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${ entry.rank === 1 ? 'bg-amber-400 text-white' : entry.rank === 2 ? 'bg-gray-300 text-gray-700' : entry.rank === 3 ? 'bg-amber-600 text-white' : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300' }`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${entry.rank === 1 ? "bg-amber-400 text-white" : entry.rank === 2 ? "bg-gray-300 text-gray-700" : entry.rank === 3 ? "bg-amber-600 text-white" : "bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300"}`}
                   >
                     {entry.rank}
                   </div>
                   <div className="flex-1">
                     <p
-                      className={`font-medium ${entry.isCurrentUser ? 'text-amber-700' : 'text-gray-900 dark:text-white'}`}
+                      className={`font-medium ${entry.isCurrentUser ? "text-amber-700" : "text-gray-900 dark:text-white"}`}
                     >
                       {entry.displayName}
                     </p>
                     <div className="h-1.5 bg-gray-100 dark:bg-slate-700 rounded-full mt-1">
                       <div
-                        className={`h-full rounded-full ${entry.isCurrentUser ? 'bg-amber-500' : 'bg-gray-400 dark:bg-slate-500'}`}
+                        className={`h-full rounded-full ${entry.isCurrentUser ? "bg-amber-500" : "bg-gray-400 dark:bg-slate-500"}`}
                         style={{ width: `${entry.progress}%` }}
                       />
                     </div>

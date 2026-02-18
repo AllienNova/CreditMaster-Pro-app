@@ -5,32 +5,32 @@
  * and have strict method enforcement.
  */
 
-describe('Payment API', () => {
-  it('GET /api/payment/checkout → returns 405 (POST only)', () => {
+describe("Payment API", () => {
+  it("GET /api/payment/checkout → returns 405 (POST only)", () => {
     cy.request({
-      url: '/api/payment/checkout',
+      url: "/api/payment/checkout",
       failOnStatusCode: false,
     }).then((resp) => {
       expect(resp.status).to.eq(405);
     });
   });
 
-  it('POST /api/payment/checkout without auth → returns 401 or error', () => {
+  it("POST /api/payment/checkout without auth → returns 401 or error", () => {
     cy.request({
-      method: 'POST',
-      url: '/api/payment/checkout',
-      body: { priceId: 'price_test_123' },
+      method: "POST",
+      url: "/api/payment/checkout",
+      body: { priceId: "price_test_123" },
       failOnStatusCode: false,
     }).then((resp) => {
       expect(resp.status).to.be.oneOf([400, 401, 500]);
-      expect(resp.body).to.be.an('object');
+      expect(resp.body).to.be.an("object");
     });
   });
 
-  it('POST /api/payment/checkout with empty body → returns error', () => {
+  it("POST /api/payment/checkout with empty body → returns error", () => {
     cy.request({
-      method: 'POST',
-      url: '/api/payment/checkout',
+      method: "POST",
+      url: "/api/payment/checkout",
       body: {},
       failOnStatusCode: false,
     }).then((resp) => {
@@ -39,20 +39,20 @@ describe('Payment API', () => {
   });
 });
 
-describe('Notifications API', () => {
-  it('GET /api/notifications without userId → returns 400', () => {
+describe("Notifications API", () => {
+  it("GET /api/notifications without userId → returns 400", () => {
     cy.request({
-      url: '/api/notifications',
+      url: "/api/notifications",
       failOnStatusCode: false,
     }).then((resp) => {
       expect(resp.status).to.eq(400);
-      expect(resp.body).to.have.property('error');
+      expect(resp.body).to.have.property("error");
     });
   });
 
-  it('GET /api/notifications with userId → returns 401 or data', () => {
+  it("GET /api/notifications with userId → returns 401 or data", () => {
     cy.request({
-      url: '/api/notifications?userId=test-user',
+      url: "/api/notifications?userId=test-user",
       failOnStatusCode: false,
     }).then((resp) => {
       expect(resp.status).to.be.oneOf([200, 401]);
@@ -60,21 +60,21 @@ describe('Notifications API', () => {
   });
 });
 
-describe('Admin API', () => {
-  it('GET /api/admin/users → requires authentication', () => {
+describe("Admin API", () => {
+  it("GET /api/admin/users → requires authentication", () => {
     cy.request({
-      url: '/api/admin/users',
+      url: "/api/admin/users",
       failOnStatusCode: false,
     }).then((resp) => {
       expect(resp.status).to.be.oneOf([401, 405]);
     });
   });
 
-  it('POST /api/admin/users → returns 405 (GET only) or 401', () => {
+  it("POST /api/admin/users → returns 405 (GET only) or 401", () => {
     cy.request({
-      method: 'POST',
-      url: '/api/admin/users',
-      body: { email: 'test@test.com' },
+      method: "POST",
+      url: "/api/admin/users",
+      body: { email: "test@test.com" },
       failOnStatusCode: false,
     }).then((resp) => {
       expect(resp.status).to.be.oneOf([401, 405]);

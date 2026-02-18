@@ -4,25 +4,25 @@
  */
 
 // API Services
-export * from './api';
+export * from "./api";
 
 // Notification Services
-export * from './notifications';
+export * from "./notifications";
 
 // Background Task Services
-export * from './background';
+export * from "./background";
 
 // Widget Services
-export * from './widgets';
+export * from "./widgets";
 
 // Haptic Feedback Services
-export * from './haptics';
+export * from "./haptics";
 
 // Biometric Authentication Services
-export * from './biometrics';
+export * from "./biometrics";
 
 // Offline Sync Service
-export { offlineSyncService, OfflineSyncService } from './offline-sync';
+export { offlineSyncService, OfflineSyncService } from "./offline-sync";
 export type {
   SyncQueueItem,
   SyncResult,
@@ -31,7 +31,7 @@ export type {
   SyncEntity,
   ConflictStrategy,
   OfflineSyncConfig,
-} from './offline-sync';
+} from "./offline-sync";
 
 // Legacy Services (to be deprecated)
-export { supabase } from './supabase';
+export { supabase } from "./supabase";

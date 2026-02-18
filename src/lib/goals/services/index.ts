@@ -6,7 +6,7 @@ export {
   GoalInvestmentService,
   getGoalInvestmentService,
   goalInvestmentService,
-} from './GoalInvestmentService';
+} from "./GoalInvestmentService";
 
 export type {
   GoalType,
@@ -21,13 +21,13 @@ export type {
   GoalProgress,
   GoalMilestone,
   RecommendedAllocation,
-} from './GoalInvestmentService';
+} from "./GoalInvestmentService";
 
 export {
   ContributionSchedulerService,
   getContributionScheduler,
   contributionScheduler,
-} from './ContributionSchedulerService';
+} from "./ContributionSchedulerService";
 
 export type {
   ContributionStatus,
@@ -37,13 +37,13 @@ export type {
   SchedulerConfig,
   SchedulerStats,
   ContributionEvent,
-} from './ContributionSchedulerService';
+} from "./ContributionSchedulerService";
 
 export {
   SmartAllocationService,
   getSmartAllocationService,
   smartAllocationService,
-} from './SmartAllocationService';
+} from "./SmartAllocationService";
 
 export type {
   AssetClass,
@@ -53,13 +53,13 @@ export type {
   GoalContext,
   MarketConditions,
   GlidePath,
-} from './SmartAllocationService';
+} from "./SmartAllocationService";
 
 export {
   GoalNotificationService,
   getGoalNotificationService,
   goalNotificationService,
-} from './GoalNotificationService';
+} from "./GoalNotificationService";
 
 export type {
   NotificationType,
@@ -69,4 +69,4 @@ export type {
   AdjustmentRecommendation,
   GoalHealthCheck,
   NotificationPreferences,
-} from './GoalNotificationService';
+} from "./GoalNotificationService";

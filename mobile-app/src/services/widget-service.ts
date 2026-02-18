@@ -8,20 +8,20 @@
  * - Net Worth Widget
  */
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 export type WidgetType =
-  | 'credit_score'
-  | 'budget_overview'
-  | 'upcoming_bills'
-  | 'net_worth'
-  | 'quick_actions';
+  | "credit_score"
+  | "budget_overview"
+  | "upcoming_bills"
+  | "net_worth"
+  | "quick_actions";
 
-export type WidgetSize = 'small' | 'medium' | 'large';
+export type WidgetSize = "small" | "medium" | "large";
 
 export interface WidgetData {
   type: WidgetType;
@@ -32,8 +32,8 @@ export interface WidgetData {
 export interface CreditScoreWidgetData {
   score: number;
   change: number;
-  changeDirection: 'up' | 'down' | 'stable';
-  rating: 'poor' | 'fair' | 'good' | 'very_good' | 'excellent';
+  changeDirection: "up" | "down" | "stable";
+  rating: "poor" | "fair" | "good" | "very_good" | "excellent";
   lastUpdated: string;
 }
 
@@ -86,8 +86,8 @@ export interface WidgetConfig {
 // CONSTANTS
 // ============================================================================
 
-const WIDGET_STORAGE_KEY = '@fynvita_widget_data';
-const WIDGET_CONFIG_KEY = '@fynvita_widget_config';
+const WIDGET_STORAGE_KEY = "@fynvita_widget_data";
+const WIDGET_CONFIG_KEY = "@fynvita_widget_config";
 
 const DEFAULT_REFRESH_INTERVALS: Record<WidgetType, number> = {
   credit_score: 60, // 1 hour
@@ -117,7 +117,7 @@ class WidgetService {
         }
       }
     } catch (error) {
-      if (__DEV__) console.error('Failed to initialize widget service:', error);
+      if (__DEV__) console.error("Failed to initialize widget service:", error);
     }
   }
 
@@ -137,13 +137,13 @@ class WidgetService {
    */
   async updateCreditScoreWidget(data: CreditScoreWidgetData): Promise<void> {
     const widgetData: WidgetData = {
-      type: 'credit_score',
+      type: "credit_score",
       lastUpdated: new Date().toISOString(),
       data,
     };
 
-    await this.saveWidgetData('credit_score', widgetData);
-    await this.notifyWidgetUpdate('credit_score');
+    await this.saveWidgetData("credit_score", widgetData);
+    await this.notifyWidgetUpdate("credit_score");
   }
 
   /**
@@ -151,13 +151,13 @@ class WidgetService {
    */
   async updateBudgetWidget(data: BudgetWidgetData): Promise<void> {
     const widgetData: WidgetData = {
-      type: 'budget_overview',
+      type: "budget_overview",
       lastUpdated: new Date().toISOString(),
       data,
     };
 
-    await this.saveWidgetData('budget_overview', widgetData);
-    await this.notifyWidgetUpdate('budget_overview');
+    await this.saveWidgetData("budget_overview", widgetData);
+    await this.notifyWidgetUpdate("budget_overview");
   }
 
   /**
@@ -165,13 +165,13 @@ class WidgetService {
    */
   async updateBillsWidget(data: BillsWidgetData): Promise<void> {
     const widgetData: WidgetData = {
-      type: 'upcoming_bills',
+      type: "upcoming_bills",
       lastUpdated: new Date().toISOString(),
       data,
     };
 
-    await this.saveWidgetData('upcoming_bills', widgetData);
-    await this.notifyWidgetUpdate('upcoming_bills');
+    await this.saveWidgetData("upcoming_bills", widgetData);
+    await this.notifyWidgetUpdate("upcoming_bills");
   }
 
   /**
@@ -179,13 +179,13 @@ class WidgetService {
    */
   async updateNetWorthWidget(data: NetWorthWidgetData): Promise<void> {
     const widgetData: WidgetData = {
-      type: 'net_worth',
+      type: "net_worth",
       lastUpdated: new Date().toISOString(),
       data,
     };
 
-    await this.saveWidgetData('net_worth', widgetData);
-    await this.notifyWidgetUpdate('net_worth');
+    await this.saveWidgetData("net_worth", widgetData);
+    await this.notifyWidgetUpdate("net_worth");
   }
 
   /**
@@ -193,7 +193,7 @@ class WidgetService {
    */
   async refreshAllWidgets(
     userId: string,
-    apiClient: WidgetApiClient
+    apiClient: WidgetApiClient,
   ): Promise<void> {
     try {
       // Fetch all data in parallel
@@ -209,7 +209,7 @@ class WidgetService {
       if (bills) await this.updateBillsWidget(bills);
       if (netWorth) await this.updateNetWorthWidget(netWorth);
     } catch (error) {
-      if (__DEV__) console.error('Failed to refresh widgets:', error);
+      if (__DEV__) console.error("Failed to refresh widgets:", error);
     }
   }
 
@@ -223,7 +223,7 @@ class WidgetService {
         return JSON.parse(stored);
       }
     } catch (error) {
-      if (__DEV__) console.error('Failed to get widget configs:', error);
+      if (__DEV__) console.error("Failed to get widget configs:", error);
     }
     return this.getDefaultConfigs();
   }
@@ -244,7 +244,7 @@ class WidgetService {
 
       await AsyncStorage.setItem(WIDGET_CONFIG_KEY, JSON.stringify(configs));
     } catch (error) {
-      if (__DEV__) console.error('Failed to update widget config:', error);
+      if (__DEV__) console.error("Failed to update widget config:", error);
     }
   }
 
@@ -254,33 +254,33 @@ class WidgetService {
   private getDefaultConfigs(): WidgetConfig[] {
     return [
       {
-        widgetId: 'credit_score_small',
-        type: 'credit_score',
-        size: 'small',
+        widgetId: "credit_score_small",
+        type: "credit_score",
+        size: "small",
         refreshInterval: DEFAULT_REFRESH_INTERVALS.credit_score,
         isEnabled: true,
         position: 0,
       },
       {
-        widgetId: 'budget_medium',
-        type: 'budget_overview',
-        size: 'medium',
+        widgetId: "budget_medium",
+        type: "budget_overview",
+        size: "medium",
         refreshInterval: DEFAULT_REFRESH_INTERVALS.budget_overview,
         isEnabled: true,
         position: 1,
       },
       {
-        widgetId: 'bills_small',
-        type: 'upcoming_bills',
-        size: 'small',
+        widgetId: "bills_small",
+        type: "upcoming_bills",
+        size: "small",
         refreshInterval: DEFAULT_REFRESH_INTERVALS.upcoming_bills,
         isEnabled: true,
         position: 2,
       },
       {
-        widgetId: 'net_worth_small',
-        type: 'net_worth',
-        size: 'small',
+        widgetId: "net_worth_small",
+        type: "net_worth",
+        size: "small",
         refreshInterval: DEFAULT_REFRESH_INTERVALS.net_worth,
         isEnabled: false,
         position: 3,
@@ -293,7 +293,7 @@ class WidgetService {
    */
   private async saveWidgetData(
     type: WidgetType,
-    data: WidgetData
+    data: WidgetData,
   ): Promise<void> {
     this.cachedData.set(type, data);
 
@@ -304,7 +304,7 @@ class WidgetService {
       }
       await AsyncStorage.setItem(WIDGET_STORAGE_KEY, JSON.stringify(allData));
     } catch (error) {
-      if (__DEV__) console.error('Failed to save widget data:', error);
+      if (__DEV__) console.error("Failed to save widget data:", error);
     }
   }
 
@@ -333,20 +333,20 @@ class WidgetService {
     let color: string;
 
     if (score >= 800) {
-      rating = 'Excellent';
-      color = '#10B981'; // green
+      rating = "Excellent";
+      color = "#10B981"; // green
     } else if (score >= 740) {
-      rating = 'Very Good';
-      color = '#22C55E'; // light green
+      rating = "Very Good";
+      color = "#22C55E"; // light green
     } else if (score >= 670) {
-      rating = 'Good';
-      color = '#84CC16'; // lime
+      rating = "Good";
+      color = "#84CC16"; // lime
     } else if (score >= 580) {
-      rating = 'Fair';
-      color = '#EAB308'; // yellow
+      rating = "Fair";
+      color = "#EAB308"; // yellow
     } else {
-      rating = 'Poor';
-      color = '#EF4444'; // red
+      rating = "Poor";
+      color = "#EF4444"; // red
     }
 
     return {
@@ -361,18 +361,18 @@ class WidgetService {
    */
   formatCurrency(amount: number, compact: boolean = false): string {
     if (compact && Math.abs(amount) >= 1000) {
-      const formatter = new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        notation: 'compact',
+      const formatter = new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        notation: "compact",
         maximumFractionDigits: 1,
       });
       return formatter.format(amount);
     }
 
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       maximumFractionDigits: 0,
     }).format(amount);
   }

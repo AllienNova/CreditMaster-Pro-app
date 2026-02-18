@@ -10,20 +10,20 @@
  * - Error handling
  */
 
-import { NextRequest } from 'next/server';
+import { NextRequest } from "next/server";
 
 // Mock dependencies BEFORE importing modules that use them
-jest.mock('@/lib/auth/jwt-validation');
-jest.mock('@/lib/investments/services/MarketDataService');
-jest.mock('@/lib/investments/services/InvestmentAnalysisEngine');
-jest.mock('@/lib/investments/services/AnalysisCacheService');
+jest.mock("@/lib/auth/jwt-validation");
+jest.mock("@/lib/investments/services/MarketDataService");
+jest.mock("@/lib/investments/services/InvestmentAnalysisEngine");
+jest.mock("@/lib/investments/services/AnalysisCacheService");
 
 // Import after mocks are set up
-import { GET, POST } from '../route';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { getMarketDataService } from '@/lib/investments/services/MarketDataService';
-import { getInvestmentAnalysisEngine } from '@/lib/investments/services/InvestmentAnalysisEngine';
-import { getAnalysisCacheService } from '@/lib/investments/services/AnalysisCacheService';
+import { GET, POST } from "../route";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { getMarketDataService } from "@/lib/investments/services/MarketDataService";
+import { getInvestmentAnalysisEngine } from "@/lib/investments/services/InvestmentAnalysisEngine";
+import { getAnalysisCacheService } from "@/lib/investments/services/AnalysisCacheService";
 
 interface MockRequestOptions {
   method?: string;
@@ -35,7 +35,7 @@ function createMockRequest(urlString: string, options?: MockRequestOptions) {
   const parsedUrl = new URL(urlString);
   const request = {
     url: urlString,
-    method: options?.method || 'GET',
+    method: options?.method || "GET",
     json: jest.fn().mockResolvedValue(options?.body || {}),
     headers: new Headers(),
     nextUrl: parsedUrl,
@@ -43,11 +43,15 @@ function createMockRequest(urlString: string, options?: MockRequestOptions) {
   return request;
 }
 
-describe('/api/investments/comprehensive-analysis', () => {
-  const mockUser = { id: 'user-123', email: 'test@example.com', name: 'Test User' };
+describe("/api/investments/comprehensive-analysis", () => {
+  const mockUser = {
+    id: "user-123",
+    email: "test@example.com",
+    name: "Test User",
+  };
 
   const mockQuote = {
-    symbol: 'AAPL',
+    symbol: "AAPL",
     price: 150.0,
     change: 2.5,
     changePercent: 1.69,
@@ -64,12 +68,12 @@ describe('/api/investments/comprehensive-analysis', () => {
   }));
 
   const mockAnalysis = {
-    symbol: 'AAPL',
+    symbol: "AAPL",
     analyzedAt: new Date(),
     currentPrice: 150.0,
-    overallSignal: 'buy' as const,
+    overallSignal: "buy" as const,
     overallConfidence: 0.75,
-    riskLevel: 'moderate' as const,
+    riskLevel: "moderate" as const,
     compositeScore: {
       overall: 72,
       technical: 75,
@@ -77,16 +81,16 @@ describe('/api/investments/comprehensive-analysis', () => {
       sentiment: 65,
       pattern: 70,
       confidence: 0.75,
-      signal: 'buy',
+      signal: "buy",
     },
     correlationAnalysis: {
       overallAlignment: 0.68,
-      alignmentLevel: 'moderate' as const,
+      alignmentLevel: "moderate" as const,
     },
-    keyInsights: ['Strong technical momentum', 'Positive earnings growth'],
-    risks: ['Market volatility', 'Sector rotation risk'],
-    opportunities: ['Breakout potential', 'Dividend growth'],
-    summary: 'Overall positive outlook with moderate risk',
+    keyInsights: ["Strong technical momentum", "Positive earnings growth"],
+    risks: ["Market volatility", "Sector rotation risk"],
+    opportunities: ["Breakout potential", "Dividend growth"],
+    summary: "Overall positive outlook with moderate risk",
   };
 
   const mockMarketDataService = {
@@ -106,64 +110,77 @@ describe('/api/investments/comprehensive-analysis', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (getMarketDataService as jest.Mock).mockReturnValue(mockMarketDataService);
-    (getInvestmentAnalysisEngine as jest.Mock).mockReturnValue(mockAnalysisEngine);
+    (getInvestmentAnalysisEngine as jest.Mock).mockReturnValue(
+      mockAnalysisEngine,
+    );
     (getAnalysisCacheService as jest.Mock).mockReturnValue(mockCacheService);
     mockCacheService.get.mockReturnValue(null); // No cache by default
   });
 
-  describe('GET /api/investments/comprehensive-analysis', () => {
-    it('should return API documentation', async () => {
-      const request = createMockRequest('http://localhost:3000/api/investments/comprehensive-analysis');
+  describe("GET /api/investments/comprehensive-analysis", () => {
+    it("should return API documentation", async () => {
+      const request = createMockRequest(
+        "http://localhost:3000/api/investments/comprehensive-analysis",
+      );
       const response = await GET();
       const data = await response.json();
 
       expect(response.status).toBe(200);
-      expect(data.endpoint).toBe('/api/investments/comprehensive-analysis');
-      expect(data.method).toBe('POST');
+      expect(data.endpoint).toBe("/api/investments/comprehensive-analysis");
+      expect(data.method).toBe("POST");
       expect(data.services).toHaveLength(6);
-      expect(data.services).toContain('Technical Analysis');
-      expect(data.services).toContain('Fundamental Analysis');
+      expect(data.services).toContain("Technical Analysis");
+      expect(data.services).toContain("Fundamental Analysis");
     });
   });
 
-  describe('POST /api/investments/comprehensive-analysis', () => {
+  describe("POST /api/investments/comprehensive-analysis", () => {
     beforeEach(() => {
       (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
         valid: true,
         user: mockUser,
       });
       mockMarketDataService.getQuote.mockResolvedValue(mockQuote);
-      mockMarketDataService.getHistoricalData.mockResolvedValue(mockHistoricalData);
+      mockMarketDataService.getHistoricalData.mockResolvedValue(
+        mockHistoricalData,
+      );
       mockAnalysisEngine.analyzeInvestment.mockResolvedValue(mockAnalysis);
     });
 
-    it('should perform comprehensive analysis successfully', async () => {
+    it("should perform comprehensive analysis successfully", async () => {
       const validInput = {
-        symbol: 'AAPL',
-        timeframe: '1d',
+        symbol: "AAPL",
+        timeframe: "1d",
       };
 
-      const request = createMockRequest('http://localhost:3000/api/investments/comprehensive-analysis', {
-        method: 'POST',
-        body: validInput,
-      });
+      const request = createMockRequest(
+        "http://localhost:3000/api/investments/comprehensive-analysis",
+        {
+          method: "POST",
+          body: validInput,
+        },
+      );
       const response = await POST(request);
       const data = await response.json();
 
       expect(response.status).toBe(200);
       expect(data.success).toBe(true);
-      expect(data.data.symbol).toBe('AAPL');
-      expect(data.data.overallSignal).toBe('buy');
+      expect(data.data.symbol).toBe("AAPL");
+      expect(data.data.overallSignal).toBe("buy");
       expect(data.meta.processingTime).toBeDefined();
-      expect(mockMarketDataService.getQuote).toHaveBeenCalledWith('AAPL');
-      expect(mockMarketDataService.getHistoricalData).toHaveBeenCalledWith('AAPL', '1d', 100);
+      expect(mockMarketDataService.getQuote).toHaveBeenCalledWith("AAPL");
+      expect(mockMarketDataService.getHistoricalData).toHaveBeenCalledWith(
+        "AAPL",
+        "1d",
+        100,
+      );
       expect(mockAnalysisEngine.analyzeInvestment).toHaveBeenCalled();
     });
 
-    it('should handle custom weights', async () => {
+    it("should handle custom weights", async () => {
       const validInput = {
-        symbol: 'AAPL',
-        timeframe: '1d',
+        symbol: "AAPL",
+        timeframe: "1d",
         customWeights: {
           technical: 0.4,
           fundamental: 0.3,
@@ -172,10 +189,13 @@ describe('/api/investments/comprehensive-analysis', () => {
         },
       };
 
-      const request = createMockRequest('http://localhost:3000/api/investments/comprehensive-analysis', {
-        method: 'POST',
-        body: validInput,
-      });
+      const request = createMockRequest(
+        "http://localhost:3000/api/investments/comprehensive-analysis",
+        {
+          method: "POST",
+          body: validInput,
+        },
+      );
       const response = await POST(request);
       const data = await response.json();
 
@@ -184,30 +204,33 @@ describe('/api/investments/comprehensive-analysis', () => {
       // Note: customWeights is accepted in the request but not currently passed to analyzeInvestment
       // This is a known limitation - the route validates customWeights but doesn't use them yet
       expect(mockAnalysisEngine.analyzeInvestment).toHaveBeenCalledWith(
-        'AAPL',
+        "AAPL",
         150.0,
         expect.any(Array), // Converted historical data
         expect.objectContaining({
-          timeframe: '1d',
-        })
+          timeframe: "1d",
+        }),
       );
     });
 
-    it('should handle user profile preferences', async () => {
+    it("should handle user profile preferences", async () => {
       const validInput = {
-        symbol: 'AAPL',
-        timeframe: '1d',
+        symbol: "AAPL",
+        timeframe: "1d",
         userProfile: {
-          riskTolerance: 'conservative',
-          investmentHorizon: 'long_term',
-          preferredAssetClasses: ['stocks', 'etfs'],
+          riskTolerance: "conservative",
+          investmentHorizon: "long_term",
+          preferredAssetClasses: ["stocks", "etfs"],
         },
       };
 
-      const request = createMockRequest('http://localhost:3000/api/investments/comprehensive-analysis', {
-        method: 'POST',
-        body: validInput,
-      });
+      const request = createMockRequest(
+        "http://localhost:3000/api/investments/comprehensive-analysis",
+        {
+          method: "POST",
+          body: validInput,
+        },
+      );
       const response = await POST(request);
       const data = await response.json();
 
@@ -215,52 +238,61 @@ describe('/api/investments/comprehensive-analysis', () => {
       expect(data.success).toBe(true);
     });
 
-    it('should return 401 if not authenticated', async () => {
+    it("should return 401 if not authenticated", async () => {
       (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
         valid: false,
         user: null,
       });
 
-      const request = createMockRequest('http://localhost:3000/api/investments/comprehensive-analysis', {
-        method: 'POST',
-        body: { symbol: 'AAPL' },
-      });
+      const request = createMockRequest(
+        "http://localhost:3000/api/investments/comprehensive-analysis",
+        {
+          method: "POST",
+          body: { symbol: "AAPL" },
+        },
+      );
       const response = await POST(request);
       const data = await response.json();
 
       expect(response.status).toBe(401);
       expect(data.success).toBe(false);
-      expect(data.error).toBe('Unauthorized');
+      expect(data.error).toBe("Unauthorized");
     });
 
-    it('should return 400 for invalid symbol', async () => {
+    it("should return 400 for invalid symbol", async () => {
       const invalidInput = {
-        symbol: '',
-        timeframe: '1d',
+        symbol: "",
+        timeframe: "1d",
       };
 
-      const request = createMockRequest('http://localhost:3000/api/investments/comprehensive-analysis', {
-        method: 'POST',
-        body: invalidInput,
-      });
+      const request = createMockRequest(
+        "http://localhost:3000/api/investments/comprehensive-analysis",
+        {
+          method: "POST",
+          body: invalidInput,
+        },
+      );
       const response = await POST(request);
       const data = await response.json();
 
       expect(response.status).toBe(400);
       expect(data.success).toBe(false);
-      expect(data.error).toBe('Invalid request');
+      expect(data.error).toBe("Invalid request");
     });
 
-    it('should return 400 for invalid timeframe', async () => {
+    it("should return 400 for invalid timeframe", async () => {
       const invalidInput = {
-        symbol: 'AAPL',
-        timeframe: 'invalid',
+        symbol: "AAPL",
+        timeframe: "invalid",
       };
 
-      const request = createMockRequest('http://localhost:3000/api/investments/comprehensive-analysis', {
-        method: 'POST',
-        body: invalidInput,
-      });
+      const request = createMockRequest(
+        "http://localhost:3000/api/investments/comprehensive-analysis",
+        {
+          method: "POST",
+          body: invalidInput,
+        },
+      );
       const response = await POST(request);
       const data = await response.json();
 
@@ -268,28 +300,38 @@ describe('/api/investments/comprehensive-analysis', () => {
       expect(data.success).toBe(false);
     });
 
-    it('should handle market data fetch errors', async () => {
-      mockMarketDataService.getQuote.mockRejectedValue(new Error('Market data unavailable'));
+    it("should handle market data fetch errors", async () => {
+      mockMarketDataService.getQuote.mockRejectedValue(
+        new Error("Market data unavailable"),
+      );
 
-      const request = createMockRequest('http://localhost:3000/api/investments/comprehensive-analysis', {
-        method: 'POST',
-        body: { symbol: 'AAPL', timeframe: '1d' },
-      });
+      const request = createMockRequest(
+        "http://localhost:3000/api/investments/comprehensive-analysis",
+        {
+          method: "POST",
+          body: { symbol: "AAPL", timeframe: "1d" },
+        },
+      );
       const response = await POST(request);
       const data = await response.json();
 
       expect(response.status).toBe(500);
       expect(data.success).toBe(false);
-      expect(data.error).toBe('Market data unavailable');
+      expect(data.error).toBe("Market data unavailable");
     });
 
-    it('should handle analysis engine errors', async () => {
-      mockAnalysisEngine.analyzeInvestment.mockRejectedValue(new Error('Analysis failed'));
+    it("should handle analysis engine errors", async () => {
+      mockAnalysisEngine.analyzeInvestment.mockRejectedValue(
+        new Error("Analysis failed"),
+      );
 
-      const request = createMockRequest('http://localhost:3000/api/investments/comprehensive-analysis', {
-        method: 'POST',
-        body: { symbol: 'AAPL', timeframe: '1d' },
-      });
+      const request = createMockRequest(
+        "http://localhost:3000/api/investments/comprehensive-analysis",
+        {
+          method: "POST",
+          body: { symbol: "AAPL", timeframe: "1d" },
+        },
+      );
       const response = await POST(request);
       const data = await response.json();
 
@@ -297,28 +339,38 @@ describe('/api/investments/comprehensive-analysis', () => {
       expect(data.success).toBe(false);
     });
 
-    it('should uppercase symbol automatically', async () => {
-      const request = createMockRequest('http://localhost:3000/api/investments/comprehensive-analysis', {
-        method: 'POST',
-        body: { symbol: 'aapl', timeframe: '1d' },
-      });
+    it("should uppercase symbol automatically", async () => {
+      const request = createMockRequest(
+        "http://localhost:3000/api/investments/comprehensive-analysis",
+        {
+          method: "POST",
+          body: { symbol: "aapl", timeframe: "1d" },
+        },
+      );
       const response = await POST(request);
       const data = await response.json();
 
       expect(response.status).toBe(200);
-      expect(mockMarketDataService.getQuote).toHaveBeenCalledWith('AAPL');
+      expect(mockMarketDataService.getQuote).toHaveBeenCalledWith("AAPL");
     });
 
-    it('should use default timeframe if not provided', async () => {
-      const request = createMockRequest('http://localhost:3000/api/investments/comprehensive-analysis', {
-        method: 'POST',
-        body: { symbol: 'AAPL' },
-      });
+    it("should use default timeframe if not provided", async () => {
+      const request = createMockRequest(
+        "http://localhost:3000/api/investments/comprehensive-analysis",
+        {
+          method: "POST",
+          body: { symbol: "AAPL" },
+        },
+      );
       const response = await POST(request);
       const data = await response.json();
 
       expect(response.status).toBe(200);
-      expect(mockMarketDataService.getHistoricalData).toHaveBeenCalledWith('AAPL', '1d', 100);
+      expect(mockMarketDataService.getHistoricalData).toHaveBeenCalledWith(
+        "AAPL",
+        "1d",
+        100,
+      );
     });
   });
 });

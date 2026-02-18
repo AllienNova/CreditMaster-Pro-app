@@ -1,9 +1,9 @@
 /**
  * Model Router
- * 
+ *
  * Intelligent routing system to select the best AI model for each task.
  * Routes requests to optimal models based on task type, complexity, and requirements.
- * 
+ *
  * Supports 300+ models from AIML API including:
  * - OpenAI (GPT-5, GPT-4o, GPT-4o-mini)
  * - Anthropic (Claude 4.5 Sonnet, Claude 4.5 Haiku, Claude 4.5 Opus)
@@ -15,35 +15,35 @@
 
 export enum TaskType {
   // Credit Repair Tasks
-  DISPUTE_GENERATION = 'dispute_generation',
-  CREDIT_ANALYSIS = 'credit_analysis',
-  CREDIT_REPORT_REVIEW = 'credit_report_review',
-  LEGAL_COMPLIANCE = 'legal_compliance',
-  FINANCIAL_ADVICE = 'financial_advice',
-  
+  DISPUTE_GENERATION = "dispute_generation",
+  CREDIT_ANALYSIS = "credit_analysis",
+  CREDIT_REPORT_REVIEW = "credit_report_review",
+  LEGAL_COMPLIANCE = "legal_compliance",
+  FINANCIAL_ADVICE = "financial_advice",
+
   // Student Loan Tasks
-  STUDENT_LOAN_STRATEGY = 'student_loan_strategy',
-  LOAN_CALCULATION = 'loan_calculation',
-  REPAYMENT_PLANNING = 'repayment_planning',
-  FORGIVENESS_ANALYSIS = 'forgiveness_analysis',
-  
+  STUDENT_LOAN_STRATEGY = "student_loan_strategy",
+  LOAN_CALCULATION = "loan_calculation",
+  REPAYMENT_PLANNING = "repayment_planning",
+  FORGIVENESS_ANALYSIS = "forgiveness_analysis",
+
   // Document Processing
-  DOCUMENT_OCR = 'document_ocr',
-  DOCUMENT_ANALYSIS = 'document_analysis',
-  DOCUMENT_GENERATION = 'document_generation',
-  
+  DOCUMENT_OCR = "document_ocr",
+  DOCUMENT_ANALYSIS = "document_analysis",
+  DOCUMENT_GENERATION = "document_generation",
+
   // General Tasks
-  QUICK_RESPONSE = 'quick_response',
-  GENERAL_CHAT = 'general_chat',
-  REASONING = 'reasoning',
-  CODE_GENERATION = 'code_generation',
-  
+  QUICK_RESPONSE = "quick_response",
+  GENERAL_CHAT = "general_chat",
+  REASONING = "reasoning",
+  CODE_GENERATION = "code_generation",
+
   // Specialized Tasks
-  IMAGE_GENERATION = 'image_generation',
-  VOICE_SYNTHESIS = 'voice_synthesis',
-  TRANSCRIPTION = 'transcription',
-  EMBEDDING = 'embedding',
-  MODERATION = 'moderation',
+  IMAGE_GENERATION = "image_generation",
+  VOICE_SYNTHESIS = "voice_synthesis",
+  TRANSCRIPTION = "transcription",
+  EMBEDDING = "embedding",
+  MODERATION = "moderation",
 }
 
 export interface ModelInfo {
@@ -52,7 +52,7 @@ export interface ModelInfo {
   provider: string;
   contextWindow: number;
   strengths: string[];
-  costTier: 'free' | 'low' | 'medium' | 'high';
+  costTier: "free" | "low" | "medium" | "high";
 }
 
 export interface ModelRecommendation {
@@ -63,7 +63,7 @@ export interface ModelRecommendation {
 
 /**
  * Model Router Class
- * 
+ *
  * Intelligently routes tasks to the best AI model
  */
 export class ModelRouter {
@@ -71,210 +71,220 @@ export class ModelRouter {
   private modelMap: Record<TaskType, string[]> = {
     // Credit Repair - Use Claude 4.5 Sonnet for legal writing, GPT-5 for compliance
     [TaskType.DISPUTE_GENERATION]: [
-      'anthropic/claude-4.5-sonnet',    // Best for legal writing
-      'openai/gpt-5-pro',                // Excellent compliance knowledge
-      'openai/gpt-4o',                   // Fast and reliable
+      "anthropic/claude-4.5-sonnet", // Best for legal writing
+      "openai/gpt-5-pro", // Excellent compliance knowledge
+      "openai/gpt-4o", // Fast and reliable
     ],
-    
+
     [TaskType.CREDIT_ANALYSIS]: [
-      'deepseek/deepseek-r1',            // Best reasoning capabilities
-      'openai/gpt-5-pro',                // Strong analytical skills
-      'anthropic/claude-4.5-sonnet',     // Detailed analysis
+      "deepseek/deepseek-r1", // Best reasoning capabilities
+      "openai/gpt-5-pro", // Strong analytical skills
+      "anthropic/claude-4.5-sonnet", // Detailed analysis
     ],
-    
+
     [TaskType.CREDIT_REPORT_REVIEW]: [
-      'openai/gpt-5-pro',                // Comprehensive review
-      'anthropic/claude-4.5-sonnet',     // Attention to detail
-      'google/gemini-2.5-pro',           // Multi-modal capabilities
+      "openai/gpt-5-pro", // Comprehensive review
+      "anthropic/claude-4.5-sonnet", // Attention to detail
+      "google/gemini-2.5-pro", // Multi-modal capabilities
     ],
-    
+
     [TaskType.LEGAL_COMPLIANCE]: [
-      'openai/gpt-5-pro',                // Best legal knowledge
-      'anthropic/claude-4.5-sonnet',     // Ethical AI, careful analysis
-      'deepseek/deepseek-r1',            // Reasoning for edge cases
+      "openai/gpt-5-pro", // Best legal knowledge
+      "anthropic/claude-4.5-sonnet", // Ethical AI, careful analysis
+      "deepseek/deepseek-r1", // Reasoning for edge cases
     ],
-    
+
     [TaskType.FINANCIAL_ADVICE]: [
-      'anthropic/claude-4.5-sonnet',     // Empathetic, detailed advice
-      'openai/gpt-5-pro',                // Comprehensive knowledge
-      'google/gemini-2.5-pro',           // Multi-faceted analysis
+      "anthropic/claude-4.5-sonnet", // Empathetic, detailed advice
+      "openai/gpt-5-pro", // Comprehensive knowledge
+      "google/gemini-2.5-pro", // Multi-faceted analysis
     ],
-    
+
     // Student Loan - Use reasoning models for complex calculations
     [TaskType.STUDENT_LOAN_STRATEGY]: [
-      'deepseek/deepseek-v3.1-terminus', // Best for mathematical reasoning
-      'anthropic/claude-4.5-sonnet',     // Detailed strategy planning
-      'openai/gpt-5-pro',                // Comprehensive knowledge
+      "deepseek/deepseek-v3.1-terminus", // Best for mathematical reasoning
+      "anthropic/claude-4.5-sonnet", // Detailed strategy planning
+      "openai/gpt-5-pro", // Comprehensive knowledge
     ],
-    
+
     [TaskType.LOAN_CALCULATION]: [
-      'deepseek/deepseek-v3.1-terminus', // Mathematical reasoning
-      'deepseek/deepseek-r1',            // Advanced calculations
-      'openai/gpt-5-pro',                // Reliable calculations
+      "deepseek/deepseek-v3.1-terminus", // Mathematical reasoning
+      "deepseek/deepseek-r1", // Advanced calculations
+      "openai/gpt-5-pro", // Reliable calculations
     ],
-    
+
     [TaskType.REPAYMENT_PLANNING]: [
-      'anthropic/claude-4.5-sonnet',     // Long-term planning
-      'deepseek/deepseek-v3.1-terminus', // Optimization
-      'openai/gpt-5-pro',                // Comprehensive plans
+      "anthropic/claude-4.5-sonnet", // Long-term planning
+      "deepseek/deepseek-v3.1-terminus", // Optimization
+      "openai/gpt-5-pro", // Comprehensive plans
     ],
-    
+
     [TaskType.FORGIVENESS_ANALYSIS]: [
-      'openai/gpt-5-pro',                // Policy knowledge
-      'anthropic/claude-4.5-sonnet',     // Detailed analysis
-      'deepseek/deepseek-r1',            // Complex eligibility logic
+      "openai/gpt-5-pro", // Policy knowledge
+      "anthropic/claude-4.5-sonnet", // Detailed analysis
+      "deepseek/deepseek-r1", // Complex eligibility logic
     ],
-    
+
     // Document Processing
     [TaskType.DOCUMENT_OCR]: [
-      'openai/gpt-4o',                   // Excellent OCR capabilities
-      'google/gemini-2.5-pro',           // Multi-modal processing
+      "openai/gpt-4o", // Excellent OCR capabilities
+      "google/gemini-2.5-pro", // Multi-modal processing
     ],
-    
+
     [TaskType.DOCUMENT_ANALYSIS]: [
-      'anthropic/claude-4.5-sonnet',     // Thorough document review
-      'openai/gpt-5-pro',                // Comprehensive analysis
-      'google/gemini-2.5-pro',           // Multi-modal understanding
+      "anthropic/claude-4.5-sonnet", // Thorough document review
+      "openai/gpt-5-pro", // Comprehensive analysis
+      "google/gemini-2.5-pro", // Multi-modal understanding
     ],
-    
+
     [TaskType.DOCUMENT_GENERATION]: [
-      'anthropic/claude-4.5-sonnet',     // Best for professional writing
-      'openai/gpt-5-pro',                // Versatile generation
-      'openai/gpt-4o',                   // Fast generation
+      "anthropic/claude-4.5-sonnet", // Best for professional writing
+      "openai/gpt-5-pro", // Versatile generation
+      "openai/gpt-4o", // Fast generation
     ],
-    
+
     // General Tasks
     [TaskType.QUICK_RESPONSE]: [
-      'openai/gpt-4o-mini',              // Fast and cheap
-      'anthropic/claude-4.5-haiku',      // Quick responses
-      'google/gemini-2.5-flash',         // Lightning fast
+      "openai/gpt-4o-mini", // Fast and cheap
+      "anthropic/claude-4.5-haiku", // Quick responses
+      "google/gemini-2.5-flash", // Lightning fast
     ],
-    
+
     [TaskType.GENERAL_CHAT]: [
-      'openai/gpt-4o',                   // Balanced performance
-      'anthropic/claude-4.5-sonnet',     // Engaging conversation
-      'google/gemini-2.5-pro',           // Versatile chat
+      "openai/gpt-4o", // Balanced performance
+      "anthropic/claude-4.5-sonnet", // Engaging conversation
+      "google/gemini-2.5-pro", // Versatile chat
     ],
-    
+
     [TaskType.REASONING]: [
-      'deepseek/deepseek-r1',            // Best reasoning model
-      'deepseek/deepseek-v3.1-terminus', // Advanced reasoning
-      'openai/gpt-5-pro',                // Strong reasoning
+      "deepseek/deepseek-r1", // Best reasoning model
+      "deepseek/deepseek-v3.1-terminus", // Advanced reasoning
+      "openai/gpt-5-pro", // Strong reasoning
     ],
-    
+
     [TaskType.CODE_GENERATION]: [
-      'openai/gpt-5-pro',                // Excellent coding
-      'anthropic/claude-4.5-sonnet',     // Clean code
-      'deepseek/deepseek-r1',            // Algorithm design
+      "openai/gpt-5-pro", // Excellent coding
+      "anthropic/claude-4.5-sonnet", // Clean code
+      "deepseek/deepseek-r1", // Algorithm design
     ],
-    
+
     // Specialized Tasks
     [TaskType.IMAGE_GENERATION]: [
-      'flux-pro',                        // High quality images
-      'stable-diffusion-xl',             // Versatile generation
-      'imagen-4.0-ultra',                // Google's best
+      "flux-pro", // High quality images
+      "stable-diffusion-xl", // Versatile generation
+      "imagen-4.0-ultra", // Google's best
     ],
-    
+
     [TaskType.VOICE_SYNTHESIS]: [
-      'tts-1-hd',                        // OpenAI high quality
-      'elevenlabs-multilingual',         // Best voice quality
-      'qwen3-tts-flash',                 // Fast synthesis
+      "tts-1-hd", // OpenAI high quality
+      "elevenlabs-multilingual", // Best voice quality
+      "qwen3-tts-flash", // Fast synthesis
     ],
-    
+
     [TaskType.TRANSCRIPTION]: [
-      'whisper-1',                       // OpenAI Whisper
-      'whisper-large-v3',                // Most accurate
+      "whisper-1", // OpenAI Whisper
+      "whisper-large-v3", // Most accurate
     ],
-    
+
     [TaskType.EMBEDDING]: [
-      'text-embedding-3-large',          // Best embeddings
-      'text-embedding-3-small',          // Fast embeddings
+      "text-embedding-3-large", // Best embeddings
+      "text-embedding-3-small", // Fast embeddings
     ],
-    
+
     [TaskType.MODERATION]: [
-      'openai-moderation',               // Content safety
+      "openai-moderation", // Content safety
     ],
   };
 
   // Model information database
   private modelInfo: Record<string, ModelInfo> = {
-    'anthropic/claude-4.5-sonnet': {
-      id: 'anthropic/claude-4.5-sonnet',
-      name: 'Claude 4.5 Sonnet',
-      provider: 'Anthropic',
+    "anthropic/claude-4.5-sonnet": {
+      id: "anthropic/claude-4.5-sonnet",
+      name: "Claude 4.5 Sonnet",
+      provider: "Anthropic",
       contextWindow: 200000,
-      strengths: ['Legal writing', 'Ethical AI', 'Long documents', 'Detailed analysis'],
-      costTier: 'high',
+      strengths: [
+        "Legal writing",
+        "Ethical AI",
+        "Long documents",
+        "Detailed analysis",
+      ],
+      costTier: "high",
     },
-    'openai/gpt-5-pro': {
-      id: 'openai/gpt-5-pro',
-      name: 'GPT-5 Pro',
-      provider: 'OpenAI',
+    "openai/gpt-5-pro": {
+      id: "openai/gpt-5-pro",
+      name: "GPT-5 Pro",
+      provider: "OpenAI",
       contextWindow: 400000,
-      strengths: ['Comprehensive knowledge', 'Coding', 'Reasoning', 'Versatility'],
-      costTier: 'high',
+      strengths: [
+        "Comprehensive knowledge",
+        "Coding",
+        "Reasoning",
+        "Versatility",
+      ],
+      costTier: "high",
     },
-    'deepseek/deepseek-r1': {
-      id: 'deepseek/deepseek-r1',
-      name: 'DeepSeek R1',
-      provider: 'DeepSeek',
+    "deepseek/deepseek-r1": {
+      id: "deepseek/deepseek-r1",
+      name: "DeepSeek R1",
+      provider: "DeepSeek",
       contextWindow: 128000,
-      strengths: ['Reasoning', 'Mathematics', 'Logic', 'Problem solving'],
-      costTier: 'medium',
+      strengths: ["Reasoning", "Mathematics", "Logic", "Problem solving"],
+      costTier: "medium",
     },
-    'deepseek/deepseek-v3.1-terminus': {
-      id: 'deepseek/deepseek-v3.1-terminus',
-      name: 'DeepSeek V3.1 Terminus',
-      provider: 'DeepSeek',
+    "deepseek/deepseek-v3.1-terminus": {
+      id: "deepseek/deepseek-v3.1-terminus",
+      name: "DeepSeek V3.1 Terminus",
+      provider: "DeepSeek",
       contextWindow: 128000,
-      strengths: ['Advanced reasoning', 'Optimization', 'Complex calculations'],
-      costTier: 'medium',
+      strengths: ["Advanced reasoning", "Optimization", "Complex calculations"],
+      costTier: "medium",
     },
-    'openai/gpt-4o': {
-      id: 'openai/gpt-4o',
-      name: 'GPT-4o',
-      provider: 'OpenAI',
+    "openai/gpt-4o": {
+      id: "openai/gpt-4o",
+      name: "GPT-4o",
+      provider: "OpenAI",
       contextWindow: 128000,
-      strengths: ['Fast', 'Reliable', 'Multi-modal', 'OCR'],
-      costTier: 'medium',
+      strengths: ["Fast", "Reliable", "Multi-modal", "OCR"],
+      costTier: "medium",
     },
-    'openai/gpt-4o-mini': {
-      id: 'openai/gpt-4o-mini',
-      name: 'GPT-4o Mini',
-      provider: 'OpenAI',
+    "openai/gpt-4o-mini": {
+      id: "openai/gpt-4o-mini",
+      name: "GPT-4o Mini",
+      provider: "OpenAI",
       contextWindow: 128000,
-      strengths: ['Fast', 'Cheap', 'Efficient', 'Quick responses'],
-      costTier: 'low',
+      strengths: ["Fast", "Cheap", "Efficient", "Quick responses"],
+      costTier: "low",
     },
-    'anthropic/claude-4.5-haiku': {
-      id: 'anthropic/claude-4.5-haiku',
-      name: 'Claude 4.5 Haiku',
-      provider: 'Anthropic',
+    "anthropic/claude-4.5-haiku": {
+      id: "anthropic/claude-4.5-haiku",
+      name: "Claude 4.5 Haiku",
+      provider: "Anthropic",
       contextWindow: 200000,
-      strengths: ['Fast', 'Efficient', 'Quick responses'],
-      costTier: 'low',
+      strengths: ["Fast", "Efficient", "Quick responses"],
+      costTier: "low",
     },
-    'google/gemini-2.5-pro': {
-      id: 'google/gemini-2.5-pro',
-      name: 'Gemini 2.5 Pro',
-      provider: 'Google',
+    "google/gemini-2.5-pro": {
+      id: "google/gemini-2.5-pro",
+      name: "Gemini 2.5 Pro",
+      provider: "Google",
       contextWindow: 1000000,
-      strengths: ['Huge context', 'Multi-modal', 'Versatile'],
-      costTier: 'high',
+      strengths: ["Huge context", "Multi-modal", "Versatile"],
+      costTier: "high",
     },
-    'google/gemini-2.5-flash': {
-      id: 'google/gemini-2.5-flash',
-      name: 'Gemini 2.5 Flash',
-      provider: 'Google',
+    "google/gemini-2.5-flash": {
+      id: "google/gemini-2.5-flash",
+      name: "Gemini 2.5 Flash",
+      provider: "Google",
       contextWindow: 1000000,
-      strengths: ['Lightning fast', 'Large context', 'Efficient'],
-      costTier: 'low',
+      strengths: ["Lightning fast", "Large context", "Efficient"],
+      costTier: "low",
     },
   };
 
   /**
    * Get the best model for a specific task
-   * 
+   *
    * @param taskType - Type of task to perform
    * @param preferredIndex - Index of preferred model (0 = primary, 1 = first fallback, etc.)
    * @returns Model ID
@@ -289,7 +299,7 @@ export class ModelRouter {
 
   /**
    * Get all models for a specific task (primary + fallbacks)
-   * 
+   *
    * @param taskType - Type of task to perform
    * @returns Array of model IDs
    */
@@ -299,7 +309,7 @@ export class ModelRouter {
 
   /**
    * Get model recommendation with reasoning
-   * 
+   *
    * @param taskType - Type of task to perform
    * @returns Model recommendation with primary and fallbacks
    */
@@ -314,7 +324,7 @@ export class ModelRouter {
     const primaryInfo = this.modelInfo[primary];
 
     const reasoning = primaryInfo
-      ? `${primaryInfo.name} is recommended for ${taskType} because of its strengths in: ${primaryInfo.strengths.join(', ')}.`
+      ? `${primaryInfo.name} is recommended for ${taskType} because of its strengths in: ${primaryInfo.strengths.join(", ")}.`
       : `${primary} is the primary model for ${taskType}.`;
 
     return {
@@ -326,7 +336,7 @@ export class ModelRouter {
 
   /**
    * Get information about a specific model
-   * 
+   *
    * @param modelId - Model ID
    * @returns Model information
    */
@@ -336,7 +346,7 @@ export class ModelRouter {
 
   /**
    * Get all available models
-   * 
+   *
    * @returns Array of all model IDs
    */
   getAllAvailableModels(): string[] {
@@ -345,7 +355,7 @@ export class ModelRouter {
 
   /**
    * Get models by provider
-   * 
+   *
    * @param provider - Provider name (e.g., 'OpenAI', 'Anthropic')
    * @returns Array of model IDs from that provider
    */
@@ -357,11 +367,11 @@ export class ModelRouter {
 
   /**
    * Get models by cost tier
-   * 
+   *
    * @param costTier - Cost tier (free, low, medium, high)
    * @returns Array of model IDs in that cost tier
    */
-  getModelsByCostTier(costTier: 'free' | 'low' | 'medium' | 'high'): string[] {
+  getModelsByCostTier(costTier: "free" | "low" | "medium" | "high"): string[] {
     return Object.entries(this.modelInfo)
       .filter(([, info]) => info.costTier === costTier)
       .map(([id]) => id);
@@ -369,7 +379,7 @@ export class ModelRouter {
 
   /**
    * Select best model based on requirements
-   * 
+   *
    * @param taskType - Type of task
    * @param requirements - Requirements (e.g., { costTier: 'low', provider: 'OpenAI' })
    * @returns Model ID that best matches requirements
@@ -377,10 +387,10 @@ export class ModelRouter {
   selectModel(
     taskType: TaskType,
     requirements?: {
-      costTier?: 'free' | 'low' | 'medium' | 'high';
+      costTier?: "free" | "low" | "medium" | "high";
       provider?: string;
       contextWindow?: number;
-    }
+    },
   ): string {
     const models = this.getAllModels(taskType);
 
@@ -401,7 +411,10 @@ export class ModelRouter {
         return false;
       }
 
-      if (requirements.contextWindow && info.contextWindow < requirements.contextWindow) {
+      if (
+        requirements.contextWindow &&
+        info.contextWindow < requirements.contextWindow
+      ) {
         return false;
       }
 
@@ -437,4 +450,3 @@ export function resetModelRouter(): void {
 }
 
 export default ModelRouter;
-

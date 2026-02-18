@@ -9,34 +9,34 @@
  * - Trigger-based rules (paycheck, windfall, etc.)
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 export type RuleType =
-  | 'round_up'
-  | 'percentage'
-  | 'fixed_amount'
-  | 'goal_contribution'
-  | 'paycheck_split'
-  | 'surplus_sweep'
-  | 'windfall_capture';
+  | "round_up"
+  | "percentage"
+  | "fixed_amount"
+  | "goal_contribution"
+  | "paycheck_split"
+  | "surplus_sweep"
+  | "windfall_capture";
 
-export type RuleStatus = 'active' | 'paused' | 'disabled';
+export type RuleStatus = "active" | "paused" | "disabled";
 export type RuleFrequency =
-  | 'per_transaction'
-  | 'daily'
-  | 'weekly'
-  | 'biweekly'
-  | 'monthly';
+  | "per_transaction"
+  | "daily"
+  | "weekly"
+  | "biweekly"
+  | "monthly";
 export type TriggerType =
-  | 'transaction'
-  | 'income'
-  | 'balance'
-  | 'schedule'
-  | 'manual';
+  | "transaction"
+  | "income"
+  | "balance"
+  | "schedule"
+  | "manual";
 
 export interface AutoSaveRule {
   id: string;
@@ -85,7 +85,7 @@ export type RuleConfig =
   | WindfallCaptureConfig;
 
 export interface RoundUpConfig {
-  type: 'round_up';
+  type: "round_up";
   roundTo: 1 | 5 | 10; // Round to nearest $1, $5, or $10
   multiplier: number; // 1x, 2x, 3x the round-up amount
   includeCategories?: string[]; // Only round up certain categories
@@ -93,14 +93,14 @@ export interface RoundUpConfig {
 }
 
 export interface PercentageConfig {
-  type: 'percentage';
+  type: "percentage";
   percentage: number; // 1-100
-  basedOn: 'income' | 'transaction' | 'category_spending';
+  basedOn: "income" | "transaction" | "category_spending";
   category?: string;
 }
 
 export interface FixedAmountConfig {
-  type: 'fixed_amount';
+  type: "fixed_amount";
   amount: number;
   frequency: RuleFrequency;
   dayOfWeek?: number; // 0-6 for weekly
@@ -108,14 +108,14 @@ export interface FixedAmountConfig {
 }
 
 export interface GoalContributionConfig {
-  type: 'goal_contribution';
+  type: "goal_contribution";
   goalId: string;
   targetDate: Date;
   calculatedAmount?: number; // Auto-calculated based on goal
 }
 
 export interface PaycheckSplitConfig {
-  type: 'paycheck_split';
+  type: "paycheck_split";
   percentage: number;
   fixedAmount?: number; // Alternative to percentage
   employerName?: string; // Match specific employer
@@ -123,14 +123,14 @@ export interface PaycheckSplitConfig {
 }
 
 export interface SurplusSweepConfig {
-  type: 'surplus_sweep';
+  type: "surplus_sweep";
   targetBalance: number; // Keep this much in checking
   sweepPercentage: number; // Sweep this % of surplus
   sweepDay: number; // Day of month to sweep
 }
 
 export interface WindfallCaptureConfig {
-  type: 'windfall_capture';
+  type: "windfall_capture";
   minAmount: number; // Minimum to consider a windfall
   capturePercentage: number;
   windfallCategories: string[]; // Tax refund, bonus, gift, etc.
@@ -153,7 +153,7 @@ export interface SaveTransfer {
   sourceAccountId: string;
   destinationAccountId: string;
   triggerTransactionId?: string;
-  status: 'pending' | 'completed' | 'failed' | 'cancelled';
+  status: "pending" | "completed" | "failed" | "cancelled";
   failureReason?: string;
   scheduledDate: Date;
   executedDate?: Date;
@@ -187,8 +187,8 @@ export class AutoSaveRulesService {
   async createRule(
     rule: Omit<
       AutoSaveRule,
-      'id' | 'totalSaved' | 'transferCount' | 'createdAt' | 'updatedAt'
-    >
+      "id" | "totalSaved" | "transferCount" | "createdAt" | "updatedAt"
+    >,
   ): Promise<AutoSaveRule> {
     const now = new Date();
     const newRule: AutoSaveRule = {
@@ -201,7 +201,7 @@ export class AutoSaveRulesService {
     };
 
     const { data, error } = await this.supabase
-      .from('auto_save_rules')
+      .from("auto_save_rules")
       .insert(this.toDbFormat(newRule))
       .select()
       .single();
@@ -212,15 +212,15 @@ export class AutoSaveRulesService {
 
   async updateRule(
     ruleId: string,
-    updates: Partial<AutoSaveRule>
+    updates: Partial<AutoSaveRule>,
   ): Promise<AutoSaveRule> {
     const { data, error } = await this.supabase
-      .from('auto_save_rules')
+      .from("auto_save_rules")
       .update({
         ...this.toDbFormat(updates),
         updated_at: new Date().toISOString(),
       })
-      .eq('id', ruleId)
+      .eq("id", ruleId)
       .select()
       .single();
 
@@ -230,25 +230,25 @@ export class AutoSaveRulesService {
 
   async toggleRuleStatus(
     ruleId: string,
-    status: RuleStatus
+    status: RuleStatus,
   ): Promise<AutoSaveRule> {
     return this.updateRule(ruleId, { status });
   }
 
   async deleteRule(ruleId: string): Promise<void> {
     const { error } = await this.supabase
-      .from('auto_save_rules')
+      .from("auto_save_rules")
       .delete()
-      .eq('id', ruleId);
+      .eq("id", ruleId);
 
     if (error) throw error;
   }
 
   async getRule(ruleId: string): Promise<AutoSaveRule | null> {
     const { data } = await this.supabase
-      .from('auto_save_rules')
-      .select('*')
-      .eq('id', ruleId)
+      .from("auto_save_rules")
+      .select("*")
+      .eq("id", ruleId)
       .single();
 
     return data ? this.fromDbFormat(data) : null;
@@ -256,16 +256,16 @@ export class AutoSaveRulesService {
 
   async getUserRules(
     userId: string,
-    status?: RuleStatus
+    status?: RuleStatus,
   ): Promise<AutoSaveRule[]> {
     let query = this.supabase
-      .from('auto_save_rules')
-      .select('*')
-      .eq('user_id', userId)
-      .order('priority', { ascending: true });
+      .from("auto_save_rules")
+      .select("*")
+      .eq("user_id", userId)
+      .order("priority", { ascending: true });
 
     if (status) {
-      query = query.eq('status', status);
+      query = query.eq("status", status);
     }
 
     const { data, error } = await query;
@@ -282,18 +282,18 @@ export class AutoSaveRulesService {
     userId: string,
     transactionId: string,
     amount: number,
-    category: string
+    category: string,
   ): Promise<SaveTransfer[]> {
-    const rules = await this.getUserRules(userId, 'active');
+    const rules = await this.getUserRules(userId, "active");
     const transfers: SaveTransfer[] = [];
 
     for (const rule of rules) {
-      if (rule.triggerType !== 'transaction') continue;
+      if (rule.triggerType !== "transaction") continue;
 
       const transferAmount = this.calculateTransferAmount(
         rule,
         amount,
-        category
+        category,
       );
       if (transferAmount <= 0) continue;
 
@@ -316,7 +316,7 @@ export class AutoSaveRulesService {
         sourceAccountId: rule.sourceAccountId,
         destinationAccountId: rule.destinationAccountId,
         triggerTransactionId: transactionId,
-        status: 'pending',
+        status: "pending",
         scheduledDate: new Date(),
       });
 
@@ -329,12 +329,12 @@ export class AutoSaveRulesService {
   private calculateTransferAmount(
     rule: AutoSaveRule,
     transactionAmount: number,
-    category: string
+    category: string,
   ): number {
     const config = rule.config;
 
     switch (config.type) {
-      case 'round_up': {
+      case "round_up": {
         // Check category filters
         if (
           config.includeCategories?.length &&
@@ -352,12 +352,12 @@ export class AutoSaveRulesService {
         return Math.max(0, roundUp);
       }
 
-      case 'percentage': {
-        if (config.basedOn === 'transaction') {
+      case "percentage": {
+        if (config.basedOn === "transaction") {
           return transactionAmount * (config.percentage / 100);
         }
         if (
-          config.basedOn === 'category_spending' &&
+          config.basedOn === "category_spending" &&
           config.category === category
         ) {
           return transactionAmount * (config.percentage / 100);
@@ -365,7 +365,7 @@ export class AutoSaveRulesService {
         return 0;
       }
 
-      case 'windfall_capture': {
+      case "windfall_capture": {
         if (
           transactionAmount >= config.minAmount &&
           config.windfallCategories.includes(category)
@@ -381,16 +381,16 @@ export class AutoSaveRulesService {
   }
 
   async evaluateScheduledRules(userId: string): Promise<SaveTransfer[]> {
-    const rules = await this.getUserRules(userId, 'active');
+    const rules = await this.getUserRules(userId, "active");
     const transfers: SaveTransfer[] = [];
     const now = new Date();
 
     for (const rule of rules) {
-      if (rule.triggerType !== 'schedule') continue;
+      if (rule.triggerType !== "schedule") continue;
 
       const config = rule.config as FixedAmountConfig | SurplusSweepConfig;
 
-      if (config.type === 'fixed_amount') {
+      if (config.type === "fixed_amount") {
         if (this.shouldTriggerFixedAmount(config, now)) {
           const transfer = await this.createTransfer({
             ruleId: rule.id,
@@ -398,14 +398,14 @@ export class AutoSaveRulesService {
             amount: config.amount,
             sourceAccountId: rule.sourceAccountId,
             destinationAccountId: rule.destinationAccountId,
-            status: 'pending',
+            status: "pending",
             scheduledDate: now,
           });
           transfers.push(transfer);
         }
       }
 
-      if (config.type === 'surplus_sweep') {
+      if (config.type === "surplus_sweep") {
         if (now.getDate() === config.sweepDay) {
           // Would need account balance integration here
           // For now, this creates the framework
@@ -418,20 +418,20 @@ export class AutoSaveRulesService {
 
   private shouldTriggerFixedAmount(
     config: FixedAmountConfig,
-    date: Date
+    date: Date,
   ): boolean {
     switch (config.frequency) {
-      case 'daily':
+      case "daily":
         return true;
-      case 'weekly':
+      case "weekly":
         return config.dayOfWeek === date.getDay();
-      case 'biweekly':
+      case "biweekly":
         // Simplified: trigger on specific day every other week
         const weekNumber = Math.floor(
-          date.getTime() / (7 * 24 * 60 * 60 * 1000)
+          date.getTime() / (7 * 24 * 60 * 60 * 1000),
         );
         return config.dayOfWeek === date.getDay() && weekNumber % 2 === 0;
-      case 'monthly':
+      case "monthly":
         return config.dayOfMonth === date.getDate();
       default:
         return false;
@@ -443,7 +443,7 @@ export class AutoSaveRulesService {
   // ==========================================================================
 
   async createTransfer(
-    transfer: Omit<SaveTransfer, 'id' | 'createdAt'>
+    transfer: Omit<SaveTransfer, "id" | "createdAt">,
   ): Promise<SaveTransfer> {
     const newTransfer = {
       ...transfer,
@@ -452,7 +452,7 @@ export class AutoSaveRulesService {
     };
 
     const { data, error } = await this.supabase
-      .from('save_transfers')
+      .from("save_transfers")
       .insert({
         id: newTransfer.id,
         rule_id: newTransfer.ruleId,
@@ -474,30 +474,30 @@ export class AutoSaveRulesService {
 
   async executeTransfer(transferId: string): Promise<SaveTransfer> {
     const { data: transfer } = await this.supabase
-      .from('save_transfers')
-      .select('*')
-      .eq('id', transferId)
+      .from("save_transfers")
+      .select("*")
+      .eq("id", transferId)
       .single();
 
-    if (!transfer) throw new Error('Transfer not found');
+    if (!transfer) throw new Error("Transfer not found");
 
     // In a real implementation, this would integrate with banking APIs
     // For now, we mark it as completed and update stats
 
     const { data, error } = await this.supabase
-      .from('save_transfers')
+      .from("save_transfers")
       .update({
-        status: 'completed',
+        status: "completed",
         executed_date: new Date().toISOString(),
       })
-      .eq('id', transferId)
+      .eq("id", transferId)
       .select()
       .single();
 
     if (error) throw error;
 
     // Update rule statistics
-    await this.supabase.rpc('increment_rule_stats', {
+    await this.supabase.rpc("increment_rule_stats", {
       rule_id: transfer.rule_id,
       amount: transfer.amount,
     });
@@ -507,13 +507,13 @@ export class AutoSaveRulesService {
 
   async getTransferHistory(
     userId: string,
-    limit: number = 50
+    limit: number = 50,
   ): Promise<SaveTransfer[]> {
     const { data, error } = await this.supabase
-      .from('save_transfers')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
+      .from("save_transfers")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
       .limit(limit);
 
     if (error) throw error;
@@ -526,7 +526,7 @@ export class AutoSaveRulesService {
 
   async getRuleSummary(userId: string): Promise<RuleSummary> {
     const rules = await this.getUserRules(userId);
-    const activeRules = rules.filter((r) => r.status === 'active');
+    const activeRules = rules.filter((r) => r.status === "active");
 
     // Get this month's savings
     const startOfMonth = new Date();
@@ -534,15 +534,15 @@ export class AutoSaveRulesService {
     startOfMonth.setHours(0, 0, 0, 0);
 
     const { data: monthlyTransfers } = await this.supabase
-      .from('save_transfers')
-      .select('amount')
-      .eq('user_id', userId)
-      .eq('status', 'completed')
-      .gte('executed_date', startOfMonth.toISOString());
+      .from("save_transfers")
+      .select("amount")
+      .eq("user_id", userId)
+      .eq("status", "completed")
+      .gte("executed_date", startOfMonth.toISOString());
 
     const totalSavedThisMonth = (monthlyTransfers || []).reduce(
       (sum, t) => sum + t.amount,
-      0
+      0,
     );
     const totalSavedAllTime = rules.reduce((sum, r) => sum + r.totalSaved, 0);
 
@@ -572,23 +572,23 @@ export class AutoSaveRulesService {
     const config = rule.config;
 
     switch (config.type) {
-      case 'fixed_amount':
+      case "fixed_amount":
         switch (config.frequency) {
-          case 'daily':
+          case "daily":
             return config.amount * 30;
-          case 'weekly':
+          case "weekly":
             return config.amount * 4;
-          case 'biweekly':
+          case "biweekly":
             return config.amount * 2;
-          case 'monthly':
+          case "monthly":
             return config.amount;
           default:
             return 0;
         }
-      case 'round_up':
+      case "round_up":
         // Estimate based on average transaction count
         return (config.roundTo / 2) * config.multiplier * 50; // ~50 transactions/month
-      case 'percentage':
+      case "percentage":
         // Would need income data for accurate estimate
         return 0;
       default:
@@ -602,11 +602,11 @@ export class AutoSaveRulesService {
     startOfMonth.setHours(0, 0, 0, 0);
 
     const { data } = await this.supabase
-      .from('save_transfers')
-      .select('amount')
-      .eq('rule_id', ruleId)
-      .eq('status', 'completed')
-      .gte('executed_date', startOfMonth.toISOString());
+      .from("save_transfers")
+      .select("amount")
+      .eq("rule_id", ruleId)
+      .eq("status", "completed")
+      .gte("executed_date", startOfMonth.toISOString());
 
     return (data || []).reduce((sum, t) => sum + t.amount, 0);
   }
@@ -682,7 +682,7 @@ export class AutoSaveRulesService {
       sourceAccountId: data.source_account_id as string,
       destinationAccountId: data.destination_account_id as string,
       triggerTransactionId: data.trigger_transaction_id as string | undefined,
-      status: data.status as 'pending' | 'completed' | 'failed' | 'cancelled',
+      status: data.status as "pending" | "completed" | "failed" | "cancelled",
       failureReason: data.failure_reason as string | undefined,
       scheduledDate: new Date(data.scheduled_date as string),
       executedDate: data.executed_date
@@ -705,7 +705,7 @@ export function getAutoSaveRulesService(): AutoSaveRulesService {
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     autoSaveRulesServiceInstance = new AutoSaveRulesService(
       supabaseUrl,
-      supabaseKey
+      supabaseKey,
     );
   }
   return autoSaveRulesServiceInstance;

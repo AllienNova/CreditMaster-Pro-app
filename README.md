@@ -32,19 +32,19 @@ Fynvita combines AI-powered credit repair, comprehensive financial management, a
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| **Frontend** | Next.js 15.5 (App Router), React 19, TypeScript 5.7, Tailwind CSS |
-| **Backend** | Next.js API Routes (serverless), Node.js 22 |
-| **Database** | Supabase (PostgreSQL) with Row-Level Security |
-| **Auth** | Supabase Auth (email/password, OAuth, MFA) |
-| **AI/ML** | AIML API (300+ models), intelligent model routing |
-| **Payments** | Stripe (subscriptions, checkout, webhooks) |
-| **Email** | Resend (transactional email) |
-| **Storage** | AWS S3 (document storage with presigned URLs) |
-| **Mobile** | React Native / Expo |
-| **Testing** | Jest, React Testing Library, Cypress, Playwright |
-| **Deployment** | Vercel |
+| Layer          | Technology                                                        |
+| -------------- | ----------------------------------------------------------------- |
+| **Frontend**   | Next.js 15.5 (App Router), React 19, TypeScript 5.7, Tailwind CSS |
+| **Backend**    | Next.js API Routes (serverless), Node.js 22                       |
+| **Database**   | Supabase (PostgreSQL) with Row-Level Security                     |
+| **Auth**       | Supabase Auth (email/password, OAuth, MFA)                        |
+| **AI/ML**      | AIML API (300+ models), intelligent model routing                 |
+| **Payments**   | Stripe (subscriptions, checkout, webhooks)                        |
+| **Email**      | Resend (transactional email)                                      |
+| **Storage**    | AWS S3 (document storage with presigned URLs)                     |
+| **Mobile**     | React Native / Expo                                               |
+| **Testing**    | Jest, React Testing Library, Cypress, Playwright                  |
+| **Deployment** | Vercel                                                            |
 
 ## Architecture
 
@@ -72,16 +72,16 @@ Next.js App Router ──── API Routes (279 endpoints)
 
 ## Project Metrics
 
-| Metric | Value |
-|--------|-------|
-| Web Pages | 388 |
-| Mobile Screens | 200+ |
-| API Routes | 279 |
-| Components | 272 |
-| Test Suites | 143+ |
-| Test Coverage | 81.42% |
-| TypeScript Errors | 0 |
-| Build Time | ~11s |
+| Metric            | Value  |
+| ----------------- | ------ |
+| Web Pages         | 388    |
+| Mobile Screens    | 200+   |
+| API Routes        | 279    |
+| Components        | 272    |
+| Test Suites       | 143+   |
+| Test Coverage     | 81.42% |
+| TypeScript Errors | 0      |
+| Build Time        | ~11s   |
 
 ## Getting Started
 

@@ -2,32 +2,32 @@
 // BILL NEGOTIATION TYPES
 // ============================================================================
 
-import type { BillCategory } from './bill.types';
+import type { BillCategory } from "./bill.types";
 
 export type NegotiationStatus =
-  | 'not_started'
-  | 'researching'
-  | 'in_progress'
-  | 'awaiting_response'
-  | 'completed'
-  | 'declined'
-  | 'cancelled';
+  | "not_started"
+  | "researching"
+  | "in_progress"
+  | "awaiting_response"
+  | "completed"
+  | "declined"
+  | "cancelled";
 
 export type NegotiationType =
-  | 'rate_reduction'
-  | 'fee_waiver'
-  | 'plan_change'
-  | 'cancellation'
-  | 'price_match'
-  | 'loyalty_discount'
-  | 'bundle_discount';
+  | "rate_reduction"
+  | "fee_waiver"
+  | "plan_change"
+  | "cancellation"
+  | "price_match"
+  | "loyalty_discount"
+  | "bundle_discount";
 
 export type NegotiationOutcome =
-  | 'success'
-  | 'partial_success'
-  | 'rejected'
-  | 'pending'
-  | 'no_response';
+  | "success"
+  | "partial_success"
+  | "rejected"
+  | "pending"
+  | "no_response";
 
 export interface BillNegotiation {
   id: string;
@@ -62,7 +62,7 @@ export interface NegotiationScripts {
 export interface NegotiationAttempt {
   id: string;
   date: Date;
-  method: 'phone' | 'email' | 'chat' | 'in_person';
+  method: "phone" | "email" | "chat" | "in_person";
   contactName?: string;
   outcome: NegotiationOutcome;
   offeredAmount?: number;
@@ -75,7 +75,7 @@ export interface BillComparisonData {
   lowestCompetitorRate: number;
   competitors: CompetitorRate[];
   savingsPotential: number;
-  marketPosition: 'below_average' | 'average' | 'above_average';
+  marketPosition: "below_average" | "average" | "above_average";
 }
 
 export interface CompetitorRate {
@@ -96,7 +96,7 @@ export interface MerchantContactInfo {
 }
 
 export interface NegotiationInsight {
-  type: 'tip' | 'warning' | 'opportunity' | 'success_story';
+  type: "tip" | "warning" | "opportunity" | "success_story";
   title: string;
   description: string;
   category?: BillCategory;
@@ -143,7 +143,7 @@ export interface NegotiationUpdateInput {
 }
 
 export interface NegotiationAttemptInput {
-  method: 'phone' | 'email' | 'chat' | 'in_person';
+  method: "phone" | "email" | "chat" | "in_person";
   contactName?: string;
   outcome: NegotiationOutcome;
   offeredAmount?: number;
@@ -167,21 +167,21 @@ export interface MarketRateData {
 // ============================================================================
 
 export type BillType =
-  | 'telecom'
-  | 'utilities'
-  | 'insurance'
-  | 'subscription'
-  | 'internet'
-  | 'cable'
-  | 'mobile'
-  | 'electricity'
-  | 'gas'
-  | 'water'
-  | 'home_insurance'
-  | 'auto_insurance'
-  | 'streaming';
+  | "telecom"
+  | "utilities"
+  | "insurance"
+  | "subscription"
+  | "internet"
+  | "cable"
+  | "mobile"
+  | "electricity"
+  | "gas"
+  | "water"
+  | "home_insurance"
+  | "auto_insurance"
+  | "streaming";
 
-export type NegotiationDifficulty = 'easy' | 'moderate' | 'difficult';
+export type NegotiationDifficulty = "easy" | "moderate" | "difficult";
 
 export interface NegotiableBill {
   id: string;
@@ -190,7 +190,7 @@ export interface NegotiableBill {
   provider: string;
   serviceName: string;
   currentAmount: number;
-  billingFrequency: 'monthly' | 'quarterly' | 'annually';
+  billingFrequency: "monthly" | "quarterly" | "annually";
   contractEndDate?: Date;
   isUnderContract: boolean;
 
@@ -228,14 +228,18 @@ export interface MarketAnalysis {
   // Analysis
   savingsPotential: number;
   savingsPercentage: number;
-  marketPosition: 'below_average' | 'average' | 'above_average' | 'significantly_above';
+  marketPosition:
+    | "below_average"
+    | "average"
+    | "above_average"
+    | "significantly_above";
 
   // Leverage points
   leveragePoints: LeveragePoint[];
   competitiveAdvantages: string[];
 
   // Recommendations
-  recommendedAction: 'negotiate' | 'switch' | 'stay' | 'research_more';
+  recommendedAction: "negotiate" | "switch" | "stay" | "research_more";
   confidenceScore: number; // 0-100
 
   // Metadata
@@ -245,9 +249,15 @@ export interface MarketAnalysis {
 }
 
 export interface LeveragePoint {
-  type: 'loyalty' | 'competitor_pricing' | 'market_rate' | 'contract_end' | 'payment_history' | 'bundle_opportunity';
+  type:
+    | "loyalty"
+    | "competitor_pricing"
+    | "market_rate"
+    | "contract_end"
+    | "payment_history"
+    | "bundle_opportunity";
   description: string;
-  strength: 'weak' | 'moderate' | 'strong';
+  strength: "weak" | "moderate" | "strong";
   talkingPoint: string;
 }
 
@@ -264,13 +274,13 @@ export interface NegotiationScript {
   closing: string;
 
   // Strategy
-  strategy: 'aggressive' | 'balanced' | 'conservative';
+  strategy: "aggressive" | "balanced" | "conservative";
   targetSavings: number;
   minimumAcceptableSavings: number;
 
   // User profile factors
   userTenure?: number; // months
-  paymentHistory: 'excellent' | 'good' | 'fair' | 'poor';
+  paymentHistory: "excellent" | "good" | "fair" | "poor";
   loyaltyScore: number; // 0-100
 
   // AI metadata
@@ -286,7 +296,7 @@ export interface NegotiationPoint {
   point: string;
   supportingData?: string;
   expectedResponse?: string;
-  priority: 'high' | 'medium' | 'low';
+  priority: "high" | "medium" | "low";
 }
 
 export interface Counterargument {
@@ -299,7 +309,7 @@ export interface FallbackOption {
   option: string;
   description: string;
   estimatedSavings: number;
-  likelihood: 'high' | 'medium' | 'low';
+  likelihood: "high" | "medium" | "low";
 }
 
 export interface NegotiationHistory {
@@ -326,7 +336,7 @@ export interface SavingsEstimate {
 export interface UserProfile {
   userId: string;
   tenure?: number; // months with provider
-  paymentHistory: 'excellent' | 'good' | 'fair' | 'poor';
+  paymentHistory: "excellent" | "good" | "fair" | "poor";
   loyaltyScore: number; // 0-100
   previousNegotiations: number;
   successRate: number;
@@ -340,7 +350,7 @@ export interface NegotiationOutcomeData {
   savingsAchieved: number;
   newMonthlyRate?: number;
   previousMonthlyRate: number;
-  method: 'phone' | 'email' | 'chat' | 'in_person';
+  method: "phone" | "email" | "chat" | "in_person";
   duration?: number;
   representative?: string;
   notes?: string;

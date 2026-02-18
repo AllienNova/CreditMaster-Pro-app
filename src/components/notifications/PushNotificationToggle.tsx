@@ -4,11 +4,17 @@
  * Toggle switch for enabling/disabling push notifications in settings.
  */
 
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useWebPushNotifications } from '@/hooks/useWebPushNotifications';
-import { Bell, BellOff, Loader2, AlertTriangle, CheckCircle } from 'lucide-react';
+import { useState } from "react";
+import { useWebPushNotifications } from "@/hooks/useWebPushNotifications";
+import {
+  Bell,
+  BellOff,
+  Loader2,
+  AlertTriangle,
+  CheckCircle,
+} from "lucide-react";
 
 interface PushNotificationToggleProps {
   userId?: string;
@@ -19,12 +25,12 @@ interface PushNotificationToggleProps {
 
 export function PushNotificationToggle({
   userId,
-  className = '',
+  className = "",
   showLabel = true,
   showDescription = true,
 }: PushNotificationToggleProps) {
   const [feedback, setFeedback] = useState<{
-    type: 'success' | 'error';
+    type: "success" | "error";
     message: string;
   } | null>(null);
 
@@ -44,21 +50,21 @@ export function PushNotificationToggle({
     if (isSubscribed) {
       const success = await unsubscribe();
       if (success) {
-        setFeedback({ type: 'success', message: 'Notifications disabled' });
+        setFeedback({ type: "success", message: "Notifications disabled" });
       } else {
         setFeedback({
-          type: 'error',
-          message: error || 'Failed to disable notifications',
+          type: "error",
+          message: error || "Failed to disable notifications",
         });
       }
     } else {
       const success = await subscribe();
       if (success) {
-        setFeedback({ type: 'success', message: 'Notifications enabled!' });
+        setFeedback({ type: "success", message: "Notifications enabled!" });
       } else {
         setFeedback({
-          type: 'error',
-          message: error || 'Failed to enable notifications',
+          type: "error",
+          message: error || "Failed to enable notifications",
         });
       }
     }
@@ -70,7 +76,9 @@ export function PushNotificationToggle({
   // Not supported message
   if (!isSupported) {
     return (
-      <div className={`flex items-center gap-3 p-4 bg-gray-50 dark:bg-slate-900 rounded-lg ${className}`}>
+      <div
+        className={`flex items-center gap-3 p-4 bg-gray-50 dark:bg-slate-900 rounded-lg ${className}`}
+      >
         <BellOff className="w-5 h-5 text-gray-400 dark:text-slate-500" />
         <div>
           <p className="text-sm font-medium text-gray-700 dark:text-slate-200">
@@ -85,16 +93,19 @@ export function PushNotificationToggle({
   }
 
   // Permission denied message
-  if (permission === 'denied') {
+  if (permission === "denied") {
     return (
-      <div className={`flex items-center gap-3 p-4 bg-yellow-50 rounded-lg ${className}`}>
+      <div
+        className={`flex items-center gap-3 p-4 bg-yellow-50 rounded-lg ${className}`}
+      >
         <AlertTriangle className="w-5 h-5 text-yellow-600" />
         <div>
           <p className="text-sm font-medium text-yellow-800">
             Notifications blocked
           </p>
           <p className="text-xs text-yellow-700">
-            Please enable notifications in your browser settings to receive alerts.
+            Please enable notifications in your browser settings to receive
+            alerts.
           </p>
         </div>
       </div>
@@ -128,7 +139,7 @@ export function PushNotificationToggle({
           onClick={handleToggle}
           disabled={isLoading}
           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
-            isSubscribed ? 'bg-emerald-500' : 'bg-gray-300'
+            isSubscribed ? "bg-emerald-500" : "bg-gray-300"
           }`}
           role="switch"
           aria-checked={isSubscribed}
@@ -141,7 +152,7 @@ export function PushNotificationToggle({
           ) : (
             <span
               className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-slate-800 shadow-md transition-transform ${
-                isSubscribed ? 'translate-x-6' : 'translate-x-1'
+                isSubscribed ? "translate-x-6" : "translate-x-1"
               }`}
             />
           )}
@@ -152,10 +163,10 @@ export function PushNotificationToggle({
       {feedback && (
         <div
           className={`mt-2 flex items-center gap-2 text-sm ${
-            feedback.type === 'success' ? 'text-emerald-600' : 'text-red-600'
+            feedback.type === "success" ? "text-emerald-600" : "text-red-600"
           }`}
         >
-          {feedback.type === 'success' ? (
+          {feedback.type === "success" ? (
             <CheckCircle className="w-4 h-4" />
           ) : (
             <AlertTriangle className="w-4 h-4" />

@@ -1,10 +1,10 @@
 /**
  * Fundamental Analysis Type Definitions
- * 
+ *
  * Types for financial statements, valuation models, and fundamental metrics
  */
 
-import { SignalStrength, RiskLevel } from './investment.types';
+import { SignalStrength, RiskLevel } from "./investment.types";
 
 // ============================================================================
 // FINANCIAL STATEMENTS
@@ -12,7 +12,7 @@ import { SignalStrength, RiskLevel } from './investment.types';
 
 export interface IncomeStatement {
   fiscalDate: Date;
-  period: 'annual' | 'quarterly';
+  period: "annual" | "quarterly";
   revenue: number;
   costOfRevenue: number;
   grossProfit: number;
@@ -35,7 +35,7 @@ export interface IncomeStatement {
 
 export interface BalanceSheet {
   fiscalDate: Date;
-  period: 'annual' | 'quarterly';
+  period: "annual" | "quarterly";
   totalAssets: number;
   currentAssets: number;
   cash: number;
@@ -60,7 +60,7 @@ export interface BalanceSheet {
 
 export interface CashFlowStatement {
   fiscalDate: Date;
-  period: 'annual' | 'quarterly';
+  period: "annual" | "quarterly";
   operatingCashFlow: number;
   netIncome: number;
   depreciation: number;
@@ -180,7 +180,11 @@ export interface DCFValuation {
   discountRate: number;
   projectionYears: number;
   // Projections
-  projectedCashFlows: Array<{ year: number; fcf: number; discountedFcf: number }>;
+  projectedCashFlows: Array<{
+    year: number;
+    fcf: number;
+    discountedFcf: number;
+  }>;
   terminalValue: number;
   discountedTerminalValue: number;
   // Results
@@ -271,13 +275,13 @@ export interface EarningsHistory {
   earnings: EarningsData[];
   beatRate: number;
   avgSurprise: number;
-  trend: 'improving' | 'stable' | 'declining';
+  trend: "improving" | "stable" | "declining";
 }
 
 export interface EarningsCalendar {
   symbol: string;
   nextEarningsDate: Date;
-  nextEarningsTime: 'before_market' | 'after_market' | 'unknown';
+  nextEarningsTime: "before_market" | "after_market" | "unknown";
   estimatedEps: number;
   estimatedRevenue: number;
   analystCount: number;
@@ -333,6 +337,9 @@ export interface FundamentalAnalysis {
   upside: number;
   riskLevel: RiskLevel;
   summary: string;
-  keyMetrics: Array<{ name: string; value: number; status: 'good' | 'neutral' | 'concern' }>;
+  keyMetrics: Array<{
+    name: string;
+    value: number;
+    status: "good" | "neutral" | "concern";
+  }>;
 }
-

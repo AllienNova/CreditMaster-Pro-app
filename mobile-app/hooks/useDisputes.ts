@@ -1,6 +1,6 @@
-import { useCallback, useState } from 'react';
-import { useDisputeStore, selectDisputes } from '../src/store';
-import { disputesAPI } from '../services/api';
+import { useCallback, useState } from "react";
+import { useDisputeStore, selectDisputes } from "../src/store";
+import { disputesAPI } from "../services/api";
 
 interface CreateDisputeData {
   bureau: string;
@@ -11,7 +11,11 @@ interface CreateDisputeData {
 
 export function useDisputes() {
   const disputes = useDisputeStore(selectDisputes);
-  const { setDisputes, createDispute: addDispute, updateDispute } = useDisputeStore();
+  const {
+    setDisputes,
+    createDispute: addDispute,
+    updateDispute,
+  } = useDisputeStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,47 +37,56 @@ export function useDisputes() {
     setLoading(false);
   }, [setDisputes]);
 
-  const createDispute = useCallback(async (disputeData: CreateDisputeData) => {
-    setLoading(true);
-    setError(null);
+  const createDispute = useCallback(
+    async (disputeData: CreateDisputeData) => {
+      setLoading(true);
+      setError(null);
 
-    const { data, error: apiError } = await disputesAPI.create(disputeData);
+      const { data, error: apiError } = await disputesAPI.create(disputeData);
 
-    if (apiError) {
-      setError(apiError);
+      if (apiError) {
+        setError(apiError);
+        setLoading(false);
+        return { success: false, error: apiError };
+      }
+
+      if (data?.dispute) {
+        addDispute(data.dispute);
+      }
       setLoading(false);
-      return { success: false, error: apiError };
-    }
+      return { success: true, error: null, dispute: data?.dispute };
+    },
+    [addDispute],
+  );
 
-    if (data?.dispute) {
-      addDispute(data.dispute);
-    }
-    setLoading(false);
-    return { success: true, error: null, dispute: data?.dispute };
-  }, [addDispute]);
+  const updateDisputeStatus = useCallback(
+    async (id: string, status: string) => {
+      setLoading(true);
+      setError(null);
 
-  const updateDisputeStatus = useCallback(async (id: string, status: string) => {
-    setLoading(true);
-    setError(null);
+      const { data, error: apiError } = await disputesAPI.update(id, {
+        status,
+      });
 
-    const { data, error: apiError } = await disputesAPI.update(id, { status });
+      if (apiError) {
+        setError(apiError);
+        setLoading(false);
+        return { success: false, error: apiError };
+      }
 
-    if (apiError) {
-      setError(apiError);
+      updateDispute(id, { status } as any);
       setLoading(false);
-      return { success: false, error: apiError };
-    }
-
-    updateDispute(id, { status } as any);
-    setLoading(false);
-    return { success: true, error: null };
-  }, [updateDispute]);
+      return { success: true, error: null };
+    },
+    [updateDispute],
+  );
 
   const generateLetter = useCallback(async (disputeId: string) => {
     setLoading(true);
     setError(null);
 
-    const { data, error: apiError } = await disputesAPI.generateLetter(disputeId);
+    const { data, error: apiError } =
+      await disputesAPI.generateLetter(disputeId);
 
     if (apiError) {
       setError(apiError);
@@ -86,17 +99,22 @@ export function useDisputes() {
   }, []);
 
   // Filter helpers
-  const pendingDisputes = disputes.filter((d) => d.status === 'pending' || d.status === 'in_progress');
-  const resolvedDisputes = disputes.filter((d) => d.status === 'resolved');
-  const rejectedDisputes = disputes.filter((d) => d.status === 'rejected');
+  const pendingDisputes = disputes.filter(
+    (d) => d.status === "pending" || d.status === "in_progress",
+  );
+  const resolvedDisputes = disputes.filter((d) => d.status === "resolved");
+  const rejectedDisputes = disputes.filter((d) => d.status === "rejected");
 
   // Group by bureau
-  const disputesByBureau = disputes.reduce((acc, dispute) => {
-    const bureau = dispute.bureau;
-    if (!acc[bureau]) acc[bureau] = [];
-    acc[bureau].push(dispute);
-    return acc;
-  }, {} as Record<string, typeof disputes>);
+  const disputesByBureau = disputes.reduce(
+    (acc, dispute) => {
+      const bureau = dispute.bureau;
+      if (!acc[bureau]) acc[bureau] = [];
+      acc[bureau].push(dispute);
+      return acc;
+    },
+    {} as Record<string, typeof disputes>,
+  );
 
   // Stats
   const stats = {
@@ -104,9 +122,14 @@ export function useDisputes() {
     pending: pendingDisputes.length,
     resolved: resolvedDisputes.length,
     rejected: rejectedDisputes.length,
-    successRate: disputes.length > 0
-      ? Math.round((resolvedDisputes.length / (resolvedDisputes.length + rejectedDisputes.length)) * 100) || 0
-      : 0,
+    successRate:
+      disputes.length > 0
+        ? Math.round(
+            (resolvedDisputes.length /
+              (resolvedDisputes.length + rejectedDisputes.length)) *
+              100,
+          ) || 0
+        : 0,
   };
 
   return {
@@ -124,4 +147,3 @@ export function useDisputes() {
     stats,
   };
 }
-

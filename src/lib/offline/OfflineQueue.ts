@@ -1,21 +1,21 @@
 /**
  * Offline Queue System
- * 
+ *
  * Manages queued actions when offline and syncs them when connection is restored
  */
 
-'use client';
+"use client";
 
 export interface QueuedAction {
   id: string;
-  type: 'analysis' | 'preference' | 'portfolio' | 'alert';
+  type: "analysis" | "preference" | "portfolio" | "alert";
   endpoint: string;
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+  method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   data?: any;
   timestamp: number;
   retryCount: number;
   maxRetries: number;
-  status: 'pending' | 'processing' | 'failed' | 'completed';
+  status: "pending" | "processing" | "failed" | "completed";
   error?: string;
 }
 
@@ -30,7 +30,7 @@ const DEFAULT_OPTIONS: Required<OfflineQueueOptions> = {
   maxQueueSize: 100,
   maxRetries: 3,
   retryDelay: 1000,
-  storageKey: 'offline-action-queue',
+  storageKey: "offline-action-queue",
 };
 
 export class OfflineQueue {
@@ -47,25 +47,27 @@ export class OfflineQueue {
   /**
    * Add an action to the queue
    */
-  add(action: Omit<QueuedAction, 'id' | 'timestamp' | 'retryCount' | 'status'>): string {
+  add(
+    action: Omit<QueuedAction, "id" | "timestamp" | "retryCount" | "status">,
+  ): string {
     const queuedAction: QueuedAction = {
       ...action,
       id: this.generateId(),
       timestamp: Date.now(),
       retryCount: 0,
-      status: 'pending',
+      status: "pending",
     };
 
     // Check queue size limit
     if (this.queue.length >= this.options.maxQueueSize) {
       // Remove oldest completed or failed action
       const indexToRemove = this.queue.findIndex(
-        (a) => a.status === 'completed' || a.status === 'failed'
+        (a) => a.status === "completed" || a.status === "failed",
       );
       if (indexToRemove !== -1) {
         this.queue.splice(indexToRemove, 1);
       } else {
-        throw new Error('Queue is full');
+        throw new Error("Queue is full");
       }
     }
 
@@ -84,34 +86,36 @@ export class OfflineQueue {
 
     this.isProcessing = true;
 
-    const pendingActions = this.queue.filter((a) => a.status === 'pending');
+    const pendingActions = this.queue.filter((a) => a.status === "pending");
 
     for (const action of pendingActions) {
       try {
-        action.status = 'processing';
+        action.status = "processing";
         this.notifyListeners();
 
         const response = await fetch(action.endpoint, {
           method: action.method,
-          headers: action.data ? { 'Content-Type': 'application/json' } : {},
+          headers: action.data ? { "Content-Type": "application/json" } : {},
           body: action.data ? JSON.stringify(action.data) : undefined,
         });
 
         if (response.ok) {
-          action.status = 'completed';
+          action.status = "completed";
         } else {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
       } catch (error) {
         action.retryCount++;
-        action.error = error instanceof Error ? error.message : 'Unknown error';
+        action.error = error instanceof Error ? error.message : "Unknown error";
 
         if (action.retryCount >= action.maxRetries) {
-          action.status = 'failed';
+          action.status = "failed";
         } else {
-          action.status = 'pending';
+          action.status = "pending";
           // Wait before retrying
-          await new Promise((resolve) => setTimeout(resolve, this.options.retryDelay));
+          await new Promise((resolve) =>
+            setTimeout(resolve, this.options.retryDelay),
+          );
         }
       }
 
@@ -133,14 +137,16 @@ export class OfflineQueue {
    * Get pending actions count
    */
   getPendingCount(): number {
-    return this.queue.filter((a) => a.status === 'pending').length;
+    return this.queue.filter((a) => a.status === "pending").length;
   }
 
   /**
    * Clear completed and failed actions
    */
   clearCompleted(): void {
-    this.queue = this.queue.filter((a) => a.status === 'pending' || a.status === 'processing');
+    this.queue = this.queue.filter(
+      (a) => a.status === "pending" || a.status === "processing",
+    );
     this.saveQueue();
     this.notifyListeners();
   }
@@ -158,7 +164,7 @@ export class OfflineQueue {
   }
 
   private loadQueue(): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     try {
       const stored = localStorage.getItem(this.options.storageKey);
@@ -172,7 +178,7 @@ export class OfflineQueue {
   }
 
   private saveQueue(): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     try {
       localStorage.setItem(this.options.storageKey, JSON.stringify(this.queue));
@@ -196,4 +202,3 @@ export function getOfflineQueue(): OfflineQueue {
   }
   return offlineQueueInstance;
 }
-

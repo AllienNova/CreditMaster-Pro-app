@@ -3,12 +3,12 @@
  * Displays daily quests with progress
  */
 
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { lightTheme as theme } from '../../constants/theme';
+import React from "react";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { lightTheme as theme } from "../../constants/theme";
 
-type QuestType = 'daily' | 'weekly' | 'challenge';
+type QuestType = "daily" | "weekly" | "challenge";
 
 interface Quest {
   id: string;
@@ -33,25 +33,25 @@ export function QuestCard({ quest, onComplete }: QuestCardProps) {
 
   const getTypeIcon = (): keyof typeof Ionicons.glyphMap => {
     switch (quest.type) {
-      case 'daily':
-        return 'sunny';
-      case 'weekly':
-        return 'calendar';
-      case 'challenge':
-        return 'trophy';
+      case "daily":
+        return "sunny";
+      case "weekly":
+        return "calendar";
+      case "challenge":
+        return "trophy";
       default:
-        return 'star';
+        return "star";
     }
   };
 
   const getTypeColor = (): string => {
     switch (quest.type) {
-      case 'daily':
-        return '#F59E0B';
-      case 'weekly':
-        return '#3B82F6';
-      case 'challenge':
-        return '#A855F7';
+      case "daily":
+        return "#F59E0B";
+      case "weekly":
+        return "#3B82F6";
+      case "challenge":
+        return "#A855F7";
       default:
         return theme.colors.primary;
     }
@@ -129,20 +129,20 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border,
   },
   containerComplete: {
-    backgroundColor: '#F0FDF4',
-    borderColor: '#BBF7D0',
+    backgroundColor: "#F0FDF4",
+    borderColor: "#BBF7D0",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     marginBottom: 12,
   },
   typeIcon: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 12,
   },
   titleContainer: {
@@ -150,12 +150,12 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: 2,
   },
   titleComplete: {
-    textDecorationLine: 'line-through',
+    textDecorationLine: "line-through",
     color: theme.colors.textSecondary,
   },
   description: {
@@ -163,8 +163,8 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   rewardContainer: {
-    alignItems: 'center',
-    backgroundColor: '#FEF3C7',
+    alignItems: "center",
+    backgroundColor: "#FEF3C7",
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
@@ -172,34 +172,34 @@ const styles = StyleSheet.create({
   },
   xpReward: {
     fontSize: 14,
-    fontWeight: '700',
-    color: '#D97706',
+    fontWeight: "700",
+    color: "#D97706",
   },
   xpLabel: {
     fontSize: 10,
-    color: '#B45309',
+    color: "#B45309",
   },
   progressSection: {
     marginBottom: 8,
   },
   progressBar: {
     height: 6,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: "#E5E7EB",
     borderRadius: 3,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   progressFill: {
-    height: '100%',
+    height: "100%",
     borderRadius: 3,
   },
   progressInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginTop: 6,
   },
   progressText: {
     fontSize: 11,
-    fontWeight: '500',
+    fontWeight: "500",
     color: theme.colors.textSecondary,
   },
   expiresText: {
@@ -207,29 +207,29 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   claimButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 10,
     borderRadius: 8,
     gap: 6,
   },
   claimText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#fff',
+    fontWeight: "600",
+    color: "#fff",
   },
   completedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 6,
     paddingVertical: 8,
   },
   completedText: {
     fontSize: 13,
-    fontWeight: '500',
-    color: '#22C55E',
+    fontWeight: "500",
+    color: "#22C55E",
   },
 });
 

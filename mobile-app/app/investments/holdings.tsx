@@ -3,7 +3,7 @@
  * List all holdings with CRUD operations
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -13,28 +13,28 @@ import {
   RefreshControl,
   TextInput,
   Alert,
-} from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { lightTheme as theme } from '../../src/constants/theme';
-import { Card } from '../../src/components/Card';
+} from "react-native";
+import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { lightTheme as theme } from "../../src/constants/theme";
+import { Card } from "../../src/components/Card";
 import {
   useInvestmentStore,
   selectHoldings,
   selectInvestmentLoading,
-} from '../../src/store';
-import { Holding } from '../../src/services/api/investments';
+} from "../../src/store";
+import { Holding } from "../../src/services/api/investments";
 
-type SortKey = 'value' | 'gainPercent' | 'symbol';
-type FilterType = 'all' | 'stocks' | 'etfs' | 'crypto' | 'bonds';
+type SortKey = "value" | "gainPercent" | "symbol";
+type FilterType = "all" | "stocks" | "etfs" | "crypto" | "bonds";
 
 export default function HoldingsScreen() {
   const [refreshing, setRefreshing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<SortKey>('value');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<SortKey>("value");
   const [sortAsc, setSortAsc] = useState(false);
-  const [filterType, setFilterType] = useState<FilterType>('all');
+  const [filterType, setFilterType] = useState<FilterType>("all");
 
   const holdings = useInvestmentStore(selectHoldings);
   const isLoading = useInvestmentStore(selectInvestmentLoading);
@@ -47,16 +47,16 @@ export default function HoldingsScreen() {
   }, []);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
   };
 
   const formatPercent = (value: number) => {
-    const sign = value >= 0 ? '+' : '';
+    const sign = value >= 0 ? "+" : "";
     return `${sign}${value.toFixed(2)}%`;
   };
 
@@ -64,72 +64,78 @@ export default function HoldingsScreen() {
   const filteredHoldings = holdings
     .filter((h) => {
       const matchesSearch =
-        searchQuery === '' ||
+        searchQuery === "" ||
         h.symbol?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         h.name?.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesFilter = filterType === 'all' || h.asset_type === filterType;
+      const matchesFilter = filterType === "all" || h.asset_type === filterType;
       return matchesSearch && matchesFilter;
     })
     .sort((a, b) => {
       let comparison = 0;
       switch (sortBy) {
-        case 'value':
+        case "value":
           comparison = (b.current_value || 0) - (a.current_value || 0);
           break;
-        case 'gainPercent':
+        case "gainPercent":
           comparison = (b.gain_loss_percent || 0) - (a.gain_loss_percent || 0);
           break;
-        case 'symbol':
-          comparison = (a.symbol || '').localeCompare(b.symbol || '');
+        case "symbol":
+          comparison = (a.symbol || "").localeCompare(b.symbol || "");
           break;
       }
       return sortAsc ? -comparison : comparison;
     });
 
   const filters: { key: FilterType; label: string }[] = [
-    { key: 'all', label: 'All' },
-    { key: 'stocks', label: 'Stocks' },
-    { key: 'etfs', label: 'ETFs' },
-    { key: 'crypto', label: 'Crypto' },
-    { key: 'bonds', label: 'Bonds' },
+    { key: "all", label: "All" },
+    { key: "stocks", label: "Stocks" },
+    { key: "etfs", label: "ETFs" },
+    { key: "crypto", label: "Crypto" },
+    { key: "bonds", label: "Bonds" },
   ];
 
   const sortOptions: { key: SortKey; label: string }[] = [
-    { key: 'value', label: 'Value' },
-    { key: 'gainPercent', label: 'Gain %' },
-    { key: 'symbol', label: 'Symbol' },
+    { key: "value", label: "Value" },
+    { key: "gainPercent", label: "Gain %" },
+    { key: "symbol", label: "Symbol" },
   ];
 
   const handleDeleteHolding = (holding: Holding) => {
     Alert.alert(
-      'Delete Holding',
+      "Delete Holding",
       `Are you sure you want to delete ${holding.symbol}?`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Delete',
-          style: 'destructive',
+          text: "Delete",
+          style: "destructive",
           onPress: async () => {
             try {
-              const response = await fetch(`/api/investments/holdings/${holding.id}`, {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-              });
+              const response = await fetch(
+                `/api/investments/holdings/${holding.id}`,
+                {
+                  method: "DELETE",
+                  headers: { "Content-Type": "application/json" },
+                },
+              );
               if (response.ok) {
-                Alert.alert('Success', 'Holding deleted successfully');
+                Alert.alert("Success", "Holding deleted successfully");
                 // Refresh portfolio to reflect deletion
                 await fetchPortfolio();
               } else {
                 const errorData = await response.json().catch(() => ({}));
-                Alert.alert('Error', errorData.message || 'Failed to delete holding');
+                Alert.alert(
+                  "Error",
+                  errorData.message || "Failed to delete holding",
+                );
               }
             } catch (error) {
-              console.error('Delete holding error:', error);
-              Alert.alert('Error', 'Network error. Please try again.');
+              console.error("Delete holding error:", error);
+              Alert.alert("Error", "Network error. Please try again.");
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -141,16 +147,19 @@ export default function HoldingsScreen() {
       <View style={styles.holdingInfo}>
         <View style={styles.holdingIcon}>
           <Text style={styles.holdingIconText}>
-            {holding.symbol?.slice(0, 2).toUpperCase() || 'XX'}
+            {holding.symbol?.slice(0, 2).toUpperCase() || "XX"}
           </Text>
         </View>
         <View style={styles.holdingDetails}>
-          <Text style={styles.holdingSymbol}>{holding.symbol || 'Unknown'}</Text>
+          <Text style={styles.holdingSymbol}>
+            {holding.symbol || "Unknown"}
+          </Text>
           <Text style={styles.holdingName} numberOfLines={1}>
             {holding.name || holding.symbol}
           </Text>
           <Text style={styles.holdingShares}>
-            {holding.quantity} shares @ {formatCurrency(holding.average_cost || 0)}
+            {holding.quantity} shares @{" "}
+            {formatCurrency(holding.average_cost || 0)}
           </Text>
         </View>
       </View>
@@ -162,7 +171,10 @@ export default function HoldingsScreen() {
           <Text
             style={[
               styles.holdingChange,
-              { color: (holding.gain_loss_percent || 0) >= 0 ? '#10B981' : '#EF4444' },
+              {
+                color:
+                  (holding.gain_loss_percent || 0) >= 0 ? "#10B981" : "#EF4444",
+              },
             ]}
           >
             {formatCurrency(holding.gain_loss || 0)}
@@ -170,7 +182,10 @@ export default function HoldingsScreen() {
           <Text
             style={[
               styles.holdingChangePercent,
-              { color: (holding.gain_loss_percent || 0) >= 0 ? '#10B981' : '#EF4444' },
+              {
+                color:
+                  (holding.gain_loss_percent || 0) >= 0 ? "#10B981" : "#EF4444",
+              },
             ]}
           >
             {formatPercent(holding.gain_loss_percent || 0)}
@@ -180,21 +195,35 @@ export default function HoldingsScreen() {
           style={styles.deleteButton}
           onPress={() => handleDeleteHolding(holding)}
         >
-          <Ionicons name="trash-outline" size={18} color={theme.colors.textSecondary} />
+          <Ionicons
+            name="trash-outline"
+            size={18}
+            color={theme.colors.textSecondary}
+          />
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
 
-  const totalValue = filteredHoldings.reduce((sum, h) => sum + (h.current_value || 0), 0);
-  const totalGain = filteredHoldings.reduce((sum, h) => sum + (h.gain_loss || 0), 0);
+  const totalValue = filteredHoldings.reduce(
+    (sum, h) => sum + (h.current_value || 0),
+    0,
+  );
+  const totalGain = filteredHoldings.reduce(
+    (sum, h) => sum + (h.gain_loss || 0),
+    0,
+  );
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={["bottom"]}>
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
-          <Ionicons name="search-outline" size={20} color={theme.colors.textSecondary} />
+          <Ionicons
+            name="search-outline"
+            size={20}
+            color={theme.colors.textSecondary}
+          />
           <TextInput
             style={styles.searchInput}
             placeholder="Search holdings..."
@@ -203,8 +232,12 @@ export default function HoldingsScreen() {
             onChangeText={setSearchQuery}
           />
           {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={20} color={theme.colors.textSecondary} />
+            <TouchableOpacity onPress={() => setSearchQuery("")}>
+              <Ionicons
+                name="close-circle"
+                size={20}
+                color={theme.colors.textSecondary}
+              />
             </TouchableOpacity>
           )}
         </View>
@@ -268,7 +301,7 @@ export default function HoldingsScreen() {
             </Text>
             {sortBy === option.key && (
               <Ionicons
-                name={sortAsc ? 'arrow-up' : 'arrow-down'}
+                name={sortAsc ? "arrow-up" : "arrow-down"}
                 size={14}
                 color={theme.colors.primary}
               />
@@ -289,7 +322,7 @@ export default function HoldingsScreen() {
           <Text
             style={[
               styles.summaryValue,
-              { color: totalGain >= 0 ? '#10B981' : '#EF4444' },
+              { color: totalGain >= 0 ? "#10B981" : "#EF4444" },
             ]}
           >
             {formatCurrency(totalGain)}
@@ -305,7 +338,9 @@ export default function HoldingsScreen() {
       {/* Holdings List */}
       <FlatList
         data={filteredHoldings}
-        keyExtractor={(item) => item.id || item.symbol || Math.random().toString()}
+        keyExtractor={(item) =>
+          item.id || item.symbol || Math.random().toString()
+        }
         renderItem={renderHolding}
         contentContainerStyle={styles.listContent}
         refreshControl={
@@ -324,7 +359,9 @@ export default function HoldingsScreen() {
             />
             <Text style={styles.emptyText}>No holdings found</Text>
             <Text style={styles.emptySubtext}>
-              {searchQuery ? 'Try adjusting your search' : 'Add your first investment'}
+              {searchQuery
+                ? "Try adjusting your search"
+                : "Add your first investment"}
             </Text>
           </View>
         }
@@ -333,7 +370,7 @@ export default function HoldingsScreen() {
       {/* Add Button */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => router.push('/investments/add-holding')}
+        onPress={() => router.push("/investments/add-holding")}
       >
         <Ionicons name="add" size={28} color="#FFFFFF" />
       </TouchableOpacity>
@@ -351,8 +388,8 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.sm,
   },
   searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: theme.colors.surface,
     borderRadius: theme.borderRadius.lg,
     paddingHorizontal: theme.spacing.md,
@@ -383,15 +420,15 @@ const styles = StyleSheet.create({
   },
   filterChipText: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: "500",
     color: theme.colors.textSecondary,
   },
   filterChipTextActive: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
   sortContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.sm,
     gap: 8,
@@ -401,8 +438,8 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   sortChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: theme.borderRadius.md,
@@ -414,21 +451,21 @@ const styles = StyleSheet.create({
   },
   sortChipText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: "500",
     color: theme.colors.textSecondary,
   },
   sortChipTextActive: {
     color: theme.colors.primary,
   },
   summaryCard: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.md,
     padding: theme.spacing.md,
   },
   summaryItem: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
   },
   summaryLabel: {
     fontSize: 11,
@@ -437,7 +474,7 @@ const styles = StyleSheet.create({
   },
   summaryValue: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   summaryDivider: {
@@ -449,17 +486,17 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   holdingCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     backgroundColor: theme.colors.surface,
     borderRadius: theme.borderRadius.lg,
     padding: theme.spacing.md,
     marginBottom: theme.spacing.sm,
   },
   holdingInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
   },
   holdingIcon: {
@@ -467,13 +504,13 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     backgroundColor: `${theme.colors.primary}20`,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: theme.spacing.md,
   },
   holdingIconText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.primary,
   },
   holdingDetails: {
@@ -481,7 +518,7 @@ const styles = StyleSheet.create({
   },
   holdingSymbol: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   holdingName: {
@@ -495,37 +532,37 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   holdingRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   holdingValues: {
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   holdingValue: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   holdingChange: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: "500",
     marginTop: 2,
   },
   holdingChangePercent: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   deleteButton: {
     padding: 8,
   },
   emptyState: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: theme.spacing.xl * 2,
   },
   emptyText: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginTop: theme.spacing.md,
   },
@@ -535,17 +572,17 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   fab: {
-    position: 'absolute',
+    position: "absolute",
     right: theme.spacing.lg,
     bottom: theme.spacing.lg,
     width: 56,
     height: 56,
     borderRadius: 28,
     backgroundColor: theme.colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     elevation: 4,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,

@@ -7,10 +7,10 @@
  * runtime key rotation.
  */
 
-import { getSupabase } from '@/lib/supabase/client';
-import { ExperianClient } from './experian-client';
-import { EquifaxClient } from './equifax-client';
-import { TransUnionClient } from './transunion-client';
+import { getSupabase } from "@/lib/supabase/client";
+import { ExperianClient } from "./experian-client";
+import { EquifaxClient } from "./equifax-client";
+import { TransUnionClient } from "./transunion-client";
 import type {
   BureauCredentials,
   BureauApiEnvironment,
@@ -26,14 +26,18 @@ import type {
   Bureau,
   CreditAnalysis,
   CreditUtilization,
-  CreditAccount
-} from './types';
+  CreditAccount,
+} from "./types";
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-const BUREAUS: readonly Bureau[] = ['experian', 'equifax', 'transunion'] as const;
+const BUREAUS: readonly Bureau[] = [
+  "experian",
+  "equifax",
+  "transunion",
+] as const;
 
 /** Default credential cache time-to-live in milliseconds (5 minutes). */
 const CREDENTIAL_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -45,18 +49,21 @@ const HEALTH_CHECK_TIMEOUT_MS = 10_000;
 // Default base URLs per bureau & environment
 // ---------------------------------------------------------------------------
 
-const DEFAULT_BASE_URLS: Record<Bureau, Record<BureauApiEnvironment, string>> = {
+const DEFAULT_BASE_URLS: Record<
+  Bureau,
+  Record<BureauApiEnvironment, string>
+> = {
   experian: {
-    sandbox: 'https://sandbox-us-api.experian.com',
-    production: 'https://us-api.experian.com',
+    sandbox: "https://sandbox-us-api.experian.com",
+    production: "https://us-api.experian.com",
   },
   equifax: {
-    sandbox: 'https://api.sandbox.equifax.com',
-    production: 'https://api.equifax.com',
+    sandbox: "https://api.sandbox.equifax.com",
+    production: "https://api.equifax.com",
   },
   transunion: {
-    sandbox: 'https://netaccess-test.transunion.com',
-    production: 'https://netaccess.transunion.com',
+    sandbox: "https://netaccess-test.transunion.com",
+    production: "https://netaccess.transunion.com",
   },
 };
 
@@ -79,9 +86,9 @@ interface CachedCredential {
  * Keys shorter than 12 chars are fully masked.
  */
 function maskApiKey(key: string): string {
-  if (!key) return '(empty)';
-  if (key.length < 12) return '*'.repeat(key.length);
-  return `${key.slice(0, 4)}${'*'.repeat(key.length - 8)}${key.slice(-4)}`;
+  if (!key) return "(empty)";
+  if (key.length < 12) return "*".repeat(key.length);
+  return `${key.slice(0, 4)}${"*".repeat(key.length - 8)}${key.slice(-4)}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -94,8 +101,8 @@ function maskApiKey(key: string): string {
  */
 function readBureauApiEnvironment(): BureauApiEnvironment {
   const raw = process.env.BUREAU_API_ENVIRONMENT;
-  if (raw === 'production') return 'production';
-  return 'sandbox';
+  if (raw === "production") return "production";
+  return "sandbox";
 }
 
 /**
@@ -114,9 +121,9 @@ function readBureauCredentialFromEnv(bureau: Bureau): SingleBureauCredential {
   const defaultBaseUrl = DEFAULT_BASE_URLS[bureau][environment];
 
   return {
-    apiKey: process.env[`${prefix}_API_KEY`] ?? '',
-    apiSecret: process.env[`${prefix}_API_SECRET`] ?? '',
-    clientId: process.env[`${prefix}_CLIENT_ID`] ?? '',
+    apiKey: process.env[`${prefix}_API_KEY`] ?? "",
+    apiSecret: process.env[`${prefix}_API_SECRET`] ?? "",
+    clientId: process.env[`${prefix}_CLIENT_ID`] ?? "",
     baseUrl: process.env[`${prefix}_BASE_URL`] ?? defaultBaseUrl,
     environment,
   };
@@ -127,9 +134,9 @@ function readBureauCredentialFromEnv(bureau: Bureau): SingleBureauCredential {
  */
 function readAllBureauCredentialsFromEnv(): BureauConfig {
   return {
-    experian: readBureauCredentialFromEnv('experian'),
-    equifax: readBureauCredentialFromEnv('equifax'),
-    transunion: readBureauCredentialFromEnv('transunion'),
+    experian: readBureauCredentialFromEnv("experian"),
+    equifax: readBureauCredentialFromEnv("equifax"),
+    transunion: readBureauCredentialFromEnv("transunion"),
   };
 }
 
@@ -149,11 +156,14 @@ export class CreditBureauService {
   private static credentialCacheTtlMs: number = CREDENTIAL_CACHE_TTL_MS;
 
   // ---- Validation state ----
-  private static validationState: Map<Bureau, {
-    valid: boolean;
-    lastValidated: string | null;
-    lastError: string | null;
-  }> = new Map();
+  private static validationState: Map<
+    Bureau,
+    {
+      valid: boolean;
+      lastValidated: string | null;
+      lastError: string | null;
+    }
+  > = new Map();
 
   // =========================================================================
   // Credential management — public API
@@ -198,7 +208,9 @@ export class CreditBureauService {
    * Experian, a lightweight ping for Equifax/TransUnion) and records
    * the result in `validationState`.
    */
-  static async validateCredentials(bureau: Bureau): Promise<CredentialValidationResult> {
+  static async validateCredentials(
+    bureau: Bureau,
+  ): Promise<CredentialValidationResult> {
     const credential = this.getBureauCredentials(bureau);
     const startMs = Date.now();
     const checkedAt = new Date().toISOString();
@@ -218,21 +230,26 @@ export class CreditBureauService {
 
     try {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), HEALTH_CHECK_TIMEOUT_MS);
+      const timer = setTimeout(
+        () => controller.abort(),
+        HEALTH_CHECK_TIMEOUT_MS,
+      );
 
       let healthUrl: string;
 
       switch (bureau) {
-        case 'experian': {
+        case "experian": {
           // Experian: attempt OAuth token exchange as the health check
           healthUrl = `${credential.baseUrl}/oauth2/v1/token`;
-          const credentials = btoa(`${credential.clientId}:${credential.apiSecret}`);
+          const credentials = btoa(
+            `${credential.clientId}:${credential.apiSecret}`,
+          );
           const resp = await fetch(healthUrl, {
-            method: 'POST',
+            method: "POST",
             headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Basic ${credentials}`,
-              'Grant_type': 'client_credentials',
+              "Content-Type": "application/json",
+              Authorization: `Basic ${credentials}`,
+              Grant_type: "client_credentials",
             },
             signal: controller.signal,
           });
@@ -242,14 +259,14 @@ export class CreditBureauService {
           }
           break;
         }
-        case 'equifax': {
+        case "equifax": {
           // Equifax: lightweight API ping
           healthUrl = `${credential.baseUrl}/business/oneview/v1/health`;
           const resp = await fetch(healthUrl, {
-            method: 'GET',
+            method: "GET",
             headers: {
-              'Authorization': `Bearer ${credential.apiKey}`,
-              'X-Client-Id': credential.clientId,
+              Authorization: `Bearer ${credential.apiKey}`,
+              "X-Client-Id": credential.clientId,
             },
             signal: controller.signal,
           });
@@ -260,19 +277,21 @@ export class CreditBureauService {
           }
           break;
         }
-        case 'transunion': {
+        case "transunion": {
           // TransUnion: lightweight API ping
           healthUrl = `${credential.baseUrl}/tuapi/health`;
           const resp = await fetch(healthUrl, {
-            method: 'GET',
+            method: "GET",
             headers: {
-              'Authorization': `Bearer ${credential.apiKey}`,
+              Authorization: `Bearer ${credential.apiKey}`,
             },
             signal: controller.signal,
           });
           clearTimeout(timer);
           if (!resp.ok && resp.status !== 404) {
-            throw new Error(`TransUnion health endpoint returned ${resp.status}`);
+            throw new Error(
+              `TransUnion health endpoint returned ${resp.status}`,
+            );
           }
           break;
         }
@@ -292,10 +311,10 @@ export class CreditBureauService {
       };
       this.recordValidation(bureau, result);
       return result;
-
     } catch (err) {
       const latencyMs = Date.now() - startMs;
-      const errorMessage = err instanceof Error ? err.message : 'Unknown validation error';
+      const errorMessage =
+        err instanceof Error ? err.message : "Unknown validation error";
       // CreditBureauService: Credential validation failed for ${bureau} — ${errorMessage}
       const result: CredentialValidationResult = {
         bureau,
@@ -315,7 +334,7 @@ export class CreditBureauService {
    */
   static async validateAllCredentials(): Promise<CredentialValidationResult[]> {
     const results = await Promise.all(
-      BUREAUS.map((bureau) => this.validateCredentials(bureau))
+      BUREAUS.map((bureau) => this.validateCredentials(bureau)),
     );
     return results;
   }
@@ -416,19 +435,19 @@ export class CreditBureauService {
     this.experianClient = new ExperianClient(
       credentials.experian.client_id,
       credentials.experian.client_secret,
-      credentials.experian.sandbox
+      credentials.experian.sandbox,
     );
 
     this.equifaxClient = new EquifaxClient(
       credentials.equifax.api_key,
       credentials.equifax.client_id,
-      credentials.equifax.environment
+      credentials.equifax.environment,
     );
 
     this.transunionClient = new TransUnionClient(
       credentials.transunion.subscriber_id,
       credentials.transunion.api_key,
-      credentials.transunion.environment
+      credentials.transunion.environment,
     );
 
     this.initialized = true;
@@ -457,19 +476,19 @@ export class CreditBureauService {
     this.experianClient = new ExperianClient(
       expCred.clientId,
       expCred.apiSecret,
-      expCred.environment === 'sandbox'
+      expCred.environment === "sandbox",
     );
 
     this.equifaxClient = new EquifaxClient(
       eqfCred.apiKey,
       eqfCred.clientId,
-      eqfCred.environment
+      eqfCred.environment,
     );
 
     this.transunionClient = new TransUnionClient(
       tuCred.clientId, // subscriberId mapped to clientId
       tuCred.apiKey,
-      tuCred.environment === 'sandbox' ? 'test' : 'production'
+      tuCred.environment === "sandbox" ? "test" : "production",
     );
 
     this.initialized = true;
@@ -489,21 +508,23 @@ export class CreditBureauService {
         // Auto-initialize with legacy environment variables
         const credentials: BureauCredentials = {
           experian: {
-            client_id: process.env.EXPERIAN_CLIENT_ID || '',
-            client_secret: process.env.EXPERIAN_CLIENT_SECRET || '',
-            sandbox: process.env.EXPERIAN_SANDBOX === 'true',
+            client_id: process.env.EXPERIAN_CLIENT_ID || "",
+            client_secret: process.env.EXPERIAN_CLIENT_SECRET || "",
+            sandbox: process.env.EXPERIAN_SANDBOX === "true",
           },
           equifax: {
-            api_key: process.env.EQUIFAX_API_KEY || '',
-            client_id: process.env.EQUIFAX_CLIENT_ID || '',
+            api_key: process.env.EQUIFAX_API_KEY || "",
+            client_id: process.env.EQUIFAX_CLIENT_ID || "",
             environment:
-              (process.env.EQUIFAX_ENVIRONMENT as 'sandbox' | 'production') || 'sandbox',
+              (process.env.EQUIFAX_ENVIRONMENT as "sandbox" | "production") ||
+              "sandbox",
           },
           transunion: {
-            subscriber_id: process.env.TRANSUNION_SUBSCRIBER_ID || '',
-            api_key: process.env.TRANSUNION_API_KEY || '',
+            subscriber_id: process.env.TRANSUNION_SUBSCRIBER_ID || "",
+            api_key: process.env.TRANSUNION_API_KEY || "",
             environment:
-              (process.env.TRANSUNION_ENVIRONMENT as 'test' | 'production') || 'test',
+              (process.env.TRANSUNION_ENVIRONMENT as "test" | "production") ||
+              "test",
           },
         };
         this.initialize(credentials);
@@ -521,7 +542,7 @@ export class CreditBureauService {
   static async getCreditReport(
     userId: string,
     bureau: Bureau,
-    reportType: 'full' | 'monitoring' | 'score_only' = 'full'
+    reportType: "full" | "monitoring" | "score_only" = "full",
   ): Promise<BureauResponse<CreditReport>> {
     this.ensureInitialized();
 
@@ -533,23 +554,32 @@ export class CreditBureauService {
         bureau,
         report_type: reportType,
         consumer_consent: true,
-        permissible_purpose: 'ACCOUNT_REVIEW',
+        permissible_purpose: "ACCOUNT_REVIEW",
       };
 
       let response: BureauResponse<CreditReport>;
 
       switch (bureau) {
-        case 'experian':
-          if (!this.experianClient) throw new Error('Experian client not initialized');
-          response = await this.experianClient.getCreditReport(request, userPII);
+        case "experian":
+          if (!this.experianClient)
+            throw new Error("Experian client not initialized");
+          response = await this.experianClient.getCreditReport(
+            request,
+            userPII,
+          );
           break;
-        case 'equifax':
-          if (!this.equifaxClient) throw new Error('Equifax client not initialized');
+        case "equifax":
+          if (!this.equifaxClient)
+            throw new Error("Equifax client not initialized");
           response = await this.equifaxClient.getCreditReport(request, userPII);
           break;
-        case 'transunion':
-          if (!this.transunionClient) throw new Error('TransUnion client not initialized');
-          response = await this.transunionClient.getCreditReport(request, userPII);
+        case "transunion":
+          if (!this.transunionClient)
+            throw new Error("TransUnion client not initialized");
+          response = await this.transunionClient.getCreditReport(
+            request,
+            userPII,
+          );
           break;
         default:
           throw new Error(`Unknown bureau: ${bureau}`);
@@ -565,7 +595,7 @@ export class CreditBureauService {
       // CreditBureauService error: Error getting credit report
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
         bureau,
         timestamp: new Date().toISOString(),
       };
@@ -581,21 +611,22 @@ export class CreditBureauService {
     transunion?: BureauResponse<CreditReport>;
   }> {
     // Execute all requests in parallel
-    const [experianResult, equifaxResult, transunionResult] = await Promise.allSettled([
-      this.getCreditReport(userId, 'experian'),
-      this.getCreditReport(userId, 'equifax'),
-      this.getCreditReport(userId, 'transunion'),
-    ]);
+    const [experianResult, equifaxResult, transunionResult] =
+      await Promise.allSettled([
+        this.getCreditReport(userId, "experian"),
+        this.getCreditReport(userId, "equifax"),
+        this.getCreditReport(userId, "transunion"),
+      ]);
 
     const results: Partial<Record<Bureau, BureauResponse<CreditReport>>> = {};
 
-    if (experianResult.status === 'fulfilled') {
+    if (experianResult.status === "fulfilled") {
       results.experian = experianResult.value;
     }
-    if (equifaxResult.status === 'fulfilled') {
+    if (equifaxResult.status === "fulfilled") {
       results.equifax = equifaxResult.value;
     }
-    if (transunionResult.status === 'fulfilled') {
+    if (transunionResult.status === "fulfilled") {
       results.transunion = transunionResult.value;
     }
 
@@ -611,7 +642,7 @@ export class CreditBureauService {
    */
   static async submitDispute(
     userId: string,
-    dispute: DisputeSubmission
+    dispute: DisputeSubmission,
   ): Promise<BureauResponse> {
     this.ensureInitialized();
 
@@ -621,17 +652,23 @@ export class CreditBureauService {
       let response: BureauResponse;
 
       switch (dispute.bureau) {
-        case 'experian':
-          if (!this.experianClient) throw new Error('Experian client not initialized');
+        case "experian":
+          if (!this.experianClient)
+            throw new Error("Experian client not initialized");
           response = await this.experianClient.submitDispute(dispute, userPII);
           break;
-        case 'equifax':
-          if (!this.equifaxClient) throw new Error('Equifax client not initialized');
+        case "equifax":
+          if (!this.equifaxClient)
+            throw new Error("Equifax client not initialized");
           response = await this.equifaxClient.submitDispute(dispute, userPII);
           break;
-        case 'transunion':
-          if (!this.transunionClient) throw new Error('TransUnion client not initialized');
-          response = await this.transunionClient.submitDispute(dispute, userPII);
+        case "transunion":
+          if (!this.transunionClient)
+            throw new Error("TransUnion client not initialized");
+          response = await this.transunionClient.submitDispute(
+            dispute,
+            userPII,
+          );
           break;
         default:
           throw new Error(`Unknown bureau: ${dispute.bureau}`);
@@ -644,7 +681,7 @@ export class CreditBureauService {
           bureau: dispute.bureau,
           credit_item_id: dispute.credit_item_id,
           dispute_reason: dispute.dispute_reason,
-          status: 'submitted',
+          status: "submitted",
           reference_id: response.reference_id,
           created_at: new Date().toISOString(),
         });
@@ -655,7 +692,7 @@ export class CreditBureauService {
       // CreditBureauService error: Error submitting dispute
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
         bureau: dispute.bureau,
         timestamp: new Date().toISOString(),
       };
@@ -669,7 +706,9 @@ export class CreditBureauService {
   /**
    * Analyze credit report and provide recommendations
    */
-  static async analyzeCreditReport(creditReport: CreditReport): Promise<CreditAnalysis> {
+  static async analyzeCreditReport(
+    creditReport: CreditReport,
+  ): Promise<CreditAnalysis> {
     const accounts = creditReport.accounts || [];
     const inquiries = creditReport.inquiries || [];
     const publicRecords = creditReport.public_records || [];
@@ -678,36 +717,40 @@ export class CreditBureauService {
     const utilization = this.calculateCreditUtilization(accounts);
 
     // Identify negative items
-    const negativeItems: CreditAnalysis['negative_items'] = [];
+    const negativeItems: CreditAnalysis["negative_items"] = [];
 
     // Late payments
-    const lateAccounts = accounts.filter((acc) => acc.payment_status === 'late');
+    const lateAccounts = accounts.filter(
+      (acc) => acc.payment_status === "late",
+    );
     if (lateAccounts.length > 0) {
       negativeItems.push({
-        type: 'late_payments',
+        type: "late_payments",
         description: `${lateAccounts.length} account(s) with late payments`,
-        impact: 'high' as const,
-        recommendation: 'Bring all accounts current and set up automatic payments',
+        impact: "high" as const,
+        recommendation:
+          "Bring all accounts current and set up automatic payments",
       });
     }
 
     // High utilization
     if (utilization.utilization_percentage > 30) {
       negativeItems.push({
-        type: 'high_utilization',
+        type: "high_utilization",
         description: `Credit utilization at ${utilization.utilization_percentage.toFixed(1)}%`,
-        impact: 'high' as const,
-        recommendation: 'Pay down balances to below 30% utilization',
+        impact: "high" as const,
+        recommendation: "Pay down balances to below 30% utilization",
       });
     }
 
     // Public records
     if (publicRecords.length > 0) {
       negativeItems.push({
-        type: 'public_records',
+        type: "public_records",
         description: `${publicRecords.length} public record(s) on file`,
-        impact: 'high' as const,
-        recommendation: 'Resolve public records and consider dispute if inaccurate',
+        impact: "high" as const,
+        recommendation:
+          "Resolve public records and consider dispute if inaccurate",
       });
     }
 
@@ -716,25 +759,25 @@ export class CreditBureauService {
       const inquiryDate = new Date(inq.inquiry_date);
       const sixMonthsAgo = new Date();
       sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-      return inquiryDate > sixMonthsAgo && inq.inquiry_type === 'hard';
+      return inquiryDate > sixMonthsAgo && inq.inquiry_type === "hard";
     });
 
     if (recentInquiries.length > 3) {
       negativeItems.push({
-        type: 'too_many_inquiries',
+        type: "too_many_inquiries",
         description: `${recentInquiries.length} hard inquiries in last 6 months`,
-        impact: 'medium' as const,
-        recommendation: 'Avoid applying for new credit for 6-12 months',
+        impact: "medium" as const,
+        recommendation: "Avoid applying for new credit for 6-12 months",
       });
     }
 
     // Positive factors
     const positiveFactors: string[] = [];
     if (utilization.utilization_percentage < 30) {
-      positiveFactors.push('Low credit utilization');
+      positiveFactors.push("Low credit utilization");
     }
-    if (accounts.filter((acc) => acc.payment_status === 'current').length > 0) {
-      positiveFactors.push('Accounts in good standing');
+    if (accounts.filter((acc) => acc.payment_status === "current").length > 0) {
+      positiveFactors.push("Accounts in good standing");
     }
 
     return {
@@ -756,7 +799,7 @@ export class CreditBureauService {
    */
   private static recordValidation(
     bureau: Bureau,
-    result: CredentialValidationResult
+    result: CredentialValidationResult,
   ): void {
     this.validationState.set(bureau, {
       valid: result.valid,
@@ -770,28 +813,28 @@ export class CreditBureauService {
    */
   private static reinitializeBureauClient(
     bureau: Bureau,
-    credential: SingleBureauCredential
+    credential: SingleBureauCredential,
   ): void {
     switch (bureau) {
-      case 'experian':
+      case "experian":
         this.experianClient = new ExperianClient(
           credential.clientId,
           credential.apiSecret,
-          credential.environment === 'sandbox'
+          credential.environment === "sandbox",
         );
         break;
-      case 'equifax':
+      case "equifax":
         this.equifaxClient = new EquifaxClient(
           credential.apiKey,
           credential.clientId,
-          credential.environment
+          credential.environment,
         );
         break;
-      case 'transunion':
+      case "transunion":
         this.transunionClient = new TransUnionClient(
           credential.clientId,
           credential.apiKey,
-          credential.environment === 'sandbox' ? 'test' : 'production'
+          credential.environment === "sandbox" ? "test" : "production",
         );
         break;
     }
@@ -804,39 +847,49 @@ export class CreditBureauService {
   /**
    * Calculate credit utilization
    */
-  private static calculateCreditUtilization(accounts: CreditAccount[]): CreditUtilization {
+  private static calculateCreditUtilization(
+    accounts: CreditAccount[],
+  ): CreditUtilization {
     const creditAccounts = accounts.filter(
       (acc): acc is CreditAccount & { credit_limit: number } =>
-        typeof acc.credit_limit === 'number' && acc.credit_limit > 0
+        typeof acc.credit_limit === "number" && acc.credit_limit > 0,
     );
 
-    const totalLimit = creditAccounts.reduce((sum, acc) => sum + (acc.credit_limit || 0), 0);
-    const totalBalance = creditAccounts.reduce((sum, acc) => sum + (acc.balance || 0), 0);
+    const totalLimit = creditAccounts.reduce(
+      (sum, acc) => sum + (acc.credit_limit || 0),
+      0,
+    );
+    const totalBalance = creditAccounts.reduce(
+      (sum, acc) => sum + (acc.balance || 0),
+      0,
+    );
 
     return {
       total_credit_limit: totalLimit,
       total_balance: totalBalance,
-      utilization_percentage: totalLimit > 0 ? (totalBalance / totalLimit) * 100 : 0,
+      utilization_percentage:
+        totalLimit > 0 ? (totalBalance / totalLimit) * 100 : 0,
       by_account: creditAccounts.map((acc) => ({
         account_id: acc.id,
         creditor_name: acc.creditor_name,
         credit_limit: acc.credit_limit,
         balance: acc.balance,
-        utilization: acc.credit_limit > 0 ? (acc.balance / acc.credit_limit) * 100 : 0,
+        utilization:
+          acc.credit_limit > 0 ? (acc.balance / acc.credit_limit) * 100 : 0,
       })),
     };
   }
 
   private static getScoreFactors(score: number): string[] {
-    if (score >= 800) return ['Exceptional credit history', 'Very low risk'];
-    if (score >= 740) return ['Very good credit history', 'Low risk'];
-    if (score >= 670) return ['Good credit history', 'Average risk'];
-    if (score >= 580) return ['Fair credit history', 'Higher risk'];
-    return ['Poor credit history', 'High risk'];
+    if (score >= 800) return ["Exceptional credit history", "Very low risk"];
+    if (score >= 740) return ["Very good credit history", "Low risk"];
+    if (score >= 670) return ["Good credit history", "Average risk"];
+    if (score >= 580) return ["Fair credit history", "Higher risk"];
+    return ["Poor credit history", "High risk"];
   }
 
   private static generateRecommendations(
-    negativeItems: CreditAnalysis['negative_items']
+    negativeItems: CreditAnalysis["negative_items"],
   ): string[] {
     return negativeItems.map((item) => item.recommendation);
   }
@@ -850,26 +903,26 @@ export class CreditBureauService {
    */
   private static async getUserPII(userId: string): Promise<UserPII> {
     const { data: profile, error } = await getSupabase()
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
       .single();
 
     if (error || !profile) {
-      throw new Error('User profile not found');
+      throw new Error("User profile not found");
     }
 
     return {
-      firstName: profile.first_name || '',
-      lastName: profile.last_name || '',
-      ssn: profile.ssn || '',
-      dateOfBirth: profile.date_of_birth || '',
+      firstName: profile.first_name || "",
+      lastName: profile.last_name || "",
+      ssn: profile.ssn || "",
+      dateOfBirth: profile.date_of_birth || "",
       addresses: [
         {
-          streetAddress: profile.address_line1 || '',
-          city: profile.city || '',
-          state: profile.state || '',
-          zipCode: profile.zip_code || '',
+          streetAddress: profile.address_line1 || "",
+          city: profile.city || "",
+          state: profile.state || "",
+          zipCode: profile.zip_code || "",
         },
       ],
     };
@@ -879,7 +932,7 @@ export class CreditBureauService {
    * Save credit report to database
    */
   private static async saveCreditReport(report: CreditReport): Promise<void> {
-    const { error } = await getSupabase().from('credit_reports').insert(report);
+    const { error } = await getSupabase().from("credit_reports").insert(report);
 
     if (error) {
       // CreditBureauService error: Error saving credit report
@@ -890,8 +943,12 @@ export class CreditBureauService {
   /**
    * Save dispute record to database
    */
-  private static async saveDisputeRecord(dispute: BureauDisputeRecord): Promise<void> {
-    const { error } = await getSupabase().from('bureau_disputes').insert(dispute);
+  private static async saveDisputeRecord(
+    dispute: BureauDisputeRecord,
+  ): Promise<void> {
+    const { error } = await getSupabase()
+      .from("bureau_disputes")
+      .insert(dispute);
 
     if (error) {
       // CreditBureauService error: Error saving dispute record
@@ -908,7 +965,7 @@ interface BureauDisputeRecord {
   bureau: Bureau;
   credit_item_id: string;
   dispute_reason: string;
-  status: 'submitted' | 'processing' | 'resolved' | 'rejected';
+  status: "submitted" | "processing" | "resolved" | "rejected";
   reference_id?: string;
   created_at: string;
 }

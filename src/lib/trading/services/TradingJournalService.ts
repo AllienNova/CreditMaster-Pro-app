@@ -9,23 +9,23 @@
  * - Performance metrics and reports
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type TradeDirection = 'long' | 'short';
-export type TradeStatus = 'open' | 'closed' | 'partial';
-export type TradeOutcome = 'win' | 'loss' | 'breakeven';
+export type TradeDirection = "long" | "short";
+export type TradeStatus = "open" | "closed" | "partial";
+export type TradeOutcome = "win" | "loss" | "breakeven";
 export type EmotionalState =
-  | 'confident'
-  | 'fearful'
-  | 'greedy'
-  | 'neutral'
-  | 'fomo'
-  | 'revenge';
-export type TimeFrame = '1m' | '5m' | '15m' | '1h' | '4h' | '1d' | '1w';
+  | "confident"
+  | "fearful"
+  | "greedy"
+  | "neutral"
+  | "fomo"
+  | "revenge";
+export type TimeFrame = "1m" | "5m" | "15m" | "1h" | "4h" | "1d" | "1w";
 
 export interface TradeEntry {
   id: string;
@@ -163,7 +163,7 @@ export class TradingJournalService {
   // ==========================================================================
 
   async createTrade(
-    trade: Omit<TradeEntry, 'id' | 'createdAt' | 'updatedAt'>
+    trade: Omit<TradeEntry, "id" | "createdAt" | "updatedAt">,
   ): Promise<TradeEntry> {
     const now = new Date();
     const newTrade = {
@@ -174,7 +174,7 @@ export class TradingJournalService {
     };
 
     const { data, error } = await this.supabase
-      .from('trading_journal')
+      .from("trading_journal")
       .insert(this.toDbFormat(newTrade))
       .select()
       .single();
@@ -185,15 +185,15 @@ export class TradingJournalService {
 
   async updateTrade(
     tradeId: string,
-    updates: Partial<TradeEntry>
+    updates: Partial<TradeEntry>,
   ): Promise<TradeEntry> {
     const { data, error } = await this.supabase
-      .from('trading_journal')
+      .from("trading_journal")
       .update({
         ...this.toDbFormat(updates),
         updated_at: new Date().toISOString(),
       })
-      .eq('id', tradeId)
+      .eq("id", tradeId)
       .select()
       .single();
 
@@ -207,22 +207,22 @@ export class TradingJournalService {
     exitQuantity: number,
     exitReason: string,
     emotionalStateAfter?: EmotionalState,
-    lessonsLearned?: string
+    lessonsLearned?: string,
   ): Promise<TradeEntry> {
     // Get the current trade
     const { data: trade } = await this.supabase
-      .from('trading_journal')
-      .select('*')
-      .eq('id', tradeId)
+      .from("trading_journal")
+      .select("*")
+      .eq("id", tradeId)
       .single();
 
-    if (!trade) throw new Error('Trade not found');
+    if (!trade) throw new Error("Trade not found");
 
     const entryValue = trade.entry_price * trade.entry_quantity;
     const exitValue = exitPrice * exitQuantity;
 
     let profitLoss: number;
-    if (trade.direction === 'long') {
+    if (trade.direction === "long") {
       profitLoss = exitValue - entryValue;
     } else {
       profitLoss = entryValue - exitValue;
@@ -231,12 +231,12 @@ export class TradingJournalService {
     const profitLossPercent = (profitLoss / entryValue) * 100;
 
     let outcome: TradeOutcome;
-    if (profitLoss > 0) outcome = 'win';
-    else if (profitLoss < 0) outcome = 'loss';
-    else outcome = 'breakeven';
+    if (profitLoss > 0) outcome = "win";
+    else if (profitLoss < 0) outcome = "loss";
+    else outcome = "breakeven";
 
     return this.updateTrade(tradeId, {
-      status: exitQuantity >= trade.entry_quantity ? 'closed' : 'partial',
+      status: exitQuantity >= trade.entry_quantity ? "closed" : "partial",
       exitDate: new Date(),
       exitPrice,
       exitQuantity,
@@ -251,18 +251,18 @@ export class TradingJournalService {
 
   async deleteTrade(tradeId: string): Promise<void> {
     const { error } = await this.supabase
-      .from('trading_journal')
+      .from("trading_journal")
       .delete()
-      .eq('id', tradeId);
+      .eq("id", tradeId);
 
     if (error) throw error;
   }
 
   async getTrade(tradeId: string): Promise<TradeEntry | null> {
     const { data } = await this.supabase
-      .from('trading_journal')
-      .select('*')
-      .eq('id', tradeId)
+      .from("trading_journal")
+      .select("*")
+      .eq("id", tradeId)
       .single();
 
     return data ? this.fromDbFormat(data) : null;
@@ -270,31 +270,31 @@ export class TradingJournalService {
 
   async getTrades(filter: TradeFilter): Promise<TradeEntry[]> {
     let query = this.supabase
-      .from('trading_journal')
-      .select('*')
-      .eq('user_id', filter.userId)
-      .order('entry_date', { ascending: false });
+      .from("trading_journal")
+      .select("*")
+      .eq("user_id", filter.userId)
+      .order("entry_date", { ascending: false });
 
     if (filter.startDate) {
-      query = query.gte('entry_date', filter.startDate.toISOString());
+      query = query.gte("entry_date", filter.startDate.toISOString());
     }
     if (filter.endDate) {
-      query = query.lte('entry_date', filter.endDate.toISOString());
+      query = query.lte("entry_date", filter.endDate.toISOString());
     }
     if (filter.symbols?.length) {
-      query = query.in('symbol', filter.symbols);
+      query = query.in("symbol", filter.symbols);
     }
     if (filter.strategies?.length) {
-      query = query.in('strategy', filter.strategies);
+      query = query.in("strategy", filter.strategies);
     }
     if (filter.outcomes?.length) {
-      query = query.in('outcome', filter.outcomes);
+      query = query.in("outcome", filter.outcomes);
     }
     if (filter.direction) {
-      query = query.eq('direction', filter.direction);
+      query = query.eq("direction", filter.direction);
     }
     if (filter.status) {
-      query = query.eq('status', filter.status);
+      query = query.eq("status", filter.status);
     }
 
     const { data, error } = await query;
@@ -310,32 +310,32 @@ export class TradingJournalService {
   async getTradeStats(
     userId: string,
     startDate?: Date,
-    endDate?: Date
+    endDate?: Date,
   ): Promise<TradeStats> {
     const trades = await this.getTrades({
       userId,
       startDate,
       endDate,
-      status: 'closed',
+      status: "closed",
     });
 
     const allTrades = await this.getTrades({ userId });
-    const openTrades = allTrades.filter((t) => t.status === 'open');
+    const openTrades = allTrades.filter((t) => t.status === "open");
 
     if (trades.length === 0) {
       return this.emptyStats(allTrades.length, openTrades.length);
     }
 
-    const wins = trades.filter((t) => t.outcome === 'win');
-    const losses = trades.filter((t) => t.outcome === 'loss');
-    const breakevens = trades.filter((t) => t.outcome === 'breakeven');
+    const wins = trades.filter((t) => t.outcome === "win");
+    const losses = trades.filter((t) => t.outcome === "loss");
+    const breakevens = trades.filter((t) => t.outcome === "breakeven");
 
     const totalWinAmount = wins.reduce(
       (sum, t) => sum + (t.profitLoss || 0),
-      0
+      0,
     );
     const totalLossAmount = Math.abs(
-      losses.reduce((sum, t) => sum + (t.profitLoss || 0), 0)
+      losses.reduce((sum, t) => sum + (t.profitLoss || 0), 0),
     );
     const totalPL = trades.reduce((sum, t) => sum + (t.profitLoss || 0), 0);
 
@@ -360,18 +360,18 @@ export class TradingJournalService {
     let currentLossStreak = 0;
 
     for (const trade of trades.sort(
-      (a, b) => a.entryDate.getTime() - b.entryDate.getTime()
+      (a, b) => a.entryDate.getTime() - b.entryDate.getTime(),
     )) {
-      if (trade.outcome === 'win') {
+      if (trade.outcome === "win") {
         currentWinStreak++;
         currentLossStreak = 0;
         maxConsecutiveWins = Math.max(maxConsecutiveWins, currentWinStreak);
-      } else if (trade.outcome === 'loss') {
+      } else if (trade.outcome === "loss") {
         currentLossStreak++;
         currentWinStreak = 0;
         maxConsecutiveLosses = Math.max(
           maxConsecutiveLosses,
-          currentLossStreak
+          currentLossStreak,
         );
       }
     }
@@ -381,7 +381,7 @@ export class TradingJournalService {
       .filter((t) => t.exitDate)
       .map(
         (t) =>
-          (t.exitDate!.getTime() - t.entryDate.getTime()) / (1000 * 60 * 60)
+          (t.exitDate!.getTime() - t.entryDate.getTime()) / (1000 * 60 * 60),
       );
     const averageHoldingTime =
       holdingTimes.length > 0
@@ -395,13 +395,13 @@ export class TradingJournalService {
 
     const tradesThisWeek = trades.filter((t) => t.entryDate >= weekAgo).length;
     const tradesThisMonth = trades.filter(
-      (t) => t.entryDate >= monthAgo
+      (t) => t.entryDate >= monthAgo,
     ).length;
 
     // Best/worst strategy
     const strategyStats = this.calculateStrategyPerformance(trades);
     const sortedStrategies = strategyStats.sort(
-      (a, b) => b.winRate - a.winRate
+      (a, b) => b.winRate - a.winRate,
     );
     const bestStrategy = sortedStrategies[0]?.strategy;
     const worstStrategy =
@@ -413,7 +413,7 @@ export class TradingJournalService {
     let runningPL = 0;
 
     for (const trade of trades.sort(
-      (a, b) => a.entryDate.getTime() - b.entryDate.getTime()
+      (a, b) => a.entryDate.getTime() - b.entryDate.getTime(),
     )) {
       runningPL += trade.profitLoss || 0;
       if (runningPL > peak) peak = runningPL;
@@ -469,7 +469,7 @@ export class TradingJournalService {
     const strategyMap = new Map<string, TradeEntry[]>();
 
     for (const trade of trades) {
-      const strategy = trade.strategy || 'Untagged';
+      const strategy = trade.strategy || "Untagged";
       if (!strategyMap.has(strategy)) {
         strategyMap.set(strategy, []);
       }
@@ -478,15 +478,15 @@ export class TradingJournalService {
 
     return Array.from(strategyMap.entries()).map(
       ([strategy, strategyTrades]) => {
-        const wins = strategyTrades.filter((t) => t.outcome === 'win');
-        const losses = strategyTrades.filter((t) => t.outcome === 'loss');
+        const wins = strategyTrades.filter((t) => t.outcome === "win");
+        const losses = strategyTrades.filter((t) => t.outcome === "loss");
         const totalPL = strategyTrades.reduce(
           (sum, t) => sum + (t.profitLoss || 0),
-          0
+          0,
         );
         const winAmount = wins.reduce((sum, t) => sum + (t.profitLoss || 0), 0);
         const lossAmount = Math.abs(
-          losses.reduce((sum, t) => sum + (t.profitLoss || 0), 0)
+          losses.reduce((sum, t) => sum + (t.profitLoss || 0), 0),
         );
 
         return {
@@ -508,13 +508,13 @@ export class TradingJournalService {
                 ? Infinity
                 : 0,
         };
-      }
+      },
     );
   }
 
   async getDailyPerformance(
     userId: string,
-    days: number = 30
+    days: number = 30,
   ): Promise<DailyPerformance[]> {
     const endDate = new Date();
     const startDate = new Date(endDate.getTime() - days * 24 * 60 * 60 * 1000);
@@ -523,7 +523,7 @@ export class TradingJournalService {
       userId,
       startDate,
       endDate,
-      status: 'closed',
+      status: "closed",
     });
 
     const dailyMap = new Map<string, DailyPerformance>();
@@ -535,7 +535,7 @@ export class TradingJournalService {
       d <= endDate;
       d.setDate(d.getDate() + 1)
     ) {
-      const dateKey = d.toISOString().split('T')[0];
+      const dateKey = d.toISOString().split("T")[0];
       dailyMap.set(dateKey, {
         date: new Date(d),
         trades: 0,
@@ -549,19 +549,19 @@ export class TradingJournalService {
     // Populate with trade data
     for (const trade of trades) {
       if (!trade.exitDate) continue;
-      const dateKey = trade.exitDate.toISOString().split('T')[0];
+      const dateKey = trade.exitDate.toISOString().split("T")[0];
       const day = dailyMap.get(dateKey);
       if (day) {
         day.trades++;
         day.profitLoss += trade.profitLoss || 0;
-        if (trade.outcome === 'win') day.wins++;
-        if (trade.outcome === 'loss') day.losses++;
+        if (trade.outcome === "win") day.wins++;
+        if (trade.outcome === "loss") day.losses++;
       }
     }
 
     // Calculate cumulative P/L
     const sorted = Array.from(dailyMap.values()).sort(
-      (a, b) => a.date.getTime() - b.date.getTime()
+      (a, b) => a.date.getTime() - b.date.getTime(),
     );
     for (const day of sorted) {
       cumulativePL += day.profitLoss;
@@ -572,11 +572,11 @@ export class TradingJournalService {
   }
 
   async getSymbolPerformance(
-    userId: string
+    userId: string,
   ): Promise<
     Map<string, { trades: number; winRate: number; totalPL: number }>
   > {
-    const trades = await this.getTrades({ userId, status: 'closed' });
+    const trades = await this.getTrades({ userId, status: "closed" });
     const symbolMap = new Map<string, TradeEntry[]>();
 
     for (const trade of trades) {
@@ -588,10 +588,10 @@ export class TradingJournalService {
 
     const result = new Map();
     for (const [symbol, symbolTrades] of symbolMap) {
-      const wins = symbolTrades.filter((t) => t.outcome === 'win').length;
+      const wins = symbolTrades.filter((t) => t.outcome === "win").length;
       const totalPL = symbolTrades.reduce(
         (sum, t) => sum + (t.profitLoss || 0),
-        0
+        0,
       );
       result.set(symbol, {
         trades: symbolTrades.length,
@@ -613,7 +613,7 @@ export class TradingJournalService {
 
     if (stats.closedTrades < 10) {
       insights.push(
-        'Keep logging trades to unlock detailed performance insights (need 10+ trades).'
+        "Keep logging trades to unlock detailed performance insights (need 10+ trades).",
       );
       return insights;
     }
@@ -621,54 +621,54 @@ export class TradingJournalService {
     // Win rate insights
     if (stats.winRate >= 60) {
       insights.push(
-        `Excellent win rate of ${stats.winRate.toFixed(1)}%! Your edge is working.`
+        `Excellent win rate of ${stats.winRate.toFixed(1)}%! Your edge is working.`,
       );
     } else if (stats.winRate < 40) {
       insights.push(
-        `Your win rate of ${stats.winRate.toFixed(1)}% suggests reviewing your entry criteria.`
+        `Your win rate of ${stats.winRate.toFixed(1)}% suggests reviewing your entry criteria.`,
       );
     }
 
     // Risk/reward insights
     if (stats.averageRiskReward < 1.5) {
       insights.push(
-        'Consider improving your risk/reward ratio. Aim for at least 1.5:1.'
+        "Consider improving your risk/reward ratio. Aim for at least 1.5:1.",
       );
     } else if (stats.averageRiskReward >= 2) {
       insights.push(
-        `Great risk/reward ratio of ${stats.averageRiskReward.toFixed(1)}:1!`
+        `Great risk/reward ratio of ${stats.averageRiskReward.toFixed(1)}:1!`,
       );
     }
 
     // Profit factor insights
     if (stats.profitFactor >= 2) {
       insights.push(
-        `Strong profit factor of ${stats.profitFactor.toFixed(2)}. Your winners outpace losers.`
+        `Strong profit factor of ${stats.profitFactor.toFixed(2)}. Your winners outpace losers.`,
       );
     } else if (stats.profitFactor < 1) {
       insights.push(
-        'Profit factor below 1 indicates losses exceed wins. Review your strategy.'
+        "Profit factor below 1 indicates losses exceed wins. Review your strategy.",
       );
     }
 
     // Streak insights
     if (stats.consecutiveLosses >= 3) {
       insights.push(
-        `You had a ${stats.consecutiveLosses}-trade losing streak. Consider reducing position size after 2 consecutive losses.`
+        `You had a ${stats.consecutiveLosses}-trade losing streak. Consider reducing position size after 2 consecutive losses.`,
       );
     }
 
     // Best strategy insight
     if (stats.bestStrategy) {
       insights.push(
-        `Your best performing strategy is "${stats.bestStrategy}". Consider focusing on it.`
+        `Your best performing strategy is "${stats.bestStrategy}". Consider focusing on it.`,
       );
     }
 
     // Drawdown insight
     if (stats.maxDrawdown > 0) {
       insights.push(
-        `Maximum drawdown was $${stats.maxDrawdown.toFixed(2)}. Ensure proper risk management.`
+        `Maximum drawdown was $${stats.maxDrawdown.toFixed(2)}. Ensure proper risk management.`,
       );
     }
 
@@ -709,7 +709,7 @@ export class TradingJournalService {
   private toDbFormat(
     trade: Partial<
       TradeEntry & { id?: string; created_at?: string; updated_at?: string }
-    >
+    >,
   ): Record<string, unknown> {
     return {
       id: trade.id,
@@ -805,7 +805,7 @@ export function getTradingJournalService(): TradingJournalService {
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     tradingJournalServiceInstance = new TradingJournalService(
       supabaseUrl,
-      supabaseKey
+      supabaseKey,
     );
   }
   return tradingJournalServiceInstance;

@@ -1,9 +1,13 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Dispute, DisputeStatus, DisputeOutcome } from '@/lib/disputes/dispute-service';
+import { useState } from "react";
+import {
+  Dispute,
+  DisputeStatus,
+  DisputeOutcome,
+} from "@/lib/disputes/dispute-service";
 
-type DisputeActionType = 'send' | 'update_status' | 'resolve' | 'add_note';
+type DisputeActionType = "send" | "update_status" | "resolve" | "add_note";
 
 type DisputeActionPayload =
   | { status: DisputeStatus; description: string }
@@ -13,35 +17,46 @@ type DisputeActionPayload =
 
 interface DisputeActionsProps {
   dispute: Dispute;
-  onAction: (action: DisputeActionType, payload?: DisputeActionPayload) => Promise<void>;
+  onAction: (
+    action: DisputeActionType,
+    payload?: DisputeActionPayload,
+  ) => Promise<void>;
 }
 
-export default function DisputeActions({ dispute, onAction }: DisputeActionsProps) {
+export default function DisputeActions({
+  dispute,
+  onAction,
+}: DisputeActionsProps) {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showResolveModal, setShowResolveModal] = useState(false);
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSend = async () => {
-    if (!confirm('Are you sure you want to send this dispute to the bureau?')) return;
-    
+    if (!confirm("Are you sure you want to send this dispute to the bureau?"))
+      return;
+
     setLoading(true);
     try {
-      await onAction('send');
+      await onAction("send");
     } finally {
       setLoading(false);
     }
   };
 
-  const canSend = dispute.status === 'draft';
-  const canUpdateStatus = ['sent', 'under_review'].includes(dispute.status);
-  const canResolve = ['sent', 'under_review', 'escalated'].includes(dispute.status);
+  const canSend = dispute.status === "draft";
+  const canUpdateStatus = ["sent", "under_review"].includes(dispute.status);
+  const canResolve = ["sent", "under_review", "escalated"].includes(
+    dispute.status,
+  );
 
   return (
     <div className="space-y-6">
       {/* Quick Actions */}
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Actions</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          Actions
+        </h2>
         <div className="space-y-3">
           {canSend && (
             <button
@@ -49,10 +64,10 @@ export default function DisputeActions({ dispute, onAction }: DisputeActionsProp
               disabled={loading}
               className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Sending...' : 'Send to Bureau'}
+              {loading ? "Sending..." : "Send to Bureau"}
             </button>
           )}
-          
+
           {canUpdateStatus && (
             <button
               onClick={() => setShowStatusModal(true)}
@@ -61,7 +76,7 @@ export default function DisputeActions({ dispute, onAction }: DisputeActionsProp
               Update Status
             </button>
           )}
-          
+
           {canResolve && (
             <button
               onClick={() => setShowResolveModal(true)}
@@ -70,7 +85,7 @@ export default function DisputeActions({ dispute, onAction }: DisputeActionsProp
               Mark as Resolved
             </button>
           )}
-          
+
           <button
             onClick={() => setShowNoteModal(true)}
             className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors font-medium"
@@ -87,7 +102,7 @@ export default function DisputeActions({ dispute, onAction }: DisputeActionsProp
           onSubmit={async (status: DisputeStatus, description: string) => {
             setLoading(true);
             try {
-              await onAction('update_status', { status, description });
+              await onAction("update_status", { status, description });
               setShowStatusModal(false);
             } finally {
               setLoading(false);
@@ -104,7 +119,7 @@ export default function DisputeActions({ dispute, onAction }: DisputeActionsProp
           onSubmit={async (outcome: DisputeOutcome, note: string) => {
             setLoading(true);
             try {
-              await onAction('resolve', { outcome, note });
+              await onAction("resolve", { outcome, note });
               setShowResolveModal(false);
             } finally {
               setLoading(false);
@@ -121,7 +136,7 @@ export default function DisputeActions({ dispute, onAction }: DisputeActionsProp
           onSubmit={async (note: string) => {
             setLoading(true);
             try {
-              await onAction('add_note', { note });
+              await onAction("add_note", { note });
               setShowNoteModal(false);
             } finally {
               setLoading(false);
@@ -137,13 +152,16 @@ export default function DisputeActions({ dispute, onAction }: DisputeActionsProp
 // Status Modal
 interface StatusModalProps {
   onClose: () => void;
-  onSubmit: (status: DisputeStatus, description: string) => Promise<void> | void;
+  onSubmit: (
+    status: DisputeStatus,
+    description: string,
+  ) => Promise<void> | void;
   loading: boolean;
 }
 
 function StatusModal({ onClose, onSubmit, loading }: StatusModalProps) {
-  const [status, setStatus] = useState<DisputeStatus>('under_review');
-  const [description, setDescription] = useState('');
+  const [status, setStatus] = useState<DisputeStatus>("under_review");
+  const [description, setDescription] = useState("");
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -190,7 +208,7 @@ function StatusModal({ onClose, onSubmit, loading }: StatusModalProps) {
             disabled={loading}
             className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
           >
-            {loading ? 'Updating...' : 'Update'}
+            {loading ? "Updating..." : "Update"}
           </button>
         </div>
       </div>
@@ -206,8 +224,8 @@ interface ResolveModalProps {
 }
 
 function ResolveModal({ onClose, onSubmit, loading }: ResolveModalProps) {
-  const [outcome, setOutcome] = useState<DisputeOutcome>('removed');
-  const [note, setNote] = useState('');
+  const [outcome, setOutcome] = useState<DisputeOutcome>("removed");
+  const [note, setNote] = useState("");
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -255,7 +273,7 @@ function ResolveModal({ onClose, onSubmit, loading }: ResolveModalProps) {
             disabled={loading}
             className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
           >
-            {loading ? 'Resolving...' : 'Resolve'}
+            {loading ? "Resolving..." : "Resolve"}
           </button>
         </div>
       </div>
@@ -271,7 +289,7 @@ interface NoteModalProps {
 }
 
 function NoteModal({ onClose, onSubmit, loading }: NoteModalProps) {
-  const [note, setNote] = useState('');
+  const [note, setNote] = useState("");
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -299,7 +317,7 @@ function NoteModal({ onClose, onSubmit, loading }: NoteModalProps) {
             disabled={loading || !note.trim()}
             className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
           >
-            {loading ? 'Adding...' : 'Add Note'}
+            {loading ? "Adding..." : "Add Note"}
           </button>
         </div>
       </div>

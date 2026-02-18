@@ -15,8 +15,8 @@
  * - Lightweight response (technical data only)
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { aiStockAnalyst } from '@/lib/investments/ai-stock-analyst';
+import { NextRequest, NextResponse } from "next/server";
+import { aiStockAnalyst } from "@/lib/investments/ai-stock-analyst";
 
 // ============================================================================
 // RATE LIMITING
@@ -52,21 +52,21 @@ function checkRateLimit(identifier: string): boolean {
  */
 export async function GET(
   request: NextRequest,
-  context: { params: Promise<{ symbol: string }> }
+  context: { params: Promise<{ symbol: string }> },
 ) {
   try {
     // Get symbol from params (Next.js 15 async params)
     const { symbol } = await context.params;
 
     // Apply rate limiting (use IP or symbol as identifier)
-    const identifier = request.headers.get('x-forwarded-for') || symbol;
+    const identifier = request.headers.get("x-forwarded-for") || symbol;
     if (!checkRateLimit(identifier)) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Rate limit exceeded. Maximum 10 requests per minute.',
+          error: "Rate limit exceeded. Maximum 10 requests per minute.",
         },
-        { status: 429 }
+        { status: 429 },
       );
     }
 
@@ -75,15 +75,15 @@ export async function GET(
       return NextResponse.json(
         {
           success: false,
-          error: 'Invalid symbol. Must be 1-10 characters.',
+          error: "Invalid symbol. Must be 1-10 characters.",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Get technical analysis
     const technical = await aiStockAnalyst.getTechnicalAnalysis(
-      symbol.toUpperCase()
+      symbol.toUpperCase(),
     );
 
     // Return successful response
@@ -95,21 +95,18 @@ export async function GET(
       {
         status: 200,
         headers: {
-          'Cache-Control':
-            'public, s-maxage=3600, stale-while-revalidate=7200',
+          "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200",
         },
-      }
+      },
     );
   } catch (error) {
-    console.error('Error in technical analysis API:', error);
+    console.error("Error in technical analysis API:", error);
     return NextResponse.json(
       {
         success: false,
-        error:
-          error instanceof Error ? error.message : 'Internal server error',
+        error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-

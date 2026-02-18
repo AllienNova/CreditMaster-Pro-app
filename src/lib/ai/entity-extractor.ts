@@ -5,19 +5,19 @@
  * Extracts amounts, dates, categories, percentages, and other financial data
  */
 
-import { AIMLService } from '@/lib/aiml-service';
+import { AIMLService } from "@/lib/aiml-service";
 import type {
   ExtractedEntities,
   MoneyAmount,
   DateEntity,
   IntentType,
-} from './types/chat.types';
+} from "./types/chat.types";
 
 // ============================================================================
 // CONFIGURATION
 // ============================================================================
 
-const ENTITY_MODEL = 'openai/gpt-4o-mini';
+const ENTITY_MODEL = "openai/gpt-4o-mini";
 
 const ENTITY_SYSTEM_PROMPT = `You are an entity extraction expert for financial chat messages.
 
@@ -73,75 +73,75 @@ Rules:
 
 const ENTITY_EXAMPLES = [
   {
-    user: 'I want to save $5000 for a vacation by next summer',
+    user: "I want to save $5000 for a vacation by next summer",
     assistant: JSON.stringify({
       amounts: [
         {
           value: 5000,
-          currency: 'USD',
-          originalText: '$5000',
+          currency: "USD",
+          originalText: "$5000",
           confidence: 0.98,
         },
       ],
       dates: [
         {
-          value: '2026-06-21',
-          originalText: 'next summer',
-          precision: 'month',
+          value: "2026-06-21",
+          originalText: "next summer",
+          precision: "month",
           confidence: 0.85,
         },
       ],
-      goalTypes: ['vacation'],
+      goalTypes: ["vacation"],
     }),
   },
   {
-    user: 'Set a monthly budget of $800 for groceries and $200 for entertainment',
+    user: "Set a monthly budget of $800 for groceries and $200 for entertainment",
     assistant: JSON.stringify({
       amounts: [
         {
           value: 800,
-          currency: 'USD',
-          originalText: '$800',
+          currency: "USD",
+          originalText: "$800",
           confidence: 0.98,
         },
         {
           value: 200,
-          currency: 'USD',
-          originalText: '$200',
+          currency: "USD",
+          originalText: "$200",
           confidence: 0.98,
         },
       ],
-      categories: ['groceries', 'entertainment'],
-      timeframes: ['monthly'],
+      categories: ["groceries", "entertainment"],
+      timeframes: ["monthly"],
     }),
   },
   {
-    user: 'I spent about 50% more on dining out last month',
+    user: "I spent about 50% more on dining out last month",
     assistant: JSON.stringify({
       percentages: [50],
-      categories: ['dining out'],
+      categories: ["dining out"],
       dates: [
         {
-          value: '2025-11-01',
-          originalText: 'last month',
-          precision: 'month',
+          value: "2025-11-01",
+          originalText: "last month",
+          precision: "month",
           confidence: 0.9,
         },
       ],
     }),
   },
   {
-    user: 'Transfer $1,000 from savings to checking account',
+    user: "Transfer $1,000 from savings to checking account",
     assistant: JSON.stringify({
       amounts: [
         {
           value: 1000,
-          currency: 'USD',
-          originalText: '$1,000',
+          currency: "USD",
+          originalText: "$1,000",
           confidence: 0.98,
         },
       ],
-      accountTypes: ['savings', 'checking'],
+      accountTypes: ["savings", "checking"],
     }),
   },
 ];
@@ -164,7 +164,7 @@ export class EntityExtractor {
    */
   async extract(
     userMessage: string,
-    intent?: IntentType
+    intent?: IntentType,
   ): Promise<ExtractedEntities | null> {
     // Check cache first
     const cacheKey = this.getCacheKey(userMessage, intent);
@@ -205,7 +205,7 @@ export class EntityExtractor {
    * Batch extract entities from multiple messages
    */
   async extractBatch(
-    messages: string[]
+    messages: string[],
   ): Promise<Array<ExtractedEntities | null>> {
     const results = await Promise.all(messages.map((msg) => this.extract(msg)));
     return results;
@@ -220,7 +220,7 @@ export class EntityExtractor {
    */
   private async aiExtract(
     userMessage: string,
-    intent?: IntentType
+    intent?: IntentType,
   ): Promise<ExtractedEntities | null> {
     const messages = this.buildEntityPrompt(userMessage, intent);
 
@@ -229,7 +229,7 @@ export class EntityExtractor {
       max_tokens: 500,
     });
 
-    const content = response.choices[0]?.message?.content || '';
+    const content = response.choices[0]?.message?.content || "";
 
     // Parse JSON response
     const result = this.parseEntityResponse(content);
@@ -243,10 +243,10 @@ export class EntityExtractor {
    */
   private buildEntityPrompt(
     userMessage: string,
-    intent?: IntentType
-  ): Array<{ role: 'system' | 'user' | 'assistant'; content: string }> {
+    intent?: IntentType,
+  ): Array<{ role: "system" | "user" | "assistant"; content: string }> {
     const messages: Array<{
-      role: 'system' | 'user' | 'assistant';
+      role: "system" | "user" | "assistant";
       content: string;
     }> = [];
 
@@ -255,19 +255,19 @@ export class EntityExtractor {
 
     if (intent) {
       systemPrompt += `\n\nUser intent: ${intent}`;
-      systemPrompt += '\nFocus on extracting entities relevant to this intent.';
+      systemPrompt += "\nFocus on extracting entities relevant to this intent.";
     }
 
-    messages.push({ role: 'system', content: systemPrompt });
+    messages.push({ role: "system", content: systemPrompt });
 
     // Add examples
     for (const example of ENTITY_EXAMPLES) {
-      messages.push({ role: 'user', content: example.user });
-      messages.push({ role: 'assistant', content: example.assistant });
+      messages.push({ role: "user", content: example.user });
+      messages.push({ role: "assistant", content: example.assistant });
     }
 
     // Add user message
-    messages.push({ role: 'user', content: userMessage });
+    messages.push({ role: "user", content: userMessage });
 
     return messages;
   }
@@ -300,7 +300,7 @@ export class EntityExtractor {
    */
   private regexExtract(
     userMessage: string,
-    intent?: IntentType
+    intent?: IntentType,
   ): ExtractedEntities | null {
     const entities: ExtractedEntities = {};
 
@@ -360,8 +360,8 @@ export class EntityExtractor {
     let match;
     while ((match = dollarPattern.exec(text)) !== null) {
       amounts.push({
-        value: parseFloat(match[1].replace(/,/g, '')),
-        currency: 'USD',
+        value: parseFloat(match[1].replace(/,/g, "")),
+        currency: "USD",
         originalText: match[0],
         confidence: 0.95,
       });
@@ -371,8 +371,8 @@ export class EntityExtractor {
     const wordsPattern = /([\d,]+(?:\.\d{2})?)\s*(dollars?|bucks?|usd)/gi;
     while ((match = wordsPattern.exec(text)) !== null) {
       amounts.push({
-        value: parseFloat(match[1].replace(/,/g, '')),
-        currency: 'USD',
+        value: parseFloat(match[1].replace(/,/g, "")),
+        currency: "USD",
         originalText: match[0],
         confidence: 0.9,
       });
@@ -393,28 +393,28 @@ export class EntityExtractor {
     const lower = text.toLowerCase();
 
     const writtenNumbers: Record<string, number> = {
-      'one hundred': 100,
-      'two hundred': 200,
-      'three hundred': 300,
-      'four hundred': 400,
-      'five hundred': 500,
-      'six hundred': 600,
-      'seven hundred': 700,
-      'eight hundred': 800,
-      'nine hundred': 900,
-      'one thousand': 1000,
-      'two thousand': 2000,
-      'three thousand': 3000,
-      'four thousand': 4000,
-      'five thousand': 5000,
-      'ten thousand': 10000,
+      "one hundred": 100,
+      "two hundred": 200,
+      "three hundred": 300,
+      "four hundred": 400,
+      "five hundred": 500,
+      "six hundred": 600,
+      "seven hundred": 700,
+      "eight hundred": 800,
+      "nine hundred": 900,
+      "one thousand": 1000,
+      "two thousand": 2000,
+      "three thousand": 3000,
+      "four thousand": 4000,
+      "five thousand": 5000,
+      "ten thousand": 10000,
     };
 
     for (const [written, value] of Object.entries(writtenNumbers)) {
       if (lower.includes(written)) {
         amounts.push({
           value,
-          currency: 'USD',
+          currency: "USD",
           originalText: written,
           confidence: 0.75,
         });
@@ -445,9 +445,9 @@ export class EntityExtractor {
 
     // Pattern 3: Common fractions
     const lower = text.toLowerCase();
-    if (lower.includes('half')) percentages.push(50);
-    if (lower.includes('quarter')) percentages.push(25);
-    if (lower.includes('third')) percentages.push(33.33);
+    if (lower.includes("half")) percentages.push(50);
+    if (lower.includes("quarter")) percentages.push(25);
+    if (lower.includes("third")) percentages.push(33.33);
 
     return percentages;
   }
@@ -460,31 +460,31 @@ export class EntityExtractor {
     const lower = text.toLowerCase();
 
     const categoryKeywords = [
-      'groceries',
-      'food',
-      'dining',
-      'restaurant',
-      'entertainment',
-      'shopping',
-      'gas',
-      'fuel',
-      'transportation',
-      'utilities',
-      'rent',
-      'mortgage',
-      'insurance',
-      'healthcare',
-      'medical',
-      'education',
-      'travel',
-      'vacation',
-      'clothing',
-      'personal care',
-      'subscriptions',
-      'bills',
-      'debt',
-      'savings',
-      'investments',
+      "groceries",
+      "food",
+      "dining",
+      "restaurant",
+      "entertainment",
+      "shopping",
+      "gas",
+      "fuel",
+      "transportation",
+      "utilities",
+      "rent",
+      "mortgage",
+      "insurance",
+      "healthcare",
+      "medical",
+      "education",
+      "travel",
+      "vacation",
+      "clothing",
+      "personal care",
+      "subscriptions",
+      "bills",
+      "debt",
+      "savings",
+      "investments",
     ];
 
     for (const category of categoryKeywords) {
@@ -504,18 +504,18 @@ export class EntityExtractor {
     const lower = text.toLowerCase();
 
     const accountKeywords = [
-      'checking',
-      'savings',
-      'credit card',
-      'debit card',
-      '401k',
-      'ira',
-      'roth',
-      'investment',
-      'brokerage',
-      'money market',
-      'cd',
-      'certificate of deposit',
+      "checking",
+      "savings",
+      "credit card",
+      "debit card",
+      "401k",
+      "ira",
+      "roth",
+      "investment",
+      "brokerage",
+      "money market",
+      "cd",
+      "certificate of deposit",
     ];
 
     for (const account of accountKeywords) {
@@ -535,19 +535,19 @@ export class EntityExtractor {
     const lower = text.toLowerCase();
 
     const goalKeywords = [
-      'emergency fund',
-      'vacation',
-      'retirement',
-      'house',
-      'home',
-      'car',
-      'vehicle',
-      'wedding',
-      'education',
-      'college',
-      'debt payoff',
-      'investment',
-      'savings',
+      "emergency fund",
+      "vacation",
+      "retirement",
+      "house",
+      "home",
+      "car",
+      "vehicle",
+      "wedding",
+      "education",
+      "college",
+      "debt payoff",
+      "investment",
+      "savings",
     ];
 
     for (const goal of goalKeywords) {
@@ -567,13 +567,13 @@ export class EntityExtractor {
     const lower = text.toLowerCase();
 
     const timeframeKeywords = [
-      'daily',
-      'weekly',
-      'biweekly',
-      'monthly',
-      'quarterly',
-      'annually',
-      'yearly',
+      "daily",
+      "weekly",
+      "biweekly",
+      "monthly",
+      "quarterly",
+      "annually",
+      "yearly",
     ];
 
     for (const timeframe of timeframeKeywords) {
@@ -595,44 +595,44 @@ export class EntityExtractor {
     // Relative dates
     const now = new Date();
 
-    if (lower.includes('today')) {
+    if (lower.includes("today")) {
       dates.push({
         value: now,
-        originalText: 'today',
-        precision: 'day',
+        originalText: "today",
+        precision: "day",
         confidence: 0.95,
       });
     }
 
-    if (lower.includes('tomorrow')) {
+    if (lower.includes("tomorrow")) {
       const tomorrow = new Date(now);
       tomorrow.setDate(tomorrow.getDate() + 1);
       dates.push({
         value: tomorrow,
-        originalText: 'tomorrow',
-        precision: 'day',
+        originalText: "tomorrow",
+        precision: "day",
         confidence: 0.95,
       });
     }
 
-    if (lower.includes('next month')) {
+    if (lower.includes("next month")) {
       const nextMonth = new Date(now);
       nextMonth.setMonth(nextMonth.getMonth() + 1);
       dates.push({
         value: nextMonth,
-        originalText: 'next month',
-        precision: 'month',
+        originalText: "next month",
+        precision: "month",
         confidence: 0.9,
       });
     }
 
-    if (lower.includes('next year')) {
+    if (lower.includes("next year")) {
       const nextYear = new Date(now);
       nextYear.setFullYear(nextYear.getFullYear() + 1);
       dates.push({
         value: nextYear,
-        originalText: 'next year',
-        precision: 'year',
+        originalText: "next year",
+        precision: "year",
         confidence: 0.9,
       });
     }
@@ -654,8 +654,8 @@ export class EntityExtractor {
     if (entities.amounts && Array.isArray(entities.amounts)) {
       normalized.amounts = entities.amounts.map((amt: any) => ({
         value: parseFloat(amt.value) || 0,
-        currency: amt.currency || 'USD',
-        originalText: amt.originalText || '',
+        currency: amt.currency || "USD",
+        originalText: amt.originalText || "",
         confidence: Math.min(Math.max(amt.confidence || 0.5, 0), 1),
       }));
     }
@@ -664,8 +664,8 @@ export class EntityExtractor {
     if (entities.dates && Array.isArray(entities.dates)) {
       normalized.dates = entities.dates.map((date: any) => ({
         value: new Date(date.value),
-        originalText: date.originalText || '',
-        precision: date.precision || 'day',
+        originalText: date.originalText || "",
+        precision: date.precision || "day",
         confidence: Math.min(Math.max(date.confidence || 0.5, 0), 1),
       }));
     }
@@ -673,35 +673,35 @@ export class EntityExtractor {
     // Normalize categories
     if (entities.categories && Array.isArray(entities.categories)) {
       normalized.categories = entities.categories.map((cat: string) =>
-        cat.toLowerCase().trim()
+        cat.toLowerCase().trim(),
       );
     }
 
     // Normalize account types
     if (entities.accountTypes && Array.isArray(entities.accountTypes)) {
       normalized.accountTypes = entities.accountTypes.map((acc: string) =>
-        acc.toLowerCase().trim()
+        acc.toLowerCase().trim(),
       );
     }
 
     // Normalize goal types
     if (entities.goalTypes && Array.isArray(entities.goalTypes)) {
       normalized.goalTypes = entities.goalTypes.map((goal: string) =>
-        goal.toLowerCase().trim()
+        goal.toLowerCase().trim(),
       );
     }
 
     // Normalize percentages
     if (entities.percentages && Array.isArray(entities.percentages)) {
       normalized.percentages = entities.percentages.map((pct: any) =>
-        parseFloat(pct)
+        parseFloat(pct),
       );
     }
 
     // Normalize timeframes
     if (entities.timeframes && Array.isArray(entities.timeframes)) {
       normalized.timeframes = entities.timeframes.map((tf: string) =>
-        tf.toLowerCase().trim()
+        tf.toLowerCase().trim(),
       );
     }
 

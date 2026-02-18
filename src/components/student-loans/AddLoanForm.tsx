@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 
 export interface NewLoanFormData {
   loan_type: string;
@@ -21,47 +21,49 @@ interface AddLoanFormProps {
 
 export default function AddLoanForm({ onSubmit, onCancel }: AddLoanFormProps) {
   const [formData, setFormData] = useState({
-    loan_type: 'direct_subsidized',
-    servicer_name: '',
-    current_balance: '',
-    interest_rate: '',
-    loan_status: 'in_repayment',
-    disbursement_date: '',
-    repayment_start_date: '',
-    original_amount: '',
-    outstanding_interest: '',
+    loan_type: "direct_subsidized",
+    servicer_name: "",
+    current_balance: "",
+    interest_rate: "",
+    loan_status: "in_repayment",
+    disbursement_date: "",
+    repayment_start_date: "",
+    original_amount: "",
+    outstanding_interest: "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const loanTypes = [
-    { value: 'direct_subsidized', label: 'Direct Subsidized' },
-    { value: 'direct_unsubsidized', label: 'Direct Unsubsidized' },
-    { value: 'direct_plus', label: 'Direct PLUS' },
-    { value: 'direct_consolidation', label: 'Direct Consolidation' },
-    { value: 'perkins', label: 'Perkins' },
-    { value: 'ffel_subsidized', label: 'FFEL Subsidized' },
-    { value: 'ffel_unsubsidized', label: 'FFEL Unsubsidized' },
-    { value: 'ffel_plus', label: 'FFEL PLUS' },
-    { value: 'private', label: 'Private' },
+    { value: "direct_subsidized", label: "Direct Subsidized" },
+    { value: "direct_unsubsidized", label: "Direct Unsubsidized" },
+    { value: "direct_plus", label: "Direct PLUS" },
+    { value: "direct_consolidation", label: "Direct Consolidation" },
+    { value: "perkins", label: "Perkins" },
+    { value: "ffel_subsidized", label: "FFEL Subsidized" },
+    { value: "ffel_unsubsidized", label: "FFEL Unsubsidized" },
+    { value: "ffel_plus", label: "FFEL PLUS" },
+    { value: "private", label: "Private" },
   ];
 
   const loanStatuses = [
-    { value: 'in_repayment', label: 'In Repayment' },
-    { value: 'deferment', label: 'Deferment' },
-    { value: 'forbearance', label: 'Forbearance' },
-    { value: 'grace_period', label: 'Grace Period' },
-    { value: 'delinquent', label: 'Delinquent' },
-    { value: 'default', label: 'Default' },
-    { value: 'paid_in_full', label: 'Paid in Full' },
+    { value: "in_repayment", label: "In Repayment" },
+    { value: "deferment", label: "Deferment" },
+    { value: "forbearance", label: "Forbearance" },
+    { value: "grace_period", label: "Grace Period" },
+    { value: "delinquent", label: "Delinquent" },
+    { value: "default", label: "Default" },
+    { value: "paid_in_full", label: "Paid in Full" },
   ];
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
     // Clear error for this field
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
@@ -69,23 +71,26 @@ export default function AddLoanForm({ onSubmit, onCancel }: AddLoanFormProps) {
     const newErrors: Record<string, string> = {};
 
     if (!formData.servicer_name.trim()) {
-      newErrors.servicer_name = 'Servicer name is required';
+      newErrors.servicer_name = "Servicer name is required";
     }
 
-    if (!formData.current_balance || parseFloat(formData.current_balance) <= 0) {
-      newErrors.current_balance = 'Valid current balance is required';
+    if (
+      !formData.current_balance ||
+      parseFloat(formData.current_balance) <= 0
+    ) {
+      newErrors.current_balance = "Valid current balance is required";
     }
 
     if (!formData.interest_rate || parseFloat(formData.interest_rate) < 0) {
-      newErrors.interest_rate = 'Valid interest rate is required';
+      newErrors.interest_rate = "Valid interest rate is required";
     }
 
     if (!formData.disbursement_date) {
-      newErrors.disbursement_date = 'Disbursement date is required';
+      newErrors.disbursement_date = "Disbursement date is required";
     }
 
     if (!formData.repayment_start_date) {
-      newErrors.repayment_start_date = 'Repayment start date is required';
+      newErrors.repayment_start_date = "Repayment start date is required";
     }
 
     setErrors(newErrors);
@@ -104,8 +109,12 @@ export default function AddLoanForm({ onSubmit, onCancel }: AddLoanFormProps) {
       ...formData,
       current_balance: parseFloat(formData.current_balance),
       interest_rate: parseFloat(formData.interest_rate),
-      original_amount: formData.original_amount ? parseFloat(formData.original_amount) : undefined,
-      outstanding_interest: formData.outstanding_interest ? parseFloat(formData.outstanding_interest) : undefined,
+      original_amount: formData.original_amount
+        ? parseFloat(formData.original_amount)
+        : undefined,
+      outstanding_interest: formData.outstanding_interest
+        ? parseFloat(formData.outstanding_interest)
+        : undefined,
     };
 
     onSubmit(loanData);
@@ -124,7 +133,7 @@ export default function AddLoanForm({ onSubmit, onCancel }: AddLoanFormProps) {
           onChange={handleChange}
           className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
-          {loanTypes.map(type => (
+          {loanTypes.map((type) => (
             <option key={type.value} value={type.value}>
               {type.label}
             </option>
@@ -144,7 +153,9 @@ export default function AddLoanForm({ onSubmit, onCancel }: AddLoanFormProps) {
           onChange={handleChange}
           placeholder="e.g., Nelnet, Great Lakes, Navient"
           className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-            errors.servicer_name ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'
+            errors.servicer_name
+              ? "border-red-500"
+              : "border-gray-300 dark:border-slate-600"
           }`}
         />
         {errors.servicer_name && (
@@ -167,11 +178,15 @@ export default function AddLoanForm({ onSubmit, onCancel }: AddLoanFormProps) {
             step="0.01"
             min="0"
             className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-              errors.current_balance ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'
+              errors.current_balance
+                ? "border-red-500"
+                : "border-gray-300 dark:border-slate-600"
             }`}
           />
           {errors.current_balance && (
-            <p className="mt-1 text-sm text-red-600">{errors.current_balance}</p>
+            <p className="mt-1 text-sm text-red-600">
+              {errors.current_balance}
+            </p>
           )}
         </div>
 
@@ -189,7 +204,9 @@ export default function AddLoanForm({ onSubmit, onCancel }: AddLoanFormProps) {
             min="0"
             max="100"
             className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-              errors.interest_rate ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'
+              errors.interest_rate
+                ? "border-red-500"
+                : "border-gray-300 dark:border-slate-600"
             }`}
           />
           {errors.interest_rate && (
@@ -209,7 +226,7 @@ export default function AddLoanForm({ onSubmit, onCancel }: AddLoanFormProps) {
           onChange={handleChange}
           className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
-          {loanStatuses.map(status => (
+          {loanStatuses.map((status) => (
             <option key={status.value} value={status.value}>
               {status.label}
             </option>
@@ -229,11 +246,15 @@ export default function AddLoanForm({ onSubmit, onCancel }: AddLoanFormProps) {
             value={formData.disbursement_date}
             onChange={handleChange}
             className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-              errors.disbursement_date ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'
+              errors.disbursement_date
+                ? "border-red-500"
+                : "border-gray-300 dark:border-slate-600"
             }`}
           />
           {errors.disbursement_date && (
-            <p className="mt-1 text-sm text-red-600">{errors.disbursement_date}</p>
+            <p className="mt-1 text-sm text-red-600">
+              {errors.disbursement_date}
+            </p>
           )}
         </div>
 
@@ -247,11 +268,15 @@ export default function AddLoanForm({ onSubmit, onCancel }: AddLoanFormProps) {
             value={formData.repayment_start_date}
             onChange={handleChange}
             className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-              errors.repayment_start_date ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'
+              errors.repayment_start_date
+                ? "border-red-500"
+                : "border-gray-300 dark:border-slate-600"
             }`}
           />
           {errors.repayment_start_date && (
-            <p className="mt-1 text-sm text-red-600">{errors.repayment_start_date}</p>
+            <p className="mt-1 text-sm text-red-600">
+              {errors.repayment_start_date}
+            </p>
           )}
         </div>
       </div>

@@ -1,16 +1,23 @@
-import { useState, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useLocalSearchParams, router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { lightTheme as theme, colors } from '../../src/constants/theme';
-import type { Dispute } from '../../src/types';
+import { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
+import { useLocalSearchParams, router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { lightTheme as theme, colors } from "../../src/constants/theme";
+import type { Dispute } from "../../src/types";
 
 const statusColors: Record<string, { bg: string; text: string }> = {
-  draft: { bg: '#F3F4F6', text: '#6B7280' },
-  sent: { bg: '#DBEAFE', text: '#2563EB' },
-  under_review: { bg: '#FEF3C7', text: '#D97706' },
-  resolved: { bg: '#DCFCE7', text: '#16A34A' },
-  rejected: { bg: '#FEE2E2', text: '#DC2626' },
+  draft: { bg: "#F3F4F6", text: "#6B7280" },
+  sent: { bg: "#DBEAFE", text: "#2563EB" },
+  under_review: { bg: "#FEF3C7", text: "#D97706" },
+  resolved: { bg: "#DCFCE7", text: "#16A34A" },
+  rejected: { bg: "#FEE2E2", text: "#DC2626" },
 };
 
 export default function DisputeDetailScreen() {
@@ -22,16 +29,19 @@ export default function DisputeDetailScreen() {
     // Mock fetch
     setTimeout(() => {
       setDispute({
-        id: id || '1',
-        user_id: '1',
-        bureau: 'experian',
-        status: 'under_review',
-        item_type: 'Late Payment',
-        item_description: 'Capital One late payment reported for March 2023. Account #XXXX-1234.',
-        dispute_reason: 'Payment was made on time via automatic payment. Bank records show payment cleared on March 1st, before the due date of March 5th.',
-        letter_content: 'Dear Experian,\n\nI am writing to dispute the following information...',
-        created_at: '2024-11-01T10:00:00Z',
-        updated_at: '2024-11-15T10:00:00Z',
+        id: id || "1",
+        user_id: "1",
+        bureau: "experian",
+        status: "under_review",
+        item_type: "Late Payment",
+        item_description:
+          "Capital One late payment reported for March 2023. Account #XXXX-1234.",
+        dispute_reason:
+          "Payment was made on time via automatic payment. Bank records show payment cleared on March 1st, before the due date of March 5th.",
+        letter_content:
+          "Dear Experian,\n\nI am writing to dispute the following information...",
+        created_at: "2024-11-01T10:00:00Z",
+        updated_at: "2024-11-15T10:00:00Z",
       });
       setLoading(false);
     }, 500);
@@ -54,9 +64,21 @@ export default function DisputeDetailScreen() {
   }
 
   const timeline = [
-    { date: dispute.created_at, title: 'Dispute Created', description: 'You created this dispute' },
-    { date: dispute.updated_at, title: 'Letter Sent', description: 'Dispute letter sent to bureau' },
-    { date: new Date().toISOString(), title: 'Under Review', description: 'Bureau is reviewing your dispute' },
+    {
+      date: dispute.created_at,
+      title: "Dispute Created",
+      description: "You created this dispute",
+    },
+    {
+      date: dispute.updated_at,
+      title: "Letter Sent",
+      description: "Dispute letter sent to bureau",
+    },
+    {
+      date: new Date().toISOString(),
+      title: "Under Review",
+      description: "Bureau is reviewing your dispute",
+    },
   ];
 
   return (
@@ -64,12 +86,30 @@ export default function DisputeDetailScreen() {
       {/* Header Card */}
       <View style={styles.headerCard}>
         <View style={styles.headerTop}>
-          <Text style={[styles.bureau, { color: colors.bureaus[dispute.bureau as keyof typeof colors.bureaus] }]}>
+          <Text
+            style={[
+              styles.bureau,
+              {
+                color:
+                  colors.bureaus[dispute.bureau as keyof typeof colors.bureaus],
+              },
+            ]}
+          >
             {dispute.bureau.charAt(0).toUpperCase() + dispute.bureau.slice(1)}
           </Text>
-          <View style={[styles.statusBadge, { backgroundColor: statusColors[dispute.status]?.bg }]}>
-            <Text style={[styles.statusText, { color: statusColors[dispute.status]?.text }]}>
-              {dispute.status.replace('_', ' ')}
+          <View
+            style={[
+              styles.statusBadge,
+              { backgroundColor: statusColors[dispute.status]?.bg },
+            ]}
+          >
+            <Text
+              style={[
+                styles.statusText,
+                { color: statusColors[dispute.status]?.text },
+              ]}
+            >
+              {dispute.status.replace("_", " ")}
             </Text>
           </View>
         </View>
@@ -92,13 +132,22 @@ export default function DisputeDetailScreen() {
           {timeline.map((item, index) => (
             <View key={index} style={styles.timelineItem}>
               <View style={styles.timelineDot}>
-                <View style={[styles.dot, index === timeline.length - 1 && styles.dotActive]} />
-                {index < timeline.length - 1 && <View style={styles.timelineLine} />}
+                <View
+                  style={[
+                    styles.dot,
+                    index === timeline.length - 1 && styles.dotActive,
+                  ]}
+                />
+                {index < timeline.length - 1 && (
+                  <View style={styles.timelineLine} />
+                )}
               </View>
               <View style={styles.timelineContent}>
                 <Text style={styles.timelineTitle}>{item.title}</Text>
                 <Text style={styles.timelineDesc}>{item.description}</Text>
-                <Text style={styles.timelineDate}>{new Date(item.date).toLocaleDateString()}</Text>
+                <Text style={styles.timelineDate}>
+                  {new Date(item.date).toLocaleDateString()}
+                </Text>
               </View>
             </View>
           ))}
@@ -107,14 +156,18 @@ export default function DisputeDetailScreen() {
 
       {/* Actions */}
       <View style={styles.actionsContainer}>
-        {dispute.status === 'draft' && (
+        {dispute.status === "draft" && (
           <TouchableOpacity style={styles.primaryButton} onPress={() => {}}>
             <Ionicons name="send" size={20} color="#FFFFFF" />
             <Text style={styles.primaryButtonText}>Send Dispute</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity style={styles.secondaryButton} onPress={() => {}}>
-          <Ionicons name="document-text" size={20} color={theme.colors.primary} />
+          <Ionicons
+            name="document-text"
+            size={20}
+            color={theme.colors.primary}
+          />
           <Text style={styles.secondaryButtonText}>View Letter</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.secondaryButton} onPress={() => {}}>
@@ -129,33 +182,104 @@ export default function DisputeDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
-  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  errorContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  loadingContainer: { flex: 1, alignItems: "center", justifyContent: "center" },
+  errorContainer: { flex: 1, alignItems: "center", justifyContent: "center" },
   errorText: { fontSize: 16, color: theme.colors.error },
-  headerCard: { backgroundColor: theme.colors.surface, margin: theme.spacing.md, borderRadius: theme.borderRadius.lg, padding: theme.spacing.lg },
-  headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.sm },
-  bureau: { fontSize: 14, fontWeight: '600' },
+  headerCard: {
+    backgroundColor: theme.colors.surface,
+    margin: theme.spacing.md,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+  },
+  headerTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: theme.spacing.sm,
+  },
+  bureau: { fontSize: 14, fontWeight: "600" },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
-  statusText: { fontSize: 12, fontWeight: '600', textTransform: 'capitalize' },
-  itemType: { fontSize: 20, fontWeight: '700', color: theme.colors.text, marginBottom: 8 },
-  itemDescription: { fontSize: 14, color: theme.colors.textSecondary, lineHeight: 20 },
+  statusText: { fontSize: 12, fontWeight: "600", textTransform: "capitalize" },
+  itemType: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: theme.colors.text,
+    marginBottom: 8,
+  },
+  itemDescription: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    lineHeight: 20,
+  },
   section: { marginBottom: theme.spacing.md },
-  sectionTitle: { fontSize: 16, fontWeight: '600', color: theme.colors.text, marginLeft: theme.spacing.lg, marginBottom: theme.spacing.sm },
-  card: { backgroundColor: theme.colors.surface, marginHorizontal: theme.spacing.md, borderRadius: theme.borderRadius.lg, padding: theme.spacing.md },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: theme.colors.text,
+    marginLeft: theme.spacing.lg,
+    marginBottom: theme.spacing.sm,
+  },
+  card: {
+    backgroundColor: theme.colors.surface,
+    marginHorizontal: theme.spacing.md,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.md,
+  },
   reasonText: { fontSize: 14, color: theme.colors.text, lineHeight: 22 },
-  timelineItem: { flexDirection: 'row', marginBottom: theme.spacing.md },
-  timelineDot: { alignItems: 'center', marginRight: theme.spacing.md },
-  dot: { width: 12, height: 12, borderRadius: 6, backgroundColor: theme.colors.border },
+  timelineItem: { flexDirection: "row", marginBottom: theme.spacing.md },
+  timelineDot: { alignItems: "center", marginRight: theme.spacing.md },
+  dot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: theme.colors.border,
+  },
   dotActive: { backgroundColor: theme.colors.primary },
-  timelineLine: { width: 2, flex: 1, backgroundColor: theme.colors.border, marginTop: 4 },
+  timelineLine: {
+    width: 2,
+    flex: 1,
+    backgroundColor: theme.colors.border,
+    marginTop: 4,
+  },
   timelineContent: { flex: 1, paddingBottom: theme.spacing.md },
-  timelineTitle: { fontSize: 14, fontWeight: '600', color: theme.colors.text },
+  timelineTitle: { fontSize: 14, fontWeight: "600", color: theme.colors.text },
   timelineDesc: { fontSize: 13, color: theme.colors.textSecondary },
-  timelineDate: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 4 },
+  timelineDate: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    marginTop: 4,
+  },
   actionsContainer: { paddingHorizontal: theme.spacing.md },
-  primaryButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.primary, padding: theme.spacing.md, borderRadius: theme.borderRadius.md, marginBottom: theme.spacing.sm },
-  primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600', marginLeft: 8 },
-  secondaryButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.surface, padding: theme.spacing.md, borderRadius: theme.borderRadius.md, marginBottom: theme.spacing.sm, borderWidth: 1, borderColor: theme.colors.border },
-  secondaryButtonText: { color: theme.colors.primary, fontSize: 16, fontWeight: '500', marginLeft: 8 },
+  primaryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: theme.colors.primary,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    marginBottom: theme.spacing.sm,
+  },
+  primaryButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+    marginLeft: 8,
+  },
+  secondaryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: theme.colors.surface,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    marginBottom: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  secondaryButtonText: {
+    color: theme.colors.primary,
+    fontSize: 16,
+    fontWeight: "500",
+    marginLeft: 8,
+  },
 });
-

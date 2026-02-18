@@ -1,14 +1,14 @@
 /**
  * Financial Chat API - Sessions Endpoint
- * 
+ *
  * Phase 6.1.4: GET and POST endpoints for chat sessions
  * Handles listing user sessions and creating new sessions
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { FinancialChatEngine } from '@/lib/ai/financial-chat-engine';
-import { CreateSessionRequest } from '@/lib/ai/types/financial-chat.types';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { FinancialChatEngine } from "@/lib/ai/financial-chat-engine";
+import { CreateSessionRequest } from "@/lib/ai/types/financial-chat.types";
 
 /**
  * GET /api/chat/financial/sessions
@@ -25,28 +25,31 @@ export async function GET(request: NextRequest) {
 
     if (authError || !user) {
       return NextResponse.json(
-        { error: 'Unauthorized', message: 'Authentication required' },
-        { status: 401 }
+        { error: "Unauthorized", message: "Authentication required" },
+        { status: 401 },
       );
     }
 
     // Parse query parameters
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get('limit') || '20', 10);
-    const offset = parseInt(searchParams.get('offset') || '0', 10);
+    const limit = parseInt(searchParams.get("limit") || "20", 10);
+    const offset = parseInt(searchParams.get("offset") || "0", 10);
 
     // Validate parameters
     if (limit < 1 || limit > 100) {
       return NextResponse.json(
-        { error: 'Validation error', message: 'limit must be between 1 and 100' },
-        { status: 400 }
+        {
+          error: "Validation error",
+          message: "limit must be between 1 and 100",
+        },
+        { status: 400 },
       );
     }
 
     if (offset < 0) {
       return NextResponse.json(
-        { error: 'Validation error', message: 'offset must be non-negative' },
-        { status: 400 }
+        { error: "Validation error", message: "offset must be non-negative" },
+        { status: 400 },
       );
     }
 
@@ -66,17 +69,17 @@ export async function GET(request: NextRequest) {
         limit,
         offset,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error: unknown) {
-    console.error('Get sessions API error:', error);
+    console.error("Get sessions API error:", error);
 
     return NextResponse.json(
       {
-        error: 'Internal server error',
-        message: 'An error occurred while fetching sessions',
+        error: "Internal server error",
+        message: "An error occurred while fetching sessions",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -96,8 +99,8 @@ export async function POST(request: NextRequest) {
 
     if (authError || !user) {
       return NextResponse.json(
-        { error: 'Unauthorized', message: 'Authentication required' },
-        { status: 401 }
+        { error: "Unauthorized", message: "Authentication required" },
+        { status: 401 },
       );
     }
 
@@ -105,17 +108,20 @@ export async function POST(request: NextRequest) {
     const body: CreateSessionRequest = await request.json();
 
     // Validate title if provided
-    if (body.title && typeof body.title !== 'string') {
+    if (body.title && typeof body.title !== "string") {
       return NextResponse.json(
-        { error: 'Validation error', message: 'title must be a string' },
-        { status: 400 }
+        { error: "Validation error", message: "title must be a string" },
+        { status: 400 },
       );
     }
 
     if (body.title && body.title.length > 200) {
       return NextResponse.json(
-        { error: 'Validation error', message: 'title cannot exceed 200 characters' },
-        { status: 400 }
+        {
+          error: "Validation error",
+          message: "title cannot exceed 200 characters",
+        },
+        { status: 400 },
       );
     }
 
@@ -128,20 +134,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         session,
-        message: 'Session created successfully',
+        message: "Session created successfully",
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error: unknown) {
-    console.error('Create session API error:', error);
+    console.error("Create session API error:", error);
 
     return NextResponse.json(
       {
-        error: 'Internal server error',
-        message: 'An error occurred while creating the session',
+        error: "Internal server error",
+        message: "An error occurred while creating the session",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-

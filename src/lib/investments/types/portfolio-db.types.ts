@@ -5,47 +5,47 @@
  * for investment portfolios, holdings, and transactions.
  */
 
-import { z } from 'zod';
+import { z } from "zod";
 
 // ============================================================================
 // ENUMS
 // ============================================================================
 
 export enum PortfolioType {
-  MANUAL = 'manual',
-  LINKED = 'linked',
-  SIMULATED = 'simulated',
-  PAPER_TRADING = 'paper_trading',
+  MANUAL = "manual",
+  LINKED = "linked",
+  SIMULATED = "simulated",
+  PAPER_TRADING = "paper_trading",
 }
 
 export enum RiskLevel {
-  CONSERVATIVE = 'conservative',
-  MODERATE = 'moderate',
-  AGGRESSIVE = 'aggressive',
-  VERY_AGGRESSIVE = 'very_aggressive',
+  CONSERVATIVE = "conservative",
+  MODERATE = "moderate",
+  AGGRESSIVE = "aggressive",
+  VERY_AGGRESSIVE = "very_aggressive",
 }
 
 export enum AssetType {
-  STOCK = 'stock',
-  ETF = 'etf',
-  MUTUAL_FUND = 'mutual_fund',
-  BOND = 'bond',
-  CRYPTO = 'crypto',
-  OPTION = 'option',
-  FUTURE = 'future',
-  CASH = 'cash',
-  OTHER = 'other',
+  STOCK = "stock",
+  ETF = "etf",
+  MUTUAL_FUND = "mutual_fund",
+  BOND = "bond",
+  CRYPTO = "crypto",
+  OPTION = "option",
+  FUTURE = "future",
+  CASH = "cash",
+  OTHER = "other",
 }
 
 export enum TransactionType {
-  BUY = 'buy',
-  SELL = 'sell',
-  DIVIDEND = 'dividend',
-  SPLIT = 'split',
-  TRANSFER_IN = 'transfer_in',
-  TRANSFER_OUT = 'transfer_out',
-  FEE = 'fee',
-  INTEREST = 'interest',
+  BUY = "buy",
+  SELL = "sell",
+  DIVIDEND = "dividend",
+  SPLIT = "split",
+  TRANSFER_IN = "transfer_in",
+  TRANSFER_OUT = "transfer_out",
+  FEE = "fee",
+  INTEREST = "interest",
 }
 
 // ============================================================================
@@ -141,8 +141,6 @@ export interface HoldingCreateInput {
   currency?: string;
 }
 
-
-
 export interface HoldingUpdateInput {
   quantity?: number;
   average_cost?: number;
@@ -193,15 +191,44 @@ export interface TransactionCreateInput {
 // ZOD SCHEMAS
 // ============================================================================
 
-export const PortfolioTypeSchema = z.enum(['manual', 'linked', 'simulated', 'paper_trading']);
-export const RiskLevelSchema = z.enum(['conservative', 'moderate', 'aggressive', 'very_aggressive']);
-export const AssetTypeSchema = z.enum(['stock', 'etf', 'mutual_fund', 'bond', 'crypto', 'option', 'future', 'cash', 'other']);
-export const TransactionTypeSchema = z.enum(['buy', 'sell', 'dividend', 'split', 'transfer_in', 'transfer_out', 'fee', 'interest']);
+export const PortfolioTypeSchema = z.enum([
+  "manual",
+  "linked",
+  "simulated",
+  "paper_trading",
+]);
+export const RiskLevelSchema = z.enum([
+  "conservative",
+  "moderate",
+  "aggressive",
+  "very_aggressive",
+]);
+export const AssetTypeSchema = z.enum([
+  "stock",
+  "etf",
+  "mutual_fund",
+  "bond",
+  "crypto",
+  "option",
+  "future",
+  "cash",
+  "other",
+]);
+export const TransactionTypeSchema = z.enum([
+  "buy",
+  "sell",
+  "dividend",
+  "split",
+  "transfer_in",
+  "transfer_out",
+  "fee",
+  "interest",
+]);
 
 export const PortfolioCreateSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().max(500).optional(),
-  portfolio_type: PortfolioTypeSchema.default('manual'),
+  portfolio_type: PortfolioTypeSchema.default("manual"),
   linked_account_id: z.string().optional(),
   risk_level: RiskLevelSchema.optional(),
   target_allocation: z.record(z.number()).optional(),
@@ -225,8 +252,8 @@ export const HoldingCreateSchema = z.object({
   average_cost: z.number().nonnegative(),
   sector: z.string().max(100).optional(),
   industry: z.string().max(100).optional(),
-  country: z.string().length(2).default('US'),
-  currency: z.string().length(3).default('USD'),
+  country: z.string().length(2).default("US"),
+  currency: z.string().length(3).default("USD"),
 });
 
 export const HoldingUpdateSchema = z.object({
@@ -304,7 +331,7 @@ export interface RebalanceRecommendation {
     symbol: string;
     current_allocation: number;
     target_allocation: number;
-    action: 'buy' | 'sell' | 'hold';
+    action: "buy" | "sell" | "hold";
     shares_to_trade?: number;
     amount_to_trade?: number;
   }>;

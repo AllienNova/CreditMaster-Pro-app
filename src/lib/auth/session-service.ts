@@ -1,6 +1,6 @@
 /**
  * Session Management Service
- * 
+ *
  * Provides session tracking and management functionality:
  * - Track active sessions across devices
  * - View session details (device, location, last active)
@@ -8,7 +8,7 @@
  * - Session timeout management
  */
 
-import { getSupabase } from '@/lib/supabase/client';
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
 
@@ -16,7 +16,7 @@ export interface Session {
   id: string;
   userId: string;
   deviceName: string;
-  deviceType: 'desktop' | 'mobile' | 'tablet' | 'unknown';
+  deviceType: "desktop" | "mobile" | "tablet" | "unknown";
   browser: string;
   os: string;
   ipAddress: string;
@@ -30,7 +30,7 @@ export interface Session {
 export interface SessionCreateData {
   userId: string;
   deviceName: string;
-  deviceType: 'desktop' | 'mobile' | 'tablet' | 'unknown';
+  deviceType: "desktop" | "mobile" | "tablet" | "unknown";
   browser: string;
   os: string;
   ipAddress: string;
@@ -41,13 +41,15 @@ class SessionService {
   /**
    * Create a new session
    */
-  async createSession(data: SessionCreateData): Promise<{ success: boolean; sessionId?: string; error?: string }> {
+  async createSession(
+    data: SessionCreateData,
+  ): Promise<{ success: boolean; sessionId?: string; error?: string }> {
     try {
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 30); // 30 days
 
       const { data: sessionData, error } = await supabase
-        .from('sessions')
+        .from("sessions")
         .insert({
           user_id: data.userId,
           device_name: data.deviceName,
@@ -78,7 +80,8 @@ class SessionService {
       // SessionService error: Create session error
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to create session',
+        error:
+          error instanceof Error ? error.message : "Failed to create session",
       };
     }
   }
@@ -86,14 +89,17 @@ class SessionService {
   /**
    * Get all active sessions for a user
    */
-  async getUserSessions(userId: string, currentSessionId?: string): Promise<Session[]> {
+  async getUserSessions(
+    userId: string,
+    currentSessionId?: string,
+  ): Promise<Session[]> {
     try {
       const { data, error } = await supabase
-        .from('sessions')
-        .select('*')
-        .eq('user_id', userId)
-        .gt('expires_at', new Date().toISOString())
-        .order('last_active_at', { ascending: false });
+        .from("sessions")
+        .select("*")
+        .eq("user_id", userId)
+        .gt("expires_at", new Date().toISOString())
+        .order("last_active_at", { ascending: false });
 
       if (error) {
         // SessionService error: Get user sessions error
@@ -123,14 +129,16 @@ class SessionService {
   /**
    * Update session last active time
    */
-  async updateSessionActivity(sessionId: string): Promise<{ success: boolean; error?: string }> {
+  async updateSessionActivity(
+    sessionId: string,
+  ): Promise<{ success: boolean; error?: string }> {
     try {
       const { error } = await supabase
-        .from('sessions')
+        .from("sessions")
         .update({
           last_active_at: new Date().toISOString(),
         })
-        .eq('id', sessionId);
+        .eq("id", sessionId);
 
       if (error) {
         return {
@@ -144,7 +152,8 @@ class SessionService {
       // SessionService error: Update session activity error
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to update session',
+        error:
+          error instanceof Error ? error.message : "Failed to update session",
       };
     }
   }
@@ -152,13 +161,16 @@ class SessionService {
   /**
    * Revoke a specific session
    */
-  async revokeSession(sessionId: string, userId: string): Promise<{ success: boolean; error?: string }> {
+  async revokeSession(
+    sessionId: string,
+    userId: string,
+  ): Promise<{ success: boolean; error?: string }> {
     try {
       const { error } = await supabase
-        .from('sessions')
+        .from("sessions")
         .delete()
-        .eq('id', sessionId)
-        .eq('user_id', userId);
+        .eq("id", sessionId)
+        .eq("user_id", userId);
 
       if (error) {
         return {
@@ -172,7 +184,8 @@ class SessionService {
       // SessionService error: Revoke session error
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to revoke session',
+        error:
+          error instanceof Error ? error.message : "Failed to revoke session",
       };
     }
   }
@@ -180,13 +193,16 @@ class SessionService {
   /**
    * Revoke all sessions except the current one
    */
-  async revokeAllOtherSessions(userId: string, currentSessionId: string): Promise<{ success: boolean; error?: string }> {
+  async revokeAllOtherSessions(
+    userId: string,
+    currentSessionId: string,
+  ): Promise<{ success: boolean; error?: string }> {
     try {
       const { error } = await supabase
-        .from('sessions')
+        .from("sessions")
         .delete()
-        .eq('user_id', userId)
-        .neq('id', currentSessionId);
+        .eq("user_id", userId)
+        .neq("id", currentSessionId);
 
       if (error) {
         return {
@@ -200,7 +216,8 @@ class SessionService {
       // SessionService error: Revoke all other sessions error
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to revoke sessions',
+        error:
+          error instanceof Error ? error.message : "Failed to revoke sessions",
       };
     }
   }
@@ -208,12 +225,15 @@ class SessionService {
   /**
    * Clean up expired sessions
    */
-  async cleanupExpiredSessions(): Promise<{ success: boolean; error?: string }> {
+  async cleanupExpiredSessions(): Promise<{
+    success: boolean;
+    error?: string;
+  }> {
     try {
       const { error } = await supabase
-        .from('sessions')
+        .from("sessions")
         .delete()
-        .lt('expires_at', new Date().toISOString());
+        .lt("expires_at", new Date().toISOString());
 
       if (error) {
         return {
@@ -227,7 +247,8 @@ class SessionService {
       // SessionService error: Cleanup expired sessions error
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to cleanup sessions',
+        error:
+          error instanceof Error ? error.message : "Failed to cleanup sessions",
       };
     }
   }
@@ -235,45 +256,57 @@ class SessionService {
   /**
    * Get device information from user agent
    */
-  getDeviceInfo(userAgent: string): { deviceType: 'desktop' | 'mobile' | 'tablet' | 'unknown'; browser: string; os: string } {
+  getDeviceInfo(userAgent: string): {
+    deviceType: "desktop" | "mobile" | "tablet" | "unknown";
+    browser: string;
+    os: string;
+  } {
     const ua = userAgent.toLowerCase();
 
     // Detect device type
-    let deviceType: 'desktop' | 'mobile' | 'tablet' | 'unknown' = 'unknown';
-    if (ua.includes('mobile')) {
-      deviceType = 'mobile';
-    } else if (ua.includes('tablet') || ua.includes('ipad')) {
-      deviceType = 'tablet';
-    } else if (ua.includes('windows') || ua.includes('mac') || ua.includes('linux')) {
-      deviceType = 'desktop';
+    let deviceType: "desktop" | "mobile" | "tablet" | "unknown" = "unknown";
+    if (ua.includes("mobile")) {
+      deviceType = "mobile";
+    } else if (ua.includes("tablet") || ua.includes("ipad")) {
+      deviceType = "tablet";
+    } else if (
+      ua.includes("windows") ||
+      ua.includes("mac") ||
+      ua.includes("linux")
+    ) {
+      deviceType = "desktop";
     }
 
     // Detect browser
-    let browser = 'Unknown';
-    if (ua.includes('chrome') && !ua.includes('edg')) {
-      browser = 'Chrome';
-    } else if (ua.includes('safari') && !ua.includes('chrome')) {
-      browser = 'Safari';
-    } else if (ua.includes('firefox')) {
-      browser = 'Firefox';
-    } else if (ua.includes('edg')) {
-      browser = 'Edge';
-    } else if (ua.includes('opera') || ua.includes('opr')) {
-      browser = 'Opera';
+    let browser = "Unknown";
+    if (ua.includes("chrome") && !ua.includes("edg")) {
+      browser = "Chrome";
+    } else if (ua.includes("safari") && !ua.includes("chrome")) {
+      browser = "Safari";
+    } else if (ua.includes("firefox")) {
+      browser = "Firefox";
+    } else if (ua.includes("edg")) {
+      browser = "Edge";
+    } else if (ua.includes("opera") || ua.includes("opr")) {
+      browser = "Opera";
     }
 
     // Detect OS
-    let os = 'Unknown';
-    if (ua.includes('windows')) {
-      os = 'Windows';
-    } else if (ua.includes('mac')) {
-      os = 'macOS';
-    } else if (ua.includes('linux')) {
-      os = 'Linux';
-    } else if (ua.includes('android')) {
-      os = 'Android';
-    } else if (ua.includes('ios') || ua.includes('iphone') || ua.includes('ipad')) {
-      os = 'iOS';
+    let os = "Unknown";
+    if (ua.includes("windows")) {
+      os = "Windows";
+    } else if (ua.includes("mac")) {
+      os = "macOS";
+    } else if (ua.includes("linux")) {
+      os = "Linux";
+    } else if (ua.includes("android")) {
+      os = "Android";
+    } else if (
+      ua.includes("ios") ||
+      ua.includes("iphone") ||
+      ua.includes("ipad")
+    ) {
+      os = "iOS";
     }
 
     return { deviceType, browser, os };
@@ -283,4 +316,3 @@ class SessionService {
 // Export singleton instance
 export const sessionService = new SessionService();
 export default sessionService;
-

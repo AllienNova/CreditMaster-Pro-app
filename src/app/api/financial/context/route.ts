@@ -51,21 +51,21 @@
  *         description: Internal server error
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { rbac } from '@/lib/auth/rbac';
-import { financialContextEngine } from '@/lib/financial/financial-context-engine';
-import { FinancialContextOptions } from '@/lib/financial/types/financial-context.types';
+import { NextRequest, NextResponse } from "next/server";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { rbac } from "@/lib/auth/rbac";
+import { financialContextEngine } from "@/lib/financial/financial-context-engine";
+import { FinancialContextOptions } from "@/lib/financial/types/financial-context.types";
 
 /**
  * Parse boolean query parameter
  */
 function parseBooleanParam(
   value: string | null,
-  defaultValue: boolean
+  defaultValue: boolean,
 ): boolean {
   if (value === null) return defaultValue;
-  return value.toLowerCase() === 'true';
+  return value.toLowerCase() === "true";
 }
 
 /**
@@ -99,56 +99,56 @@ export async function GET(request: NextRequest) {
     const validation = await jwtValidation.validateFromHeaders(request);
 
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check permissions
     if (
       !rbac.hasPermission(
         validation.user as Parameters<typeof rbac.hasPermission>[0],
-        'financial:read'
+        "financial:read",
       )
     ) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const searchParams = request.nextUrl.searchParams;
 
     // Parse query parameters
-    const forceRefresh = parseBooleanParam(searchParams.get('refresh'), false);
-    const enhanced = parseBooleanParam(searchParams.get('enhanced'), false);
+    const forceRefresh = parseBooleanParam(searchParams.get("refresh"), false);
+    const enhanced = parseBooleanParam(searchParams.get("enhanced"), false);
 
     // For enhanced context, parse additional options
     if (enhanced) {
       const options: FinancialContextOptions = {
         forceRefresh,
-        includeBills: parseBooleanParam(searchParams.get('includeBills'), true),
+        includeBills: parseBooleanParam(searchParams.get("includeBills"), true),
         includeInsights: parseBooleanParam(
-          searchParams.get('includeInsights'),
-          true
+          searchParams.get("includeInsights"),
+          true,
         ),
         includeRecommendations: parseBooleanParam(
-          searchParams.get('includeRecommendations'),
-          true
+          searchParams.get("includeRecommendations"),
+          true,
         ),
         includeTransactions: parseBooleanParam(
-          searchParams.get('includeTransactions'),
-          true
+          searchParams.get("includeTransactions"),
+          true,
         ),
         includeInvestments: parseBooleanParam(
-          searchParams.get('includeInvestments'),
-          true
+          searchParams.get("includeInvestments"),
+          true,
         ),
         includeCreditProfile: parseBooleanParam(
-          searchParams.get('includeCreditProfile'),
-          true
+          searchParams.get("includeCreditProfile"),
+          true,
         ),
-        transactionDays: parseIntParam(searchParams.get('transactionDays'), 30),
+        transactionDays: parseIntParam(searchParams.get("transactionDays"), 30),
       };
 
       const context = await financialContextEngine.getEnhancedFinancialContext(
         validation.user.id,
-        options
+        options,
       );
 
       return NextResponse.json({
@@ -164,14 +164,17 @@ export async function GET(request: NextRequest) {
     // Standard context (backward compatible)
     const context = await financialContextEngine.getFinancialContext(
       validation.user.id,
-      forceRefresh
+      forceRefresh,
     );
 
     // Add caching headers (5-minute TTL with stale-while-revalidate)
     const headers = new Headers();
-    headers.set('Content-Type', 'application/json');
+    headers.set("Content-Type", "application/json");
     if (!forceRefresh) {
-      headers.set('Cache-Control', 'private, max-age=300, stale-while-revalidate=60');
+      headers.set(
+        "Cache-Control",
+        "private, max-age=300, stale-while-revalidate=60",
+      );
     }
 
     return NextResponse.json(
@@ -195,14 +198,17 @@ export async function GET(request: NextRequest) {
           ttl: 300,
         },
       },
-      { headers }
+      { headers },
     );
   } catch (error) {
-    console.error('Error fetching financial context:', error);
+    console.error("Error fetching financial context:", error);
 
     // Return appropriate error status based on error type
-    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch financial context';
-    const statusCode = errorMessage.includes('not found') ? 404 : 500;
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "Failed to fetch financial context";
+    const statusCode = errorMessage.includes("not found") ? 404 : 500;
 
     return NextResponse.json(
       {
@@ -212,7 +218,7 @@ export async function GET(request: NextRequest) {
           timestamp: new Date().toISOString(),
         },
       },
-      { status: statusCode }
+      { status: statusCode },
     );
   }
 }
@@ -248,9 +254,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Unauthorized - Invalid or missing JWT token',
+          error: "Unauthorized - Invalid or missing JWT token",
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -258,15 +264,16 @@ export async function POST(request: NextRequest) {
     if (
       !rbac.hasPermission(
         validation.user as Parameters<typeof rbac.hasPermission>[0],
-        'financial:write'
+        "financial:write",
       )
     ) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Forbidden - Insufficient permissions to refresh financial context',
+          error:
+            "Forbidden - Insufficient permissions to refresh financial context",
         },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -274,22 +281,25 @@ export async function POST(request: NextRequest) {
     financialContextEngine.clearCache(validation.user.id);
     const context = await financialContextEngine.getFinancialContext(
       validation.user.id,
-      true
+      true,
     );
 
     return NextResponse.json({
       success: true,
       data: context,
-      message: 'Financial context refreshed successfully',
+      message: "Financial context refreshed successfully",
       _meta: {
         refreshedAt: new Date().toISOString(),
         userId: validation.user.id,
       },
     });
   } catch (error) {
-    console.error('Error refreshing financial context:', error);
+    console.error("Error refreshing financial context:", error);
 
-    const errorMessage = error instanceof Error ? error.message : 'Failed to refresh financial context';
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "Failed to refresh financial context";
 
     return NextResponse.json(
       {
@@ -299,7 +309,7 @@ export async function POST(request: NextRequest) {
           timestamp: new Date().toISOString(),
         },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

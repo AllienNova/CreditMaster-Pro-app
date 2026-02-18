@@ -4,16 +4,16 @@
  * Tests for portfolio performance metrics calculations.
  */
 
-import { PerformanceCalculator } from '../PerformanceCalculator';
-import { PortfolioService } from '../PortfolioService';
+import { PerformanceCalculator } from "../PerformanceCalculator";
+import { PortfolioService } from "../PortfolioService";
 
-jest.mock('../PortfolioService');
+jest.mock("../PortfolioService");
 
-describe('PerformanceCalculator', () => {
+describe("PerformanceCalculator", () => {
   let calculator: PerformanceCalculator;
   let mockPortfolioService: jest.Mocked<PortfolioService>;
-  const userId = 'test-user-123';
-  const portfolioId = 'portfolio-1';
+  const userId = "test-user-123";
+  const portfolioId = "portfolio-1";
 
   beforeEach(() => {
     calculator = new PerformanceCalculator(userId);
@@ -21,8 +21,8 @@ describe('PerformanceCalculator', () => {
     jest.clearAllMocks();
   });
 
-  describe('calculateTotalReturn', () => {
-    it('should calculate positive total return', async () => {
+  describe("calculateTotalReturn", () => {
+    it("should calculate positive total return", async () => {
       const mockPortfolio = {
         id: portfolioId,
         user_id: userId,
@@ -32,11 +32,15 @@ describe('PerformanceCalculator', () => {
 
       const mockHoldings = [
         { current_value: 7000, quantity: 100, average_cost: 60 }, // cost: 6000
-        { current_value: 5000, quantity: 50, average_cost: 80 },  // cost: 4000
+        { current_value: 5000, quantity: 50, average_cost: 80 }, // cost: 4000
       ];
 
-      mockPortfolioService.getPortfolio = jest.fn().mockResolvedValue(mockPortfolio);
-      mockPortfolioService.getHoldings = jest.fn().mockResolvedValue(mockHoldings);
+      mockPortfolioService.getPortfolio = jest
+        .fn()
+        .mockResolvedValue(mockPortfolio);
+      mockPortfolioService.getHoldings = jest
+        .fn()
+        .mockResolvedValue(mockHoldings);
 
       const result = await calculator.calculateTotalReturn(portfolioId);
 
@@ -44,9 +48,11 @@ describe('PerformanceCalculator', () => {
       expect(result.percentage).toBe(20); // (2000 / 10000) * 100
     });
 
-    it('should return zero for empty portfolio', async () => {
+    it("should return zero for empty portfolio", async () => {
       const mockPortfolio = { id: portfolioId, user_id: userId };
-      mockPortfolioService.getPortfolio = jest.fn().mockResolvedValue(mockPortfolio);
+      mockPortfolioService.getPortfolio = jest
+        .fn()
+        .mockResolvedValue(mockPortfolio);
       mockPortfolioService.getHoldings = jest.fn().mockResolvedValue([]);
 
       const result = await calculator.calculateTotalReturn(portfolioId);
@@ -55,7 +61,7 @@ describe('PerformanceCalculator', () => {
       expect(result.percentage).toBe(0);
     });
 
-    it('should handle negative returns', async () => {
+    it("should handle negative returns", async () => {
       const mockPortfolio = {
         id: portfolioId,
         user_id: userId,
@@ -67,8 +73,12 @@ describe('PerformanceCalculator', () => {
         { current_value: 8000, quantity: 100, average_cost: 100 },
       ];
 
-      mockPortfolioService.getPortfolio = jest.fn().mockResolvedValue(mockPortfolio);
-      mockPortfolioService.getHoldings = jest.fn().mockResolvedValue(mockHoldings);
+      mockPortfolioService.getPortfolio = jest
+        .fn()
+        .mockResolvedValue(mockPortfolio);
+      mockPortfolioService.getHoldings = jest
+        .fn()
+        .mockResolvedValue(mockHoldings);
 
       const result = await calculator.calculateTotalReturn(portfolioId);
 
@@ -77,30 +87,34 @@ describe('PerformanceCalculator', () => {
     });
   });
 
-  describe('calculateAnnualizedReturn', () => {
-    it('should calculate annualized return (CAGR)', async () => {
+  describe("calculateAnnualizedReturn", () => {
+    it("should calculate annualized return (CAGR)", async () => {
       const mockPortfolio = { id: portfolioId, user_id: userId };
       const mockHoldings = [
         { current_value: 12000, quantity: 100, average_cost: 100 },
       ];
 
-      mockPortfolioService.getPortfolio = jest.fn().mockResolvedValue(mockPortfolio);
-      mockPortfolioService.getHoldings = jest.fn().mockResolvedValue(mockHoldings);
+      mockPortfolioService.getPortfolio = jest
+        .fn()
+        .mockResolvedValue(mockPortfolio);
+      mockPortfolioService.getHoldings = jest
+        .fn()
+        .mockResolvedValue(mockHoldings);
 
       const result = await calculator.calculateAnnualizedReturn(portfolioId, 1);
 
       expect(result).toBeCloseTo(20, 1); // ~20% annual return
     });
 
-    it('should throw error for invalid years', async () => {
-      await expect(calculator.calculateAnnualizedReturn(portfolioId, 0)).rejects.toThrow(
-        'Years must be greater than 0'
-      );
+    it("should throw error for invalid years", async () => {
+      await expect(
+        calculator.calculateAnnualizedReturn(portfolioId, 0),
+      ).rejects.toThrow("Years must be greater than 0");
     });
   });
 
-  describe('calculateSharpeRatio', () => {
-    it('should calculate Sharpe ratio', async () => {
+  describe("calculateSharpeRatio", () => {
+    it("should calculate Sharpe ratio", async () => {
       const mockPortfolio = {
         id: portfolioId,
         user_id: userId,
@@ -110,16 +124,20 @@ describe('PerformanceCalculator', () => {
         { current_value: 12000, quantity: 100, average_cost: 100 },
       ];
 
-      mockPortfolioService.getPortfolio = jest.fn().mockResolvedValue(mockPortfolio);
-      mockPortfolioService.getHoldings = jest.fn().mockResolvedValue(mockHoldings);
+      mockPortfolioService.getPortfolio = jest
+        .fn()
+        .mockResolvedValue(mockPortfolio);
+      mockPortfolioService.getHoldings = jest
+        .fn()
+        .mockResolvedValue(mockHoldings);
 
       const result = await calculator.calculateSharpeRatio(portfolioId, 0.04);
 
       expect(result).toBeDefined();
-      expect(typeof result).toBe('number');
+      expect(typeof result).toBe("number");
     });
 
-    it('should return 0 for zero volatility', async () => {
+    it("should return 0 for zero volatility", async () => {
       const mockPortfolio = {
         id: portfolioId,
         user_id: userId,
@@ -129,8 +147,12 @@ describe('PerformanceCalculator', () => {
         { current_value: 10000, quantity: 100, average_cost: 100 },
       ];
 
-      mockPortfolioService.getPortfolio = jest.fn().mockResolvedValue(mockPortfolio);
-      mockPortfolioService.getHoldings = jest.fn().mockResolvedValue(mockHoldings);
+      mockPortfolioService.getPortfolio = jest
+        .fn()
+        .mockResolvedValue(mockPortfolio);
+      mockPortfolioService.getHoldings = jest
+        .fn()
+        .mockResolvedValue(mockHoldings);
 
       const result = await calculator.calculateSharpeRatio(portfolioId);
 
@@ -138,8 +160,8 @@ describe('PerformanceCalculator', () => {
     });
   });
 
-  describe('calculateMaxDrawdown', () => {
-    it('should calculate max drawdown from worst holding', async () => {
+  describe("calculateMaxDrawdown", () => {
+    it("should calculate max drawdown from worst holding", async () => {
       const mockPortfolio = { id: portfolioId, user_id: userId };
       const mockHoldings = [
         {
@@ -147,19 +169,23 @@ describe('PerformanceCalculator', () => {
           quantity: 100,
           average_cost: 100,
           gain_loss_percent: -20,
-          created_at: new Date('2024-01-01'),
+          created_at: new Date("2024-01-01"),
         },
         {
           current_value: 5000,
           quantity: 50,
           average_cost: 100,
           gain_loss_percent: 0,
-          created_at: new Date('2024-01-01'),
+          created_at: new Date("2024-01-01"),
         },
       ];
 
-      mockPortfolioService.getPortfolio = jest.fn().mockResolvedValue(mockPortfolio);
-      mockPortfolioService.getHoldings = jest.fn().mockResolvedValue(mockHoldings);
+      mockPortfolioService.getPortfolio = jest
+        .fn()
+        .mockResolvedValue(mockPortfolio);
+      mockPortfolioService.getHoldings = jest
+        .fn()
+        .mockResolvedValue(mockHoldings);
 
       const result = await calculator.calculateMaxDrawdown(portfolioId);
 
@@ -168,4 +194,3 @@ describe('PerformanceCalculator', () => {
     });
   });
 });
-

@@ -4,14 +4,14 @@
  * React hook for mobile app to manage positions.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type PositionSide = 'long' | 'short';
-export type PositionStatus = 'open' | 'closed' | 'liquidated';
+export type PositionSide = "long" | "short";
+export type PositionStatus = "open" | "closed" | "liquidated";
 
 export interface Position {
   id: string;
@@ -80,10 +80,10 @@ export function usePositions(config: UsePositionsConfig = {}) {
   // Fetch positions
   const fetchPositions = useCallback(async () => {
     try {
-      const response = await fetch('/api/trading/positions');
+      const response = await fetch("/api/trading/positions");
 
       if (!response.ok) {
-        throw new Error('Failed to fetch positions');
+        throw new Error("Failed to fetch positions");
       }
 
       const data = await response.json();
@@ -102,7 +102,7 @@ export function usePositions(config: UsePositionsConfig = {}) {
       setState((prev) => ({
         ...prev,
         isLoading: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
       }));
     }
   }, []);
@@ -111,17 +111,17 @@ export function usePositions(config: UsePositionsConfig = {}) {
   const closePosition = useCallback(
     async (
       positionId: string,
-      closePrice?: number
+      closePrice?: number,
     ): Promise<{ success: boolean; realizedPL?: number; error?: string }> => {
       try {
-        const response = await fetch('/api/trading/positions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const response = await fetch("/api/trading/positions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            action: 'close',
+            action: "close",
             positionId,
             closePrice,
-            reason: 'manual',
+            reason: "manual",
           }),
         });
 
@@ -134,12 +134,12 @@ export function usePositions(config: UsePositionsConfig = {}) {
           setState((prev) => ({
             ...prev,
             openPositions: prev.openPositions.filter(
-              (p) => p.id !== positionId
+              (p) => p.id !== positionId,
             ),
             positions: prev.positions.map((p) =>
               p.id === positionId
-                ? { ...p, ...position, status: 'closed' as PositionStatus }
-                : p
+                ? { ...p, ...position, status: "closed" as PositionStatus }
+                : p,
             ),
           }));
 
@@ -148,16 +148,16 @@ export function usePositions(config: UsePositionsConfig = {}) {
 
         return {
           success: false,
-          error: data.error || 'Failed to close position',
+          error: data.error || "Failed to close position",
         };
       } catch (error) {
         return {
           success: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: error instanceof Error ? error.message : "Unknown error",
         };
       }
     },
-    []
+    [],
   );
 
   // Close all positions
@@ -167,10 +167,10 @@ export function usePositions(config: UsePositionsConfig = {}) {
     totalRealizedPL: number;
   }> => {
     try {
-      const response = await fetch('/api/trading/positions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'closeAll' }),
+      const response = await fetch("/api/trading/positions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "closeAll" }),
       });
 
       const data = await response.json();
@@ -181,7 +181,7 @@ export function usePositions(config: UsePositionsConfig = {}) {
           openPositions: [],
           positions: prev.positions.map((p) => ({
             ...p,
-            status: 'closed' as PositionStatus,
+            status: "closed" as PositionStatus,
           })),
         }));
 
@@ -206,7 +206,7 @@ export function usePositions(config: UsePositionsConfig = {}) {
         if (p.symbol === symbol) {
           const priceDiff = price - p.avgEntryPrice;
           const unrealizedPL =
-            p.side === 'long'
+            p.side === "long"
               ? priceDiff * p.quantity
               : -priceDiff * p.quantity;
           const unrealizedPLPercent =
@@ -230,7 +230,7 @@ export function usePositions(config: UsePositionsConfig = {}) {
     (symbol: string): Position | undefined => {
       return state.openPositions.find((p) => p.symbol === symbol);
     },
-    [state.openPositions]
+    [state.openPositions],
   );
 
   // Check if has position for symbol
@@ -238,14 +238,14 @@ export function usePositions(config: UsePositionsConfig = {}) {
     (symbol: string): boolean => {
       return state.openPositions.some((p) => p.symbol === symbol);
     },
-    [state.openPositions]
+    [state.openPositions],
   );
 
   // Calculate totals
   const totals = {
     unrealizedPL: state.openPositions.reduce(
       (sum, p) => sum + p.unrealizedPL,
-      0
+      0,
     ),
     marketValue: state.openPositions.reduce((sum, p) => sum + p.marketValue, 0),
     positionCount: state.openPositions.length,

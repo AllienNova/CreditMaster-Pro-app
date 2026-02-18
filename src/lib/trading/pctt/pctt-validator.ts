@@ -1,6 +1,6 @@
 /**
  * PCTT Strategy Validator
- * 
+ *
  * Statistical validation for PCTT trading signals including:
  * - Monte Carlo permutation testing
  * - Bootstrap confidence intervals
@@ -8,7 +8,7 @@
  * - Walk-forward analysis
  */
 
-import { PCTTSignal } from './pctt-core';
+import { PCTTSignal } from "./pctt-core";
 
 // ============================================================================
 // TYPES
@@ -21,8 +21,8 @@ export interface TradeResult {
   pnl: number;
   rMultiple: number;
   barsHeld: number;
-  outcome: 'win' | 'loss' | 'breakeven';
-  exitReason: 'target' | 'stop' | 'time' | 'manual';
+  outcome: "win" | "loss" | "breakeven";
+  exitReason: "target" | "stop" | "time" | "manual";
 }
 
 export interface ValidationResult {
@@ -93,7 +93,7 @@ export class PCTTValidator {
 
   constructor(config: Partial<ValidatorConfig> = {}) {
     this.config = { ...DEFAULT_VALIDATOR_CONFIG, ...config };
-    
+
     // Simple seeded random for reproducibility
     if (this.config.randomSeed !== undefined) {
       let seed = this.config.randomSeed;
@@ -117,10 +117,10 @@ export class PCTTValidator {
   monteCarloSignificance(
     returns: number[],
     signals: number[],
-    metric: 'sharpe' | 'totalReturn' | 'sortino' = 'sharpe'
+    metric: "sharpe" | "totalReturn" | "sortino" = "sharpe",
   ): ValidationResult {
     if (returns.length !== signals.length) {
-      throw new Error('Returns and signals must have the same length');
+      throw new Error("Returns and signals must have the same length");
     }
 
     if (returns.length < this.config.minSampleSize) {
@@ -143,12 +143,14 @@ export class PCTTValidator {
     }
 
     // Calculate p-value (one-tailed)
-    const pValue = nullMetrics.filter(m => m >= actualMetric).length / this.config.nSimulations;
+    const pValue =
+      nullMetrics.filter((m) => m >= actualMetric).length /
+      this.config.nSimulations;
     const alpha = 1 - this.config.confidenceLevel;
     const isSignificant = pValue < alpha;
 
     return {
-      testName: 'Monte Carlo Permutation Test',
+      testName: "Monte Carlo Permutation Test",
       statistic: actualMetric,
       pValue,
       isSignificant,
@@ -176,10 +178,10 @@ export class PCTTValidator {
   bootstrapCI(
     data: number[],
     metricFunc: (arr: number[]) => number,
-    method: 'percentile' | 'basic' = 'percentile'
+    method: "percentile" | "basic" = "percentile",
   ): BootstrapCI {
     if (data.length < 10) {
-      throw new Error('Sample size too small for bootstrap');
+      throw new Error("Sample size too small for bootstrap");
     }
 
     const pointEstimate = metricFunc(data);
@@ -194,12 +196,14 @@ export class PCTTValidator {
     let ciLower: number;
     let ciUpper: number;
 
-    if (method === 'percentile') {
+    if (method === "percentile") {
       ciLower = this.percentile(bootStats, (alpha / 2) * 100);
       ciUpper = this.percentile(bootStats, (1 - alpha / 2) * 100);
     } else {
-      ciLower = 2 * pointEstimate - this.percentile(bootStats, (1 - alpha / 2) * 100);
-      ciUpper = 2 * pointEstimate - this.percentile(bootStats, (alpha / 2) * 100);
+      ciLower =
+        2 * pointEstimate - this.percentile(bootStats, (1 - alpha / 2) * 100);
+      ciUpper =
+        2 * pointEstimate - this.percentile(bootStats, (alpha / 2) * 100);
     }
 
     return {
@@ -222,7 +226,7 @@ export class PCTTValidator {
       stdReturn: this.std.bind(this),
       sharpeRatio: (arr) => this.sharpeRatio(arr),
       sortinoRatio: (arr) => this.sortinoRatio(arr),
-      winRate: (arr) => arr.filter(x => x > 0).length / arr.length,
+      winRate: (arr) => arr.filter((x) => x > 0).length / arr.length,
       profitFactor: (arr) => this.profitFactor(arr),
       maxDrawdown: (arr) => this.maxDrawdown(arr),
       expectancy: this.mean.bind(this),
@@ -271,9 +275,14 @@ export class PCTTValidator {
     for (let i = 0; i < buckets.length; i++) {
       const bt = bucketTrades[i];
       if (bt.length > 0) {
-        const winRate = bt.filter(t => t.outcome === 'win').length / bt.length;
+        const winRate =
+          bt.filter((t) => t.outcome === "win").length / bt.length;
         observedRates.push(winRate);
-        expectedRates.push(buckets[i] - (i > 0 ? buckets[i - 1] : 0) / 2 + (i > 0 ? buckets[i - 1] : 0));
+        expectedRates.push(
+          buckets[i] -
+            (i > 0 ? buckets[i - 1] : 0) / 2 +
+            (i > 0 ? buckets[i - 1] : 0),
+        );
       } else {
         observedRates.push(0);
         expectedRates.push(buckets[i]);
@@ -284,7 +293,7 @@ export class PCTTValidator {
     let brierSum = 0;
     for (const trade of trades) {
       const predicted = trade.signal.qScore;
-      const actual = trade.outcome === 'win' ? 1 : 0;
+      const actual = trade.outcome === "win" ? 1 : 0;
       brierSum += (predicted - actual) ** 2;
     }
     const brierScore = trades.length > 0 ? brierSum / trades.length : 1;
@@ -332,10 +341,10 @@ export class PCTTValidator {
       };
     }
 
-    const wins = trades.filter(t => t.outcome === 'win');
-    const losses = trades.filter(t => t.outcome === 'loss');
-    const returns = trades.map(t => t.pnl);
-    const rMultiples = trades.map(t => t.rMultiple);
+    const wins = trades.filter((t) => t.outcome === "win");
+    const losses = trades.filter((t) => t.outcome === "loss");
+    const returns = trades.map((t) => t.pnl);
+    const rMultiples = trades.map((t) => t.rMultiple);
 
     const grossProfit = wins.reduce((s, t) => s + t.pnl, 0);
     const grossLoss = Math.abs(losses.reduce((s, t) => s + t.pnl, 0));
@@ -345,13 +354,18 @@ export class PCTTValidator {
       winRate: wins.length / trades.length,
       avgWin: wins.length > 0 ? grossProfit / wins.length : 0,
       avgLoss: losses.length > 0 ? grossLoss / losses.length : 0,
-      profitFactor: grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? Infinity : 0,
+      profitFactor:
+        grossLoss > 0
+          ? grossProfit / grossLoss
+          : grossProfit > 0
+            ? Infinity
+            : 0,
       expectancy: this.mean(returns),
       sharpeRatio: this.sharpeRatio(returns),
       sortinoRatio: this.sortinoRatio(returns),
       maxDrawdown: this.maxDrawdown(returns),
       avgRMultiple: this.mean(rMultiples),
-      avgBarsHeld: this.mean(trades.map(t => t.barsHeld)),
+      avgBarsHeld: this.mean(trades.map((t) => t.barsHeld)),
     };
   }
 
@@ -367,16 +381,16 @@ export class PCTTValidator {
   whitesRealityCheck(
     strategies: { returns: number[]; signals: number[]; name: string }[],
     benchmarkReturns: number[],
-    metric: 'sharpe' | 'totalReturn' | 'sortino' = 'sharpe'
+    metric: "sharpe" | "totalReturn" | "sortino" = "sharpe",
   ): ValidationResult {
     if (strategies.length === 0) {
-      throw new Error('At least one strategy required');
+      throw new Error("At least one strategy required");
     }
 
     const metricFunc = this.getMetricFunction(metric);
 
     // Calculate actual performance for each strategy
-    const strategyMetrics = strategies.map(s => {
+    const strategyMetrics = strategies.map((s) => {
       const stratReturns = s.returns.map((r, i) => r * s.signals[i]);
       return {
         name: s.name,
@@ -386,8 +400,8 @@ export class PCTTValidator {
     });
 
     // Find best strategy
-    const bestStrategy = strategyMetrics.reduce((best, curr) => 
-      curr.metric > best.metric ? curr : best
+    const bestStrategy = strategyMetrics.reduce((best, curr) =>
+      curr.metric > best.metric ? curr : best,
     );
 
     // Calculate benchmark metric
@@ -400,25 +414,25 @@ export class PCTTValidator {
       // For each simulation, calculate max metric across all strategies
       // using bootstrapped returns under null hypothesis
       const bootReturns = this.resampleWithReplacement(benchmarkReturns);
-      
+
       let maxMetric = -Infinity;
       for (const strategy of strategies) {
         // Apply strategy signals to bootstrapped returns
-        const stratReturns = bootReturns.map((r, i) => 
-          r * (strategy.signals[i % strategy.signals.length] || 1)
+        const stratReturns = bootReturns.map(
+          (r, i) => r * (strategy.signals[i % strategy.signals.length] || 1),
         );
         const simMetric = metricFunc(stratReturns);
         maxMetric = Math.max(maxMetric, simMetric);
       }
-      
+
       nullMaxMetrics.push(maxMetric);
     }
 
     // Calculate adjusted p-value
     // How often does the null max exceed our best strategy?
-    const adjustedPValue = nullMaxMetrics.filter(
-      m => m >= bestStrategy.metric
-    ).length / this.config.nSimulations;
+    const adjustedPValue =
+      nullMaxMetrics.filter((m) => m >= bestStrategy.metric).length /
+      this.config.nSimulations;
 
     const alpha = 1 - this.config.confidenceLevel;
     const isSignificant = adjustedPValue < alpha;
@@ -438,7 +452,10 @@ export class PCTTValidator {
         nullDistMean: this.mean(nullMaxMetrics),
         nullDistStd: this.std(nullMaxMetrics),
         nullDist95: this.percentile(nullMaxMetrics, 95),
-        allStrategyMetrics: strategyMetrics.map(s => ({ name: s.name, metric: s.metric })),
+        allStrategyMetrics: strategyMetrics.map((s) => ({
+          name: s.name,
+          metric: s.metric,
+        })),
       },
     };
   }
@@ -450,10 +467,10 @@ export class PCTTValidator {
   blockBootstrapCI(
     data: number[],
     metricFunc: (arr: number[]) => number,
-    blockSize: number = 10
+    blockSize: number = 10,
   ): BootstrapCI {
     if (data.length < blockSize * 2) {
-      throw new Error('Data length must be at least 2x block size');
+      throw new Error("Data length must be at least 2x block size");
     }
 
     const pointEstimate = metricFunc(data);
@@ -463,7 +480,7 @@ export class PCTTValidator {
     for (let sim = 0; sim < this.config.nSimulations; sim++) {
       // Sample blocks with replacement
       const bootSample: number[] = [];
-      
+
       for (let b = 0; b < numBlocks; b++) {
         // Random block start
         const start = Math.floor(this.rng() * (data.length - blockSize + 1));
@@ -471,7 +488,7 @@ export class PCTTValidator {
           bootSample.push(data[start + i]);
         }
       }
-      
+
       bootStats.push(metricFunc(bootSample.slice(0, data.length)));
     }
 
@@ -499,11 +516,15 @@ export class PCTTValidator {
   walkForwardAnalysis(
     trades: TradeResult[],
     trainRatio: number = 0.7,
-    windows: number = 5
-  ): { inSample: PerformanceMetrics[]; outOfSample: PerformanceMetrics[]; stability: number } {
+    windows: number = 5,
+  ): {
+    inSample: PerformanceMetrics[];
+    outOfSample: PerformanceMetrics[];
+    stability: number;
+  } {
     const windowSize = Math.floor(trades.length / windows);
     const trainSize = Math.floor(windowSize * trainRatio);
-    
+
     const inSample: PerformanceMetrics[] = [];
     const outOfSample: PerformanceMetrics[] = [];
 
@@ -524,16 +545,16 @@ export class PCTTValidator {
     }
 
     // Calculate stability (correlation between in-sample and out-of-sample Sharpe)
-    const isReturns = inSample.map(m => m.expectancy);
-    const oosReturns = outOfSample.map(m => m.expectancy);
-    
+    const isReturns = inSample.map((m) => m.expectancy);
+    const oosReturns = outOfSample.map((m) => m.expectancy);
+
     const minLen = Math.min(isReturns.length, oosReturns.length);
     let stability = 0;
-    
+
     if (minLen >= 3) {
       const correlation = this.correlation(
         isReturns.slice(0, minLen),
-        oosReturns.slice(0, minLen)
+        oosReturns.slice(0, minLen),
       );
       stability = Math.max(0, correlation);
     }
@@ -547,11 +568,11 @@ export class PCTTValidator {
 
   private getMetricFunction(metric: string): (arr: number[]) => number {
     switch (metric) {
-      case 'sharpe':
+      case "sharpe":
         return (arr) => this.sharpeRatio(arr);
-      case 'totalReturn':
+      case "totalReturn":
         return (arr) => arr.reduce((a, b) => a * (1 + b), 1) - 1;
-      case 'sortino':
+      case "sortino":
         return (arr) => this.sortinoRatio(arr);
       default:
         return (arr) => this.sharpeRatio(arr);
@@ -568,8 +589,9 @@ export class PCTTValidator {
   }
 
   private resampleWithReplacement<T>(array: T[]): T[] {
-    return Array.from({ length: array.length }, () => 
-      array[Math.floor(this.rng() * array.length)]
+    return Array.from(
+      { length: array.length },
+      () => array[Math.floor(this.rng() * array.length)],
     );
   }
 
@@ -581,14 +603,18 @@ export class PCTTValidator {
   private std(arr: number[]): number {
     if (arr.length < 2) return 0;
     const m = this.mean(arr);
-    return Math.sqrt(arr.reduce((s, x) => s + (x - m) ** 2, 0) / (arr.length - 1));
+    return Math.sqrt(
+      arr.reduce((s, x) => s + (x - m) ** 2, 0) / (arr.length - 1),
+    );
   }
 
   private median(arr: number[]): number {
     if (arr.length === 0) return 0;
     const sorted = [...arr].sort((a, b) => a - b);
     const mid = Math.floor(sorted.length / 2);
-    return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+    return sorted.length % 2
+      ? sorted[mid]
+      : (sorted[mid - 1] + sorted[mid]) / 2;
   }
 
   private percentile(arr: number[], p: number): number {
@@ -608,17 +634,22 @@ export class PCTTValidator {
     return (m / s) * Math.sqrt(periodsPerYear);
   }
 
-  private sortinoRatio(returns: number[], periodsPerYear: number = 252): number {
+  private sortinoRatio(
+    returns: number[],
+    periodsPerYear: number = 252,
+  ): number {
     const m = this.mean(returns);
-    const downside = returns.filter(r => r < 0);
+    const downside = returns.filter((r) => r < 0);
     const downsideStd = this.std(downside);
     if (downsideStd === 0) return 0;
     return (m / downsideStd) * Math.sqrt(periodsPerYear);
   }
 
   private profitFactor(returns: number[]): number {
-    const gains = returns.filter(r => r > 0).reduce((a, b) => a + b, 0);
-    const losses = Math.abs(returns.filter(r => r < 0).reduce((a, b) => a + b, 0));
+    const gains = returns.filter((r) => r > 0).reduce((a, b) => a + b, 0);
+    const losses = Math.abs(
+      returns.filter((r) => r < 0).reduce((a, b) => a + b, 0),
+    );
     if (losses === 0) return gains > 0 ? Infinity : 0;
     return gains / losses;
   }
@@ -629,7 +660,7 @@ export class PCTTValidator {
     let equity = 1;
 
     for (const r of returns) {
-      equity *= (1 + r);
+      equity *= 1 + r;
       peak = Math.max(peak, equity);
       const dd = (peak - equity) / peak;
       maxDD = Math.max(maxDD, dd);
@@ -662,6 +693,8 @@ export class PCTTValidator {
 // FACTORY
 // ============================================================================
 
-export function createPCTTValidator(config?: Partial<ValidatorConfig>): PCTTValidator {
+export function createPCTTValidator(
+  config?: Partial<ValidatorConfig>,
+): PCTTValidator {
   return new PCTTValidator(config);
 }

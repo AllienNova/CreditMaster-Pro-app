@@ -1,11 +1,11 @@
-import { Suspense } from 'react';
-import { Metadata } from 'next';
-import DebtPayoffPlanner from '@/components/financial/DebtPayoffPlanner';
+import { Suspense } from "react";
+import { Metadata } from "next";
+import DebtPayoffPlanner from "@/components/financial/DebtPayoffPlanner";
 
 export const metadata: Metadata = {
-  title: 'Debt Payoff Planner | Fynvita',
+  title: "Debt Payoff Planner | Fynvita",
   description:
-    'Create a personalized debt payoff strategy and track your progress to financial freedom',
+    "Create a personalized debt payoff strategy and track your progress to financial freedom",
 };
 
 function DebtLoadingSkeleton() {
@@ -121,7 +121,7 @@ export default function DebtPage() {
               <p className="text-sm text-gray-600 dark:text-slate-400">
                 <strong className="text-gray-900 dark:text-white">
                   Automate payments
-                </strong>{' '}
+                </strong>{" "}
                 - Set up automatic payments to never miss a due date
               </p>
             </div>
@@ -130,7 +130,7 @@ export default function DebtPage() {
               <p className="text-sm text-gray-600 dark:text-slate-400">
                 <strong className="text-gray-900 dark:text-white">
                   Round up payments
-                </strong>{' '}
+                </strong>{" "}
                 - Pay $300 instead of $285 to chip away faster
               </p>
             </div>
@@ -139,7 +139,7 @@ export default function DebtPage() {
               <p className="text-sm text-gray-600 dark:text-slate-400">
                 <strong className="text-gray-900 dark:text-white">
                   Use windfalls wisely
-                </strong>{' '}
+                </strong>{" "}
                 - Apply tax refunds and bonuses to debt
               </p>
             </div>
@@ -148,7 +148,7 @@ export default function DebtPage() {
               <p className="text-sm text-gray-600 dark:text-slate-400">
                 <strong className="text-gray-900 dark:text-white">
                   Negotiate rates
-                </strong>{' '}
+                </strong>{" "}
                 - Call creditors to request lower interest rates
               </p>
             </div>

@@ -6,9 +6,9 @@
  * PATCH /api/financial/budgets/rollover - Adjust rollover amount for a specific budget
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { budgetService } from '@/lib/financial/budget-service';
+import { NextRequest, NextResponse } from "next/server";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { budgetService } from "@/lib/financial/budget-service";
 
 /**
  * GET /api/financial/budgets/rollover
@@ -19,8 +19,8 @@ export async function GET(request: NextRequest) {
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
       return NextResponse.json(
-        { error: 'Unauthorized', message: 'Invalid or missing authentication' },
-        { status: 401 }
+        { error: "Unauthorized", message: "Invalid or missing authentication" },
+        { status: 401 },
       );
     }
 
@@ -35,10 +35,10 @@ export async function GET(request: NextRequest) {
     void _error;
     return NextResponse.json(
       {
-        error: 'Internal Server Error',
-        message: 'Failed to fetch rollover summary',
+        error: "Internal Server Error",
+        message: "Failed to fetch rollover summary",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -52,13 +52,13 @@ export async function POST(request: NextRequest) {
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
       return NextResponse.json(
-        { error: 'Unauthorized', message: 'Invalid or missing authentication' },
-        { status: 401 }
+        { error: "Unauthorized", message: "Invalid or missing authentication" },
+        { status: 401 },
       );
     }
 
     const result = await budgetService.processRolloversForUser(
-      validation.user.id
+      validation.user.id,
     );
 
     return NextResponse.json({
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
         message:
           result.processed > 0
             ? `Processed ${result.processed} budget(s) with $${result.totalRollover.toFixed(2)} total rollover`
-            : 'No budgets needed rollover processing',
+            : "No budgets needed rollover processing",
       },
     });
   } catch (_error) {
@@ -77,10 +77,10 @@ export async function POST(request: NextRequest) {
     void _error;
     return NextResponse.json(
       {
-        error: 'Internal Server Error',
-        message: 'Failed to process rollovers',
+        error: "Internal Server Error",
+        message: "Failed to process rollovers",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -95,35 +95,35 @@ export async function PATCH(request: NextRequest) {
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
       return NextResponse.json(
-        { error: 'Unauthorized', message: 'Invalid or missing authentication' },
-        { status: 401 }
+        { error: "Unauthorized", message: "Invalid or missing authentication" },
+        { status: 401 },
       );
     }
 
     const body = await request.json();
     const { budgetId, rolloverAmount } = body;
 
-    if (!budgetId || typeof budgetId !== 'string') {
+    if (!budgetId || typeof budgetId !== "string") {
       return NextResponse.json(
-        { error: 'Bad Request', message: 'budgetId is required' },
-        { status: 400 }
+        { error: "Bad Request", message: "budgetId is required" },
+        { status: 400 },
       );
     }
 
-    if (typeof rolloverAmount !== 'number' || rolloverAmount < 0) {
+    if (typeof rolloverAmount !== "number" || rolloverAmount < 0) {
       return NextResponse.json(
         {
-          error: 'Bad Request',
-          message: 'rolloverAmount must be a non-negative number',
+          error: "Bad Request",
+          message: "rolloverAmount must be a non-negative number",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const budget = await budgetService.adjustRolloverAmount(
       budgetId,
       validation.user.id,
-      rolloverAmount
+      rolloverAmount,
     );
 
     return NextResponse.json({
@@ -133,10 +133,10 @@ export async function PATCH(request: NextRequest) {
   } catch (_error) {
     // RolloverRoute error: Failed to adjust rollover
     const message =
-      _error instanceof Error ? _error.message : 'Failed to adjust rollover';
+      _error instanceof Error ? _error.message : "Failed to adjust rollover";
     return NextResponse.json(
-      { error: 'Internal Server Error', message },
-      { status: 500 }
+      { error: "Internal Server Error", message },
+      { status: 500 },
     );
   }
 }

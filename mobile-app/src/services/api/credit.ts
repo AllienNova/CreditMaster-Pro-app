@@ -3,8 +3,8 @@
  * Handles all credit score, monitoring, and bureau-related API calls
  */
 
-import { api } from './client';
-import { offlineSyncService } from '../offline-sync';
+import { api } from "./client";
+import { offlineSyncService } from "../offline-sync";
 import type {
   CreditScore,
   CreditScoreHistory,
@@ -13,7 +13,7 @@ import type {
   MonitoringStatus,
   ApiResponse,
   PaginatedResponse,
-} from './types';
+} from "./types";
 
 // Credit Score Endpoints
 export const creditScoreApi = {
@@ -21,25 +21,32 @@ export const creditScoreApi = {
    * Get all current credit scores from connected bureaus
    */
   getScores: () =>
-    api.get<CreditScore[]>('/credit/scores', { enableCache: true, cacheTime: 5 * 60 * 1000 }),
+    api.get<CreditScore[]>("/credit/scores", {
+      enableCache: true,
+      cacheTime: 5 * 60 * 1000,
+    }),
 
   /**
    * Get credit score from specific bureau
    */
-  getScoreByBureau: (bureau: 'experian' | 'equifax' | 'transunion') =>
+  getScoreByBureau: (bureau: "experian" | "equifax" | "transunion") =>
     api.get<CreditScore>(`/credit/scores/${bureau}`),
 
   /**
    * Get credit score history
    */
   getHistory: (months?: number) =>
-    api.get<CreditScore[]>(`/credit/scores/history${months ? `?months=${months}` : ''}`),
+    api.get<CreditScore[]>(
+      `/credit/scores/history${months ? `?months=${months}` : ""}`,
+    ),
 
   /**
    * Get credit score factors analysis
    */
   getFactors: () =>
-    api.get<{ factor: string; impact: number; status: string }[]>('/credit/factors'),
+    api.get<{ factor: string; impact: number; status: string }[]>(
+      "/credit/factors",
+    ),
 
   /**
    * Simulate score impact for potential actions
@@ -54,15 +61,17 @@ export const creditScoreApi = {
       currentScore: number;
       projectedScore: number;
       impact: number;
-      confidence: 'high' | 'medium' | 'low';
+      confidence: "high" | "medium" | "low";
       recommendations: string[];
-    }>('/credit/simulate', scenarios),
+    }>("/credit/simulate", scenarios),
 
   /**
    * Request a fresh credit score pull
    */
   refreshScores: () =>
-    api.post<{ message: string; estimatedTime: string }>('/credit/scores/refresh'),
+    api.post<{ message: string; estimatedTime: string }>(
+      "/credit/scores/refresh",
+    ),
 };
 
 // Credit Monitoring Endpoints
@@ -70,26 +79,34 @@ export const creditMonitoringApi = {
   /**
    * Get monitoring status and connection info
    */
-  getStatus: () =>
-    api.get<MonitoringStatus>('/credit/monitoring/status'),
+  getStatus: () => api.get<MonitoringStatus>("/credit/monitoring/status"),
 
   /**
    * Enable/disable monitoring for a bureau
    */
   toggleBureauMonitoring: (bureau: string, enabled: boolean) =>
-    api.patch<MonitoringStatus>(`/credit/monitoring/bureaus/${bureau}`, { enabled }),
+    api.patch<MonitoringStatus>(`/credit/monitoring/bureaus/${bureau}`, {
+      enabled,
+    }),
 
   /**
    * Get all monitoring alerts
    */
-  getAlerts: (params?: { page?: number; limit?: number; unreadOnly?: boolean; severity?: string }) => {
+  getAlerts: (params?: {
+    page?: number;
+    limit?: number;
+    unreadOnly?: boolean;
+    severity?: string;
+  }) => {
     const queryParams = new URLSearchParams();
-    if (params?.page) queryParams.append('page', params.page.toString());
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
-    if (params?.unreadOnly) queryParams.append('unread', 'true');
-    if (params?.severity) queryParams.append('severity', params.severity);
+    if (params?.page) queryParams.append("page", params.page.toString());
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
+    if (params?.unreadOnly) queryParams.append("unread", "true");
+    if (params?.severity) queryParams.append("severity", params.severity);
     const query = queryParams.toString();
-    return api.get<PaginatedResponse<CreditMonitoringAlert>>(`/credit/monitoring/alerts${query ? `?${query}` : ''}`);
+    return api.get<PaginatedResponse<CreditMonitoringAlert>>(
+      `/credit/monitoring/alerts${query ? `?${query}` : ""}`,
+    );
   },
 
   /**
@@ -102,13 +119,17 @@ export const creditMonitoringApi = {
    * Acknowledge an alert
    */
   acknowledgeAlert: (alertId: string) =>
-    api.patch<CreditMonitoringAlert>(`/credit/monitoring/alerts/${alertId}/acknowledge`),
+    api.patch<CreditMonitoringAlert>(
+      `/credit/monitoring/alerts/${alertId}/acknowledge`,
+    ),
 
   /**
    * Acknowledge all alerts
    */
   acknowledgeAllAlerts: () =>
-    api.post<{ acknowledged: number }>('/credit/monitoring/alerts/acknowledge-all'),
+    api.post<{ acknowledged: number }>(
+      "/credit/monitoring/alerts/acknowledge-all",
+    ),
 
   /**
    * Update monitoring preferences
@@ -119,13 +140,19 @@ export const creditMonitoringApi = {
     pushNotifications?: boolean;
     threshold?: number;
   }) =>
-    api.patch<MonitoringStatus>('/credit/monitoring/preferences', preferences),
+    api.patch<MonitoringStatus>("/credit/monitoring/preferences", preferences),
 
   /**
    * Connect to a credit bureau
    */
-  connectBureau: (bureau: string, credentials: { username: string; password: string }) =>
-    api.post<{ success: boolean; message: string }>(`/credit/monitoring/bureaus/${bureau}/connect`, credentials),
+  connectBureau: (
+    bureau: string,
+    credentials: { username: string; password: string },
+  ) =>
+    api.post<{ success: boolean; message: string }>(
+      `/credit/monitoring/bureaus/${bureau}/connect`,
+      credentials,
+    ),
 
   /**
    * Disconnect from a credit bureau
@@ -140,7 +167,9 @@ export const creditReportApi = {
    * Get list of credit reports
    */
   getReports: () =>
-    api.get<{ reports: { id: string; bureau: string; date: string; status: string }[] }>('/credit/reports'),
+    api.get<{
+      reports: { id: string; bureau: string; date: string; status: string }[];
+    }>("/credit/reports"),
 
   /**
    * Get single credit report
@@ -160,46 +189,66 @@ export const creditReportApi = {
    * Upload and analyze a credit report.
    * If the device is offline, the upload metadata is queued for sync.
    */
-  uploadReport: async (file: { uri: string; name: string; type: string }): Promise<ApiResponse<{ reportId: string; status: string }>> => {
+  uploadReport: async (file: {
+    uri: string;
+    name: string;
+    type: string;
+  }): Promise<ApiResponse<{ reportId: string; status: string }>> => {
     // Check connectivity via the sync service
     if (!offlineSyncService.getIsOnline()) {
       // Queue the upload intent for when connectivity is restored
       await offlineSyncService.addToQueue({
-        endpoint: '/credit/reports/upload',
-        method: 'POST',
-        body: JSON.stringify({ fileName: file.name, fileUri: file.uri, fileType: file.type }),
-        entity: 'credit_score',
-        operationType: 'upload',
-        priority: 'high',
-        conflictStrategy: 'client_wins',
+        endpoint: "/credit/reports/upload",
+        method: "POST",
+        body: JSON.stringify({
+          fileName: file.name,
+          fileUri: file.uri,
+          fileType: file.type,
+        }),
+        entity: "credit_score",
+        operationType: "upload",
+        priority: "high",
+        conflictStrategy: "client_wins",
         metadata: { fileName: file.name },
       });
       return {
         success: false,
-        error: { code: 'OFFLINE_QUEUED', message: 'Upload queued for when online', retryable: true },
-        message: 'You appear to be offline. This upload will be processed when you reconnect.',
+        error: {
+          code: "OFFLINE_QUEUED",
+          message: "Upload queued for when online",
+          retryable: true,
+        },
+        message:
+          "You appear to be offline. This upload will be processed when you reconnect.",
       } as ApiResponse<{ reportId: string; status: string }>;
     }
 
-    const { supabase } = await import('../supabase');
-    const { data: { session } } = await supabase.auth.getSession();
+    const { supabase } = await import("../supabase");
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
     const formData = new FormData();
-    formData.append('file', {
+    formData.append("file", {
       uri: file.uri,
       name: file.name,
       type: file.type,
     } as unknown as Blob);
 
-    const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'https://cpfi.com/api'}/credit/reports/upload`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${session?.access_token}`,
+    const response = await fetch(
+      `${process.env.EXPO_PUBLIC_API_URL || "https://cpfi.com/api"}/credit/reports/upload`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: formData,
       },
-      body: formData,
-    });
+    );
 
-    return response.json() as Promise<ApiResponse<{ reportId: string; status: string }>>;
+    return response.json() as Promise<
+      ApiResponse<{ reportId: string; status: string }>
+    >;
   },
 
   /**

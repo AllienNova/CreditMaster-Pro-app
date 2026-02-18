@@ -9,7 +9,7 @@ import {
   ConnectionState,
   RealtimeQuote,
   OrderUpdate,
-} from '../realtime-trading-service';
+} from "../realtime-trading-service";
 
 // Mock WebSocket
 class MockWebSocket {
@@ -38,41 +38,41 @@ class MockWebSocket {
     const parsed = JSON.parse(data);
 
     // Simulate auth response
-    if (parsed.action === 'auth') {
+    if (parsed.action === "auth") {
       setTimeout(() => {
         this.onmessage?.({
-          data: JSON.stringify([{ T: 'success', msg: 'authenticated' }]),
+          data: JSON.stringify([{ T: "success", msg: "authenticated" }]),
         });
       }, 10);
     }
 
     // Simulate trading auth response
-    if (parsed.action === 'authenticate') {
+    if (parsed.action === "authenticate") {
       setTimeout(() => {
         this.onmessage?.({
           data: JSON.stringify({
-            stream: 'authorization',
-            data: { status: 'authorized' },
+            stream: "authorization",
+            data: { status: "authorized" },
           }),
         });
       }, 10);
     }
 
     // Simulate subscription response
-    if (parsed.action === 'subscribe') {
+    if (parsed.action === "subscribe") {
       setTimeout(() => {
         this.onmessage?.({
-          data: JSON.stringify([{ T: 'subscription', ...parsed }]),
+          data: JSON.stringify([{ T: "subscription", ...parsed }]),
         });
       }, 10);
     }
 
     // Simulate listen response
-    if (parsed.action === 'listen') {
+    if (parsed.action === "listen") {
       setTimeout(() => {
         this.onmessage?.({
           data: JSON.stringify({
-            stream: 'listening',
+            stream: "listening",
             data: { streams: parsed.data.streams },
           }),
         });
@@ -96,7 +96,7 @@ class MockWebSocket {
 // Store original WebSocket
 const OriginalWebSocket = global.WebSocket;
 
-describe('RealtimeTradingService', () => {
+describe("RealtimeTradingService", () => {
   beforeAll(() => {
     // @ts-expect-error - Mocking WebSocket
     global.WebSocket = MockWebSocket;
@@ -106,16 +106,16 @@ describe('RealtimeTradingService', () => {
     global.WebSocket = OriginalWebSocket;
   });
 
-  describe('Configuration', () => {
-    it('should use default config when not provided', () => {
+  describe("Configuration", () => {
+    it("should use default config when not provided", () => {
       const service = createRealtimeTradingService();
       const status = service.getStatus();
 
-      expect(status.dataConnection).toBe('disconnected');
-      expect(status.tradingConnection).toBe('disconnected');
+      expect(status.dataConnection).toBe("disconnected");
+      expect(status.tradingConnection).toBe("disconnected");
     });
 
-    it('should merge custom config with defaults', () => {
+    it("should merge custom config with defaults", () => {
       const customConfig = {
         paperTrading: false,
         reconnectAttempts: 5,
@@ -125,9 +125,9 @@ describe('RealtimeTradingService', () => {
       expect(service).toBeDefined();
     });
 
-    it('should have correct default values', () => {
+    it("should have correct default values", () => {
       expect(DEFAULT_REALTIME_CONFIG.paperTrading).toBe(true);
-      expect(DEFAULT_REALTIME_CONFIG.dataFeed).toBe('iex');
+      expect(DEFAULT_REALTIME_CONFIG.dataFeed).toBe("iex");
       expect(DEFAULT_REALTIME_CONFIG.reconnectAttempts).toBe(10);
       expect(DEFAULT_REALTIME_CONFIG.reconnectDelayMs).toBe(1000);
       expect(DEFAULT_REALTIME_CONFIG.heartbeatIntervalMs).toBe(30000);
@@ -135,7 +135,7 @@ describe('RealtimeTradingService', () => {
     });
   });
 
-  describe('Connection Management', () => {
+  describe("Connection Management", () => {
     let service: RealtimeTradingService;
 
     beforeEach(() => {
@@ -146,16 +146,16 @@ describe('RealtimeTradingService', () => {
       service.disconnect();
     });
 
-    it('should throw error when connecting without credentials', async () => {
+    it("should throw error when connecting without credentials", async () => {
       await expect(service.connect()).rejects.toThrow(
-        'API credentials required'
+        "API credentials required",
       );
     });
 
-    it('should connect successfully with valid credentials', async () => {
+    it("should connect successfully with valid credentials", async () => {
       await service.connect({
-        apiKey: 'test-key',
-        apiSecret: 'test-secret',
+        apiKey: "test-key",
+        apiSecret: "test-secret",
       });
 
       // Wait for async operations
@@ -164,10 +164,10 @@ describe('RealtimeTradingService', () => {
       expect(service.isConnected()).toBe(true);
     });
 
-    it('should disconnect properly', async () => {
+    it("should disconnect properly", async () => {
       await service.connect({
-        apiKey: 'test-key',
-        apiSecret: 'test-secret',
+        apiKey: "test-key",
+        apiSecret: "test-secret",
       });
 
       await new Promise((resolve) => setTimeout(resolve, 50));
@@ -177,7 +177,7 @@ describe('RealtimeTradingService', () => {
       expect(service.isConnected()).toBe(false);
     });
 
-    it('should track connection state changes', async () => {
+    it("should track connection state changes", async () => {
       const states: ConnectionState[] = [];
 
       service.dataConnection$.subscribe((state) => {
@@ -185,25 +185,25 @@ describe('RealtimeTradingService', () => {
       });
 
       await service.connect({
-        apiKey: 'test-key',
-        apiSecret: 'test-secret',
+        apiKey: "test-key",
+        apiSecret: "test-secret",
       });
 
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      expect(states).toContain('connecting');
-      expect(states).toContain('connected');
+      expect(states).toContain("connecting");
+      expect(states).toContain("connected");
     });
   });
 
-  describe('Subscription Management', () => {
+  describe("Subscription Management", () => {
     let service: RealtimeTradingService;
 
     beforeEach(async () => {
       service = createRealtimeTradingService();
       await service.connect({
-        apiKey: 'test-key',
-        apiSecret: 'test-secret',
+        apiKey: "test-key",
+        apiSecret: "test-secret",
       });
       await new Promise((resolve) => setTimeout(resolve, 50));
     });
@@ -212,59 +212,59 @@ describe('RealtimeTradingService', () => {
       service.disconnect();
     });
 
-    it('should subscribe to quotes', () => {
-      service.subscribeQuotes(['AAPL', 'GOOGL']);
+    it("should subscribe to quotes", () => {
+      service.subscribeQuotes(["AAPL", "GOOGL"]);
 
       const status = service.getStatus();
-      expect(status.subscriptions.quotes).toContain('AAPL');
-      expect(status.subscriptions.quotes).toContain('GOOGL');
+      expect(status.subscriptions.quotes).toContain("AAPL");
+      expect(status.subscriptions.quotes).toContain("GOOGL");
     });
 
-    it('should subscribe to trades', () => {
-      service.subscribeTrades(['MSFT', 'AMZN']);
+    it("should subscribe to trades", () => {
+      service.subscribeTrades(["MSFT", "AMZN"]);
 
       const status = service.getStatus();
-      expect(status.subscriptions.trades).toContain('MSFT');
-      expect(status.subscriptions.trades).toContain('AMZN');
+      expect(status.subscriptions.trades).toContain("MSFT");
+      expect(status.subscriptions.trades).toContain("AMZN");
     });
 
-    it('should subscribe to bars', () => {
-      service.subscribeBars(['TSLA']);
+    it("should subscribe to bars", () => {
+      service.subscribeBars(["TSLA"]);
 
       const status = service.getStatus();
-      expect(status.subscriptions.bars).toContain('TSLA');
+      expect(status.subscriptions.bars).toContain("TSLA");
     });
 
-    it('should unsubscribe from quotes', () => {
-      service.subscribeQuotes(['AAPL', 'GOOGL', 'MSFT']);
-      service.unsubscribeQuotes(['GOOGL']);
+    it("should unsubscribe from quotes", () => {
+      service.subscribeQuotes(["AAPL", "GOOGL", "MSFT"]);
+      service.unsubscribeQuotes(["GOOGL"]);
 
       const status = service.getStatus();
-      expect(status.subscriptions.quotes).toContain('AAPL');
-      expect(status.subscriptions.quotes).not.toContain('GOOGL');
-      expect(status.subscriptions.quotes).toContain('MSFT');
+      expect(status.subscriptions.quotes).toContain("AAPL");
+      expect(status.subscriptions.quotes).not.toContain("GOOGL");
+      expect(status.subscriptions.quotes).toContain("MSFT");
     });
 
-    it('should not duplicate subscriptions', () => {
-      service.subscribeQuotes(['AAPL']);
-      service.subscribeQuotes(['AAPL']);
+    it("should not duplicate subscriptions", () => {
+      service.subscribeQuotes(["AAPL"]);
+      service.subscribeQuotes(["AAPL"]);
 
       const status = service.getStatus();
       const aaplCount = status.subscriptions.quotes.filter(
-        (s) => s === 'AAPL'
+        (s) => s === "AAPL",
       ).length;
       expect(aaplCount).toBe(1);
     });
   });
 
-  describe('Quote Streaming', () => {
+  describe("Quote Streaming", () => {
     let service: RealtimeTradingService;
 
     beforeEach(async () => {
       service = createRealtimeTradingService();
       await service.connect({
-        apiKey: 'test-key',
-        apiSecret: 'test-secret',
+        apiKey: "test-key",
+        apiSecret: "test-secret",
       });
       await new Promise((resolve) => setTimeout(resolve, 50));
     });
@@ -273,17 +273,17 @@ describe('RealtimeTradingService', () => {
       service.disconnect();
     });
 
-    it('should have quotes observable available', () => {
+    it("should have quotes observable available", () => {
       // Verify the observable is properly set up
       const observable = service.quotes$;
       expect(observable).toBeDefined();
-      expect(typeof observable.subscribe).toBe('function');
+      expect(typeof observable.subscribe).toBe("function");
     });
 
-    it('should filter quotes by symbol', () => {
+    it("should filter quotes by symbol", () => {
       const aaplQuotes: RealtimeQuote[] = [];
 
-      service.getQuotesForSymbol('AAPL').subscribe((quote) => {
+      service.getQuotesForSymbol("AAPL").subscribe((quote) => {
         aaplQuotes.push(quote);
       });
 
@@ -292,14 +292,14 @@ describe('RealtimeTradingService', () => {
     });
   });
 
-  describe('Order Updates', () => {
+  describe("Order Updates", () => {
     let service: RealtimeTradingService;
 
     beforeEach(async () => {
       service = createRealtimeTradingService();
       await service.connect({
-        apiKey: 'test-key',
-        apiSecret: 'test-secret',
+        apiKey: "test-key",
+        apiSecret: "test-secret",
       });
       await new Promise((resolve) => setTimeout(resolve, 50));
     });
@@ -308,7 +308,7 @@ describe('RealtimeTradingService', () => {
       service.disconnect();
     });
 
-    it('should emit order updates via observable', () => {
+    it("should emit order updates via observable", () => {
       const updates: OrderUpdate[] = [];
 
       service.orderUpdates$.subscribe((update) => {
@@ -319,8 +319,8 @@ describe('RealtimeTradingService', () => {
       expect(service.getStatus().subscriptions.orderUpdates).toBe(true);
     });
 
-    it('should filter order updates by order ID', () => {
-      const orderId = 'test-order-123';
+    it("should filter order updates by order ID", () => {
+      const orderId = "test-order-123";
       let receivedUpdate = false;
 
       service.getOrderUpdates(orderId).subscribe(() => {
@@ -331,10 +331,10 @@ describe('RealtimeTradingService', () => {
       expect(receivedUpdate).toBe(false); // No updates yet
     });
 
-    it('should filter order updates by symbol', () => {
+    it("should filter order updates by symbol", () => {
       const symbolUpdates: OrderUpdate[] = [];
 
-      service.getOrderUpdatesForSymbol('AAPL').subscribe((update) => {
+      service.getOrderUpdatesForSymbol("AAPL").subscribe((update) => {
         symbolUpdates.push(update);
       });
 
@@ -343,7 +343,7 @@ describe('RealtimeTradingService', () => {
     });
   });
 
-  describe('Error Handling', () => {
+  describe("Error Handling", () => {
     let service: RealtimeTradingService;
 
     beforeEach(() => {
@@ -354,7 +354,7 @@ describe('RealtimeTradingService', () => {
       service.disconnect();
     });
 
-    it('should emit errors via observable', () => {
+    it("should emit errors via observable", () => {
       const errors: Error[] = [];
 
       service.errors$.subscribe((error) => {
@@ -366,7 +366,7 @@ describe('RealtimeTradingService', () => {
     });
   });
 
-  describe('Status Reporting', () => {
+  describe("Status Reporting", () => {
     let service: RealtimeTradingService;
 
     beforeEach(() => {
@@ -377,27 +377,27 @@ describe('RealtimeTradingService', () => {
       service.disconnect();
     });
 
-    it('should return complete status object', () => {
+    it("should return complete status object", () => {
       const status = service.getStatus();
 
-      expect(status).toHaveProperty('dataConnection');
-      expect(status).toHaveProperty('tradingConnection');
-      expect(status).toHaveProperty('subscriptions');
-      expect(status).toHaveProperty('lastDataHeartbeat');
-      expect(status).toHaveProperty('lastTradingHeartbeat');
+      expect(status).toHaveProperty("dataConnection");
+      expect(status).toHaveProperty("tradingConnection");
+      expect(status).toHaveProperty("subscriptions");
+      expect(status).toHaveProperty("lastDataHeartbeat");
+      expect(status).toHaveProperty("lastTradingHeartbeat");
     });
 
-    it('should report disconnected when not connected', () => {
+    it("should report disconnected when not connected", () => {
       expect(service.isConnected()).toBe(false);
     });
 
-    it('should return subscriptions object with correct structure', () => {
+    it("should return subscriptions object with correct structure", () => {
       const status = service.getStatus();
 
-      expect(status.subscriptions).toHaveProperty('quotes');
-      expect(status.subscriptions).toHaveProperty('trades');
-      expect(status.subscriptions).toHaveProperty('bars');
-      expect(status.subscriptions).toHaveProperty('orderUpdates');
+      expect(status.subscriptions).toHaveProperty("quotes");
+      expect(status.subscriptions).toHaveProperty("trades");
+      expect(status.subscriptions).toHaveProperty("bars");
+      expect(status.subscriptions).toHaveProperty("orderUpdates");
       expect(Array.isArray(status.subscriptions.quotes)).toBe(true);
       expect(Array.isArray(status.subscriptions.trades)).toBe(true);
       expect(Array.isArray(status.subscriptions.bars)).toBe(true);
@@ -405,8 +405,8 @@ describe('RealtimeTradingService', () => {
   });
 });
 
-describe('Factory Functions', () => {
-  it('should create new instance with createRealtimeTradingService', () => {
+describe("Factory Functions", () => {
+  it("should create new instance with createRealtimeTradingService", () => {
     const service1 = createRealtimeTradingService();
     const service2 = createRealtimeTradingService();
 

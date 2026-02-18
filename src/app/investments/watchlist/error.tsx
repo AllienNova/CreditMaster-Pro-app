@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
+import { useEffect } from "react";
 
 export default function WatchlistError({
   error,
@@ -10,7 +10,7 @@ export default function WatchlistError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('Watchlist error:', error);
+    console.error("Watchlist error:", error);
   }, [error]);
 
   return (

@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import CreditScoreCard from '@/components/credit-bureau/CreditScoreCard';
-import CreditReportViewer from '@/components/credit-bureau/CreditReportViewer';
-import CreditReportImport from '@/components/credit-bureau/CreditReportImport';
-import type { CreditReport } from '@/types/credit-bureau';
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import CreditScoreCard from "@/components/credit-bureau/CreditScoreCard";
+import CreditReportViewer from "@/components/credit-bureau/CreditReportViewer";
+import CreditReportImport from "@/components/credit-bureau/CreditReportImport";
+import type { CreditReport } from "@/types/credit-bureau";
 
 export default function CreditReportsPage() {
   const [reports, setReports] = useState<CreditReport[]>([]);
   const [selectedReport, setSelectedReport] = useState<CreditReport | null>(
-    null
+    null,
   );
   const [loading, setLoading] = useState(true);
   const [showImport, setShowImport] = useState(false);
@@ -23,7 +23,7 @@ export default function CreditReportsPage() {
   const fetchReports = async (preferredReportId?: string) => {
     setLoading(true);
     try {
-      const response = await fetch('/api/credit-bureau/report');
+      const response = await fetch("/api/credit-bureau/report");
       if (response.ok) {
         const data = await response.json();
         const nextReports: CreditReport[] = data.reports || [];
@@ -52,13 +52,13 @@ export default function CreditReportsPage() {
 
   const handleDisputeClick = (
     itemId: string,
-    itemType: 'account' | 'inquiry' | 'public_record'
+    itemType: "account" | "inquiry" | "public_record",
   ) => {
     // Navigate to dispute creation page with pre-filled data
     const params = new URLSearchParams({
       itemId,
       itemType,
-      reportId: selectedReport?.id || '',
+      reportId: selectedReport?.id || "",
     });
     window.location.href = `/disputes/new?${params.toString()}`;
   };
@@ -106,7 +106,9 @@ export default function CreditReportsPage() {
 
           <CreditReportImport
             onImportComplete={handleImportComplete}
-            onError={() => { /* CreditReportsPage: Import error handled by UI */ }}
+            onError={() => {
+              /* CreditReportsPage: Import error handled by UI */
+            }}
           />
 
           {/* Features */}
@@ -151,7 +153,9 @@ export default function CreditReportsPage() {
                   />
                 </svg>
               </div>
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">AI Analysis</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                AI Analysis
+              </h3>
               <p className="text-sm text-gray-600 dark:text-slate-300">
                 Get instant AI-powered insights and recommendations to improve
                 your credit.
@@ -224,7 +228,9 @@ export default function CreditReportsPage() {
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto" />
-            <p className="mt-4 text-gray-600 dark:text-slate-300">Loading credit reports...</p>
+            <p className="mt-4 text-gray-600 dark:text-slate-300">
+              Loading credit reports...
+            </p>
           </div>
         ) : showImport ? (
           <div>
@@ -249,7 +255,9 @@ export default function CreditReportsPage() {
             </button>
             <CreditReportImport
               onImportComplete={handleImportComplete}
-              onError={() => { /* CreditReportsPage: Import error handled by UI */ }}
+              onError={() => {
+                /* CreditReportsPage: Import error handled by UI */
+              }}
             />
           </div>
         ) : (
@@ -275,13 +283,13 @@ export default function CreditReportsPage() {
                   lastUpdated={new Date(report.reportDate)}
                   factors={{
                     positive: [
-                      'On-time payment history',
-                      'Low credit utilization',
-                      'Long credit history',
+                      "On-time payment history",
+                      "Low credit utilization",
+                      "Long credit history",
                     ],
                     negative: [
-                      '2 hard inquiries in last 6 months',
-                      'High balance on credit card',
+                      "2 hard inquiries in last 6 months",
+                      "High balance on credit card",
                     ],
                   }}
                 />
@@ -295,7 +303,7 @@ export default function CreditReportsPage() {
                   Select Report to View
                 </label>
                 <select
-                  value={selectedReport?.id || ''}
+                  value={selectedReport?.id || ""}
                   onChange={(e) => {
                     const report = reports.find((r) => r.id === e.target.value);
                     setSelectedReport(report || null);
@@ -305,7 +313,7 @@ export default function CreditReportsPage() {
                   {reports.map((report) => (
                     <option key={report.id} value={report.id}>
                       {report.bureau.charAt(0).toUpperCase() +
-                        report.bureau.slice(1)}{' '}
+                        report.bureau.slice(1)}{" "}
                       - {new Date(report.reportDate).toLocaleDateString()}
                     </option>
                   ))}

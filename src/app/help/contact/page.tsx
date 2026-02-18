@@ -1,48 +1,48 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Icon } from '@/components/ui/Icon';
+import { useState } from "react";
+import { Icon } from "@/components/ui/Icon";
 
 const contactMethods = [
   {
     icon: "envelope",
-    title: 'Email Support',
-    description: 'Get a response within 24 hours',
-    action: 'support@fynvita.com',
-    available: '24/7',
+    title: "Email Support",
+    description: "Get a response within 24 hours",
+    action: "support@fynvita.com",
+    available: "24/7",
   },
   {
     icon: "envelope",
-    title: 'Live Fynvita Chat',
-    description: 'Fynvita Chat with our support team',
-    action: 'Start Fynvita Chat',
-    available: 'Mon-Fri 9am-6pm EST',
+    title: "Live Fynvita Chat",
+    description: "Fynvita Chat with our support team",
+    action: "Start Fynvita Chat",
+    available: "Mon-Fri 9am-6pm EST",
   },
   {
     icon: "chat",
-    title: 'Phone Support',
-    description: 'Premium & Enterprise only',
-    action: '1-800-FynvitaREDIT',
-    available: 'Mon-Fri 9am-6pm EST',
+    title: "Phone Support",
+    description: "Premium & Enterprise only",
+    action: "1-800-FynvitaREDIT",
+    available: "Mon-Fri 9am-6pm EST",
   },
 ];
 
 const topics = [
-  'General Question',
-  'Technical Issue',
-  'Billing Question',
-  'Dispute Help',
-  'Account Access',
-  'Feature Request',
-  'Other',
+  "General Question",
+  "Technical Issue",
+  "Billing Question",
+  "Dispute Help",
+  "Account Access",
+  "Feature Request",
+  "Other",
 ];
 
 export default function FynvitaContactPage() {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    topic: '',
-    message: '',
+    name: "",
+    email: "",
+    topic: "",
+    message: "",
   });
   const [submitted, setSubmitted] = useState(false);
 
@@ -57,7 +57,9 @@ export default function FynvitaContactPage() {
         <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-emerald-100 flex items-center justify-center">
           <span className="text-4xl"></span>
         </div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Message Sent!</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+          Message Sent!
+        </h1>
         <p className="text-gray-600 dark:text-slate-300 mb-8">
           Thank you for contacting us. We&apos;ll get back to you within 24
           hours.
@@ -89,9 +91,13 @@ export default function FynvitaContactPage() {
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
               {method.title}
             </h3>
-            <p className="text-gray-500 dark:text-slate-400 text-sm mb-2">{method.description}</p>
+            <p className="text-gray-500 dark:text-slate-400 text-sm mb-2">
+              {method.description}
+            </p>
             <p className="text-emerald-500 font-medium">{method.action}</p>
-            <p className="text-xs text-gray-400 dark:text-slate-500 mt-2">{method.available}</p>
+            <p className="text-xs text-gray-400 dark:text-slate-500 mt-2">
+              {method.available}
+            </p>
           </div>
         ))}
       </div>
@@ -184,7 +190,7 @@ export default function FynvitaContactPage() {
         {/* FAQ Link */}
         <div className="mt-8 text-center">
           <p className="text-gray-500 dark:text-slate-400">
-            Looking for quick answers? Check out our{' '}
+            Looking for quick answers? Check out our{" "}
             <a
               href="/help/faq"
               className="text-emerald-500 hover:text-emerald-600"

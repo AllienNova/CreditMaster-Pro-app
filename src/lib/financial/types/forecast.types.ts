@@ -33,7 +33,7 @@ export interface MonthlyPrediction {
   predictedIncome: number;
   predictedNetFlow: number;
   confidenceInterval: ConfidenceInterval;
-  trend: 'increasing' | 'decreasing' | 'stable';
+  trend: "increasing" | "decreasing" | "stable";
   seasonalFactor: number;
 }
 
@@ -48,14 +48,14 @@ export interface CategoryForecast {
   displayName: string;
   currentMonthlyAvg: number;
   predictedMonthlyAvg: number;
-  trend: 'increasing' | 'decreasing' | 'stable';
+  trend: "increasing" | "decreasing" | "stable";
   percentChange: number;
   confidenceInterval: ConfidenceInterval;
   seasonalPattern?: SeasonalPattern;
 }
 
 export interface SeasonalPattern {
-  type: 'monthly' | 'quarterly' | 'annual';
+  type: "monthly" | "quarterly" | "annual";
   peakMonths: number[];
   lowMonths: number[];
   variancePercent: number;
@@ -65,7 +65,7 @@ export interface ForecastAccuracy {
   overallScore: number; // 0-100
   mape: number; // Mean Absolute Percentage Error
   rmse: number; // Root Mean Square Error
-  dataQuality: 'excellent' | 'good' | 'fair' | 'poor';
+  dataQuality: "excellent" | "good" | "fair" | "poor";
   historicalMonths: number;
   lastValidation?: Date;
 }
@@ -75,20 +75,20 @@ export interface ForecastInsight {
   type: ForecastInsightType;
   title: string;
   description: string;
-  impact: 'positive' | 'negative' | 'neutral';
+  impact: "positive" | "negative" | "neutral";
   confidence: number;
   relatedCategory?: string;
   potentialSavings?: number;
 }
 
 export type ForecastInsightType =
-  | 'spending_spike_predicted'
-  | 'savings_opportunity'
-  | 'budget_risk'
-  | 'seasonal_pattern'
-  | 'trend_change'
-  | 'anomaly_expected'
-  | 'goal_impact';
+  | "spending_spike_predicted"
+  | "savings_opportunity"
+  | "budget_risk"
+  | "seasonal_pattern"
+  | "trend_change"
+  | "anomaly_expected"
+  | "goal_impact";
 
 // ============================================================================
 // FORECAST OPTIONS
@@ -148,4 +148,3 @@ export interface ForecastValidation {
   categoryAccuracy: Record<string, number>;
   improvementSuggestions: string[];
 }
-

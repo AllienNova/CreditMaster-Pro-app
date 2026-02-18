@@ -1,6 +1,6 @@
 /**
  * Cache Module
- * 
+ *
  * Central export for caching functionality
  */
 
@@ -13,6 +13,5 @@ export {
   analyticsCache,
   type CacheEntry,
   type CacheOptions,
-  type CacheStats
-} from './cache-service';
-
+  type CacheStats,
+} from "./cache-service";

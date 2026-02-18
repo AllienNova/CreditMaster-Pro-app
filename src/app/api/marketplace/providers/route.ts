@@ -4,8 +4,8 @@
  * GET /api/marketplace/providers - Get providers with filters
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { providerService, type ProviderFilters } from '@/lib/marketplace';
+import { NextRequest, NextResponse } from "next/server";
+import { providerService, type ProviderFilters } from "@/lib/marketplace";
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,22 +14,22 @@ export async function GET(request: NextRequest) {
     // Parse filters from query params
     const filters: ProviderFilters = {};
 
-    const category = searchParams.get('category');
+    const category = searchParams.get("category");
     if (category) filters.category = category;
 
-    const minRating = searchParams.get('minRating');
+    const minRating = searchParams.get("minRating");
     if (minRating) filters.minRating = parseFloat(minRating);
 
-    const verified = searchParams.get('verified');
-    if (verified !== null) filters.verified = verified !== 'false';
+    const verified = searchParams.get("verified");
+    if (verified !== null) filters.verified = verified !== "false";
 
-    const search = searchParams.get('search');
+    const search = searchParams.get("search");
     if (search) filters.search = search;
 
     // Check for special queries
-    const top = searchParams.get('top');
-    if (top === 'true') {
-      const limit = parseInt(searchParams.get('limit') || '10');
+    const top = searchParams.get("top");
+    if (top === "true") {
+      const limit = parseInt(searchParams.get("limit") || "10");
       const providers = await providerService.getTopProviders(limit);
       return NextResponse.json({
         success: true,
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
 
     // Get filtered providers
     const providers = await providerService.getProviders(
-      Object.keys(filters).length > 0 ? filters : undefined
+      Object.keys(filters).length > 0 ? filters : undefined,
     );
 
     return NextResponse.json({
@@ -68,14 +68,14 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching providers:', error);
+    console.error("Error fetching providers:", error);
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to fetch providers',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to fetch providers",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

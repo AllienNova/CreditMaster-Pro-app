@@ -5,13 +5,13 @@
  * POST /api/investments/analyze/[symbol] - Request custom analysis with options
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { aiStockAnalyst } from '@/lib/investments/ai-stock-analyst';
+import { NextRequest, NextResponse } from "next/server";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { aiStockAnalyst } from "@/lib/investments/ai-stock-analyst";
 import type {
   StockAnalysisRequest,
   AnalysisType,
-} from '@/lib/investments/types/stock-analysis.types';
+} from "@/lib/investments/types/stock-analysis.types";
 
 interface RouteParams {
   params: Promise<{ symbol: string }>;
@@ -27,8 +27,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
       );
     }
 
@@ -36,18 +36,18 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     if (!symbol || symbol.length < 1 || symbol.length > 10) {
       return NextResponse.json(
-        { success: false, error: 'Invalid symbol. Must be 1-10 characters.' },
-        { status: 400 }
+        { success: false, error: "Invalid symbol. Must be 1-10 characters." },
+        { status: 400 },
       );
     }
 
     // Perform analysis with default options
     const analysisRequest: StockAnalysisRequest = {
       symbol: symbol.toUpperCase(),
-      analysisTypes: ['technical', 'fundamental', 'sentiment', 'ai'],
+      analysisTypes: ["technical", "fundamental", "sentiment", "ai"],
       includeAI: true,
-      timeframe: 'medium',
-      riskTolerance: 'moderate',
+      timeframe: "medium",
+      riskTolerance: "moderate",
     };
 
     const result = await aiStockAnalyst.analyzeStock(analysisRequest);
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     if (!result.success) {
       return NextResponse.json(
         { success: false, error: result.error },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -68,13 +68,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       },
     });
   } catch (error) {
-    console.error('Stock analysis error:', error);
+    console.error("Stock analysis error:", error);
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Internal server error',
+        error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -89,8 +89,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
       );
     }
 
@@ -98,8 +98,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     if (!symbol || symbol.length < 1 || symbol.length > 10) {
       return NextResponse.json(
-        { success: false, error: 'Invalid symbol. Must be 1-10 characters.' },
-        { status: 400 }
+        { success: false, error: "Invalid symbol. Must be 1-10 characters." },
+        { status: 400 },
       );
     }
 
@@ -108,28 +108,28 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     // Validate analysis types
     const validAnalysisTypes: AnalysisType[] = [
-      'technical',
-      'fundamental',
-      'sentiment',
-      'risk',
-      'ai',
+      "technical",
+      "fundamental",
+      "sentiment",
+      "risk",
+      "ai",
     ];
     const analysisTypes =
       body.analysisTypes?.filter((t: string) =>
-        validAnalysisTypes.includes(t as AnalysisType)
+        validAnalysisTypes.includes(t as AnalysisType),
       ) || validAnalysisTypes;
 
     // Validate timeframe
-    const validTimeframes = ['short', 'medium', 'long'];
+    const validTimeframes = ["short", "medium", "long"];
     const timeframe = validTimeframes.includes(body.timeframe)
       ? body.timeframe
-      : 'medium';
+      : "medium";
 
     // Validate risk tolerance
-    const validRiskTolerances = ['conservative', 'moderate', 'aggressive'];
+    const validRiskTolerances = ["conservative", "moderate", "aggressive"];
     const riskTolerance = validRiskTolerances.includes(body.riskTolerance)
       ? body.riskTolerance
-      : 'moderate';
+      : "moderate";
 
     const analysisRequest: StockAnalysisRequest = {
       symbol: symbol.toUpperCase(),
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     if (!result.success) {
       return NextResponse.json(
         { success: false, error: result.error },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -163,13 +163,13 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       },
     });
   } catch (error) {
-    console.error('Stock analysis error:', error);
+    console.error("Stock analysis error:", error);
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Internal server error',
+        error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

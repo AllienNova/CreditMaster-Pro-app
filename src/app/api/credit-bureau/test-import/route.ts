@@ -1,33 +1,33 @@
 /**
  * Test Credit Report Import API
- * 
+ *
  * POST /api/credit-bureau/test-import - Test importing a mock credit report
- * 
+ *
  * This endpoint is for testing purposes only and should be removed in production.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase/client';
+import { NextRequest, NextResponse } from "next/server";
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
-import { generateMockCreditReport } from '@/lib/credit-bureau/mock-credit-report-generator';
-import type { Bureau } from '@/types/credit-bureau';
+import { generateMockCreditReport } from "@/lib/credit-bureau/mock-credit-report-generator";
+import type { Bureau } from "@/types/credit-bureau";
 
 export async function POST(request: NextRequest) {
   try {
     // 1. Parse request body
     const body = await request.json();
-    const { 
-      userId, 
-      bureau = 'experian',
+    const {
+      userId,
+      bureau = "experian",
       creditScore,
-      includeNegativeItems = false 
+      includeNegativeItems = false,
     } = body;
 
     if (!userId) {
       return NextResponse.json(
-        { error: 'userId is required' },
-        { status: 400 }
+        { error: "userId is required" },
+        { status: 400 },
       );
     }
 
@@ -46,10 +46,10 @@ export async function POST(request: NextRequest) {
     // TestImport: Mock credit report generated
 
     // 3. Save credit report to database
-    const reportDate = new Date().toISOString().split('T')[0];
-    
+    const reportDate = new Date().toISOString().split("T")[0];
+
     const { data: creditReportData, error: reportError } = await supabase
-      .from('credit_reports')
+      .from("credit_reports")
       .insert({
         user_id: userId,
         bureau,
@@ -65,15 +65,15 @@ export async function POST(request: NextRequest) {
     if (reportError) {
       // TestImport error: Error saving credit report
       return NextResponse.json(
-        { error: 'Failed to save credit report', details: reportError.message },
-        { status: 500 }
+        { error: "Failed to save credit report", details: reportError.message },
+        { status: 500 },
       );
     }
 
     // TestImport: Credit report saved to database
 
     // 4. Save credit accounts
-    const accountsToInsert = mockReport.accounts.map(account => ({
+    const accountsToInsert = mockReport.accounts.map((account) => ({
       report_id: creditReportData.id,
       user_id: userId,
       account_type: account.accountType,
@@ -90,22 +90,25 @@ export async function POST(request: NextRequest) {
     }));
 
     const { data: accountsData, error: accountsError } = await supabase
-      .from('credit_accounts')
+      .from("credit_accounts")
       .insert(accountsToInsert)
       .select();
 
     if (accountsError) {
       // TestImport error: Error saving credit accounts
       return NextResponse.json(
-        { error: 'Failed to save credit accounts', details: accountsError.message },
-        { status: 500 }
+        {
+          error: "Failed to save credit accounts",
+          details: accountsError.message,
+        },
+        { status: 500 },
       );
     }
 
     // TestImport: credit accounts saved
 
     // 5. Save credit inquiries
-    const inquiriesToInsert = mockReport.inquiries.map(inquiry => ({
+    const inquiriesToInsert = mockReport.inquiries.map((inquiry) => ({
       report_id: creditReportData.id,
       user_id: userId,
       inquiry_type: inquiry.inquiryType,
@@ -115,15 +118,18 @@ export async function POST(request: NextRequest) {
     }));
 
     const { data: inquiriesData, error: inquiriesError } = await supabase
-      .from('credit_inquiries')
+      .from("credit_inquiries")
       .insert(inquiriesToInsert)
       .select();
 
     if (inquiriesError) {
       // TestImport error: Error saving credit inquiries
       return NextResponse.json(
-        { error: 'Failed to save credit inquiries', details: inquiriesError.message },
-        { status: 500 }
+        {
+          error: "Failed to save credit inquiries",
+          details: inquiriesError.message,
+        },
+        { status: 500 },
       );
     }
 
@@ -131,7 +137,7 @@ export async function POST(request: NextRequest) {
 
     // 6. Save public records (if any)
     if (mockReport.publicRecords.length > 0) {
-      const recordsToInsert = mockReport.publicRecords.map(record => ({
+      const recordsToInsert = mockReport.publicRecords.map((record) => ({
         report_id: creditReportData.id,
         user_id: userId,
         record_type: record.recordType,
@@ -144,15 +150,18 @@ export async function POST(request: NextRequest) {
       }));
 
       const { data: recordsData, error: recordsError } = await supabase
-        .from('public_records')
+        .from("public_records")
         .insert(recordsToInsert)
         .select();
 
       if (recordsError) {
         // TestImport error: Error saving public records
         return NextResponse.json(
-          { error: 'Failed to save public records', details: recordsError.message },
-          { status: 500 }
+          {
+            error: "Failed to save public records",
+            details: recordsError.message,
+          },
+          { status: 500 },
         );
       }
 
@@ -162,7 +171,7 @@ export async function POST(request: NextRequest) {
     // 7. Return success response
     return NextResponse.json({
       success: true,
-      message: 'Mock credit report imported successfully',
+      message: "Mock credit report imported successfully",
       data: {
         reportId: creditReportData.id,
         bureau,
@@ -175,16 +184,18 @@ export async function POST(request: NextRequest) {
         },
       },
     });
-
   } catch (_error) {
     // TestImport error: Test import error
 
     return NextResponse.json(
       {
         success: false,
-        error: _error instanceof Error ? _error.message : 'Failed to import test credit report'
+        error:
+          _error instanceof Error
+            ? _error.message
+            : "Failed to import test credit report",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -193,38 +204,51 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
+    const userId = searchParams.get("userId");
 
     if (!userId) {
       return NextResponse.json(
-        { error: 'userId is required' },
-        { status: 400 }
+        { error: "userId is required" },
+        { status: 400 },
       );
     }
 
     // Get all credit reports for user
     const { data: reports, error: reportsError } = await supabase
-      .from('credit_reports')
-      .select('*')
-      .eq('user_id', userId)
-      .order('report_date', { ascending: false });
+      .from("credit_reports")
+      .select("*")
+      .eq("user_id", userId)
+      .order("report_date", { ascending: false });
 
     if (reportsError) {
       // TestImport error: Error fetching credit reports
       return NextResponse.json(
-        { error: 'Failed to fetch credit reports', details: reportsError.message },
-        { status: 500 }
+        {
+          error: "Failed to fetch credit reports",
+          details: reportsError.message,
+        },
+        { status: 500 },
       );
     }
 
     // Get accounts, inquiries, and public records for each report
     const reportsWithDetails = await Promise.all(
       reports.map(async (report) => {
-        const [accountsResult, inquiriesResult, recordsResult] = await Promise.all([
-          supabase.from('credit_accounts').select('*').eq('report_id', report.id),
-          supabase.from('credit_inquiries').select('*').eq('report_id', report.id),
-          supabase.from('public_records').select('*').eq('report_id', report.id),
-        ]);
+        const [accountsResult, inquiriesResult, recordsResult] =
+          await Promise.all([
+            supabase
+              .from("credit_accounts")
+              .select("*")
+              .eq("report_id", report.id),
+            supabase
+              .from("credit_inquiries")
+              .select("*")
+              .eq("report_id", report.id),
+            supabase
+              .from("public_records")
+              .select("*")
+              .eq("report_id", report.id),
+          ]);
 
         return {
           ...report,
@@ -232,24 +256,25 @@ export async function GET(request: NextRequest) {
           inquiries: inquiriesResult.data || [],
           publicRecords: recordsResult.data || [],
         };
-      })
+      }),
     );
 
     return NextResponse.json({
       success: true,
       data: reportsWithDetails,
     });
-
   } catch (_error) {
     // TestImport error: Test fetch error
 
     return NextResponse.json(
       {
         success: false,
-        error: _error instanceof Error ? _error.message : 'Failed to fetch test credit reports'
+        error:
+          _error instanceof Error
+            ? _error.message
+            : "Failed to fetch test credit reports",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-

@@ -11,16 +11,16 @@
  * - All processing logged for audit
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { taxDocumentProcessor } from '@/lib/tax/documents';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { taxDocumentProcessor } from "@/lib/tax/documents";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_TYPES = [
-  'application/pdf',
-  'image/png',
-  'image/jpeg',
-  'image/jpg',
+  "application/pdf",
+  "image/png",
+  "image/jpeg",
+  "image/jpg",
 ];
 
 export async function POST(request: NextRequest) {
@@ -35,25 +35,25 @@ export async function POST(request: NextRequest) {
     if (authError || !user) {
       return NextResponse.json(
         {
-          error: 'Unauthorized',
-          message: 'Please sign in to upload documents.',
+          error: "Unauthorized",
+          message: "Please sign in to upload documents.",
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     // 2. Parse form data
     const formData = await request.formData();
-    const file = formData.get('file') as File | null;
-    const taxYear = formData.get('taxYear') as string | null;
+    const file = formData.get("file") as File | null;
+    const taxYear = formData.get("taxYear") as string | null;
 
     if (!file) {
       return NextResponse.json(
         {
-          error: 'No file provided',
-          message: 'Please select a file to upload.',
+          error: "No file provided",
+          message: "Please select a file to upload.",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -61,10 +61,10 @@ export async function POST(request: NextRequest) {
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
         {
-          error: 'File too large',
-          message: 'File size must be less than 10MB.',
+          error: "File too large",
+          message: "File size must be less than 10MB.",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -72,16 +72,16 @@ export async function POST(request: NextRequest) {
     if (!ALLOWED_TYPES.includes(file.type)) {
       return NextResponse.json(
         {
-          error: 'Invalid file type',
-          message: 'Supported formats: PDF, PNG, JPG, JPEG.',
+          error: "Invalid file type",
+          message: "Supported formats: PDF, PNG, JPG, JPEG.",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // 5. Convert file to base64
     const arrayBuffer = await file.arrayBuffer();
-    const base64Image = Buffer.from(arrayBuffer).toString('base64');
+    const base64Image = Buffer.from(arrayBuffer).toString("base64");
 
     // 6. Process document with multi-provider OCR
     const result = await taxDocumentProcessor.processDocument(user.id, {
@@ -95,18 +95,20 @@ export async function POST(request: NextRequest) {
     const insertData = {
       user_id: user.id,
       tax_year:
-        result.taxYear ||
-        parseInt(taxYear || String(new Date().getFullYear())),
+        result.taxYear || parseInt(taxYear || String(new Date().getFullYear())),
       document_type: result.documentType as string,
       document_name: file.name,
       file_size: file.size,
       mime_type: file.type,
-      extracted_data: result.extractedData as unknown as Record<string, unknown>,
+      extracted_data: result.extractedData as unknown as Record<
+        string,
+        unknown
+      >,
       extraction_confidence: result.overallConfidence,
       is_verified: !result.requiresReview,
     };
     const { data: docRecord, error: dbError } = await supabase
-      .from('tax_documents')
+      .from("tax_documents")
       .insert(insertData as never)
       .select()
       .single();
@@ -143,11 +145,11 @@ export async function POST(request: NextRequest) {
     // Error silently caught
     return NextResponse.json(
       {
-        error: 'Processing failed',
+        error: "Processing failed",
         message:
-          'Unable to process the document. Please try again or upload a different file.',
+          "Unable to process the document. Please try again or upload a different file.",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

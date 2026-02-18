@@ -9,7 +9,7 @@
 import {
   healthScoreCalculator,
   HealthScoreCalculator,
-} from '../health-score-calculator';
+} from "../health-score-calculator";
 import type {
   AggregatedAccounts,
   CategorizedTransactions,
@@ -17,16 +17,16 @@ import type {
   FinancialGoal,
   DebtAnalysis,
   CreditSummary,
-} from '../types/financial-context.types';
+} from "../types/financial-context.types";
 
 // Helper to create properly typed mock input
 const createMockAccounts = (): AggregatedAccounts => ({
   checking: [
     {
-      id: 'acc-1',
-      institutionName: 'Test Bank',
-      accountName: 'Checking',
-      accountType: 'checking',
+      id: "acc-1",
+      institutionName: "Test Bank",
+      accountName: "Checking",
+      accountType: "checking",
       currentBalance: 5000,
       isLinked: true,
       lastUpdatedAt: new Date(),
@@ -34,10 +34,10 @@ const createMockAccounts = (): AggregatedAccounts => ({
   ],
   savings: [
     {
-      id: 'acc-2',
-      institutionName: 'Test Bank',
-      accountName: 'Savings',
-      accountType: 'savings',
+      id: "acc-2",
+      institutionName: "Test Bank",
+      accountName: "Savings",
+      accountType: "savings",
       currentBalance: 10000,
       isLinked: true,
       lastUpdatedAt: new Date(),
@@ -45,10 +45,10 @@ const createMockAccounts = (): AggregatedAccounts => ({
   ],
   credit: [
     {
-      id: 'acc-3',
-      institutionName: 'Test Bank',
-      accountName: 'Credit Card',
-      accountType: 'credit',
+      id: "acc-3",
+      institutionName: "Test Bank",
+      accountName: "Credit Card",
+      accountType: "credit",
       currentBalance: 2000,
       creditLimit: 10000,
       isLinked: true,
@@ -92,7 +92,7 @@ const createMockDebts = (): DebtAnalysis => ({
 const createMockCreditProfile = (): CreditSummary => ({
   currentScore: 720,
   scoreChange: 10,
-  scoreChangeDirection: 'up',
+  scoreChangeDirection: "up",
   lastUpdated: new Date(),
   scoreHistory: [],
   factors: [],
@@ -119,35 +119,35 @@ const createMockInput = (): HealthScoreInput => ({
   creditProfile: createMockCreditProfile(),
 });
 
-describe('HealthScoreCalculator', () => {
-  describe('exports', () => {
-    it('should export HealthScoreCalculator class', () => {
+describe("HealthScoreCalculator", () => {
+  describe("exports", () => {
+    it("should export HealthScoreCalculator class", () => {
       expect(HealthScoreCalculator).toBeDefined();
-      expect(typeof HealthScoreCalculator).toBe('function');
+      expect(typeof HealthScoreCalculator).toBe("function");
     });
 
-    it('should export healthScoreCalculator singleton', () => {
+    it("should export healthScoreCalculator singleton", () => {
       expect(healthScoreCalculator).toBeDefined();
       expect(healthScoreCalculator).toBeInstanceOf(HealthScoreCalculator);
     });
   });
 
-  describe('class methods', () => {
-    it('should have calculateScore method', () => {
-      expect(typeof healthScoreCalculator.calculateScore).toBe('function');
+  describe("class methods", () => {
+    it("should have calculateScore method", () => {
+      expect(typeof healthScoreCalculator.calculateScore).toBe("function");
     });
 
-    it('should have saveScore method', () => {
-      expect(typeof healthScoreCalculator.saveScore).toBe('function');
+    it("should have saveScore method", () => {
+      expect(typeof healthScoreCalculator.saveScore).toBe("function");
     });
 
-    it('should have getHistoricalScores method', () => {
-      expect(typeof healthScoreCalculator.getHistoricalScores).toBe('function');
+    it("should have getHistoricalScores method", () => {
+      expect(typeof healthScoreCalculator.getHistoricalScores).toBe("function");
     });
   });
 
-  describe('calculateScore', () => {
-    it('should calculate a valid health score', async () => {
+  describe("calculateScore", () => {
+    it("should calculate a valid health score", async () => {
       const input = createMockInput();
       const score = await healthScoreCalculator.calculateScore(input);
 
@@ -156,41 +156,41 @@ describe('HealthScoreCalculator', () => {
       expect(score.overallScore).toBeLessThanOrEqual(100);
     });
 
-    it('should include all five components in breakdown', async () => {
+    it("should include all five components in breakdown", async () => {
       const input = createMockInput();
       const score = await healthScoreCalculator.calculateScore(input);
 
-      expect(score.breakdown).toHaveProperty('savings');
-      expect(score.breakdown).toHaveProperty('debt');
-      expect(score.breakdown).toHaveProperty('spending');
-      expect(score.breakdown).toHaveProperty('credit');
-      expect(score.breakdown).toHaveProperty('insurance');
+      expect(score.breakdown).toHaveProperty("savings");
+      expect(score.breakdown).toHaveProperty("debt");
+      expect(score.breakdown).toHaveProperty("spending");
+      expect(score.breakdown).toHaveProperty("credit");
+      expect(score.breakdown).toHaveProperty("insurance");
     });
 
-    it('should assign correct grade based on score', async () => {
+    it("should assign correct grade based on score", async () => {
       const input = createMockInput();
       const score = await healthScoreCalculator.calculateScore(input);
 
-      const validGrades = ['A', 'B', 'C', 'D', 'F'];
+      const validGrades = ["A", "B", "C", "D", "F"];
       expect(validGrades).toContain(score.grade);
     });
 
-    it('should have calculatedAt timestamp', async () => {
+    it("should have calculatedAt timestamp", async () => {
       const input = createMockInput();
       const score = await healthScoreCalculator.calculateScore(input);
 
       expect(score.calculatedAt).toBeInstanceOf(Date);
     });
 
-    it('should return appropriate grade for high credit score', async () => {
+    it("should return appropriate grade for high credit score", async () => {
       const input = createMockInput();
       input.creditProfile.currentScore = 800;
       input.accounts.savings = [
         {
-          id: 'acc-high',
-          institutionName: 'Test Bank',
-          accountName: 'High Savings',
-          accountType: 'savings',
+          id: "acc-high",
+          institutionName: "Test Bank",
+          accountName: "High Savings",
+          accountType: "savings",
           currentBalance: 50000,
           isLinked: true,
           lastUpdatedAt: new Date(),
@@ -202,17 +202,17 @@ describe('HealthScoreCalculator', () => {
       const score = await healthScoreCalculator.calculateScore(input);
 
       // High values should trend toward A or B grade
-      expect(['A', 'B', 'C']).toContain(score.grade);
+      expect(["A", "B", "C"]).toContain(score.grade);
     });
 
-    it('should calculate component weights correctly', async () => {
+    it("should calculate component weights correctly", async () => {
       const input = createMockInput();
       const score = await healthScoreCalculator.calculateScore(input);
 
       // Verify weights sum to 1.0
       const totalWeight = Object.values(score.breakdown).reduce(
         (sum, comp) => sum + comp.weight,
-        0
+        0,
       );
       expect(totalWeight).toBeCloseTo(1.0, 2);
     });

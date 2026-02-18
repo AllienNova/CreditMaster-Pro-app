@@ -3,7 +3,7 @@
  * View rankings for XP and streaks
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -13,23 +13,30 @@ import {
   RefreshControl,
   ActivityIndicator,
   FlatList,
-} from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { lightTheme as theme } from '../../src/constants/theme';
-import { Card } from '../../src/components/Card';
-import { useGamificationStore } from '../../src/store/gamificationStore';
-import type { LeaderboardType, LeaderboardEntry } from '../../src/services/api/gamification';
+} from "react-native";
+import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { lightTheme as theme } from "../../src/constants/theme";
+import { Card } from "../../src/components/Card";
+import { useGamificationStore } from "../../src/store/gamificationStore";
+import type {
+  LeaderboardType,
+  LeaderboardEntry,
+} from "../../src/services/api/gamification";
 
-const tabs: { key: LeaderboardType; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { key: 'weekly_xp', label: 'Weekly XP', icon: 'flash' },
-  { key: 'monthly_xp', label: 'Monthly XP', icon: 'calendar' },
-  { key: 'streak', label: 'Streak', icon: 'flame' },
+const tabs: {
+  key: LeaderboardType;
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}[] = [
+  { key: "weekly_xp", label: "Weekly XP", icon: "flash" },
+  { key: "monthly_xp", label: "Monthly XP", icon: "calendar" },
+  { key: "streak", label: "Streak", icon: "flame" },
 ];
 
 export default function LeaderboardScreen() {
-  const [activeTab, setActiveTab] = useState<LeaderboardType>('weekly_xp');
+  const [activeTab, setActiveTab] = useState<LeaderboardType>("weekly_xp");
   const [refreshing, setRefreshing] = useState(false);
 
   const {
@@ -61,27 +68,33 @@ export default function LeaderboardScreen() {
   };
 
   const getRankColor = (rank: number): string => {
-    if (rank === 1) return '#FFD700'; // Gold
-    if (rank === 2) return '#C0C0C0'; // Silver
-    if (rank === 3) return '#CD7F32'; // Bronze
+    if (rank === 1) return "#FFD700"; // Gold
+    if (rank === 2) return "#C0C0C0"; // Silver
+    if (rank === 3) return "#CD7F32"; // Bronze
     return theme.colors.textSecondary;
   };
 
   const getRankEmoji = (rank: number): string => {
-    if (rank === 1) return '🥇';
-    if (rank === 2) return '🥈';
-    if (rank === 3) return '🥉';
-    return '';
+    if (rank === 1) return "🥇";
+    if (rank === 2) return "🥈";
+    if (rank === 3) return "🥉";
+    return "";
   };
 
   const formatValue = (value: number, type: LeaderboardType): string => {
-    if (type === 'streak') {
+    if (type === "streak") {
       return `${value} days`;
     }
     return `${value.toLocaleString()} XP`;
   };
 
-  const renderLeaderboardItem = ({ item, index }: { item: LeaderboardEntry; index: number }) => {
+  const renderLeaderboardItem = ({
+    item,
+    index,
+  }: {
+    item: LeaderboardEntry;
+    index: number;
+  }) => {
     const isTopThree = item.rank <= 3;
     const isCurrentUser = item.isCurrentUser;
 
@@ -97,13 +110,19 @@ export default function LeaderboardScreen() {
           <View
             style={[
               styles.rankBadge,
-              { backgroundColor: isTopThree ? `${getRankColor(item.rank)}20` : theme.colors.surface },
+              {
+                backgroundColor: isTopThree
+                  ? `${getRankColor(item.rank)}20`
+                  : theme.colors.surface,
+              },
             ]}
           >
             {isTopThree ? (
               <Text style={styles.rankEmoji}>{getRankEmoji(item.rank)}</Text>
             ) : (
-              <Text style={[styles.rankNumber, { color: getRankColor(item.rank) }]}>
+              <Text
+                style={[styles.rankNumber, { color: getRankColor(item.rank) }]}
+              >
                 #{item.rank}
               </Text>
             )}
@@ -114,12 +133,14 @@ export default function LeaderboardScreen() {
               numberOfLines={1}
             >
               {item.displayName}
-              {isCurrentUser && ' (You)'}
+              {isCurrentUser && " (You)"}
             </Text>
           </View>
         </View>
         <View style={styles.rankRight}>
-          <Text style={[styles.rankValue, isCurrentUser && styles.rankValueCurrent]}>
+          <Text
+            style={[styles.rankValue, isCurrentUser && styles.rankValueCurrent]}
+          >
             {formatValue(item.value, leaderboardType)}
           </Text>
         </View>
@@ -129,7 +150,7 @@ export default function LeaderboardScreen() {
 
   if (isLoadingLeaderboard && leaderboard.length === 0) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={["top"]}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={styles.loadingText}>Loading leaderboard...</Text>
@@ -139,10 +160,13 @@ export default function LeaderboardScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
         <Text style={styles.title}>Leaderboard</Text>
@@ -189,15 +213,19 @@ export default function LeaderboardScreen() {
             <View style={styles.userStatDivider} />
             <View style={styles.userStatItem}>
               <Text style={styles.userStatLabel}>Top %</Text>
-              <Text style={[styles.userStatValue, { color: theme.colors.success }]}>
-                {userPercentile !== null ? `${Math.round(userPercentile)}%` : '-'}
+              <Text
+                style={[styles.userStatValue, { color: theme.colors.success }]}
+              >
+                {userPercentile !== null
+                  ? `${Math.round(userPercentile)}%`
+                  : "-"}
               </Text>
             </View>
             <View style={styles.userStatDivider} />
             <View style={styles.userStatItem}>
               <Text style={styles.userStatLabel}>Your XP</Text>
-              <Text style={[styles.userStatValue, { color: '#F59E0B' }]}>
-                {progress?.xp.totalEarned.toLocaleString() || '0'}
+              <Text style={[styles.userStatValue, { color: "#F59E0B" }]}>
+                {progress?.xp.totalEarned.toLocaleString() || "0"}
               </Text>
             </View>
           </View>
@@ -207,9 +235,13 @@ export default function LeaderboardScreen() {
       {/* Period Info */}
       {leaderboardPeriod && (
         <View style={styles.periodInfo}>
-          <Ionicons name="time-outline" size={14} color={theme.colors.textSecondary} />
+          <Ionicons
+            name="time-outline"
+            size={14}
+            color={theme.colors.textSecondary}
+          />
           <Text style={styles.periodText}>
-            {new Date(leaderboardPeriod.start).toLocaleDateString()} -{' '}
+            {new Date(leaderboardPeriod.start).toLocaleDateString()} -{" "}
             {new Date(leaderboardPeriod.end).toLocaleDateString()}
           </Text>
         </View>
@@ -229,7 +261,11 @@ export default function LeaderboardScreen() {
         </View>
       ) : leaderboard.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Ionicons name="trophy-outline" size={64} color={theme.colors.textSecondary} />
+          <Ionicons
+            name="trophy-outline"
+            size={64}
+            color={theme.colors.textSecondary}
+          />
           <Text style={styles.emptyTitle}>No Rankings Yet</Text>
           <Text style={styles.emptyText}>
             Be the first to earn XP and climb the leaderboard!
@@ -263,19 +299,19 @@ export default function LeaderboardScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   loadingText: { marginTop: 12, color: theme.colors.textSecondary },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.md,
   },
   backButton: { padding: 4 },
-  title: { fontSize: 20, fontWeight: '700', color: theme.colors.text },
+  title: { fontSize: 20, fontWeight: "700", color: theme.colors.text },
   tabContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.md,
     backgroundColor: theme.colors.surface,
@@ -284,9 +320,9 @@ const styles = StyleSheet.create({
   },
   tab: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 10,
     borderRadius: 8,
     gap: 4,
@@ -296,12 +332,12 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: "500",
     color: theme.colors.textSecondary,
   },
   tabTextActive: {
     color: theme.colors.primary,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   userStatsCard: {
     marginHorizontal: theme.spacing.lg,
@@ -311,12 +347,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   userStatsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   userStatItem: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
   },
   userStatLabel: {
     fontSize: 11,
@@ -325,7 +361,7 @@ const styles = StyleSheet.create({
   },
   userStatValue: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.primary,
   },
   userStatDivider: {
@@ -334,9 +370,9 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.border,
   },
   periodInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 6,
     marginBottom: theme.spacing.md,
   },
@@ -352,13 +388,13 @@ const styles = StyleSheet.create({
   },
   listHeaderText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   rankItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     backgroundColor: theme.colors.surface,
     borderRadius: 12,
     padding: 14,
@@ -367,8 +403,8 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border,
   },
   rankItemTop: {
-    borderColor: 'transparent',
-    shadowColor: '#000',
+    borderColor: "transparent",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -379,16 +415,16 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.primary,
   },
   rankLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
   },
   rankBadge: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 12,
   },
   rankEmoji: {
@@ -396,26 +432,26 @@ const styles = StyleSheet.create({
   },
   rankNumber: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   userInfo: {
     flex: 1,
   },
   userName: {
     fontSize: 15,
-    fontWeight: '500',
+    fontWeight: "500",
     color: theme.colors.text,
   },
   userNameCurrent: {
     color: theme.colors.primary,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   rankRight: {
     marginLeft: 12,
   },
   rankValue: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   rankValueCurrent: {
@@ -423,15 +459,15 @@ const styles = StyleSheet.create({
   },
   errorContainer: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 60,
   },
   errorText: {
     fontSize: 14,
     color: theme.colors.error,
     marginTop: 12,
-    textAlign: 'center',
+    textAlign: "center",
   },
   retryButton: {
     marginTop: 16,
@@ -442,25 +478,25 @@ const styles = StyleSheet.create({
   },
   retryText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#fff',
+    fontWeight: "600",
+    color: "#fff",
   },
   emptyContainer: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 60,
   },
   emptyTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
     marginTop: 16,
   },
   emptyText: {
     fontSize: 14,
     color: theme.colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 8,
     paddingHorizontal: 40,
   },

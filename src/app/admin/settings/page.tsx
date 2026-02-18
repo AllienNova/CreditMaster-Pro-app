@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
 interface Settings {
   siteName: string;
@@ -14,10 +14,10 @@ interface Settings {
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<Settings>({
-    siteName: 'Fynvita',
-    supportEmail: 'support@Fynvita.pro',
+    siteName: "Fynvita",
+    supportEmail: "support@Fynvita.pro",
     maxDisputesPerMonth: 10,
-    aiModelDefault: 'gpt-4',
+    aiModelDefault: "gpt-4",
     maintenanceMode: false,
     signupsEnabled: true,
     stripeTestMode: true,
@@ -28,15 +28,15 @@ export default function AdminSettingsPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await fetch('/api/admin/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(settings),
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
-      console.error('Failed to save settings:', error);
+      console.error("Failed to save settings:", error);
     } finally {
       setSaving(false);
     }
@@ -136,19 +136,19 @@ export default function AdminSettingsPage() {
         <div className="space-y-4">
           {[
             {
-              key: 'maintenanceMode',
-              label: 'Maintenance Mode',
-              desc: 'Disable access for non-admin users',
+              key: "maintenanceMode",
+              label: "Maintenance Mode",
+              desc: "Disable access for non-admin users",
             },
             {
-              key: 'signupsEnabled',
-              label: 'Signups Enabled',
-              desc: 'Allow new user registrations',
+              key: "signupsEnabled",
+              label: "Signups Enabled",
+              desc: "Allow new user registrations",
             },
             {
-              key: 'stripeTestMode',
-              label: 'Stripe Test Mode',
-              desc: 'Use Stripe test environment',
+              key: "stripeTestMode",
+              label: "Stripe Test Mode",
+              desc: "Use Stripe test environment",
             },
           ].map((item) => (
             <div
@@ -156,8 +156,12 @@ export default function AdminSettingsPage() {
               className="flex items-center justify-between py-2"
             >
               <div>
-                <p className="font-medium text-gray-900 dark:text-white">{item.label}</p>
-                <p className="text-sm text-gray-500 dark:text-slate-400">{item.desc}</p>
+                <p className="font-medium text-gray-900 dark:text-white">
+                  {item.label}
+                </p>
+                <p className="text-sm text-gray-500 dark:text-slate-400">
+                  {item.desc}
+                </p>
               </div>
               <button
                 onClick={() =>
@@ -168,15 +172,15 @@ export default function AdminSettingsPage() {
                 }
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                   settings[item.key as keyof Settings]
-                    ? 'bg-blue-600'
-                    : 'bg-gray-200 dark:bg-slate-700'
+                    ? "bg-blue-600"
+                    : "bg-gray-200 dark:bg-slate-700"
                 }`}
               >
                 <span
                   className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-slate-800 transition-transform ${
                     settings[item.key as keyof Settings]
-                      ? 'translate-x-6'
-                      : 'translate-x-1'
+                      ? "translate-x-6"
+                      : "translate-x-1"
                   }`}
                 />
               </button>
@@ -192,7 +196,7 @@ export default function AdminSettingsPage() {
           disabled={saving}
           className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
         >
-          {saving ? 'Saving...' : 'Save Settings'}
+          {saving ? "Saving..." : "Save Settings"}
         </button>
         {saved && (
           <span className="text-green-600">Settings saved successfully</span>

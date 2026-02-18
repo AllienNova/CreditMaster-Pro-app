@@ -8,19 +8,19 @@
  * - Accountability partner notifications
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 export type CommitmentType =
-  | 'charity_donation'
-  | 'public_post'
-  | 'accountability_notify'
-  | 'self_penalty';
-export type CommitmentStatus = 'active' | 'completed' | 'failed' | 'cancelled';
-export type CheckInFrequency = 'daily' | 'weekly' | 'biweekly' | 'monthly';
+  | "charity_donation"
+  | "public_post"
+  | "accountability_notify"
+  | "self_penalty";
+export type CommitmentStatus = "active" | "completed" | "failed" | "cancelled";
+export type CheckInFrequency = "daily" | "weekly" | "biweekly" | "monthly";
 
 export interface CommitmentContract {
   id: string;
@@ -69,7 +69,7 @@ export interface CheckIn {
   progress: number;
   note?: string;
   verified: boolean;
-  verifiedBy?: 'self' | 'partner' | 'auto';
+  verifiedBy?: "self" | "partner" | "auto";
 }
 
 export interface Charity {
@@ -109,43 +109,43 @@ export interface CommitmentStats {
 
 const CHARITIES: Charity[] = [
   {
-    id: 'habitat',
-    name: 'Habitat for Humanity',
-    description: 'Building homes and hope for families in need',
-    category: 'Housing',
-    website: 'https://habitat.org',
+    id: "habitat",
+    name: "Habitat for Humanity",
+    description: "Building homes and hope for families in need",
+    category: "Housing",
+    website: "https://habitat.org",
     isVerified: true,
   },
   {
-    id: 'feedingamerica',
-    name: 'Feeding America',
-    description: 'Nationwide network of food banks fighting hunger',
-    category: 'Hunger',
-    website: 'https://feedingamerica.org',
+    id: "feedingamerica",
+    name: "Feeding America",
+    description: "Nationwide network of food banks fighting hunger",
+    category: "Hunger",
+    website: "https://feedingamerica.org",
     isVerified: true,
   },
   {
-    id: 'stjude',
+    id: "stjude",
     name: "St. Jude Children's Hospital",
-    description: 'Leading research and treatment for childhood cancer',
-    category: 'Health',
-    website: 'https://stjude.org',
+    description: "Leading research and treatment for childhood cancer",
+    category: "Health",
+    website: "https://stjude.org",
     isVerified: true,
   },
   {
-    id: 'redcross',
-    name: 'American Red Cross',
-    description: 'Disaster relief and emergency assistance',
-    category: 'Emergency',
-    website: 'https://redcross.org',
+    id: "redcross",
+    name: "American Red Cross",
+    description: "Disaster relief and emergency assistance",
+    category: "Emergency",
+    website: "https://redcross.org",
     isVerified: true,
   },
   {
-    id: 'wwf',
-    name: 'World Wildlife Fund',
-    description: 'Conservation and endangered species protection',
-    category: 'Environment',
-    website: 'https://worldwildlife.org',
+    id: "wwf",
+    name: "World Wildlife Fund",
+    description: "Conservation and endangered species protection",
+    category: "Environment",
+    website: "https://worldwildlife.org",
     isVerified: true,
   },
 ];
@@ -156,40 +156,40 @@ const CHARITIES: Charity[] = [
 
 const COMMITMENT_TEMPLATES: CommitmentTemplate[] = [
   {
-    id: 'charity-stake',
-    name: 'Charity Donation Stake',
-    description: 'Donate to charity if you miss your goal',
-    type: 'charity_donation',
+    id: "charity-stake",
+    name: "Charity Donation Stake",
+    description: "Donate to charity if you miss your goal",
+    type: "charity_donation",
     suggestedStake: 50,
     suggestedDuration: 30,
     tips: [
-      'Choose a charity you care about',
-      'Set a stake amount that motivates but doesnt stress you',
-      'Tell friends about your commitment for extra motivation',
+      "Choose a charity you care about",
+      "Set a stake amount that motivates but doesnt stress you",
+      "Tell friends about your commitment for extra motivation",
     ],
   },
   {
-    id: 'public-accountability',
-    name: 'Public Accountability',
-    description: 'Share your commitment publicly for social motivation',
-    type: 'public_post',
+    id: "public-accountability",
+    name: "Public Accountability",
+    description: "Share your commitment publicly for social motivation",
+    type: "public_post",
     suggestedDuration: 30,
     tips: [
-      'Be specific about your goal',
-      'Share your why to inspire others',
-      'Post regular updates on your progress',
+      "Be specific about your goal",
+      "Share your why to inspire others",
+      "Post regular updates on your progress",
     ],
   },
   {
-    id: 'partner-check-in',
-    name: 'Partner Check-In',
-    description: 'Have an accountability partner verify your progress',
-    type: 'accountability_notify',
+    id: "partner-check-in",
+    name: "Partner Check-In",
+    description: "Have an accountability partner verify your progress",
+    type: "accountability_notify",
     suggestedDuration: 21,
     tips: [
-      'Choose a partner who will be honest with you',
-      'Set clear expectations upfront',
-      'Check in regularly, not just at the end',
+      "Choose a partner who will be honest with you",
+      "Set clear expectations upfront",
+      "Check in regularly, not just at the end",
     ],
   },
 ];
@@ -212,21 +212,21 @@ export class CommitmentDeviceService {
   async createContract(
     contract: Omit<
       CommitmentContract,
-      'id' | 'checkIns' | 'status' | 'createdAt' | 'updatedAt'
-    >
+      "id" | "checkIns" | "status" | "createdAt" | "updatedAt"
+    >,
   ): Promise<CommitmentContract> {
     const now = new Date();
     const newContract: CommitmentContract = {
       ...contract,
       id: crypto.randomUUID(),
-      status: 'active',
+      status: "active",
       checkIns: [],
       createdAt: now,
       updatedAt: now,
     };
 
     const { data, error } = await this.supabase
-      .from('commitment_contracts')
+      .from("commitment_contracts")
       .insert(this.contractToDb(newContract))
       .select()
       .single();
@@ -237,9 +237,9 @@ export class CommitmentDeviceService {
 
   async getContract(contractId: string): Promise<CommitmentContract | null> {
     const { data } = await this.supabase
-      .from('commitment_contracts')
-      .select('*')
-      .eq('id', contractId)
+      .from("commitment_contracts")
+      .select("*")
+      .eq("id", contractId)
       .single();
 
     if (!data) return null;
@@ -251,15 +251,15 @@ export class CommitmentDeviceService {
 
   async getUserContracts(
     userId: string,
-    status?: CommitmentStatus
+    status?: CommitmentStatus,
   ): Promise<CommitmentContract[]> {
     let query = this.supabase
-      .from('commitment_contracts')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .from("commitment_contracts")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
-    if (status) query = query.eq('status', status);
+    if (status) query = query.eq("status", status);
 
     const { data, error } = await query;
     if (error) throw error;
@@ -273,9 +273,9 @@ export class CommitmentDeviceService {
 
   async cancelContract(contractId: string): Promise<void> {
     await this.supabase
-      .from('commitment_contracts')
-      .update({ status: 'cancelled', updated_at: new Date().toISOString() })
-      .eq('id', contractId);
+      .from("commitment_contracts")
+      .update({ status: "cancelled", updated_at: new Date().toISOString() })
+      .eq("id", contractId);
   }
 
   // ==========================================================================
@@ -285,11 +285,11 @@ export class CommitmentDeviceService {
   async recordCheckIn(
     contractId: string,
     progress: number,
-    note?: string
+    note?: string,
   ): Promise<CheckIn> {
     const contract = await this.getContract(contractId);
-    if (!contract) throw new Error('Contract not found');
-    if (contract.status !== 'active') throw new Error('Contract is not active');
+    if (!contract) throw new Error("Contract not found");
+    if (contract.status !== "active") throw new Error("Contract is not active");
 
     const checkIn: CheckIn = {
       id: crypto.randomUUID(),
@@ -298,11 +298,11 @@ export class CommitmentDeviceService {
       progress,
       note,
       verified: true,
-      verifiedBy: 'self',
+      verifiedBy: "self",
     };
 
     const { data, error } = await this.supabase
-      .from('commitment_check_ins')
+      .from("commitment_check_ins")
       .insert({
         id: checkIn.id,
         contract_id: checkIn.contractId,
@@ -319,22 +319,22 @@ export class CommitmentDeviceService {
 
     // Update contract progress
     await this.supabase
-      .from('commitment_contracts')
+      .from("commitment_contracts")
       .update({
         current_progress: progress,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', contractId);
+      .eq("id", contractId);
 
     return this.checkInFromDb(data);
   }
 
   async getCheckIns(contractId: string): Promise<CheckIn[]> {
     const { data, error } = await this.supabase
-      .from('commitment_check_ins')
-      .select('*')
-      .eq('contract_id', contractId)
-      .order('date', { ascending: true });
+      .from("commitment_check_ins")
+      .select("*")
+      .eq("contract_id", contractId)
+      .order("date", { ascending: true });
 
     if (error) throw error;
     return (data || []).map(this.checkInFromDb);
@@ -345,10 +345,10 @@ export class CommitmentDeviceService {
   // ==========================================================================
 
   async evaluateContract(
-    contractId: string
+    contractId: string,
   ): Promise<{ success: boolean; consequenceRequired: boolean }> {
     const contract = await this.getContract(contractId);
-    if (!contract) throw new Error('Contract not found');
+    if (!contract) throw new Error("Contract not found");
 
     const now = new Date();
     if (now < contract.endDate) {
@@ -358,17 +358,17 @@ export class CommitmentDeviceService {
     const success = contract.currentProgress >= contract.goalTarget;
 
     await this.supabase
-      .from('commitment_contracts')
+      .from("commitment_contracts")
       .update({
-        status: success ? 'completed' : 'failed',
+        status: success ? "completed" : "failed",
         was_successful: success,
         updated_at: now.toISOString(),
       })
-      .eq('id', contractId);
+      .eq("id", contractId);
 
     if (
       !success &&
-      contract.type === 'charity_donation' &&
+      contract.type === "charity_donation" &&
       contract.stakeAmount
     ) {
       await this.executeConsequence(contract);
@@ -378,21 +378,21 @@ export class CommitmentDeviceService {
   }
 
   private async executeConsequence(
-    contract: CommitmentContract
+    contract: CommitmentContract,
   ): Promise<void> {
     // In production, this would integrate with payment processing
     // For now, just record that the consequence was executed
     await this.supabase
-      .from('commitment_contracts')
+      .from("commitment_contracts")
       .update({
         consequence_executed: true,
         consequence_executed_at: new Date().toISOString(),
       })
-      .eq('id', contract.id);
+      .eq("id", contract.id);
 
     // Record the donation
-    if (contract.type === 'charity_donation' && contract.stakeAmount) {
-      await this.supabase.from('commitment_donations').insert({
+    if (contract.type === "charity_donation" && contract.stakeAmount) {
+      await this.supabase.from("commitment_donations").insert({
         id: crypto.randomUUID(),
         contract_id: contract.id,
         user_id: contract.userId,
@@ -410,17 +410,17 @@ export class CommitmentDeviceService {
   async getUserStats(userId: string): Promise<CommitmentStats> {
     const contracts = await this.getUserContracts(userId);
 
-    const completed = contracts.filter((c) => c.status === 'completed');
-    const failed = contracts.filter((c) => c.status === 'failed');
-    const active = contracts.filter((c) => c.status === 'active');
+    const completed = contracts.filter((c) => c.status === "completed");
+    const failed = contracts.filter((c) => c.status === "failed");
+    const active = contracts.filter((c) => c.status === "active");
 
     const totalStaked = contracts.reduce(
       (sum, c) => sum + (c.stakeAmount || 0),
-      0
+      0,
     );
     const totalDonated = failed.reduce(
       (sum, c) => sum + (c.stakeAmount || 0),
-      0
+      0,
     );
 
     // Calculate streak
@@ -542,7 +542,7 @@ export class CommitmentDeviceService {
       progress: data.progress as number,
       note: data.note as string | undefined,
       verified: data.verified as boolean,
-      verifiedBy: data.verified_by as CheckIn['verifiedBy'],
+      verifiedBy: data.verified_by as CheckIn["verifiedBy"],
     };
   }
 }
@@ -559,7 +559,7 @@ export function getCommitmentDeviceService(): CommitmentDeviceService {
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     commitmentDeviceServiceInstance = new CommitmentDeviceService(
       supabaseUrl,
-      supabaseKey
+      supabaseKey,
     );
   }
   return commitmentDeviceServiceInstance;

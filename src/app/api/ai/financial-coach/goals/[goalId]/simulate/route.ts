@@ -4,9 +4,9 @@
  * POST /api/ai/financial-coach/goals/[goalId]/simulate - Simulate goal scenarios
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { goalPlanner } from '@/lib/financial/goal-planner';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { goalPlanner } from "@/lib/financial/goal-planner";
 
 interface RouteParams {
   params: Promise<{ goalId: string }>;
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const user = await getUser();
 
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
@@ -34,8 +34,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     if (!scenarios || !Array.isArray(scenarios)) {
       return NextResponse.json(
-        { error: 'Missing required field: scenarios (array)' },
-        { status: 400 }
+        { error: "Missing required field: scenarios (array)" },
+        { status: 400 },
       );
     }
 
@@ -45,16 +45,16 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         (s: { monthlyContribution: number; targetDate?: string }) => ({
           monthlyContribution: parseFloat(String(s.monthlyContribution)),
           targetDate: s.targetDate ? new Date(s.targetDate) : undefined,
-        })
+        }),
       ),
     });
 
     return NextResponse.json(simulation);
   } catch (error) {
-    console.error('Error simulating goal:', error);
+    console.error("Error simulating goal:", error);
     return NextResponse.json(
-      { error: 'Failed to simulate goal' },
-      { status: 500 }
+      { error: "Failed to simulate goal" },
+      { status: 500 },
     );
   }
 }

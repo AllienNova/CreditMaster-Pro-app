@@ -3,12 +3,12 @@
  * Shows countdown to next payday with circular progress
  */
 
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
-import { lightTheme as theme } from '../../constants/theme';
+import React, { useEffect, useState } from "react";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import Svg, { Circle, Defs, LinearGradient, Stop } from "react-native-svg";
+import { lightTheme as theme } from "../../constants/theme";
 
 interface PaydayCountdownProps {
   daysUntilPayday?: number;
@@ -26,10 +26,10 @@ function formatCurrency(value: number): string {
 }
 
 function formatDate(date: Date): string {
-  return date.toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
+  return date.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
   });
 }
 
@@ -50,9 +50,19 @@ function CircularProgress({
 
   return (
     <View style={{ width: size, height: size }}>
-      <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
+      <Svg
+        width={size}
+        height={size}
+        style={{ transform: [{ rotate: "-90deg" }] }}
+      >
         <Defs>
-          <LinearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <LinearGradient
+            id="progressGradient"
+            x1="0%"
+            y1="0%"
+            x2="100%"
+            y2="0%"
+          >
             <Stop offset="0%" stopColor="#22C55E" />
             <Stop offset="100%" stopColor="#10B981" />
           </LinearGradient>
@@ -92,7 +102,7 @@ function LoadingSkeleton() {
       <View style={styles.skeletonCircle} />
       <View style={styles.skeletonDetails}>
         <View style={styles.skeletonLine} />
-        <View style={[styles.skeletonLine, { width: '60%' }]} />
+        <View style={[styles.skeletonLine, { width: "60%" }]} />
       </View>
     </View>
   );
@@ -103,13 +113,15 @@ function EmptyState({ onAddIncome }: { onAddIncome?: () => void }) {
     <View style={styles.container}>
       <View style={styles.emptyContent}>
         <View style={styles.emptyIcon}>
-          <Ionicons name="wallet-outline" size={28} color={theme.colors.success} />
+          <Ionicons
+            name="wallet-outline"
+            size={28}
+            color={theme.colors.success}
+          />
         </View>
         <View style={styles.emptyTextContainer}>
           <Text style={styles.emptyTitle}>Track Your Payday</Text>
-          <Text style={styles.emptySubtitle}>
-            Add income to see countdown
-          </Text>
+          <Text style={styles.emptySubtitle}>Add income to see countdown</Text>
         </View>
         <TouchableOpacity
           style={styles.addButton}
@@ -128,7 +140,7 @@ export function PaydayCountdown({
   daysUntilPayday = 0,
   nextPayDate,
   expectedAmount = 0,
-  sourceName = 'Paycheck',
+  sourceName = "Paycheck",
   percentComplete = 0,
   isLoading = false,
   hasIncomeSources = true,
@@ -157,7 +169,7 @@ export function PaydayCountdown({
   return (
     <TouchableOpacity
       style={styles.container}
-      onPress={() => router.push('/dashboard/income')}
+      onPress={() => router.push("/dashboard/income")}
       activeOpacity={0.7}
     >
       <View style={styles.content}>
@@ -171,7 +183,9 @@ export function PaydayCountdown({
             ) : (
               <>
                 <Text style={styles.daysNumber}>{daysUntilPayday}</Text>
-                <Text style={styles.daysLabel}>{isTomorrow ? 'day' : 'days'}</Text>
+                <Text style={styles.daysLabel}>
+                  {isTomorrow ? "day" : "days"}
+                </Text>
               </>
             )}
           </View>
@@ -182,8 +196,8 @@ export function PaydayCountdown({
             {isPayday
               ? "Today's payday!"
               : isTomorrow
-                ? 'Payday tomorrow!'
-                : 'Days until payday'}
+                ? "Payday tomorrow!"
+                : "Days until payday"}
           </Text>
           <Text style={styles.amount}>{formatCurrency(expectedAmount)}</Text>
           <Text style={styles.source}>{sourceName}</Text>
@@ -191,7 +205,11 @@ export function PaydayCountdown({
           <View style={styles.infoRow}>
             {nextPayDate && (
               <View style={styles.infoItem}>
-                <Ionicons name="calendar-outline" size={14} color={theme.colors.textSecondary} />
+                <Ionicons
+                  name="calendar-outline"
+                  size={14}
+                  color={theme.colors.textSecondary}
+                />
                 <Text style={styles.infoText}>{formatDate(nextPayDate)}</Text>
               </View>
             )}
@@ -200,8 +218,14 @@ export function PaydayCountdown({
       </View>
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>{percentComplete}% through pay period</Text>
-        <Ionicons name="chevron-forward" size={16} color={theme.colors.primary} />
+        <Text style={styles.footerText}>
+          {percentComplete}% through pay period
+        </Text>
+        <Ionicons
+          name="chevron-forward"
+          size={16}
+          color={theme.colors.primary}
+        />
       </View>
     </TouchableOpacity>
   );
@@ -216,21 +240,21 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   content: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 16,
   },
   progressContent: {
-    position: 'absolute',
-    justifyContent: 'center',
-    alignItems: 'center',
+    position: "absolute",
+    justifyContent: "center",
+    alignItems: "center",
   },
   daysContainer: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   daysNumber: {
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
   },
   daysLabel: {
@@ -242,7 +266,7 @@ const styles = StyleSheet.create({
   },
   payDayText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.success,
   },
   details: {
@@ -255,7 +279,7 @@ const styles = StyleSheet.create({
   },
   amount: {
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
   },
   source: {
@@ -264,13 +288,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   infoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   infoText: {
@@ -278,9 +302,9 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
@@ -292,8 +316,8 @@ const styles = StyleSheet.create({
   },
   // Empty state styles
   emptyContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   emptyIcon: {
@@ -301,15 +325,15 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     backgroundColor: `${theme.colors.success}20`,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   emptyTextContainer: {
     flex: 1,
   },
   emptyTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   emptySubtitle: {
@@ -317,8 +341,8 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
     backgroundColor: theme.colors.success,
     paddingHorizontal: 12,
@@ -327,8 +351,8 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
   // Skeleton styles
   skeletonCircle: {
@@ -346,7 +370,7 @@ const styles = StyleSheet.create({
     height: 14,
     backgroundColor: theme.colors.border,
     borderRadius: 4,
-    width: '80%',
+    width: "80%",
   },
 });
 

@@ -7,14 +7,14 @@
  * Phase 2.2: Savings Optimizer
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getSavingsOptimizer } from '@/lib/financial/savings-optimizer';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { rbac } from '@/lib/auth/rbac';
+import { NextRequest, NextResponse } from "next/server";
+import { getSavingsOptimizer } from "@/lib/financial/savings-optimizer";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { rbac } from "@/lib/auth/rbac";
 import {
   applyFinancialAPIMiddleware,
   finalizeResponse,
-} from '@/lib/api/financial-api-middleware';
+} from "@/lib/api/financial-api-middleware";
 
 // ============================================================================
 // GET - Get Savings Recommendations
@@ -77,21 +77,22 @@ export async function GET(request: NextRequest) {
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
       );
     }
 
-    if (!rbac.hasPermission(validation.user, 'financial:read')) {
+    if (!rbac.hasPermission(validation.user, "financial:read")) {
       return NextResponse.json(
-        { success: false, error: 'Forbidden - Insufficient permissions' },
-        { status: 403 }
+        { success: false, error: "Forbidden - Insufficient permissions" },
+        { status: 403 },
       );
     }
 
     // Calculate potential savings
     const savingsOptimizer = getSavingsOptimizer();
-    const potentialSavings = await savingsOptimizer.calculatePotentialSavings(userId);
+    const potentialSavings =
+      await savingsOptimizer.calculatePotentialSavings(userId);
 
     const response = NextResponse.json(
       {
@@ -111,20 +112,19 @@ export async function GET(request: NextRequest) {
           totalAnnualSavings: potentialSavings.totalAnnualSavings,
         },
       },
-      { status: 200 }
+      { status: 200 },
     );
 
     return finalizeResponse(request, response, startTime, userId);
   } catch (error) {
-    console.error('Savings recommendations error:', error);
+    console.error("Savings recommendations error:", error);
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to generate savings recommendations',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to generate savings recommendations",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-

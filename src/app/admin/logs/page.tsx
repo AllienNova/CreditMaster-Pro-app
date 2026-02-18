@@ -3,14 +3,70 @@
 import { useState } from "react";
 
 const logs = [
-  { id: 1, level: "error", message: "Failed to connect to Equifax API: Connection timeout", source: "credit-bureau-service", timestamp: "2024-12-03 10:45:23", count: 12 },
-  { id: 2, level: "warning", message: "Rate limit approaching for Experian API (85%)", source: "rate-limiter", timestamp: "2024-12-03 10:42:15", count: 1 },
-  { id: 3, level: "error", message: "Payment webhook signature verification failed", source: "stripe-webhook", timestamp: "2024-12-03 10:38:42", count: 3 },
-  { id: 4, level: "info", message: "Database migration completed successfully", source: "migration-runner", timestamp: "2024-12-03 10:30:00", count: 1 },
-  { id: 5, level: "warning", message: "Email delivery delayed: Queue backlog", source: "email-service", timestamp: "2024-12-03 10:25:18", count: 45 },
-  { id: 6, level: "error", message: "User authentication failed: Invalid token", source: "auth-middleware", timestamp: "2024-12-03 10:20:33", count: 8 },
-  { id: 7, level: "info", message: "Cache cleared for user preferences", source: "cache-service", timestamp: "2024-12-03 10:15:00", count: 1 },
-  { id: 8, level: "error", message: "Dispute letter generation failed: AI service unavailable", source: "ai-service", timestamp: "2024-12-03 10:10:45", count: 5 },
+  {
+    id: 1,
+    level: "error",
+    message: "Failed to connect to Equifax API: Connection timeout",
+    source: "credit-bureau-service",
+    timestamp: "2024-12-03 10:45:23",
+    count: 12,
+  },
+  {
+    id: 2,
+    level: "warning",
+    message: "Rate limit approaching for Experian API (85%)",
+    source: "rate-limiter",
+    timestamp: "2024-12-03 10:42:15",
+    count: 1,
+  },
+  {
+    id: 3,
+    level: "error",
+    message: "Payment webhook signature verification failed",
+    source: "stripe-webhook",
+    timestamp: "2024-12-03 10:38:42",
+    count: 3,
+  },
+  {
+    id: 4,
+    level: "info",
+    message: "Database migration completed successfully",
+    source: "migration-runner",
+    timestamp: "2024-12-03 10:30:00",
+    count: 1,
+  },
+  {
+    id: 5,
+    level: "warning",
+    message: "Email delivery delayed: Queue backlog",
+    source: "email-service",
+    timestamp: "2024-12-03 10:25:18",
+    count: 45,
+  },
+  {
+    id: 6,
+    level: "error",
+    message: "User authentication failed: Invalid token",
+    source: "auth-middleware",
+    timestamp: "2024-12-03 10:20:33",
+    count: 8,
+  },
+  {
+    id: 7,
+    level: "info",
+    message: "Cache cleared for user preferences",
+    source: "cache-service",
+    timestamp: "2024-12-03 10:15:00",
+    count: 1,
+  },
+  {
+    id: 8,
+    level: "error",
+    message: "Dispute letter generation failed: AI service unavailable",
+    source: "ai-service",
+    timestamp: "2024-12-03 10:10:45",
+    count: 5,
+  },
 ];
 
 export default function AdminLogsPage() {
@@ -19,7 +75,9 @@ export default function AdminLogsPage() {
 
   const filteredLogs = logs.filter((log) => {
     const matchesLevel = levelFilter === "all" || log.level === levelFilter;
-    const matchesSearch = log.message.toLowerCase().includes(searchQuery.toLowerCase()) || log.source.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch =
+      log.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      log.source.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesLevel && matchesSearch;
   });
 
@@ -30,7 +88,13 @@ export default function AdminLogsPage() {
       info: "bg-blue-100 text-blue-700",
       debug: "bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200",
     };
-    return <span className={`px-2 py-1 text-xs rounded-full font-medium ${styles[level]}`}>{level.toUpperCase()}</span>;
+    return (
+      <span
+        className={`px-2 py-1 text-xs rounded-full font-medium ${styles[level]}`}
+      >
+        {level.toUpperCase()}
+      </span>
+    );
   };
 
   const errorCount = logs.filter((l) => l.level === "error").length;
@@ -39,7 +103,9 @@ export default function AdminLogsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Error Logs</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          Error Logs
+        </h1>
         <div className="flex gap-3">
           <button className="px-4 py-2 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition">
             Clear Logs
@@ -76,13 +142,20 @@ export default function AdminLogsPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="flex-1 min-w-[200px] px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500"
           />
-          <select value={levelFilter} onChange={(e) => setLevelFilter(e.target.value)} className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg">
+          <select
+            value={levelFilter}
+            onChange={(e) => setLevelFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg"
+          >
             <option value="all">All Levels</option>
             <option value="error">Errors</option>
             <option value="warning">Warnings</option>
             <option value="info">Info</option>
           </select>
-          <input type="date" className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg" />
+          <input
+            type="date"
+            className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg"
+          />
         </div>
       </div>
 
@@ -91,21 +164,42 @@ export default function AdminLogsPage() {
         <table className="w-full">
           <thead className="bg-gray-50 dark:bg-slate-900">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Level</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Message</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Source</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Count</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Timestamp</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">
+                Level
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">
+                Message
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">
+                Source
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">
+                Count
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">
+                Timestamp
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-slate-700 font-mono text-sm">
             {filteredLogs.map((log) => (
-              <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900">
+              <tr
+                key={log.id}
+                className="hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900"
+              >
                 <td className="px-6 py-4">{getLevelBadge(log.level)}</td>
-                <td className="px-6 py-4 text-gray-900 dark:text-white max-w-md truncate">{log.message}</td>
-                <td className="px-6 py-4 text-gray-500 dark:text-slate-400">{log.source}</td>
-                <td className="px-6 py-4 text-gray-500 dark:text-slate-400">{log.count > 1 ? `×${log.count}` : "-"}</td>
-                <td className="px-6 py-4 text-gray-500 dark:text-slate-400">{log.timestamp}</td>
+                <td className="px-6 py-4 text-gray-900 dark:text-white max-w-md truncate">
+                  {log.message}
+                </td>
+                <td className="px-6 py-4 text-gray-500 dark:text-slate-400">
+                  {log.source}
+                </td>
+                <td className="px-6 py-4 text-gray-500 dark:text-slate-400">
+                  {log.count > 1 ? `×${log.count}` : "-"}
+                </td>
+                <td className="px-6 py-4 text-gray-500 dark:text-slate-400">
+                  {log.timestamp}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -114,4 +208,3 @@ export default function AdminLogsPage() {
     </div>
   );
 }
-

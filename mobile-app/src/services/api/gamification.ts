@@ -3,34 +3,34 @@
  * Handles XP, levels, badges, quests, and leaderboard endpoints
  */
 
-import { api } from './client';
-import type { ApiResponse } from './types';
+import { api } from "./client";
+import type { ApiResponse } from "./types";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 export type BadgeCategory =
-  | 'savings'
-  | 'debt'
-  | 'budget'
-  | 'credit'
-  | 'investing'
-  | 'trading'
-  | 'tax'
-  | 'streak'
-  | 'community'
-  | 'special';
+  | "savings"
+  | "debt"
+  | "budget"
+  | "credit"
+  | "investing"
+  | "trading"
+  | "tax"
+  | "streak"
+  | "community"
+  | "special";
 
-export type BadgeRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+export type BadgeRarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
 
 export type QuestType =
-  | 'transaction'
-  | 'savings'
-  | 'budget'
-  | 'credit'
-  | 'education'
-  | 'engagement';
+  | "transaction"
+  | "savings"
+  | "budget"
+  | "credit"
+  | "education"
+  | "engagement";
 
 export interface Badge {
   id: string;
@@ -141,7 +141,11 @@ export interface LeaderboardEntry {
   isCurrentUser?: boolean;
 }
 
-export type LeaderboardType = 'weekly_xp' | 'monthly_xp' | 'streak' | 'challenge';
+export type LeaderboardType =
+  | "weekly_xp"
+  | "monthly_xp"
+  | "streak"
+  | "challenge";
 
 export interface LeaderboardResponse {
   type: LeaderboardType;
@@ -186,8 +190,10 @@ export interface CompleteQuestResponse {
 /**
  * Get user's gamification progress (XP, level, streak)
  */
-export async function getProgress(): Promise<ApiResponse<GamificationProgress>> {
-  return api.get<GamificationProgress>('/gamification/progress', {
+export async function getProgress(): Promise<
+  ApiResponse<GamificationProgress>
+> {
+  return api.get<GamificationProgress>("/gamification/progress", {
     enableCache: true,
     cacheTime: 60 * 1000, // 1 minute cache
   });
@@ -196,15 +202,17 @@ export async function getProgress(): Promise<ApiResponse<GamificationProgress>> 
 /**
  * Update streak (daily check-in) and get XP
  */
-export async function updateStreak(): Promise<ApiResponse<StreakUpdateResponse>> {
-  return api.post<StreakUpdateResponse>('/gamification/progress');
+export async function updateStreak(): Promise<
+  ApiResponse<StreakUpdateResponse>
+> {
+  return api.post<StreakUpdateResponse>("/gamification/progress");
 }
 
 /**
  * Get user's badges (earned, in progress, locked)
  */
 export async function getBadges(): Promise<ApiResponse<BadgesResponse>> {
-  return api.get<BadgesResponse>('/gamification/badges', {
+  return api.get<BadgesResponse>("/gamification/badges", {
     enableCache: true,
     cacheTime: 5 * 60 * 1000, // 5 minute cache
   });
@@ -214,16 +222,16 @@ export async function getBadges(): Promise<ApiResponse<BadgesResponse>> {
  * Award a badge to the user
  */
 export async function awardBadge(
-  badgeCode: string
+  badgeCode: string,
 ): Promise<ApiResponse<AwardBadgeResponse>> {
-  return api.post<AwardBadgeResponse>('/gamification/badges', { badgeCode });
+  return api.post<AwardBadgeResponse>("/gamification/badges", { badgeCode });
 }
 
 /**
  * Get daily quests
  */
 export async function getQuests(): Promise<ApiResponse<QuestsResponse>> {
-  return api.get<QuestsResponse>('/gamification/quests', {
+  return api.get<QuestsResponse>("/gamification/quests", {
     enableCache: true,
     cacheTime: 60 * 1000, // 1 minute cache
   });
@@ -233,21 +241,24 @@ export async function getQuests(): Promise<ApiResponse<QuestsResponse>> {
  * Complete a quest and claim reward
  */
 export async function completeQuest(
-  questId: string
+  questId: string,
 ): Promise<ApiResponse<CompleteQuestResponse>> {
-  return api.post<CompleteQuestResponse>('/gamification/quests', { questId });
+  return api.post<CompleteQuestResponse>("/gamification/quests", { questId });
 }
 
 /**
  * Get leaderboard data
  */
 export async function getLeaderboard(
-  type: LeaderboardType = 'weekly_xp'
+  type: LeaderboardType = "weekly_xp",
 ): Promise<ApiResponse<LeaderboardResponse>> {
-  return api.get<LeaderboardResponse>(`/gamification/leaderboard?type=${type}`, {
-    enableCache: true,
-    cacheTime: 5 * 60 * 1000, // 5 minute cache
-  });
+  return api.get<LeaderboardResponse>(
+    `/gamification/leaderboard?type=${type}`,
+    {
+      enableCache: true,
+      cacheTime: 5 * 60 * 1000, // 5 minute cache
+    },
+  );
 }
 
 // ============================================================================

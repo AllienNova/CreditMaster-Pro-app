@@ -1,13 +1,13 @@
 /**
  * Onboarding Progress Hook (Web)
- * 
+ *
  * Provides auto-save functionality for onboarding progress
  * - Loads saved progress on mount
  * - Auto-saves every 30 seconds
  * - Manual save on step completion
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from "react";
 
 export interface OnboardingProgress {
   current_step: number;
@@ -43,8 +43,8 @@ export function useOnboardingProgress() {
     const loadProgress = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/onboarding/progress');
-        
+        const response = await fetch("/api/onboarding/progress");
+
         if (response.ok) {
           const data = await response.json();
           setProgress(data);
@@ -53,7 +53,7 @@ export function useOnboardingProgress() {
         }
       } catch (err) {
         // Error loading progress
-        setError('Failed to load saved progress');
+        setError("Failed to load saved progress");
       } finally {
         setLoading(false);
       }
@@ -63,33 +63,36 @@ export function useOnboardingProgress() {
   }, []);
 
   // Save progress to API
-  const saveProgress = useCallback(async (progressToSave: OnboardingProgress) => {
-    try {
-      setSaving(true);
-      setError(null);
-      
-      const response = await fetch('/api/onboarding/progress', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(progressToSave),
-      });
+  const saveProgress = useCallback(
+    async (progressToSave: OnboardingProgress) => {
+      try {
+        setSaving(true);
+        setError(null);
 
-      if (!response.ok) {
-        throw new Error('Failed to save progress');
+        const response = await fetch("/api/onboarding/progress", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(progressToSave),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to save progress");
+        }
+
+        hasChangesRef.current = false;
+        return true;
+      } catch (err) {
+        // Error saving progress
+        setError("Failed to save progress");
+        return false;
+      } finally {
+        setSaving(false);
       }
-
-      hasChangesRef.current = false;
-      return true;
-    } catch (err) {
-      // Error saving progress
-      setError('Failed to save progress');
-      return false;
-    } finally {
-      setSaving(false);
-    }
-  }, []);
+    },
+    [],
+  );
 
   // Auto-save every 30 seconds if there are changes
   useEffect(() => {
@@ -117,19 +120,24 @@ export function useOnboardingProgress() {
   }, []);
 
   // Complete a step
-  const completeStep = useCallback(async (stepNumber: number) => {
-    const current = progressRef.current;
-    const newCompletedSteps = Array.from(new Set([...current.completed_steps, stepNumber]));
-    const newProgress = {
-      ...current,
-      completed_steps: newCompletedSteps,
-      current_step: Math.min(stepNumber + 1, 5),
-      last_updated: new Date().toISOString(),
-    };
+  const completeStep = useCallback(
+    async (stepNumber: number) => {
+      const current = progressRef.current;
+      const newCompletedSteps = Array.from(
+        new Set([...current.completed_steps, stepNumber]),
+      );
+      const newProgress = {
+        ...current,
+        completed_steps: newCompletedSteps,
+        current_step: Math.min(stepNumber + 1, 5),
+        last_updated: new Date().toISOString(),
+      };
 
-    setProgress(newProgress);
-    await saveProgress(newProgress);
-  }, [saveProgress]);
+      setProgress(newProgress);
+      await saveProgress(newProgress);
+    },
+    [saveProgress],
+  );
 
   // Update form data for current step
   const updateFormData = useCallback((stepData: Record<string, any>) => {
@@ -145,11 +153,14 @@ export function useOnboardingProgress() {
   }, []);
 
   // Go to specific step
-  const goToStep = useCallback((stepNumber: number) => {
-    if (stepNumber >= 1 && stepNumber <= 5) {
-      updateProgress({ current_step: stepNumber });
-    }
-  }, [updateProgress]);
+  const goToStep = useCallback(
+    (stepNumber: number) => {
+      if (stepNumber >= 1 && stepNumber <= 5) {
+        updateProgress({ current_step: stepNumber });
+      }
+    },
+    [updateProgress],
+  );
 
   // Manual save
   const save = useCallback(async () => {
@@ -168,4 +179,3 @@ export function useOnboardingProgress() {
     save,
   };
 }
-

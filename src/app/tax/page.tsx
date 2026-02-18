@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Tax Optimization Dashboard
@@ -12,9 +12,9 @@
  * COMPLIANCE: Includes required disclaimers for tax advice
  */
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 // Types
 interface TaxRecommendation {
@@ -22,7 +22,7 @@ interface TaxRecommendation {
   title: string;
   summary: string;
   estimatedTaxSavings: number;
-  priority: 'critical' | 'high' | 'medium' | 'low';
+  priority: "critical" | "high" | "medium" | "low";
   deadline?: string;
   status: string;
 }
@@ -52,10 +52,10 @@ interface TaxAnalysisResult {
 
 // Priority badge colors
 const priorityColors = {
-  critical: 'bg-red-100 text-red-800 border-red-200',
-  high: 'bg-orange-100 text-orange-800 border-orange-200',
-  medium: 'bg-blue-100 text-blue-800 border-blue-200',
-  low: 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100 border-gray-200 dark:border-slate-700',
+  critical: "bg-red-100 text-red-800 border-red-200",
+  high: "bg-orange-100 text-orange-800 border-orange-200",
+  medium: "bg-blue-100 text-blue-800 border-blue-200",
+  low: "bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100 border-gray-200 dark:border-slate-700",
 };
 
 export default function TaxOptimizationPage() {
@@ -75,14 +75,14 @@ export default function TaxOptimizationPage() {
     setError(null);
 
     try {
-      const response = await fetch('/api/tax/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/tax/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           taxYear: new Date().getFullYear(),
           grossIncome: 300000,
-          filingStatus: 'single',
-          stateOfResidence: 'CA',
+          filingStatus: "single",
+          stateOfResidence: "CA",
           ytd401kContribution: 10000,
           ytdIraContribution: 0,
           ytdHsaContribution: 1000,
@@ -92,25 +92,25 @@ export default function TaxOptimizationPage() {
 
       if (!response.ok) {
         if (response.status === 401) {
-          router.push('/login?redirect=/tax');
+          router.push("/login?redirect=/tax");
           return;
         }
-        throw new Error('Failed to fetch tax analysis');
+        throw new Error("Failed to fetch tax analysis");
       }
 
       const result = await response.json();
       setAnalysis(result.data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setIsLoading(false);
     }
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
@@ -211,7 +211,9 @@ export default function TaxOptimizationPage() {
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto mb-4" />
-              <p className="text-gray-600 dark:text-slate-300">Analyzing your tax situation...</p>
+              <p className="text-gray-600 dark:text-slate-300">
+                Analyzing your tax situation...
+              </p>
             </div>
           </div>
         )}
@@ -262,9 +264,9 @@ export default function TaxOptimizationPage() {
                   {formatPercent(analysis.currentProjection.effectiveRate)}
                 </p>
                 <p className="text-gray-500 dark:text-slate-400 text-sm mt-1">
-                  Marginal:{' '}
+                  Marginal:{" "}
                   {formatPercent(
-                    analysis.currentProjection.federalMarginalRate
+                    analysis.currentProjection.federalMarginalRate,
                   )}
                 </p>
               </div>
@@ -280,7 +282,9 @@ export default function TaxOptimizationPage() {
                 <p className="text-3xl font-bold text-gray-900 dark:text-white">
                   {formatCurrency(analysis.currentProjection.monthlyTakeHome)}
                 </p>
-                <p className="text-gray-500 dark:text-slate-400 text-sm mt-1">After all taxes</p>
+                <p className="text-gray-500 dark:text-slate-400 text-sm mt-1">
+                  After all taxes
+                </p>
               </div>
 
               {/* Retirement Gap */}
@@ -341,7 +345,7 @@ export default function TaxOptimizationPage() {
                               </span>
                               {rec.deadline && (
                                 <span className="text-gray-500 dark:text-slate-400">
-                                  Deadline:{' '}
+                                  Deadline:{" "}
                                   {new Date(rec.deadline).toLocaleDateString()}
                                 </span>
                               )}
@@ -366,28 +370,36 @@ export default function TaxOptimizationPage() {
                   </h3>
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-slate-300">Gross Income</span>
+                      <span className="text-gray-600 dark:text-slate-300">
+                        Gross Income
+                      </span>
                       <span className="font-medium">
                         {formatCurrency(analysis.currentProjection.grossIncome)}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-slate-300">Taxable Income</span>
+                      <span className="text-gray-600 dark:text-slate-300">
+                        Taxable Income
+                      </span>
                       <span className="font-medium">
                         {formatCurrency(
-                          analysis.currentProjection.taxableIncome
+                          analysis.currentProjection.taxableIncome,
                         )}
                       </span>
                     </div>
                     <hr className="my-2" />
                     <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-slate-300">Total Tax</span>
+                      <span className="text-gray-600 dark:text-slate-300">
+                        Total Tax
+                      </span>
                       <span className="font-semibold text-red-600">
                         -{formatCurrency(analysis.currentProjection.totalTax)}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-slate-300">Annual Take-Home</span>
+                      <span className="text-gray-600 dark:text-slate-300">
+                        Annual Take-Home
+                      </span>
                       <span className="font-semibold text-green-600">
                         {formatCurrency(analysis.currentProjection.takeHomePay)}
                       </span>
@@ -405,7 +417,9 @@ export default function TaxOptimizationPage() {
                       <span className="text-3xl font-bold text-gray-900 dark:text-white">
                         {analysis.assetLocationScore}
                       </span>
-                      <span className="text-gray-500 dark:text-slate-400">/100</span>
+                      <span className="text-gray-500 dark:text-slate-400">
+                        /100
+                      </span>
                     </div>
                     <div className="overflow-hidden h-2 text-xs flex rounded-full bg-gray-200 dark:bg-slate-700">
                       <div
@@ -415,10 +429,10 @@ export default function TaxOptimizationPage() {
                     </div>
                     <p className="text-sm text-gray-500 dark:text-slate-400 mt-2">
                       {analysis.assetLocationScore >= 80
-                        ? 'Excellent'
+                        ? "Excellent"
                         : analysis.assetLocationScore >= 60
-                          ? 'Good'
-                          : 'Needs Improvement'}
+                          ? "Good"
+                          : "Needs Improvement"}
                     </p>
                   </div>
                 </div>

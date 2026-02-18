@@ -8,24 +8,27 @@
  * @module InvestmentAnalysisEngine
  */
 
-import { getTechnicalAnalysisService } from './TechnicalAnalysisService';
-import { getFundamentalAnalysisService } from './FundamentalAnalysisService';
-import { getSentimentAnalysisService } from './SentimentAnalysisService';
-import { getPatternRecognitionService } from './PatternRecognitionService';
-import { getAIRecommendationEngine } from './AIRecommendationEngine';
-import { getPortfolioAnalysisService } from './PortfolioAnalysisService';
+import { getTechnicalAnalysisService } from "./TechnicalAnalysisService";
+import { getFundamentalAnalysisService } from "./FundamentalAnalysisService";
+import { getSentimentAnalysisService } from "./SentimentAnalysisService";
+import { getPatternRecognitionService } from "./PatternRecognitionService";
+import { getAIRecommendationEngine } from "./AIRecommendationEngine";
+import { getPortfolioAnalysisService } from "./PortfolioAnalysisService";
 
-import type { TechnicalAnalysis } from '../types/technical-analysis.types';
-import type { FundamentalAnalysis } from '../types/fundamental-analysis.types';
-import type { SentimentAnalysis } from '../types/sentiment-analysis.types';
-import type { PatternScanResult } from './PatternRecognitionService';
+import type { TechnicalAnalysis } from "../types/technical-analysis.types";
+import type { FundamentalAnalysis } from "../types/fundamental-analysis.types";
+import type { SentimentAnalysis } from "../types/sentiment-analysis.types";
+import type { PatternScanResult } from "./PatternRecognitionService";
 import type {
   InvestmentRecommendation,
   UserProfile,
   RecommendationAction,
-} from './AIRecommendationEngine';
-import type { PortfolioHolding, PortfolioMetrics } from './PortfolioAnalysisService';
-import type { Timeframe, SignalStrength } from '../types/investment.types';
+} from "./AIRecommendationEngine";
+import type {
+  PortfolioHolding,
+  PortfolioMetrics,
+} from "./PortfolioAnalysisService";
+import type { Timeframe, SignalStrength } from "../types/investment.types";
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -54,7 +57,7 @@ export interface ComprehensiveAnalysis {
   // Overall assessment
   overallSignal: SignalStrength;
   overallConfidence: number; // 0-100
-  riskLevel: 'low' | 'moderate' | 'high' | 'very_high';
+  riskLevel: "low" | "moderate" | "high" | "very_high";
 
   // Actionable insights
   keyInsights: string[];
@@ -87,7 +90,7 @@ export interface CorrelationAnalysis {
   fundamentalSentimentAlignment: number; // -1 to 1
 
   overallAlignment: number; // 0-100
-  alignmentLevel: 'strong' | 'moderate' | 'weak' | 'conflicting';
+  alignmentLevel: "strong" | "moderate" | "weak" | "conflicting";
 
   conflicts: AnalysisConflict[];
   agreements: AnalysisAgreement[];
@@ -96,14 +99,14 @@ export interface CorrelationAnalysis {
 export interface AnalysisConflict {
   sources: string[];
   description: string;
-  severity: 'low' | 'medium' | 'high';
+  severity: "low" | "medium" | "high";
   resolution: string;
 }
 
 export interface AnalysisAgreement {
   sources: string[];
   description: string;
-  strength: 'weak' | 'moderate' | 'strong';
+  strength: "weak" | "moderate" | "strong";
 }
 
 export interface PortfolioComprehensiveAnalysis {
@@ -130,11 +133,11 @@ export interface PortfolioComprehensiveAnalysis {
 
 export interface PositionAdjustment {
   symbol: string;
-  action: 'increase' | 'decrease' | 'hold' | 'exit';
+  action: "increase" | "decrease" | "hold" | "exit";
   currentWeight: number;
   targetWeight: number;
   reason: string;
-  priority: 'high' | 'medium' | 'low';
+  priority: "high" | "medium" | "low";
 }
 
 export interface AnalysisOptions {
@@ -167,9 +170,9 @@ export class InvestmentAnalysisEngine {
 
   // Default weights for composite scoring
   private readonly defaultWeights = {
-    technical: 0.30,
+    technical: 0.3,
     fundamental: 0.35,
-    sentiment: 0.20,
+    sentiment: 0.2,
     pattern: 0.15,
   };
 
@@ -184,8 +187,14 @@ export class InvestmentAnalysisEngine {
   async analyzeInvestment(
     symbol: string,
     currentPrice: number,
-    historicalData: { close: number; high: number; low: number; volume: number; timestamp: Date }[],
-    options?: AnalysisOptions
+    historicalData: {
+      close: number;
+      high: number;
+      low: number;
+      volume: number;
+      timestamp: Date;
+    }[],
+    options?: AnalysisOptions,
   ): Promise<ComprehensiveAnalysis> {
     const {
       includePatterns = true,
@@ -195,15 +204,20 @@ export class InvestmentAnalysisEngine {
       includeNews = true,
       includeSocial = true,
       userProfile,
-      timeframe = '1d',
+      timeframe = "1d",
     } = options || {};
 
     // Run all analyses in parallel for performance
     const [technical, fundamental, sentiment] = await Promise.all([
-      this.technicalService.analyzeTechnical(symbol, timeframe, historicalData, {
-        includePatterns,
-        includeSignals,
-      }),
+      this.technicalService.analyzeTechnical(
+        symbol,
+        timeframe,
+        historicalData,
+        {
+          includePatterns,
+          includeSignals,
+        },
+      ),
       this.fundamentalService.analyzeFundamentals(symbol, {
         includeDCF,
         includeComparables,
@@ -229,7 +243,11 @@ export class InvestmentAnalysisEngine {
       close: d.close,
       volume: d.volume,
     }));
-    const patterns = this.patternService.scanForPatterns(candleData, symbol, timeframe);
+    const patterns = this.patternService.scanForPatterns(
+      candleData,
+      symbol,
+      timeframe,
+    );
 
     // Generate AI recommendation
     const recommendation = await this.aiEngine.generateRecommendation(
@@ -249,7 +267,7 @@ export class InvestmentAnalysisEngine {
         roic: fundamental.profitability.returnOnInvestedCapital,
       },
       sentiment,
-      userProfile
+      userProfile,
     );
 
     // Calculate composite score
@@ -257,7 +275,7 @@ export class InvestmentAnalysisEngine {
       technical,
       fundamental,
       sentiment,
-      patterns
+      patterns,
     );
 
     // Perform correlation analysis
@@ -265,14 +283,14 @@ export class InvestmentAnalysisEngine {
       technical,
       fundamental,
       sentiment,
-      patterns
+      patterns,
     );
 
     // Determine overall signal and confidence
     const { overallSignal, overallConfidence } = this.determineOverallSignal(
       compositeScore,
       correlationAnalysis,
-      recommendation
+      recommendation,
     );
 
     // Assess risk level
@@ -280,7 +298,7 @@ export class InvestmentAnalysisEngine {
       technical,
       fundamental,
       sentiment,
-      correlationAnalysis
+      correlationAnalysis,
     );
 
     // Generate insights
@@ -289,15 +307,20 @@ export class InvestmentAnalysisEngine {
       fundamental,
       sentiment,
       patterns,
-      recommendation
+      recommendation,
     );
 
-    const risks = this.identifyRisks(technical, fundamental, sentiment, correlationAnalysis);
+    const risks = this.identifyRisks(
+      technical,
+      fundamental,
+      sentiment,
+      correlationAnalysis,
+    );
     const opportunities = this.identifyOpportunities(
       technical,
       fundamental,
       sentiment,
-      patterns
+      patterns,
     );
 
     // Generate comprehensive summary
@@ -307,7 +330,7 @@ export class InvestmentAnalysisEngine {
       compositeScore,
       overallSignal,
       riskLevel,
-      keyInsights
+      keyInsights,
     );
 
     return {
@@ -341,8 +364,17 @@ export class InvestmentAnalysisEngine {
   async analyzePortfolio(
     portfolioId: string,
     holdings: PortfolioHolding[],
-    historicalDataMap: Map<string, { close: number; high: number; low: number; volume: number; timestamp: Date }[]>,
-    options?: AnalysisOptions
+    historicalDataMap: Map<
+      string,
+      {
+        close: number;
+        high: number;
+        low: number;
+        volume: number;
+        timestamp: Date;
+      }[]
+    >,
+    options?: AnalysisOptions,
   ): Promise<PortfolioComprehensiveAnalysis> {
     // Analyze portfolio metrics
     const metrics = this.portfolioService.analyzePortfolio(holdings);
@@ -358,7 +390,7 @@ export class InvestmentAnalysisEngine {
             holding.symbol,
             holding.currentPrice,
             historicalData,
-            options
+            options,
           );
           holdingAnalyses.set(holding.symbol, analysis);
         } catch (_error) {
@@ -368,7 +400,10 @@ export class InvestmentAnalysisEngine {
     }
 
     // Calculate portfolio-level scores
-    const portfolioHealth = this.calculatePortfolioHealth(metrics, holdingAnalyses);
+    const portfolioHealth = this.calculatePortfolioHealth(
+      metrics,
+      holdingAnalyses,
+    );
     const diversificationScore = metrics.diversificationScore;
     const riskScore = this.calculatePortfolioRiskScore(metrics);
 
@@ -376,13 +411,13 @@ export class InvestmentAnalysisEngine {
     const positionAdjustments = this.generatePositionAdjustments(
       holdings,
       holdingAnalyses,
-      metrics
+      metrics,
     );
 
     // Generate rebalance recommendations
     const rebalanceRecommendations = this.generateRebalanceRecommendations(
       metrics,
-      positionAdjustments
+      positionAdjustments,
     );
 
     // Generate portfolio summary
@@ -390,7 +425,7 @@ export class InvestmentAnalysisEngine {
       portfolioHealth,
       diversificationScore,
       riskScore,
-      positionAdjustments
+      positionAdjustments,
     );
 
     return {
@@ -418,7 +453,7 @@ export class InvestmentAnalysisEngine {
     technical: TechnicalAnalysis,
     fundamental: FundamentalAnalysis,
     sentiment: SentimentAnalysis,
-    patterns: PatternScanResult
+    patterns: PatternScanResult,
   ): CompositeScore {
     // Convert each analysis to 0-100 score
     const technicalScore = technical.overallScore;
@@ -439,9 +474,16 @@ export class InvestmentAnalysisEngine {
     const signal = this.scoreToSignal(overall);
 
     // Calculate confidence based on score distribution
-    const scores = [technicalScore, fundamentalScore, sentimentScore, patternScore];
+    const scores = [
+      technicalScore,
+      fundamentalScore,
+      sentimentScore,
+      patternScore,
+    ];
     const avgScore = scores.reduce((sum, s) => sum + s, 0) / scores.length;
-    const variance = scores.reduce((sum, s) => sum + Math.pow(s - avgScore, 2), 0) / scores.length;
+    const variance =
+      scores.reduce((sum, s) => sum + Math.pow(s - avgScore, 2), 0) /
+      scores.length;
     const stdDev = Math.sqrt(variance);
 
     // Lower standard deviation = higher confidence
@@ -473,9 +515,9 @@ export class InvestmentAnalysisEngine {
       const weight = pattern.reliability / 100;
       totalWeight += weight;
 
-      if (pattern.direction === 'bullish') {
+      if (pattern.direction === "bullish") {
         bullishScore += weight * 100;
-      } else if (pattern.direction === 'bearish') {
+      } else if (pattern.direction === "bearish") {
         bearishScore += weight * 100;
       }
     }
@@ -491,13 +533,12 @@ export class InvestmentAnalysisEngine {
    * Convert numeric score to signal strength
    */
   private scoreToSignal(score: number): SignalStrength {
-    if (score >= 80) return 'strong_buy';
-    if (score >= 60) return 'buy';
-    if (score >= 40) return 'neutral';
-    if (score >= 20) return 'sell';
-    return 'strong_sell';
+    if (score >= 80) return "strong_buy";
+    if (score >= 60) return "buy";
+    if (score >= 40) return "neutral";
+    if (score >= 20) return "sell";
+    return "strong_sell";
   }
-
 
   // ============================================================================
   // CORRELATION ANALYSIS
@@ -510,20 +551,20 @@ export class InvestmentAnalysisEngine {
     technical: TechnicalAnalysis,
     fundamental: FundamentalAnalysis,
     sentiment: SentimentAnalysis,
-    patterns: PatternScanResult
+    patterns: PatternScanResult,
   ): CorrelationAnalysis {
     // Calculate pairwise alignments
     const techFundAlignment = this.calculateAlignment(
       technical.overallScore,
-      fundamental.overallScore
+      fundamental.overallScore,
     );
     const techSentAlignment = this.calculateAlignment(
       technical.overallScore,
-      sentiment.compositeSentiment.score
+      sentiment.compositeSentiment.score,
     );
     const fundSentAlignment = this.calculateAlignment(
       fundamental.overallScore,
-      sentiment.compositeSentiment.score
+      sentiment.compositeSentiment.score,
     );
 
     // Calculate overall alignment (average of pairwise alignments)
@@ -533,17 +574,27 @@ export class InvestmentAnalysisEngine {
       ((fundSentAlignment + 1) / 2) * 100 * 0.3;
 
     // Determine alignment level
-    let alignmentLevel: 'strong' | 'moderate' | 'weak' | 'conflicting';
-    if (overallAlignment >= 75) alignmentLevel = 'strong';
-    else if (overallAlignment >= 50) alignmentLevel = 'moderate';
-    else if (overallAlignment >= 25) alignmentLevel = 'weak';
-    else alignmentLevel = 'conflicting';
+    let alignmentLevel: "strong" | "moderate" | "weak" | "conflicting";
+    if (overallAlignment >= 75) alignmentLevel = "strong";
+    else if (overallAlignment >= 50) alignmentLevel = "moderate";
+    else if (overallAlignment >= 25) alignmentLevel = "weak";
+    else alignmentLevel = "conflicting";
 
     // Identify conflicts
-    const conflicts = this.identifyConflicts(technical, fundamental, sentiment, patterns);
+    const conflicts = this.identifyConflicts(
+      technical,
+      fundamental,
+      sentiment,
+      patterns,
+    );
 
     // Identify agreements
-    const agreements = this.identifyAgreements(technical, fundamental, sentiment, patterns);
+    const agreements = this.identifyAgreements(
+      technical,
+      fundamental,
+      sentiment,
+      patterns,
+    );
 
     return {
       technicalFundamentalAlignment: techFundAlignment,
@@ -575,44 +626,53 @@ export class InvestmentAnalysisEngine {
     technical: TechnicalAnalysis,
     fundamental: FundamentalAnalysis,
     sentiment: SentimentAnalysis,
-    patterns: PatternScanResult
+    patterns: PatternScanResult,
   ): AnalysisConflict[] {
     const conflicts: AnalysisConflict[] = [];
 
     // Technical vs Fundamental conflict
     if (
-      (technical.overallSignal === 'strong_buy' || technical.overallSignal === 'buy') &&
-      (fundamental.signal === 'strong_sell' || fundamental.signal === 'sell')
+      (technical.overallSignal === "strong_buy" ||
+        technical.overallSignal === "buy") &&
+      (fundamental.signal === "strong_sell" || fundamental.signal === "sell")
     ) {
       conflicts.push({
-        sources: ['Technical Analysis', 'Fundamental Analysis'],
-        description: 'Technical indicators suggest buying while fundamentals suggest selling',
-        severity: 'high',
+        sources: ["Technical Analysis", "Fundamental Analysis"],
+        description:
+          "Technical indicators suggest buying while fundamentals suggest selling",
+        severity: "high",
         resolution:
-          'Consider fundamental analysis for long-term decisions and technical for entry timing',
+          "Consider fundamental analysis for long-term decisions and technical for entry timing",
       });
     }
 
     // Technical vs Sentiment conflict
     if (
-      (technical.overallSignal === 'strong_buy' || technical.overallSignal === 'buy') &&
-      sentiment.overallSignal === 'strong_sell'
+      (technical.overallSignal === "strong_buy" ||
+        technical.overallSignal === "buy") &&
+      sentiment.overallSignal === "strong_sell"
     ) {
       conflicts.push({
-        sources: ['Technical Analysis', 'Sentiment Analysis'],
-        description: 'Technical indicators are bullish but market sentiment is very bearish',
-        severity: 'medium',
-        resolution: 'Negative sentiment may be temporary; monitor for sentiment shifts',
+        sources: ["Technical Analysis", "Sentiment Analysis"],
+        description:
+          "Technical indicators are bullish but market sentiment is very bearish",
+        severity: "medium",
+        resolution:
+          "Negative sentiment may be temporary; monitor for sentiment shifts",
       });
     }
 
     // Fundamental vs Sentiment conflict
-    if (fundamental.signal === 'strong_buy' && sentiment.overallSignal === 'strong_sell') {
+    if (
+      fundamental.signal === "strong_buy" &&
+      sentiment.overallSignal === "strong_sell"
+    ) {
       conflicts.push({
-        sources: ['Fundamental Analysis', 'Sentiment Analysis'],
-        description: 'Strong fundamentals but very negative market sentiment',
-        severity: 'medium',
-        resolution: 'May present a contrarian opportunity if fundamentals are solid',
+        sources: ["Fundamental Analysis", "Sentiment Analysis"],
+        description: "Strong fundamentals but very negative market sentiment",
+        severity: "medium",
+        resolution:
+          "May present a contrarian opportunity if fundamentals are solid",
       });
     }
 
@@ -626,7 +686,7 @@ export class InvestmentAnalysisEngine {
     technical: TechnicalAnalysis,
     fundamental: FundamentalAnalysis,
     sentiment: SentimentAnalysis,
-    patterns: PatternScanResult
+    patterns: PatternScanResult,
   ): AnalysisAgreement[] {
     const agreements: AnalysisAgreement[] = [];
 
@@ -637,9 +697,9 @@ export class InvestmentAnalysisEngine {
       sentiment.compositeSentiment.score > 60
     ) {
       agreements.push({
-        sources: ['Technical', 'Fundamental', 'Sentiment'],
-        description: 'All analyses indicate bullish conditions',
-        strength: 'strong',
+        sources: ["Technical", "Fundamental", "Sentiment"],
+        description: "All analyses indicate bullish conditions",
+        strength: "strong",
       });
     }
 
@@ -650,21 +710,26 @@ export class InvestmentAnalysisEngine {
       sentiment.compositeSentiment.score < 40
     ) {
       agreements.push({
-        sources: ['Technical', 'Fundamental', 'Sentiment'],
-        description: 'All analyses indicate bearish conditions',
-        strength: 'strong',
+        sources: ["Technical", "Fundamental", "Sentiment"],
+        description: "All analyses indicate bearish conditions",
+        strength: "strong",
       });
     }
 
     // Technical and patterns agree
-    const bullishPatterns = patterns.patterns.filter((p) => p.direction === 'bullish').length;
-    const bearishPatterns = patterns.patterns.filter((p) => p.direction === 'bearish').length;
+    const bullishPatterns = patterns.patterns.filter(
+      (p) => p.direction === "bullish",
+    ).length;
+    const bearishPatterns = patterns.patterns.filter(
+      (p) => p.direction === "bearish",
+    ).length;
 
     if (technical.overallScore > 60 && bullishPatterns > bearishPatterns) {
       agreements.push({
-        sources: ['Technical', 'Patterns'],
-        description: 'Technical indicators and chart patterns both suggest bullish momentum',
-        strength: 'moderate',
+        sources: ["Technical", "Patterns"],
+        description:
+          "Technical indicators and chart patterns both suggest bullish momentum",
+        strength: "moderate",
       });
     }
 
@@ -681,23 +746,27 @@ export class InvestmentAnalysisEngine {
   private determineOverallSignal(
     compositeScore: CompositeScore,
     correlationAnalysis: CorrelationAnalysis,
-    recommendation: InvestmentRecommendation
+    recommendation: InvestmentRecommendation,
   ): { overallSignal: SignalStrength; overallConfidence: number } {
     // Start with composite signal
     let overallSignal = compositeScore.signal;
 
     // Adjust confidence based on correlation alignment
     let confidenceAdjustment = 0;
-    if (correlationAnalysis.alignmentLevel === 'strong') confidenceAdjustment = 20;
-    else if (correlationAnalysis.alignmentLevel === 'moderate') confidenceAdjustment = 10;
-    else if (correlationAnalysis.alignmentLevel === 'weak') confidenceAdjustment = -10;
+    if (correlationAnalysis.alignmentLevel === "strong")
+      confidenceAdjustment = 20;
+    else if (correlationAnalysis.alignmentLevel === "moderate")
+      confidenceAdjustment = 10;
+    else if (correlationAnalysis.alignmentLevel === "weak")
+      confidenceAdjustment = -10;
     else confidenceAdjustment = -20; // conflicting
 
     // Combine composite confidence with AI recommendation confidence
-    const baseConfidence = (compositeScore.confidence + recommendation.confidence) / 2;
+    const baseConfidence =
+      (compositeScore.confidence + recommendation.confidence) / 2;
     const overallConfidence = Math.max(
       0,
-      Math.min(100, baseConfidence + confidenceAdjustment)
+      Math.min(100, baseConfidence + confidenceAdjustment),
     );
 
     // If AI recommendation differs significantly, use the more conservative signal
@@ -705,11 +774,11 @@ export class InvestmentAnalysisEngine {
     const aiSignal = this.mapRecommendationToSignal(recommendation.action);
     if (aiSignal !== overallSignal) {
       const signals: SignalStrength[] = [
-        'strong_sell',
-        'sell',
-        'neutral',
-        'buy',
-        'strong_buy',
+        "strong_sell",
+        "sell",
+        "neutral",
+        "buy",
+        "strong_buy",
       ];
       const compositeIndex = signals.indexOf(overallSignal);
       const aiIndex = signals.indexOf(aiSignal);
@@ -725,8 +794,10 @@ export class InvestmentAnalysisEngine {
   /**
    * Map RecommendationAction to SignalStrength
    */
-  private mapRecommendationToSignal(action: RecommendationAction): SignalStrength {
-    if (action === 'hold') return 'neutral';
+  private mapRecommendationToSignal(
+    action: RecommendationAction,
+  ): SignalStrength {
+    if (action === "hold") return "neutral";
     // RecommendationAction and SignalStrength are compatible except for 'hold'
     return action as SignalStrength;
   }
@@ -738,36 +809,36 @@ export class InvestmentAnalysisEngine {
     technical: TechnicalAnalysis,
     fundamental: FundamentalAnalysis,
     sentiment: SentimentAnalysis,
-    correlationAnalysis: CorrelationAnalysis
-  ): 'low' | 'moderate' | 'high' | 'very_high' {
+    correlationAnalysis: CorrelationAnalysis,
+  ): "low" | "moderate" | "high" | "very_high" {
     let riskScore = 0;
 
     // Technical risk (volatility)
-    if (technical.volatility.volatilityLevel === 'extreme') riskScore += 30;
-    else if (technical.volatility.volatilityLevel === 'high') riskScore += 20;
-    else if (technical.volatility.volatilityLevel === 'normal') riskScore += 10;
+    if (technical.volatility.volatilityLevel === "extreme") riskScore += 30;
+    else if (technical.volatility.volatilityLevel === "high") riskScore += 20;
+    else if (technical.volatility.volatilityLevel === "normal") riskScore += 10;
 
     // Fundamental risk
-    if (fundamental.riskLevel === 'very_high') riskScore += 30;
-    else if (fundamental.riskLevel === 'high') riskScore += 20;
-    else if (fundamental.riskLevel === 'moderate') riskScore += 10;
+    if (fundamental.riskLevel === "very_high") riskScore += 30;
+    else if (fundamental.riskLevel === "high") riskScore += 20;
+    else if (fundamental.riskLevel === "moderate") riskScore += 10;
 
     // Sentiment risk (extreme sentiment can be risky)
     const sentScore = sentiment.compositeSentiment.score;
-    if (sentScore > 80 || sentScore < 20) riskScore += 20; // Extreme sentiment
+    if (sentScore > 80 || sentScore < 20)
+      riskScore += 20; // Extreme sentiment
     else if (sentScore > 70 || sentScore < 30) riskScore += 10;
 
     // Correlation risk (conflicting signals increase risk)
-    if (correlationAnalysis.alignmentLevel === 'conflicting') riskScore += 20;
-    else if (correlationAnalysis.alignmentLevel === 'weak') riskScore += 10;
+    if (correlationAnalysis.alignmentLevel === "conflicting") riskScore += 20;
+    else if (correlationAnalysis.alignmentLevel === "weak") riskScore += 10;
 
     // Determine risk level
-    if (riskScore >= 60) return 'very_high';
-    if (riskScore >= 40) return 'high';
-    if (riskScore >= 20) return 'moderate';
-    return 'low';
+    if (riskScore >= 60) return "very_high";
+    if (riskScore >= 40) return "high";
+    if (riskScore >= 20) return "moderate";
+    return "low";
   }
-
 
   // ============================================================================
   // INSIGHT GENERATION
@@ -781,63 +852,78 @@ export class InvestmentAnalysisEngine {
     fundamental: FundamentalAnalysis,
     sentiment: SentimentAnalysis,
     patterns: PatternScanResult,
-    recommendation: InvestmentRecommendation
+    recommendation: InvestmentRecommendation,
   ): string[] {
     const insights: string[] = [];
 
     // Technical insights
-    if (technical.trend.shortTerm === 'bullish' && technical.trend.mediumTerm === 'bullish') {
-      insights.push('Strong bullish technical trend across multiple timeframes');
+    if (
+      technical.trend.shortTerm === "bullish" &&
+      technical.trend.mediumTerm === "bullish"
+    ) {
+      insights.push(
+        "Strong bullish technical trend across multiple timeframes",
+      );
     }
-    if (technical.momentum.rsiZone === 'oversold') {
-      insights.push(`RSI at ${technical.momentum.rsi.toFixed(1)} indicates oversold conditions`);
+    if (technical.momentum.rsiZone === "oversold") {
+      insights.push(
+        `RSI at ${technical.momentum.rsi.toFixed(1)} indicates oversold conditions`,
+      );
     }
-    if (technical.momentum.rsiZone === 'overbought') {
-      insights.push(`RSI at ${technical.momentum.rsi.toFixed(1)} indicates overbought conditions`);
+    if (technical.momentum.rsiZone === "overbought") {
+      insights.push(
+        `RSI at ${technical.momentum.rsi.toFixed(1)} indicates overbought conditions`,
+      );
     }
 
     // Fundamental insights
     if (fundamental.upside > 20) {
       insights.push(
-        `Fair value estimate suggests ${fundamental.upside.toFixed(1)}% upside potential`
+        `Fair value estimate suggests ${fundamental.upside.toFixed(1)}% upside potential`,
       );
     }
     if (fundamental.qualityScore > 80) {
-      insights.push('High-quality company with strong fundamentals');
+      insights.push("High-quality company with strong fundamentals");
     }
     if (fundamental.growthScore > 80) {
-      insights.push('Strong growth metrics indicate expanding business');
+      insights.push("Strong growth metrics indicate expanding business");
     }
     if (fundamental.profitability.returnOnEquity > 20) {
-      insights.push(`Strong ROE of ${fundamental.profitability.returnOnEquity.toFixed(1)}%`);
+      insights.push(
+        `Strong ROE of ${fundamental.profitability.returnOnEquity.toFixed(1)}%`,
+      );
     }
 
     // Sentiment insights
     if (sentiment.compositeSentiment.score > 70) {
-      insights.push('Positive market sentiment with bullish investor outlook');
+      insights.push("Positive market sentiment with bullish investor outlook");
     }
     if (sentiment.compositeSentiment.score < 30) {
-      insights.push('Negative market sentiment may present contrarian opportunity');
-    }
-    if (sentiment.analystConsensus.consensusRating === 'strong_buy') {
       insights.push(
-        `Analyst consensus: ${sentiment.analystConsensus.consensusRating.toUpperCase()}`
+        "Negative market sentiment may present contrarian opportunity",
+      );
+    }
+    if (sentiment.analystConsensus.consensusRating === "strong_buy") {
+      insights.push(
+        `Analyst consensus: ${sentiment.analystConsensus.consensusRating.toUpperCase()}`,
       );
     }
 
     // Pattern insights
-    const highReliabilityPatterns = patterns.patterns.filter((p) => p.reliability > 70);
+    const highReliabilityPatterns = patterns.patterns.filter(
+      (p) => p.reliability > 70,
+    );
     if (highReliabilityPatterns.length > 0) {
       const pattern = highReliabilityPatterns[0];
       insights.push(
-        `${pattern.type.replace(/_/g, ' ')} pattern detected with ${pattern.reliability}% reliability`
+        `${pattern.type.replace(/_/g, " ")} pattern detected with ${pattern.reliability}% reliability`,
       );
     }
 
     // AI recommendation insights
     if (recommendation.confidence > 80) {
       insights.push(
-        `AI recommendation: ${recommendation.action.toUpperCase()} with ${recommendation.confidence}% confidence`
+        `AI recommendation: ${recommendation.action.toUpperCase()} with ${recommendation.confidence}% confidence`,
       );
     }
 
@@ -851,38 +937,45 @@ export class InvestmentAnalysisEngine {
     technical: TechnicalAnalysis,
     fundamental: FundamentalAnalysis,
     sentiment: SentimentAnalysis,
-    correlationAnalysis: CorrelationAnalysis
+    correlationAnalysis: CorrelationAnalysis,
   ): string[] {
     const risks: string[] = [];
 
     // Technical risks
-    if (technical.volatility.volatilityLevel === 'extreme') {
-      risks.push('Extremely high volatility increases price uncertainty');
+    if (technical.volatility.volatilityLevel === "extreme") {
+      risks.push("Extremely high volatility increases price uncertainty");
     }
     if (technical.trend.strength < 25) {
-      risks.push('Weak trend strength suggests indecisive market direction');
+      risks.push("Weak trend strength suggests indecisive market direction");
     }
 
     // Fundamental risks
     if (fundamental.leverage.debtToEquity > 2.0) {
-      risks.push(`High debt-to-equity ratio of ${fundamental.leverage.debtToEquity.toFixed(2)}`);
+      risks.push(
+        `High debt-to-equity ratio of ${fundamental.leverage.debtToEquity.toFixed(2)}`,
+      );
     }
     if (fundamental.profitability.netMargin < 0) {
-      risks.push('Company is currently unprofitable');
+      risks.push("Company is currently unprofitable");
     }
-    if (fundamental.riskLevel === 'very_high' || fundamental.riskLevel === 'high') {
-      risks.push(`Fundamental risk level: ${fundamental.riskLevel.replace('_', ' ')}`);
+    if (
+      fundamental.riskLevel === "very_high" ||
+      fundamental.riskLevel === "high"
+    ) {
+      risks.push(
+        `Fundamental risk level: ${fundamental.riskLevel.replace("_", " ")}`,
+      );
     }
 
     // Sentiment risks
     if (sentiment.compositeSentiment.score > 85) {
-      risks.push('Extremely positive sentiment may indicate overenthusiasm');
+      risks.push("Extremely positive sentiment may indicate overenthusiasm");
     }
 
     // Correlation risks
     if (correlationAnalysis.conflicts.length > 0) {
       risks.push(
-        `Conflicting signals between ${correlationAnalysis.conflicts[0].sources.join(' and ')}`
+        `Conflicting signals between ${correlationAnalysis.conflicts[0].sources.join(" and ")}`,
       );
     }
 
@@ -896,43 +989,60 @@ export class InvestmentAnalysisEngine {
     technical: TechnicalAnalysis,
     fundamental: FundamentalAnalysis,
     sentiment: SentimentAnalysis,
-    patterns: PatternScanResult
+    patterns: PatternScanResult,
   ): string[] {
     const opportunities: string[] = [];
 
     // Technical opportunities
-    if (technical.momentum.rsiZone === 'oversold' && technical.trend.longTerm === 'bullish') {
-      opportunities.push('Oversold conditions in a long-term uptrend may offer entry opportunity');
+    if (
+      technical.momentum.rsiZone === "oversold" &&
+      technical.trend.longTerm === "bullish"
+    ) {
+      opportunities.push(
+        "Oversold conditions in a long-term uptrend may offer entry opportunity",
+      );
     }
     if (technical.supportResistance.supports.length > 0) {
       const strongSupport = technical.supportResistance.supports.find(
-        (s) => s.strength === 'strong'
+        (s) => s.strength === "strong",
       );
       if (strongSupport) {
-        opportunities.push(`Strong support at $${strongSupport.price.toFixed(2)}`);
+        opportunities.push(
+          `Strong support at $${strongSupport.price.toFixed(2)}`,
+        );
       }
     }
 
     // Fundamental opportunities
     if (fundamental.upside > 30 && fundamental.qualityScore > 70) {
-      opportunities.push('High-quality stock trading below fair value');
+      opportunities.push("High-quality stock trading below fair value");
     }
-    if (fundamental.growth.revenueGrowthYoY > 20 && fundamental.valuation.peRatio < 20) {
-      opportunities.push('Strong growth at reasonable valuation (PEG opportunity)');
+    if (
+      fundamental.growth.revenueGrowthYoY > 20 &&
+      fundamental.valuation.peRatio < 20
+    ) {
+      opportunities.push(
+        "Strong growth at reasonable valuation (PEG opportunity)",
+      );
     }
 
     // Sentiment opportunities
-    if (sentiment.compositeSentiment.score < 30 && fundamental.overallScore > 70) {
-      opportunities.push('Negative sentiment on fundamentally strong company (contrarian play)');
+    if (
+      sentiment.compositeSentiment.score < 30 &&
+      fundamental.overallScore > 70
+    ) {
+      opportunities.push(
+        "Negative sentiment on fundamentally strong company (contrarian play)",
+      );
     }
 
     // Pattern opportunities
     const bullishPatterns = patterns.patterns.filter(
-      (p) => p.direction === 'bullish' && p.reliability > 60
+      (p) => p.direction === "bullish" && p.reliability > 60,
     );
     if (bullishPatterns.length > 0 && bullishPatterns[0].priceTarget) {
       opportunities.push(
-        `Bullish pattern suggests price target of $${bullishPatterns[0].priceTarget.toFixed(2)}`
+        `Bullish pattern suggests price target of $${bullishPatterns[0].priceTarget.toFixed(2)}`,
       );
     }
 
@@ -948,14 +1058,14 @@ export class InvestmentAnalysisEngine {
     compositeScore: CompositeScore,
     overallSignal: SignalStrength,
     riskLevel: string,
-    keyInsights: string[]
+    keyInsights: string[],
   ): string {
-    const signalText = overallSignal.replace('_', ' ').toUpperCase();
+    const signalText = overallSignal.replace("_", " ").toUpperCase();
     const scoreText = compositeScore.overall.toFixed(1);
 
     let summary = `${symbol} is currently trading at $${currentPrice.toFixed(2)}. `;
     summary += `Our comprehensive analysis yields an overall score of ${scoreText}/100, `;
-    summary += `indicating a ${signalText} signal with ${riskLevel.replace('_', ' ')} risk. `;
+    summary += `indicating a ${signalText} signal with ${riskLevel.replace("_", " ")} risk. `;
 
     if (compositeScore.confidence > 70) {
       summary += `We have high confidence (${compositeScore.confidence.toFixed(0)}%) in this assessment. `;
@@ -970,7 +1080,6 @@ export class InvestmentAnalysisEngine {
     return summary;
   }
 
-
   // ============================================================================
   // PORTFOLIO HELPER METHODS
   // ============================================================================
@@ -980,7 +1089,7 @@ export class InvestmentAnalysisEngine {
    */
   private calculatePortfolioHealth(
     metrics: PortfolioMetrics,
-    holdingAnalyses: Map<string, ComprehensiveAnalysis>
+    holdingAnalyses: Map<string, ComprehensiveAnalysis>,
   ): number {
     let healthScore = 50; // Start neutral
 
@@ -1004,7 +1113,7 @@ export class InvestmentAnalysisEngine {
     const avgHoldingScore =
       Array.from(holdingAnalyses.values()).reduce(
         (sum, analysis) => sum + analysis.compositeScore.overall,
-        0
+        0,
       ) / holdingAnalyses.size;
 
     if (avgHoldingScore > 70) healthScore += 10;
@@ -1020,17 +1129,17 @@ export class InvestmentAnalysisEngine {
     let riskScore = 0;
 
     // Volatility risk
-    if (metrics.volatility > 0.30) riskScore += 30;
-    else if (metrics.volatility > 0.20) riskScore += 20;
+    if (metrics.volatility > 0.3) riskScore += 30;
+    else if (metrics.volatility > 0.2) riskScore += 20;
     else if (metrics.volatility > 0.15) riskScore += 10;
 
     // Concentration risk
-    if (metrics.concentrationRisk > 0.50) riskScore += 25;
-    else if (metrics.concentrationRisk > 0.30) riskScore += 15;
+    if (metrics.concentrationRisk > 0.5) riskScore += 25;
+    else if (metrics.concentrationRisk > 0.3) riskScore += 15;
 
     // Drawdown risk
-    if (Math.abs(metrics.maxDrawdown) > 0.30) riskScore += 25;
-    else if (Math.abs(metrics.maxDrawdown) > 0.20) riskScore += 15;
+    if (Math.abs(metrics.maxDrawdown) > 0.3) riskScore += 25;
+    else if (Math.abs(metrics.maxDrawdown) > 0.2) riskScore += 15;
 
     // Diversification (inverse - low diversification = high risk)
     if (metrics.diversificationScore < 40) riskScore += 20;
@@ -1045,7 +1154,7 @@ export class InvestmentAnalysisEngine {
   private generatePositionAdjustments(
     holdings: PortfolioHolding[],
     holdingAnalyses: Map<string, ComprehensiveAnalysis>,
-    metrics: PortfolioMetrics
+    metrics: PortfolioMetrics,
   ): PositionAdjustment[] {
     const adjustments: PositionAdjustment[] = [];
     const totalValue = metrics.totalValue;
@@ -1054,44 +1163,48 @@ export class InvestmentAnalysisEngine {
       const analysis = holdingAnalyses.get(holding.symbol);
       if (!analysis) continue;
 
-      const currentWeight = (holding.shares * holding.currentPrice) / totalValue;
+      const currentWeight =
+        (holding.shares * holding.currentPrice) / totalValue;
       let targetWeight = currentWeight;
-      let action: 'increase' | 'decrease' | 'hold' | 'exit' = 'hold';
-      let reason = '';
-      let priority: 'high' | 'medium' | 'low' = 'low';
+      let action: "increase" | "decrease" | "hold" | "exit" = "hold";
+      let reason = "";
+      let priority: "high" | "medium" | "low" = "low";
 
       // Determine action based on analysis
-      if (analysis.overallSignal === 'strong_sell') {
-        action = 'exit';
+      if (analysis.overallSignal === "strong_sell") {
+        action = "exit";
         targetWeight = 0;
-        reason = 'Strong sell signal across multiple analyses';
-        priority = 'high';
-      } else if (analysis.overallSignal === 'sell') {
-        action = 'decrease';
+        reason = "Strong sell signal across multiple analyses";
+        priority = "high";
+      } else if (analysis.overallSignal === "sell") {
+        action = "decrease";
         targetWeight = currentWeight * 0.5;
-        reason = 'Sell signal suggests reducing exposure';
-        priority = 'medium';
-      } else if (analysis.overallSignal === 'strong_buy' && currentWeight < 0.15) {
-        action = 'increase';
+        reason = "Sell signal suggests reducing exposure";
+        priority = "medium";
+      } else if (
+        analysis.overallSignal === "strong_buy" &&
+        currentWeight < 0.15
+      ) {
+        action = "increase";
         targetWeight = Math.min(0.15, currentWeight * 1.5);
-        reason = 'Strong buy signal with room to increase position';
-        priority = 'high';
-      } else if (analysis.overallSignal === 'buy' && currentWeight < 0.10) {
-        action = 'increase';
-        targetWeight = Math.min(0.10, currentWeight * 1.25);
-        reason = 'Buy signal suggests increasing position';
-        priority = 'medium';
+        reason = "Strong buy signal with room to increase position";
+        priority = "high";
+      } else if (analysis.overallSignal === "buy" && currentWeight < 0.1) {
+        action = "increase";
+        targetWeight = Math.min(0.1, currentWeight * 1.25);
+        reason = "Buy signal suggests increasing position";
+        priority = "medium";
       }
 
       // Check for concentration risk
-      if (currentWeight > 0.20) {
-        action = 'decrease';
+      if (currentWeight > 0.2) {
+        action = "decrease";
         targetWeight = 0.15;
-        reason = 'Position exceeds 20% concentration limit';
-        priority = 'high';
+        reason = "Position exceeds 20% concentration limit";
+        priority = "high";
       }
 
-      if (action !== 'hold') {
+      if (action !== "hold") {
         adjustments.push({
           symbol: holding.symbol,
           action,
@@ -1115,38 +1228,46 @@ export class InvestmentAnalysisEngine {
    */
   private generateRebalanceRecommendations(
     metrics: PortfolioMetrics,
-    positionAdjustments: PositionAdjustment[]
+    positionAdjustments: PositionAdjustment[],
   ): string[] {
     const recommendations: string[] = [];
 
     // Diversification recommendations
     if (metrics.diversificationScore < 60) {
       recommendations.push(
-        'Consider adding holdings in different sectors to improve diversification'
+        "Consider adding holdings in different sectors to improve diversification",
       );
     }
 
     // Concentration recommendations
-    if (metrics.concentrationRisk > 0.30) {
-      recommendations.push('Reduce concentration risk by rebalancing overweight positions');
+    if (metrics.concentrationRisk > 0.3) {
+      recommendations.push(
+        "Reduce concentration risk by rebalancing overweight positions",
+      );
     }
 
     // Risk recommendations
     if (metrics.volatility > 0.25) {
-      recommendations.push('High portfolio volatility - consider adding defensive positions');
+      recommendations.push(
+        "High portfolio volatility - consider adding defensive positions",
+      );
     }
 
     // Position-specific recommendations
-    const highPriorityAdjustments = positionAdjustments.filter((a) => a.priority === 'high');
+    const highPriorityAdjustments = positionAdjustments.filter(
+      (a) => a.priority === "high",
+    );
     if (highPriorityAdjustments.length > 0) {
       recommendations.push(
-        `${highPriorityAdjustments.length} high-priority position adjustments recommended`
+        `${highPriorityAdjustments.length} high-priority position adjustments recommended`,
       );
     }
 
     // Performance recommendations
     if (metrics.sharpeRatio < 0.5) {
-      recommendations.push('Low risk-adjusted returns - review underperforming positions');
+      recommendations.push(
+        "Low risk-adjusted returns - review underperforming positions",
+      );
     }
 
     return recommendations.slice(0, 5);
@@ -1159,16 +1280,16 @@ export class InvestmentAnalysisEngine {
     portfolioHealth: number,
     diversificationScore: number,
     riskScore: number,
-    positionAdjustments: PositionAdjustment[]
+    positionAdjustments: PositionAdjustment[],
   ): string {
     let summary = `Portfolio health score: ${portfolioHealth.toFixed(0)}/100. `;
 
     if (portfolioHealth > 75) {
-      summary += 'Your portfolio is in excellent condition. ';
+      summary += "Your portfolio is in excellent condition. ";
     } else if (portfolioHealth > 50) {
-      summary += 'Your portfolio is performing adequately. ';
+      summary += "Your portfolio is performing adequately. ";
     } else {
-      summary += 'Your portfolio needs attention. ';
+      summary += "Your portfolio needs attention. ";
     }
 
     summary += `Diversification: ${diversificationScore.toFixed(0)}/100. `;
@@ -1177,7 +1298,7 @@ export class InvestmentAnalysisEngine {
     if (positionAdjustments.length > 0) {
       summary += `${positionAdjustments.length} position adjustments recommended.`;
     } else {
-      summary += 'No immediate adjustments needed.';
+      summary += "No immediate adjustments needed.";
     }
 
     return summary;
@@ -1199,6 +1320,3 @@ export function getInvestmentAnalysisEngine(): InvestmentAnalysisEngine {
   }
   return investmentAnalysisEngineInstance;
 }
-
-
-

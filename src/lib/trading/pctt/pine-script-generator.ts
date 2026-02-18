@@ -1,25 +1,25 @@
 /**
  * PCTT Pine Script Generator
- * 
+ *
  * ============================================================================
  * OPTIONAL FEATURE - NOT REQUIRED FOR TRADING
  * ============================================================================
- * 
+ *
  * This is an OPTIONAL export utility for users who want to visualize PCTT
  * signals on TradingView. It is NOT required for trading - all trading
  * executes natively through the PCTTTradingService → Broker API path.
- * 
+ *
  * Use Case: User wants to see PCTT signals on their TradingView charts
  * for visual analysis alongside their Fynvita trading.
- * 
+ *
  * Primary Trading Path (Native):
  *   Your Charts → PCTTEngine → PCTTTradingService → Alpaca API → Trade
- * 
+ *
  * Optional Visualization:
  *   Export Pine Script → User pastes into TradingView → View-only signals
  */
 
-import { PCTTConfig, DEFAULT_PCTT_CONFIG } from './pctt-core';
+import { PCTTConfig, DEFAULT_PCTT_CONFIG } from "./pctt-core";
 
 // ============================================================================
 // TYPES
@@ -37,7 +37,7 @@ export interface PineScriptOptions {
 }
 
 const DEFAULT_OPTIONS: PineScriptOptions = {
-  indicatorName: 'PCTT Structure',
+  indicatorName: "PCTT Structure",
   showPivots: true,
   showQScores: true,
   showRegime: true,
@@ -51,7 +51,7 @@ const DEFAULT_OPTIONS: PineScriptOptions = {
 
 export function generatePCTTPineScript(
   config: Partial<PCTTConfig> = {},
-  options: PineScriptOptions = {}
+  options: PineScriptOptions = {},
 ): string {
   const cfg = { ...DEFAULT_PCTT_CONFIG, ...config };
   const opts = { ...DEFAULT_OPTIONS, ...options };
@@ -390,7 +390,9 @@ if barstate.islast
 // ALERTS
 // ============================================================================
 
-${opts.enableAlerts ? `
+${
+  opts.enableAlerts
+    ? `
 // Long Entry Alert
 alertcondition(longSignal, "PCTT Long Entry", "PCTT Long Signal on {{ticker}} at {{close}}")
 
@@ -404,7 +406,9 @@ alertcondition(state == "freeze_down", "PCTT Support Break", "PCTT Support Break
 // Retest Alerts
 alertcondition(state == "retest_up", "PCTT Bullish Retest", "PCTT Bullish Retest on {{ticker}}")
 alertcondition(state == "retest_down", "PCTT Bearish Retest", "PCTT Bearish Retest on {{ticker}}")
-` : '// Alerts disabled'}
+`
+    : "// Alerts disabled"
+}
 
 // Webhook Alert with JSON payload
 if longSignal

@@ -1,9 +1,9 @@
-import { Suspense } from 'react';
-import NotificationCenter from '@/components/notifications/NotificationCenter';
+import { Suspense } from "react";
+import NotificationCenter from "@/components/notifications/NotificationCenter";
 
 export const metadata = {
-  title: 'Notifications | Fynvita',
-  description: 'View your notifications',
+  title: "Notifications | Fynvita",
+  description: "View your notifications",
 };
 
 export default function NotificationsPage() {
@@ -11,7 +11,9 @@ export default function NotificationsPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Notifications</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Notifications
+          </h1>
           <p className="mt-2 text-gray-600 dark:text-slate-300">
             Stay updated with your credit repair progress
           </p>

@@ -42,7 +42,10 @@ export default function NotificationBell() {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
@@ -52,13 +55,20 @@ export default function NotificationBell() {
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case "dispute_created": return "";
-      case "dispute_resolved": return "";
-      case "credit_score_changed": return "";
-      case "payment_successful": return "";
-      case "document_uploaded": return "";
-      case "alert": return "";
-      default: return "";
+      case "dispute_created":
+        return "";
+      case "dispute_resolved":
+        return "";
+      case "credit_score_changed":
+        return "";
+      case "payment_successful":
+        return "";
+      case "document_uploaded":
+        return "";
+      case "alert":
+        return "";
+      default:
+        return "";
     }
   };
 
@@ -94,19 +104,27 @@ export default function NotificationBell() {
       {isOpen && (
         <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-200 dark:border-slate-700 z-50 overflow-hidden">
           <div className="p-4 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
-            <h3 className="font-semibold text-gray-900 dark:text-white">Notifications</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white">
+              Notifications
+            </h3>
             {unreadCount > 0 && (
-              <span className="text-xs text-emerald-600 font-medium">{unreadCount} new</span>
+              <span className="text-xs text-emerald-600 font-medium">
+                {unreadCount} new
+              </span>
             )}
           </div>
 
           <div className="max-h-80 overflow-y-auto">
             {loading ? (
-              <div className="p-4 text-center text-gray-500 dark:text-slate-400">Loading...</div>
+              <div className="p-4 text-center text-gray-500 dark:text-slate-400">
+                Loading...
+              </div>
             ) : notifications.length === 0 ? (
               <div className="p-8 text-center">
                 <span className="text-4xl mb-2 block"></span>
-                <p className="text-gray-500 dark:text-slate-400 text-sm">No notifications yet</p>
+                <p className="text-gray-500 dark:text-slate-400 text-sm">
+                  No notifications yet
+                </p>
               </div>
             ) : (
               notifications.map((notification) => (
@@ -117,13 +135,21 @@ export default function NotificationBell() {
                   }`}
                 >
                   <div className="flex gap-3">
-                    <span className="text-xl">{getTypeIcon(notification.type)}</span>
+                    <span className="text-xl">
+                      {getTypeIcon(notification.type)}
+                    </span>
                     <div className="flex-1 min-w-0">
-                      <p className={`text-sm ${!notification.read ? "font-semibold" : ""} text-gray-900 dark:text-white truncate`}>
+                      <p
+                        className={`text-sm ${!notification.read ? "font-semibold" : ""} text-gray-900 dark:text-white truncate`}
+                      >
                         {notification.title}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-slate-400 truncate">{notification.message}</p>
-                      <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">{formatTime(notification.created_at)}</p>
+                      <p className="text-xs text-gray-500 dark:text-slate-400 truncate">
+                        {notification.message}
+                      </p>
+                      <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
+                        {formatTime(notification.created_at)}
+                      </p>
                     </div>
                     {!notification.read && (
                       <span className="w-2 h-2 bg-emerald-500 rounded-full flex-shrink-0 mt-2" />
@@ -146,4 +172,3 @@ export default function NotificationBell() {
     </div>
   );
 }
-

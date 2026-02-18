@@ -3,10 +3,10 @@
  * Moving Average Convergence Divergence oscillator for mobile trading
  */
 
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import Svg, { Path, Line, G, Text as SvgText, Rect } from 'react-native-svg';
-import { lightTheme as theme } from '../../constants/theme';
+import React, { useMemo } from "react";
+import { View, Text, StyleSheet, Dimensions } from "react-native";
+import Svg, { Path, Line, G, Text as SvgText, Rect } from "react-native-svg";
+import { lightTheme as theme } from "../../constants/theme";
 
 // ============================================================================
 // TYPES
@@ -33,7 +33,7 @@ export interface MACDChartProps {
 // CONSTANTS
 // ============================================================================
 
-const { width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get("window");
 
 // ============================================================================
 // COMPONENT
@@ -43,10 +43,10 @@ export function MACDChart({
   data,
   width = screenWidth - 32,
   height = 120,
-  macdColor = '#2962FF',
-  signalColor = '#FF6D00',
-  histogramPosColor = '#26a69a',
-  histogramNegColor = '#ef5350',
+  macdColor = "#2962FF",
+  signalColor = "#FF6D00",
+  histogramPosColor = "#26a69a",
+  histogramNegColor = "#ef5350",
 }: MACDChartProps) {
   const padding = { top: 15, right: 50, bottom: 20, left: 10 };
   const chartWidth = width - padding.left - padding.right;
@@ -55,34 +55,42 @@ export function MACDChart({
   // Calculate value range
   const valueRange = useMemo(() => {
     if (data.length === 0) return { min: -1, max: 1, range: 2 };
-    const allValues = data.flatMap(d => [d.macd, d.signal, d.histogram]);
+    const allValues = data.flatMap((d) => [d.macd, d.signal, d.histogram]);
     const max = Math.max(...allValues) * 1.1;
     const min = Math.min(...allValues) * 1.1;
     const absMax = Math.max(Math.abs(max), Math.abs(min));
     return { min: -absMax, max: absMax, range: absMax * 2 };
   }, [data]);
 
-  const getX = (index: number) => padding.left + (index / (data.length - 1)) * chartWidth;
-  const getY = (value: number) => padding.top + chartHeight / 2 - (value / valueRange.max) * (chartHeight / 2);
+  const getX = (index: number) =>
+    padding.left + (index / (data.length - 1)) * chartWidth;
+  const getY = (value: number) =>
+    padding.top +
+    chartHeight / 2 -
+    (value / valueRange.max) * (chartHeight / 2);
 
   // MACD line path
   const macdPath = useMemo(() => {
-    if (data.length < 2) return '';
-    return data.map((point, i) => {
-      const x = getX(i);
-      const y = getY(point.macd);
-      return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
-    }).join(' ');
+    if (data.length < 2) return "";
+    return data
+      .map((point, i) => {
+        const x = getX(i);
+        const y = getY(point.macd);
+        return `${i === 0 ? "M" : "L"} ${x} ${y}`;
+      })
+      .join(" ");
   }, [data, chartWidth, chartHeight, valueRange]);
 
   // Signal line path
   const signalPath = useMemo(() => {
-    if (data.length < 2) return '';
-    return data.map((point, i) => {
-      const x = getX(i);
-      const y = getY(point.signal);
-      return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
-    }).join(' ');
+    if (data.length < 2) return "";
+    return data
+      .map((point, i) => {
+        const x = getX(i);
+        const y = getY(point.signal);
+        return `${i === 0 ? "M" : "L"} ${x} ${y}`;
+      })
+      .join(" ");
   }, [data, chartWidth, chartHeight, valueRange]);
 
   // Histogram bar width
@@ -125,7 +133,8 @@ export function MACDChart({
         {data.map((point, i) => {
           const x = getX(i) - barWidth / 2;
           const isPositive = point.histogram >= 0;
-          const barHeight = Math.abs(point.histogram / valueRange.max) * (chartHeight / 2);
+          const barHeight =
+            Math.abs(point.histogram / valueRange.max) * (chartHeight / 2);
           const y = isPositive ? zeroY - barHeight : zeroY;
 
           return (
@@ -229,18 +238,18 @@ export function MACDChart({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
   },
   legend: {
-    position: 'absolute',
+    position: "absolute",
     top: 2,
     left: 10,
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
   },
   legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   legendDot: {

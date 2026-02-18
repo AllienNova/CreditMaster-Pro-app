@@ -8,15 +8,15 @@
 
 ## 1. Project Identity
 
-| Field | Value |
-|-------|-------|
-| **Name** | Fynvita — Your Financial Vitality |
-| **Repository** | https://github.com/AllienNova/CreditMaster-Pro-app |
+| Field           | Value                                                                              |
+| --------------- | ---------------------------------------------------------------------------------- |
+| **Name**        | Fynvita — Your Financial Vitality                                                  |
+| **Repository**  | https://github.com/AllienNova/CreditMaster-Pro-app                                 |
 | **Description** | AI-powered credit health, financial wellness, and investment intelligence platform |
-| **Version** | 1.0.0 |
-| **License** | Private |
-| **Brand** | Fynvita (formerly CPFI / CreditMaster Pro) |
-| **Domain** | fynvita.com |
+| **Version**     | 1.0.0                                                                              |
+| **License**     | Private                                                                            |
+| **Brand**       | Fynvita (formerly CPFI / CreditMaster Pro)                                         |
+| **Domain**      | fynvita.com                                                                        |
 
 ---
 
@@ -24,78 +24,78 @@
 
 ### 2.1 Core Framework
 
-| Layer | Technology | Version |
-|-------|-----------|---------|
-| Framework | Next.js (App Router) | ^15.5.6 |
-| UI Library | React | ^19.0.0 |
-| Language | TypeScript (strict mode) | ^5.7.2 |
-| Styling | Tailwind CSS | ^3.4.19 |
-| Runtime | Node.js | 22.13+ |
+| Layer      | Technology               | Version |
+| ---------- | ------------------------ | ------- |
+| Framework  | Next.js (App Router)     | ^15.5.6 |
+| UI Library | React                    | ^19.0.0 |
+| Language   | TypeScript (strict mode) | ^5.7.2  |
+| Styling    | Tailwind CSS             | ^3.4.19 |
+| Runtime    | Node.js                  | 22.13+  |
 
 ### 2.2 Backend & Data
 
-| Service | Technology | Version | Purpose |
-|---------|-----------|---------|---------|
-| Database | Supabase PostgreSQL | ^2.89.0 | Primary data store |
-| Auth | Supabase Auth + SSR | ^0.7.0 | Authentication, JWT, MFA |
-| File Storage | AWS S3 | ^3.917.0 | Document uploads |
-| Payment | Stripe | ^19.1.0 | Subscriptions, checkout |
-| Email | Resend | ^6.2.2 | Transactional email |
-| AI Gateway | AIML API (OpenAI SDK) | ^4.77.3 | 300+ AI model access |
+| Service      | Technology            | Version  | Purpose                  |
+| ------------ | --------------------- | -------- | ------------------------ |
+| Database     | Supabase PostgreSQL   | ^2.89.0  | Primary data store       |
+| Auth         | Supabase Auth + SSR   | ^0.7.0   | Authentication, JWT, MFA |
+| File Storage | AWS S3                | ^3.917.0 | Document uploads         |
+| Payment      | Stripe                | ^19.1.0  | Subscriptions, checkout  |
+| Email        | Resend                | ^6.2.2   | Transactional email      |
+| AI Gateway   | AIML API (OpenAI SDK) | ^4.77.3  | 300+ AI model access     |
 
 ### 2.3 Frontend Libraries
 
-| Library | Version | Purpose |
-|---------|---------|---------|
-| Framer Motion | ^12.29.0 | Animations |
-| Recharts | ^3.5.1 | Data visualization |
-| Lightweight Charts | ^5.1.0 | Trading charts |
-| Lucide React | ^0.563.0 | Icons |
+| Library              | Version  | Purpose                 |
+| -------------------- | -------- | ----------------------- |
+| Framer Motion        | ^12.29.0 | Animations              |
+| Recharts             | ^3.5.1   | Data visualization      |
+| Lightweight Charts   | ^5.1.0   | Trading charts          |
+| Lucide React         | ^0.563.0 | Icons                   |
 | TanStack React Query | ^5.90.16 | Server state management |
-| Zod | ^3.25.76 | Runtime validation |
-| date-fns | ^4.1.0 | Date utilities |
+| Zod                  | ^3.25.76 | Runtime validation      |
+| date-fns             | ^4.1.0   | Date utilities          |
 
 ### 2.4 Testing Stack
 
-| Tool | Version | Purpose |
-|------|---------|---------|
-| Jest | ^30.2.0 | Unit + Integration tests |
-| Cypress | ^15.5.0 | E2E (API + route validation) |
-| Playwright | ^1.57.0 | E2E (browser journeys) |
-| Testing Library | ^16.3.0 | Component testing |
-| MSW | ^1.3.3 | API mocking |
+| Tool            | Version | Purpose                      |
+| --------------- | ------- | ---------------------------- |
+| Jest            | ^30.2.0 | Unit + Integration tests     |
+| Cypress         | ^15.5.0 | E2E (API + route validation) |
+| Playwright      | ^1.57.0 | E2E (browser journeys)       |
+| Testing Library | ^16.3.0 | Component testing            |
+| MSW             | ^1.3.3  | API mocking                  |
 
 ### 2.5 Build & Quality
 
-| Tool | Version | Purpose |
-|------|---------|---------|
-| ESLint | ^9.18.0 | Linting |
-| ts-jest | ^29.4.5 | TypeScript test transform |
-| PostCSS | ^8.5.6 | CSS processing |
-| Autoprefixer | ^10.4.23 | CSS compatibility |
+| Tool         | Version  | Purpose                   |
+| ------------ | -------- | ------------------------- |
+| ESLint       | ^9.18.0  | Linting                   |
+| ts-jest      | ^29.4.5  | TypeScript test transform |
+| PostCSS      | ^8.5.6   | CSS processing            |
+| Autoprefixer | ^10.4.23 | CSS compatibility         |
 
 ---
 
 ## 3. Codebase Metrics (Verified)
 
-| Metric | Value | Source |
-|--------|-------|--------|
-| Total source files (src/) | 1,296 | `find src -name "*.ts" -o -name "*.tsx" \| wc -l` |
-| Total lines of code | 79,612 | `wc -l` on all .ts/.tsx files |
-| API route files | 248 | `find src/app/api -name "route.ts" \| wc -l` |
-| Page files (page.tsx) | 180 | `find src/app -name "page.tsx" \| wc -l` |
-| Component files (.tsx) | 225 | `find src/components -name "*.tsx" \| wc -l` |
-| Layout files (layout.tsx) | 7 | `find src/app -name "layout.tsx" \| wc -l` |
-| Library directories (src/lib/) | 51 | `find src/lib -mindepth 1 -maxdepth 1 -type d` |
-| Test files (Jest — web) | 149 | .test.ts + .test.tsx under src/ |
-| Test files (Jest — mobile) | 12 | .test.ts + .test.tsx under mobile-app/src/ |
-| Test files (Cypress) | 21 | .cy.ts under cypress/e2e/ |
-| Test files (Playwright) | 16 | .spec.ts under e2e/ |
-| Total test files | 198 | Sum of all test frameworks |
-| Estimated test cases | ~1,300+ | Sum of it()/test() calls across all test files |
-| Documentation files | 95 | Markdown files in docs/ + root |
-| npm dependencies | 28 | package.json dependencies |
-| npm devDependencies | 22 | package.json devDependencies |
+| Metric                         | Value   | Source                                            |
+| ------------------------------ | ------- | ------------------------------------------------- |
+| Total source files (src/)      | 1,296   | `find src -name "*.ts" -o -name "*.tsx" \| wc -l` |
+| Total lines of code            | 79,612  | `wc -l` on all .ts/.tsx files                     |
+| API route files                | 248     | `find src/app/api -name "route.ts" \| wc -l`      |
+| Page files (page.tsx)          | 180     | `find src/app -name "page.tsx" \| wc -l`          |
+| Component files (.tsx)         | 225     | `find src/components -name "*.tsx" \| wc -l`      |
+| Layout files (layout.tsx)      | 7       | `find src/app -name "layout.tsx" \| wc -l`        |
+| Library directories (src/lib/) | 51      | `find src/lib -mindepth 1 -maxdepth 1 -type d`    |
+| Test files (Jest — web)        | 149     | .test.ts + .test.tsx under src/                   |
+| Test files (Jest — mobile)     | 12      | .test.ts + .test.tsx under mobile-app/src/        |
+| Test files (Cypress)           | 21      | .cy.ts under cypress/e2e/                         |
+| Test files (Playwright)        | 16      | .spec.ts under e2e/                               |
+| Total test files               | 198     | Sum of all test frameworks                        |
+| Estimated test cases           | ~1,300+ | Sum of it()/test() calls across all test files    |
+| Documentation files            | 95      | Markdown files in docs/ + root                    |
+| npm dependencies               | 28      | package.json dependencies                         |
+| npm devDependencies            | 22      | package.json devDependencies                      |
 
 ---
 
@@ -190,49 +190,49 @@ Layer 3: AIOrchestrator (src/lib/ai-orchestrator.ts)
 
 ## 5. API Route Inventory (248 Routes across 41 Domains)
 
-| Domain | Routes | Key Endpoints |
-|--------|--------|--------------|
-| financial | 64 | Budgeting, calculators, goals, insights, transactions, recurring, net-worth |
-| investments | 27 | Portfolio analysis, holdings, risk assessment, recommendations |
-| ai | 23 | Chat, consensus, credit analysis, dispute generation, recommendations |
-| credit-repair | 13 | Disputes, score, quick-wins, goodwill, impact, timeline |
-| marketplace | 12 | Products, listings, reviews, categories |
-| admin | 10 | Users, analytics, settings, system management |
-| disputes | 9 | CRUD, generate, status tracking, bureau submissions |
-| trading | 6 | Orders, positions, strategies, market data |
-| credit-monitoring | 5 | Alerts, score history, reports, monitoring |
-| credit-builder | 5 | Plans, progress, accounts, recommendations |
-| gamification | 5 | Achievements, leaderboard, challenges, rewards |
-| notifications | 5 | CRUD, preferences, push, mark-read |
-| auth | 5 | Login, signup, callback, reset-password, session |
-| analytics | 5 | Dashboard, events, reports, user-activity |
-| payment | 4 | Checkout, webhook, subscription, portal |
-| monitoring | 4 | Health, metrics, logs, status |
-| cron | 4 | Scheduled jobs: cleanup, sync, notifications, reports |
-| credit-bureau | 4 | Reports, disputes, score-factors, inquiries |
-| chat | 4 | Messages, history, context, sessions |
-| tax | 3 | Optimization, documents, estimates |
-| student-loans | 3 | Data, strategy, federal programs |
-| federal | 3 | Programs, eligibility, applications |
-| documents | 3 | CRUD, upload, download |
-| servicers | 2 | Loan servicer data, contact info |
-| ml | 2 | Predictions, model status |
-| credit | 2 | Score, analyze |
-| automation | 2 | Rules, triggers |
-| Other (14 domains) | 14 | ws, voice, user, test-db, strategies, settings, profile, performance, onboarding, health, federal-programs, email, csrf, credit-report |
+| Domain             | Routes | Key Endpoints                                                                                                                          |
+| ------------------ | ------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| financial          | 64     | Budgeting, calculators, goals, insights, transactions, recurring, net-worth                                                            |
+| investments        | 27     | Portfolio analysis, holdings, risk assessment, recommendations                                                                         |
+| ai                 | 23     | Chat, consensus, credit analysis, dispute generation, recommendations                                                                  |
+| credit-repair      | 13     | Disputes, score, quick-wins, goodwill, impact, timeline                                                                                |
+| marketplace        | 12     | Products, listings, reviews, categories                                                                                                |
+| admin              | 10     | Users, analytics, settings, system management                                                                                          |
+| disputes           | 9      | CRUD, generate, status tracking, bureau submissions                                                                                    |
+| trading            | 6      | Orders, positions, strategies, market data                                                                                             |
+| credit-monitoring  | 5      | Alerts, score history, reports, monitoring                                                                                             |
+| credit-builder     | 5      | Plans, progress, accounts, recommendations                                                                                             |
+| gamification       | 5      | Achievements, leaderboard, challenges, rewards                                                                                         |
+| notifications      | 5      | CRUD, preferences, push, mark-read                                                                                                     |
+| auth               | 5      | Login, signup, callback, reset-password, session                                                                                       |
+| analytics          | 5      | Dashboard, events, reports, user-activity                                                                                              |
+| payment            | 4      | Checkout, webhook, subscription, portal                                                                                                |
+| monitoring         | 4      | Health, metrics, logs, status                                                                                                          |
+| cron               | 4      | Scheduled jobs: cleanup, sync, notifications, reports                                                                                  |
+| credit-bureau      | 4      | Reports, disputes, score-factors, inquiries                                                                                            |
+| chat               | 4      | Messages, history, context, sessions                                                                                                   |
+| tax                | 3      | Optimization, documents, estimates                                                                                                     |
+| student-loans      | 3      | Data, strategy, federal programs                                                                                                       |
+| federal            | 3      | Programs, eligibility, applications                                                                                                    |
+| documents          | 3      | CRUD, upload, download                                                                                                                 |
+| servicers          | 2      | Loan servicer data, contact info                                                                                                       |
+| ml                 | 2      | Predictions, model status                                                                                                              |
+| credit             | 2      | Score, analyze                                                                                                                         |
+| automation         | 2      | Rules, triggers                                                                                                                        |
+| Other (14 domains) | 14     | ws, voice, user, test-db, strategies, settings, profile, performance, onboarding, health, federal-programs, email, csrf, credit-report |
 
 ---
 
 ## 6. Subscription & Pricing Model
 
-| Tier | Monthly | Annual (monthly) | Users | Disputes | AI Messages | Key Features |
-|------|---------|------------------|-------|----------|-------------|-------------|
-| **Free** | $0 | $0 | 1 | 0 | 10 | Basic credit monitoring, budgeting |
-| **Standard** | $29.99 | ~$29.09 (3% off) | 1 | 5 | 100 | Full credit health + financial wellness |
-| **Pro** | $99.99 | ~$91.99 (8% off) | 1 | Unlimited | Unlimited | + Investment intelligence + AI coach |
-| **Family Duo** | $159.99 | ~$131.19 (18% off) | 2 | Unlimited | Unlimited | All Pro features for 2 members |
-| **Family** | $199.99 | ~$163.99 (18% off) | 3 | Unlimited | Unlimited | All Pro features for 3 members |
-| **Family Plus** | $399.99 | ~$327.99 (18% off) | 5 | Unlimited | Unlimited | Premium perks for 5 members |
+| Tier            | Monthly | Annual (monthly)   | Users | Disputes  | AI Messages | Key Features                            |
+| --------------- | ------- | ------------------ | ----- | --------- | ----------- | --------------------------------------- |
+| **Free**        | $0      | $0                 | 1     | 0         | 10          | Basic credit monitoring, budgeting      |
+| **Standard**    | $29.99  | ~$29.09 (3% off)   | 1     | 5         | 100         | Full credit health + financial wellness |
+| **Pro**         | $99.99  | ~$91.99 (8% off)   | 1     | Unlimited | Unlimited   | + Investment intelligence + AI coach    |
+| **Family Duo**  | $159.99 | ~$131.19 (18% off) | 2     | Unlimited | Unlimited   | All Pro features for 2 members          |
+| **Family**      | $199.99 | ~$163.99 (18% off) | 3     | Unlimited | Unlimited   | All Pro features for 3 members          |
+| **Family Plus** | $399.99 | ~$327.99 (18% off) | 5     | Unlimited | Unlimited   | Premium perks for 5 members             |
 
 **Payment Processor**: Stripe (checkout sessions, webhooks, subscription lifecycle)
 **Stripe Events Handled**: subscription.created/updated/deleted, invoice.paid/payment_failed, payment_intent.succeeded
@@ -252,20 +252,20 @@ Layer 3: AIOrchestrator (src/lib/ai-orchestrator.ts)
 
 ### 7.2 Security Services (src/lib/security/)
 
-| Service | File | Lines | Responsibility |
-|---------|------|-------|---------------|
-| Input Validation | input-validation.ts | ~325 | Prompt injection detection, PII detection, content sanitization |
-| Output Validation | output-validation.ts | ~341 | Harmful content filtering, PII leakage prevention |
-| Rate Limiting | rate-limiting.ts | ~387 | Per-IP, per-user throttling with cost tracking (in-memory Map) |
-| Auth Middleware | auth-middleware.ts | ~400 | JWT authentication, RBAC with 100+ permissions across 14 categories |
-| Audit Logging | audit-logging.ts | ~501 | Security event logging, AI interaction tracking (in-memory, last 10K) |
+| Service           | File                 | Lines | Responsibility                                                        |
+| ----------------- | -------------------- | ----- | --------------------------------------------------------------------- |
+| Input Validation  | input-validation.ts  | ~325  | Prompt injection detection, PII detection, content sanitization       |
+| Output Validation | output-validation.ts | ~341  | Harmful content filtering, PII leakage prevention                     |
+| Rate Limiting     | rate-limiting.ts     | ~387  | Per-IP, per-user throttling with cost tracking (in-memory Map)        |
+| Auth Middleware   | auth-middleware.ts   | ~400  | JWT authentication, RBAC with 100+ permissions across 14 categories   |
+| Audit Logging     | audit-logging.ts     | ~501  | Security event logging, AI interaction tracking (in-memory, last 10K) |
 
 ### 7.3 Compliance (src/lib/compliance/)
 
-| Service | File | Lines | Responsibility |
-|---------|------|-------|---------------|
-| GDPR/CCPA | gdpr-ccpa.ts | ~450 | Data export, deletion, consent management |
-| PII Protection | pii-protection.ts | ~400 | PII detection, encryption, masking |
+| Service        | File              | Lines | Responsibility                            |
+| -------------- | ----------------- | ----- | ----------------------------------------- |
+| GDPR/CCPA      | gdpr-ccpa.ts      | ~450  | Data export, deletion, consent management |
+| PII Protection | pii-protection.ts | ~400  | PII detection, encryption, masking        |
 
 ### 7.4 RBAC Model
 
@@ -275,63 +275,63 @@ Layer 3: AIOrchestrator (src/lib/ai-orchestrator.ts)
 
 ### 7.5 Known Security Findings
 
-| ID | Finding | Severity | Status |
-|----|---------|----------|--------|
-| SEC-01 | Rate limiter uses in-memory Map (resets on restart) | MEDIUM | Open |
-| SEC-02 | PII detection is regex-based (may miss edge cases) | LOW | Accepted |
-| SEC-03 | No DAST scanning in CI | MEDIUM | Open |
-| SEC-04 | Audit logs stored in-memory (lost on restart) | MEDIUM | Open |
-| SEC-05 | CSP allows external domains (Stripe, Plaid, Supabase, AIML) | LOW | Accepted |
-| SEC-06 | No secret rotation schedule | LOW | Open |
-| SEC-07 | MFA WebAuthn placeholder (TOTP works) | LOW | Open |
+| ID     | Finding                                                     | Severity | Status   |
+| ------ | ----------------------------------------------------------- | -------- | -------- |
+| SEC-01 | Rate limiter uses in-memory Map (resets on restart)         | MEDIUM   | Open     |
+| SEC-02 | PII detection is regex-based (may miss edge cases)          | LOW      | Accepted |
+| SEC-03 | No DAST scanning in CI                                      | MEDIUM   | Open     |
+| SEC-04 | Audit logs stored in-memory (lost on restart)               | MEDIUM   | Open     |
+| SEC-05 | CSP allows external domains (Stripe, Plaid, Supabase, AIML) | LOW      | Accepted |
+| SEC-06 | No secret rotation schedule                                 | LOW      | Open     |
+| SEC-07 | MFA WebAuthn placeholder (TOTP works)                       | LOW      | Open     |
 
 ---
 
 ## 8. Page Inventory (180 pages across ~30 domains)
 
-| Domain | Pages | Key Screens |
-|--------|-------|-------------|
-| Financial | ~25 | Budgeting, calculators, goals, insights, transactions, bills |
-| Dashboard | ~14 | Main dashboard, widgets, overview, activity |
-| Credit Builder | ~16 | Plans, progress, accounts, recommendations |
-| Admin | ~12 | User management, analytics, settings, moderation |
-| Marketplace | ~12 | Browse, listings, product detail, reviews, categories |
-| Investments | ~10 | Portfolio, holdings, analysis, recommendations |
-| Auth | ~8 | Login, signup, reset-password, callback, MFA |
-| Credit Repair | ~8 | Disputes, timeline, letters, results |
-| Settings | ~7 | Profile, preferences, notifications, security, billing |
-| Onboarding | ~5 | Welcome, profile setup, goals, quiz |
-| Disputes | ~5 | List, detail, create, status, history |
-| Analytics | ~5 | Reports, trends, insights, export |
-| Tax | ~4 | Optimization, documents, estimates, planning |
-| Budgeting | ~4 | Overview, categories, transactions, goals |
-| Trading | ~3 | Dashboard, orders, positions |
-| Billing | ~3 | Subscription, invoices, payment methods |
-| Help | ~3 | FAQ, support, contact |
-| Other | ~36 | Pricing, landing, credit factors, gamification, student loans, etc. |
+| Domain         | Pages | Key Screens                                                         |
+| -------------- | ----- | ------------------------------------------------------------------- |
+| Financial      | ~25   | Budgeting, calculators, goals, insights, transactions, bills        |
+| Dashboard      | ~14   | Main dashboard, widgets, overview, activity                         |
+| Credit Builder | ~16   | Plans, progress, accounts, recommendations                          |
+| Admin          | ~12   | User management, analytics, settings, moderation                    |
+| Marketplace    | ~12   | Browse, listings, product detail, reviews, categories               |
+| Investments    | ~10   | Portfolio, holdings, analysis, recommendations                      |
+| Auth           | ~8    | Login, signup, reset-password, callback, MFA                        |
+| Credit Repair  | ~8    | Disputes, timeline, letters, results                                |
+| Settings       | ~7    | Profile, preferences, notifications, security, billing              |
+| Onboarding     | ~5    | Welcome, profile setup, goals, quiz                                 |
+| Disputes       | ~5    | List, detail, create, status, history                               |
+| Analytics      | ~5    | Reports, trends, insights, export                                   |
+| Tax            | ~4    | Optimization, documents, estimates, planning                        |
+| Budgeting      | ~4    | Overview, categories, transactions, goals                           |
+| Trading        | ~3    | Dashboard, orders, positions                                        |
+| Billing        | ~3    | Subscription, invoices, payment methods                             |
+| Help           | ~3    | FAQ, support, contact                                               |
+| Other          | ~36   | Pricing, landing, credit factors, gamification, student loans, etc. |
 
 ---
 
 ## 9. Component Inventory (225 components across ~40 directories)
 
-| Category | Count | Key Components |
-|----------|-------|---------------|
-| Financial | ~48 | Calculators, charts, transaction lists, budget views |
-| UI (shared) | ~20 | Buttons, cards, modals, forms, inputs, loading |
-| Investments | ~20 | Portfolio cards, holdings table, risk meter |
-| Credit Repair | ~10 | Dispute forms, timeline, letter preview |
-| Charts | ~9 | Line, bar, pie, area, sparkline, candlestick |
-| Auth | ~9 | Login form, signup form, MFA, social auth |
-| Trading | ~8 | Order form, position cards, market data |
-| Disputes | ~8 | Dispute card, status badge, bureau selector |
-| Documents | ~6 | Upload form, file list, preview |
-| Notifications | ~6 | Bell icon, notification list, preferences |
-| Gamification | ~6 | Achievement badges, leaderboard, progress |
-| AI/ML | ~5 | AIChat, CreditAnalyzer, DisputeGenerator, LoanCalculator |
-| Chat | ~5 | Message bubble, input, history, context |
-| Layout | ~5 | Navbar, sidebar, footer, header |
-| Onboarding | ~5 | Welcome wizard, profile form, goal selector |
-| Other | ~55 | Admin, marketplace, student loans, settings, etc. |
+| Category      | Count | Key Components                                           |
+| ------------- | ----- | -------------------------------------------------------- |
+| Financial     | ~48   | Calculators, charts, transaction lists, budget views     |
+| UI (shared)   | ~20   | Buttons, cards, modals, forms, inputs, loading           |
+| Investments   | ~20   | Portfolio cards, holdings table, risk meter              |
+| Credit Repair | ~10   | Dispute forms, timeline, letter preview                  |
+| Charts        | ~9    | Line, bar, pie, area, sparkline, candlestick             |
+| Auth          | ~9    | Login form, signup form, MFA, social auth                |
+| Trading       | ~8    | Order form, position cards, market data                  |
+| Disputes      | ~8    | Dispute card, status badge, bureau selector              |
+| Documents     | ~6    | Upload form, file list, preview                          |
+| Notifications | ~6    | Bell icon, notification list, preferences                |
+| Gamification  | ~6    | Achievement badges, leaderboard, progress                |
+| AI/ML         | ~5    | AIChat, CreditAnalyzer, DisputeGenerator, LoanCalculator |
+| Chat          | ~5    | Message bubble, input, history, context                  |
+| Layout        | ~5    | Navbar, sidebar, footer, header                          |
+| Onboarding    | ~5    | Welcome wizard, profile form, goal selector              |
+| Other         | ~55   | Admin, marketplace, student loans, settings, etc.        |
 
 ---
 
@@ -339,97 +339,97 @@ Layer 3: AIOrchestrator (src/lib/ai-orchestrator.ts)
 
 ### 10.1 Core AI Services
 
-| Module | Directory | Key Files | Responsibility |
-|--------|-----------|-----------|---------------|
-| AIML Service | src/lib/aiml-service.ts | 1 file, ~400 lines | Direct AIML API wrapper (chat, image, voice, embeddings) |
-| Model Router | src/lib/model-router.ts | 1 file, ~300 lines | Intelligent model selection (13 task types) |
-| AI Orchestrator | src/lib/ai-orchestrator.ts | 1 file, ~600 lines | High-level AI workflows, multi-model consensus |
-| AI Module | src/lib/ai/ | ~11 files | AI utilities, model configs, prompt helpers |
-| Prompts | src/lib/prompts/ | ~5 files | Advanced prompt templates (dispute, credit, etc.) |
+| Module          | Directory                  | Key Files          | Responsibility                                           |
+| --------------- | -------------------------- | ------------------ | -------------------------------------------------------- |
+| AIML Service    | src/lib/aiml-service.ts    | 1 file, ~400 lines | Direct AIML API wrapper (chat, image, voice, embeddings) |
+| Model Router    | src/lib/model-router.ts    | 1 file, ~300 lines | Intelligent model selection (13 task types)              |
+| AI Orchestrator | src/lib/ai-orchestrator.ts | 1 file, ~600 lines | High-level AI workflows, multi-model consensus           |
+| AI Module       | src/lib/ai/                | ~11 files          | AI utilities, model configs, prompt helpers              |
+| Prompts         | src/lib/prompts/           | ~5 files           | Advanced prompt templates (dispute, credit, etc.)        |
 
 ### 10.2 Business Logic
 
-| Module | Directory | Files | Responsibility |
-|--------|-----------|-------|---------------|
-| Financial | src/lib/financial/ | ~35 | Budgeting, calculators, bills, insights |
-| Investments | src/lib/investments/ | ~27 | Portfolio analysis, risk, recommendations |
-| Trading | src/lib/trading/ | ~30 | Orders, positions, strategies, market data |
-| Credit Repair | src/lib/credit-repair/ | ~14 | Dispute lifecycle, bureau communication |
-| Credit Bureau | src/lib/credit-bureau/ | ~8 | Score factors, report parsing |
-| Credit Builder | src/lib/credit-builder/ | — | Credit building plans and tracking |
-| Credit Monitoring | src/lib/credit-monitoring/ | — | Score alerts, report monitoring |
-| Disputes | src/lib/disputes/ | ~5 | Dispute tracking service (~653 lines) |
-| Tax | src/lib/tax/ | ~12 | Optimization, compliance, documents |
-| Gamification | src/lib/gamification/ | ~9 | Achievements, leaderboard, challenges |
-| Marketplace | src/lib/marketplace/ | — | Product listings, transactions |
-| Student Loans | src/lib/student-loan-agent/ | ~5 | Loan analysis, federal regulations, strategy |
-| Commerce | src/lib/commerce/ | ~12 | E-commerce, cart, orders |
+| Module            | Directory                   | Files | Responsibility                               |
+| ----------------- | --------------------------- | ----- | -------------------------------------------- |
+| Financial         | src/lib/financial/          | ~35   | Budgeting, calculators, bills, insights      |
+| Investments       | src/lib/investments/        | ~27   | Portfolio analysis, risk, recommendations    |
+| Trading           | src/lib/trading/            | ~30   | Orders, positions, strategies, market data   |
+| Credit Repair     | src/lib/credit-repair/      | ~14   | Dispute lifecycle, bureau communication      |
+| Credit Bureau     | src/lib/credit-bureau/      | ~8    | Score factors, report parsing                |
+| Credit Builder    | src/lib/credit-builder/     | —     | Credit building plans and tracking           |
+| Credit Monitoring | src/lib/credit-monitoring/  | —     | Score alerts, report monitoring              |
+| Disputes          | src/lib/disputes/           | ~5    | Dispute tracking service (~653 lines)        |
+| Tax               | src/lib/tax/                | ~12   | Optimization, compliance, documents          |
+| Gamification      | src/lib/gamification/       | ~9    | Achievements, leaderboard, challenges        |
+| Marketplace       | src/lib/marketplace/        | —     | Product listings, transactions               |
+| Student Loans     | src/lib/student-loan-agent/ | ~5    | Loan analysis, federal regulations, strategy |
+| Commerce          | src/lib/commerce/           | ~12   | E-commerce, cart, orders                     |
 
 ### 10.3 Infrastructure Services
 
-| Module | Directory | Files | Responsibility |
-|--------|-----------|-------|---------------|
-| Auth | src/lib/auth/ | ~12 | Session management, JWT, MFA, RBAC |
-| Security | src/lib/security/ | ~11 | Input/output validation, rate limiting, audit |
-| Compliance | src/lib/compliance/ | ~5 | GDPR/CCPA, PII protection |
-| Payment | src/lib/payment/ | ~5 | Stripe service (~610 lines) |
-| Notifications | src/lib/notifications/ | ~5 | Email, push, in-app (~565 lines) |
-| Documents | src/lib/documents/ | ~5 | S3 upload/download (~456 lines) |
-| Monitoring | src/lib/monitoring/ | ~8 | Logger (~372 lines), metrics (~480 lines) |
-| Email | src/lib/email/ | — | Email templates, delivery |
-| Supabase | src/lib/supabase/ | ~5 | Client, server, middleware helpers |
-| Database | src/lib/database/ | — | Query helpers, connection management |
-| Cache | src/lib/cache/ | — | Caching utilities |
-| Realtime | src/lib/realtime/ | — | WebSocket/SSE helpers |
+| Module        | Directory              | Files | Responsibility                                |
+| ------------- | ---------------------- | ----- | --------------------------------------------- |
+| Auth          | src/lib/auth/          | ~12   | Session management, JWT, MFA, RBAC            |
+| Security      | src/lib/security/      | ~11   | Input/output validation, rate limiting, audit |
+| Compliance    | src/lib/compliance/    | ~5    | GDPR/CCPA, PII protection                     |
+| Payment       | src/lib/payment/       | ~5    | Stripe service (~610 lines)                   |
+| Notifications | src/lib/notifications/ | ~5    | Email, push, in-app (~565 lines)              |
+| Documents     | src/lib/documents/     | ~5    | S3 upload/download (~456 lines)               |
+| Monitoring    | src/lib/monitoring/    | ~8    | Logger (~372 lines), metrics (~480 lines)     |
+| Email         | src/lib/email/         | —     | Email templates, delivery                     |
+| Supabase      | src/lib/supabase/      | ~5    | Client, server, middleware helpers            |
+| Database      | src/lib/database/      | —     | Query helpers, connection management          |
+| Cache         | src/lib/cache/         | —     | Caching utilities                             |
+| Realtime      | src/lib/realtime/      | —     | WebSocket/SSE helpers                         |
 
 ### 10.4 Utility & Cross-Cutting
 
-| Module | Directory | Files | Responsibility |
-|--------|-----------|-------|---------------|
-| Utils | src/lib/utils/ | — | General utilities |
-| Validation | src/lib/validation/ | — | Schema validation helpers |
-| Config | src/lib/config/ | — | Environment configuration |
-| Analytics | src/lib/analytics/ | — | Event tracking, user analytics |
-| Experiments | src/lib/experiments/ | — | Feature flags, A/B testing |
-| I18n | src/lib/i18n/ | — | Internationalization |
-| Offline | src/lib/offline/ | — | Offline-first support |
-| PWA | src/lib/pwa/ | — | Progressive web app utilities |
-| Performance | src/lib/performance/ | — | Performance monitoring |
-| Onboarding | src/lib/onboarding/ | — | User onboarding flows |
+| Module      | Directory            | Files | Responsibility                 |
+| ----------- | -------------------- | ----- | ------------------------------ |
+| Utils       | src/lib/utils/       | —     | General utilities              |
+| Validation  | src/lib/validation/  | —     | Schema validation helpers      |
+| Config      | src/lib/config/      | —     | Environment configuration      |
+| Analytics   | src/lib/analytics/   | —     | Event tracking, user analytics |
+| Experiments | src/lib/experiments/ | —     | Feature flags, A/B testing     |
+| I18n        | src/lib/i18n/        | —     | Internationalization           |
+| Offline     | src/lib/offline/     | —     | Offline-first support          |
+| PWA         | src/lib/pwa/         | —     | Progressive web app utilities  |
+| Performance | src/lib/performance/ | —     | Performance monitoring         |
+| Onboarding  | src/lib/onboarding/  | —     | User onboarding flows          |
 
 ---
 
 ## 11. External Service Integration
 
-| Service | Package | Config Vars | Purpose | Failure Mode |
-|---------|---------|-------------|---------|-------------|
-| AIML API | openai@^4.77.3 | `AIML_API_KEY`, `AIML_API_URL` | AI model gateway (300+ models) | Graceful degradation, retry with fallback model |
-| Supabase | @supabase/supabase-js@^2.89.0 | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Auth + PostgreSQL DB | App-breaking: auth fails, data unavailable |
-| Stripe | stripe@^19.1.0 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, price IDs | Payments & subscriptions | Checkout fails, webhook retries |
-| AWS S3 | @aws-sdk/client-s3@^3.917.0 | `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_S3_BUCKET` | Document storage | Upload fails, presigned URLs expire (7-day) |
-| Resend | resend@^6.2.2 | `RESEND_API_KEY`, `EMAIL_FROM` | Transactional email | Silent fail, queued for retry |
-| Web Push | web-push@^3.6.7 | VAPID keys | Push notifications | Silent fail |
+| Service  | Package                       | Config Vars                                                                 | Purpose                        | Failure Mode                                    |
+| -------- | ----------------------------- | --------------------------------------------------------------------------- | ------------------------------ | ----------------------------------------------- |
+| AIML API | openai@^4.77.3                | `AIML_API_KEY`, `AIML_API_URL`                                              | AI model gateway (300+ models) | Graceful degradation, retry with fallback model |
+| Supabase | @supabase/supabase-js@^2.89.0 | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`                 | Auth + PostgreSQL DB           | App-breaking: auth fails, data unavailable      |
+| Stripe   | stripe@^19.1.0                | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, price IDs                     | Payments & subscriptions       | Checkout fails, webhook retries                 |
+| AWS S3   | @aws-sdk/client-s3@^3.917.0   | `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_S3_BUCKET` | Document storage               | Upload fails, presigned URLs expire (7-day)     |
+| Resend   | resend@^6.2.2                 | `RESEND_API_KEY`, `EMAIL_FROM`                                              | Transactional email            | Silent fail, queued for retry                   |
+| Web Push | web-push@^3.6.7               | VAPID keys                                                                  | Push notifications             | Silent fail                                     |
 
 ---
 
 ## 12. Environment Variables (Required)
 
-| Variable | Scope | Required | Description |
-|----------|-------|----------|-------------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Client + Server | Yes | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Client + Server | Yes | Supabase anonymous key |
-| `AIML_API_KEY` | Server only | Yes | AIML API authentication |
-| `AIML_API_URL` | Server only | No | AIML API base URL (default: https://api.aimlapi.com/v1) |
-| `STRIPE_SECRET_KEY` | Server only | Yes | Stripe secret key |
-| `STRIPE_WEBHOOK_SECRET` | Server only | Yes | Stripe webhook signing secret |
-| `STRIPE_*_PRICE_ID` | Server only | Yes | Stripe price IDs per tier |
-| `AWS_REGION` | Server only | Yes | AWS region for S3 |
-| `AWS_ACCESS_KEY_ID` | Server only | Yes | AWS access key |
-| `AWS_SECRET_ACCESS_KEY` | Server only | Yes | AWS secret key |
-| `AWS_S3_BUCKET` | Server only | Yes | S3 bucket name |
-| `RESEND_API_KEY` | Server only | Yes | Resend email API key |
-| `EMAIL_FROM` | Server only | No | Sender email address |
-| `NODE_ENV` | Both | Auto | Environment (development/production/test) |
+| Variable                        | Scope           | Required | Description                                             |
+| ------------------------------- | --------------- | -------- | ------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Client + Server | Yes      | Supabase project URL                                    |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Client + Server | Yes      | Supabase anonymous key                                  |
+| `AIML_API_KEY`                  | Server only     | Yes      | AIML API authentication                                 |
+| `AIML_API_URL`                  | Server only     | No       | AIML API base URL (default: https://api.aimlapi.com/v1) |
+| `STRIPE_SECRET_KEY`             | Server only     | Yes      | Stripe secret key                                       |
+| `STRIPE_WEBHOOK_SECRET`         | Server only     | Yes      | Stripe webhook signing secret                           |
+| `STRIPE_*_PRICE_ID`             | Server only     | Yes      | Stripe price IDs per tier                               |
+| `AWS_REGION`                    | Server only     | Yes      | AWS region for S3                                       |
+| `AWS_ACCESS_KEY_ID`             | Server only     | Yes      | AWS access key                                          |
+| `AWS_SECRET_ACCESS_KEY`         | Server only     | Yes      | AWS secret key                                          |
+| `AWS_S3_BUCKET`                 | Server only     | Yes      | S3 bucket name                                          |
+| `RESEND_API_KEY`                | Server only     | Yes      | Resend email API key                                    |
+| `EMAIL_FROM`                    | Server only     | No       | Sender email address                                    |
+| `NODE_ENV`                      | Both            | Auto     | Environment (development/production/test)               |
 
 ---
 
@@ -437,22 +437,22 @@ Layer 3: AIOrchestrator (src/lib/ai-orchestrator.ts)
 
 ### 13.1 Test Pyramid
 
-| Layer | Framework | Files | Est. Cases | Focus |
-|-------|-----------|-------|-----------|-------|
-| Unit | Jest | ~100 | ~800 | Pure functions, service methods, components |
-| Integration | Jest | ~49 | ~300 | API routes, service-to-service, DB |
-| E2E (API) | Cypress | 21 | ~190 | Route access, auth enforcement, response format |
-| E2E (UI) | Playwright | 16 | ~149 | Full browser journeys, multi-page flows |
-| **Total** | | **186** | **~1,300+** | |
+| Layer       | Framework  | Files   | Est. Cases  | Focus                                           |
+| ----------- | ---------- | ------- | ----------- | ----------------------------------------------- |
+| Unit        | Jest       | ~100    | ~800        | Pure functions, service methods, components     |
+| Integration | Jest       | ~49     | ~300        | API routes, service-to-service, DB              |
+| E2E (API)   | Cypress    | 21      | ~190        | Route access, auth enforcement, response format |
+| E2E (UI)    | Playwright | 16      | ~149        | Full browser journeys, multi-page flows         |
+| **Total**   |            | **186** | **~1,300+** |                                                 |
 
 ### 13.2 Coverage Thresholds (jest.config.ts)
 
-| Metric | Threshold |
-|--------|-----------|
-| Statements | 80% |
-| Branches | 80% |
-| Functions | 80% |
-| Lines | 80% |
+| Metric     | Threshold |
+| ---------- | --------- |
+| Statements | 80%       |
+| Branches   | 80%       |
+| Functions  | 80%       |
+| Lines      | 80%       |
 
 ### 13.3 Quality Gates
 
@@ -465,33 +465,33 @@ Layer 3: AIOrchestrator (src/lib/ai-orchestrator.ts)
 
 ### 13.4 Critical Path Tests
 
-| ID | Path | Framework | Validates |
-|----|------|-----------|-----------|
-| CP-01 | Auth flow | Playwright | Login → session → protected route |
-| CP-02 | Payment checkout | Jest + Cypress | Stripe checkout, webhook handling |
-| CP-03 | Credit repair API | Cypress | Auth enforcement on all endpoints |
-| CP-04 | Dispute lifecycle | Jest | Create → send → review → resolve |
-| CP-05 | AI chat | Cypress | /api/ai/chat requires auth |
-| CP-06 | Protected routes | Cypress | 9+ routes redirect to /login |
-| CP-07 | Public pages | Cypress | Landing, pricing, credit/factors = 200 |
-| CP-08 | Input validation | Jest | Prompt injection, PII detection |
-| CP-09 | Rate limiting | Jest | Per-IP and per-user throttling |
-| CP-10 | Document upload | Jest | S3 upload, validation, presigned URL |
+| ID    | Path              | Framework      | Validates                              |
+| ----- | ----------------- | -------------- | -------------------------------------- |
+| CP-01 | Auth flow         | Playwright     | Login → session → protected route      |
+| CP-02 | Payment checkout  | Jest + Cypress | Stripe checkout, webhook handling      |
+| CP-03 | Credit repair API | Cypress        | Auth enforcement on all endpoints      |
+| CP-04 | Dispute lifecycle | Jest           | Create → send → review → resolve       |
+| CP-05 | AI chat           | Cypress        | /api/ai/chat requires auth             |
+| CP-06 | Protected routes  | Cypress        | 9+ routes redirect to /login           |
+| CP-07 | Public pages      | Cypress        | Landing, pricing, credit/factors = 200 |
+| CP-08 | Input validation  | Jest           | Prompt injection, PII detection        |
+| CP-09 | Rate limiting     | Jest           | Per-IP and per-user throttling         |
+| CP-10 | Document upload   | Jest           | S3 upload, validation, presigned URL   |
 
 ---
 
 ## 14. Deployment
 
-| Setting | Value |
-|---------|-------|
-| **Host** | Vercel |
-| **Build Command** | `next build` |
-| **Output** | Standalone (Docker-compatible) |
-| **Region** | Auto (Vercel Edge Network) |
-| **Node Version** | 22.x |
-| **Auto-deploy** | main branch → production |
-| **Preview** | All PRs get preview deployments |
-| **CI/CD Config** | None (Vercel auto-deploy; no GitHub Actions) |
+| Setting           | Value                                        |
+| ----------------- | -------------------------------------------- |
+| **Host**          | Vercel                                       |
+| **Build Command** | `next build`                                 |
+| **Output**        | Standalone (Docker-compatible)               |
+| **Region**        | Auto (Vercel Edge Network)                   |
+| **Node Version**  | 22.x                                         |
+| **Auto-deploy**   | main branch → production                     |
+| **Preview**       | All PRs get preview deployments              |
+| **CI/CD Config**  | None (Vercel auto-deploy; no GitHub Actions) |
 
 ### Build Configuration (next.config.ts)
 
@@ -507,48 +507,48 @@ Layer 3: AIOrchestrator (src/lib/ai-orchestrator.ts)
 
 ### 15.1 Critical Conflicts (Documentation vs. Code)
 
-| What | CLAUDE.md Claims | Actual |
-|------|-----------------|--------|
-| API Routes | 21 | **248** |
-| Pages | 6 | **180** |
-| Components | 10+ | **225** |
-| Lines of Code | 15,000+ | **79,612** |
-| Source Files | 60+ | **1,296** |
-| Test Cases | 83 | **~1,300+** |
-| Pricing Tiers | 3 ($29/$79/$199) | **6 (Free/$29.99/$99.99/$159.99/$199.99/$399.99)** |
-| Tier Names | Basic/Premium/Enterprise | **Free/Standard/Pro/Family Duo/Family/Family Plus** |
+| What          | CLAUDE.md Claims         | Actual                                              |
+| ------------- | ------------------------ | --------------------------------------------------- |
+| API Routes    | 21                       | **248**                                             |
+| Pages         | 6                        | **180**                                             |
+| Components    | 10+                      | **225**                                             |
+| Lines of Code | 15,000+                  | **79,612**                                          |
+| Source Files  | 60+                      | **1,296**                                           |
+| Test Cases    | 83                       | **~1,300+**                                         |
+| Pricing Tiers | 3 ($29/$79/$199)         | **6 (Free/$29.99/$99.99/$159.99/$199.99/$399.99)**  |
+| Tier Names    | Basic/Premium/Enterprise | **Free/Standard/Pro/Family Duo/Family/Family Plus** |
 
 ### 15.2 Technical Debt
 
-| ID | Area | Risk | Remediation |
-|----|------|------|-------------|
-| TD-01 | Deprecated `src/lib/supabase.ts` | Import confusion, auth bugs | Migrate to `@/lib/supabase/client` |
-| TD-02 | In-memory rate limiting | Resets on deploy/restart | Move to Redis or Supabase |
-| TD-03 | In-memory audit logs (10K cap) | Logs lost on restart | Persist to database |
-| TD-04 | In-memory metrics | Data lost on restart | Persist to metrics service |
-| TD-05 | Mixed branding (CPFI/CreditMaster/Fynvita) | User confusion | Systematic rename |
-| TD-06 | 95 doc files (many overlap/conflict) | Developer confusion | Consolidate |
-| TD-07 | No database migrations | Unreproducible environments | Add migration tooling |
-| TD-08 | No CI/CD pipeline config | Manual deployment risk | Add GitHub Actions |
-| TD-09 | Large component files (300-600+ lines) | Maintainability | Extract sub-components |
-| TD-10 | No feature flag infrastructure | Risky deployments | Add flag system |
+| ID    | Area                                       | Risk                        | Remediation                        |
+| ----- | ------------------------------------------ | --------------------------- | ---------------------------------- |
+| TD-01 | Deprecated `src/lib/supabase.ts`           | Import confusion, auth bugs | Migrate to `@/lib/supabase/client` |
+| TD-02 | In-memory rate limiting                    | Resets on deploy/restart    | Move to Redis or Supabase          |
+| TD-03 | In-memory audit logs (10K cap)             | Logs lost on restart        | Persist to database                |
+| TD-04 | In-memory metrics                          | Data lost on restart        | Persist to metrics service         |
+| TD-05 | Mixed branding (CPFI/CreditMaster/Fynvita) | User confusion              | Systematic rename                  |
+| TD-06 | 95 doc files (many overlap/conflict)       | Developer confusion         | Consolidate                        |
+| TD-07 | No database migrations                     | Unreproducible environments | Add migration tooling              |
+| TD-08 | No CI/CD pipeline config                   | Manual deployment risk      | Add GitHub Actions                 |
+| TD-09 | Large component files (300-600+ lines)     | Maintainability             | Extract sub-components             |
+| TD-10 | No feature flag infrastructure             | Risky deployments           | Add flag system                    |
 
 ### 15.3 Pending Architectural Decisions
 
-| ID | Decision | Status |
-|----|----------|--------|
-| DEC-01 | Supabase client pattern: migrate to `@/lib/supabase/client` | **Decided: Migrate** |
-| DEC-02 | State management: Context vs Zustand vs TanStack Query | Open |
-| DEC-03 | Caching: None vs Redis vs ISR vs in-memory | Open |
-| DEC-04 | Real-time: Polling vs WebSockets vs SSE vs Supabase Realtime | Open |
-| DEC-05 | Monorepo: Keep single app vs split (web + mobile + shared) | Open |
-| DEC-06 | API versioning: None vs URL-based vs header-based | Open |
-| DEC-07 | Feature flags: None vs env vars vs LaunchDarkly | Open |
-| DEC-08 | Error monitoring: Console vs Sentry vs Datadog | Open |
-| DEC-09 | CI/CD: GitHub Actions vs Vercel CI vs both | Open |
-| DEC-10 | Database migrations: Manual vs Prisma vs Supabase CLI | Open |
-| DEC-11 | Outdated docs cleanup: Archive vs update vs delete | Open |
-| DEC-12 | Brand consolidation: Full rename to Fynvita | **Decided: In progress** |
+| ID     | Decision                                                     | Status                   |
+| ------ | ------------------------------------------------------------ | ------------------------ |
+| DEC-01 | Supabase client pattern: migrate to `@/lib/supabase/client`  | **Decided: Migrate**     |
+| DEC-02 | State management: Context vs Zustand vs TanStack Query       | Open                     |
+| DEC-03 | Caching: None vs Redis vs ISR vs in-memory                   | Open                     |
+| DEC-04 | Real-time: Polling vs WebSockets vs SSE vs Supabase Realtime | Open                     |
+| DEC-05 | Monorepo: Keep single app vs split (web + mobile + shared)   | Open                     |
+| DEC-06 | API versioning: None vs URL-based vs header-based            | Open                     |
+| DEC-07 | Feature flags: None vs env vars vs LaunchDarkly              | Open                     |
+| DEC-08 | Error monitoring: Console vs Sentry vs Datadog               | Open                     |
+| DEC-09 | CI/CD: GitHub Actions vs Vercel CI vs both                   | Open                     |
+| DEC-10 | Database migrations: Manual vs Prisma vs Supabase CLI        | Open                     |
+| DEC-11 | Outdated docs cleanup: Archive vs update vs delete           | Open                     |
+| DEC-12 | Brand consolidation: Full rename to Fynvita                  | **Decided: In progress** |
 
 ---
 
@@ -558,32 +558,32 @@ Layer 3: AIOrchestrator (src/lib/ai-orchestrator.ts)
 
 ### 16.1 Module Completion Status
 
-| Module | Current Score | Target | Gap | Priority |
-|--------|--------------|--------|-----|----------|
-| Tax Optimization | 100% | 100 | 0 | Done |
-| Budgeting/Financial | 91% | 102 | +11 | HIGH |
-| Credit Repair | 88% | 102 | +14 | HIGH |
-| Security | 75% | 102 | +27 | HIGH |
-| Investment Intelligence | 71% | 102 | +31 | HIGH |
-| Trading System | 65% | 102 | +37 | MEDIUM |
-| Risk Management | 65% | 102 | +37 | MEDIUM |
-| AI/ML Features | 64% | 102 | +38 | MEDIUM |
-| Gamification | 60% | 102 | +42 | LOW |
-| Mobile App Parity | 30% | 102 | +72 | HIGH |
-| Global Connector | 0% | 102 | +102 | LOW |
+| Module                  | Current Score | Target | Gap  | Priority |
+| ----------------------- | ------------- | ------ | ---- | -------- |
+| Tax Optimization        | 100%          | 100    | 0    | Done     |
+| Budgeting/Financial     | 91%           | 102    | +11  | HIGH     |
+| Credit Repair           | 88%           | 102    | +14  | HIGH     |
+| Security                | 75%           | 102    | +27  | HIGH     |
+| Investment Intelligence | 71%           | 102    | +31  | HIGH     |
+| Trading System          | 65%           | 102    | +37  | MEDIUM   |
+| Risk Management         | 65%           | 102    | +37  | MEDIUM   |
+| AI/ML Features          | 64%           | 102    | +38  | MEDIUM   |
+| Gamification            | 60%           | 102    | +42  | LOW      |
+| Mobile App Parity       | 30%           | 102    | +72  | HIGH     |
+| Global Connector        | 0%            | 102    | +102 | LOW      |
 
 **Overall Platform Score**: 76/102 → Target: 102/102 (A+ rating)
 
 ### 16.2 Roadmap Overview (Q1–Q4 2026)
 
-| Phase | Quarter | Focus | Status | Key Deliverables |
-|-------|---------|-------|--------|-----------------|
-| **Phase 1: Foundation** | Q1 2026 | Core platform stability | **100% Complete** | Onboarding UX, chat engine, auth hardening |
-| **Phase 2: Growth** | Q1–Q2 2026 | Revenue features | **95% Complete** | Stripe 6-tier pricing, marketplace, notifications |
-| **Phase 3: Differentiation** | Q2 2026 | Competitive moat | **95% Complete** | AI personalization, gamification, credit builder |
-| **Phase 3.5: AI & Gamification** | Q2–Q3 2026 | Deep integration | **70% Complete** | Behavioral coaching, XP system, nudge engine |
-| **Phase 4: Scale** | Q3–Q4 2026 | Infrastructure | **70% Complete** | Mobile parity, global connector, trading engines |
-| **Phase 5: Tax Optimization** | Q4 2026 | Tax module | **100% Complete** | Tax engine, OCR, retirement optimization |
+| Phase                            | Quarter    | Focus                   | Status            | Key Deliverables                                  |
+| -------------------------------- | ---------- | ----------------------- | ----------------- | ------------------------------------------------- |
+| **Phase 1: Foundation**          | Q1 2026    | Core platform stability | **100% Complete** | Onboarding UX, chat engine, auth hardening        |
+| **Phase 2: Growth**              | Q1–Q2 2026 | Revenue features        | **95% Complete**  | Stripe 6-tier pricing, marketplace, notifications |
+| **Phase 3: Differentiation**     | Q2 2026    | Competitive moat        | **95% Complete**  | AI personalization, gamification, credit builder  |
+| **Phase 3.5: AI & Gamification** | Q2–Q3 2026 | Deep integration        | **70% Complete**  | Behavioral coaching, XP system, nudge engine      |
+| **Phase 4: Scale**               | Q3–Q4 2026 | Infrastructure          | **70% Complete**  | Mobile parity, global connector, trading engines  |
+| **Phase 5: Tax Optimization**    | Q4 2026    | Tax module              | **100% Complete** | Tax engine, OCR, retirement optimization          |
 
 ### 16.3 A+ Upgrade Strategy (76 → 102)
 
@@ -592,22 +592,22 @@ Layer 3: AIOrchestrator (src/lib/ai-orchestrator.ts)
 
 #### 16.3.1 Credit Repair Upgrade (88 → 102, 10 weeks)
 
-| Feature | Description | Effort |
-|---------|-------------|--------|
-| Live Bureau APIs | Experian ($0.50–2.00/pull), Equifax ($1–3/pull), TransUnion ($0.75–2.50/pull) | L |
-| AI OCR Response Processing | Parse bureau responses, extract outcomes, update dispute status | M |
-| ML Success Prediction | Train model on dispute outcomes; predict success rate before submission | L |
-| Autonomous Dispute Agent | Full lifecycle: detect → generate → submit → track → resolve | XL |
+| Feature                    | Description                                                                   | Effort |
+| -------------------------- | ----------------------------------------------------------------------------- | ------ |
+| Live Bureau APIs           | Experian ($0.50–2.00/pull), Equifax ($1–3/pull), TransUnion ($0.75–2.50/pull) | L      |
+| AI OCR Response Processing | Parse bureau responses, extract outcomes, update dispute status               | M      |
+| ML Success Prediction      | Train model on dispute outcomes; predict success rate before submission       | L      |
+| Autonomous Dispute Agent   | Full lifecycle: detect → generate → submit → track → resolve                  | XL     |
 
 #### 16.3.2 Financial Upgrade (91 → 102, 10 weeks)
 
-| Feature | Description | Effort |
-|---------|-------------|--------|
-| Predictive Cash Flow | ML-based cash flow forecasting (target >90% accuracy) | L |
-| Smart Payment Scheduling | Optimize payment dates to minimize interest, maximize float | M |
-| Gig Economy Support | Irregular income modeling, 1099 tax estimation | M |
-| Multi-Currency | International account aggregation, FX conversion | L |
-| Family Collaboration | Shared budgets, delegated access, family financial goals | M |
+| Feature                  | Description                                                 | Effort |
+| ------------------------ | ----------------------------------------------------------- | ------ |
+| Predictive Cash Flow     | ML-based cash flow forecasting (target >90% accuracy)       | L      |
+| Smart Payment Scheduling | Optimize payment dates to minimize interest, maximize float | M      |
+| Gig Economy Support      | Irregular income modeling, 1099 tax estimation              | M      |
+| Multi-Currency           | International account aggregation, FX conversion            | L      |
+| Family Collaboration     | Shared budgets, delegated access, family financial goals    | M      |
 
 #### 16.3.3 Trading System Upgrade (25 → 102, 12 weeks)
 
@@ -635,27 +635,27 @@ Layer 3: AIOrchestrator (src/lib/ai-orchestrator.ts)
               └─────────────────┘
 ```
 
-| Feature | Description | Effort |
-|---------|-------------|--------|
-| Broker Integration | Alpaca (primary), Interactive Brokers; paper trading mode | L |
-| 3-Engine System | Rule-based (visual builder), ML (RF/LSTM), LLM (Claude/GPT) | XL |
-| Signal Fusion | Weighted consensus across engines; confidence scoring | L |
-| Risk Gateway | Kill switch, position limits, max drawdown, correlation checks | L |
-| 5 Trailing Stop Types | Percentage, ATR-based, chandelier, parabolic SAR, volatility | M |
-| Backtesting Engine | Historical replay, Monte Carlo simulation, walk-forward analysis | L |
+| Feature               | Description                                                      | Effort |
+| --------------------- | ---------------------------------------------------------------- | ------ |
+| Broker Integration    | Alpaca (primary), Interactive Brokers; paper trading mode        | L      |
+| 3-Engine System       | Rule-based (visual builder), ML (RF/LSTM), LLM (Claude/GPT)      | XL     |
+| Signal Fusion         | Weighted consensus across engines; confidence scoring            | L      |
+| Risk Gateway          | Kill switch, position limits, max drawdown, correlation checks   | L      |
+| 5 Trailing Stop Types | Percentage, ATR-based, chandelier, parabolic SAR, volatility     | M      |
+| Backtesting Engine    | Historical replay, Monte Carlo simulation, walk-forward analysis | L      |
 
 **Success Metrics**: Sharpe ratio >2.0, max drawdown <15%, win rate >55%
 
 #### 16.3.4 Risk Management Upgrade (65 → 102, 12 weeks)
 
-| Feature | Description | Effort |
-|---------|-------------|--------|
-| Risk Rules Engine | Configurable TypeScript rules with real-time evaluation | L |
-| Position Sizing | Kelly Criterion, volatility-adjusted, risk-parity allocation | M |
-| Kill Switch System | Manual + automated circuit breakers (drawdown, correlation, volatility) | M |
-| Correlation Monitor | Cross-asset correlation tracking, diversification scoring | M |
-| Stress Testing | Historical scenario replay, Monte Carlo VaR, tail risk analysis | L |
-| Real-Time Risk Dashboard | Live P&L, Greeks exposure, sector concentration | M |
+| Feature                  | Description                                                             | Effort |
+| ------------------------ | ----------------------------------------------------------------------- | ------ |
+| Risk Rules Engine        | Configurable TypeScript rules with real-time evaluation                 | L      |
+| Position Sizing          | Kelly Criterion, volatility-adjusted, risk-parity allocation            | M      |
+| Kill Switch System       | Manual + automated circuit breakers (drawdown, correlation, volatility) | M      |
+| Correlation Monitor      | Cross-asset correlation tracking, diversification scoring               | M      |
+| Stress Testing           | Historical scenario replay, Monte Carlo VaR, tail risk analysis         | L      |
+| Real-Time Risk Dashboard | Live P&L, Greeks exposure, sector concentration                         | M      |
 
 ### 16.4 Feature Implementation Plans
 
@@ -664,13 +664,13 @@ Layer 3: AIOrchestrator (src/lib/ai-orchestrator.ts)
 **Stack**: React Native 0.74 + Expo SDK 51
 **Gap**: 126 web pages vs 29 mobile screens → 97 screens to implement
 
-| Phase | Duration | Screens | Focus |
-|-------|----------|---------|-------|
-| P0: Critical | 3 weeks | 25 | Auth, dashboard, credit score, budgeting, notifications |
-| P1: Credit Karma Competitive | 3 weeks | 20 | Credit repair, disputes, credit builder, score simulator |
-| P2: Financial Intelligence | 3 weeks | 22 | Investments, trading, tax, financial tools |
-| P3: Marketplace & Admin | 3 weeks | 20 | Marketplace, settings, admin, gamification |
-| P4: Testing & Polish | 2 weeks | 10 | E2E tests, performance, accessibility |
+| Phase                        | Duration | Screens | Focus                                                    |
+| ---------------------------- | -------- | ------- | -------------------------------------------------------- |
+| P0: Critical                 | 3 weeks  | 25      | Auth, dashboard, credit score, budgeting, notifications  |
+| P1: Credit Karma Competitive | 3 weeks  | 20      | Credit repair, disputes, credit builder, score simulator |
+| P2: Financial Intelligence   | 3 weeks  | 22      | Investments, trading, tax, financial tools               |
+| P3: Marketplace & Admin      | 3 weeks  | 20      | Marketplace, settings, admin, gamification               |
+| P4: Testing & Polish         | 2 weeks  | 10      | E2E tests, performance, accessibility                    |
 
 #### 16.4.2 Intelligent Financial Suite (12 weeks, 3–4 developers)
 
@@ -687,45 +687,45 @@ Layer 3: AIOrchestrator (src/lib/ai-orchestrator.ts)
 
 **3 Rails Architecture**:
 
-| Rail | Purpose | Key Integration |
-|------|---------|----------------|
-| Data Rail | Account aggregation (bank, brokerage, crypto) | TrueLayer (EU/UK), Plaid (US) |
-| Commercial Rail | Affiliate revenue, insurance leads, product recommendations | Partner APIs, lead-gen |
-| Payment Rail | Bank-to-bank transfers, card payments, crypto on-ramp | Banking APIs, card networks |
+| Rail            | Purpose                                                     | Key Integration               |
+| --------------- | ----------------------------------------------------------- | ----------------------------- |
+| Data Rail       | Account aggregation (bank, brokerage, crypto)               | TrueLayer (EU/UK), Plaid (US) |
+| Commercial Rail | Affiliate revenue, insurance leads, product recommendations | Partner APIs, lead-gen        |
+| Payment Rail    | Bank-to-bank transfers, card payments, crypto on-ramp       | Banking APIs, card networks   |
 
 **New Database Tables**: 8 (connector_registry, partner_configs, affiliate_clicks, insurance_quotes, payment_rails, bank_connections, transfer_logs, commission_ledger)
 
 #### 16.4.4 AI Personalization & Gamification (5 sprints)
 
-| Component | Description |
-|-----------|-------------|
-| Behavioral Finance Coaching | Pipeline: spending analysis → pattern detection → personalized advice |
-| Goal-Based Nudge System | Contextual nudges triggered by financial events, idle periods, goal proximity |
-| Emotional Spending Detection | NLP on transaction memos, time-of-day patterns, category clustering |
-| Gamified Dashboard | ProgressRings, achievement badges (5 rarity tiers), XP/level system (30 levels) |
-| Social Features | Leaderboard (opt-in), challenges (solo + team), referral bonuses |
+| Component                    | Description                                                                     |
+| ---------------------------- | ------------------------------------------------------------------------------- |
+| Behavioral Finance Coaching  | Pipeline: spending analysis → pattern detection → personalized advice           |
+| Goal-Based Nudge System      | Contextual nudges triggered by financial events, idle periods, goal proximity   |
+| Emotional Spending Detection | NLP on transaction memos, time-of-day patterns, category clustering             |
+| Gamified Dashboard           | ProgressRings, achievement badges (5 rarity tiers), XP/level system (30 levels) |
+| Social Features              | Leaderboard (opt-in), challenges (solo + team), referral bonuses                |
 
 **Gamification Leveling**: 30 levels, XP curve = `100 × level^1.5`, max level title: "Financial Sage"
 
 #### 16.4.5 Onboarding Enhancement (138 hours, 3 phases)
 
-| Phase | Hours | Focus | Target Improvement |
-|-------|-------|-------|-------------------|
-| Phase 1: Critical | 30h | Progress save/resume, smart defaults, error recovery | Completion 45% → 55% |
-| Phase 2: Enhanced UX | 48h | Contextual tooltips, skip/defer, adaptive forms | Completion 55% → 65% |
-| Phase 3: Polish | 60h | Animations, social proof, A/B testing | Completion 65% → 75% |
+| Phase                | Hours | Focus                                                | Target Improvement   |
+| -------------------- | ----- | ---------------------------------------------------- | -------------------- |
+| Phase 1: Critical    | 30h   | Progress save/resume, smart defaults, error recovery | Completion 45% → 55% |
+| Phase 2: Enhanced UX | 48h   | Contextual tooltips, skip/defer, adaptive forms      | Completion 55% → 65% |
+| Phase 3: Polish      | 60h   | Animations, social proof, A/B testing                | Completion 65% → 75% |
 
 **Targets**: Completion rate 45% → 75%, time 10min → 4min, drop-off 55% → 25%
 
 #### 16.4.6 Tax Optimization Module (Complete)
 
-| Feature | Status |
-|---------|--------|
-| Tax Calculation Engine | Done |
-| Retirement Optimization (Roth conversions, RMD planning) | Done |
-| Document OCR (W-2, 1099 parsing) | Done |
-| Scenario Modeling (what-if tax projections) | Done |
-| Tax-Loss Harvesting Integration | Done |
+| Feature                                                  | Status |
+| -------------------------------------------------------- | ------ |
+| Tax Calculation Engine                                   | Done   |
+| Retirement Optimization (Roth conversions, RMD planning) | Done   |
+| Document OCR (W-2, 1099 parsing)                         | Done   |
+| Scenario Modeling (what-if tax projections)              | Done   |
+| Tax-Loss Harvesting Integration                          | Done   |
 
 #### 16.4.7 Financial Chat Engine (Phase 6 Architecture)
 
@@ -746,111 +746,111 @@ Action Types (10): fetch_balance, analyze_spending, check_budget,
 
 ### 16.5 Master Task Priority Matrix
 
-| Priority | Timeframe | Tasks | Examples |
-|----------|-----------|-------|---------|
-| **P0: Immediate** | 2 weeks | 8 tasks | Fix CLAUDE.md metrics, persistent rate limiting, audit log persistence, Supabase client migration |
-| **P1: Short-term** | 1 month | 12 tasks | Credit bureau API integration, ML success prediction, CI/CD pipeline, brand consolidation |
-| **P2: Medium-term** | 1 quarter | 15 tasks | Trading engine v1, mobile app phase 1–2, global connector phase 1, AI personalization |
-| **P3: Long-term** | 6 months | 15+ tasks | Full mobile parity, global connector phase 2–3, trading engine v2 (ML+LLM), white-label |
+| Priority            | Timeframe | Tasks     | Examples                                                                                          |
+| ------------------- | --------- | --------- | ------------------------------------------------------------------------------------------------- |
+| **P0: Immediate**   | 2 weeks   | 8 tasks   | Fix CLAUDE.md metrics, persistent rate limiting, audit log persistence, Supabase client migration |
+| **P1: Short-term**  | 1 month   | 12 tasks  | Credit bureau API integration, ML success prediction, CI/CD pipeline, brand consolidation         |
+| **P2: Medium-term** | 1 quarter | 15 tasks  | Trading engine v1, mobile app phase 1–2, global connector phase 1, AI personalization             |
+| **P3: Long-term**   | 6 months  | 15+ tasks | Full mobile parity, global connector phase 2–3, trading engine v2 (ML+LLM), white-label           |
 
 ### 16.6 Competitive Positioning
 
-| Feature Area | Fynvita | Credit Karma | Betterment | Wealthfront | Mint | Robinhood |
-|-------------|---------|-------------|-----------|-------------|------|-----------|
-| Credit Repair (AI) | Strong | Basic | None | None | None | None |
-| Investment Intelligence | Strong | None | Strong | Strong | None | Basic |
-| Budgeting/Financial | Strong | None | Basic | Basic | Strong | None |
-| Trading | Planned | None | None | None | None | Strong |
-| Tax Optimization | Done | Basic | Tax-loss | Tax-loss | None | None |
-| AI Chat (300+ models) | Unique | None | None | None | None | None |
-| Gamification | Partial | None | None | None | None | Partial |
-| Mobile App | Planned | Full | Full | Full | Full | Full |
+| Feature Area            | Fynvita | Credit Karma | Betterment | Wealthfront | Mint   | Robinhood |
+| ----------------------- | ------- | ------------ | ---------- | ----------- | ------ | --------- |
+| Credit Repair (AI)      | Strong  | Basic        | None       | None        | None   | None      |
+| Investment Intelligence | Strong  | None         | Strong     | Strong      | None   | Basic     |
+| Budgeting/Financial     | Strong  | None         | Basic      | Basic       | Strong | None      |
+| Trading                 | Planned | None         | None       | None        | None   | Strong    |
+| Tax Optimization        | Done    | Basic        | Tax-loss   | Tax-loss    | None   | None      |
+| AI Chat (300+ models)   | Unique  | None         | None       | None        | None   | None      |
+| Gamification            | Partial | None         | None       | None        | None   | Partial   |
+| Mobile App              | Planned | Full         | Full       | Full        | Full   | Full      |
 
 **Key Differentiator**: Only platform combining AI credit repair + financial wellness + investment intelligence + 300+ AI model access in one product.
 
 ### 16.7 Completed Milestones
 
-| Milestone | Date | What Was Delivered |
-|-----------|------|-------------------|
-| Onboarding Phase 1 | Jan 7, 2026 | Progress save/resume, smart defaults, real-time validation |
-| Onboarding Phase 2 | Jan 7, 2026 | Contextual tooltips, adaptive forms, skip/defer logic |
-| Phase 6.2 Chat Engine | Jan 5, 2026 | Financial chat web interface, intent detection, entity extraction |
-| Tax Module | Q4 2025 | Full tax calculation, OCR, retirement optimization, scenario modeling |
-| 6-Tier Pricing | Q4 2025 | Free → Family Plus ($0–$399.99), Stripe integration |
-| Security Hardening | Q4 2025 | Zero Trust audit (Grade A-), 5-layer security, RBAC (100+ permissions) |
-| E2E Test Suite | Q4 2025 | Cypress (21 specs) + Playwright (16 specs) covering critical paths |
+| Milestone             | Date        | What Was Delivered                                                     |
+| --------------------- | ----------- | ---------------------------------------------------------------------- |
+| Onboarding Phase 1    | Jan 7, 2026 | Progress save/resume, smart defaults, real-time validation             |
+| Onboarding Phase 2    | Jan 7, 2026 | Contextual tooltips, adaptive forms, skip/defer logic                  |
+| Phase 6.2 Chat Engine | Jan 5, 2026 | Financial chat web interface, intent detection, entity extraction      |
+| Tax Module            | Q4 2025     | Full tax calculation, OCR, retirement optimization, scenario modeling  |
+| 6-Tier Pricing        | Q4 2025     | Free → Family Plus ($0–$399.99), Stripe integration                    |
+| Security Hardening    | Q4 2025     | Zero Trust audit (Grade A-), 5-layer security, RBAC (100+ permissions) |
+| E2E Test Suite        | Q4 2025     | Cypress (21 specs) + Playwright (16 specs) covering critical paths     |
 
 ### 16.8 Security Audit Summary (Zero Trust)
 
 **Audit Grade**: A- (0 critical issues, 500+ files audited)
 
-| Layer | Coverage | Status |
-|-------|----------|--------|
-| Authentication (Supabase Auth + JWT + MFA) | Full | Pass |
-| Authorization (RBAC, 14 categories, 100+ permissions) | Full | Pass |
-| Input Validation (prompt injection, PII, sanitization) | Full | Pass |
-| Rate Limiting (per-IP, per-user, cost tracking) | Partial | In-memory only (TD-02) |
-| Error Handling (structured logging, audit trail) | Partial | In-memory only (TD-03/04) |
+| Layer                                                  | Coverage | Status                    |
+| ------------------------------------------------------ | -------- | ------------------------- |
+| Authentication (Supabase Auth + JWT + MFA)             | Full     | Pass                      |
+| Authorization (RBAC, 14 categories, 100+ permissions)  | Full     | Pass                      |
+| Input Validation (prompt injection, PII, sanitization) | Full     | Pass                      |
+| Rate Limiting (per-IP, per-user, cost tracking)        | Partial  | In-memory only (TD-02)    |
+| Error Handling (structured logging, audit trail)       | Partial  | In-memory only (TD-03/04) |
 
 ### 16.9 Trading System Readiness Audit
 
-| Component | Coverage | Status |
-|-----------|----------|--------|
-| PCTT Core Strategy | 92% | Ready |
-| Risk Management Engine | 88% | Ready |
-| LLM Analysis Pipeline | 85% | Ready |
-| Mobile Trading UI | 80% | Ready |
-| Web Trading UI | 45% | Needs work |
-| Order Management | 30% | Needs work |
+| Component              | Coverage | Status     |
+| ---------------------- | -------- | ---------- |
+| PCTT Core Strategy     | 92%      | Ready      |
+| Risk Management Engine | 88%      | Ready      |
+| LLM Analysis Pipeline  | 85%      | Ready      |
+| Mobile Trading UI      | 80%      | Ready      |
+| Web Trading UI         | 45%      | Needs work |
+| Order Management       | 30%      | Needs work |
 
 ### 16.10 Source Documents (Archivable)
 
 The following 26 documents were consolidated into this section. They can be moved to `docs/archive/plans/`:
 
-| Document | Lines | Key Content Captured |
-|----------|-------|---------------------|
-| ENHANCEMENT_ROADMAP.md | 900 | §16.2 Roadmap, §16.5 Priority Matrix |
-| UPGRADE_PLAN_OVERVIEW.md | 243 | §16.3 A+ Strategy, budget, timeline |
-| MASTER_TASK_LIST.md | 1,115 | §16.1 Status, §16.5 Priority Matrix |
-| MOBILE_APP_PARITY_IMPLEMENTATION_PLAN.md | 1,229 | §16.4.1 Mobile App |
-| INTELLIGENT_FINANCIAL_SUITE_IMPLEMENTATION_PLAN.md | 763 | §16.4.2 Financial Suite |
-| INTELLIGENT_BANKING_IMPLEMENTATION_PLAN.md | 448 | §16.4.2 Banking sub-system |
-| GLOBAL_CONNECTOR_STRATEGY_PLAN.md | 992 | §16.4.3 Global Connector |
-| ONBOARDING_UX_ENHANCEMENT_PLAN.md | 1,348 | §16.4.5 Onboarding |
-| AI_PERSONALIZATION_DESIGN.md | 842 | §16.4.4 AI Personalization |
-| UPGRADE_TRADING_SYSTEM.md | ~400 | §16.3.3 Trading Upgrade |
-| UPGRADE_RISK_MANAGEMENT.md | ~400 | §16.3.4 Risk Upgrade |
-| UPGRADE_CREDIT_REPAIR.md | ~300 | §16.3.1 Credit Upgrade |
-| UPGRADE_FINANCIAL.md | ~300 | §16.3.2 Financial Upgrade |
-| PHASE_6_ARCHITECTURE_DIAGRAM.md | ~500 | §16.4.7 Chat Engine |
-| ONBOARDING_PHASE1_IMPLEMENTATION.md | 297 | §16.7 Completed |
-| ONBOARDING_PHASE2_IMPLEMENTATION.md | 229 | §16.7 Completed |
-| PHASE_6.2_IMPLEMENTATION_SUMMARY.md | ~400 | §16.7 Completed |
-| phase-6-implementation-guide.md | ~300 | §16.4.7 Chat phases |
-| TAX_OPTIMIZATION_MODULE.md | — | §16.4.6 Tax (Complete) |
-| TRADING_SYSTEM_AUDIT.md | — | §16.9 Trading Readiness |
-| FINANCIAL_CHAT_API.md | — | §16.4.7 Chat API |
-| FEATURE_GAP_MATRIX.md | — | §16.6 Competitive |
-| ZERO_TRUST_AUDIT_REPORT.md | 597 | §16.8 Security Audit |
-| ONBOARDING_IMPLEMENTATION_EXAMPLES.md | — | §16.4.5 (code examples) |
-| ONBOARDING_QUICK_START.md | — | §16.4.5 (quick start) |
-| ONBOARDING_RECOMMENDATIONS_SUMMARY.md | — | §16.4.5 (summary) |
+| Document                                           | Lines | Key Content Captured                 |
+| -------------------------------------------------- | ----- | ------------------------------------ |
+| ENHANCEMENT_ROADMAP.md                             | 900   | §16.2 Roadmap, §16.5 Priority Matrix |
+| UPGRADE_PLAN_OVERVIEW.md                           | 243   | §16.3 A+ Strategy, budget, timeline  |
+| MASTER_TASK_LIST.md                                | 1,115 | §16.1 Status, §16.5 Priority Matrix  |
+| MOBILE_APP_PARITY_IMPLEMENTATION_PLAN.md           | 1,229 | §16.4.1 Mobile App                   |
+| INTELLIGENT_FINANCIAL_SUITE_IMPLEMENTATION_PLAN.md | 763   | §16.4.2 Financial Suite              |
+| INTELLIGENT_BANKING_IMPLEMENTATION_PLAN.md         | 448   | §16.4.2 Banking sub-system           |
+| GLOBAL_CONNECTOR_STRATEGY_PLAN.md                  | 992   | §16.4.3 Global Connector             |
+| ONBOARDING_UX_ENHANCEMENT_PLAN.md                  | 1,348 | §16.4.5 Onboarding                   |
+| AI_PERSONALIZATION_DESIGN.md                       | 842   | §16.4.4 AI Personalization           |
+| UPGRADE_TRADING_SYSTEM.md                          | ~400  | §16.3.3 Trading Upgrade              |
+| UPGRADE_RISK_MANAGEMENT.md                         | ~400  | §16.3.4 Risk Upgrade                 |
+| UPGRADE_CREDIT_REPAIR.md                           | ~300  | §16.3.1 Credit Upgrade               |
+| UPGRADE_FINANCIAL.md                               | ~300  | §16.3.2 Financial Upgrade            |
+| PHASE_6_ARCHITECTURE_DIAGRAM.md                    | ~500  | §16.4.7 Chat Engine                  |
+| ONBOARDING_PHASE1_IMPLEMENTATION.md                | 297   | §16.7 Completed                      |
+| ONBOARDING_PHASE2_IMPLEMENTATION.md                | 229   | §16.7 Completed                      |
+| PHASE_6.2_IMPLEMENTATION_SUMMARY.md                | ~400  | §16.7 Completed                      |
+| phase-6-implementation-guide.md                    | ~300  | §16.4.7 Chat phases                  |
+| TAX_OPTIMIZATION_MODULE.md                         | —     | §16.4.6 Tax (Complete)               |
+| TRADING_SYSTEM_AUDIT.md                            | —     | §16.9 Trading Readiness              |
+| FINANCIAL_CHAT_API.md                              | —     | §16.4.7 Chat API                     |
+| FEATURE_GAP_MATRIX.md                              | —     | §16.6 Competitive                    |
+| ZERO_TRUST_AUDIT_REPORT.md                         | 597   | §16.8 Security Audit                 |
+| ONBOARDING_IMPLEMENTATION_EXAMPLES.md              | —     | §16.4.5 (code examples)              |
+| ONBOARDING_QUICK_START.md                          | —     | §16.4.5 (quick start)                |
+| ONBOARDING_RECOMMENDATIONS_SUMMARY.md              | —     | §16.4.5 (summary)                    |
 
 ---
 
 ## Cross-Reference
 
-| Related Document | Purpose |
-|-----------------|---------|
-| `docs/Codebase_Index.md` | Detailed module/service inventory |
-| `docs/Plan_Index.md` | Master documentation index (95 files) |
-| `docs/Traceability_Matrix.md` | Requirements → Code → Test mapping |
-| `docs/Gaps_Conflicts_Decisions.md` | Full conflict/gap/decision tracking |
-| `docs/Testing/Test_Strategy.md` | Test approach, environments, gates |
-| `docs/Testing/Test_Catalog.md` | Complete test inventory |
+| Related Document                   | Purpose                               |
+| ---------------------------------- | ------------------------------------- |
+| `docs/Codebase_Index.md`           | Detailed module/service inventory     |
+| `docs/Plan_Index.md`               | Master documentation index (95 files) |
+| `docs/Traceability_Matrix.md`      | Requirements → Code → Test mapping    |
+| `docs/Gaps_Conflicts_Decisions.md` | Full conflict/gap/decision tracking   |
+| `docs/Testing/Test_Strategy.md`    | Test approach, environments, gates    |
+| `docs/Testing/Test_Catalog.md`     | Complete test inventory               |
 
 ---
 
-*Document generated from full codebase analysis on 2026-02-16.*
-*Section 16 consolidated from 26 implementation plan documents on 2026-02-17.*
-*Verified metrics: file counts via find/wc, LOC via wc -l, dependency versions via package.json.*
+_Document generated from full codebase analysis on 2026-02-16._
+_Section 16 consolidated from 26 implementation plan documents on 2026-02-17._
+_Verified metrics: file counts via find/wc, LOC via wc -l, dependency versions via package.json._

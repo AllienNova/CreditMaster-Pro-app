@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { Suspense, useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 function PaymentSuccessContent() {
   const router = useRouter();
@@ -15,7 +15,7 @@ function PaymentSuccessContent() {
       setCountdown((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          router.push('/dashboard');
+          router.push("/dashboard");
           return 0;
         }
         return prev - 1;
@@ -138,8 +138,8 @@ function PaymentSuccessContent() {
 
           {/* Auto Redirect */}
           <p className="text-sm text-gray-500 dark:text-slate-400 mb-6">
-            Redirecting to dashboard in{' '}
-            <span className="font-bold text-blue-600">{countdown}</span>{' '}
+            Redirecting to dashboard in{" "}
+            <span className="font-bold text-blue-600">{countdown}</span>{" "}
             seconds...
           </p>
 
@@ -163,14 +163,14 @@ function PaymentSuccessContent() {
         {/* Additional Info */}
         <div className="mt-8 text-center text-sm text-gray-600 dark:text-slate-300">
           <p>
-            Need help? Visit our{' '}
+            Need help? Visit our{" "}
             <Link
               href="/support"
               className="text-blue-600 hover:text-blue-700 font-medium"
             >
               Support Center
-            </Link>{' '}
-            or email us at{' '}
+            </Link>{" "}
+            or email us at{" "}
             <a
               href="mailto:support@fynvita.com"
               className="text-blue-600 hover:text-blue-700 font-medium"

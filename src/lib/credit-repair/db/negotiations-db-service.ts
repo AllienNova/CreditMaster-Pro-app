@@ -1,9 +1,9 @@
 /**
  * Negotiations Database Service
- * 
+ *
  * Provides database operations for pay-for-delete negotiations.
  * Includes full CRUD operations, error handling, and TypeScript types.
- * 
+ *
  * Features:
  * - Negotiation CRUD operations
  * - Status tracking
@@ -12,7 +12,7 @@
  * - Full error handling
  */
 
-import { getSupabase } from '@/lib/supabase/client';
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
 
@@ -31,7 +31,13 @@ export interface Negotiation {
   settlementPercentage?: number;
   settlementAmount?: number;
   scripts?: Record<string, string>;
-  status: 'pending' | 'negotiating' | 'agreed' | 'paid' | 'completed' | 'failed';
+  status:
+    | "pending"
+    | "negotiating"
+    | "agreed"
+    | "paid"
+    | "completed"
+    | "failed";
   agreedAt?: Date;
   paidAt?: Date;
   deletionConfirmedAt?: Date;
@@ -50,7 +56,13 @@ export interface CreateNegotiationInput {
   settlementPercentage?: number;
   settlementAmount?: number;
   scripts?: Record<string, string>;
-  status?: 'pending' | 'negotiating' | 'agreed' | 'paid' | 'completed' | 'failed';
+  status?:
+    | "pending"
+    | "negotiating"
+    | "agreed"
+    | "paid"
+    | "completed"
+    | "failed";
   notes?: string;
 }
 
@@ -63,7 +75,13 @@ export interface UpdateNegotiationInput {
   settlementPercentage?: number;
   settlementAmount?: number;
   scripts?: Record<string, string>;
-  status?: 'pending' | 'negotiating' | 'agreed' | 'paid' | 'completed' | 'failed';
+  status?:
+    | "pending"
+    | "negotiating"
+    | "agreed"
+    | "paid"
+    | "completed"
+    | "failed";
   agreedAt?: Date;
   paidAt?: Date;
   deletionConfirmedAt?: Date;
@@ -81,7 +99,13 @@ interface NegotiationRow {
   settlement_percentage?: number | null;
   settlement_amount?: number | null;
   scripts?: Record<string, string> | null;
-  status: 'pending' | 'negotiating' | 'agreed' | 'paid' | 'completed' | 'failed';
+  status:
+    | "pending"
+    | "negotiating"
+    | "agreed"
+    | "paid"
+    | "completed"
+    | "failed";
   agreed_at?: string | null;
   paid_at?: string | null;
   deletion_confirmed_at?: string | null;
@@ -99,7 +123,13 @@ type NegotiationUpdateRow = Partial<{
   settlement_percentage: number;
   settlement_amount: number;
   scripts: Record<string, string>;
-  status: 'pending' | 'negotiating' | 'agreed' | 'paid' | 'completed' | 'failed';
+  status:
+    | "pending"
+    | "negotiating"
+    | "agreed"
+    | "paid"
+    | "completed"
+    | "failed";
   agreed_at: string;
   paid_at: string;
   deletion_confirmed_at: string;
@@ -114,11 +144,11 @@ type NegotiationUpdateRow = Partial<{
  * Create a new negotiation
  */
 export async function createNegotiation(
-  input: CreateNegotiationInput
+  input: CreateNegotiationInput,
 ): Promise<Negotiation> {
   try {
     const { data, error } = await supabase
-      .from('negotiations')
+      .from("negotiations")
       .insert({
         user_id: input.userId,
         collection_agency: input.collectionAgency,
@@ -129,7 +159,7 @@ export async function createNegotiation(
         settlement_percentage: input.settlementPercentage,
         settlement_amount: input.settlementAmount,
         scripts: input.scripts,
-        status: input.status || 'pending',
+        status: input.status || "pending",
         notes: input.notes,
       })
       .select()
@@ -140,7 +170,9 @@ export async function createNegotiation(
     return mapNegotiationFromDb(data as NegotiationRow);
   } catch (error) {
     // NegotiationsDB error: Error creating negotiation
-    throw new Error(`Failed to create negotiation: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to create negotiation: ${(error as Error).message}`,
+    );
   }
 }
 
@@ -149,18 +181,18 @@ export async function createNegotiation(
  */
 export async function getNegotiation(
   negotiationId: string,
-  userId: string
+  userId: string,
 ): Promise<Negotiation | null> {
   try {
     const { data, error } = await supabase
-      .from('negotiations')
-      .select('*')
-      .eq('id', negotiationId)
-      .eq('user_id', userId)
+      .from("negotiations")
+      .select("*")
+      .eq("id", negotiationId)
+      .eq("user_id", userId)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
+      if (error.code === "PGRST116") {
         return null;
       }
       throw error;
@@ -183,21 +215,21 @@ export async function getNegotiationsByUser(
     collectionAgency?: string;
     limit?: number;
     offset?: number;
-  }
+  },
 ): Promise<{ negotiations: Negotiation[]; total: number }> {
   try {
     let query = supabase
-      .from('negotiations')
-      .select('*', { count: 'exact' })
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .from("negotiations")
+      .select("*", { count: "exact" })
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
     if (filters?.status) {
-      query = query.eq('status', filters.status);
+      query = query.eq("status", filters.status);
     }
 
     if (filters?.collectionAgency) {
-      query = query.ilike('collection_agency', `%${filters.collectionAgency}%`);
+      query = query.ilike("collection_agency", `%${filters.collectionAgency}%`);
     }
 
     if (filters?.limit) {
@@ -205,7 +237,10 @@ export async function getNegotiationsByUser(
     }
 
     if (filters?.offset) {
-      query = query.range(filters.offset, filters.offset + (filters.limit || 10) - 1);
+      query = query.range(
+        filters.offset,
+        filters.offset + (filters.limit || 10) - 1,
+      );
     }
 
     const { data, error, count } = await query;
@@ -230,15 +265,15 @@ export async function getNegotiationsByUser(
 export async function getNegotiationsByStatus(
   userId: string,
   status: string,
-  limit?: number
+  limit?: number,
 ): Promise<Negotiation[]> {
   try {
     let query = supabase
-      .from('negotiations')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('status', status)
-      .order('created_at', { ascending: false });
+      .from("negotiations")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", status)
+      .order("created_at", { ascending: false });
 
     if (limit) {
       query = query.limit(limit);
@@ -252,7 +287,9 @@ export async function getNegotiationsByStatus(
     return rows.map(mapNegotiationFromDb);
   } catch (error) {
     // NegotiationsDB error: Error getting negotiations by status
-    throw new Error(`Failed to get negotiations by status: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to get negotiations by status: ${(error as Error).message}`,
+    );
   }
 }
 
@@ -262,30 +299,41 @@ export async function getNegotiationsByStatus(
 export async function updateNegotiation(
   negotiationId: string,
   userId: string,
-  updates: UpdateNegotiationInput
+  updates: UpdateNegotiationInput,
 ): Promise<Negotiation> {
   try {
     const updateData: NegotiationUpdateRow = {};
 
-    if (updates.collectionAgency !== undefined) updateData.collection_agency = updates.collectionAgency;
-    if (updates.originalCreditor !== undefined) updateData.original_creditor = updates.originalCreditor;
-    if (updates.accountNumber !== undefined) updateData.account_number = updates.accountNumber;
-    if (updates.originalBalance !== undefined) updateData.original_balance = updates.originalBalance;
-    if (updates.currentBalance !== undefined) updateData.current_balance = updates.currentBalance;
-    if (updates.settlementPercentage !== undefined) updateData.settlement_percentage = updates.settlementPercentage;
-    if (updates.settlementAmount !== undefined) updateData.settlement_amount = updates.settlementAmount;
+    if (updates.collectionAgency !== undefined)
+      updateData.collection_agency = updates.collectionAgency;
+    if (updates.originalCreditor !== undefined)
+      updateData.original_creditor = updates.originalCreditor;
+    if (updates.accountNumber !== undefined)
+      updateData.account_number = updates.accountNumber;
+    if (updates.originalBalance !== undefined)
+      updateData.original_balance = updates.originalBalance;
+    if (updates.currentBalance !== undefined)
+      updateData.current_balance = updates.currentBalance;
+    if (updates.settlementPercentage !== undefined)
+      updateData.settlement_percentage = updates.settlementPercentage;
+    if (updates.settlementAmount !== undefined)
+      updateData.settlement_amount = updates.settlementAmount;
     if (updates.scripts !== undefined) updateData.scripts = updates.scripts;
     if (updates.status !== undefined) updateData.status = updates.status;
-    if (updates.agreedAt !== undefined) updateData.agreed_at = updates.agreedAt.toISOString();
-    if (updates.paidAt !== undefined) updateData.paid_at = updates.paidAt.toISOString();
-    if (updates.deletionConfirmedAt !== undefined) updateData.deletion_confirmed_at = updates.deletionConfirmedAt.toISOString();
+    if (updates.agreedAt !== undefined)
+      updateData.agreed_at = updates.agreedAt.toISOString();
+    if (updates.paidAt !== undefined)
+      updateData.paid_at = updates.paidAt.toISOString();
+    if (updates.deletionConfirmedAt !== undefined)
+      updateData.deletion_confirmed_at =
+        updates.deletionConfirmedAt.toISOString();
     if (updates.notes !== undefined) updateData.notes = updates.notes;
 
     const { data, error } = await supabase
-      .from('negotiations')
+      .from("negotiations")
       .update(updateData)
-      .eq('id', negotiationId)
-      .eq('user_id', userId)
+      .eq("id", negotiationId)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -294,7 +342,9 @@ export async function updateNegotiation(
     return mapNegotiationFromDb(data as NegotiationRow);
   } catch (error) {
     // NegotiationsDB error: Error updating negotiation
-    throw new Error(`Failed to update negotiation: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to update negotiation: ${(error as Error).message}`,
+    );
   }
 }
 
@@ -303,30 +353,30 @@ export async function updateNegotiation(
  */
 export async function deleteNegotiation(
   negotiationId: string,
-  userId: string
+  userId: string,
 ): Promise<boolean> {
   try {
     const { error } = await supabase
-      .from('negotiations')
+      .from("negotiations")
       .delete()
-      .eq('id', negotiationId)
-      .eq('user_id', userId);
+      .eq("id", negotiationId)
+      .eq("user_id", userId);
 
     if (error) throw error;
 
     return true;
   } catch (error) {
     // NegotiationsDB error: Error deleting negotiation
-    throw new Error(`Failed to delete negotiation: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to delete negotiation: ${(error as Error).message}`,
+    );
   }
 }
 
 /**
  * Get negotiation statistics
  */
-export async function getNegotiationStats(
-  userId: string
-): Promise<{
+export async function getNegotiationStats(userId: string): Promise<{
   total: number;
   byStatus: Record<string, number>;
   totalOriginalBalance: number;
@@ -336,13 +386,15 @@ export async function getNegotiationStats(
 }> {
   try {
     const { data, error } = await supabase
-      .from('negotiations')
-      .select('*')
-      .eq('user_id', userId);
+      .from("negotiations")
+      .select("*")
+      .eq("user_id", userId);
 
     if (error) throw error;
 
-    const negotiations = ((data ?? []) as NegotiationRow[]).map(mapNegotiationFromDb);
+    const negotiations = ((data ?? []) as NegotiationRow[]).map(
+      mapNegotiationFromDb,
+    );
 
     const total = negotiations.length;
 
@@ -353,18 +405,27 @@ export async function getNegotiationStats(
     }
 
     // Calculate financial stats
-    const totalOriginalBalance = negotiations.reduce((sum, n) => sum + n.originalBalance, 0);
+    const totalOriginalBalance = negotiations.reduce(
+      (sum, n) => sum + n.originalBalance,
+      0,
+    );
     const totalSettlementAmount = negotiations
       .filter((n) => n.settlementAmount)
       .reduce((sum, n) => sum + (n.settlementAmount || 0), 0);
-    const averageSavings = totalOriginalBalance > 0 
-      ? ((totalOriginalBalance - totalSettlementAmount) / totalOriginalBalance) * 100 
-      : 0;
+    const averageSavings =
+      totalOriginalBalance > 0
+        ? ((totalOriginalBalance - totalSettlementAmount) /
+            totalOriginalBalance) *
+          100
+        : 0;
 
     // Calculate success rate
-    const completed = negotiations.filter((n) => n.status === 'completed' || n.status === 'failed');
-    const successful = negotiations.filter((n) => n.status === 'completed');
-    const successRate = completed.length > 0 ? (successful.length / completed.length) * 100 : 0;
+    const completed = negotiations.filter(
+      (n) => n.status === "completed" || n.status === "failed",
+    );
+    const successful = negotiations.filter((n) => n.status === "completed");
+    const successRate =
+      completed.length > 0 ? (successful.length / completed.length) * 100 : 0;
 
     return {
       total,
@@ -376,7 +437,9 @@ export async function getNegotiationStats(
     };
   } catch (error) {
     // NegotiationsDB error: Error getting negotiation stats
-    throw new Error(`Failed to get negotiation stats: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to get negotiation stats: ${(error as Error).message}`,
+    );
   }
 }
 
@@ -399,7 +462,9 @@ function mapNegotiationFromDb(data: NegotiationRow): Negotiation {
     status: data.status,
     agreedAt: data.agreed_at ? new Date(data.agreed_at) : undefined,
     paidAt: data.paid_at ? new Date(data.paid_at) : undefined,
-    deletionConfirmedAt: data.deletion_confirmed_at ? new Date(data.deletion_confirmed_at) : undefined,
+    deletionConfirmedAt: data.deletion_confirmed_at
+      ? new Date(data.deletion_confirmed_at)
+      : undefined,
     notes: data.notes ?? undefined,
     createdAt: new Date(data.created_at),
     updatedAt: new Date(data.updated_at),

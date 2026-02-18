@@ -9,8 +9,8 @@ import {
   Debt as BaseDebt,
   DebtType as BaseDebtType,
   PayoffMilestone,
-  DebtPayment
-} from './debt-payoff.types';
+  DebtPayment,
+} from "./debt-payoff.types";
 
 // ============================================================================
 // ENUMS
@@ -21,26 +21,26 @@ import {
  */
 export enum PayoffMethod {
   /** Dave Ramsey method - smallest balance first for psychological wins */
-  SNOWBALL = 'snowball',
+  SNOWBALL = "snowball",
   /** Mathematically optimal - highest interest rate first */
-  AVALANCHE = 'avalanche',
+  AVALANCHE = "avalanche",
   /** AI-powered hybrid approach balancing math and psychology */
-  AI_OPTIMIZED = 'ai_optimized',
+  AI_OPTIMIZED = "ai_optimized",
   /** Custom hybrid with configurable weights */
-  HYBRID = 'hybrid',
+  HYBRID = "hybrid",
 }
 
 /**
  * Debt type classification
  */
 export enum DebtType {
-  CREDIT_CARD = 'credit_card',
-  STUDENT_LOAN = 'student_loan',
-  PERSONAL_LOAN = 'personal_loan',
-  MORTGAGE = 'mortgage',
-  AUTO_LOAN = 'auto_loan',
-  MEDICAL = 'medical',
-  OTHER = 'other',
+  CREDIT_CARD = "credit_card",
+  STUDENT_LOAN = "student_loan",
+  PERSONAL_LOAN = "personal_loan",
+  MORTGAGE = "mortgage",
+  AUTO_LOAN = "auto_loan",
+  MEDICAL = "medical",
+  OTHER = "other",
 }
 
 /**
@@ -48,13 +48,13 @@ export enum DebtType {
  */
 export enum StrategyFocus {
   /** Minimize total interest paid */
-  INTEREST_SAVINGS = 'interest_savings',
+  INTEREST_SAVINGS = "interest_savings",
   /** Maximize quick wins for motivation */
-  QUICK_WINS = 'quick_wins',
+  QUICK_WINS = "quick_wins",
   /** Balance between savings and motivation */
-  BALANCED = 'balanced',
+  BALANCED = "balanced",
   /** Optimize for monthly cash flow */
-  CASH_FLOW = 'cash_flow',
+  CASH_FLOW = "cash_flow",
 }
 
 // ============================================================================
@@ -198,7 +198,7 @@ export interface MotivationMetrics {
   percentageComplete: number;
   streakDays: number; // Days of consistent payments
   motivationScore: number; // 0-100
-  psychologicalMomentum: 'high' | 'medium' | 'low';
+  psychologicalMomentum: "high" | "medium" | "low";
   celebrationPoints: string[]; // Milestones achieved
 }
 
@@ -291,4 +291,3 @@ export interface StrategyCalculationResponse {
     details?: any;
   };
 }
-

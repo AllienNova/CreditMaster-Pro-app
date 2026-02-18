@@ -5,7 +5,7 @@
  * Compare different scenarios to optimize tax outcomes.
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -16,14 +16,17 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useTaxStore } from '../../src/store/taxStore';
-import type { TaxScenarioInput, TaxScenarioResult } from '../../src/services/api/tax';
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { useTaxStore } from "../../src/store/taxStore";
+import type {
+  TaxScenarioInput,
+  TaxScenarioResult,
+} from "../../src/services/api/tax";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
-const defaultScenario: Omit<TaxScenarioInput, 'name'> = {
+const defaultScenario: Omit<TaxScenarioInput, "name"> = {
   grossIncome: 300000,
   additional401k: 0,
   additionalIra: 0,
@@ -34,19 +37,23 @@ const defaultScenario: Omit<TaxScenarioInput, 'name'> = {
 };
 
 export default function TaxScenariosScreen() {
-  const { scenarioResults, isLoadingScenarios, compareScenarios, clearScenarioResults } =
-    useTaxStore();
+  const {
+    scenarioResults,
+    isLoadingScenarios,
+    compareScenarios,
+    clearScenarioResults,
+  } = useTaxStore();
 
   const [baseScenario, setBaseScenario] = useState<TaxScenarioInput>({
     ...defaultScenario,
-    name: 'Baseline',
+    name: "Baseline",
   });
 
   const [scenarios, setScenarios] = useState<TaxScenarioInput[]>([
-    { ...defaultScenario, name: 'Max 401(k)', additional401k: 13000 },
+    { ...defaultScenario, name: "Max 401(k)", additional401k: 13000 },
     {
       ...defaultScenario,
-      name: 'Max All Retirement',
+      name: "Max All Retirement",
       additional401k: 13000,
       additionalIra: 7000,
       additionalHsa: 3150,
@@ -54,9 +61,9 @@ export default function TaxScenariosScreen() {
   ]);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
@@ -85,29 +92,29 @@ export default function TaxScenariosScreen() {
   const updateScenario = (
     index: number,
     field: keyof TaxScenarioInput,
-    value: string | number
+    value: string | number,
   ) => {
     const updated = [...scenarios];
     updated[index] = { ...updated[index], [field]: value };
     setScenarios(updated);
   };
 
-  const baselineResult = scenarioResults.find((r) => r.name === 'Baseline');
+  const baselineResult = scenarioResults.find((r) => r.name === "Baseline");
 
   const handleSaveScenario = (scenario: TaxScenarioInput) => {
     Alert.alert(
-      'Save Scenario',
+      "Save Scenario",
       `Save "${scenario.name}" for future reference?`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Save',
+          text: "Save",
           onPress: () => {
             // TODO: Implement save functionality
-            Alert.alert('Saved', 'Scenario saved successfully');
+            Alert.alert("Saved", "Scenario saved successfully");
           },
         },
-      ]
+      ],
     );
   };
 
@@ -132,7 +139,10 @@ export default function TaxScenariosScreen() {
               style={styles.input}
               value={baseScenario.grossIncome.toString()}
               onChangeText={(v) =>
-                setBaseScenario({ ...baseScenario, grossIncome: Number(v) || 0 })
+                setBaseScenario({
+                  ...baseScenario,
+                  grossIncome: Number(v) || 0,
+                })
               }
               keyboardType="numeric"
               placeholder="300000"
@@ -145,7 +155,10 @@ export default function TaxScenariosScreen() {
               style={styles.input}
               value={baseScenario.additional401k.toString()}
               onChangeText={(v) =>
-                setBaseScenario({ ...baseScenario, additional401k: Number(v) || 0 })
+                setBaseScenario({
+                  ...baseScenario,
+                  additional401k: Number(v) || 0,
+                })
               }
               keyboardType="numeric"
               placeholder="0"
@@ -185,7 +198,7 @@ export default function TaxScenariosScreen() {
               <TextInput
                 style={styles.scenarioName}
                 value={scenario.name}
-                onChangeText={(v) => updateScenario(index, 'name', v)}
+                onChangeText={(v) => updateScenario(index, "name", v)}
                 placeholder="Scenario Name"
               />
               <TouchableOpacity onPress={() => handleRemoveScenario(index)}>
@@ -199,7 +212,9 @@ export default function TaxScenariosScreen() {
                 <TextInput
                   style={styles.inputSmall}
                   value={scenario.additional401k.toString()}
-                  onChangeText={(v) => updateScenario(index, 'additional401k', Number(v) || 0)}
+                  onChangeText={(v) =>
+                    updateScenario(index, "additional401k", Number(v) || 0)
+                  }
                   keyboardType="numeric"
                 />
               </View>
@@ -209,7 +224,9 @@ export default function TaxScenariosScreen() {
                 <TextInput
                   style={styles.inputSmall}
                   value={scenario.additionalIra.toString()}
-                  onChangeText={(v) => updateScenario(index, 'additionalIra', Number(v) || 0)}
+                  onChangeText={(v) =>
+                    updateScenario(index, "additionalIra", Number(v) || 0)
+                  }
                   keyboardType="numeric"
                 />
               </View>
@@ -219,7 +236,9 @@ export default function TaxScenariosScreen() {
                 <TextInput
                   style={styles.inputSmall}
                   value={scenario.additionalHsa.toString()}
-                  onChangeText={(v) => updateScenario(index, 'additionalHsa', Number(v) || 0)}
+                  onChangeText={(v) =>
+                    updateScenario(index, "additionalHsa", Number(v) || 0)
+                  }
                   keyboardType="numeric"
                 />
               </View>
@@ -230,7 +249,11 @@ export default function TaxScenariosScreen() {
                   style={styles.inputSmall}
                   value={scenario.additionalCharitable.toString()}
                   onChangeText={(v) =>
-                    updateScenario(index, 'additionalCharitable', Number(v) || 0)
+                    updateScenario(
+                      index,
+                      "additionalCharitable",
+                      Number(v) || 0,
+                    )
                   }
                   keyboardType="numeric"
                 />
@@ -248,7 +271,7 @@ export default function TaxScenariosScreen() {
           disabled={isLoadingScenarios}
         >
           <LinearGradient
-            colors={['#F59E0B', '#EA580C']}
+            colors={["#F59E0B", "#EA580C"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.compareButtonGradient}
@@ -280,14 +303,17 @@ export default function TaxScenariosScreen() {
             const savings = baselineResult
               ? baselineResult.totalTax - result.totalTax
               : 0;
-            const isBaseline = result.name === 'Baseline';
+            const isBaseline = result.name === "Baseline";
             const isBest =
               !isBaseline &&
-              savings === Math.max(
-                ...scenarioResults
-                  .filter((r) => r.name !== 'Baseline')
-                  .map((r) => (baselineResult ? baselineResult.totalTax - r.totalTax : 0))
-              );
+              savings ===
+                Math.max(
+                  ...scenarioResults
+                    .filter((r) => r.name !== "Baseline")
+                    .map((r) =>
+                      baselineResult ? baselineResult.totalTax - r.totalTax : 0,
+                    ),
+                );
 
             return (
               <TouchableOpacity
@@ -297,7 +323,9 @@ export default function TaxScenariosScreen() {
                   isBaseline && styles.resultCardBaseline,
                   isBest && styles.resultCardBest,
                 ]}
-                onPress={() => handleSaveScenario(scenarios[index - 1] || baseScenario)}
+                onPress={() =>
+                  handleSaveScenario(scenarios[index - 1] || baseScenario)
+                }
               >
                 <View style={styles.resultHeader}>
                   <Text style={styles.resultName}>{result.name}</Text>
@@ -346,10 +374,12 @@ export default function TaxScenariosScreen() {
                     <Text
                       style={[
                         styles.savingsAmount,
-                        savings > 0 ? styles.savingsPositive : styles.savingsNegative,
+                        savings > 0
+                          ? styles.savingsPositive
+                          : styles.savingsNegative,
                       ]}
                     >
-                      {savings > 0 ? '+' : ''}
+                      {savings > 0 ? "+" : ""}
                       {formatCurrency(savings)}
                     </Text>
                   </View>
@@ -363,9 +393,9 @@ export default function TaxScenariosScreen() {
       {/* Disclaimer */}
       <View style={styles.disclaimerContainer}>
         <Text style={styles.disclaimerText}>
-          <Text style={styles.disclaimerBold}>Disclaimer:</Text> These calculations
-          are estimates for planning purposes only. Actual tax liability may vary
-          based on your complete tax situation.
+          <Text style={styles.disclaimerBold}>Disclaimer:</Text> These
+          calculations are estimates for planning purposes only. Actual tax
+          liability may vary based on your complete tax situation.
         </Text>
       </View>
     </ScrollView>
@@ -375,7 +405,7 @@ export default function TaxScenariosScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF7ED',
+    backgroundColor: "#FFF7ED",
   },
   header: {
     padding: 20,
@@ -383,12 +413,12 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1C1917',
+    fontWeight: "bold",
+    color: "#1C1917",
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#78716C',
+    color: "#78716C",
     marginTop: 4,
   },
   section: {
@@ -396,90 +426,90 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 12,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#1C1917',
+    fontWeight: "600",
+    color: "#1C1917",
     marginBottom: 12,
   },
   addButton: {
     fontSize: 14,
-    color: '#F59E0B',
-    fontWeight: '600',
+    color: "#F59E0B",
+    fontWeight: "600",
   },
   inputCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 16,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
   },
   inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: "#F3F4F6",
   },
   inputLabel: {
     fontSize: 14,
-    color: '#78716C',
+    color: "#78716C",
     flex: 1,
   },
   input: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: "#F3F4F6",
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1C1917',
+    fontWeight: "600",
+    color: "#1C1917",
     width: 120,
-    textAlign: 'right',
+    textAlign: "right",
   },
   scenarioCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
   },
   scenarioHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 12,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: "#F3F4F6",
   },
   scenarioName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1C1917',
+    fontWeight: "600",
+    color: "#1C1917",
     flex: 1,
   },
   removeButton: {
     fontSize: 14,
-    color: '#DC2626',
-    fontWeight: '500',
+    color: "#DC2626",
+    fontWeight: "500",
   },
   scenarioInputs: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 12,
   },
   inputCompact: {
@@ -487,17 +517,17 @@ const styles = StyleSheet.create({
   },
   inputLabelSmall: {
     fontSize: 12,
-    color: '#78716C',
+    color: "#78716C",
     marginBottom: 4,
   },
   inputSmall: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: "#F3F4F6",
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 14,
-    fontWeight: '500',
-    color: '#1C1917',
+    fontWeight: "500",
+    color: "#1C1917",
   },
   actions: {
     paddingHorizontal: 16,
@@ -505,81 +535,81 @@ const styles = StyleSheet.create({
   },
   compareButton: {
     borderRadius: 12,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginBottom: 12,
   },
   compareButtonGradient: {
     paddingVertical: 16,
-    alignItems: 'center',
+    alignItems: "center",
   },
   compareButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   clearButton: {
     paddingVertical: 12,
-    alignItems: 'center',
+    alignItems: "center",
   },
   clearButtonText: {
-    color: '#78716C',
+    color: "#78716C",
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   resultCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
   },
   resultCardBaseline: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: "#FEF3C7",
   },
   resultCardBest: {
     borderWidth: 2,
-    borderColor: '#16A34A',
+    borderColor: "#16A34A",
   },
   resultHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 12,
   },
   resultName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1C1917',
+    fontWeight: "600",
+    color: "#1C1917",
     flex: 1,
   },
   baselineBadge: {
-    backgroundColor: '#F59E0B',
+    backgroundColor: "#F59E0B",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
   },
   baselineBadgeText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   bestBadge: {
-    backgroundColor: '#16A34A',
+    backgroundColor: "#16A34A",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
   },
   bestBadgeText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   resultGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 12,
   },
   resultItem: {
@@ -587,56 +617,56 @@ const styles = StyleSheet.create({
   },
   resultLabel: {
     fontSize: 12,
-    color: '#78716C',
+    color: "#78716C",
     marginBottom: 2,
   },
   resultValue: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1C1917',
+    fontWeight: "600",
+    color: "#1C1917",
   },
   resultTax: {
-    color: '#DC2626',
+    color: "#DC2626",
   },
   resultTakeHome: {
-    color: '#16A34A',
+    color: "#16A34A",
   },
   resultSavings: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: "#F3F4F6",
   },
   savingsLabel: {
     fontSize: 14,
-    color: '#78716C',
+    color: "#78716C",
   },
   savingsAmount: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   savingsPositive: {
-    color: '#16A34A',
+    color: "#16A34A",
   },
   savingsNegative: {
-    color: '#DC2626',
+    color: "#DC2626",
   },
   disclaimerContainer: {
     margin: 16,
     padding: 16,
-    backgroundColor: '#FEF3C7',
+    backgroundColor: "#FEF3C7",
     borderRadius: 12,
     marginBottom: 40,
   },
   disclaimerText: {
     fontSize: 12,
-    color: '#92400E',
+    color: "#92400E",
     lineHeight: 18,
   },
   disclaimerBold: {
-    fontWeight: '700',
+    fontWeight: "700",
   },
 });

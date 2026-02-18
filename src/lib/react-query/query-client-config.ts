@@ -1,11 +1,11 @@
 /**
  * React Query Client Configuration
  * Phase 6.5.2: Client-side caching strategy
- * 
+ *
  * Configures React Query for optimal caching and data synchronization
  */
 
-import { QueryClient, DefaultOptions } from '@tanstack/react-query';
+import { QueryClient, DefaultOptions } from "@tanstack/react-query";
 
 /**
  * Default query options for React Query
@@ -14,29 +14,29 @@ const queryConfig: DefaultOptions = {
   queries: {
     // Cache time: How long data stays in cache after becoming unused
     gcTime: 1000 * 60 * 10, // 10 minutes (formerly cacheTime)
-    
+
     // Stale time: How long data is considered fresh
     staleTime: 1000 * 60 * 2, // 2 minutes
-    
+
     // Retry configuration
     retry: 2,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-    
+
     // Refetch configuration
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
     refetchOnMount: true,
-    
+
     // Network mode
-    networkMode: 'online',
+    networkMode: "online",
   },
   mutations: {
     // Retry mutations once on failure
     retry: 1,
     retryDelay: 1000,
-    
+
     // Network mode
-    networkMode: 'online',
+    networkMode: "online",
   },
 };
 
@@ -59,25 +59,26 @@ export const queryClient = createQueryClient();
  */
 export const queryKeys = {
   // Chat sessions
-  chatSessions: (userId: string) => ['chat', 'sessions', userId] as const,
-  chatSession: (sessionId: string) => ['chat', 'session', sessionId] as const,
-  
+  chatSessions: (userId: string) => ["chat", "sessions", userId] as const,
+  chatSession: (sessionId: string) => ["chat", "session", sessionId] as const,
+
   // Chat messages
-  chatMessages: (sessionId: string) => ['chat', 'messages', sessionId] as const,
-  chatMessage: (messageId: string) => ['chat', 'message', messageId] as const,
-  
+  chatMessages: (sessionId: string) => ["chat", "messages", sessionId] as const,
+  chatMessage: (messageId: string) => ["chat", "message", messageId] as const,
+
   // Portfolio
-  portfolio: (userId: string) => ['portfolio', userId] as const,
-  portfolioHoldings: (userId: string) => ['portfolio', 'holdings', userId] as const,
-  
+  portfolio: (userId: string) => ["portfolio", userId] as const,
+  portfolioHoldings: (userId: string) =>
+    ["portfolio", "holdings", userId] as const,
+
   // Financial goals
-  financialGoals: (userId: string) => ['financial', 'goals', userId] as const,
-  
+  financialGoals: (userId: string) => ["financial", "goals", userId] as const,
+
   // User preferences
-  userPreferences: (userId: string) => ['user', 'preferences', userId] as const,
-  
+  userPreferences: (userId: string) => ["user", "preferences", userId] as const,
+
   // Risk profile
-  riskProfile: (userId: string) => ['risk', 'profile', userId] as const,
+  riskProfile: (userId: string) => ["risk", "profile", userId] as const,
 };
 
 /**
@@ -116,7 +117,7 @@ export const cacheInvalidation = {
    */
   invalidateAllChat: (userId: string) => {
     return queryClient.invalidateQueries({
-      queryKey: ['chat'],
+      queryKey: ["chat"],
     });
   },
 
@@ -134,11 +135,19 @@ export const cacheInvalidation = {
    */
   invalidateUserData: (userId: string) => {
     return Promise.all([
-      queryClient.invalidateQueries({ queryKey: queryKeys.chatSessions(userId) }),
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.chatSessions(userId),
+      }),
       queryClient.invalidateQueries({ queryKey: queryKeys.portfolio(userId) }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.financialGoals(userId) }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.userPreferences(userId) }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.riskProfile(userId) }),
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.financialGoals(userId),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.userPreferences(userId),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.riskProfile(userId),
+      }),
     ]);
   },
 };
@@ -154,8 +163,10 @@ export const prefetchHelpers = {
     await queryClient.prefetchQuery({
       queryKey: queryKeys.chatSessions(userId),
       queryFn: async () => {
-        const response = await fetch(`/api/chat/financial/sessions?userId=${userId}`);
-        if (!response.ok) throw new Error('Failed to fetch sessions');
+        const response = await fetch(
+          `/api/chat/financial/sessions?userId=${userId}`,
+        );
+        if (!response.ok) throw new Error("Failed to fetch sessions");
         return response.json();
       },
     });
@@ -168,11 +179,12 @@ export const prefetchHelpers = {
     await queryClient.prefetchQuery({
       queryKey: queryKeys.chatMessages(sessionId),
       queryFn: async () => {
-        const response = await fetch(`/api/chat/financial/sessions/${sessionId}/messages`);
-        if (!response.ok) throw new Error('Failed to fetch messages');
+        const response = await fetch(
+          `/api/chat/financial/sessions/${sessionId}/messages`,
+        );
+        if (!response.ok) throw new Error("Failed to fetch messages");
         return response.json();
       },
     });
   },
 };
-

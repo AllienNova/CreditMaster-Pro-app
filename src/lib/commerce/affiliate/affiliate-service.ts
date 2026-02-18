@@ -4,7 +4,7 @@
  * Manages affiliate partners, referral codes, and user attribution.
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 import {
   Partner,
   CreatePartnerInput,
@@ -13,7 +13,7 @@ import {
   CreateReferralCodeInput,
   ReferralValidation,
   Attribution,
-} from './types';
+} from "./types";
 
 // =============================================================================
 // Configuration
@@ -58,10 +58,10 @@ class AffiliateService {
       commission_rate: input.commissionRate,
       commission_fixed: input.commissionFixed,
       min_payout: input.minPayout || 50,
-      payout_frequency: input.payoutFrequency || 'monthly',
-      payment_method: input.paymentMethod || 'stripe',
+      payout_frequency: input.payoutFrequency || "monthly",
+      payment_method: input.paymentMethod || "stripe",
       stripe_account_id: input.stripeAccountId,
-      regions: input.regions || ['US'],
+      regions: input.regions || ["US"],
       is_active: true,
       metadata: input.metadata,
       created_at: now.toISOString(),
@@ -69,7 +69,7 @@ class AffiliateService {
     };
 
     const { data, error } = await supabase
-      .from('affiliate_partners')
+      .from("affiliate_partners")
       .insert(partnerData)
       .select()
       .single();
@@ -90,25 +90,34 @@ class AffiliateService {
     };
 
     if (input.name !== undefined) updateData.name = input.name;
-    if (input.description !== undefined) updateData.description = input.description;
+    if (input.description !== undefined)
+      updateData.description = input.description;
     if (input.logoUrl !== undefined) updateData.logo_url = input.logoUrl;
-    if (input.websiteUrl !== undefined) updateData.website_url = input.websiteUrl;
-    if (input.apiEndpoint !== undefined) updateData.api_endpoint = input.apiEndpoint;
-    if (input.commissionType !== undefined) updateData.commission_type = input.commissionType;
-    if (input.commissionRate !== undefined) updateData.commission_rate = input.commissionRate;
-    if (input.commissionFixed !== undefined) updateData.commission_fixed = input.commissionFixed;
+    if (input.websiteUrl !== undefined)
+      updateData.website_url = input.websiteUrl;
+    if (input.apiEndpoint !== undefined)
+      updateData.api_endpoint = input.apiEndpoint;
+    if (input.commissionType !== undefined)
+      updateData.commission_type = input.commissionType;
+    if (input.commissionRate !== undefined)
+      updateData.commission_rate = input.commissionRate;
+    if (input.commissionFixed !== undefined)
+      updateData.commission_fixed = input.commissionFixed;
     if (input.minPayout !== undefined) updateData.min_payout = input.minPayout;
-    if (input.payoutFrequency !== undefined) updateData.payout_frequency = input.payoutFrequency;
-    if (input.paymentMethod !== undefined) updateData.payment_method = input.paymentMethod;
-    if (input.stripeAccountId !== undefined) updateData.stripe_account_id = input.stripeAccountId;
+    if (input.payoutFrequency !== undefined)
+      updateData.payout_frequency = input.payoutFrequency;
+    if (input.paymentMethod !== undefined)
+      updateData.payment_method = input.paymentMethod;
+    if (input.stripeAccountId !== undefined)
+      updateData.stripe_account_id = input.stripeAccountId;
     if (input.regions !== undefined) updateData.regions = input.regions;
     if (input.isActive !== undefined) updateData.is_active = input.isActive;
     if (input.metadata !== undefined) updateData.metadata = input.metadata;
 
     const { data, error } = await supabase
-      .from('affiliate_partners')
+      .from("affiliate_partners")
       .update(updateData)
-      .eq('id', id)
+      .eq("id", id)
       .select()
       .single();
 
@@ -124,13 +133,13 @@ class AffiliateService {
    */
   async getPartner(id: string): Promise<Partner | null> {
     const { data, error } = await supabase
-      .from('affiliate_partners')
+      .from("affiliate_partners")
       .select()
-      .eq('id', id)
+      .eq("id", id)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') return null;
+      if (error.code === "PGRST116") return null;
       throw new Error(`Failed to get partner: ${error.message}`);
     }
 
@@ -142,13 +151,13 @@ class AffiliateService {
    */
   async getPartnerBySlug(slug: string): Promise<Partner | null> {
     const { data, error } = await supabase
-      .from('affiliate_partners')
+      .from("affiliate_partners")
       .select()
-      .eq('slug', slug)
+      .eq("slug", slug)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') return null;
+      if (error.code === "PGRST116") return null;
       throw new Error(`Failed to get partner: ${error.message}`);
     }
 
@@ -163,19 +172,19 @@ class AffiliateService {
     isActive?: boolean;
     region?: string;
   }): Promise<Partner[]> {
-    let query = supabase.from('affiliate_partners').select();
+    let query = supabase.from("affiliate_partners").select();
 
     if (filters?.type) {
-      query = query.eq('type', filters.type);
+      query = query.eq("type", filters.type);
     }
     if (filters?.isActive !== undefined) {
-      query = query.eq('is_active', filters.isActive);
+      query = query.eq("is_active", filters.isActive);
     }
     if (filters?.region) {
-      query = query.contains('regions', [filters.region]);
+      query = query.contains("regions", [filters.region]);
     }
 
-    const { data, error } = await query.order('name');
+    const { data, error } = await query.order("name");
 
     if (error) {
       throw new Error(`Failed to list partners: ${error.message}`);
@@ -198,11 +207,15 @@ class AffiliateService {
   /**
    * Generate a unique referral code
    */
-  async generateReferralCode(input: CreateReferralCodeInput): Promise<ReferralCode> {
+  async generateReferralCode(
+    input: CreateReferralCodeInput,
+  ): Promise<ReferralCode> {
     const code = input.customCode || this.createUniqueCode();
     const expiresAt =
       input.expiresAt ||
-      new Date(Date.now() + DEFAULT_REFERRAL_EXPIRATION_DAYS * 24 * 60 * 60 * 1000);
+      new Date(
+        Date.now() + DEFAULT_REFERRAL_EXPIRATION_DAYS * 24 * 60 * 60 * 1000,
+      );
 
     const codeData = {
       code,
@@ -217,14 +230,14 @@ class AffiliateService {
     };
 
     const { data, error } = await supabase
-      .from('referral_codes')
+      .from("referral_codes")
       .insert(codeData)
       .select()
       .single();
 
     if (error) {
       // Handle duplicate code
-      if (error.code === '23505') {
+      if (error.code === "23505") {
         // Retry with new code
         return this.generateReferralCode({
           ...input,
@@ -242,28 +255,28 @@ class AffiliateService {
    */
   async validateReferralCode(code: string): Promise<ReferralValidation> {
     const { data, error } = await supabase
-      .from('referral_codes')
+      .from("referral_codes")
       .select()
-      .eq('code', code.toUpperCase())
+      .eq("code", code.toUpperCase())
       .single();
 
     if (error || !data) {
-      return { valid: false, error: 'Invalid referral code' };
+      return { valid: false, error: "Invalid referral code" };
     }
 
     // Check if active
     if (!data.is_active) {
-      return { valid: false, error: 'Referral code is no longer active' };
+      return { valid: false, error: "Referral code is no longer active" };
     }
 
     // Check expiration
     if (data.expires_at && new Date(data.expires_at) < new Date()) {
-      return { valid: false, error: 'Referral code has expired' };
+      return { valid: false, error: "Referral code has expired" };
     }
 
     // Check max uses
     if (data.max_uses && data.uses_count >= data.max_uses) {
-      return { valid: false, error: 'Referral code has reached maximum uses' };
+      return { valid: false, error: "Referral code has reached maximum uses" };
     }
 
     return {
@@ -284,9 +297,9 @@ class AffiliateService {
 
     // Increment usage count
     await supabase
-      .from('referral_codes')
+      .from("referral_codes")
       .update({ uses_count: (validation.code!.usesCount || 0) + 1 })
-      .eq('code', code.toUpperCase());
+      .eq("code", code.toUpperCase());
 
     // Create attribution record
     await this.createAttribution({
@@ -303,11 +316,11 @@ class AffiliateService {
    */
   async getUserReferralCodes(userId: string): Promise<ReferralCode[]> {
     const { data, error } = await supabase
-      .from('referral_codes')
+      .from("referral_codes")
       .select()
-      .eq('user_id', userId)
-      .eq('is_active', true)
-      .order('created_at', { ascending: false });
+      .eq("user_id", userId)
+      .eq("is_active", true)
+      .order("created_at", { ascending: false });
 
     if (error) {
       throw new Error(`Failed to get referral codes: ${error.message}`);
@@ -321,9 +334,9 @@ class AffiliateService {
    */
   async deactivateReferralCode(code: string): Promise<void> {
     const { error } = await supabase
-      .from('referral_codes')
+      .from("referral_codes")
       .update({ is_active: false })
-      .eq('code', code.toUpperCase());
+      .eq("code", code.toUpperCase());
 
     if (error) {
       throw new Error(`Failed to deactivate referral code: ${error.message}`);
@@ -346,7 +359,7 @@ class AffiliateService {
     clickId?: string;
   }): Promise<Attribution> {
     const expiresAt = new Date(
-      Date.now() + ATTRIBUTION_WINDOW_DAYS * 24 * 60 * 60 * 1000
+      Date.now() + ATTRIBUTION_WINDOW_DAYS * 24 * 60 * 60 * 1000,
     );
 
     const attributionData = {
@@ -363,9 +376,9 @@ class AffiliateService {
 
     // Use upsert to handle existing attribution
     const { data: result, error } = await supabase
-      .from('user_attributions')
+      .from("user_attributions")
       .upsert(attributionData, {
-        onConflict: 'user_id',
+        onConflict: "user_id",
         ignoreDuplicates: false,
       })
       .select()
@@ -383,13 +396,13 @@ class AffiliateService {
    */
   async getUserAttribution(userId: string): Promise<Attribution | null> {
     const { data, error } = await supabase
-      .from('user_attributions')
+      .from("user_attributions")
       .select()
-      .eq('user_id', userId)
+      .eq("user_id", userId)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') return null;
+      if (error.code === "PGRST116") return null;
       throw new Error(`Failed to get attribution: ${error.message}`);
     }
 
@@ -406,9 +419,9 @@ class AffiliateService {
    */
   async updateLastClick(userId: string, clickId: string): Promise<void> {
     const { error } = await supabase
-      .from('user_attributions')
+      .from("user_attributions")
       .update({ last_click_id: clickId })
-      .eq('user_id', userId);
+      .eq("user_id", userId);
 
     if (error) {
       // AffiliateService error: Failed to update last click
@@ -431,8 +444,8 @@ class AffiliateService {
    * Create a unique referral code
    */
   private createUniqueCode(): string {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Removed ambiguous chars
-    let code = '';
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Removed ambiguous chars
+    let code = "";
     for (let i = 0; i < 8; i++) {
       code += chars.charAt(Math.floor(Math.random() * chars.length));
     }
@@ -447,17 +460,17 @@ class AffiliateService {
       id: row.id as string,
       name: row.name as string,
       slug: row.slug as string,
-      type: row.type as Partner['type'],
+      type: row.type as Partner["type"],
       description: row.description as string | undefined,
       logoUrl: row.logo_url as string | undefined,
       websiteUrl: row.website_url as string | undefined,
       apiEndpoint: row.api_endpoint as string | undefined,
-      commissionType: row.commission_type as Partner['commissionType'],
+      commissionType: row.commission_type as Partner["commissionType"],
       commissionRate: row.commission_rate as number | undefined,
       commissionFixed: row.commission_fixed as number | undefined,
       minPayout: row.min_payout as number,
-      payoutFrequency: row.payout_frequency as Partner['payoutFrequency'],
-      paymentMethod: row.payment_method as Partner['paymentMethod'],
+      payoutFrequency: row.payout_frequency as Partner["payoutFrequency"],
+      paymentMethod: row.payment_method as Partner["paymentMethod"],
       stripeAccountId: row.stripe_account_id as string | undefined,
       regions: row.regions as string[],
       isActive: row.is_active as boolean,
@@ -479,7 +492,9 @@ class AffiliateService {
       campaignId: row.campaign_id as string | undefined,
       usesCount: row.uses_count as number,
       maxUses: row.max_uses as number | undefined,
-      expiresAt: row.expires_at ? new Date(row.expires_at as string) : undefined,
+      expiresAt: row.expires_at
+        ? new Date(row.expires_at as string)
+        : undefined,
       isActive: row.is_active as boolean,
       createdAt: new Date(row.created_at as string),
     };
@@ -498,7 +513,9 @@ class AffiliateService {
       firstClickId: row.first_click_id as string | undefined,
       lastClickId: row.last_click_id as string | undefined,
       attributedAt: new Date(row.attributed_at as string),
-      expiresAt: row.expires_at ? new Date(row.expires_at as string) : undefined,
+      expiresAt: row.expires_at
+        ? new Date(row.expires_at as string)
+        : undefined,
     };
   }
 }

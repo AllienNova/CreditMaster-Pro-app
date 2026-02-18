@@ -10,33 +10,33 @@
  * - AI insights
  */
 
-import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
-import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Notifications from "expo-notifications";
+import * as Device from "expo-device";
+import { Platform } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 export type NotificationType =
-  | 'credit_score_change'
-  | 'bill_reminder'
-  | 'bill_due_today'
-  | 'bill_overdue'
-  | 'budget_warning'
-  | 'budget_exceeded'
-  | 'security_alert'
-  | 'transaction_alert'
-  | 'market_update'
-  | 'price_alert'
-  | 'goal_milestone'
-  | 'ai_insight'
-  | 'subscription_renewal'
-  | 'weekly_summary'
-  | 'system';
+  | "credit_score_change"
+  | "bill_reminder"
+  | "bill_due_today"
+  | "bill_overdue"
+  | "budget_warning"
+  | "budget_exceeded"
+  | "security_alert"
+  | "transaction_alert"
+  | "market_update"
+  | "price_alert"
+  | "goal_milestone"
+  | "ai_insight"
+  | "subscription_renewal"
+  | "weekly_summary"
+  | "system";
 
-export type NotificationPriority = 'low' | 'default' | 'high' | 'critical';
+export type NotificationPriority = "low" | "default" | "high" | "critical";
 
 export interface NotificationPayload {
   type: NotificationType;
@@ -58,9 +58,9 @@ export interface NotificationPreferences {
     end: string; // HH:mm
   };
   frequency: {
-    billReminders: 'daily' | 'day_before' | 'week_before' | 'all';
-    budgetAlerts: 'always' | 'daily_summary' | 'weekly_summary';
-    marketUpdates: 'realtime' | 'daily' | 'weekly' | 'off';
+    billReminders: "daily" | "day_before" | "week_before" | "all";
+    budgetAlerts: "always" | "daily_summary" | "weekly_summary";
+    marketUpdates: "realtime" | "daily" | "weekly" | "off";
   };
 }
 
@@ -70,7 +70,7 @@ export interface ScheduledNotification {
   scheduledFor: Date;
   payload: NotificationPayload;
   recurring?: {
-    interval: 'daily' | 'weekly' | 'monthly';
+    interval: "daily" | "weekly" | "monthly";
     dayOfWeek?: number;
     dayOfMonth?: number;
     time: string;
@@ -91,9 +91,9 @@ export interface NotificationHistory {
 // CONSTANTS
 // ============================================================================
 
-const PUSH_TOKEN_KEY = '@fynvita_push_token';
-const NOTIFICATION_PREFS_KEY = '@fynvita_notification_prefs';
-const NOTIFICATION_HISTORY_KEY = '@fynvita_notification_history';
+const PUSH_TOKEN_KEY = "@fynvita_push_token";
+const NOTIFICATION_PREFS_KEY = "@fynvita_notification_prefs";
+const NOTIFICATION_HISTORY_KEY = "@fynvita_notification_history";
 
 const DEFAULT_PREFERENCES: NotificationPreferences = {
   enabled: true,
@@ -116,52 +116,52 @@ const DEFAULT_PREFERENCES: NotificationPreferences = {
   },
   quietHours: {
     enabled: true,
-    start: '22:00',
-    end: '08:00',
+    start: "22:00",
+    end: "08:00",
   },
   frequency: {
-    billReminders: 'day_before',
-    budgetAlerts: 'always',
-    marketUpdates: 'daily',
+    billReminders: "day_before",
+    budgetAlerts: "always",
+    marketUpdates: "daily",
   },
 };
 
 const NOTIFICATION_CHANNELS = {
   credit: {
-    id: 'credit-alerts',
-    name: 'Credit Alerts',
+    id: "credit-alerts",
+    name: "Credit Alerts",
     importance: Notifications.AndroidImportance.HIGH,
-    sound: 'default',
+    sound: "default",
   },
   bills: {
-    id: 'bill-reminders',
-    name: 'Bill Reminders',
+    id: "bill-reminders",
+    name: "Bill Reminders",
     importance: Notifications.AndroidImportance.HIGH,
-    sound: 'default',
+    sound: "default",
   },
   budget: {
-    id: 'budget-alerts',
-    name: 'Budget Alerts',
+    id: "budget-alerts",
+    name: "Budget Alerts",
     importance: Notifications.AndroidImportance.DEFAULT,
-    sound: 'default',
+    sound: "default",
   },
   security: {
-    id: 'security-alerts',
-    name: 'Security Alerts',
+    id: "security-alerts",
+    name: "Security Alerts",
     importance: Notifications.AndroidImportance.MAX,
-    sound: 'alarm',
+    sound: "alarm",
   },
   market: {
-    id: 'market-updates',
-    name: 'Market Updates',
+    id: "market-updates",
+    name: "Market Updates",
     importance: Notifications.AndroidImportance.LOW,
     sound: null,
   },
   general: {
-    id: 'general',
-    name: 'General',
+    id: "general",
+    name: "General",
     importance: Notifications.AndroidImportance.DEFAULT,
-    sound: 'default',
+    sound: "default",
   },
 };
 
@@ -189,7 +189,7 @@ class PushNotificationService {
     });
 
     // Set up Android notification channels
-    if (Platform.OS === 'android') {
+    if (Platform.OS === "android") {
       await this.setupAndroidChannels();
     }
 
@@ -211,7 +211,7 @@ class PushNotificationService {
   async registerForPushNotifications(): Promise<string | null> {
     if (!Device.isDevice) {
       if (__DEV__) {
-        console.log('Push notifications require a physical device');
+        console.log("Push notifications require a physical device");
       }
       return null;
     }
@@ -222,14 +222,14 @@ class PushNotificationService {
     let finalStatus = existingStatus;
 
     // Request permission if not granted
-    if (existingStatus !== 'granted') {
+    if (existingStatus !== "granted") {
       const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
     }
 
-    if (finalStatus !== 'granted') {
+    if (finalStatus !== "granted") {
       if (__DEV__) {
-        console.log('Push notification permission denied');
+        console.log("Push notification permission denied");
       }
       return null;
     }
@@ -245,7 +245,7 @@ class PushNotificationService {
 
       return this.pushToken;
     } catch (error) {
-      if (__DEV__) console.error('Failed to get push token:', error);
+      if (__DEV__) console.error("Failed to get push token:", error);
       return null;
     }
   }
@@ -261,7 +261,7 @@ class PushNotificationService {
    * Send local notification
    */
   async sendLocalNotification(
-    payload: NotificationPayload
+    payload: NotificationPayload,
   ): Promise<string | null> {
     // Check if notifications are enabled for this type
     if (!this.shouldSendNotification(payload.type)) {
@@ -269,7 +269,7 @@ class PushNotificationService {
     }
 
     // Check quiet hours
-    if (this.isQuietHours() && payload.priority !== 'critical') {
+    if (this.isQuietHours() && payload.priority !== "critical") {
       return null;
     }
 
@@ -284,7 +284,7 @@ class PushNotificationService {
           ...payload.data,
         },
         badge: payload.badge,
-        sound: payload.sound || 'default',
+        sound: payload.sound || "default",
         categoryIdentifier: payload.categoryId,
       },
       trigger: null, // Immediate
@@ -311,7 +311,7 @@ class PushNotificationService {
     trigger:
       | Date
       | { seconds: number }
-      | { repeats: boolean; hour: number; minute: number }
+      | { repeats: boolean; hour: number; minute: number },
   ): Promise<string | null> {
     if (!this.shouldSendNotification(payload.type)) {
       return null;
@@ -321,7 +321,7 @@ class PushNotificationService {
 
     if (trigger instanceof Date) {
       notificationTrigger = { date: trigger };
-    } else if ('seconds' in trigger) {
+    } else if ("seconds" in trigger) {
       notificationTrigger = { seconds: trigger.seconds };
     } else {
       notificationTrigger = {
@@ -339,7 +339,7 @@ class PushNotificationService {
           type: payload.type,
           ...payload.data,
         },
-        sound: payload.sound || 'default',
+        sound: payload.sound || "default",
       },
       trigger: notificationTrigger,
     });
@@ -380,17 +380,17 @@ class PushNotificationService {
   async notifyCreditScoreChange(
     previousScore: number,
     newScore: number,
-    changeReason?: string
+    changeReason?: string,
   ): Promise<void> {
     const change = newScore - previousScore;
-    const direction = change > 0 ? 'increased' : 'decreased';
-    const emoji = change > 0 ? '📈' : '📉';
+    const direction = change > 0 ? "increased" : "decreased";
+    const emoji = change > 0 ? "📈" : "📉";
 
     await this.sendLocalNotification({
-      type: 'credit_score_change',
+      type: "credit_score_change",
       title: `${emoji} Credit Score ${direction.charAt(0).toUpperCase() + direction.slice(1)}`,
-      body: `Your score ${direction} by ${Math.abs(change)} points to ${newScore}${changeReason ? `. ${changeReason}` : ''}`,
-      priority: Math.abs(change) >= 20 ? 'high' : 'default',
+      body: `Your score ${direction} by ${Math.abs(change)} points to ${newScore}${changeReason ? `. ${changeReason}` : ""}`,
+      priority: Math.abs(change) >= 20 ? "high" : "default",
       data: { previousScore, newScore, change },
     });
   }
@@ -402,28 +402,28 @@ class PushNotificationService {
     billName: string,
     amount: number,
     dueDate: Date,
-    daysUntilDue: number
+    daysUntilDue: number,
   ): Promise<void> {
     let title: string;
     let type: NotificationType;
-    let priority: NotificationPriority = 'default';
+    let priority: NotificationPriority = "default";
 
     if (daysUntilDue < 0) {
-      type = 'bill_overdue';
-      title = '⚠️ Bill Overdue';
-      priority = 'high';
+      type = "bill_overdue";
+      title = "⚠️ Bill Overdue";
+      priority = "high";
     } else if (daysUntilDue === 0) {
-      type = 'bill_due_today';
-      title = '📅 Bill Due Today';
-      priority = 'high';
+      type = "bill_due_today";
+      title = "📅 Bill Due Today";
+      priority = "high";
     } else {
-      type = 'bill_reminder';
-      title = '💳 Upcoming Bill';
+      type = "bill_reminder";
+      title = "💳 Upcoming Bill";
     }
 
-    const formattedAmount = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    const formattedAmount = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(amount);
 
     const body =
@@ -448,15 +448,15 @@ class PushNotificationService {
   async notifyBudgetAlert(
     category: string,
     percentUsed: number,
-    remaining: number
+    remaining: number,
   ): Promise<void> {
     const type: NotificationType =
-      percentUsed >= 100 ? 'budget_exceeded' : 'budget_warning';
-    const emoji = percentUsed >= 100 ? '🚨' : '⚠️';
+      percentUsed >= 100 ? "budget_exceeded" : "budget_warning";
+    const emoji = percentUsed >= 100 ? "🚨" : "⚠️";
 
-    const formattedRemaining = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    const formattedRemaining = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(Math.abs(remaining));
 
     const title =
@@ -473,7 +473,7 @@ class PushNotificationService {
       type,
       title,
       body,
-      priority: percentUsed >= 100 ? 'high' : 'default',
+      priority: percentUsed >= 100 ? "high" : "default",
       data: { category, percentUsed, remaining },
     });
   }
@@ -482,20 +482,20 @@ class PushNotificationService {
    * Send security alert notification
    */
   async notifySecurityAlert(
-    alertType: 'new_device' | 'password_change' | 'suspicious_activity',
-    details: string
+    alertType: "new_device" | "password_change" | "suspicious_activity",
+    details: string,
   ): Promise<void> {
     const titles: Record<string, string> = {
-      new_device: '🔐 New Device Sign-in',
-      password_change: '🔑 Password Changed',
-      suspicious_activity: '🚨 Suspicious Activity Detected',
+      new_device: "🔐 New Device Sign-in",
+      password_change: "🔑 Password Changed",
+      suspicious_activity: "🚨 Suspicious Activity Detected",
     };
 
     await this.sendLocalNotification({
-      type: 'security_alert',
+      type: "security_alert",
       title: titles[alertType],
       body: details,
-      priority: 'critical',
+      priority: "critical",
       data: { alertType },
     });
   }
@@ -505,10 +505,10 @@ class PushNotificationService {
    */
   async notifyAIInsight(insight: string, category: string): Promise<void> {
     await this.sendLocalNotification({
-      type: 'ai_insight',
-      title: '💡 Financial Insight',
+      type: "ai_insight",
+      title: "💡 Financial Insight",
       body: insight,
-      priority: 'low',
+      priority: "low",
       data: { category },
     });
   }
@@ -528,12 +528,12 @@ class PushNotificationService {
    * Update notification preferences
    */
   async updatePreferences(
-    updates: Partial<NotificationPreferences>
+    updates: Partial<NotificationPreferences>,
   ): Promise<void> {
     this.preferences = { ...this.preferences, ...updates };
     await AsyncStorage.setItem(
       NOTIFICATION_PREFS_KEY,
-      JSON.stringify(this.preferences)
+      JSON.stringify(this.preferences),
     );
   }
 
@@ -542,7 +542,7 @@ class PushNotificationService {
    */
   async toggleNotificationType(
     type: NotificationType,
-    enabled: boolean
+    enabled: boolean,
   ): Promise<void> {
     this.preferences.types[type] = enabled;
     await this.updatePreferences({ types: this.preferences.types });
@@ -563,7 +563,7 @@ class PushNotificationService {
         return history.slice(0, limit);
       }
     } catch (error) {
-      if (__DEV__) console.error('Failed to get notification history:', error);
+      if (__DEV__) console.error("Failed to get notification history:", error);
     }
     return [];
   }
@@ -579,11 +579,11 @@ class PushNotificationService {
         history[index].read = true;
         await AsyncStorage.setItem(
           NOTIFICATION_HISTORY_KEY,
-          JSON.stringify(history)
+          JSON.stringify(history),
         );
       }
     } catch (error) {
-      if (__DEV__) console.error('Failed to mark notification as read:', error);
+      if (__DEV__) console.error("Failed to mark notification as read:", error);
     }
   }
 
@@ -621,7 +621,7 @@ class PushNotificationService {
         importance: channel.importance,
         sound: channel.sound,
         vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#3B82F6',
+        lightColor: "#3B82F6",
       });
     }
   }
@@ -631,9 +631,9 @@ class PushNotificationService {
     this.notificationListener = Notifications.addNotificationReceivedListener(
       (notification) => {
         if (__DEV__) {
-          console.log('Notification received:', notification);
+          console.log("Notification received:", notification);
         }
-      }
+      },
     );
 
     // Handle notification taps
@@ -641,7 +641,7 @@ class PushNotificationService {
       Notifications.addNotificationResponseReceivedListener((response) => {
         const data = response.notification.request.content.data;
         if (__DEV__) {
-          console.log('Notification tapped:', data);
+          console.log("Notification tapped:", data);
         }
         // Handle navigation based on notification type
         this.handleNotificationTap(data);
@@ -665,7 +665,8 @@ class PushNotificationService {
         this.preferences = { ...DEFAULT_PREFERENCES, ...JSON.parse(stored) };
       }
     } catch (error) {
-      if (__DEV__) console.error('Failed to load notification preferences:', error);
+      if (__DEV__)
+        console.error("Failed to load notification preferences:", error);
     }
   }
 
@@ -679,7 +680,7 @@ class PushNotificationService {
     }
 
     const now = new Date();
-    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    const currentTime = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
 
     const { start, end } = this.preferences.quietHours;
 
@@ -722,10 +723,11 @@ class PushNotificationService {
       const trimmed = history.slice(0, 100);
       await AsyncStorage.setItem(
         NOTIFICATION_HISTORY_KEY,
-        JSON.stringify(trimmed)
+        JSON.stringify(trimmed),
       );
     } catch (error) {
-      if (__DEV__) console.error('Failed to add notification to history:', error);
+      if (__DEV__)
+        console.error("Failed to add notification to history:", error);
     }
   }
 }

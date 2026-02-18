@@ -1,11 +1,11 @@
-import { Suspense } from 'react';
-import { Metadata } from 'next';
-import NetWorthTracker from '@/components/financial/NetWorthTracker';
+import { Suspense } from "react";
+import { Metadata } from "next";
+import NetWorthTracker from "@/components/financial/NetWorthTracker";
 
 export const metadata: Metadata = {
-  title: 'Net Worth Tracker | Fynvita',
+  title: "Net Worth Tracker | Fynvita",
   description:
-    'Track your net worth over time with detailed asset and liability breakdowns',
+    "Track your net worth over time with detailed asset and liability breakdowns",
 };
 
 function NetWorthLoadingSkeleton() {

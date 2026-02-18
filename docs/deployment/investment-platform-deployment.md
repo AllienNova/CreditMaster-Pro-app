@@ -124,8 +124,8 @@ psql $DATABASE_URL
 
 ```sql
 -- Check that all tables exist
-SELECT table_name FROM information_schema.tables 
-WHERE table_schema = 'public' 
+SELECT table_name FROM information_schema.tables
+WHERE table_schema = 'public'
 AND table_name LIKE 'cpfi_%';
 ```
 
@@ -133,9 +133,9 @@ AND table_name LIKE 'cpfi_%';
 
 ```sql
 -- Verify RLS is enabled
-SELECT tablename, rowsecurity 
-FROM pg_tables 
-WHERE schemaname = 'public' 
+SELECT tablename, rowsecurity
+FROM pg_tables
+WHERE schemaname = 'public'
 AND tablename LIKE 'cpfi_%';
 ```
 
@@ -154,7 +154,7 @@ AND tablename LIKE 'cpfi_%';
 
 ```typescript
 // lib/redis.ts
-import { Redis } from '@upstash/redis';
+import { Redis } from "@upstash/redis";
 
 export const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL!,
@@ -200,8 +200,8 @@ curl -X POST $UPSTASH_REDIS_REST_URL/set/test/value \
 
 ```typescript
 // app/api/investments/route.ts
-export const runtime = 'edge';
-export const preferredRegion = 'iad1'; // US East
+export const runtime = "edge";
+export const preferredRegion = "iad1"; // US East
 ```
 
 ### 2. Configure Caching
@@ -212,11 +212,11 @@ module.exports = {
   async headers() {
     return [
       {
-        source: '/api/investments/:path*',
+        source: "/api/investments/:path*",
         headers: [
           {
-            key: 'Cache-Control',
-            value: 'public, s-maxage=60, stale-while-revalidate=120',
+            key: "Cache-Control",
+            value: "public, s-maxage=60, stale-while-revalidate=120",
           },
         ],
       },
@@ -246,7 +246,7 @@ npm install @sentry/nextjs
 
 ```typescript
 // sentry.client.config.ts
-import * as Sentry from '@sentry/nextjs';
+import * as Sentry from "@sentry/nextjs";
 
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
@@ -278,8 +278,8 @@ export default function RootLayout({ children }) {
 ```typescript
 // lib/metrics.ts
 export async function trackMetric(name: string, value: number) {
-  await fetch('/api/metrics', {
-    method: 'POST',
+  await fetch("/api/metrics", {
+    method: "POST",
     body: JSON.stringify({ name, value }),
   });
 }
@@ -301,20 +301,24 @@ export async function GET() {
     marketData: await checkMarketData(),
   };
 
-  const healthy = Object.values(checks).every(c => c.status === 'ok');
+  const healthy = Object.values(checks).every((c) => c.status === "ok");
 
-  return Response.json({
-    status: healthy ? 'healthy' : 'degraded',
-    checks,
-  }, {
-    status: healthy ? 200 : 503,
-  });
+  return Response.json(
+    {
+      status: healthy ? "healthy" : "degraded",
+      checks,
+    },
+    {
+      status: healthy ? 200 : 503,
+    },
+  );
 }
 ```
 
 ### 2. Configure Uptime Monitoring
 
 Use services like:
+
 - Vercel Monitoring
 - UptimeRobot
 - Pingdom
@@ -354,4 +358,3 @@ vercel rollback <deployment-url>
 ## Support
 
 For deployment issues, contact: devops@creditmaster-pro.com
-

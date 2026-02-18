@@ -5,17 +5,17 @@
  * Target Coverage: 90%+
  */
 
-import { FinancialCoach, setAIMLService } from '../financial-coach';
-import { AIMLService } from '@/lib/aiml-service';
-import { financialContextEngine } from '@/lib/financial/financial-context-engine';
-import { FinancialContext } from '@/lib/financial/types/financial-context.types';
+import { FinancialCoach, setAIMLService } from "../financial-coach";
+import { AIMLService } from "@/lib/aiml-service";
+import { financialContextEngine } from "@/lib/financial/financial-context-engine";
+import { FinancialContext } from "@/lib/financial/types/financial-context.types";
 
 // ============================================================================
 // MOCKS
 // ============================================================================
 
 // Mock Financial Context Engine
-jest.mock('@/lib/financial/financial-context-engine', () => ({
+jest.mock("@/lib/financial/financial-context-engine", () => ({
   financialContextEngine: {
     getFinancialContext: jest.fn(),
   },
@@ -27,15 +27,15 @@ jest.mock('@/lib/financial/financial-context-engine', () => ({
 
 const mockFinancialContext: FinancialContext = {
   user: {
-    id: 'test-user-123',
-    email: 'test@example.com',
-    fullName: 'Test User',
-    subscriptionTier: 'premium',
+    id: "test-user-123",
+    email: "test@example.com",
+    fullName: "Test User",
+    subscriptionTier: "premium",
     createdAt: new Date(),
     onboardingCompleted: true,
     preferences: {
-      currency: 'USD',
-      timezone: 'America/New_York',
+      currency: "USD",
+      timezone: "America/New_York",
       budgetAlertThreshold: 80,
       goalRemindersEnabled: true,
       insightNotificationsEnabled: true,
@@ -59,16 +59,51 @@ const mockFinancialContext: FinancialContext = {
     totalExpenses: -3500,
     netCashFlow: 1500,
     byCategory: [
-      { category: 'dining', amount: -600, percentage: 15, transactionCount: 15, trend: 'stable' as const, changeFromLastPeriod: 0 },
-      { category: 'groceries', amount: -500, percentage: 12.5, transactionCount: 8, trend: 'stable' as const, changeFromLastPeriod: 0 },
-      { category: 'rent', amount: -1500, percentage: 37.5, transactionCount: 1, trend: 'stable' as const, changeFromLastPeriod: 0 },
-      { category: 'utilities', amount: -200, percentage: 5, transactionCount: 3, trend: 'stable' as const, changeFromLastPeriod: 0 },
-      { category: 'transportation', amount: -300, percentage: 7.5, transactionCount: 10, trend: 'stable' as const, changeFromLastPeriod: 0 },
+      {
+        category: "dining",
+        amount: -600,
+        percentage: 15,
+        transactionCount: 15,
+        trend: "stable" as const,
+        changeFromLastPeriod: 0,
+      },
+      {
+        category: "groceries",
+        amount: -500,
+        percentage: 12.5,
+        transactionCount: 8,
+        trend: "stable" as const,
+        changeFromLastPeriod: 0,
+      },
+      {
+        category: "rent",
+        amount: -1500,
+        percentage: 37.5,
+        transactionCount: 1,
+        trend: "stable" as const,
+        changeFromLastPeriod: 0,
+      },
+      {
+        category: "utilities",
+        amount: -200,
+        percentage: 5,
+        transactionCount: 3,
+        trend: "stable" as const,
+        changeFromLastPeriod: 0,
+      },
+      {
+        category: "transportation",
+        amount: -300,
+        percentage: 7.5,
+        transactionCount: 10,
+        trend: "stable" as const,
+        changeFromLastPeriod: 0,
+      },
     ],
     byMerchant: [],
     period: {
-      startDate: new Date('2024-01-01'),
-      endDate: new Date('2024-01-31'),
+      startDate: new Date("2024-01-01"),
+      endDate: new Date("2024-01-31"),
       daysIncluded: 31,
     },
   },
@@ -78,21 +113,21 @@ const mockFinancialContext: FinancialContext = {
     debtToIncomeRatio: 0.16,
     averageInterestRate: 12.0,
     payoffStrategies: [],
-    projectedPayoffDate: new Date('2026-01-01'),
+    projectedPayoffDate: new Date("2026-01-01"),
     totalInterestSaved: 0,
     debts: [
       {
-        id: 'debt-1',
-        name: 'Credit Card',
-        type: 'credit_card' as const,
+        id: "debt-1",
+        name: "Credit Card",
+        type: "credit_card" as const,
         balance: 3000,
         interestRate: 18.5,
         minimumPayment: 90,
       },
       {
-        id: 'debt-2',
-        name: 'Student Loan',
-        type: 'student_loan' as const,
+        id: "debt-2",
+        name: "Student Loan",
+        type: "student_loan" as const,
         balance: 5000,
         interestRate: 5.5,
         minimumPayment: 150,
@@ -101,14 +136,14 @@ const mockFinancialContext: FinancialContext = {
   },
   budgets: [
     {
-      id: 'budget-1',
-      category: 'dining',
+      id: "budget-1",
+      category: "dining",
       budgetedAmount: 400,
       spentAmount: 600,
       remainingAmount: -200,
       percentUsed: 150,
-      period: 'monthly' as const,
-      status: 'over_budget' as const,
+      period: "monthly" as const,
+      status: "over_budget" as const,
       daysRemaining: 15,
       projectedOverage: 200,
       rolloverEnabled: false,
@@ -118,15 +153,30 @@ const mockFinancialContext: FinancialContext = {
   goals: [],
   healthScore: {
     overallScore: 65,
-    grade: 'D' as const,
+    grade: "D" as const,
     breakdown: {
-      savings: { score: 60, weight: 0.25, status: 'fair' as const, factors: [] },
-      debt: { score: 70, weight: 0.25, status: 'good' as const, factors: [] },
-      spending: { score: 65, weight: 0.2, status: 'fair' as const, factors: [] },
-      credit: { score: 60, weight: 0.2, status: 'fair' as const, factors: [] },
-      insurance: { score: 70, weight: 0.1, status: 'good' as const, factors: [] },
+      savings: {
+        score: 60,
+        weight: 0.25,
+        status: "fair" as const,
+        factors: [],
+      },
+      debt: { score: 70, weight: 0.25, status: "good" as const, factors: [] },
+      spending: {
+        score: 65,
+        weight: 0.2,
+        status: "fair" as const,
+        factors: [],
+      },
+      credit: { score: 60, weight: 0.2, status: "fair" as const, factors: [] },
+      insurance: {
+        score: 70,
+        weight: 0.1,
+        status: "good" as const,
+        factors: [],
+      },
     },
-    trend: 'stable' as const,
+    trend: "stable" as const,
     calculatedAt: new Date(),
   },
   investments: {
@@ -143,7 +193,7 @@ const mockFinancialContext: FinancialContext = {
   creditProfile: {
     currentScore: 680,
     scoreChange: 5,
-    scoreChangeDirection: 'up' as const,
+    scoreChangeDirection: "up" as const,
     lastUpdated: new Date(),
     scoreHistory: [],
     factors: [],
@@ -162,16 +212,17 @@ const mockAIAnalysisResponse = {
       message: {
         content: JSON.stringify({
           behavioralInsights: [
-            'You are spending 12% of income on dining out, which is above the recommended 10%',
-            'Your savings rate of 30% is excellent and shows strong financial discipline',
-            'You have high-interest credit card debt that should be prioritized',
+            "You are spending 12% of income on dining out, which is above the recommended 10%",
+            "Your savings rate of 30% is excellent and shows strong financial discipline",
+            "You have high-interest credit card debt that should be prioritized",
           ],
           nextSteps: [
-            'Save $1,000 emergency fund (Baby Step 1)',
-            'Pay off credit card debt using debt snowball method',
-            'Reduce dining out expenses by $200/month',
+            "Save $1,000 emergency fund (Baby Step 1)",
+            "Pay off credit card debt using debt snowball method",
+            "Reduce dining out expenses by $200/month",
           ],
-          encouragement: 'You\'re doing great with your savings rate! Let\'s tackle that credit card debt next.',
+          encouragement:
+            "You're doing great with your savings rate! Let's tackle that credit card debt next.",
         }),
       },
     },
@@ -187,29 +238,33 @@ const mockActionPlanResponse = {
           targetBabyStep: 3,
           milestones: [
             {
-              id: 'milestone-1',
+              id: "milestone-1",
               babyStep: 1,
-              title: 'Save $1,000 Emergency Fund',
-              description: 'Build starter emergency fund',
+              title: "Save $1,000 Emergency Fund",
+              description: "Build starter emergency fund",
               targetAmount: 1000,
-              actions: ['Save $250/week', 'Sell unused items', 'Cut dining budget'],
+              actions: [
+                "Save $250/week",
+                "Sell unused items",
+                "Cut dining budget",
+              ],
               completed: false,
             },
           ],
           weeklyActions: [
-            'Track every dollar spent',
-            'Review budget progress',
-            'Find extra income opportunities',
+            "Track every dollar spent",
+            "Review budget progress",
+            "Find extra income opportunities",
           ],
           monthlyReviews: [
-            'Review Baby Step progress',
-            'Adjust budget categories',
-            'Celebrate milestones achieved',
+            "Review Baby Step progress",
+            "Adjust budget categories",
+            "Celebrate milestones achieved",
           ],
           celebrationPoints: [
-            'First $100 saved',
-            'First debt paid off',
-            'Emergency fund complete',
+            "First $100 saved",
+            "First debt paid off",
+            "Emergency fund complete",
           ],
         }),
       },
@@ -223,18 +278,20 @@ const mockAdviceResponse = {
     {
       message: {
         content: JSON.stringify({
-          answer: 'Based on your $5,000 monthly income and $3,500 expenses, you should focus on Baby Step 1 first. Save $1,000 as quickly as possible for your starter emergency fund.',
+          answer:
+            "Based on your $5,000 monthly income and $3,500 expenses, you should focus on Baby Step 1 first. Save $1,000 as quickly as possible for your starter emergency fund.",
           relevantBabyStep: 1,
           actionSteps: [
-            'Open a separate savings account for emergency fund',
-            'Set up automatic transfer of $250/week',
-            'Cut dining budget by $200/month',
+            "Open a separate savings account for emergency fund",
+            "Set up automatic transfer of $250/week",
+            "Cut dining budget by $200/month",
           ],
           resources: [
-            'Dave Ramsey Baby Steps Guide',
-            'Emergency Fund Calculator',
+            "Dave Ramsey Baby Steps Guide",
+            "Emergency Fund Calculator",
           ],
-          encouragement: 'You can do this! With your current cash flow, you can have your $1,000 saved in just 4 weeks!',
+          encouragement:
+            "You can do this! With your current cash flow, you can have your $1,000 saved in just 4 weeks!",
         }),
       },
     },
@@ -246,7 +303,7 @@ const mockAdviceResponse = {
 // TEST SUITE
 // ============================================================================
 
-describe('FinancialCoach', () => {
+describe("FinancialCoach", () => {
   let coach: FinancialCoach;
   let mockAIMLInstance: jest.Mocked<AIMLService>;
 
@@ -264,7 +321,7 @@ describe('FinancialCoach', () => {
 
     // Mock financial context
     (financialContextEngine.getFinancialContext as jest.Mock).mockResolvedValue(
-      mockFinancialContext
+      mockFinancialContext,
     );
 
     // Create new coach instance
@@ -275,14 +332,17 @@ describe('FinancialCoach', () => {
   // ANALYZE FINANCIAL SITUATION TESTS
   // ==========================================================================
 
-  describe('analyzeFinancialSituation', () => {
-    it('should analyze financial situation and return comprehensive analysis', async () => {
+  describe("analyzeFinancialSituation", () => {
+    it("should analyze financial situation and return comprehensive analysis", async () => {
       mockAIMLInstance.chat.mockResolvedValue(mockAIAnalysisResponse as any);
 
-      const result = await coach.analyzeFinancialSituation('test-user-123', 'overall');
+      const result = await coach.analyzeFinancialSituation(
+        "test-user-123",
+        "overall",
+      );
 
       expect(result).toBeDefined();
-      expect(result.userId).toBe('test-user-123');
+      expect(result.userId).toBe("test-user-123");
       expect(result.currentBabyStep).toBe(2); // Has $2,500 savings (>$1,000) but still has debt
       expect(result.financialHealth.score).toBeGreaterThan(0);
       expect(result.behavioralInsights).toHaveLength(3);
@@ -290,46 +350,46 @@ describe('FinancialCoach', () => {
       expect(result.encouragement).toBeTruthy();
     });
 
-    it('should determine Baby Step 1 when savings < $1,000', async () => {
+    it("should determine Baby Step 1 when savings < $1,000", async () => {
       const contextWithLowSavings = {
         ...mockFinancialContext,
         accounts: { ...mockFinancialContext.accounts, totalSavings: 500 },
       };
-      (financialContextEngine.getFinancialContext as jest.Mock).mockResolvedValue(
-        contextWithLowSavings
-      );
+      (
+        financialContextEngine.getFinancialContext as jest.Mock
+      ).mockResolvedValue(contextWithLowSavings);
       mockAIMLInstance.chat.mockResolvedValue(mockAIAnalysisResponse as any);
 
-      const result = await coach.analyzeFinancialSituation('test-user-123');
+      const result = await coach.analyzeFinancialSituation("test-user-123");
 
       expect(result.currentBabyStep).toBe(1);
     });
 
-    it('should determine Baby Step 2 when has savings but still has debt', async () => {
+    it("should determine Baby Step 2 when has savings but still has debt", async () => {
       mockAIMLInstance.chat.mockResolvedValue(mockAIAnalysisResponse as any);
 
-      const result = await coach.analyzeFinancialSituation('test-user-123');
+      const result = await coach.analyzeFinancialSituation("test-user-123");
 
       expect(result.currentBabyStep).toBe(2);
     });
 
-    it('should determine Baby Step 3 when debt-free but emergency fund incomplete', async () => {
+    it("should determine Baby Step 3 when debt-free but emergency fund incomplete", async () => {
       const contextDebtFree = {
         ...mockFinancialContext,
         debts: { ...mockFinancialContext.debts, totalDebt: 0, debts: [] },
         accounts: { ...mockFinancialContext.accounts, totalSavings: 5000 },
       };
-      (financialContextEngine.getFinancialContext as jest.Mock).mockResolvedValue(
-        contextDebtFree
-      );
+      (
+        financialContextEngine.getFinancialContext as jest.Mock
+      ).mockResolvedValue(contextDebtFree);
       mockAIMLInstance.chat.mockResolvedValue(mockAIAnalysisResponse as any);
 
-      const result = await coach.analyzeFinancialSituation('test-user-123');
+      const result = await coach.analyzeFinancialSituation("test-user-123");
 
       expect(result.currentBabyStep).toBe(3);
     });
 
-    it('should identify critical issues', async () => {
+    it("should identify critical issues", async () => {
       const contextNegativeCashFlow = {
         ...mockFinancialContext,
         transactions: {
@@ -339,31 +399,38 @@ describe('FinancialCoach', () => {
           netCashFlow: -500,
         },
       };
-      (financialContextEngine.getFinancialContext as jest.Mock).mockResolvedValue(
-        contextNegativeCashFlow
-      );
+      (
+        financialContextEngine.getFinancialContext as jest.Mock
+      ).mockResolvedValue(contextNegativeCashFlow);
       mockAIMLInstance.chat.mockResolvedValue(mockAIAnalysisResponse as any);
 
-      const result = await coach.analyzeFinancialSituation('test-user-123');
+      const result = await coach.analyzeFinancialSituation("test-user-123");
 
       expect(result.criticalIssues.length).toBeGreaterThan(0);
-      expect(result.criticalIssues.some(issue => issue.id === 'negative_cashflow')).toBe(true);
+      expect(
+        result.criticalIssues.some((issue) => issue.id === "negative_cashflow"),
+      ).toBe(true);
     });
 
-    it('should find opportunities for improvement', async () => {
+    it("should find opportunities for improvement", async () => {
       mockAIMLInstance.chat.mockResolvedValue(mockAIAnalysisResponse as any);
 
-      const result = await coach.analyzeFinancialSituation('test-user-123', 'expense_reduction');
+      const result = await coach.analyzeFinancialSituation(
+        "test-user-123",
+        "expense_reduction",
+      );
 
       expect(result.opportunities.length).toBeGreaterThan(0);
-      expect(result.opportunities[0]).toHaveProperty('title');
-      expect(result.opportunities[0]).toHaveProperty('estimatedImpact');
+      expect(result.opportunities[0]).toHaveProperty("title");
+      expect(result.opportunities[0]).toHaveProperty("estimatedImpact");
     });
 
-    it('should handle AI service errors gracefully', async () => {
-      mockAIMLInstance.chat.mockRejectedValue(new Error('AI service unavailable'));
+    it("should handle AI service errors gracefully", async () => {
+      mockAIMLInstance.chat.mockRejectedValue(
+        new Error("AI service unavailable"),
+      );
 
-      const result = await coach.analyzeFinancialSituation('test-user-123');
+      const result = await coach.analyzeFinancialSituation("test-user-123");
 
       // Should still return analysis with fallback insights
       expect(result).toBeDefined();
@@ -376,63 +443,69 @@ describe('FinancialCoach', () => {
   // GENERATE ACTION PLAN TESTS
   // ==========================================================================
 
-  describe('generateActionPlan', () => {
-    it('should generate comprehensive action plan', async () => {
+  describe("generateActionPlan", () => {
+    it("should generate comprehensive action plan", async () => {
       mockAIMLInstance.chat.mockResolvedValue(mockActionPlanResponse as any);
 
       const result = await coach.generateActionPlan(
-        'test-user-123',
-        ['Pay off debt', 'Build emergency fund'],
-        '1-5 years'
+        "test-user-123",
+        ["Pay off debt", "Build emergency fund"],
+        "1-5 years",
       );
 
       expect(result).toBeDefined();
-      expect(result.userId).toBe('test-user-123');
-      expect(result.title).toContain('Financial Freedom Action Plan');
+      expect(result.userId).toBe("test-user-123");
+      expect(result.title).toContain("Financial Freedom Action Plan");
       expect(result.milestones.length).toBeGreaterThan(0);
       expect(result.weeklyActions.length).toBeGreaterThan(0);
       expect(result.celebrationPoints.length).toBeGreaterThan(0);
     });
 
-    it('should include Dave Ramsey Baby Steps in plan', async () => {
+    it("should include Dave Ramsey Baby Steps in plan", async () => {
       mockAIMLInstance.chat.mockResolvedValue(mockActionPlanResponse as any);
 
       const result = await coach.generateActionPlan(
-        'test-user-123',
-        ['Become debt-free'],
-        '1-5 years'
+        "test-user-123",
+        ["Become debt-free"],
+        "1-5 years",
       );
 
       expect(result.startingBabyStep).toBeDefined();
       expect(result.targetBabyStep).toBeDefined();
-      expect(result.targetBabyStep).toBeGreaterThanOrEqual(result.startingBabyStep);
+      expect(result.targetBabyStep).toBeGreaterThanOrEqual(
+        result.startingBabyStep,
+      );
     });
 
-    it('should handle multiple goals', async () => {
+    it("should handle multiple goals", async () => {
       mockAIMLInstance.chat.mockResolvedValue(mockActionPlanResponse as any);
 
       const goals = [
-        'Pay off credit card debt',
-        'Save $10,000 emergency fund',
-        'Start investing for retirement',
+        "Pay off credit card debt",
+        "Save $10,000 emergency fund",
+        "Start investing for retirement",
       ];
 
-      const result = await coach.generateActionPlan('test-user-123', goals, '1-5 years');
+      const result = await coach.generateActionPlan(
+        "test-user-123",
+        goals,
+        "1-5 years",
+      );
 
       expect(result).toBeDefined();
       expect(mockAIMLInstance.chat).toHaveBeenCalled();
     });
 
-    it('should handle AI parsing errors gracefully', async () => {
+    it("should handle AI parsing errors gracefully", async () => {
       mockAIMLInstance.chat.mockResolvedValue({
-        choices: [{ message: { content: 'Invalid JSON response' } }],
+        choices: [{ message: { content: "Invalid JSON response" } }],
         usage: { total_tokens: 100 },
       } as any);
 
       const result = await coach.generateActionPlan(
-        'test-user-123',
-        ['Pay off debt'],
-        '1-5 years'
+        "test-user-123",
+        ["Pay off debt"],
+        "1-5 years",
       );
 
       // Should return fallback plan
@@ -445,56 +518,61 @@ describe('FinancialCoach', () => {
   // GET PERSONALIZED ADVICE TESTS
   // ==========================================================================
 
-  describe('getPersonalizedAdvice', () => {
-    it('should provide personalized advice for specific question', async () => {
+  describe("getPersonalizedAdvice", () => {
+    it("should provide personalized advice for specific question", async () => {
       mockAIMLInstance.chat.mockResolvedValue(mockAdviceResponse as any);
 
       const result = await coach.getPersonalizedAdvice(
-        'test-user-123',
-        'Should I pay off debt or save for emergency fund first?'
+        "test-user-123",
+        "Should I pay off debt or save for emergency fund first?",
       );
 
       expect(result).toBeDefined();
-      expect(result.question).toBe('Should I pay off debt or save for emergency fund first?');
+      expect(result.question).toBe(
+        "Should I pay off debt or save for emergency fund first?",
+      );
       expect(result.answer).toBeTruthy();
       expect(result.relevantBabyStep).toBeDefined();
       expect(result.actionSteps.length).toBeGreaterThan(0);
       expect(result.encouragement).toBeTruthy();
     });
 
-    it('should reference user financial data in advice', async () => {
+    it("should reference user financial data in advice", async () => {
       mockAIMLInstance.chat.mockResolvedValue(mockAdviceResponse as any);
 
-      await coach.getPersonalizedAdvice('test-user-123', 'How much should I save?');
+      await coach.getPersonalizedAdvice(
+        "test-user-123",
+        "How much should I save?",
+      );
 
       const callArgs = mockAIMLInstance.chat.mock.calls[0];
       const userPrompt = callArgs[1][1].content;
 
-      expect(userPrompt).toContain('$5000'); // Monthly income (no comma in implementation)
-      expect(userPrompt).toContain('$3500'); // Monthly expenses (no comma in implementation)
+      expect(userPrompt).toContain("$5000"); // Monthly income (no comma in implementation)
+      expect(userPrompt).toContain("$3500"); // Monthly expenses (no comma in implementation)
     });
 
-    it('should align advice with Dave Ramsey philosophy', async () => {
+    it("should align advice with Dave Ramsey philosophy", async () => {
       mockAIMLInstance.chat.mockResolvedValue(mockAdviceResponse as any);
 
       await coach.getPersonalizedAdvice(
-        'test-user-123',
-        'Should I invest while I have debt?'
+        "test-user-123",
+        "Should I invest while I have debt?",
       );
 
       const callArgs = mockAIMLInstance.chat.mock.calls[0];
       const systemPrompt = callArgs[1][0].content;
 
-      expect(systemPrompt).toContain('Dave Ramsey');
-      expect(systemPrompt).toContain('Baby Step'); // Singular form is used in the prompt
+      expect(systemPrompt).toContain("Dave Ramsey");
+      expect(systemPrompt).toContain("Baby Step"); // Singular form is used in the prompt
     });
 
-    it('should handle AI errors with fallback advice', async () => {
-      mockAIMLInstance.chat.mockRejectedValue(new Error('AI unavailable'));
+    it("should handle AI errors with fallback advice", async () => {
+      mockAIMLInstance.chat.mockRejectedValue(new Error("AI unavailable"));
 
       const result = await coach.getPersonalizedAdvice(
-        'test-user-123',
-        'How do I start budgeting?'
+        "test-user-123",
+        "How do I start budgeting?",
       );
 
       expect(result).toBeDefined();
@@ -507,8 +585,8 @@ describe('FinancialCoach', () => {
   // GET PROACTIVE RECOMMENDATIONS TESTS
   // ==========================================================================
 
-  describe('getProactiveRecommendations', () => {
-    it('should generate proactive recommendations', async () => {
+  describe("getProactiveRecommendations", () => {
+    it("should generate proactive recommendations", async () => {
       mockAIMLInstance.chat.mockResolvedValue({
         choices: [
           {
@@ -516,13 +594,13 @@ describe('FinancialCoach', () => {
               content: JSON.stringify({
                 recommendations: [
                   {
-                    priority: 'high',
-                    category: 'debt_payoff',
-                    title: 'Pay off credit card debt',
-                    benefit: 'Save $555/year in interest',
-                    difficulty: 'moderate',
-                    timeline: '10 months',
-                    actionSteps: ['Pay $390/month', 'Stop using credit card'],
+                    priority: "high",
+                    category: "debt_payoff",
+                    title: "Pay off credit card debt",
+                    benefit: "Save $555/year in interest",
+                    difficulty: "moderate",
+                    timeline: "10 months",
+                    actionSteps: ["Pay $390/month", "Stop using credit card"],
                     estimatedImpact: 555,
                   },
                 ],
@@ -533,16 +611,16 @@ describe('FinancialCoach', () => {
         usage: { total_tokens: 400 },
       } as any);
 
-      const result = await coach.getProactiveRecommendations('test-user-123');
+      const result = await coach.getProactiveRecommendations("test-user-123");
 
       expect(result).toBeDefined();
       expect(result.length).toBeGreaterThan(0);
-      expect(result[0]).toHaveProperty('priority');
-      expect(result[0]).toHaveProperty('category');
-      expect(result[0]).toHaveProperty('actionSteps');
+      expect(result[0]).toHaveProperty("priority");
+      expect(result[0]).toHaveProperty("category");
+      expect(result[0]).toHaveProperty("actionSteps");
     });
 
-    it('should prioritize high-impact recommendations', async () => {
+    it("should prioritize high-impact recommendations", async () => {
       mockAIMLInstance.chat.mockResolvedValue({
         choices: [
           {
@@ -550,24 +628,24 @@ describe('FinancialCoach', () => {
               content: JSON.stringify({
                 recommendations: [
                   {
-                    priority: 'high',
+                    priority: "high",
                     estimatedImpact: 1000,
-                    category: 'debt_payoff',
-                    title: 'High impact',
-                    benefit: 'Big savings',
-                    difficulty: 'easy',
-                    timeline: '1 month',
-                    actionSteps: ['Do this'],
+                    category: "debt_payoff",
+                    title: "High impact",
+                    benefit: "Big savings",
+                    difficulty: "easy",
+                    timeline: "1 month",
+                    actionSteps: ["Do this"],
                   },
                   {
-                    priority: 'low',
+                    priority: "low",
                     estimatedImpact: 50,
-                    category: 'expense_reduction',
-                    title: 'Low impact',
-                    benefit: 'Small savings',
-                    difficulty: 'easy',
-                    timeline: '1 month',
-                    actionSteps: ['Do that'],
+                    category: "expense_reduction",
+                    title: "Low impact",
+                    benefit: "Small savings",
+                    difficulty: "easy",
+                    timeline: "1 month",
+                    actionSteps: ["Do that"],
                   },
                 ],
               }),
@@ -577,19 +655,21 @@ describe('FinancialCoach', () => {
         usage: { total_tokens: 400 },
       } as any);
 
-      const result = await coach.getProactiveRecommendations('test-user-123');
+      const result = await coach.getProactiveRecommendations("test-user-123");
 
-      expect(result[0].priority).toBe('high');
-      expect(result[0].estimatedImpact).toBeGreaterThan(result[1]?.estimatedImpact || 0);
+      expect(result[0].priority).toBe("high");
+      expect(result[0].estimatedImpact).toBeGreaterThan(
+        result[1]?.estimatedImpact || 0,
+      );
     });
 
-    it('should handle empty recommendations gracefully', async () => {
+    it("should handle empty recommendations gracefully", async () => {
       mockAIMLInstance.chat.mockResolvedValue({
-        choices: [{ message: { content: '{}' } }],
+        choices: [{ message: { content: "{}" } }],
         usage: { total_tokens: 50 },
       } as any);
 
-      const result = await coach.getProactiveRecommendations('test-user-123');
+      const result = await coach.getProactiveRecommendations("test-user-123");
 
       expect(result).toBeDefined();
       expect(Array.isArray(result)).toBe(true);
@@ -600,44 +680,51 @@ describe('FinancialCoach', () => {
   // DAVE RAMSEY PHILOSOPHY TESTS
   // ==========================================================================
 
-  describe('Dave Ramsey Philosophy Integration', () => {
-    it('should recommend Baby Step 1 for users without emergency fund', async () => {
+  describe("Dave Ramsey Philosophy Integration", () => {
+    it("should recommend Baby Step 1 for users without emergency fund", async () => {
       const contextNoSavings = {
         ...mockFinancialContext,
         accounts: { ...mockFinancialContext.accounts, totalSavings: 0 },
       };
-      (financialContextEngine.getFinancialContext as jest.Mock).mockResolvedValue(
-        contextNoSavings
-      );
+      (
+        financialContextEngine.getFinancialContext as jest.Mock
+      ).mockResolvedValue(contextNoSavings);
       mockAIMLInstance.chat.mockResolvedValue(mockAIAnalysisResponse as any);
 
-      const result = await coach.analyzeFinancialSituation('test-user-123');
+      const result = await coach.analyzeFinancialSituation("test-user-123");
 
       expect(result.currentBabyStep).toBe(1);
-      expect(result.nextSteps.some(step => step.includes('$1,000'))).toBe(true);
+      expect(result.nextSteps.some((step) => step.includes("$1,000"))).toBe(
+        true,
+      );
     });
 
-    it('should recommend debt snowball for Baby Step 2', async () => {
+    it("should recommend debt snowball for Baby Step 2", async () => {
       mockAIMLInstance.chat.mockResolvedValue(mockAIAnalysisResponse as any);
 
-      const result = await coach.analyzeFinancialSituation('test-user-123', 'debt_payoff');
+      const result = await coach.analyzeFinancialSituation(
+        "test-user-123",
+        "debt_payoff",
+      );
 
       expect(result.currentBabyStep).toBe(2);
       // Should have debt-related opportunities
-      expect(result.opportunities.some(opp => opp.type === 'debt_payoff')).toBe(true);
+      expect(
+        result.opportunities.some((opp) => opp.type === "debt_payoff"),
+      ).toBe(true);
     });
 
-    it('should calculate debt snowball correctly', async () => {
+    it("should calculate debt snowball correctly", async () => {
       mockAIMLInstance.chat.mockResolvedValue(mockAIAnalysisResponse as any);
 
-      const result = await coach.analyzeFinancialSituation('test-user-123');
+      const result = await coach.analyzeFinancialSituation("test-user-123");
 
       // Credit card ($3,000) should be prioritized over student loan ($5,000)
       const debtOpportunities = result.opportunities.filter(
-        opp => opp.type === 'debt_payoff'
+        (opp) => opp.type === "debt_payoff",
       );
       if (debtOpportunities.length > 0) {
-        expect(debtOpportunities[0].title).toContain('Credit Card');
+        expect(debtOpportunities[0].title).toContain("Credit Card");
       }
     });
   });
@@ -646,35 +733,38 @@ describe('FinancialCoach', () => {
   // ERROR HANDLING TESTS
   // ==========================================================================
 
-  describe('Error Handling', () => {
-    it('should handle missing financial context', async () => {
-      (financialContextEngine.getFinancialContext as jest.Mock).mockRejectedValue(
-        new Error('Context not found')
-      );
+  describe("Error Handling", () => {
+    it("should handle missing financial context", async () => {
+      (
+        financialContextEngine.getFinancialContext as jest.Mock
+      ).mockRejectedValue(new Error("Context not found"));
 
       await expect(
-        coach.analyzeFinancialSituation('invalid-user')
+        coach.analyzeFinancialSituation("invalid-user"),
       ).rejects.toThrow();
     });
 
-    it('should handle AI timeout gracefully', async () => {
+    it("should handle AI timeout gracefully", async () => {
       mockAIMLInstance.chat.mockImplementation(
-        () => new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 100))
+        () =>
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("Timeout")), 100),
+          ),
       );
 
-      const result = await coach.analyzeFinancialSituation('test-user-123');
+      const result = await coach.analyzeFinancialSituation("test-user-123");
 
       expect(result).toBeDefined();
       expect(result.behavioralInsights.length).toBeGreaterThan(0);
     });
 
-    it('should handle malformed AI responses', async () => {
+    it("should handle malformed AI responses", async () => {
       mockAIMLInstance.chat.mockResolvedValue({
-        choices: [{ message: { content: 'Not JSON at all!' } }],
+        choices: [{ message: { content: "Not JSON at all!" } }],
         usage: { total_tokens: 50 },
       } as any);
 
-      const result = await coach.analyzeFinancialSituation('test-user-123');
+      const result = await coach.analyzeFinancialSituation("test-user-123");
 
       expect(result).toBeDefined();
       expect(result.behavioralInsights).toBeDefined();
@@ -685,32 +775,32 @@ describe('FinancialCoach', () => {
   // CONTEXT UTILIZATION TESTS
   // ==========================================================================
 
-  describe('Financial Context Utilization', () => {
-    it('should use actual income and expenses in analysis', async () => {
+  describe("Financial Context Utilization", () => {
+    it("should use actual income and expenses in analysis", async () => {
       mockAIMLInstance.chat.mockResolvedValue(mockAIAnalysisResponse as any);
 
-      await coach.analyzeFinancialSituation('test-user-123');
+      await coach.analyzeFinancialSituation("test-user-123");
 
-      expect(financialContextEngine.getFinancialContext).toHaveBeenCalledWith('test-user-123');
+      expect(financialContextEngine.getFinancialContext).toHaveBeenCalledWith(
+        "test-user-123",
+      );
     });
 
-    it('should consider debt-to-income ratio', async () => {
+    it("should consider debt-to-income ratio", async () => {
       mockAIMLInstance.chat.mockResolvedValue(mockAIAnalysisResponse as any);
 
-      const result = await coach.analyzeFinancialSituation('test-user-123');
+      const result = await coach.analyzeFinancialSituation("test-user-123");
 
       expect(result.financialHealth.debtStatus).toBeDefined();
     });
 
-    it('should calculate emergency fund months correctly', async () => {
+    it("should calculate emergency fund months correctly", async () => {
       mockAIMLInstance.chat.mockResolvedValue(mockAIAnalysisResponse as any);
 
-      const result = await coach.analyzeFinancialSituation('test-user-123');
+      const result = await coach.analyzeFinancialSituation("test-user-123");
 
       // Check that savings status is calculated
       expect(result.financialHealth.savingsStatus).toBeDefined();
     });
   });
 });
-
-

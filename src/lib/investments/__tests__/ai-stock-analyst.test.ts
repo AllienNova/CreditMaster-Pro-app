@@ -2,11 +2,11 @@
  * AI Stock Analyst Service Tests
  */
 
-import { AIStockAnalystService } from '../ai-stock-analyst';
-import type { StockAnalysisRequest } from '../types/stock-analysis.types';
+import { AIStockAnalystService } from "../ai-stock-analyst";
+import type { StockAnalysisRequest } from "../types/stock-analysis.types";
 
 // Mock the AIML service
-jest.mock('../../aiml-service', () => ({
+jest.mock("../../aiml-service", () => ({
   AIMLService: jest.fn().mockImplementation(() => ({
     chat: jest.fn().mockResolvedValue({
       choices: [
@@ -14,49 +14,49 @@ jest.mock('../../aiml-service', () => ({
           message: {
             content: JSON.stringify({
               summary:
-                'Test stock shows strong fundamentals with moderate technical signals.',
+                "Test stock shows strong fundamentals with moderate technical signals.",
               bullCase: [
-                'Strong revenue growth',
-                'Market leader',
-                'Expanding margins',
+                "Strong revenue growth",
+                "Market leader",
+                "Expanding margins",
               ],
               bearCase: [
-                'High valuation',
-                'Competition increasing',
-                'Macro headwinds',
+                "High valuation",
+                "Competition increasing",
+                "Macro headwinds",
               ],
-              keyRisks: ['Market volatility', 'Regulatory changes'],
+              keyRisks: ["Market volatility", "Regulatory changes"],
               investmentThesis:
-                'Consider accumulating on dips for long-term growth.',
+                "Consider accumulating on dips for long-term growth.",
               priceTargets: [
                 {
-                  scenario: 'bull',
+                  scenario: "bull",
                   price: 200,
                   probability: 25,
-                  timeframe: '12 months',
-                  rationale: 'Best case',
+                  timeframe: "12 months",
+                  rationale: "Best case",
                 },
                 {
-                  scenario: 'base',
+                  scenario: "base",
                   price: 175,
                   probability: 50,
-                  timeframe: '12 months',
-                  rationale: 'Expected',
+                  timeframe: "12 months",
+                  rationale: "Expected",
                 },
                 {
-                  scenario: 'bear',
+                  scenario: "bear",
                   price: 140,
                   probability: 25,
-                  timeframe: '12 months',
-                  rationale: 'Worst case',
+                  timeframe: "12 months",
+                  rationale: "Worst case",
                 },
               ],
               catalysts: [
                 {
-                  type: 'earnings',
-                  description: 'Q4 earnings',
-                  potentialImpact: 'high',
-                  direction: 'positive',
+                  type: "earnings",
+                  description: "Q4 earnings",
+                  potentialImpact: "high",
+                  direction: "positive",
                 },
               ],
             }),
@@ -67,7 +67,7 @@ jest.mock('../../aiml-service', () => ({
   })),
 }));
 
-describe('AIStockAnalystService', () => {
+describe("AIStockAnalystService", () => {
   let service: AIStockAnalystService;
 
   beforeEach(() => {
@@ -75,21 +75,21 @@ describe('AIStockAnalystService', () => {
     service.clearCache();
   });
 
-  describe('analyzeStock', () => {
-    it('should return comprehensive analysis for valid symbol', async () => {
+  describe("analyzeStock", () => {
+    it("should return comprehensive analysis for valid symbol", async () => {
       const request: StockAnalysisRequest = {
-        symbol: 'AAPL',
-        analysisTypes: ['technical', 'fundamental', 'sentiment', 'ai'],
+        symbol: "AAPL",
+        analysisTypes: ["technical", "fundamental", "sentiment", "ai"],
         includeAI: true,
-        timeframe: 'medium',
-        riskTolerance: 'moderate',
+        timeframe: "medium",
+        riskTolerance: "moderate",
       };
 
       const result = await service.analyzeStock(request);
 
       expect(result.success).toBe(true);
       expect(result.data).toBeDefined();
-      expect(result.data?.symbol).toBe('AAPL');
+      expect(result.data?.symbol).toBe("AAPL");
       expect(result.data?.quote).toBeDefined();
       expect(result.data?.technical).toBeDefined();
       expect(result.data?.fundamental).toBeDefined();
@@ -97,28 +97,28 @@ describe('AIStockAnalystService', () => {
       expect(result.data?.recommendation).toBeDefined();
     });
 
-    it('should return error for empty symbol', async () => {
+    it("should return error for empty symbol", async () => {
       const request: StockAnalysisRequest = {
-        symbol: '',
-        analysisTypes: ['technical'],
+        symbol: "",
+        analysisTypes: ["technical"],
         includeAI: false,
-        timeframe: 'short',
-        riskTolerance: 'moderate',
+        timeframe: "short",
+        riskTolerance: "moderate",
       };
 
       const result = await service.analyzeStock(request);
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain('Invalid symbol');
+      expect(result.error).toContain("Invalid symbol");
     });
 
-    it('should cache analysis results', async () => {
+    it("should cache analysis results", async () => {
       const request: StockAnalysisRequest = {
-        symbol: 'MSFT',
-        analysisTypes: ['technical'],
+        symbol: "MSFT",
+        analysisTypes: ["technical"],
         includeAI: false,
-        timeframe: 'medium',
-        riskTolerance: 'moderate',
+        timeframe: "medium",
+        riskTolerance: "moderate",
       };
 
       // First call
@@ -131,23 +131,23 @@ describe('AIStockAnalystService', () => {
       expect(result2.data?.timestamp).toEqual(result1.data?.timestamp);
     });
 
-    it('should handle different timeframes', async () => {
+    it("should handle different timeframes", async () => {
       service.clearCache();
 
       const shortTermRequest: StockAnalysisRequest = {
-        symbol: 'GOOGL',
-        analysisTypes: ['technical'],
+        symbol: "GOOGL",
+        analysisTypes: ["technical"],
         includeAI: false,
-        timeframe: 'short',
-        riskTolerance: 'aggressive',
+        timeframe: "short",
+        riskTolerance: "aggressive",
       };
 
       const longTermRequest: StockAnalysisRequest = {
-        symbol: 'AMZN', // Use different symbol to avoid cache conflicts
-        analysisTypes: ['technical'],
+        symbol: "AMZN", // Use different symbol to avoid cache conflicts
+        analysisTypes: ["technical"],
         includeAI: false,
-        timeframe: 'long',
-        riskTolerance: 'conservative',
+        timeframe: "long",
+        riskTolerance: "conservative",
       };
 
       const shortResult = await service.analyzeStock(shortTermRequest);
@@ -155,19 +155,19 @@ describe('AIStockAnalystService', () => {
 
       expect(shortResult.success).toBe(true);
       expect(longResult.success).toBe(true);
-      expect(shortResult.data?.recommendation.timeHorizon).toBe('short_term');
-      expect(longResult.data?.recommendation.timeHorizon).toBe('long_term');
+      expect(shortResult.data?.recommendation.timeHorizon).toBe("short_term");
+      expect(longResult.data?.recommendation.timeHorizon).toBe("long_term");
     });
   });
 
-  describe('technical analysis', () => {
-    it('should calculate technical indicators', async () => {
+  describe("technical analysis", () => {
+    it("should calculate technical indicators", async () => {
       const request: StockAnalysisRequest = {
-        symbol: 'TSLA',
-        analysisTypes: ['technical'],
+        symbol: "TSLA",
+        analysisTypes: ["technical"],
         includeAI: false,
-        timeframe: 'medium',
-        riskTolerance: 'moderate',
+        timeframe: "medium",
+        riskTolerance: "moderate",
       };
 
       const result = await service.analyzeStock(request);
@@ -184,13 +184,13 @@ describe('AIStockAnalystService', () => {
       expect(technical?.resistance).toBeDefined();
     });
 
-    it('should generate valid signals', async () => {
+    it("should generate valid signals", async () => {
       const request: StockAnalysisRequest = {
-        symbol: 'NVDA',
-        analysisTypes: ['technical'],
+        symbol: "NVDA",
+        analysisTypes: ["technical"],
         includeAI: false,
-        timeframe: 'short',
-        riskTolerance: 'aggressive',
+        timeframe: "short",
+        riskTolerance: "aggressive",
       };
 
       const result = await service.analyzeStock(request);
@@ -198,21 +198,21 @@ describe('AIStockAnalystService', () => {
       expect(result.success).toBe(true);
       const technical = result.data?.technical;
       expect(technical?.overallSignal).toMatch(
-        /^(strong_buy|buy|hold|sell|strong_sell)$/
+        /^(strong_buy|buy|hold|sell|strong_sell)$/,
       );
       expect(technical?.confidence).toBeGreaterThanOrEqual(0);
       expect(technical?.confidence).toBeLessThanOrEqual(100);
     });
   });
 
-  describe('fundamental analysis', () => {
-    it('should calculate fundamental metrics', async () => {
+  describe("fundamental analysis", () => {
+    it("should calculate fundamental metrics", async () => {
       const request: StockAnalysisRequest = {
-        symbol: 'AMZN',
-        analysisTypes: ['fundamental'],
+        symbol: "AMZN",
+        analysisTypes: ["fundamental"],
         includeAI: false,
-        timeframe: 'long',
-        riskTolerance: 'moderate',
+        timeframe: "long",
+        riskTolerance: "moderate",
       };
 
       const result = await service.analyzeStock(request);
@@ -225,17 +225,17 @@ describe('AIStockAnalystService', () => {
       expect(fundamental?.growth).toBeDefined();
       expect(fundamental?.financial).toBeDefined();
       expect(fundamental?.overallRating).toMatch(
-        /^(excellent|good|fair|poor|very_poor)$/
+        /^(excellent|good|fair|poor|very_poor)$/,
       );
     });
 
-    it('should estimate fair value', async () => {
+    it("should estimate fair value", async () => {
       const request: StockAnalysisRequest = {
-        symbol: 'META',
-        analysisTypes: ['fundamental'],
+        symbol: "META",
+        analysisTypes: ["fundamental"],
         includeAI: false,
-        timeframe: 'medium',
-        riskTolerance: 'moderate',
+        timeframe: "medium",
+        riskTolerance: "moderate",
       };
 
       const result = await service.analyzeStock(request);
@@ -244,19 +244,19 @@ describe('AIStockAnalystService', () => {
       const fairValue = result.data?.fundamental?.fairValue;
       expect(fairValue).toBeDefined();
       expect(fairValue?.value).toBeGreaterThan(0);
-      expect(fairValue?.method).toBe('dcf');
-      expect(typeof fairValue?.upside).toBe('number');
+      expect(fairValue?.method).toBe("dcf");
+      expect(typeof fairValue?.upside).toBe("number");
     });
   });
 
-  describe('sentiment analysis', () => {
-    it('should analyze market sentiment', async () => {
+  describe("sentiment analysis", () => {
+    it("should analyze market sentiment", async () => {
       const request: StockAnalysisRequest = {
-        symbol: 'NFLX',
-        analysisTypes: ['sentiment'],
+        symbol: "NFLX",
+        analysisTypes: ["sentiment"],
         includeAI: false,
-        timeframe: 'medium',
-        riskTolerance: 'moderate',
+        timeframe: "medium",
+        riskTolerance: "moderate",
       };
 
       const result = await service.analyzeStock(request);
@@ -266,21 +266,21 @@ describe('AIStockAnalystService', () => {
       expect(sentiment).toBeDefined();
       expect(sentiment?.overallSentiment).toBeDefined();
       expect(sentiment?.overallSentiment.label).toMatch(
-        /^(very_bullish|bullish|neutral|bearish|very_bearish)$/
+        /^(very_bullish|bullish|neutral|bearish|very_bearish)$/,
       );
       expect(sentiment?.newsSentiment).toBeDefined();
       expect(sentiment?.analystSentiment).toBeDefined();
     });
   });
 
-  describe('risk assessment', () => {
-    it('should assess investment risk', async () => {
+  describe("risk assessment", () => {
+    it("should assess investment risk", async () => {
       const request: StockAnalysisRequest = {
-        symbol: 'JPM',
-        analysisTypes: ['risk'],
+        symbol: "JPM",
+        analysisTypes: ["risk"],
         includeAI: false,
-        timeframe: 'medium',
-        riskTolerance: 'conservative',
+        timeframe: "medium",
+        riskTolerance: "conservative",
       };
 
       const result = await service.analyzeStock(request);
@@ -289,22 +289,22 @@ describe('AIStockAnalystService', () => {
       const risk = result.data?.riskAssessment;
       expect(risk).toBeDefined();
       expect(risk?.overallRisk).toMatch(
-        /^(very_low|low|moderate|high|very_high)$/
+        /^(very_low|low|moderate|high|very_high)$/,
       );
-      expect(typeof risk?.beta).toBe('number');
-      expect(typeof risk?.sharpeRatio).toBe('number');
-      expect(typeof risk?.maxDrawdown).toBe('number');
+      expect(typeof risk?.beta).toBe("number");
+      expect(typeof risk?.sharpeRatio).toBe("number");
+      expect(typeof risk?.maxDrawdown).toBe("number");
     });
   });
 
-  describe('recommendation generation', () => {
-    it('should generate actionable recommendation', async () => {
+  describe("recommendation generation", () => {
+    it("should generate actionable recommendation", async () => {
       const request: StockAnalysisRequest = {
-        symbol: 'DIS',
-        analysisTypes: ['technical', 'fundamental', 'sentiment'],
+        symbol: "DIS",
+        analysisTypes: ["technical", "fundamental", "sentiment"],
         includeAI: false,
-        timeframe: 'medium',
-        riskTolerance: 'moderate',
+        timeframe: "medium",
+        riskTolerance: "moderate",
       };
 
       const result = await service.analyzeStock(request);
@@ -313,7 +313,7 @@ describe('AIStockAnalystService', () => {
       const recommendation = result.data?.recommendation;
       expect(recommendation).toBeDefined();
       expect(recommendation?.action).toMatch(
-        /^(strong_buy|buy|hold|sell|strong_sell)$/
+        /^(strong_buy|buy|hold|sell|strong_sell)$/,
       );
       expect(recommendation?.entryPrice).toBeGreaterThan(0);
       expect(recommendation?.targetPrice).toBeGreaterThan(0);
@@ -322,23 +322,23 @@ describe('AIStockAnalystService', () => {
       expect(Array.isArray(recommendation?.rationale)).toBe(true);
     });
 
-    it('should adjust for risk tolerance', async () => {
+    it("should adjust for risk tolerance", async () => {
       service.clearCache();
 
       const conservativeRequest: StockAnalysisRequest = {
-        symbol: 'JNJ', // Use different symbol
-        analysisTypes: ['technical', 'fundamental'],
+        symbol: "JNJ", // Use different symbol
+        analysisTypes: ["technical", "fundamental"],
         includeAI: false,
-        timeframe: 'medium',
-        riskTolerance: 'conservative',
+        timeframe: "medium",
+        riskTolerance: "conservative",
       };
 
       const aggressiveRequest: StockAnalysisRequest = {
-        symbol: 'NVDA', // Use different symbol
-        analysisTypes: ['technical', 'fundamental'],
+        symbol: "NVDA", // Use different symbol
+        analysisTypes: ["technical", "fundamental"],
         includeAI: false,
-        timeframe: 'medium',
-        riskTolerance: 'aggressive',
+        timeframe: "medium",
+        riskTolerance: "aggressive",
       };
 
       const conservativeResult =
@@ -363,52 +363,52 @@ describe('AIStockAnalystService', () => {
       expect(aggressiveRec?.confidence).toBeGreaterThanOrEqual(0);
       expect(aggressiveRec?.confidence).toBeLessThanOrEqual(100);
       expect(conservativeRec?.timeHorizon).toMatch(
-        /^(short_term|medium_term|long_term)$/
+        /^(short_term|medium_term|long_term)$/,
       );
       expect(aggressiveRec?.timeHorizon).toMatch(
-        /^(short_term|medium_term|long_term)$/
+        /^(short_term|medium_term|long_term)$/,
       );
     });
   });
 
-  describe('cache management', () => {
-    it('should clear cache for specific symbol', async () => {
+  describe("cache management", () => {
+    it("should clear cache for specific symbol", async () => {
       const request: StockAnalysisRequest = {
-        symbol: 'INTC',
-        analysisTypes: ['technical'],
+        symbol: "INTC",
+        analysisTypes: ["technical"],
         includeAI: false,
-        timeframe: 'short',
-        riskTolerance: 'moderate',
+        timeframe: "short",
+        riskTolerance: "moderate",
       };
 
       const result1 = await service.analyzeStock(request);
       expect(result1.success).toBe(true);
 
-      service.clearCache('INTC');
+      service.clearCache("INTC");
 
       const result2 = await service.analyzeStock(request);
       expect(result2.success).toBe(true);
       // After clearing cache, timestamps should be different
       expect(result2.data?.timestamp.getTime()).toBeGreaterThanOrEqual(
-        result1.data?.timestamp.getTime() || 0
+        result1.data?.timestamp.getTime() || 0,
       );
     });
 
-    it('should clear entire cache', async () => {
+    it("should clear entire cache", async () => {
       const request1: StockAnalysisRequest = {
-        symbol: 'AMD',
-        analysisTypes: ['technical'],
+        symbol: "AMD",
+        analysisTypes: ["technical"],
         includeAI: false,
-        timeframe: 'short',
-        riskTolerance: 'moderate',
+        timeframe: "short",
+        riskTolerance: "moderate",
       };
 
       const request2: StockAnalysisRequest = {
-        symbol: 'QCOM',
-        analysisTypes: ['technical'],
+        symbol: "QCOM",
+        analysisTypes: ["technical"],
         includeAI: false,
-        timeframe: 'short',
-        riskTolerance: 'moderate',
+        timeframe: "short",
+        riskTolerance: "moderate",
       };
 
       await service.analyzeStock(request1);
@@ -429,12 +429,12 @@ describe('AIStockAnalystService', () => {
   // NEW PUBLIC API METHODS TESTS
   // ==========================================================================
 
-  describe('getTechnicalAnalysis', () => {
-    it('should return technical analysis for valid symbol', async () => {
-      const technical = await service.getTechnicalAnalysis('AAPL');
+  describe("getTechnicalAnalysis", () => {
+    it("should return technical analysis for valid symbol", async () => {
+      const technical = await service.getTechnicalAnalysis("AAPL");
 
       expect(technical).toBeDefined();
-      expect(technical.symbol).toBe('AAPL');
+      expect(technical.symbol).toBe("AAPL");
       expect(technical.indicators).toBeDefined();
       expect(technical.indicators.rsi).toBeGreaterThanOrEqual(0);
       expect(technical.indicators.rsi).toBeLessThanOrEqual(100);
@@ -443,81 +443,81 @@ describe('AIStockAnalystService', () => {
       expect(Array.isArray(technical.signals)).toBe(true);
     });
 
-    it('should return default analysis for invalid symbol', async () => {
-      const technical = await service.getTechnicalAnalysis('INVALID123');
+    it("should return default analysis for invalid symbol", async () => {
+      const technical = await service.getTechnicalAnalysis("INVALID123");
 
       expect(technical).toBeDefined();
-      expect(technical.symbol).toBe('INVALID123');
+      expect(technical.symbol).toBe("INVALID123");
       // Should return default values instead of throwing
     });
   });
 
-  describe('getFundamentalAnalysis', () => {
-    it('should return fundamental analysis for valid symbol', async () => {
-      const fundamental = await service.getFundamentalAnalysis('MSFT');
+  describe("getFundamentalAnalysis", () => {
+    it("should return fundamental analysis for valid symbol", async () => {
+      const fundamental = await service.getFundamentalAnalysis("MSFT");
 
       expect(fundamental).toBeDefined();
-      expect(fundamental.symbol).toBe('MSFT');
+      expect(fundamental.symbol).toBe("MSFT");
       expect(fundamental.valuation).toBeDefined();
       expect(fundamental.profitability).toBeDefined();
       expect(fundamental.growth).toBeDefined();
       // financialHealth is optional, so we don't test for it
     });
 
-    it('should handle errors gracefully', async () => {
-      const fundamental = await service.getFundamentalAnalysis('');
+    it("should handle errors gracefully", async () => {
+      const fundamental = await service.getFundamentalAnalysis("");
 
       expect(fundamental).toBeDefined();
       // Should return default values instead of throwing
     });
   });
 
-  describe('getSentimentAnalysis', () => {
-    it('should return sentiment analysis for valid symbol', async () => {
-      const sentiment = await service.getSentimentAnalysis('TSLA');
+  describe("getSentimentAnalysis", () => {
+    it("should return sentiment analysis for valid symbol", async () => {
+      const sentiment = await service.getSentimentAnalysis("TSLA");
 
       expect(sentiment).toBeDefined();
-      expect(sentiment.symbol).toBe('TSLA');
+      expect(sentiment.symbol).toBe("TSLA");
       expect(sentiment.overallSentiment).toBeDefined();
       expect(sentiment.newsSentiment).toBeDefined();
       expect(sentiment.socialSentiment).toBeDefined();
     });
   });
 
-  describe('getAIRecommendation', () => {
-    it('should return AI recommendation with default options', async () => {
-      const recommendation = await service.getAIRecommendation('GOOGL');
+  describe("getAIRecommendation", () => {
+    it("should return AI recommendation with default options", async () => {
+      const recommendation = await service.getAIRecommendation("GOOGL");
 
       expect(recommendation).toBeDefined();
       expect(recommendation.action).toMatch(/^(buy|sell|hold)$/);
       expect(recommendation.confidence).toBeGreaterThanOrEqual(0);
       expect(recommendation.confidence).toBeLessThanOrEqual(100);
       expect(recommendation.timeHorizon).toMatch(
-        /^(short_term|medium_term|long_term)$/
+        /^(short_term|medium_term|long_term)$/,
       );
       expect(recommendation.targetPrice).toBeGreaterThan(0);
       expect(Array.isArray(recommendation.rationale)).toBe(true);
     });
 
-    it('should accept custom timeframe and risk tolerance', async () => {
-      const recommendation = await service.getAIRecommendation('NVDA', {
-        timeframe: 'long',
-        riskTolerance: 'aggressive',
+    it("should accept custom timeframe and risk tolerance", async () => {
+      const recommendation = await service.getAIRecommendation("NVDA", {
+        timeframe: "long",
+        riskTolerance: "aggressive",
       });
 
       expect(recommendation).toBeDefined();
       expect(recommendation.action).toMatch(/^(buy|sell|hold)$/);
-      expect(recommendation.timeHorizon).toBe('long_term');
+      expect(recommendation.timeHorizon).toBe("long_term");
     });
 
-    it('should handle short timeframe', async () => {
-      const recommendation = await service.getAIRecommendation('AMD', {
-        timeframe: 'short',
-        riskTolerance: 'conservative',
+    it("should handle short timeframe", async () => {
+      const recommendation = await service.getAIRecommendation("AMD", {
+        timeframe: "short",
+        riskTolerance: "conservative",
       });
 
       expect(recommendation).toBeDefined();
-      expect(recommendation.timeHorizon).toBe('short_term');
+      expect(recommendation.timeHorizon).toBe("short_term");
     });
   });
 
@@ -525,13 +525,13 @@ describe('AIStockAnalystService', () => {
   // REDIS CACHING TESTS
   // ==========================================================================
 
-  describe('Redis caching integration', () => {
-    it('should cache analysis in Redis', async () => {
+  describe("Redis caching integration", () => {
+    it("should cache analysis in Redis", async () => {
       service.clearCache();
 
       const request: StockAnalysisRequest = {
-        symbol: 'IBM',
-        analysisTypes: ['technical'],
+        symbol: "IBM",
+        analysisTypes: ["technical"],
         includeAI: false,
       };
 
@@ -544,11 +544,11 @@ describe('AIStockAnalystService', () => {
       expect(result2.data?.timestamp).toEqual(result1.data?.timestamp);
     });
 
-    it('should handle Redis unavailability gracefully', async () => {
+    it("should handle Redis unavailability gracefully", async () => {
       // Redis is not configured in test environment, should use in-memory fallback
       const request: StockAnalysisRequest = {
-        symbol: 'ORCL',
-        analysisTypes: ['technical'],
+        symbol: "ORCL",
+        analysisTypes: ["technical"],
         includeAI: false,
       };
 
@@ -563,11 +563,11 @@ describe('AIStockAnalystService', () => {
   // ERROR HANDLING TESTS
   // ==========================================================================
 
-  describe('Error handling', () => {
-    it('should handle network errors gracefully', async () => {
+  describe("Error handling", () => {
+    it("should handle network errors gracefully", async () => {
       const request: StockAnalysisRequest = {
-        symbol: 'XYZ', // Use a valid symbol format
-        analysisTypes: ['technical'],
+        symbol: "XYZ", // Use a valid symbol format
+        analysisTypes: ["technical"],
         includeAI: false,
       };
 
@@ -578,10 +578,10 @@ describe('AIStockAnalystService', () => {
       expect(result.processingTime).toBeGreaterThanOrEqual(0);
     });
 
-    it('should handle AI service errors gracefully', async () => {
+    it("should handle AI service errors gracefully", async () => {
       const request: StockAnalysisRequest = {
-        symbol: 'TEST',
-        analysisTypes: ['ai'],
+        symbol: "TEST",
+        analysisTypes: ["ai"],
         includeAI: true,
       };
 

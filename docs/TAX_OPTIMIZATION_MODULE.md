@@ -5,6 +5,7 @@ Comprehensive AI-powered tax optimization engine providing personalized tax-savi
 ## Overview
 
 The Tax Optimization module helps users:
+
 - Calculate federal and state tax liabilities
 - Identify tax-saving opportunities
 - Optimize retirement account contributions
@@ -41,6 +42,7 @@ The Tax Optimization module helps users:
 ### 1. Tax Calculation Engine
 
 **Federal Tax Calculations:**
+
 - Progressive tax brackets (2024 rates)
 - All filing statuses (Single, MFJ, MFS, HoH)
 - Long-term capital gains (0%, 15%, 20% rates)
@@ -48,6 +50,7 @@ The Tax Optimization module helps users:
 - FICA taxes (Social Security, Medicare, Additional Medicare)
 
 **State Tax Calculations:**
+
 - All 50 states supported
 - Progressive and flat tax states
 - No-income-tax states (TX, FL, WA, NV, WY, SD, AK, TN, NH)
@@ -55,6 +58,7 @@ The Tax Optimization module helps users:
 ### 2. Retirement Account Optimization
 
 Analyzes and recommends optimal contributions for:
+
 - **401(k)** - Employer match capture, contribution limits
 - **Traditional IRA** - Deductibility based on income/coverage
 - **Roth IRA** - Income eligibility, backdoor strategies
@@ -64,13 +68,15 @@ Analyzes and recommends optimal contributions for:
 ### 3. Document OCR Processing
 
 **Multi-Provider Architecture:**
+
 ```
 Primary:   OpenAI Vision (GPT-4o) → Best context understanding
-Secondary: Google Vision API      → Fast, accurate raw OCR  
+Secondary: Google Vision API      → Fast, accurate raw OCR
 Tertiary:  LandingAI             → Specialized document AI
 ```
 
 **Intelligent Fallback:**
+
 - If primary confidence < 85%, runs secondary providers in parallel
 - Consensus-based field resolution when providers disagree
 - Automatic retry with exponential backoff
@@ -93,6 +99,7 @@ Tertiary:  LandingAI             → Specialized document AI
 ### 4. Scenario Modeling
 
 What-if analysis tool for comparing tax strategies:
+
 - Adjust retirement contributions
 - Model capital gains realization
 - Compare charitable giving strategies
@@ -101,6 +108,7 @@ What-if analysis tool for comparing tax strategies:
 ### 5. Tax Calendar
 
 Track important tax deadlines:
+
 - Quarterly estimated tax payments
 - Filing deadlines
 - Contribution deadlines (401k, IRA, HSA)
@@ -127,6 +135,7 @@ SUPABASE_SERVICE_ROLE_KEY=...
 Run tax analysis for a user profile.
 
 **Request:**
+
 ```json
 {
   "taxYear": 2024,
@@ -141,6 +150,7 @@ Run tax analysis for a user profile.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -166,10 +176,12 @@ Run tax analysis for a user profile.
 Upload and process a tax document.
 
 **Request:** `multipart/form-data`
+
 - `file` - PDF, PNG, or JPG (max 10MB)
 - `taxYear` - Tax year (optional)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -197,6 +209,7 @@ Upload and process a tax document.
 Fetch user's tax documents.
 
 **Query Parameters:**
+
 - `year` - Filter by tax year
 - `type` - Filter by document type
 - `status` - Filter by status (verified, pending)
@@ -208,6 +221,7 @@ Delete a tax document.
 ## Database Schema
 
 ### tax_documents
+
 ```sql
 CREATE TABLE tax_documents (
   id UUID PRIMARY KEY,
@@ -224,7 +238,9 @@ CREATE TABLE tax_documents (
 ```
 
 ### tax_audit_log
+
 All tax-related actions are logged for compliance:
+
 ```sql
 CREATE TABLE tax_audit_log (
   id UUID PRIMARY KEY,
@@ -240,20 +256,25 @@ CREATE TABLE tax_audit_log (
 ## Security & Compliance
 
 ### Data Protection
+
 - All tax data encrypted at rest (Supabase)
 - Row-Level Security (RLS) on all tables
 - Users can only access their own data
 - No PII logged in application logs
 
 ### Disclaimers
+
 The Tax Optimization module includes required disclaimers:
+
 - Tax recommendations are for informational purposes only
 - Do not constitute tax, legal, or financial advice
 - Users should consult qualified tax professionals
 - Tax calculations based on current law, subject to change
 
 ### Audit Trail
+
 All actions are logged:
+
 - Document uploads and processing
 - Tax analysis runs
 - Recommendation acknowledgments
@@ -261,22 +282,24 @@ All actions are logged:
 
 ## UI Routes
 
-| Route | Description |
-|-------|-------------|
-| `/tax` | Main tax dashboard |
+| Route            | Description                  |
+| ---------------- | ---------------------------- |
+| `/tax`           | Main tax dashboard           |
 | `/tax/documents` | Document upload & management |
-| `/tax/scenarios` | What-if scenario modeler |
-| `/tax/calendar` | Tax deadlines & reminders |
+| `/tax/scenarios` | What-if scenario modeler     |
+| `/tax/calendar`  | Tax deadlines & reminders    |
 
 ## Mobile App
 
 React Native screens available:
+
 - `app/tax/index.tsx` - Main tax screen
 - `app/tax/documents.tsx` - Document management
 
 ## Testing
 
 Run tests with:
+
 ```bash
 npm run test -- src/lib/tax/__tests__
 ```

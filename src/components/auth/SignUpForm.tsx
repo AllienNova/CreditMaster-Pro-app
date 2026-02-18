@@ -1,20 +1,20 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { useAuth } from '@/hooks/useAuth';
-import { createClient } from '@/lib/supabase/client';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useAuth } from "@/hooks/useAuth";
+import { createClient } from "@/lib/supabase/client";
 
 export default function SignUpForm() {
   const router = useRouter();
   const { signUp, loading, error: authError } = useAuth();
 
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
   });
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -32,22 +32,22 @@ export default function SignUpForm() {
       !formData.password ||
       !formData.confirmPassword
     ) {
-      setError('Please fill in all fields');
+      setError("Please fill in all fields");
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      setError("Passwords do not match");
       return;
     }
 
     if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters');
+      setError("Password must be at least 8 characters");
       return;
     }
 
     if (!agreedToTerms) {
-      setError('Please agree to the Terms of Service and Privacy Policy');
+      setError("Please agree to the Terms of Service and Privacy Policy");
       return;
     }
 
@@ -60,13 +60,13 @@ export default function SignUpForm() {
 
     if (success) {
       // Redirect to onboarding flow for new users
-      router.push('/onboarding');
+      router.push("/onboarding");
     } else {
-      setError(authError || 'Failed to sign up');
+      setError(authError || "Failed to sign up");
     }
   };
 
-  const handleOAuthLogin = async (provider: 'google' | 'github') => {
+  const handleOAuthLogin = async (provider: "google" | "github") => {
     try {
       setOauthLoading(provider);
       setError(null);
@@ -79,10 +79,10 @@ export default function SignUpForm() {
         options: {
           redirectTo,
           queryParams:
-            provider === 'google'
+            provider === "google"
               ? {
-                  access_type: 'offline',
-                  prompt: 'consent',
+                  access_type: "offline",
+                  prompt: "consent",
                 }
               : undefined,
         },
@@ -92,7 +92,7 @@ export default function SignUpForm() {
         setError(oauthError.message);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'OAuth login failed');
+      setError(err instanceof Error ? err.message : "OAuth login failed");
     } finally {
       setOauthLoading(null);
     }
@@ -126,7 +126,20 @@ export default function SignUpForm() {
           aria-live="polite"
         >
           <div className="flex items-center gap-2">
-            <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+            <svg
+              className="w-5 h-5 text-red-500 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+              />
+            </svg>
             <p className="text-red-800 dark:text-red-300 text-sm">{error}</p>
           </div>
         </div>
@@ -185,7 +198,7 @@ export default function SignUpForm() {
           <div className="relative">
             <input
               id="password"
-              type={showPassword ? 'text' : 'password'}
+              type={showPassword ? "text" : "password"}
               value={formData.password}
               onChange={(e) =>
                 setFormData({ ...formData, password: e.target.value })
@@ -198,12 +211,41 @@ export default function SignUpForm() {
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-slate-500 dark:hover:text-gray-300 transition-colors"
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? (
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"
+                  />
+                </svg>
               ) : (
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                </svg>
               )}
             </button>
           </div>
@@ -222,7 +264,7 @@ export default function SignUpForm() {
           </label>
           <input
             id="confirmPassword"
-            type={showPassword ? 'text' : 'password'}
+            type={showPassword ? "text" : "password"}
             value={formData.confirmPassword}
             onChange={(e) =>
               setFormData({ ...formData, confirmPassword: e.target.value })
@@ -246,14 +288,14 @@ export default function SignUpForm() {
             htmlFor="terms"
             className="ml-2 text-sm text-gray-600 dark:text-slate-300"
           >
-            I agree to the{' '}
+            I agree to the{" "}
             <Link
               href="/terms"
               className="text-blue-600 hover:text-blue-700 font-medium"
             >
               Terms of Service
-            </Link>{' '}
-            and{' '}
+            </Link>{" "}
+            and{" "}
             <Link
               href="/privacy"
               className="text-blue-600 hover:text-blue-700 font-medium"
@@ -290,7 +332,7 @@ export default function SignUpForm() {
               Creating account...
             </span>
           ) : (
-            'Create Account'
+            "Create Account"
           )}
         </button>
       </form>
@@ -298,7 +340,7 @@ export default function SignUpForm() {
       {/* Sign In Link */}
       <div className="mt-6 text-center">
         <p className="text-gray-600 dark:text-slate-300">
-          Already have an account?{' '}
+          Already have an account?{" "}
           <Link
             href="/auth/login"
             className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-semibold"
@@ -314,7 +356,9 @@ export default function SignUpForm() {
           <div className="w-full border-t border-gray-300 dark:border-slate-600"></div>
         </div>
         <div className="relative flex justify-center text-sm">
-          <span className="px-4 bg-white dark:bg-slate-800 text-gray-500 dark:text-slate-400">Or continue with</span>
+          <span className="px-4 bg-white dark:bg-slate-800 text-gray-500 dark:text-slate-400">
+            Or continue with
+          </span>
         </div>
       </div>
 
@@ -322,11 +366,11 @@ export default function SignUpForm() {
       <div className="mt-6 grid grid-cols-2 gap-3">
         <button
           type="button"
-          onClick={() => handleOAuthLogin('google')}
+          onClick={() => handleOAuthLogin("google")}
           disabled={loading || oauthLoading !== null}
           className="px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed bg-white dark:bg-slate-800"
         >
-          {oauthLoading === 'google' ? (
+          {oauthLoading === "google" ? (
             <svg
               className="animate-spin h-5 w-5 text-gray-500 dark:text-slate-400"
               viewBox="0 0 24 24"
@@ -366,17 +410,19 @@ export default function SignUpForm() {
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                 />
               </svg>
-              <span className="text-sm font-medium text-gray-700 dark:text-slate-200">Google</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-slate-200">
+                Google
+              </span>
             </>
           )}
         </button>
         <button
           type="button"
-          onClick={() => handleOAuthLogin('github')}
+          onClick={() => handleOAuthLogin("github")}
           disabled={loading || oauthLoading !== null}
           className="px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed bg-white dark:bg-slate-800"
         >
-          {oauthLoading === 'github' ? (
+          {oauthLoading === "github" ? (
             <svg
               className="animate-spin h-5 w-5 text-gray-500 dark:text-slate-400"
               viewBox="0 0 24 24"
@@ -398,10 +444,17 @@ export default function SignUpForm() {
             </svg>
           ) : (
             <>
-              <svg className="w-5 h-5 text-gray-900 dark:text-white" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <svg
+                className="w-5 h-5 text-gray-900 dark:text-white"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+              >
                 <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
               </svg>
-              <span className="text-sm font-medium text-gray-700 dark:text-slate-200">GitHub</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-slate-200">
+                GitHub
+              </span>
             </>
           )}
         </button>

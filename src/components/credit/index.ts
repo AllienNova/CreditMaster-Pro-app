@@ -9,5 +9,5 @@ export {
   getScoreLabel,
   getScoreBgColor,
   getScoreTextColor,
-} from './ScoreGauge';
-export type { ScoreGaugeProps, ScoreRating } from './ScoreGauge';
+} from "./ScoreGauge";
+export type { ScoreGaugeProps, ScoreRating } from "./ScoreGauge";

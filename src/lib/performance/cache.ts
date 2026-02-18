@@ -118,12 +118,12 @@ export const dataCache = new Cache({ ttl: 5 * 60 * 1000, maxSize: 2000 }); // 5 
 export function cached<T>(
   cache: Cache<T>,
   keyFn: (...args: unknown[]) => string,
-  ttl?: number
+  ttl?: number,
 ) {
   return function (
     target: unknown,
     propertyKey: string,
-    descriptor: PropertyDescriptor
+    descriptor: PropertyDescriptor,
   ) {
     const originalMethod = descriptor.value;
 
@@ -147,7 +147,7 @@ export function cached<T>(
 // Simple memoization helper
 export function memoize<T extends (...args: unknown[]) => unknown>(
   fn: T,
-  options: CacheOptions = {}
+  options: CacheOptions = {},
 ): T {
   const cache = new Cache(options);
 
@@ -166,11 +166,10 @@ export function memoize<T extends (...args: unknown[]) => unknown>(
 }
 
 // Run cleanup every minute
-if (typeof setInterval !== 'undefined') {
+if (typeof setInterval !== "undefined") {
   setInterval(() => {
     apiCache.cleanup();
     sessionCache.cleanup();
     dataCache.cleanup();
   }, 60 * 1000);
 }
-

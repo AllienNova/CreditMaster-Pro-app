@@ -4,18 +4,18 @@
  * Enhanced with real-time updates and background sync
  */
 
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { creditScoreApi, creditMonitoringApi } from '../services/api';
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { creditScoreApi, creditMonitoringApi } from "../services/api";
 import type {
   CreditScore,
   CreditFactor,
   CreditScoreHistory,
   CreditMonitoringAlert,
   MonitoringStatus,
-} from '../services/api/types';
-import { pushNotificationService } from '../services/notifications/pushNotificationService';
+} from "../services/api/types";
+import { pushNotificationService } from "../services/notifications/pushNotificationService";
 
 interface CreditState {
   // Credit Scores
@@ -71,14 +71,19 @@ interface CreditState {
   acknowledgeAllAlerts: () => Promise<void>;
   toggleBureauMonitoring: (bureau: string, enabled: boolean) => Promise<void>;
   deleteAlert: (alertId: string) => Promise<void>;
-  updateAlertPreferences: (preferences: Record<string, boolean>) => Promise<void>;
+  updateAlertPreferences: (
+    preferences: Record<string, boolean>,
+  ) => Promise<void>;
   toggleMonitoring: (enabled: boolean) => Promise<void>;
 
   // Actions - Real-time Updates
   enableBackgroundSync: (intervalMs?: number) => void;
   disableBackgroundSync: () => void;
   performBackgroundSync: () => Promise<void>;
-  handleScoreChange: (newScores: CreditScore[], oldScores: CreditScore[]) => Promise<void>;
+  handleScoreChange: (
+    newScores: CreditScore[],
+    oldScores: CreditScore[],
+  ) => Promise<void>;
   handleNewAlert: (alert: CreditMonitoringAlert) => Promise<void>;
 
   // Actions - Utility
@@ -129,9 +134,13 @@ export const useCreditStore = create<CreditState>()(
             const newScores = response.data;
             const now = new Date().toISOString();
             // Calculate average score
-            const avgScore = newScores.length > 0
-              ? Math.round(newScores.reduce((sum, s) => sum + s.score, 0) / newScores.length)
-              : null;
+            const avgScore =
+              newScores.length > 0
+                ? Math.round(
+                    newScores.reduce((sum, s) => sum + s.score, 0) /
+                      newScores.length,
+                  )
+                : null;
             set({
               scores: newScores,
               currentScore: avgScore,
@@ -146,14 +155,16 @@ export const useCreditStore = create<CreditState>()(
             }
           } else {
             set({
-              scoreError: (response.error as { message?: string })?.message || 'Failed to fetch scores',
+              scoreError:
+                (response.error as { message?: string })?.message ||
+                "Failed to fetch scores",
               isLoadingScores: false,
             });
           }
         } catch (error) {
           set({
             scoreError:
-              error instanceof Error ? error.message : 'Unknown error',
+              error instanceof Error ? error.message : "Unknown error",
             isLoadingScores: false,
           });
         }
@@ -167,12 +178,19 @@ export const useCreditStore = create<CreditState>()(
             // Convert array to history format
             const scores = response.data;
             const history: CreditScoreHistory = {
-              history: scores.map(s => ({ date: s.date, score: s.score, bureau: s.bureau })),
-              averageScore: scores.reduce((sum, s) => sum + s.score, 0) / (scores.length || 1),
-              highestScore: Math.max(...scores.map(s => s.score), 0),
-              lowestScore: Math.min(...scores.map(s => s.score), 850),
-              trend: 'stable',
-              periodStart: scores[scores.length - 1]?.date || new Date().toISOString(),
+              history: scores.map((s) => ({
+                date: s.date,
+                score: s.score,
+                bureau: s.bureau,
+              })),
+              averageScore:
+                scores.reduce((sum, s) => sum + s.score, 0) /
+                (scores.length || 1),
+              highestScore: Math.max(...scores.map((s) => s.score), 0),
+              lowestScore: Math.min(...scores.map((s) => s.score), 850),
+              trend: "stable",
+              periodStart:
+                scores[scores.length - 1]?.date || new Date().toISOString(),
               periodEnd: scores[0]?.date || new Date().toISOString(),
             };
             set({ scoreHistory: history, isLoadingScores: false });
@@ -192,14 +210,19 @@ export const useCreditStore = create<CreditState>()(
             const factors: CreditFactor[] = response.data.map((f, index) => ({
               id: `factor-${index}`,
               name: f.factor,
-              impact: f.impact > 0 ? 'positive' : f.impact < 0 ? 'negative' : 'neutral',
-              category: 'payment_history' as const,
+              impact:
+                f.impact > 0
+                  ? "positive"
+                  : f.impact < 0
+                    ? "negative"
+                    : "neutral",
+              category: "payment_history" as const,
               description: f.status,
             }));
             set({ factors });
           }
         } catch (error) {
-          if (__DEV__) console.error('Failed to fetch factors:', error);
+          if (__DEV__) console.error("Failed to fetch factors:", error);
         }
       },
 
@@ -215,7 +238,7 @@ export const useCreditStore = create<CreditState>()(
         } catch (error) {
           set({
             scoreError:
-              error instanceof Error ? error.message : 'Refresh failed',
+              error instanceof Error ? error.message : "Refresh failed",
             isRefreshing: false,
           });
         }
@@ -244,7 +267,8 @@ export const useCreditStore = create<CreditState>()(
             set({ monitoringStatus: response.data });
           }
         } catch (error) {
-          if (__DEV__) console.error('Failed to fetch monitoring status:', error);
+          if (__DEV__)
+            console.error("Failed to fetch monitoring status:", error);
         }
       },
 
@@ -259,7 +283,9 @@ export const useCreditStore = create<CreditState>()(
             const now = new Date().toISOString();
             set({
               alerts,
-              unreadAlertCount: alerts.filter((a: CreditMonitoringAlert) => !a.acknowledged).length,
+              unreadAlertCount: alerts.filter(
+                (a: CreditMonitoringAlert) => !a.acknowledged,
+              ).length,
               lastAlertFetch: now,
               isLoadingAlerts: false,
             });
@@ -267,7 +293,8 @@ export const useCreditStore = create<CreditState>()(
             // Check for new alerts and notify
             if (oldAlerts.length > 0) {
               const newAlerts = alerts.filter(
-                (alert: CreditMonitoringAlert) => !oldAlerts.some((old) => old.id === alert.id)
+                (alert: CreditMonitoringAlert) =>
+                  !oldAlerts.some((old) => old.id === alert.id),
               );
               for (const alert of newAlerts) {
                 await get().handleNewAlert(alert);
@@ -275,14 +302,16 @@ export const useCreditStore = create<CreditState>()(
             }
           } else {
             set({
-              alertError: (response.error as { message?: string })?.message || 'Failed to fetch alerts',
+              alertError:
+                (response.error as { message?: string })?.message ||
+                "Failed to fetch alerts",
               isLoadingAlerts: false,
             });
           }
         } catch (error) {
           set({
             alertError:
-              error instanceof Error ? error.message : 'Failed to fetch alerts',
+              error instanceof Error ? error.message : "Failed to fetch alerts",
             isLoadingAlerts: false,
           });
         }
@@ -294,13 +323,13 @@ export const useCreditStore = create<CreditState>()(
           if (response.success) {
             set((state) => ({
               alerts: state.alerts.map((a) =>
-                a.id === alertId ? { ...a, acknowledged: true } : a
+                a.id === alertId ? { ...a, acknowledged: true } : a,
               ),
               unreadAlertCount: Math.max(0, state.unreadAlertCount - 1),
             }));
           }
         } catch (error) {
-          if (__DEV__) console.error('Failed to acknowledge alert:', error);
+          if (__DEV__) console.error("Failed to acknowledge alert:", error);
         }
       },
 
@@ -314,7 +343,8 @@ export const useCreditStore = create<CreditState>()(
             }));
           }
         } catch (error) {
-          if (__DEV__) console.error('Failed to acknowledge all alerts:', error);
+          if (__DEV__)
+            console.error("Failed to acknowledge all alerts:", error);
         }
       },
 
@@ -322,13 +352,14 @@ export const useCreditStore = create<CreditState>()(
         try {
           const response = await creditMonitoringApi.toggleBureauMonitoring(
             bureau,
-            enabled
+            enabled,
           );
           if (response.success) {
             get().fetchMonitoringStatus();
           }
         } catch (error) {
-          if (__DEV__) console.error('Failed to toggle bureau monitoring:', error);
+          if (__DEV__)
+            console.error("Failed to toggle bureau monitoring:", error);
         }
       },
 
@@ -368,12 +399,13 @@ export const useCreditStore = create<CreditState>()(
           _backgroundSyncTimer: null, // MEMORY LEAK FIX: Clear state reference
         });
         if (__DEV__) {
-          console.log('📡 Background sync disabled');
+          console.log("📡 Background sync disabled");
         }
       },
 
       performBackgroundSync: async () => {
-        const { isSyncingInBackground, isLoadingScores, isLoadingAlerts } = get();
+        const { isSyncingInBackground, isLoadingScores, isLoadingAlerts } =
+          get();
 
         // Skip if already syncing or loading
         if (isSyncingInBackground || isLoadingScores || isLoadingAlerts) {
@@ -384,10 +416,7 @@ export const useCreditStore = create<CreditState>()(
 
         try {
           // Fetch scores and alerts in parallel
-          await Promise.all([
-            get().fetchScores(),
-            get().fetchAlerts(),
-          ]);
+          await Promise.all([get().fetchScores(), get().fetchAlerts()]);
 
           set({
             lastBackgroundSync: new Date().toISOString(),
@@ -395,10 +424,10 @@ export const useCreditStore = create<CreditState>()(
           });
 
           if (__DEV__) {
-            console.log('📡 Background sync completed');
+            console.log("📡 Background sync completed");
           }
         } catch (error) {
-          if (__DEV__) console.error('Background sync failed:', error);
+          if (__DEV__) console.error("Background sync failed:", error);
           set({ isSyncingInBackground: false });
         }
       },
@@ -410,24 +439,24 @@ export const useCreditStore = create<CreditState>()(
 
           if (oldScore && oldScore.score !== newScore.score) {
             const change = newScore.score - oldScore.score;
-            const direction = change > 0 ? 'increased' : 'decreased';
+            const direction = change > 0 ? "increased" : "decreased";
             const absChange = Math.abs(change);
 
             // Send notification for significant changes (5+ points)
             if (absChange >= 5) {
               await pushNotificationService.scheduleLocalNotification(
-                `Credit Score ${direction === 'increased' ? '📈' : '📉'}`,
+                `Credit Score ${direction === "increased" ? "📈" : "📉"}`,
                 `Your ${newScore.bureau} score ${direction} by ${absChange} points to ${newScore.score}`,
                 {
-                  screen: '/credit/score-detail',
+                  screen: "/credit/score-detail",
                   params: { bureau: newScore.bureau },
-                }
+                },
               );
             }
 
             if (__DEV__) {
               console.log(
-                `📊 Score change detected: ${newScore.bureau} ${oldScore.score} → ${newScore.score} (${change > 0 ? '+' : ''}${change})`
+                `📊 Score change detected: ${newScore.bureau} ${oldScore.score} → ${newScore.score} (${change > 0 ? "+" : ""}${change})`,
               );
             }
           }
@@ -436,20 +465,21 @@ export const useCreditStore = create<CreditState>()(
 
       handleNewAlert: async (alert) => {
         // Send push notification for new alert
-        const severityEmoji = {
-          critical: '🚨',
-          high: '⚠️',
-          medium: 'ℹ️',
-          low: '📋',
-        }[alert.severity] || '📢';
+        const severityEmoji =
+          {
+            critical: "🚨",
+            high: "⚠️",
+            medium: "ℹ️",
+            low: "📋",
+          }[alert.severity] || "📢";
 
         await pushNotificationService.scheduleLocalNotification(
           `${severityEmoji} ${alert.title}`,
           alert.description,
           {
-            screen: '/monitoring/alerts',
+            screen: "/monitoring/alerts",
             id: alert.id,
-          }
+          },
         );
 
         if (__DEV__) {
@@ -466,31 +496,33 @@ export const useCreditStore = create<CreditState>()(
             }));
           }
         } catch (error) {
-          if (__DEV__) console.error('Failed to delete alert:', error);
+          if (__DEV__) console.error("Failed to delete alert:", error);
         }
       },
 
       updateAlertPreferences: async (preferences: Record<string, boolean>) => {
         try {
-          const response = await creditMonitoringApi.updatePreferences(preferences);
+          const response =
+            await creditMonitoringApi.updatePreferences(preferences);
           if (response.success) {
             // Refresh monitoring status to get updated preferences
             await get().fetchMonitoringStatus();
           }
         } catch (error) {
-          if (__DEV__) console.error('Failed to update alert preferences:', error);
+          if (__DEV__)
+            console.error("Failed to update alert preferences:", error);
         }
       },
 
       toggleMonitoring: async (enabled: boolean) => {
         try {
           // Toggle all bureaus
-          const bureaus = ['experian', 'equifax', 'transunion'];
+          const bureaus = ["experian", "equifax", "transunion"];
           for (const bureau of bureaus) {
             await get().toggleBureauMonitoring(bureau, enabled);
           }
         } catch (error) {
-          if (__DEV__) console.error('Failed to toggle monitoring:', error);
+          if (__DEV__) console.error("Failed to toggle monitoring:", error);
         }
       },
 
@@ -506,34 +538,48 @@ export const useCreditStore = create<CreditState>()(
       },
 
       setScores: (scores) => {
-        const currentScore = scores.length > 0
-          ? Math.round(scores.reduce((sum, s) => sum + s.score, 0) / scores.length)
-          : null;
-        set({ scores, currentScore, lastScoreUpdate: new Date().toISOString() });
+        const currentScore =
+          scores.length > 0
+            ? Math.round(
+                scores.reduce((sum, s) => sum + s.score, 0) / scores.length,
+              )
+            : null;
+        set({
+          scores,
+          currentScore,
+          lastScoreUpdate: new Date().toISOString(),
+        });
       },
 
       updateScore: (bureau, score) => {
-        const scores = get().scores.map(s =>
+        const scores = get().scores.map((s) =>
           s.bureau.toLowerCase() === bureau.toLowerCase()
             ? { ...s, score, change: score - s.score }
-            : s
+            : s,
         );
-        const currentScore = scores.length > 0
-          ? Math.round(scores.reduce((sum, s) => sum + s.score, 0) / scores.length)
-          : null;
-        set({ scores, currentScore, lastScoreUpdate: new Date().toISOString() });
+        const currentScore =
+          scores.length > 0
+            ? Math.round(
+                scores.reduce((sum, s) => sum + s.score, 0) / scores.length,
+              )
+            : null;
+        set({
+          scores,
+          currentScore,
+          lastScoreUpdate: new Date().toISOString(),
+        });
       },
     }),
     {
-      name: 'cpfi-credit-store',
+      name: "cpfi-credit-store",
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         scores: state.scores,
         lastScoreUpdate: state.lastScoreUpdate,
         monitoringStatus: state.monitoringStatus,
       }),
-    }
-  )
+    },
+  ),
 );
 
 // Selectors
@@ -541,7 +587,7 @@ export const selectScores = (state: CreditState) => state.scores;
 export const selectAverageScore = (state: CreditState) => {
   if (state.scores.length === 0) return 0;
   return Math.round(
-    state.scores.reduce((sum, s) => sum + s.score, 0) / state.scores.length
+    state.scores.reduce((sum, s) => sum + s.score, 0) / state.scores.length,
   );
 };
 export const selectScoreByBureau = (bureau: string) => (state: CreditState) =>
@@ -550,7 +596,11 @@ export const selectUnreadAlerts = (state: CreditState) =>
   state.alerts.filter((a) => !a.acknowledged);
 export const selectIsMonitoringActive = (state: CreditState) =>
   state.monitoringStatus?.isActive ?? false;
-export const selectLastScoreFetch = (state: CreditState) => state.lastScoreFetch;
-export const selectLastAlertFetch = (state: CreditState) => state.lastAlertFetch;
-export const selectIsBackgroundSyncEnabled = (state: CreditState) => state.isBackgroundSyncEnabled;
-export const selectLastBackgroundSync = (state: CreditState) => state.lastBackgroundSync;
+export const selectLastScoreFetch = (state: CreditState) =>
+  state.lastScoreFetch;
+export const selectLastAlertFetch = (state: CreditState) =>
+  state.lastAlertFetch;
+export const selectIsBackgroundSyncEnabled = (state: CreditState) =>
+  state.isBackgroundSyncEnabled;
+export const selectLastBackgroundSync = (state: CreditState) =>
+  state.lastBackgroundSync;

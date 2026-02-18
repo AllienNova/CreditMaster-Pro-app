@@ -4,10 +4,10 @@
  * with a total or summary value in the center.
  */
 
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import Svg, { G, Path, Text as SvgText } from 'react-native-svg';
-import { lightTheme as theme } from '../../constants/theme';
+import React from "react";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import Svg, { G, Path, Text as SvgText } from "react-native-svg";
+import { lightTheme as theme } from "../../constants/theme";
 
 interface DonutData {
   value: number;
@@ -28,14 +28,14 @@ export interface DonutChartProps {
 }
 
 const CHART_COLORS = [
-  '#3B82F6', // blue
-  '#8B5CF6', // purple
-  '#22C55E', // green
-  '#F59E0B', // amber
-  '#EF4444', // red
-  '#06B6D4', // cyan
-  '#EC4899', // pink
-  '#84CC16', // lime
+  "#3B82F6", // blue
+  "#8B5CF6", // purple
+  "#22C55E", // green
+  "#F59E0B", // amber
+  "#EF4444", // red
+  "#06B6D4", // cyan
+  "#EC4899", // pink
+  "#84CC16", // lime
 ];
 
 export function DonutChart({
@@ -110,10 +110,15 @@ export function DonutChart({
     return value.toLocaleString();
   };
 
-  const displayCenterValue = centerValue ?? (currency ? `$${total.toLocaleString()}` : total.toLocaleString());
+  const displayCenterValue =
+    centerValue ??
+    (currency ? `$${total.toLocaleString()}` : total.toLocaleString());
 
   return (
-    <View style={styles.container} accessibilityLabel="Donut chart showing data distribution">
+    <View
+      style={styles.container}
+      accessibilityLabel="Donut chart showing data distribution"
+    >
       <View style={styles.chartContainer}>
         <Svg width={size} height={size}>
           {slices.map((slice, index) => {
@@ -185,7 +190,9 @@ export function DonutChart({
               onPress={() => onSlicePress?.(slice, index)}
               activeOpacity={onSlicePress ? 0.7 : 1}
             >
-              <View style={[styles.legendDot, { backgroundColor: slice.color }]} />
+              <View
+                style={[styles.legendDot, { backgroundColor: slice.color }]}
+              />
               <Text style={styles.legendLabel} numberOfLines={1}>
                 {slice.label}
               </Text>
@@ -209,18 +216,18 @@ export function DonutChart({
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   chartContainer: {
     marginBottom: 16,
   },
   legend: {
-    width: '100%',
+    width: "100%",
     paddingHorizontal: 16,
   },
   legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 10,
     paddingVertical: 4,
   },
@@ -236,22 +243,22 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
   },
   legendValues: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   legendPercentage: {
     fontSize: 13,
     color: theme.colors.textSecondary,
     minWidth: 45,
-    textAlign: 'right',
+    textAlign: "right",
   },
   legendValue: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     minWidth: 60,
-    textAlign: 'right',
+    textAlign: "right",
   },
 });
 

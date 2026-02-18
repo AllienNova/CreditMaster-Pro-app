@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
 /**
  * Advanced Chart Container
- * 
+ *
  * Full-featured chart container with:
  * - Responsive design for mobile and web
  * - Chart type selector
@@ -12,13 +12,19 @@
  * - Real-time price display
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import InvestmentChart, { CrosshairData, IndicatorConfig } from './InvestmentChart';
-import { ChartType } from '@/lib/investments/types/charting.types';
-import { Timeframe } from '@/lib/investments/types/investment.types';
-import { getMarketDataService, RealtimeUpdate } from '@/lib/investments/services/MarketDataService';
-import { CandleData } from '@/lib/investments/types/charting.types';
-import { Icon } from '@/components/ui/Icon';
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import InvestmentChart, {
+  CrosshairData,
+  IndicatorConfig,
+} from "./InvestmentChart";
+import { ChartType } from "@/lib/investments/types/charting.types";
+import { Timeframe } from "@/lib/investments/types/investment.types";
+import {
+  getMarketDataService,
+  RealtimeUpdate,
+} from "@/lib/investments/services/MarketDataService";
+import { CandleData } from "@/lib/investments/types/charting.types";
+import { Icon } from "@/components/ui/Icon";
 
 // ============================================================================
 // TYPES
@@ -35,36 +41,40 @@ interface AdvancedChartContainerProps {
   className?: string;
 }
 
-type ViewMode = 'basic' | 'advanced';
+type ViewMode = "basic" | "advanced";
 
 // ============================================================================
 // CONSTANTS
 // ============================================================================
 
 const TIMEFRAMES: { value: Timeframe; label: string }[] = [
-  { value: '1m', label: '1m' },
-  { value: '5m', label: '5m' },
-  { value: '15m', label: '15m' },
-  { value: '1h', label: '1H' },
-  { value: '4h', label: '4H' },
-  { value: '1d', label: '1D' },
-  { value: '1w', label: '1W' },
-  { value: '1M', label: '1M' },
+  { value: "1m", label: "1m" },
+  { value: "5m", label: "5m" },
+  { value: "15m", label: "15m" },
+  { value: "1h", label: "1H" },
+  { value: "4h", label: "4H" },
+  { value: "1d", label: "1D" },
+  { value: "1w", label: "1W" },
+  { value: "1M", label: "1M" },
 ];
 
 const CHART_TYPES: { value: ChartType; label: string; icon: string }[] = [
-  { value: 'candlestick', label: 'Candles', icon: "sparkles" },
-  { value: 'line', label: 'Line', icon: "sparkles" },
-  { value: 'area', label: 'Area', icon: "sparkles" },
-  { value: 'heikin_ashi', label: 'Heikin Ashi', icon: "sparkles" },
+  { value: "candlestick", label: "Candles", icon: "sparkles" },
+  { value: "line", label: "Line", icon: "sparkles" },
+  { value: "area", label: "Area", icon: "sparkles" },
+  { value: "heikin_ashi", label: "Heikin Ashi", icon: "sparkles" },
 ];
 
-const AVAILABLE_INDICATORS: { type: IndicatorConfig['type']; label: string; defaultPeriod: number }[] = [
-  { type: 'sma', label: 'SMA', defaultPeriod: 20 },
-  { type: 'ema', label: 'EMA', defaultPeriod: 20 },
-  { type: 'bollinger', label: 'Bollinger Bands', defaultPeriod: 20 },
-  { type: 'rsi', label: 'RSI', defaultPeriod: 14 },
-  { type: 'macd', label: 'MACD', defaultPeriod: 12 },
+const AVAILABLE_INDICATORS: {
+  type: IndicatorConfig["type"];
+  label: string;
+  defaultPeriod: number;
+}[] = [
+  { type: "sma", label: "SMA", defaultPeriod: 20 },
+  { type: "ema", label: "EMA", defaultPeriod: 20 },
+  { type: "bollinger", label: "Bollinger Bands", defaultPeriod: 20 },
+  { type: "rsi", label: "RSI", defaultPeriod: 14 },
+  { type: "macd", label: "MACD", defaultPeriod: 12 },
 ];
 
 // ============================================================================
@@ -73,23 +83,25 @@ const AVAILABLE_INDICATORS: { type: IndicatorConfig['type']; label: string; defa
 
 export function AdvancedChartContainer({
   symbol,
-  initialTimeframe = '1d',
-  initialChartType = 'candlestick',
+  initialTimeframe = "1d",
+  initialChartType = "candlestick",
   showToolbar = true,
   showIndicatorPanel = true,
   height = 500,
   onSymbolChange,
-  className = '',
+  className = "",
 }: AdvancedChartContainerProps) {
   // State
   const [timeframe, setTimeframe] = useState<Timeframe>(initialTimeframe);
   const [chartType, setChartType] = useState<ChartType>(initialChartType);
-  const [viewMode, setViewMode] = useState<ViewMode>('basic');
+  const [viewMode, setViewMode] = useState<ViewMode>("basic");
   const [indicators, setIndicators] = useState<IndicatorConfig[]>([]);
   const [candleData, setCandleData] = useState<CandleData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [crosshairData, setCrosshairData] = useState<CrosshairData | null>(null);
+  const [crosshairData, setCrosshairData] = useState<CrosshairData | null>(
+    null,
+  );
   const [lastPrice, setLastPrice] = useState<number | null>(null);
   const [priceChange, setPriceChange] = useState<number>(0);
 
@@ -101,16 +113,22 @@ export function AdvancedChartContainer({
     setLoading(true);
     setError(null);
     try {
-      const data = await marketDataService.getHistoricalData(symbol, timeframe, 500);
+      const data = await marketDataService.getHistoricalData(
+        symbol,
+        timeframe,
+        500,
+      );
       setCandleData(data);
       if (data.length > 0) {
         const latest = data[data.length - 1];
         const previous = data.length > 1 ? data[data.length - 2] : latest;
         setLastPrice(latest.close);
-        setPriceChange(((latest.close - previous.close) / previous.close) * 100);
+        setPriceChange(
+          ((latest.close - previous.close) / previous.close) * 100,
+        );
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch data');
+      setError(err instanceof Error ? err.message : "Failed to fetch data");
     } finally {
       setLoading(false);
     }
@@ -123,35 +141,38 @@ export function AdvancedChartContainer({
 
   // Subscribe to real-time updates
   useEffect(() => {
-    const unsubscribe = marketDataService.subscribeToSymbol(symbol, (update: RealtimeUpdate) => {
-      setLastPrice(update.price);
-      setPriceChange(update.changePercent);
-      
-      // Update last candle in data
-      setCandleData(prev => {
-        if (prev.length === 0) return prev;
-        const newData = [...prev];
-        const lastCandle = { ...newData[newData.length - 1] };
-        lastCandle.close = update.price;
-        lastCandle.high = Math.max(lastCandle.high, update.price);
-        lastCandle.low = Math.min(lastCandle.low, update.price);
-        lastCandle.volume += update.volume;
-        newData[newData.length - 1] = lastCandle;
-        return newData;
-      });
-    });
+    const unsubscribe = marketDataService.subscribeToSymbol(
+      symbol,
+      (update: RealtimeUpdate) => {
+        setLastPrice(update.price);
+        setPriceChange(update.changePercent);
+
+        // Update last candle in data
+        setCandleData((prev) => {
+          if (prev.length === 0) return prev;
+          const newData = [...prev];
+          const lastCandle = { ...newData[newData.length - 1] };
+          lastCandle.close = update.price;
+          lastCandle.high = Math.max(lastCandle.high, update.price);
+          lastCandle.low = Math.min(lastCandle.low, update.price);
+          lastCandle.volume += update.volume;
+          newData[newData.length - 1] = lastCandle;
+          return newData;
+        });
+      },
+    );
 
     return () => unsubscribe();
   }, [symbol, marketDataService]);
 
   // Toggle indicator
-  const toggleIndicator = (type: IndicatorConfig['type']) => {
-    setIndicators(prev => {
-      const exists = prev.find(i => i.type === type);
+  const toggleIndicator = (type: IndicatorConfig["type"]) => {
+    setIndicators((prev) => {
+      const exists = prev.find((i) => i.type === type);
       if (exists) {
-        return prev.filter(i => i.type !== type);
+        return prev.filter((i) => i.type !== type);
       }
-      const config = AVAILABLE_INDICATORS.find(i => i.type === type);
+      const config = AVAILABLE_INDICATORS.find((i) => i.type === type);
       return [...prev, { type, period: config?.defaultPeriod, visible: true }];
     });
   };
@@ -162,9 +183,11 @@ export function AdvancedChartContainer({
   }, []);
 
   // Calculate chart height
-  const chartHeight = showIndicatorPanel && indicators.some(i => i.type === 'rsi' || i.type === 'macd')
-    ? height - 100
-    : height;
+  const chartHeight =
+    showIndicatorPanel &&
+    indicators.some((i) => i.type === "rsi" || i.type === "macd")
+      ? height - 100
+      : height;
 
   return (
     <div className={`advanced-chart-container ${className}`}>
@@ -189,7 +212,7 @@ export function AdvancedChartContainer({
       )}
 
       {/* Indicator Panel (Advanced Mode) */}
-      {showIndicatorPanel && viewMode === 'advanced' && (
+      {showIndicatorPanel && viewMode === "advanced" && (
         <IndicatorPanel
           indicators={indicators}
           availableIndicators={AVAILABLE_INDICATORS}
@@ -228,7 +251,7 @@ export function AdvancedChartContainer({
           showVolume={true}
           showGrid={true}
           theme="dark"
-          indicators={viewMode === 'advanced' ? indicators : []}
+          indicators={viewMode === "advanced" ? indicators : []}
           onCrosshairMove={handleCrosshairMove}
         />
       </div>
@@ -247,7 +270,12 @@ interface ChartHeaderProps {
   crosshairData: CrosshairData | null;
 }
 
-function ChartHeader({ symbol, lastPrice, priceChange, crosshairData }: ChartHeaderProps) {
+function ChartHeader({
+  symbol,
+  lastPrice,
+  priceChange,
+  crosshairData,
+}: ChartHeaderProps) {
   const displayPrice = crosshairData?.price ?? lastPrice;
   const isPositive = priceChange >= 0;
 
@@ -260,8 +288,11 @@ function ChartHeader({ symbol, lastPrice, priceChange, crosshairData }: ChartHea
             ${displayPrice.toFixed(2)}
           </span>
         )}
-        <span className={`text-sm font-medium ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
-          {isPositive ? '+' : ''}{priceChange.toFixed(2)}%
+        <span
+          className={`text-sm font-medium ${isPositive ? "text-green-500" : "text-red-500"}`}
+        >
+          {isPositive ? "+" : ""}
+          {priceChange.toFixed(2)}%
         </span>
       </div>
 
@@ -301,14 +332,14 @@ function ChartToolbar({
     <div className="flex items-center justify-between px-4 py-2 bg-gray-800/50 border-b border-gray-700">
       {/* Timeframe Selector */}
       <div className="flex items-center gap-1">
-        {TIMEFRAMES.map(tf => (
+        {TIMEFRAMES.map((tf) => (
           <button
             key={tf.value}
             onClick={() => onTimeframeChange(tf.value)}
             className={`px-3 py-1 text-sm rounded transition-colors ${
               timeframe === tf.value
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-400 dark:text-slate-500 hover:text-white hover:bg-gray-700'
+                ? "bg-blue-600 text-white"
+                : "text-gray-400 dark:text-slate-500 hover:text-white hover:bg-gray-700"
             }`}
           >
             {tf.label}
@@ -318,15 +349,15 @@ function ChartToolbar({
 
       {/* Chart Type Selector */}
       <div className="flex items-center gap-2">
-        {CHART_TYPES.map(ct => (
+        {CHART_TYPES.map((ct) => (
           <button
             key={ct.value}
             onClick={() => onChartTypeChange(ct.value)}
             title={ct.label}
             className={`px-2 py-1 text-sm rounded transition-colors ${
               chartType === ct.value
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-400 dark:text-slate-500 hover:text-white hover:bg-gray-700'
+                ? "bg-blue-600 text-white"
+                : "text-gray-400 dark:text-slate-500 hover:text-white hover:bg-gray-700"
             }`}
           >
             {ct.icon}
@@ -337,14 +368,16 @@ function ChartToolbar({
       {/* View Mode Toggle */}
       <div className="flex items-center gap-2">
         <button
-          onClick={() => onViewModeChange(viewMode === 'basic' ? 'advanced' : 'basic')}
+          onClick={() =>
+            onViewModeChange(viewMode === "basic" ? "advanced" : "basic")
+          }
           className={`px-3 py-1 text-sm rounded transition-colors ${
-            viewMode === 'advanced'
-              ? 'bg-purple-600 text-white'
-              : 'text-gray-400 dark:text-slate-500 hover:text-white hover:bg-gray-700'
+            viewMode === "advanced"
+              ? "bg-purple-600 text-white"
+              : "text-gray-400 dark:text-slate-500 hover:text-white hover:bg-gray-700"
           }`}
         >
-          {viewMode === 'advanced' ? 'Advanced' : 'Basic'}
+          {viewMode === "advanced" ? "Advanced" : "Basic"}
         </button>
       </div>
     </div>
@@ -354,23 +387,29 @@ function ChartToolbar({
 interface IndicatorPanelProps {
   indicators: IndicatorConfig[];
   availableIndicators: typeof AVAILABLE_INDICATORS;
-  onToggle: (type: IndicatorConfig['type']) => void;
+  onToggle: (type: IndicatorConfig["type"]) => void;
 }
 
-function IndicatorPanel({ indicators, availableIndicators, onToggle }: IndicatorPanelProps) {
+function IndicatorPanel({
+  indicators,
+  availableIndicators,
+  onToggle,
+}: IndicatorPanelProps) {
   return (
     <div className="flex items-center gap-2 px-4 py-2 bg-gray-800/30 border-b border-gray-700 overflow-x-auto">
-      <span className="text-sm text-gray-500 dark:text-slate-400 whitespace-nowrap">Indicators:</span>
-      {availableIndicators.map(ind => {
-        const isActive = indicators.some(i => i.type === ind.type);
+      <span className="text-sm text-gray-500 dark:text-slate-400 whitespace-nowrap">
+        Indicators:
+      </span>
+      {availableIndicators.map((ind) => {
+        const isActive = indicators.some((i) => i.type === ind.type);
         return (
           <button
             key={ind.type}
             onClick={() => onToggle(ind.type)}
             className={`px-3 py-1 text-sm rounded whitespace-nowrap transition-colors ${
               isActive
-                ? 'bg-green-600 text-white'
-                : 'bg-gray-700 text-gray-400 dark:text-slate-500 hover:text-white hover:bg-gray-600'
+                ? "bg-green-600 text-white"
+                : "bg-gray-700 text-gray-400 dark:text-slate-500 hover:text-white hover:bg-gray-600"
             }`}
           >
             {ind.label}
@@ -382,4 +421,3 @@ function IndicatorPanel({ indicators, availableIndicators, onToggle }: Indicator
 }
 
 export default AdvancedChartContainer;
-

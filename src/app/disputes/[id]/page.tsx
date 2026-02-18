@@ -1,10 +1,10 @@
-import { Suspense } from 'react';
-import { notFound } from 'next/navigation';
-import DisputeDetail from '@/components/disputes/DisputeDetail';
+import { Suspense } from "react";
+import { notFound } from "next/navigation";
+import DisputeDetail from "@/components/disputes/DisputeDetail";
 
 export const metadata = {
-  title: 'Dispute Details | Fynvita',
-  description: 'View and manage dispute details',
+  title: "Dispute Details | Fynvita",
+  description: "View and manage dispute details",
 };
 
 interface DisputePageProps {

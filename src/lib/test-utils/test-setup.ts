@@ -4,16 +4,16 @@
  * Provides utilities for setting up real API tests with actual database connections
  */
 
-import { createClient } from '@supabase/supabase-js';
-import type { JsonRecord } from '@/types/student-loan';
+import { createClient } from "@supabase/supabase-js";
+import type { JsonRecord } from "@/types/student-loan";
 import type {
   Bureau as CreditBureau,
   DisputeStatus as CreditDisputeStatus,
-} from '@/lib/credit-repair/db/types';
+} from "@/lib/credit-repair/db/types";
 
 // Test database configuration
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
 // For demo purposes, we'll skip real Supabase if credentials are missing
 const USE_REAL_SUPABASE = SUPABASE_URL && SUPABASE_SERVICE_KEY;
@@ -77,9 +77,9 @@ interface CreditReportInsertPayload extends JsonRecord {
  * Test user credentials
  */
 export const TEST_USER = {
-  email: 'test@fynvita.com',
-  password: 'TestPassword123!',
-  name: 'Test User',
+  email: "test@fynvita.com",
+  password: "TestPassword123!",
+  name: "Test User",
 };
 
 /**
@@ -90,7 +90,7 @@ export async function createTestUser(): Promise<{
   token: string;
 }> {
   if (!supabaseAdmin) {
-    throw new Error('Supabase admin client not initialized');
+    throw new Error("Supabase admin client not initialized");
   }
 
   // Check if user already exists
@@ -121,7 +121,7 @@ export async function createTestUser(): Promise<{
 
   // Sign in to get JWT token
   if (!supabaseAdmin) {
-    throw new Error('Supabase admin client not initialized');
+    throw new Error("Supabase admin client not initialized");
   }
 
   const { data: signInData, error: signInError } =
@@ -145,20 +145,20 @@ export async function createTestUser(): Promise<{
  */
 export async function cleanupTestData(userId: string): Promise<void> {
   if (!supabaseAdmin) {
-    throw new Error('Supabase admin client not initialized');
+    throw new Error("Supabase admin client not initialized");
   }
 
   // Delete in reverse order of dependencies
   await supabaseAdmin
-    .from('credit_card_utilization_history')
+    .from("credit_card_utilization_history")
     .delete()
-    .eq('user_id', userId);
-  await supabaseAdmin.from('credit_cards').delete().eq('user_id', userId);
-  await supabaseAdmin.from('goodwill_letters').delete().eq('user_id', userId);
-  await supabaseAdmin.from('negotiations').delete().eq('user_id', userId);
-  await supabaseAdmin.from('credit_reports').delete().eq('user_id', userId);
-  await supabaseAdmin.from('disputes').delete().eq('user_id', userId);
-  await supabaseAdmin.from('credit_scores').delete().eq('user_id', userId);
+    .eq("user_id", userId);
+  await supabaseAdmin.from("credit_cards").delete().eq("user_id", userId);
+  await supabaseAdmin.from("goodwill_letters").delete().eq("user_id", userId);
+  await supabaseAdmin.from("negotiations").delete().eq("user_id", userId);
+  await supabaseAdmin.from("credit_reports").delete().eq("user_id", userId);
+  await supabaseAdmin.from("disputes").delete().eq("user_id", userId);
+  await supabaseAdmin.from("credit_scores").delete().eq("user_id", userId);
 }
 
 /**
@@ -166,7 +166,7 @@ export async function cleanupTestData(userId: string): Promise<void> {
  */
 export async function deleteTestUser(userId: string): Promise<void> {
   if (!supabaseAdmin) {
-    throw new Error('Supabase admin client not initialized');
+    throw new Error("Supabase admin client not initialized");
   }
 
   await cleanupTestData(userId);
@@ -178,21 +178,21 @@ export async function deleteTestUser(userId: string): Promise<void> {
  */
 export async function makeAuthenticatedRequest(
   path: string,
-  options: AuthenticatedRequestOptions
+  options: AuthenticatedRequestOptions,
 ): Promise<Response> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const url = `${baseUrl}${path}`;
   const serializedBody =
-    typeof options.body === 'string'
+    typeof options.body === "string"
       ? options.body
       : options.body
         ? JSON.stringify(options.body)
         : undefined;
 
   const response = await fetch(url, {
-    method: options.method || 'GET',
+    method: options.method || "GET",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       Authorization: `Bearer ${options.token}`,
     },
     body: serializedBody,
@@ -209,7 +209,7 @@ export async function waitFor(
   options: {
     timeout?: number;
     interval?: number;
-  } = {}
+  } = {},
 ): Promise<void> {
   const timeout = options.timeout || 5000;
   const interval = options.interval || 100;
@@ -222,14 +222,14 @@ export async function waitFor(
     await new Promise((resolve) => setTimeout(resolve, interval));
   }
 
-  throw new Error('Timeout waiting for condition');
+  throw new Error("Timeout waiting for condition");
 }
 
 /**
  * Measure execution time
  */
 export async function measureTime<T>(
-  fn: () => Promise<T>
+  fn: () => Promise<T>,
 ): Promise<{ result: T; duration: number }> {
   const start = performance.now();
   const result = await fn();
@@ -242,23 +242,23 @@ export async function measureTime<T>(
  */
 export async function createTestDispute(
   userId: string,
-  overrides: Partial<DisputeInsertPayload> = {}
+  overrides: Partial<DisputeInsertPayload> = {},
 ): Promise<JsonRecord> {
   if (!supabaseAdmin) {
-    throw new Error('Supabase admin client not initialized');
+    throw new Error("Supabase admin client not initialized");
   }
 
   const payload: DisputeInsertPayload = {
     user_id: userId,
-    bureau: 'experian',
-    item_type: 'late_payment',
-    item_description: 'Test late payment',
-    reason: 'not_mine',
-    status: 'draft',
+    bureau: "experian",
+    item_type: "late_payment",
+    item_description: "Test late payment",
+    reason: "not_mine",
+    status: "draft",
   };
 
   const { data, error } = await supabaseAdmin
-    .from('disputes')
+    .from("disputes")
     .insert({
       ...payload,
       ...overrides,
@@ -278,22 +278,22 @@ export async function createTestDispute(
  */
 export async function createTestCreditCard(
   userId: string,
-  overrides: Partial<CreditCardInsertPayload> = {}
+  overrides: Partial<CreditCardInsertPayload> = {},
 ): Promise<JsonRecord> {
   if (!supabaseAdmin) {
-    throw new Error('Supabase admin client not initialized');
+    throw new Error("Supabase admin client not initialized");
   }
 
   const payload: CreditCardInsertPayload = {
     user_id: userId,
-    name: 'Test Card',
+    name: "Test Card",
     credit_limit: 5000,
     current_balance: 1000,
     utilization: 20,
   };
 
   const { data, error } = await supabaseAdmin
-    .from('credit_cards')
+    .from("credit_cards")
     .insert({
       ...payload,
       ...overrides,
@@ -313,22 +313,22 @@ export async function createTestCreditCard(
  */
 export async function createTestGoodwillLetter(
   userId: string,
-  overrides: Partial<GoodwillLetterInsertPayload> = {}
+  overrides: Partial<GoodwillLetterInsertPayload> = {},
 ): Promise<JsonRecord> {
   if (!supabaseAdmin) {
-    throw new Error('Supabase admin client not initialized');
+    throw new Error("Supabase admin client not initialized");
   }
 
   const payload: GoodwillLetterInsertPayload = {
     user_id: userId,
-    creditor_name: 'Test Creditor',
-    account_number: '1234567890',
-    issue_description: 'Test issue',
-    status: 'draft',
+    creditor_name: "Test Creditor",
+    account_number: "1234567890",
+    issue_description: "Test issue",
+    status: "draft",
   };
 
   const { data, error } = await supabaseAdmin
-    .from('goodwill_letters')
+    .from("goodwill_letters")
     .insert({
       ...payload,
       ...overrides,
@@ -348,23 +348,23 @@ export async function createTestGoodwillLetter(
  */
 export async function createTestNegotiation(
   userId: string,
-  overrides: Partial<NegotiationInsertPayload> = {}
+  overrides: Partial<NegotiationInsertPayload> = {},
 ): Promise<JsonRecord> {
   if (!supabaseAdmin) {
-    throw new Error('Supabase admin client not initialized');
+    throw new Error("Supabase admin client not initialized");
   }
 
   const payload: NegotiationInsertPayload = {
     user_id: userId,
-    creditor_name: 'Test Creditor',
-    account_number: '1234567890',
+    creditor_name: "Test Creditor",
+    account_number: "1234567890",
     original_amount: 5000,
     target_amount: 2500,
-    status: 'draft',
+    status: "draft",
   };
 
   const { data, error } = await supabaseAdmin
-    .from('negotiations')
+    .from("negotiations")
     .insert({
       ...payload,
       ...overrides,
@@ -384,21 +384,21 @@ export async function createTestNegotiation(
  */
 export async function createTestCreditReport(
   userId: string,
-  overrides: Partial<CreditReportInsertPayload> = {}
+  overrides: Partial<CreditReportInsertPayload> = {},
 ): Promise<JsonRecord> {
   if (!supabaseAdmin) {
-    throw new Error('Supabase admin client not initialized');
+    throw new Error("Supabase admin client not initialized");
   }
 
   const payload: CreditReportInsertPayload = {
     user_id: userId,
-    bureau: 'experian',
+    bureau: "experian",
     report_date: new Date().toISOString(),
-    file_url: 'https://example.com/report.pdf',
+    file_url: "https://example.com/report.pdf",
   };
 
   const { data, error } = await supabaseAdmin
-    .from('credit_reports')
+    .from("credit_reports")
     .insert({
       ...payload,
       ...overrides,

@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 
 interface CreditAnalyzerProps {
   onAnalyze?: (analysis: CreditAnalysisOutput) => void;
@@ -10,7 +10,7 @@ interface CreditAnalysisOutput {
   score_factors: string[];
   negative_items: Array<{
     item: string;
-    impact: 'high' | 'medium' | 'low';
+    impact: "high" | "medium" | "low";
     disputable: boolean;
     reason: string;
   }>;
@@ -19,29 +19,29 @@ interface CreditAnalysisOutput {
     step: number;
     action: string;
     timeline: string;
-    priority: 'high' | 'medium' | 'low';
+    priority: "high" | "medium" | "low";
   }>;
   timeline_estimate: string;
   estimated_score_improvement: number;
 }
 
 export default function CreditAnalyzer({ onAnalyze }: CreditAnalyzerProps) {
-  const [creditScore, setCreditScore] = useState('');
-  const [goals, setGoals] = useState('');
+  const [creditScore, setCreditScore] = useState("");
+  const [goals, setGoals] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [analysis, setAnalysis] = useState<CreditAnalysisOutput | null>(null);
 
   const handleAnalyze = async () => {
     setLoading(true);
-    setError('');
+    setError("");
     setAnalysis(null);
 
     try {
-      const response = await fetch('/api/credit/analyze', {
-        method: 'POST',
+      const response = await fetch("/api/credit/analyze", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           creditReport: {
@@ -49,23 +49,23 @@ export default function CreditAnalyzer({ onAnalyze }: CreditAnalyzerProps) {
             inquiries: [],
           },
           creditScore: creditScore ? parseInt(creditScore) : undefined,
-          goals: goals ? goals.split('\n').filter(g => g.trim()) : undefined,
+          goals: goals ? goals.split("\n").filter((g) => g.trim()) : undefined,
         }),
       });
 
       const data = await response.json();
 
       if (!data.success) {
-        throw new Error(data.error || 'Failed to analyze credit report');
+        throw new Error(data.error || "Failed to analyze credit report");
       }
 
       setAnalysis(data.data.analysis);
-      
+
       if (onAnalyze) {
         onAnalyze(data.data.analysis);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setLoading(false);
     }
@@ -73,36 +73,39 @@ export default function CreditAnalyzer({ onAnalyze }: CreditAnalyzerProps) {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'high':
-        return 'text-red-600 bg-red-50';
-      case 'medium':
-        return 'text-yellow-600 bg-yellow-50';
-      case 'low':
-        return 'text-green-600 bg-green-50';
+      case "high":
+        return "text-red-600 bg-red-50";
+      case "medium":
+        return "text-yellow-600 bg-yellow-50";
+      case "low":
+        return "text-green-600 bg-green-50";
       default:
-        return 'text-gray-600 dark:text-slate-300 bg-gray-50 dark:bg-slate-900';
+        return "text-gray-600 dark:text-slate-300 bg-gray-50 dark:bg-slate-900";
     }
   };
 
   const getImpactColor = (impact: string) => {
     switch (impact) {
-      case 'high':
-        return 'text-red-600';
-      case 'medium':
-        return 'text-yellow-600';
-      case 'low':
-        return 'text-green-600';
+      case "high":
+        return "text-red-600";
+      case "medium":
+        return "text-yellow-600";
+      case "low":
+        return "text-green-600";
       default:
-        return 'text-gray-600 dark:text-slate-300';
+        return "text-gray-600 dark:text-slate-300";
     }
   };
 
   return (
     <div className="credit-analyzer">
       <div className="max-w-4xl mx-auto p-6">
-        <h2 className="text-3xl font-bold mb-6">AI-Powered Credit Report Analyzer</h2>
+        <h2 className="text-3xl font-bold mb-6">
+          AI-Powered Credit Report Analyzer
+        </h2>
         <p className="text-gray-600 dark:text-slate-300 mb-8">
-          Get comprehensive credit analysis using DeepSeek R1's advanced reasoning
+          Get comprehensive credit analysis using DeepSeek R1's advanced
+          reasoning
         </p>
 
         <div className="space-y-6">
@@ -111,7 +114,9 @@ export default function CreditAnalyzer({ onAnalyze }: CreditAnalyzerProps) {
             <h3 className="text-xl font-semibold mb-4">Credit Information</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Current Credit Score (Optional)</label>
+                <label className="block text-sm font-medium mb-2">
+                  Current Credit Score (Optional)
+                </label>
                 <input
                   type="number"
                   value={creditScore}
@@ -123,7 +128,9 @@ export default function CreditAnalyzer({ onAnalyze }: CreditAnalyzerProps) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Your Goals (One per line, optional)</label>
+                <label className="block text-sm font-medium mb-2">
+                  Your Goals (One per line, optional)
+                </label>
                 <textarea
                   value={goals}
                   onChange={(e) => setGoals(e.target.value)}
@@ -141,7 +148,7 @@ export default function CreditAnalyzer({ onAnalyze }: CreditAnalyzerProps) {
             disabled={loading}
             className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
           >
-            {loading ? 'Analyzing...' : 'Analyze Credit Report'}
+            {loading ? "Analyzing..." : "Analyze Credit Report"}
           </button>
 
           {/* Error Message */}
@@ -156,9 +163,15 @@ export default function CreditAnalyzer({ onAnalyze }: CreditAnalyzerProps) {
             <div className="space-y-6">
               {/* Score Improvement Estimate */}
               <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow-lg p-6">
-                <h3 className="text-2xl font-bold mb-2">Estimated Score Improvement</h3>
-                <p className="text-4xl font-bold">+{analysis.estimated_score_improvement} points</p>
-                <p className="text-sm mt-2">Timeline: {analysis.timeline_estimate}</p>
+                <h3 className="text-2xl font-bold mb-2">
+                  Estimated Score Improvement
+                </h3>
+                <p className="text-4xl font-bold">
+                  +{analysis.estimated_score_improvement} points
+                </p>
+                <p className="text-sm mt-2">
+                  Timeline: {analysis.timeline_estimate}
+                </p>
               </div>
 
               {/* Score Factors */}
@@ -180,14 +193,21 @@ export default function CreditAnalyzer({ onAnalyze }: CreditAnalyzerProps) {
                   <h3 className="text-xl font-semibold mb-4">Negative Items</h3>
                   <div className="space-y-4">
                     {analysis.negative_items.map((item, i) => (
-                      <div key={i} className="border-l-4 border-red-500 pl-4 py-2">
+                      <div
+                        key={i}
+                        className="border-l-4 border-red-500 pl-4 py-2"
+                      >
                         <div className="flex items-center justify-between mb-2">
                           <h4 className="font-semibold">{item.item}</h4>
-                          <span className={`text-sm px-2 py-1 rounded ${getImpactColor(item.impact)}`}>
+                          <span
+                            className={`text-sm px-2 py-1 rounded ${getImpactColor(item.impact)}`}
+                          >
                             {item.impact.toUpperCase()} IMPACT
                           </span>
                         </div>
-                        <p className="text-sm text-gray-600 dark:text-slate-300 mb-2">{item.reason}</p>
+                        <p className="text-sm text-gray-600 dark:text-slate-300 mb-2">
+                          {item.reason}
+                        </p>
                         {item.disputable && (
                           <span className="inline-block text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
                             Disputable
@@ -226,11 +246,15 @@ export default function CreditAnalyzer({ onAnalyze }: CreditAnalyzerProps) {
                       <div className="flex-grow">
                         <div className="flex items-center justify-between mb-2">
                           <h4 className="font-semibold">{step.action}</h4>
-                          <span className={`text-xs px-2 py-1 rounded ${getPriorityColor(step.priority)}`}>
+                          <span
+                            className={`text-xs px-2 py-1 rounded ${getPriorityColor(step.priority)}`}
+                          >
                             {step.priority.toUpperCase()}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-600 dark:text-slate-300">Timeline: {step.timeline}</p>
+                        <p className="text-sm text-gray-600 dark:text-slate-300">
+                          Timeline: {step.timeline}
+                        </p>
                       </div>
                     </div>
                   ))}
@@ -247,4 +271,3 @@ export default function CreditAnalyzer({ onAnalyze }: CreditAnalyzerProps) {
     </div>
   );
 }
-

@@ -401,7 +401,12 @@
             "url": {
               "raw": "{{base_url}}/api/credit-repair/negotiate/{{negotiation_id}}",
               "host": ["{{base_url}}"],
-              "path": ["api", "credit-repair", "negotiate", "{{negotiation_id}}"]
+              "path": [
+                "api",
+                "credit-repair",
+                "negotiate",
+                "{{negotiation_id}}"
+              ]
             }
           }
         }
@@ -531,4 +536,3 @@
     }
   ]
 }
-

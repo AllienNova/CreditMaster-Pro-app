@@ -1,11 +1,11 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { lightTheme } from '../../src/constants/theme';
-import { useDisputeStore } from '../../src/store/disputeStore';
+import React from "react";
+import { View, Text, StyleSheet, ScrollView, Dimensions } from "react-native";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { lightTheme } from "../../src/constants/theme";
+import { useDisputeStore } from "../../src/store/disputeStore";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 /**
  * Dispute Analytics Screen
@@ -17,20 +17,33 @@ export default function DisputeAnalyticsScreen() {
 
   // Calculate analytics
   const totalDisputes = disputes.length;
-  const resolvedDisputes = disputes.filter(d => d.status === 'resolved').length;
-  const pendingDisputes = disputes.filter(d => d.status === 'pending' || d.status === 'in_review').length;
-  const successRate = totalDisputes > 0 ? Math.round((resolvedDisputes / totalDisputes) * 100) : 0;
+  const resolvedDisputes = disputes.filter(
+    (d) => d.status === "resolved",
+  ).length;
+  const pendingDisputes = disputes.filter(
+    (d) => d.status === "pending" || d.status === "in_review",
+  ).length;
+  const successRate =
+    totalDisputes > 0
+      ? Math.round((resolvedDisputes / totalDisputes) * 100)
+      : 0;
 
-  const bureauBreakdown = disputes.reduce((acc, d) => {
-    acc[d.bureau] = (acc[d.bureau] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const bureauBreakdown = disputes.reduce(
+    (acc, d) => {
+      acc[d.bureau] = (acc[d.bureau] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
 
-  const typeBreakdown = disputes.reduce((acc, d) => {
-    const type = d.item_type || 'other';
-    acc[type] = (acc[type] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const typeBreakdown = disputes.reduce(
+    (acc, d) => {
+      const type = d.item_type || "other";
+      acc[type] = (acc[type] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
 
   return (
     <ScrollView style={styles.container}>
@@ -41,22 +54,37 @@ export default function DisputeAnalyticsScreen() {
 
       {/* Summary Cards */}
       <View style={styles.summaryRow}>
-        <View style={[styles.summaryCard, { backgroundColor: lightTheme.colors.primary }]}>
+        <View
+          style={[
+            styles.summaryCard,
+            { backgroundColor: lightTheme.colors.primary },
+          ]}
+        >
           <Text style={styles.summaryValue}>{totalDisputes}</Text>
           <Text style={styles.summaryLabel}>Total Disputes</Text>
         </View>
-        <View style={[styles.summaryCard, { backgroundColor: lightTheme.colors.success }]}>
+        <View
+          style={[
+            styles.summaryCard,
+            { backgroundColor: lightTheme.colors.success },
+          ]}
+        >
           <Text style={styles.summaryValue}>{successRate}%</Text>
           <Text style={styles.summaryLabel}>Success Rate</Text>
         </View>
       </View>
 
       <View style={styles.summaryRow}>
-        <View style={[styles.summaryCard, { backgroundColor: lightTheme.colors.warning }]}>
+        <View
+          style={[
+            styles.summaryCard,
+            { backgroundColor: lightTheme.colors.warning },
+          ]}
+        >
           <Text style={styles.summaryValue}>{pendingDisputes}</Text>
           <Text style={styles.summaryLabel}>Pending</Text>
         </View>
-        <View style={[styles.summaryCard, { backgroundColor: '#6366F1' }]}>
+        <View style={[styles.summaryCard, { backgroundColor: "#6366F1" }]}>
           <Text style={styles.summaryValue}>{resolvedDisputes}</Text>
           <Text style={styles.summaryLabel}>Resolved</Text>
         </View>
@@ -69,8 +97,15 @@ export default function DisputeAnalyticsScreen() {
           Object.entries(bureauBreakdown).map(([bureau, count]) => (
             <View key={bureau} style={styles.breakdownRow}>
               <View style={styles.breakdownLabel}>
-                <View style={[styles.dot, { backgroundColor: getBureauColor(bureau) }]} />
-                <Text style={styles.breakdownText}>{formatBureauName(bureau)}</Text>
+                <View
+                  style={[
+                    styles.dot,
+                    { backgroundColor: getBureauColor(bureau) },
+                  ]}
+                />
+                <Text style={styles.breakdownText}>
+                  {formatBureauName(bureau)}
+                </Text>
               </View>
               <Text style={styles.breakdownValue}>{count}</Text>
             </View>
@@ -97,12 +132,16 @@ export default function DisputeAnalyticsScreen() {
 
       {/* Tips */}
       <View style={styles.tipsSection}>
-        <Ionicons name="bulb-outline" size={24} color={lightTheme.colors.warning} />
+        <Ionicons
+          name="bulb-outline"
+          size={24}
+          color={lightTheme.colors.warning}
+        />
         <View style={styles.tipsContent}>
           <Text style={styles.tipsTitle}>Pro Tips</Text>
           <Text style={styles.tipsText}>
-            Disputes typically take 30-45 days to resolve. For best results, include supporting
-            documentation and be specific about the error.
+            Disputes typically take 30-45 days to resolve. For best results,
+            include supporting documentation and be specific about the error.
           </Text>
         </View>
       </View>
@@ -112,24 +151,24 @@ export default function DisputeAnalyticsScreen() {
 
 function getBureauColor(bureau: string): string {
   const colors: Record<string, string> = {
-    experian: '#0066CC',
-    equifax: '#CC0000',
-    transunion: '#00AA00',
+    experian: "#0066CC",
+    equifax: "#CC0000",
+    transunion: "#00AA00",
   };
   return colors[bureau.toLowerCase()] || lightTheme.colors.primary;
 }
 
 function formatBureauName(bureau: string): string {
   const names: Record<string, string> = {
-    experian: 'Experian',
-    equifax: 'Equifax',
-    transunion: 'TransUnion',
+    experian: "Experian",
+    equifax: "Equifax",
+    transunion: "TransUnion",
   };
   return names[bureau.toLowerCase()] || bureau;
 }
 
 function formatTypeName(type: string): string {
-  return type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  return type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 const styles = StyleSheet.create({
@@ -143,7 +182,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: "700",
     color: lightTheme.colors.text,
   },
   subtitle: {
@@ -152,7 +191,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   summaryRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingHorizontal: 20,
     gap: 12,
     marginBottom: 12,
@@ -161,16 +200,16 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     borderRadius: 16,
-    alignItems: 'center',
+    alignItems: "center",
   },
   summaryValue: {
     fontSize: 32,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
   summaryLabel: {
     fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
+    color: "rgba(255,255,255,0.8)",
     marginTop: 4,
   },
   section: {
@@ -182,21 +221,21 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: lightTheme.colors.text,
     marginBottom: 16,
   },
   breakdownRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: lightTheme.colors.border,
   },
   breakdownLabel: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   dot: {
@@ -210,20 +249,20 @@ const styles = StyleSheet.create({
   },
   breakdownValue: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: lightTheme.colors.text,
   },
   emptyText: {
     fontSize: 14,
     color: lightTheme.colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
     paddingVertical: 20,
   },
   tipsSection: {
-    flexDirection: 'row',
+    flexDirection: "row",
     margin: 20,
     padding: 16,
-    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    backgroundColor: "rgba(245, 158, 11, 0.1)",
     borderRadius: 16,
     gap: 12,
   },
@@ -232,7 +271,7 @@ const styles = StyleSheet.create({
   },
   tipsTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: lightTheme.colors.text,
     marginBottom: 4,
   },

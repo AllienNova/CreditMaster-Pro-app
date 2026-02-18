@@ -15,7 +15,9 @@ export default function TermsOfServicePage() {
         <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
           Terms of Service
         </h1>
-        <p className="text-sm text-gray-600 dark:text-slate-300 mb-8">Last Updated: January 2025</p>
+        <p className="text-sm text-gray-600 dark:text-slate-300 mb-8">
+          Last Updated: January 2025
+        </p>
 
         {/* Critical Disclaimer */}
         <div className="bg-blue-50 border-l-4 border-blue-500 p-6 mb-8">
@@ -25,7 +27,7 @@ export default function TermsOfServicePage() {
           <p className="text-blue-800 leading-relaxed">
             Fynvita is a <strong>self-service software platform</strong> that
             provides AI-powered tools, templates, calculators, and educational
-            resources.{' '}
+            resources.{" "}
             <strong>We do not provide credit repair services.</strong> You
             maintain full control over all actions taken with your credit
             profile. We are a technology provider, not a credit repair
@@ -36,7 +38,9 @@ export default function TermsOfServicePage() {
 
         {/* Table of Contents */}
         <div className="mb-8 p-6 bg-gray-50 dark:bg-slate-900 rounded-lg">
-          <h3 className="font-bold text-gray-900 dark:text-white mb-3">Table of Contents</h3>
+          <h3 className="font-bold text-gray-900 dark:text-white mb-3">
+            Table of Contents
+          </h3>
           <ol className="list-decimal list-inside space-y-2 text-sm text-gray-700 dark:text-slate-200">
             <li>
               <a href="#acceptance" className="hover:text-blue-600">
@@ -124,7 +128,7 @@ export default function TermsOfServicePage() {
             2. Description of Service
           </h2>
           <p className="text-gray-700 dark:text-slate-200 leading-relaxed mb-4">
-            Fynvita is a <strong>software-as-a-service (SaaS) platform</strong>{' '}
+            Fynvita is a <strong>software-as-a-service (SaaS) platform</strong>{" "}
             that provides:
           </p>
           <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-slate-200 ml-4 mb-4">
@@ -225,7 +229,7 @@ export default function TermsOfServicePage() {
             5. Educational Purpose
           </h2>
           <p className="text-gray-700 dark:text-slate-200 leading-relaxed mb-4">
-            All content, tools, and resources provided by the Platform are for{' '}
+            All content, tools, and resources provided by the Platform are for{" "}
             <strong>educational and informational purposes only</strong>. They
             do not constitute:
           </p>
@@ -284,7 +288,9 @@ export default function TermsOfServicePage() {
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
             7. User Obligations
           </h2>
-          <p className="text-gray-700 dark:text-slate-200 leading-relaxed mb-4">You agree to:</p>
+          <p className="text-gray-700 dark:text-slate-200 leading-relaxed mb-4">
+            You agree to:
+          </p>
           <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-slate-200 ml-4 mb-4">
             <li>Provide accurate and truthful information</li>
             <li>Use the Platform only for lawful purposes</li>
@@ -461,7 +467,9 @@ export default function TermsOfServicePage() {
 
         {/* Contact */}
         <section className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Contact Us</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+            Contact Us
+          </h2>
           <p className="text-gray-700 dark:text-slate-200 leading-relaxed mb-4">
             If you have questions about these Terms of Service, please contact
             us at:

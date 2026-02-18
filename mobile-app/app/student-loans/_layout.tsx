@@ -2,8 +2,8 @@
  * Student Loans Stack Navigator Layout
  */
 
-import { Stack } from 'expo-router';
-import { lightTheme as theme } from '../../src/constants/theme';
+import { Stack } from "expo-router";
+import { lightTheme as theme } from "../../src/constants/theme";
 
 export default function StudentLoansLayout() {
   return (
@@ -14,7 +14,7 @@ export default function StudentLoansLayout() {
         },
         headerTintColor: theme.colors.text,
         headerTitleStyle: {
-          fontWeight: '600',
+          fontWeight: "600",
         },
         headerShadowVisible: false,
       }}
@@ -22,33 +22,33 @@ export default function StudentLoansLayout() {
       <Stack.Screen
         name="index"
         options={{
-          title: 'Student Loans',
+          title: "Student Loans",
           headerShown: false,
         }}
       />
       <Stack.Screen
         name="[id]"
         options={{
-          title: 'Loan Details',
+          title: "Loan Details",
         }}
       />
       <Stack.Screen
         name="add"
         options={{
-          title: 'Add Loan',
-          presentation: 'modal',
+          title: "Add Loan",
+          presentation: "modal",
         }}
       />
       <Stack.Screen
         name="strategies"
         options={{
-          title: 'Repayment Strategies',
+          title: "Repayment Strategies",
         }}
       />
       <Stack.Screen
         name="eligibility"
         options={{
-          title: 'Federal Program Eligibility',
+          title: "Federal Program Eligibility",
         }}
       />
     </Stack>

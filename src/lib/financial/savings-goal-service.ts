@@ -9,15 +9,18 @@
  * Currency:    Integrates with CurrencyService (FIN-001) for cross-currency conversions.
  */
 
-import { supabaseAdmin } from '@/lib/supabase/server';
-import { currencyService, type CurrencyCode } from '@/lib/financial/currency-service';
+import { supabaseAdmin } from "@/lib/supabase/server";
+import {
+  currencyService,
+  type CurrencyCode,
+} from "@/lib/financial/currency-service";
 
 // ============================================================================
 // TYPES & INTERFACES
 // ============================================================================
 
 /** Possible lifecycle states for a savings goal */
-export type GoalStatus = 'active' | 'paused' | 'completed' | 'cancelled';
+export type GoalStatus = "active" | "paused" | "completed" | "cancelled";
 
 /** Standard milestone thresholds (percent of target) */
 const MILESTONE_THRESHOLDS = [25, 50, 75, 90, 100] as const;
@@ -276,34 +279,37 @@ export class SavingsGoalService {
   /**
    * Create a new savings goal for a user.
    */
-  async createGoal(userId: string, params: CreateGoalParams): Promise<SavingsGoal> {
+  async createGoal(
+    userId: string,
+    params: CreateGoalParams,
+  ): Promise<SavingsGoal> {
     const now = new Date().toISOString();
     const targetDate =
-      typeof params.targetDate === 'string'
+      typeof params.targetDate === "string"
         ? params.targetDate
         : params.targetDate.toISOString();
 
     if (params.targetAmount <= 0) {
-      throw new Error('Target amount must be a positive number');
+      throw new Error("Target amount must be a positive number");
     }
 
-    const { data, error } = await (supabaseAdmin.from as any)('savings_goals')
+    const { data, error } = await (supabaseAdmin.from as any)("savings_goals")
       .insert({
         user_id: userId,
         name: params.name,
-        description: params.description ?? '',
+        description: params.description ?? "",
         target_amount: params.targetAmount,
         current_amount: 0,
-        currency: params.currency ?? 'USD',
-        status: 'active' as GoalStatus,
+        currency: params.currency ?? "USD",
+        status: "active" as GoalStatus,
         target_date: targetDate,
-        icon: params.icon ?? 'piggy-bank',
-        color: params.color ?? '#4F46E5',
+        icon: params.icon ?? "piggy-bank",
+        color: params.color ?? "#4F46E5",
         created_at: now,
         updated_at: now,
         deleted_at: null,
       })
-      .select('*')
+      .select("*")
       .single();
 
     if (error) {
@@ -317,11 +323,11 @@ export class SavingsGoalService {
    * List all non-deleted goals for a user.
    */
   async getGoals(userId: string): Promise<SavingsGoal[]> {
-    const { data, error } = await (supabaseAdmin.from as any)('savings_goals')
-      .select('*')
-      .eq('user_id', userId)
-      .is('deleted_at', null)
-      .order('created_at', { ascending: false });
+    const { data, error } = await (supabaseAdmin.from as any)("savings_goals")
+      .select("*")
+      .eq("user_id", userId)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false });
 
     if (error) {
       throw new Error(`Failed to fetch savings goals: ${error.message}`);
@@ -342,35 +348,38 @@ export class SavingsGoalService {
     milestones: GoalMilestone[];
     contributions: GoalContribution[];
   }> {
-    const [goalResult, milestonesResult, contributionsResult] = await Promise.all([
-      (supabaseAdmin.from as any)('savings_goals')
-        .select('*')
-        .eq('id', goalId)
-        .is('deleted_at', null)
-        .single(),
-      (supabaseAdmin.from as any)('goal_milestones')
-        .select('*')
-        .eq('goal_id', goalId)
-        .order('threshold', { ascending: true }),
-      (supabaseAdmin.from as any)('goal_contributions')
-        .select('*')
-        .eq('goal_id', goalId)
-        .order('created_at', { ascending: true }),
-    ]);
+    const [goalResult, milestonesResult, contributionsResult] =
+      await Promise.all([
+        (supabaseAdmin.from as any)("savings_goals")
+          .select("*")
+          .eq("id", goalId)
+          .is("deleted_at", null)
+          .single(),
+        (supabaseAdmin.from as any)("goal_milestones")
+          .select("*")
+          .eq("goal_id", goalId)
+          .order("threshold", { ascending: true }),
+        (supabaseAdmin.from as any)("goal_contributions")
+          .select("*")
+          .eq("goal_id", goalId)
+          .order("created_at", { ascending: true }),
+      ]);
 
     if (goalResult.error) {
-      throw new Error(`Failed to fetch savings goal: ${goalResult.error.message}`);
+      throw new Error(
+        `Failed to fetch savings goal: ${goalResult.error.message}`,
+      );
     }
 
     const goal = mapGoalRow(goalResult.data as SavingsGoalRow);
 
     const milestones: GoalMilestone[] = (milestonesResult.data ?? []).map(
-      (row: GoalMilestoneRow) => mapMilestoneRow(row)
+      (row: GoalMilestoneRow) => mapMilestoneRow(row),
     );
 
-    const contributions: GoalContribution[] = (contributionsResult.data ?? []).map(
-      (row: GoalContributionRow) => mapContributionRow(row)
-    );
+    const contributions: GoalContribution[] = (
+      contributionsResult.data ?? []
+    ).map((row: GoalContributionRow) => mapContributionRow(row));
 
     return { goal, milestones, contributions };
   }
@@ -378,22 +387,26 @@ export class SavingsGoalService {
   /**
    * Update mutable fields on a savings goal.
    */
-  async updateGoal(goalId: string, updates: UpdateGoalParams): Promise<SavingsGoal> {
+  async updateGoal(
+    goalId: string,
+    updates: UpdateGoalParams,
+  ): Promise<SavingsGoal> {
     const patch: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
     };
 
     if (updates.name !== undefined) patch.name = updates.name;
-    if (updates.description !== undefined) patch.description = updates.description;
+    if (updates.description !== undefined)
+      patch.description = updates.description;
     if (updates.targetAmount !== undefined) {
       if (updates.targetAmount <= 0) {
-        throw new Error('Target amount must be a positive number');
+        throw new Error("Target amount must be a positive number");
       }
       patch.target_amount = updates.targetAmount;
     }
     if (updates.targetDate !== undefined) {
       patch.target_date =
-        typeof updates.targetDate === 'string'
+        typeof updates.targetDate === "string"
           ? updates.targetDate
           : updates.targetDate.toISOString();
     }
@@ -401,11 +414,11 @@ export class SavingsGoalService {
     if (updates.icon !== undefined) patch.icon = updates.icon;
     if (updates.color !== undefined) patch.color = updates.color;
 
-    const { data, error } = await (supabaseAdmin.from as any)('savings_goals')
+    const { data, error } = await (supabaseAdmin.from as any)("savings_goals")
       .update(patch)
-      .eq('id', goalId)
-      .is('deleted_at', null)
-      .select('*')
+      .eq("id", goalId)
+      .is("deleted_at", null)
+      .select("*")
       .single();
 
     if (error) {
@@ -419,13 +432,13 @@ export class SavingsGoalService {
    * Soft-delete a savings goal by setting deleted_at.
    */
   async deleteGoal(goalId: string): Promise<void> {
-    const { error } = await (supabaseAdmin.from as any)('savings_goals')
+    const { error } = await (supabaseAdmin.from as any)("savings_goals")
       .update({
         deleted_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
-      .eq('id', goalId)
-      .is('deleted_at', null);
+      .eq("id", goalId)
+      .is("deleted_at", null);
 
     if (error) {
       throw new Error(`Failed to delete savings goal: ${error.message}`);
@@ -446,23 +459,28 @@ export class SavingsGoalService {
     goalId: string,
     amount: number,
     source?: string,
-    note?: string
-  ): Promise<{ contribution: GoalContribution; newMilestones: GoalMilestone[] }> {
+    note?: string,
+  ): Promise<{
+    contribution: GoalContribution;
+    newMilestones: GoalMilestone[];
+  }> {
     if (amount <= 0) {
-      throw new Error('Contribution amount must be a positive number');
+      throw new Error("Contribution amount must be a positive number");
     }
 
     // Fetch the current goal
-    const { data: goalData, error: goalError } = await (supabaseAdmin.from as any)(
-      'savings_goals'
-    )
-      .select('*')
-      .eq('id', goalId)
-      .is('deleted_at', null)
+    const { data: goalData, error: goalError } = await (
+      supabaseAdmin.from as any
+    )("savings_goals")
+      .select("*")
+      .eq("id", goalId)
+      .is("deleted_at", null)
       .single();
 
     if (goalError) {
-      throw new Error(`Failed to fetch goal for contribution: ${goalError.message}`);
+      throw new Error(
+        `Failed to fetch goal for contribution: ${goalError.message}`,
+      );
     }
 
     const goalRow = goalData as SavingsGoalRow;
@@ -470,17 +488,17 @@ export class SavingsGoalService {
     const newAmount = previousAmount + amount;
 
     // Insert contribution record
-    const { data: contribData, error: contribError } = await (supabaseAdmin.from as any)(
-      'goal_contributions'
-    )
+    const { data: contribData, error: contribError } = await (
+      supabaseAdmin.from as any
+    )("goal_contributions")
       .insert({
         goal_id: goalId,
         amount,
-        source: source ?? 'manual',
-        note: note ?? '',
+        source: source ?? "manual",
+        note: note ?? "",
         created_at: new Date().toISOString(),
       })
-      .select('*')
+      .select("*")
       .single();
 
     if (contribError) {
@@ -494,13 +512,13 @@ export class SavingsGoalService {
     };
 
     // Auto-complete the goal when target is reached
-    if (newAmount >= goalRow.target_amount && goalRow.status === 'active') {
-      updatePatch.status = 'completed';
+    if (newAmount >= goalRow.target_amount && goalRow.status === "active") {
+      updatePatch.status = "completed";
     }
 
-    await (supabaseAdmin.from as any)('savings_goals')
+    await (supabaseAdmin.from as any)("savings_goals")
       .update(updatePatch)
-      .eq('id', goalId);
+      .eq("id", goalId);
 
     const contribution = mapContributionRow(contribData as GoalContributionRow);
 
@@ -509,7 +527,7 @@ export class SavingsGoalService {
       goalId,
       previousAmount,
       newAmount,
-      goalRow.target_amount
+      goalRow.target_amount,
     );
 
     return { contribution, newMilestones };
@@ -523,10 +541,10 @@ export class SavingsGoalService {
    * Calculate the current progress snapshot for a goal.
    */
   async trackProgress(goalId: string): Promise<GoalProjection> {
-    const { data, error } = await (supabaseAdmin.from as any)('savings_goals')
-      .select('*')
-      .eq('id', goalId)
-      .is('deleted_at', null)
+    const { data, error } = await (supabaseAdmin.from as any)("savings_goals")
+      .select("*")
+      .eq("id", goalId)
+      .is("deleted_at", null)
       .single();
 
     if (error) {
@@ -538,25 +556,35 @@ export class SavingsGoalService {
 
     const daysElapsed = Math.max(
       1,
-      Math.floor((now.getTime() - goal.createdAt.getTime()) / (1000 * 60 * 60 * 24))
+      Math.floor(
+        (now.getTime() - goal.createdAt.getTime()) / (1000 * 60 * 60 * 24),
+      ),
     );
     const daysRemaining = Math.max(
       0,
-      Math.floor((goal.targetDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      Math.floor(
+        (goal.targetDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+      ),
     );
 
     const progressPercent =
       goal.targetAmount > 0
-        ? Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 10000) / 100)
+        ? Math.min(
+            100,
+            Math.round((goal.currentAmount / goal.targetAmount) * 10000) / 100,
+          )
         : 0;
 
     const remainingAmount = Math.max(0, goal.targetAmount - goal.currentAmount);
-    const requiredDailyRate = daysRemaining > 0 ? remainingAmount / daysRemaining : remainingAmount;
-    const actualDailyRate = daysElapsed > 0 ? goal.currentAmount / daysElapsed : 0;
+    const requiredDailyRate =
+      daysRemaining > 0 ? remainingAmount / daysRemaining : remainingAmount;
+    const actualDailyRate =
+      daysElapsed > 0 ? goal.currentAmount / daysElapsed : 0;
 
-    const onTrack = daysRemaining === 0
-      ? goal.currentAmount >= goal.targetAmount
-      : actualDailyRate >= requiredDailyRate * 0.9; // 10% tolerance
+    const onTrack =
+      daysRemaining === 0
+        ? goal.currentAmount >= goal.targetAmount
+        : actualDailyRate >= requiredDailyRate * 0.9; // 10% tolerance
 
     return {
       goalId: goal.id,
@@ -577,24 +605,26 @@ export class SavingsGoalService {
    */
   async getProjectedDate(goalId: string): Promise<ProjectedCompletion> {
     const [goalResult, contribResult] = await Promise.all([
-      (supabaseAdmin.from as any)('savings_goals')
-        .select('*')
-        .eq('id', goalId)
-        .is('deleted_at', null)
+      (supabaseAdmin.from as any)("savings_goals")
+        .select("*")
+        .eq("id", goalId)
+        .is("deleted_at", null)
         .single(),
-      (supabaseAdmin.from as any)('goal_contributions')
-        .select('*')
-        .eq('goal_id', goalId)
-        .order('created_at', { ascending: true }),
+      (supabaseAdmin.from as any)("goal_contributions")
+        .select("*")
+        .eq("goal_id", goalId)
+        .order("created_at", { ascending: true }),
     ]);
 
     if (goalResult.error) {
-      throw new Error(`Failed to fetch goal for projection: ${goalResult.error.message}`);
+      throw new Error(
+        `Failed to fetch goal for projection: ${goalResult.error.message}`,
+      );
     }
 
     const goal = mapGoalRow(goalResult.data as SavingsGoalRow);
     const contributions: GoalContribution[] = (contribResult.data ?? []).map(
-      (row: GoalContributionRow) => mapContributionRow(row)
+      (row: GoalContributionRow) => mapContributionRow(row),
     );
 
     // Need at least 2 data points for meaningful regression
@@ -647,7 +677,9 @@ export class SavingsGoalService {
     const now = new Date();
     const daysUntilProjected = Math.max(
       0,
-      Math.ceil((projectedDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      Math.ceil(
+        (projectedDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+      ),
     );
 
     // Confidence based on R-squared and sample size
@@ -673,10 +705,10 @@ export class SavingsGoalService {
    * Get all recorded milestones for a goal.
    */
   async getMilestones(goalId: string): Promise<GoalMilestone[]> {
-    const { data, error } = await (supabaseAdmin.from as any)('goal_milestones')
-      .select('*')
-      .eq('goal_id', goalId)
-      .order('threshold', { ascending: true });
+    const { data, error } = await (supabaseAdmin.from as any)("goal_milestones")
+      .select("*")
+      .eq("goal_id", goalId)
+      .order("threshold", { ascending: true });
 
     if (error) {
       throw new Error(`Failed to fetch milestones: ${error.message}`);
@@ -696,22 +728,28 @@ export class SavingsGoalService {
    */
   async checkMilestones(goalId: string): Promise<GoalMilestone[]> {
     const [goalResult, existingMilestones] = await Promise.all([
-      (supabaseAdmin.from as any)('savings_goals')
-        .select('*')
-        .eq('id', goalId)
-        .is('deleted_at', null)
+      (supabaseAdmin.from as any)("savings_goals")
+        .select("*")
+        .eq("id", goalId)
+        .is("deleted_at", null)
         .single(),
       this.getMilestones(goalId),
     ]);
 
     if (goalResult.error) {
-      throw new Error(`Failed to fetch goal for milestone check: ${goalResult.error.message}`);
+      throw new Error(
+        `Failed to fetch goal for milestone check: ${goalResult.error.message}`,
+      );
     }
 
     const goal = mapGoalRow(goalResult.data as SavingsGoalRow);
-    const existingThresholds = new Set(existingMilestones.map((m) => m.threshold));
+    const existingThresholds = new Set(
+      existingMilestones.map((m) => m.threshold),
+    );
     const currentPercent =
-      goal.targetAmount > 0 ? (goal.currentAmount / goal.targetAmount) * 100 : 0;
+      goal.targetAmount > 0
+        ? (goal.currentAmount / goal.targetAmount) * 100
+        : 0;
 
     const newMilestones: GoalMilestone[] = [];
 
@@ -720,7 +758,7 @@ export class SavingsGoalService {
         const milestone = await this.insertMilestone(
           goalId,
           threshold,
-          goal.currentAmount
+          goal.currentAmount,
         );
         newMilestones.push(milestone);
       }
@@ -737,14 +775,16 @@ export class SavingsGoalService {
     goalId: string,
     previousAmount: number,
     newAmount: number,
-    targetAmount: number
+    targetAmount: number,
   ): Promise<GoalMilestone[]> {
     if (targetAmount <= 0) {
       return [];
     }
 
     const existingMilestones = await this.getMilestones(goalId);
-    const existingThresholds = new Set(existingMilestones.map((m) => m.threshold));
+    const existingThresholds = new Set(
+      existingMilestones.map((m) => m.threshold),
+    );
 
     const previousPercent = (previousAmount / targetAmount) * 100;
     const newPercent = (newAmount / targetAmount) * 100;
@@ -757,7 +797,11 @@ export class SavingsGoalService {
         newPercent >= threshold &&
         !existingThresholds.has(threshold)
       ) {
-        const milestone = await this.insertMilestone(goalId, threshold, newAmount);
+        const milestone = await this.insertMilestone(
+          goalId,
+          threshold,
+          newAmount,
+        );
         newMilestones.push(milestone);
       }
     }
@@ -771,16 +815,16 @@ export class SavingsGoalService {
   private async insertMilestone(
     goalId: string,
     threshold: MilestoneThreshold,
-    amountAtMilestone: number
+    amountAtMilestone: number,
   ): Promise<GoalMilestone> {
-    const { data, error } = await (supabaseAdmin.from as any)('goal_milestones')
+    const { data, error } = await (supabaseAdmin.from as any)("goal_milestones")
       .insert({
         goal_id: goalId,
         threshold,
         amount_at_milestone: amountAtMilestone,
         reached_at: new Date().toISOString(),
       })
-      .select('*')
+      .select("*")
       .single();
 
     if (error) {
@@ -800,7 +844,7 @@ export class SavingsGoalService {
    */
   async getGoalSummary(
     userId: string,
-    displayCurrency: CurrencyCode = 'USD'
+    displayCurrency: CurrencyCode = "USD",
   ): Promise<GoalSummary> {
     const goals = await this.getGoals(userId);
 
@@ -820,45 +864,50 @@ export class SavingsGoalService {
       const savedInDisplay = currencyService.convertAndRound(
         goal.currentAmount,
         goal.currency,
-        displayCurrency
+        displayCurrency,
       );
       const targetInDisplay = currencyService.convertAndRound(
         goal.targetAmount,
         goal.currency,
-        displayCurrency
+        displayCurrency,
       );
 
       totalSaved += savedInDisplay;
       totalTargets += targetInDisplay;
 
       switch (goal.status) {
-        case 'active':
+        case "active":
           activeGoals++;
           break;
-        case 'completed':
+        case "completed":
           completedGoals++;
           break;
-        case 'paused':
+        case "paused":
           pausedGoals++;
           break;
-        case 'cancelled':
+        case "cancelled":
           cancelledGoals++;
           break;
       }
 
       // On-track analysis for active goals
-      if (goal.status === 'active') {
+      if (goal.status === "active") {
         const daysElapsed = Math.max(
           1,
-          Math.floor((now.getTime() - goal.createdAt.getTime()) / (1000 * 60 * 60 * 24))
+          Math.floor(
+            (now.getTime() - goal.createdAt.getTime()) / (1000 * 60 * 60 * 24),
+          ),
         );
         const daysRemaining = Math.max(
           0,
-          Math.floor((goal.targetDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+          Math.floor(
+            (goal.targetDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+          ),
         );
 
         const remaining = Math.max(0, goal.targetAmount - goal.currentAmount);
-        const requiredDailyRate = daysRemaining > 0 ? remaining / daysRemaining : remaining;
+        const requiredDailyRate =
+          daysRemaining > 0 ? remaining / daysRemaining : remaining;
         const actualDailyRate = goal.currentAmount / daysElapsed;
 
         if (actualDailyRate >= requiredDailyRate * 0.9) {
@@ -897,15 +946,20 @@ export class SavingsGoalService {
    * Convert a goal's currency, translating the target and current amounts
    * to the new currency using live exchange rates.
    */
-  async convertGoalCurrency(goalId: string, newCurrency: CurrencyCode): Promise<SavingsGoal> {
-    const { data, error } = await (supabaseAdmin.from as any)('savings_goals')
-      .select('*')
-      .eq('id', goalId)
-      .is('deleted_at', null)
+  async convertGoalCurrency(
+    goalId: string,
+    newCurrency: CurrencyCode,
+  ): Promise<SavingsGoal> {
+    const { data, error } = await (supabaseAdmin.from as any)("savings_goals")
+      .select("*")
+      .eq("id", goalId)
+      .is("deleted_at", null)
       .single();
 
     if (error) {
-      throw new Error(`Failed to fetch goal for currency conversion: ${error.message}`);
+      throw new Error(
+        `Failed to fetch goal for currency conversion: ${error.message}`,
+      );
     }
 
     const goal = mapGoalRow(data as SavingsGoalRow);
@@ -917,29 +971,31 @@ export class SavingsGoalService {
     const convertedTarget = currencyService.convertAndRound(
       goal.targetAmount,
       goal.currency,
-      newCurrency
+      newCurrency,
     );
     const convertedCurrent = currencyService.convertAndRound(
       goal.currentAmount,
       goal.currency,
-      newCurrency
+      newCurrency,
     );
 
-    const { data: updated, error: updateError } = await (supabaseAdmin.from as any)(
-      'savings_goals'
-    )
+    const { data: updated, error: updateError } = await (
+      supabaseAdmin.from as any
+    )("savings_goals")
       .update({
         currency: newCurrency,
         target_amount: convertedTarget,
         current_amount: convertedCurrent,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', goalId)
-      .select('*')
+      .eq("id", goalId)
+      .select("*")
       .single();
 
     if (updateError) {
-      throw new Error(`Failed to convert goal currency: ${updateError.message}`);
+      throw new Error(
+        `Failed to convert goal currency: ${updateError.message}`,
+      );
     }
 
     return mapGoalRow(updated as SavingsGoalRow);

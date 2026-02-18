@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Investments Layout
@@ -7,9 +7,9 @@
  * Provides consistent header and tab navigation between investment features.
  */
 
-import { usePathname } from 'next/navigation';
-import Link from 'next/link';
-import { ReactNode } from 'react';
+import { usePathname } from "next/navigation";
+import Link from "next/link";
+import { ReactNode } from "react";
 
 interface NavItem {
   label: string;
@@ -19,55 +19,55 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   {
-    label: 'Overview',
-    href: '/investments',
-    description: 'Portfolio summary and key metrics',
+    label: "Overview",
+    href: "/investments",
+    description: "Portfolio summary and key metrics",
   },
   {
-    label: 'Holdings',
-    href: '/investments/holdings',
-    description: 'View and manage your positions',
+    label: "Holdings",
+    href: "/investments/holdings",
+    description: "View and manage your positions",
   },
   {
-    label: 'Performance',
-    href: '/investments/performance',
-    description: 'Historical returns and benchmarks',
+    label: "Performance",
+    href: "/investments/performance",
+    description: "Historical returns and benchmarks",
   },
   {
-    label: 'Watchlist',
-    href: '/investments/watchlist',
-    description: 'Track stocks of interest',
+    label: "Watchlist",
+    href: "/investments/watchlist",
+    description: "Track stocks of interest",
   },
   {
-    label: 'Research',
-    href: '/investments/research',
-    description: 'AI-powered stock analysis',
+    label: "Research",
+    href: "/investments/research",
+    description: "AI-powered stock analysis",
   },
   {
-    label: 'Analytics',
-    href: '/investments/analytics',
-    description: 'Risk and diversification metrics',
+    label: "Analytics",
+    href: "/investments/analytics",
+    description: "Risk and diversification metrics",
   },
   {
-    label: 'Signals',
-    href: '/investments/signals',
-    description: 'AI trading signals',
+    label: "Signals",
+    href: "/investments/signals",
+    description: "AI trading signals",
   },
   {
-    label: 'Dividends',
-    href: '/investments/dividends',
-    description: 'Dividend income tracking',
+    label: "Dividends",
+    href: "/investments/dividends",
+    description: "Dividend income tracking",
   },
   {
-    label: 'Rebalance',
-    href: '/investments/rebalance',
-    description: 'Portfolio rebalancing tools',
+    label: "Rebalance",
+    href: "/investments/rebalance",
+    description: "Portfolio rebalancing tools",
   },
 ];
 
 function isActiveRoute(pathname: string, href: string): boolean {
-  if (href === '/investments') {
-    return pathname === '/investments';
+  if (href === "/investments") {
+    return pathname === "/investments";
   }
   return pathname.startsWith(href);
 }
@@ -99,8 +99,8 @@ export default function InvestmentsLayout({
                     flex-shrink-0 px-4 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap
                     ${
                       isActive
-                        ? 'border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400'
-                        : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:border-gray-300 dark:hover:border-slate-500'
+                        ? "border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400"
+                        : "border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:border-gray-300 dark:hover:border-slate-500"
                     }
                   `}
                 >

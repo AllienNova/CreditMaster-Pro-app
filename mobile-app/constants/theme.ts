@@ -13,9 +13,9 @@ export {
   withOpacity,
   getScoreColor,
   getScoreLabel,
-} from '../src/constants/theme';
+} from "../src/constants/theme";
 
-export type { Theme, ThemeColors, ThemeShadow } from '../src/types';
+export type { Theme, ThemeColors, ThemeShadow } from "../src/types";
 
 // Re-export lightTheme as default for backward compatibility
-export { default } from '../src/constants/theme';
+export { default } from "../src/constants/theme";

@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState } from "react";
+import { motion } from "framer-motion";
 import {
   CreditCard,
   Shield,
@@ -14,14 +14,14 @@ import {
   Sparkles,
   Target,
   TrendingUp,
-} from 'lucide-react';
+} from "lucide-react";
 
 type CreditBuildingGoal =
-  | 'first_credit'
-  | 'rebuild_credit'
-  | 'increase_score'
-  | 'graduation_path'
-  | 'maximize_rewards';
+  | "first_credit"
+  | "rebuild_credit"
+  | "increase_score"
+  | "graduation_path"
+  | "maximize_rewards";
 
 interface SecuredCard {
   id: string;
@@ -45,7 +45,7 @@ interface SecuredCard {
 interface CardRecommendation {
   card: SecuredCard;
   matchScore: number;
-  approvalLikelihood: 'high' | 'medium' | 'low';
+  approvalLikelihood: "high" | "medium" | "low";
   reasons: string[];
   warnings?: string[];
   projectedScoreImpact: number;
@@ -54,96 +54,96 @@ interface CardRecommendation {
 const MOCK_RECOMMENDATIONS: CardRecommendation[] = [
   {
     card: {
-      id: 'discover-it-secured',
-      name: 'Discover it® Secured Credit Card',
-      issuer: 'Discover',
+      id: "discover-it-secured",
+      name: "Discover it® Secured Credit Card",
+      issuer: "Discover",
       annualFee: 0,
       depositMin: 200,
       depositMax: 2500,
       rewardsRate: 2,
-      rewardsType: '2% at gas stations and restaurants, 1% all else',
+      rewardsType: "2% at gas stations and restaurants, 1% all else",
       graduationEligible: true,
       graduationTimeMonths: 8,
       noCreditCheckRequired: false,
       features: [
-        'Cashback Match first year',
-        'Free FICO score',
-        'No foreign transaction fees',
+        "Cashback Match first year",
+        "Free FICO score",
+        "No foreign transaction fees",
       ],
       pros: [
-        'Best rewards for a secured card',
-        'No annual fee',
-        'Quick graduation potential',
+        "Best rewards for a secured card",
+        "No annual fee",
+        "Quick graduation potential",
       ],
-      cons: ['Requires credit check'],
+      cons: ["Requires credit check"],
       rating: 4.8,
-      applicationUrl: '#',
+      applicationUrl: "#",
     },
     matchScore: 95,
-    approvalLikelihood: 'high',
+    approvalLikelihood: "high",
     reasons: [
-      'Excellent match for your goal: Path to unsecured card',
-      'Can graduate to unsecured card in ~8 months',
-      'No annual fee',
-      'Reports to all 3 credit bureaus',
+      "Excellent match for your goal: Path to unsecured card",
+      "Can graduate to unsecured card in ~8 months",
+      "No annual fee",
+      "Reports to all 3 credit bureaus",
     ],
     projectedScoreImpact: 45,
   },
   {
     card: {
-      id: 'capital-one-quicksilver',
-      name: 'Capital One Quicksilver Secured',
-      issuer: 'Capital One',
+      id: "capital-one-quicksilver",
+      name: "Capital One Quicksilver Secured",
+      issuer: "Capital One",
       annualFee: 0,
       depositMin: 200,
       depositMax: 1000,
       rewardsRate: 1.5,
-      rewardsType: '1.5% unlimited cashback',
+      rewardsType: "1.5% unlimited cashback",
       graduationEligible: true,
       graduationTimeMonths: 6,
       noCreditCheckRequired: false,
-      features: ['Automatic credit line reviews', 'CreditWise monitoring'],
-      pros: ['Good rewards rate', 'Fast graduation possible'],
-      cons: ['Higher APR', 'Lower maximum credit line'],
+      features: ["Automatic credit line reviews", "CreditWise monitoring"],
+      pros: ["Good rewards rate", "Fast graduation possible"],
+      cons: ["Higher APR", "Lower maximum credit line"],
       rating: 4.5,
-      applicationUrl: '#',
+      applicationUrl: "#",
     },
     matchScore: 88,
-    approvalLikelihood: 'high',
+    approvalLikelihood: "high",
     reasons: [
-      'Good rewards rate of 1.5%',
-      'Fast graduation possible in 6 months',
-      'No annual fee',
+      "Good rewards rate of 1.5%",
+      "Fast graduation possible in 6 months",
+      "No annual fee",
     ],
     projectedScoreImpact: 40,
   },
   {
     card: {
-      id: 'opensky-secured',
-      name: 'OpenSky® Secured Visa®',
-      issuer: 'OpenSky',
+      id: "opensky-secured",
+      name: "OpenSky® Secured Visa®",
+      issuer: "OpenSky",
       annualFee: 35,
       depositMin: 200,
       depositMax: 3000,
       graduationEligible: false,
       noCreditCheckRequired: true,
-      features: ['No credit check required', 'No bank account required'],
+      features: ["No credit check required", "No bank account required"],
       pros: [
-        'Guaranteed approval',
-        'No bank account needed',
-        'Higher credit line available',
+        "Guaranteed approval",
+        "No bank account needed",
+        "Higher credit line available",
       ],
-      cons: ['Annual fee', 'No rewards', 'No graduation path'],
+      cons: ["Annual fee", "No rewards", "No graduation path"],
       rating: 4.0,
-      applicationUrl: '#',
+      applicationUrl: "#",
     },
     matchScore: 75,
-    approvalLikelihood: 'high',
+    approvalLikelihood: "high",
     reasons: [
-      'No credit check - guaranteed approval',
-      'Higher credit line available up to $3,000',
+      "No credit check - guaranteed approval",
+      "Higher credit line available up to $3,000",
     ],
-    warnings: ['$35 annual fee', 'No graduation to unsecured card'],
+    warnings: ["$35 annual fee", "No graduation to unsecured card"],
     projectedScoreImpact: 35,
   },
 ];
@@ -151,31 +151,31 @@ const MOCK_RECOMMENDATIONS: CardRecommendation[] = [
 const GOALS: { id: CreditBuildingGoal; label: string; description: string }[] =
   [
     {
-      id: 'first_credit',
-      label: 'Build First Credit',
-      description: 'No credit history yet',
+      id: "first_credit",
+      label: "Build First Credit",
+      description: "No credit history yet",
     },
     {
-      id: 'rebuild_credit',
-      label: 'Rebuild Credit',
-      description: 'Recovering from past issues',
+      id: "rebuild_credit",
+      label: "Rebuild Credit",
+      description: "Recovering from past issues",
     },
     {
-      id: 'graduation_path',
-      label: 'Path to Unsecured',
-      description: 'Want to graduate to regular card',
+      id: "graduation_path",
+      label: "Path to Unsecured",
+      description: "Want to graduate to regular card",
     },
     {
-      id: 'maximize_rewards',
-      label: 'Maximize Rewards',
-      description: 'Earn while building credit',
+      id: "maximize_rewards",
+      label: "Maximize Rewards",
+      description: "Earn while building credit",
     },
   ];
 
 const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
     minimumFractionDigits: 0,
   }).format(amount);
 };
@@ -184,19 +184,19 @@ export default function SecuredCardsPage() {
   const [recommendations] =
     useState<CardRecommendation[]>(MOCK_RECOMMENDATIONS);
   const [selectedGoal, setSelectedGoal] =
-    useState<CreditBuildingGoal>('graduation_path');
+    useState<CreditBuildingGoal>("graduation_path");
   const [depositAmount, setDepositAmount] = useState(500);
 
   const getApprovalColor = (likelihood: string) => {
     switch (likelihood) {
-      case 'high':
-        return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300';
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300';
-      case 'low':
-        return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300';
+      case "high":
+        return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300";
+      case "medium":
+        return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300";
+      case "low":
+        return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300";
       default:
-        return 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200';
+        return "bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200";
     }
   };
 
@@ -231,8 +231,8 @@ export default function SecuredCardsPage() {
                 onClick={() => setSelectedGoal(goal.id)}
                 className={`p-4 rounded-xl border-2 text-left transition-all ${
                   selectedGoal === goal.id
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                    : 'border-gray-200 dark:border-slate-700 hover:border-blue-300'
+                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                    : "border-gray-200 dark:border-slate-700 hover:border-blue-300"
                 }`}
               >
                 <h3 className="font-medium text-gray-900 dark:text-white">
@@ -343,7 +343,7 @@ export default function SecuredCardsPage() {
                         className={`px-2 py-1 rounded text-xs font-medium ${getApprovalColor(rec.approvalLikelihood)}`}
                       >
                         {rec.approvalLikelihood.charAt(0).toUpperCase() +
-                          rec.approvalLikelihood.slice(1)}{' '}
+                          rec.approvalLikelihood.slice(1)}{" "}
                         Approval
                       </span>
                       {rec.card.noCreditCheckRequired && (
@@ -364,7 +364,7 @@ export default function SecuredCardsPage() {
                         </p>
                         <p className="font-semibold text-gray-900 dark:text-white">
                           {rec.card.annualFee === 0
-                            ? '$0'
+                            ? "$0"
                             : formatCurrency(rec.card.annualFee)}
                         </p>
                       </div>
@@ -373,7 +373,7 @@ export default function SecuredCardsPage() {
                           Deposit
                         </p>
                         <p className="font-semibold text-gray-900 dark:text-white">
-                          {formatCurrency(rec.card.depositMin)} -{' '}
+                          {formatCurrency(rec.card.depositMin)} -{" "}
                           {formatCurrency(rec.card.depositMax)}
                         </p>
                       </div>
@@ -384,7 +384,7 @@ export default function SecuredCardsPage() {
                         <p className="font-semibold text-gray-900 dark:text-white">
                           {rec.card.rewardsRate
                             ? `${rec.card.rewardsRate}%`
-                            : 'None'}
+                            : "None"}
                         </p>
                       </div>
                       <div>
@@ -394,7 +394,7 @@ export default function SecuredCardsPage() {
                         <p className="font-semibold text-gray-900 dark:text-white">
                           {rec.card.graduationEligible
                             ? `~${rec.card.graduationTimeMonths} months`
-                            : 'N/A'}
+                            : "N/A"}
                         </p>
                       </div>
                     </div>
@@ -429,7 +429,9 @@ export default function SecuredCardsPage() {
                           {rec.card.rating}
                         </span>
                       </div>
-                      <div className="text-xs text-gray-500 dark:text-slate-400">Rating</div>
+                      <div className="text-xs text-gray-500 dark:text-slate-400">
+                        Rating
+                      </div>
                     </div>
                     <div className="text-center">
                       <div className="flex items-center gap-1 justify-center text-green-600">
@@ -438,7 +440,9 @@ export default function SecuredCardsPage() {
                           +{rec.projectedScoreImpact}
                         </span>
                       </div>
-                      <div className="text-xs text-gray-500 dark:text-slate-400">Score Impact</div>
+                      <div className="text-xs text-gray-500 dark:text-slate-400">
+                        Score Impact
+                      </div>
                     </div>
                     <a
                       href={rec.card.applicationUrl}

@@ -1,10 +1,10 @@
 /**
  * Educational Tooltip Component (Mobile)
- * 
+ *
  * Displays contextual help and educational content with modal-based rendering
  */
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -13,8 +13,8 @@ import {
   StyleSheet,
   Linking,
   Pressable,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 export interface EducationalTooltipProps {
   title: string;
@@ -29,7 +29,7 @@ export function EducationalTooltip({
   content,
   learnMoreUrl,
   iconSize = 20,
-  iconColor = '#6B7280',
+  iconColor = "#6B7280",
 }: EducationalTooltipProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -60,21 +60,14 @@ export function EducationalTooltip({
         animationType="fade"
         onRequestClose={() => setIsOpen(false)}
       >
-        <Pressable
-          style={styles.backdrop}
-          onPress={() => setIsOpen(false)}
-        >
+        <Pressable style={styles.backdrop} onPress={() => setIsOpen(false)}>
           <Pressable
             style={styles.modalContent}
             onPress={(e) => e.stopPropagation()}
           >
             <View style={styles.header}>
               <View style={styles.iconContainer}>
-                <Ionicons
-                  name="information-circle"
-                  size={24}
-                  color="#3B82F6"
-                />
+                <Ionicons name="information-circle" size={24} color="#3B82F6" />
               </View>
               <TouchableOpacity
                 onPress={() => setIsOpen(false)}
@@ -97,11 +90,7 @@ export function EducationalTooltip({
                 accessibilityRole="button"
               >
                 <Text style={styles.learnMoreText}>Learn more</Text>
-                <Ionicons
-                  name="chevron-forward"
-                  size={16}
-                  color="#3B82F6"
-                />
+                <Ionicons name="chevron-forward" size={16} color="#3B82F6" />
               </TouchableOpacity>
             )}
 
@@ -126,74 +115,73 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 24,
-    width: '100%',
+    width: "100%",
     maxWidth: 400,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     marginBottom: 16,
   },
   iconContainer: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#EFF6FF',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#EFF6FF",
+    justifyContent: "center",
+    alignItems: "center",
   },
   closeButton: {
     padding: 4,
   },
   title: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
+    fontWeight: "600",
+    color: "#111827",
     marginBottom: 12,
   },
   content: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#4B5563',
+    color: "#4B5563",
     marginBottom: 20,
   },
   learnMoreButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 16,
   },
   learnMoreText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#3B82F6',
+    fontWeight: "500",
+    color: "#3B82F6",
     marginRight: 4,
   },
   gotItButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: "#3B82F6",
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 24,
-    alignItems: 'center',
+    alignItems: "center",
   },
   gotItText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
 });
-

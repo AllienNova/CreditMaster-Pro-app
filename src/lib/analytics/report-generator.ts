@@ -14,7 +14,7 @@ import type {
   DisputeAnalytics,
   WorkflowAnalytics,
   AIUsageAnalytics,
-} from './analytics-engine';
+} from "./analytics-engine";
 
 type SystemAnalyticsOverview = {
   disputes: DisputeAnalytics;
@@ -26,7 +26,7 @@ type SystemAnalyticsOverview = {
 // TYPE DEFINITIONS
 // ============================================================================
 
-export type ReportFormat = 'pdf' | 'csv' | 'json' | 'html';
+export type ReportFormat = "pdf" | "csv" | "json" | "html";
 
 export interface ReportOptions {
   format: ReportFormat;
@@ -54,18 +54,18 @@ export class ReportGenerator {
    */
   static async generateReport(
     report: AnalyticsReport,
-    options: ReportOptions
+    options: ReportOptions,
   ): Promise<GeneratedReport> {
     // Generating report
 
     switch (options.format) {
-      case 'json':
+      case "json":
         return this.generateJSON(report);
-      case 'csv':
+      case "csv":
         return this.generateCSV(report);
-      case 'html':
+      case "html":
         return this.generateHTML(report, options);
-      case 'pdf':
+      case "pdf":
         return this.generatePDF(report, options);
       default:
         throw new Error(`Unsupported format: ${options.format}`);
@@ -76,13 +76,13 @@ export class ReportGenerator {
    * Generate JSON report
    */
   private static async generateJSON(
-    report: AnalyticsReport
+    report: AnalyticsReport,
   ): Promise<GeneratedReport> {
     const content = JSON.stringify(report, null, 2);
 
     return {
       report_id: report.report_id,
-      format: 'json',
+      format: "json",
       content,
       filename: `report_${report.report_id}.json`,
       size_bytes: Buffer.byteLength(content),
@@ -94,9 +94,9 @@ export class ReportGenerator {
    * Generate CSV report
    */
   private static async generateCSV(
-    report: AnalyticsReport
+    report: AnalyticsReport,
   ): Promise<GeneratedReport> {
-    let csv = '';
+    let csv = "";
 
     // Add header
     csv += `Report ID,${report.report_id}\n`;
@@ -104,20 +104,20 @@ export class ReportGenerator {
     csv += `Generated At,${report.generated_at}\n`;
     csv += `Period,${report.period_start} to ${report.period_end}\n`;
     csv += `Summary,${report.summary}\n`;
-    csv += '\n';
+    csv += "\n";
 
     // Add data based on report type
-    if (report.report_type === 'user' && this.isUserAnalytics(report.data)) {
-      csv += 'Metric,Value\n';
+    if (report.report_type === "user" && this.isUserAnalytics(report.data)) {
+      csv += "Metric,Value\n";
       csv += `Total Disputes,${report.data.total_disputes}\n`;
       csv += `Successful Disputes,${report.data.successful_disputes}\n`;
       csv += `Success Rate,${report.data.success_rate}%\n`;
       csv += `Total Savings,$${report.data.total_savings}\n`;
     } else if (
-      report.report_type === 'system' &&
+      report.report_type === "system" &&
       this.isSystemAnalyticsOverview(report.data)
     ) {
-      csv += 'Category,Metric,Value\n';
+      csv += "Category,Metric,Value\n";
       csv += `Disputes,Total,${report.data.disputes.total_disputes}\n`;
       csv += `Disputes,Success Rate,${report.data.disputes.success_rate}%\n`;
       csv += `Workflows,Total,${report.data.workflows.total_workflows}\n`;
@@ -126,7 +126,7 @@ export class ReportGenerator {
 
     return {
       report_id: report.report_id,
-      format: 'csv',
+      format: "csv",
       content: csv,
       filename: `report_${report.report_id}.csv`,
       size_bytes: Buffer.byteLength(csv),
@@ -139,12 +139,12 @@ export class ReportGenerator {
    */
   private static async generateHTML(
     report: AnalyticsReport,
-    options: ReportOptions
+    options: ReportOptions,
   ): Promise<GeneratedReport> {
     const optionDetails = {
       includeCharts: options.includeCharts ?? false,
       includeRawData: options.includeRawData ?? false,
-      template: options.template ?? 'default',
+      template: options.template ?? "default",
     };
     const html = `
 <!DOCTYPE html>
@@ -235,8 +235,8 @@ export class ReportGenerator {
     <h2>Report Options</h2>
     <ul>
       <li><strong>Template:</strong> ${optionDetails.template}</li>
-      <li><strong>Include Charts:</strong> ${optionDetails.includeCharts ? 'Yes' : 'No'}</li>
-      <li><strong>Include Raw Data:</strong> ${optionDetails.includeRawData ? 'Yes' : 'No'}</li>
+      <li><strong>Include Charts:</strong> ${optionDetails.includeCharts ? "Yes" : "No"}</li>
+      <li><strong>Include Raw Data:</strong> ${optionDetails.includeRawData ? "Yes" : "No"}</li>
     </ul>
   </div>
   
@@ -254,7 +254,7 @@ export class ReportGenerator {
 
     return {
       report_id: report.report_id,
-      format: 'html',
+      format: "html",
       content: html,
       filename: `report_${report.report_id}.html`,
       size_bytes: Buffer.byteLength(html),
@@ -267,20 +267,20 @@ export class ReportGenerator {
    */
   private static async generatePDF(
     report: AnalyticsReport,
-    options: ReportOptions
+    options: ReportOptions,
   ): Promise<GeneratedReport> {
     // In production, use a library like puppeteer or pdfkit
     // For now, return a placeholder
     // ReportGenerator: PDF generation requires puppeteer or pdfkit
 
-    const templateName = options.template ?? 'default';
+    const templateName = options.template ?? "default";
     const content = `PDF Report: ${report.report_id}\n\nTemplate: ${templateName}\nCharts: ${
-      options.includeCharts ? 'included' : 'excluded'
-    }\nRaw Data: ${options.includeRawData ? 'included' : 'excluded'}\n\nThis is a placeholder. In production, use puppeteer or pdfkit to generate actual PDFs.`;
+      options.includeCharts ? "included" : "excluded"
+    }\nRaw Data: ${options.includeRawData ? "included" : "excluded"}\n\nThis is a placeholder. In production, use puppeteer or pdfkit to generate actual PDFs.`;
 
     return {
       report_id: report.report_id,
-      format: 'pdf',
+      format: "pdf",
       content,
       filename: `report_${report.report_id}.pdf`,
       size_bytes: Buffer.byteLength(content),
@@ -293,12 +293,12 @@ export class ReportGenerator {
    */
   static async generateMultipleFormats(
     report: AnalyticsReport,
-    formats: ReportFormat[]
+    formats: ReportFormat[],
   ): Promise<GeneratedReport[]> {
     // ReportGenerator: Generating reports in multiple formats
 
     const reports = await Promise.all(
-      formats.map((format) => this.generateReport(report, { format }))
+      formats.map((format) => this.generateReport(report, { format })),
     );
 
     return reports;
@@ -309,40 +309,40 @@ export class ReportGenerator {
    */
   static exportToCSV(
     data: Array<Record<string, unknown>>,
-    headers: string[]
+    headers: string[],
   ): string {
-    let csv = headers.join(',') + '\n';
+    let csv = headers.join(",") + "\n";
 
     data.forEach((row) => {
       const values = headers.map((header) => {
         const value = row[header];
         // Escape commas and quotes
         if (
-          typeof value === 'string' &&
-          (value.includes(',') || value.includes('"'))
+          typeof value === "string" &&
+          (value.includes(",") || value.includes('"'))
         ) {
           return `"${value.replace(/"/g, '""')}"`;
         }
         return value;
       });
-      csv += values.join(',') + '\n';
+      csv += values.join(",") + "\n";
     });
 
     return csv;
   }
 
   private static isUserAnalytics(
-    data: AnalyticsReport['data']
+    data: AnalyticsReport["data"],
   ): data is UserAnalytics {
-    return typeof (data as UserAnalytics)?.total_disputes === 'number';
+    return typeof (data as UserAnalytics)?.total_disputes === "number";
   }
 
   private static isSystemAnalyticsOverview(
-    data: AnalyticsReport['data']
+    data: AnalyticsReport["data"],
   ): data is SystemAnalyticsOverview {
     const candidate = data as Partial<SystemAnalyticsOverview>;
     return Boolean(
-      candidate?.disputes && candidate?.workflows && candidate?.ai_usage
+      candidate?.disputes && candidate?.workflows && candidate?.ai_usage,
     );
   }
 }

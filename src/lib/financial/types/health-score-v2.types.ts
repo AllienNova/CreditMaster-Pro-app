@@ -5,8 +5,12 @@
  * with investment data integration and detailed breakdowns.
  */
 
-import { FinancialHealthScore, HealthScoreBreakdown, ComponentScore } from './financial-context.types';
-import { AggregatedFinancialContext } from './aggregated-context.types';
+import {
+  FinancialHealthScore,
+  HealthScoreBreakdown,
+  ComponentScore,
+} from "./financial-context.types";
+import { AggregatedFinancialContext } from "./aggregated-context.types";
 
 // ============================================================================
 // SCORE CONFIGURATION
@@ -17,12 +21,12 @@ import { AggregatedFinancialContext } from './aggregated-context.types';
  * V2 adds investments and rebalances weights
  */
 export interface ScoreWeightsV2 {
-  savings: number;      // Emergency fund, savings rate, goals
-  debt: number;         // Debt-to-income, high-interest debt
-  spending: number;     // Budget adherence, spending ratio
-  credit: number;       // Credit score, utilization
-  investments: number;  // Portfolio performance, diversification, retirement
-  insurance: number;    // Coverage adequacy
+  savings: number; // Emergency fund, savings rate, goals
+  debt: number; // Debt-to-income, high-interest debt
+  spending: number; // Budget adherence, spending ratio
+  credit: number; // Credit score, utilization
+  investments: number; // Portfolio performance, diversification, retirement
+  insurance: number; // Coverage adequacy
 }
 
 /**
@@ -49,7 +53,7 @@ export interface ScoreThresholdsV2 {
 export interface ComponentScoreV2 extends ComponentScore {
   subScores: SubScore[];
   recommendations: ComponentRecommendation[];
-  trend: 'improving' | 'declining' | 'stable';
+  trend: "improving" | "declining" | "stable";
   trendPercent: number;
   benchmarkComparison: BenchmarkComparison;
 }
@@ -59,13 +63,13 @@ export interface SubScore {
   score: number;
   maxScore: number;
   description: string;
-  impact: 'high' | 'medium' | 'low';
+  impact: "high" | "medium" | "low";
 }
 
 export interface ComponentRecommendation {
   action: string;
   impact: string;
-  priority: 'high' | 'medium' | 'low';
+  priority: "high" | "medium" | "low";
   estimatedImprovement: number; // Points improvement
   timeframe: string;
 }
@@ -74,7 +78,7 @@ export interface BenchmarkComparison {
   percentile: number;
   ageGroupAverage: number;
   incomeGroupAverage: number;
-  comparison: 'above' | 'below' | 'average';
+  comparison: "above" | "below" | "average";
 }
 
 // ============================================================================
@@ -99,28 +103,28 @@ export interface HealthScoreBreakdownV2 extends HealthScoreBreakdown {
 export interface FinancialHealthScoreV2 extends FinancialHealthScore {
   version: 2;
   breakdown: HealthScoreBreakdownV2;
-  
+
   // Enhanced metrics
   percentileRank: number;
   ageGroupRank: number;
   incomeGroupRank: number;
-  
+
   // Trend analysis
-  trendDirection: 'improving' | 'declining' | 'stable';
+  trendDirection: "improving" | "declining" | "stable";
   trendPercent: number;
   projectedScore30Days: number;
   projectedScore90Days: number;
-  
+
   // Actionable insights
   topStrengths: ScoreStrength[];
   topWeaknesses: ScoreWeakness[];
   quickWins: QuickWin[];
-  
+
   // Historical context
   previousScore?: number;
-  previousGrade?: 'A' | 'B' | 'C' | 'D' | 'F';
+  previousGrade?: "A" | "B" | "C" | "D" | "F";
   scoreHistory: ScoreHistoryPoint[];
-  
+
   // Metadata
   dataQuality: DataQualityAssessment;
   calculationDetails: CalculationDetails;
@@ -147,8 +151,8 @@ export interface QuickWin {
   action: string;
   component: keyof HealthScoreBreakdownV2;
   estimatedImprovement: number;
-  impact: 'high' | 'medium' | 'low';
-  effort: 'low' | 'medium' | 'high';
+  impact: "high" | "medium" | "low";
+  effort: "low" | "medium" | "high";
   timeframe: string;
   category?: string;
 }
@@ -156,18 +160,18 @@ export interface QuickWin {
 export interface ScoreHistoryPoint {
   date: Date;
   score: number;
-  grade: 'A' | 'B' | 'C' | 'D' | 'F';
+  grade: "A" | "B" | "C" | "D" | "F";
 }
 
 export interface DataQualityAssessment {
-  overallQuality: 'excellent' | 'good' | 'fair' | 'poor';
+  overallQuality: "excellent" | "good" | "fair" | "poor";
   missingData: string[];
   staleData: string[];
   confidenceLevel: number; // 0-100
 }
 
 export interface CalculationDetails {
-  algorithm: 'v2';
+  algorithm: "v2";
   weightsUsed: ScoreWeightsV2;
   thresholdsUsed: ScoreThresholdsV2;
   dataSourcesUsed: string[];
@@ -195,6 +199,10 @@ export interface HealthScoreOptionsV2 {
   incomeGroup?: IncomeGroup;
 }
 
-export type AgeGroup = '18-24' | '25-34' | '35-44' | '45-54' | '55-64' | '65+';
-export type IncomeGroup = 'low' | 'lower-middle' | 'middle' | 'upper-middle' | 'high';
-
+export type AgeGroup = "18-24" | "25-34" | "35-44" | "45-54" | "55-64" | "65+";
+export type IncomeGroup =
+  | "low"
+  | "lower-middle"
+  | "middle"
+  | "upper-middle"
+  | "high";

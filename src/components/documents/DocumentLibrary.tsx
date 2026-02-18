@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { Document, DocumentType } from '@/lib/documents/document-service';
-import DocumentCard from './DocumentCard';
-import DocumentUpload from './DocumentUpload';
-import DocumentShareModal from './DocumentShareModal';
-import { useAuth } from '@/hooks/useAuth';
+import { useState, useEffect, useCallback } from "react";
+import { Document, DocumentType } from "@/lib/documents/document-service";
+import DocumentCard from "./DocumentCard";
+import DocumentUpload from "./DocumentUpload";
+import DocumentShareModal from "./DocumentShareModal";
+import { useAuth } from "@/hooks/useAuth";
 
-type ViewMode = 'grid' | 'list';
-type SortBy = 'date' | 'name' | 'size';
+type ViewMode = "grid" | "list";
+type SortBy = "date" | "name" | "size";
 
 export default function DocumentLibrary() {
   const { user, loading: authLoading } = useAuth();
@@ -18,10 +18,10 @@ export default function DocumentLibrary() {
   const [error, setError] = useState<string | null>(null);
 
   // Filters and view
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState<DocumentType | 'all'>('all');
-  const [sortBy, setSortBy] = useState<SortBy>('date');
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [typeFilter, setTypeFilter] = useState<DocumentType | "all">("all");
+  const [sortBy, setSortBy] = useState<SortBy>("date");
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [shareDocument, setShareDocument] = useState<Document | null>(null);
 
@@ -33,15 +33,15 @@ export default function DocumentLibrary() {
 
     try {
       const response = await fetch(`/api/documents`);
-      
+
       if (!response.ok) {
-        throw new Error('Failed to fetch documents');
+        throw new Error("Failed to fetch documents");
       }
-      
+
       const data = await response.json();
       setDocuments(data.documents || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load documents');
+      setError(err instanceof Error ? err.message : "Failed to load documents");
     } finally {
       setLoading(false);
     }
@@ -49,34 +49,35 @@ export default function DocumentLibrary() {
 
   const filterAndSortDocuments = useCallback(() => {
     let filtered = [...documents];
-    
+
     // Apply search filter
     if (searchTerm) {
-      filtered = filtered.filter(doc =>
-        doc.originalName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        doc.type.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (doc) =>
+          doc.originalName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          doc.type.toLowerCase().includes(searchTerm.toLowerCase()),
       );
     }
-    
+
     // Apply type filter
-    if (typeFilter !== 'all') {
-      filtered = filtered.filter(doc => doc.type === typeFilter);
+    if (typeFilter !== "all") {
+      filtered = filtered.filter((doc) => doc.type === typeFilter);
     }
-    
+
     // Apply sorting
     filtered.sort((a, b) => {
       switch (sortBy) {
-        case 'date':
+        case "date":
           return b.uploadedAt.getTime() - a.uploadedAt.getTime();
-        case 'name':
+        case "name":
           return a.originalName.localeCompare(b.originalName);
-        case 'size':
+        case "size":
           return b.size - a.size;
         default:
           return 0;
       }
     });
-    
+
     setFilteredDocuments(filtered);
   }, [documents, searchTerm, typeFilter, sortBy]);
 
@@ -91,49 +92,49 @@ export default function DocumentLibrary() {
   }, [filterAndSortDocuments]);
 
   const handleUploadSuccess = (document: Document) => {
-    setDocuments(prev => [document, ...prev]);
+    setDocuments((prev) => [document, ...prev]);
     setShowUploadModal(false);
   };
 
   const handleDelete = async (documentId: string) => {
-    if (!confirm('Are you sure you want to delete this document?')) {
+    if (!confirm("Are you sure you want to delete this document?")) {
       return;
     }
-    
+
     try {
       const response = await fetch(`/api/documents?documentId=${documentId}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
-      
+
       if (!response.ok) {
-        throw new Error('Failed to delete document');
+        throw new Error("Failed to delete document");
       }
-      
-      setDocuments(prev => prev.filter(doc => doc.id !== documentId));
+
+      setDocuments((prev) => prev.filter((doc) => doc.id !== documentId));
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete document');
+      alert(err instanceof Error ? err.message : "Failed to delete document");
     }
   };
 
   const handleDownload = async (document: Document) => {
     try {
       // Open the presigned URL in a new tab
-      window.open(document.url, '_blank');
+      window.open(document.url, "_blank");
     } catch (_error) {
       // Error logged
-      alert('Failed to download document');
+      alert("Failed to download document");
     }
   };
 
-  const documentTypes: { value: DocumentType | 'all'; label: string }[] = [
-    { value: 'all', label: 'All Documents' },
-    { value: 'credit_report', label: 'Credit Reports' },
-    { value: 'dispute_letter', label: 'Dispute Letters' },
-    { value: 'evidence', label: 'Evidence' },
-    { value: 'identity_document', label: 'ID Documents' },
-    { value: 'proof_of_address', label: 'Proof of Address' },
-    { value: 'income_verification', label: 'Income Verification' },
-    { value: 'other', label: 'Other' },
+  const documentTypes: { value: DocumentType | "all"; label: string }[] = [
+    { value: "all", label: "All Documents" },
+    { value: "credit_report", label: "Credit Reports" },
+    { value: "dispute_letter", label: "Dispute Letters" },
+    { value: "evidence", label: "Evidence" },
+    { value: "identity_document", label: "ID Documents" },
+    { value: "proof_of_address", label: "Proof of Address" },
+    { value: "income_verification", label: "Income Verification" },
+    { value: "other", label: "Other" },
   ];
 
   if (loading) {
@@ -142,7 +143,10 @@ export default function DocumentLibrary() {
         <div className="h-10 bg-gray-200 dark:bg-slate-700 rounded mb-6"></div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="h-48 bg-gray-200 dark:bg-slate-700 rounded"></div>
+            <div
+              key={i}
+              className="h-48 bg-gray-200 dark:bg-slate-700 rounded"
+            ></div>
           ))}
         </div>
       </div>
@@ -154,7 +158,9 @@ export default function DocumentLibrary() {
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
         <div className="text-center py-12">
           <div className="text-red-600 text-xl mb-4"></div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Error Loading Documents</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+            Error Loading Documents
+          </h3>
           <p className="text-gray-600 dark:text-slate-300 mb-4">{error}</p>
           <button
             onClick={fetchDocuments}
@@ -183,13 +189,15 @@ export default function DocumentLibrary() {
                 className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-            
+
             {/* Filters and Actions */}
             <div className="flex items-center gap-3">
               {/* Type Filter */}
               <select
                 value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value as DocumentType | 'all')}
+                onChange={(e) =>
+                  setTypeFilter(e.target.value as DocumentType | "all")
+                }
                 className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 {documentTypes.map((type) => (
@@ -198,7 +206,7 @@ export default function DocumentLibrary() {
                   </option>
                 ))}
               </select>
-              
+
               {/* Sort */}
               <select
                 value={sortBy}
@@ -209,26 +217,25 @@ export default function DocumentLibrary() {
                 <option value="name">Sort by Name</option>
                 <option value="size">Sort by Size</option>
               </select>
-              
+
               {/* View Mode Toggle */}
               <div className="flex border border-gray-300 dark:border-slate-600 rounded-lg overflow-hidden">
                 <button
                   type="button"
-                  onClick={() => setViewMode('grid')}
-                  className={`px-3 py-2 ${ viewMode === 'grid' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900' }`}
+                  onClick={() => setViewMode("grid")}
+                  className={`px-3 py-2 ${viewMode === "grid" ? "bg-blue-600 text-white" : "bg-white text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900"}`}
                   title="Grid View"
                 >
                   ⊞
                 </button>
                 <button
                   type="button"
-                  onClick={() => setViewMode('list')}
-                  className={`px-3 py-2 ${ viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900' }`}
+                  onClick={() => setViewMode("list")}
+                  className={`px-3 py-2 ${viewMode === "list" ? "bg-blue-600 text-white" : "bg-white text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900"}`}
                   title="List View"
-                >
-                                  </button>
+                ></button>
               </div>
-              
+
               {/* Upload Button */}
               <button
                 type="button"
@@ -240,21 +247,23 @@ export default function DocumentLibrary() {
             </div>
           </div>
         </div>
-        
+
         {/* Documents */}
         <div className="p-6">
           {filteredDocuments.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-gray-400 dark:text-slate-500 text-6xl mb-4"></div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                {searchTerm || typeFilter !== 'all' ? 'No documents found' : 'No documents yet'}
+                {searchTerm || typeFilter !== "all"
+                  ? "No documents found"
+                  : "No documents yet"}
               </h3>
               <p className="text-gray-600 dark:text-slate-300 mb-6">
-                {searchTerm || typeFilter !== 'all'
-                  ? 'Try adjusting your filters'
-                  : 'Upload your first document to get started'}
+                {searchTerm || typeFilter !== "all"
+                  ? "Try adjusting your filters"
+                  : "Upload your first document to get started"}
               </p>
-              {!searchTerm && typeFilter === 'all' && (
+              {!searchTerm && typeFilter === "all" && (
                 <button
                   type="button"
                   onClick={() => setShowUploadModal(true)}
@@ -267,9 +276,9 @@ export default function DocumentLibrary() {
           ) : (
             <div
               className={
-                viewMode === 'grid'
-                  ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
-                  : 'space-y-4'
+                viewMode === "grid"
+                  ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                  : "space-y-4"
               }
             >
               {filteredDocuments.map((document) => (
@@ -286,7 +295,7 @@ export default function DocumentLibrary() {
           )}
         </div>
       </div>
-      
+
       {/* Upload Modal */}
       {showUploadModal && (
         <DocumentUpload

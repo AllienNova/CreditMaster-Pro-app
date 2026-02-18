@@ -14,28 +14,28 @@ import {
   GetObjectCommand,
   DeleteObjectCommand,
   ListObjectsV2Command,
-} from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+} from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 // Initialize S3 client
 const s3Client = new S3Client({
-  region: process.env.AWS_REGION || 'us-east-1',
+  region: process.env.AWS_REGION || "us-east-1",
   credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
   },
 });
 
-const BUCKET_NAME = process.env.AWS_S3_BUCKET || 'fynvita-documents';
+const BUCKET_NAME = process.env.AWS_S3_BUCKET || "fynvita-documents";
 
 export type DocumentType =
-  | 'credit_report'
-  | 'dispute_letter'
-  | 'evidence'
-  | 'identity_document'
-  | 'proof_of_address'
-  | 'income_verification'
-  | 'other';
+  | "credit_report"
+  | "dispute_letter"
+  | "evidence"
+  | "identity_document"
+  | "proof_of_address"
+  | "income_verification"
+  | "other";
 
 export interface Document {
   id: string;
@@ -68,10 +68,10 @@ class DocumentService {
     fileName: string,
     mimeType: string,
     documentType: DocumentType,
-    metadata?: Record<string, any>
+    metadata?: Record<string, any>,
   ): Promise<Document> {
     const documentId = `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const fileExtension = fileName.split('.').pop();
+    const fileExtension = fileName.split(".").pop();
     const s3Key = `users/${userId}/${documentType}/${documentId}.${fileExtension}`;
 
     // Upload to S3
@@ -152,7 +152,7 @@ class DocumentService {
    */
   getUserDocuments(userId: string, type?: DocumentType): Document[] {
     const userDocuments = Array.from(this.documents.values()).filter(
-      (d) => d.userId === userId
+      (d) => d.userId === userId,
     );
 
     if (type) {
@@ -160,7 +160,7 @@ class DocumentService {
     }
 
     return userDocuments.sort(
-      (a, b) => b.uploadedAt.getTime() - a.uploadedAt.getTime()
+      (a, b) => b.uploadedAt.getTime() - a.uploadedAt.getTime(),
     );
   }
 
@@ -193,7 +193,7 @@ class DocumentService {
    */
   updateDocumentMetadata(
     documentId: string,
-    metadata: Record<string, any>
+    metadata: Record<string, any>,
   ): Document | null {
     const document = this.documents.get(documentId);
     if (!document) return null;
@@ -264,10 +264,10 @@ class DocumentService {
     userId: string,
     fileName: string,
     mimeType: string,
-    documentType: DocumentType
+    documentType: DocumentType,
   ): Promise<{ uploadUrl: string; documentId: string; s3Key: string }> {
     const documentId = `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const fileExtension = fileName.split('.').pop();
+    const fileExtension = fileName.split(".").pop();
     const s3Key = `users/${userId}/${documentType}/${documentId}.${fileExtension}`;
 
     const command = new PutObjectCommand({
@@ -298,7 +298,7 @@ class DocumentService {
     size: number,
     mimeType: string,
     documentType: DocumentType,
-    metadata?: Record<string, any>
+    metadata?: Record<string, any>,
   ): Document {
     const document: Document = {
       id: documentId,
@@ -324,7 +324,7 @@ class DocumentService {
   getDocumentsByDateRange(
     userId: string,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
   ): Document[] {
     return this.getUserDocuments(userId).filter((doc) => {
       const uploadTime = doc.uploadedAt.getTime();
@@ -339,23 +339,23 @@ class DocumentService {
    */
   validateFileType(mimeType: string, documentType: DocumentType): boolean {
     const allowedTypes: Record<DocumentType, string[]> = {
-      credit_report: ['application/pdf', 'image/png', 'image/jpeg'],
+      credit_report: ["application/pdf", "image/png", "image/jpeg"],
       dispute_letter: [
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       ],
-      evidence: ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'],
-      identity_document: ['application/pdf', 'image/png', 'image/jpeg'],
-      proof_of_address: ['application/pdf', 'image/png', 'image/jpeg'],
-      income_verification: ['application/pdf', 'image/png', 'image/jpeg'],
+      evidence: ["application/pdf", "image/png", "image/jpeg", "image/jpg"],
+      identity_document: ["application/pdf", "image/png", "image/jpeg"],
+      proof_of_address: ["application/pdf", "image/png", "image/jpeg"],
+      income_verification: ["application/pdf", "image/png", "image/jpeg"],
       other: [
-        'application/pdf',
-        'image/png',
-        'image/jpeg',
-        'image/jpg',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        "application/pdf",
+        "image/png",
+        "image/jpeg",
+        "image/jpg",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       ],
     };
 
@@ -380,8 +380,8 @@ class DocumentService {
     documentId: string,
     userId: string,
     recipients: string[],
-    permissions: 'view' | 'download',
-    expiresInHours: number = 24
+    permissions: "view" | "download",
+    expiresInHours: number = 24,
   ): ShareLink {
     const shareId = `share_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const expiresAt = new Date(Date.now() + expiresInHours * 60 * 60 * 1000);
@@ -392,7 +392,7 @@ class DocumentService {
       userId,
       recipients,
       permissions,
-      url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/shared/${shareId}`,
+      url: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/shared/${shareId}`,
       expiresAt,
       createdAt: new Date(),
     };
@@ -407,7 +407,7 @@ class DocumentService {
   listShareLinks(documentId: string, userId: string): ShareLink[] {
     return Array.from(this.shareLinks.values())
       .filter(
-        (link) => link.documentId === documentId && link.userId === userId
+        (link) => link.documentId === documentId && link.userId === userId,
       )
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
@@ -441,7 +441,7 @@ export interface ShareLink {
   documentId: string;
   userId: string;
   recipients: string[];
-  permissions: 'view' | 'download';
+  permissions: "view" | "download";
   url: string;
   expiresAt: Date;
   createdAt: Date;

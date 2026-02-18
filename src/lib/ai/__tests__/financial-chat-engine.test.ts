@@ -6,14 +6,14 @@
  */
 
 // Use global jest instead of @jest/globals to avoid type issues with mocked functions
-import { FinancialChatEngine } from '../financial-chat-engine';
+import { FinancialChatEngine } from "../financial-chat-engine";
 import {
   ChatContext,
   ChatIntent,
   MessageRole,
   IntentType,
   ActionType,
-} from '../types/financial-chat.types';
+} from "../types/financial-chat.types";
 
 // ============================================================================
 // MOCKS
@@ -28,7 +28,7 @@ const mockSupabase = {
   rpc: jest.fn(),
 };
 
-jest.mock('@/lib/supabase/client', () => ({
+jest.mock("@/lib/supabase/client", () => ({
   createClient: jest.fn(() => mockSupabase),
 }));
 
@@ -38,7 +38,7 @@ const mockAIML = {
   chat: mockChat,
 };
 
-jest.mock('@/lib/aiml-service', () => ({
+jest.mock("@/lib/aiml-service", () => ({
   getAIMLService: () => ({
     chat: mockChat,
   }),
@@ -48,30 +48,30 @@ jest.mock('@/lib/aiml-service', () => ({
 // TEST DATA
 // ============================================================================
 
-const mockUserId = 'user-123';
-const mockSessionId = 'session-456';
-const mockMessageId = 'message-789';
+const mockUserId = "user-123";
+const mockSessionId = "session-456";
+const mockMessageId = "message-789";
 
 const mockSessionDB = {
   id: mockSessionId,
   user_id: mockUserId,
-  created_at: '2024-01-15T10:00:00Z',
-  updated_at: '2024-01-15T10:30:00Z',
-  title: 'Investment Discussion',
-  metadata: { tags: ['investing'] },
+  created_at: "2024-01-15T10:00:00Z",
+  updated_at: "2024-01-15T10:30:00Z",
+  title: "Investment Discussion",
+  metadata: { tags: ["investing"] },
   message_count: 5,
-  last_message_at: '2024-01-15T10:30:00Z',
+  last_message_at: "2024-01-15T10:30:00Z",
   archived: false,
 };
 
 const mockMessageDB = {
   id: mockMessageId,
   session_id: mockSessionId,
-  role: 'user',
-  content: 'How is my portfolio performing?',
-  timestamp: '2024-01-15T10:30:00Z',
+  role: "user",
+  content: "How is my portfolio performing?",
+  timestamp: "2024-01-15T10:30:00Z",
   metadata: {},
-  intent_type: 'portfolio_analysis',
+  intent_type: "portfolio_analysis",
   intent_confidence: 0.95,
 };
 
@@ -86,13 +86,13 @@ const mockIntentResponse = `\`\`\`json
 \`\`\``;
 
 const mockAIResponse =
-  'Your portfolio is performing well with a total value of $50,000.';
+  "Your portfolio is performing well with a total value of $50,000.";
 
 // ============================================================================
 // TEST SUITE
 // ============================================================================
 
-describe('FinancialChatEngine', () => {
+describe("FinancialChatEngine", () => {
   let chatEngine: FinancialChatEngine;
 
   beforeEach(() => {
@@ -137,26 +137,26 @@ describe('FinancialChatEngine', () => {
   // SESSION MANAGEMENT TESTS
   // ==========================================================================
 
-  describe('Session Management', () => {
-    it('should create a new chat session', async () => {
+  describe("Session Management", () => {
+    it("should create a new chat session", async () => {
       const session = await chatEngine.createSession(
         mockUserId,
-        'Test Session'
+        "Test Session",
       );
 
       expect(session).toBeDefined();
       expect(session.userId).toBe(mockUserId);
-      expect(mockSupabase.from).toHaveBeenCalledWith('chat_sessions');
+      expect(mockSupabase.from).toHaveBeenCalledWith("chat_sessions");
     });
 
-    it('should create a session without title', async () => {
+    it("should create a session without title", async () => {
       const session = await chatEngine.createSession(mockUserId);
 
       expect(session).toBeDefined();
       expect(session.userId).toBe(mockUserId);
     });
 
-    it('should get user sessions', async () => {
+    it("should get user sessions", async () => {
       const mockChain = {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -173,13 +173,13 @@ describe('FinancialChatEngine', () => {
       expect(Array.isArray(sessions)).toBe(true);
     });
 
-    it('should delete session', async () => {
+    it("should delete session", async () => {
       await chatEngine.deleteSession(mockSessionId);
 
-      expect(mockSupabase.from).toHaveBeenCalledWith('chat_sessions');
+      expect(mockSupabase.from).toHaveBeenCalledWith("chat_sessions");
     });
 
-    it('should get session history', async () => {
+    it("should get session history", async () => {
       const mockChain = {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -201,16 +201,16 @@ describe('FinancialChatEngine', () => {
   // INTENT DETECTION TESTS
   // ==========================================================================
 
-  describe('Intent Detection', () => {
-    it('should detect portfolio analysis intent', async () => {
+  describe("Intent Detection", () => {
+    it("should detect portfolio analysis intent", async () => {
       mockAIML.chat.mockResolvedValue({
         choices: [{ message: { content: mockIntentResponse } }],
       });
 
       const context = { userId: mockUserId };
       const intent = await chatEngine.detectIntent(
-        'How is my portfolio performing?',
-        context
+        "How is my portfolio performing?",
+        context,
       );
 
       expect(intent).toBeDefined();
@@ -218,7 +218,7 @@ describe('FinancialChatEngine', () => {
       expect(intent.confidence).toBeGreaterThan(0.8);
     });
 
-    it('should detect investment advice intent', async () => {
+    it("should detect investment advice intent", async () => {
       const investmentIntentResponse = `\`\`\`json
 {
   "type": "investment_advice",
@@ -235,8 +235,8 @@ describe('FinancialChatEngine', () => {
 
       const context = { userId: mockUserId };
       const intent = await chatEngine.detectIntent(
-        'Should I buy AAPL?',
-        context
+        "Should I buy AAPL?",
+        context,
       );
 
       expect(intent.type).toBe(IntentType.INVESTMENT_ADVICE);
@@ -244,7 +244,7 @@ describe('FinancialChatEngine', () => {
       expect(intent.action).toBe(ActionType.ANALYZE_INVESTMENT);
     });
 
-    it('should detect budget planning intent', async () => {
+    it("should detect budget planning intent", async () => {
       const budgetIntentResponse = `\`\`\`json
 {
   "type": "budget_planning",
@@ -261,15 +261,15 @@ describe('FinancialChatEngine', () => {
 
       const context = { userId: mockUserId };
       const intent = await chatEngine.detectIntent(
-        'Help me create a budget',
-        context
+        "Help me create a budget",
+        context,
       );
 
       expect(intent.type).toBe(IntentType.BUDGET_PLANNING);
       expect(intent.action).toBe(ActionType.CREATE_BUDGET);
     });
 
-    it('should detect debt strategy intent', async () => {
+    it("should detect debt strategy intent", async () => {
       const debtIntentResponse = `\`\`\`json
 {
   "type": "debt_strategy",
@@ -286,28 +286,28 @@ describe('FinancialChatEngine', () => {
 
       const context = { userId: mockUserId };
       const intent = await chatEngine.detectIntent(
-        'How can I pay off my debt faster?',
-        context
+        "How can I pay off my debt faster?",
+        context,
       );
 
       expect(intent.type).toBe(IntentType.DEBT_STRATEGY);
       expect(intent.action).toBe(ActionType.OPTIMIZE_DEBT);
     });
 
-    it('should handle malformed AI response gracefully', async () => {
+    it("should handle malformed AI response gracefully", async () => {
       mockAIML.chat.mockResolvedValue({
-        choices: [{ message: { content: 'Invalid JSON response' } }],
+        choices: [{ message: { content: "Invalid JSON response" } }],
       });
 
       const context = { userId: mockUserId };
-      const intent = await chatEngine.detectIntent('Test message', context);
+      const intent = await chatEngine.detectIntent("Test message", context);
 
       expect(intent).toBeDefined();
       expect(intent.type).toBe(IntentType.QUESTION);
       expect(intent.confidence).toBeLessThanOrEqual(0.5);
     });
 
-    it('should extract entities from user message', async () => {
+    it("should extract entities from user message", async () => {
       const entityIntentResponse = `\`\`\`json
 {
   "type": "investment_advice",
@@ -327,14 +327,14 @@ describe('FinancialChatEngine', () => {
 
       const context = { userId: mockUserId };
       const intent = await chatEngine.detectIntent(
-        'Should I invest $5000 in TSLA?',
-        context
+        "Should I invest $5000 in TSLA?",
+        context,
       );
 
       expect(intent.entities).toBeDefined();
       expect(intent.entities?.length).toBe(2);
-      expect(intent.entities?.[0].type).toBe('symbol');
-      expect(intent.entities?.[0].value).toBe('TSLA');
+      expect(intent.entities?.[0].type).toBe("symbol");
+      expect(intent.entities?.[0].value).toBe("TSLA");
     });
   });
 
@@ -342,8 +342,8 @@ describe('FinancialChatEngine', () => {
   // RESPONSE GENERATION TESTS
   // ==========================================================================
 
-  describe('Response Generation', () => {
-    it('should generate response for portfolio analysis', async () => {
+  describe("Response Generation", () => {
+    it("should generate response for portfolio analysis", async () => {
       const intent: ChatIntent = {
         type: IntentType.PORTFOLIO_ANALYSIS,
         confidence: 0.95,
@@ -354,11 +354,11 @@ describe('FinancialChatEngine', () => {
       const response = await chatEngine.generateResponse(intent, context);
 
       expect(response).toBeDefined();
-      expect(typeof response).toBe('string');
+      expect(typeof response).toBe("string");
       expect(response.length).toBeGreaterThan(0);
     });
 
-    it('should generate contextual response with user data', async () => {
+    it("should generate contextual response with user data", async () => {
       const intent: ChatIntent = {
         type: IntentType.INVESTMENT_ADVICE,
         confidence: 0.92,
@@ -367,10 +367,10 @@ describe('FinancialChatEngine', () => {
       const context: ChatContext = {
         userId: mockUserId,
         userPreferences: {
-          riskTolerance: 'moderate',
-          investmentHorizon: 'medium',
-          preferredAssets: ['stocks', 'bonds'],
-          communicationStyle: 'detailed',
+          riskTolerance: "moderate",
+          investmentHorizon: "medium",
+          preferredAssets: ["stocks", "bonds"],
+          communicationStyle: "detailed",
           notificationPreferences: {
             marketAlerts: true,
             portfolioUpdates: true,
@@ -390,8 +390,8 @@ describe('FinancialChatEngine', () => {
   // ACTION EXECUTION TESTS
   // ==========================================================================
 
-  describe('Action Execution', () => {
-    it('should execute VIEW_PORTFOLIO action', async () => {
+  describe("Action Execution", () => {
+    it("should execute VIEW_PORTFOLIO action", async () => {
       const mockChain = {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockResolvedValue({ data: [], error: null }),
@@ -402,61 +402,61 @@ describe('FinancialChatEngine', () => {
       const result = await chatEngine.executeAction(
         ActionType.VIEW_PORTFOLIO,
         {},
-        context
+        context,
       );
 
       expect(result).toBeDefined();
     });
 
-    it('should execute ANALYZE_INVESTMENT action', async () => {
+    it("should execute ANALYZE_INVESTMENT action", async () => {
       const context = { userId: mockUserId };
       const result = await chatEngine.executeAction(
         ActionType.ANALYZE_INVESTMENT,
-        { symbol: 'AAPL' },
-        context
+        { symbol: "AAPL" },
+        context,
       );
 
       expect(result).toBeDefined();
-      expect(result.symbol).toBe('AAPL');
+      expect(result.symbol).toBe("AAPL");
     });
 
-    it('should execute GET_TRADING_SIGNAL action', async () => {
+    it("should execute GET_TRADING_SIGNAL action", async () => {
       const context = { userId: mockUserId };
       const result = await chatEngine.executeAction(
         ActionType.GET_TRADING_SIGNAL,
-        { symbol: 'TSLA' },
-        context
+        { symbol: "TSLA" },
+        context,
       );
 
       expect(result).toBeDefined();
-      expect(result.symbol).toBe('TSLA');
+      expect(result.symbol).toBe("TSLA");
     });
 
-    it('should execute CREATE_BUDGET action', async () => {
+    it("should execute CREATE_BUDGET action", async () => {
       const context = { userId: mockUserId };
       const result = await chatEngine.executeAction(
         ActionType.CREATE_BUDGET,
         { monthlyIncome: 5000 },
-        context
+        context,
       );
 
       expect(result).toBeDefined();
       expect(result.created).toBe(true);
     });
 
-    it('should execute OPTIMIZE_DEBT action', async () => {
+    it("should execute OPTIMIZE_DEBT action", async () => {
       const context = { userId: mockUserId };
       const result = await chatEngine.executeAction(
         ActionType.OPTIMIZE_DEBT,
         {},
-        context
+        context,
       );
 
       expect(result).toBeDefined();
       expect(result.strategy).toBeDefined();
     });
 
-    it('should execute TRACK_GOALS action', async () => {
+    it("should execute TRACK_GOALS action", async () => {
       const mockChain = {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockResolvedValue({ data: [], error: null }),
@@ -467,7 +467,7 @@ describe('FinancialChatEngine', () => {
       const result = await chatEngine.executeAction(
         ActionType.TRACK_GOALS,
         {},
-        context
+        context,
       );
 
       expect(result).toBeDefined();
@@ -479,14 +479,14 @@ describe('FinancialChatEngine', () => {
   // ERROR HANDLING TESTS
   // ==========================================================================
 
-  describe('Error Handling', () => {
-    it('should handle database errors when creating session', async () => {
+  describe("Error Handling", () => {
+    it("should handle database errors when creating session", async () => {
       const mockChain = {
         insert: jest.fn().mockReturnThis(),
         select: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
           data: null,
-          error: { message: 'Database error' },
+          error: { message: "Database error" },
         }),
       };
       mockSupabase.from.mockReturnValue(mockChain);
@@ -494,19 +494,19 @@ describe('FinancialChatEngine', () => {
       await expect(chatEngine.createSession(mockUserId)).rejects.toThrow();
     });
 
-    it('should handle session not found error', async () => {
+    it("should handle session not found error", async () => {
       const mockChain = {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
           data: null,
-          error: { message: 'Session not found' },
+          error: { message: "Session not found" },
         }),
       };
       mockSupabase.from.mockReturnValue(mockChain);
 
       await expect(
-        chatEngine.getSessionHistory('invalid-session-id', 50)
+        chatEngine.getSessionHistory("invalid-session-id", 50),
       ).rejects.toThrow();
     });
   });
@@ -515,8 +515,8 @@ describe('FinancialChatEngine', () => {
   // INTEGRATION TESTS
   // ==========================================================================
 
-  describe('Integration Tests', () => {
-    it('should complete full message flow', async () => {
+  describe("Integration Tests", () => {
+    it("should complete full message flow", async () => {
       const mockChain = {
         insert: jest.fn().mockReturnThis(),
         select: jest.fn().mockReturnThis(),
@@ -539,8 +539,8 @@ describe('FinancialChatEngine', () => {
 
       const response = await chatEngine.sendMessage(
         mockSessionId,
-        'How is my portfolio?',
-        false
+        "How is my portfolio?",
+        false,
       );
 
       expect(response).toBeDefined();

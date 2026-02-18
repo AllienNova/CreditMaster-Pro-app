@@ -5,101 +5,101 @@
  * and quick access to popular services.
  */
 
-import Link from 'next/link';
-import { Icon } from '@/components/ui/Icon';
+import Link from "next/link";
+import { Icon } from "@/components/ui/Icon";
 
 export const metadata = {
-  title: 'Marketplace | Fynvita',
-  description: 'Discover trusted products and services for credit building',
+  title: "Marketplace | Fynvita",
+  description: "Discover trusted products and services for credit building",
 };
 
 const categories = [
   {
-    name: 'Credit Monitoring',
-    description: 'Real-time tracking across all 3 bureaus',
-    href: '/marketplace/monitoring',
+    name: "Credit Monitoring",
+    description: "Real-time tracking across all 3 bureaus",
+    href: "/marketplace/monitoring",
     icon: "shield",
-    color: 'from-blue-500 to-blue-500',
+    color: "from-blue-500 to-blue-500",
     featured: true,
   },
   {
-    name: 'Tradelines',
-    description: 'Authorized user tradelines to boost your score',
-    href: '/marketplace/tradelines',
+    name: "Tradelines",
+    description: "Authorized user tradelines to boost your score",
+    href: "/marketplace/tradelines",
     icon: "trending-up",
-    color: 'from-green-500 to-emerald-500',
+    color: "from-green-500 to-emerald-500",
     featured: true,
   },
   {
-    name: 'Credit Repair Services',
-    description: 'Vetted credit repair companies',
-    href: '/marketplace/services',
+    name: "Credit Repair Services",
+    description: "Vetted credit repair companies",
+    href: "/marketplace/services",
     icon: "wrench",
-    color: 'from-blue-500 to-blue-500',
+    color: "from-blue-500 to-blue-500",
     featured: true,
   },
   {
-    name: 'Education Library',
-    description: 'Courses and guides for financial literacy',
-    href: '/marketplace/education',
+    name: "Education Library",
+    description: "Courses and guides for financial literacy",
+    href: "/marketplace/education",
     icon: "academic-cap",
-    color: 'from-orange-500 to-amber-500',
+    color: "from-orange-500 to-amber-500",
   },
   {
-    name: 'Credit Calculators',
-    description: 'Financial planning tools',
-    href: '/marketplace/calculators',
+    name: "Credit Calculators",
+    description: "Financial planning tools",
+    href: "/marketplace/calculators",
     icon: "calculator",
-    color: 'from-emerald-500 to-rose-500',
+    color: "from-emerald-500 to-rose-500",
   },
   {
-    name: 'Report Analysis',
-    description: 'AI-powered credit report parsing',
-    href: '/marketplace/analysis',
+    name: "Report Analysis",
+    description: "AI-powered credit report parsing",
+    href: "/marketplace/analysis",
     icon: "document-chart",
-    color: 'from-teal-500 to-blue-500',
+    color: "from-teal-500 to-blue-500",
   },
   {
-    name: 'Secured Cards',
-    description: 'Best secured credit cards comparison',
-    href: '/marketplace/secured-cards',
+    name: "Secured Cards",
+    description: "Best secured credit cards comparison",
+    href: "/marketplace/secured-cards",
     icon: "credit-card",
-    color: 'from-blue-500 to-blue-500',
+    color: "from-blue-500 to-blue-500",
   },
   {
-    name: 'Builder Loans',
-    description: 'Credit builder loan marketplace',
-    href: '/marketplace/loans',
+    name: "Builder Loans",
+    description: "Credit builder loan marketplace",
+    href: "/marketplace/loans",
     icon: "banknotes",
-    color: 'from-yellow-500 to-orange-500',
+    color: "from-yellow-500 to-orange-500",
   },
   {
-    name: 'Debt Consolidation',
-    description: 'Consolidate and save on interest',
-    href: '/marketplace/consolidation',
+    name: "Debt Consolidation",
+    description: "Consolidate and save on interest",
+    href: "/marketplace/consolidation",
     icon: "arrow-path",
-    color: 'from-red-500 to-emerald-500',
+    color: "from-red-500 to-emerald-500",
   },
   {
-    name: 'Credit Attorneys',
-    description: 'Legal help for complex cases',
-    href: '/marketplace/attorneys',
+    name: "Credit Attorneys",
+    description: "Legal help for complex cases",
+    href: "/marketplace/attorneys",
     icon: "scale",
-    color: 'from-slate-500 to-gray-500',
+    color: "from-slate-500 to-gray-500",
   },
   {
-    name: 'Financial Coaching',
-    description: '1-on-1 expert guidance',
-    href: '/marketplace/coaching',
+    name: "Financial Coaching",
+    description: "1-on-1 expert guidance",
+    href: "/marketplace/coaching",
     icon: "user",
-    color: 'from-blue-500 to-blue-500',
+    color: "from-blue-500 to-blue-500",
   },
   {
-    name: 'Community',
-    description: 'Success stories and forums',
-    href: '/marketplace/community',
+    name: "Community",
+    description: "Success stories and forums",
+    href: "/marketplace/community",
     icon: "users",
-    color: 'from-emerald-500 to-green-500',
+    color: "from-emerald-500 to-green-500",
   },
 ];
 
@@ -121,7 +121,9 @@ export default function MarketplacePage() {
 
       {/* Featured Categories */}
       <section>
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Featured</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+          Featured
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {featuredCategories.map((category) => (
             <Link
@@ -133,11 +135,16 @@ export default function MarketplacePage() {
                 className={`absolute inset-0 bg-gradient-to-br ${category.color} opacity-0 group-hover:opacity-10 transition-opacity`}
               />
               <div className="p-6">
-                <Icon name={category.icon} className="text-4xl mb-4 inline-block" />
+                <Icon
+                  name={category.icon}
+                  className="text-4xl mb-4 inline-block"
+                />
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
                   {category.name}
                 </h3>
-                <p className="text-sm text-gray-600 dark:text-slate-300">{category.description}</p>
+                <p className="text-sm text-gray-600 dark:text-slate-300">
+                  {category.description}
+                </p>
               </div>
               <div className={`h-1 bg-gradient-to-r ${category.color}`} />
             </Link>
@@ -147,7 +154,9 @@ export default function MarketplacePage() {
 
       {/* All Categories */}
       <section>
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">All Categories</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+          All Categories
+        </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {otherCategories.map((category) => (
             <Link
@@ -157,8 +166,12 @@ export default function MarketplacePage() {
             >
               <Icon name={category.icon} className="text-2xl inline-block" />
               <div>
-                <h3 className="font-medium text-gray-900 dark:text-white">{category.name}</h3>
-                <p className="text-sm text-gray-500 dark:text-slate-400">{category.description}</p>
+                <h3 className="font-medium text-gray-900 dark:text-white">
+                  {category.name}
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-slate-400">
+                  {category.description}
+                </p>
               </div>
             </Link>
           ))}

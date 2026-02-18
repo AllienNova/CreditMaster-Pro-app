@@ -13,8 +13,8 @@
  * - Graceful fallbacks when AI service unavailable
  */
 
-import { AIMLService, ChatMessage } from '../aiml-service';
-import { RedisCacheService } from '../cache/redis-cache-service';
+import { AIMLService, ChatMessage } from "../aiml-service";
+import { RedisCacheService } from "../cache/redis-cache-service";
 import {
   StockQuote,
   StockHistoricalData,
@@ -56,7 +56,7 @@ import {
   AnalystSentiment,
   InsiderActivity,
   InstitutionalActivity,
-} from './types/stock-analysis.types';
+} from "./types/stock-analysis.types";
 import {
   ANALYST_SYSTEM_PROMPT,
   TECHNICAL_ANALYSIS_PROMPT,
@@ -65,13 +65,13 @@ import {
   RECOMMENDATION_PROMPT,
   formatPriceData,
   formatIndicators,
-} from '../ai/prompts/investment-analyst-prompts';
+} from "../ai/prompts/investment-analyst-prompts";
 
 // ============================================================================
 // CONSTANTS
 // ============================================================================
 
-const AI_MODEL = 'anthropic/claude-4.5-sonnet';
+const AI_MODEL = "anthropic/claude-4.5-sonnet";
 const ANALYSIS_CACHE_TTL = 60 * 60; // 1 hour in seconds (for Redis)
 
 // Technical indicator thresholds
@@ -95,7 +95,7 @@ export class AIStockAnalystService {
     this.aimlService = new AIMLService();
     this.redisCache = new RedisCacheService({
       ttl: ANALYSIS_CACHE_TTL,
-      prefix: 'stock-analysis:',
+      prefix: "stock-analysis:",
     });
     this.analysisCache = new Map();
   }
@@ -108,12 +108,12 @@ export class AIStockAnalystService {
    * Perform comprehensive stock analysis
    */
   async analyzeStock(
-    request: StockAnalysisRequest
+    request: StockAnalysisRequest,
   ): Promise<StockAnalysisResponse> {
     const startTime = Date.now();
     const {
       symbol,
-      analysisTypes = ['technical', 'fundamental', 'sentiment', 'ai'],
+      analysisTypes = ["technical", "fundamental", "sentiment", "ai"],
       includeAI = true,
     } = request;
 
@@ -122,7 +122,7 @@ export class AIStockAnalystService {
       if (!symbol || symbol.trim().length === 0) {
         return {
           success: false,
-          error: 'Invalid symbol: Symbol cannot be empty',
+          error: "Invalid symbol: Symbol cannot be empty",
           processingTime: Date.now() - startTime,
           dataFreshness: {
             quote: new Date(),
@@ -166,17 +166,17 @@ export class AIStockAnalystService {
       }
 
       // Fetch historical data for technical analysis
-      const historicalData = await this.getHistoricalData(symbol, '1d', 200);
+      const historicalData = await this.getHistoricalData(symbol, "1d", 200);
 
       // Perform analyses in parallel
       const [technical, fundamental, sentiment] = await Promise.all([
-        analysisTypes.includes('technical')
+        analysisTypes.includes("technical")
           ? this.performTechnicalAnalysis(symbol, quote, historicalData)
           : this.getDefaultTechnicalAnalysis(symbol),
-        analysisTypes.includes('fundamental')
+        analysisTypes.includes("fundamental")
           ? this.performFundamentalAnalysis(symbol, quote)
           : this.getDefaultFundamentalAnalysis(symbol),
-        analysisTypes.includes('sentiment')
+        analysisTypes.includes("sentiment")
           ? this.performSentimentAnalysis(symbol)
           : this.getDefaultSentimentAnalysis(symbol),
       ]);
@@ -186,7 +186,7 @@ export class AIStockAnalystService {
         quote,
         technical,
         fundamental,
-        historicalData
+        historicalData,
       );
 
       // Generate AI analysis if requested
@@ -197,7 +197,7 @@ export class AIStockAnalystService {
             technical,
             fundamental,
             sentiment,
-            riskAssessment
+            riskAssessment,
           )
         : this.getDefaultAIAnalysis(symbol);
 
@@ -209,8 +209,8 @@ export class AIStockAnalystService {
         sentiment,
         riskAssessment,
         aiAnalysis,
-        request.timeframe || 'medium',
-        request.riskTolerance || 'moderate'
+        request.timeframe || "medium",
+        request.riskTolerance || "moderate",
       );
 
       const analysis: ComprehensiveStockAnalysis = {
@@ -245,7 +245,7 @@ export class AIStockAnalystService {
       return {
         success: false,
         error:
-          error instanceof Error ? error.message : 'Unknown error occurred',
+          error instanceof Error ? error.message : "Unknown error occurred",
         processingTime: Date.now() - startTime,
         dataFreshness: {
           quote: new Date(),
@@ -274,7 +274,7 @@ export class AIStockAnalystService {
     return {
       symbol: symbol.toUpperCase(),
       name: this.getCompanyName(symbol),
-      exchange: 'NASDAQ',
+      exchange: "NASDAQ",
       price: basePrice + change,
       change,
       changePercent,
@@ -301,7 +301,7 @@ export class AIStockAnalystService {
   private async getHistoricalData(
     symbol: string,
     interval: string,
-    periods: number
+    periods: number,
   ): Promise<StockHistoricalData> {
     const basePrice = this.getSimulatedBasePrice(symbol);
     const data: OHLCV[] = [];
@@ -332,7 +332,7 @@ export class AIStockAnalystService {
 
     return {
       symbol: symbol.toUpperCase(),
-      interval: interval as '1d',
+      interval: interval as "1d",
       data,
     };
   }
@@ -355,16 +355,16 @@ export class AIStockAnalystService {
 
   private getCompanyName(symbol: string): string {
     const names: Record<string, string> = {
-      AAPL: 'Apple Inc.',
-      GOOGL: 'Alphabet Inc.',
-      MSFT: 'Microsoft Corporation',
-      AMZN: 'Amazon.com Inc.',
-      TSLA: 'Tesla Inc.',
-      META: 'Meta Platforms Inc.',
-      NVDA: 'NVIDIA Corporation',
-      JPM: 'JPMorgan Chase & Co.',
-      V: 'Visa Inc.',
-      JNJ: 'Johnson & Johnson',
+      AAPL: "Apple Inc.",
+      GOOGL: "Alphabet Inc.",
+      MSFT: "Microsoft Corporation",
+      AMZN: "Amazon.com Inc.",
+      TSLA: "Tesla Inc.",
+      META: "Meta Platforms Inc.",
+      NVDA: "NVIDIA Corporation",
+      JPM: "JPMorgan Chase & Co.",
+      V: "Visa Inc.",
+      JNJ: "Johnson & Johnson",
     };
     return names[symbol.toUpperCase()] || `${symbol.toUpperCase()} Corp.`;
   }
@@ -379,7 +379,7 @@ export class AIStockAnalystService {
   private async performTechnicalAnalysis(
     symbol: string,
     quote: StockQuote,
-    historicalData: StockHistoricalData
+    historicalData: StockHistoricalData,
   ): Promise<TechnicalAnalysis> {
     const closes = historicalData.data.map((d) => d.close);
     const highs = historicalData.data.map((d) => d.high);
@@ -392,7 +392,7 @@ export class AIStockAnalystService {
     const { support, resistance } = this.findSupportResistance(
       highs,
       lows,
-      closes
+      closes,
     );
     const overallSignal = this.calculateOverallSignal(signals);
 
@@ -416,7 +416,7 @@ export class AIStockAnalystService {
     closes: number[],
     highs: number[],
     lows: number[],
-    volumes: number[]
+    volumes: number[],
   ): TechnicalIndicators {
     return {
       sma20: this.calculateSMA(closes, 20),
@@ -492,7 +492,7 @@ export class AIStockAnalystService {
     closes: number[],
     highs: number[],
     lows: number[],
-    period: number = 14
+    period: number = 14,
   ): StochasticData {
     const recentCloses = closes.slice(-period);
     const recentHighs = highs.slice(-period);
@@ -514,13 +514,13 @@ export class AIStockAnalystService {
   // Bollinger Bands calculation
   private calculateBollingerBands(
     closes: number[],
-    period: number = 20
+    period: number = 20,
   ): BollingerBands {
     const sma = this.calculateSMA(closes, period);
     const slice = closes.slice(-period);
     const squaredDiffs = slice.map((val) => Math.pow(val - sma, 2));
     const stdDev = Math.sqrt(
-      squaredDiffs.reduce((sum, val) => sum + val, 0) / period
+      squaredDiffs.reduce((sum, val) => sum + val, 0) / period,
     );
 
     return {
@@ -536,7 +536,7 @@ export class AIStockAnalystService {
     highs: number[],
     lows: number[],
     closes: number[],
-    period: number = 14
+    period: number = 14,
   ): number {
     if (highs.length < period + 1) return 0;
 
@@ -545,7 +545,7 @@ export class AIStockAnalystService {
       const tr = Math.max(
         highs[i] - lows[i],
         Math.abs(highs[i] - closes[i - 1]),
-        Math.abs(lows[i] - closes[i - 1])
+        Math.abs(lows[i] - closes[i - 1]),
       );
       trueRanges.push(tr);
     }
@@ -568,7 +568,7 @@ export class AIStockAnalystService {
     closes: number[],
     highs: number[],
     lows: number[],
-    volumes: number[]
+    volumes: number[],
   ): number {
     let cumulativeTPV = 0;
     let cumulativeVolume = 0;
@@ -589,7 +589,7 @@ export class AIStockAnalystService {
     highs: number[],
     lows: number[],
     closes: number[],
-    period: number = 14
+    period: number = 14,
   ): number {
     if (highs.length < period * 2) return 25;
 
@@ -605,7 +605,7 @@ export class AIStockAnalystService {
     highs: number[],
     lows: number[],
     closes: number[],
-    period: number = 20
+    period: number = 20,
   ): number {
     const typicalPrices = closes.map((c, i) => (highs[i] + lows[i] + c) / 3);
     const sma = this.calculateSMA(typicalPrices, period);
@@ -622,34 +622,34 @@ export class AIStockAnalystService {
    */
   private generateTechnicalSignals(
     indicators: TechnicalIndicators,
-    currentPrice: number
+    currentPrice: number,
   ): TechnicalSignal[] {
     const signals: TechnicalSignal[] = [];
 
     // RSI Signal
     if (indicators.rsi < RSI_OVERSOLD) {
       signals.push({
-        indicator: 'RSI',
-        signal: 'buy',
+        indicator: "RSI",
+        signal: "buy",
         value: indicators.rsi,
         description: `RSI at ${indicators.rsi.toFixed(1)} indicates oversold conditions`,
-        strength: indicators.rsi < 20 ? 'strong' : 'moderate',
+        strength: indicators.rsi < 20 ? "strong" : "moderate",
       });
     } else if (indicators.rsi > RSI_OVERBOUGHT) {
       signals.push({
-        indicator: 'RSI',
-        signal: 'sell',
+        indicator: "RSI",
+        signal: "sell",
         value: indicators.rsi,
         description: `RSI at ${indicators.rsi.toFixed(1)} indicates overbought conditions`,
-        strength: indicators.rsi > 80 ? 'strong' : 'moderate',
+        strength: indicators.rsi > 80 ? "strong" : "moderate",
       });
     } else {
       signals.push({
-        indicator: 'RSI',
-        signal: 'hold',
+        indicator: "RSI",
+        signal: "hold",
         value: indicators.rsi,
         description: `RSI at ${indicators.rsi.toFixed(1)} is neutral`,
-        strength: 'weak',
+        strength: "weak",
       });
     }
 
@@ -659,24 +659,24 @@ export class AIStockAnalystService {
       indicators.macd.macd > indicators.macd.signal
     ) {
       signals.push({
-        indicator: 'MACD',
-        signal: 'buy',
+        indicator: "MACD",
+        signal: "buy",
         value: indicators.macd.histogram,
-        description: 'MACD bullish crossover',
+        description: "MACD bullish crossover",
         strength:
-          Math.abs(indicators.macd.histogram) > 1 ? 'strong' : 'moderate',
+          Math.abs(indicators.macd.histogram) > 1 ? "strong" : "moderate",
       });
     } else if (
       indicators.macd.histogram < 0 &&
       indicators.macd.macd < indicators.macd.signal
     ) {
       signals.push({
-        indicator: 'MACD',
-        signal: 'sell',
+        indicator: "MACD",
+        signal: "sell",
         value: indicators.macd.histogram,
-        description: 'MACD bearish crossover',
+        description: "MACD bearish crossover",
         strength:
-          Math.abs(indicators.macd.histogram) > 1 ? 'strong' : 'moderate',
+          Math.abs(indicators.macd.histogram) > 1 ? "strong" : "moderate",
       });
     }
 
@@ -686,60 +686,60 @@ export class AIStockAnalystService {
       indicators.sma50 > indicators.sma200
     ) {
       signals.push({
-        indicator: 'Moving Averages',
-        signal: 'buy',
+        indicator: "Moving Averages",
+        signal: "buy",
         value: currentPrice,
-        description: 'Price above 50 SMA, golden cross pattern',
-        strength: 'strong',
+        description: "Price above 50 SMA, golden cross pattern",
+        strength: "strong",
       });
     } else if (
       currentPrice < indicators.sma50 &&
       indicators.sma50 < indicators.sma200
     ) {
       signals.push({
-        indicator: 'Moving Averages',
-        signal: 'sell',
+        indicator: "Moving Averages",
+        signal: "sell",
         value: currentPrice,
-        description: 'Price below 50 SMA, death cross pattern',
-        strength: 'strong',
+        description: "Price below 50 SMA, death cross pattern",
+        strength: "strong",
       });
     }
 
     // Bollinger Bands Signal
     if (currentPrice < indicators.bollingerBands.lower) {
       signals.push({
-        indicator: 'Bollinger Bands',
-        signal: 'buy',
+        indicator: "Bollinger Bands",
+        signal: "buy",
         value: currentPrice,
-        description: 'Price below lower Bollinger Band',
-        strength: 'moderate',
+        description: "Price below lower Bollinger Band",
+        strength: "moderate",
       });
     } else if (currentPrice > indicators.bollingerBands.upper) {
       signals.push({
-        indicator: 'Bollinger Bands',
-        signal: 'sell',
+        indicator: "Bollinger Bands",
+        signal: "sell",
         value: currentPrice,
-        description: 'Price above upper Bollinger Band',
-        strength: 'moderate',
+        description: "Price above upper Bollinger Band",
+        strength: "moderate",
       });
     }
 
     // Stochastic Signal
     if (indicators.stochastic.k < 20 && indicators.stochastic.d < 20) {
       signals.push({
-        indicator: 'Stochastic',
-        signal: 'buy',
+        indicator: "Stochastic",
+        signal: "buy",
         value: indicators.stochastic.k,
-        description: 'Stochastic in oversold territory',
-        strength: 'moderate',
+        description: "Stochastic in oversold territory",
+        strength: "moderate",
       });
     } else if (indicators.stochastic.k > 80 && indicators.stochastic.d > 80) {
       signals.push({
-        indicator: 'Stochastic',
-        signal: 'sell',
+        indicator: "Stochastic",
+        signal: "sell",
         value: indicators.stochastic.k,
-        description: 'Stochastic in overbought territory',
-        strength: 'moderate',
+        description: "Stochastic in overbought territory",
+        strength: "moderate",
       });
     }
 
@@ -751,44 +751,44 @@ export class AIStockAnalystService {
    */
   private analyzeTrend(
     closes: number[],
-    indicators: TechnicalIndicators
+    indicators: TechnicalIndicators,
   ): TrendAnalysis {
     const currentPrice = closes[closes.length - 1];
 
     // Short-term trend (20-day)
     const shortTerm: TrendDirection =
       currentPrice > indicators.sma20
-        ? 'bullish'
+        ? "bullish"
         : currentPrice < indicators.sma20
-          ? 'bearish'
-          : 'neutral';
+          ? "bearish"
+          : "neutral";
 
     // Medium-term trend (50-day)
     const mediumTerm: TrendDirection =
       currentPrice > indicators.sma50
-        ? 'bullish'
+        ? "bullish"
         : currentPrice < indicators.sma50
-          ? 'bearish'
-          : 'neutral';
+          ? "bearish"
+          : "neutral";
 
     // Long-term trend (200-day)
     const longTerm: TrendDirection =
       currentPrice > indicators.sma200
-        ? 'bullish'
+        ? "bullish"
         : currentPrice < indicators.sma200
-          ? 'bearish'
-          : 'neutral';
+          ? "bearish"
+          : "neutral";
 
     // Calculate trend strength based on ADX
     const strength = Math.min(100, indicators.adx);
 
-    let description = '';
+    let description = "";
     if (shortTerm === mediumTerm && mediumTerm === longTerm) {
       description = `Strong ${shortTerm} trend across all timeframes`;
     } else if (shortTerm !== longTerm) {
       description = `Mixed signals: ${shortTerm} short-term, ${longTerm} long-term`;
     } else {
-      description = `${mediumTerm} trend with ${strength > ADX_TREND_THRESHOLD ? 'strong' : 'weak'} momentum`;
+      description = `${mediumTerm} trend with ${strength > ADX_TREND_THRESHOLD ? "strong" : "weak"} momentum`;
     }
 
     return { shortTerm, mediumTerm, longTerm, strength, description };
@@ -800,7 +800,7 @@ export class AIStockAnalystService {
   private findSupportResistance(
     highs: number[],
     lows: number[],
-    closes: number[]
+    closes: number[],
   ): { support: number[]; resistance: number[] } {
     const recentHighs = highs.slice(-50);
     const recentLows = lows.slice(-50);
@@ -850,27 +850,27 @@ export class AIStockAnalystService {
     const weights: Record<string, number> = {
       RSI: 2,
       MACD: 2,
-      'Moving Averages': 3,
-      'Bollinger Bands': 1,
+      "Moving Averages": 3,
+      "Bollinger Bands": 1,
       Stochastic: 1,
     };
 
     for (const signal of signals) {
       const weight = weights[signal.indicator] || 1;
       const strengthMultiplier =
-        signal.strength === 'strong'
+        signal.strength === "strong"
           ? 1.5
-          : signal.strength === 'moderate'
+          : signal.strength === "moderate"
             ? 1
             : 0.5;
 
-      if (signal.signal === 'strong_buy')
+      if (signal.signal === "strong_buy")
         score += 2 * weight * strengthMultiplier;
-      else if (signal.signal === 'buy')
+      else if (signal.signal === "buy")
         score += 1 * weight * strengthMultiplier;
-      else if (signal.signal === 'sell')
+      else if (signal.signal === "sell")
         score -= 1 * weight * strengthMultiplier;
-      else if (signal.signal === 'strong_sell')
+      else if (signal.signal === "strong_sell")
         score -= 2 * weight * strengthMultiplier;
 
       totalWeight += weight;
@@ -878,11 +878,11 @@ export class AIStockAnalystService {
 
     const normalizedScore = totalWeight > 0 ? score / totalWeight : 0;
 
-    if (normalizedScore >= 1.5) return 'strong_buy';
-    if (normalizedScore >= 0.5) return 'buy';
-    if (normalizedScore <= -1.5) return 'strong_sell';
-    if (normalizedScore <= -0.5) return 'sell';
-    return 'hold';
+    if (normalizedScore >= 1.5) return "strong_buy";
+    if (normalizedScore >= 0.5) return "buy";
+    if (normalizedScore <= -1.5) return "strong_sell";
+    if (normalizedScore <= -0.5) return "sell";
+    return "hold";
   }
 
   /**
@@ -893,16 +893,16 @@ export class AIStockAnalystService {
 
     // Check signal agreement
     const buySignals = signals.filter(
-      (s) => s.signal === 'buy' || s.signal === 'strong_buy'
+      (s) => s.signal === "buy" || s.signal === "strong_buy",
     ).length;
     const sellSignals = signals.filter(
-      (s) => s.signal === 'sell' || s.signal === 'strong_sell'
+      (s) => s.signal === "sell" || s.signal === "strong_sell",
     ).length;
     const totalSignals = signals.length;
 
     const agreement = Math.max(buySignals, sellSignals) / totalSignals;
     const strongSignals =
-      signals.filter((s) => s.strength === 'strong').length / totalSignals;
+      signals.filter((s) => s.strength === "strong").length / totalSignals;
 
     return Math.min(100, agreement * 60 + strongSignals * 40);
   }
@@ -916,7 +916,7 @@ export class AIStockAnalystService {
    */
   private async performFundamentalAnalysis(
     symbol: string,
-    quote: StockQuote
+    quote: StockQuote,
   ): Promise<FundamentalAnalysis> {
     // In production, this would fetch from financial data APIs
     const valuation = this.getValuationMetrics(quote);
@@ -930,7 +930,7 @@ export class AIStockAnalystService {
       valuation,
       profitability,
       growth,
-      financial
+      financial,
     );
 
     return {
@@ -1004,7 +1004,7 @@ export class AIStockAnalystService {
       exDividendDate: hasDividend
         ? new Date(Date.now() + Math.random() * 90 * 24 * 60 * 60 * 1000)
         : null,
-      dividendFrequency: hasDividend ? 'quarterly' : 'none',
+      dividendFrequency: hasDividend ? "quarterly" : "none",
     };
   }
 
@@ -1014,24 +1014,24 @@ export class AIStockAnalystService {
       { sector: string; industry: string; peers: string[] }
     > = {
       AAPL: {
-        sector: 'Technology',
-        industry: 'Consumer Electronics',
-        peers: ['MSFT', 'GOOGL', 'AMZN'],
+        sector: "Technology",
+        industry: "Consumer Electronics",
+        peers: ["MSFT", "GOOGL", "AMZN"],
       },
       MSFT: {
-        sector: 'Technology',
-        industry: 'Software',
-        peers: ['AAPL', 'GOOGL', 'ORCL'],
+        sector: "Technology",
+        industry: "Software",
+        peers: ["AAPL", "GOOGL", "ORCL"],
       },
       GOOGL: {
-        sector: 'Technology',
-        industry: 'Internet Services',
-        peers: ['META', 'MSFT', 'AMZN'],
+        sector: "Technology",
+        industry: "Internet Services",
+        peers: ["META", "MSFT", "AMZN"],
       },
       DEFAULT: {
-        sector: 'Technology',
-        industry: 'General',
-        peers: ['AAPL', 'MSFT', 'GOOGL'],
+        sector: "Technology",
+        industry: "General",
+        peers: ["AAPL", "MSFT", "GOOGL"],
       },
     };
 
@@ -1052,17 +1052,17 @@ export class AIStockAnalystService {
       sectorAvgDividendYield: 1 + Math.random() * 2,
       relativeValuation:
         Math.random() > 0.6
-          ? 'fairly_valued'
+          ? "fairly_valued"
           : Math.random() > 0.3
-            ? 'undervalued'
-            : 'overvalued',
+            ? "undervalued"
+            : "overvalued",
     };
   }
 
   private calculateFairValue(
     quote: StockQuote,
     growth: GrowthMetrics,
-    profitability: ProfitabilityMetrics
+    profitability: ProfitabilityMetrics,
   ): FairValueEstimate {
     // Simplified DCF-like calculation
     const eps = quote.eps || quote.price / 20;
@@ -1084,7 +1084,7 @@ export class AIStockAnalystService {
 
     return {
       value: fairValue,
-      method: 'dcf',
+      method: "dcf",
       upside,
       confidence: 60 + Math.random() * 25,
     };
@@ -1094,7 +1094,7 @@ export class AIStockAnalystService {
     valuation: ValuationMetrics,
     profitability: ProfitabilityMetrics,
     growth: GrowthMetrics,
-    financial: FinancialHealthMetrics
+    financial: FinancialHealthMetrics,
   ): FundamentalRating {
     let score = 0;
 
@@ -1115,11 +1115,11 @@ export class AIStockAnalystService {
       score += 2;
     else if (financial.currentRatio > 1) score += 1;
 
-    if (score >= 7) return 'excellent';
-    if (score >= 5) return 'good';
-    if (score >= 3) return 'fair';
-    if (score >= 1) return 'poor';
-    return 'very_poor';
+    if (score >= 7) return "excellent";
+    if (score >= 5) return "good";
+    if (score >= 3) return "fair";
+    if (score >= 1) return "poor";
+    return "very_poor";
   }
 
   // ==========================================================================
@@ -1130,7 +1130,7 @@ export class AIStockAnalystService {
    * Perform sentiment analysis
    */
   private async performSentimentAnalysis(
-    symbol: string
+    symbol: string,
   ): Promise<SentimentAnalysis> {
     // In production, this would aggregate from news APIs, social media, etc.
     const overallScore = -20 + Math.random() * 60;
@@ -1148,12 +1148,12 @@ export class AIStockAnalystService {
   }
 
   private getSentimentScore(score: number): SentimentScore {
-    let label: SentimentScore['label'];
-    if (score >= 40) label = 'very_bullish';
-    else if (score >= 15) label = 'bullish';
-    else if (score >= -15) label = 'neutral';
-    else if (score >= -40) label = 'bearish';
-    else label = 'very_bearish';
+    let label: SentimentScore["label"];
+    if (score >= 40) label = "very_bullish";
+    else if (score >= 15) label = "bullish";
+    else if (score >= -15) label = "neutral";
+    else if (score >= -40) label = "bearish";
+    else label = "very_bearish";
 
     return { score, label, confidence: 50 + Math.random() * 40 };
   }
@@ -1161,10 +1161,10 @@ export class AIStockAnalystService {
   private getNewsSentiment(symbol: string): NewsSentiment {
     const articleCount = Math.floor(20 + Math.random() * 50);
     const positiveCount = Math.floor(
-      articleCount * (0.3 + Math.random() * 0.4)
+      articleCount * (0.3 + Math.random() * 0.4),
     );
     const negativeCount = Math.floor(
-      articleCount * (0.1 + Math.random() * 0.3)
+      articleCount * (0.1 + Math.random() * 0.3),
     );
 
     return {
@@ -1176,22 +1176,22 @@ export class AIStockAnalystService {
       topHeadlines: [
         {
           title: `${symbol} Reports Strong Quarterly Results`,
-          source: 'Reuters',
+          source: "Reuters",
           url: `https://reuters.com/${symbol.toLowerCase()}`,
           publishedAt: new Date(),
-          sentiment: 'positive',
+          sentiment: "positive",
           relevanceScore: 0.95,
         },
         {
           title: `Analysts Upgrade ${symbol} Price Target`,
-          source: 'Bloomberg',
+          source: "Bloomberg",
           url: `https://bloomberg.com/${symbol.toLowerCase()}`,
           publishedAt: new Date(Date.now() - 86400000),
-          sentiment: 'positive',
+          sentiment: "positive",
           relevanceScore: 0.88,
         },
       ],
-      trendingTopics: ['earnings', 'growth', 'market share'],
+      trendingTopics: ["earnings", "growth", "market share"],
     };
   }
 
@@ -1225,11 +1225,11 @@ export class AIStockAnalystService {
 
   private getAnalystSentiment(): AnalystSentiment {
     const ratings = [
-      'strong_buy',
-      'buy',
-      'hold',
-      'sell',
-      'strong_sell',
+      "strong_buy",
+      "buy",
+      "hold",
+      "sell",
+      "strong_sell",
     ] as const;
     const distribution = {
       strongBuy: Math.floor(Math.random() * 10),
@@ -1247,12 +1247,12 @@ export class AIStockAnalystService {
         distribution.strongSell * 2) /
       total;
 
-    let consensusRating: AnalystSentiment['consensusRating'];
-    if (weightedScore > 1) consensusRating = 'strong_buy';
-    else if (weightedScore > 0.3) consensusRating = 'buy';
-    else if (weightedScore > -0.3) consensusRating = 'hold';
-    else if (weightedScore > -1) consensusRating = 'sell';
-    else consensusRating = 'strong_sell';
+    let consensusRating: AnalystSentiment["consensusRating"];
+    if (weightedScore > 1) consensusRating = "strong_buy";
+    else if (weightedScore > 0.3) consensusRating = "buy";
+    else if (weightedScore > -0.3) consensusRating = "hold";
+    else if (weightedScore > -1) consensusRating = "sell";
+    else consensusRating = "strong_sell";
 
     return {
       consensusRating,
@@ -1273,19 +1273,19 @@ export class AIStockAnalystService {
     return {
       netActivity:
         buyCount > sellCount
-          ? 'buying'
+          ? "buying"
           : sellCount > buyCount
-            ? 'selling'
-            : 'neutral',
+            ? "selling"
+            : "neutral",
       buyCount,
       sellCount,
       netShares: (buyCount - sellCount) * 10000,
       netValue: (buyCount - sellCount) * 1500000,
       recentTransactions: [
         {
-          name: 'John Smith',
-          title: 'CEO',
-          transactionType: 'buy',
+          name: "John Smith",
+          title: "CEO",
+          transactionType: "buy",
           shares: 10000,
           price: 150,
           value: 1500000,
@@ -1301,21 +1301,21 @@ export class AIStockAnalystService {
       institutionalOwnershipChange: -5 + Math.random() * 10,
       topHolders: [
         {
-          name: 'Vanguard Group',
+          name: "Vanguard Group",
           shares: 100000000,
           value: 15000000000,
           percentOfPortfolio: 2.5,
           changeInShares: 500000,
         },
         {
-          name: 'BlackRock',
+          name: "BlackRock",
           shares: 90000000,
           value: 13500000000,
           percentOfPortfolio: 2.1,
           changeInShares: -200000,
         },
         {
-          name: 'State Street',
+          name: "State Street",
           shares: 50000000,
           value: 7500000000,
           percentOfPortfolio: 1.8,
@@ -1340,7 +1340,7 @@ export class AIStockAnalystService {
     quote: StockQuote,
     technical: TechnicalAnalysis,
     fundamental: FundamentalAnalysis,
-    historicalData: StockHistoricalData
+    historicalData: StockHistoricalData,
   ): RiskAssessment {
     const closes = historicalData.data.map((d) => d.close);
     const returns = this.calculateReturns(closes);
@@ -1356,13 +1356,13 @@ export class AIStockAnalystService {
       volatilityRisk: this.getRiskLevel(volatility * 100),
       liquidityRisk:
         quote.avgVolume > 10000000
-          ? 'low'
+          ? "low"
           : quote.avgVolume > 1000000
-            ? 'moderate'
-            : 'high',
+            ? "moderate"
+            : "high",
       fundamentalRisk: this.getFundamentalRisk(fundamental),
       marketRisk: this.getRiskLevel(beta * 30),
-      sectorRisk: 'moderate',
+      sectorRisk: "moderate",
       beta,
       sharpeRatio,
       maxDrawdown,
@@ -1413,7 +1413,7 @@ export class AIStockAnalystService {
   private calculateVaR(
     returns: number[],
     currentPrice: number,
-    confidence: number = 0.95
+    confidence: number = 0.95,
   ): number {
     if (returns.length === 0) return 0;
     const sortedReturns = [...returns].sort((a, b) => a - b);
@@ -1422,56 +1422,56 @@ export class AIStockAnalystService {
   }
 
   private getRiskLevel(score: number): RiskLevel {
-    if (score < 10) return 'very_low';
-    if (score < 20) return 'low';
-    if (score < 35) return 'moderate';
-    if (score < 50) return 'high';
-    return 'very_high';
+    if (score < 10) return "very_low";
+    if (score < 20) return "low";
+    if (score < 35) return "moderate";
+    if (score < 50) return "high";
+    return "very_high";
   }
 
   private getFundamentalRisk(fundamental: FundamentalAnalysis): RiskLevel {
     const rating = fundamental.overallRating;
-    if (rating === 'excellent') return 'very_low';
-    if (rating === 'good') return 'low';
-    if (rating === 'fair') return 'moderate';
-    if (rating === 'poor') return 'high';
-    return 'very_high';
+    if (rating === "excellent") return "very_low";
+    if (rating === "good") return "low";
+    if (rating === "fair") return "moderate";
+    if (rating === "poor") return "high";
+    return "very_high";
   }
 
   private identifyRiskFactors(
     quote: StockQuote,
     technical: TechnicalAnalysis,
-    fundamental: FundamentalAnalysis
+    fundamental: FundamentalAnalysis,
   ): RiskFactor[] {
     const factors: RiskFactor[] = [];
 
     // Valuation risk
     if (fundamental.valuation.peRatio && fundamental.valuation.peRatio > 40) {
       factors.push({
-        factor: 'High Valuation',
+        factor: "High Valuation",
         description: `P/E ratio of ${fundamental.valuation.peRatio.toFixed(1)} is above market average`,
-        severity: 'high',
-        mitigants: ['Strong growth prospects', 'Market leader position'],
+        severity: "high",
+        mitigants: ["Strong growth prospects", "Market leader position"],
       });
     }
 
     // Technical risk
     if (technical.indicators.rsi > 70) {
       factors.push({
-        factor: 'Overbought Conditions',
+        factor: "Overbought Conditions",
         description: `RSI at ${technical.indicators.rsi.toFixed(1)} indicates overbought territory`,
-        severity: 'moderate',
-        mitigants: ['Strong momentum', 'Positive trend'],
+        severity: "moderate",
+        mitigants: ["Strong momentum", "Positive trend"],
       });
     }
 
     // Debt risk
     if (fundamental.financial.debtToEquity > 1) {
       factors.push({
-        factor: 'High Leverage',
+        factor: "High Leverage",
         description: `Debt-to-equity ratio of ${fundamental.financial.debtToEquity.toFixed(2)} is elevated`,
-        severity: 'moderate',
-        mitigants: ['Strong cash flow', 'Low interest rates'],
+        severity: "moderate",
+        mitigants: ["Strong cash flow", "Low interest rates"],
       });
     }
 
@@ -1491,7 +1491,7 @@ export class AIStockAnalystService {
     technical: TechnicalAnalysis,
     fundamental: FundamentalAnalysis,
     sentiment: SentimentAnalysis,
-    riskAssessment: RiskAssessment
+    riskAssessment: RiskAssessment,
   ): Promise<AIStockAnalysis> {
     try {
       const prompt = this.buildAnalysisPrompt(
@@ -1500,12 +1500,12 @@ export class AIStockAnalystService {
         technical,
         fundamental,
         sentiment,
-        riskAssessment
+        riskAssessment,
       );
 
       const messages: ChatMessage[] = [
         {
-          role: 'system',
+          role: "system",
           content: `You are an expert financial analyst providing comprehensive stock analysis.
 Analyze the provided data and generate actionable investment insights.
 Always provide balanced analysis considering both bull and bear cases.
@@ -1526,14 +1526,14 @@ Format your response as JSON with the following structure:
   ]
 }`,
         },
-        { role: 'user', content: prompt },
+        { role: "user", content: prompt },
       ];
 
       const response = await this.aimlService.chat(AI_MODEL, messages, {
         temperature: 0.3,
         max_tokens: 2000,
       });
-      const content = response.choices[0]?.message?.content || '';
+      const content = response.choices[0]?.message?.content || "";
 
       // Parse AI response
       const parsed = this.parseAIResponse(content, quote.price);
@@ -1556,7 +1556,7 @@ Format your response as JSON with the following structure:
     technical: TechnicalAnalysis,
     fundamental: FundamentalAnalysis,
     sentiment: SentimentAnalysis,
-    riskAssessment: RiskAssessment
+    riskAssessment: RiskAssessment,
   ): string {
     return `
 Analyze ${symbol} (${quote.name}) with the following data:
@@ -1566,19 +1566,19 @@ PRICE DATA:
 - Change: ${quote.changePercent.toFixed(2)}%
 - 52-Week Range: $${quote.week52Low.toFixed(2)} - $${quote.week52High.toFixed(2)}
 - Market Cap: $${(quote.marketCap / 1e9).toFixed(2)}B
-- P/E Ratio: ${quote.peRatio?.toFixed(2) || 'N/A'}
+- P/E Ratio: ${quote.peRatio?.toFixed(2) || "N/A"}
 
 TECHNICAL ANALYSIS:
 - Overall Signal: ${technical.overallSignal}
 - RSI: ${technical.indicators.rsi.toFixed(1)}
-- MACD: ${technical.indicators.macd.histogram > 0 ? 'Bullish' : 'Bearish'}
+- MACD: ${technical.indicators.macd.histogram > 0 ? "Bullish" : "Bearish"}
 - Trend: ${technical.trend.shortTerm} (short), ${technical.trend.mediumTerm} (medium), ${technical.trend.longTerm} (long)
-- Support Levels: ${technical.support.map((s) => '$' + s.toFixed(2)).join(', ') || 'N/A'}
-- Resistance Levels: ${technical.resistance.map((r) => '$' + r.toFixed(2)).join(', ') || 'N/A'}
+- Support Levels: ${technical.support.map((s) => "$" + s.toFixed(2)).join(", ") || "N/A"}
+- Resistance Levels: ${technical.resistance.map((r) => "$" + r.toFixed(2)).join(", ") || "N/A"}
 
 FUNDAMENTAL ANALYSIS:
 - Rating: ${fundamental.overallRating}
-- Fair Value: $${fundamental.fairValue.value.toFixed(2)} (${fundamental.fairValue.upside > 0 ? '+' : ''}${fundamental.fairValue.upside.toFixed(1)}% upside)
+- Fair Value: $${fundamental.fairValue.value.toFixed(2)} (${fundamental.fairValue.upside > 0 ? "+" : ""}${fundamental.fairValue.upside.toFixed(1)}% upside)
 - ROE: ${fundamental.profitability.roe.toFixed(1)}%
 - Revenue Growth: ${fundamental.growth.revenueGrowthYoY.toFixed(1)}%
 - Debt/Equity: ${fundamental.financial.debtToEquity.toFixed(2)}
@@ -1599,10 +1599,10 @@ Provide a comprehensive analysis with actionable recommendations.`;
 
   private parseAIResponse(
     content: string,
-    currentPrice: number
+    currentPrice: number,
   ): Omit<
     AIStockAnalysis,
-    'confidenceScore' | 'analysisModel' | 'generatedAt'
+    "confidenceScore" | "analysisModel" | "generatedAt"
   > {
     try {
       // Try to extract JSON from the response
@@ -1610,24 +1610,24 @@ Provide a comprehensive analysis with actionable recommendations.`;
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
         return {
-          summary: parsed.summary || 'Analysis completed.',
+          summary: parsed.summary || "Analysis completed.",
           bullCase: parsed.bullCase || [],
           bearCase: parsed.bearCase || [],
           keyRisks: parsed.keyRisks || [],
           catalysts: (parsed.catalysts || []).map((c: Catalyst) => ({
-            type: c.type || 'other',
-            description: c.description || '',
-            potentialImpact: c.potentialImpact || 'medium',
-            direction: c.direction || 'uncertain',
+            type: c.type || "other",
+            description: c.description || "",
+            potentialImpact: c.potentialImpact || "medium",
+            direction: c.direction || "uncertain",
           })),
           priceTargets: (parsed.priceTargets || []).map((pt: PriceTarget) => ({
             scenario: pt.scenario,
             price: pt.price || currentPrice,
             probability: pt.probability || 33,
-            timeframe: pt.timeframe || '12 months',
-            rationale: pt.rationale || '',
+            timeframe: pt.timeframe || "12 months",
+            rationale: pt.rationale || "",
           })),
-          investmentThesis: parsed.investmentThesis || '',
+          investmentThesis: parsed.investmentThesis || "",
         };
       }
     } catch {
@@ -1637,44 +1637,44 @@ Provide a comprehensive analysis with actionable recommendations.`;
     // Return default if parsing fails
     return {
       summary:
-        'AI analysis completed. Review technical and fundamental data for investment decisions.',
+        "AI analysis completed. Review technical and fundamental data for investment decisions.",
       bullCase: [
-        'Strong market position',
-        'Growth potential',
-        'Solid fundamentals',
+        "Strong market position",
+        "Growth potential",
+        "Solid fundamentals",
       ],
       bearCase: [
-        'Market volatility',
-        'Competition risks',
-        'Valuation concerns',
+        "Market volatility",
+        "Competition risks",
+        "Valuation concerns",
       ],
-      keyRisks: ['Market risk', 'Sector-specific risks'],
+      keyRisks: ["Market risk", "Sector-specific risks"],
       catalysts: [],
       priceTargets: [
         {
-          scenario: 'bull',
+          scenario: "bull",
           price: currentPrice * 1.3,
           probability: 25,
-          timeframe: '12 months',
-          rationale: 'Optimistic scenario',
+          timeframe: "12 months",
+          rationale: "Optimistic scenario",
         },
         {
-          scenario: 'base',
+          scenario: "base",
           price: currentPrice * 1.1,
           probability: 50,
-          timeframe: '12 months',
-          rationale: 'Base case',
+          timeframe: "12 months",
+          rationale: "Base case",
         },
         {
-          scenario: 'bear',
+          scenario: "bear",
           price: currentPrice * 0.85,
           probability: 25,
-          timeframe: '12 months',
-          rationale: 'Pessimistic scenario',
+          timeframe: "12 months",
+          rationale: "Pessimistic scenario",
         },
       ],
       investmentThesis:
-        'Consider position based on risk tolerance and investment horizon.',
+        "Consider position based on risk tolerance and investment horizon.",
     };
   }
 
@@ -1692,8 +1692,8 @@ Provide a comprehensive analysis with actionable recommendations.`;
     sentiment: SentimentAnalysis,
     riskAssessment: RiskAssessment,
     aiAnalysis: AIStockAnalysis,
-    timeframe: 'short' | 'medium' | 'long',
-    riskTolerance: 'conservative' | 'moderate' | 'aggressive'
+    timeframe: "short" | "medium" | "long",
+    riskTolerance: "conservative" | "moderate" | "aggressive",
   ): StockRecommendation {
     // Calculate weighted score
     const technicalScore = this.signalToScore(technical.overallSignal);
@@ -1702,9 +1702,9 @@ Provide a comprehensive analysis with actionable recommendations.`;
 
     // Weight based on timeframe
     const weights =
-      timeframe === 'short'
+      timeframe === "short"
         ? { technical: 0.5, fundamental: 0.2, sentiment: 0.3 }
-        : timeframe === 'long'
+        : timeframe === "long"
           ? { technical: 0.2, fundamental: 0.5, sentiment: 0.3 }
           : { technical: 0.35, fundamental: 0.35, sentiment: 0.3 };
 
@@ -1715,30 +1715,30 @@ Provide a comprehensive analysis with actionable recommendations.`;
 
     // Determine action
     let action: SignalType;
-    if (weightedScore >= 1.5) action = 'strong_buy';
-    else if (weightedScore >= 0.5) action = 'buy';
-    else if (weightedScore <= -1.5) action = 'strong_sell';
-    else if (weightedScore <= -0.5) action = 'sell';
-    else action = 'hold';
+    if (weightedScore >= 1.5) action = "strong_buy";
+    else if (weightedScore >= 0.5) action = "buy";
+    else if (weightedScore <= -1.5) action = "strong_sell";
+    else if (weightedScore <= -0.5) action = "sell";
+    else action = "hold";
 
     // Adjust for risk tolerance
     if (
-      riskTolerance === 'conservative' &&
-      riskAssessment.overallRisk === 'high'
+      riskTolerance === "conservative" &&
+      riskAssessment.overallRisk === "high"
     ) {
-      if (action === 'strong_buy') action = 'buy';
-      if (action === 'buy') action = 'hold';
+      if (action === "strong_buy") action = "buy";
+      if (action === "buy") action = "hold";
     }
 
     // Calculate target and stop loss
     const targetPrice =
-      aiAnalysis.priceTargets.find((pt) => pt.scenario === 'base')?.price ||
+      aiAnalysis.priceTargets.find((pt) => pt.scenario === "base")?.price ||
       quote.price * 1.1;
     const stopLoss =
       quote.price *
-      (riskTolerance === 'conservative'
+      (riskTolerance === "conservative"
         ? 0.95
-        : riskTolerance === 'moderate'
+        : riskTolerance === "moderate"
           ? 0.92
           : 0.88);
 
@@ -1746,14 +1746,14 @@ Provide a comprehensive analysis with actionable recommendations.`;
       action,
       confidence: Math.min(
         95,
-        technical.confidence * 0.4 + aiAnalysis.confidenceScore * 0.6
+        technical.confidence * 0.4 + aiAnalysis.confidenceScore * 0.6,
       ),
       timeHorizon:
-        timeframe === 'short'
-          ? 'short_term'
-          : timeframe === 'long'
-            ? 'long_term'
-            : 'medium_term',
+        timeframe === "short"
+          ? "short_term"
+          : timeframe === "long"
+            ? "long_term"
+            : "medium_term",
       entryPrice: quote.price,
       targetPrice,
       stopLoss,
@@ -1762,7 +1762,7 @@ Provide a comprehensive analysis with actionable recommendations.`;
         technical,
         fundamental,
         sentiment,
-        action
+        action,
       ),
       keyMetrics: this.getKeyMetrics(quote, technical, fundamental),
       warnings: this.generateWarnings(riskAssessment, technical, fundamental),
@@ -1793,22 +1793,22 @@ Provide a comprehensive analysis with actionable recommendations.`;
 
   private calculatePositionSize(
     riskAssessment: RiskAssessment,
-    riskTolerance: 'conservative' | 'moderate' | 'aggressive'
+    riskTolerance: "conservative" | "moderate" | "aggressive",
   ): number {
     const baseSize =
-      riskTolerance === 'conservative'
+      riskTolerance === "conservative"
         ? 2
-        : riskTolerance === 'moderate'
+        : riskTolerance === "moderate"
           ? 5
           : 10;
     const riskMultiplier =
-      riskAssessment.overallRisk === 'very_low'
+      riskAssessment.overallRisk === "very_low"
         ? 1.5
-        : riskAssessment.overallRisk === 'low'
+        : riskAssessment.overallRisk === "low"
           ? 1.2
-          : riskAssessment.overallRisk === 'moderate'
+          : riskAssessment.overallRisk === "moderate"
             ? 1
-            : riskAssessment.overallRisk === 'high'
+            : riskAssessment.overallRisk === "high"
               ? 0.7
               : 0.5;
     return Math.min(15, baseSize * riskMultiplier);
@@ -1818,55 +1818,55 @@ Provide a comprehensive analysis with actionable recommendations.`;
     technical: TechnicalAnalysis,
     fundamental: FundamentalAnalysis,
     sentiment: SentimentAnalysis,
-    action: SignalType
+    action: SignalType,
   ): string[] {
     const rationale: string[] = [];
 
-    if (action === 'strong_buy' || action === 'buy') {
+    if (action === "strong_buy" || action === "buy") {
       if (
-        technical.overallSignal === 'buy' ||
-        technical.overallSignal === 'strong_buy'
+        technical.overallSignal === "buy" ||
+        technical.overallSignal === "strong_buy"
       ) {
         rationale.push(
-          `Technical indicators show ${technical.trend.shortTerm} momentum`
+          `Technical indicators show ${technical.trend.shortTerm} momentum`,
         );
       }
       if (
-        fundamental.overallRating === 'excellent' ||
-        fundamental.overallRating === 'good'
+        fundamental.overallRating === "excellent" ||
+        fundamental.overallRating === "good"
       ) {
         rationale.push(
-          `Strong fundamentals with ${fundamental.overallRating} rating`
+          `Strong fundamentals with ${fundamental.overallRating} rating`,
         );
       }
       if (
-        sentiment.overallSentiment.label === 'bullish' ||
-        sentiment.overallSentiment.label === 'very_bullish'
+        sentiment.overallSentiment.label === "bullish" ||
+        sentiment.overallSentiment.label === "very_bullish"
       ) {
         rationale.push(
-          `Positive market sentiment (${sentiment.overallSentiment.label})`
+          `Positive market sentiment (${sentiment.overallSentiment.label})`,
         );
       }
-    } else if (action === 'strong_sell' || action === 'sell') {
+    } else if (action === "strong_sell" || action === "sell") {
       if (
-        technical.overallSignal === 'sell' ||
-        technical.overallSignal === 'strong_sell'
+        technical.overallSignal === "sell" ||
+        technical.overallSignal === "strong_sell"
       ) {
         rationale.push(
-          `Technical indicators show ${technical.trend.shortTerm} momentum`
+          `Technical indicators show ${technical.trend.shortTerm} momentum`,
         );
       }
       if (
-        fundamental.overallRating === 'poor' ||
-        fundamental.overallRating === 'very_poor'
+        fundamental.overallRating === "poor" ||
+        fundamental.overallRating === "very_poor"
       ) {
         rationale.push(
-          `Weak fundamentals with ${fundamental.overallRating} rating`
+          `Weak fundamentals with ${fundamental.overallRating} rating`,
         );
       }
     } else {
-      rationale.push('Mixed signals suggest holding current position');
-      rationale.push('Wait for clearer directional signals');
+      rationale.push("Mixed signals suggest holding current position");
+      rationale.push("Wait for clearer directional signals");
     }
 
     return rationale;
@@ -1875,51 +1875,51 @@ Provide a comprehensive analysis with actionable recommendations.`;
   private getKeyMetrics(
     quote: StockQuote,
     technical: TechnicalAnalysis,
-    fundamental: FundamentalAnalysis
+    fundamental: FundamentalAnalysis,
   ): KeyMetric[] {
     return [
       {
-        name: 'P/E Ratio',
-        value: quote.peRatio?.toFixed(2) || 'N/A',
+        name: "P/E Ratio",
+        value: quote.peRatio?.toFixed(2) || "N/A",
         interpretation:
           quote.peRatio && quote.peRatio < 20
-            ? 'positive'
+            ? "positive"
             : quote.peRatio && quote.peRatio > 35
-              ? 'negative'
-              : 'neutral',
+              ? "negative"
+              : "neutral",
         weight: 0.2,
       },
       {
-        name: 'RSI',
+        name: "RSI",
         value: technical.indicators.rsi.toFixed(1),
         interpretation:
           technical.indicators.rsi < 30
-            ? 'positive'
+            ? "positive"
             : technical.indicators.rsi > 70
-              ? 'negative'
-              : 'neutral',
+              ? "negative"
+              : "neutral",
         weight: 0.15,
       },
       {
-        name: 'Fair Value Upside',
+        name: "Fair Value Upside",
         value: `${fundamental.fairValue.upside.toFixed(1)}%`,
         interpretation:
           fundamental.fairValue.upside > 10
-            ? 'positive'
+            ? "positive"
             : fundamental.fairValue.upside < -10
-              ? 'negative'
-              : 'neutral',
+              ? "negative"
+              : "neutral",
         weight: 0.25,
       },
       {
-        name: 'ROE',
+        name: "ROE",
         value: `${fundamental.profitability.roe.toFixed(1)}%`,
         interpretation:
           fundamental.profitability.roe > 15
-            ? 'positive'
+            ? "positive"
             : fundamental.profitability.roe < 5
-              ? 'negative'
-              : 'neutral',
+              ? "negative"
+              : "neutral",
         weight: 0.2,
       },
     ];
@@ -1928,24 +1928,24 @@ Provide a comprehensive analysis with actionable recommendations.`;
   private generateWarnings(
     riskAssessment: RiskAssessment,
     technical: TechnicalAnalysis,
-    fundamental: FundamentalAnalysis
+    fundamental: FundamentalAnalysis,
   ): string[] {
     const warnings: string[] = [];
 
     if (
-      riskAssessment.overallRisk === 'high' ||
-      riskAssessment.overallRisk === 'very_high'
+      riskAssessment.overallRisk === "high" ||
+      riskAssessment.overallRisk === "very_high"
     ) {
       warnings.push(`High risk investment (${riskAssessment.overallRisk})`);
     }
     if (technical.indicators.rsi > 70) {
-      warnings.push('Stock may be overbought based on RSI');
+      warnings.push("Stock may be overbought based on RSI");
     }
     if (technical.indicators.rsi < 30) {
-      warnings.push('Stock may be oversold - potential value trap');
+      warnings.push("Stock may be oversold - potential value trap");
     }
     if (fundamental.financial.debtToEquity > 1.5) {
-      warnings.push('High debt levels may pose risk');
+      warnings.push("High debt levels may pose risk");
     }
 
     return warnings;
@@ -1977,15 +1977,15 @@ Provide a comprehensive analysis with actionable recommendations.`;
       },
       signals: [],
       trend: {
-        shortTerm: 'neutral',
-        mediumTerm: 'neutral',
-        longTerm: 'neutral',
+        shortTerm: "neutral",
+        mediumTerm: "neutral",
+        longTerm: "neutral",
         strength: 0,
-        description: 'No data',
+        description: "No data",
       },
       support: [],
       resistance: [],
-      overallSignal: 'hold',
+      overallSignal: "hold",
       confidence: 0,
     };
   }
@@ -2035,19 +2035,19 @@ Provide a comprehensive analysis with actionable recommendations.`;
         dividendGrowth5Y: 0,
         yearsOfDividendGrowth: 0,
         exDividendDate: null,
-        dividendFrequency: 'none',
+        dividendFrequency: "none",
       },
       comparison: {
-        sector: 'Unknown',
-        industry: 'Unknown',
+        sector: "Unknown",
+        industry: "Unknown",
         peers: [],
         sectorAvgPE: 0,
         sectorAvgPB: 0,
         sectorAvgDividendYield: 0,
-        relativeValuation: 'fairly_valued',
+        relativeValuation: "fairly_valued",
       },
-      overallRating: 'fair',
-      fairValue: { value: 0, method: 'dcf', upside: 0, confidence: 0 },
+      overallRating: "fair",
+      fairValue: { value: 0, method: "dcf", upside: 0, confidence: 0 },
     };
   }
 
@@ -2055,7 +2055,7 @@ Provide a comprehensive analysis with actionable recommendations.`;
     return {
       symbol,
       timestamp: new Date(),
-      overallSentiment: { score: 0, label: 'neutral', confidence: 0 },
+      overallSentiment: { score: 0, label: "neutral", confidence: 0 },
       newsSentiment: {
         score: 0,
         articleCount: 0,
@@ -2091,7 +2091,7 @@ Provide a comprehensive analysis with actionable recommendations.`;
         },
       },
       analystSentiment: {
-        consensusRating: 'hold',
+        consensusRating: "hold",
         targetPrice: 0,
         targetPriceHigh: 0,
         targetPriceLow: 0,
@@ -2107,7 +2107,7 @@ Provide a comprehensive analysis with actionable recommendations.`;
         recentDowngrades: 0,
       },
       insiderActivity: {
-        netActivity: 'neutral',
+        netActivity: "neutral",
         buyCount: 0,
         sellCount: 0,
         netShares: 0,
@@ -2134,9 +2134,9 @@ Provide a comprehensive analysis with actionable recommendations.`;
       keyRisks: [],
       catalysts: [],
       priceTargets: [],
-      investmentThesis: 'Unable to generate investment thesis at this time.',
+      investmentThesis: "Unable to generate investment thesis at this time.",
       confidenceScore: 0,
-      analysisModel: 'none',
+      analysisModel: "none",
       generatedAt: new Date(),
     };
   }
@@ -2155,7 +2155,7 @@ Provide a comprehensive analysis with actionable recommendations.`;
         return this.getDefaultTechnicalAnalysis(symbol);
       }
 
-      const historicalData = await this.getHistoricalData(symbol, '1d', 200);
+      const historicalData = await this.getHistoricalData(symbol, "1d", 200);
       return await this.performTechnicalAnalysis(symbol, quote, historicalData);
     } catch (error) {
       // AIStockAnalyst error: Error getting technical analysis
@@ -2198,9 +2198,9 @@ Provide a comprehensive analysis with actionable recommendations.`;
   async getAIRecommendation(
     symbol: string,
     options?: {
-      timeframe?: 'short' | 'medium' | 'long';
-      riskTolerance?: 'conservative' | 'moderate' | 'aggressive';
-    }
+      timeframe?: "short" | "medium" | "long";
+      riskTolerance?: "conservative" | "moderate" | "aggressive";
+    },
   ): Promise<StockRecommendation> {
     try {
       const quote = await this.getStockQuote(symbol);
@@ -2208,7 +2208,7 @@ Provide a comprehensive analysis with actionable recommendations.`;
         throw new Error(`Unable to fetch quote for ${symbol}`);
       }
 
-      const historicalData = await this.getHistoricalData(symbol, '1d', 200);
+      const historicalData = await this.getHistoricalData(symbol, "1d", 200);
 
       // Perform all analyses
       const [technical, fundamental, sentiment] = await Promise.all([
@@ -2221,7 +2221,7 @@ Provide a comprehensive analysis with actionable recommendations.`;
         quote,
         technical,
         fundamental,
-        historicalData
+        historicalData,
       );
 
       const aiAnalysis = await this.generateAIAnalysis(
@@ -2230,7 +2230,7 @@ Provide a comprehensive analysis with actionable recommendations.`;
         technical,
         fundamental,
         sentiment,
-        riskAssessment
+        riskAssessment,
       );
 
       return this.generateRecommendation(
@@ -2240,8 +2240,8 @@ Provide a comprehensive analysis with actionable recommendations.`;
         sentiment,
         riskAssessment,
         aiAnalysis,
-        options?.timeframe || 'medium',
-        options?.riskTolerance || 'moderate'
+        options?.timeframe || "medium",
+        options?.riskTolerance || "moderate",
       );
     } catch (error) {
       // AIStockAnalyst error: Error getting AI recommendation
@@ -2254,12 +2254,12 @@ Provide a comprehensive analysis with actionable recommendations.`;
   // ==========================================================================
 
   private async getCachedAnalysis(
-    symbol: string
+    symbol: string,
   ): Promise<ComprehensiveStockAnalysis | null> {
     try {
       // Try Redis first
       const cached = await this.redisCache.get<ComprehensiveStockAnalysis>(
-        symbol.toUpperCase()
+        symbol.toUpperCase(),
       );
       if (cached) {
         return cached;
@@ -2267,7 +2267,10 @@ Provide a comprehensive analysis with actionable recommendations.`;
 
       // Fallback to in-memory cache
       const memCached = this.analysisCache.get(symbol.toUpperCase());
-      if (memCached && Date.now() - memCached.timestamp < ANALYSIS_CACHE_TTL * 1000) {
+      if (
+        memCached &&
+        Date.now() - memCached.timestamp < ANALYSIS_CACHE_TTL * 1000
+      ) {
         return memCached.data;
       }
 
@@ -2276,7 +2279,10 @@ Provide a comprehensive analysis with actionable recommendations.`;
       // AIStockAnalyst error: Error getting cached analysis
       // Fallback to in-memory cache on Redis error
       const memCached = this.analysisCache.get(symbol.toUpperCase());
-      if (memCached && Date.now() - memCached.timestamp < ANALYSIS_CACHE_TTL * 1000) {
+      if (
+        memCached &&
+        Date.now() - memCached.timestamp < ANALYSIS_CACHE_TTL * 1000
+      ) {
         return memCached.data;
       }
       return null;
@@ -2285,11 +2291,15 @@ Provide a comprehensive analysis with actionable recommendations.`;
 
   private async cacheAnalysis(
     symbol: string,
-    analysis: ComprehensiveStockAnalysis
+    analysis: ComprehensiveStockAnalysis,
   ): Promise<void> {
     try {
       // Cache in Redis with 1-hour TTL
-      await this.redisCache.set(symbol.toUpperCase(), analysis, ANALYSIS_CACHE_TTL);
+      await this.redisCache.set(
+        symbol.toUpperCase(),
+        analysis,
+        ANALYSIS_CACHE_TTL,
+      );
 
       // Also cache in memory as fallback
       this.analysisCache.set(symbol.toUpperCase(), {

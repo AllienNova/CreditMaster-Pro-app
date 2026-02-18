@@ -1,18 +1,18 @@
 /**
  * React Hook for Realtime Updates
- * 
+ *
  * Provides easy-to-use hooks for subscribing to real-time data changes
  */
 
-'use client';
+"use client";
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from "react";
 import {
   subscribeToCreditScores,
   subscribeToDisputes,
   subscribeToNotifications,
-  RealtimeSubscription
-} from '@/lib/realtime/supabase-realtime';
+  RealtimeSubscription,
+} from "@/lib/realtime/supabase-realtime";
 
 interface DisputeData {
   id: string;
@@ -40,11 +40,14 @@ export function useRealtimeCreditScore(userId: string | null) {
   useEffect(() => {
     if (!userId) return;
 
-    const subscription = subscribeToCreditScores(userId, (newScore, scoreChange) => {
-      setScore(newScore);
-      setChange(scoreChange);
-      setLastUpdated(new Date());
-    });
+    const subscription = subscribeToCreditScores(
+      userId,
+      (newScore, scoreChange) => {
+        setScore(newScore);
+        setChange(scoreChange);
+        setLastUpdated(new Date());
+      },
+    );
 
     return () => subscription.unsubscribe();
   }, [userId]);
@@ -59,22 +62,25 @@ export function useRealtimeDisputes(userId: string | null) {
   const [disputes, setDisputes] = useState<DisputeData[]>([]);
   const [latestUpdate, setLatestUpdate] = useState<DisputeUpdate | null>(null);
 
-  const handleUpdate = useCallback((dispute: DisputeData, eventType: string) => {
-    setLatestUpdate({ dispute, eventType, timestamp: new Date() });
-    
-    setDisputes(prev => {
-      if (eventType === 'INSERT') {
-        return [dispute, ...prev];
-      }
-      if (eventType === 'UPDATE') {
-        return prev.map(d => d.id === dispute.id ? dispute : d);
-      }
-      if (eventType === 'DELETE') {
-        return prev.filter(d => d.id !== dispute.id);
-      }
-      return prev;
-    });
-  }, []);
+  const handleUpdate = useCallback(
+    (dispute: DisputeData, eventType: string) => {
+      setLatestUpdate({ dispute, eventType, timestamp: new Date() });
+
+      setDisputes((prev) => {
+        if (eventType === "INSERT") {
+          return [dispute, ...prev];
+        }
+        if (eventType === "UPDATE") {
+          return prev.map((d) => (d.id === dispute.id ? dispute : d));
+        }
+        if (eventType === "DELETE") {
+          return prev.filter((d) => d.id !== dispute.id);
+        }
+        return prev;
+      });
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!userId) return;
@@ -99,8 +105,8 @@ export function useRealtimeNotifications(userId: string | null) {
     if (!userId) return;
 
     const subscription = subscribeToNotifications(userId, (notification) => {
-      setNotifications(prev => [notification, ...prev]);
-      setUnreadCount(prev => prev + 1);
+      setNotifications((prev) => [notification, ...prev]);
+      setUnreadCount((prev) => prev + 1);
       setLatestNotification(notification);
     });
 
@@ -108,14 +114,14 @@ export function useRealtimeNotifications(userId: string | null) {
   }, [userId]);
 
   const markAsRead = useCallback((notificationId: string) => {
-    setNotifications(prev =>
-      prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n)),
     );
-    setUnreadCount(prev => Math.max(0, prev - 1));
+    setUnreadCount((prev) => Math.max(0, prev - 1));
   }, []);
 
   const markAllAsRead = useCallback(() => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     setUnreadCount(0);
   }, []);
 
@@ -124,7 +130,7 @@ export function useRealtimeNotifications(userId: string | null) {
     unreadCount,
     latestNotification,
     markAsRead,
-    markAllAsRead
+    markAllAsRead,
   };
 }
 
@@ -144,7 +150,7 @@ export function useDashboardRealtime(userId: string | null) {
       creditScore.lastUpdated ||
       disputes.latestUpdate ||
       notifications.latestNotification
-    )
+    ),
   };
 }
 
@@ -161,18 +167,17 @@ export function useRealtimeStatus() {
       setLastPing(new Date());
     };
 
-    window.addEventListener('online', () => setIsConnected(true));
-    window.addEventListener('offline', () => setIsConnected(false));
+    window.addEventListener("online", () => setIsConnected(true));
+    window.addEventListener("offline", () => setIsConnected(false));
 
     const interval = setInterval(checkConnection, 30000);
 
     return () => {
-      window.removeEventListener('online', () => setIsConnected(true));
-      window.removeEventListener('offline', () => setIsConnected(false));
+      window.removeEventListener("online", () => setIsConnected(true));
+      window.removeEventListener("offline", () => setIsConnected(false));
       clearInterval(interval);
     };
   }, []);
 
   return { isConnected, lastPing };
 }
-

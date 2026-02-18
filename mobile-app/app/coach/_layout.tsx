@@ -2,8 +2,8 @@
  * AI Financial Coach Layout
  */
 
-import { Stack } from 'expo-router';
-import { useTheme } from '../../src/hooks/useTheme';
+import { Stack } from "expo-router";
+import { useTheme } from "../../src/hooks/useTheme";
 
 export default function CoachLayout() {
   const { colors } = useTheme();
@@ -16,7 +16,7 @@ export default function CoachLayout() {
         },
         headerTintColor: colors.text,
         headerTitleStyle: {
-          fontWeight: '600',
+          fontWeight: "600",
         },
         contentStyle: {
           backgroundColor: colors.background,
@@ -26,41 +26,40 @@ export default function CoachLayout() {
       <Stack.Screen
         name="index"
         options={{
-          title: 'AI Financial Coach',
+          title: "AI Financial Coach",
           headerLargeTitle: true,
         }}
       />
       <Stack.Screen
         name="recommendations"
         options={{
-          title: 'Recommendations',
+          title: "Recommendations",
         }}
       />
       <Stack.Screen
         name="goals"
         options={{
-          title: 'Financial Goals',
+          title: "Financial Goals",
         }}
       />
       <Stack.Screen
         name="goal-detail"
         options={{
-          title: 'Goal Details',
+          title: "Goal Details",
         }}
       />
       <Stack.Screen
         name="budget"
         options={{
-          title: 'Budget Optimizer',
+          title: "Budget Optimizer",
         }}
       />
       <Stack.Screen
         name="debt-strategy"
         options={{
-          title: 'Debt Strategy',
+          title: "Debt Strategy",
         }}
       />
     </Stack>
   );
 }
-

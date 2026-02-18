@@ -4,8 +4,8 @@
  * GET /api/marketplace/products/[id] - Get product by ID
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { marketplaceService } from '@/lib/marketplace';
+import { NextRequest, NextResponse } from "next/server";
+import { marketplaceService } from "@/lib/marketplace";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -19,9 +19,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Product ID is required',
+          error: "Product ID is required",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -31,9 +31,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Product not found',
+          error: "Product not found",
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -42,14 +42,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       data: product,
     });
   } catch (error) {
-    console.error('Error fetching product:', error);
+    console.error("Error fetching product:", error);
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to fetch product',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to fetch product",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Application Providers
@@ -8,9 +8,9 @@
  * - ToastProvider for notifications
  */
 
-import { ReactNode } from 'react';
-import { ThemeProvider } from '@/contexts/ThemeContext';
-import { ToastProvider } from '@/components/ui/Toast';
+import { ReactNode } from "react";
+import { ThemeProvider } from "@/contexts/ThemeContext";
+import { ToastProvider } from "@/components/ui/Toast";
 
 interface ProvidersProps {
   children: ReactNode;

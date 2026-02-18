@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Rebalance Preview Modal
@@ -7,8 +7,8 @@
  * before/after allocation visualization and execution confirmation.
  */
 
-import React, { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
   ArrowRight,
@@ -21,7 +21,7 @@ import {
   Info,
   ChevronDown,
   ChevronUp,
-} from 'lucide-react';
+} from "lucide-react";
 
 // ============================================================================
 // TYPES
@@ -42,7 +42,7 @@ export interface AllocationItem {
 export interface RebalanceTrade {
   assetClass: AssetClass;
   label: string;
-  action: 'buy' | 'sell';
+  action: "buy" | "sell";
   amount: number;
   shares?: number;
   currentValue: number;
@@ -92,23 +92,23 @@ export function RebalancePreviewModal({
   const [acknowledged, setAcknowledged] = useState(false);
 
   const sellTrades = useMemo(
-    () => preview.trades.filter((t) => t.action === 'sell'),
-    [preview.trades]
+    () => preview.trades.filter((t) => t.action === "sell"),
+    [preview.trades],
   );
 
   const buyTrades = useMemo(
-    () => preview.trades.filter((t) => t.action === 'buy'),
-    [preview.trades]
+    () => preview.trades.filter((t) => t.action === "buy"),
+    [preview.trades],
   );
 
   const totalSells = useMemo(
     () => sellTrades.reduce((sum, t) => sum + t.amount, 0),
-    [sellTrades]
+    [sellTrades],
   );
 
   const totalBuys = useMemo(
     () => buyTrades.reduce((sum, t) => sum + t.amount, 0),
-    [buyTrades]
+    [buyTrades],
   );
 
   if (!isOpen) return null;
@@ -138,7 +138,9 @@ export function RebalancePreviewModal({
               <h2 className="text-lg font-semibold text-white">
                 Rebalance Preview
               </h2>
-              <p className="text-sm text-gray-400 dark:text-slate-500">{preview.portfolioName}</p>
+              <p className="text-sm text-gray-400 dark:text-slate-500">
+                {preview.portfolioName}
+              </p>
             </div>
             <button
               onClick={onCancel}
@@ -178,13 +180,13 @@ export function RebalancePreviewModal({
                           <span
                             className={`text-xs font-medium ${
                               change > 0
-                                ? 'text-emerald-400'
+                                ? "text-emerald-400"
                                 : change < 0
-                                  ? 'text-red-400'
-                                  : 'text-gray-500 dark:text-slate-400'
+                                  ? "text-red-400"
+                                  : "text-gray-500 dark:text-slate-400"
                             }`}
                           >
-                            {change > 0 ? '+' : ''}
+                            {change > 0 ? "+" : ""}
                             {change.toFixed(1)}%
                           </span>
                         </div>
@@ -347,7 +349,7 @@ export function RebalancePreviewModal({
                   {showTaxDetails && (
                     <motion.div
                       initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
+                      animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       className="overflow-hidden"
                     >
@@ -361,7 +363,9 @@ export function RebalancePreviewModal({
                           </span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-gray-400 dark:text-slate-500">Long-term gains</span>
+                          <span className="text-gray-400 dark:text-slate-500">
+                            Long-term gains
+                          </span>
                           <span className="text-white">
                             ${preview.taxImpact.longTermGains.toLocaleString()}
                           </span>
@@ -400,19 +404,25 @@ export function RebalancePreviewModal({
             {/* Summary */}
             <div className="bg-gray-800/50 rounded-lg p-4 space-y-3">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-400 dark:text-slate-500">Portfolio Value</span>
+                <span className="text-gray-400 dark:text-slate-500">
+                  Portfolio Value
+                </span>
                 <span className="text-white font-medium">
                   ${preview.totalValue.toLocaleString()}
                 </span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-400 dark:text-slate-500">Total Trade Value</span>
+                <span className="text-gray-400 dark:text-slate-500">
+                  Total Trade Value
+                </span>
                 <span className="text-white font-medium">
                   ${preview.totalTradeValue.toLocaleString()}
                 </span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-400 dark:text-slate-500">Estimated Commission</span>
+                <span className="text-gray-400 dark:text-slate-500">
+                  Estimated Commission
+                </span>
                 <span className="text-white">
                   ${preview.estimatedCommission.toFixed(2)}
                 </span>

@@ -1,6 +1,6 @@
 /**
  * Credit Monitoring Service
- * 
+ *
  * Comprehensive credit monitoring system with:
  * - Real-time score tracking across all 3 bureaus
  * - Automated alerts for score changes
@@ -10,14 +10,20 @@
  * - Fraud alert detection
  */
 
-import { getSupabase } from '@/lib/supabase/client';
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
 
-type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
 type JsonRecord = Record<string, JsonValue>;
 
-export type Bureau = 'experian' | 'equifax' | 'transunion';
+export type Bureau = "experian" | "equifax" | "transunion";
 
 export interface CreditScore {
   id: string;
@@ -31,7 +37,7 @@ export interface CreditScore {
 
 export interface ScoreFactor {
   factor: string;
-  impact: 'positive' | 'negative' | 'neutral';
+  impact: "positive" | "negative" | "neutral";
   description: string;
 }
 
@@ -42,23 +48,23 @@ export interface CreditAlert {
   bureau?: Bureau;
   title: string;
   message: string;
-  severity: 'low' | 'medium' | 'high' | 'critical';
+  severity: "low" | "medium" | "high" | "critical";
   read: boolean;
   createdAt: Date;
   data?: JsonRecord;
 }
 
 export type AlertType =
-  | 'score_increase'
-  | 'score_decrease'
-  | 'new_account'
-  | 'new_inquiry'
-  | 'account_closed'
-  | 'payment_missed'
-  | 'credit_limit_change'
-  | 'address_change'
-  | 'fraud_alert'
-  | 'identity_theft';
+  | "score_increase"
+  | "score_decrease"
+  | "new_account"
+  | "new_inquiry"
+  | "account_closed"
+  | "payment_missed"
+  | "credit_limit_change"
+  | "address_change"
+  | "fraud_alert"
+  | "identity_theft";
 
 export interface MonitoringSettings {
   userId: string;
@@ -115,10 +121,10 @@ class CreditMonitoringService {
   }> {
     try {
       const { data, error } = await supabase
-        .from('credit_scores')
-        .select('*')
-        .eq('user_id', userId)
-        .order('score_date', { ascending: false })
+        .from("credit_scores")
+        .select("*")
+        .eq("user_id", userId)
+        .order("score_date", { ascending: false })
         .limit(3);
 
       if (error) throw error;
@@ -144,23 +150,26 @@ class CreditMonitoringService {
   async getScoreHistory(
     userId: string,
     bureau: Bureau,
-    days: number = 365
+    days: number = 365,
   ): Promise<CreditScoreHistory> {
     try {
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
 
       const { data, error } = await supabase
-        .from('credit_scores')
-        .select('score, score_date')
-        .eq('user_id', userId)
-        .eq('bureau', bureau)
-        .gte('score_date', startDate.toISOString())
-        .order('score_date', { ascending: true });
+        .from("credit_scores")
+        .select("score, score_date")
+        .eq("user_id", userId)
+        .eq("bureau", bureau)
+        .gte("score_date", startDate.toISOString())
+        .order("score_date", { ascending: true });
 
       if (error) throw error;
 
-      const rows = (data ?? []) as Pick<CreditScoreRow, 'score' | 'score_date'>[];
+      const rows = (data ?? []) as Pick<
+        CreditScoreRow,
+        "score" | "score_date"
+      >[];
 
       return {
         bureau,
@@ -182,7 +191,7 @@ class CreditMonitoringService {
     userId: string,
     bureau: Bureau,
     score: number,
-    factors: ScoreFactor[]
+    factors: ScoreFactor[],
   ): Promise<CreditScore | null> {
     try {
       // Get previous score to detect changes
@@ -191,7 +200,7 @@ class CreditMonitoringService {
 
       // Insert new score
       const { data, error } = await supabase
-        .from('credit_scores')
+        .from("credit_scores")
         .insert({
           user_id: userId,
           bureau,
@@ -209,14 +218,14 @@ class CreditMonitoringService {
       if (previousScore) {
         const change = score - previousScore;
         const settings = await this.getMonitoringSettings(userId);
-        
+
         if (Math.abs(change) >= settings.scoreChangeThreshold) {
           await this.createAlert(userId, {
-            type: change > 0 ? 'score_increase' : 'score_decrease',
+            type: change > 0 ? "score_increase" : "score_decrease",
             bureau,
-            title: `${bureau.charAt(0).toUpperCase() + bureau.slice(1)} Score ${change > 0 ? 'Increased' : 'Decreased'}`,
-            message: `Your ${bureau} credit score ${change > 0 ? 'increased' : 'decreased'} by ${Math.abs(change)} points (${previousScore} → ${score})`,
-            severity: Math.abs(change) >= 20 ? 'high' : 'medium',
+            title: `${bureau.charAt(0).toUpperCase() + bureau.slice(1)} Score ${change > 0 ? "Increased" : "Decreased"}`,
+            message: `Your ${bureau} credit score ${change > 0 ? "increased" : "decreased"} by ${Math.abs(change)} points (${previousScore} → ${score})`,
+            severity: Math.abs(change) >= 20 ? "high" : "medium",
             data: { previousScore, newScore: score, change },
           });
         }
@@ -243,9 +252,9 @@ class CreditMonitoringService {
   async getMonitoringSettings(userId: string): Promise<MonitoringSettings> {
     try {
       const { data, error } = await supabase
-        .from('credit_monitoring_settings')
-        .select('*')
-        .eq('user_id', userId)
+        .from("credit_monitoring_settings")
+        .select("*")
+        .eq("user_id", userId)
         .single();
 
       if (error) {
@@ -287,11 +296,11 @@ class CreditMonitoringService {
    */
   async updateMonitoringSettings(
     userId: string,
-    settings: Partial<MonitoringSettings>
+    settings: Partial<MonitoringSettings>,
   ): Promise<boolean> {
     try {
       const { error } = await supabase
-        .from('credit_monitoring_settings')
+        .from("credit_monitoring_settings")
         .upsert({
           user_id: userId,
           experian_enabled: settings.experianEnabled,
@@ -318,22 +327,22 @@ class CreditMonitoringService {
     options?: {
       unreadOnly?: boolean;
       limit?: number;
-      severity?: 'low' | 'medium' | 'high' | 'critical';
-    }
+      severity?: "low" | "medium" | "high" | "critical";
+    },
   ): Promise<CreditAlert[]> {
     try {
       let query = supabase
-        .from('credit_alerts')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+        .from("credit_alerts")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
 
       if (options?.unreadOnly) {
-        query = query.eq('read', false);
+        query = query.eq("read", false);
       }
 
       if (options?.severity) {
-        query = query.eq('severity', options.severity);
+        query = query.eq("severity", options.severity);
       }
 
       if (options?.limit) {
@@ -362,13 +371,13 @@ class CreditMonitoringService {
       bureau?: Bureau;
       title: string;
       message: string;
-      severity: 'low' | 'medium' | 'high' | 'critical';
+      severity: "low" | "medium" | "high" | "critical";
       data?: JsonRecord;
-    }
+    },
   ): Promise<CreditAlert | null> {
     try {
       const { data, error } = await supabase
-        .from('credit_alerts')
+        .from("credit_alerts")
         .insert({
           user_id: userId,
           type: alert.type,
@@ -398,9 +407,9 @@ class CreditMonitoringService {
   async markAlertAsRead(alertId: string): Promise<boolean> {
     try {
       const { error } = await supabase
-        .from('credit_alerts')
+        .from("credit_alerts")
         .update({ read: true })
-        .eq('id', alertId);
+        .eq("id", alertId);
 
       if (error) throw error;
       return true;
@@ -416,10 +425,10 @@ class CreditMonitoringService {
   async markAllAlertsAsRead(userId: string): Promise<boolean> {
     try {
       const { error } = await supabase
-        .from('credit_alerts')
+        .from("credit_alerts")
         .update({ read: true })
-        .eq('user_id', userId)
-        .eq('read', false);
+        .eq("user_id", userId)
+        .eq("read", false);
 
       if (error) throw error;
       return true;
@@ -432,7 +441,9 @@ class CreditMonitoringService {
   /**
    * Get monitoring dashboard data
    */
-  async getMonitoringDashboard(userId: string): Promise<CreditMonitoringDashboard> {
+  async getMonitoringDashboard(
+    userId: string,
+  ): Promise<CreditMonitoringDashboard> {
     try {
       // Get current scores
       const currentScores = await this.getCurrentScores(userId);
@@ -440,16 +451,17 @@ class CreditMonitoringService {
       // Calculate average score
       const scores = Object.values(currentScores)
         .filter((s): s is CreditScore => s !== undefined)
-        .map(s => s.score);
-      const averageScore = scores.length > 0
-        ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
-        : 0;
+        .map((s) => s.score);
+      const averageScore =
+        scores.length > 0
+          ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+          : 0;
 
       // Get score history for all bureaus
       const history = await Promise.all([
-        this.getScoreHistory(userId, 'experian', 365),
-        this.getScoreHistory(userId, 'equifax', 365),
-        this.getScoreHistory(userId, 'transunion', 365),
+        this.getScoreHistory(userId, "experian", 365),
+        this.getScoreHistory(userId, "equifax", 365),
+        this.getScoreHistory(userId, "transunion", 365),
       ]);
 
       // Calculate score changes
@@ -460,7 +472,7 @@ class CreditMonitoringService {
       const alerts = await this.getAlerts(userId, { limit: 10 });
 
       // Get recent changes (mock data - would come from credit report monitoring)
-      const recentChanges: CreditMonitoringDashboard['recentChanges'] = [];
+      const recentChanges: CreditMonitoringDashboard["recentChanges"] = [];
 
       return {
         currentScores: {
@@ -484,19 +496,22 @@ class CreditMonitoringService {
   /**
    * Calculate score change over period
    */
-  private calculateScoreChange(history: CreditScoreHistory[], days: number): number {
+  private calculateScoreChange(
+    history: CreditScoreHistory[],
+    days: number,
+  ): number {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);
 
     let totalChange = 0;
     let bureauCount = 0;
 
-    history.forEach(bureauHistory => {
-      const scores = bureauHistory.scores.filter(s => s.date >= cutoffDate);
+    history.forEach((bureauHistory) => {
+      const scores = bureauHistory.scores.filter((s) => s.date >= cutoffDate);
       if (scores.length >= 2) {
         const oldScore = scores[0].score;
         const newScore = scores[scores.length - 1].score;
-        totalChange += (newScore - oldScore);
+        totalChange += newScore - oldScore;
         bureauCount++;
       }
     });
@@ -552,7 +567,7 @@ interface CreditAlertRow {
   bureau?: Bureau | null;
   title: string;
   message: string;
-  severity: 'low' | 'medium' | 'high' | 'critical';
+  severity: "low" | "medium" | "high" | "critical";
   read: boolean;
   created_at: string;
   data?: JsonRecord | null;

@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { creditMonitoringService } from '@/lib/credit-monitoring/credit-monitoring-service';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { rbac } from '@/lib/auth/rbac';
+import { NextRequest, NextResponse } from "next/server";
+import { creditMonitoringService } from "@/lib/credit-monitoring/credit-monitoring-service";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { rbac } from "@/lib/auth/rbac";
 
 /**
  * GET /api/credit-monitoring/settings
@@ -13,18 +13,19 @@ export async function GET(request: NextRequest) {
     const validation = await jwtValidation.validateFromHeaders(request);
 
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check permissions
-    if (!rbac.hasPermission(validation.user, 'credit:read')) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!rbac.hasPermission(validation.user, "credit:read")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Extract userId from validated token
     const userId = validation.user.id;
 
-    const settings = await creditMonitoringService.getMonitoringSettings(userId);
+    const settings =
+      await creditMonitoringService.getMonitoringSettings(userId);
 
     return NextResponse.json({
       success: true,
@@ -33,8 +34,8 @@ export async function GET(request: NextRequest) {
   } catch (_error) {
     // Error silently caught
     return NextResponse.json(
-      { error: 'Failed to fetch monitoring settings' },
-      { status: 500 }
+      { error: "Failed to fetch monitoring settings" },
+      { status: 500 },
     );
   }
 }
@@ -49,12 +50,12 @@ export async function PUT(request: NextRequest) {
     const validation = await jwtValidation.validateFromHeaders(request);
 
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check permissions
-    if (!rbac.hasPermission(validation.user, 'credit:update_settings')) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!rbac.hasPermission(validation.user, "credit:update_settings")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Extract userId from validated token
@@ -63,12 +64,15 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const { ...settings } = body;
 
-    const success = await creditMonitoringService.updateMonitoringSettings(userId, settings);
+    const success = await creditMonitoringService.updateMonitoringSettings(
+      userId,
+      settings,
+    );
 
     if (!success) {
       return NextResponse.json(
-        { error: 'Failed to update monitoring settings' },
-        { status: 500 }
+        { error: "Failed to update monitoring settings" },
+        { status: 500 },
       );
     }
 
@@ -78,9 +82,8 @@ export async function PUT(request: NextRequest) {
   } catch (_error) {
     // Error silently caught
     return NextResponse.json(
-      { error: 'Failed to update monitoring settings' },
-      { status: 500 }
+      { error: "Failed to update monitoring settings" },
+      { status: 500 },
     );
   }
 }
-

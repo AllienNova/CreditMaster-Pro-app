@@ -3,11 +3,11 @@
  * Tests for background sync, notifications, and real-time update functionality
  */
 
-import { act } from '@testing-library/react-native';
-import { useCreditStore } from '../creditStore';
+import { act } from "@testing-library/react-native";
+import { useCreditStore } from "../creditStore";
 
 // Mock API services
-jest.mock('../../services/api', () => ({
+jest.mock("../../services/api", () => ({
   creditScoreApi: {
     getScores: jest.fn(),
     getHistory: jest.fn(),
@@ -25,7 +25,7 @@ jest.mock('../../services/api', () => ({
 }));
 
 // Mock push notification service
-jest.mock('../../services/notifications/pushNotificationService', () => ({
+jest.mock("../../services/notifications/pushNotificationService", () => ({
   pushNotificationService: {
     scheduleLocalNotification: jest.fn(),
     cancelNotification: jest.fn(),
@@ -33,10 +33,12 @@ jest.mock('../../services/notifications/pushNotificationService', () => ({
   },
 }));
 
-const { creditScoreApi, creditMonitoringApi } = require('../../services/api');
-const { pushNotificationService } = require('../../services/notifications/pushNotificationService');
+const { creditScoreApi, creditMonitoringApi } = require("../../services/api");
+const {
+  pushNotificationService,
+} = require("../../services/notifications/pushNotificationService");
 
-describe('Credit Store - Real-Time Updates', () => {
+describe("Credit Store - Real-Time Updates", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers();
@@ -48,8 +50,8 @@ describe('Credit Store - Real-Time Updates', () => {
     jest.useRealTimers();
   });
 
-  describe('Background Sync', () => {
-    it('should enable background sync with default interval', () => {
+  describe("Background Sync", () => {
+    it("should enable background sync with default interval", () => {
       act(() => {
         useCreditStore.getState().enableBackgroundSync();
       });
@@ -59,7 +61,7 @@ describe('Credit Store - Real-Time Updates', () => {
       expect(state.backgroundSyncInterval).toBe(5 * 60 * 1000); // 5 minutes
     });
 
-    it('should enable background sync with custom interval', () => {
+    it("should enable background sync with custom interval", () => {
       const customInterval = 10 * 60 * 1000; // 10 minutes
 
       act(() => {
@@ -71,7 +73,7 @@ describe('Credit Store - Real-Time Updates', () => {
       expect(state.backgroundSyncInterval).toBe(customInterval);
     });
 
-    it('should disable background sync', () => {
+    it("should disable background sync", () => {
       act(() => {
         useCreditStore.getState().enableBackgroundSync();
       });
@@ -84,12 +86,24 @@ describe('Credit Store - Real-Time Updates', () => {
       expect(state.isBackgroundSyncEnabled).toBe(false);
     });
 
-    it('should perform background sync successfully', async () => {
+    it("should perform background sync successfully", async () => {
       const mockScores = [
-        { id: '1', bureau: 'experian', score: 720, date: '2024-01-01', change: 0 },
+        {
+          id: "1",
+          bureau: "experian",
+          score: 720,
+          date: "2024-01-01",
+          change: 0,
+        },
       ];
       const mockAlerts = [
-        { id: '1', title: 'Test Alert', description: 'Test', severity: 'low', acknowledged: false },
+        {
+          id: "1",
+          title: "Test Alert",
+          description: "Test",
+          severity: "low",
+          acknowledged: false,
+        },
       ];
 
       creditScoreApi.getScores.mockResolvedValue({
@@ -113,7 +127,7 @@ describe('Credit Store - Real-Time Updates', () => {
       expect(state.isSyncingInBackground).toBe(false);
     });
 
-    it('should skip background sync if already syncing', async () => {
+    it("should skip background sync if already syncing", async () => {
       useCreditStore.setState({ isSyncingInBackground: true });
 
       await act(async () => {
@@ -124,149 +138,247 @@ describe('Credit Store - Real-Time Updates', () => {
     });
   });
 
-  describe('Score Change Detection', () => {
-    it('should detect score increase and send notification', async () => {
+  describe("Score Change Detection", () => {
+    it("should detect score increase and send notification", async () => {
       const oldScores = [
-        { id: '1', userId: 'test-user', bureau: 'experian' as const, score: 700, date: '2024-01-01', change: 0 },
+        {
+          id: "1",
+          userId: "test-user",
+          bureau: "experian" as const,
+          score: 700,
+          date: "2024-01-01",
+          change: 0,
+        },
       ];
       const newScores = [
-        { id: '1', userId: 'test-user', bureau: 'experian' as const, score: 720, date: '2024-01-02', change: 20 },
+        {
+          id: "1",
+          userId: "test-user",
+          bureau: "experian" as const,
+          score: 720,
+          date: "2024-01-02",
+          change: 20,
+        },
       ];
 
-      pushNotificationService.scheduleLocalNotification.mockResolvedValue('notif-1');
+      pushNotificationService.scheduleLocalNotification.mockResolvedValue(
+        "notif-1",
+      );
 
       await act(async () => {
         await useCreditStore.getState().handleScoreChange(newScores, oldScores);
       });
 
-      expect(pushNotificationService.scheduleLocalNotification).toHaveBeenCalledWith(
-        expect.stringContaining('📈'),
-        expect.stringContaining('increased by 20 points to 720'),
+      expect(
+        pushNotificationService.scheduleLocalNotification,
+      ).toHaveBeenCalledWith(
+        expect.stringContaining("📈"),
+        expect.stringContaining("increased by 20 points to 720"),
         expect.objectContaining({
-          screen: '/credit/score-detail',
-        })
+          screen: "/credit/score-detail",
+        }),
       );
     });
 
-    it('should detect score decrease and send notification', async () => {
+    it("should detect score decrease and send notification", async () => {
       const oldScores = [
-        { id: '1', userId: 'test-user', bureau: 'experian' as const, score: 720, date: '2024-01-01', change: 0 },
+        {
+          id: "1",
+          userId: "test-user",
+          bureau: "experian" as const,
+          score: 720,
+          date: "2024-01-01",
+          change: 0,
+        },
       ];
       const newScores = [
-        { id: '1', userId: 'test-user', bureau: 'experian' as const, score: 700, date: '2024-01-02', change: -20 },
+        {
+          id: "1",
+          userId: "test-user",
+          bureau: "experian" as const,
+          score: 700,
+          date: "2024-01-02",
+          change: -20,
+        },
       ];
 
-      pushNotificationService.scheduleLocalNotification.mockResolvedValue('notif-1');
+      pushNotificationService.scheduleLocalNotification.mockResolvedValue(
+        "notif-1",
+      );
 
       await act(async () => {
         await useCreditStore.getState().handleScoreChange(newScores, oldScores);
       });
 
-      expect(pushNotificationService.scheduleLocalNotification).toHaveBeenCalledWith(
-        expect.stringContaining('📉'),
-        expect.stringContaining('decreased by 20 points to 700'),
-        expect.any(Object)
+      expect(
+        pushNotificationService.scheduleLocalNotification,
+      ).toHaveBeenCalledWith(
+        expect.stringContaining("📉"),
+        expect.stringContaining("decreased by 20 points to 700"),
+        expect.any(Object),
       );
     });
 
-    it('should not send notification for small score changes (< 5 points)', async () => {
+    it("should not send notification for small score changes (< 5 points)", async () => {
       const oldScores = [
-        { id: '1', userId: 'test-user', bureau: 'experian' as const, score: 700, date: '2024-01-01', change: 0 },
+        {
+          id: "1",
+          userId: "test-user",
+          bureau: "experian" as const,
+          score: 700,
+          date: "2024-01-01",
+          change: 0,
+        },
       ];
       const newScores = [
-        { id: '1', userId: 'test-user', bureau: 'experian' as const, score: 703, date: '2024-01-02', change: 3 },
+        {
+          id: "1",
+          userId: "test-user",
+          bureau: "experian" as const,
+          score: 703,
+          date: "2024-01-02",
+          change: 3,
+        },
       ];
 
       await act(async () => {
         await useCreditStore.getState().handleScoreChange(newScores, oldScores);
       });
 
-      expect(pushNotificationService.scheduleLocalNotification).not.toHaveBeenCalled();
+      expect(
+        pushNotificationService.scheduleLocalNotification,
+      ).not.toHaveBeenCalled();
     });
 
-    it('should handle multiple bureau score changes', async () => {
+    it("should handle multiple bureau score changes", async () => {
       const oldScores = [
-        { id: '1', userId: 'test-user', bureau: 'experian' as const, score: 700, date: '2024-01-01', change: 0 },
-        { id: '2', userId: 'test-user', bureau: 'equifax' as const, score: 710, date: '2024-01-01', change: 0 },
+        {
+          id: "1",
+          userId: "test-user",
+          bureau: "experian" as const,
+          score: 700,
+          date: "2024-01-01",
+          change: 0,
+        },
+        {
+          id: "2",
+          userId: "test-user",
+          bureau: "equifax" as const,
+          score: 710,
+          date: "2024-01-01",
+          change: 0,
+        },
       ];
       const newScores = [
-        { id: '1', userId: 'test-user', bureau: 'experian' as const, score: 720, date: '2024-01-02', change: 20 },
-        { id: '2', userId: 'test-user', bureau: 'equifax' as const, score: 725, date: '2024-01-02', change: 15 },
+        {
+          id: "1",
+          userId: "test-user",
+          bureau: "experian" as const,
+          score: 720,
+          date: "2024-01-02",
+          change: 20,
+        },
+        {
+          id: "2",
+          userId: "test-user",
+          bureau: "equifax" as const,
+          score: 725,
+          date: "2024-01-02",
+          change: 15,
+        },
       ];
 
-      pushNotificationService.scheduleLocalNotification.mockResolvedValue('notif-1');
+      pushNotificationService.scheduleLocalNotification.mockResolvedValue(
+        "notif-1",
+      );
 
       await act(async () => {
         await useCreditStore.getState().handleScoreChange(newScores, oldScores);
       });
 
-      expect(pushNotificationService.scheduleLocalNotification).toHaveBeenCalledTimes(2);
+      expect(
+        pushNotificationService.scheduleLocalNotification,
+      ).toHaveBeenCalledTimes(2);
     });
   });
 
-  describe('New Alert Handling', () => {
-    it('should send notification for new critical alert', async () => {
+  describe("New Alert Handling", () => {
+    it("should send notification for new critical alert", async () => {
       const newAlert = {
-        id: '1',
-        userId: 'test-user',
-        bureau: 'experian',
-        title: 'Fraud Alert',
-        description: 'Suspicious activity detected',
-        severity: 'critical' as const,
+        id: "1",
+        userId: "test-user",
+        bureau: "experian",
+        title: "Fraud Alert",
+        description: "Suspicious activity detected",
+        severity: "critical" as const,
         acknowledged: false,
-        createdAt: '2024-01-01',
-        alertType: 'fraud_alert' as const,
-        type: 'fraud_alert' as const,
+        createdAt: "2024-01-01",
+        alertType: "fraud_alert" as const,
+        type: "fraud_alert" as const,
       };
 
-      pushNotificationService.scheduleLocalNotification.mockResolvedValue('notif-1');
+      pushNotificationService.scheduleLocalNotification.mockResolvedValue(
+        "notif-1",
+      );
 
       await act(async () => {
         await useCreditStore.getState().handleNewAlert(newAlert);
       });
 
-      expect(pushNotificationService.scheduleLocalNotification).toHaveBeenCalledWith(
-        expect.stringContaining('🚨'),
-        expect.stringContaining('Suspicious activity detected'),
+      expect(
+        pushNotificationService.scheduleLocalNotification,
+      ).toHaveBeenCalledWith(
+        expect.stringContaining("🚨"),
+        expect.stringContaining("Suspicious activity detected"),
         expect.objectContaining({
-          screen: '/monitoring/alerts',
-          id: '1',
-        })
+          screen: "/monitoring/alerts",
+          id: "1",
+        }),
       );
     });
 
-    it('should send notification for new high severity alert', async () => {
+    it("should send notification for new high severity alert", async () => {
       const newAlert = {
-        id: '2',
-        userId: 'test-user',
-        bureau: 'equifax',
-        title: 'New Inquiry',
-        description: 'Hard inquiry detected',
-        severity: 'high' as const,
+        id: "2",
+        userId: "test-user",
+        bureau: "equifax",
+        title: "New Inquiry",
+        description: "Hard inquiry detected",
+        severity: "high" as const,
         acknowledged: false,
-        createdAt: '2024-01-01',
-        alertType: 'inquiry' as const,
-        type: 'inquiry' as const,
+        createdAt: "2024-01-01",
+        alertType: "inquiry" as const,
+        type: "inquiry" as const,
       };
 
-      pushNotificationService.scheduleLocalNotification.mockResolvedValue('notif-2');
+      pushNotificationService.scheduleLocalNotification.mockResolvedValue(
+        "notif-2",
+      );
 
       await act(async () => {
         await useCreditStore.getState().handleNewAlert(newAlert);
       });
 
-      expect(pushNotificationService.scheduleLocalNotification).toHaveBeenCalledWith(
-        expect.stringContaining('⚠️'),
+      expect(
+        pushNotificationService.scheduleLocalNotification,
+      ).toHaveBeenCalledWith(
+        expect.stringContaining("⚠️"),
         expect.any(String),
-        expect.any(Object)
+        expect.any(Object),
       );
     });
   });
 
-  describe('Timestamp Tracking', () => {
-    it('should update lastScoreFetch when fetching scores', async () => {
+  describe("Timestamp Tracking", () => {
+    it("should update lastScoreFetch when fetching scores", async () => {
       const mockScores = [
-        { id: '1', bureau: 'experian', score: 720, date: '2024-01-01', change: 0 },
+        {
+          id: "1",
+          bureau: "experian",
+          score: 720,
+          date: "2024-01-01",
+          change: 0,
+        },
       ];
 
       creditScoreApi.getScores.mockResolvedValue({
@@ -283,9 +395,15 @@ describe('Credit Store - Real-Time Updates', () => {
       expect(state.lastScoreUpdate).toBeTruthy();
     });
 
-    it('should update lastAlertFetch when fetching alerts', async () => {
+    it("should update lastAlertFetch when fetching alerts", async () => {
       const mockAlerts = [
-        { id: '1', title: 'Test', description: 'Test', severity: 'low', acknowledged: false },
+        {
+          id: "1",
+          title: "Test",
+          description: "Test",
+          severity: "low",
+          acknowledged: false,
+        },
       ];
 
       creditMonitoringApi.getAlerts.mockResolvedValue({
@@ -302,8 +420,8 @@ describe('Credit Store - Real-Time Updates', () => {
     });
   });
 
-  describe('Store Reset', () => {
-    it('should clean up background sync on reset', () => {
+  describe("Store Reset", () => {
+    it("should clean up background sync on reset", () => {
       act(() => {
         useCreditStore.getState().enableBackgroundSync();
       });
@@ -317,4 +435,3 @@ describe('Credit Store - Real-Time Updates', () => {
     });
   });
 });
-

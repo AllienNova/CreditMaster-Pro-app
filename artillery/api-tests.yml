@@ -4,16 +4,16 @@ config:
     - duration: 120
       arrivalRate: 20
       name: "API Load Test"
-  
+
   # Performance thresholds for APIs
   ensure:
     maxErrorRate: 2 # Max 2% error rate for APIs
     p95: 1500 # 95th percentile < 1.5s
     p99: 3000 # 99th percentile < 3s
-  
+
   http:
     timeout: 30
-  
+
   variables:
     testUserId: "api-test-user"
     testEmail: "api-test@creditmaster.com"
@@ -129,4 +129,3 @@ scenarios:
             income: 50000
             familySize: 1
       - think: 3
-

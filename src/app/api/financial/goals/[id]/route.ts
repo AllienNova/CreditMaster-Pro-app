@@ -6,12 +6,12 @@
  * DELETE /api/financial/goals/[id] - Delete goal (soft delete)
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { rbac } from '@/lib/auth/rbac';
-import { goalTracker } from '@/lib/financial/goal-tracker';
-import { getSupabase } from '@/lib/supabase/client';
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { rbac } from "@/lib/auth/rbac";
+import { goalTracker } from "@/lib/financial/goal-tracker";
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
 
@@ -20,13 +20,16 @@ const updateGoalSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   targetAmount: z.number().positive().optional(),
   currentAmount: z.number().min(0).optional(),
-  targetDate: z.string().refine((date) => {
-    const targetDate = new Date(date);
-    return targetDate > new Date();
-  }, 'Target date must be in the future').optional(),
-  priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
+  targetDate: z
+    .string()
+    .refine((date) => {
+      const targetDate = new Date(date);
+      return targetDate > new Date();
+    }, "Target date must be in the future")
+    .optional(),
+  priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
   description: z.string().max(1000).optional(),
-  status: z.enum(['active', 'completed', 'paused', 'cancelled']).optional(),
+  status: z.enum(["active", "completed", "paused", "cancelled"]).optional(),
 });
 
 interface RouteParams {
@@ -39,10 +42,7 @@ interface RouteParams {
  * GET /api/financial/goals/[id]
  * Retrieve specific goal with detailed progress metrics
  */
-export async function GET(
-  request: NextRequest,
-  { params }: RouteParams
-) {
+export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     // Validate JWT token
     const validation = await jwtValidation.validateFromHeaders(request);
@@ -51,20 +51,20 @@ export async function GET(
       return NextResponse.json(
         {
           success: false,
-          error: 'Unauthorized - Invalid or missing JWT token',
+          error: "Unauthorized - Invalid or missing JWT token",
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     // Check permissions
-    if (!rbac.hasPermission(validation.user, 'financial:create_goals')) {
+    if (!rbac.hasPermission(validation.user, "financial:create_goals")) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Forbidden - Premium feature required',
+          error: "Forbidden - Premium feature required",
         },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -73,25 +73,28 @@ export async function GET(
 
     // Fetch goal from database
     const { data: goal, error } = await supabase
-      .from('financial_goals')
-      .select('*')
-      .eq('id', goalId)
-      .eq('user_id', userId)
+      .from("financial_goals")
+      .select("*")
+      .eq("id", goalId)
+      .eq("user_id", userId)
       .single();
 
     if (error || !goal) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Goal not found',
+          error: "Goal not found",
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     // Calculate comprehensive progress metrics
     const progress = await goalTracker.calculateProgressMetrics(userId, goalId);
-    const recommendations = await goalTracker.getGoalRecommendations(userId, goalId);
+    const recommendations = await goalTracker.getGoalRecommendations(
+      userId,
+      goalId,
+    );
     const history = await goalTracker.getProgressHistory(userId, goalId);
 
     return NextResponse.json({
@@ -108,13 +111,15 @@ export async function GET(
         priority: goal.priority,
         createdAt: goal.created_at,
         updatedAt: goal.updated_at,
-        progress: progress ? {
-          percentage: progress.progressPercentage,
-          velocity: progress.velocity,
-          performance: progress.performanceScore,
-          predictions: progress.predictions,
-          risks: progress.risks,
-        } : null,
+        progress: progress
+          ? {
+              percentage: progress.progressPercentage,
+              velocity: progress.velocity,
+              performance: progress.performanceScore,
+              predictions: progress.predictions,
+              risks: progress.risks,
+            }
+          : null,
         recommendations: recommendations.map((rec) => ({
           type: rec.type,
           title: rec.title,
@@ -132,7 +137,8 @@ export async function GET(
   } catch (_error) {
     // FinancialGoalsRoute error: Failed to fetch goal
 
-    const errorMessage = _error instanceof Error ? _error.message : 'Failed to fetch goal';
+    const errorMessage =
+      _error instanceof Error ? _error.message : "Failed to fetch goal";
 
     return NextResponse.json(
       {
@@ -142,7 +148,7 @@ export async function GET(
           timestamp: new Date().toISOString(),
         },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -151,10 +157,7 @@ export async function GET(
  * PATCH /api/financial/goals/[id]
  * Update goal properties (partial updates)
  */
-export async function PATCH(
-  request: NextRequest,
-  { params }: RouteParams
-) {
+export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     // Validate JWT token
     const validation = await jwtValidation.validateFromHeaders(request);
@@ -163,20 +166,20 @@ export async function PATCH(
       return NextResponse.json(
         {
           success: false,
-          error: 'Unauthorized - Invalid or missing JWT token',
+          error: "Unauthorized - Invalid or missing JWT token",
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     // Check permissions
-    if (!rbac.hasPermission(validation.user, 'financial:create_goals')) {
+    if (!rbac.hasPermission(validation.user, "financial:create_goals")) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Forbidden - Premium feature required',
+          error: "Forbidden - Premium feature required",
         },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -185,19 +188,19 @@ export async function PATCH(
 
     // Verify goal ownership
     const { data: existingGoal, error: fetchError } = await supabase
-      .from('financial_goals')
-      .select('*')
-      .eq('id', goalId)
-      .eq('user_id', userId)
+      .from("financial_goals")
+      .select("*")
+      .eq("id", goalId)
+      .eq("user_id", userId)
       .single();
 
     if (fetchError || !existingGoal) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Goal not found',
+          error: "Goal not found",
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -209,13 +212,13 @@ export async function PATCH(
       return NextResponse.json(
         {
           success: false,
-          error: 'Validation failed',
+          error: "Validation failed",
           details: validationResult.error.errors.map((err) => ({
-            field: err.path.join('.'),
+            field: err.path.join("."),
             message: err.message,
           })),
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -227,19 +230,23 @@ export async function PATCH(
     };
 
     if (updates.name !== undefined) updateData.name = updates.name;
-    if (updates.targetAmount !== undefined) updateData.target_amount = updates.targetAmount;
-    if (updates.currentAmount !== undefined) updateData.current_amount = updates.currentAmount;
-    if (updates.targetDate !== undefined) updateData.target_date = updates.targetDate;
+    if (updates.targetAmount !== undefined)
+      updateData.target_amount = updates.targetAmount;
+    if (updates.currentAmount !== undefined)
+      updateData.current_amount = updates.currentAmount;
+    if (updates.targetDate !== undefined)
+      updateData.target_date = updates.targetDate;
     if (updates.priority !== undefined) updateData.priority = updates.priority;
-    if (updates.description !== undefined) updateData.description = updates.description;
+    if (updates.description !== undefined)
+      updateData.description = updates.description;
     if (updates.status !== undefined) updateData.status = updates.status;
 
     // Update goal in database
     const { data: updatedGoal, error: updateError } = await supabase
-      .from('financial_goals')
+      .from("financial_goals")
       .update(updateData)
-      .eq('id', goalId)
-      .eq('user_id', userId)
+      .eq("id", goalId)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -249,7 +256,11 @@ export async function PATCH(
 
     // If currentAmount was updated, update progress
     if (updates.currentAmount !== undefined) {
-      await goalTracker.updateGoalProgress(userId, goalId, updates.currentAmount);
+      await goalTracker.updateGoalProgress(
+        userId,
+        goalId,
+        updates.currentAmount,
+      );
     }
 
     // Calculate updated progress metrics
@@ -269,19 +280,24 @@ export async function PATCH(
         priority: updatedGoal.priority,
         createdAt: updatedGoal.created_at,
         updatedAt: updatedGoal.updated_at,
-        progress: progress ? {
-          percentage: progress.progressPercentage,
-          velocity: progress.velocity.monthlyVelocity,
-          performanceGrade: progress.performanceScore.grade,
-          onTrack: progress.performanceScore.status === 'on_track' || progress.performanceScore.status === 'ahead',
-        } : null,
+        progress: progress
+          ? {
+              percentage: progress.progressPercentage,
+              velocity: progress.velocity.monthlyVelocity,
+              performanceGrade: progress.performanceScore.grade,
+              onTrack:
+                progress.performanceScore.status === "on_track" ||
+                progress.performanceScore.status === "ahead",
+            }
+          : null,
       },
-      message: 'Goal updated successfully',
+      message: "Goal updated successfully",
     });
   } catch (_error) {
     // FinancialGoalsRoute error: Failed to update goal
 
-    const errorMessage = _error instanceof Error ? _error.message : 'Failed to update goal';
+    const errorMessage =
+      _error instanceof Error ? _error.message : "Failed to update goal";
 
     return NextResponse.json(
       {
@@ -291,7 +307,7 @@ export async function PATCH(
           timestamp: new Date().toISOString(),
         },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -300,10 +316,7 @@ export async function PATCH(
  * DELETE /api/financial/goals/[id]
  * Delete goal (soft delete by setting status to 'cancelled')
  */
-export async function DELETE(
-  request: NextRequest,
-  { params }: RouteParams
-) {
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     // Validate JWT token
     const validation = await jwtValidation.validateFromHeaders(request);
@@ -312,20 +325,20 @@ export async function DELETE(
       return NextResponse.json(
         {
           success: false,
-          error: 'Unauthorized - Invalid or missing JWT token',
+          error: "Unauthorized - Invalid or missing JWT token",
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     // Check permissions
-    if (!rbac.hasPermission(validation.user, 'financial:create_goals')) {
+    if (!rbac.hasPermission(validation.user, "financial:create_goals")) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Forbidden - Premium feature required',
+          error: "Forbidden - Premium feature required",
         },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -334,19 +347,19 @@ export async function DELETE(
 
     // Verify goal ownership
     const { data: existingGoal, error: fetchError } = await supabase
-      .from('financial_goals')
-      .select('*')
-      .eq('id', goalId)
-      .eq('user_id', userId)
+      .from("financial_goals")
+      .select("*")
+      .eq("id", goalId)
+      .eq("user_id", userId)
       .single();
 
     if (fetchError || !existingGoal) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Goal not found',
+          error: "Goal not found",
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -355,7 +368,7 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: 'Goal deleted successfully',
+      message: "Goal deleted successfully",
       _meta: {
         deletedAt: new Date().toISOString(),
         goalId,
@@ -364,7 +377,8 @@ export async function DELETE(
   } catch (_error) {
     // FinancialGoalsRoute error: Failed to delete goal
 
-    const errorMessage = _error instanceof Error ? _error.message : 'Failed to delete goal';
+    const errorMessage =
+      _error instanceof Error ? _error.message : "Failed to delete goal";
 
     return NextResponse.json(
       {
@@ -374,7 +388,7 @@ export async function DELETE(
           timestamp: new Date().toISOString(),
         },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

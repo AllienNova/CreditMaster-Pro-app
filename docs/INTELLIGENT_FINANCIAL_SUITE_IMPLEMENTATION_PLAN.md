@@ -25,43 +25,43 @@ This document outlines the systematic implementation of four major feature suite
 
 ### Suite 1: Intelligent Banking & Financial Management (Weeks 1-4)
 
-| Feature | Priority | Complexity | Dependencies |
-|---------|----------|------------|--------------|
-| Account Aggregation Enhancement | P0 | Medium | Plaid (exists) |
-| Smart Budgeting Engine | P0 | High | Account data |
-| Savings Optimizer | P1 | Medium | Budgets, Goals |
-| Financial Health Score | P0 | High | All financial data |
-| Spending Intelligence | P0 | Medium | Transactions |
-| Bill Negotiation AI | P2 | High | AI Orchestrator |
+| Feature                         | Priority | Complexity | Dependencies       |
+| ------------------------------- | -------- | ---------- | ------------------ |
+| Account Aggregation Enhancement | P0       | Medium     | Plaid (exists)     |
+| Smart Budgeting Engine          | P0       | High       | Account data       |
+| Savings Optimizer               | P1       | Medium     | Budgets, Goals     |
+| Financial Health Score          | P0       | High       | All financial data |
+| Spending Intelligence           | P0       | Medium     | Transactions       |
+| Bill Negotiation AI             | P2       | High       | AI Orchestrator    |
 
 ### Suite 2: AI Financial Coach (Weeks 3-6)
 
-| Feature | Priority | Complexity | Dependencies |
-|---------|----------|------------|--------------|
-| Financial Profile Engine | P0 | High | All user data |
-| Personalized Advice Generator | P0 | High | AI models |
-| Goal Setting & Tracking | P0 | Medium | Database |
-| Proactive Recommendations | P1 | High | ML models |
-| Debt Strategy Optimizer | P0 | High | Debt data |
+| Feature                       | Priority | Complexity | Dependencies  |
+| ----------------------------- | -------- | ---------- | ------------- |
+| Financial Profile Engine      | P0       | High       | All user data |
+| Personalized Advice Generator | P0       | High       | AI models     |
+| Goal Setting & Tracking       | P0       | Medium     | Database      |
+| Proactive Recommendations     | P1       | High       | ML models     |
+| Debt Strategy Optimizer       | P0       | High       | Debt data     |
 
 ### Suite 3: Expert Asset Scanner & Investment Intelligence (Weeks 5-9)
 
-| Feature | Priority | Complexity | Dependencies |
-|---------|----------|------------|--------------|
-| Multi-Asset Portfolio Tracker | P1 | High | Market APIs |
-| AI Investment Analysis | P1 | Very High | AI + Market data |
-| Portfolio Optimization | P2 | Very High | Analysis engine |
-| Market Intelligence Alerts | P1 | Medium | Real-time data |
-| Trading Signal Generator | P2 | Very High | AI models |
+| Feature                       | Priority | Complexity | Dependencies     |
+| ----------------------------- | -------- | ---------- | ---------------- |
+| Multi-Asset Portfolio Tracker | P1       | High       | Market APIs      |
+| AI Investment Analysis        | P1       | Very High  | AI + Market data |
+| Portfolio Optimization        | P2       | Very High  | Analysis engine  |
+| Market Intelligence Alerts    | P1       | Medium     | Real-time data   |
+| Trading Signal Generator      | P2       | Very High  | AI models        |
 
 ### Suite 4: Financial Chat Interface (Weeks 7-10)
 
-| Feature | Priority | Complexity | Dependencies |
-|---------|----------|------------|--------------|
-| Financial Context Engine | P0 | High | All user data |
-| Conversational Budget Management | P0 | High | AI + Budgets |
-| Goal Chat Interface | P1 | Medium | Goals system |
-| Financial Education AI | P1 | Medium | Content + AI |
+| Feature                          | Priority | Complexity | Dependencies  |
+| -------------------------------- | -------- | ---------- | ------------- |
+| Financial Context Engine         | P0       | High       | All user data |
+| Conversational Budget Management | P0       | High       | AI + Budgets  |
+| Goal Chat Interface              | P1       | Medium     | Goals system  |
+| Financial Education AI           | P1       | Medium     | Content + AI  |
 
 ---
 
@@ -340,13 +340,13 @@ interface FinancialContextResponse {
 ```typescript
 // POST /api/ai/financial-coach/analyze
 interface CoachAnalysisRequest {
-  focusArea?: 'overview' | 'debt' | 'savings' | 'spending';
+  focusArea?: "overview" | "debt" | "savings" | "spending";
   specificQuestion?: string;
 }
 
 // POST /api/ai/financial-coach/debt-strategy
 interface DebtStrategyRequest {
-  method: 'snowball' | 'avalanche' | 'ai_optimized';
+  method: "snowball" | "avalanche" | "ai_optimized";
   extraPayment?: number;
 }
 ```
@@ -356,9 +356,9 @@ interface DebtStrategyRequest {
 ```typescript
 // GET /api/investments/portfolio
 interface PortfolioResponse {
-  portfolio: { totalValue: number; holdings: Holding[]; };
+  portfolio: { totalValue: number; holdings: Holding[] };
   aiAnalysis: {
-    overallRating: 'strong' | 'good' | 'fair' | 'weak';
+    overallRating: "strong" | "good" | "fair" | "weak";
     diversificationScore: number;
     recommendations: PortfolioRecommendation[];
   };
@@ -367,7 +367,7 @@ interface PortfolioResponse {
 // GET /api/investments/signals
 interface SignalsResponse {
   signals: TradingSignal[];
-  marketSentiment: { overall: 'bullish' | 'neutral' | 'bearish'; };
+  marketSentiment: { overall: "bullish" | "neutral" | "bearish" };
 }
 ```
 
@@ -397,22 +397,22 @@ interface FinancialChatResponse {
 
 ### 5.1 Existing Integrations (Leverage)
 
-| Integration | Status | Used For |
-|-------------|--------|----------|
-| **Plaid** | ✅ Implemented | Account aggregation, transactions |
-| **AIML API** | ✅ Implemented | 300+ AI models |
-| **Supabase** | ✅ Implemented | Database, Auth |
-| **Stripe** | ✅ Implemented | Payments |
+| Integration  | Status         | Used For                          |
+| ------------ | -------------- | --------------------------------- |
+| **Plaid**    | ✅ Implemented | Account aggregation, transactions |
+| **AIML API** | ✅ Implemented | 300+ AI models                    |
+| **Supabase** | ✅ Implemented | Database, Auth                    |
+| **Stripe**   | ✅ Implemented | Payments                          |
 
 ### 5.2 New Integrations Required
 
-| Integration | Priority | Cost | Used For |
-|-------------|----------|------|----------|
-| **Alpha Vantage** | P1 | Free tier + $50/mo | Stock data, fundamentals |
-| **Polygon.io** | P1 | $29-$199/mo | Real-time market data |
-| **CoinGecko** | P1 | Free tier | Crypto prices |
-| **Finnhub** | P2 | Free tier | News sentiment |
-| **OpenFIGI** | P2 | Free | Asset identification |
+| Integration       | Priority | Cost               | Used For                 |
+| ----------------- | -------- | ------------------ | ------------------------ |
+| **Alpha Vantage** | P1       | Free tier + $50/mo | Stock data, fundamentals |
+| **Polygon.io**    | P1       | $29-$199/mo        | Real-time market data    |
+| **CoinGecko**     | P1       | Free tier          | Crypto prices            |
+| **Finnhub**       | P2       | Free tier          | News sentiment           |
+| **OpenFIGI**      | P2       | Free               | Asset identification     |
 
 ### 5.3 Integration Architecture
 
@@ -425,12 +425,13 @@ export class MarketDataService {
 
   async getQuote(symbol: string, assetType: AssetType): Promise<Quote> {
     switch (assetType) {
-      case 'crypto':
+      case "crypto":
         return this.coinGecko.getPrice(symbol);
-      case 'stock':
-      case 'etf':
-        return this.polygon.getQuote(symbol) ??
-               this.alphaVantage.getQuote(symbol);
+      case "stock":
+      case "etf":
+        return (
+          this.polygon.getQuote(symbol) ?? this.alphaVantage.getQuote(symbol)
+        );
       default:
         return this.alphaVantage.getQuote(symbol);
     }
@@ -438,7 +439,7 @@ export class MarketDataService {
 
   async getHistoricalData(
     symbol: string,
-    period: '1D' | '1W' | '1M' | '3M' | '1Y' | '5Y'
+    period: "1D" | "1W" | "1M" | "3M" | "1Y" | "5Y",
   ): Promise<OHLCV[]>;
 
   async getFundamentals(symbol: string): Promise<Fundamentals>;
@@ -453,33 +454,33 @@ export class MarketDataService {
 
 ### 6.1 Web Screens Required
 
-| Screen | Route | Priority | Features |
-|--------|-------|----------|----------|
-| Financial Dashboard | `/financial` | P0 | Health score, accounts, insights |
-| Smart Budget | `/financial/budget` | P0 | AI budgets, categories, tracking |
-| Savings Goals | `/financial/goals` | P0 | Goal cards, progress, automation |
-| Spending Analysis | `/financial/spending` | P0 | Categories, trends, AI insights |
-| Bill Manager | `/financial/bills` | P1 | Bills, negotiation status |
-| AI Financial Coach | `/financial/coach` | P0 | Chat, recommendations |
-| Investment Dashboard | `/investments` | P1 | Portfolio, holdings, analysis |
-| Asset Detail | `/investments/[symbol]` | P1 | Charts, AI analysis, signals |
-| Portfolio Optimizer | `/investments/optimize` | P2 | Rebalancing, suggestions |
-| Financial Chat | `/chat/financial` | P0 | Full chat interface |
+| Screen               | Route                   | Priority | Features                         |
+| -------------------- | ----------------------- | -------- | -------------------------------- |
+| Financial Dashboard  | `/financial`            | P0       | Health score, accounts, insights |
+| Smart Budget         | `/financial/budget`     | P0       | AI budgets, categories, tracking |
+| Savings Goals        | `/financial/goals`      | P0       | Goal cards, progress, automation |
+| Spending Analysis    | `/financial/spending`   | P0       | Categories, trends, AI insights  |
+| Bill Manager         | `/financial/bills`      | P1       | Bills, negotiation status        |
+| AI Financial Coach   | `/financial/coach`      | P0       | Chat, recommendations            |
+| Investment Dashboard | `/investments`          | P1       | Portfolio, holdings, analysis    |
+| Asset Detail         | `/investments/[symbol]` | P1       | Charts, AI analysis, signals     |
+| Portfolio Optimizer  | `/investments/optimize` | P2       | Rebalancing, suggestions         |
+| Financial Chat       | `/chat/financial`       | P0       | Full chat interface              |
 
 ### 6.2 Mobile Screens Required
 
-| Screen | Route | Priority |
-|--------|-------|----------|
-| Financial Home | `/financial/index` | P0 |
-| Smart Budget | `/financial/smart-budget` | P0 |
-| Goals Manager | `/financial/goals-manager` | P0 |
-| Spending Insights | `/financial/spending-insights` | P0 |
-| Bill Negotiator | `/financial/bill-negotiator` | P1 |
-| AI Coach | `/financial/ai-coach` | P0 |
-| Investment Home | `/investments/index` | P1 |
-| Asset Detail | `/investments/[symbol]` | P1 |
-| Trading Signals | `/investments/signals` | P2 |
-| Financial Chat | `/chat/financial` | P0 |
+| Screen            | Route                          | Priority |
+| ----------------- | ------------------------------ | -------- |
+| Financial Home    | `/financial/index`             | P0       |
+| Smart Budget      | `/financial/smart-budget`      | P0       |
+| Goals Manager     | `/financial/goals-manager`     | P0       |
+| Spending Insights | `/financial/spending-insights` | P0       |
+| Bill Negotiator   | `/financial/bill-negotiator`   | P1       |
+| AI Coach          | `/financial/ai-coach`          | P0       |
+| Investment Home   | `/investments/index`           | P1       |
+| Asset Detail      | `/investments/[symbol]`        | P1       |
+| Trading Signals   | `/investments/signals`         | P2       |
+| Financial Chat    | `/chat/financial`              | P0       |
 
 ---
 
@@ -488,11 +489,13 @@ export class MarketDataService {
 ### Week 1-2: Foundation & Financial Context Engine
 
 **Goals:**
+
 - Build unified Financial Context Engine
 - Implement Financial Health Score algorithm
 - Create database migrations
 
 **Tasks:**
+
 - [ ] Create `financial-context-engine.ts`
 - [ ] Implement health score calculation
 - [ ] Run Supabase migrations for new tables
@@ -502,11 +505,13 @@ export class MarketDataService {
 ### Week 3-4: Smart Banking Suite
 
 **Goals:**
+
 - Enhanced budgeting with AI
 - Savings optimizer
 - Spending intelligence
 
 **Tasks:**
+
 - [ ] AI-powered budget generation
 - [ ] Automatic transaction categorization
 - [ ] Spending pattern analysis
@@ -517,11 +522,13 @@ export class MarketDataService {
 ### Week 5-6: AI Financial Coach
 
 **Goals:**
+
 - Personal financial AI assistant
 - Debt optimization strategies
 - Goal planning
 
 **Tasks:**
+
 - [ ] Financial coach AI prompt engineering
 - [ ] Debt snowball/avalanche optimizer
 - [ ] Goal setting and tracking system
@@ -532,11 +539,13 @@ export class MarketDataService {
 ### Week 7-8: Investment Intelligence (Phase 1)
 
 **Goals:**
+
 - Portfolio tracking
 - Basic AI analysis
 - Market data integration
 
 **Tasks:**
+
 - [ ] Integrate Alpha Vantage / Polygon
 - [ ] Portfolio tracker implementation
 - [ ] Basic AI analysis for holdings
@@ -546,11 +555,13 @@ export class MarketDataService {
 ### Week 9-10: Investment Intelligence (Phase 2)
 
 **Goals:**
+
 - Advanced analysis
 - Trading signals
 - Portfolio optimization
 
 **Tasks:**
+
 - [ ] Advanced AI analysis models
 - [ ] Trading signal generator
 - [ ] Portfolio optimizer
@@ -560,11 +571,13 @@ export class MarketDataService {
 ### Week 11-12: Financial Chat & Polish
 
 **Goals:**
+
 - Full chat interface
 - Integration testing
 - Performance optimization
 
 **Tasks:**
+
 - [ ] Financial chat with context awareness
 - [ ] Action execution from chat
 - [ ] End-to-end testing
@@ -577,21 +590,21 @@ export class MarketDataService {
 
 ### 8.1 Technical Prerequisites
 
-| Prerequisite | Status | Notes |
-|-------------|--------|-------|
-| Plaid Integration | ✅ Ready | Already implemented |
-| AIML API Access | ✅ Ready | 300+ models available |
-| Supabase Database | ✅ Ready | Need migrations |
-| User Authentication | ✅ Ready | JWT + sessions |
-| Mobile App Shell | ✅ Ready | Expo Router setup |
+| Prerequisite        | Status   | Notes                 |
+| ------------------- | -------- | --------------------- |
+| Plaid Integration   | ✅ Ready | Already implemented   |
+| AIML API Access     | ✅ Ready | 300+ models available |
+| Supabase Database   | ✅ Ready | Need migrations       |
+| User Authentication | ✅ Ready | JWT + sessions        |
+| Mobile App Shell    | ✅ Ready | Expo Router setup     |
 
 ### 8.2 External Dependencies
 
-| Dependency | Required For | Setup Time |
-|-----------|--------------|------------|
-| Alpha Vantage API Key | Investment data | 1 day |
-| Polygon.io API Key | Real-time quotes | 1 day |
-| CoinGecko API | Crypto prices | Free, instant |
+| Dependency            | Required For     | Setup Time    |
+| --------------------- | ---------------- | ------------- |
+| Alpha Vantage API Key | Investment data  | 1 day         |
+| Polygon.io API Key    | Real-time quotes | 1 day         |
+| CoinGecko API         | Crypto prices    | Free, instant |
 
 ### 8.3 Task Dependencies
 
@@ -611,12 +624,12 @@ graph TD
 
 ### 8.4 Risk Mitigation
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Market API rate limits | High | Implement caching, use multiple providers |
-| AI model costs | Medium | Use model routing, cache responses |
-| Plaid connection issues | High | Implement retry logic, fallback UI |
-| Complex financial calculations | Medium | Unit test extensively |
+| Risk                           | Impact | Mitigation                                |
+| ------------------------------ | ------ | ----------------------------------------- |
+| Market API rate limits         | High   | Implement caching, use multiple providers |
+| AI model costs                 | Medium | Use model routing, cache responses        |
+| Plaid connection issues        | High   | Implement retry logic, fallback UI        |
+| Complex financial calculations | Medium | Unit test extensively                     |
 
 ---
 
@@ -624,22 +637,22 @@ graph TD
 
 ### 9.1 Key Performance Indicators
 
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| User Engagement | 3x current | Daily active users |
-| Feature Adoption | 60% | Users using new features |
-| Financial Health Score Usage | 80% | Users checking score weekly |
-| AI Coach Conversations | 5/user/week | Chat sessions |
-| Investment Tracking | 40% | Users with portfolios |
+| Metric                       | Target      | Measurement                 |
+| ---------------------------- | ----------- | --------------------------- |
+| User Engagement              | 3x current  | Daily active users          |
+| Feature Adoption             | 60%         | Users using new features    |
+| Financial Health Score Usage | 80%         | Users checking score weekly |
+| AI Coach Conversations       | 5/user/week | Chat sessions               |
+| Investment Tracking          | 40%         | Users with portfolios       |
 
 ### 9.2 Technical Metrics
 
-| Metric | Target |
-|--------|--------|
-| API Response Time | < 200ms |
-| AI Analysis Time | < 3s |
+| Metric                   | Target  |
+| ------------------------ | ------- |
+| API Response Time        | < 200ms |
+| AI Analysis Time         | < 3s    |
 | Health Score Calculation | < 500ms |
-| Portfolio Sync | < 2s |
+| Portfolio Sync           | < 2s    |
 
 ---
 
@@ -743,6 +756,7 @@ mobile-app/app/
 This implementation plan provides a comprehensive roadmap for building CPFI's Intelligent Financial Suite. The key differentiator from Credit Karma is our **AI-first approach** that works with users' existing bank accounts rather than trying to replace them.
 
 **Total New Components:**
+
 - 15+ new backend services
 - 20+ new API endpoints
 - 10+ new web pages
@@ -750,6 +764,7 @@ This implementation plan provides a comprehensive roadmap for building CPFI's In
 - 8 new database tables
 
 **Competitive Advantages:**
+
 1. AI-powered financial coaching (unique)
 2. Hedge fund-quality investment analysis (unique)
 3. Bill negotiation assistant (Rocket Money feature)
@@ -757,6 +772,7 @@ This implementation plan provides a comprehensive roadmap for building CPFI's In
 5. Conversational financial planning
 
 **Next Steps:**
+
 1. Review and approve plan
 2. Set up new API integrations
 3. Run database migrations

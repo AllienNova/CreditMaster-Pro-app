@@ -4,11 +4,11 @@
  * Split from financialStore for better modularity
  */
 
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { bankAccountApi } from '../services/api';
-import type { BankAccount } from '../services/api/types';
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { bankAccountApi } from "../services/api";
+import type { BankAccount } from "../services/api/types";
 
 interface AccountState {
   // State
@@ -26,7 +26,10 @@ interface AccountState {
   // Actions - Accounts
   fetchAccounts: () => Promise<void>;
   connectAccount: () => Promise<{ linkToken: string } | null>;
-  exchangePlaidToken: (publicToken: string, metadata?: Record<string, unknown>) => Promise<boolean>;
+  exchangePlaidToken: (
+    publicToken: string,
+    metadata?: Record<string, unknown>,
+  ) => Promise<boolean>;
   refreshAccount: (accountId: string) => Promise<void>;
   disconnectAccount: (accountId: string) => Promise<boolean>;
   selectAccount: (accountId: string | null) => void;
@@ -58,14 +61,17 @@ export const useAccountStore = create<AccountState>()(
             set({ accounts: response.data.accounts, isLoadingAccounts: false });
           } else {
             set({
-              error: response.error?.message || 'Failed to fetch accounts',
-              isLoadingAccounts: false
+              error: response.error?.message || "Failed to fetch accounts",
+              isLoadingAccounts: false,
             });
           }
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'Failed to fetch accounts',
-            isLoadingAccounts: false
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to fetch accounts",
+            isLoadingAccounts: false,
           });
         }
       },
@@ -79,23 +85,32 @@ export const useAccountStore = create<AccountState>()(
             return { linkToken: response.data.linkToken };
           }
           set({
-            error: response.error?.message || 'Failed to get link token',
-            isConnectingAccount: false
+            error: response.error?.message || "Failed to get link token",
+            isConnectingAccount: false,
           });
           return null;
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'Failed to connect account',
-            isConnectingAccount: false
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to connect account",
+            isConnectingAccount: false,
           });
           return null;
         }
       },
 
-      exchangePlaidToken: async (publicToken: string, metadata?: Record<string, unknown>) => {
+      exchangePlaidToken: async (
+        publicToken: string,
+        metadata?: Record<string, unknown>,
+      ) => {
         set({ isConnectingAccount: true, error: null });
         try {
-          const response = await bankAccountApi.exchangePlaidToken(publicToken, metadata);
+          const response = await bankAccountApi.exchangePlaidToken(
+            publicToken,
+            metadata,
+          );
           if (response.success) {
             // Refresh accounts after successful connection
             await get().fetchAccounts();
@@ -103,14 +118,17 @@ export const useAccountStore = create<AccountState>()(
             return true;
           }
           set({
-            error: response.error?.message || 'Failed to exchange token',
-            isConnectingAccount: false
+            error: response.error?.message || "Failed to exchange token",
+            isConnectingAccount: false,
           });
           return false;
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'Failed to exchange token',
-            isConnectingAccount: false
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to exchange token",
+            isConnectingAccount: false,
           });
           return false;
         }
@@ -124,11 +142,16 @@ export const useAccountStore = create<AccountState>()(
             // Refresh all accounts to get updated data
             await get().fetchAccounts();
           } else {
-            set({ error: response.error?.message || 'Failed to refresh account' });
+            set({
+              error: response.error?.message || "Failed to refresh account",
+            });
           }
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'Failed to refresh account'
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to refresh account",
           });
         } finally {
           set({ isRefreshing: false });
@@ -142,21 +165,27 @@ export const useAccountStore = create<AccountState>()(
           if (response.success) {
             // Remove account from local state
             set({
-              accounts: get().accounts.filter(a => a.id !== accountId),
-              selectedAccountId: get().selectedAccountId === accountId ? null : get().selectedAccountId,
-              isLoadingAccounts: false
+              accounts: get().accounts.filter((a) => a.id !== accountId),
+              selectedAccountId:
+                get().selectedAccountId === accountId
+                  ? null
+                  : get().selectedAccountId,
+              isLoadingAccounts: false,
             });
             return true;
           }
           set({
-            error: response.error?.message || 'Failed to disconnect account',
-            isLoadingAccounts: false
+            error: response.error?.message || "Failed to disconnect account",
+            isLoadingAccounts: false,
           });
           return false;
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'Failed to disconnect account',
-            isLoadingAccounts: false
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to disconnect account",
+            isLoadingAccounts: false,
           });
           return false;
         }
@@ -171,22 +200,22 @@ export const useAccountStore = create<AccountState>()(
       resetStore: () => set(initialState),
     }),
     {
-      name: 'cpfi-account-store',
+      name: "cpfi-account-store",
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         accounts: state.accounts,
         selectedAccountId: state.selectedAccountId,
       }),
-    }
-  )
+    },
+  ),
 );
 
 // Selectors
 export const selectAccounts = (state: AccountState) => state.accounts;
 export const selectSelectedAccount = (state: AccountState) =>
-  state.accounts.find(a => a.id === state.selectedAccountId) || null;
+  state.accounts.find((a) => a.id === state.selectedAccountId) || null;
 export const selectAccountsByType = (type: string) => (state: AccountState) =>
-  state.accounts.filter(a => a.type === type);
+  state.accounts.filter((a) => a.type === type);
 export const selectTotalBalance = (state: AccountState) =>
   state.accounts.reduce((sum, account) => sum + (account.balance || 0), 0);
 export const selectIsLoading = (state: AccountState) =>

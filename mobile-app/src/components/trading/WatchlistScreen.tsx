@@ -3,7 +3,7 @@
  * Real-time watchlist with mini charts and trading signals
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -13,9 +13,9 @@ import {
   TextInput,
   RefreshControl,
   Dimensions,
-} from 'react-native';
-import Svg, { Path } from 'react-native-svg';
-import { lightTheme as theme } from '../../constants/theme';
+} from "react-native";
+import Svg, { Path } from "react-native-svg";
+import { lightTheme as theme } from "../../constants/theme";
 
 // ============================================================================
 // TYPES
@@ -28,7 +28,7 @@ export interface WatchlistItem {
   change: number;
   changePercent: number;
   volume: number;
-  signal?: 'buy' | 'sell' | 'hold';
+  signal?: "buy" | "sell" | "hold";
   signalStrength?: number;
   priceHistory: number[];
 }
@@ -36,7 +36,7 @@ export interface WatchlistItem {
 export interface WatchlistScreenProps {
   items: WatchlistItem[];
   onItemPress?: (symbol: string) => void;
-  onTradePress?: (symbol: string, side: 'buy' | 'sell') => void;
+  onTradePress?: (symbol: string, side: "buy" | "sell") => void;
   onRefresh?: () => Promise<void>;
   loading?: boolean;
 }
@@ -59,14 +59,16 @@ function Sparkline({ data, width = 60, height = 24, color }: SparklineProps) {
   const max = Math.max(...data);
   const range = max - min || 1;
 
-  const points = data.map((value, index) => {
-    const x = (index / (data.length - 1)) * width;
-    const y = height - ((value - min) / range) * height;
-    return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
-  }).join(' ');
+  const points = data
+    .map((value, index) => {
+      const x = (index / (data.length - 1)) * width;
+      const y = height - ((value - min) / range) * height;
+      return `${index === 0 ? "M" : "L"} ${x} ${y}`;
+    })
+    .join(" ");
 
   const isPositive = data[data.length - 1] >= data[0];
-  const lineColor = color || (isPositive ? '#26a69a' : '#ef5350');
+  const lineColor = color || (isPositive ? "#26a69a" : "#ef5350");
 
   return (
     <Svg width={width} height={height}>
@@ -87,15 +89,15 @@ function Sparkline({ data, width = 60, height = 24, color }: SparklineProps) {
 // ============================================================================
 
 interface SignalBadgeProps {
-  signal: 'buy' | 'sell' | 'hold';
+  signal: "buy" | "sell" | "hold";
   strength?: number;
 }
 
 function SignalBadge({ signal, strength }: SignalBadgeProps) {
   const config = {
-    buy: { bg: '#26a69a20', color: '#26a69a', icon: '▲' },
-    sell: { bg: '#ef535020', color: '#ef5350', icon: '▼' },
-    hold: { bg: '#78909c20', color: '#78909c', icon: '●' },
+    buy: { bg: "#26a69a20", color: "#26a69a", icon: "▲" },
+    sell: { bg: "#ef535020", color: "#ef5350", icon: "▼" },
+    hold: { bg: "#78909c20", color: "#78909c", icon: "●" },
   };
 
   const { bg, color, icon } = config[signal];
@@ -130,7 +132,9 @@ function WatchlistRow({ item, onPress, onBuy, onSell }: WatchlistRowProps) {
       {/* Symbol & Name */}
       <View style={styles.symbolContainer}>
         <Text style={styles.symbol}>{item.symbol}</Text>
-        <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
+        <Text style={styles.name} numberOfLines={1}>
+          {item.name}
+        </Text>
       </View>
 
       {/* Sparkline */}
@@ -141,15 +145,20 @@ function WatchlistRow({ item, onPress, onBuy, onSell }: WatchlistRowProps) {
       {/* Price & Change */}
       <View style={styles.priceContainer}>
         <Text style={styles.price}>${item.price.toFixed(2)}</Text>
-        <View style={[
-          styles.changeBadge,
-          { backgroundColor: isPositive ? '#26a69a20' : '#ef535020' }
-        ]}>
-          <Text style={[
-            styles.changeText,
-            { color: isPositive ? '#26a69a' : '#ef5350' }
-          ]}>
-            {isPositive ? '+' : ''}{item.changePercent.toFixed(2)}%
+        <View
+          style={[
+            styles.changeBadge,
+            { backgroundColor: isPositive ? "#26a69a20" : "#ef535020" },
+          ]}
+        >
+          <Text
+            style={[
+              styles.changeText,
+              { color: isPositive ? "#26a69a" : "#ef5350" },
+            ]}
+          >
+            {isPositive ? "+" : ""}
+            {item.changePercent.toFixed(2)}%
           </Text>
         </View>
       </View>
@@ -191,26 +200,32 @@ export function WatchlistScreen({
   onRefresh,
   loading = false,
 }: WatchlistScreenProps) {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [refreshing, setRefreshing] = useState(false);
-  const [sortBy, setSortBy] = useState<'symbol' | 'change' | 'signal'>('symbol');
+  const [sortBy, setSortBy] = useState<"symbol" | "change" | "signal">(
+    "symbol",
+  );
 
   // Filter and sort items
   const filteredItems = useMemo(() => {
-    let result = items.filter(item =>
-      item.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.name.toLowerCase().includes(searchQuery.toLowerCase())
+    let result = items.filter(
+      (item) =>
+        item.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.name.toLowerCase().includes(searchQuery.toLowerCase()),
     );
 
     result.sort((a, b) => {
       switch (sortBy) {
-        case 'symbol':
+        case "symbol":
           return a.symbol.localeCompare(b.symbol);
-        case 'change':
+        case "change":
           return b.changePercent - a.changePercent;
-        case 'signal':
+        case "signal":
           const signalOrder = { buy: 3, hold: 2, sell: 1, undefined: 0 };
-          return (signalOrder[b.signal || 'undefined'] || 0) - (signalOrder[a.signal || 'undefined'] || 0);
+          return (
+            (signalOrder[b.signal || "undefined"] || 0) -
+            (signalOrder[a.signal || "undefined"] || 0)
+          );
         default:
           return 0;
       }
@@ -227,14 +242,17 @@ export function WatchlistScreen({
   }, [onRefresh]);
 
   // Render item
-  const renderItem = useCallback(({ item }: { item: WatchlistItem }) => (
-    <WatchlistRow
-      item={item}
-      onPress={() => onItemPress?.(item.symbol)}
-      onBuy={() => onTradePress?.(item.symbol, 'buy')}
-      onSell={() => onTradePress?.(item.symbol, 'sell')}
-    />
-  ), [onItemPress, onTradePress]);
+  const renderItem = useCallback(
+    ({ item }: { item: WatchlistItem }) => (
+      <WatchlistRow
+        item={item}
+        onPress={() => onItemPress?.(item.symbol)}
+        onBuy={() => onTradePress?.(item.symbol, "buy")}
+        onSell={() => onTradePress?.(item.symbol, "sell")}
+      />
+    ),
+    [onItemPress, onTradePress],
+  );
 
   return (
     <View style={styles.container}>
@@ -252,19 +270,21 @@ export function WatchlistScreen({
       {/* Sort Options */}
       <View style={styles.sortContainer}>
         <Text style={styles.sortLabel}>Sort by:</Text>
-        {(['symbol', 'change', 'signal'] as const).map(option => (
+        {(["symbol", "change", "signal"] as const).map((option) => (
           <TouchableOpacity
             key={option}
             style={[
               styles.sortButton,
-              sortBy === option && styles.sortButtonActive
+              sortBy === option && styles.sortButtonActive,
             ]}
             onPress={() => setSortBy(option)}
           >
-            <Text style={[
-              styles.sortButtonText,
-              sortBy === option && styles.sortButtonTextActive
-            ]}>
+            <Text
+              style={[
+                styles.sortButtonText,
+                sortBy === option && styles.sortButtonTextActive,
+              ]}
+            >
               {option.charAt(0).toUpperCase() + option.slice(1)}
             </Text>
           </TouchableOpacity>
@@ -274,10 +294,18 @@ export function WatchlistScreen({
       {/* List Header */}
       <View style={styles.listHeader}>
         <Text style={[styles.headerText, { flex: 1.5 }]}>Symbol</Text>
-        <Text style={[styles.headerText, { flex: 1, textAlign: 'center' }]}>Chart</Text>
-        <Text style={[styles.headerText, { flex: 1, textAlign: 'right' }]}>Price</Text>
-        <Text style={[styles.headerText, { flex: 1, textAlign: 'center' }]}>Signal</Text>
-        <Text style={[styles.headerText, { flex: 0.6, textAlign: 'center' }]}>Trade</Text>
+        <Text style={[styles.headerText, { flex: 1, textAlign: "center" }]}>
+          Chart
+        </Text>
+        <Text style={[styles.headerText, { flex: 1, textAlign: "right" }]}>
+          Price
+        </Text>
+        <Text style={[styles.headerText, { flex: 1, textAlign: "center" }]}>
+          Signal
+        </Text>
+        <Text style={[styles.headerText, { flex: 0.6, textAlign: "center" }]}>
+          Trade
+        </Text>
       </View>
 
       {/* List */}
@@ -295,7 +323,7 @@ export function WatchlistScreen({
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>
-              {searchQuery ? 'No matching symbols' : 'No items in watchlist'}
+              {searchQuery ? "No matching symbols" : "No items in watchlist"}
             </Text>
           </View>
         }
@@ -316,7 +344,7 @@ export function WatchlistScreen({
 // STYLES
 // ============================================================================
 
-const { width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get("window");
 
 const styles = StyleSheet.create({
   container: {
@@ -338,8 +366,8 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border,
   },
   sortContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingBottom: 8,
     gap: 8,
@@ -362,10 +390,10 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   sortButtonTextActive: {
-    color: '#fff',
+    color: "#fff",
   },
   listHeader: {
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingHorizontal: 16,
     paddingVertical: 8,
     backgroundColor: theme.colors.surface,
@@ -374,13 +402,13 @@ const styles = StyleSheet.create({
   },
   headerText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.textSecondary,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
   },
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
@@ -391,7 +419,7 @@ const styles = StyleSheet.create({
   },
   symbol: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   name: {
@@ -401,15 +429,15 @@ const styles = StyleSheet.create({
   },
   chartContainer: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
   },
   priceContainer: {
     flex: 1,
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   price: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   changeBadge: {
@@ -420,15 +448,15 @@ const styles = StyleSheet.create({
   },
   changeText: {
     fontSize: 11,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   signalContainer: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
   },
   signalBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: 4,
@@ -439,38 +467,38 @@ const styles = StyleSheet.create({
   },
   signalText: {
     fontSize: 9,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   signalStrength: {
     fontSize: 8,
   },
   tradeButtons: {
     flex: 0.6,
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     gap: 4,
   },
   tradeButton: {
     width: 24,
     height: 24,
     borderRadius: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   buyButton: {
-    backgroundColor: '#26a69a',
+    backgroundColor: "#26a69a",
   },
   sellButton: {
-    backgroundColor: '#ef5350',
+    backgroundColor: "#ef5350",
   },
   tradeButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   emptyContainer: {
     padding: 40,
-    alignItems: 'center',
+    alignItems: "center",
   },
   emptyText: {
     color: theme.colors.textSecondary,
@@ -486,7 +514,7 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 11,
     color: theme.colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
   },
 });
 

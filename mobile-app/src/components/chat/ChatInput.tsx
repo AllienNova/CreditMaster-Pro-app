@@ -3,12 +3,19 @@
  * Multi-line text input with character counter and XSS protection
  */
 
-import React, { useState, useRef } from 'react';
-import { View, TextInput, TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
-import DOMPurify from 'isomorphic-dompurify';
-import { lightTheme as theme } from '../../constants/theme';
+import React, { useState, useRef } from "react";
+import {
+  View,
+  TextInput,
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import DOMPurify from "isomorphic-dompurify";
+import { lightTheme as theme } from "../../constants/theme";
 
 interface ChatInputProps {
   onSend: (message: string) => void;
@@ -23,7 +30,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   disabled = false,
   maxLength = 2000,
 }) => {
-  const [text, setText] = useState('');
+  const [text, setText] = useState("");
   const [inputHeight, setInputHeight] = useState(40);
   const inputRef = useRef<TextInput>(null);
 
@@ -46,7 +53,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onSend(sanitized);
-    setText('');
+    setText("");
     setInputHeight(40);
   };
 
@@ -77,11 +84,15 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           returnKeyType="default"
           blurOnSubmit={false}
         />
-        
+
         <Text
           style={[
             styles.charCounter,
-            isAtLimit ? styles.charCounterError : isNearLimit ? styles.charCounterWarning : {},
+            isAtLimit
+              ? styles.charCounterError
+              : isNearLimit
+                ? styles.charCounterWarning
+                : {},
           ]}
         >
           {charCount}/{maxLength}
@@ -108,19 +119,19 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
+    flexDirection: "row",
     padding: theme.spacing.md,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    alignItems: 'flex-end',
+    borderTopColor: "#E5E7EB",
+    alignItems: "flex-end",
   },
   inputWrapper: {
     flex: 1,
     marginRight: theme.spacing.sm,
   },
   input: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: "#F3F4F6",
     borderRadius: theme.borderRadius.md,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
@@ -129,32 +140,31 @@ const styles = StyleSheet.create({
   },
   inputError: {
     borderWidth: 1,
-    borderColor: '#DC2626',
+    borderColor: "#DC2626",
   },
   charCounter: {
     fontSize: 10,
     color: theme.colors.textSecondary,
-    textAlign: 'right',
+    textAlign: "right",
     marginTop: 4,
   },
   charCounterWarning: {
-    color: '#F59E0B',
-    fontWeight: '600',
+    color: "#F59E0B",
+    fontWeight: "600",
   },
   charCounterError: {
-    color: '#DC2626',
-    fontWeight: '600',
+    color: "#DC2626",
+    fontWeight: "600",
   },
   sendButton: {
     width: 42,
     height: 42,
     borderRadius: 21,
     backgroundColor: theme.colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   sendButtonDisabled: {
-    backgroundColor: '#9CA3AF',
+    backgroundColor: "#9CA3AF",
   },
 });
-

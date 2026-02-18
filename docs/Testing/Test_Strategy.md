@@ -18,14 +18,14 @@
  ╱─────────────────────────────────╲
 ```
 
-| Layer | Framework | Count (files) | Approx Cases | Focus |
-|-------|-----------|--------------|--------------|-------|
-| Unit | Jest | ~100 | ~800 | Pure functions, service methods, component rendering |
-| Integration | Jest | ~49 | ~300 | API route handlers, service-to-service, DB interactions |
-| Mobile | Jest | 12 | ~180 | Mobile components, stores, API clients, navigation |
-| E2E (API) | Cypress | 21 | ~276 | Route accessibility, auth enforcement, response formats |
-| E2E (UI) | Playwright | 16 | ~100+ | Full browser journeys, multi-page flows |
-| **Total** | | **198** | **~1,660+** | |
+| Layer       | Framework  | Count (files) | Approx Cases | Focus                                                   |
+| ----------- | ---------- | ------------- | ------------ | ------------------------------------------------------- |
+| Unit        | Jest       | ~100          | ~800         | Pure functions, service methods, component rendering    |
+| Integration | Jest       | ~49           | ~300         | API route handlers, service-to-service, DB interactions |
+| Mobile      | Jest       | 12            | ~180         | Mobile components, stores, API clients, navigation      |
+| E2E (API)   | Cypress    | 21            | ~276         | Route accessibility, auth enforcement, response formats |
+| E2E (UI)    | Playwright | 16            | ~100+        | Full browser journeys, multi-page flows                 |
+| **Total**   |            | **198**       | **~1,660+**  |                                                         |
 
 ---
 
@@ -41,6 +41,7 @@
 - **Path Aliases**: `@/*` mapped to `<rootDir>/src/*`
 
 **Key Configuration:**
+
 ```
 testEnvironment: 'jsdom'
 transform: ts-jest
@@ -49,6 +50,7 @@ testTimeout: 10000
 ```
 
 **Mocking Strategy:**
+
 - External APIs (AIML, Stripe, Supabase, AWS S3, Resend): Mocked at module level via `jest.mock()`
 - Internal services: Real implementations where possible, mocked only at system boundaries
 - Environment variables: Set in test setup files
@@ -64,17 +66,18 @@ testTimeout: 10000
 
 **Test Categories (21 specs):**
 
-| Category | Specs | Focus |
-|----------|-------|-------|
-| Page Access | 5 | Public pages return 200, protected pages return 307 redirect |
-| Auth Enforcement | 4 | API endpoints return 401 without auth token |
-| API Contracts | 6 | Response format, content-type, error body structure |
-| User Workflows | 2 | Multi-step user journeys (landing → pricing → login) |
-| Responsive | 2 | Mobile, tablet, desktop viewport rendering |
-| Security Headers | 1 | CSP, HSTS, X-Frame-Options validation |
-| Health Check | 1 | API endpoint availability |
+| Category         | Specs | Focus                                                        |
+| ---------------- | ----- | ------------------------------------------------------------ |
+| Page Access      | 5     | Public pages return 200, protected pages return 307 redirect |
+| Auth Enforcement | 4     | API endpoints return 401 without auth token                  |
+| API Contracts    | 6     | Response format, content-type, error body structure          |
+| User Workflows   | 2     | Multi-step user journeys (landing → pricing → login)         |
+| Responsive       | 2     | Mobile, tablet, desktop viewport rendering                   |
+| Security Headers | 1     | CSP, HSTS, X-Frame-Options validation                        |
+| Health Check     | 1     | API endpoint availability                                    |
 
 **Execution:**
+
 ```bash
 npm run cypress:open    # Interactive mode
 npm run cypress:run     # Headless CI mode
@@ -90,30 +93,30 @@ npx cypress run --spec "cypress/e2e/<file>.cy.ts"  # Single spec
 
 **Test Suites (16 specs):**
 
-| Suite | Focus |
-|-------|-------|
-| home.spec.ts | Landing page load and navigation |
-| auth.spec.ts | Login/logout flows |
-| dashboard.spec.ts | Dashboard rendering and navigation |
-| api.spec.ts | API endpoint validation |
-| chat-suite.spec.ts | AI chat functionality |
-| financial-suite.spec.ts | Financial tools and calculators |
-| investment-suite.spec.ts | Investment portfolio features |
-| marketplace.spec.ts | Marketplace browsing |
-| pricing.spec.ts | Pricing page and tier display |
-| student-loans.spec.ts | Student loan tools |
-| investment-*.spec.ts (6) | Detailed investment feature tests |
+| Suite                     | Focus                              |
+| ------------------------- | ---------------------------------- |
+| home.spec.ts              | Landing page load and navigation   |
+| auth.spec.ts              | Login/logout flows                 |
+| dashboard.spec.ts         | Dashboard rendering and navigation |
+| api.spec.ts               | API endpoint validation            |
+| chat-suite.spec.ts        | AI chat functionality              |
+| financial-suite.spec.ts   | Financial tools and calculators    |
+| investment-suite.spec.ts  | Investment portfolio features      |
+| marketplace.spec.ts       | Marketplace browsing               |
+| pricing.spec.ts           | Pricing page and tier display      |
+| student-loans.spec.ts     | Student loan tools                 |
+| investment-\*.spec.ts (6) | Detailed investment feature tests  |
 
 ---
 
 ## 3. Test Environments
 
-| Environment | Purpose | Database | External Services | Run By |
-|-------------|---------|----------|-------------------|--------|
-| Local (dev) | Developer feedback loop | Supabase (dev project) | Mocked | Developer |
-| CI (GitHub Actions) | PR validation | Supabase (test project) | Mocked | Automated |
-| Staging | Pre-production validation | Supabase (staging) | Sandbox APIs | Automated + Manual |
-| Production | Smoke tests only | Supabase (prod) | Live APIs | Automated (post-deploy) |
+| Environment         | Purpose                   | Database                | External Services | Run By                  |
+| ------------------- | ------------------------- | ----------------------- | ----------------- | ----------------------- |
+| Local (dev)         | Developer feedback loop   | Supabase (dev project)  | Mocked            | Developer               |
+| CI (GitHub Actions) | PR validation             | Supabase (test project) | Mocked            | Automated               |
+| Staging             | Pre-production validation | Supabase (staging)      | Sandbox APIs      | Automated + Manual      |
+| Production          | Smoke tests only          | Supabase (prod)         | Live APIs         | Automated (post-deploy) |
 
 ### Environment Variables for Testing
 
@@ -132,12 +135,12 @@ STRIPE_SECRET_KEY=sk_test_xxx
 
 ### 4.1 Coverage Requirements
 
-| Metric | Threshold | Current (est.) |
-|--------|-----------|----------------|
-| Statements | 80% | ~81% |
-| Branches | 80% | ~78% |
-| Functions | 80% | ~80% |
-| Lines | 80% | ~81% |
+| Metric     | Threshold | Current (est.) |
+| ---------- | --------- | -------------- |
+| Statements | 80%       | ~81%           |
+| Branches   | 80%       | ~78%           |
+| Functions  | 80%       | ~80%           |
+| Lines      | 80%       | ~81%           |
 
 ### 4.2 Quality Gates (CI Pipeline)
 
@@ -177,19 +180,20 @@ Gate 6: E2E (Playwright) → All 16 specs pass (requires dev server)
 
 ### 5.3 External Service Mocking
 
-| Service | Jest Mock | E2E Approach |
-|---------|-----------|--------------|
-| AIML API | `jest.mock('@/lib/aiml-service')` | Real API (rate-limited) or MSW |
-| Supabase Auth | `jest.mock('@/lib/supabase')` | Real auth (test project) |
-| Stripe | `jest.mock('stripe')` | Stripe test mode |
-| AWS S3 | `jest.mock('@aws-sdk/client-s3')` | LocalStack or mocked |
-| Resend | `jest.mock('resend')` | Mocked (no real emails) |
+| Service       | Jest Mock                         | E2E Approach                   |
+| ------------- | --------------------------------- | ------------------------------ |
+| AIML API      | `jest.mock('@/lib/aiml-service')` | Real API (rate-limited) or MSW |
+| Supabase Auth | `jest.mock('@/lib/supabase')`     | Real auth (test project)       |
+| Stripe        | `jest.mock('stripe')`             | Stripe test mode               |
+| AWS S3        | `jest.mock('@aws-sdk/client-s3')` | LocalStack or mocked           |
+| Resend        | `jest.mock('resend')`             | Mocked (no real emails)        |
 
 ---
 
 ## 6. Test Naming Conventions
 
 ### Jest
+
 ```
 src/lib/__tests__/<module>.test.ts        — Library unit tests
 src/lib/<module>/__tests__/<file>.test.ts  — Feature module tests
@@ -199,18 +203,21 @@ src/components/__tests__/<comp>.test.tsx   — Component tests
 ```
 
 ### Cypress
+
 ```
 cypress/e2e/<feature>.cy.ts              — Feature E2E specs
 cypress/e2e/<feature>-api.cy.ts          — API-focused E2E specs
 ```
 
 ### Playwright
+
 ```
 e2e/<feature>.spec.ts                    — Feature E2E specs
 e2e/<feature>-suite.spec.ts             — Multi-feature suite specs
 ```
 
 ### Test Case Naming
+
 ```typescript
 describe('ServiceName', () => {
   describe('methodName', () => {
@@ -226,18 +233,18 @@ describe('ServiceName', () => {
 
 These tests MUST pass before any production deployment:
 
-| ID | Path | Test Type | What It Validates |
-|----|------|-----------|-------------------|
-| CP-01 | Auth flow | Playwright | Login → session → protected route access |
-| CP-02 | Payment checkout | Jest + Cypress | Stripe checkout session creation, webhook handling |
-| CP-03 | Credit repair API | Cypress | All credit-repair endpoints enforce auth (401) |
-| CP-04 | Dispute lifecycle | Jest | Create → send → review → resolve status transitions |
-| CP-05 | AI chat | Cypress | /api/ai/chat returns 401 without auth |
-| CP-06 | Protected routes | Cypress | All 9+ protected routes redirect to /login (307) |
-| CP-07 | Public pages | Cypress | Landing, pricing, credit/factors return 200 |
-| CP-08 | Input validation | Jest | Prompt injection detection, PII detection |
-| CP-09 | Rate limiting | Jest | Per-IP and per-user throttling works |
-| CP-10 | Document upload | Jest | S3 upload, validation, presigned URL generation |
+| ID    | Path              | Test Type      | What It Validates                                   |
+| ----- | ----------------- | -------------- | --------------------------------------------------- |
+| CP-01 | Auth flow         | Playwright     | Login → session → protected route access            |
+| CP-02 | Payment checkout  | Jest + Cypress | Stripe checkout session creation, webhook handling  |
+| CP-03 | Credit repair API | Cypress        | All credit-repair endpoints enforce auth (401)      |
+| CP-04 | Dispute lifecycle | Jest           | Create → send → review → resolve status transitions |
+| CP-05 | AI chat           | Cypress        | /api/ai/chat returns 401 without auth               |
+| CP-06 | Protected routes  | Cypress        | All 9+ protected routes redirect to /login (307)    |
+| CP-07 | Public pages      | Cypress        | Landing, pricing, credit/factors return 200         |
+| CP-08 | Input validation  | Jest           | Prompt injection detection, PII detection           |
+| CP-09 | Rate limiting     | Jest           | Per-IP and per-user throttling works                |
+| CP-10 | Document upload   | Jest           | S3 upload, validation, presigned URL generation     |
 
 ---
 
@@ -277,4 +284,4 @@ npm run lint && npm run type-check && npm test -- --coverage && npm run build
 
 ---
 
-*Document generated from codebase analysis on 2026-02-16.*
+_Document generated from codebase analysis on 2026-02-16._

@@ -9,16 +9,16 @@
  * - Suspicious activity detected
  */
 
-import { notificationService } from '@/lib/notifications/notification-service';
+import { notificationService } from "@/lib/notifications/notification-service";
 
 export interface SecurityEvent {
   type:
-    | 'new_login'
-    | 'password_changed'
-    | '2fa_enabled'
-    | '2fa_disabled'
-    | 'account_recovery'
-    | 'suspicious_activity';
+    | "new_login"
+    | "password_changed"
+    | "2fa_enabled"
+    | "2fa_disabled"
+    | "account_recovery"
+    | "suspicious_activity";
   userId: string;
   userEmail: string;
   userName: string;
@@ -37,16 +37,16 @@ class SecurityNotificationsService {
    * Send new login notification
    */
   async sendNewLoginNotification(
-    event: SecurityEvent
+    event: SecurityEvent,
   ): Promise<{ success: boolean; error?: string }> {
     try {
       const { metadata } = event;
       const deviceInfo =
         metadata?.deviceName || `${metadata?.browser} on ${metadata?.os}`;
-      const location = metadata?.location || 'Unknown location';
+      const location = metadata?.location || "Unknown location";
       const timestamp = metadata?.timestamp || new Date();
 
-      const subject = 'New Login to Your Fynvita Account';
+      const subject = "New Login to Your Fynvita Account";
       const html = `
         <!DOCTYPE html>
         <html>
@@ -81,7 +81,7 @@ class SecurityNotificationsService {
                   <span class="info-label">Location:</span> ${location}
                 </div>
                 <div class="info-item">
-                  <span class="info-label">IP Address:</span> ${metadata?.ipAddress || 'Unknown'}
+                  <span class="info-label">IP Address:</span> ${metadata?.ipAddress || "Unknown"}
                 </div>
                 <div class="info-item">
                   <span class="info-label">Time:</span> ${timestamp.toLocaleString()}
@@ -123,7 +123,7 @@ class SecurityNotificationsService {
         error:
           _error instanceof Error
             ? _error.message
-            : 'Failed to send notification',
+            : "Failed to send notification",
       };
     }
   }
@@ -132,10 +132,10 @@ class SecurityNotificationsService {
    * Send password changed notification
    */
   async sendPasswordChangedNotification(
-    event: SecurityEvent
+    event: SecurityEvent,
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      const subject = 'Your Fynvita Password Was Changed';
+      const subject = "Your Fynvita Password Was Changed";
       const html = `
         <!DOCTYPE html>
         <html>
@@ -199,7 +199,7 @@ class SecurityNotificationsService {
         error:
           _error instanceof Error
             ? _error.message
-            : 'Failed to send notification',
+            : "Failed to send notification",
       };
     }
   }
@@ -208,10 +208,10 @@ class SecurityNotificationsService {
    * Send 2FA enabled notification
    */
   async send2FAEnabledNotification(
-    event: SecurityEvent
+    event: SecurityEvent,
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      const subject = 'Two-Factor Authentication Enabled';
+      const subject = "Two-Factor Authentication Enabled";
       const html = `
         <!DOCTYPE html>
         <html>
@@ -269,7 +269,7 @@ class SecurityNotificationsService {
         error:
           _error instanceof Error
             ? _error.message
-            : 'Failed to send notification',
+            : "Failed to send notification",
       };
     }
   }
@@ -278,10 +278,10 @@ class SecurityNotificationsService {
    * Send 2FA disabled notification
    */
   async send2FADisabledNotification(
-    event: SecurityEvent
+    event: SecurityEvent,
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      const subject = 'Two-Factor Authentication Disabled';
+      const subject = "Two-Factor Authentication Disabled";
       const html = `
         <!DOCTYPE html>
         <html>
@@ -340,7 +340,7 @@ class SecurityNotificationsService {
         error:
           _error instanceof Error
             ? _error.message
-            : 'Failed to send notification',
+            : "Failed to send notification",
       };
     }
   }
@@ -349,21 +349,21 @@ class SecurityNotificationsService {
    * Send notification for any security event
    */
   async sendSecurityNotification(
-    event: SecurityEvent
+    event: SecurityEvent,
   ): Promise<{ success: boolean; error?: string }> {
     switch (event.type) {
-      case 'new_login':
+      case "new_login":
         return this.sendNewLoginNotification(event);
-      case 'password_changed':
+      case "password_changed":
         return this.sendPasswordChangedNotification(event);
-      case '2fa_enabled':
+      case "2fa_enabled":
         return this.send2FAEnabledNotification(event);
-      case '2fa_disabled':
+      case "2fa_disabled":
         return this.send2FADisabledNotification(event);
       default:
         return {
           success: false,
-          error: 'Unknown security event type',
+          error: "Unknown security event type",
         };
     }
   }

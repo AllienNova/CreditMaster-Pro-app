@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Credit Utilization Optimizer
@@ -7,9 +7,9 @@
  * Features interactive sliders, real-time calculations, and AI recommendations.
  */
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { useAuth } from '@/hooks/useAuth';
+import { useState } from "react";
+import Link from "next/link";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Card {
   id: string;
@@ -17,35 +17,35 @@ interface Card {
   balance: number;
   limit: number;
   utilization: number;
-  status: 'good' | 'warning' | 'danger';
+  status: "good" | "warning" | "danger";
 }
 
 export default function UtilizationOptimizerPage() {
   const { user, loading: authLoading } = useAuth();
   const [cards, setCards] = useState<Card[]>([
     {
-      id: '1',
-      name: 'Chase Freedom',
+      id: "1",
+      name: "Chase Freedom",
       balance: 1500,
       limit: 5000,
       utilization: 30,
-      status: 'good',
+      status: "good",
     },
     {
-      id: '2',
-      name: 'Capital One',
+      id: "2",
+      name: "Capital One",
       balance: 2800,
       limit: 4000,
       utilization: 70,
-      status: 'danger',
+      status: "danger",
     },
     {
-      id: '3',
-      name: 'Discover it',
+      id: "3",
+      name: "Discover it",
       balance: 500,
       limit: 3000,
       utilization: 16.7,
-      status: 'good',
+      status: "good",
     },
   ]);
   const [monthlyBudget, setMonthlyBudget] = useState(800);
@@ -77,14 +77,14 @@ export default function UtilizationOptimizerPage() {
             utilization,
             status:
               utilization < 30
-                ? 'good'
+                ? "good"
                 : utilization < 50
-                  ? 'warning'
-                  : 'danger',
+                  ? "warning"
+                  : "danger",
           };
         }
         return card;
-      })
+      }),
     );
   };
 
@@ -101,7 +101,7 @@ export default function UtilizationOptimizerPage() {
 
   const projectedScoreIncrease = Math.min(
     50,
-    Math.floor((currentUtilization - optimalUtilization) * 1.2)
+    Math.floor((currentUtilization - optimalUtilization) * 1.2),
   );
 
   return (
@@ -163,17 +163,17 @@ export default function UtilizationOptimizerPage() {
             <span
               className={`px-4 py-2 rounded-full font-semibold ${
                 currentUtilization < 30
-                  ? 'bg-green-100 text-green-700'
+                  ? "bg-green-100 text-green-700"
                   : currentUtilization < 50
-                    ? 'bg-yellow-100 text-yellow-700'
-                    : 'bg-red-100 text-red-700'
+                    ? "bg-yellow-100 text-yellow-700"
+                    : "bg-red-100 text-red-700"
               }`}
             >
               {currentUtilization < 30
-                ? 'Excellent'
+                ? "Excellent"
                 : currentUtilization < 50
-                  ? 'Fair'
-                  : 'Needs Improvement'}
+                  ? "Fair"
+                  : "Needs Improvement"}
             </span>
           </div>
 
@@ -191,10 +191,10 @@ export default function UtilizationOptimizerPage() {
               <div
                 className={`h-4 rounded-full transition-all duration-500 ${
                   currentUtilization < 30
-                    ? 'bg-green-500'
+                    ? "bg-green-500"
                     : currentUtilization < 50
-                      ? 'bg-yellow-500'
-                      : 'bg-red-500'
+                      ? "bg-yellow-500"
+                      : "bg-red-500"
                 }`}
                 style={{ width: `${Math.min(100, currentUtilization)}%` }}
               ></div>
@@ -209,7 +209,9 @@ export default function UtilizationOptimizerPage() {
 
           <div className="grid md:grid-cols-3 gap-4">
             <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-4">
-              <div className="text-sm text-gray-600 dark:text-slate-300 mb-1">Total Balance</div>
+              <div className="text-sm text-gray-600 dark:text-slate-300 mb-1">
+                Total Balance
+              </div>
               <div className="text-2xl font-bold text-gray-900 dark:text-white">
                 ${totalBalance.toLocaleString()}
               </div>
@@ -223,7 +225,9 @@ export default function UtilizationOptimizerPage() {
               </div>
             </div>
             <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-4">
-              <div className="text-sm text-gray-600 dark:text-slate-300 mb-1">Available Credit</div>
+              <div className="text-sm text-gray-600 dark:text-slate-300 mb-1">
+                Available Credit
+              </div>
               <div className="text-2xl font-bold text-green-600">
                 ${(totalLimit - totalBalance).toLocaleString()}
               </div>
@@ -255,11 +259,11 @@ export default function UtilizationOptimizerPage() {
                   </div>
                   <div
                     className={`px-4 py-2 rounded-full font-semibold ${
-                      card.status === 'good'
-                        ? 'bg-green-100 text-green-700'
-                        : card.status === 'warning'
-                          ? 'bg-yellow-100 text-yellow-700'
-                          : 'bg-red-100 text-red-700'
+                      card.status === "good"
+                        ? "bg-green-100 text-green-700"
+                        : card.status === "warning"
+                          ? "bg-yellow-100 text-yellow-700"
+                          : "bg-red-100 text-red-700"
                     }`}
                   >
                     {card.utilization.toFixed(1)}%
@@ -270,11 +274,11 @@ export default function UtilizationOptimizerPage() {
                   <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-3 relative overflow-hidden">
                     <div
                       className={`h-3 rounded-full transition-all duration-300 ${
-                        card.status === 'good'
-                          ? 'bg-green-500'
-                          : card.status === 'warning'
-                            ? 'bg-yellow-500'
-                            : 'bg-red-500'
+                        card.status === "good"
+                          ? "bg-green-500"
+                          : card.status === "warning"
+                            ? "bg-yellow-500"
+                            : "bg-red-500"
                       }`}
                       style={{ width: `${Math.min(100, card.utilization)}%` }}
                     ></div>
@@ -445,7 +449,7 @@ export default function UtilizationOptimizerPage() {
                   monthlyBudget -
                   cards.reduce(
                     (sum, c) => sum + Math.max(25, c.balance * 0.02),
-                    0
+                    0,
                   );
                 const extraPayment =
                   card.utilization > 30

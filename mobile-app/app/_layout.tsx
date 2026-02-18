@@ -1,10 +1,10 @@
-import { useEffect } from 'react';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import * as SplashScreen from 'expo-splash-screen';
-import { useAuthStore } from '../src/store/authStore';
-import { ErrorBoundary } from '../src/components/ErrorBoundary';
-import { useTheme } from '../src/hooks/useTheme';
+import { useEffect } from "react";
+import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import * as SplashScreen from "expo-splash-screen";
+import { useAuthStore } from "../src/store/authStore";
+import { ErrorBoundary } from "../src/components/ErrorBoundary";
+import { useTheme } from "../src/hooks/useTheme";
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -33,7 +33,7 @@ export default function RootLayout() {
 
   return (
     <ErrorBoundary>
-      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <StatusBar style={isDark ? "light" : "dark"} />
       <Stack screenOptions={{ headerShown: false }}>
         {/* Auth Screens */}
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
@@ -54,15 +54,49 @@ export default function RootLayout() {
         <Stack.Screen name="credit-builder" options={{ headerShown: false }} />
 
         {/* Dispute Screens */}
-        <Stack.Screen name="dispute/[id]" options={{ headerShown: true, title: 'Dispute Details', ...headerOptions }} />
-        <Stack.Screen name="dispute/create" options={{ headerShown: true, title: 'New Dispute', ...headerOptions }} />
+        <Stack.Screen
+          name="dispute/[id]"
+          options={{
+            headerShown: true,
+            title: "Dispute Details",
+            ...headerOptions,
+          }}
+        />
+        <Stack.Screen
+          name="dispute/create"
+          options={{
+            headerShown: true,
+            title: "New Dispute",
+            ...headerOptions,
+          }}
+        />
         <Stack.Screen name="dispute/wizard" options={{ headerShown: false }} />
-        <Stack.Screen name="dispute/templates" options={{ headerShown: true, title: 'Templates', ...headerOptions }} />
-        <Stack.Screen name="dispute/strategies" options={{ headerShown: true, title: 'Strategies', ...headerOptions }} />
-        <Stack.Screen name="dispute/analytics" options={{ headerShown: true, title: 'Dispute Analytics', ...headerOptions }} />
+        <Stack.Screen
+          name="dispute/templates"
+          options={{ headerShown: true, title: "Templates", ...headerOptions }}
+        />
+        <Stack.Screen
+          name="dispute/strategies"
+          options={{ headerShown: true, title: "Strategies", ...headerOptions }}
+        />
+        <Stack.Screen
+          name="dispute/analytics"
+          options={{
+            headerShown: true,
+            title: "Dispute Analytics",
+            ...headerOptions,
+          }}
+        />
 
         {/* Document Screens */}
-        <Stack.Screen name="document/[id]" options={{ headerShown: true, title: 'Document Details', ...headerOptions }} />
+        <Stack.Screen
+          name="document/[id]"
+          options={{
+            headerShown: true,
+            title: "Document Details",
+            ...headerOptions,
+          }}
+        />
 
         {/* Financial Screens */}
         <Stack.Screen name="financial" options={{ headerShown: false }} />
@@ -86,10 +120,30 @@ export default function RootLayout() {
         <Stack.Screen name="help" options={{ headerShown: false }} />
 
         {/* Utility Screens */}
-        <Stack.Screen name="notifications" options={{ headerShown: true, title: 'Notifications', ...headerOptions }} />
-        <Stack.Screen name="search" options={{ headerShown: true, title: 'Search', ...headerOptions }} />
-        <Stack.Screen name="chat" options={{ headerShown: true, title: 'AI Assistant', ...headerOptions }} />
-        <Stack.Screen name="activity" options={{ headerShown: true, title: 'Activity', ...headerOptions }} />
+        <Stack.Screen
+          name="notifications"
+          options={{
+            headerShown: true,
+            title: "Notifications",
+            ...headerOptions,
+          }}
+        />
+        <Stack.Screen
+          name="search"
+          options={{ headerShown: true, title: "Search", ...headerOptions }}
+        />
+        <Stack.Screen
+          name="chat"
+          options={{
+            headerShown: true,
+            title: "AI Assistant",
+            ...headerOptions,
+          }}
+        />
+        <Stack.Screen
+          name="activity"
+          options={{ headerShown: true, title: "Activity", ...headerOptions }}
+        />
       </Stack>
     </ErrorBoundary>
   );

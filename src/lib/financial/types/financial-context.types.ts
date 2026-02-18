@@ -13,7 +13,7 @@ export interface UserProfile {
   id: string;
   email: string;
   fullName: string;
-  subscriptionTier: 'free' | 'basic' | 'premium' | 'enterprise';
+  subscriptionTier: "free" | "basic" | "premium" | "enterprise";
   createdAt: Date;
   onboardingCompleted: boolean;
   preferences: UserPreferences;
@@ -49,12 +49,12 @@ export interface AccountSummary {
   institutionName: string;
   accountName: string;
   accountType:
-    | 'checking'
-    | 'savings'
-    | 'credit'
-    | 'investment'
-    | 'loan'
-    | 'other';
+    | "checking"
+    | "savings"
+    | "credit"
+    | "investment"
+    | "loan"
+    | "other";
   currentBalance: number;
   availableBalance?: number;
   creditLimit?: number;
@@ -96,7 +96,7 @@ export interface CategoryBreakdown {
   amount: number;
   percentage: number;
   transactionCount: number;
-  trend: 'up' | 'down' | 'stable';
+  trend: "up" | "down" | "stable";
   changeFromLastPeriod: number;
 }
 
@@ -124,8 +124,8 @@ export interface BudgetStatus {
   spentAmount: number;
   remainingAmount: number;
   percentUsed: number;
-  period: 'weekly' | 'biweekly' | 'monthly' | 'yearly';
-  status: 'on_track' | 'warning' | 'over_budget';
+  period: "weekly" | "biweekly" | "monthly" | "yearly";
+  status: "on_track" | "warning" | "over_budget";
   daysRemaining: number;
   projectedOverage: number;
   rolloverEnabled: boolean;
@@ -147,23 +147,23 @@ export interface FinancialGoal {
   targetDate?: Date;
   autoSaveEnabled: boolean;
   autoSaveAmount?: number;
-  autoSaveFrequency?: 'weekly' | 'biweekly' | 'monthly';
+  autoSaveFrequency?: "weekly" | "biweekly" | "monthly";
   linkedAccountId?: string;
   priority: number;
-  status: 'active' | 'completed' | 'paused' | 'cancelled';
+  status: "active" | "completed" | "paused" | "cancelled";
   milestones: GoalMilestone[];
   createdAt: Date;
 }
 
 export type GoalType =
-  | 'emergency_fund'
-  | 'debt_payoff'
-  | 'savings'
-  | 'investment'
-  | 'retirement'
-  | 'home_purchase'
-  | 'education'
-  | 'custom';
+  | "emergency_fund"
+  | "debt_payoff"
+  | "savings"
+  | "investment"
+  | "retirement"
+  | "home_purchase"
+  | "education"
+  | "custom";
 
 export interface GoalMilestone {
   percentage: number;
@@ -195,12 +195,12 @@ export interface DebtItem {
   id: string;
   name: string;
   type:
-    | 'credit_card'
-    | 'student_loan'
-    | 'mortgage'
-    | 'auto_loan'
-    | 'personal_loan'
-    | 'other';
+    | "credit_card"
+    | "student_loan"
+    | "mortgage"
+    | "auto_loan"
+    | "personal_loan"
+    | "other";
   balance: number;
   interestRate: number;
   minimumPayment: number;
@@ -208,7 +208,7 @@ export interface DebtItem {
 }
 
 export interface PayoffStrategy {
-  name: 'avalanche' | 'snowball' | 'custom';
+  name: "avalanche" | "snowball" | "custom";
   description: string;
   monthsToPayoff: number;
   totalInterest: number;
@@ -252,13 +252,13 @@ export interface PortfolioOverview {
 
 export interface AssetAllocation {
   assetType:
-    | 'stock'
-    | 'etf'
-    | 'mutual_fund'
-    | 'bond'
-    | 'crypto'
-    | 'cash'
-    | 'other';
+    | "stock"
+    | "etf"
+    | "mutual_fund"
+    | "bond"
+    | "crypto"
+    | "cash"
+    | "other";
   value: number;
   percentage: number;
   targetPercentage?: number;
@@ -280,7 +280,7 @@ export interface HoldingSummary {
 export interface CreditSummary {
   currentScore: number;
   scoreChange: number;
-  scoreChangeDirection: 'up' | 'down' | 'stable';
+  scoreChangeDirection: "up" | "down" | "stable";
   lastUpdated: Date;
   scoreHistory: ScoreHistoryPoint[];
   factors: CreditFactor[];
@@ -296,13 +296,13 @@ export interface ScoreHistoryPoint {
 
 export interface CreditFactor {
   name: string;
-  impact: 'high' | 'medium' | 'low';
-  status: 'positive' | 'negative' | 'neutral';
+  impact: "high" | "medium" | "low";
+  status: "positive" | "negative" | "neutral";
   description: string;
 }
 
 export interface BureauScore {
-  bureau: 'experian' | 'equifax' | 'transunion';
+  bureau: "experian" | "equifax" | "transunion";
   score: number;
   lastUpdated: Date;
 }
@@ -313,9 +313,9 @@ export interface BureauScore {
 
 export interface FinancialHealthScore {
   overallScore: number;
-  grade: 'A' | 'B' | 'C' | 'D' | 'F';
+  grade: "A" | "B" | "C" | "D" | "F";
   breakdown: HealthScoreBreakdown;
-  trend: 'improving' | 'declining' | 'stable';
+  trend: "improving" | "declining" | "stable";
   calculatedAt: Date;
 }
 
@@ -330,7 +330,7 @@ export interface HealthScoreBreakdown {
 export interface ComponentScore {
   score: number;
   weight: number;
-  status: 'excellent' | 'good' | 'fair' | 'poor' | 'critical';
+  status: "excellent" | "good" | "fair" | "poor" | "critical";
   factors: string[];
 }
 
@@ -343,7 +343,7 @@ export interface AIInsight {
   type: InsightType;
   title: string;
   message: string;
-  severity: 'info' | 'warning' | 'critical' | 'success';
+  severity: "info" | "warning" | "critical" | "success";
   actionType?: string;
   actionData?: Record<string, unknown>;
   read: boolean;
@@ -353,22 +353,22 @@ export interface AIInsight {
 }
 
 export type InsightType =
-  | 'spending_alert'
-  | 'savings_opportunity'
-  | 'bill_reduction'
-  | 'debt_advice'
-  | 'investment_tip'
-  | 'budget_warning'
-  | 'goal_milestone'
-  | 'general';
+  | "spending_alert"
+  | "savings_opportunity"
+  | "bill_reduction"
+  | "debt_advice"
+  | "investment_tip"
+  | "budget_warning"
+  | "goal_milestone"
+  | "general";
 
 export interface Recommendation {
   id: string;
   category: RecommendationCategory;
   title: string;
   description: string;
-  impact: 'high' | 'medium' | 'low';
-  effort: 'easy' | 'moderate' | 'difficult';
+  impact: "high" | "medium" | "low";
+  effort: "easy" | "moderate" | "difficult";
   potentialSavings?: number;
   priority: number;
   actionSteps: string[];
@@ -376,13 +376,13 @@ export interface Recommendation {
 }
 
 export type RecommendationCategory =
-  | 'reduce_spending'
-  | 'increase_savings'
-  | 'pay_off_debt'
-  | 'improve_credit'
-  | 'optimize_investments'
-  | 'reduce_bills'
-  | 'emergency_fund';
+  | "reduce_spending"
+  | "increase_savings"
+  | "pay_off_debt"
+  | "improve_credit"
+  | "optimize_investments"
+  | "reduce_bills"
+  | "emergency_fund";
 
 // ============================================================================
 // UNIFIED FINANCIAL CONTEXT
@@ -412,15 +412,15 @@ export interface RecurringBill {
   name: string;
   category: string;
   amount: number;
-  frequency: 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'annually';
+  frequency: "weekly" | "biweekly" | "monthly" | "quarterly" | "annually";
   dueDay?: number;
   linkedAccountId?: string;
   autoDetected: boolean;
-  negotiationStatus: 'not_started' | 'in_progress' | 'completed' | 'declined';
+  negotiationStatus: "not_started" | "in_progress" | "completed" | "declined";
   negotiationSavings?: number;
   lastPaidAt?: Date;
   nextDueAt?: Date;
-  status: 'active' | 'paused' | 'cancelled';
+  status: "active" | "paused" | "cancelled";
 }
 
 // ============================================================================
@@ -471,7 +471,7 @@ export interface DataQuality {
   /** Last successful sync timestamp */
   lastSuccessfulSync?: Date;
   /** Data freshness status */
-  freshness: 'fresh' | 'stale' | 'outdated';
+  freshness: "fresh" | "stale" | "outdated";
   /** Missing data indicators */
   missingData: string[];
   /** Data sources contributing to context */
@@ -480,9 +480,9 @@ export interface DataQuality {
 
 export interface DataSource {
   name: string;
-  type: 'plaid' | 'manual' | 'credit_bureau' | 'database';
+  type: "plaid" | "manual" | "credit_bureau" | "database";
   lastUpdated: Date;
-  status: 'connected' | 'disconnected' | 'error';
+  status: "connected" | "disconnected" | "error";
   errorMessage?: string;
 }
 
@@ -530,8 +530,14 @@ export interface MonthlySummary {
 
 export interface FinancialAlert {
   id: string;
-  type: 'budget_warning' | 'bill_due' | 'low_balance' | 'unusual_spending' | 'goal_milestone' | 'account_error';
-  severity: 'info' | 'warning' | 'critical';
+  type:
+    | "budget_warning"
+    | "bill_due"
+    | "low_balance"
+    | "unusual_spending"
+    | "goal_milestone"
+    | "account_error";
+  severity: "info" | "warning" | "critical";
   title: string;
   message: string;
   actionRequired: boolean;
@@ -582,7 +588,7 @@ export interface FinancialSummary {
   /** Financial health score */
   healthScore: number;
   /** Health grade */
-  healthGrade: 'A' | 'B' | 'C' | 'D' | 'F';
+  healthGrade: "A" | "B" | "C" | "D" | "F";
   /** Number of active goals */
   activeGoals: number;
   /** Overall goal progress */

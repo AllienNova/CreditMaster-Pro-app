@@ -9,7 +9,7 @@
  * - Order history and audit logging
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from "@/lib/supabase/server";
 import {
   Order,
   OrderRequest,
@@ -24,7 +24,7 @@ import {
   OrderManagerConfig,
   DEFAULT_ORDER_MANAGER_CONFIG,
   Fill,
-} from './order-types';
+} from "./order-types";
 
 // ============================================================================
 // ORDER MANAGER CLASS
@@ -36,7 +36,7 @@ export class OrderManager {
   private readonly orderEvents: OrderEvent[] = [];
   private readonly fills: Fill[] = [];
   private dailyOrderCount: number = 0;
-  private lastResetDate: string = '';
+  private lastResetDate: string = "";
 
   constructor(config: Partial<OrderManagerConfig> = {}) {
     this.config = { ...DEFAULT_ORDER_MANAGER_CONFIG, ...config };
@@ -49,7 +49,7 @@ export class OrderManager {
   async createOrder(
     request: OrderRequest,
     userId: string,
-    accountId: string
+    accountId: string,
   ): Promise<{ order: Order | null; validation: OrderValidationResult }> {
     // Reset daily counter if new day
     this.resetDailyCounterIfNeeded();
@@ -70,7 +70,7 @@ export class OrderManager {
       id: this.generateOrderId(),
       userId,
       accountId,
-      status: 'pending',
+      status: "pending",
       filledQty: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -81,7 +81,7 @@ export class OrderManager {
     this.openOrders.set(order.id, order);
 
     // Log event
-    this.logOrderEvent(order.id, 'created', 'pending', 'pending');
+    this.logOrderEvent(order.id, "created", "pending", "pending");
 
     // Persist to database
     await this.persistOrder(order);
@@ -95,7 +95,7 @@ export class OrderManager {
 
   async submitOrder(
     orderId: string,
-    brokerClient: BrokerClient
+    brokerClient: BrokerClient,
   ): Promise<Order | null> {
     const order = this.openOrders.get(orderId);
     if (!order) {
@@ -103,7 +103,7 @@ export class OrderManager {
       return null;
     }
 
-    if (order.status !== 'pending') {
+    if (order.status !== "pending") {
       // OrderManager error: Order is not in pending status
       return null;
     }
@@ -132,23 +132,23 @@ export class OrderManager {
 
       // Update order with broker ID
       order.brokerId = brokerResponse.id;
-      order.status = 'submitted';
+      order.status = "submitted";
       order.submittedAt = new Date();
       order.updatedAt = new Date();
 
       this.dailyOrderCount++;
-      this.logOrderEvent(order.id, 'submitted', 'pending', 'submitted');
+      this.logOrderEvent(order.id, "submitted", "pending", "submitted");
 
       await this.persistOrder(order);
 
       return order;
     } catch (error) {
-      order.status = 'error';
+      order.status = "error";
       order.errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
+        error instanceof Error ? error.message : "Unknown error";
       order.updatedAt = new Date();
 
-      this.logOrderEvent(order.id, 'error', 'pending', 'error', {
+      this.logOrderEvent(order.id, "error", "pending", "error", {
         error: order.errorMessage,
       });
 
@@ -188,26 +188,26 @@ export class OrderManager {
 
     // Handle status-specific updates
     switch (update.status) {
-      case 'accepted':
-        this.logOrderEvent(order.id, 'accepted', previousStatus, 'accepted');
+      case "accepted":
+        this.logOrderEvent(order.id, "accepted", previousStatus, "accepted");
         break;
 
-      case 'partial':
+      case "partial":
         this.logOrderEvent(
           order.id,
-          'partial_fill',
+          "partial_fill",
           previousStatus,
-          'partial',
+          "partial",
           {
             filledQty: order.filledQty,
             filledAvgPrice: order.filledAvgPrice,
-          }
+          },
         );
         break;
 
-      case 'filled':
+      case "filled":
         order.filledAt = update.timestamp;
-        this.logOrderEvent(order.id, 'filled', previousStatus, 'filled', {
+        this.logOrderEvent(order.id, "filled", previousStatus, "filled", {
           filledQty: order.filledQty,
           filledAvgPrice: order.filledAvgPrice,
         });
@@ -215,22 +215,22 @@ export class OrderManager {
         this.openOrders.delete(order.id);
         break;
 
-      case 'cancelled':
+      case "cancelled":
         order.cancelledAt = update.timestamp;
-        this.logOrderEvent(order.id, 'cancelled', previousStatus, 'cancelled');
+        this.logOrderEvent(order.id, "cancelled", previousStatus, "cancelled");
         this.openOrders.delete(order.id);
         break;
 
-      case 'rejected':
+      case "rejected":
         order.rejectReason = update.message;
-        this.logOrderEvent(order.id, 'rejected', previousStatus, 'rejected', {
+        this.logOrderEvent(order.id, "rejected", previousStatus, "rejected", {
           reason: update.message,
         });
         this.openOrders.delete(order.id);
         break;
 
-      case 'expired':
-        this.logOrderEvent(order.id, 'expired', previousStatus, 'expired');
+      case "expired":
+        this.logOrderEvent(order.id, "expired", previousStatus, "expired");
         this.openOrders.delete(order.id);
         break;
     }
@@ -246,7 +246,7 @@ export class OrderManager {
 
   async cancelOrder(
     orderId: string,
-    brokerClient: BrokerClient
+    brokerClient: BrokerClient,
   ): Promise<boolean> {
     const order = this.openOrders.get(orderId);
     if (!order) {
@@ -255,7 +255,7 @@ export class OrderManager {
     }
 
     if (
-      !['pending', 'submitted', 'accepted', 'partial'].includes(order.status)
+      !["pending", "submitted", "accepted", "partial"].includes(order.status)
     ) {
       // OrderManager error: Order cannot be cancelled in current status
       return false;
@@ -268,9 +268,9 @@ export class OrderManager {
 
       await this.handleOrderUpdate({
         orderId,
-        status: 'cancelled',
+        status: "cancelled",
         timestamp: new Date(),
-        message: 'Cancelled by user',
+        message: "Cancelled by user",
       });
 
       return true;
@@ -297,69 +297,69 @@ export class OrderManager {
 
   async validateOrder(
     request: OrderRequest,
-    userId: string
+    userId: string,
   ): Promise<OrderValidationResult> {
     const errors: OrderValidationError[] = [];
     const warnings: OrderValidationWarning[] = [];
     let adjustedOrder: OrderRequest | undefined;
 
     // Required field validation
-    if (!request.symbol || request.symbol.trim() === '') {
+    if (!request.symbol || request.symbol.trim() === "") {
       errors.push({
-        field: 'symbol',
-        message: 'Symbol is required',
-        code: 'REQUIRED_FIELD',
+        field: "symbol",
+        message: "Symbol is required",
+        code: "REQUIRED_FIELD",
       });
     }
 
     if (!request.quantity || request.quantity <= 0) {
       errors.push({
-        field: 'quantity',
-        message: 'Quantity must be greater than 0',
-        code: 'INVALID_QUANTITY',
+        field: "quantity",
+        message: "Quantity must be greater than 0",
+        code: "INVALID_QUANTITY",
       });
     }
 
-    if (!request.side || !['buy', 'sell'].includes(request.side)) {
+    if (!request.side || !["buy", "sell"].includes(request.side)) {
       errors.push({
-        field: 'side',
-        message: 'Side must be buy or sell',
-        code: 'INVALID_SIDE',
+        field: "side",
+        message: "Side must be buy or sell",
+        code: "INVALID_SIDE",
       });
     }
 
     // Limit price validation for limit orders
-    if (['limit', 'stop_limit'].includes(request.type) && !request.limitPrice) {
+    if (["limit", "stop_limit"].includes(request.type) && !request.limitPrice) {
       errors.push({
-        field: 'limitPrice',
-        message: 'Limit price required for limit orders',
-        code: 'MISSING_LIMIT_PRICE',
+        field: "limitPrice",
+        message: "Limit price required for limit orders",
+        code: "MISSING_LIMIT_PRICE",
       });
     }
 
     // Stop price validation for stop orders
-    if (['stop', 'stop_limit'].includes(request.type) && !request.stopPrice) {
+    if (["stop", "stop_limit"].includes(request.type) && !request.stopPrice) {
       errors.push({
-        field: 'stopPrice',
-        message: 'Stop price required for stop orders',
-        code: 'MISSING_STOP_PRICE',
+        field: "stopPrice",
+        message: "Stop price required for stop orders",
+        code: "MISSING_STOP_PRICE",
       });
     }
 
     // Check order limits
     if (this.openOrders.size >= this.config.maxOpenOrders) {
       errors.push({
-        field: 'system',
+        field: "system",
         message: `Maximum open orders (${this.config.maxOpenOrders}) reached`,
-        code: 'MAX_OPEN_ORDERS',
+        code: "MAX_OPEN_ORDERS",
       });
     }
 
     if (this.dailyOrderCount >= this.config.maxDailyOrders) {
       errors.push({
-        field: 'system',
+        field: "system",
         message: `Maximum daily orders (${this.config.maxDailyOrders}) reached`,
-        code: 'MAX_DAILY_ORDERS',
+        code: "MAX_DAILY_ORDERS",
       });
     }
 
@@ -367,31 +367,31 @@ export class OrderManager {
     const estimatedValue = this.calculateOrderValue(request);
     if (estimatedValue > this.config.maxOrderValue) {
       errors.push({
-        field: 'quantity',
+        field: "quantity",
         message: `Order value ($${estimatedValue.toFixed(2)}) exceeds maximum ($${this.config.maxOrderValue})`,
-        code: 'MAX_ORDER_VALUE',
+        code: "MAX_ORDER_VALUE",
       });
     }
 
     // Stop loss requirement
     if (
       this.config.requireStopLoss &&
-      request.side === 'buy' &&
+      request.side === "buy" &&
       !request.stopLossPrice
     ) {
       warnings.push({
-        field: 'stopLossPrice',
-        message: 'Stop loss is recommended for risk management',
-        suggestion: 'Add a stop loss price to protect against adverse moves',
+        field: "stopLossPrice",
+        message: "Stop loss is recommended for risk management",
+        suggestion: "Add a stop loss price to protect against adverse moves",
       });
     }
 
     // Extended hours warning
     if (request.extendedHours && !this.config.enableExtendedHours) {
       warnings.push({
-        field: 'extendedHours',
-        message: 'Extended hours trading is disabled',
-        suggestion: 'Order will be executed during regular market hours only',
+        field: "extendedHours",
+        message: "Extended hours trading is disabled",
+        suggestion: "Order will be executed during regular market hours only",
       });
       adjustedOrder = { ...request, extendedHours: false };
     }
@@ -420,32 +420,32 @@ export class OrderManager {
     const supabase = await createClient();
 
     let query = supabase
-      .from('orders')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .from("orders")
+      .select("*")
+      .order("created_at", { ascending: false });
 
     if (filter.status && filter.status.length > 0) {
-      query = query.in('status', filter.status);
+      query = query.in("status", filter.status);
     }
 
     if (filter.side) {
-      query = query.eq('side', filter.side);
+      query = query.eq("side", filter.side);
     }
 
     if (filter.symbol) {
-      query = query.eq('symbol', filter.symbol);
+      query = query.eq("symbol", filter.symbol);
     }
 
     if (filter.startDate) {
-      query = query.gte('created_at', filter.startDate.toISOString());
+      query = query.gte("created_at", filter.startDate.toISOString());
     }
 
     if (filter.endDate) {
-      query = query.lte('created_at', filter.endDate.toISOString());
+      query = query.lte("created_at", filter.endDate.toISOString());
     }
 
     if (filter.strategyId) {
-      query = query.eq('strategy_id', filter.strategyId);
+      query = query.eq("strategy_id", filter.strategyId);
     }
 
     if (filter.limit) {
@@ -455,7 +455,7 @@ export class OrderManager {
     if (filter.offset) {
       query = query.range(
         filter.offset,
-        filter.offset + (filter.limit || 50) - 1
+        filter.offset + (filter.limit || 50) - 1,
       );
     }
 
@@ -472,7 +472,7 @@ export class OrderManager {
   getBlotter(): OrderBlotter {
     const openOrders = this.getOpenOrders();
     const filledOrders = this.orderEvents
-      .filter((e) => e.eventType === 'filled')
+      .filter((e) => e.eventType === "filled")
       .map((e) => this.openOrders.get(e.orderId))
       .filter((o): o is Order => o !== undefined);
 
@@ -483,7 +483,7 @@ export class OrderManager {
       totalOpenValue: openOrders.reduce((sum, o) => sum + o.estimatedValue, 0),
       totalFilledValue: filledOrders.reduce(
         (sum, o) => sum + (o.filledAvgPrice || 0) * o.filledQty,
-        0
+        0,
       ),
       todayOrderCount: this.dailyOrderCount,
       todayFillCount: this.fills.filter((f) => this.isToday(f.timestamp))
@@ -503,7 +503,7 @@ export class OrderManager {
   // ==========================================================================
 
   async reconcileWithBroker(
-    brokerClient: BrokerClient
+    brokerClient: BrokerClient,
   ): Promise<ReconciliationResult> {
     const result: ReconciliationResult = {
       matched: 0,
@@ -515,9 +515,9 @@ export class OrderManager {
 
     try {
       // Get all open orders from broker
-      const brokerOrders = await brokerClient.getOrders({ status: 'open' });
+      const brokerOrders = await brokerClient.getOrders({ status: "open" });
       const brokerOrderMap = new Map(
-        brokerOrders.map((o) => [o.client_order_id, o])
+        brokerOrders.map((o) => [o.client_order_id, o]),
       );
 
       // Check local orders against broker
@@ -533,8 +533,8 @@ export class OrderManager {
             result.mismatched++;
             result.corrections.push({
               orderId,
-              type: 'status_mismatch',
-              action: 'update_status',
+              type: "status_mismatch",
+              action: "update_status",
               details: { local: localOrder.status, broker: brokerStatus },
             });
 
@@ -549,21 +549,21 @@ export class OrderManager {
 
           brokerOrderMap.delete(orderId);
         } else if (
-          ['submitted', 'accepted', 'partial'].includes(localOrder.status)
+          ["submitted", "accepted", "partial"].includes(localOrder.status)
         ) {
           // Order missing on broker side
           result.missingBroker++;
           result.corrections.push({
             orderId,
-            type: 'missing_broker',
-            action: 'mark_cancelled',
+            type: "missing_broker",
+            action: "mark_cancelled",
           });
 
           await this.handleOrderUpdate({
             orderId,
-            status: 'cancelled',
+            status: "cancelled",
             timestamp: new Date(),
-            message: 'Not found on broker - reconciliation',
+            message: "Not found on broker - reconciliation",
           });
         }
       }
@@ -573,8 +573,8 @@ export class OrderManager {
         result.missingLocal++;
         result.corrections.push({
           orderId: clientOrderId,
-          type: 'missing_local',
-          action: 'import',
+          type: "missing_local",
+          action: "import",
         });
       }
     } catch (_error) {
@@ -598,7 +598,7 @@ export class OrderManager {
   }
 
   private resetDailyCounterIfNeeded(): void {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split("T")[0];
     if (this.lastResetDate !== today) {
       this.dailyOrderCount = 0;
       this.lastResetDate = today;
@@ -606,16 +606,16 @@ export class OrderManager {
   }
 
   private isToday(date: Date): boolean {
-    const today = new Date().toISOString().split('T')[0];
-    return date.toISOString().split('T')[0] === today;
+    const today = new Date().toISOString().split("T")[0];
+    return date.toISOString().split("T")[0] === today;
   }
 
   private logOrderEvent(
     orderId: string,
-    eventType: OrderEvent['eventType'],
+    eventType: OrderEvent["eventType"],
     previousStatus: OrderStatus,
     newStatus: OrderStatus,
-    details?: Record<string, unknown>
+    details?: Record<string, unknown>,
   ): void {
     this.orderEvents.push({
       id: `EVT-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
@@ -634,7 +634,7 @@ export class OrderManager {
 
       // Using type assertion since 'orders' table schema not yet defined in Supabase types
       await (
-        supabase.from('orders') as unknown as {
+        supabase.from("orders") as unknown as {
           upsert: (data: Record<string, unknown>) => Promise<unknown>;
         }
       ).upsert({
@@ -673,9 +673,9 @@ export class OrderManager {
     try {
       const supabase = await createClient();
       const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('id', orderId)
+        .from("orders")
+        .select("*")
+        .eq("id", orderId)
         .single();
 
       if (error || !data) return null;
@@ -693,12 +693,12 @@ export class OrderManager {
       userId: data.user_id as string,
       accountId: data.account_id as string,
       symbol: data.symbol as string,
-      side: data.side as Order['side'],
+      side: data.side as Order["side"],
       quantity: data.quantity as number,
-      type: data.type as Order['type'],
+      type: data.type as Order["type"],
       limitPrice: data.limit_price as number | undefined,
       stopPrice: data.stop_price as number | undefined,
-      timeInForce: data.time_in_force as Order['timeInForce'],
+      timeInForce: data.time_in_force as Order["timeInForce"],
       status: data.status as OrderStatus,
       filledQty: data.filled_qty as number,
       filledAvgPrice: data.filled_avg_price as number | undefined,
@@ -722,21 +722,21 @@ export class OrderManager {
 
   private mapBrokerStatus(brokerStatus: string): OrderStatus {
     const statusMap: Record<string, OrderStatus> = {
-      new: 'submitted',
-      accepted: 'accepted',
-      pending_new: 'submitted',
-      partially_filled: 'partial',
-      filled: 'filled',
-      done_for_day: 'filled',
-      canceled: 'cancelled',
-      cancelled: 'cancelled',
-      expired: 'expired',
-      rejected: 'rejected',
-      pending_cancel: 'accepted',
-      pending_replace: 'accepted',
-      replaced: 'accepted',
+      new: "submitted",
+      accepted: "accepted",
+      pending_new: "submitted",
+      partially_filled: "partial",
+      filled: "filled",
+      done_for_day: "filled",
+      canceled: "cancelled",
+      cancelled: "cancelled",
+      expired: "expired",
+      rejected: "rejected",
+      pending_cancel: "accepted",
+      pending_replace: "accepted",
+      replaced: "accepted",
     };
-    return statusMap[brokerStatus.toLowerCase()] || 'error';
+    return statusMap[brokerStatus.toLowerCase()] || "error";
   }
 }
 
@@ -792,7 +792,7 @@ export interface ReconciliationResult {
 
 export interface ReconciliationCorrection {
   orderId: string;
-  type: 'status_mismatch' | 'missing_broker' | 'missing_local';
+  type: "status_mismatch" | "missing_broker" | "missing_local";
   action: string;
   details?: Record<string, unknown>;
 }
@@ -804,14 +804,14 @@ export interface ReconciliationCorrection {
 let orderManagerInstance: OrderManager | null = null;
 
 export function getOrderManager(
-  config?: Partial<OrderManagerConfig>
+  config?: Partial<OrderManagerConfig>,
 ): OrderManager {
   orderManagerInstance ??= new OrderManager(config);
   return orderManagerInstance;
 }
 
 export function createOrderManager(
-  config?: Partial<OrderManagerConfig>
+  config?: Partial<OrderManagerConfig>,
 ): OrderManager {
   return new OrderManager(config);
 }

@@ -1,6 +1,6 @@
 /**
  * Input Validation Service
- * 
+ *
  * Provides comprehensive input validation and sanitization to protect against:
  * - Prompt injection attacks
  * - XSS (Cross-Site Scripting)
@@ -15,7 +15,7 @@ export interface ValidationResult {
   sanitized: string;
   errors: string[];
   warnings: string[];
-  risk: 'low' | 'medium' | 'high' | 'critical';
+  risk: "low" | "medium" | "high" | "critical";
 }
 
 export interface ValidationOptions {
@@ -97,38 +97,38 @@ const MALICIOUS_PATTERNS = [
  */
 export function validateInput(
   input: string,
-  options: ValidationOptions = {}
+  options: ValidationOptions = {},
 ): ValidationResult {
   const opts = { ...DEFAULT_OPTIONS, ...options };
   const errors: string[] = [];
   const warnings: string[] = [];
   let sanitized = input;
-  let risk: 'low' | 'medium' | 'high' | 'critical' = 'low';
+  let risk: "low" | "medium" | "high" | "critical" = "low";
 
   // Check if input is empty
   if (!input || input.trim().length === 0) {
-    errors.push('Input cannot be empty');
+    errors.push("Input cannot be empty");
     return {
       isValid: false,
-      sanitized: '',
+      sanitized: "",
       errors,
       warnings,
-      risk: 'low',
+      risk: "low",
     };
   }
 
   // Check input length
   if (input.length > (opts.maxLength || 10000)) {
     errors.push(`Input exceeds maximum length of ${opts.maxLength} characters`);
-    risk = 'medium';
+    risk = "medium";
   }
 
   // Check for prompt injection attempts
   if (opts.checkPromptInjection) {
     for (const pattern of PROMPT_INJECTION_PATTERNS) {
       if (pattern.test(input)) {
-        errors.push('Potential prompt injection detected');
-        risk = 'critical';
+        errors.push("Potential prompt injection detected");
+        risk = "critical";
         break;
       }
     }
@@ -139,7 +139,7 @@ export function validateInput(
     for (const [type, pattern] of Object.entries(PII_PATTERNS)) {
       if (pattern.test(input)) {
         warnings.push(`Potential PII detected: ${type}`);
-        if (risk === 'low') risk = 'medium';
+        if (risk === "low") risk = "medium";
       }
     }
   }
@@ -147,8 +147,8 @@ export function validateInput(
   // Check for malicious patterns
   for (const pattern of MALICIOUS_PATTERNS) {
     if (pattern.test(input)) {
-      errors.push('Potentially malicious content detected');
-      risk = 'critical';
+      errors.push("Potentially malicious content detected");
+      risk = "critical";
       break;
     }
   }
@@ -167,10 +167,12 @@ export function validateInput(
   sanitized = sanitized.trim();
 
   // Normalize whitespace
-  sanitized = sanitized.replace(/\s+/g, ' ');
+  sanitized = sanitized.replace(/\s+/g, " ");
 
   // In strict mode, reject any input with errors
-  const isValid = opts.strictMode ? errors.length === 0 : errors.length === 0 || risk !== 'critical';
+  const isValid = opts.strictMode
+    ? errors.length === 0
+    : errors.length === 0 || risk !== "critical";
 
   return {
     isValid,
@@ -186,20 +188,20 @@ export function validateInput(
  */
 function sanitizeHTML(input: string): string {
   return input
-    .replace(/<[^>]*>/g, '') // Remove HTML tags
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&')
+    .replace(/<[^>]*>/g, "") // Remove HTML tags
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&")
     .replace(/&quot;/g, '"')
     .replace(/&#x27;/g, "'")
-    .replace(/&#x2F;/g, '/');
+    .replace(/&#x2F;/g, "/");
 }
 
 /**
  * Sanitize special characters
  */
 function sanitizeSpecialChars(input: string): string {
-  return input.replace(/[^\w\s.,!?-]/g, '');
+  return input.replace(/[^\w\s.,!?-]/g, "");
 }
 
 /**
@@ -262,21 +264,21 @@ export function validateLoanInput(input: string): ValidationResult {
  * Check if input contains prompt injection
  */
 export function hasPromptInjection(input: string): boolean {
-  return PROMPT_INJECTION_PATTERNS.some(pattern => pattern.test(input));
+  return PROMPT_INJECTION_PATTERNS.some((pattern) => pattern.test(input));
 }
 
 /**
  * Check if input contains PII
  */
 export function hasPII(input: string): boolean {
-  return Object.values(PII_PATTERNS).some(pattern => pattern.test(input));
+  return Object.values(PII_PATTERNS).some((pattern) => pattern.test(input));
 }
 
 /**
  * Check if input contains malicious content
  */
 export function hasMaliciousContent(input: string): boolean {
-  return MALICIOUS_PATTERNS.some(pattern => pattern.test(input));
+  return MALICIOUS_PATTERNS.some((pattern) => pattern.test(input));
 }
 
 /**
@@ -284,41 +286,42 @@ export function hasMaliciousContent(input: string): boolean {
  */
 export function redactPII(input: string): string {
   let redacted = input;
-  
+
   // Redact SSN
-  redacted = redacted.replace(PII_PATTERNS.ssn, 'XXX-XX-XXXX');
-  
+  redacted = redacted.replace(PII_PATTERNS.ssn, "XXX-XX-XXXX");
+
   // Redact credit card
-  redacted = redacted.replace(PII_PATTERNS.creditCard, 'XXXX-XXXX-XXXX-XXXX');
-  
+  redacted = redacted.replace(PII_PATTERNS.creditCard, "XXXX-XXXX-XXXX-XXXX");
+
   // Redact email
-  redacted = redacted.replace(PII_PATTERNS.email, '[EMAIL REDACTED]');
-  
+  redacted = redacted.replace(PII_PATTERNS.email, "[EMAIL REDACTED]");
+
   // Redact phone
-  redacted = redacted.replace(PII_PATTERNS.phone, '[PHONE REDACTED]');
-  
+  redacted = redacted.replace(PII_PATTERNS.phone, "[PHONE REDACTED]");
+
   // Redact IP address
-  redacted = redacted.replace(PII_PATTERNS.ipAddress, '[IP REDACTED]');
-  
+  redacted = redacted.replace(PII_PATTERNS.ipAddress, "[IP REDACTED]");
+
   return redacted;
 }
 
 /**
  * Get risk level for input
  */
-export function getRiskLevel(input: string): 'low' | 'medium' | 'high' | 'critical' {
+export function getRiskLevel(
+  input: string,
+): "low" | "medium" | "high" | "critical" {
   if (hasPromptInjection(input) || hasMaliciousContent(input)) {
-    return 'critical';
+    return "critical";
   }
-  
-  if (hasPII(input)) {
-    return 'medium';
-  }
-  
-  if (input.length > 10000) {
-    return 'medium';
-  }
-  
-  return 'low';
-}
 
+  if (hasPII(input)) {
+    return "medium";
+  }
+
+  if (input.length > 10000) {
+    return "medium";
+  }
+
+  return "low";
+}

@@ -8,17 +8,17 @@
  * - MFA method management
  */
 
-import { getSupabase } from '@/lib/supabase/client';
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
-import crypto from 'crypto';
+import crypto from "crypto";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type MFAMethodType = 'totp' | 'webauthn' | 'sms' | 'email';
-export type MFAMethodStatus = 'pending' | 'verified' | 'disabled';
+export type MFAMethodType = "totp" | "webauthn" | "sms" | "email";
+export type MFAMethodStatus = "pending" | "verified" | "disabled";
 
 export interface MFAMethod {
   id: string;
@@ -80,7 +80,7 @@ export interface MFAVerificationResult {
 
 const BACKUP_CODE_COUNT = 10;
 const BACKUP_CODE_LENGTH = 8;
-const TOTP_ISSUER = 'Fynvita';
+const TOTP_ISSUER = "Fynvita";
 
 // ============================================================================
 // MFA SERVICE
@@ -101,8 +101,8 @@ export class MFAService {
   }> {
     try {
       const { data, error } = await supabase.auth.mfa.enroll({
-        factorType: 'totp',
-        friendlyName: friendlyName || 'Authenticator App',
+        factorType: "totp",
+        friendlyName: friendlyName || "Authenticator App",
       });
 
       if (error) {
@@ -122,7 +122,7 @@ export class MFAService {
       // MFAService error: TOTP enrollment error
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to enroll TOTP',
+        error: error instanceof Error ? error.message : "Failed to enroll TOTP",
       };
     }
   }
@@ -132,7 +132,7 @@ export class MFAService {
    */
   async verifyTOTPEnrollment(
     factorId: string,
-    code: string
+    code: string,
   ): Promise<MFAVerificationResult> {
     try {
       // First create a challenge
@@ -162,7 +162,7 @@ export class MFAService {
       return {
         success: false,
         error:
-          error instanceof Error ? error.message : 'Failed to verify TOTP code',
+          error instanceof Error ? error.message : "Failed to verify TOTP code",
       };
     }
   }
@@ -172,7 +172,7 @@ export class MFAService {
    */
   async verifyTOTP(
     factorId: string,
-    code: string
+    code: string,
   ): Promise<MFAVerificationResult> {
     try {
       const { data, error } = await supabase.auth.mfa.challengeAndVerify({
@@ -190,7 +190,7 @@ export class MFAService {
       return {
         success: false,
         error:
-          error instanceof Error ? error.message : 'Failed to verify TOTP code',
+          error instanceof Error ? error.message : "Failed to verify TOTP code",
       };
     }
   }
@@ -199,7 +199,7 @@ export class MFAService {
    * Unenroll TOTP factor
    */
   async unenrollTOTP(
-    factorId: string
+    factorId: string,
   ): Promise<{ success: boolean; error?: string }> {
     try {
       const { error } = await supabase.auth.mfa.unenroll({
@@ -216,7 +216,7 @@ export class MFAService {
       return {
         success: false,
         error:
-          error instanceof Error ? error.message : 'Failed to unenroll TOTP',
+          error instanceof Error ? error.message : "Failed to unenroll TOTP",
       };
     }
   }
@@ -239,7 +239,7 @@ export class MFAService {
       for (let i = 0; i < BACKUP_CODE_COUNT; i++) {
         const code = crypto
           .randomBytes(BACKUP_CODE_LENGTH / 2)
-          .toString('hex')
+          .toString("hex")
           .toUpperCase();
         codes.push(code);
       }
@@ -252,7 +252,7 @@ export class MFAService {
       }));
 
       // Store in database (replace existing codes)
-      const { error } = await supabase.from('user_backup_codes').upsert({
+      const { error } = await supabase.from("user_backup_codes").upsert({
         user_id: userId,
         codes: hashedCodes,
         updated_at: new Date().toISOString(),
@@ -260,7 +260,7 @@ export class MFAService {
 
       if (error) {
         // MFAService error: Failed to store backup codes
-        return { success: false, error: 'Failed to save backup codes' };
+        return { success: false, error: "Failed to save backup codes" };
       }
 
       return { success: true, codes };
@@ -271,7 +271,7 @@ export class MFAService {
         error:
           error instanceof Error
             ? error.message
-            : 'Failed to generate backup codes',
+            : "Failed to generate backup codes",
       };
     }
   }
@@ -281,42 +281,42 @@ export class MFAService {
    */
   async verifyBackupCode(
     userId: string,
-    code: string
+    code: string,
   ): Promise<MFAVerificationResult> {
     try {
-      const normalizedCode = code.replace(/[-\s]/g, '').toUpperCase();
+      const normalizedCode = code.replace(/[-\s]/g, "").toUpperCase();
       const codeHash = this.hashBackupCode(normalizedCode);
 
       // Get user's backup codes
       const { data, error } = await supabase
-        .from('user_backup_codes')
-        .select('codes')
-        .eq('user_id', userId)
+        .from("user_backup_codes")
+        .select("codes")
+        .eq("user_id", userId)
         .single();
 
       if (error || !data) {
-        return { success: false, error: 'No backup codes found' };
+        return { success: false, error: "No backup codes found" };
       }
 
       const codes = data.codes as Array<{ code_hash: string; used: boolean }>;
       const codeIndex = codes.findIndex(
-        (c) => c.code_hash === codeHash && !c.used
+        (c) => c.code_hash === codeHash && !c.used,
       );
 
       if (codeIndex === -1) {
-        return { success: false, error: 'Invalid or already used backup code' };
+        return { success: false, error: "Invalid or already used backup code" };
       }
 
       // Mark code as used
       codes[codeIndex].used = true;
 
       const { error: updateError } = await supabase
-        .from('user_backup_codes')
+        .from("user_backup_codes")
         .update({
           codes,
           updated_at: new Date().toISOString(),
         })
-        .eq('user_id', userId);
+        .eq("user_id", userId);
 
       if (updateError) {
         // MFAService error: Failed to mark backup code as used
@@ -330,7 +330,7 @@ export class MFAService {
         error:
           error instanceof Error
             ? error.message
-            : 'Failed to verify backup code',
+            : "Failed to verify backup code",
       };
     }
   }
@@ -341,9 +341,9 @@ export class MFAService {
   async getBackupCodesCount(userId: string): Promise<number> {
     try {
       const { data, error } = await supabase
-        .from('user_backup_codes')
-        .select('codes')
-        .eq('user_id', userId)
+        .from("user_backup_codes")
+        .select("codes")
+        .eq("user_id", userId)
         .single();
 
       if (error || !data) {
@@ -358,7 +358,7 @@ export class MFAService {
   }
 
   private hashBackupCode(code: string): string {
-    return crypto.createHash('sha256').update(code).digest('hex');
+    return crypto.createHash("sha256").update(code).digest("hex");
   }
 
   // ==========================================================================
@@ -380,9 +380,9 @@ export class MFAService {
         for (const factor of factorsData.totp) {
           methods.push({
             id: factor.id,
-            type: 'totp',
-            name: factor.friendly_name || 'Authenticator App',
-            status: factor.status === 'verified' ? 'verified' : 'pending',
+            type: "totp",
+            name: factor.friendly_name || "Authenticator App",
+            status: factor.status === "verified" ? "verified" : "pending",
             createdAt: new Date(factor.created_at),
             lastUsedAt: factor.last_challenged_at
               ? new Date(factor.last_challenged_at)
@@ -394,7 +394,7 @@ export class MFAService {
       // Get backup codes count
       const backupCodesRemaining = await this.getBackupCodesCount(userId);
 
-      const verifiedMethods = methods.filter((m) => m.status === 'verified');
+      const verifiedMethods = methods.filter((m) => m.status === "verified");
 
       return {
         enabled: verifiedMethods.length > 0,
@@ -410,7 +410,7 @@ export class MFAService {
                   if (!latest) return m.lastUsedAt;
                   return m.lastUsedAt > latest ? m.lastUsedAt : latest;
                 },
-                undefined as Date | undefined
+                undefined as Date | undefined,
               )
             : undefined,
       };
@@ -443,11 +443,14 @@ export class MFAService {
 
       const required = data.currentLevel !== data.nextLevel;
       const factors = data.currentAuthenticationMethods
-        .filter((m): m is { method: string; timestamp: number } => typeof m !== 'string' && m.method === 'totp')
+        .filter(
+          (m): m is { method: string; timestamp: number } =>
+            typeof m !== "string" && m.method === "totp",
+        )
         .map((m) => ({
           id: m.method,
-          type: 'totp' as MFAMethodType,
-          name: 'Authenticator App',
+          type: "totp" as MFAMethodType,
+          name: "Authenticator App",
         }));
 
       return { required, factors };
@@ -461,7 +464,7 @@ export class MFAService {
    */
   async renameMFAMethod(
     factorId: string,
-    newName: string
+    newName: string,
   ): Promise<{ success: boolean; error?: string }> {
     // Supabase doesn't support renaming factors directly,
     // so we'd need to store names separately
@@ -470,10 +473,10 @@ export class MFAService {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) {
-        return { success: false, error: 'Not authenticated' };
+        return { success: false, error: "Not authenticated" };
       }
 
-      const { error } = await supabase.from('user_mfa_names').upsert({
+      const { error } = await supabase.from("user_mfa_names").upsert({
         user_id: user.id,
         factor_id: factorId,
         name: newName,
@@ -489,7 +492,7 @@ export class MFAService {
       return {
         success: false,
         error:
-          error instanceof Error ? error.message : 'Failed to rename method',
+          error instanceof Error ? error.message : "Failed to rename method",
       };
     }
   }
@@ -520,7 +523,7 @@ export class MFAService {
         challenge: {
           challengeId: data.id,
           factorId,
-          type: 'totp',
+          type: "totp",
           expiresAt: new Date(data.expires_at),
         },
       };
@@ -528,7 +531,7 @@ export class MFAService {
       return {
         success: false,
         error:
-          error instanceof Error ? error.message : 'Failed to create challenge',
+          error instanceof Error ? error.message : "Failed to create challenge",
       };
     }
   }
@@ -539,7 +542,7 @@ export class MFAService {
   async verifyChallenge(
     factorId: string,
     challengeId: string,
-    code: string
+    code: string,
   ): Promise<MFAVerificationResult> {
     try {
       const { error } = await supabase.auth.mfa.verify({
@@ -557,7 +560,7 @@ export class MFAService {
       return {
         success: false,
         error:
-          error instanceof Error ? error.message : 'Failed to verify challenge',
+          error instanceof Error ? error.message : "Failed to verify challenge",
       };
     }
   }

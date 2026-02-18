@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * useAuth Hook
@@ -6,17 +6,17 @@
  * Provides authentication state and utilities for client components
  */
 
-import { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
-import type { User, AuthChangeEvent, Session } from '@supabase/supabase-js';
+import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import type { User, AuthChangeEvent, Session } from "@supabase/supabase-js";
 
 const E2E_USER: User = {
-  id: 'e2e-user-id',
-  aud: 'authenticated',
-  email: 'e2e@example.com',
+  id: "e2e-user-id",
+  aud: "authenticated",
+  email: "e2e@example.com",
   app_metadata: {},
-  user_metadata: { full_name: 'E2E User' },
+  user_metadata: { full_name: "E2E User" },
   created_at: new Date().toISOString(),
 } as User;
 
@@ -40,84 +40,91 @@ interface UseAuthReturn {
   signOut: () => Promise<void>;
 }
 
-export function useAuth(redirectTo: string = '/auth/login'): UseAuthReturn {
+export function useAuth(redirectTo: string = "/auth/login"): UseAuthReturn {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const bypassAuth = process.env.NEXT_PUBLIC_E2E_AUTH_BYPASS === 'true';
+  const bypassAuth = process.env.NEXT_PUBLIC_E2E_AUTH_BYPASS === "true";
 
-  const signIn = useCallback(async (credentials: SignInCredentials): Promise<boolean> => {
-    try {
-      setLoading(true);
-      setError(null);
-      if (bypassAuth) {
-        setUser(E2E_USER);
-        return true;
-      }
-      const supabase = createClient();
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: credentials.email,
-        password: credentials.password,
-      });
+  const signIn = useCallback(
+    async (credentials: SignInCredentials): Promise<boolean> => {
+      try {
+        setLoading(true);
+        setError(null);
+        if (bypassAuth) {
+          setUser(E2E_USER);
+          return true;
+        }
+        const supabase = createClient();
+        const { data, error: signInError } =
+          await supabase.auth.signInWithPassword({
+            email: credentials.email,
+            password: credentials.password,
+          });
 
-      if (signInError) {
-        setError(signInError.message);
+        if (signInError) {
+          setError(signInError.message);
+          return false;
+        }
+
+        if (data.user) {
+          setUser(data.user);
+          router.push("/dashboard");
+          return true;
+        }
+
         return false;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Sign in failed");
+        return false;
+      } finally {
+        setLoading(false);
       }
+    },
+    [router, bypassAuth],
+  );
 
-      if (data.user) {
-        setUser(data.user);
-        router.push('/dashboard');
-        return true;
-      }
-
-      return false;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sign in failed');
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  }, [router, bypassAuth]);
-
-  const signUp = useCallback(async (credentials: SignUpCredentials): Promise<boolean> => {
-    try {
-      setLoading(true);
-      setError(null);
-      if (bypassAuth) {
-        setUser(E2E_USER);
-        return true;
-      }
-      const supabase = createClient();
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email: credentials.email,
-        password: credentials.password,
-        options: {
-          data: {
-            name: credentials.name,
+  const signUp = useCallback(
+    async (credentials: SignUpCredentials): Promise<boolean> => {
+      try {
+        setLoading(true);
+        setError(null);
+        if (bypassAuth) {
+          setUser(E2E_USER);
+          return true;
+        }
+        const supabase = createClient();
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email: credentials.email,
+          password: credentials.password,
+          options: {
+            data: {
+              name: credentials.name,
+            },
           },
-        },
-      });
+        });
 
-      if (signUpError) {
-        setError(signUpError.message);
+        if (signUpError) {
+          setError(signUpError.message);
+          return false;
+        }
+
+        if (data.user) {
+          setUser(data.user);
+          return true;
+        }
+
         return false;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Sign up failed");
+        return false;
+      } finally {
+        setLoading(false);
       }
-
-      if (data.user) {
-        setUser(data.user);
-        return true;
-      }
-
-      return false;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sign up failed');
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  }, [bypassAuth]);
+    },
+    [bypassAuth],
+  );
 
   const signOut = useCallback(async (): Promise<void> => {
     try {
@@ -130,9 +137,9 @@ export function useAuth(redirectTo: string = '/auth/login'): UseAuthReturn {
       const supabase = createClient();
       await supabase.auth.signOut();
       setUser(null);
-      router.push('/auth/login');
+      router.push("/auth/login");
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sign out failed');
+      setError(err instanceof Error ? err.message : "Sign out failed");
     } finally {
       setLoading(false);
     }
@@ -147,7 +154,10 @@ export function useAuth(redirectTo: string = '/auth/login'): UseAuthReturn {
           return;
         }
         const supabase = createClient();
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        const {
+          data: { user },
+          error: authError,
+        } = await supabase.auth.getUser();
 
         if (authError) {
           setError(authError.message);
@@ -163,7 +173,7 @@ export function useAuth(redirectTo: string = '/auth/login'): UseAuthReturn {
 
         setUser(user);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Authentication failed');
+        setError(err instanceof Error ? err.message : "Authentication failed");
       } finally {
         setLoading(false);
       }
@@ -176,13 +186,17 @@ export function useAuth(redirectTo: string = '/auth/login'): UseAuthReturn {
       return;
     }
     const supabase = createClient();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
-      if (session?.user) {
-        setUser(session.user);
-      } else {
-        setUser(null);
-      }
-    });
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(
+      (_event: AuthChangeEvent, session: Session | null) => {
+        if (session?.user) {
+          setUser(session.user);
+        } else {
+          setUser(null);
+        }
+      },
+    );
 
     return () => {
       subscription.unsubscribe();

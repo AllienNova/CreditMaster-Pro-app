@@ -1,14 +1,23 @@
-import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
-import { Link, router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { useAuthStore } from '../../src/store/authStore';
-import { useTheme } from '../../src/hooks/useTheme';
+import { useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+} from "react-native";
+import { Link, router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { useAuthStore } from "../../src/store/authStore";
+import { useTheme } from "../../src/hooks/useTheme";
 
 export default function LoginScreen() {
-  const { colors, spacing, borderRadius, fontSize, fontWeight, withOpacity } = useTheme();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const { colors, spacing, borderRadius, fontSize, fontWeight, withOpacity } =
+    useTheme();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const { login, isLoading, error, clearError } = useAuthStore();
 
   const handleLogin = async () => {
@@ -16,28 +25,41 @@ export default function LoginScreen() {
     clearError();
     const success = await login(email, password);
     if (success) {
-      router.replace('/(tabs)');
+      router.replace("/(tabs)");
     }
   };
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: colors.background, padding: spacing.lg }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{
+        flex: 1,
+        backgroundColor: colors.background,
+        padding: spacing.lg,
+      }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <View style={{ alignItems: 'center', marginTop: 60, marginBottom: 40 }}>
-        <View style={{
-          width: 80,
-          height: 80,
-          borderRadius: 40,
-          backgroundColor: withOpacity(colors.primary, 0.1),
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: spacing.md,
-        }}>
+      <View style={{ alignItems: "center", marginTop: 60, marginBottom: 40 }}>
+        <View
+          style={{
+            width: 80,
+            height: 80,
+            borderRadius: 40,
+            backgroundColor: withOpacity(colors.primary, 0.1),
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: spacing.md,
+          }}
+        >
           <Ionicons name="card-outline" size={40} color={colors.primary} />
         </View>
-        <Text style={{ fontSize: fontSize.xxl + 4, fontWeight: fontWeight.bold, color: colors.text, marginBottom: spacing.xs }}>
+        <Text
+          style={{
+            fontSize: fontSize.xxl + 4,
+            fontWeight: fontWeight.bold,
+            color: colors.text,
+            marginBottom: spacing.xs,
+          }}
+        >
           Fynvita
         </Text>
         <Text style={{ fontSize: fontSize.md, color: colors.textSecondary }}>
@@ -47,18 +69,29 @@ export default function LoginScreen() {
 
       <View style={{ flex: 1 }}>
         {error && (
-          <View style={{
-            backgroundColor: withOpacity(colors.error, 0.1),
-            padding: spacing.md,
-            borderRadius: borderRadius.md,
-            marginBottom: spacing.md,
-          }}>
-            <Text style={{ color: colors.error, textAlign: 'center' }}>{error}</Text>
+          <View
+            style={{
+              backgroundColor: withOpacity(colors.error, 0.1),
+              padding: spacing.md,
+              borderRadius: borderRadius.md,
+              marginBottom: spacing.md,
+            }}
+          >
+            <Text style={{ color: colors.error, textAlign: "center" }}>
+              {error}
+            </Text>
           </View>
         )}
 
         <View style={{ marginBottom: spacing.md }}>
-          <Text style={{ fontSize: fontSize.sm, fontWeight: fontWeight.medium, color: colors.text, marginBottom: spacing.xs }}>
+          <Text
+            style={{
+              fontSize: fontSize.sm,
+              fontWeight: fontWeight.medium,
+              color: colors.text,
+              marginBottom: spacing.xs,
+            }}
+          >
             Email
           </Text>
           <TextInput
@@ -82,7 +115,14 @@ export default function LoginScreen() {
         </View>
 
         <View style={{ marginBottom: spacing.md }}>
-          <Text style={{ fontSize: fontSize.sm, fontWeight: fontWeight.medium, color: colors.text, marginBottom: spacing.xs }}>
+          <Text
+            style={{
+              fontSize: fontSize.sm,
+              fontWeight: fontWeight.medium,
+              color: colors.text,
+              marginBottom: spacing.xs,
+            }}
+          >
             Password
           </Text>
           <TextInput
@@ -104,9 +144,13 @@ export default function LoginScreen() {
           />
         </View>
 
-        <TouchableOpacity style={{ alignSelf: 'flex-end', marginBottom: spacing.lg }}>
+        <TouchableOpacity
+          style={{ alignSelf: "flex-end", marginBottom: spacing.lg }}
+        >
           <Link href="/(auth)/forgot-password">
-            <Text style={{ color: colors.primary, fontSize: fontSize.sm }}>Forgot password?</Text>
+            <Text style={{ color: colors.primary, fontSize: fontSize.sm }}>
+              Forgot password?
+            </Text>
           </Link>
         </TouchableOpacity>
 
@@ -115,7 +159,7 @@ export default function LoginScreen() {
             backgroundColor: colors.primary,
             padding: spacing.md,
             borderRadius: borderRadius.md,
-            alignItems: 'center',
+            alignItems: "center",
           }}
           onPress={handleLogin}
           disabled={isLoading}
@@ -123,17 +167,35 @@ export default function LoginScreen() {
           {isLoading ? (
             <ActivityIndicator color={colors.white} />
           ) : (
-            <Text style={{ color: colors.white, fontSize: fontSize.md, fontWeight: fontWeight.semibold }}>
+            <Text
+              style={{
+                color: colors.white,
+                fontSize: fontSize.md,
+                fontWeight: fontWeight.semibold,
+              }}
+            >
               Sign In
             </Text>
           )}
         </TouchableOpacity>
       </View>
 
-      <View style={{ flexDirection: 'row', justifyContent: 'center', paddingBottom: 40 }}>
-        <Text style={{ color: colors.textSecondary }}>Don&apos;t have an account? </Text>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "center",
+          paddingBottom: 40,
+        }}
+      >
+        <Text style={{ color: colors.textSecondary }}>
+          Don&apos;t have an account?{" "}
+        </Text>
         <Link href="/(auth)/register">
-          <Text style={{ color: colors.primary, fontWeight: fontWeight.semibold }}>Sign up</Text>
+          <Text
+            style={{ color: colors.primary, fontWeight: fontWeight.semibold }}
+          >
+            Sign up
+          </Text>
         </Link>
       </View>
     </KeyboardAvoidingView>

@@ -10,7 +10,7 @@
  * Security: All paper trades are clearly marked and isolated from real trading.
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import {
   Order,
   OrderRequest,
@@ -22,7 +22,7 @@ import {
   OrderBlotter,
   OrderFilter,
   OrderValidationResult,
-} from '../orders/order-types';
+} from "../orders/order-types";
 
 // ============================================================================
 // TYPES
@@ -55,7 +55,7 @@ export interface PaperPosition {
   unrealizedPLPercent: number;
   realizedPL: number;
   costBasis: number;
-  side: 'long' | 'short';
+  side: "long" | "short";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -137,7 +137,7 @@ export class PaperTradingEngine {
   constructor(
     supabaseUrl: string,
     supabaseKey: string,
-    config: Partial<PaperTradingConfig> = {}
+    config: Partial<PaperTradingConfig> = {},
   ) {
     this.supabase = createClient(supabaseUrl, supabaseKey);
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -149,12 +149,12 @@ export class PaperTradingEngine {
 
   async createAccount(
     userId: string,
-    name: string = 'Paper Trading Account',
-    initialBalance?: number
+    name: string = "Paper Trading Account",
+    initialBalance?: number,
   ): Promise<PaperAccount> {
     const balance = initialBalance ?? this.config.initialBalance;
 
-    const account: Omit<PaperAccount, 'id'> = {
+    const account: Omit<PaperAccount, "id"> = {
       userId,
       name,
       initialBalance: balance,
@@ -169,7 +169,7 @@ export class PaperTradingEngine {
     };
 
     const { data, error } = await this.supabase
-      .from('paper_accounts')
+      .from("paper_accounts")
       .insert(account)
       .select()
       .single();
@@ -181,12 +181,12 @@ export class PaperTradingEngine {
 
   async getAccount(userId: string): Promise<PaperAccount | null> {
     const { data, error } = await this.supabase
-      .from('paper_accounts')
-      .select('*')
-      .eq('userId', userId)
+      .from("paper_accounts")
+      .select("*")
+      .eq("userId", userId)
       .single();
 
-    if (error && error.code !== 'PGRST116') {
+    if (error && error.code !== "PGRST116") {
       throw new Error(`Failed to get paper account: ${error.message}`);
     }
 
@@ -196,9 +196,9 @@ export class PaperTradingEngine {
   async resetAccount(accountId: string): Promise<PaperAccount> {
     // Get account to get initial balance
     const { data: account, error: fetchError } = await this.supabase
-      .from('paper_accounts')
-      .select('initialBalance')
-      .eq('id', accountId)
+      .from("paper_accounts")
+      .select("initialBalance")
+      .eq("id", accountId)
       .single();
 
     if (fetchError)
@@ -206,25 +206,25 @@ export class PaperTradingEngine {
 
     // Delete all positions
     await this.supabase
-      .from('paper_positions')
+      .from("paper_positions")
       .delete()
-      .eq('accountId', accountId);
+      .eq("accountId", accountId);
 
     // Delete all orders
     await this.supabase
-      .from('paper_orders')
+      .from("paper_orders")
       .delete()
-      .eq('accountId', accountId);
+      .eq("accountId", accountId);
 
     // Delete all trades
     await this.supabase
-      .from('paper_trades')
+      .from("paper_trades")
       .delete()
-      .eq('accountId', accountId);
+      .eq("accountId", accountId);
 
     // Reset account balances
     const { data, error } = await this.supabase
-      .from('paper_accounts')
+      .from("paper_accounts")
       .update({
         cashBalance: account.initialBalance,
         buyingPower: account.initialBalance,
@@ -234,7 +234,7 @@ export class PaperTradingEngine {
         isPDTRestricted: false,
         updatedAt: new Date(),
       })
-      .eq('id', accountId)
+      .eq("id", accountId)
       .select()
       .single();
 
@@ -251,7 +251,7 @@ export class PaperTradingEngine {
     const validation = await this.validateOrder(accountId, request);
     if (!validation.isValid) {
       throw new Error(
-        `Order validation failed: ${validation.errors.map((e) => e.message).join(', ')}`
+        `Order validation failed: ${validation.errors.map((e) => e.message).join(", ")}`,
       );
     }
 
@@ -263,15 +263,15 @@ export class PaperTradingEngine {
       currentPrice,
       request.side,
       request.type,
-      request.limitPrice
+      request.limitPrice,
     );
 
     // Create order
-    const order: Omit<Order, 'id'> = {
+    const order: Omit<Order, "id"> = {
       ...request,
-      userId: '', // Will be filled from account
+      userId: "", // Will be filled from account
       accountId,
-      status: 'pending',
+      status: "pending",
       filledQty: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -279,7 +279,7 @@ export class PaperTradingEngine {
     };
 
     const { data: createdOrder, error } = await this.supabase
-      .from('paper_orders')
+      .from("paper_orders")
       .insert(order)
       .select()
       .single();
@@ -299,25 +299,25 @@ export class PaperTradingEngine {
 
   async cancelOrder(orderId: string): Promise<Order> {
     const { data: order, error: fetchError } = await this.supabase
-      .from('paper_orders')
-      .select('*')
-      .eq('id', orderId)
+      .from("paper_orders")
+      .select("*")
+      .eq("id", orderId)
       .single();
 
     if (fetchError) throw new Error(`Order not found: ${fetchError.message}`);
 
-    if (['filled', 'cancelled', 'rejected'].includes(order.status)) {
+    if (["filled", "cancelled", "rejected"].includes(order.status)) {
       throw new Error(`Cannot cancel order in status: ${order.status}`);
     }
 
     const { data, error } = await this.supabase
-      .from('paper_orders')
+      .from("paper_orders")
       .update({
-        status: 'cancelled',
+        status: "cancelled",
         cancelledAt: new Date(),
         updatedAt: new Date(),
       })
-      .eq('id', orderId)
+      .eq("id", orderId)
       .select()
       .single();
 
@@ -327,25 +327,25 @@ export class PaperTradingEngine {
 
   async getOrders(accountId: string, filter?: OrderFilter): Promise<Order[]> {
     let query = this.supabase
-      .from('paper_orders')
-      .select('*')
-      .eq('accountId', accountId)
-      .order('createdAt', { ascending: false });
+      .from("paper_orders")
+      .select("*")
+      .eq("accountId", accountId)
+      .order("createdAt", { ascending: false });
 
     if (filter?.status && filter.status.length > 0) {
-      query = query.in('status', filter.status);
+      query = query.in("status", filter.status);
     }
     if (filter?.side) {
-      query = query.eq('side', filter.side);
+      query = query.eq("side", filter.side);
     }
     if (filter?.symbol) {
-      query = query.eq('symbol', filter.symbol);
+      query = query.eq("symbol", filter.symbol);
     }
     if (filter?.startDate) {
-      query = query.gte('createdAt', filter.startDate.toISOString());
+      query = query.gte("createdAt", filter.startDate.toISOString());
     }
     if (filter?.endDate) {
-      query = query.lte('createdAt', filter.endDate.toISOString());
+      query = query.lte("createdAt", filter.endDate.toISOString());
     }
     if (filter?.limit) {
       query = query.limit(filter.limit);
@@ -363,14 +363,14 @@ export class PaperTradingEngine {
     today.setHours(0, 0, 0, 0);
 
     const openOrders = orders.filter((o) =>
-      ['pending', 'submitted', 'accepted', 'partial'].includes(o.status)
+      ["pending", "submitted", "accepted", "partial"].includes(o.status),
     );
-    const filledOrders = orders.filter((o) => o.status === 'filled');
-    const cancelledOrders = orders.filter((o) => o.status === 'cancelled');
+    const filledOrders = orders.filter((o) => o.status === "filled");
+    const cancelledOrders = orders.filter((o) => o.status === "cancelled");
 
     const todayOrders = orders.filter((o) => new Date(o.createdAt) >= today);
     const todayFills = filledOrders.filter(
-      (o) => new Date(o.filledAt!) >= today
+      (o) => new Date(o.filledAt!) >= today,
     );
 
     return {
@@ -380,7 +380,7 @@ export class PaperTradingEngine {
       totalOpenValue: openOrders.reduce((sum, o) => sum + o.estimatedValue, 0),
       totalFilledValue: filledOrders.reduce(
         (sum, o) => sum + (o.filledAvgPrice || 0) * o.filledQty,
-        0
+        0,
       ),
       todayOrderCount: todayOrders.length,
       todayFillCount: todayFills.length,
@@ -393,10 +393,10 @@ export class PaperTradingEngine {
 
   async getPositions(accountId: string): Promise<PaperPosition[]> {
     const { data, error } = await this.supabase
-      .from('paper_positions')
-      .select('*')
-      .eq('accountId', accountId)
-      .gt('quantity', 0);
+      .from("paper_positions")
+      .select("*")
+      .eq("accountId", accountId)
+      .gt("quantity", 0);
 
     if (error) throw new Error(`Failed to get positions: ${error.message}`);
 
@@ -415,7 +415,7 @@ export class PaperTradingEngine {
           unrealizedPL,
           unrealizedPLPercent,
         };
-      })
+      }),
     );
 
     return updatedPositions;
@@ -423,16 +423,16 @@ export class PaperTradingEngine {
 
   async getPosition(
     accountId: string,
-    symbol: string
+    symbol: string,
   ): Promise<PaperPosition | null> {
     const { data, error } = await this.supabase
-      .from('paper_positions')
-      .select('*')
-      .eq('accountId', accountId)
-      .eq('symbol', symbol)
+      .from("paper_positions")
+      .select("*")
+      .eq("accountId", accountId)
+      .eq("symbol", symbol)
       .single();
 
-    if (error && error.code !== 'PGRST116') {
+    if (error && error.code !== "PGRST116") {
       throw new Error(`Failed to get position: ${error.message}`);
     }
 
@@ -459,20 +459,20 @@ export class PaperTradingEngine {
     accountId: string,
     startDate?: Date,
     endDate?: Date,
-    limit: number = 100
+    limit: number = 100,
   ): Promise<PaperTrade[]> {
     let query = this.supabase
-      .from('paper_trades')
-      .select('*')
-      .eq('accountId', accountId)
-      .order('executedAt', { ascending: false })
+      .from("paper_trades")
+      .select("*")
+      .eq("accountId", accountId)
+      .order("executedAt", { ascending: false })
       .limit(limit);
 
     if (startDate) {
-      query = query.gte('executedAt', startDate.toISOString());
+      query = query.gte("executedAt", startDate.toISOString());
     }
     if (endDate) {
-      query = query.lte('executedAt', endDate.toISOString());
+      query = query.lte("executedAt", endDate.toISOString());
     }
 
     const { data, error } = await query;
@@ -488,16 +488,16 @@ export class PaperTradingEngine {
   async getPerformance(
     accountId: string,
     startDate?: Date,
-    endDate?: Date
+    endDate?: Date,
   ): Promise<PaperPerformance> {
     const start = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const end = endDate || new Date();
 
     // Get account
     const { data: account, error: accountError } = await this.supabase
-      .from('paper_accounts')
-      .select('*')
-      .eq('id', accountId)
+      .from("paper_accounts")
+      .select("*")
+      .eq("id", accountId)
       .single();
 
     if (accountError)
@@ -512,10 +512,10 @@ export class PaperTradingEngine {
 
     const totalWins = winningTrades.reduce(
       (sum, t) => sum + (t.realizedPL || 0),
-      0
+      0,
     );
     const totalLosses = Math.abs(
-      losingTrades.reduce((sum, t) => sum + (t.realizedPL || 0), 0)
+      losingTrades.reduce((sum, t) => sum + (t.realizedPL || 0), 0),
     );
 
     const netPL = account.totalValue - account.initialBalance;
@@ -554,7 +554,7 @@ export class PaperTradingEngine {
 
   private async validateOrder(
     accountId: string,
-    request: OrderRequest
+    request: OrderRequest,
   ): Promise<OrderValidationResult> {
     const errors: { field: string; message: string; code: string }[] = [];
     const warnings: { field: string; message: string; suggestion?: string }[] =
@@ -562,16 +562,16 @@ export class PaperTradingEngine {
 
     // Get account
     const { data: account } = await this.supabase
-      .from('paper_accounts')
-      .select('*')
-      .eq('id', accountId)
+      .from("paper_accounts")
+      .select("*")
+      .eq("id", accountId)
       .single();
 
     if (!account) {
       errors.push({
-        field: 'accountId',
-        message: 'Account not found',
-        code: 'ACCOUNT_NOT_FOUND',
+        field: "accountId",
+        message: "Account not found",
+        code: "ACCOUNT_NOT_FOUND",
       });
       return { isValid: false, errors, warnings };
     }
@@ -579,71 +579,71 @@ export class PaperTradingEngine {
     // Validate symbol
     if (!request.symbol || request.symbol.length === 0) {
       errors.push({
-        field: 'symbol',
-        message: 'Symbol is required',
-        code: 'SYMBOL_REQUIRED',
+        field: "symbol",
+        message: "Symbol is required",
+        code: "SYMBOL_REQUIRED",
       });
     }
 
     // Validate quantity
     if (!request.quantity || request.quantity <= 0) {
       errors.push({
-        field: 'quantity',
-        message: 'Quantity must be positive',
-        code: 'INVALID_QUANTITY',
+        field: "quantity",
+        message: "Quantity must be positive",
+        code: "INVALID_QUANTITY",
       });
     }
 
     // Validate buying power for buy orders
-    if (request.side === 'buy') {
+    if (request.side === "buy") {
       const currentPrice = await this.getCurrentPrice(request.symbol);
       const estimatedCost = request.quantity * currentPrice;
 
       if (estimatedCost > account.buyingPower) {
         errors.push({
-          field: 'quantity',
+          field: "quantity",
           message: `Insufficient buying power. Required: $${estimatedCost.toFixed(2)}, Available: $${account.buyingPower.toFixed(2)}`,
-          code: 'INSUFFICIENT_BUYING_POWER',
+          code: "INSUFFICIENT_BUYING_POWER",
         });
       }
     }
 
     // Validate position for sell orders
-    if (request.side === 'sell') {
+    if (request.side === "sell") {
       const position = await this.getPosition(accountId, request.symbol);
 
       if (!position || position.quantity < request.quantity) {
         if (!this.config.allowShortSelling) {
           errors.push({
-            field: 'quantity',
+            field: "quantity",
             message:
-              'Insufficient shares to sell and short selling is disabled',
-            code: 'INSUFFICIENT_SHARES',
+              "Insufficient shares to sell and short selling is disabled",
+            code: "INSUFFICIENT_SHARES",
           });
         } else {
           warnings.push({
-            field: 'side',
-            message: 'This will create a short position',
+            field: "side",
+            message: "This will create a short position",
           });
         }
       }
     }
 
     // Validate limit price for limit orders
-    if (['limit', 'stop_limit'].includes(request.type) && !request.limitPrice) {
+    if (["limit", "stop_limit"].includes(request.type) && !request.limitPrice) {
       errors.push({
-        field: 'limitPrice',
-        message: 'Limit price is required for limit orders',
-        code: 'LIMIT_PRICE_REQUIRED',
+        field: "limitPrice",
+        message: "Limit price is required for limit orders",
+        code: "LIMIT_PRICE_REQUIRED",
       });
     }
 
     // Validate stop price for stop orders
-    if (['stop', 'stop_limit'].includes(request.type) && !request.stopPrice) {
+    if (["stop", "stop_limit"].includes(request.type) && !request.stopPrice) {
       errors.push({
-        field: 'stopPrice',
-        message: 'Stop price is required for stop orders',
-        code: 'STOP_PRICE_REQUIRED',
+        field: "stopPrice",
+        message: "Stop price is required for stop orders",
+        code: "STOP_PRICE_REQUIRED",
       });
     }
 
@@ -656,14 +656,14 @@ export class PaperTradingEngine {
 
   private async executeOrder(
     order: Order,
-    executionPrice: number
+    executionPrice: number,
   ): Promise<Order> {
     const fillQuantity = order.quantity;
     const totalValue = fillQuantity * executionPrice;
     const commission = this.config.commissionPerTrade;
 
     // Create fill record
-    const fill: Omit<Fill, 'id'> = {
+    const fill: Omit<Fill, "id"> = {
       orderId: order.id,
       symbol: order.symbol,
       side: order.side,
@@ -674,7 +674,7 @@ export class PaperTradingEngine {
       fees: 0,
     };
 
-    await this.supabase.from('paper_fills').insert(fill);
+    await this.supabase.from("paper_fills").insert(fill);
 
     // Update position
     await this.updatePosition(
@@ -682,7 +682,7 @@ export class PaperTradingEngine {
       order.symbol,
       order.side,
       fillQuantity,
-      executionPrice
+      executionPrice,
     );
 
     // Update account balance
@@ -690,11 +690,11 @@ export class PaperTradingEngine {
       order.accountId,
       order.side,
       totalValue,
-      commission
+      commission,
     );
 
     // Create trade record
-    const trade: Omit<PaperTrade, 'id'> = {
+    const trade: Omit<PaperTrade, "id"> = {
       accountId: order.accountId,
       orderId: order.id,
       symbol: order.symbol,
@@ -707,20 +707,20 @@ export class PaperTradingEngine {
       executedAt: new Date(),
     };
 
-    await this.supabase.from('paper_trades').insert(trade);
+    await this.supabase.from("paper_trades").insert(trade);
 
     // Update order status
     const { data: updatedOrder, error } = await this.supabase
-      .from('paper_orders')
+      .from("paper_orders")
       .update({
-        status: 'filled',
+        status: "filled",
         filledQty: fillQuantity,
         filledAvgPrice: executionPrice,
         filledAt: new Date(),
         updatedAt: new Date(),
         commission,
       })
-      .eq('id', order.id)
+      .eq("id", order.id)
       .select()
       .single();
 
@@ -733,16 +733,16 @@ export class PaperTradingEngine {
     symbol: string,
     side: OrderSide,
     quantity: number,
-    price: number
+    price: number,
   ): Promise<void> {
     const existing = await this.getPosition(accountId, symbol);
 
     if (!existing) {
       // Create new position
-      const position: Omit<PaperPosition, 'id'> = {
+      const position: Omit<PaperPosition, "id"> = {
         accountId,
         symbol,
-        quantity: side === 'buy' ? quantity : -quantity,
+        quantity: side === "buy" ? quantity : -quantity,
         avgEntryPrice: price,
         currentPrice: price,
         marketValue: quantity * price,
@@ -750,19 +750,19 @@ export class PaperTradingEngine {
         unrealizedPLPercent: 0,
         realizedPL: 0,
         costBasis: quantity * price,
-        side: side === 'buy' ? 'long' : 'short',
+        side: side === "buy" ? "long" : "short",
         createdAt: new Date(),
         updatedAt: new Date(),
       };
 
-      await this.supabase.from('paper_positions').insert(position);
+      await this.supabase.from("paper_positions").insert(position);
     } else {
       // Update existing position
       let newQuantity: number;
       let newAvgPrice: number;
       let realizedPL = existing.realizedPL;
 
-      if (side === 'buy') {
+      if (side === "buy") {
         if (existing.quantity >= 0) {
           // Adding to long position
           const totalCost =
@@ -796,21 +796,21 @@ export class PaperTradingEngine {
       if (newQuantity === 0) {
         // Close position
         await this.supabase
-          .from('paper_positions')
+          .from("paper_positions")
           .delete()
-          .eq('id', existing.id);
+          .eq("id", existing.id);
       } else {
         await this.supabase
-          .from('paper_positions')
+          .from("paper_positions")
           .update({
             quantity: newQuantity,
             avgEntryPrice: newAvgPrice,
             costBasis: Math.abs(newQuantity) * newAvgPrice,
             realizedPL,
-            side: newQuantity > 0 ? 'long' : 'short',
+            side: newQuantity > 0 ? "long" : "short",
             updatedAt: new Date(),
           })
-          .eq('id', existing.id);
+          .eq("id", existing.id);
       }
     }
   }
@@ -819,19 +819,19 @@ export class PaperTradingEngine {
     accountId: string,
     side: OrderSide,
     totalValue: number,
-    commission: number
+    commission: number,
   ): Promise<void> {
     const { data: account, error: fetchError } = await this.supabase
-      .from('paper_accounts')
-      .select('*')
-      .eq('id', accountId)
+      .from("paper_accounts")
+      .select("*")
+      .eq("id", accountId)
       .single();
 
     if (fetchError)
       throw new Error(`Failed to fetch account: ${fetchError.message}`);
 
     let newCashBalance: number;
-    if (side === 'buy') {
+    if (side === "buy") {
       newCashBalance = account.cashBalance - totalValue - commission;
     } else {
       newCashBalance = account.cashBalance + totalValue - commission;
@@ -842,7 +842,7 @@ export class PaperTradingEngine {
     const portfolioValue = positions.reduce((sum, p) => sum + p.marketValue, 0);
 
     await this.supabase
-      .from('paper_accounts')
+      .from("paper_accounts")
       .update({
         cashBalance: newCashBalance,
         buyingPower: newCashBalance, // Simplified - could include margin
@@ -850,23 +850,23 @@ export class PaperTradingEngine {
         totalValue: newCashBalance + portfolioValue,
         updatedAt: new Date(),
       })
-      .eq('id', accountId);
+      .eq("id", accountId);
   }
 
   private calculateExecutionPrice(
     currentPrice: number,
     side: OrderSide,
     orderType: OrderType,
-    limitPrice?: number
+    limitPrice?: number,
   ): number {
-    if (orderType === 'limit' && limitPrice) {
+    if (orderType === "limit" && limitPrice) {
       // For limit orders, use limit price (assuming it's marketable)
       return limitPrice;
     }
 
     // Apply slippage for market orders
     const slippage = currentPrice * (this.config.slippagePercent / 100);
-    return side === 'buy' ? currentPrice + slippage : currentPrice - slippage;
+    return side === "buy" ? currentPrice + slippage : currentPrice - slippage;
   }
 
   private async getCurrentPrice(symbol: string): Promise<number> {
@@ -879,7 +879,7 @@ export class PaperTradingEngine {
     // Fetch from market data service (simplified - would use real API)
     try {
       const response = await fetch(
-        `https://api.polygon.io/v2/aggs/ticker/${symbol}/prev?apiKey=${process.env.POLYGON_API_KEY}`
+        `https://api.polygon.io/v2/aggs/ticker/${symbol}/prev?apiKey=${process.env.POLYGON_API_KEY}`,
       );
       const data = await response.json();
 
@@ -901,12 +901,12 @@ export class PaperTradingEngine {
   private async calculateMaxDrawdown(
     accountId: string,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
   ): Promise<number> {
     const dailyReturns = await this.getDailyReturns(
       accountId,
       startDate,
-      endDate
+      endDate,
     );
 
     if (dailyReturns.length === 0) return 0;
@@ -930,12 +930,12 @@ export class PaperTradingEngine {
   private async calculateSharpeRatio(
     accountId: string,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
   ): Promise<number> {
     const dailyReturns = await this.getDailyReturns(
       accountId,
       startDate,
-      endDate
+      endDate,
     );
 
     if (dailyReturns.length < 2) return 0;
@@ -958,13 +958,13 @@ export class PaperTradingEngine {
   private async getDailyReturns(
     accountId: string,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
   ): Promise<{ date: string; value: number; return: number }[]> {
     // Simplified - would query actual daily snapshots
     const { data: account } = await this.supabase
-      .from('paper_accounts')
-      .select('initialBalance, totalValue')
-      .eq('id', accountId)
+      .from("paper_accounts")
+      .select("initialBalance, totalValue")
+      .eq("id", accountId)
       .single();
 
     if (!account) return [];
@@ -979,7 +979,7 @@ export class PaperTradingEngine {
       currentValue = currentValue * (1 + dailyReturn);
 
       days.push({
-        date: currentDate.toISOString().split('T')[0],
+        date: currentDate.toISOString().split("T")[0],
         value: currentValue,
         return: dailyReturn * 100,
       });
@@ -1002,7 +1002,7 @@ export class PaperTradingEngine {
 let paperTradingEngineInstance: PaperTradingEngine | null = null;
 
 export function getPaperTradingEngine(
-  config?: Partial<PaperTradingConfig>
+  config?: Partial<PaperTradingConfig>,
 ): PaperTradingEngine {
   if (!paperTradingEngineInstance) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -1011,7 +1011,7 @@ export function getPaperTradingEngine(
     paperTradingEngineInstance = new PaperTradingEngine(
       supabaseUrl,
       supabaseKey,
-      config
+      config,
     );
   }
   return paperTradingEngineInstance;

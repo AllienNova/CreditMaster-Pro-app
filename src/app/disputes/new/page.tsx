@@ -1,9 +1,9 @@
-import { Suspense } from 'react';
-import CreateDisputeForm from '@/components/disputes/CreateDisputeForm';
+import { Suspense } from "react";
+import CreateDisputeForm from "@/components/disputes/CreateDisputeForm";
 
 export const metadata = {
-  title: 'Create Dispute | Fynvita',
-  description: 'Create a new credit dispute',
+  title: "Create Dispute | Fynvita",
+  description: "Create a new credit dispute",
 };
 
 export default function NewDisputePage() {

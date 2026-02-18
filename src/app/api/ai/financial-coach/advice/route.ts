@@ -4,17 +4,20 @@
  * POST /api/ai/financial-coach/advice - Get personalized financial advice
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { z } from 'zod';
-import { financialCoach } from '@/lib/ai/financial-coach';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { z } from "zod";
+import { financialCoach } from "@/lib/ai/financial-coach";
 
 // ============================================================================
 // VALIDATION SCHEMAS
 // ============================================================================
 
 const AdviceRequestSchema = z.object({
-  question: z.string().min(10, 'Question must be at least 10 characters').max(500, 'Question must be less than 500 characters'),
+  question: z
+    .string()
+    .min(10, "Question must be at least 10 characters")
+    .max(500, "Question must be less than 500 characters"),
 });
 
 // ============================================================================
@@ -69,11 +72,11 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: {
-            code: 'UNAUTHORIZED',
-            message: 'Authentication required',
+            code: "UNAUTHORIZED",
+            message: "Authentication required",
           },
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -83,11 +86,11 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: {
-            code: 'RATE_LIMIT_EXCEEDED',
-            message: 'Too many requests. Please try again in a minute.',
+            code: "RATE_LIMIT_EXCEEDED",
+            message: "Too many requests. Please try again in a minute.",
           },
         },
-        { status: 429 }
+        { status: 429 },
       );
     }
 
@@ -100,12 +103,12 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: {
-            code: 'INVALID_REQUEST',
-            message: 'Invalid request parameters',
+            code: "INVALID_REQUEST",
+            message: "Invalid request parameters",
             details: validation.error.errors,
           },
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -114,7 +117,7 @@ export async function POST(request: NextRequest) {
     // Get personalized advice
     const advice = await financialCoach.getPersonalizedAdvice(
       user.id,
-      question
+      question,
     );
 
     return NextResponse.json({
@@ -125,19 +128,18 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error getting personalized advice:', error);
+    console.error("Error getting personalized advice:", error);
 
     return NextResponse.json(
       {
         success: false,
         error: {
-          code: 'INTERNAL_ERROR',
-          message: 'Failed to get personalized advice',
-          details: error instanceof Error ? error.message : 'Unknown error',
+          code: "INTERNAL_ERROR",
+          message: "Failed to get personalized advice",
+          details: error instanceof Error ? error.message : "Unknown error",
         },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-

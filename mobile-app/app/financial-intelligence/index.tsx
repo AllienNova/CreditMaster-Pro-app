@@ -4,22 +4,32 @@
  * Enhanced with Phase 2.1-2.4 integration
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Animated, Dimensions } from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { lightTheme as theme } from '../../src/constants/theme';
-import { Card } from '../../src/components/Card';
-import { useFinancialStore } from '../../src/store/financialStore';
-import Svg, { Circle } from 'react-native-svg';
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  RefreshControl,
+  Animated,
+  Dimensions,
+} from "react-native";
+import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { lightTheme as theme } from "../../src/constants/theme";
+import { Card } from "../../src/components/Card";
+import { useFinancialStore } from "../../src/store/financialStore";
+import Svg, { Circle } from "react-native-svg";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 interface FinancialSnapshot {
   healthScore: number;
   healthGrade: string;
-  healthTrend: 'up' | 'down' | 'stable';
+  healthTrend: "up" | "down" | "stable";
   netWorth: number;
   totalDebt: number;
   monthlyIncome: number;
@@ -50,7 +60,7 @@ interface BudgetSummary {
 
 interface Insight {
   id: string;
-  type: 'pattern' | 'trend' | 'recommendation' | 'warning' | 'opportunity';
+  type: "pattern" | "trend" | "recommendation" | "warning" | "opportunity";
   title: string;
   description: string;
   confidence: number;
@@ -68,52 +78,52 @@ interface QuickAction {
 
 const QUICK_ACTIONS: QuickAction[] = [
   {
-    id: 'ai-coach',
-    title: 'AI Coach',
-    description: 'Get personalized advice',
-    icon: 'chatbubbles',
-    route: '/financial-intelligence/ai-coach',
+    id: "ai-coach",
+    title: "AI Coach",
+    description: "Get personalized advice",
+    icon: "chatbubbles",
+    route: "/financial-intelligence/ai-coach",
     color: theme.colors.primary,
   },
   {
-    id: 'smart-budget',
-    title: 'Smart Budget',
-    description: 'AI-powered budgeting',
-    icon: 'calculator',
-    route: '/financial-intelligence/smart-budget',
-    color: '#10B981',
+    id: "smart-budget",
+    title: "Smart Budget",
+    description: "AI-powered budgeting",
+    icon: "calculator",
+    route: "/financial-intelligence/smart-budget",
+    color: "#10B981",
   },
   {
-    id: 'debt-payoff',
-    title: 'Debt Payoff',
-    description: 'Strategic debt elimination',
-    icon: 'trending-down',
-    route: '/financial-intelligence/debt-payoff',
-    color: '#F59E0B',
+    id: "debt-payoff",
+    title: "Debt Payoff",
+    description: "Strategic debt elimination",
+    icon: "trending-down",
+    route: "/financial-intelligence/debt-payoff",
+    color: "#F59E0B",
   },
   {
-    id: 'spending-insights',
-    title: 'Spending Insights',
-    description: 'AI spending analysis',
-    icon: 'analytics',
-    route: '/financial-intelligence/spending-insights',
-    color: '#8B5CF6',
+    id: "spending-insights",
+    title: "Spending Insights",
+    description: "AI spending analysis",
+    icon: "analytics",
+    route: "/financial-intelligence/spending-insights",
+    color: "#8B5CF6",
   },
   {
-    id: 'goals-manager',
-    title: 'Goals Manager',
-    description: 'Track financial goals',
-    icon: 'flag',
-    route: '/financial-intelligence/goals-manager',
-    color: '#EF4444',
+    id: "goals-manager",
+    title: "Goals Manager",
+    description: "Track financial goals",
+    icon: "flag",
+    route: "/financial-intelligence/goals-manager",
+    color: "#EF4444",
   },
   {
-    id: 'bill-negotiator',
-    title: 'Bill Negotiator',
-    description: 'Save on recurring bills',
-    icon: 'receipt',
-    route: '/financial-intelligence/bill-negotiator',
-    color: '#06B6D4',
+    id: "bill-negotiator",
+    title: "Bill Negotiator",
+    description: "Save on recurring bills",
+    icon: "receipt",
+    route: "/financial-intelligence/bill-negotiator",
+    color: "#06B6D4",
   },
 ];
 
@@ -124,10 +134,14 @@ const QUICK_ACTIONS: QuickAction[] = [
 interface HealthScoreGaugeProps {
   score: number;
   grade: string;
-  trend: 'up' | 'down' | 'stable';
+  trend: "up" | "down" | "stable";
 }
 
-const HealthScoreGauge: React.FC<HealthScoreGaugeProps> = ({ score, grade, trend }) => {
+const HealthScoreGauge: React.FC<HealthScoreGaugeProps> = ({
+  score,
+  grade,
+  trend,
+}) => {
   const size = 140;
   const strokeWidth = 12;
   const radius = (size - strokeWidth) / 2;
@@ -135,22 +149,22 @@ const HealthScoreGauge: React.FC<HealthScoreGaugeProps> = ({ score, grade, trend
   const progress = (score / 100) * circumference;
 
   const getScoreColor = (score: number): string => {
-    if (score >= 90) return '#22C55E';
-    if (score >= 80) return '#84CC16';
-    if (score >= 70) return '#3B82F6';
-    if (score >= 60) return '#F59E0B';
-    return '#EF4444';
+    if (score >= 90) return "#22C55E";
+    if (score >= 80) return "#84CC16";
+    if (score >= 70) return "#3B82F6";
+    if (score >= 60) return "#F59E0B";
+    return "#EF4444";
   };
 
   const getTrendIcon = () => {
-    if (trend === 'up') return 'trending-up';
-    if (trend === 'down') return 'trending-down';
-    return 'remove';
+    if (trend === "up") return "trending-up";
+    if (trend === "down") return "trending-down";
+    return "remove";
   };
 
   const getTrendColor = () => {
-    if (trend === 'up') return theme.colors.success;
-    if (trend === 'down') return theme.colors.error;
+    if (trend === "up") return theme.colors.success;
+    if (trend === "down") return theme.colors.error;
     return theme.colors.textSecondary;
   };
 
@@ -183,7 +197,9 @@ const HealthScoreGauge: React.FC<HealthScoreGaugeProps> = ({ score, grade, trend
           />
         </Svg>
         <View style={styles.gaugeCenter}>
-          <Text style={[styles.scoreValue, { color: getScoreColor(score) }]}>{score}</Text>
+          <Text style={[styles.scoreValue, { color: getScoreColor(score) }]}>
+            {score}
+          </Text>
           <Text style={styles.scoreGrade}>{grade}</Text>
           <View style={styles.trendContainer}>
             <Ionicons name={getTrendIcon()} size={16} color={getTrendColor()} />
@@ -206,10 +222,10 @@ const AccountCards: React.FC<AccountCardsProps> = ({ accounts }) => {
   const [balancesHidden, setBalancesHidden] = useState(false);
 
   const formatCurrency = (amount: number): string => {
-    if (balancesHidden) return '••••••';
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    if (balancesHidden) return "••••••";
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
@@ -223,7 +239,7 @@ const AccountCards: React.FC<AccountCardsProps> = ({ accounts }) => {
         <Text style={styles.cardTitle}>Accounts Summary</Text>
         <TouchableOpacity onPress={() => setBalancesHidden(!balancesHidden)}>
           <Ionicons
-            name={balancesHidden ? 'eye-off' : 'eye'}
+            name={balancesHidden ? "eye-off" : "eye"}
             size={24}
             color={theme.colors.primary}
           />
@@ -231,17 +247,27 @@ const AccountCards: React.FC<AccountCardsProps> = ({ accounts }) => {
       </View>
       <View style={styles.totalBalanceContainer}>
         <Text style={styles.totalBalanceLabel}>Total Balance</Text>
-        <Text style={styles.totalBalanceValue}>{formatCurrency(totalBalance)}</Text>
+        <Text style={styles.totalBalanceValue}>
+          {formatCurrency(totalBalance)}
+        </Text>
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.accountsScroll}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.accountsScroll}
+      >
         {accounts.slice(0, 5).map((account) => (
           <View key={account.id} style={styles.accountCard}>
             <View style={styles.accountIcon}>
               <Ionicons name="wallet" size={24} color={theme.colors.primary} />
             </View>
-            <Text style={styles.accountName} numberOfLines={1}>{account.name}</Text>
+            <Text style={styles.accountName} numberOfLines={1}>
+              {account.name}
+            </Text>
             <Text style={styles.accountType}>{account.type}</Text>
-            <Text style={styles.accountBalance}>{formatCurrency(account.balance)}</Text>
+            <Text style={styles.accountBalance}>
+              {formatCurrency(account.balance)}
+            </Text>
           </View>
         ))}
       </ScrollView>
@@ -261,9 +287,9 @@ const BudgetSummaryComponent: React.FC<BudgetSummaryProps> = ({ budget }) => {
   if (!budget) return null;
 
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
@@ -280,19 +306,32 @@ const BudgetSummaryComponent: React.FC<BudgetSummaryProps> = ({ budget }) => {
     <Card style={styles.budgetCard}>
       <View style={styles.cardHeader}>
         <Text style={styles.cardTitle}>Monthly Budget</Text>
-        <TouchableOpacity onPress={() => router.push('/financial-intelligence/smart-budget')}>
-          <Ionicons name="chevron-forward" size={24} color={theme.colors.primary} />
+        <TouchableOpacity
+          onPress={() => router.push("/financial-intelligence/smart-budget")}
+        >
+          <Ionicons
+            name="chevron-forward"
+            size={24}
+            color={theme.colors.primary}
+          />
         </TouchableOpacity>
       </View>
 
       <View style={styles.budgetOverview}>
         <View style={styles.budgetMetric}>
           <Text style={styles.budgetLabel}>Budgeted</Text>
-          <Text style={styles.budgetValue}>{formatCurrency(budget.totalBudgeted)}</Text>
+          <Text style={styles.budgetValue}>
+            {formatCurrency(budget.totalBudgeted)}
+          </Text>
         </View>
         <View style={styles.budgetMetric}>
           <Text style={styles.budgetLabel}>Spent</Text>
-          <Text style={[styles.budgetValue, { color: getProgressColor(budget.percentUsed) }]}>
+          <Text
+            style={[
+              styles.budgetValue,
+              { color: getProgressColor(budget.percentUsed) },
+            ]}
+          >
             {formatCurrency(budget.totalSpent)}
           </Text>
         </View>
@@ -316,7 +355,9 @@ const BudgetSummaryComponent: React.FC<BudgetSummaryProps> = ({ budget }) => {
             ]}
           />
         </View>
-        <Text style={styles.progressText}>{budget.percentUsed.toFixed(0)}% used</Text>
+        <Text style={styles.progressText}>
+          {budget.percentUsed.toFixed(0)}% used
+        </Text>
       </View>
 
       {budget.topCategories && budget.topCategories.length > 0 && (
@@ -324,8 +365,12 @@ const BudgetSummaryComponent: React.FC<BudgetSummaryProps> = ({ budget }) => {
           <Text style={styles.topCategoriesTitle}>Top Spending Categories</Text>
           {budget.topCategories.slice(0, 3).map((cat, idx) => (
             <View key={idx} style={styles.categoryRow}>
-              <Text style={styles.categoryName}>{cat.category.replace(/_/g, ' ')}</Text>
-              <Text style={styles.categoryAmount}>{formatCurrency(cat.spent)}</Text>
+              <Text style={styles.categoryName}>
+                {cat.category.replace(/_/g, " ")}
+              </Text>
+              <Text style={styles.categoryAmount}>
+                {formatCurrency(cat.spent)}
+              </Text>
             </View>
           ))}
         </View>
@@ -347,23 +392,35 @@ const InsightsList: React.FC<InsightsListProps> = ({ insights }) => {
 
   const getInsightIcon = (type: string) => {
     switch (type) {
-      case 'pattern': return 'analytics';
-      case 'trend': return 'trending-up';
-      case 'recommendation': return 'bulb';
-      case 'warning': return 'warning';
-      case 'opportunity': return 'star';
-      default: return 'information-circle';
+      case "pattern":
+        return "analytics";
+      case "trend":
+        return "trending-up";
+      case "recommendation":
+        return "bulb";
+      case "warning":
+        return "warning";
+      case "opportunity":
+        return "star";
+      default:
+        return "information-circle";
     }
   };
 
   const getInsightColor = (type: string) => {
     switch (type) {
-      case 'pattern': return '#8B5CF6';
-      case 'trend': return '#3B82F6';
-      case 'recommendation': return '#10B981';
-      case 'warning': return '#F59E0B';
-      case 'opportunity': return '#F59E0B';
-      default: return theme.colors.textSecondary;
+      case "pattern":
+        return "#8B5CF6";
+      case "trend":
+        return "#3B82F6";
+      case "recommendation":
+        return "#10B981";
+      case "warning":
+        return "#F59E0B";
+      case "opportunity":
+        return "#F59E0B";
+      default:
+        return theme.colors.textSecondary;
     }
   };
 
@@ -371,21 +428,42 @@ const InsightsList: React.FC<InsightsListProps> = ({ insights }) => {
     <Card style={styles.insightsCard}>
       <View style={styles.cardHeader}>
         <Text style={styles.cardTitle}>AI Insights</Text>
-        <TouchableOpacity onPress={() => router.push('/financial-intelligence/spending-insights')}>
-          <Ionicons name="chevron-forward" size={24} color={theme.colors.primary} />
+        <TouchableOpacity
+          onPress={() =>
+            router.push("/financial-intelligence/spending-insights")
+          }
+        >
+          <Ionicons
+            name="chevron-forward"
+            size={24}
+            color={theme.colors.primary}
+          />
         </TouchableOpacity>
       </View>
 
       {insights.slice(0, 5).map((insight) => (
         <View key={insight.id} style={styles.insightItem}>
-          <View style={[styles.insightIcon, { backgroundColor: getInsightColor(insight.type) + '20' }]}>
-            <Ionicons name={getInsightIcon(insight.type)} size={20} color={getInsightColor(insight.type)} />
+          <View
+            style={[
+              styles.insightIcon,
+              { backgroundColor: getInsightColor(insight.type) + "20" },
+            ]}
+          >
+            <Ionicons
+              name={getInsightIcon(insight.type)}
+              size={20}
+              color={getInsightColor(insight.type)}
+            />
           </View>
           <View style={styles.insightContent}>
             <Text style={styles.insightTitle}>{insight.title}</Text>
-            <Text style={styles.insightDescription} numberOfLines={2}>{insight.description}</Text>
+            <Text style={styles.insightDescription} numberOfLines={2}>
+              {insight.description}
+            </Text>
             <View style={styles.insightMeta}>
-              <Text style={styles.insightConfidence}>{(insight.confidence * 100).toFixed(0)}% confidence</Text>
+              <Text style={styles.insightConfidence}>
+                {(insight.confidence * 100).toFixed(0)}% confidence
+              </Text>
               {insight.actionable && (
                 <View style={styles.actionableBadge}>
                   <Text style={styles.actionableText}>Actionable</Text>
@@ -403,7 +481,9 @@ export default function FinancialIntelligenceDashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [snapshot, setSnapshot] = useState<FinancialSnapshot | null>(null);
-  const [budgetSummary, setBudgetSummary] = useState<BudgetSummary | null>(null);
+  const [budgetSummary, setBudgetSummary] = useState<BudgetSummary | null>(
+    null,
+  );
   const [insights, setInsights] = useState<Insight[]>([]);
   const [accountsList, setAccountsList] = useState<Account[]>([]);
   const { accounts } = useFinancialStore();
@@ -413,13 +493,13 @@ export default function FinancialIntelligenceDashboard() {
       setLoading(true);
 
       // Fetch health score and financial context
-      const contextResponse = await fetch('/api/financial/context');
+      const contextResponse = await fetch("/api/financial/context");
       if (contextResponse.ok) {
         const contextData = await contextResponse.json();
         setSnapshot({
           healthScore: contextData.healthScore?.score || 0,
-          healthGrade: contextData.healthScore?.grade || 'N/A',
-          healthTrend: contextData.healthScore?.trend || 'stable',
+          healthGrade: contextData.healthScore?.grade || "N/A",
+          healthTrend: contextData.healthScore?.trend || "stable",
           netWorth: contextData.netWorth || 0,
           totalDebt: contextData.totalDebt || 0,
           monthlyIncome: contextData.monthlyIncome || 0,
@@ -429,27 +509,31 @@ export default function FinancialIntelligenceDashboard() {
       }
 
       // Fetch budget summary from Phase 2.1
-      const budgetResponse = await fetch('/api/financial/budgets/analyze?period=monthly');
+      const budgetResponse = await fetch(
+        "/api/financial/budgets/analyze?period=monthly",
+      );
       if (budgetResponse.ok) {
         const budgetData = await budgetResponse.json();
         setBudgetSummary(budgetData.data);
       }
 
       // Fetch insights from Phase 2.3
-      const insightsResponse = await fetch('/api/financial/spending/insights?timeRange=30d');
+      const insightsResponse = await fetch(
+        "/api/financial/spending/insights?timeRange=30d",
+      );
       if (insightsResponse.ok) {
         const insightsData = await insightsResponse.json();
         setInsights(insightsData.data?.insights || []);
       }
 
       // Fetch accounts from dashboard
-      const dashboardResponse = await fetch('/api/financial/dashboard');
+      const dashboardResponse = await fetch("/api/financial/dashboard");
       if (dashboardResponse.ok) {
         const dashboardData = await dashboardResponse.json();
         setAccountsList(dashboardData.data?.accounts || []);
       }
     } catch (error) {
-      if (__DEV__) console.error('Error fetching snapshot:', error);
+      if (__DEV__) console.error("Error fetching snapshot:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -466,9 +550,9 @@ export default function FinancialIntelligenceDashboard() {
   }, [fetchSnapshot]);
 
   const getHealthScoreColor = (score: number) => {
-    if (score >= 80) return '#10B981';
-    if (score >= 60) return '#F59E0B';
-    return '#EF4444';
+    if (score >= 80) return "#10B981";
+    if (score >= 60) return "#F59E0B";
+    return "#EF4444";
   };
 
   if (loading && !snapshot) {
@@ -476,7 +560,9 @@ export default function FinancialIntelligenceDashboard() {
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.loadingText}>Loading Financial Intelligence...</Text>
+          <Text style={styles.loadingText}>
+            Loading Financial Intelligence...
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -487,13 +573,19 @@ export default function FinancialIntelligenceDashboard() {
       <ScrollView
         style={styles.scrollView}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[theme.colors.primary]}
+          />
         }
       >
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Financial Intelligence</Text>
-          <Text style={styles.headerSubtitle}>AI-Powered Financial Management</Text>
+          <Text style={styles.headerSubtitle}>
+            AI-Powered Financial Management
+          </Text>
         </View>
 
         {/* Financial Snapshot */}
@@ -507,19 +599,13 @@ export default function FinancialIntelligenceDashboard() {
         )}
 
         {/* Account Cards */}
-        {accountsList.length > 0 && (
-          <AccountCards accounts={accountsList} />
-        )}
+        {accountsList.length > 0 && <AccountCards accounts={accountsList} />}
 
         {/* Budget Summary */}
-        {budgetSummary && (
-          <BudgetSummaryComponent budget={budgetSummary} />
-        )}
+        {budgetSummary && <BudgetSummaryComponent budget={budgetSummary} />}
 
         {/* AI Insights */}
-        {insights.length > 0 && (
-          <InsightsList insights={insights} />
-        )}
+        {insights.length > 0 && <InsightsList insights={insights} />}
 
         {/* Quick Actions */}
         <View style={styles.section}>
@@ -531,11 +617,18 @@ export default function FinancialIntelligenceDashboard() {
                 style={styles.actionCard}
                 onPress={() => router.push(action.route as any)}
               >
-                <View style={[styles.actionIcon, { backgroundColor: `${action.color}15` }]}>
+                <View
+                  style={[
+                    styles.actionIcon,
+                    { backgroundColor: `${action.color}15` },
+                  ]}
+                >
                   <Ionicons name={action.icon} size={28} color={action.color} />
                 </View>
                 <Text style={styles.actionTitle}>{action.title}</Text>
-                <Text style={styles.actionDescription}>{action.description}</Text>
+                <Text style={styles.actionDescription}>
+                  {action.description}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -548,7 +641,8 @@ export default function FinancialIntelligenceDashboard() {
             <View style={styles.accountsInfo}>
               <Ionicons name="link" size={24} color={theme.colors.primary} />
               <Text style={styles.accountsText}>
-                {accounts.length} {accounts.length === 1 ? 'account' : 'accounts'} connected
+                {accounts.length}{" "}
+                {accounts.length === 1 ? "account" : "accounts"} connected
               </Text>
             </View>
           </Card>
@@ -565,8 +659,8 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     marginTop: theme.spacing.md,
@@ -582,39 +676,39 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontWeight: "bold",
+    color: "#FFFFFF",
     marginBottom: theme.spacing.xs,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#E0E7FF',
+    color: "#E0E7FF",
   },
   snapshotCard: {
     margin: theme.spacing.md,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: theme.colors.text,
     marginBottom: theme.spacing.md,
   },
   healthScoreContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   healthScoreCircle: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#F3F4F6",
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: theme.spacing.lg,
   },
   healthScoreText: {
     fontSize: 32,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   healthGradeText: {
     fontSize: 14,
@@ -625,8 +719,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   metricRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: theme.spacing.sm,
   },
   metricLabel: {
@@ -635,20 +729,20 @@ const styles = StyleSheet.create({
   },
   metricValue: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   section: {
     padding: theme.spacing.md,
   },
   actionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     marginHorizontal: -theme.spacing.xs,
   },
   actionCard: {
-    width: '48%',
-    backgroundColor: '#FFFFFF',
+    width: "48%",
+    backgroundColor: "#FFFFFF",
     borderRadius: theme.borderRadius.md,
     padding: theme.spacing.md,
     margin: theme.spacing.xs,
@@ -658,13 +752,13 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: theme.spacing.sm,
   },
   actionTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: 4,
   },
@@ -673,8 +767,8 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   accountsInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   accountsText: {
     marginLeft: theme.spacing.sm,
@@ -685,22 +779,22 @@ const styles = StyleSheet.create({
   healthScoreCard: {
     margin: theme.spacing.md,
     padding: theme.spacing.lg,
-    alignItems: 'center',
+    alignItems: "center",
   },
   gaugeContainer: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
+    position: "relative",
+    alignItems: "center",
+    justifyContent: "center",
     marginTop: theme.spacing.md,
   },
   gaugeCenter: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
+    position: "absolute",
+    alignItems: "center",
+    justifyContent: "center",
   },
   scoreValue: {
     fontSize: 36,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   scoreGrade: {
     fontSize: 14,
@@ -716,14 +810,14 @@ const styles = StyleSheet.create({
     padding: theme.spacing.lg,
   },
   cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: theme.spacing.md,
   },
   cardTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   totalBalanceContainer: {
@@ -736,7 +830,7 @@ const styles = StyleSheet.create({
   },
   totalBalanceValue: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: theme.colors.text,
   },
   accountsScroll: {
@@ -753,14 +847,14 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: theme.colors.primary + '20',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: theme.colors.primary + "20",
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: theme.spacing.sm,
   },
   accountName: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: 2,
   },
@@ -771,7 +865,7 @@ const styles = StyleSheet.create({
   },
   accountBalance: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: theme.colors.text,
   },
   // Budget Summary styles
@@ -780,13 +874,13 @@ const styles = StyleSheet.create({
     padding: theme.spacing.lg,
   },
   budgetOverview: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: theme.spacing.md,
   },
   budgetMetric: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
   },
   budgetLabel: {
     fontSize: 12,
@@ -795,7 +889,7 @@ const styles = StyleSheet.create({
   },
   budgetValue: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: theme.colors.text,
   },
   progressBarContainer: {
@@ -805,17 +899,17 @@ const styles = StyleSheet.create({
     height: 8,
     backgroundColor: theme.colors.border,
     borderRadius: 4,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginBottom: 4,
   },
   progressFill: {
-    height: '100%',
+    height: "100%",
     borderRadius: 4,
   },
   progressText: {
     fontSize: 12,
     color: theme.colors.textSecondary,
-    textAlign: 'right',
+    textAlign: "right",
   },
   topCategories: {
     marginTop: theme.spacing.md,
@@ -825,24 +919,24 @@ const styles = StyleSheet.create({
   },
   topCategoriesTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: theme.spacing.sm,
   },
   categoryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: theme.spacing.sm,
   },
   categoryName: {
     fontSize: 14,
     color: theme.colors.text,
-    textTransform: 'capitalize',
+    textTransform: "capitalize",
   },
   categoryAmount: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   // Insights List styles
@@ -851,7 +945,7 @@ const styles = StyleSheet.create({
     padding: theme.spacing.lg,
   },
   insightItem: {
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingVertical: theme.spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
@@ -860,8 +954,8 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: theme.spacing.md,
   },
   insightContent: {
@@ -869,7 +963,7 @@ const styles = StyleSheet.create({
   },
   insightTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: 4,
   },
@@ -879,8 +973,8 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.sm,
   },
   insightMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   insightConfidence: {
     fontSize: 12,
@@ -888,7 +982,7 @@ const styles = StyleSheet.create({
     marginRight: theme.spacing.sm,
   },
   actionableBadge: {
-    backgroundColor: theme.colors.success + '20',
+    backgroundColor: theme.colors.success + "20",
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: 2,
     borderRadius: 4,
@@ -896,6 +990,6 @@ const styles = StyleSheet.create({
   actionableText: {
     fontSize: 11,
     color: theme.colors.success,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

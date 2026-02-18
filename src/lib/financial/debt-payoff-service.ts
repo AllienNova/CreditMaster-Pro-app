@@ -15,7 +15,7 @@ import {
   DebtOverview,
   PayoffMilestone,
   PayoffInsight,
-} from './types/debt-payoff.types';
+} from "./types/debt-payoff.types";
 
 export class DebtPayoffService {
   /**
@@ -38,13 +38,13 @@ export class DebtPayoffService {
     const totalDebt = activeDebts.reduce((sum, d) => sum + d.balance, 0);
     const totalMinimumPayments = activeDebts.reduce(
       (sum, d) => sum + d.minimumPayment,
-      0
+      0,
     );
     const averageInterestRate =
       activeDebts.reduce((sum, d) => sum + d.interestRate, 0) /
       activeDebts.length;
     const highestInterestRate = Math.max(
-      ...activeDebts.map((d) => d.interestRate)
+      ...activeDebts.map((d) => d.interestRate),
     );
     const lowestBalance = Math.min(...activeDebts.map((d) => d.balance));
 
@@ -74,7 +74,7 @@ export class DebtPayoffService {
   calculatePayoffPlan(
     debts: Debt[],
     strategy: PayoffStrategy,
-    extraPayment: number = 0
+    extraPayment: number = 0,
   ): PayoffPlan {
     const activeDebts = debts.filter((d) => d.isActive && d.balance > 0);
     if (activeDebts.length === 0) {
@@ -87,7 +87,7 @@ export class DebtPayoffService {
     const totalDebt = activeDebts.reduce((sum, d) => sum + d.balance, 0);
     const totalMinimum = activeDebts.reduce(
       (sum, d) => sum + d.minimumPayment,
-      0
+      0,
     );
     const monthlyPayment = totalMinimum + extraPayment;
 
@@ -120,15 +120,15 @@ export class DebtPayoffService {
     const sorted = [...debts];
 
     switch (strategy) {
-      case 'avalanche':
+      case "avalanche":
         // Highest interest rate first
         sorted.sort((a, b) => b.interestRate - a.interestRate);
         break;
-      case 'snowball':
+      case "snowball":
         // Lowest balance first
         sorted.sort((a, b) => a.balance - b.balance);
         break;
-      case 'hybrid':
+      case "hybrid":
         // Score based on both factors (balance weight: 0.4, interest weight: 0.6)
         sorted.sort((a, b) => {
           const maxBalance = Math.max(...debts.map((d) => d.balance));
@@ -152,7 +152,7 @@ export class DebtPayoffService {
    */
   private simulatePayoff(
     sortedDebts: Debt[],
-    monthlyPayment: number
+    monthlyPayment: number,
   ): {
     payoffDate: Date;
     totalMonths: number;
@@ -253,7 +253,7 @@ export class DebtPayoffService {
           date: monthDate,
           totalBalance: Object.values(balances).reduce(
             (sum, b) => sum + Math.max(0, b),
-            0
+            0,
           ),
           totalPaid,
           totalInterest,
@@ -281,33 +281,33 @@ export class DebtPayoffService {
    */
   compareStrategies(
     debts: Debt[],
-    extraPayment: number = 0
+    extraPayment: number = 0,
   ): StrategyComparison {
     const avalanche = this.calculatePayoffPlan(
       debts,
-      'avalanche',
-      extraPayment
+      "avalanche",
+      extraPayment,
     );
-    const snowball = this.calculatePayoffPlan(debts, 'snowball', extraPayment);
-    const hybrid = this.calculatePayoffPlan(debts, 'hybrid', extraPayment);
+    const snowball = this.calculatePayoffPlan(debts, "snowball", extraPayment);
+    const hybrid = this.calculatePayoffPlan(debts, "hybrid", extraPayment);
 
     // Determine recommendation
-    let recommendation: PayoffStrategy = 'avalanche';
-    let recommendationReason = '';
+    let recommendation: PayoffStrategy = "avalanche";
+    let recommendationReason = "";
 
     const interestDiff =
       snowball.totalInterestPaid - avalanche.totalInterestPaid;
     const monthDiff = snowball.totalMonths - avalanche.totalMonths;
 
     if (interestDiff > 500) {
-      recommendation = 'avalanche';
+      recommendation = "avalanche";
       recommendationReason = `Avalanche saves $${interestDiff.toFixed(0)} in interest`;
     } else if (debts.some((d) => d.balance < 1000)) {
-      recommendation = 'snowball';
-      recommendationReason = 'Quick wins with small balances boost motivation';
+      recommendation = "snowball";
+      recommendationReason = "Quick wins with small balances boost motivation";
     } else {
-      recommendation = 'hybrid';
-      recommendationReason = 'Balanced approach for your debt mix';
+      recommendation = "hybrid";
+      recommendationReason = "Balanced approach for your debt mix";
     }
 
     return {
@@ -332,7 +332,7 @@ export class DebtPayoffService {
       const entry = plan.timeline.find((t) => t.totalBalance <= targetBalance);
       milestones.push({
         id: `pct-${pct}`,
-        type: 'percentage',
+        type: "percentage",
         target: pct,
         achieved: false,
         projectedDate: entry?.date || plan.payoffDate,
@@ -344,7 +344,7 @@ export class DebtPayoffService {
     plan.debtOrder.forEach((debt) => {
       milestones.push({
         id: `debt-${debt.debtId}`,
-        type: 'debt_paid',
+        type: "debt_paid",
         target: debt.debtName,
         achieved: false,
         projectedDate: debt.payoffDate,
@@ -353,7 +353,7 @@ export class DebtPayoffService {
     });
 
     return milestones.sort(
-      (a, b) => a.projectedDate.getTime() - b.projectedDate.getTime()
+      (a, b) => a.projectedDate.getTime() - b.projectedDate.getTime(),
     );
   }
 
@@ -365,19 +365,19 @@ export class DebtPayoffService {
 
     if (overview.highestInterestRate > 20) {
       insights.push({
-        type: 'warning',
-        title: 'High Interest Alert',
+        type: "warning",
+        title: "High Interest Alert",
         description: `You have debt at ${overview.highestInterestRate.toFixed(1)}% APR`,
-        impact: 'Consider balance transfer or consolidation',
+        impact: "Consider balance transfer or consolidation",
         actionable: true,
-        action: 'Explore balance transfer options',
+        action: "Explore balance transfer options",
       });
     }
 
     if (plan.interestSaved > 100) {
       insights.push({
-        type: 'tip',
-        title: 'Interest Savings',
+        type: "tip",
+        title: "Interest Savings",
         description: `Your current plan saves $${plan.interestSaved.toFixed(0)} in interest`,
         impact: `${plan.monthsSaved} months faster payoff`,
       });
@@ -385,12 +385,12 @@ export class DebtPayoffService {
 
     if (overview.debtToIncomeRatio && overview.debtToIncomeRatio > 40) {
       insights.push({
-        type: 'warning',
-        title: 'High Debt-to-Income',
+        type: "warning",
+        title: "High Debt-to-Income",
         description: `Your DTI is ${overview.debtToIncomeRatio.toFixed(1)}%`,
-        impact: 'May affect credit applications',
+        impact: "May affect credit applications",
         actionable: true,
-        action: 'Focus on reducing debt or increasing income',
+        action: "Focus on reducing debt or increasing income",
       });
     }
 
@@ -399,7 +399,7 @@ export class DebtPayoffService {
 
   private createEmptyPlan(
     strategy: PayoffStrategy,
-    extraPayment: number
+    extraPayment: number,
   ): PayoffPlan {
     return {
       strategy,

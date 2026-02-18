@@ -3,7 +3,7 @@
  * AI-powered budget creation and optimization
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -16,14 +16,14 @@ import {
   Modal,
   Dimensions,
   Alert,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { LineChart } from 'react-native-chart-kit';
-import { lightTheme as theme } from '../../src/constants/theme';
-import { Card } from '../../src/components/Card';
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { LineChart } from "react-native-chart-kit";
+import { lightTheme as theme } from "../../src/constants/theme";
+import { Card } from "../../src/components/Card";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 // TypeScript Interfaces
 interface BudgetCategory {
@@ -32,7 +32,7 @@ interface BudgetCategory {
   spent: number;
   remaining: number;
   percentUsed: number;
-  trend: 'up' | 'down' | 'stable';
+  trend: "up" | "down" | "stable";
 }
 
 interface BudgetAnalysis {
@@ -47,12 +47,12 @@ interface BudgetAnalysis {
 
 interface Recommendation {
   id: string;
-  type: 'increase' | 'decrease' | 'reallocate';
+  type: "increase" | "decrease" | "reallocate";
   category: string;
   currentAmount: number;
   suggestedAmount: number;
   reason: string;
-  impact: 'high' | 'medium' | 'low';
+  impact: "high" | "medium" | "low";
   confidence: number;
 }
 
@@ -71,9 +71,9 @@ interface BudgetOverviewProps {
 
 const BudgetOverview: React.FC<BudgetOverviewProps> = ({ analysis }) => {
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
@@ -89,30 +89,47 @@ const BudgetOverview: React.FC<BudgetOverviewProps> = ({ analysis }) => {
   return (
     <Card style={styles.overviewCard}>
       <Text style={styles.cardTitle}>Monthly Budget Overview</Text>
-      
+
       <View style={styles.metricsGrid}>
         <View style={styles.metricBox}>
           <Ionicons name="wallet" size={24} color={theme.colors.primary} />
           <Text style={styles.metricLabel}>Budgeted</Text>
-          <Text style={styles.metricValue}>{formatCurrency(analysis.totalBudgeted)}</Text>
+          <Text style={styles.metricValue}>
+            {formatCurrency(analysis.totalBudgeted)}
+          </Text>
         </View>
-        
+
         <View style={styles.metricBox}>
-          <Ionicons name="trending-down" size={24} color={theme.colors.warning} />
+          <Ionicons
+            name="trending-down"
+            size={24}
+            color={theme.colors.warning}
+          />
           <Text style={styles.metricLabel}>Spent</Text>
-          <Text style={[styles.metricValue, { color: getProgressColor(analysis.percentUsed) }]}>
+          <Text
+            style={[
+              styles.metricValue,
+              { color: getProgressColor(analysis.percentUsed) },
+            ]}
+          >
             {formatCurrency(analysis.totalSpent)}
           </Text>
         </View>
-        
+
         <View style={styles.metricBox}>
           <Ionicons name="cash" size={24} color={theme.colors.success} />
           <Text style={styles.metricLabel}>Remaining</Text>
-          <Text style={styles.metricValue}>{formatCurrency(analysis.totalRemaining)}</Text>
+          <Text style={styles.metricValue}>
+            {formatCurrency(analysis.totalRemaining)}
+          </Text>
         </View>
-        
+
         <View style={styles.metricBox}>
-          <Ionicons name="calendar" size={24} color={theme.colors.textSecondary} />
+          <Ionicons
+            name="calendar"
+            size={24}
+            color={theme.colors.textSecondary}
+          />
           <Text style={styles.metricLabel}>Days Left</Text>
           <Text style={styles.metricValue}>{analysis.daysRemaining}</Text>
         </View>
@@ -147,14 +164,17 @@ interface CategoryListProps {
   onUpdateCategory: (category: string, newAmount: number) => void;
 }
 
-const CategoryList: React.FC<CategoryListProps> = ({ categories, onUpdateCategory }) => {
+const CategoryList: React.FC<CategoryListProps> = ({
+  categories,
+  onUpdateCategory,
+}) => {
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState<string>('');
+  const [editValue, setEditValue] = useState<string>("");
 
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
@@ -169,9 +189,12 @@ const CategoryList: React.FC<CategoryListProps> = ({ categories, onUpdateCategor
 
   const getTrendIcon = (trend: string) => {
     switch (trend) {
-      case 'up': return 'trending-up';
-      case 'down': return 'trending-down';
-      default: return 'remove';
+      case "up":
+        return "trending-up";
+      case "down":
+        return "trending-down";
+      default:
+        return "remove";
     }
   };
 
@@ -188,12 +211,12 @@ const CategoryList: React.FC<CategoryListProps> = ({ categories, onUpdateCategor
       }
     }
     setEditingCategory(null);
-    setEditValue('');
+    setEditValue("");
   };
 
   const handleCancel = () => {
     setEditingCategory(null);
-    setEditValue('');
+    setEditValue("");
   };
 
   return (
@@ -211,11 +234,19 @@ const CategoryList: React.FC<CategoryListProps> = ({ categories, onUpdateCategor
               <Ionicons
                 name={getTrendIcon(category.trend)}
                 size={16}
-                color={category.trend === 'up' ? theme.colors.error : theme.colors.success}
+                color={
+                  category.trend === "up"
+                    ? theme.colors.error
+                    : theme.colors.success
+                }
               />
             </View>
             <TouchableOpacity onPress={() => handleEdit(category)}>
-              <Ionicons name="create-outline" size={20} color={theme.colors.primary} />
+              <Ionicons
+                name="create-outline"
+                size={20}
+                color={theme.colors.primary}
+              />
             </TouchableOpacity>
           </View>
 
@@ -232,7 +263,10 @@ const CategoryList: React.FC<CategoryListProps> = ({ categories, onUpdateCategor
               <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
                 <Ionicons name="checkmark" size={20} color="#FFF" />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={handleCancel}
+              >
                 <Ionicons name="close" size={20} color="#FFF" />
               </TouchableOpacity>
             </View>
@@ -241,17 +275,26 @@ const CategoryList: React.FC<CategoryListProps> = ({ categories, onUpdateCategor
               <View style={styles.categoryAmounts}>
                 <View style={styles.amountItem}>
                   <Text style={styles.amountLabel}>Budgeted</Text>
-                  <Text style={styles.amountValue}>{formatCurrency(category.budgeted)}</Text>
+                  <Text style={styles.amountValue}>
+                    {formatCurrency(category.budgeted)}
+                  </Text>
                 </View>
                 <View style={styles.amountItem}>
                   <Text style={styles.amountLabel}>Spent</Text>
-                  <Text style={[styles.amountValue, { color: getProgressColor(category.percentUsed) }]}>
+                  <Text
+                    style={[
+                      styles.amountValue,
+                      { color: getProgressColor(category.percentUsed) },
+                    ]}
+                  >
                     {formatCurrency(category.spent)}
                   </Text>
                 </View>
                 <View style={styles.amountItem}>
                   <Text style={styles.amountLabel}>Remaining</Text>
-                  <Text style={styles.amountValue}>{formatCurrency(category.remaining)}</Text>
+                  <Text style={styles.amountValue}>
+                    {formatCurrency(category.remaining)}
+                  </Text>
                 </View>
               </View>
 
@@ -267,7 +310,9 @@ const CategoryList: React.FC<CategoryListProps> = ({ categories, onUpdateCategor
                     ]}
                   />
                 </View>
-                <Text style={styles.progressText}>{category.percentUsed.toFixed(1)}%</Text>
+                <Text style={styles.progressText}>
+                  {category.percentUsed.toFixed(1)}%
+                </Text>
               </View>
             </>
           )}
@@ -288,16 +333,18 @@ interface SpendingChartProps {
 
 const SpendingChart: React.FC<SpendingChartProps> = ({ trends, category }) => {
   const chartData = {
-    labels: trends.slice(-7).map(t => new Date(t.date).getDate().toString()),
-    datasets: [{
-      data: trends.slice(-7).map(t => t.amount),
-    }],
+    labels: trends.slice(-7).map((t) => new Date(t.date).getDate().toString()),
+    datasets: [
+      {
+        data: trends.slice(-7).map((t) => t.amount),
+      },
+    ],
   };
 
   return (
     <Card style={styles.chartCard}>
       <Text style={styles.cardTitle}>
-        {category ? `${category} Spending Trend` : 'Overall Spending Trend'}
+        {category ? `${category} Spending Trend` : "Overall Spending Trend"}
       </Text>
       <Text style={styles.cardSubtitle}>Last 7 days</Text>
 
@@ -316,8 +363,8 @@ const SpendingChart: React.FC<SpendingChartProps> = ({ trends, category }) => {
             borderRadius: 16,
           },
           propsForDots: {
-            r: '6',
-            strokeWidth: '2',
+            r: "6",
+            strokeWidth: "2",
             stroke: theme.colors.primary,
           },
         }}
@@ -337,29 +384,40 @@ interface RecommendationsProps {
   onApplyRecommendation: (recommendation: Recommendation) => void;
 }
 
-const Recommendations: React.FC<RecommendationsProps> = ({ recommendations, onApplyRecommendation }) => {
+const Recommendations: React.FC<RecommendationsProps> = ({
+  recommendations,
+  onApplyRecommendation,
+}) => {
   const getImpactColor = (impact: string): string => {
     switch (impact) {
-      case 'high': return theme.colors.success;
-      case 'medium': return theme.colors.warning;
-      case 'low': return theme.colors.textSecondary;
-      default: return theme.colors.text;
+      case "high":
+        return theme.colors.success;
+      case "medium":
+        return theme.colors.warning;
+      case "low":
+        return theme.colors.textSecondary;
+      default:
+        return theme.colors.text;
     }
   };
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'increase': return 'arrow-up-circle';
-      case 'decrease': return 'arrow-down-circle';
-      case 'reallocate': return 'swap-horizontal';
-      default: return 'bulb';
+      case "increase":
+        return "arrow-up-circle";
+      case "decrease":
+        return "arrow-down-circle";
+      case "reallocate":
+        return "swap-horizontal";
+      default:
+        return "bulb";
     }
   };
 
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
@@ -367,15 +425,15 @@ const Recommendations: React.FC<RecommendationsProps> = ({ recommendations, onAp
 
   const handleApply = (recommendation: Recommendation) => {
     Alert.alert(
-      'Apply Recommendation',
+      "Apply Recommendation",
       `Update ${recommendation.category} budget from ${formatCurrency(recommendation.currentAmount)} to ${formatCurrency(recommendation.suggestedAmount)}?`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Apply',
+          text: "Apply",
           onPress: () => onApplyRecommendation(recommendation),
         },
-      ]
+      ],
     );
   };
 
@@ -384,9 +442,15 @@ const Recommendations: React.FC<RecommendationsProps> = ({ recommendations, onAp
       <Card style={styles.recommendationsCard}>
         <Text style={styles.cardTitle}>AI Recommendations</Text>
         <View style={styles.emptyState}>
-          <Ionicons name="checkmark-circle" size={48} color={theme.colors.success} />
+          <Ionicons
+            name="checkmark-circle"
+            size={48}
+            color={theme.colors.success}
+          />
           <Text style={styles.emptyStateText}>Your budget looks great!</Text>
-          <Text style={styles.emptyStateSubtext}>No optimization suggestions at this time.</Text>
+          <Text style={styles.emptyStateSubtext}>
+            No optimization suggestions at this time.
+          </Text>
         </View>
       </Card>
     );
@@ -404,8 +468,17 @@ const Recommendations: React.FC<RecommendationsProps> = ({ recommendations, onAp
       {recommendations.map((rec) => (
         <View key={rec.id} style={styles.recommendationItem}>
           <View style={styles.recommendationHeader}>
-            <View style={[styles.recommendationIcon, { backgroundColor: getImpactColor(rec.impact) + '20' }]}>
-              <Ionicons name={getTypeIcon(rec.type)} size={24} color={getImpactColor(rec.impact)} />
+            <View
+              style={[
+                styles.recommendationIcon,
+                { backgroundColor: getImpactColor(rec.impact) + "20" },
+              ]}
+            >
+              <Ionicons
+                name={getTypeIcon(rec.type)}
+                size={24}
+                color={getImpactColor(rec.impact)}
+              />
             </View>
             <View style={styles.recommendationContent}>
               <Text style={styles.recommendationCategory}>{rec.category}</Text>
@@ -416,12 +489,23 @@ const Recommendations: React.FC<RecommendationsProps> = ({ recommendations, onAp
           <View style={styles.recommendationAmounts}>
             <View style={styles.amountChange}>
               <Text style={styles.amountChangeLabel}>Current</Text>
-              <Text style={styles.amountChangeValue}>{formatCurrency(rec.currentAmount)}</Text>
+              <Text style={styles.amountChangeValue}>
+                {formatCurrency(rec.currentAmount)}
+              </Text>
             </View>
-            <Ionicons name="arrow-forward" size={20} color={theme.colors.textSecondary} />
+            <Ionicons
+              name="arrow-forward"
+              size={20}
+              color={theme.colors.textSecondary}
+            />
             <View style={styles.amountChange}>
               <Text style={styles.amountChangeLabel}>Suggested</Text>
-              <Text style={[styles.amountChangeValue, { color: getImpactColor(rec.impact) }]}>
+              <Text
+                style={[
+                  styles.amountChangeValue,
+                  { color: getImpactColor(rec.impact) },
+                ]}
+              >
                 {formatCurrency(rec.suggestedAmount)}
               </Text>
             </View>
@@ -429,10 +513,15 @@ const Recommendations: React.FC<RecommendationsProps> = ({ recommendations, onAp
 
           <View style={styles.recommendationFooter}>
             <View style={styles.confidenceBadge}>
-              <Text style={styles.confidenceText}>{(rec.confidence * 100).toFixed(0)}% confidence</Text>
+              <Text style={styles.confidenceText}>
+                {(rec.confidence * 100).toFixed(0)}% confidence
+              </Text>
             </View>
             <TouchableOpacity
-              style={[styles.applyButton, { backgroundColor: getImpactColor(rec.impact) }]}
+              style={[
+                styles.applyButton,
+                { backgroundColor: getImpactColor(rec.impact) },
+              ]}
               onPress={() => handleApply(rec)}
             >
               <Text style={styles.applyButtonText}>Apply</Text>
@@ -461,9 +550,9 @@ export default function SmartBudgetScreen() {
 
       // Parallel API calls
       const [analysisRes, recommendationsRes, trendsRes] = await Promise.all([
-        fetch('/api/financial/budgets/analyze?period=monthly'),
-        fetch('/api/financial/budgets/recommendations'),
-        fetch('/api/financial/spending/trends?period=daily&days=30'),
+        fetch("/api/financial/budgets/analyze?period=monthly"),
+        fetch("/api/financial/budgets/recommendations"),
+        fetch("/api/financial/spending/trends?period=daily&days=30"),
       ]);
 
       if (analysisRes.ok) {
@@ -481,8 +570,8 @@ export default function SmartBudgetScreen() {
         setTrends(data.trends || []);
       }
     } catch (error) {
-      if (__DEV__) console.error('Error fetching budget data:', error);
-      Alert.alert('Error', 'Failed to load budget data. Please try again.');
+      if (__DEV__) console.error("Error fetching budget data:", error);
+      Alert.alert("Error", "Failed to load budget data. Please try again.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -500,48 +589,56 @@ export default function SmartBudgetScreen() {
 
   const handleUpdateCategory = async (category: string, newAmount: number) => {
     try {
-      const response = await fetch('/api/financial/budgets/adjust', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/financial/budgets/adjust", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           adjustments: [{ category, budgeted: newAmount }],
         }),
       });
 
       if (response.ok) {
-        Alert.alert('Success', `${category} budget updated to $${newAmount.toLocaleString()}`);
+        Alert.alert(
+          "Success",
+          `${category} budget updated to $${newAmount.toLocaleString()}`,
+        );
         fetchBudgetData();
       } else {
-        Alert.alert('Error', 'Failed to update budget. Please try again.');
+        Alert.alert("Error", "Failed to update budget. Please try again.");
       }
     } catch (error) {
-      if (__DEV__) console.error('Error updating category:', error);
-      Alert.alert('Error', 'Failed to update budget. Please try again.');
+      if (__DEV__) console.error("Error updating category:", error);
+      Alert.alert("Error", "Failed to update budget. Please try again.");
     }
   };
 
   const handleApplyRecommendation = async (recommendation: Recommendation) => {
     try {
-      const response = await fetch('/api/financial/budgets/adjust', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/financial/budgets/adjust", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          adjustments: [{
-            category: recommendation.category,
-            budgeted: recommendation.suggestedAmount,
-          }],
+          adjustments: [
+            {
+              category: recommendation.category,
+              budgeted: recommendation.suggestedAmount,
+            },
+          ],
         }),
       });
 
       if (response.ok) {
-        Alert.alert('Success', 'Budget recommendation applied successfully!');
+        Alert.alert("Success", "Budget recommendation applied successfully!");
         fetchBudgetData();
       } else {
-        Alert.alert('Error', 'Failed to apply recommendation. Please try again.');
+        Alert.alert(
+          "Error",
+          "Failed to apply recommendation. Please try again.",
+        );
       }
     } catch (error) {
-      if (__DEV__) console.error('Error applying recommendation:', error);
-      Alert.alert('Error', 'Failed to apply recommendation. Please try again.');
+      if (__DEV__) console.error("Error applying recommendation:", error);
+      Alert.alert("Error", "Failed to apply recommendation. Please try again.");
     }
   };
 
@@ -561,7 +658,11 @@ export default function SmartBudgetScreen() {
       <ScrollView
         style={styles.scrollView}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[theme.colors.primary]}
+          />
         }
       >
         {/* Budget Overview */}
@@ -599,8 +700,8 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     marginTop: theme.spacing.md,
@@ -614,7 +715,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: theme.spacing.sm,
   },
@@ -623,18 +724,18 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   metricsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
     marginTop: theme.spacing.md,
   },
   metricBox: {
-    width: '48%',
+    width: "48%",
     backgroundColor: theme.colors.background,
     borderRadius: theme.borderRadius.md,
     padding: theme.spacing.md,
     marginBottom: theme.spacing.sm,
-    alignItems: 'center',
+    alignItems: "center",
   },
   metricLabel: {
     fontSize: 12,
@@ -643,7 +744,7 @@ const styles = StyleSheet.create({
   },
   metricValue: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: theme.colors.text,
     marginTop: 4,
   },
@@ -654,17 +755,17 @@ const styles = StyleSheet.create({
     height: 8,
     backgroundColor: theme.colors.border,
     borderRadius: 4,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   progressFill: {
-    height: '100%',
+    height: "100%",
     borderRadius: 4,
   },
   progressText: {
     fontSize: 12,
     color: theme.colors.textSecondary,
     marginTop: 4,
-    textAlign: 'right',
+    textAlign: "right",
   },
   // CategoryList styles
   categoryCard: {
@@ -672,9 +773,9 @@ const styles = StyleSheet.create({
     padding: theme.spacing.lg,
   },
   cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: theme.spacing.md,
   },
   categoryItem: {
@@ -683,25 +784,25 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.border,
   },
   categoryHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: theme.spacing.sm,
   },
   categoryTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: theme.spacing.sm,
   },
   categoryName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
-    textTransform: 'capitalize',
+    textTransform: "capitalize",
   },
   editContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: theme.spacing.sm,
     marginTop: theme.spacing.sm,
   },
@@ -720,25 +821,25 @@ const styles = StyleSheet.create({
     height: 40,
     backgroundColor: theme.colors.success,
     borderRadius: theme.borderRadius.sm,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   cancelButton: {
     width: 40,
     height: 40,
     backgroundColor: theme.colors.error,
     borderRadius: theme.borderRadius.sm,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   categoryAmounts: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: theme.spacing.sm,
   },
   amountItem: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
   },
   amountLabel: {
     fontSize: 11,
@@ -747,12 +848,12 @@ const styles = StyleSheet.create({
   },
   amountValue: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   categoryProgress: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: theme.spacing.sm,
   },
   // SpendingChart styles
@@ -775,20 +876,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: 2,
     minWidth: 24,
-    alignItems: 'center',
+    alignItems: "center",
   },
   badgeText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#FFF',
+    fontWeight: "600",
+    color: "#FFF",
   },
   emptyState: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: theme.spacing.xl,
   },
   emptyStateText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginTop: theme.spacing.md,
   },
@@ -803,16 +904,16 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.border,
   },
   recommendationHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     marginBottom: theme.spacing.md,
   },
   recommendationIcon: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: theme.spacing.md,
   },
   recommendationContent: {
@@ -820,10 +921,10 @@ const styles = StyleSheet.create({
   },
   recommendationCategory: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: 4,
-    textTransform: 'capitalize',
+    textTransform: "capitalize",
   },
   recommendationReason: {
     fontSize: 14,
@@ -831,16 +932,16 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   recommendationAmounts: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
     backgroundColor: theme.colors.background,
     borderRadius: theme.borderRadius.md,
     padding: theme.spacing.md,
     marginBottom: theme.spacing.md,
   },
   amountChange: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   amountChangeLabel: {
     fontSize: 12,
@@ -849,13 +950,13 @@ const styles = StyleSheet.create({
   },
   amountChangeValue: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: theme.colors.text,
   },
   recommendationFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   confidenceBadge: {
     backgroundColor: theme.colors.background,
@@ -868,8 +969,8 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   applyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
@@ -877,8 +978,7 @@ const styles = StyleSheet.create({
   },
   applyButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#FFF',
+    fontWeight: "600",
+    color: "#FFF",
   },
 });
-

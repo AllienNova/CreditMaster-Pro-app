@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,32 +7,57 @@ import {
   TouchableOpacity,
   RefreshControl,
   Dimensions,
-} from 'react-native';
-import { Stack } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import Svg, { Circle, Defs, LinearGradient, Stop, Line, Path } from 'react-native-svg';
+} from "react-native";
+import { Stack } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import Svg, {
+  Circle,
+  Defs,
+  LinearGradient,
+  Stop,
+  Line,
+  Path,
+} from "react-native-svg";
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 // Theme constants
 const theme = {
   colors: {
-    primary: '#10B981',
-    primaryDark: '#059669',
-    background: '#F9FAFB',
-    card: '#FFFFFF',
-    text: '#111827',
-    textSecondary: '#6B7280',
-    border: '#E5E7EB',
-    success: '#10B981',
-    warning: '#F59E0B',
-    error: '#EF4444',
+    primary: "#10B981",
+    primaryDark: "#059669",
+    background: "#F9FAFB",
+    card: "#FFFFFF",
+    text: "#111827",
+    textSecondary: "#6B7280",
+    border: "#E5E7EB",
+    success: "#10B981",
+    warning: "#F59E0B",
+    error: "#EF4444",
   },
 };
 
-type VitalityGrade = 'A+' | 'A' | 'A-' | 'B+' | 'B' | 'B-' | 'C+' | 'C' | 'C-' | 'D+' | 'D' | 'D-' | 'F';
-type TrendDirection = 'improving' | 'stable' | 'declining';
-type ComponentCategory = 'credit' | 'spending' | 'savings' | 'debt' | 'investments';
+type VitalityGrade =
+  | "A+"
+  | "A"
+  | "A-"
+  | "B+"
+  | "B"
+  | "B-"
+  | "C+"
+  | "C"
+  | "C-"
+  | "D+"
+  | "D"
+  | "D-"
+  | "F";
+type TrendDirection = "improving" | "stable" | "declining";
+type ComponentCategory =
+  | "credit"
+  | "spending"
+  | "savings"
+  | "debt"
+  | "investments";
 
 interface QuickWin {
   id: string;
@@ -76,77 +101,136 @@ interface VitalityScoreData {
 // Mock data - replace with API call
 const mockVitalityData: VitalityScoreData = {
   overall: 78,
-  grade: 'B+',
+  grade: "B+",
   percentile: 72,
-  trend: 'improving',
+  trend: "improving",
   trendPercentage: 5.2,
   components: {
-    credit: { score: 85, weight: 0.25, trend: 'improving', details: { creditScore: 720, utilization: 25 } },
-    spending: { score: 70, weight: 0.20, trend: 'stable', details: { budgetAdherence: 0.85 } },
-    savings: { score: 65, weight: 0.20, trend: 'improving', details: { emergencyFund: 2.5 } },
-    debt: { score: 75, weight: 0.20, trend: 'stable', details: { debtToIncome: 0.28 } },
-    investments: { score: 80, weight: 0.15, trend: 'improving', details: { diversification: 0.75 } },
+    credit: {
+      score: 85,
+      weight: 0.25,
+      trend: "improving",
+      details: { creditScore: 720, utilization: 25 },
+    },
+    spending: {
+      score: 70,
+      weight: 0.2,
+      trend: "stable",
+      details: { budgetAdherence: 0.85 },
+    },
+    savings: {
+      score: 65,
+      weight: 0.2,
+      trend: "improving",
+      details: { emergencyFund: 2.5 },
+    },
+    debt: {
+      score: 75,
+      weight: 0.2,
+      trend: "stable",
+      details: { debtToIncome: 0.28 },
+    },
+    investments: {
+      score: 80,
+      weight: 0.15,
+      trend: "improving",
+      details: { diversification: 0.75 },
+    },
   },
   quickWins: [
-    { id: '1', title: 'Pay down credit card', description: 'Reduce balance by $500 to lower utilization', impact: 8, category: 'credit' },
-    { id: '2', title: 'Set up auto-save', description: 'Automate $100/month to savings', impact: 5, category: 'savings' },
-    { id: '3', title: 'Review subscriptions', description: 'Cancel unused subscriptions', impact: 3, category: 'spending' },
+    {
+      id: "1",
+      title: "Pay down credit card",
+      description: "Reduce balance by $500 to lower utilization",
+      impact: 8,
+      category: "credit",
+    },
+    {
+      id: "2",
+      title: "Set up auto-save",
+      description: "Automate $100/month to savings",
+      impact: 5,
+      category: "savings",
+    },
+    {
+      id: "3",
+      title: "Review subscriptions",
+      description: "Cancel unused subscriptions",
+      impact: 3,
+      category: "spending",
+    },
   ],
   nextMilestone: {
     target: 80,
-    title: 'Score Champion',
-    description: 'Reach 80+ vitality score',
+    title: "Score Champion",
+    description: "Reach 80+ vitality score",
     pointsNeeded: 2,
   },
   history: [
-    { date: '2025-12-01', score: 72 },
-    { date: '2025-12-15', score: 74 },
-    { date: '2026-01-01', score: 76 },
-    { date: '2026-01-10', score: 78 },
+    { date: "2025-12-01", score: 72 },
+    { date: "2025-12-15", score: 74 },
+    { date: "2026-01-01", score: 76 },
+    { date: "2026-01-10", score: 78 },
   ],
 };
 
 function getGradeColor(grade: VitalityGrade): string {
-  if (grade.startsWith('A')) return '#10B981';
-  if (grade.startsWith('B')) return '#3B82F6';
-  if (grade.startsWith('C')) return '#F59E0B';
-  if (grade.startsWith('D')) return '#F97316';
-  return '#EF4444';
+  if (grade.startsWith("A")) return "#10B981";
+  if (grade.startsWith("B")) return "#3B82F6";
+  if (grade.startsWith("C")) return "#F59E0B";
+  if (grade.startsWith("D")) return "#F97316";
+  return "#EF4444";
 }
 
 function getTrendIcon(trend: TrendDirection): string {
   switch (trend) {
-    case 'improving': return 'trending-up';
-    case 'declining': return 'trending-down';
-    default: return 'remove';
+    case "improving":
+      return "trending-up";
+    case "declining":
+      return "trending-down";
+    default:
+      return "remove";
   }
 }
 
 function getTrendColor(trend: TrendDirection): string {
   switch (trend) {
-    case 'improving': return '#10B981';
-    case 'declining': return '#EF4444';
-    default: return '#6B7280';
+    case "improving":
+      return "#10B981";
+    case "declining":
+      return "#EF4444";
+    default:
+      return "#6B7280";
   }
 }
 
 function getComponentIcon(category: ComponentCategory): string {
   switch (category) {
-    case 'credit': return 'card';
-    case 'spending': return 'cart';
-    case 'savings': return 'wallet';
-    case 'debt': return 'trending-down';
-    case 'investments': return 'stats-chart';
+    case "credit":
+      return "card";
+    case "spending":
+      return "cart";
+    case "savings":
+      return "wallet";
+    case "debt":
+      return "trending-down";
+    case "investments":
+      return "stats-chart";
   }
 }
 
 function getComponentColor(category: ComponentCategory): string {
   switch (category) {
-    case 'credit': return '#3B82F6';
-    case 'spending': return '#10B981';
-    case 'savings': return '#8B5CF6';
-    case 'debt': return '#F59E0B';
-    case 'investments': return '#EC4899';
+    case "credit":
+      return "#3B82F6";
+    case "spending":
+      return "#10B981";
+    case "savings":
+      return "#8B5CF6";
+    case "debt":
+      return "#F59E0B";
+    case "investments":
+      return "#EC4899";
   }
 }
 
@@ -168,7 +252,13 @@ function HeroScore({ data }: { data: VitalityScoreData }) {
         <View style={styles.scoreCircleContainer}>
           <Svg width={size} height={size}>
             <Defs>
-              <LinearGradient id="heroGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <LinearGradient
+                id="heroGradient"
+                x1="0%"
+                y1="0%"
+                x2="100%"
+                y2="100%"
+              >
                 <Stop offset="0%" stopColor="#10B981" />
                 <Stop offset="100%" stopColor="#059669" />
               </LinearGradient>
@@ -208,7 +298,11 @@ function HeroScore({ data }: { data: VitalityScoreData }) {
           <View style={styles.trendBadge}>
             <Ionicons name={trendIcon as any} size={16} color={trendColor} />
             <Text style={[styles.trendText, { color: trendColor }]}>
-              {data.trend === 'improving' ? '+' : data.trend === 'declining' ? '-' : ''}
+              {data.trend === "improving"
+                ? "+"
+                : data.trend === "declining"
+                  ? "-"
+                  : ""}
               {Math.abs(data.trendPercentage).toFixed(1)}%
             </Text>
           </View>
@@ -223,14 +317,18 @@ function HeroScore({ data }: { data: VitalityScoreData }) {
       <View style={styles.milestoneSection}>
         <View style={styles.milestoneHeader}>
           <Ionicons name="trophy" size={16} color="#F59E0B" />
-          <Text style={styles.milestoneTitle}>Next: {data.nextMilestone.title}</Text>
+          <Text style={styles.milestoneTitle}>
+            Next: {data.nextMilestone.title}
+          </Text>
         </View>
         <View style={styles.milestoneProgress}>
           <View style={styles.milestoneTrack}>
             <View
               style={[
                 styles.milestoneFill,
-                { width: `${((data.overall / data.nextMilestone.target) * 100)}%` },
+                {
+                  width: `${(data.overall / data.nextMilestone.target) * 100}%`,
+                },
               ]}
             />
           </View>
@@ -300,11 +398,17 @@ function ComponentCard({
     <View style={styles.componentCard}>
       <View style={styles.componentHeader}>
         <View style={[styles.componentIcon, { backgroundColor: `${color}20` }]}>
-          <Ionicons name={getComponentIcon(category) as any} size={18} color={color} />
+          <Ionicons
+            name={getComponentIcon(category) as any}
+            size={18}
+            color={color}
+          />
         </View>
         <View style={styles.componentInfo}>
           <Text style={styles.componentName}>{name}</Text>
-          <Text style={styles.componentWeight}>{(weight * 100).toFixed(0)}% weight</Text>
+          <Text style={styles.componentWeight}>
+            {(weight * 100).toFixed(0)}% weight
+          </Text>
         </View>
         <View style={styles.componentScoreContainer}>
           <Text style={[styles.componentScore, { color }]}>{score}</Text>
@@ -315,32 +419,44 @@ function ComponentCard({
       </View>
       <View style={styles.componentProgress}>
         <View style={styles.componentTrack}>
-          <View style={[styles.componentFill, { width: `${score}%`, backgroundColor: color }]} />
+          <View
+            style={[
+              styles.componentFill,
+              { width: `${score}%`, backgroundColor: color },
+            ]}
+          />
         </View>
       </View>
     </View>
   );
 }
 
-function TrendChart({ history }: { history: { date: string; score: number }[] }) {
+function TrendChart({
+  history,
+}: {
+  history: { date: string; score: number }[];
+}) {
   const chartWidth = SCREEN_WIDTH - 72;
   const chartHeight = 100;
   const padding = 10;
 
   if (history.length < 2) return null;
 
-  const minScore = Math.min(...history.map(h => h.score)) - 5;
-  const maxScore = Math.max(...history.map(h => h.score)) + 5;
+  const minScore = Math.min(...history.map((h) => h.score)) - 5;
+  const maxScore = Math.max(...history.map((h) => h.score)) + 5;
   const range = maxScore - minScore;
 
   const points = history.map((h, i) => ({
     x: padding + (i / (history.length - 1)) * (chartWidth - 2 * padding),
-    y: chartHeight - padding - ((h.score - minScore) / range) * (chartHeight - 2 * padding),
+    y:
+      chartHeight -
+      padding -
+      ((h.score - minScore) / range) * (chartHeight - 2 * padding),
   }));
 
   const pathD = points
     .map((p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`))
-    .join(' ');
+    .join(" ");
 
   return (
     <View style={styles.sectionCard}>
@@ -381,7 +497,10 @@ function TrendChart({ history }: { history: { date: string; score: number }[] })
       <View style={styles.chartLabels}>
         {history.map((h, i) => (
           <Text key={i} style={styles.chartLabel}>
-            {new Date(h.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            {new Date(h.date).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+            })}
           </Text>
         ))}
       </View>
@@ -396,7 +515,7 @@ export default function VitalityScreen() {
 
   const fetchData = async () => {
     try {
-      const response = await fetch('/api/financial/vitality-score');
+      const response = await fetch("/api/financial/vitality-score");
       if (response.ok) {
         const vitalityData = await response.json();
         setData(vitalityData);
@@ -434,9 +553,9 @@ export default function VitalityScreen() {
     <>
       <Stack.Screen
         options={{
-          title: 'Financial Vitality',
-          headerStyle: { backgroundColor: '#F9FAFB' },
-          headerTitleStyle: { fontWeight: '600', color: '#111827' },
+          title: "Financial Vitality",
+          headerStyle: { backgroundColor: "#F9FAFB" },
+          headerTitleStyle: { fontWeight: "600", color: "#111827" },
         }}
       />
 
@@ -507,60 +626,60 @@ export default function VitalityScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: "#F9FAFB",
   },
   content: {
     padding: 16,
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#F9FAFB",
   },
   loadingText: {
     fontSize: 16,
-    color: '#6B7280',
+    color: "#6B7280",
   },
   // Hero Section
   heroCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 20,
     padding: 24,
     marginBottom: 16,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
   },
   heroContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   scoreCircleContainer: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
+    position: "relative",
+    alignItems: "center",
+    justifyContent: "center",
   },
   scoreOverlay: {
-    position: 'absolute',
-    alignItems: 'center',
+    position: "absolute",
+    alignItems: "center",
   },
   scoreValue: {
     fontSize: 42,
-    fontWeight: '700',
-    color: '#111827',
+    fontWeight: "700",
+    color: "#111827",
   },
   scoreLabel: {
     fontSize: 12,
-    color: '#6B7280',
+    color: "#6B7280",
     marginTop: 2,
   },
   heroInfo: {
     flex: 1,
     marginLeft: 20,
-    alignItems: 'flex-start',
+    alignItems: "flex-start",
   },
   gradeBadge: {
     paddingHorizontal: 12,
@@ -570,100 +689,100 @@ const styles = StyleSheet.create({
   },
   gradeText: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
   trendBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
     marginBottom: 8,
   },
   trendText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   percentileText: {
     fontSize: 13,
-    color: '#6B7280',
+    color: "#6B7280",
   },
   // Milestone
   milestoneSection: {
     marginTop: 20,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: "#E5E7EB",
   },
   milestoneHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     marginBottom: 8,
   },
   milestoneTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
+    fontWeight: "600",
+    color: "#111827",
   },
   milestoneProgress: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   milestoneTrack: {
     flex: 1,
     height: 8,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: "#E5E7EB",
     borderRadius: 4,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   milestoneFill: {
-    height: '100%',
-    backgroundColor: '#F59E0B',
+    height: "100%",
+    backgroundColor: "#F59E0B",
     borderRadius: 4,
   },
   milestonePoints: {
     fontSize: 12,
-    fontWeight: '500',
-    color: '#F59E0B',
+    fontWeight: "500",
+    color: "#F59E0B",
   },
   // Section Card
   sectionCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
+    fontWeight: "600",
+    color: "#111827",
   },
   // Quick Wins
   quickWinItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: "#F3F4F6",
   },
   quickWinIcon: {
     width: 36,
     height: 36,
     borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   quickWinContent: {
     flex: 1,
@@ -671,37 +790,37 @@ const styles = StyleSheet.create({
   },
   quickWinTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
+    fontWeight: "600",
+    color: "#111827",
   },
   quickWinDescription: {
     fontSize: 12,
-    color: '#6B7280',
+    color: "#6B7280",
     marginTop: 2,
   },
   quickWinImpact: {
-    alignItems: 'center',
+    alignItems: "center",
     marginLeft: 12,
   },
   impactValue: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#10B981',
+    fontWeight: "700",
+    color: "#10B981",
   },
   impactLabel: {
     fontSize: 10,
-    color: '#6B7280',
+    color: "#6B7280",
   },
   // Chart
   chartLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     paddingHorizontal: 10,
     marginTop: 8,
   },
   chartLabel: {
     fontSize: 10,
-    color: '#6B7280',
+    color: "#6B7280",
   },
   // Components
   componentsList: {
@@ -709,20 +828,20 @@ const styles = StyleSheet.create({
   },
   componentCard: {
     padding: 12,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: "#F9FAFB",
     borderRadius: 12,
   },
   componentHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 8,
   },
   componentIcon: {
     width: 32,
     height: 32,
     borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   componentInfo: {
     flex: 1,
@@ -730,21 +849,21 @@ const styles = StyleSheet.create({
   },
   componentName: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
+    fontWeight: "600",
+    color: "#111827",
   },
   componentWeight: {
     fontSize: 11,
-    color: '#9CA3AF',
+    color: "#9CA3AF",
   },
   componentScoreContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   componentScore: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   componentTrend: {
     marginTop: 2,
@@ -754,12 +873,12 @@ const styles = StyleSheet.create({
   },
   componentTrack: {
     height: 6,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: "#E5E7EB",
     borderRadius: 3,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   componentFill: {
-    height: '100%',
+    height: "100%",
     borderRadius: 3,
   },
 });

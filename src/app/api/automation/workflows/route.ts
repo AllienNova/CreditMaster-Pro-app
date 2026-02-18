@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { rbac } from '@/lib/auth/rbac';
-import { WorkflowEngine } from '@/lib/automation/workflow-engine';
+import { NextRequest, NextResponse } from "next/server";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { rbac } from "@/lib/auth/rbac";
+import { WorkflowEngine } from "@/lib/automation/workflow-engine";
 
 /**
  * GET /api/automation/workflows
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     const validation = await jwtValidation.validateFromHeaders(request);
 
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const startTime = Date.now();
@@ -30,8 +30,8 @@ export async function GET(request: NextRequest) {
     // WorkflowsAPI error: Error fetching workflows
     void _error;
     return NextResponse.json(
-      { error: 'Failed to fetch workflows' },
-      { status: 500 }
+      { error: "Failed to fetch workflows" },
+      { status: 500 },
     );
   }
 }
@@ -46,12 +46,12 @@ export async function POST(request: NextRequest) {
     const validation = await jwtValidation.validateFromHeaders(request);
 
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check permissions
-    if (!rbac.hasPermission(validation.user, 'automation:workflows:create')) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!rbac.hasPermission(validation.user, "automation:workflows:create")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const startTime = Date.now();
@@ -61,8 +61,8 @@ export async function POST(request: NextRequest) {
 
     if (!template_id) {
       return NextResponse.json(
-        { error: 'template_id is required' },
-        { status: 400 }
+        { error: "template_id is required" },
+        { status: 400 },
       );
     }
 
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     const workflow = await WorkflowEngine.executeWorkflow(
       validation.user.id,
       template_id,
-      config
+      config,
     );
 
     const duration = Date.now() - startTime;
@@ -82,9 +82,8 @@ export async function POST(request: NextRequest) {
     // WorkflowsAPI error: Error creating workflow
     void _error;
     return NextResponse.json(
-      { error: 'Failed to create workflow' },
-      { status: 500 }
+      { error: "Failed to create workflow" },
+      { status: 500 },
     );
   }
 }
-

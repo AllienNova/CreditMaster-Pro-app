@@ -6,20 +6,24 @@
  */
 
 // Use global jest instead of @jest/globals to avoid type issues with mocked functions
-import { UnifiedMarketDataService } from '../market-data-service';
-import { AssetType, TimeInterval, MarketDataAPIError } from '../types/market-data.types';
+import { UnifiedMarketDataService } from "../market-data-service";
+import {
+  AssetType,
+  TimeInterval,
+  MarketDataAPIError,
+} from "../types/market-data.types";
 
 // Mock the integrations
-jest.mock('../../integrations/alpha-vantage');
-jest.mock('../../integrations/polygon');
-jest.mock('../../integrations/coingecko');
-jest.mock('../../cache/redis-cache-service');
+jest.mock("../../integrations/alpha-vantage");
+jest.mock("../../integrations/polygon");
+jest.mock("../../integrations/coingecko");
+jest.mock("../../cache/redis-cache-service");
 
-import { AlphaVantageClient } from '../../integrations/alpha-vantage';
-import { PolygonClient } from '../../integrations/polygon';
-import { CoinGeckoClient } from '../../integrations/coingecko';
+import { AlphaVantageClient } from "../../integrations/alpha-vantage";
+import { PolygonClient } from "../../integrations/polygon";
+import { CoinGeckoClient } from "../../integrations/coingecko";
 
-describe('UnifiedMarketDataService', () => {
+describe("UnifiedMarketDataService", () => {
   let service: UnifiedMarketDataService;
   let mockAlphaVantage: any;
   let mockPolygon: any;
@@ -31,9 +35,9 @@ describe('UnifiedMarketDataService', () => {
 
     // Create service instance
     service = new UnifiedMarketDataService({
-      alphaVantageKey: 'test-key',
-      polygonKey: 'test-key',
-      polygonTier: 'free',
+      alphaVantageKey: "test-key",
+      polygonKey: "test-key",
+      polygonTier: "free",
       enableRedis: false,
     });
 
@@ -51,10 +55,10 @@ describe('UnifiedMarketDataService', () => {
   // STOCK QUOTE TESTS
   // ============================================================================
 
-  describe('getQuote - Stock', () => {
-    it('should get stock quote from Polygon (primary provider)', async () => {
+  describe("getQuote - Stock", () => {
+    it("should get stock quote from Polygon (primary provider)", async () => {
       const mockQuote = {
-        symbol: 'AAPL',
+        symbol: "AAPL",
         price: 150.25,
         change: 2.5,
         changePercent: 1.69,
@@ -68,16 +72,16 @@ describe('UnifiedMarketDataService', () => {
 
       mockPolygon.getQuote = jest.fn().mockResolvedValue(mockQuote);
 
-      const result = await service.getQuote('AAPL', AssetType.STOCK);
+      const result = await service.getQuote("AAPL", AssetType.STOCK);
 
       expect(result).toEqual(mockQuote);
-      expect(mockPolygon.getQuote).toHaveBeenCalledWith('AAPL');
+      expect(mockPolygon.getQuote).toHaveBeenCalledWith("AAPL");
       expect(mockAlphaVantage.getQuote).not.toHaveBeenCalled();
     });
 
-    it('should fallback to Alpha Vantage when Polygon fails', async () => {
+    it("should fallback to Alpha Vantage when Polygon fails", async () => {
       const mockQuote = {
-        symbol: 'AAPL',
+        symbol: "AAPL",
         price: 150.25,
         change: 2.5,
         changePercent: 1.69,
@@ -89,31 +93,52 @@ describe('UnifiedMarketDataService', () => {
         timestamp: new Date(),
       };
 
-      mockPolygon.getQuote = jest.fn().mockRejectedValue(
-        new MarketDataAPIError('Rate limit exceeded', 'RATE_LIMIT', 'Polygon', true)
-      );
+      mockPolygon.getQuote = jest
+        .fn()
+        .mockRejectedValue(
+          new MarketDataAPIError(
+            "Rate limit exceeded",
+            "RATE_LIMIT",
+            "Polygon",
+            true,
+          ),
+        );
       mockAlphaVantage.getQuote = jest.fn().mockResolvedValue(mockQuote);
 
-      const result = await service.getQuote('AAPL', AssetType.STOCK);
+      const result = await service.getQuote("AAPL", AssetType.STOCK);
 
       expect(result).toEqual(mockQuote);
-      expect(mockPolygon.getQuote).toHaveBeenCalledWith('AAPL');
-      expect(mockAlphaVantage.getQuote).toHaveBeenCalledWith('AAPL');
+      expect(mockPolygon.getQuote).toHaveBeenCalledWith("AAPL");
+      expect(mockAlphaVantage.getQuote).toHaveBeenCalledWith("AAPL");
     });
 
-    it('should throw error when all providers fail', async () => {
-      mockPolygon.getQuote = jest.fn().mockRejectedValue(
-        new MarketDataAPIError('Rate limit exceeded', 'RATE_LIMIT', 'Polygon', true)
-      );
-      mockAlphaVantage.getQuote = jest.fn().mockRejectedValue(
-        new MarketDataAPIError('API error', 'API_ERROR', 'AlphaVantage', false)
-      );
+    it("should throw error when all providers fail", async () => {
+      mockPolygon.getQuote = jest
+        .fn()
+        .mockRejectedValue(
+          new MarketDataAPIError(
+            "Rate limit exceeded",
+            "RATE_LIMIT",
+            "Polygon",
+            true,
+          ),
+        );
+      mockAlphaVantage.getQuote = jest
+        .fn()
+        .mockRejectedValue(
+          new MarketDataAPIError(
+            "API error",
+            "API_ERROR",
+            "AlphaVantage",
+            false,
+          ),
+        );
 
-      await expect(service.getQuote('AAPL', AssetType.STOCK)).rejects.toThrow(
-        MarketDataAPIError
+      await expect(service.getQuote("AAPL", AssetType.STOCK)).rejects.toThrow(
+        MarketDataAPIError,
       );
-      await expect(service.getQuote('AAPL', AssetType.STOCK)).rejects.toThrow(
-        'All providers failed'
+      await expect(service.getQuote("AAPL", AssetType.STOCK)).rejects.toThrow(
+        "All providers failed",
       );
     });
   });
@@ -122,11 +147,11 @@ describe('UnifiedMarketDataService', () => {
   // CRYPTO QUOTE TESTS
   // ============================================================================
 
-  describe('getQuote - Crypto', () => {
-    it('should get crypto quote from CoinGecko', async () => {
+  describe("getQuote - Crypto", () => {
+    it("should get crypto quote from CoinGecko", async () => {
       const mockQuote = {
-        symbol: 'BTC',
-        name: 'bitcoin',
+        symbol: "BTC",
+        name: "bitcoin",
         price: 45000,
         change24h: 1500,
         changePercent24h: 3.45,
@@ -142,18 +167,18 @@ describe('UnifiedMarketDataService', () => {
         btc: mockQuote,
       });
 
-      const result = await service.getQuote('BTC', AssetType.CRYPTO);
+      const result = await service.getQuote("BTC", AssetType.CRYPTO);
 
       expect(result).toEqual(mockQuote);
-      expect(mockCoinGecko.getCoinPrice).toHaveBeenCalledWith(['btc'], ['usd']);
+      expect(mockCoinGecko.getCoinPrice).toHaveBeenCalledWith(["btc"], ["usd"]);
     });
 
-    it('should throw error when crypto not found', async () => {
+    it("should throw error when crypto not found", async () => {
       mockCoinGecko.getCoinPrice = jest.fn().mockResolvedValue({});
 
-      await expect(service.getQuote('INVALID', AssetType.CRYPTO)).rejects.toThrow(
-        'No data found for cryptocurrency'
-      );
+      await expect(
+        service.getQuote("INVALID", AssetType.CRYPTO),
+      ).rejects.toThrow("No data found for cryptocurrency");
     });
   });
 
@@ -161,14 +186,14 @@ describe('UnifiedMarketDataService', () => {
   // HISTORICAL DATA TESTS
   // ============================================================================
 
-  describe('getHistory', () => {
-    it('should get stock history from Polygon', async () => {
+  describe("getHistory", () => {
+    it("should get stock history from Polygon", async () => {
       const mockHistory = {
-        symbol: 'AAPL',
+        symbol: "AAPL",
         interval: TimeInterval.ONE_DAY,
         data: [
           {
-            timestamp: new Date('2024-01-01'),
+            timestamp: new Date("2024-01-01"),
             open: 150,
             high: 152,
             low: 149,
@@ -176,41 +201,41 @@ describe('UnifiedMarketDataService', () => {
             volume: 50000000,
           },
         ],
-        startDate: new Date('2024-01-01'),
-        endDate: new Date('2024-01-31'),
+        startDate: new Date("2024-01-01"),
+        endDate: new Date("2024-01-31"),
       };
 
       mockPolygon.getAggregates = jest.fn().mockResolvedValue(mockHistory);
 
       const result = await service.getHistory(
-        'AAPL',
+        "AAPL",
         AssetType.STOCK,
         TimeInterval.ONE_DAY,
-        30
+        30,
       );
 
       expect(result).toEqual(mockHistory);
       expect(mockPolygon.getAggregates).toHaveBeenCalled();
     });
 
-    it('should get crypto history from CoinGecko', async () => {
+    it("should get crypto history from CoinGecko", async () => {
       const mockHistory = [
-        { timestamp: new Date('2024-01-01'), price: 45000 },
-        { timestamp: new Date('2024-01-02'), price: 46000 },
+        { timestamp: new Date("2024-01-01"), price: 45000 },
+        { timestamp: new Date("2024-01-02"), price: 46000 },
       ];
 
       mockCoinGecko.getCoinHistory = jest.fn().mockResolvedValue(mockHistory);
 
       const result = await service.getHistory(
-        'BTC',
+        "BTC",
         AssetType.CRYPTO,
         TimeInterval.ONE_DAY,
-        30
+        30,
       );
 
-      expect(result.symbol).toBe('BTC');
+      expect(result.symbol).toBe("BTC");
       expect(result.data.length).toBe(2);
-      expect(mockCoinGecko.getCoinHistory).toHaveBeenCalledWith('btc', 30);
+      expect(mockCoinGecko.getCoinHistory).toHaveBeenCalledWith("btc", 30);
     });
   });
 
@@ -218,32 +243,32 @@ describe('UnifiedMarketDataService', () => {
   // NEWS TESTS
   // ============================================================================
 
-  describe('getNews', () => {
-    it('should get news from Polygon', async () => {
+  describe("getNews", () => {
+    it("should get news from Polygon", async () => {
       const mockNews = [
         {
-          title: 'Apple announces new product',
-          description: 'Apple unveils latest innovation',
-          url: 'https://example.com/news/1',
-          source: 'TechNews',
+          title: "Apple announces new product",
+          description: "Apple unveils latest innovation",
+          url: "https://example.com/news/1",
+          source: "TechNews",
           publishedAt: new Date(),
-          sentiment: 'positive' as const,
-          symbols: ['AAPL'],
+          sentiment: "positive" as const,
+          symbols: ["AAPL"],
         },
       ];
 
       mockPolygon.getNews = jest.fn().mockResolvedValue(mockNews);
 
-      const result = await service.getNews('AAPL', 10);
+      const result = await service.getNews("AAPL", 10);
 
       expect(result).toEqual(mockNews);
-      expect(mockPolygon.getNews).toHaveBeenCalledWith('AAPL', 10);
+      expect(mockPolygon.getNews).toHaveBeenCalledWith("AAPL", 10);
     });
 
-    it('should return empty array when Polygon fails', async () => {
-      mockPolygon.getNews = jest.fn().mockRejectedValue(new Error('API error'));
+    it("should return empty array when Polygon fails", async () => {
+      mockPolygon.getNews = jest.fn().mockRejectedValue(new Error("API error"));
 
-      const result = await service.getNews('AAPL', 10);
+      const result = await service.getNews("AAPL", 10);
 
       expect(result).toEqual([]);
     });
@@ -253,28 +278,30 @@ describe('UnifiedMarketDataService', () => {
   // COMPANY PROFILE TESTS
   // ============================================================================
 
-  describe('getCompanyProfile', () => {
-    it('should get company profile from Alpha Vantage', async () => {
+  describe("getCompanyProfile", () => {
+    it("should get company profile from Alpha Vantage", async () => {
       const mockProfile = {
-        symbol: 'AAPL',
-        name: 'Apple Inc.',
-        description: 'Technology company',
-        sector: 'Technology',
-        industry: 'Consumer Electronics',
+        symbol: "AAPL",
+        name: "Apple Inc.",
+        description: "Technology company",
+        sector: "Technology",
+        industry: "Consumer Electronics",
         marketCap: 3000000000000,
         employees: 150000,
-        headquarters: 'Cupertino, CA',
-        founded: '1976',
-        ceo: 'Tim Cook',
-        website: 'https://apple.com',
+        headquarters: "Cupertino, CA",
+        founded: "1976",
+        ceo: "Tim Cook",
+        website: "https://apple.com",
       };
 
-      mockAlphaVantage.getCompanyOverview = jest.fn().mockResolvedValue(mockProfile);
+      mockAlphaVantage.getCompanyOverview = jest
+        .fn()
+        .mockResolvedValue(mockProfile);
 
-      const result = await service.getCompanyProfile('AAPL');
+      const result = await service.getCompanyProfile("AAPL");
 
       expect(result).toEqual(mockProfile);
-      expect(mockAlphaVantage.getCompanyOverview).toHaveBeenCalledWith('AAPL');
+      expect(mockAlphaVantage.getCompanyOverview).toHaveBeenCalledWith("AAPL");
     });
   });
 
@@ -282,35 +309,48 @@ describe('UnifiedMarketDataService', () => {
   // SEARCH TESTS
   // ============================================================================
 
-  describe('search', () => {
-    it('should search stocks and crypto', async () => {
+  describe("search", () => {
+    it("should search stocks and crypto", async () => {
       const mockStockResults = [
-        { symbol: 'AAPL', name: 'Apple Inc.', type: 'Equity', region: 'US' },
+        { symbol: "AAPL", name: "Apple Inc.", type: "Equity", region: "US" },
       ];
       const mockCryptoResults = [
-        { id: 'bitcoin', symbol: 'btc', name: 'Bitcoin', thumb: '', large: '', market_cap_rank: 1 },
+        {
+          id: "bitcoin",
+          symbol: "btc",
+          name: "Bitcoin",
+          thumb: "",
+          large: "",
+          market_cap_rank: 1,
+        },
       ];
 
-      mockAlphaVantage.searchSymbol = jest.fn().mockResolvedValue(mockStockResults);
-      mockCoinGecko.searchCoins = jest.fn().mockResolvedValue(mockCryptoResults);
+      mockAlphaVantage.searchSymbol = jest
+        .fn()
+        .mockResolvedValue(mockStockResults);
+      mockCoinGecko.searchCoins = jest
+        .fn()
+        .mockResolvedValue(mockCryptoResults);
 
-      const result = await service.search('app');
+      const result = await service.search("app");
 
       expect(result.length).toBeGreaterThan(0);
-      expect(mockAlphaVantage.searchSymbol).toHaveBeenCalledWith('app');
-      expect(mockCoinGecko.searchCoins).toHaveBeenCalledWith('app');
+      expect(mockAlphaVantage.searchSymbol).toHaveBeenCalledWith("app");
+      expect(mockCoinGecko.searchCoins).toHaveBeenCalledWith("app");
     });
 
-    it('should search only stocks when assetType is STOCK', async () => {
+    it("should search only stocks when assetType is STOCK", async () => {
       const mockStockResults = [
-        { symbol: 'AAPL', name: 'Apple Inc.', type: 'Equity', region: 'US' },
+        { symbol: "AAPL", name: "Apple Inc.", type: "Equity", region: "US" },
       ];
 
-      mockAlphaVantage.searchSymbol = jest.fn().mockResolvedValue(mockStockResults);
+      mockAlphaVantage.searchSymbol = jest
+        .fn()
+        .mockResolvedValue(mockStockResults);
 
-      const result = await service.search('app', AssetType.STOCK);
+      const result = await service.search("app", AssetType.STOCK);
 
-      expect(mockAlphaVantage.searchSymbol).toHaveBeenCalledWith('app');
+      expect(mockAlphaVantage.searchSymbol).toHaveBeenCalledWith("app");
       expect(mockCoinGecko.searchCoins).not.toHaveBeenCalled();
     });
   });
@@ -319,20 +359,20 @@ describe('UnifiedMarketDataService', () => {
   // HEALTH CHECK TESTS
   // ============================================================================
 
-  describe('Provider Health', () => {
-    it('should return health status for all providers', () => {
+  describe("Provider Health", () => {
+    it("should return health status for all providers", () => {
       const health = service.getProviderHealth();
 
       expect(health.length).toBe(3);
-      expect(health.map(h => h.provider)).toContain('AlphaVantage');
-      expect(health.map(h => h.provider)).toContain('Polygon');
-      expect(health.map(h => h.provider)).toContain('CoinGecko');
+      expect(health.map((h) => h.provider)).toContain("AlphaVantage");
+      expect(health.map((h) => h.provider)).toContain("Polygon");
+      expect(health.map((h) => h.provider)).toContain("CoinGecko");
     });
 
-    it('should check if provider is healthy', () => {
-      expect(service.isProviderHealthy('AlphaVantage')).toBe(true);
-      expect(service.isProviderHealthy('Polygon')).toBe(true);
-      expect(service.isProviderHealthy('CoinGecko')).toBe(true);
+    it("should check if provider is healthy", () => {
+      expect(service.isProviderHealthy("AlphaVantage")).toBe(true);
+      expect(service.isProviderHealthy("Polygon")).toBe(true);
+      expect(service.isProviderHealthy("CoinGecko")).toBe(true);
     });
   });
 
@@ -340,19 +380,27 @@ describe('UnifiedMarketDataService', () => {
   // REAL-TIME DATA TESTS
   // ============================================================================
 
-  describe('Real-time Data', () => {
-    it('should subscribe to real-time quotes', () => {
+  describe("Real-time Data", () => {
+    it("should subscribe to real-time quotes", () => {
       const mockUnsubscribe = jest.fn();
-      mockPolygon.subscribeToQuotes = jest.fn().mockReturnValue(mockUnsubscribe);
+      mockPolygon.subscribeToQuotes = jest
+        .fn()
+        .mockReturnValue(mockUnsubscribe);
 
       const callback = jest.fn();
-      const unsubscribe = service.subscribeToRealTime(['AAPL', 'GOOGL'], callback);
+      const unsubscribe = service.subscribeToRealTime(
+        ["AAPL", "GOOGL"],
+        callback,
+      );
 
-      expect(mockPolygon.subscribeToQuotes).toHaveBeenCalledWith(['AAPL', 'GOOGL'], callback);
-      expect(typeof unsubscribe).toBe('function');
+      expect(mockPolygon.subscribeToQuotes).toHaveBeenCalledWith(
+        ["AAPL", "GOOGL"],
+        callback,
+      );
+      expect(typeof unsubscribe).toBe("function");
     });
 
-    it('should disconnect from real-time data', () => {
+    it("should disconnect from real-time data", () => {
       mockPolygon.disconnect = jest.fn();
 
       service.disconnectRealTime();

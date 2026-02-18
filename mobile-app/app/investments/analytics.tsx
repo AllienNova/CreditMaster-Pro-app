@@ -1,11 +1,11 @@
 /**
  * Portfolio Analytics Mobile Screen
- * 
+ *
  * Phase 5.5.2: Mobile-optimized portfolio analytics with tabbed interface,
  * interactive charts, and swipeable recommendations
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -15,24 +15,24 @@ import {
   RefreshControl,
   Dimensions,
   Animated,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { lightTheme as theme } from '../../src/constants/theme';
-import { Card } from '../../src/components/Card';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { lightTheme as theme } from "../../src/constants/theme";
+import { Card } from "../../src/components/Card";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 enum RiskLevel {
-  CONSERVATIVE = 'conservative',
-  MODERATE = 'moderate',
-  AGGRESSIVE = 'aggressive',
-  VERY_AGGRESSIVE = 'very_aggressive',
+  CONSERVATIVE = "conservative",
+  MODERATE = "moderate",
+  AGGRESSIVE = "aggressive",
+  VERY_AGGRESSIVE = "very_aggressive",
 }
 
 interface RiskMetrics {
@@ -70,7 +70,7 @@ interface CorrelationMatrix {
 
 interface RebalanceTrade {
   symbol: string;
-  action: 'buy' | 'sell';
+  action: "buy" | "sell";
   shares: number;
   value: number;
   reason: string;
@@ -88,36 +88,49 @@ interface RebalanceRecommendation {
   }>;
 }
 
-type TimeHorizon = '1M' | '3M' | '6M' | '1Y' | '3Y' | '5Y';
-type AnalyticsTab = 'risk' | 'diversification' | 'correlation' | 'rebalance';
+type TimeHorizon = "1M" | "3M" | "6M" | "1Y" | "3Y" | "5Y";
+type AnalyticsTab = "risk" | "diversification" | "correlation" | "rebalance";
 
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
 export default function AnalyticsScreen() {
-  const [activeTab, setActiveTab] = useState<AnalyticsTab>('risk');
-  const [timeHorizon, setTimeHorizon] = useState<TimeHorizon>('1Y');
+  const [activeTab, setActiveTab] = useState<AnalyticsTab>("risk");
+  const [timeHorizon, setTimeHorizon] = useState<TimeHorizon>("1Y");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   // Data states
   const [riskMetrics, setRiskMetrics] = useState<RiskMetrics | null>(null);
-  const [diversification, setDiversification] = useState<DiversificationScore | null>(null);
+  const [diversification, setDiversification] =
+    useState<DiversificationScore | null>(null);
   const [sectorExposure, setSectorExposure] = useState<SectorExposure[]>([]);
-  const [correlation, setCorrelation] = useState<CorrelationMatrix | null>(null);
-  const [rebalance, setRebalance] = useState<RebalanceRecommendation | null>(null);
+  const [correlation, setCorrelation] = useState<CorrelationMatrix | null>(
+    null,
+  );
+  const [rebalance, setRebalance] = useState<RebalanceRecommendation | null>(
+    null,
+  );
 
-  const portfolioId = 'default-portfolio-id'; // In production, get from context/store
+  const portfolioId = "default-portfolio-id"; // In production, get from context/store
 
   // Fetch analytics data
   const fetchAnalytics = useCallback(async () => {
     try {
       const [riskRes, divRes, corrRes, rebalRes] = await Promise.all([
-        fetch(`/api/investments/analytics/risk?portfolioId=${portfolioId}&timeHorizon=${timeHorizon}`),
-        fetch(`/api/investments/analytics/diversification?portfolioId=${portfolioId}`),
-        fetch(`/api/investments/analytics/correlation?portfolioId=${portfolioId}`),
-        fetch(`/api/investments/analytics/rebalance?portfolioId=${portfolioId}`),
+        fetch(
+          `/api/investments/analytics/risk?portfolioId=${portfolioId}&timeHorizon=${timeHorizon}`,
+        ),
+        fetch(
+          `/api/investments/analytics/diversification?portfolioId=${portfolioId}`,
+        ),
+        fetch(
+          `/api/investments/analytics/correlation?portfolioId=${portfolioId}`,
+        ),
+        fetch(
+          `/api/investments/analytics/rebalance?portfolioId=${portfolioId}`,
+        ),
       ]);
 
       if (riskRes.ok && divRes.ok && corrRes.ok && rebalRes.ok) {
@@ -135,7 +148,7 @@ export default function AnalyticsScreen() {
         setRebalance(rebalData.data);
       }
     } catch (error) {
-      console.error('Error fetching analytics:', error);
+      console.error("Error fetching analytics:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -152,10 +165,13 @@ export default function AnalyticsScreen() {
   }, [fetchAnalytics]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Portfolio Analytics</Text>
@@ -163,56 +179,139 @@ export default function AnalyticsScreen() {
       </View>
 
       {/* Time Horizon Selector */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.timeHorizonScroll}>
-        {(['1M', '3M', '6M', '1Y', '3Y', '5Y'] as TimeHorizon[]).map((horizon) => (
-          <TouchableOpacity
-            key={horizon}
-            style={[styles.timeHorizonButton, timeHorizon === horizon && styles.timeHorizonButtonActive]}
-            onPress={() => setTimeHorizon(horizon)}
-          >
-            <Text style={[styles.timeHorizonText, timeHorizon === horizon && styles.timeHorizonTextActive]}>
-              {horizon}
-            </Text>
-          </TouchableOpacity>
-        ))}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.timeHorizonScroll}
+      >
+        {(["1M", "3M", "6M", "1Y", "3Y", "5Y"] as TimeHorizon[]).map(
+          (horizon) => (
+            <TouchableOpacity
+              key={horizon}
+              style={[
+                styles.timeHorizonButton,
+                timeHorizon === horizon && styles.timeHorizonButtonActive,
+              ]}
+              onPress={() => setTimeHorizon(horizon)}
+            >
+              <Text
+                style={[
+                  styles.timeHorizonText,
+                  timeHorizon === horizon && styles.timeHorizonTextActive,
+                ]}
+              >
+                {horizon}
+              </Text>
+            </TouchableOpacity>
+          ),
+        )}
       </ScrollView>
 
       {/* Tabs */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.tabsScroll}
+      >
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'risk' && styles.tabActive]}
-          onPress={() => setActiveTab('risk')}
+          style={[styles.tab, activeTab === "risk" && styles.tabActive]}
+          onPress={() => setActiveTab("risk")}
         >
-          <Ionicons name="shield-checkmark" size={20} color={activeTab === 'risk' ? theme.colors.primary : theme.colors.textSecondary} />
-          <Text style={[styles.tabText, activeTab === 'risk' && styles.tabTextActive]}>Risk</Text>
+          <Ionicons
+            name="shield-checkmark"
+            size={20}
+            color={
+              activeTab === "risk"
+                ? theme.colors.primary
+                : theme.colors.textSecondary
+            }
+          />
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "risk" && styles.tabTextActive,
+            ]}
+          >
+            Risk
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'diversification' && styles.tabActive]}
-          onPress={() => setActiveTab('diversification')}
+          style={[
+            styles.tab,
+            activeTab === "diversification" && styles.tabActive,
+          ]}
+          onPress={() => setActiveTab("diversification")}
         >
-          <Ionicons name="pie-chart" size={20} color={activeTab === 'diversification' ? theme.colors.primary : theme.colors.textSecondary} />
-          <Text style={[styles.tabText, activeTab === 'diversification' && styles.tabTextActive]}>Diversification</Text>
+          <Ionicons
+            name="pie-chart"
+            size={20}
+            color={
+              activeTab === "diversification"
+                ? theme.colors.primary
+                : theme.colors.textSecondary
+            }
+          />
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "diversification" && styles.tabTextActive,
+            ]}
+          >
+            Diversification
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'correlation' && styles.tabActive]}
-          onPress={() => setActiveTab('correlation')}
+          style={[styles.tab, activeTab === "correlation" && styles.tabActive]}
+          onPress={() => setActiveTab("correlation")}
         >
-          <Ionicons name="git-network" size={20} color={activeTab === 'correlation' ? theme.colors.primary : theme.colors.textSecondary} />
-          <Text style={[styles.tabText, activeTab === 'correlation' && styles.tabTextActive]}>Correlation</Text>
+          <Ionicons
+            name="git-network"
+            size={20}
+            color={
+              activeTab === "correlation"
+                ? theme.colors.primary
+                : theme.colors.textSecondary
+            }
+          />
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "correlation" && styles.tabTextActive,
+            ]}
+          >
+            Correlation
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'rebalance' && styles.tabActive]}
-          onPress={() => setActiveTab('rebalance')}
+          style={[styles.tab, activeTab === "rebalance" && styles.tabActive]}
+          onPress={() => setActiveTab("rebalance")}
         >
-          <Ionicons name="swap-horizontal" size={20} color={activeTab === 'rebalance' ? theme.colors.primary : theme.colors.textSecondary} />
-          <Text style={[styles.tabText, activeTab === 'rebalance' && styles.tabTextActive]}>Rebalance</Text>
+          <Ionicons
+            name="swap-horizontal"
+            size={20}
+            color={
+              activeTab === "rebalance"
+                ? theme.colors.primary
+                : theme.colors.textSecondary
+            }
+          />
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "rebalance" && styles.tabTextActive,
+            ]}
+          >
+            Rebalance
+          </Text>
         </TouchableOpacity>
       </ScrollView>
 
       {/* Content */}
       <ScrollView
         style={styles.scrollView}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         {loading ? (
           <View style={styles.loadingContainer}>
@@ -220,15 +319,21 @@ export default function AnalyticsScreen() {
           </View>
         ) : (
           <>
-            {activeTab === 'risk' && riskMetrics && <RiskCard metrics={riskMetrics} />}
-            {activeTab === 'diversification' && diversification && (
+            {activeTab === "risk" && riskMetrics && (
+              <RiskCard metrics={riskMetrics} />
+            )}
+            {activeTab === "diversification" && diversification && (
               <>
                 <DiversificationChart score={diversification} />
                 <SectorBreakdown sectors={sectorExposure} />
               </>
             )}
-            {activeTab === 'correlation' && correlation && <CorrelationCard correlation={correlation} />}
-            {activeTab === 'rebalance' && rebalance && <RebalanceList recommendation={rebalance} />}
+            {activeTab === "correlation" && correlation && (
+              <CorrelationCard correlation={correlation} />
+            )}
+            {activeTab === "rebalance" && rebalance && (
+              <RebalanceList recommendation={rebalance} />
+            )}
           </>
         )}
       </ScrollView>
@@ -246,10 +351,10 @@ interface RiskCardProps {
 
 function RiskCard({ metrics }: RiskCardProps) {
   const getRiskLevel = (sharpe: number): { level: string; color: string } => {
-    if (sharpe >= 2) return { level: 'Low', color: theme.colors.success };
-    if (sharpe >= 1) return { level: 'Moderate', color: theme.colors.warning };
-    if (sharpe >= 0) return { level: 'High', color: '#F59E0B' };
-    return { level: 'Very High', color: theme.colors.error };
+    if (sharpe >= 2) return { level: "Low", color: theme.colors.success };
+    if (sharpe >= 1) return { level: "Moderate", color: theme.colors.warning };
+    if (sharpe >= 0) return { level: "High", color: "#F59E0B" };
+    return { level: "Very High", color: theme.colors.error };
   };
 
   const risk = getRiskLevel(metrics.sharpeRatio);
@@ -259,11 +364,15 @@ function RiskCard({ metrics }: RiskCardProps) {
       <Text style={styles.cardTitle}>Risk Assessment</Text>
 
       {/* Risk Level Indicator */}
-      <View style={[styles.riskIndicator, { backgroundColor: `${risk.color}20` }]}>
+      <View
+        style={[styles.riskIndicator, { backgroundColor: `${risk.color}20` }]}
+      >
         <Ionicons name="shield-checkmark" size={32} color={risk.color} />
         <View style={styles.riskInfo}>
           <Text style={styles.riskLabel}>Risk Level</Text>
-          <Text style={[styles.riskLevel, { color: risk.color }]}>{risk.level}</Text>
+          <Text style={[styles.riskLevel, { color: risk.color }]}>
+            {risk.level}
+          </Text>
         </View>
       </View>
 
@@ -271,7 +380,9 @@ function RiskCard({ metrics }: RiskCardProps) {
       <View style={styles.metricsGrid}>
         <View style={styles.metricItem}>
           <Text style={styles.metricLabel}>Sharpe Ratio</Text>
-          <Text style={styles.metricValue}>{metrics.sharpeRatio.toFixed(2)}</Text>
+          <Text style={styles.metricValue}>
+            {metrics.sharpeRatio.toFixed(2)}
+          </Text>
         </View>
         <View style={styles.metricItem}>
           <Text style={styles.metricLabel}>Beta</Text>
@@ -279,8 +390,19 @@ function RiskCard({ metrics }: RiskCardProps) {
         </View>
         <View style={styles.metricItem}>
           <Text style={styles.metricLabel}>Alpha</Text>
-          <Text style={[styles.metricValue, { color: metrics.alpha >= 0 ? theme.colors.success : theme.colors.error }]}>
-            {metrics.alpha >= 0 ? '+' : ''}{metrics.alpha.toFixed(2)}%
+          <Text
+            style={[
+              styles.metricValue,
+              {
+                color:
+                  metrics.alpha >= 0
+                    ? theme.colors.success
+                    : theme.colors.error,
+              },
+            ]}
+          >
+            {metrics.alpha >= 0 ? "+" : ""}
+            {metrics.alpha.toFixed(2)}%
           </Text>
         </View>
         <View style={styles.metricItem}>
@@ -303,11 +425,15 @@ function RiskCard({ metrics }: RiskCardProps) {
         </View>
         <View style={styles.metricItem}>
           <Text style={styles.metricLabel}>Volatility</Text>
-          <Text style={styles.metricValue}>{metrics.volatility.annualized.toFixed(2)}%</Text>
+          <Text style={styles.metricValue}>
+            {metrics.volatility.annualized.toFixed(2)}%
+          </Text>
         </View>
         <View style={styles.metricItem}>
           <Text style={styles.metricLabel}>Sortino Ratio</Text>
-          <Text style={styles.metricValue}>{metrics.sortinoRatio.toFixed(2)}</Text>
+          <Text style={styles.metricValue}>
+            {metrics.sortinoRatio.toFixed(2)}
+          </Text>
         </View>
       </View>
     </Card>
@@ -335,7 +461,12 @@ function DiversificationChart({ score }: DiversificationChartProps) {
 
       {/* Overall Score */}
       <View style={styles.overallScore}>
-        <Text style={[styles.scoreValue, { color: getScoreColor(score.overallScore) }]}>
+        <Text
+          style={[
+            styles.scoreValue,
+            { color: getScoreColor(score.overallScore) },
+          ]}
+        >
           {score.overallScore.toFixed(0)}
         </Text>
         <Text style={styles.scoreLabel}>/ 100</Text>
@@ -346,30 +477,74 @@ function DiversificationChart({ score }: DiversificationChartProps) {
         <View style={styles.scoreItem}>
           <Text style={styles.scoreItemLabel}>Sector</Text>
           <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${score.sectorDiversification}%`, backgroundColor: getScoreColor(score.sectorDiversification) }]} />
+            <View
+              style={[
+                styles.progressFill,
+                {
+                  width: `${score.sectorDiversification}%`,
+                  backgroundColor: getScoreColor(score.sectorDiversification),
+                },
+              ]}
+            />
           </View>
-          <Text style={styles.scoreItemValue}>{score.sectorDiversification.toFixed(0)}</Text>
+          <Text style={styles.scoreItemValue}>
+            {score.sectorDiversification.toFixed(0)}
+          </Text>
         </View>
         <View style={styles.scoreItem}>
           <Text style={styles.scoreItemLabel}>Asset Class</Text>
           <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${score.assetClassDiversification}%`, backgroundColor: getScoreColor(score.assetClassDiversification) }]} />
+            <View
+              style={[
+                styles.progressFill,
+                {
+                  width: `${score.assetClassDiversification}%`,
+                  backgroundColor: getScoreColor(
+                    score.assetClassDiversification,
+                  ),
+                },
+              ]}
+            />
           </View>
-          <Text style={styles.scoreItemValue}>{score.assetClassDiversification.toFixed(0)}</Text>
+          <Text style={styles.scoreItemValue}>
+            {score.assetClassDiversification.toFixed(0)}
+          </Text>
         </View>
         <View style={styles.scoreItem}>
           <Text style={styles.scoreItemLabel}>Geographic</Text>
           <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${score.geographicDiversification}%`, backgroundColor: getScoreColor(score.geographicDiversification) }]} />
+            <View
+              style={[
+                styles.progressFill,
+                {
+                  width: `${score.geographicDiversification}%`,
+                  backgroundColor: getScoreColor(
+                    score.geographicDiversification,
+                  ),
+                },
+              ]}
+            />
           </View>
-          <Text style={styles.scoreItemValue}>{score.geographicDiversification.toFixed(0)}</Text>
+          <Text style={styles.scoreItemValue}>
+            {score.geographicDiversification.toFixed(0)}
+          </Text>
         </View>
         <View style={styles.scoreItem}>
           <Text style={styles.scoreItemLabel}>Concentration Risk</Text>
           <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${score.concentrationRisk}%`, backgroundColor: theme.colors.error }]} />
+            <View
+              style={[
+                styles.progressFill,
+                {
+                  width: `${score.concentrationRisk}%`,
+                  backgroundColor: theme.colors.error,
+                },
+              ]}
+            />
           </View>
-          <Text style={styles.scoreItemValue}>{score.concentrationRisk.toFixed(0)}</Text>
+          <Text style={styles.scoreItemValue}>
+            {score.concentrationRisk.toFixed(0)}
+          </Text>
         </View>
       </View>
     </Card>
@@ -392,14 +567,14 @@ function SectorBreakdown({ sectors }: SectorBreakdownProps) {
     const colors = [
       theme.colors.primary,
       theme.colors.secondary,
-      '#10B981',
-      '#F59E0B',
-      '#EF4444',
-      '#8B5CF6',
-      '#EC4899',
-      '#14B8A6',
-      '#F97316',
-      '#6366F1',
+      "#10B981",
+      "#F59E0B",
+      "#EF4444",
+      "#8B5CF6",
+      "#EC4899",
+      "#14B8A6",
+      "#F97316",
+      "#6366F1",
     ];
     return colors[index % colors.length];
   };
@@ -412,23 +587,41 @@ function SectorBreakdown({ sectors }: SectorBreakdownProps) {
         {displaySectors.map((sector, index) => (
           <View key={sector.sector} style={styles.sectorItem}>
             <View style={styles.sectorInfo}>
-              <View style={[styles.sectorDot, { backgroundColor: getSectorColor(index) }]} />
-              <Text style={styles.sectorName}>{sector.sector.replace('_', ' ')}</Text>
+              <View
+                style={[
+                  styles.sectorDot,
+                  { backgroundColor: getSectorColor(index) },
+                ]}
+              />
+              <Text style={styles.sectorName}>
+                {sector.sector.replace("_", " ")}
+              </Text>
             </View>
             <View style={styles.sectorValues}>
-              <Text style={styles.sectorAllocation}>{sector.allocation.toFixed(1)}%</Text>
-              <Text style={styles.sectorValue}>${(sector.value / 1000).toFixed(1)}K</Text>
+              <Text style={styles.sectorAllocation}>
+                {sector.allocation.toFixed(1)}%
+              </Text>
+              <Text style={styles.sectorValue}>
+                ${(sector.value / 1000).toFixed(1)}K
+              </Text>
             </View>
           </View>
         ))}
       </View>
 
       {sectors.length > 5 && (
-        <TouchableOpacity style={styles.expandButton} onPress={() => setExpanded(!expanded)}>
+        <TouchableOpacity
+          style={styles.expandButton}
+          onPress={() => setExpanded(!expanded)}
+        >
           <Text style={styles.expandButtonText}>
-            {expanded ? 'Show Less' : `Show ${sectors.length - 5} More`}
+            {expanded ? "Show Less" : `Show ${sectors.length - 5} More`}
           </Text>
-          <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={16} color={theme.colors.primary} />
+          <Ionicons
+            name={expanded ? "chevron-up" : "chevron-down"}
+            size={16}
+            color={theme.colors.primary}
+          />
         </TouchableOpacity>
       )}
     </Card>
@@ -450,7 +643,17 @@ function CorrelationCard({ correlation }: CorrelationCardProps) {
 
       <View style={styles.correlationSummary}>
         <Text style={styles.correlationLabel}>Average Correlation</Text>
-        <Text style={[styles.correlationValue, { color: correlation.avgCorrelation > 0.7 ? theme.colors.error : theme.colors.success }]}>
+        <Text
+          style={[
+            styles.correlationValue,
+            {
+              color:
+                correlation.avgCorrelation > 0.7
+                  ? theme.colors.error
+                  : theme.colors.success,
+            },
+          ]}
+        >
           {correlation.avgCorrelation.toFixed(2)}
         </Text>
       </View>
@@ -465,7 +668,17 @@ function CorrelationCard({ correlation }: CorrelationCardProps) {
                 <Text style={styles.pairSymbols}>
                   {pair.pair[0]} ↔ {pair.pair[1]}
                 </Text>
-                <Text style={[styles.pairValue, { color: pair.correlation > 0 ? theme.colors.error : theme.colors.success }]}>
+                <Text
+                  style={[
+                    styles.pairValue,
+                    {
+                      color:
+                        pair.correlation > 0
+                          ? theme.colors.error
+                          : theme.colors.success,
+                    },
+                  ]}
+                >
                   {pair.correlation.toFixed(2)}
                 </Text>
               </View>
@@ -475,7 +688,8 @@ function CorrelationCard({ correlation }: CorrelationCardProps) {
       )}
 
       <Text style={styles.infoText}>
-        High correlation (&gt;0.7) indicates assets move together, reducing diversification benefits.
+        High correlation (&gt;0.7) indicates assets move together, reducing
+        diversification benefits.
       </Text>
     </Card>
   );
@@ -490,8 +704,8 @@ interface RebalanceListProps {
 }
 
 function RebalanceList({ recommendation }: RebalanceListProps) {
-  const buyTrades = recommendation.trades.filter(t => t.action === 'buy');
-  const sellTrades = recommendation.trades.filter(t => t.action === 'sell');
+  const buyTrades = recommendation.trades.filter((t) => t.action === "buy");
+  const sellTrades = recommendation.trades.filter((t) => t.action === "sell");
 
   return (
     <>
@@ -502,17 +716,27 @@ function RebalanceList({ recommendation }: RebalanceListProps) {
         <View style={styles.rebalanceSummary}>
           <View style={styles.summaryItem}>
             <Text style={styles.summaryLabel}>Total Trades</Text>
-            <Text style={styles.summaryValue}>{recommendation.trades.length}</Text>
+            <Text style={styles.summaryValue}>
+              {recommendation.trades.length}
+            </Text>
           </View>
           <View style={styles.summaryItem}>
             <Text style={styles.summaryLabel}>Expected Improvement</Text>
-            <Text style={[styles.summaryValue, { color: theme.colors.success }]}>
-              +{(recommendation.expectedImprovement.sharpeRatio * 100).toFixed(1)}%
+            <Text
+              style={[styles.summaryValue, { color: theme.colors.success }]}
+            >
+              +
+              {(recommendation.expectedImprovement.sharpeRatio * 100).toFixed(
+                1,
+              )}
+              %
             </Text>
           </View>
           <View style={styles.summaryItem}>
             <Text style={styles.summaryLabel}>Estimated Cost</Text>
-            <Text style={styles.summaryValue}>${recommendation.estimatedCost.toFixed(2)}</Text>
+            <Text style={styles.summaryValue}>
+              ${recommendation.estimatedCost.toFixed(2)}
+            </Text>
           </View>
         </View>
       </Card>
@@ -520,12 +744,22 @@ function RebalanceList({ recommendation }: RebalanceListProps) {
       {/* Buy Recommendations */}
       {buyTrades.length > 0 && (
         <Card style={styles.card}>
-          <Text style={styles.cardTitle}>Buy Recommendations ({buyTrades.length})</Text>
+          <Text style={styles.cardTitle}>
+            Buy Recommendations ({buyTrades.length})
+          </Text>
           {buyTrades.map((trade, idx) => (
-            <View key={idx} style={[styles.tradeCard, { backgroundColor: `${theme.colors.success}10` }]}>
+            <View
+              key={idx}
+              style={[
+                styles.tradeCard,
+                { backgroundColor: `${theme.colors.success}10` },
+              ]}
+            >
               <View style={styles.tradeHeader}>
                 <Text style={styles.tradeSymbol}>{trade.symbol}</Text>
-                <Text style={[styles.tradeValue, { color: theme.colors.success }]}>
+                <Text
+                  style={[styles.tradeValue, { color: theme.colors.success }]}
+                >
                   ${trade.value.toFixed(2)}
                 </Text>
               </View>
@@ -539,12 +773,22 @@ function RebalanceList({ recommendation }: RebalanceListProps) {
       {/* Sell Recommendations */}
       {sellTrades.length > 0 && (
         <Card style={styles.card}>
-          <Text style={styles.cardTitle}>Sell Recommendations ({sellTrades.length})</Text>
+          <Text style={styles.cardTitle}>
+            Sell Recommendations ({sellTrades.length})
+          </Text>
           {sellTrades.map((trade, idx) => (
-            <View key={idx} style={[styles.tradeCard, { backgroundColor: `${theme.colors.error}10` }]}>
+            <View
+              key={idx}
+              style={[
+                styles.tradeCard,
+                { backgroundColor: `${theme.colors.error}10` },
+              ]}
+            >
               <View style={styles.tradeHeader}>
                 <Text style={styles.tradeSymbol}>{trade.symbol}</Text>
-                <Text style={[styles.tradeValue, { color: theme.colors.error }]}>
+                <Text
+                  style={[styles.tradeValue, { color: theme.colors.error }]}
+                >
                   ${trade.value.toFixed(2)}
                 </Text>
               </View>
@@ -556,22 +800,35 @@ function RebalanceList({ recommendation }: RebalanceListProps) {
       )}
 
       {/* Tax Implications */}
-      {recommendation.taxImplications && recommendation.taxImplications.length > 0 && (
-        <Card style={styles.card}>
-          <Text style={styles.cardTitle}>Tax Implications</Text>
-          {recommendation.taxImplications.map((tax, idx) => (
-            <View key={idx} style={styles.taxItem}>
-              <Text style={styles.taxSymbol}>{tax.symbol}</Text>
-              <View style={styles.taxDetails}>
-                <Text style={styles.taxPeriod}>{tax.holdingPeriod.replace('_', ' ')}</Text>
-                <Text style={[styles.taxAmount, { color: tax.gainLoss >= 0 ? theme.colors.success : theme.colors.error }]}>
-                  ${tax.estimatedTax.toFixed(2)} tax
-                </Text>
+      {recommendation.taxImplications &&
+        recommendation.taxImplications.length > 0 && (
+          <Card style={styles.card}>
+            <Text style={styles.cardTitle}>Tax Implications</Text>
+            {recommendation.taxImplications.map((tax, idx) => (
+              <View key={idx} style={styles.taxItem}>
+                <Text style={styles.taxSymbol}>{tax.symbol}</Text>
+                <View style={styles.taxDetails}>
+                  <Text style={styles.taxPeriod}>
+                    {tax.holdingPeriod.replace("_", " ")}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.taxAmount,
+                      {
+                        color:
+                          tax.gainLoss >= 0
+                            ? theme.colors.success
+                            : theme.colors.error,
+                      },
+                    ]}
+                  >
+                    ${tax.estimatedTax.toFixed(2)} tax
+                  </Text>
+                </View>
               </View>
-            </View>
-          ))}
-        </Card>
-      )}
+            ))}
+          </Card>
+        )}
     </>
   );
 }
@@ -586,9 +843,9 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
     backgroundColor: theme.colors.surface,
@@ -601,7 +858,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   timeHorizonScroll: {
@@ -621,11 +878,11 @@ const styles = StyleSheet.create({
   timeHorizonText: {
     fontSize: 14,
     color: theme.colors.textSecondary,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   timeHorizonTextActive: {
     color: theme.colors.primary,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   tabsScroll: {
     backgroundColor: theme.colors.surface,
@@ -633,8 +890,8 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.border,
   },
   tab: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.md,
     marginHorizontal: 4,
@@ -647,18 +904,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: theme.colors.textSecondary,
     marginLeft: theme.spacing.xs,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   tabTextActive: {
     color: theme.colors.primary,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   scrollView: {
     flex: 1,
   },
   loadingContainer: {
     padding: theme.spacing.xl,
-    alignItems: 'center',
+    alignItems: "center",
   },
   loadingText: {
     fontSize: 14,
@@ -670,13 +927,13 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: theme.spacing.md,
   },
   riskIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: theme.spacing.md,
     borderRadius: theme.borderRadius.md,
     marginBottom: theme.spacing.md,
@@ -690,15 +947,15 @@ const styles = StyleSheet.create({
   },
   riskLevel: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     marginTop: 2,
   },
   metricsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
   },
   metricItem: {
-    width: '50%',
+    width: "50%",
     marginBottom: theme.spacing.md,
   },
   metricLabel: {
@@ -708,16 +965,16 @@ const styles = StyleSheet.create({
   },
   metricValue: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
   },
   overallScore: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: theme.spacing.lg,
   },
   scoreValue: {
     fontSize: 48,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   scoreLabel: {
     fontSize: 18,
@@ -734,38 +991,38 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: theme.colors.text,
     marginBottom: 4,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   progressBar: {
     height: 8,
     backgroundColor: theme.colors.border,
     borderRadius: 4,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginBottom: 4,
   },
   progressFill: {
-    height: '100%',
+    height: "100%",
     borderRadius: 4,
   },
   scoreItemValue: {
     fontSize: 12,
     color: theme.colors.textSecondary,
-    textAlign: 'right',
+    textAlign: "right",
   },
   sectorList: {
     marginTop: theme.spacing.sm,
   },
   sectorItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: theme.spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
   },
   sectorInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
   },
   sectorDot: {
@@ -777,14 +1034,14 @@ const styles = StyleSheet.create({
   sectorName: {
     fontSize: 14,
     color: theme.colors.text,
-    textTransform: 'capitalize',
+    textTransform: "capitalize",
   },
   sectorValues: {
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   sectorAllocation: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   sectorValue: {
@@ -793,22 +1050,22 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   expandButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: theme.spacing.sm,
     marginTop: theme.spacing.sm,
   },
   expandButtonText: {
     fontSize: 13,
     color: theme.colors.primary,
-    fontWeight: '500',
+    fontWeight: "500",
     marginRight: theme.spacing.xs,
   },
   correlationSummary: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: theme.spacing.md,
     backgroundColor: `${theme.colors.primary}10`,
     borderRadius: theme.borderRadius.md,
@@ -817,15 +1074,15 @@ const styles = StyleSheet.create({
   correlationLabel: {
     fontSize: 14,
     color: theme.colors.text,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   correlationValue: {
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   subsectionTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginTop: theme.spacing.md,
     marginBottom: theme.spacing.sm,
@@ -834,9 +1091,9 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.sm,
   },
   correlationPair: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: theme.spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
@@ -847,7 +1104,7 @@ const styles = StyleSheet.create({
   },
   pairValue: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   infoText: {
     fontSize: 12,
@@ -856,22 +1113,22 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   rebalanceSummary: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   summaryItem: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
   },
   summaryLabel: {
     fontSize: 11,
     color: theme.colors.textSecondary,
     marginBottom: 4,
-    textAlign: 'center',
+    textAlign: "center",
   },
   summaryValue: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
   },
   tradeCard: {
@@ -880,19 +1137,19 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.sm,
   },
   tradeHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: theme.spacing.xs,
   },
   tradeSymbol: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
   },
   tradeValue: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   tradeShares: {
     fontSize: 13,
@@ -905,30 +1162,29 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   taxItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: theme.spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
   },
   taxSymbol: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   taxDetails: {
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   taxPeriod: {
     fontSize: 11,
     color: theme.colors.textSecondary,
-    textTransform: 'capitalize',
+    textTransform: "capitalize",
   },
   taxAmount: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     marginTop: 2,
   },
 });
-

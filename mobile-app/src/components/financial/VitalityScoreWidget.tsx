@@ -1,30 +1,43 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import React from "react";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import Svg, { Circle, Defs, LinearGradient, Stop } from "react-native-svg";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 
 // Theme constants
 const theme = {
   colors: {
-    primary: '#10B981',
-    primaryDark: '#059669',
-    background: '#FFFFFF',
-    backgroundDark: '#1F2937',
-    text: '#111827',
-    textSecondary: '#6B7280',
-    textDark: '#F9FAFB',
-    textSecondaryDark: '#9CA3AF',
-    border: '#E5E7EB',
-    borderDark: '#374151',
-    success: '#10B981',
-    warning: '#F59E0B',
-    error: '#EF4444',
+    primary: "#10B981",
+    primaryDark: "#059669",
+    background: "#FFFFFF",
+    backgroundDark: "#1F2937",
+    text: "#111827",
+    textSecondary: "#6B7280",
+    textDark: "#F9FAFB",
+    textSecondaryDark: "#9CA3AF",
+    border: "#E5E7EB",
+    borderDark: "#374151",
+    success: "#10B981",
+    warning: "#F59E0B",
+    error: "#EF4444",
   },
 };
 
-type VitalityGrade = 'A+' | 'A' | 'A-' | 'B+' | 'B' | 'B-' | 'C+' | 'C' | 'C-' | 'D+' | 'D' | 'D-' | 'F';
-type TrendDirection = 'improving' | 'stable' | 'declining';
+type VitalityGrade =
+  | "A+"
+  | "A"
+  | "A-"
+  | "B+"
+  | "B"
+  | "B-"
+  | "C+"
+  | "C"
+  | "C-"
+  | "D+"
+  | "D"
+  | "D-"
+  | "F";
+type TrendDirection = "improving" | "stable" | "declining";
 
 interface VitalityScoreData {
   overall: number;
@@ -47,32 +60,32 @@ interface VitalityScoreWidgetProps {
 }
 
 function getGradeColor(grade: VitalityGrade): string {
-  if (grade.startsWith('A')) return '#10B981';
-  if (grade.startsWith('B')) return '#3B82F6';
-  if (grade.startsWith('C')) return '#F59E0B';
-  if (grade.startsWith('D')) return '#F97316';
-  return '#EF4444';
+  if (grade.startsWith("A")) return "#10B981";
+  if (grade.startsWith("B")) return "#3B82F6";
+  if (grade.startsWith("C")) return "#F59E0B";
+  if (grade.startsWith("D")) return "#F97316";
+  return "#EF4444";
 }
 
 function getTrendIcon(trend: TrendDirection): string {
   switch (trend) {
-    case 'improving':
-      return 'trending-up';
-    case 'declining':
-      return 'trending-down';
+    case "improving":
+      return "trending-up";
+    case "declining":
+      return "trending-down";
     default:
-      return 'remove';
+      return "remove";
   }
 }
 
 function getTrendColor(trend: TrendDirection): string {
   switch (trend) {
-    case 'improving':
-      return '#10B981';
-    case 'declining':
-      return '#EF4444';
+    case "improving":
+      return "#10B981";
+    case "declining":
+      return "#EF4444";
     default:
-      return '#6B7280';
+      return "#6B7280";
   }
 }
 
@@ -124,7 +137,15 @@ function CircularProgress({
   );
 }
 
-function ComponentBar({ label, score, color }: { label: string; score: number; color: string }) {
+function ComponentBar({
+  label,
+  score,
+  color,
+}: {
+  label: string;
+  score: number;
+  color: string;
+}) {
   return (
     <View style={styles.componentBar}>
       <View style={styles.componentBarHeader}>
@@ -156,7 +177,10 @@ function LoadingSkeleton({ compact }: { compact?: boolean }) {
       {!compact && (
         <View style={styles.skeletonBars}>
           {[1, 2, 3, 4, 5].map((i) => (
-            <View key={i} style={[styles.skeletonText, { height: 8, marginTop: 12 }]} />
+            <View
+              key={i}
+              style={[styles.skeletonText, { height: 8, marginTop: 12 }]}
+            />
           ))}
         </View>
       )}
@@ -180,7 +204,7 @@ export function VitalityScoreWidget({
   const trendColor = getTrendColor(data.trend);
 
   const handlePress = () => {
-    router.push('/dashboard/vitality');
+    router.push("/dashboard/vitality");
   };
 
   return (
@@ -191,9 +215,15 @@ export function VitalityScoreWidget({
     >
       <View style={styles.header}>
         <View style={styles.scoreContainer}>
-          <CircularProgress score={data.overall} size={compact ? 80 : 100} strokeWidth={compact ? 8 : 10} />
+          <CircularProgress
+            score={data.overall}
+            size={compact ? 80 : 100}
+            strokeWidth={compact ? 8 : 10}
+          />
           <View style={styles.scoreOverlay}>
-            <Text style={[styles.scoreValue, compact && styles.scoreValueCompact]}>
+            <Text
+              style={[styles.scoreValue, compact && styles.scoreValueCompact]}
+            >
               {data.overall}
             </Text>
           </View>
@@ -201,7 +231,9 @@ export function VitalityScoreWidget({
 
         <View style={styles.scoreInfo}>
           <View style={styles.titleRow}>
-            <Text style={[styles.title, compact && styles.titleCompact]}>Financial Vitality</Text>
+            <Text style={[styles.title, compact && styles.titleCompact]}>
+              Financial Vitality
+            </Text>
             <View style={[styles.gradeBadge, { backgroundColor: gradeColor }]}>
               <Text style={styles.gradeText}>{data.grade}</Text>
             </View>
@@ -210,13 +242,20 @@ export function VitalityScoreWidget({
           <View style={styles.trendRow}>
             <Ionicons name={trendIcon as any} size={16} color={trendColor} />
             <Text style={[styles.trendText, { color: trendColor }]}>
-              {data.trend === 'improving' ? '+' : data.trend === 'declining' ? '-' : ''}
+              {data.trend === "improving"
+                ? "+"
+                : data.trend === "declining"
+                  ? "-"
+                  : ""}
               {Math.abs(data.trendPercentage).toFixed(1)}% this month
             </Text>
           </View>
 
           {!compact && (
-            <TouchableOpacity style={styles.detailsButton} onPress={handlePress}>
+            <TouchableOpacity
+              style={styles.detailsButton}
+              onPress={handlePress}
+            >
               <Text style={styles.detailsButtonText}>View Details</Text>
               <Ionicons name="chevron-forward" size={14} color="#10B981" />
             </TouchableOpacity>
@@ -259,10 +298,10 @@ export function VitalityScoreWidget({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 20,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -272,23 +311,23 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   scoreContainer: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
+    position: "relative",
+    alignItems: "center",
+    justifyContent: "center",
   },
   scoreOverlay: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
+    position: "absolute",
+    alignItems: "center",
+    justifyContent: "center",
   },
   scoreValue: {
     fontSize: 28,
-    fontWeight: '700',
-    color: '#111827',
+    fontWeight: "700",
+    color: "#111827",
   },
   scoreValueCompact: {
     fontSize: 22,
@@ -298,15 +337,15 @@ const styles = StyleSheet.create({
     marginLeft: 16,
   },
   titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
     gap: 8,
   },
   title: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
+    fontWeight: "600",
+    color: "#111827",
   },
   titleCompact: {
     fontSize: 14,
@@ -318,29 +357,29 @@ const styles = StyleSheet.create({
   },
   gradeText: {
     fontSize: 12,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
   trendRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: 8,
     gap: 4,
   },
   trendText: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   detailsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: 12,
     gap: 4,
   },
   detailsButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#10B981',
+    fontWeight: "600",
+    color: "#10B981",
   },
   components: {
     marginTop: 20,
@@ -350,40 +389,40 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   componentBarHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   componentBarLabel: {
     fontSize: 12,
-    fontWeight: '500',
-    color: '#6B7280',
+    fontWeight: "500",
+    color: "#6B7280",
   },
   componentBarScore: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#111827',
+    fontWeight: "600",
+    color: "#111827",
   },
   componentBarTrack: {
     height: 6,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: "#E5E7EB",
     borderRadius: 3,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   componentBarFill: {
-    height: '100%',
+    height: "100%",
     borderRadius: 3,
   },
   // Skeleton styles
   skeletonHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   skeletonCircle: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: "#E5E7EB",
   },
   skeletonTextGroup: {
     marginLeft: 16,
@@ -391,7 +430,7 @@ const styles = StyleSheet.create({
   },
   skeletonText: {
     height: 16,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: "#E5E7EB",
     borderRadius: 4,
   },
   skeletonBars: {

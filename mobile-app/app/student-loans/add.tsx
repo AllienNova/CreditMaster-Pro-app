@@ -3,7 +3,7 @@
  * Form to add a new student loan to the portfolio
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -16,54 +16,86 @@ import {
   Modal,
   KeyboardAvoidingView,
   Platform,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, Stack } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { lightTheme as theme } from '../../src/constants/theme';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter, Stack } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { lightTheme as theme } from "../../src/constants/theme";
 import {
   useStudentLoanStore,
   CreateLoanInput,
   LoanType,
   LoanStatus,
-} from '../../src/store';
+} from "../../src/store";
 
 // Loan type options
-const loanTypeOptions: { value: LoanType; label: string; description: string }[] = [
-  { value: 'federal_direct_subsidized', label: 'Direct Subsidized', description: 'Federal loan where government pays interest while in school' },
-  { value: 'federal_direct_unsubsidized', label: 'Direct Unsubsidized', description: 'Federal loan where interest accrues from disbursement' },
-  { value: 'federal_plus_parent', label: 'Parent PLUS', description: 'Federal loan for parents of dependent students' },
-  { value: 'federal_plus_grad', label: 'Grad PLUS', description: 'Federal loan for graduate/professional students' },
-  { value: 'federal_perkins', label: 'Perkins', description: 'Federal loan with fixed 5% interest (discontinued)' },
-  { value: 'private', label: 'Private', description: 'Non-federal loan from bank or private lender' },
-  { value: 'consolidated', label: 'Consolidated', description: 'Combined federal loans into single loan' },
+const loanTypeOptions: {
+  value: LoanType;
+  label: string;
+  description: string;
+}[] = [
+  {
+    value: "federal_direct_subsidized",
+    label: "Direct Subsidized",
+    description: "Federal loan where government pays interest while in school",
+  },
+  {
+    value: "federal_direct_unsubsidized",
+    label: "Direct Unsubsidized",
+    description: "Federal loan where interest accrues from disbursement",
+  },
+  {
+    value: "federal_plus_parent",
+    label: "Parent PLUS",
+    description: "Federal loan for parents of dependent students",
+  },
+  {
+    value: "federal_plus_grad",
+    label: "Grad PLUS",
+    description: "Federal loan for graduate/professional students",
+  },
+  {
+    value: "federal_perkins",
+    label: "Perkins",
+    description: "Federal loan with fixed 5% interest (discontinued)",
+  },
+  {
+    value: "private",
+    label: "Private",
+    description: "Non-federal loan from bank or private lender",
+  },
+  {
+    value: "consolidated",
+    label: "Consolidated",
+    description: "Combined federal loans into single loan",
+  },
 ];
 
 // Status options
 const statusOptions: { value: LoanStatus; label: string }[] = [
-  { value: 'in_repayment', label: 'In Repayment' },
-  { value: 'in_grace', label: 'Grace Period' },
-  { value: 'deferment', label: 'Deferment' },
-  { value: 'forbearance', label: 'Forbearance' },
-  { value: 'default', label: 'Default' },
-  { value: 'paid_in_full', label: 'Paid in Full' },
+  { value: "in_repayment", label: "In Repayment" },
+  { value: "in_grace", label: "Grace Period" },
+  { value: "deferment", label: "Deferment" },
+  { value: "forbearance", label: "Forbearance" },
+  { value: "default", label: "Default" },
+  { value: "paid_in_full", label: "Paid in Full" },
 ];
 
 // Common servicers
 const servicerSuggestions = [
-  'Nelnet',
-  'Great Lakes',
-  'FedLoan Servicing',
-  'MOHELA',
-  'Navient',
-  'Aidvantage',
-  'ECSI',
-  'EdFinancial',
-  'OSLA',
-  'SoFi',
-  'Earnest',
-  'CommonBond',
-  'Other',
+  "Nelnet",
+  "Great Lakes",
+  "FedLoan Servicing",
+  "MOHELA",
+  "Navient",
+  "Aidvantage",
+  "ECSI",
+  "EdFinancial",
+  "OSLA",
+  "SoFi",
+  "Earnest",
+  "CommonBond",
+  "Other",
 ];
 
 export default function AddLoanScreen() {
@@ -75,8 +107,8 @@ export default function AddLoanScreen() {
 
   // Form state
   const [formData, setFormData] = useState<Partial<CreateLoanInput>>({
-    loanType: 'federal_direct_unsubsidized',
-    status: 'in_repayment',
+    loanType: "federal_direct_unsubsidized",
+    status: "in_repayment",
   });
 
   // Modal states
@@ -105,28 +137,28 @@ export default function AddLoanScreen() {
     const newErrors: Record<string, string> = {};
 
     if (!formData.loanType) {
-      newErrors.loanType = 'Loan type is required';
+      newErrors.loanType = "Loan type is required";
     }
     if (!formData.servicer?.trim()) {
-      newErrors.servicer = 'Servicer is required';
+      newErrors.servicer = "Servicer is required";
     }
     if (!formData.originalPrincipal || formData.originalPrincipal <= 0) {
-      newErrors.originalPrincipal = 'Original principal is required';
+      newErrors.originalPrincipal = "Original principal is required";
     }
     if (!formData.currentBalance || formData.currentBalance < 0) {
-      newErrors.currentBalance = 'Current balance is required';
+      newErrors.currentBalance = "Current balance is required";
     }
     if (formData.interestRate === undefined || formData.interestRate < 0) {
-      newErrors.interestRate = 'Interest rate is required';
+      newErrors.interestRate = "Interest rate is required";
     }
     if (!formData.monthlyPayment || formData.monthlyPayment < 0) {
-      newErrors.monthlyPayment = 'Monthly payment is required';
+      newErrors.monthlyPayment = "Monthly payment is required";
     }
     if (!formData.originationDate) {
-      newErrors.originationDate = 'Origination date is required';
+      newErrors.originationDate = "Origination date is required";
     }
     if (!formData.status) {
-      newErrors.status = 'Status is required';
+      newErrors.status = "Status is required";
     }
 
     setErrors(newErrors);
@@ -136,29 +168,33 @@ export default function AddLoanScreen() {
   // Handle submit
   const handleSubmit = useCallback(async () => {
     if (!validateForm()) {
-      Alert.alert('Validation Error', 'Please fill in all required fields');
+      Alert.alert("Validation Error", "Please fill in all required fields");
       return;
     }
 
     const result = await addLoan(formData as CreateLoanInput);
     if (result) {
-      Alert.alert('Success', 'Loan added successfully', [
-        { text: 'OK', onPress: () => router.back() },
+      Alert.alert("Success", "Loan added successfully", [
+        { text: "OK", onPress: () => router.back() },
       ]);
     } else {
-      Alert.alert('Error', 'Failed to add loan. Please try again.');
+      Alert.alert("Error", "Failed to add loan. Please try again.");
     }
   }, [formData, addLoan, router]);
 
   // Get current loan type label
-  const currentTypeLabel = loanTypeOptions.find((o) => o.value === formData.loanType)?.label || 'Select Type';
-  const currentStatusLabel = statusOptions.find((o) => o.value === formData.status)?.label || 'Select Status';
+  const currentTypeLabel =
+    loanTypeOptions.find((o) => o.value === formData.loanType)?.label ||
+    "Select Type";
+  const currentStatusLabel =
+    statusOptions.find((o) => o.value === formData.status)?.label ||
+    "Select Status";
 
   return (
     <>
       <Stack.Screen
         options={{
-          title: 'Add Student Loan',
+          title: "Add Student Loan",
           headerRight: () => (
             <TouchableOpacity
               onPress={handleSubmit}
@@ -174,38 +210,64 @@ export default function AddLoanScreen() {
           ),
         }}
       />
-      <SafeAreaView style={styles.container} edges={['bottom']}>
+      <SafeAreaView style={styles.container} edges={["bottom"]}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.keyboardView}
         >
-          <ScrollView style={styles.scrollView} keyboardShouldPersistTaps="handled">
+          <ScrollView
+            style={styles.scrollView}
+            keyboardShouldPersistTaps="handled"
+          >
             {/* Loan Type */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Loan Type</Text>
               <TouchableOpacity
-                style={[styles.selector, !!errors.loanType && styles.selectorError]}
+                style={[
+                  styles.selector,
+                  !!errors.loanType && styles.selectorError,
+                ]}
                 onPress={() => setShowTypeModal(true)}
               >
                 <Text style={styles.selectorText}>{currentTypeLabel}</Text>
-                <Ionicons name="chevron-down" size={20} color={theme.colors.textSecondary} />
+                <Ionicons
+                  name="chevron-down"
+                  size={20}
+                  color={theme.colors.textSecondary}
+                />
               </TouchableOpacity>
-              {errors.loanType && <Text style={styles.errorText}>{errors.loanType}</Text>}
+              {errors.loanType && (
+                <Text style={styles.errorText}>{errors.loanType}</Text>
+              )}
             </View>
 
             {/* Servicer */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Loan Servicer</Text>
               <TouchableOpacity
-                style={[styles.selector, !!errors.servicer && styles.selectorError]}
+                style={[
+                  styles.selector,
+                  !!errors.servicer && styles.selectorError,
+                ]}
                 onPress={() => setShowServicerModal(true)}
               >
-                <Text style={[styles.selectorText, !formData.servicer && styles.placeholder]}>
-                  {formData.servicer || 'Select or enter servicer'}
+                <Text
+                  style={[
+                    styles.selectorText,
+                    !formData.servicer && styles.placeholder,
+                  ]}
+                >
+                  {formData.servicer || "Select or enter servicer"}
                 </Text>
-                <Ionicons name="chevron-down" size={20} color={theme.colors.textSecondary} />
+                <Ionicons
+                  name="chevron-down"
+                  size={20}
+                  color={theme.colors.textSecondary}
+                />
               </TouchableOpacity>
-              {errors.servicer && <Text style={styles.errorText}>{errors.servicer}</Text>}
+              {errors.servicer && (
+                <Text style={styles.errorText}>{errors.servicer}</Text>
+              )}
             </View>
 
             {/* Account Number (Optional) */}
@@ -214,7 +276,7 @@ export default function AddLoanScreen() {
               <TextInput
                 style={styles.input}
                 value={formData.accountNumber}
-                onChangeText={(text) => updateField('accountNumber', text)}
+                onChangeText={(text) => updateField("accountNumber", text)}
                 placeholder="Enter account number"
                 placeholderTextColor={theme.colors.textSecondary}
               />
@@ -223,12 +285,19 @@ export default function AddLoanScreen() {
             {/* Original Principal */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Original Principal</Text>
-              <View style={[styles.inputWrapper, !!errors.originalPrincipal && styles.inputError]}>
+              <View
+                style={[
+                  styles.inputWrapper,
+                  !!errors.originalPrincipal && styles.inputError,
+                ]}
+              >
                 <Text style={styles.inputPrefix}>$</Text>
                 <TextInput
                   style={styles.inputWithPrefix}
                   value={formData.originalPrincipal?.toString()}
-                  onChangeText={(text) => updateField('originalPrincipal', parseFloat(text) || 0)}
+                  onChangeText={(text) =>
+                    updateField("originalPrincipal", parseFloat(text) || 0)
+                  }
                   placeholder="0.00"
                   placeholderTextColor={theme.colors.textSecondary}
                   keyboardType="decimal-pad"
@@ -242,12 +311,19 @@ export default function AddLoanScreen() {
             {/* Current Balance */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Current Balance</Text>
-              <View style={[styles.inputWrapper, !!errors.currentBalance && styles.inputError]}>
+              <View
+                style={[
+                  styles.inputWrapper,
+                  !!errors.currentBalance && styles.inputError,
+                ]}
+              >
                 <Text style={styles.inputPrefix}>$</Text>
                 <TextInput
                   style={styles.inputWithPrefix}
                   value={formData.currentBalance?.toString()}
-                  onChangeText={(text) => updateField('currentBalance', parseFloat(text) || 0)}
+                  onChangeText={(text) =>
+                    updateField("currentBalance", parseFloat(text) || 0)
+                  }
                   placeholder="0.00"
                   placeholderTextColor={theme.colors.textSecondary}
                   keyboardType="decimal-pad"
@@ -261,29 +337,45 @@ export default function AddLoanScreen() {
             {/* Interest Rate */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Interest Rate</Text>
-              <View style={[styles.inputWrapper, !!errors.interestRate && styles.inputError]}>
+              <View
+                style={[
+                  styles.inputWrapper,
+                  !!errors.interestRate && styles.inputError,
+                ]}
+              >
                 <TextInput
                   style={styles.inputWithSuffix}
                   value={formData.interestRate?.toString()}
-                  onChangeText={(text) => updateField('interestRate', parseFloat(text) || 0)}
+                  onChangeText={(text) =>
+                    updateField("interestRate", parseFloat(text) || 0)
+                  }
                   placeholder="0.00"
                   placeholderTextColor={theme.colors.textSecondary}
                   keyboardType="decimal-pad"
                 />
                 <Text style={styles.inputSuffix}>%</Text>
               </View>
-              {errors.interestRate && <Text style={styles.errorText}>{errors.interestRate}</Text>}
+              {errors.interestRate && (
+                <Text style={styles.errorText}>{errors.interestRate}</Text>
+              )}
             </View>
 
             {/* Monthly Payment */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Monthly Payment</Text>
-              <View style={[styles.inputWrapper, !!errors.monthlyPayment && styles.inputError]}>
+              <View
+                style={[
+                  styles.inputWrapper,
+                  !!errors.monthlyPayment && styles.inputError,
+                ]}
+              >
                 <Text style={styles.inputPrefix}>$</Text>
                 <TextInput
                   style={styles.inputWithPrefix}
                   value={formData.monthlyPayment?.toString()}
-                  onChangeText={(text) => updateField('monthlyPayment', parseFloat(text) || 0)}
+                  onChangeText={(text) =>
+                    updateField("monthlyPayment", parseFloat(text) || 0)
+                  }
                   placeholder="0.00"
                   placeholderTextColor={theme.colors.textSecondary}
                   keyboardType="decimal-pad"
@@ -298,9 +390,12 @@ export default function AddLoanScreen() {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Origination Date</Text>
               <TextInput
-                style={[styles.input, !!errors.originationDate && styles.inputError]}
+                style={[
+                  styles.input,
+                  !!errors.originationDate && styles.inputError,
+                ]}
                 value={formData.originationDate}
-                onChangeText={(text) => updateField('originationDate', text)}
+                onChangeText={(text) => updateField("originationDate", text)}
                 placeholder="YYYY-MM-DD"
                 placeholderTextColor={theme.colors.textSecondary}
               />
@@ -313,13 +408,22 @@ export default function AddLoanScreen() {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Loan Status</Text>
               <TouchableOpacity
-                style={[styles.selector, !!errors.status && styles.selectorError]}
+                style={[
+                  styles.selector,
+                  !!errors.status && styles.selectorError,
+                ]}
                 onPress={() => setShowStatusModal(true)}
               >
                 <Text style={styles.selectorText}>{currentStatusLabel}</Text>
-                <Ionicons name="chevron-down" size={20} color={theme.colors.textSecondary} />
+                <Ionicons
+                  name="chevron-down"
+                  size={20}
+                  color={theme.colors.textSecondary}
+                />
               </TouchableOpacity>
-              {errors.status && <Text style={styles.errorText}>{errors.status}</Text>}
+              {errors.status && (
+                <Text style={styles.errorText}>{errors.status}</Text>
+              )}
             </View>
 
             {/* Repayment Plan (Optional) */}
@@ -328,7 +432,7 @@ export default function AddLoanScreen() {
               <TextInput
                 style={styles.input}
                 value={formData.repaymentPlan}
-                onChangeText={(text) => updateField('repaymentPlan', text)}
+                onChangeText={(text) => updateField("repaymentPlan", text)}
                 placeholder="e.g., Standard, IDR, SAVE"
                 placeholderTextColor={theme.colors.textSecondary}
               />
@@ -336,7 +440,10 @@ export default function AddLoanScreen() {
 
             {/* Submit Button */}
             <TouchableOpacity
-              style={[styles.submitButton, isAddingLoan && styles.submitButtonDisabled]}
+              style={[
+                styles.submitButton,
+                isAddingLoan && styles.submitButtonDisabled,
+              ]}
               onPress={handleSubmit}
               disabled={isAddingLoan}
             >
@@ -376,19 +483,26 @@ export default function AddLoanScreen() {
                     key={option.value}
                     style={[
                       styles.modalOption,
-                      formData.loanType === option.value && styles.modalOptionSelected,
+                      formData.loanType === option.value &&
+                        styles.modalOptionSelected,
                     ]}
                     onPress={() => {
-                      updateField('loanType', option.value);
+                      updateField("loanType", option.value);
                       setShowTypeModal(false);
                     }}
                   >
                     <View style={styles.modalOptionContent}>
                       <Text style={styles.modalOptionText}>{option.label}</Text>
-                      <Text style={styles.modalOptionDesc}>{option.description}</Text>
+                      <Text style={styles.modalOptionDesc}>
+                        {option.description}
+                      </Text>
                     </View>
                     {formData.loanType === option.value && (
-                      <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
+                      <Ionicons
+                        name="checkmark"
+                        size={20}
+                        color={theme.colors.primary}
+                      />
                     )}
                   </TouchableOpacity>
                 ))}
@@ -417,16 +531,21 @@ export default function AddLoanScreen() {
                   key={option.value}
                   style={[
                     styles.modalOption,
-                    formData.status === option.value && styles.modalOptionSelected,
+                    formData.status === option.value &&
+                      styles.modalOptionSelected,
                   ]}
                   onPress={() => {
-                    updateField('status', option.value);
+                    updateField("status", option.value);
                     setShowStatusModal(false);
                   }}
                 >
                   <Text style={styles.modalOptionText}>{option.label}</Text>
                   {formData.status === option.value && (
-                    <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
+                    <Ionicons
+                      name="checkmark"
+                      size={20}
+                      color={theme.colors.primary}
+                    />
                   )}
                 </TouchableOpacity>
               ))}
@@ -452,7 +571,7 @@ export default function AddLoanScreen() {
               <TextInput
                 style={styles.servicerInput}
                 value={formData.servicer}
-                onChangeText={(text) => updateField('servicer', text)}
+                onChangeText={(text) => updateField("servicer", text)}
                 placeholder="Enter custom servicer name..."
                 placeholderTextColor={theme.colors.textSecondary}
               />
@@ -462,18 +581,26 @@ export default function AddLoanScreen() {
                     key={servicer}
                     style={[
                       styles.modalOption,
-                      formData.servicer === servicer && styles.modalOptionSelected,
+                      formData.servicer === servicer &&
+                        styles.modalOptionSelected,
                     ]}
                     onPress={() => {
-                      updateField('servicer', servicer === 'Other' ? '' : servicer);
-                      if (servicer !== 'Other') {
+                      updateField(
+                        "servicer",
+                        servicer === "Other" ? "" : servicer,
+                      );
+                      if (servicer !== "Other") {
                         setShowServicerModal(false);
                       }
                     }}
                   >
                     <Text style={styles.modalOptionText}>{servicer}</Text>
                     {formData.servicer === servicer && (
-                      <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
+                      <Ionicons
+                        name="checkmark"
+                        size={20}
+                        color={theme.colors.primary}
+                      />
                     )}
                   </TouchableOpacity>
                 ))}
@@ -508,7 +635,7 @@ const styles = StyleSheet.create({
   },
   saveText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.primary,
   },
   section: {
@@ -517,14 +644,14 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     color: theme.colors.text,
     marginBottom: 8,
   },
   selector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: 16,
     backgroundColor: theme.colors.surface,
     borderRadius: 12,
@@ -551,8 +678,8 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
   },
   inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: theme.colors.surface,
     borderRadius: 12,
     borderWidth: 1,
@@ -592,9 +719,9 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   submitButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
     marginHorizontal: 20,
     marginTop: 20,
@@ -607,41 +734,41 @@ const styles = StyleSheet.create({
   },
   submitButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
+    fontWeight: "600",
+    color: "#fff",
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
   },
   modalContent: {
     backgroundColor: theme.colors.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
-    maxHeight: '80%',
+    maxHeight: "80%",
   },
   modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 16,
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   modalOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: 16,
     borderRadius: 8,
   },
   modalOptionSelected: {
-    backgroundColor: theme.colors.primary + '10',
+    backgroundColor: theme.colors.primary + "10",
   },
   modalOptionContent: {
     flex: 1,
@@ -668,12 +795,12 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: theme.colors.primary,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 12,
   },
   modalDoneText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
+    fontWeight: "600",
+    color: "#fff",
   },
 });

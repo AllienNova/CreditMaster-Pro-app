@@ -1,10 +1,10 @@
-import Link from 'next/link';
-import type { Metadata } from 'next';
+import Link from "next/link";
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: 'Investments | Fynvita',
+  title: "Investments | Fynvita",
   description:
-    'AI-powered portfolio analysis, stock research, and investment insights.',
+    "AI-powered portfolio analysis, stock research, and investment insights.",
 };
 
 export default function InvestPage() {
@@ -114,7 +114,9 @@ export default function InvestPage() {
               <div className="bg-white dark:bg-slate-800/5 backdrop-blur rounded-xl p-6 mb-6">
                 <div className="flex justify-between items-center mb-4">
                   <div>
-                    <p className="text-gray-400 dark:text-slate-500 text-sm">Portfolio Value</p>
+                    <p className="text-gray-400 dark:text-slate-500 text-sm">
+                      Portfolio Value
+                    </p>
                     <p className="text-4xl font-bold text-white">$248,567.89</p>
                   </div>
                   <div className="text-right">
@@ -133,7 +135,7 @@ export default function InvestPage() {
                         className="flex-1 bg-gradient-to-t from-blue-500 to-emerald-400 rounded-t"
                         style={{ height: `${height}%` }}
                       ></div>
-                    )
+                    ),
                   )}
                 </div>
               </div>
@@ -141,22 +143,30 @@ export default function InvestPage() {
               {/* Holdings */}
               <div className="grid md:grid-cols-4 gap-4">
                 <div className="bg-white dark:bg-slate-800/10 backdrop-blur rounded-xl p-4">
-                  <p className="text-gray-400 dark:text-slate-500 text-xs mb-1">AAPL</p>
+                  <p className="text-gray-400 dark:text-slate-500 text-xs mb-1">
+                    AAPL
+                  </p>
                   <p className="text-white font-semibold">$189.45</p>
                   <p className="text-green-400 text-xs">+2.3%</p>
                 </div>
                 <div className="bg-white dark:bg-slate-800/10 backdrop-blur rounded-xl p-4">
-                  <p className="text-gray-400 dark:text-slate-500 text-xs mb-1">GOOGL</p>
+                  <p className="text-gray-400 dark:text-slate-500 text-xs mb-1">
+                    GOOGL
+                  </p>
                   <p className="text-white font-semibold">$142.78</p>
                   <p className="text-green-400 text-xs">+1.8%</p>
                 </div>
                 <div className="bg-white dark:bg-slate-800/10 backdrop-blur rounded-xl p-4">
-                  <p className="text-gray-400 dark:text-slate-500 text-xs mb-1">MSFT</p>
+                  <p className="text-gray-400 dark:text-slate-500 text-xs mb-1">
+                    MSFT
+                  </p>
                   <p className="text-white font-semibold">$378.92</p>
                   <p className="text-red-400 text-xs">-0.5%</p>
                 </div>
                 <div className="bg-white dark:bg-slate-800/10 backdrop-blur rounded-xl p-4">
-                  <p className="text-gray-400 dark:text-slate-500 text-xs mb-1">NVDA</p>
+                  <p className="text-gray-400 dark:text-slate-500 text-xs mb-1">
+                    NVDA
+                  </p>
                   <p className="text-white font-semibold">$495.67</p>
                   <p className="text-green-400 text-xs">+4.2%</p>
                 </div>
@@ -423,8 +433,12 @@ export default function InvestPage() {
                       <span className="text-lg"></span>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900 dark:text-white">AI Analysis</p>
-                      <p className="text-xs text-gray-500 dark:text-slate-400">AAPL - Apple Inc.</p>
+                      <p className="font-medium text-gray-900 dark:text-white">
+                        AI Analysis
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-slate-400">
+                        AAPL - Apple Inc.
+                      </p>
                     </div>
                   </div>
                   <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
@@ -444,7 +458,9 @@ export default function InvestPage() {
                       <span className="text-lg"></span>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900 dark:text-white">Risk Score</p>
+                      <p className="font-medium text-gray-900 dark:text-white">
+                        Risk Score
+                      </p>
                       <p className="text-xs text-gray-500 dark:text-slate-400">
                         Based on volatility
                       </p>
@@ -455,7 +471,7 @@ export default function InvestPage() {
                 <div className="w-full bg-gray-100 dark:bg-slate-800 rounded-full h-2">
                   <div
                     className="bg-gradient-to-r from-blue-500 to-emerald-500 h-2 rounded-full"
-                    style={{ width: '72%' }}
+                    style={{ width: "72%" }}
                   ></div>
                 </div>
               </div>

@@ -1,13 +1,16 @@
 /**
  * useRealtimeEvents Hook
- * 
+ *
  * React hook for subscribing to real-time events via Server-Sent Events (SSE)
  */
 
-'use client';
+"use client";
 
-import { useEffect, useState, useCallback, useRef } from 'react';
-import type { RealtimeEvent, EventType } from '@/lib/monitoring/real-time-monitoring';
+import { useEffect, useState, useCallback, useRef } from "react";
+import type {
+  RealtimeEvent,
+  EventType,
+} from "@/lib/monitoring/real-time-monitoring";
 
 interface UseRealtimeEventsOptions {
   eventTypes?: EventType[];
@@ -28,7 +31,7 @@ interface UseRealtimeEventsReturn {
 }
 
 export function useRealtimeEvents(
-  options: UseRealtimeEventsOptions = {}
+  options: UseRealtimeEventsOptions = {},
 ): UseRealtimeEventsReturn {
   const {
     eventTypes,
@@ -37,68 +40,68 @@ export function useRealtimeEvents(
     onConnect,
     onDisconnect,
     autoReconnect = true,
-    reconnectDelay = 3000
+    reconnectDelay = 3000,
   } = options;
-  
+
   const [events, setEvents] = useState<RealtimeEvent[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  
+
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const shouldReconnectRef = useRef(true);
-  
+
   const connect = useCallback(() => {
     // Clear any existing connection
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
     }
-    
+
     // Build URL with event types
-    const url = new URL('/api/monitoring/events', window.location.origin);
+    const url = new URL("/api/monitoring/events", window.location.origin);
     if (eventTypes && eventTypes.length > 0) {
-      url.searchParams.set('event_types', eventTypes.join(','));
+      url.searchParams.set("event_types", eventTypes.join(","));
     }
-    
+
     try {
       const eventSource = new EventSource(url.toString());
       eventSourceRef.current = eventSource;
-      
+
       eventSource.onopen = () => {
         // SSE connection opened
         setIsConnected(true);
         setError(null);
         onConnect?.();
       };
-      
+
       eventSource.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          
+
           // Skip connection and heartbeat messages
-          if (data.type === 'connected') {
+          if (data.type === "connected") {
             // SSE connected
             return;
           }
-          
+
           // Handle real-time event
           const realtimeEvent = data as RealtimeEvent;
-          setEvents(prev => [...prev, realtimeEvent]);
+          setEvents((prev) => [...prev, realtimeEvent]);
           onEvent?.(realtimeEvent);
         } catch (err) {
           // Silently ignore malformed messages
         }
       };
-      
+
       eventSource.onerror = (err) => {
         // SSE error - state updated below
         setIsConnected(false);
-        
-        const error = new Error('SSE connection error');
+
+        const error = new Error("SSE connection error");
         setError(error);
         onError?.(error);
         onDisconnect?.();
-        
+
         // Auto-reconnect if enabled
         if (autoReconnect && shouldReconnectRef.current) {
           // Attempting reconnect
@@ -108,57 +111,65 @@ export function useRealtimeEvents(
         }
       };
     } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to connect');
+      const error = err instanceof Error ? err : new Error("Failed to connect");
       // Failed to create SSE connection
       setError(error);
       onError?.(error);
     }
-  }, [eventTypes, onEvent, onError, onConnect, onDisconnect, autoReconnect, reconnectDelay]);
-  
+  }, [
+    eventTypes,
+    onEvent,
+    onError,
+    onConnect,
+    onDisconnect,
+    autoReconnect,
+    reconnectDelay,
+  ]);
+
   const disconnect = useCallback(() => {
     shouldReconnectRef.current = false;
-    
+
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
     }
-    
+
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
       eventSourceRef.current = null;
     }
-    
+
     setIsConnected(false);
     // SSE connection closed
   }, []);
-  
+
   const reconnect = useCallback(() => {
     disconnect();
     shouldReconnectRef.current = true;
     connect();
   }, [connect, disconnect]);
-  
+
   const clearEvents = useCallback(() => {
     setEvents([]);
   }, []);
-  
+
   // Connect on mount
   useEffect(() => {
     shouldReconnectRef.current = true;
     connect();
-    
+
     // Cleanup on unmount
     return () => {
       disconnect();
     };
   }, [connect, disconnect]);
-  
+
   return {
     events,
     isConnected,
     error,
     clearEvents,
-    reconnect
+    reconnect,
   };
 }
 
@@ -167,31 +178,39 @@ export function useRealtimeEvents(
  */
 export function useWorkflowEvents() {
   return useRealtimeEvents({
-    eventTypes: ['workflow_started', 'workflow_step_completed', 'workflow_completed', 'workflow_failed']
+    eventTypes: [
+      "workflow_started",
+      "workflow_step_completed",
+      "workflow_completed",
+      "workflow_failed",
+    ],
   });
 }
 
 export function useJobEvents() {
   return useRealtimeEvents({
-    eventTypes: ['job_started', 'job_completed', 'job_failed']
+    eventTypes: ["job_started", "job_completed", "job_failed"],
   });
 }
 
 export function useDisputeEvents() {
   return useRealtimeEvents({
-    eventTypes: ['dispute_created', 'dispute_updated', 'dispute_resolved']
+    eventTypes: ["dispute_created", "dispute_updated", "dispute_resolved"],
   });
 }
 
 export function useDocumentEvents() {
   return useRealtimeEvents({
-    eventTypes: ['document_uploaded', 'document_processed']
+    eventTypes: ["document_uploaded", "document_processed"],
   });
 }
 
 export function useAIEvents() {
   return useRealtimeEvents({
-    eventTypes: ['ai_processing_started', 'ai_processing_completed', 'ai_processing_failed']
+    eventTypes: [
+      "ai_processing_started",
+      "ai_processing_completed",
+      "ai_processing_failed",
+    ],
   });
 }
-

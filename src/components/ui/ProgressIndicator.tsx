@@ -1,18 +1,18 @@
-'use client';
+"use client";
 
-import { CheckIcon } from '@heroicons/react/24/solid';
+import { CheckIcon } from "@heroicons/react/24/solid";
 
 export interface Step {
   id: string;
   name: string;
   description?: string;
-  status: 'complete' | 'current' | 'upcoming';
+  status: "complete" | "current" | "upcoming";
 }
 
 interface ProgressIndicatorProps {
   steps: Step[];
   currentStep: number;
-  variant?: 'default' | 'compact' | 'minimal';
+  variant?: "default" | "compact" | "minimal";
   showLabels?: boolean;
   showDescription?: boolean;
 }
@@ -20,20 +20,22 @@ interface ProgressIndicatorProps {
 export default function ProgressIndicator({
   steps,
   currentStep,
-  variant = 'default',
+  variant = "default",
   showLabels = true,
   showDescription = false,
 }: ProgressIndicatorProps) {
   const progress = ((currentStep + 1) / steps.length) * 100;
 
-  if (variant === 'minimal') {
+  if (variant === "minimal") {
     return (
       <div className="w-full">
         <div className="flex justify-between items-center mb-2">
           <span className="text-sm font-medium text-gray-700 dark:text-slate-200">
             Step {currentStep + 1} of {steps.length}
           </span>
-          <span className="text-sm text-gray-500 dark:text-slate-400">{Math.round(progress)}%</span>
+          <span className="text-sm text-gray-500 dark:text-slate-400">
+            {Math.round(progress)}%
+          </span>
         </div>
         <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
           <div
@@ -45,7 +47,7 @@ export default function ProgressIndicator({
     );
   }
 
-  if (variant === 'compact') {
+  if (variant === "compact") {
     return (
       <div className="w-full">
         <div className="flex items-center justify-between mb-4">
@@ -55,10 +57,10 @@ export default function ProgressIndicator({
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 ${
                     index < currentStep
-                      ? 'bg-green-500 text-white'
+                      ? "bg-green-500 text-white"
                       : index === currentStep
-                      ? 'bg-blue-600 text-white ring-4 ring-blue-100'
-                      : 'bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-slate-400'
+                        ? "bg-blue-600 text-white ring-4 ring-blue-100"
+                        : "bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-slate-400"
                   }`}
                 >
                   {index < currentStep ? (
@@ -69,7 +71,7 @@ export default function ProgressIndicator({
                 </div>
                 {showLabels && (
                   <span
-                    className={`mt-2 text-xs font-medium text-center ${ index <= currentStep ? 'text-gray-900' : 'text-gray-500 dark:text-slate-400' }`}
+                    className={`mt-2 text-xs font-medium text-center ${index <= currentStep ? "text-gray-900" : "text-gray-500 dark:text-slate-400"}`}
                   >
                     {step.name}
                   </span>
@@ -79,7 +81,9 @@ export default function ProgressIndicator({
                 <div className="flex-1 h-1 mx-2">
                   <div
                     className={`h-full rounded transition-all duration-500 ${
-                      index < currentStep ? 'bg-green-500' : 'bg-gray-200 dark:bg-slate-700'
+                      index < currentStep
+                        ? "bg-green-500"
+                        : "bg-gray-200 dark:bg-slate-700"
                     }`}
                   />
                 </div>
@@ -199,7 +203,11 @@ export function CircularProgress({
         <span className="text-2xl font-bold text-gray-900 dark:text-white">
           {Math.round(progress)}%
         </span>
-        {label && <span className="text-xs text-gray-500 dark:text-slate-400 mt-1">{label}</span>}
+        {label && (
+          <span className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+            {label}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -221,23 +229,31 @@ export function WizardProgress({
         <div key={index} className="flex items-center">
           <button
             type="button"
-            onClick={() => onStepClick && index <= currentStep && onStepClick(index)}
+            onClick={() =>
+              onStepClick && index <= currentStep && onStepClick(index)
+            }
             disabled={index > currentStep}
             className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 ${
               index < currentStep
-                ? 'bg-green-500 text-white hover:bg-green-600 cursor-pointer'
+                ? "bg-green-500 text-white hover:bg-green-600 cursor-pointer"
                 : index === currentStep
-                ? 'bg-blue-600 text-white ring-4 ring-blue-100'
-                : 'bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-slate-400 cursor-not-allowed'
+                  ? "bg-blue-600 text-white ring-4 ring-blue-100"
+                  : "bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-slate-400 cursor-not-allowed"
             }`}
             title={step}
           >
-            {index < currentStep ? <CheckIcon className="w-5 h-5" /> : index + 1}
+            {index < currentStep ? (
+              <CheckIcon className="w-5 h-5" />
+            ) : (
+              index + 1
+            )}
           </button>
           {index < steps.length - 1 && (
             <div
               className={`w-12 h-1 mx-1 rounded transition-all duration-500 ${
-                index < currentStep ? 'bg-green-500' : 'bg-gray-200 dark:bg-slate-700'
+                index < currentStep
+                  ? "bg-green-500"
+                  : "bg-gray-200 dark:bg-slate-700"
               }`}
             />
           )}
@@ -246,4 +262,3 @@ export function WizardProgress({
     </div>
   );
 }
-

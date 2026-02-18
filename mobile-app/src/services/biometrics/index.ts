@@ -8,4 +8,4 @@ export {
   BiometricType,
   type AuthenticationResult,
   type BiometricCapabilities,
-} from './biometricService';
+} from "./biometricService";

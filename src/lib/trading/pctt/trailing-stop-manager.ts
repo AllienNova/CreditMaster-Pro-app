@@ -1,6 +1,6 @@
 /**
  * PCTT Hybrid Trailing Stop Manager
- * 
+ *
  * Implements the 5-stage trailing stop system from PCTT spec:
  * - Stage A: Structural stop (safety line)
  * - Stage B: Break-even lock at +bR
@@ -9,79 +9,79 @@
  * - Stage E: Time stop (exit if no progress)
  */
 
-import { OHLCV, Pivot } from './pctt-core';
+import { OHLCV, Pivot } from "./pctt-core";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type TrailingStopStage = 'A' | 'B' | 'C' | 'D' | 'E';
+export type TrailingStopStage = "A" | "B" | "C" | "D" | "E";
 
 export interface TrailingStopState {
   positionId: string;
   symbol: string;
-  side: 'long' | 'short';
-  
+  side: "long" | "short";
+
   // Entry info
   entryPrice: number;
   entryTime: Date;
   initialStopPrice: number;
-  riskDistance: number;  // Entry - initial stop (1R)
-  
+  riskDistance: number; // Entry - initial stop (1R)
+
   // Current state
   stage: TrailingStopStage;
   currentStopPrice: number;
-  highestPrice: number;  // For longs
-  lowestPrice: number;   // For shorts
-  
+  highestPrice: number; // For longs
+  lowestPrice: number; // For shorts
+
   // Pivot trail
   trailPivotPrice?: number;
   trailPivotIndex?: number;
-  
+
   // Partial exits
   partialExitsDone: number;
   remainingQuantity: number;
-  
+
   // Tracking
   barsHeld: number;
-  maxFavorableExcursion: number;  // MFE in R
-  maxAdverseExcursion: number;    // MAE in R
-  
+  maxFavorableExcursion: number; // MFE in R
+  maxAdverseExcursion: number; // MAE in R
+
   // Timestamps
-  stageBTime?: Date;  // When moved to break-even
-  stageCTime?: Date;  // When partial exit
-  stageDTime?: Date;  // When pivot trail started
-  
+  stageBTime?: Date; // When moved to break-even
+  stageCTime?: Date; // When partial exit
+  stageDTime?: Date; // When pivot trail started
+
   lastUpdate: Date;
 }
 
 export interface TrailingStopConfig {
   // Stage B: Break-even
-  breakEvenR: number;           // Move to BE at this R (default: 0.8)
-  breakEvenBuffer: number;      // ATR buffer above entry (default: 0.1)
-  
+  breakEvenR: number; // Move to BE at this R (default: 0.8)
+  breakEvenBuffer: number; // ATR buffer above entry (default: 0.1)
+
   // Stage C: Partial exit
-  partialExitR: number;         // Take partial at this R (default: 1.0)
-  partialExitPercent: number;   // Percent to exit (default: 0.5)
-  
+  partialExitR: number; // Take partial at this R (default: 1.0)
+  partialExitPercent: number; // Percent to exit (default: 0.5)
+
   // Stage D: Pivot trail
   pivotTrailActivationR: number; // Start pivot trail at this R (default: 1.5)
-  pivotTrailBuffer: number;      // ATR buffer behind pivot (default: 0.3)
-  minPivotAge: number;           // Min bars since pivot confirmation (default: 3)
-  
+  pivotTrailBuffer: number; // ATR buffer behind pivot (default: 0.3)
+  minPivotAge: number; // Min bars since pivot confirmation (default: 3)
+
   // Stage E: Time stop
-  maxBarsNoProgress: number;     // Max bars without new high/low (default: 20)
-  progressThresholdR: number;    // Min R gain to reset progress counter (default: 0.25)
-  
+  maxBarsNoProgress: number; // Max bars without new high/low (default: 20)
+  progressThresholdR: number; // Min R gain to reset progress counter (default: 0.25)
+
   // General
   atrPeriod: number;
-  useStructuralStop: boolean;    // Use safety line as initial stop
+  useStructuralStop: boolean; // Use safety line as initial stop
 }
 
 export interface StopUpdateResult {
   stopPrice: number;
   stage: TrailingStopStage;
-  action: 'hold' | 'partial_exit' | 'full_exit' | 'move_stop';
+  action: "hold" | "partial_exit" | "full_exit" | "move_stop";
   exitQuantity?: number;
   exitReason?: string;
   message: string;
@@ -127,13 +127,13 @@ export class TrailingStopManager {
   initializePosition(
     positionId: string,
     symbol: string,
-    side: 'long' | 'short',
+    side: "long" | "short",
     entryPrice: number,
     initialStopPrice: number,
-    quantity: number
+    quantity: number,
   ): TrailingStopState {
     const riskDistance = Math.abs(entryPrice - initialStopPrice);
-    
+
     const state: TrailingStopState = {
       positionId,
       symbol,
@@ -142,7 +142,7 @@ export class TrailingStopManager {
       entryTime: new Date(),
       initialStopPrice,
       riskDistance,
-      stage: 'A',
+      stage: "A",
       currentStopPrice: initialStopPrice,
       highestPrice: entryPrice,
       lowestPrice: entryPrice,
@@ -153,7 +153,7 @@ export class TrailingStopManager {
       maxAdverseExcursion: 0,
       lastUpdate: new Date(),
     };
-    
+
     this.positions.set(positionId, state);
     return state;
   }
@@ -183,45 +183,45 @@ export class TrailingStopManager {
     positionId: string,
     currentBar: OHLCV,
     atr: number,
-    confirmedPivots?: Pivot[]
+    confirmedPivots?: Pivot[],
   ): StopUpdateResult {
     const state = this.positions.get(positionId);
     if (!state) {
       return {
         stopPrice: 0,
-        stage: 'A',
-        action: 'hold',
-        message: 'Position not found',
+        stage: "A",
+        action: "hold",
+        message: "Position not found",
       };
     }
 
     // Update tracking metrics
     state.barsHeld++;
     state.lastUpdate = new Date();
-    
+
     const currentPrice = currentBar.close;
     const currentR = this.calculateR(state, currentPrice);
 
     // Update MFE/MAE
-    if (state.side === 'long') {
+    if (state.side === "long") {
       state.highestPrice = Math.max(state.highestPrice, currentBar.high);
       state.maxFavorableExcursion = Math.max(
         state.maxFavorableExcursion,
-        (state.highestPrice - state.entryPrice) / state.riskDistance
+        (state.highestPrice - state.entryPrice) / state.riskDistance,
       );
       state.maxAdverseExcursion = Math.max(
         state.maxAdverseExcursion,
-        (state.entryPrice - currentBar.low) / state.riskDistance
+        (state.entryPrice - currentBar.low) / state.riskDistance,
       );
     } else {
       state.lowestPrice = Math.min(state.lowestPrice, currentBar.low);
       state.maxFavorableExcursion = Math.max(
         state.maxFavorableExcursion,
-        (state.entryPrice - state.lowestPrice) / state.riskDistance
+        (state.entryPrice - state.lowestPrice) / state.riskDistance,
       );
       state.maxAdverseExcursion = Math.max(
         state.maxAdverseExcursion,
-        (currentBar.high - state.entryPrice) / state.riskDistance
+        (currentBar.high - state.entryPrice) / state.riskDistance,
       );
     }
 
@@ -230,9 +230,9 @@ export class TrailingStopManager {
       return {
         stopPrice: state.currentStopPrice,
         stage: state.stage,
-        action: 'full_exit',
+        action: "full_exit",
         exitQuantity: state.remainingQuantity,
-        exitReason: 'stop_hit',
+        exitReason: "stop_hit",
         message: `Stop hit at ${state.currentStopPrice.toFixed(2)}`,
       };
     }
@@ -241,27 +241,27 @@ export class TrailingStopManager {
     let result: StopUpdateResult;
 
     switch (state.stage) {
-      case 'A':
+      case "A":
         result = this.processStageA(state, currentR, atr);
         break;
-      case 'B':
+      case "B":
         result = this.processStageB(state, currentR, atr);
         break;
-      case 'C':
+      case "C":
         result = this.processStageCAndD(state, currentR, atr, confirmedPivots);
         break;
-      case 'D':
+      case "D":
         result = this.processStageCAndD(state, currentR, atr, confirmedPivots);
         break;
-      case 'E':
+      case "E":
         result = this.processStageE(state, currentR);
         break;
       default:
         result = {
           stopPrice: state.currentStopPrice,
           stage: state.stage,
-          action: 'hold',
-          message: 'Unknown stage',
+          action: "hold",
+          message: "Unknown stage",
         };
     }
 
@@ -279,32 +279,33 @@ export class TrailingStopManager {
   private processStageA(
     state: TrailingStopState,
     currentR: number,
-    atr: number
+    atr: number,
   ): StopUpdateResult {
     // Check for transition to Stage B (break-even)
     if (currentR >= this.config.breakEvenR) {
       // Move stop to break-even
       const beBuffer = this.config.breakEvenBuffer * atr;
-      const newStop = state.side === 'long'
-        ? state.entryPrice + beBuffer
-        : state.entryPrice - beBuffer;
-      
+      const newStop =
+        state.side === "long"
+          ? state.entryPrice + beBuffer
+          : state.entryPrice - beBuffer;
+
       state.currentStopPrice = newStop;
-      state.stage = 'B';
+      state.stage = "B";
       state.stageBTime = new Date();
 
       return {
         stopPrice: newStop,
-        stage: 'B',
-        action: 'move_stop',
+        stage: "B",
+        action: "move_stop",
         message: `Moved to break-even at ${newStop.toFixed(2)} (${currentR.toFixed(2)}R)`,
       };
     }
 
     return {
       stopPrice: state.currentStopPrice,
-      stage: 'A',
-      action: 'hold',
+      stage: "A",
+      action: "hold",
       message: `Stage A: Waiting for ${this.config.breakEvenR}R (current: ${currentR.toFixed(2)}R)`,
     };
   }
@@ -316,24 +317,26 @@ export class TrailingStopManager {
   private processStageB(
     state: TrailingStopState,
     currentR: number,
-    atr: number
+    atr: number,
   ): StopUpdateResult {
     // Check for transition to Stage C (partial exit)
     if (currentR >= this.config.partialExitR && state.partialExitsDone === 0) {
-      const exitQty = Math.floor(state.remainingQuantity * this.config.partialExitPercent);
-      
+      const exitQty = Math.floor(
+        state.remainingQuantity * this.config.partialExitPercent,
+      );
+
       if (exitQty > 0) {
         state.partialExitsDone++;
         state.remainingQuantity -= exitQty;
-        state.stage = 'C';
+        state.stage = "C";
         state.stageCTime = new Date();
 
         return {
           stopPrice: state.currentStopPrice,
-          stage: 'C',
-          action: 'partial_exit',
+          stage: "C",
+          action: "partial_exit",
           exitQuantity: exitQty,
-          exitReason: 'target_1r',
+          exitReason: "target_1r",
           message: `Partial exit ${exitQty} shares at ${this.config.partialExitR}R`,
         };
       }
@@ -341,8 +344,8 @@ export class TrailingStopManager {
 
     return {
       stopPrice: state.currentStopPrice,
-      stage: 'B',
-      action: 'hold',
+      stage: "B",
+      action: "hold",
       message: `Stage B: Break-even locked, waiting for ${this.config.partialExitR}R`,
     };
   }
@@ -354,23 +357,28 @@ export class TrailingStopManager {
     state: TrailingStopState,
     currentR: number,
     atr: number,
-    confirmedPivots?: Pivot[]
+    confirmedPivots?: Pivot[],
   ): StopUpdateResult {
     // Check for pivot trail activation
-    if (currentR >= this.config.pivotTrailActivationR && state.stage === 'C') {
-      state.stage = 'D';
+    if (currentR >= this.config.pivotTrailActivationR && state.stage === "C") {
+      state.stage = "D";
       state.stageDTime = new Date();
     }
 
     // If in Stage D, update stop based on pivots
-    if (state.stage === 'D' && confirmedPivots && confirmedPivots.length > 0) {
-      const newPivotStop = this.calculatePivotTrailStop(state, confirmedPivots, atr);
-      
+    if (state.stage === "D" && confirmedPivots && confirmedPivots.length > 0) {
+      const newPivotStop = this.calculatePivotTrailStop(
+        state,
+        confirmedPivots,
+        atr,
+      );
+
       if (newPivotStop !== null) {
         // Only move stop if it improves (never widen)
-        const improves = state.side === 'long'
-          ? newPivotStop > state.currentStopPrice
-          : newPivotStop < state.currentStopPrice;
+        const improves =
+          state.side === "long"
+            ? newPivotStop > state.currentStopPrice
+            : newPivotStop < state.currentStopPrice;
 
         if (improves) {
           state.currentStopPrice = newPivotStop;
@@ -378,8 +386,8 @@ export class TrailingStopManager {
 
           return {
             stopPrice: newPivotStop,
-            stage: 'D',
-            action: 'move_stop',
+            stage: "D",
+            action: "move_stop",
             message: `Pivot trail moved stop to ${newPivotStop.toFixed(2)}`,
           };
         }
@@ -390,12 +398,12 @@ export class TrailingStopManager {
     if (state.barsHeld >= this.config.maxBarsNoProgress) {
       const recentProgress = this.calculateRecentProgress(state, currentR);
       if (recentProgress < this.config.progressThresholdR) {
-        state.stage = 'E';
+        state.stage = "E";
         return {
           stopPrice: state.currentStopPrice,
-          stage: 'E',
-          action: 'hold',
-          message: 'No progress detected, time stop activated',
+          stage: "E",
+          action: "hold",
+          message: "No progress detected, time stop activated",
         };
       }
     }
@@ -403,7 +411,7 @@ export class TrailingStopManager {
     return {
       stopPrice: state.currentStopPrice,
       stage: state.stage,
-      action: 'hold',
+      action: "hold",
       message: `Stage ${state.stage}: Trailing at ${state.currentStopPrice.toFixed(2)}`,
     };
   }
@@ -413,15 +421,15 @@ export class TrailingStopManager {
    */
   private processStageE(
     state: TrailingStopState,
-    currentR: number
+    currentR: number,
   ): StopUpdateResult {
     // In time stop mode, exit on next bar that shows no improvement
     return {
       stopPrice: state.currentStopPrice,
-      stage: 'E',
-      action: 'full_exit',
+      stage: "E",
+      action: "full_exit",
       exitQuantity: state.remainingQuantity,
-      exitReason: 'time_stop',
+      exitReason: "time_stop",
       message: `Time stop: No progress in ${state.barsHeld} bars`,
     };
   }
@@ -435,11 +443,12 @@ export class TrailingStopManager {
    */
   private calculateR(state: TrailingStopState, currentPrice: number): number {
     if (state.riskDistance === 0) return 0;
-    
-    const pl = state.side === 'long'
-      ? currentPrice - state.entryPrice
-      : state.entryPrice - currentPrice;
-    
+
+    const pl =
+      state.side === "long"
+        ? currentPrice - state.entryPrice
+        : state.entryPrice - currentPrice;
+
     return pl / state.riskDistance;
   }
 
@@ -447,7 +456,7 @@ export class TrailingStopManager {
    * Check if position is stopped out
    */
   private isStoppedOut(state: TrailingStopState, bar: OHLCV): boolean {
-    if (state.side === 'long') {
+    if (state.side === "long") {
       return bar.low <= state.currentStopPrice;
     } else {
       return bar.high >= state.currentStopPrice;
@@ -460,15 +469,15 @@ export class TrailingStopManager {
   private calculatePivotTrailStop(
     state: TrailingStopState,
     pivots: Pivot[],
-    atr: number
+    atr: number,
   ): number | null {
     // For longs, trail behind higher lows
     // For shorts, trail above lower highs
-    const relevantPivots = pivots.filter(p => {
-      if (state.side === 'long') {
-        return p.type === 'low' && p.price < state.highestPrice;
+    const relevantPivots = pivots.filter((p) => {
+      if (state.side === "long") {
+        return p.type === "low" && p.price < state.highestPrice;
       } else {
-        return p.type === 'high' && p.price > state.lowestPrice;
+        return p.type === "high" && p.price > state.lowestPrice;
       }
     });
 
@@ -476,11 +485,11 @@ export class TrailingStopManager {
 
     // Get most recent relevant pivot
     const latestPivot = relevantPivots[relevantPivots.length - 1];
-    
+
     // Apply ATR buffer
     const buffer = this.config.pivotTrailBuffer * atr;
-    
-    if (state.side === 'long') {
+
+    if (state.side === "long") {
       return latestPivot.price - buffer;
     } else {
       return latestPivot.price + buffer;
@@ -492,10 +501,11 @@ export class TrailingStopManager {
    */
   private calculateRecentProgress(
     state: TrailingStopState,
-    currentR: number
+    currentR: number,
   ): number {
     // Simple implementation: progress from last stage transition
-    const baseline = state.stage === 'D' ? this.config.pivotTrailActivationR : 0;
+    const baseline =
+      state.stage === "D" ? this.config.pivotTrailActivationR : 0;
     return currentR - baseline;
   }
 
@@ -509,7 +519,7 @@ export class TrailingStopManager {
   updateAllPositions(
     barsBySymbol: Map<string, OHLCV>,
     atrBySymbol: Map<string, number>,
-    pivotsBySymbol?: Map<string, Pivot[]>
+    pivotsBySymbol?: Map<string, Pivot[]>,
   ): Map<string, StopUpdateResult> {
     const results = new Map<string, StopUpdateResult>();
 
@@ -532,7 +542,7 @@ export class TrailingStopManager {
    */
   getPositionsNeedingAction(): TrailingStopState[] {
     return Array.from(this.positions.values()).filter(
-      state => state.stage === 'E' || state.partialExitsDone > 0
+      (state) => state.stage === "E" || state.partialExitsDone > 0,
     );
   }
 
@@ -548,7 +558,11 @@ export class TrailingStopManager {
   } {
     const positions = Array.from(this.positions.values());
     const byStage: Record<TrailingStopStage, number> = {
-      A: 0, B: 0, C: 0, D: 0, E: 0
+      A: 0,
+      B: 0,
+      C: 0,
+      D: 0,
+      E: 0,
     };
 
     let totalMFE = 0;
@@ -579,7 +593,7 @@ export class TrailingStopManager {
 // ============================================================================
 
 export function createTrailingStopManager(
-  config?: Partial<TrailingStopConfig>
+  config?: Partial<TrailingStopConfig>,
 ): TrailingStopManager {
   return new TrailingStopManager(config);
 }

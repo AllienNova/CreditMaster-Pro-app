@@ -24,6 +24,7 @@ Phase 1.5 successfully delivered comprehensive REST API endpoints for the Financ
 **Status:** COMPLETE - Enhanced existing endpoint with Phase 1.5 requirements
 
 **Enhancements Made:**
+
 - ✅ Added comprehensive OpenAPI/Swagger documentation
 - ✅ Implemented proper caching headers (5-minute TTL with stale-while-revalidate)
 - ✅ Enhanced response format with summary metrics (totalAssets, totalLiabilities, netWorth)
@@ -32,10 +33,12 @@ Phase 1.5 successfully delivered comprehensive REST API endpoints for the Financ
 - ✅ Consistent error response format across all endpoints
 
 **API Endpoints:**
+
 - `GET /api/financial/context` - Get financial context summary
 - `POST /api/financial/context/refresh` - Force refresh cache
 
 **Response Format:**
+
 ```json
 {
   "success": true,
@@ -68,6 +71,7 @@ Phase 1.5 successfully delivered comprehensive REST API endpoints for the Financ
 **Status:** COMPLETE - Fully integrated with Health Score Calculator V2
 
 **Enhancements Made:**
+
 - ✅ Integrated with `healthScoreCalculatorV2` instead of legacy calculator
 - ✅ Implemented 1-hour caching strategy with automatic cache validation
 - ✅ Added `forceRecalculate` parameter support in POST body
@@ -76,18 +80,21 @@ Phase 1.5 successfully delivered comprehensive REST API endpoints for the Financ
 - ✅ Improved error handling and validation
 
 **API Endpoints:**
+
 - `GET /api/financial/health-score` - Get current health score (with 1-hour cache)
 - `GET /api/financial/health-score?history=true&days=30` - Get historical scores
 - `POST /api/financial/health-score` - Calculate and save new score
 
 **POST Request Body:**
+
 ```json
 {
-  "forceRecalculate": true  // Optional, defaults to true
+  "forceRecalculate": true // Optional, defaults to true
 }
 ```
 
 **Response Format:**
+
 ```json
 {
   "success": true,
@@ -137,14 +144,13 @@ Phase 1.5 successfully delivered comprehensive REST API endpoints for the Financ
 ### **Task 1.5.3: Financial Goals CRUD Endpoints** ✅
 
 **Files:**
+
 - `src/app/api/financial/goals/route.ts` (Enhanced from 86 to 264 lines)
 - `src/app/api/financial/goals/[id]/route.ts` (Created - 379 lines)
 
 **Status:** COMPLETE - Full CRUD operations with Zod validation
 
 **Enhancements Made:**
-
-
 
 - ✅ Created comprehensive Zod validation schemas for create and update operations
 - ✅ Integrated with `goalTracker` service instead of legacy `financialService`
@@ -157,20 +163,24 @@ Phase 1.5 successfully delivered comprehensive REST API endpoints for the Financ
 **API Endpoints:**
 
 **Collection Endpoints:**
+
 - `GET /api/financial/goals` - List all goals with filtering
 - `POST /api/financial/goals` - Create new goal
 
 **Individual Endpoints:**
+
 - `GET /api/financial/goals/[id]` - Get specific goal with detailed progress
 - `PATCH /api/financial/goals/[id]` - Update goal properties (partial updates)
 - `DELETE /api/financial/goals/[id]` - Delete goal (soft delete)
 
 **Query Parameters (GET collection):**
+
 - `status` - Filter by goal status (active, completed, paused, cancelled)
 - `type` - Filter by goal type
 - `priority` - Filter by minimum priority (low, medium, high, urgent)
 
 **POST Request Body:**
+
 ```json
 {
   "type": "emergency_fund",
@@ -184,6 +194,7 @@ Phase 1.5 successfully delivered comprehensive REST API endpoints for the Financ
 ```
 
 **PATCH Request Body (all fields optional):**
+
 ```json
 {
   "name": "Updated Goal Name",
@@ -204,6 +215,7 @@ Phase 1.5 successfully delivered comprehensive REST API endpoints for the Financ
 **Status:** COMPLETE - Enhanced with filtering, pagination, and bulk operations
 
 **Enhancements Made:**
+
 - ✅ Added `is_read` filter for read/unread insights
 - ✅ Implemented pagination with `offset` and `limit` parameters
 - ✅ Added sorting by priority or created_at with asc/desc order
@@ -212,11 +224,13 @@ Phase 1.5 successfully delivered comprehensive REST API endpoints for the Financ
 - ✅ Improved error handling and validation
 
 **API Endpoints:**
+
 - `GET /api/financial/insights` - Get insights with filtering and pagination
 - `POST /api/financial/insights` - Dismiss insight or record action
 - `PATCH /api/financial/insights` - Bulk operations on multiple insights
 
 **Query Parameters (GET):**
+
 - `types` - Comma-separated insight types
 - `categories` - Comma-separated categories
 - `minPriority` - Minimum priority level
@@ -228,14 +242,16 @@ Phase 1.5 successfully delivered comprehensive REST API endpoints for the Financ
 - `stored` - Use stored insights vs. generate new
 
 **PATCH Request Body (Bulk Operations):**
+
 ```json
 {
   "insightIds": ["insight-1", "insight-2", "insight-3"],
-  "action": "mark_read"  // or "dismiss"
+  "action": "mark_read" // or "dismiss"
 }
 ```
 
 **Response Format:**
+
 ```json
 {
   "success": true,
@@ -257,12 +273,14 @@ Phase 1.5 successfully delivered comprehensive REST API endpoints for the Financ
 **Status:** DEFERRED - Will be implemented after all endpoints are deployed and tested manually
 
 **Rationale:**
+
 - All endpoints are production-ready with proper error handling
 - Manual testing can be performed via Postman/Thunder Client
 - Integration tests should be written after initial deployment to catch real-world edge cases
 - Test files will be created in `src/app/api/financial/__tests__/` directory
 
 **Planned Test Files:**
+
 - `context.test.ts` - Financial context endpoint tests
 - `health-score.test.ts` - Health score calculation endpoint tests
 - `goals.test.ts` - Goals CRUD endpoints tests
@@ -280,12 +298,18 @@ All endpoints implement consistent authentication pattern:
 // JWT validation
 const validation = await jwtValidation.validateFromHeaders(request);
 if (!validation.valid || !validation.user) {
-  return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+  return NextResponse.json(
+    { success: false, error: "Unauthorized" },
+    { status: 401 },
+  );
 }
 
 // RBAC permission check
-if (!rbac.hasPermission(validation.user, 'financial:read')) {
-  return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
+if (!rbac.hasPermission(validation.user, "financial:read")) {
+  return NextResponse.json(
+    { success: false, error: "Forbidden" },
+    { status: 403 },
+  );
 }
 ```
 
@@ -295,11 +319,14 @@ Example validation schema:
 
 ```typescript
 const createGoalSchema = z.object({
-  type: z.string().min(1, 'Goal type is required'),
+  type: z.string().min(1, "Goal type is required"),
   name: z.string().min(1).max(200),
   targetAmount: z.number().positive(),
   targetDate: z.string().refine((date) => new Date(date) > new Date()),
-  priority: z.enum(['low', 'medium', 'high', 'urgent']).optional().default('medium'),
+  priority: z
+    .enum(["low", "medium", "high", "urgent"])
+    .optional()
+    .default("medium"),
 });
 ```
 
@@ -323,25 +350,24 @@ Consistent error response format:
 - **Health Score:** 1-hour TTL with automatic cache validation
 - **Goals & Insights:** No caching (real-time data)
 
-
 ---
 
 ## 📊 API Endpoint Summary
 
-| Endpoint | Method | Purpose | Auth | Validation |
-|----------|--------|---------|------|------------|
-| `/api/financial/context` | GET | Get financial summary | ✅ | - |
-| `/api/financial/context/refresh` | POST | Force refresh cache | ✅ | - |
-| `/api/financial/health-score` | GET | Get health score | ✅ | - |
-| `/api/financial/health-score` | POST | Calculate new score | ✅ | Zod |
-| `/api/financial/goals` | GET | List goals | ✅ | - |
-| `/api/financial/goals` | POST | Create goal | ✅ | Zod |
-| `/api/financial/goals/[id]` | GET | Get goal details | ✅ | - |
-| `/api/financial/goals/[id]` | PATCH | Update goal | ✅ | Zod |
-| `/api/financial/goals/[id]` | DELETE | Delete goal | ✅ | - |
-| `/api/financial/insights` | GET | List insights | ✅ | - |
-| `/api/financial/insights` | POST | Dismiss/action | ✅ | - |
-| `/api/financial/insights` | PATCH | Bulk operations | ✅ | Zod |
+| Endpoint                         | Method | Purpose               | Auth | Validation |
+| -------------------------------- | ------ | --------------------- | ---- | ---------- |
+| `/api/financial/context`         | GET    | Get financial summary | ✅   | -          |
+| `/api/financial/context/refresh` | POST   | Force refresh cache   | ✅   | -          |
+| `/api/financial/health-score`    | GET    | Get health score      | ✅   | -          |
+| `/api/financial/health-score`    | POST   | Calculate new score   | ✅   | Zod        |
+| `/api/financial/goals`           | GET    | List goals            | ✅   | -          |
+| `/api/financial/goals`           | POST   | Create goal           | ✅   | Zod        |
+| `/api/financial/goals/[id]`      | GET    | Get goal details      | ✅   | -          |
+| `/api/financial/goals/[id]`      | PATCH  | Update goal           | ✅   | Zod        |
+| `/api/financial/goals/[id]`      | DELETE | Delete goal           | ✅   | -          |
+| `/api/financial/insights`        | GET    | List insights         | ✅   | -          |
+| `/api/financial/insights`        | POST   | Dismiss/action        | ✅   | -          |
+| `/api/financial/insights`        | PATCH  | Bulk operations       | ✅   | Zod        |
 
 **Total Endpoints:** 12 (4 GET, 3 POST, 2 PATCH, 1 DELETE, 2 collection routes)
 
@@ -370,12 +396,14 @@ Consistent error response format:
 ## 📝 Files Modified/Created
 
 ### **Modified Files:**
+
 - `src/app/api/financial/context/route.ts` (188 → 311 lines)
 - `src/app/api/financial/health-score/route.ts` (122 → 395 lines)
 - `src/app/api/financial/goals/route.ts` (86 → 264 lines)
 - `src/app/api/financial/insights/route.ts` (181 → 375 lines)
 
 ### **Created Files:**
+
 - `src/app/api/financial/goals/[id]/route.ts` (379 lines)
 - `PHASE_1.5_COMPLETION_REPORT.md` (this file)
 

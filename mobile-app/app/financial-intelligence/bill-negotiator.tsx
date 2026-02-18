@@ -3,7 +3,7 @@
  * AI-powered bill negotiation assistant with scripts and outcome tracking
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -17,13 +17,13 @@ import {
   Alert,
   Clipboard,
   Dimensions,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { lightTheme as theme } from '../../src/constants/theme';
-import { Card } from '../../src/components/Card';
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { lightTheme as theme } from "../../src/constants/theme";
+import { Card } from "../../src/components/Card";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 // TypeScript Interfaces
 interface Bill {
@@ -32,10 +32,10 @@ interface Bill {
   category: string;
   currentAmount: number;
   dueDate: string;
-  frequency: 'monthly' | 'quarterly' | 'annual';
-  negotiationPotential: 'high' | 'medium' | 'low';
+  frequency: "monthly" | "quarterly" | "annual";
+  negotiationPotential: "high" | "medium" | "low";
   lastNegotiated?: string;
-  status: 'active' | 'negotiating' | 'completed';
+  status: "active" | "negotiating" | "completed";
 }
 
 interface NegotiationScript {
@@ -79,15 +79,20 @@ interface MarketAnalysis {
 interface BillsListProps {
   bills: Bill[];
   onSelectBill: (bill: Bill) => void;
-  sortBy: 'potential' | 'amount' | 'dueDate';
-  onSortChange: (sort: 'potential' | 'amount' | 'dueDate') => void;
+  sortBy: "potential" | "amount" | "dueDate";
+  onSortChange: (sort: "potential" | "amount" | "dueDate") => void;
 }
 
-const BillsList: React.FC<BillsListProps> = ({ bills, onSelectBill, sortBy, onSortChange }) => {
+const BillsList: React.FC<BillsListProps> = ({
+  bills,
+  onSelectBill,
+  sortBy,
+  onSortChange,
+}) => {
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
@@ -95,34 +100,44 @@ const BillsList: React.FC<BillsListProps> = ({ bills, onSelectBill, sortBy, onSo
 
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
   const getPotentialColor = (potential: string): string => {
     switch (potential) {
-      case 'high': return theme.colors.success;
-      case 'medium': return theme.colors.warning;
-      case 'low': return theme.colors.textSecondary;
-      default: return theme.colors.text;
+      case "high":
+        return theme.colors.success;
+      case "medium":
+        return theme.colors.warning;
+      case "low":
+        return theme.colors.textSecondary;
+      default:
+        return theme.colors.text;
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed': return 'checkmark-circle';
-      case 'negotiating': return 'time';
-      default: return 'document-text';
+      case "completed":
+        return "checkmark-circle";
+      case "negotiating":
+        return "time";
+      default:
+        return "document-text";
     }
   };
 
   const sortedBills = [...bills].sort((a, b) => {
     switch (sortBy) {
-      case 'potential':
+      case "potential":
         const potentialOrder = { high: 3, medium: 2, low: 1 };
-        return potentialOrder[b.negotiationPotential] - potentialOrder[a.negotiationPotential];
-      case 'amount':
+        return (
+          potentialOrder[b.negotiationPotential] -
+          potentialOrder[a.negotiationPotential]
+        );
+      case "amount":
         return b.currentAmount - a.currentAmount;
-      case 'dueDate':
+      case "dueDate":
         return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
       default:
         return 0;
@@ -135,26 +150,50 @@ const BillsList: React.FC<BillsListProps> = ({ bills, onSelectBill, sortBy, onSo
         <Text style={styles.cardTitle}>Your Bills</Text>
         <View style={styles.sortButtons}>
           <TouchableOpacity
-            style={[styles.sortButton, sortBy === 'potential' && styles.sortButtonActive]}
-            onPress={() => onSortChange('potential')}
+            style={[
+              styles.sortButton,
+              sortBy === "potential" && styles.sortButtonActive,
+            ]}
+            onPress={() => onSortChange("potential")}
           >
-            <Text style={[styles.sortButtonText, sortBy === 'potential' && styles.sortButtonTextActive]}>
+            <Text
+              style={[
+                styles.sortButtonText,
+                sortBy === "potential" && styles.sortButtonTextActive,
+              ]}
+            >
               Potential
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.sortButton, sortBy === 'amount' && styles.sortButtonActive]}
-            onPress={() => onSortChange('amount')}
+            style={[
+              styles.sortButton,
+              sortBy === "amount" && styles.sortButtonActive,
+            ]}
+            onPress={() => onSortChange("amount")}
           >
-            <Text style={[styles.sortButtonText, sortBy === 'amount' && styles.sortButtonTextActive]}>
+            <Text
+              style={[
+                styles.sortButtonText,
+                sortBy === "amount" && styles.sortButtonTextActive,
+              ]}
+            >
               Amount
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.sortButton, sortBy === 'dueDate' && styles.sortButtonActive]}
-            onPress={() => onSortChange('dueDate')}
+            style={[
+              styles.sortButton,
+              sortBy === "dueDate" && styles.sortButtonActive,
+            ]}
+            onPress={() => onSortChange("dueDate")}
           >
-            <Text style={[styles.sortButtonText, sortBy === 'dueDate' && styles.sortButtonTextActive]}>
+            <Text
+              style={[
+                styles.sortButtonText,
+                sortBy === "dueDate" && styles.sortButtonTextActive,
+              ]}
+            >
               Due Date
             </Text>
           </TouchableOpacity>
@@ -180,30 +219,50 @@ const BillsList: React.FC<BillsListProps> = ({ bills, onSelectBill, sortBy, onSo
               </View>
             </View>
             <View style={styles.billAmountContainer}>
-              <Text style={styles.billAmount}>{formatCurrency(bill.currentAmount)}</Text>
+              <Text style={styles.billAmount}>
+                {formatCurrency(bill.currentAmount)}
+              </Text>
               <Text style={styles.billFrequency}>/{bill.frequency}</Text>
             </View>
           </View>
 
           <View style={styles.billMeta}>
             <View style={styles.metaItem}>
-              <Ionicons name="calendar-outline" size={14} color={theme.colors.textSecondary} />
-              <Text style={styles.metaText}>Due {formatDate(bill.dueDate)}</Text>
+              <Ionicons
+                name="calendar-outline"
+                size={14}
+                color={theme.colors.textSecondary}
+              />
+              <Text style={styles.metaText}>
+                Due {formatDate(bill.dueDate)}
+              </Text>
             </View>
             <View
               style={[
                 styles.potentialBadge,
-                { backgroundColor: getPotentialColor(bill.negotiationPotential) + '20' },
+                {
+                  backgroundColor:
+                    getPotentialColor(bill.negotiationPotential) + "20",
+                },
               ]}
             >
-              <Text style={[styles.potentialText, { color: getPotentialColor(bill.negotiationPotential) }]}>
+              <Text
+                style={[
+                  styles.potentialText,
+                  { color: getPotentialColor(bill.negotiationPotential) },
+                ]}
+              >
                 {bill.negotiationPotential.toUpperCase()} potential
               </Text>
             </View>
           </View>
 
           <View style={styles.billAction}>
-            <Ionicons name="chevron-forward" size={20} color={theme.colors.primary} />
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={theme.colors.primary}
+            />
             <Text style={styles.billActionText}>Start Negotiation</Text>
           </View>
         </TouchableOpacity>
@@ -238,9 +297,9 @@ const NegotiationCard: React.FC<NegotiationCardProps> = ({
   });
 
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
@@ -260,7 +319,7 @@ const NegotiationCard: React.FC<NegotiationCardProps> = ({
 
   const handleSubmitOutcome = () => {
     if (outcome.success && !outcome.newRate) {
-      Alert.alert('Error', 'Please enter the new rate');
+      Alert.alert("Error", "Please enter the new rate");
       return;
     }
 
@@ -268,7 +327,9 @@ const NegotiationCard: React.FC<NegotiationCardProps> = ({
       billId: bill.id,
       success: outcome.success || false,
       newRate: outcome.newRate,
-      savingsAmount: outcome.newRate ? bill.currentAmount - outcome.newRate : undefined,
+      savingsAmount: outcome.newRate
+        ? bill.currentAmount - outcome.newRate
+        : undefined,
       notes: outcome.notes,
       followUpDate: outcome.followUpDate,
     };
@@ -301,7 +362,12 @@ const NegotiationCard: React.FC<NegotiationCardProps> = ({
               {s < step ? (
                 <Ionicons name="checkmark" size={16} color="#FFF" />
               ) : (
-                <Text style={[styles.stepNumber, s === step && styles.stepNumberActive]}>
+                <Text
+                  style={[
+                    styles.stepNumber,
+                    s === step && styles.stepNumberActive,
+                  ]}
+                >
                   {s}
                 </Text>
               )}
@@ -325,7 +391,9 @@ const NegotiationCard: React.FC<NegotiationCardProps> = ({
                 </View>
                 <View style={styles.reviewRow}>
                   <Text style={styles.reviewLabel}>Current Amount</Text>
-                  <Text style={[styles.reviewValue, { color: theme.colors.error }]}>
+                  <Text
+                    style={[styles.reviewValue, { color: theme.colors.error }]}
+                  >
                     {formatCurrency(bill.currentAmount)}
                   </Text>
                 </View>
@@ -338,7 +406,12 @@ const NegotiationCard: React.FC<NegotiationCardProps> = ({
                   <Text
                     style={[
                       styles.reviewValue,
-                      { color: bill.negotiationPotential === 'high' ? theme.colors.success : theme.colors.warning },
+                      {
+                        color:
+                          bill.negotiationPotential === "high"
+                            ? theme.colors.success
+                            : theme.colors.warning,
+                      },
                     ]}
                   >
                     {bill.negotiationPotential.toUpperCase()}
@@ -351,14 +424,27 @@ const NegotiationCard: React.FC<NegotiationCardProps> = ({
           {/* Step 2: Generate Script */}
           {step === 2 && (
             <View style={styles.stepContent}>
-              <Text style={styles.stepTitle}>Step 2: AI Negotiation Script</Text>
+              <Text style={styles.stepTitle}>
+                Step 2: AI Negotiation Script
+              </Text>
               {!script ? (
                 <View style={styles.generateContainer}>
-                  <Ionicons name="document-text-outline" size={64} color={theme.colors.primary} />
-                  <Text style={styles.generateText}>Generate a personalized negotiation script</Text>
-                  <TouchableOpacity style={styles.generateButton} onPress={onGenerateScript}>
+                  <Ionicons
+                    name="document-text-outline"
+                    size={64}
+                    color={theme.colors.primary}
+                  />
+                  <Text style={styles.generateText}>
+                    Generate a personalized negotiation script
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.generateButton}
+                    onPress={onGenerateScript}
+                  >
                     <Ionicons name="sparkles" size={20} color="#FFF" />
-                    <Text style={styles.generateButtonText}>Generate Script</Text>
+                    <Text style={styles.generateButtonText}>
+                      Generate Script
+                    </Text>
                   </TouchableOpacity>
                 </View>
               ) : (
@@ -372,26 +458,53 @@ const NegotiationCard: React.FC<NegotiationCardProps> = ({
             <View style={styles.stepContent}>
               <Text style={styles.stepTitle}>Step 3: Make the Call</Text>
               <Card style={styles.negotiateCard}>
-                <Ionicons name="call-outline" size={48} color={theme.colors.primary} />
+                <Ionicons
+                  name="call-outline"
+                  size={48}
+                  color={theme.colors.primary}
+                />
                 <Text style={styles.negotiateTitle}>Ready to negotiate?</Text>
                 <Text style={styles.negotiateText}>
-                  Use the script from Step 2 to guide your conversation. Remember to:
+                  Use the script from Step 2 to guide your conversation.
+                  Remember to:
                 </Text>
                 <View style={styles.tipsList}>
                   <View style={styles.tipItem}>
-                    <Ionicons name="checkmark-circle" size={20} color={theme.colors.success} />
-                    <Text style={styles.tipText}>Be polite and professional</Text>
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={20}
+                      color={theme.colors.success}
+                    />
+                    <Text style={styles.tipText}>
+                      Be polite and professional
+                    </Text>
                   </View>
                   <View style={styles.tipItem}>
-                    <Ionicons name="checkmark-circle" size={20} color={theme.colors.success} />
-                    <Text style={styles.tipText}>Mention competitor pricing</Text>
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={20}
+                      color={theme.colors.success}
+                    />
+                    <Text style={styles.tipText}>
+                      Mention competitor pricing
+                    </Text>
                   </View>
                   <View style={styles.tipItem}>
-                    <Ionicons name="checkmark-circle" size={20} color={theme.colors.success} />
-                    <Text style={styles.tipText}>Ask for retention department</Text>
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={20}
+                      color={theme.colors.success}
+                    />
+                    <Text style={styles.tipText}>
+                      Ask for retention department
+                    </Text>
                   </View>
                   <View style={styles.tipItem}>
-                    <Ionicons name="checkmark-circle" size={20} color={theme.colors.success} />
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={20}
+                      color={theme.colors.success}
+                    />
                     <Text style={styles.tipText}>Be willing to walk away</Text>
                   </View>
                 </View>
@@ -404,7 +517,9 @@ const NegotiationCard: React.FC<NegotiationCardProps> = ({
             <View style={styles.stepContent}>
               <Text style={styles.stepTitle}>Step 4: Record Outcome</Text>
               <Card style={styles.outcomeCard}>
-                <Text style={styles.outcomeLabel}>Was the negotiation successful?</Text>
+                <Text style={styles.outcomeLabel}>
+                  Was the negotiation successful?
+                </Text>
                 <View style={styles.outcomeButtons}>
                   <TouchableOpacity
                     style={[
@@ -416,12 +531,15 @@ const NegotiationCard: React.FC<NegotiationCardProps> = ({
                     <Ionicons
                       name="checkmark-circle"
                       size={24}
-                      color={outcome.success === true ? '#FFF' : theme.colors.success}
+                      color={
+                        outcome.success === true ? "#FFF" : theme.colors.success
+                      }
                     />
                     <Text
                       style={[
                         styles.outcomeButtonText,
-                        outcome.success === true && styles.outcomeButtonTextActive,
+                        outcome.success === true &&
+                          styles.outcomeButtonTextActive,
                       ]}
                     >
                       Success
@@ -437,12 +555,15 @@ const NegotiationCard: React.FC<NegotiationCardProps> = ({
                     <Ionicons
                       name="close-circle"
                       size={24}
-                      color={outcome.success === false ? '#FFF' : theme.colors.error}
+                      color={
+                        outcome.success === false ? "#FFF" : theme.colors.error
+                      }
                     />
                     <Text
                       style={[
                         styles.outcomeButtonText,
-                        outcome.success === false && styles.outcomeButtonTextActive,
+                        outcome.success === false &&
+                          styles.outcomeButtonTextActive,
                       ]}
                     >
                       Not Successful
@@ -456,9 +577,12 @@ const NegotiationCard: React.FC<NegotiationCardProps> = ({
                       <Text style={styles.formLabel}>New Monthly Rate *</Text>
                       <TextInput
                         style={styles.formInput}
-                        value={outcome.newRate?.toString() || ''}
+                        value={outcome.newRate?.toString() || ""}
                         onChangeText={(text) =>
-                          setOutcome({ ...outcome, newRate: parseFloat(text) || undefined })
+                          setOutcome({
+                            ...outcome,
+                            newRate: parseFloat(text) || undefined,
+                          })
                         }
                         keyboardType="numeric"
                         placeholder="Enter new rate"
@@ -479,8 +603,10 @@ const NegotiationCard: React.FC<NegotiationCardProps> = ({
                   <Text style={styles.formLabel}>Notes (Optional)</Text>
                   <TextInput
                     style={[styles.formInput, styles.formTextArea]}
-                    value={outcome.notes || ''}
-                    onChangeText={(text) => setOutcome({ ...outcome, notes: text })}
+                    value={outcome.notes || ""}
+                    onChangeText={(text) =>
+                      setOutcome({ ...outcome, notes: text })
+                    }
                     placeholder="Add any notes about the negotiation"
                     placeholderTextColor={theme.colors.textSecondary}
                     multiline
@@ -493,8 +619,10 @@ const NegotiationCard: React.FC<NegotiationCardProps> = ({
                     <Text style={styles.formLabel}>Follow-up Date</Text>
                     <TextInput
                       style={styles.formInput}
-                      value={outcome.followUpDate || ''}
-                      onChangeText={(text) => setOutcome({ ...outcome, followUpDate: text })}
+                      value={outcome.followUpDate || ""}
+                      onChangeText={(text) =>
+                        setOutcome({ ...outcome, followUpDate: text })
+                      }
                       placeholder="YYYY-MM-DD"
                       placeholderTextColor={theme.colors.textSecondary}
                     />
@@ -508,7 +636,11 @@ const NegotiationCard: React.FC<NegotiationCardProps> = ({
         <View style={styles.modalFooter}>
           {step > 1 && (
             <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-              <Ionicons name="arrow-back" size={20} color={theme.colors.primary} />
+              <Ionicons
+                name="arrow-back"
+                size={20}
+                color={theme.colors.primary}
+              />
               <Text style={styles.backButtonText}>Back</Text>
             </TouchableOpacity>
           )}
@@ -518,7 +650,10 @@ const NegotiationCard: React.FC<NegotiationCardProps> = ({
               <Ionicons name="arrow-forward" size={20} color="#FFF" />
             </TouchableOpacity>
           ) : (
-            <TouchableOpacity style={styles.submitButton} onPress={handleSubmitOutcome}>
+            <TouchableOpacity
+              style={styles.submitButton}
+              onPress={handleSubmitOutcome}
+            >
               <Text style={styles.submitButtonText}>Submit Outcome</Text>
             </TouchableOpacity>
           )}
@@ -538,9 +673,9 @@ interface ScriptViewerProps {
 
 const ScriptViewer: React.FC<ScriptViewerProps> = ({ script }) => {
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
@@ -548,7 +683,7 @@ const ScriptViewer: React.FC<ScriptViewerProps> = ({ script }) => {
 
   const handleCopy = () => {
     Clipboard.setString(script.script);
-    Alert.alert('Copied!', 'Script copied to clipboard');
+    Alert.alert("Copied!", "Script copied to clipboard");
   };
 
   return (
@@ -557,7 +692,11 @@ const ScriptViewer: React.FC<ScriptViewerProps> = ({ script }) => {
         <View style={styles.scriptHeader}>
           <Text style={styles.scriptTitle}>Your Negotiation Script</Text>
           <TouchableOpacity style={styles.copyButton} onPress={handleCopy}>
-            <Ionicons name="copy-outline" size={20} color={theme.colors.primary} />
+            <Ionicons
+              name="copy-outline"
+              size={20}
+              color={theme.colors.primary}
+            />
             <Text style={styles.copyButtonText}>Copy</Text>
           </TouchableOpacity>
         </View>
@@ -584,7 +723,11 @@ const ScriptViewer: React.FC<ScriptViewerProps> = ({ script }) => {
         <Text style={styles.cardTitle}>Key Talking Points</Text>
         {script.talkingPoints.map((point, index) => (
           <View key={index} style={styles.talkingPoint}>
-            <Ionicons name="checkmark-circle" size={20} color={theme.colors.primary} />
+            <Ionicons
+              name="checkmark-circle"
+              size={20}
+              color={theme.colors.primary}
+            />
             <Text style={styles.talkingPointText}>{point}</Text>
           </View>
         ))}
@@ -598,7 +741,9 @@ const ScriptViewer: React.FC<ScriptViewerProps> = ({ script }) => {
             <View key={index} style={styles.competitorItem}>
               <View style={styles.competitorHeader}>
                 <Text style={styles.competitorName}>{comp.provider}</Text>
-                <Text style={styles.competitorPrice}>{formatCurrency(comp.price)}/mo</Text>
+                <Text style={styles.competitorPrice}>
+                  {formatCurrency(comp.price)}/mo
+                </Text>
               </View>
               <View style={styles.competitorFeatures}>
                 {comp.features.slice(0, 3).map((feature, idx) => (
@@ -624,14 +769,17 @@ interface SavingsDisplayProps {
   newAmount: number;
 }
 
-const SavingsDisplay: React.FC<SavingsDisplayProps> = ({ currentAmount, newAmount }) => {
+const SavingsDisplay: React.FC<SavingsDisplayProps> = ({
+  currentAmount,
+  newAmount,
+}) => {
   const savings = currentAmount - newAmount;
   const savingsPercentage = ((savings / currentAmount) * 100).toFixed(1);
 
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
@@ -658,8 +806,12 @@ const SavingsDisplay: React.FC<SavingsDisplayProps> = ({ currentAmount, newAmoun
       <View style={styles.savingsSummary}>
         <Ionicons name="trending-down" size={32} color={theme.colors.success} />
         <View style={styles.savingsSummaryText}>
-          <Text style={styles.savingsSummaryAmount}>{formatCurrency(savings)}/month</Text>
-          <Text style={styles.savingsSummaryPercentage}>{savingsPercentage}% savings</Text>
+          <Text style={styles.savingsSummaryAmount}>
+            {formatCurrency(savings)}/month
+          </Text>
+          <Text style={styles.savingsSummaryPercentage}>
+            {savingsPercentage}% savings
+          </Text>
         </View>
       </View>
     </Card>
@@ -675,21 +827,23 @@ export default function BillNegotiatorScreen() {
   const [bills, setBills] = useState<Bill[]>([]);
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
   const [script, setScript] = useState<NegotiationScript | null>(null);
-  const [sortBy, setSortBy] = useState<'potential' | 'amount' | 'dueDate'>('potential');
+  const [sortBy, setSortBy] = useState<"potential" | "amount" | "dueDate">(
+    "potential",
+  );
   const [generatingScript, setGeneratingScript] = useState(false);
 
   const fetchBills = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/financial/bills');
+      const response = await fetch("/api/financial/bills");
 
       if (response.ok) {
         const data = await response.json();
         setBills(data.bills || []);
       }
     } catch (error) {
-      console.error('Error fetching bills:', error);
-      Alert.alert('Error', 'Failed to load bills. Please try again.');
+      console.error("Error fetching bills:", error);
+      Alert.alert("Error", "Failed to load bills. Please try again.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -715,19 +869,22 @@ export default function BillNegotiatorScreen() {
 
     try {
       setGeneratingScript(true);
-      const response = await fetch(`/api/financial/bills/${selectedBill.id}/negotiate`, {
-        method: 'POST',
-      });
+      const response = await fetch(
+        `/api/financial/bills/${selectedBill.id}/negotiate`,
+        {
+          method: "POST",
+        },
+      );
 
       if (response.ok) {
         const data = await response.json();
         setScript(data.script);
       } else {
-        Alert.alert('Error', 'Failed to generate script. Please try again.');
+        Alert.alert("Error", "Failed to generate script. Please try again.");
       }
     } catch (error) {
-      console.error('Error generating script:', error);
-      Alert.alert('Error', 'Failed to generate script. Please try again.');
+      console.error("Error generating script:", error);
+      Alert.alert("Error", "Failed to generate script. Please try again.");
     } finally {
       setGeneratingScript(false);
     }
@@ -735,28 +892,31 @@ export default function BillNegotiatorScreen() {
 
   const handleRecordOutcome = async (outcome: NegotiationOutcome) => {
     try {
-      const response = await fetch(`/api/financial/bills/${outcome.billId}/outcome`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(outcome),
-      });
+      const response = await fetch(
+        `/api/financial/bills/${outcome.billId}/outcome`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(outcome),
+        },
+      );
 
       if (response.ok) {
         Alert.alert(
-          'Success!',
+          "Success!",
           outcome.success
-            ? `Great! You saved ${outcome.savingsAmount ? `$${outcome.savingsAmount.toLocaleString()}` : 'money'} per month!`
-            : 'Outcome recorded. Try again later or with a different approach.'
+            ? `Great! You saved ${outcome.savingsAmount ? `$${outcome.savingsAmount.toLocaleString()}` : "money"} per month!`
+            : "Outcome recorded. Try again later or with a different approach.",
         );
         setSelectedBill(null);
         setScript(null);
         fetchBills();
       } else {
-        Alert.alert('Error', 'Failed to record outcome. Please try again.');
+        Alert.alert("Error", "Failed to record outcome. Please try again.");
       }
     } catch (error) {
-      console.error('Error recording outcome:', error);
-      Alert.alert('Error', 'Failed to record outcome. Please try again.');
+      console.error("Error recording outcome:", error);
+      Alert.alert("Error", "Failed to record outcome. Please try again.");
     }
   };
 
@@ -776,7 +936,11 @@ export default function BillNegotiatorScreen() {
       <ScrollView
         style={styles.scrollView}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[theme.colors.primary]}
+          />
         }
       >
         <BillsList
@@ -814,8 +978,8 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     marginTop: theme.spacing.md,
@@ -832,12 +996,12 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: theme.spacing.sm,
   },
   sortButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: theme.spacing.sm,
   },
   sortButton: {
@@ -856,8 +1020,8 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
   },
   sortButtonTextActive: {
-    color: '#FFF',
-    fontWeight: '600',
+    color: "#FFF",
+    fontWeight: "600",
   },
   billItem: {
     paddingVertical: theme.spacing.md,
@@ -865,14 +1029,14 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.border,
   },
   billHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     marginBottom: theme.spacing.sm,
   },
   billTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
   },
   billInfo: {
@@ -881,21 +1045,21 @@ const styles = StyleSheet.create({
   },
   billProvider: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   billCategory: {
     fontSize: 14,
     color: theme.colors.textSecondary,
-    textTransform: 'capitalize',
+    textTransform: "capitalize",
   },
   billAmountContainer: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
+    flexDirection: "row",
+    alignItems: "baseline",
   },
   billAmount: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: theme.colors.text,
   },
   billFrequency: {
@@ -903,14 +1067,14 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   billMeta: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: theme.spacing.sm,
   },
   metaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   metaText: {
@@ -924,16 +1088,16 @@ const styles = StyleSheet.create({
   },
   potentialText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   billAction: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   billActionText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.primary,
   },
   // Modal styles
@@ -942,9 +1106,9 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
   modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     padding: theme.spacing.lg,
     backgroundColor: theme.colors.surface,
     borderBottomWidth: 1,
@@ -952,7 +1116,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   modalBody: {
@@ -960,7 +1124,7 @@ const styles = StyleSheet.create({
     padding: theme.spacing.lg,
   },
   modalFooter: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: theme.spacing.md,
     padding: theme.spacing.lg,
     backgroundColor: theme.colors.surface,
@@ -969,9 +1133,9 @@ const styles = StyleSheet.create({
   },
   // Step indicator
   stepIndicator: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     gap: theme.spacing.md,
     paddingVertical: theme.spacing.lg,
     backgroundColor: theme.colors.surface,
@@ -983,8 +1147,8 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: theme.colors.border,
     backgroundColor: theme.colors.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   stepDotActive: {
     borderColor: theme.colors.primary,
@@ -996,11 +1160,11 @@ const styles = StyleSheet.create({
   },
   stepNumber: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.textSecondary,
   },
   stepNumberActive: {
-    color: '#FFF',
+    color: "#FFF",
   },
   // Step content
   stepContent: {
@@ -1008,7 +1172,7 @@ const styles = StyleSheet.create({
   },
   stepTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: theme.colors.text,
     marginBottom: theme.spacing.lg,
   },
@@ -1017,8 +1181,8 @@ const styles = StyleSheet.create({
     padding: theme.spacing.lg,
   },
   reviewRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     paddingVertical: theme.spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
@@ -1029,12 +1193,12 @@ const styles = StyleSheet.create({
   },
   reviewValue: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   // Generate script
   generateContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: theme.spacing.xl * 2,
   },
   generateText: {
@@ -1042,11 +1206,11 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     marginTop: theme.spacing.lg,
     marginBottom: theme.spacing.xl,
-    textAlign: 'center',
+    textAlign: "center",
   },
   generateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: theme.spacing.sm,
     backgroundColor: theme.colors.primary,
     paddingHorizontal: theme.spacing.xl,
@@ -1055,8 +1219,8 @@ const styles = StyleSheet.create({
   },
   generateButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFF',
+    fontWeight: "600",
+    color: "#FFF",
   },
   // Script viewer
   scriptCard: {
@@ -1064,19 +1228,19 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   scriptHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: theme.spacing.md,
   },
   scriptTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   copyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
@@ -1086,7 +1250,7 @@ const styles = StyleSheet.create({
   },
   copyButtonText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.primary,
   },
   scriptText: {
@@ -1096,7 +1260,7 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   scriptMeta: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: theme.spacing.md,
   },
   confidenceBadge: {
@@ -1110,17 +1274,17 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   savingsBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
-    backgroundColor: theme.colors.success + '10',
+    backgroundColor: theme.colors.success + "10",
     borderRadius: theme.borderRadius.sm,
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: 4,
   },
   savingsText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.success,
   },
   // Talking points
@@ -1129,8 +1293,8 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   talkingPoint: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     gap: theme.spacing.sm,
     marginBottom: theme.spacing.sm,
   },
@@ -1151,19 +1315,19 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.border,
   },
   competitorHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: theme.spacing.sm,
   },
   competitorName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   competitorPrice: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: theme.colors.success,
   },
   competitorFeatures: {
@@ -1177,11 +1341,11 @@ const styles = StyleSheet.create({
   // Negotiate step
   negotiateCard: {
     padding: theme.spacing.xl,
-    alignItems: 'center',
+    alignItems: "center",
   },
   negotiateTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginTop: theme.spacing.lg,
     marginBottom: theme.spacing.sm,
@@ -1189,16 +1353,16 @@ const styles = StyleSheet.create({
   negotiateText: {
     fontSize: 14,
     color: theme.colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: theme.spacing.lg,
   },
   tipsList: {
-    width: '100%',
+    width: "100%",
     gap: theme.spacing.md,
   },
   tipItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: theme.spacing.md,
   },
   tipText: {
@@ -1211,20 +1375,20 @@ const styles = StyleSheet.create({
   },
   outcomeLabel: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: theme.spacing.md,
   },
   outcomeButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: theme.spacing.md,
     marginBottom: theme.spacing.lg,
   },
   outcomeButton: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: theme.spacing.sm,
     paddingVertical: theme.spacing.md,
     borderRadius: theme.borderRadius.sm,
@@ -1241,18 +1405,18 @@ const styles = StyleSheet.create({
   },
   outcomeButtonText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   outcomeButtonTextActive: {
-    color: '#FFF',
+    color: "#FFF",
   },
   formGroup: {
     marginBottom: theme.spacing.md,
   },
   formLabel: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: theme.spacing.sm,
   },
@@ -1269,29 +1433,29 @@ const styles = StyleSheet.create({
   formTextArea: {
     height: 100,
     paddingTop: theme.spacing.md,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
   },
   // Savings display
   savingsCard: {
     padding: theme.spacing.lg,
-    backgroundColor: theme.colors.success + '10',
+    backgroundColor: theme.colors.success + "10",
     marginBottom: theme.spacing.md,
   },
   savingsTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: theme.spacing.md,
-    textAlign: 'center',
+    textAlign: "center",
   },
   savingsComparison: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
     marginBottom: theme.spacing.lg,
   },
   savingsColumn: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   savingsLabel: {
     fontSize: 12,
@@ -1300,23 +1464,23 @@ const styles = StyleSheet.create({
   },
   savingsAmount: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   savingsSummary: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: theme.spacing.md,
     paddingTop: theme.spacing.md,
     borderTopWidth: 1,
-    borderTopColor: theme.colors.success + '30',
+    borderTopColor: theme.colors.success + "30",
   },
   savingsSummaryText: {
-    alignItems: 'flex-start',
+    alignItems: "flex-start",
   },
   savingsSummaryAmount: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: theme.colors.success,
   },
   savingsSummaryPercentage: {
@@ -1326,9 +1490,9 @@ const styles = StyleSheet.create({
   // Footer buttons
   backButton: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: theme.spacing.sm,
     paddingVertical: theme.spacing.md,
     borderRadius: theme.borderRadius.sm,
@@ -1337,14 +1501,14 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.primary,
   },
   nextButton: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: theme.spacing.sm,
     paddingVertical: theme.spacing.md,
     borderRadius: theme.borderRadius.sm,
@@ -1352,20 +1516,19 @@ const styles = StyleSheet.create({
   },
   nextButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFF',
+    fontWeight: "600",
+    color: "#FFF",
   },
   submitButton: {
     flex: 1,
     paddingVertical: theme.spacing.md,
     borderRadius: theme.borderRadius.sm,
     backgroundColor: theme.colors.success,
-    alignItems: 'center',
+    alignItems: "center",
   },
   submitButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFF',
+    fontWeight: "600",
+    color: "#FFF",
   },
 });
-

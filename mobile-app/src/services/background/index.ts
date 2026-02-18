@@ -6,4 +6,4 @@ export {
   backgroundTaskService,
   BACKGROUND_TASKS,
   default,
-} from './backgroundTaskService';
+} from "./backgroundTaskService";

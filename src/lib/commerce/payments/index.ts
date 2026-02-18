@@ -4,7 +4,10 @@
  * Unified payment routing and processing.
  */
 
-export { paymentRouter, default as paymentRouterDefault } from './payment-router';
+export {
+  paymentRouter,
+  default as paymentRouterDefault,
+} from "./payment-router";
 export type {
   PaymentProvider,
   PaymentType,
@@ -12,4 +15,4 @@ export type {
   UnifiedPaymentRequest,
   UnifiedPayment,
   ProviderSelection,
-} from './payment-router';
+} from "./payment-router";

@@ -8,19 +8,19 @@
  * - Encouragement and nudges
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type PartnershipStatus = 'pending' | 'active' | 'declined' | 'ended';
-export type ShareLevel = 'none' | 'progress_only' | 'detailed' | 'full';
+export type PartnershipStatus = "pending" | "active" | "declined" | "ended";
+export type ShareLevel = "none" | "progress_only" | "detailed" | "full";
 export type NudgeType =
-  | 'encouragement'
-  | 'reminder'
-  | 'celebration'
-  | 'check_in';
+  | "encouragement"
+  | "reminder"
+  | "celebration"
+  | "check_in";
 
 export interface Partnership {
   id: string;
@@ -98,7 +98,7 @@ export interface PartnerInvitation {
   recipientEmail: string;
   recipientUserId?: string;
   message?: string;
-  status: 'pending' | 'accepted' | 'declined' | 'expired';
+  status: "pending" | "accepted" | "declined" | "expired";
   expiresAt: Date;
   createdAt: Date;
 }
@@ -106,23 +106,23 @@ export interface PartnerInvitation {
 const NUDGE_TEMPLATES: Record<NudgeType, string[]> = {
   encouragement: [
     "You've got this! Keep pushing toward your goals! ",
-    'I believe in you! Every small step counts! ',
+    "I believe in you! Every small step counts! ",
     "You're doing amazing! Stay focused! ",
   ],
   reminder: [
     "Hey! Don't forget to log your transactions today! ",
-    'Quick reminder to check on your budget! ',
-    'Have you reviewed your goals this week? ',
+    "Quick reminder to check on your budget! ",
+    "Have you reviewed your goals this week? ",
   ],
   celebration: [
-    'Congratulations on your achievement! ',
-    'You did it! So proud of you! ',
-    'Amazing milestone reached! Celebrate! ',
+    "Congratulations on your achievement! ",
+    "You did it! So proud of you! ",
+    "Amazing milestone reached! Celebrate! ",
   ],
   check_in: [
     "How's your financial journey going? ",
-    'Just checking in - everything on track? ',
-    'Thinking of you! How are your goals? ',
+    "Just checking in - everything on track? ",
+    "Thinking of you! How are your goals? ",
   ],
 };
 
@@ -141,12 +141,12 @@ export class AccountabilityPartnersService {
     senderId: string,
     senderName: string,
     recipientEmail: string,
-    message?: string
+    message?: string,
   ): Promise<PartnerInvitation> {
     const { data: existingUser } = await this.supabase
-      .from('profiles')
-      .select('id')
-      .eq('email', recipientEmail)
+      .from("profiles")
+      .select("id")
+      .eq("email", recipientEmail)
       .single();
 
     const now = new Date();
@@ -159,13 +159,13 @@ export class AccountabilityPartnersService {
       recipientEmail,
       recipientUserId: existingUser?.id,
       message,
-      status: 'pending',
+      status: "pending",
       expiresAt,
       createdAt: now,
     };
 
     const { data, error } = await this.supabase
-      .from('partner_invitations')
+      .from("partner_invitations")
       .insert({
         id: invitation.id,
         sender_id: invitation.senderId,
@@ -186,56 +186,56 @@ export class AccountabilityPartnersService {
 
   async acceptInvitation(
     invitationId: string,
-    userId: string
+    userId: string,
   ): Promise<Partnership> {
     const { data: invitation } = await this.supabase
-      .from('partner_invitations')
-      .select('*')
-      .eq('id', invitationId)
+      .from("partner_invitations")
+      .select("*")
+      .eq("id", invitationId)
       .single();
 
-    if (!invitation) throw new Error('Invitation not found');
-    if (invitation.status !== 'pending')
-      throw new Error('Invitation is no longer valid');
+    if (!invitation) throw new Error("Invitation not found");
+    if (invitation.status !== "pending")
+      throw new Error("Invitation is no longer valid");
 
     await this.supabase
-      .from('partner_invitations')
-      .update({ status: 'accepted', recipient_user_id: userId })
-      .eq('id', invitationId);
+      .from("partner_invitations")
+      .update({ status: "accepted", recipient_user_id: userId })
+      .eq("id", invitationId);
 
     return this.createPartnership(invitation.sender_id, userId);
   }
 
   async declineInvitation(invitationId: string): Promise<void> {
     await this.supabase
-      .from('partner_invitations')
-      .update({ status: 'declined' })
-      .eq('id', invitationId);
+      .from("partner_invitations")
+      .update({ status: "declined" })
+      .eq("id", invitationId);
   }
 
   async getPendingInvitations(userId: string): Promise<PartnerInvitation[]> {
     const { data } = await this.supabase
-      .from('partner_invitations')
-      .select('*')
-      .eq('recipient_user_id', userId)
-      .eq('status', 'pending')
-      .gt('expires_at', new Date().toISOString());
+      .from("partner_invitations")
+      .select("*")
+      .eq("recipient_user_id", userId)
+      .eq("status", "pending")
+      .gt("expires_at", new Date().toISOString());
 
     return (data || []).map(this.invitationFromDb);
   }
 
   private async createPartnership(
     requesterId: string,
-    partnerId: string
+    partnerId: string,
   ): Promise<Partnership> {
     const now = new Date();
     const partnership: Partnership = {
       id: crypto.randomUUID(),
       requesterId,
       partnerId,
-      status: 'active',
-      requesterShareLevel: 'progress_only',
-      partnerShareLevel: 'progress_only',
+      status: "active",
+      requesterShareLevel: "progress_only",
+      partnerShareLevel: "progress_only",
       sharedGoalIds: [],
       totalNudgesSent: 0,
       totalCelebrations: 0,
@@ -245,7 +245,7 @@ export class AccountabilityPartnersService {
     };
 
     const { data, error } = await this.supabase
-      .from('partnerships')
+      .from("partnerships")
       .insert(this.partnershipToDb(partnership))
       .select()
       .single();
@@ -256,10 +256,10 @@ export class AccountabilityPartnersService {
 
   async getUserPartnerships(userId: string): Promise<Partnership[]> {
     const { data, error } = await this.supabase
-      .from('partnerships')
-      .select('*')
+      .from("partnerships")
+      .select("*")
       .or(`requester_id.eq.${userId},partner_id.eq.${userId}`)
-      .eq('status', 'active');
+      .eq("status", "active");
 
     if (error) throw error;
     return (data || []).map(this.partnershipFromDb);
@@ -268,23 +268,23 @@ export class AccountabilityPartnersService {
   async updateShareLevel(
     partnershipId: string,
     userId: string,
-    shareLevel: ShareLevel
+    shareLevel: ShareLevel,
   ): Promise<Partnership> {
     const partnership = await this.getPartnership(partnershipId);
-    if (!partnership) throw new Error('Partnership not found');
+    if (!partnership) throw new Error("Partnership not found");
 
     const isRequester = partnership.requesterId === userId;
     const updateField = isRequester
-      ? 'requester_share_level'
-      : 'partner_share_level';
+      ? "requester_share_level"
+      : "partner_share_level";
 
     const { data, error } = await this.supabase
-      .from('partnerships')
+      .from("partnerships")
       .update({
         [updateField]: shareLevel,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', partnershipId)
+      .eq("id", partnershipId)
       .select()
       .single();
 
@@ -294,9 +294,9 @@ export class AccountabilityPartnersService {
 
   async getPartnership(partnershipId: string): Promise<Partnership | null> {
     const { data } = await this.supabase
-      .from('partnerships')
-      .select('*')
-      .eq('id', partnershipId)
+      .from("partnerships")
+      .select("*")
+      .eq("id", partnershipId)
       .single();
 
     return data ? this.partnershipFromDb(data) : null;
@@ -304,19 +304,19 @@ export class AccountabilityPartnersService {
 
   async endPartnership(partnershipId: string): Promise<void> {
     await this.supabase
-      .from('partnerships')
-      .update({ status: 'ended', updated_at: new Date().toISOString() })
-      .eq('id', partnershipId);
+      .from("partnerships")
+      .update({ status: "ended", updated_at: new Date().toISOString() })
+      .eq("id", partnershipId);
   }
 
   async sendNudge(
     partnershipId: string,
     senderId: string,
     type: NudgeType,
-    customMessage?: string
+    customMessage?: string,
   ): Promise<Nudge> {
     const partnership = await this.getPartnership(partnershipId);
-    if (!partnership) throw new Error('Partnership not found');
+    if (!partnership) throw new Error("Partnership not found");
 
     const receiverId =
       partnership.requesterId === senderId
@@ -338,7 +338,7 @@ export class AccountabilityPartnersService {
     };
 
     const { data, error } = await this.supabase
-      .from('partner_nudges')
+      .from("partner_nudges")
       .insert({
         id: nudge.id,
         partnership_id: nudge.partnershipId,
@@ -358,16 +358,16 @@ export class AccountabilityPartnersService {
 
   async getNudges(
     userId: string,
-    unreadOnly: boolean = false
+    unreadOnly: boolean = false,
   ): Promise<Nudge[]> {
     let query = this.supabase
-      .from('partner_nudges')
-      .select('*')
-      .eq('receiver_id', userId)
-      .order('created_at', { ascending: false })
+      .from("partner_nudges")
+      .select("*")
+      .eq("receiver_id", userId)
+      .order("created_at", { ascending: false })
       .limit(50);
 
-    if (unreadOnly) query = query.eq('is_read', false);
+    if (unreadOnly) query = query.eq("is_read", false);
 
     const { data, error } = await query;
     if (error) throw error;
@@ -376,9 +376,9 @@ export class AccountabilityPartnersService {
 
   async markNudgeAsRead(nudgeId: string): Promise<void> {
     await this.supabase
-      .from('partner_nudges')
+      .from("partner_nudges")
       .update({ is_read: true })
-      .eq('id', nudgeId);
+      .eq("id", nudgeId);
   }
 
   getNudgeTemplates(): typeof NUDGE_TEMPLATES {
@@ -429,7 +429,7 @@ export class AccountabilityPartnersService {
       recipientEmail: data.recipient_email as string,
       recipientUserId: data.recipient_user_id as string | undefined,
       message: data.message as string | undefined,
-      status: data.status as PartnerInvitation['status'],
+      status: data.status as PartnerInvitation["status"],
       expiresAt: new Date(data.expires_at as string),
       createdAt: new Date(data.created_at as string),
     };
@@ -458,7 +458,7 @@ export function getAccountabilityPartnersService(): AccountabilityPartnersServic
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     accountabilityPartnersServiceInstance = new AccountabilityPartnersService(
       supabaseUrl,
-      supabaseKey
+      supabaseKey,
     );
   }
   return accountabilityPartnersServiceInstance;

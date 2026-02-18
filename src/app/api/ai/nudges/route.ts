@@ -4,10 +4,10 @@
  * POST /api/ai/nudges - Record nudge response
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { getNudgeEngine } from '@/lib/ai-personalization';
-import type { NudgeAction } from '@/lib/ai-personalization';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { getNudgeEngine } from "@/lib/ai-personalization";
+import type { NudgeAction } from "@/lib/ai-personalization";
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const engine = getNudgeEngine();
@@ -30,8 +30,8 @@ export async function GET(request: NextRequest) {
     // NudgesRoute error: Failed to fetch nudges
     void _error;
     return NextResponse.json(
-      { error: 'Failed to fetch nudges' },
-      { status: 500 }
+      { error: "Failed to fetch nudges" },
+      { status: 500 },
     );
   }
 }
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
@@ -54,19 +54,19 @@ export async function POST(request: NextRequest) {
 
     if (!nudgeId || !action) {
       return NextResponse.json(
-        { error: 'Nudge ID and action required' },
-        { status: 400 }
+        { error: "Nudge ID and action required" },
+        { status: 400 },
       );
     }
 
     const validActions: NudgeAction[] = [
-      'accepted',
-      'dismissed',
-      'snoozed',
-      'ignored',
+      "accepted",
+      "dismissed",
+      "snoozed",
+      "ignored",
     ];
     if (!validActions.includes(action)) {
-      return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+      return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }
 
     const engine = getNudgeEngine();
@@ -80,8 +80,8 @@ export async function POST(request: NextRequest) {
     // NudgesRoute error: Failed to record response
     void _error;
     return NextResponse.json(
-      { error: 'Failed to record response' },
-      { status: 500 }
+      { error: "Failed to record response" },
+      { status: 500 },
     );
   }
 }

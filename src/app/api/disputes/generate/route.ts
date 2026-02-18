@@ -10,8 +10,11 @@
  * - Advanced strategy-based letters (7 strategies)
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getAIOrchestrator, DisputeGenerationInput } from '@/lib/ai-orchestrator';
+import { NextRequest, NextResponse } from "next/server";
+import {
+  getAIOrchestrator,
+  DisputeGenerationInput,
+} from "@/lib/ai-orchestrator";
 import {
   disputeService,
   ALL_DISPUTE_TEMPLATES,
@@ -19,7 +22,7 @@ import {
   getTemplateById,
   getStrategyById,
   recommendStrategy,
-} from '@/lib/disputes/dispute-service';
+} from "@/lib/disputes/dispute-service";
 
 // ============================================================================
 // MAIN POST HANDLER
@@ -28,26 +31,27 @@ import {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { mode = 'ai' } = body;
+    const { mode = "ai" } = body;
 
     // Route to appropriate handler based on mode
     switch (mode) {
-      case 'template':
+      case "template":
         return handleTemplateGeneration(body);
-      case 'strategy':
+      case "strategy":
         return handleStrategyGeneration(body);
-      case 'ai':
+      case "ai":
       default:
         return handleAIGeneration(body);
     }
   } catch (error) {
-    console.error('Dispute generation error:', error);
+    console.error("Dispute generation error:", error);
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to generate dispute',
+        error:
+          error instanceof Error ? error.message : "Failed to generate dispute",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -63,9 +67,9 @@ async function handleAIGeneration(body: Record<string, unknown>) {
     return NextResponse.json(
       {
         success: false,
-        error: 'Missing required fields: creditReport, disputeReason, userInfo',
+        error: "Missing required fields: creditReport, disputeReason, userInfo",
       },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -74,29 +78,37 @@ async function handleAIGeneration(body: Record<string, unknown>) {
     return NextResponse.json(
       {
         success: false,
-        error: 'userInfo must include name and address',
+        error: "userInfo must include name and address",
       },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
   // Parse creditReport - it can be a string (raw report text) or an object
-  let parsedCreditReport: import('@/lib/ai-orchestrator').CreditReport;
-  if (typeof creditReport === 'string') {
+  let parsedCreditReport: import("@/lib/ai-orchestrator").CreditReport;
+  if (typeof creditReport === "string") {
     // If it's a string, wrap it in a CreditReport structure with raw text in remarks
     parsedCreditReport = {
-      accounts: [{
-        remarks: creditReport,
-      }],
+      accounts: [
+        {
+          remarks: creditReport,
+        },
+      ],
     };
   } else {
-    parsedCreditReport = creditReport as import('@/lib/ai-orchestrator').CreditReport;
+    parsedCreditReport =
+      creditReport as import("@/lib/ai-orchestrator").CreditReport;
   }
 
   const input: DisputeGenerationInput = {
     creditReport: parsedCreditReport,
     disputeReason: disputeReason as string,
-    userInfo: userInfoObj as { name: string; address: string; ssn?: string; accountNumber?: string },
+    userInfo: userInfoObj as {
+      name: string;
+      address: string;
+      ssn?: string;
+      accountNumber?: string;
+    },
     additionalContext: body.additionalContext as string | undefined,
   };
 
@@ -105,15 +117,18 @@ async function handleAIGeneration(body: Record<string, unknown>) {
 
   let complianceReview;
   if (body.reviewCompliance) {
-    complianceReview = await orchestrator.reviewCompliance(disputeLetter, 'dispute_letter');
+    complianceReview = await orchestrator.reviewCompliance(
+      disputeLetter,
+      "dispute_letter",
+    );
   }
 
   return NextResponse.json({
     success: true,
     data: {
       disputeLetter,
-      mode: 'ai',
-      model: 'anthropic/claude-4.5-sonnet',
+      mode: "ai",
+      model: "anthropic/claude-4.5-sonnet",
       complianceReview,
       timestamp: new Date().toISOString(),
     },
@@ -131,15 +146,15 @@ async function handleTemplateGeneration(body: Record<string, unknown>) {
     return NextResponse.json(
       {
         success: false,
-        error: 'Missing required field: templateId',
-        availableTemplates: ALL_DISPUTE_TEMPLATES.map(t => ({
+        error: "Missing required field: templateId",
+        availableTemplates: ALL_DISPUTE_TEMPLATES.map((t) => ({
           id: t.id,
           name: t.name,
           scenario: t.scenario,
           successRate: t.successRate,
         })),
       },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -149,9 +164,9 @@ async function handleTemplateGeneration(body: Record<string, unknown>) {
       {
         success: false,
         error: `Template not found: ${templateId}`,
-        availableTemplates: ALL_DISPUTE_TEMPLATES.map(t => t.id),
+        availableTemplates: ALL_DISPUTE_TEMPLATES.map((t) => t.id),
       },
-      { status: 404 }
+      { status: 404 },
     );
   }
 
@@ -160,19 +175,22 @@ async function handleTemplateGeneration(body: Record<string, unknown>) {
   const placeholderValues = (placeholders || {}) as Record<string, string>;
 
   for (const [key, value] of Object.entries(placeholderValues)) {
-    letterContent = letterContent.replace(new RegExp(`\\[${key}\\]`, 'g'), value);
+    letterContent = letterContent.replace(
+      new RegExp(`\\[${key}\\]`, "g"),
+      value,
+    );
   }
 
   // Find missing placeholders
-  const missingPlaceholders = template.placeholders.filter(
-    p => letterContent.includes(p)
+  const missingPlaceholders = template.placeholders.filter((p) =>
+    letterContent.includes(p),
   );
 
   return NextResponse.json({
     success: true,
     data: {
       disputeLetter: letterContent,
-      mode: 'template',
+      mode: "template",
       template: {
         id: template.id,
         name: template.name,
@@ -182,7 +200,8 @@ async function handleTemplateGeneration(body: Record<string, unknown>) {
         requiredDocuments: template.requiredDocuments,
         bestPractices: template.bestPractices,
       },
-      missingPlaceholders: missingPlaceholders.length > 0 ? missingPlaceholders : undefined,
+      missingPlaceholders:
+        missingPlaceholders.length > 0 ? missingPlaceholders : undefined,
       timestamp: new Date().toISOString(),
     },
   });
@@ -210,7 +229,7 @@ async function handleStrategyGeneration(body: Record<string, unknown>) {
     return NextResponse.json({
       success: true,
       data: {
-        recommendedStrategies: recommended.map(s => ({
+        recommendedStrategies: recommended.map((s) => ({
           id: s.id,
           name: s.name,
           description: s.description,
@@ -228,14 +247,14 @@ async function handleStrategyGeneration(body: Record<string, unknown>) {
     return NextResponse.json(
       {
         success: false,
-        error: 'Missing required field: strategyId or scenario',
-        availableStrategies: ALL_ADVANCED_STRATEGIES.map(s => ({
+        error: "Missing required field: strategyId or scenario",
+        availableStrategies: ALL_ADVANCED_STRATEGIES.map((s) => ({
           id: s.id,
           name: s.name,
           successRate: s.successRate,
         })),
       },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -245,9 +264,9 @@ async function handleStrategyGeneration(body: Record<string, unknown>) {
       {
         success: false,
         error: `Strategy not found: ${strategyId}`,
-        availableStrategies: ALL_ADVANCED_STRATEGIES.map(s => s.id),
+        availableStrategies: ALL_ADVANCED_STRATEGIES.map((s) => s.id),
       },
-      { status: 404 }
+      { status: 404 },
     );
   }
 
@@ -261,17 +280,21 @@ async function handleStrategyGeneration(body: Record<string, unknown>) {
 
   // Use AI to generate letter based on strategy prompt
   const orchestrator = getAIOrchestrator();
-  const disputeDetails = variableValues.DISPUTE_DETAILS || '';
+  const disputeDetails = variableValues.DISPUTE_DETAILS || "";
   const disputeLetter = await orchestrator.generateDispute({
-    creditReport: disputeDetails ? {
-      accounts: [{
-        remarks: disputeDetails,
-      }],
-    } : { accounts: [] },
+    creditReport: disputeDetails
+      ? {
+          accounts: [
+            {
+              remarks: disputeDetails,
+            },
+          ],
+        }
+      : { accounts: [] },
     disputeReason: strategy.name,
     userInfo: {
-      name: variableValues.YOUR_NAME || '[YOUR_NAME]',
-      address: variableValues.YOUR_ADDRESS || '[YOUR_ADDRESS]',
+      name: variableValues.YOUR_NAME || "[YOUR_NAME]",
+      address: variableValues.YOUR_ADDRESS || "[YOUR_ADDRESS]",
     },
     additionalContext: aiPrompt,
   });
@@ -280,7 +303,7 @@ async function handleStrategyGeneration(body: Record<string, unknown>) {
     success: true,
     data: {
       disputeLetter,
-      mode: 'strategy',
+      mode: "strategy",
       strategy: {
         id: strategy.id,
         name: strategy.name,
@@ -303,19 +326,19 @@ async function handleStrategyGeneration(body: Record<string, unknown>) {
 
 export async function GET() {
   return NextResponse.json({
-    message: 'Enhanced Dispute Generation API',
-    version: '2.0.0',
+    message: "Enhanced Dispute Generation API",
+    version: "2.0.0",
     modes: {
       ai: {
-        description: 'AI-powered custom letter generation',
-        requiredFields: ['creditReport', 'disputeReason', 'userInfo'],
-        optionalFields: ['additionalContext', 'reviewCompliance'],
+        description: "AI-powered custom letter generation",
+        requiredFields: ["creditReport", "disputeReason", "userInfo"],
+        optionalFields: ["additionalContext", "reviewCompliance"],
       },
       template: {
-        description: 'Template-based letter generation',
-        requiredFields: ['templateId'],
-        optionalFields: ['placeholders'],
-        availableTemplates: ALL_DISPUTE_TEMPLATES.map(t => ({
+        description: "Template-based letter generation",
+        requiredFields: ["templateId"],
+        optionalFields: ["placeholders"],
+        availableTemplates: ALL_DISPUTE_TEMPLATES.map((t) => ({
           id: t.id,
           name: t.name,
           scenario: t.scenario,
@@ -325,10 +348,10 @@ export async function GET() {
         })),
       },
       strategy: {
-        description: 'Advanced strategy-based letter generation',
-        requiredFields: ['strategyId OR scenario'],
-        optionalFields: ['variables'],
-        availableStrategies: ALL_ADVANCED_STRATEGIES.map(s => ({
+        description: "Advanced strategy-based letter generation",
+        requiredFields: ["strategyId OR scenario"],
+        optionalFields: ["variables"],
+        availableStrategies: ALL_ADVANCED_STRATEGIES.map((s) => ({
           id: s.id,
           name: s.name,
           description: s.description,
@@ -338,7 +361,6 @@ export async function GET() {
         })),
       },
     },
-    model: 'anthropic/claude-4.5-sonnet',
+    model: "anthropic/claude-4.5-sonnet",
   });
 }
-

@@ -1,21 +1,21 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 
 interface BillingPlan {
   id: string;
   name: string;
   price: number;
-  interval: 'month' | 'year';
+  interval: "month" | "year";
   features: string[];
 }
 
 interface SubscriptionSummary {
   planId: string;
-  status: 'active' | 'trialing' | 'canceled' | 'past_due';
+  status: "active" | "trialing" | "canceled" | "past_due";
   cancelAtPeriodEnd: boolean;
   currentPeriodStart: string;
   currentPeriodEnd: string;
@@ -33,7 +33,7 @@ interface PaymentMethod {
 interface InvoiceSummary {
   id: string;
   amount: number;
-  status: 'paid' | 'open' | 'void' | 'uncollectible';
+  status: "paid" | "open" | "void" | "uncollectible";
   created: string;
   pdfUrl?: string;
 }
@@ -54,7 +54,7 @@ export default function BillingDashboard() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push('/auth/login');
+      router.push("/auth/login");
       return;
     }
 
@@ -67,14 +67,16 @@ export default function BillingDashboard() {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('/api/payment/billing');
+      const response = await fetch("/api/payment/billing");
       if (!response.ok) {
-        throw new Error('Unable to load billing data');
+        throw new Error("Unable to load billing data");
       }
       const payload: BillingResponse = await response.json();
       setData(payload);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load billing data');
+      setError(
+        err instanceof Error ? err.message : "Failed to load billing data",
+      );
     } finally {
       setLoading(false);
     }
@@ -85,7 +87,9 @@ export default function BillingDashboard() {
       <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin h-10 w-10 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-slate-300">Loading billing dashboard…</p>
+          <p className="text-gray-600 dark:text-slate-300">
+            Loading billing dashboard…
+          </p>
         </div>
       </div>
     );
@@ -95,7 +99,9 @@ export default function BillingDashboard() {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
         <div className="bg-white dark:bg-slate-800 shadow rounded-lg p-8 max-w-md text-center">
-          <p className="text-red-600 font-semibold mb-4">{error ?? 'Unknown error'}</p>
+          <p className="text-red-600 font-semibold mb-4">
+            {error ?? "Unknown error"}
+          </p>
           <button
             type="button"
             onClick={fetchBillingData}
@@ -108,17 +114,23 @@ export default function BillingDashboard() {
     );
   }
 
-  const activePlan = data.plans.find((plan) => plan.id === data.subscription.planId);
+  const activePlan = data.plans.find(
+    (plan) => plan.id === data.subscription.planId,
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         <header className="space-y-2">
-          <p className="text-sm text-gray-500 dark:text-slate-400 uppercase tracking-wide">Billing</p>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Subscriptions & invoices</h1>
+          <p className="text-sm text-gray-500 dark:text-slate-400 uppercase tracking-wide">
+            Billing
+          </p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Subscriptions & invoices
+          </h1>
           <p className="text-gray-600 dark:text-slate-300">
-            Manage your plan, payment methods, and invoice history. Changes propagate to the Stripe
-            workspace instantly.
+            Manage your plan, payment methods, and invoice history. Changes
+            propagate to the Stripe workspace instantly.
           </p>
         </header>
 
@@ -126,21 +138,31 @@ export default function BillingDashboard() {
         <section className="bg-white dark:bg-slate-800 rounded-xl shadow p-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <p className="text-sm uppercase text-gray-500 dark:text-slate-400 tracking-wide">Current plan</p>
+              <p className="text-sm uppercase text-gray-500 dark:text-slate-400 tracking-wide">
+                Current plan
+              </p>
               <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
-                {activePlan?.name ?? 'Custom plan'}
+                {activePlan?.name ?? "Custom plan"}
               </h2>
               <p className="text-gray-600 dark:text-slate-300">
-                {activePlan ? `$${activePlan.price}/${activePlan.interval}` : 'Contact support'}
+                {activePlan
+                  ? `$${activePlan.price}/${activePlan.interval}`
+                  : "Contact support"}
               </p>
               <p className="text-sm text-gray-500 dark:text-slate-400 mt-2">
-                Status:{' '}
-                <span className="font-medium capitalize">{data.subscription.status}</span> · Next
-                renewal {new Date(data.subscription.currentPeriodEnd).toLocaleDateString()}
+                Status:{" "}
+                <span className="font-medium capitalize">
+                  {data.subscription.status}
+                </span>{" "}
+                · Next renewal{" "}
+                {new Date(
+                  data.subscription.currentPeriodEnd,
+                ).toLocaleDateString()}
               </p>
               {data.subscription.cancelAtPeriodEnd && (
                 <p className="text-sm text-red-600 mt-1">
-                  Auto-renewal disabled — you’ll retain access until the end of this cycle.
+                  Auto-renewal disabled — you’ll retain access until the end of
+                  this cycle.
                 </p>
               )}
             </div>
@@ -175,8 +197,12 @@ export default function BillingDashboard() {
         <section className="bg-white dark:bg-slate-800 rounded-xl shadow p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-sm uppercase text-gray-500 dark:text-slate-400 tracking-wide">Payment methods</p>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Saved cards</h2>
+              <p className="text-sm uppercase text-gray-500 dark:text-slate-400 tracking-wide">
+                Payment methods
+              </p>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Saved cards
+              </h2>
             </div>
             <button
               type="button"
@@ -192,7 +218,9 @@ export default function BillingDashboard() {
                 className="flex flex-col sm:flex-row sm:items-center sm:justify-between border border-gray-200 dark:border-slate-700 rounded-lg p-4"
               >
                 <div>
-                  <p className="text-gray-900 dark:text-white font-medium capitalize">{method.brand} ending in {method.last4}</p>
+                  <p className="text-gray-900 dark:text-white font-medium capitalize">
+                    {method.brand} ending in {method.last4}
+                  </p>
                   <p className="text-sm text-gray-500 dark:text-slate-400">
                     Expires {method.expMonth}/{method.expYear}
                   </p>
@@ -211,10 +239,17 @@ export default function BillingDashboard() {
         <section className="bg-white dark:bg-slate-800 rounded-xl shadow p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-sm uppercase text-gray-500 dark:text-slate-400 tracking-wide">Invoices</p>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Recent billing activity</h2>
+              <p className="text-sm uppercase text-gray-500 dark:text-slate-400 tracking-wide">
+                Invoices
+              </p>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Recent billing activity
+              </h2>
             </div>
-            <Link href="/billing/invoices" className="text-sm text-blue-600 hover:text-blue-700">
+            <Link
+              href="/billing/invoices"
+              className="text-sm text-blue-600 hover:text-blue-700"
+            >
               View full history →
             </Link>
           </div>
@@ -232,17 +267,21 @@ export default function BillingDashboard() {
               <tbody className="divide-y divide-gray-100 dark:divide-slate-700 text-sm text-gray-700 dark:text-slate-200">
                 {data.invoices.slice(0, 5).map((invoice) => (
                   <tr key={invoice.id}>
-                    <td className="py-4 font-medium text-gray-900 dark:text-white">{invoice.id}</td>
-                    <td className="py-4">{new Date(invoice.created).toLocaleDateString()}</td>
+                    <td className="py-4 font-medium text-gray-900 dark:text-white">
+                      {invoice.id}
+                    </td>
+                    <td className="py-4">
+                      {new Date(invoice.created).toLocaleDateString()}
+                    </td>
                     <td className="py-4">${invoice.amount.toFixed(2)}</td>
                     <td className="py-4">
                       <span
                         className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                          invoice.status === 'paid'
-                            ? 'bg-green-50 text-green-700'
-                            : invoice.status === 'open'
-                              ? 'bg-yellow-50 text-yellow-700'
-                              : 'bg-red-50 text-red-600'
+                          invoice.status === "paid"
+                            ? "bg-green-50 text-green-700"
+                            : invoice.status === "open"
+                              ? "bg-yellow-50 text-yellow-700"
+                              : "bg-red-50 text-red-600"
                         }`}
                       >
                         {invoice.status}
@@ -259,7 +298,9 @@ export default function BillingDashboard() {
                           Download PDF
                         </a>
                       ) : (
-                        <span className="text-gray-400 dark:text-slate-500">N/A</span>
+                        <span className="text-gray-400 dark:text-slate-500">
+                          N/A
+                        </span>
                       )}
                     </td>
                   </tr>
@@ -272,4 +313,3 @@ export default function BillingDashboard() {
     </div>
   );
 }
-

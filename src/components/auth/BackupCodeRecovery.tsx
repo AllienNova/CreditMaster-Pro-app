@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Backup Code Recovery Component
@@ -7,8 +7,8 @@
  * the user doesn't have access to their primary MFA method.
  */
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useCallback, useRef, useEffect } from "react";
+import { motion } from "framer-motion";
 import {
   Shield,
   AlertTriangle,
@@ -16,7 +16,7 @@ import {
   Check,
   Loader2,
   HelpCircle,
-} from 'lucide-react';
+} from "lucide-react";
 
 // ============================================================================
 // TYPES
@@ -43,7 +43,7 @@ export function BackupCodeRecovery({
   isLocked = false,
   lockoutEndTime,
 }: BackupCodeRecoveryProps) {
-  const [code, setCode] = useState('');
+  const [code, setCode] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [attempts, setAttempts] = useState(attemptsRemaining);
@@ -52,15 +52,15 @@ export function BackupCodeRecovery({
 
   // Format code with dashes for display (e.g., XXXX-XXXX)
   const formatCode = (value: string): string => {
-    const cleaned = value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+    const cleaned = value.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
     if (cleaned.length <= 4) return cleaned;
     return `${cleaned.slice(0, 4)}-${cleaned.slice(4, 8)}`;
   };
 
   // Handle code input
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/[^A-Za-z0-9-]/g, '').toUpperCase();
-    if (value.replace(/-/g, '').length <= 8) {
+    const value = e.target.value.replace(/[^A-Za-z0-9-]/g, "").toUpperCase();
+    if (value.replace(/-/g, "").length <= 8) {
       setCode(formatCode(value));
       setError(null);
     }
@@ -69,9 +69,9 @@ export function BackupCodeRecovery({
   // Handle paste
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const pasted = e.clipboardData.getData('text').trim();
+    const pasted = e.clipboardData.getData("text").trim();
     const cleaned = pasted
-      .replace(/[^A-Za-z0-9]/g, '')
+      .replace(/[^A-Za-z0-9]/g, "")
       .toUpperCase()
       .slice(0, 8);
     setCode(formatCode(cleaned));
@@ -82,9 +82,9 @@ export function BackupCodeRecovery({
     async (e: React.FormEvent) => {
       e.preventDefault();
 
-      const cleanCode = code.replace(/-/g, '');
+      const cleanCode = code.replace(/-/g, "");
       if (cleanCode.length !== 8) {
-        setError('Please enter a complete 8-character backup code');
+        setError("Please enter a complete 8-character backup code");
         return;
       }
 
@@ -97,18 +97,18 @@ export function BackupCodeRecovery({
         if (result.success) {
           onSuccess();
         } else {
-          setError(result.error || 'Invalid backup code');
+          setError(result.error || "Invalid backup code");
           setAttempts((prev) => Math.max(0, prev - 1));
-          setCode('');
+          setCode("");
           inputRef.current?.focus();
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Verification failed');
+        setError(err instanceof Error ? err.message : "Verification failed");
       } finally {
         setIsVerifying(false);
       }
     },
-    [code, onVerify, onSuccess]
+    [code, onVerify, onSuccess],
   );
 
   // Lockout countdown
@@ -138,7 +138,7 @@ export function BackupCodeRecovery({
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   return (
@@ -230,7 +230,7 @@ export function BackupCodeRecovery({
                     <p className="text-sm text-red-200">{error}</p>
                     {attempts < attemptsRemaining && (
                       <p className="text-xs text-red-400 mt-1">
-                        {attempts} attempt{attempts !== 1 ? 's' : ''} remaining
+                        {attempts} attempt{attempts !== 1 ? "s" : ""} remaining
                       </p>
                     )}
                   </div>
@@ -242,7 +242,7 @@ export function BackupCodeRecovery({
                 <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg flex items-start gap-3">
                   <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
                   <p className="text-sm text-amber-200">
-                    Only {attempts} attempt{attempts !== 1 ? 's' : ''} remaining
+                    Only {attempts} attempt{attempts !== 1 ? "s" : ""} remaining
                     before temporary lockout.
                   </p>
                 </div>
@@ -251,7 +251,7 @@ export function BackupCodeRecovery({
               {/* Submit button */}
               <button
                 type="submit"
-                disabled={isVerifying || code.replace(/-/g, '').length !== 8}
+                disabled={isVerifying || code.replace(/-/g, "").length !== 8}
                 className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isVerifying ? (
@@ -279,13 +279,13 @@ export function BackupCodeRecovery({
                 </p>
                 <p>
                   If you've lost access to your backup codes and your
-                  authenticator, please{' '}
+                  authenticator, please{" "}
                   <a
                     href="/support"
                     className="text-blue-400 hover:text-blue-300"
                   >
                     contact support
-                  </a>{' '}
+                  </a>{" "}
                   for account recovery assistance.
                 </p>
               </div>

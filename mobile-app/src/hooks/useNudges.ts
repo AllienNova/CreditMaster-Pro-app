@@ -3,17 +3,17 @@
  * Manages AI nudge notifications for mobile app
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
 
 type NudgeType =
-  | 'motivational'
-  | 'progress'
-  | 'warning'
-  | 'celebration'
-  | 'reminder'
-  | 'insight'
-  | 'coaching';
-type NudgeResponse = 'accepted' | 'dismissed' | 'snoozed';
+  | "motivational"
+  | "progress"
+  | "warning"
+  | "celebration"
+  | "reminder"
+  | "insight"
+  | "coaching";
+type NudgeResponse = "accepted" | "dismissed" | "snoozed";
 
 interface Nudge {
   id: string;
@@ -39,42 +39,42 @@ interface UseNudgesReturn {
 
 const MOCK_NUDGES: Nudge[] = [
   {
-    id: '1',
-    nudgeType: 'insight',
-    title: 'Spending Alert',
+    id: "1",
+    nudgeType: "insight",
+    title: "Spending Alert",
     message:
-      'Your dining spending is 35% higher than last month. Consider reviewing your food budget.',
-    actionLabel: 'View Budget',
-    actionRoute: '/budget',
+      "Your dining spending is 35% higher than last month. Consider reviewing your food budget.",
+    actionLabel: "View Budget",
+    actionRoute: "/budget",
     createdAt: new Date().toISOString(),
     priority: 1,
   },
   {
-    id: '2',
-    nudgeType: 'celebration',
-    title: '🎉 Goal Achieved!',
+    id: "2",
+    nudgeType: "celebration",
+    title: "🎉 Goal Achieved!",
     message: "You've saved $500 this month - that's 20% more than your target!",
     createdAt: new Date().toISOString(),
     priority: 2,
   },
   {
-    id: '3',
-    nudgeType: 'coaching',
-    title: 'Quick Tip',
+    id: "3",
+    nudgeType: "coaching",
+    title: "Quick Tip",
     message:
-      'Automating your savings can help you reach goals 2x faster. Would you like to set this up?',
-    actionLabel: 'Set Up Auto-Save',
-    actionRoute: '/savings/automation',
+      "Automating your savings can help you reach goals 2x faster. Would you like to set this up?",
+    actionLabel: "Set Up Auto-Save",
+    actionRoute: "/savings/automation",
     createdAt: new Date().toISOString(),
     priority: 3,
   },
   {
-    id: '4',
-    nudgeType: 'reminder',
-    title: 'Bill Due Soon',
-    message: 'Your credit card payment of $450 is due in 3 days.',
-    actionLabel: 'Pay Now',
-    actionRoute: '/bills',
+    id: "4",
+    nudgeType: "reminder",
+    title: "Bill Due Soon",
+    message: "Your credit card payment of $450 is due in 3 days.",
+    actionLabel: "Pay Now",
+    actionRoute: "/bills",
     createdAt: new Date().toISOString(),
     priority: 1,
   },
@@ -90,7 +90,7 @@ export function useNudges(): UseNudgesReturn {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/ai/nudges');
+      const response = await fetch("/api/ai/nudges");
       let nudgesData: Nudge[];
       if (response.ok) {
         const data = await response.json();
@@ -100,7 +100,7 @@ export function useNudges(): UseNudgesReturn {
         nudgesData = MOCK_NUDGES;
       }
       const sortedNudges = [...nudgesData].sort(
-        (a, b) => a.priority - b.priority
+        (a, b) => a.priority - b.priority,
       );
       setNudges(sortedNudges);
       if (sortedNudges.length > 0 && !activeNudge) {
@@ -109,7 +109,7 @@ export function useNudges(): UseNudgesReturn {
     } catch (err) {
       // Fallback to mock data on network error
       const sortedNudges = [...MOCK_NUDGES].sort(
-        (a, b) => a.priority - b.priority
+        (a, b) => a.priority - b.priority,
       );
       setNudges(sortedNudges);
       if (sortedNudges.length > 0 && !activeNudge) {
@@ -132,16 +132,16 @@ export function useNudges(): UseNudgesReturn {
         }
 
         // Persist response to API
-        await fetch('/api/ai/nudges/respond', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        await fetch("/api/ai/nudges/respond", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ nudgeId, response: nudgeResponse }),
         });
       } catch (err) {
         // Don't revert UI - response was already recorded locally
       }
     },
-    [activeNudge, nudges]
+    [activeNudge, nudges],
   );
 
   const dismissAll = useCallback(() => {

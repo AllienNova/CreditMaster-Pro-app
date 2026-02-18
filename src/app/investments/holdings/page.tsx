@@ -1,17 +1,17 @@
-import { Suspense } from 'react';
-import { Metadata } from 'next';
-import Link from 'next/link';
-import HoldingsManagement from '@/components/investments/HoldingsManagement';
+import { Suspense } from "react";
+import { Metadata } from "next";
+import Link from "next/link";
+import HoldingsManagement from "@/components/investments/HoldingsManagement";
 
 export const metadata: Metadata = {
-  title: 'Holdings Management | Fynvita',
+  title: "Holdings Management | Fynvita",
   description:
-    'Manage your investment holdings - add, edit, delete positions and track performance',
+    "Manage your investment holdings - add, edit, delete positions and track performance",
   openGraph: {
-    title: 'Holdings Management | Fynvita',
+    title: "Holdings Management | Fynvita",
     description:
-      'Manage your investment holdings - add, edit, delete positions and track performance',
-    type: 'website',
+      "Manage your investment holdings - add, edit, delete positions and track performance",
+    type: "website",
   },
 };
 

@@ -2,11 +2,11 @@
  * ImageGenerator Component Tests
  */
 
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import React from "react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 // Mock the ImageGenerator component
-jest.mock('../image-generator/ImageGenerator', () => {
+jest.mock("../image-generator/ImageGenerator", () => {
   const MockImageGenerator = ({
     onGenerate,
     className,
@@ -14,16 +14,16 @@ jest.mock('../image-generator/ImageGenerator', () => {
     onGenerate?: (prompt: string, options: unknown) => Promise<string>;
     className?: string;
   }) => {
-    const [prompt, setPrompt] = React.useState('');
+    const [prompt, setPrompt] = React.useState("");
     const [generatedImage, setGeneratedImage] = React.useState<string | null>(
-      null
+      null,
     );
     const [isGenerating, setIsGenerating] = React.useState(false);
 
     const handleGenerate = () => {
       setIsGenerating(true);
       setTimeout(() => {
-        const imageUrl = 'https://example.com/generated-image.png';
+        const imageUrl = "https://example.com/generated-image.png";
         setGeneratedImage(imageUrl);
         setIsGenerating(false);
         onGenerate?.(prompt, {});
@@ -55,7 +55,7 @@ jest.mock('../image-generator/ImageGenerator', () => {
           onClick={handleGenerate}
           disabled={!prompt || isGenerating}
         >
-          {isGenerating ? 'Generating...' : 'Generate'}
+          {isGenerating ? "Generating..." : "Generate"}
         </button>
         {isGenerating && <div data-testid="loading">Generating image...</div>}
         {generatedImage && (
@@ -73,13 +73,13 @@ jest.mock('../image-generator/ImageGenerator', () => {
         <div data-testid="sample-prompts">
           <button
             type="button"
-            onClick={() => setPrompt('A serene mountain landscape')}
+            onClick={() => setPrompt("A serene mountain landscape")}
           >
             Mountain
           </button>
           <button
             type="button"
-            onClick={() => setPrompt('A futuristic city skyline')}
+            onClick={() => setPrompt("A futuristic city skyline")}
           >
             City
           </button>
@@ -90,108 +90,108 @@ jest.mock('../image-generator/ImageGenerator', () => {
   return { __esModule: true, default: MockImageGenerator };
 });
 
-import ImageGenerator from '../image-generator/ImageGenerator';
+import ImageGenerator from "../image-generator/ImageGenerator";
 
-describe('ImageGenerator', () => {
-  it('renders image generator component', () => {
+describe("ImageGenerator", () => {
+  it("renders image generator component", () => {
     render(<ImageGenerator />);
-    expect(screen.getByTestId('image-generator')).toBeInTheDocument();
+    expect(screen.getByTestId("image-generator")).toBeInTheDocument();
   });
 
-  it('renders prompt input', () => {
+  it("renders prompt input", () => {
     render(<ImageGenerator />);
     expect(
-      screen.getByPlaceholderText('Describe the image you want to generate...')
+      screen.getByPlaceholderText("Describe the image you want to generate..."),
     ).toBeInTheDocument();
   });
 
-  it('renders size selector', () => {
+  it("renders size selector", () => {
     render(<ImageGenerator />);
-    expect(screen.getByTestId('size-select')).toBeInTheDocument();
+    expect(screen.getByTestId("size-select")).toBeInTheDocument();
   });
 
-  it('renders style selector', () => {
+  it("renders style selector", () => {
     render(<ImageGenerator />);
-    expect(screen.getByTestId('style-select')).toBeInTheDocument();
+    expect(screen.getByTestId("style-select")).toBeInTheDocument();
   });
 
-  it('disables generate button when prompt is empty', () => {
+  it("disables generate button when prompt is empty", () => {
     render(<ImageGenerator />);
-    expect(screen.getByTestId('generate-button')).toBeDisabled();
+    expect(screen.getByTestId("generate-button")).toBeDisabled();
   });
 
-  it('enables generate button when prompt is entered', () => {
+  it("enables generate button when prompt is entered", () => {
     render(<ImageGenerator />);
-    const input = screen.getByTestId('prompt-input');
-    fireEvent.change(input, { target: { value: 'A beautiful sunset' } });
-    expect(screen.getByTestId('generate-button')).not.toBeDisabled();
+    const input = screen.getByTestId("prompt-input");
+    fireEvent.change(input, { target: { value: "A beautiful sunset" } });
+    expect(screen.getByTestId("generate-button")).not.toBeDisabled();
   });
 
-  it('shows loading state during generation', async () => {
+  it("shows loading state during generation", async () => {
     render(<ImageGenerator />);
-    const input = screen.getByTestId('prompt-input');
-    fireEvent.change(input, { target: { value: 'Test prompt' } });
-    fireEvent.click(screen.getByTestId('generate-button'));
-    expect(screen.getByTestId('loading')).toBeInTheDocument();
+    const input = screen.getByTestId("prompt-input");
+    fireEvent.change(input, { target: { value: "Test prompt" } });
+    fireEvent.click(screen.getByTestId("generate-button"));
+    expect(screen.getByTestId("loading")).toBeInTheDocument();
   });
 
-  it('displays generated image', async () => {
+  it("displays generated image", async () => {
     render(<ImageGenerator />);
-    const input = screen.getByTestId('prompt-input');
-    fireEvent.change(input, { target: { value: 'Test prompt' } });
-    fireEvent.click(screen.getByTestId('generate-button'));
+    const input = screen.getByTestId("prompt-input");
+    fireEvent.change(input, { target: { value: "Test prompt" } });
+    fireEvent.click(screen.getByTestId("generate-button"));
 
     await waitFor(() => {
-      expect(screen.getByTestId('generated-image')).toBeInTheDocument();
+      expect(screen.getByTestId("generated-image")).toBeInTheDocument();
     });
   });
 
-  it('calls onGenerate with prompt and image URL', async () => {
+  it("calls onGenerate with prompt and image URL", async () => {
     const onGenerate = jest.fn();
     render(<ImageGenerator onGenerate={onGenerate} />);
 
-    const input = screen.getByTestId('prompt-input');
-    fireEvent.change(input, { target: { value: 'Test prompt' } });
-    fireEvent.click(screen.getByTestId('generate-button'));
+    const input = screen.getByTestId("prompt-input");
+    fireEvent.change(input, { target: { value: "Test prompt" } });
+    fireEvent.click(screen.getByTestId("generate-button"));
 
     await waitFor(() => {
       expect(onGenerate).toHaveBeenCalledWith(
-        'Test prompt',
-        expect.any(Object)
+        "Test prompt",
+        expect.any(Object),
       );
     });
   });
 
-  it('renders download button after image generation', async () => {
+  it("renders download button after image generation", async () => {
     render(<ImageGenerator />);
-    const input = screen.getByTestId('prompt-input');
-    fireEvent.change(input, { target: { value: 'Test' } });
-    fireEvent.click(screen.getByTestId('generate-button'));
+    const input = screen.getByTestId("prompt-input");
+    fireEvent.change(input, { target: { value: "Test" } });
+    fireEvent.click(screen.getByTestId("generate-button"));
 
     await waitFor(() => {
-      expect(screen.getByTestId('download-button')).toBeInTheDocument();
+      expect(screen.getByTestId("download-button")).toBeInTheDocument();
     });
   });
 
-  it('allows clicking download button', async () => {
+  it("allows clicking download button", async () => {
     render(<ImageGenerator />);
 
-    const input = screen.getByTestId('prompt-input');
-    fireEvent.change(input, { target: { value: 'Test' } });
-    fireEvent.click(screen.getByTestId('generate-button'));
+    const input = screen.getByTestId("prompt-input");
+    fireEvent.change(input, { target: { value: "Test" } });
+    fireEvent.click(screen.getByTestId("generate-button"));
 
     await waitFor(() => {
-      expect(screen.getByTestId('download-button')).toBeInTheDocument();
+      expect(screen.getByTestId("download-button")).toBeInTheDocument();
     });
   });
 
-  it('renders sample prompts', () => {
+  it("renders sample prompts", () => {
     render(<ImageGenerator />);
-    expect(screen.getByTestId('sample-prompts')).toBeInTheDocument();
+    expect(screen.getByTestId("sample-prompts")).toBeInTheDocument();
   });
 
-  it('applies custom className', () => {
+  it("applies custom className", () => {
     render(<ImageGenerator className="custom-class" />);
-    expect(screen.getByTestId('image-generator')).toHaveClass('custom-class');
+    expect(screen.getByTestId("image-generator")).toHaveClass("custom-class");
   });
 });

@@ -1,11 +1,11 @@
 /**
  * Database Connection Pool Configuration
- * 
+ *
  * Configures Supabase connection pooling for optimal performance.
  * Uses Supabase's built-in connection pooler (Supavisor) for production.
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 // Connection pool configuration
 interface PoolConfig {
@@ -19,7 +19,7 @@ const DEFAULT_CONFIG: PoolConfig = {
   maxConnections: 20,
   idleTimeout: 30000, // 30 seconds
   connectionTimeout: 10000, // 10 seconds
-  usePooler: process.env.NODE_ENV === 'production'
+  usePooler: process.env.NODE_ENV === "production",
 };
 
 /**
@@ -28,18 +28,18 @@ const DEFAULT_CONFIG: PoolConfig = {
  */
 function getSupabaseUrl(): string {
   const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  
+
   // In production, use the pooler URL if available
   if (DEFAULT_CONFIG.usePooler && process.env.SUPABASE_POOLER_URL) {
     return process.env.SUPABASE_POOLER_URL;
   }
-  
+
   // For Supabase, the pooler URL follows a pattern
   // Replace db.xxx.supabase.co with pooler.xxx.supabase.co
-  if (DEFAULT_CONFIG.usePooler && baseUrl.includes('.supabase.co')) {
-    return baseUrl.replace('db.', 'pooler.');
+  if (DEFAULT_CONFIG.usePooler && baseUrl.includes(".supabase.co")) {
+    return baseUrl.replace("db.", "pooler.");
   }
-  
+
   return baseUrl;
 }
 
@@ -59,17 +59,17 @@ export function getPooledClient(): SupabaseClient {
       {
         auth: {
           persistSession: false,
-          autoRefreshToken: false
+          autoRefreshToken: false,
         },
         db: {
-          schema: 'public'
+          schema: "public",
         },
         global: {
           headers: {
-            'x-connection-pool': 'true'
-          }
-        }
-      }
+            "x-connection-pool": "true",
+          },
+        },
+      },
     );
   }
   return publicClient;
@@ -87,17 +87,17 @@ export function getServiceClient(): SupabaseClient {
       {
         auth: {
           persistSession: false,
-          autoRefreshToken: false
+          autoRefreshToken: false,
         },
         db: {
-          schema: 'public'
+          schema: "public",
         },
         global: {
           headers: {
-            'x-connection-pool': 'true'
-          }
-        }
-      }
+            "x-connection-pool": "true",
+          },
+        },
+      },
     );
   }
   return serviceClient;
@@ -108,36 +108,36 @@ export function getServiceClient(): SupabaseClient {
  */
 export async function executeWithRetry<T>(
   queryFn: (client: SupabaseClient) => Promise<T>,
-  options?: { maxRetries?: number; useService?: boolean }
+  options?: { maxRetries?: number; useService?: boolean },
 ): Promise<T> {
   const maxRetries = options?.maxRetries || 3;
   const client = options?.useService ? getServiceClient() : getPooledClient();
-  
+
   let lastError: Error | null = null;
-  
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await queryFn(client);
     } catch (error: any) {
       lastError = error;
-      
+
       // Only retry on connection errors
-      const isConnectionError = 
-        error.code === 'ECONNRESET' ||
-        error.code === 'ETIMEDOUT' ||
-        error.message?.includes('connection') ||
-        error.message?.includes('timeout');
-      
+      const isConnectionError =
+        error.code === "ECONNRESET" ||
+        error.code === "ETIMEDOUT" ||
+        error.message?.includes("connection") ||
+        error.message?.includes("timeout");
+
       if (!isConnectionError || attempt === maxRetries) {
         throw error;
       }
-      
+
       // Exponential backoff
       const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
-  
+
   throw lastError;
 }
 
@@ -150,22 +150,21 @@ export async function checkDatabaseHealth(): Promise<{
   poolerEnabled: boolean;
 }> {
   const start = Date.now();
-  
+
   try {
     const client = getPooledClient();
-    await client.from('profiles').select('id').limit(1);
-    
+    await client.from("profiles").select("id").limit(1);
+
     return {
       healthy: true,
       latency: Date.now() - start,
-      poolerEnabled: DEFAULT_CONFIG.usePooler
+      poolerEnabled: DEFAULT_CONFIG.usePooler,
     };
   } catch {
     return {
       healthy: false,
       latency: Date.now() - start,
-      poolerEnabled: DEFAULT_CONFIG.usePooler
+      poolerEnabled: DEFAULT_CONFIG.usePooler,
     };
   }
 }
-

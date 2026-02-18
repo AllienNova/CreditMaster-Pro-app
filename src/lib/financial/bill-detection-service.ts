@@ -1,4 +1,4 @@
-import { getSupabase } from '@/lib/supabase/client';
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
 import type {
@@ -14,7 +14,7 @@ import type {
   BillPaymentInput,
   BillFrequency,
   BillCategory,
-} from './types/bill.types';
+} from "./types/bill.types";
 
 // ============================================================================
 // TYPES
@@ -53,20 +53,20 @@ class BillDetectionService {
    */
   async getBillsByUser(
     userId: string,
-    options?: { activeOnly?: boolean; category?: BillCategory }
+    options?: { activeOnly?: boolean; category?: BillCategory },
   ): Promise<Bill[]> {
     let query = supabase
-      .from('bills')
-      .select('*')
-      .eq('user_id', userId)
-      .order('next_due_date', { ascending: true });
+      .from("bills")
+      .select("*")
+      .eq("user_id", userId)
+      .order("next_due_date", { ascending: true });
 
     if (options?.activeOnly) {
-      query = query.eq('status', 'active');
+      query = query.eq("status", "active");
     }
 
     if (options?.category) {
-      query = query.eq('category', options.category);
+      query = query.eq("category", options.category);
     }
 
     const { data, error } = await query;
@@ -83,14 +83,14 @@ class BillDetectionService {
    */
   async getBillById(billId: string, userId: string): Promise<Bill | null> {
     const { data, error } = await supabase
-      .from('bills')
-      .select('*')
-      .eq('id', billId)
-      .eq('user_id', userId)
+      .from("bills")
+      .select("*")
+      .eq("id", billId)
+      .eq("user_id", userId)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
+      if (error.code === "PGRST116") {
         return null;
       }
       throw new Error(`Failed to fetch bill: ${error.message}`);
@@ -104,7 +104,7 @@ class BillDetectionService {
    */
   async createBill(userId: string, input: BillCreateInput): Promise<Bill> {
     const { data, error } = await supabase
-      .from('bills')
+      .from("bills")
       .insert({
         user_id: userId,
         merchant_name: input.merchantName,
@@ -115,7 +115,7 @@ class BillDetectionService {
         is_auto_pay: input.isAutoPay || false,
         account_id: input.accountId,
         notes: input.notes,
-        status: 'active',
+        status: "active",
       })
       .select()
       .single();
@@ -133,7 +133,7 @@ class BillDetectionService {
   async updateBill(
     billId: string,
     userId: string,
-    input: BillUpdateInput
+    input: BillUpdateInput,
   ): Promise<Bill> {
     const updateData: Record<string, unknown> = {};
 
@@ -154,10 +154,10 @@ class BillDetectionService {
     if (input.notes !== undefined) updateData.notes = input.notes;
 
     const { data, error } = await supabase
-      .from('bills')
+      .from("bills")
       .update(updateData)
-      .eq('id', billId)
-      .eq('user_id', userId)
+      .eq("id", billId)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -173,10 +173,10 @@ class BillDetectionService {
    */
   async deleteBill(billId: string, userId: string): Promise<void> {
     const { error } = await supabase
-      .from('bills')
+      .from("bills")
       .delete()
-      .eq('id', billId)
-      .eq('user_id', userId);
+      .eq("id", billId)
+      .eq("user_id", userId);
 
     if (error) {
       throw new Error(`Failed to delete bill: ${error.message}`);
@@ -192,7 +192,7 @@ class BillDetectionService {
    */
   async detectBills(
     userId: string,
-    options?: BillDetectionOptions
+    options?: BillDetectionOptions,
   ): Promise<DetectedBill[]> {
     const transactions = await this.getTransactions(userId, options);
 
@@ -220,7 +220,7 @@ class BillDetectionService {
    */
   private async getTransactions(
     userId: string,
-    options?: BillDetectionOptions
+    options?: BillDetectionOptions,
   ): Promise<Transaction[]> {
     // Fetches transactions from database or Plaid integration
     const endDate = options?.endDate || new Date();
@@ -230,12 +230,12 @@ class BillDetectionService {
 
     try {
       const { data: transactions, error } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('user_id', userId)
-        .gte('date', startDate.toISOString())
-        .lte('date', endDate.toISOString())
-        .order('date', { ascending: false });
+        .from("transactions")
+        .select("*")
+        .eq("user_id", userId)
+        .gte("date", startDate.toISOString())
+        .lte("date", endDate.toISOString())
+        .order("date", { ascending: false });
 
       if (error) {
         // BillDetectionService error: Error fetching transactions
@@ -247,8 +247,8 @@ class BillDetectionService {
         id: t.id,
         date: new Date(t.date),
         amount: Math.abs(t.amount),
-        merchantName: t.merchant_name || t.name || 'Unknown',
-        category: t.category || 'Other',
+        merchantName: t.merchant_name || t.name || "Unknown",
+        category: t.category || "Other",
         accountId: t.account_id,
       }));
     } catch (_error) {
@@ -262,7 +262,7 @@ class BillDetectionService {
    * Group transactions by merchant name
    */
   private groupTransactionsByMerchant(
-    transactions: Transaction[]
+    transactions: Transaction[],
   ): Record<string, Transaction[]> {
     const groups: Record<string, Transaction[]> = {};
 
@@ -283,7 +283,7 @@ class BillDetectionService {
   private normalizeMerchantName(name: string): string {
     return name
       .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/[^a-z0-9\s]/g, "")
       .trim();
   }
 
@@ -292,7 +292,7 @@ class BillDetectionService {
    */
   private analyzeRecurringPattern(
     merchantName: string,
-    transactions: Transaction[]
+    transactions: Transaction[],
   ): RecurringPattern | null {
     if (transactions.length < 2) {
       return null;
@@ -300,7 +300,7 @@ class BillDetectionService {
 
     // Sort by date
     const sorted = [...transactions].sort(
-      (a, b) => a.date.getTime() - b.date.getTime()
+      (a, b) => a.date.getTime() - b.date.getTime(),
     );
 
     // Calculate average amount
@@ -317,7 +317,7 @@ class BillDetectionService {
     const confidence = this.calculateConfidence(
       sorted,
       averageAmount,
-      frequency
+      frequency,
     );
 
     // Extract day of month or week
@@ -347,7 +347,7 @@ class BillDetectionService {
     for (let i = 1; i < transactions.length; i++) {
       const days = Math.round(
         (transactions[i].date.getTime() - transactions[i - 1].date.getTime()) /
-          (24 * 60 * 60 * 1000)
+          (24 * 60 * 60 * 1000),
       );
       intervals.push(days);
     }
@@ -356,11 +356,11 @@ class BillDetectionService {
       intervals.reduce((sum, i) => sum + i, 0) / intervals.length;
 
     // Determine frequency based on average interval
-    if (avgInterval >= 6 && avgInterval <= 8) return 'weekly';
-    if (avgInterval >= 13 && avgInterval <= 15) return 'biweekly';
-    if (avgInterval >= 28 && avgInterval <= 32) return 'monthly';
-    if (avgInterval >= 88 && avgInterval <= 95) return 'quarterly';
-    if (avgInterval >= 360 && avgInterval <= 370) return 'yearly';
+    if (avgInterval >= 6 && avgInterval <= 8) return "weekly";
+    if (avgInterval >= 13 && avgInterval <= 15) return "biweekly";
+    if (avgInterval >= 28 && avgInterval <= 32) return "monthly";
+    if (avgInterval >= 88 && avgInterval <= 95) return "quarterly";
+    if (avgInterval >= 360 && avgInterval <= 370) return "yearly";
 
     return null;
   }
@@ -371,7 +371,7 @@ class BillDetectionService {
   private calculateConfidence(
     transactions: Transaction[],
     averageAmount: number,
-    frequency: BillFrequency
+    frequency: BillFrequency,
   ): number {
     let score = 50; // Base score
 
@@ -382,11 +382,11 @@ class BillDetectionService {
     const amountVariance =
       transactions.reduce(
         (sum, t) => sum + Math.abs(t.amount - averageAmount),
-        0
+        0,
       ) / transactions.length;
     const amountConsistency = Math.max(
       0,
-      100 - (amountVariance / averageAmount) * 100
+      100 - (amountVariance / averageAmount) * 100,
     );
     score += amountConsistency * 0.2;
 
@@ -405,7 +405,7 @@ class BillDetectionService {
     }
 
     const mostCommonDay = Object.entries(dayCount).sort(
-      ([, a], [, b]) => b - a
+      ([, a], [, b]) => b - a,
     )[0];
 
     return mostCommonDay ? parseInt(mostCommonDay[0]) : undefined;
@@ -423,7 +423,7 @@ class BillDetectionService {
     }
 
     const mostCommonDay = Object.entries(dayCount).sort(
-      ([, a], [, b]) => b - a
+      ([, a], [, b]) => b - a,
     )[0];
 
     return mostCommonDay ? parseInt(mostCommonDay[0]) : undefined;
@@ -438,7 +438,7 @@ class BillDetectionService {
     const nextExpectedDate = this.calculateNextDueDate(
       lastTransaction.date,
       pattern.frequency,
-      pattern.dayOfMonth
+      pattern.dayOfMonth,
     );
 
     return {
@@ -459,27 +459,27 @@ class BillDetectionService {
   private calculateNextDueDate(
     lastDate: Date,
     frequency: BillFrequency,
-    dayOfMonth?: number
+    dayOfMonth?: number,
   ): Date {
     const next = new Date(lastDate);
 
     switch (frequency) {
-      case 'weekly':
+      case "weekly":
         next.setDate(next.getDate() + 7);
         break;
-      case 'biweekly':
+      case "biweekly":
         next.setDate(next.getDate() + 14);
         break;
-      case 'monthly':
+      case "monthly":
         next.setMonth(next.getMonth() + 1);
         if (dayOfMonth) {
           next.setDate(dayOfMonth);
         }
         break;
-      case 'quarterly':
+      case "quarterly":
         next.setMonth(next.getMonth() + 3);
         break;
-      case 'yearly':
+      case "yearly":
         next.setFullYear(next.getFullYear() + 1);
         break;
     }
@@ -494,34 +494,34 @@ class BillDetectionService {
     const name = merchantName.toLowerCase();
 
     if (
-      name.includes('netflix') ||
-      name.includes('spotify') ||
-      name.includes('hulu')
+      name.includes("netflix") ||
+      name.includes("spotify") ||
+      name.includes("hulu")
     )
-      return 'streaming';
+      return "streaming";
     if (
-      name.includes('electric') ||
-      name.includes('gas') ||
-      name.includes('water')
+      name.includes("electric") ||
+      name.includes("gas") ||
+      name.includes("water")
     )
-      return 'utilities';
-    if (name.includes('insurance')) return 'insurance';
+      return "utilities";
+    if (name.includes("insurance")) return "insurance";
     if (
-      name.includes('phone') ||
-      name.includes('verizon') ||
-      name.includes('att')
+      name.includes("phone") ||
+      name.includes("verizon") ||
+      name.includes("att")
     )
-      return 'phone';
+      return "phone";
     if (
-      name.includes('internet') ||
-      name.includes('comcast') ||
-      name.includes('spectrum')
+      name.includes("internet") ||
+      name.includes("comcast") ||
+      name.includes("spectrum")
     )
-      return 'internet';
-    if (name.includes('rent') || name.includes('apartment')) return 'rent';
-    if (name.includes('mortgage') || name.includes('loan')) return 'mortgage';
+      return "internet";
+    if (name.includes("rent") || name.includes("apartment")) return "rent";
+    if (name.includes("mortgage") || name.includes("loan")) return "mortgage";
 
-    return 'other';
+    return "other";
   }
 
   // ==========================================================================
@@ -533,18 +533,18 @@ class BillDetectionService {
    */
   async recordPayment(
     userId: string,
-    input: BillPaymentInput
+    input: BillPaymentInput,
   ): Promise<BillPayment> {
     // Get the bill to verify ownership and get due date
     const bill = await this.getBillById(input.billId, userId);
     if (!bill) {
-      throw new Error('Bill not found');
+      throw new Error("Bill not found");
     }
 
     const isLate = input.paidDate > bill.nextDueDate;
 
     const { data, error } = await supabase
-      .from('bill_payments')
+      .from("bill_payments")
       .insert({
         bill_id: input.billId,
         user_id: userId,
@@ -564,7 +564,7 @@ class BillDetectionService {
     // Update bill's last paid info and next due date
     const nextDueDate = this.calculateNextDueDate(
       input.paidDate,
-      bill.frequency
+      bill.frequency,
     );
 
     await this.updateBill(input.billId, userId, {
@@ -581,14 +581,14 @@ class BillDetectionService {
    */
   async getPaymentHistory(
     billId: string,
-    userId: string
+    userId: string,
   ): Promise<BillPayment[]> {
     const { data, error } = await supabase
-      .from('bill_payments')
-      .select('*')
-      .eq('bill_id', billId)
-      .eq('user_id', userId)
-      .order('paid_date', { ascending: false });
+      .from("bill_payments")
+      .select("*")
+      .eq("bill_id", billId)
+      .eq("user_id", userId)
+      .order("paid_date", { ascending: false });
 
     if (error) {
       throw new Error(`Failed to fetch payment history: ${error.message}`);
@@ -608,8 +608,8 @@ class BillDetectionService {
     const bills = await this.getBillsByUser(userId, { activeOnly: true });
 
     const now = new Date();
-    const upcomingBills: BillSummary['upcomingBills'] = [];
-    const overdueBills: BillSummary['overdueBills'] = [];
+    const upcomingBills: BillSummary["upcomingBills"] = [];
+    const overdueBills: BillSummary["overdueBills"] = [];
     const billsByCategory: Record<BillCategory, number> = {} as Record<
       BillCategory,
       number
@@ -621,7 +621,7 @@ class BillDetectionService {
       // Calculate monthly equivalent
       const monthlyAmount = this.convertToMonthlyAmount(
         bill.amount,
-        bill.frequency
+        bill.frequency,
       );
       totalMonthlyBills += monthlyAmount;
 
@@ -631,7 +631,7 @@ class BillDetectionService {
 
       // Check if upcoming or overdue
       const daysUntilDue = Math.ceil(
-        (bill.nextDueDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)
+        (bill.nextDueDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000),
       );
 
       if (daysUntilDue < 0) {
@@ -671,18 +671,18 @@ class BillDetectionService {
    */
   private convertToMonthlyAmount(
     amount: number,
-    frequency: BillFrequency
+    frequency: BillFrequency,
   ): number {
     switch (frequency) {
-      case 'weekly':
+      case "weekly":
         return amount * 4.33; // Average weeks per month
-      case 'biweekly':
+      case "biweekly":
         return amount * 2.17; // Average biweekly periods per month
-      case 'monthly':
+      case "monthly":
         return amount;
-      case 'quarterly':
+      case "quarterly":
         return amount / 3;
-      case 'yearly':
+      case "yearly":
         return amount / 12;
     }
   }

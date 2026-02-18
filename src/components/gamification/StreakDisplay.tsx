@@ -1,33 +1,33 @@
-'use client';
+"use client";
 
 /**
  * Streak Display Component
  * Shows current streak with fire emoji and multiplier
  */
 
-import React from 'react';
-import { cn } from '@/lib/utils';
+import React from "react";
+import { cn } from "@/lib/utils";
 
 interface StreakDisplayProps {
   streak: number;
   multiplier: number;
   longestStreak?: number;
-  size?: 'sm' | 'md' | 'lg';
+  size?: "sm" | "md" | "lg";
   showMultiplier?: boolean;
   className?: string;
 }
 
 const sizeConfig = {
-  sm: { container: 'px-2 py-1', text: 'text-sm', icon: 'text-base' },
-  md: { container: 'px-3 py-1.5', text: 'text-base', icon: 'text-xl' },
-  lg: { container: 'px-4 py-2', text: 'text-lg', icon: 'text-2xl' },
+  sm: { container: "px-2 py-1", text: "text-sm", icon: "text-base" },
+  md: { container: "px-3 py-1.5", text: "text-base", icon: "text-xl" },
+  lg: { container: "px-4 py-2", text: "text-lg", icon: "text-2xl" },
 };
 
 export function StreakDisplay({
   streak,
   multiplier,
   longestStreak,
-  size = 'md',
+  size = "md",
   showMultiplier = true,
   className,
 }: StreakDisplayProps) {
@@ -35,19 +35,19 @@ export function StreakDisplay({
 
   // Determine fire intensity based on streak length
   const getFireEmoji = () => {
-    if (streak >= 100) return '';
-    if (streak >= 30) return '';
-    if (streak >= 14) return '';
-    if (streak >= 7) return '';
-    return '';
+    if (streak >= 100) return "";
+    if (streak >= 30) return "";
+    if (streak >= 14) return "";
+    if (streak >= 7) return "";
+    return "";
   };
 
   return (
     <div
       className={cn(
-        'flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-100 to-red-100 dark:from-orange-900/30 dark:to-red-900/30',
+        "flex items-center gap-2 rounded-full bg-gradient-to-r from-orange-100 to-red-100 dark:from-orange-900/30 dark:to-red-900/30",
         config.container,
-        className
+        className,
       )}
     >
       <span className={config.icon}>{getFireEmoji()}</span>
@@ -55,11 +55,11 @@ export function StreakDisplay({
       <div className="flex flex-col">
         <span
           className={cn(
-            'font-bold text-orange-600 dark:text-orange-400',
-            config.text
+            "font-bold text-orange-600 dark:text-orange-400",
+            config.text,
           )}
         >
-          {streak} day{streak !== 1 ? 's' : ''}
+          {streak} day{streak !== 1 ? "s" : ""}
         </span>
 
         {showMultiplier && multiplier > 1 && (

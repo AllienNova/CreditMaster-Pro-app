@@ -1,9 +1,9 @@
 /**
  * Goal Tracker Service
- * 
+ *
  * Advanced financial goal tracking and progress monitoring system.
  * Provides velocity tracking, predictions, risk assessment, and comparative analytics.
- * 
+ *
  * Features:
  * - Automatic progress calculation from Financial Context Engine
  * - Velocity metrics and trend analysis
@@ -13,10 +13,14 @@
  * - Performance scoring and recommendations
  */
 
-import { getSupabase } from '@/lib/supabase/client';
-import { financialContextEngine } from './financial-context-engine';
-import { goalPlanner } from './goal-planner';
-import { FinancialGoalPlan, GoalType, GoalStatus } from './types/ai-coach.types';
+import { getSupabase } from "@/lib/supabase/client";
+import { financialContextEngine } from "./financial-context-engine";
+import { goalPlanner } from "./goal-planner";
+import {
+  FinancialGoalPlan,
+  GoalType,
+  GoalStatus,
+} from "./types/ai-coach.types";
 import {
   GoalProgress,
   VelocityMetrics,
@@ -27,13 +31,16 @@ import {
   ProgressHistoryPoint,
   GoalComparison,
   ProgressMetrics,
-} from './types/goal-tracker.types';
+} from "./types/goal-tracker.types";
 
 // ============================================================================
 // CONSTANTS
 // ============================================================================
 
-const PEER_BENCHMARKS: Record<GoalType, { avgProgress: number; avgMonths: number }> = {
+const PEER_BENCHMARKS: Record<
+  GoalType,
+  { avgProgress: number; avgMonths: number }
+> = {
   emergency_fund: { avgProgress: 45, avgMonths: 14 },
   debt_payoff: { avgProgress: 38, avgMonths: 28 },
   savings: { avgProgress: 52, avgMonths: 10 },
@@ -66,7 +73,7 @@ class GoalTracker {
       linkedAccountId?: string;
       autoSaveEnabled?: boolean;
       priority?: number;
-    }
+    },
   ): Promise<FinancialGoalPlan> {
     // Delegate to goal planner for creation
     return goalPlanner.createGoalPlan({
@@ -81,7 +88,7 @@ class GoalTracker {
   async getActiveGoals(userId: string): Promise<FinancialGoalPlan[]> {
     const allGoals = await goalPlanner.getUserGoals(userId);
     return allGoals.filter(
-      (goal) => goal.status !== 'completed' && goal.status !== 'paused'
+      (goal) => goal.status !== "completed" && goal.status !== "paused",
     );
   }
 
@@ -91,7 +98,7 @@ class GoalTracker {
   async updateGoalProgress(
     userId: string,
     goalId: string,
-    newAmount: number
+    newAmount: number,
   ): Promise<FinancialGoalPlan | null> {
     return goalPlanner.updateGoalProgress(userId, goalId, newAmount);
   }
@@ -102,10 +109,10 @@ class GoalTracker {
   async deleteGoal(userId: string, goalId: string): Promise<boolean> {
     const supabase = getSupabase();
     const { error } = await supabase
-      .from('financial_goals')
+      .from("financial_goals")
       .delete()
-      .eq('id', goalId)
-      .eq('user_id', userId);
+      .eq("id", goalId)
+      .eq("user_id", userId);
 
     return !error;
   }
@@ -115,7 +122,7 @@ class GoalTracker {
    */
   async calculateProgressMetrics(
     userId: string,
-    goalId: string
+    goalId: string,
   ): Promise<GoalProgress | null> {
     const goals = await goalPlanner.getUserGoals(userId);
     const goal = goals.find((g) => g.id === goalId);
@@ -129,14 +136,17 @@ class GoalTracker {
     // Calculate time metrics
     const daysElapsed = Math.max(
       0,
-      Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+      Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)),
     );
     const daysRemaining = Math.max(
       0,
-      Math.floor((targetDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      Math.floor(
+        (targetDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+      ),
     );
     const totalDays = daysElapsed + daysRemaining;
-    const timeElapsedPercentage = totalDays > 0 ? (daysElapsed / totalDays) * 100 : 0;
+    const timeElapsedPercentage =
+      totalDays > 0 ? (daysElapsed / totalDays) * 100 : 0;
 
     // Calculate velocity metrics
     const velocity = await this.calculateVelocity(userId, goalId, goal);
@@ -145,7 +155,7 @@ class GoalTracker {
     const performanceScore = this.calculatePerformanceScore(
       goal,
       velocity,
-      timeElapsedPercentage
+      timeElapsedPercentage,
     );
 
     // Generate predictions
@@ -178,7 +188,7 @@ class GoalTracker {
   async calculateVelocity(
     userId: string,
     goalId: string,
-    goal: FinancialGoalPlan
+    goal: FinancialGoalPlan,
   ): Promise<VelocityMetrics> {
     const history = await this.getProgressHistory(userId, goalId);
 
@@ -194,20 +204,24 @@ class GoalTracker {
         averageContribution: monthlyVelocity,
         requiredVelocity,
         velocityRatio: monthlyVelocity / requiredVelocity,
-        trend: 'steady',
+        trend: "steady",
       };
     }
 
     // Calculate actual velocity from history
     const recentHistory = history.slice(-3); // Last 3 data points
-    const totalContributions = recentHistory.reduce((sum, h) => sum + h.contribution, 0);
+    const totalContributions = recentHistory.reduce(
+      (sum, h) => sum + h.contribution,
+      0,
+    );
     const avgContribution = totalContributions / recentHistory.length;
 
     const firstPoint = history[0];
     const lastPoint = history[history.length - 1];
     const daysDiff = Math.max(
       1,
-      (lastPoint.date.getTime() - firstPoint.date.getTime()) / (1000 * 60 * 60 * 24)
+      (lastPoint.date.getTime() - firstPoint.date.getTime()) /
+        (1000 * 60 * 60 * 24),
     );
     const amountDiff = lastPoint.amount - firstPoint.amount;
 
@@ -218,15 +232,15 @@ class GoalTracker {
     const requiredVelocity = this.calculateRequiredVelocity(goal);
 
     // Determine trend
-    let trend: 'accelerating' | 'steady' | 'decelerating' = 'steady';
+    let trend: "accelerating" | "steady" | "decelerating" = "steady";
     if (history.length >= 3) {
       const recent = history.slice(-2);
       const older = history.slice(-4, -2);
       if (recent.length === 2 && older.length === 2) {
         const recentAvg = (recent[0].velocity + recent[1].velocity) / 2;
         const olderAvg = (older[0].velocity + older[1].velocity) / 2;
-        if (recentAvg > olderAvg * 1.1) trend = 'accelerating';
-        else if (recentAvg < olderAvg * 0.9) trend = 'decelerating';
+        if (recentAvg > olderAvg * 1.1) trend = "accelerating";
+        else if (recentAvg < olderAvg * 0.9) trend = "decelerating";
       }
     }
 
@@ -250,7 +264,7 @@ class GoalTracker {
     const monthsRemaining = Math.max(
       1,
       (goal.targetDate.getFullYear() - now.getFullYear()) * 12 +
-        (goal.targetDate.getMonth() - now.getMonth())
+        (goal.targetDate.getMonth() - now.getMonth()),
     );
     return remaining / monthsRemaining;
   }
@@ -261,7 +275,7 @@ class GoalTracker {
   private calculatePerformanceScore(
     goal: FinancialGoalPlan,
     velocity: VelocityMetrics,
-    timeElapsedPercentage: number
+    timeElapsedPercentage: number,
   ): PerformanceScore {
     // Time performance: how well progress matches time elapsed
     const progressVsTime = goal.progress - timeElapsedPercentage;
@@ -282,30 +296,34 @@ class GoalTracker {
     else contributionConsistency = 30;
 
     // Milestone achievement
-    const achievedMilestones = goal.milestones.filter((m) => m.isAchieved).length;
+    const achievedMilestones = goal.milestones.filter(
+      (m) => m.isAchieved,
+    ).length;
     const totalMilestones = goal.milestones.length;
     const milestoneAchievement =
       totalMilestones > 0 ? (achievedMilestones / totalMilestones) * 100 : 0;
 
     // Overall score (weighted average)
     const overall = Math.round(
-      timePerformance * 0.4 + contributionConsistency * 0.4 + milestoneAchievement * 0.2
+      timePerformance * 0.4 +
+        contributionConsistency * 0.4 +
+        milestoneAchievement * 0.2,
     );
 
     // Determine grade
-    let grade: 'A' | 'B' | 'C' | 'D' | 'F';
-    if (overall >= 90) grade = 'A';
-    else if (overall >= 80) grade = 'B';
-    else if (overall >= 70) grade = 'C';
-    else if (overall >= 60) grade = 'D';
-    else grade = 'F';
+    let grade: "A" | "B" | "C" | "D" | "F";
+    if (overall >= 90) grade = "A";
+    else if (overall >= 80) grade = "B";
+    else if (overall >= 70) grade = "C";
+    else if (overall >= 60) grade = "D";
+    else grade = "F";
 
     // Determine status
-    let status: 'ahead' | 'on_track' | 'behind' | 'at_risk';
-    if (progressVsTime >= 10) status = 'ahead';
-    else if (progressVsTime >= -5) status = 'on_track';
-    else if (progressVsTime >= -15) status = 'behind';
-    else status = 'at_risk';
+    let status: "ahead" | "on_track" | "behind" | "at_risk";
+    if (progressVsTime >= 10) status = "ahead";
+    else if (progressVsTime >= -5) status = "on_track";
+    else if (progressVsTime >= -15) status = "behind";
+    else status = "at_risk";
 
     return {
       overall,
@@ -322,7 +340,7 @@ class GoalTracker {
    */
   private predictCompletion(
     goal: FinancialGoalPlan,
-    velocity: VelocityMetrics
+    velocity: VelocityMetrics,
   ): ProgressPredictions {
     const remaining = goal.targetAmount - goal.currentAmount;
     const monthsAtCurrentVelocity =
@@ -330,15 +348,15 @@ class GoalTracker {
 
     const projectedCompletionDate = new Date();
     projectedCompletionDate.setMonth(
-      projectedCompletionDate.getMonth() + Math.ceil(monthsAtCurrentVelocity)
+      projectedCompletionDate.getMonth() + Math.ceil(monthsAtCurrentVelocity),
     );
 
     // Calculate confidence based on velocity consistency
     let confidenceLevel = 50;
-    if (velocity.trend === 'accelerating') confidenceLevel = 75;
-    else if (velocity.trend === 'steady' && velocity.velocityRatio >= 0.9)
+    if (velocity.trend === "accelerating") confidenceLevel = 75;
+    else if (velocity.trend === "steady" && velocity.velocityRatio >= 0.9)
       confidenceLevel = 85;
-    else if (velocity.trend === 'decelerating') confidenceLevel = 40;
+    else if (velocity.trend === "decelerating") confidenceLevel = 40;
 
     // Probability of success
     const velocityRatio = velocity.velocityRatio;
@@ -352,11 +370,11 @@ class GoalTracker {
     const requiredMonthlyContribution = velocity.requiredVelocity;
     const shortfallAmount = Math.max(
       0,
-      requiredMonthlyContribution - velocity.monthlyVelocity
+      requiredMonthlyContribution - velocity.monthlyVelocity,
     );
     const surplusAmount = Math.max(
       0,
-      velocity.monthlyVelocity - requiredMonthlyContribution
+      velocity.monthlyVelocity - requiredMonthlyContribution,
     );
 
     return {
@@ -376,7 +394,7 @@ class GoalTracker {
     userId: string,
     goal: FinancialGoalPlan,
     velocity: VelocityMetrics,
-    predictions: ProgressPredictions
+    predictions: ProgressPredictions,
   ): Promise<RiskAssessment[]> {
     const risks: RiskAssessment[] = [];
     const now = new Date();
@@ -384,12 +402,14 @@ class GoalTracker {
     // Timeline risk
     if (predictions.projectedCompletionDate > goal.targetDate) {
       const daysBehind = Math.floor(
-        (predictions.projectedCompletionDate.getTime() - goal.targetDate.getTime()) /
-          (1000 * 60 * 60 * 24)
+        (predictions.projectedCompletionDate.getTime() -
+          goal.targetDate.getTime()) /
+          (1000 * 60 * 60 * 24),
       );
       risks.push({
-        type: 'timeline',
-        severity: daysBehind > 90 ? 'critical' : daysBehind > 30 ? 'high' : 'medium',
+        type: "timeline",
+        severity:
+          daysBehind > 90 ? "critical" : daysBehind > 30 ? "high" : "medium",
         description: `Goal is projected to complete ${daysBehind} days late`,
         impact: `May miss target date by ${Math.ceil(daysBehind / 30)} months`,
         mitigation: `Increase monthly contribution by $${predictions.shortfallAmount.toFixed(0)}`,
@@ -400,23 +420,23 @@ class GoalTracker {
     // Velocity risk
     if (velocity.velocityRatio < 0.7) {
       risks.push({
-        type: 'consistency',
-        severity: velocity.velocityRatio < 0.5 ? 'high' : 'medium',
-        description: 'Contribution velocity is below required pace',
-        impact: 'Goal completion is at risk',
-        mitigation: 'Review budget and increase automated contributions',
+        type: "consistency",
+        severity: velocity.velocityRatio < 0.5 ? "high" : "medium",
+        description: "Contribution velocity is below required pace",
+        impact: "Goal completion is at risk",
+        mitigation: "Review budget and increase automated contributions",
         detectedAt: now,
       });
     }
 
     // Decelerating trend risk
-    if (velocity.trend === 'decelerating') {
+    if (velocity.trend === "decelerating") {
       risks.push({
-        type: 'consistency',
-        severity: 'medium',
-        description: 'Contribution velocity is decreasing',
-        impact: 'Progress is slowing down',
-        mitigation: 'Identify and address spending increases',
+        type: "consistency",
+        severity: "medium",
+        description: "Contribution velocity is decreasing",
+        impact: "Progress is slowing down",
+        mitigation: "Identify and address spending increases",
         detectedAt: now,
       });
     }
@@ -428,22 +448,22 @@ class GoalTracker {
 
       if (requiredMonthly > context.transactions.netCashFlow * 0.5) {
         risks.push({
-          type: 'financial',
-          severity: 'high',
-          description: 'Required contribution exceeds 50% of net cash flow',
-          impact: 'May strain monthly budget',
-          mitigation: 'Consider extending timeline or reducing target amount',
+          type: "financial",
+          severity: "high",
+          description: "Required contribution exceeds 50% of net cash flow",
+          impact: "May strain monthly budget",
+          mitigation: "Consider extending timeline or reducing target amount",
           detectedAt: now,
         });
       }
 
       if (context.debts.debtToIncomeRatio > 40) {
         risks.push({
-          type: 'financial',
-          severity: 'medium',
-          description: 'High debt-to-income ratio',
-          impact: 'Limited capacity for additional savings',
-          mitigation: 'Focus on debt reduction before aggressive saving',
+          type: "financial",
+          severity: "medium",
+          description: "High debt-to-income ratio",
+          impact: "Limited capacity for additional savings",
+          mitigation: "Focus on debt reduction before aggressive saving",
           detectedAt: now,
         });
       }
@@ -459,7 +479,7 @@ class GoalTracker {
    */
   async getGoalRecommendations(
     userId: string,
-    goalId: string
+    goalId: string,
   ): Promise<GoalRecommendation[]> {
     const progress = await this.calculateProgressMetrics(userId, goalId);
     if (!progress) return [];
@@ -468,21 +488,25 @@ class GoalTracker {
     const now = new Date();
 
     // Behind schedule recommendation
-    if (progress.performanceScore.status === 'behind' || progress.performanceScore.status === 'at_risk') {
+    if (
+      progress.performanceScore.status === "behind" ||
+      progress.performanceScore.status === "at_risk"
+    ) {
       recommendations.push({
         id: `rec_${Date.now()}_1`,
         goalId,
-        type: 'increase_contribution',
-        priority: progress.performanceScore.status === 'at_risk' ? 'urgent' : 'high',
-        title: 'Increase Monthly Contribution',
-        description: `You're ${progress.performanceScore.status === 'at_risk' ? 'significantly' : 'slightly'} behind schedule. Increasing your contribution will help you get back on track.`,
+        type: "increase_contribution",
+        priority:
+          progress.performanceScore.status === "at_risk" ? "urgent" : "high",
+        title: "Increase Monthly Contribution",
+        description: `You're ${progress.performanceScore.status === "at_risk" ? "significantly" : "slightly"} behind schedule. Increasing your contribution will help you get back on track.`,
         actionSteps: [
           `Increase monthly contribution to $${progress.predictions.requiredMonthlyContribution.toFixed(0)}`,
-          'Set up automatic transfers on payday',
-          'Review budget for areas to cut spending',
+          "Set up automatic transfers on payday",
+          "Review budget for areas to cut spending",
         ],
         expectedImpact: `Get back on track to meet your ${new Date(progress.predictions.projectedCompletionDate).toLocaleDateString()} target`,
-        estimatedEffort: 'moderate',
+        estimatedEffort: "moderate",
         potentialSavings: progress.predictions.shortfallAmount * 12,
         timeToImplement: 1,
         createdAt: now,
@@ -490,42 +514,47 @@ class GoalTracker {
     }
 
     // Ahead of schedule celebration
-    if (progress.performanceScore.status === 'ahead') {
+    if (progress.performanceScore.status === "ahead") {
       recommendations.push({
         id: `rec_${Date.now()}_2`,
         goalId,
-        type: 'celebrate',
-        priority: 'low',
-        title: 'Celebrate Your Progress!',
-        description: "You're ahead of schedule! Consider maintaining this pace or setting a more ambitious goal.",
+        type: "celebrate",
+        priority: "low",
+        title: "Celebrate Your Progress!",
+        description:
+          "You're ahead of schedule! Consider maintaining this pace or setting a more ambitious goal.",
         actionSteps: [
-          'Acknowledge your achievement',
-          'Consider increasing your target amount',
-          'Share your success with accountability partners',
+          "Acknowledge your achievement",
+          "Consider increasing your target amount",
+          "Share your success with accountability partners",
         ],
-        expectedImpact: 'Maintain momentum and build confidence',
-        estimatedEffort: 'easy',
+        expectedImpact: "Maintain momentum and build confidence",
+        estimatedEffort: "easy",
         timeToImplement: 0,
         createdAt: now,
       });
     }
 
     // Optimize strategy for low velocity ratio
-    if (progress.velocity.velocityRatio < 0.8 && progress.velocity.velocityRatio > 0) {
+    if (
+      progress.velocity.velocityRatio < 0.8 &&
+      progress.velocity.velocityRatio > 0
+    ) {
       recommendations.push({
         id: `rec_${Date.now()}_3`,
         goalId,
-        type: 'optimize_strategy',
-        priority: 'medium',
-        title: 'Optimize Your Savings Strategy',
-        description: 'Your contribution pace could be improved with some strategic adjustments.',
+        type: "optimize_strategy",
+        priority: "medium",
+        title: "Optimize Your Savings Strategy",
+        description:
+          "Your contribution pace could be improved with some strategic adjustments.",
         actionSteps: [
-          'Enable auto-save features',
-          'Round up purchases to nearest dollar',
-          'Redirect windfalls (bonuses, tax refunds) to goal',
+          "Enable auto-save features",
+          "Round up purchases to nearest dollar",
+          "Redirect windfalls (bonuses, tax refunds) to goal",
         ],
-        expectedImpact: 'Increase velocity by 20-30%',
-        estimatedEffort: 'easy',
+        expectedImpact: "Increase velocity by 20-30%",
+        estimatedEffort: "easy",
         timeToImplement: 2,
         createdAt: now,
       });
@@ -539,7 +568,7 @@ class GoalTracker {
    */
   async getProgressHistory(
     userId: string,
-    goalId: string
+    goalId: string,
   ): Promise<ProgressHistoryPoint[]> {
     // In a real implementation, this would query a progress_history table
     // For now, we'll generate synthetic history based on current goal state
@@ -552,7 +581,7 @@ class GoalTracker {
     const now = new Date();
     const startDate = goal.startDate;
     const daysSinceStart = Math.floor(
-      (now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+      (now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
     );
 
     // Generate weekly data points
@@ -565,7 +594,7 @@ class GoalTracker {
 
       const amount = Math.min(
         goal.currentAmount,
-        goal.startingAmount + weeklyContribution * week
+        goal.startingAmount + weeklyContribution * week,
       );
       const progressPercentage = (amount / goal.targetAmount) * 100;
 
@@ -575,7 +604,7 @@ class GoalTracker {
         contribution: week > 0 ? weeklyContribution : 0,
         progressPercentage,
         velocity: weeklyContribution,
-        note: week === 0 ? 'Goal started' : undefined,
+        note: week === 0 ? "Goal started" : undefined,
       });
     }
 
@@ -587,7 +616,7 @@ class GoalTracker {
    */
   async getGoalComparison(
     userId: string,
-    goalId: string
+    goalId: string,
   ): Promise<GoalComparison | null> {
     const goals = await goalPlanner.getUserGoals(userId);
     const goal = goals.find((g) => g.id === goalId);
@@ -608,23 +637,27 @@ class GoalTracker {
     else if (userProgress >= peerAverageProgress * 0.6) percentile = 25;
     else percentile = 10;
 
-    const comparison: 'above_average' | 'average' | 'below_average' =
+    const comparison: "above_average" | "average" | "below_average" =
       userProgress >= peerAverageProgress * 1.1
-        ? 'above_average'
+        ? "above_average"
         : userProgress >= peerAverageProgress * 0.9
-          ? 'average'
-          : 'below_average';
+          ? "average"
+          : "below_average";
 
     const insights: string[] = [];
-    if (comparison === 'above_average') {
-      insights.push(`You're in the top ${100 - percentile}% of users with similar goals`);
-      insights.push('Your progress is excellent - keep up the great work!');
-    } else if (comparison === 'average') {
-      insights.push('Your progress is on par with similar users');
-      insights.push('Consider small optimizations to move ahead of the curve');
+    if (comparison === "above_average") {
+      insights.push(
+        `You're in the top ${100 - percentile}% of users with similar goals`,
+      );
+      insights.push("Your progress is excellent - keep up the great work!");
+    } else if (comparison === "average") {
+      insights.push("Your progress is on par with similar users");
+      insights.push("Consider small optimizations to move ahead of the curve");
     } else {
-      insights.push('Your progress is below average for this goal type');
-      insights.push(`Increase contributions to match the typical pace of $${(goal.targetAmount * benchmark.avgProgress / 100 / benchmark.avgMonths).toFixed(0)}/month`);
+      insights.push("Your progress is below average for this goal type");
+      insights.push(
+        `Increase contributions to match the typical pace of $${((goal.targetAmount * benchmark.avgProgress) / 100 / benchmark.avgMonths).toFixed(0)}/month`,
+      );
     }
 
     return {
@@ -645,9 +678,9 @@ class GoalTracker {
     const allGoals = await goalPlanner.getUserGoals(userId);
 
     const activeGoals = allGoals.filter(
-      (g) => g.status !== 'completed' && g.status !== 'paused'
+      (g) => g.status !== "completed" && g.status !== "paused",
     );
-    const completedGoals = allGoals.filter((g) => g.status === 'completed');
+    const completedGoals = allGoals.filter((g) => g.status === "completed");
 
     const totalSaved = allGoals.reduce((sum, g) => sum + g.currentAmount, 0);
     const totalTarget = allGoals.reduce((sum, g) => sum + g.targetAmount, 0);
@@ -661,9 +694,9 @@ class GoalTracker {
     let aheadCount = 0;
 
     for (const goal of activeGoals) {
-      if (goal.status === 'ahead') aheadCount++;
-      else if (goal.status === 'on_track') onTrackCount++;
-      else if (goal.status === 'behind') behindCount++;
+      if (goal.status === "ahead") aheadCount++;
+      else if (goal.status === "on_track") onTrackCount++;
+      else if (goal.status === "behind") behindCount++;
     }
 
     // Calculate average velocity
@@ -672,7 +705,8 @@ class GoalTracker {
       const velocity = await this.calculateVelocity(userId, goal.id, goal);
       totalVelocity += velocity.monthlyVelocity;
     }
-    const averageVelocity = activeGoals.length > 0 ? totalVelocity / activeGoals.length : 0;
+    const averageVelocity =
+      activeGoals.length > 0 ? totalVelocity / activeGoals.length : 0;
 
     return {
       totalGoals: allGoals.length,
@@ -696,4 +730,3 @@ class GoalTracker {
 export { GoalTracker };
 export const goalTracker = new GoalTracker();
 export default goalTracker;
-

@@ -3,26 +3,26 @@
 // ============================================================================
 
 export type BillFrequency =
-  | 'weekly'
-  | 'biweekly'
-  | 'monthly'
-  | 'quarterly'
-  | 'yearly';
+  | "weekly"
+  | "biweekly"
+  | "monthly"
+  | "quarterly"
+  | "yearly";
 
-export type BillStatus = 'active' | 'paused' | 'cancelled';
+export type BillStatus = "active" | "paused" | "cancelled";
 
 export type BillCategory =
-  | 'utilities'
-  | 'rent'
-  | 'mortgage'
-  | 'insurance'
-  | 'subscription'
-  | 'loan'
-  | 'credit_card'
-  | 'phone'
-  | 'internet'
-  | 'streaming'
-  | 'other';
+  | "utilities"
+  | "rent"
+  | "mortgage"
+  | "insurance"
+  | "subscription"
+  | "loan"
+  | "credit_card"
+  | "phone"
+  | "internet"
+  | "streaming"
+  | "other";
 
 export interface Bill {
   id: string;
@@ -98,9 +98,9 @@ export interface BillAlert {
   id: string;
   billId: string;
   userId: string;
-  type: 'upcoming' | 'overdue' | 'amount_change' | 'new_bill';
+  type: "upcoming" | "overdue" | "amount_change" | "new_bill";
   message: string;
-  severity: 'info' | 'warning' | 'error';
+  severity: "info" | "warning" | "error";
   read: boolean;
   createdAt: Date;
 }

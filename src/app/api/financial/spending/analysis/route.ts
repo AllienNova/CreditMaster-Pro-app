@@ -7,24 +7,27 @@
  * Phase 2.3: Spending Intelligence
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getSpendingAnalyzer } from '@/lib/financial/spending-analyzer';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { rbac } from '@/lib/auth/rbac';
+import { NextRequest, NextResponse } from "next/server";
+import { getSpendingAnalyzer } from "@/lib/financial/spending-analyzer";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { rbac } from "@/lib/auth/rbac";
 import {
   applyFinancialAPIMiddleware,
   finalizeResponse,
-} from '@/lib/api/financial-api-middleware';
-import { z } from 'zod';
+} from "@/lib/api/financial-api-middleware";
+import { z } from "zod";
 
 // ============================================================================
 // VALIDATION SCHEMA
 // ============================================================================
 
 const AnalysisQuerySchema = z.object({
-  period: z.enum(['weekly', 'monthly', 'quarterly', 'yearly']).optional().default('monthly'),
+  period: z
+    .enum(["weekly", "monthly", "quarterly", "yearly"])
+    .optional()
+    .default("monthly"),
   category: z.string().optional(),
-  includeAI: z.enum(['true', 'false']).optional().default('true'),
+  includeAI: z.enum(["true", "false"]).optional().default("true"),
 });
 
 // ============================================================================
@@ -101,9 +104,9 @@ export async function GET(request: NextRequest) {
     // Validate query parameters
     const { searchParams } = new URL(request.url);
     const queryParams = {
-      period: searchParams.get('period') || 'monthly',
-      category: searchParams.get('category') || undefined,
-      includeAI: searchParams.get('includeAI') || 'true',
+      period: searchParams.get("period") || "monthly",
+      category: searchParams.get("category") || undefined,
+      includeAI: searchParams.get("includeAI") || "true",
     };
 
     const validatedParams = AnalysisQuerySchema.parse(queryParams);
@@ -114,7 +117,7 @@ export async function GET(request: NextRequest) {
     // Analyze spending patterns
     const analysis = await analyzer.analyzeSpendingPatterns(
       userId!,
-      validatedParams.period as 'weekly' | 'monthly' | 'quarterly' | 'yearly'
+      validatedParams.period as "weekly" | "monthly" | "quarterly" | "yearly",
     );
 
     return finalizeResponse(
@@ -130,10 +133,10 @@ export async function GET(request: NextRequest) {
         },
       }),
       middlewareStartTime,
-      userId
+      userId,
     );
   } catch (error) {
-    console.error('Error analyzing spending patterns:', error);
+    console.error("Error analyzing spending patterns:", error);
 
     return finalizeResponse(
       request,
@@ -141,16 +144,15 @@ export async function GET(request: NextRequest) {
         {
           success: false,
           error: {
-            code: 'INTERNAL_ERROR',
-            message: 'Failed to analyze spending patterns',
-            details: error instanceof Error ? error.message : 'Unknown error',
+            code: "INTERNAL_ERROR",
+            message: "Failed to analyze spending patterns",
+            details: error instanceof Error ? error.message : "Unknown error",
           },
         },
-        { status: 500 }
+        { status: 500 },
       ),
       middlewareStartTime,
-      userId
+      userId,
     );
   }
 }
-

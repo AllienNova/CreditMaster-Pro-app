@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { NextResponse } from "next/server";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 // Lazy initialization to avoid build-time errors
 function getSupabase(): SupabaseClient {
@@ -7,7 +7,7 @@ function getSupabase(): SupabaseClient {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url || !key) {
-    throw new Error('Supabase credentials not configured');
+    throw new Error("Supabase credentials not configured");
   }
 
   return createClient(url, key);
@@ -15,15 +15,15 @@ function getSupabase(): SupabaseClient {
 
 // Verify cron secret to prevent unauthorized access
 function verifyCronSecret(request: Request): boolean {
-  const authHeader = request.headers.get('authorization');
+  const authHeader = request.headers.get("authorization");
   if (!authHeader) return false;
   return authHeader === `Bearer ${process.env.CRON_SECRET}`;
 }
 
 export async function GET(request: Request) {
   // Verify this is a legitimate cron request
-  if (process.env.NODE_ENV === 'production' && !verifyCronSecret(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (process.env.NODE_ENV === "production" && !verifyCronSecret(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
@@ -33,10 +33,10 @@ export async function GET(request: Request) {
 
     // Find disputes sent more than 30 days ago still pending
     const { data: overdueDisputes, error } = await supabase
-      .from('disputes')
-      .select('id, user_id, bureau, item_type, sent_at')
-      .eq('status', 'sent')
-      .lt('sent_at', thirtyDaysAgo.toISOString());
+      .from("disputes")
+      .select("id, user_id, bureau, item_type, sent_at")
+      .eq("status", "sent")
+      .lt("sent_at", thirtyDaysAgo.toISOString());
 
     if (error) throw error;
 
@@ -50,21 +50,22 @@ export async function GET(request: Request) {
     for (const dispute of overdueDisputes || []) {
       // Update status to "no_response" after 30 days
       await supabase
-        .from('disputes')
-        .update({ 
-          status: 'no_response',
+        .from("disputes")
+        .update({
+          status: "no_response",
           updated_at: new Date().toISOString(),
-          notes: 'Auto-updated: No response received within 30 days (FCRA violation)'
+          notes:
+            "Auto-updated: No response received within 30 days (FCRA violation)",
         })
-        .eq('id', dispute.id);
+        .eq("id", dispute.id);
 
       results.updated++;
 
       // Create notification for user
-      await supabase.from('notifications').insert({
+      await supabase.from("notifications").insert({
         user_id: dispute.user_id,
-        type: 'dispute_overdue',
-        title: 'Dispute Response Overdue',
+        type: "dispute_overdue",
+        title: "Dispute Response Overdue",
         message: `Your ${dispute.bureau} dispute for ${dispute.item_type} has not received a response in 30 days. This may be an FCRA violation.`,
         data: { dispute_id: dispute.id },
         read: false,
@@ -81,12 +82,11 @@ export async function GET(request: Request) {
   } catch (_error) {
     // Error silently caught
     return NextResponse.json(
-      { error: 'Failed to check dispute status' },
-      { status: 500 }
+      { error: "Failed to check dispute status" },
+      { status: 500 },
     );
   }
 }
 
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
-
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";

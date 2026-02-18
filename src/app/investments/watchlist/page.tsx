@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
 /**
  * Watchlist Page
  * Track stocks you're interested in
  */
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { EmptyState } from '@/components/ui/EmptyState';
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 interface WatchlistItem {
   symbol: string;
@@ -20,24 +20,31 @@ interface WatchlistItem {
 
 // Popular stock suggestions
 const STOCK_SUGGESTIONS = [
-  'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA', 'META', 'JPM',
+  "AAPL",
+  "MSFT",
+  "GOOGL",
+  "AMZN",
+  "TSLA",
+  "NVDA",
+  "META",
+  "JPM",
 ];
 
 export default function WatchlistPage() {
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
-  const [newSymbol, setNewSymbol] = useState('');
+  const [newSymbol, setNewSymbol] = useState("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Load watchlist from localStorage on mount
   useEffect(() => {
-    const stored = localStorage.getItem('investment-watchlist');
+    const stored = localStorage.getItem("investment-watchlist");
     if (stored) {
       try {
         setWatchlist(JSON.parse(stored));
       } catch {
-        console.error('Failed to parse watchlist');
+        console.error("Failed to parse watchlist");
       }
     }
     setIsLoading(false);
@@ -46,20 +53,20 @@ export default function WatchlistPage() {
   // Save watchlist to localStorage when it changes
   useEffect(() => {
     if (!isLoading) {
-      localStorage.setItem('investment-watchlist', JSON.stringify(watchlist));
+      localStorage.setItem("investment-watchlist", JSON.stringify(watchlist));
     }
   }, [watchlist, isLoading]);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 2,
     }).format(amount);
   };
 
   const formatPercent = (value: number) => {
-    const sign = value >= 0 ? '+' : '';
+    const sign = value >= 0 ? "+" : "";
     return `${sign}${value.toFixed(2)}%`;
   };
 
@@ -67,7 +74,7 @@ export default function WatchlistPage() {
     const normalizedSymbol = symbol.trim().toUpperCase();
 
     if (!normalizedSymbol) {
-      setError('Please enter a stock symbol');
+      setError("Please enter a stock symbol");
       return;
     }
 
@@ -87,7 +94,7 @@ export default function WatchlistPage() {
     };
 
     setWatchlist((prev) => [...prev, newItem]);
-    setNewSymbol('');
+    setNewSymbol("");
     setIsAddModalOpen(false);
     setError(null);
 
@@ -104,8 +111,8 @@ export default function WatchlistPage() {
                 change: (Math.random() - 0.5) * 20,
                 changePercent: (Math.random() - 0.5) * 5,
               }
-            : item
-        )
+            : item,
+        ),
       );
     }, 500);
   };
@@ -119,14 +126,14 @@ export default function WatchlistPage() {
   // Get stock name (would come from API in production)
   const getStockName = (symbol: string): string => {
     const names: Record<string, string> = {
-      AAPL: 'Apple Inc.',
-      MSFT: 'Microsoft Corporation',
-      GOOGL: 'Alphabet Inc.',
-      AMZN: 'Amazon.com Inc.',
-      TSLA: 'Tesla, Inc.',
-      NVDA: 'NVIDIA Corporation',
-      META: 'Meta Platforms, Inc.',
-      JPM: 'JPMorgan Chase & Co.',
+      AAPL: "Apple Inc.",
+      MSFT: "Microsoft Corporation",
+      GOOGL: "Alphabet Inc.",
+      AMZN: "Amazon.com Inc.",
+      TSLA: "Tesla, Inc.",
+      NVDA: "NVIDIA Corporation",
+      META: "Meta Platforms, Inc.",
+      JPM: "JPMorgan Chase & Co.",
     };
     return names[symbol] || symbol;
   };
@@ -140,7 +147,10 @@ export default function WatchlistPage() {
             <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/2" />
             <div className="space-y-3 mt-8">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-20 bg-gray-200 dark:bg-slate-700 rounded-lg" />
+                <div
+                  key={i}
+                  className="h-20 bg-gray-200 dark:bg-slate-700 rounded-lg"
+                />
               ))}
             </div>
           </div>
@@ -166,8 +176,18 @@ export default function WatchlistPage() {
             onClick={() => setIsAddModalOpen(true)}
             className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
           >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            <svg
+              className="w-5 h-5 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
             </svg>
             Add Stock
           </button>
@@ -190,8 +210,18 @@ export default function WatchlistPage() {
                   className="inline-flex items-center px-3 py-2 rounded-full text-sm font-medium bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-slate-200 hover:bg-emerald-100 dark:hover:bg-emerald-900 hover:text-emerald-800 dark:hover:text-emerald-200 transition-colors"
                 >
                   {symbol}
-                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  <svg
+                    className="w-4 h-4 ml-1"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4v16m8-8H4"
+                    />
                   </svg>
                 </button>
               ))}
@@ -206,7 +236,7 @@ export default function WatchlistPage() {
             title="Your Watchlist is Empty"
             description="Add stocks to track their performance and get insights"
             primaryAction={{
-              label: 'Add Your First Stock',
+              label: "Add Your First Stock",
               onClick: () => setIsAddModalOpen(true),
             }}
           />
@@ -238,11 +268,13 @@ export default function WatchlistPage() {
                       <div className="flex items-center gap-4">
                         <div className="text-right">
                           <p className="text-base font-semibold text-gray-900 dark:text-white">
-                            {item.price > 0 ? formatCurrency(item.price) : '...'}
+                            {item.price > 0
+                              ? formatCurrency(item.price)
+                              : "..."}
                           </p>
                           {item.price > 0 && (
                             <p
-                              className={`text-sm font-medium ${ item.changePercent >= 0 ? 'text-emerald-600' : 'text-red-600 dark:text-red-400' }`}
+                              className={`text-sm font-medium ${item.changePercent >= 0 ? "text-emerald-600" : "text-red-600 dark:text-red-400"}`}
                             >
                               {formatPercent(item.changePercent)}
                             </p>
@@ -256,8 +288,18 @@ export default function WatchlistPage() {
                           className="p-2 text-gray-400 dark:text-slate-500 hover:text-red-500 transition-colors"
                           title="Remove from watchlist"
                         >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M6 18L18 6M6 6l12 12"
+                            />
                           </svg>
                         </button>
                       </div>
@@ -287,8 +329,18 @@ export default function WatchlistPage() {
                       onClick={() => setIsAddModalOpen(false)}
                       className="text-gray-400 hover:text-gray-500 dark:text-slate-400"
                     >
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      <svg
+                        className="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
                       </svg>
                     </button>
                   </div>
@@ -307,7 +359,9 @@ export default function WatchlistPage() {
                     type="text"
                     value={newSymbol}
                     onChange={(e) => setNewSymbol(e.target.value.toUpperCase())}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddSymbol(newSymbol)}
+                    onKeyDown={(e) =>
+                      e.key === "Enter" && handleAddSymbol(newSymbol)
+                    }
                     placeholder="Enter symbol (e.g., AAPL)"
                     className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                     autoFocus

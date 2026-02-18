@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * useMarketData Hook
@@ -11,9 +11,9 @@
  * - Support for multiple symbols
  */
 
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { useAuth } from './useAuth';
-import type { StockQuote } from '@/lib/investments/types/stock-analysis.types';
+import { useEffect, useState, useCallback, useRef } from "react";
+import { useAuth } from "./useAuth";
+import type { StockQuote } from "@/lib/investments/types/stock-analysis.types";
 
 export interface HistoricalDataPoint {
   timestamp: number;
@@ -39,12 +39,16 @@ export interface UseMarketDataReturn {
   fetchHistorical: (interval: string, limit: number) => Promise<void>;
 }
 
-export function useMarketData(options: UseMarketDataOptions): UseMarketDataReturn {
+export function useMarketData(
+  options: UseMarketDataOptions,
+): UseMarketDataReturn {
   const { symbol, enabled = true, refreshInterval = 60000 } = options; // 1 minute default
 
   const { user, loading: authLoading } = useAuth();
   const [quote, setQuote] = useState<StockQuote | null>(null);
-  const [historicalData, setHistoricalData] = useState<HistoricalDataPoint[]>([]);
+  const [historicalData, setHistoricalData] = useState<HistoricalDataPoint[]>(
+    [],
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -68,13 +72,13 @@ export function useMarketData(options: UseMarketDataOptions): UseMarketDataRetur
       const response = await fetch(`/api/investments/quote/${symbol}`, {
         signal: abortControllerRef.current.signal,
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch quote');
+        throw new Error(errorData.error || "Failed to fetch quote");
       }
 
       const result = await response.json();
@@ -83,14 +87,15 @@ export function useMarketData(options: UseMarketDataOptions): UseMarketDataRetur
         setQuote(result.data);
         setError(null);
       } else {
-        throw new Error(result.error || 'Invalid quote data');
+        throw new Error(result.error || "Invalid quote data");
       }
     } catch (err) {
-      if (err instanceof Error && err.name === 'AbortError') {
+      if (err instanceof Error && err.name === "AbortError") {
         return;
       }
 
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load quote';
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to load quote";
       setError(errorMessage);
       // Quote fetch error - state updated
     } finally {
@@ -99,7 +104,7 @@ export function useMarketData(options: UseMarketDataOptions): UseMarketDataRetur
   }, [user, enabled, symbol]);
 
   const fetchHistorical = useCallback(
-    async (interval: string = '1d', limit: number = 100) => {
+    async (interval: string = "1d", limit: number = 100) => {
       if (!user || !symbol) return;
 
       try {
@@ -107,14 +112,14 @@ export function useMarketData(options: UseMarketDataOptions): UseMarketDataRetur
           `/api/investments/historical/${symbol}?interval=${interval}&limit=${limit}`,
           {
             headers: {
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
             },
-          }
+          },
         );
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to fetch historical data');
+          throw new Error(errorData.error || "Failed to fetch historical data");
         }
 
         const result = await response.json();
@@ -122,13 +127,13 @@ export function useMarketData(options: UseMarketDataOptions): UseMarketDataRetur
         if (result.success && result.data) {
           setHistoricalData(result.data);
         } else {
-          throw new Error(result.error || 'Invalid historical data');
+          throw new Error(result.error || "Invalid historical data");
         }
       } catch (err) {
         // Historical data fetch error
       }
     },
-    [user, symbol]
+    [user, symbol],
   );
 
   const refresh = useCallback(async () => {
@@ -180,4 +185,3 @@ export function useMarketData(options: UseMarketDataOptions): UseMarketDataRetur
     fetchHistorical,
   };
 }
-

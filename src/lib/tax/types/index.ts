@@ -4,9 +4,9 @@
  * Central export for all tax-related types and interfaces.
  */
 
-export * from './tax-profile.types';
-export * from './tax-strategy.types';
-export * from './tax-jurisdiction.types';
+export * from "./tax-profile.types";
+export * from "./tax-strategy.types";
+export * from "./tax-jurisdiction.types";
 
 // ============================================================================
 // TAX ANALYSIS TYPES
@@ -77,11 +77,11 @@ export interface TaxSavingsOpportunity {
   // Action
   recommendedAction: string;
   deadline?: Date;
-  priority: 'critical' | 'high' | 'medium' | 'low';
+  priority: "critical" | "high" | "medium" | "low";
 
   // Implementation
   steps: string[];
-  complexity: 'easy' | 'moderate' | 'complex';
+  complexity: "easy" | "moderate" | "complex";
   requiresProfessional: boolean;
 }
 
@@ -133,12 +133,12 @@ export interface TaxScenario {
   // Scenario Changes
   changes: {
     type:
-      | 'income_change'
-      | 'contribution_change'
-      | 'sale'
-      | 'deduction'
-      | 'filing_status'
-      | 'state_change';
+      | "income_change"
+      | "contribution_change"
+      | "sale"
+      | "deduction"
+      | "filing_status"
+      | "state_change";
     description: string;
     value: number;
     details?: Record<string, unknown>;
@@ -162,7 +162,7 @@ export interface TaxCalendarEvent {
   userId: string;
   taxYear: number;
 
-  eventType: 'deadline' | 'recommendation' | 'payment' | 'review';
+  eventType: "deadline" | "recommendation" | "payment" | "review";
   title: string;
   description: string;
   eventDate: Date;
@@ -177,4 +177,4 @@ export interface TaxCalendarEvent {
 }
 
 // Import for TaxRecommendation reference
-import type { TaxRecommendation } from './tax-strategy.types';
+import type { TaxRecommendation } from "./tax-strategy.types";

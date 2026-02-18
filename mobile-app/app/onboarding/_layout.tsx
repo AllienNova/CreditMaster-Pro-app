@@ -3,8 +3,8 @@
  * Stack navigator for onboarding flow
  */
 
-import { Stack } from 'expo-router';
-import { lightTheme as theme } from '../../src/constants/theme';
+import { Stack } from "expo-router";
+import { lightTheme as theme } from "../../src/constants/theme";
 
 export default function OnboardingLayout() {
   return (
@@ -12,7 +12,7 @@ export default function OnboardingLayout() {
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: theme.colors.background },
-        animation: 'slide_from_right',
+        animation: "slide_from_right",
       }}
     >
       <Stack.Screen name="index" />
@@ -23,4 +23,3 @@ export default function OnboardingLayout() {
     </Stack>
   );
 }
-

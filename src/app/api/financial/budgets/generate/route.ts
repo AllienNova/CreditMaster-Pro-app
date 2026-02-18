@@ -1,45 +1,49 @@
 /**
  * Smart Budget Generation API
- * 
+ *
  * POST /api/financial/budgets/generate - AI-powered budget generation
- * 
+ *
  * @see Phase 2.1.4: Budget API Endpoints
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getSmartBudgetEngine } from '@/lib/financial/smart-budget-engine';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { rbac } from '@/lib/auth/rbac';
+import { NextRequest, NextResponse } from "next/server";
+import { getSmartBudgetEngine } from "@/lib/financial/smart-budget-engine";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { rbac } from "@/lib/auth/rbac";
 import {
   applyFinancialAPIMiddleware,
   finalizeResponse,
-} from '@/lib/api/financial-api-middleware';
-import { BudgetPreferences } from '@/lib/financial/types/budget.types';
-import { z } from 'zod';
+} from "@/lib/api/financial-api-middleware";
+import { BudgetPreferences } from "@/lib/financial/types/budget.types";
+import { z } from "zod";
 
 // ============================================================================
 // ZOD VALIDATION SCHEMAS
 // ============================================================================
 
 const GenerateBudgetSchema = z.object({
-  monthlyIncome: z.number().positive('Monthly income must be positive'),
+  monthlyIncome: z.number().positive("Monthly income must be positive"),
   savingsGoalPercentage: z.number().min(0).max(100).optional(),
-  debtPaymentPriority: z.enum(['aggressive', 'moderate', 'minimum']).optional(),
-  lifestylePreference: z.enum(['frugal', 'balanced', 'comfortable']).optional(),
+  debtPaymentPriority: z.enum(["aggressive", "moderate", "minimum"]).optional(),
+  lifestylePreference: z.enum(["frugal", "balanced", "comfortable"]).optional(),
   essentialCategories: z.array(z.string()).optional(),
   excludeCategories: z.array(z.string()).optional(),
-  customRules: z.array(z.object({
-    category: z.string(),
-    minAmount: z.number().optional(),
-    maxAmount: z.number().optional(),
-    percentage: z.number().min(0).max(100).optional(),
-  })).optional(),
+  customRules: z
+    .array(
+      z.object({
+        category: z.string(),
+        minAmount: z.number().optional(),
+        maxAmount: z.number().optional(),
+        percentage: z.number().min(0).max(100).optional(),
+      }),
+    )
+    .optional(),
 });
 
 /**
  * POST /api/financial/budgets/generate
  * Generate AI-powered budget based on user preferences and spending history
- * 
+ *
  * @openapi
  * /api/financial/budgets/generate:
  *   post:
@@ -100,7 +104,7 @@ const GenerateBudgetSchema = z.object({
  */
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
-  
+
   try {
     // Apply middleware (auth, rate limiting, CORS, logging)
     const middleware = await applyFinancialAPIMiddleware(request, {
@@ -109,75 +113,75 @@ export async function POST(request: NextRequest) {
       cors: true,
       logging: true,
     });
-    
+
     if (middleware.error) {
       return middleware.error;
     }
-    
+
     const userId = middleware.userId!;
-    
+
     // Validate JWT token
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    
+
     // Check permissions (premium feature)
-    if (!rbac.hasPermission(validation.user, 'financial:create_budgets')) {
+    if (!rbac.hasPermission(validation.user, "financial:create_budgets")) {
       return NextResponse.json(
-        { error: 'Forbidden - Premium feature required' },
-        { status: 403 }
-      );
-    }
-    
-    // Parse and validate request body
-    const body = await request.json();
-    const validationResult = GenerateBudgetSchema.safeParse(body);
-    
-    if (!validationResult.success) {
-      return NextResponse.json(
-        {
-          error: 'Invalid request data',
-          details: validationResult.error.errors,
-        },
-        { status: 400 }
+        { error: "Forbidden - Premium feature required" },
+        { status: 403 },
       );
     }
 
-    const preferences: BudgetPreferences = validationResult.data as BudgetPreferences;
+    // Parse and validate request body
+    const body = await request.json();
+    const validationResult = GenerateBudgetSchema.safeParse(body);
+
+    if (!validationResult.success) {
+      return NextResponse.json(
+        {
+          error: "Invalid request data",
+          details: validationResult.error.errors,
+        },
+        { status: 400 },
+      );
+    }
+
+    const preferences: BudgetPreferences =
+      validationResult.data as BudgetPreferences;
 
     // Generate smart budget
     const smartBudgetEngine = getSmartBudgetEngine();
     const budget = await smartBudgetEngine.generateBudget(userId, preferences);
-    
+
     const response = NextResponse.json(
       {
         success: true,
         data: budget,
-        message: 'Smart budget generated successfully',
+        message: "Smart budget generated successfully",
         _meta: {
           aiGenerated: budget.aiGenerated,
           confidence: budget.confidence,
           generatedAt: new Date().toISOString(),
         },
       },
-      { status: 201 }
+      { status: 201 },
     );
-    
+
     return finalizeResponse(request, response, startTime, userId);
   } catch (error) {
-    console.error('Error generating smart budget:', error);
-    
+    console.error("Error generating smart budget:", error);
+
     const response = NextResponse.json(
       {
         success: false,
-        error: 'Failed to generate smart budget',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to generate smart budget",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
-    
-    return finalizeResponse(request, response, startTime, 'anonymous');
+
+    return finalizeResponse(request, response, startTime, "anonymous");
   }
 }
-

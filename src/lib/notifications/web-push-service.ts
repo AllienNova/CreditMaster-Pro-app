@@ -8,13 +8,13 @@
  * - Notification delivery via VAPID
  */
 
-import * as webPush from 'web-push';
+import * as webPush from "web-push";
 
 // VAPID keys for Web Push
 // Generate new keys with: npx web-push generate-vapid-keys
-const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '';
-const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || '';
-const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:support@fynvita.com';
+const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "";
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT || "mailto:support@fynvita.com";
 
 // Configure web-push with VAPID details
 if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
@@ -22,15 +22,15 @@ if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
 }
 
 export type PushNotificationType =
-  | 'credit_score_change'
-  | 'dispute_update'
-  | 'payment_reminder'
-  | 'payment_success'
-  | 'payment_failed'
-  | 'security_alert'
-  | 'new_account'
-  | 'document_uploaded'
-  | 'general';
+  | "credit_score_change"
+  | "dispute_update"
+  | "payment_reminder"
+  | "payment_success"
+  | "payment_failed"
+  | "security_alert"
+  | "new_account"
+  | "document_uploaded"
+  | "general";
 
 export interface PushNotificationPayload {
   type: PushNotificationType;
@@ -104,13 +104,13 @@ class WebPushService {
    */
   async sendNotification(
     subscription: PushSubscription,
-    payload: PushNotificationPayload
+    payload: PushNotificationPayload,
   ): Promise<WebPushResult> {
     if (!this.isConfigured) {
       return {
         success: false,
         subscriptionId: subscription.id,
-        error: 'Web Push not configured',
+        error: "Web Push not configured",
       };
     }
 
@@ -122,8 +122,8 @@ class WebPushService {
 
       const notificationPayload = JSON.stringify({
         ...payload,
-        icon: payload.icon || '/icons/icon-192x192.png',
-        badge: payload.badge || '/icons/badge-72x72.png',
+        icon: payload.icon || "/icons/icon-192x192.png",
+        badge: payload.badge || "/icons/badge-72x72.png",
         timestamp: Date.now(),
       });
 
@@ -135,19 +135,19 @@ class WebPushService {
       };
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
+        error instanceof Error ? error.message : "Unknown error";
       // WebPushService error: Failed to send push notification
 
       // Check if subscription is expired/invalid
       const isExpired =
-        errorMessage.includes('expired') ||
-        errorMessage.includes('unsubscribed') ||
+        errorMessage.includes("expired") ||
+        errorMessage.includes("unsubscribed") ||
         (error as { statusCode?: number }).statusCode === 410;
 
       return {
         success: false,
         subscriptionId: subscription.id,
-        error: isExpired ? 'subscription_expired' : errorMessage,
+        error: isExpired ? "subscription_expired" : errorMessage,
       };
     }
   }
@@ -157,10 +157,10 @@ class WebPushService {
    */
   async sendToMultiple(
     subscriptions: PushSubscription[],
-    payload: PushNotificationPayload
+    payload: PushNotificationPayload,
   ): Promise<WebPushResult[]> {
     const results = await Promise.all(
-      subscriptions.map((sub) => this.sendNotification(sub, payload))
+      subscriptions.map((sub) => this.sendNotification(sub, payload)),
     );
     return results;
   }
@@ -170,7 +170,7 @@ class WebPushService {
    */
   async sendToUser(
     subscriptions: PushSubscription[],
-    payload: PushNotificationPayload
+    payload: PushNotificationPayload,
   ): Promise<{
     sent: number;
     failed: number;
@@ -181,7 +181,7 @@ class WebPushService {
     const sent = results.filter((r) => r.success).length;
     const failed = results.filter((r) => !r.success).length;
     const expiredSubscriptions = results
-      .filter((r) => r.error === 'subscription_expired')
+      .filter((r) => r.error === "subscription_expired")
       .map((r) => r.subscriptionId);
 
     return { sent, failed, expiredSubscriptions };
@@ -193,23 +193,23 @@ class WebPushService {
   createCreditScoreNotification(
     oldScore: number,
     newScore: number,
-    bureau?: string
+    bureau?: string,
   ): PushNotificationPayload {
     const change = newScore - oldScore;
     const isIncrease = change > 0;
 
     return {
-      type: 'credit_score_change',
+      type: "credit_score_change",
       title: isIncrease
         ? `Credit Score Up ${change} Points!`
-        : 'Credit Score Update',
+        : "Credit Score Update",
       body: isIncrease
-        ? `Great news! Your ${bureau || 'credit'} score increased to ${newScore}.`
-        : `Your ${bureau || 'credit'} score is now ${newScore} (${change} points).`,
-      icon: '/icons/icon-192x192.png',
-      badge: '/icons/badge-72x72.png',
-      url: '/dashboard',
-      tag: 'credit-score',
+        ? `Great news! Your ${bureau || "credit"} score increased to ${newScore}.`
+        : `Your ${bureau || "credit"} score is now ${newScore} (${change} points).`,
+      icon: "/icons/icon-192x192.png",
+      badge: "/icons/badge-72x72.png",
+      url: "/dashboard",
+      tag: "credit-score",
       data: { oldScore, newScore, bureau },
       requireInteraction: isIncrease,
     };
@@ -221,42 +221,42 @@ class WebPushService {
   createDisputeNotification(
     disputeId: string,
     status: string,
-    itemDescription: string
+    itemDescription: string,
   ): PushNotificationPayload {
     const statusMessages: Record<string, { title: string; body: string }> = {
       sent: {
-        title: 'Dispute Sent',
+        title: "Dispute Sent",
         body: `Your dispute for "${itemDescription}" has been sent to the credit bureau.`,
       },
       under_review: {
-        title: 'Dispute Under Review',
+        title: "Dispute Under Review",
         body: `The credit bureau is now reviewing your dispute for "${itemDescription}".`,
       },
       resolved: {
-        title: 'Dispute Resolved!',
+        title: "Dispute Resolved!",
         body: `Your dispute for "${itemDescription}" has been resolved. Check the results!`,
       },
       rejected: {
-        title: 'Dispute Update',
+        title: "Dispute Update",
         body: `Your dispute for "${itemDescription}" requires attention.`,
       },
     };
 
     const message = statusMessages[status] || {
-      title: 'Dispute Update',
+      title: "Dispute Update",
       body: `Status update for your dispute: ${status}`,
     };
 
     return {
-      type: 'dispute_update',
+      type: "dispute_update",
       title: message.title,
       body: message.body,
       url: `/disputes/${disputeId}`,
       tag: `dispute-${disputeId}`,
       data: { disputeId, status },
       actions: [
-        { action: 'view', title: 'View Details' },
-        { action: 'dismiss', title: 'Dismiss' },
+        { action: "view", title: "View Details" },
+        { action: "dismiss", title: "Dismiss" },
       ],
     };
   }
@@ -267,20 +267,20 @@ class WebPushService {
   createPaymentReminderNotification(
     amount: number,
     dueDate: string,
-    billName?: string
+    billName?: string,
   ): PushNotificationPayload {
     return {
-      type: 'payment_reminder',
-      title: 'Payment Due Soon',
+      type: "payment_reminder",
+      title: "Payment Due Soon",
       body: billName
         ? `${billName} payment of $${amount.toFixed(2)} is due on ${dueDate}.`
         : `Payment of $${amount.toFixed(2)} is due on ${dueDate}.`,
-      url: '/financial/bills',
-      tag: 'payment-reminder',
+      url: "/financial/bills",
+      tag: "payment-reminder",
       data: { amount, dueDate, billName },
       actions: [
-        { action: 'pay', title: 'Pay Now' },
-        { action: 'snooze', title: 'Remind Later' },
+        { action: "pay", title: "Pay Now" },
+        { action: "snooze", title: "Remind Later" },
       ],
     };
   }
@@ -290,19 +290,19 @@ class WebPushService {
    */
   createSecurityAlertNotification(
     alertType: string,
-    description: string
+    description: string,
   ): PushNotificationPayload {
     return {
-      type: 'security_alert',
-      title: 'Security Alert',
+      type: "security_alert",
+      title: "Security Alert",
       body: description,
-      url: '/settings/security',
-      tag: 'security-alert',
+      url: "/settings/security",
+      tag: "security-alert",
       data: { alertType },
       requireInteraction: true,
       actions: [
-        { action: 'review', title: 'Review' },
-        { action: 'dismiss', title: 'Dismiss' },
+        { action: "review", title: "Review" },
+        { action: "dismiss", title: "Dismiss" },
       ],
     };
   }
@@ -314,13 +314,13 @@ class WebPushService {
     title: string,
     body: string,
     url?: string,
-    options?: Partial<PushNotificationPayload>
+    options?: Partial<PushNotificationPayload>,
   ): PushNotificationPayload {
     return {
-      type: 'general',
+      type: "general",
       title,
       body,
-      url: url || '/dashboard',
+      url: url || "/dashboard",
       ...options,
     };
   }
@@ -340,18 +340,18 @@ export const webPushClient = {
    */
   isSupported(): boolean {
     return (
-      typeof window !== 'undefined' &&
-      'serviceWorker' in navigator &&
-      'PushManager' in window &&
-      'Notification' in window
+      typeof window !== "undefined" &&
+      "serviceWorker" in navigator &&
+      "PushManager" in window &&
+      "Notification" in window
     );
   },
 
   /**
    * Get current notification permission status
    */
-  getPermissionStatus(): NotificationPermission | 'unsupported' {
-    if (!this.isSupported()) return 'unsupported';
+  getPermissionStatus(): NotificationPermission | "unsupported" {
+    if (!this.isSupported()) return "unsupported";
     return Notification.permission;
   },
 
@@ -360,7 +360,7 @@ export const webPushClient = {
    */
   async requestPermission(): Promise<NotificationPermission> {
     if (!this.isSupported()) {
-      throw new Error('Push notifications not supported');
+      throw new Error("Push notifications not supported");
     }
     return await Notification.requestPermission();
   },
@@ -368,13 +368,15 @@ export const webPushClient = {
   /**
    * Register service worker and subscribe to push
    */
-  async subscribe(vapidPublicKey: string): Promise<PushSubscriptionJSON | null> {
+  async subscribe(
+    vapidPublicKey: string,
+  ): Promise<PushSubscriptionJSON | null> {
     if (!this.isSupported()) {
-      throw new Error('Push notifications not supported');
+      throw new Error("Push notifications not supported");
     }
 
     // Register service worker
-    const registration = await navigator.serviceWorker.register('/sw.js');
+    const registration = await navigator.serviceWorker.register("/sw.js");
     await navigator.serviceWorker.ready;
 
     // Convert VAPID key to Uint8Array
@@ -421,10 +423,10 @@ export const webPushClient = {
    * Convert URL-safe base64 to Uint8Array
    */
   urlBase64ToUint8Array(base64String: string): Uint8Array {
-    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
     const base64 = (base64String + padding)
-      .replace(/-/g, '+')
-      .replace(/_/g, '/');
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
 
     const rawData = window.atob(base64);
     const outputArray = new Uint8Array(rawData.length);

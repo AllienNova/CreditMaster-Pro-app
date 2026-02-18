@@ -3,9 +3,9 @@
  * Phase 6.2: Message input with character limit and sanitization
  */
 
-'use client';
+"use client";
 
-import React, { useState, useRef, KeyboardEvent } from 'react';
+import React, { useState, useRef, KeyboardEvent } from "react";
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
@@ -16,25 +16,25 @@ interface ChatInputProps {
 export const ChatInput: React.FC<ChatInputProps> = ({
   onSendMessage,
   disabled = false,
-  placeholder = 'Type your message...',
+  placeholder = "Type your message...",
 }) => {
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const maxLength = 2000;
 
   const handleSend = () => {
     if (message.trim() && !disabled) {
       onSendMessage(message);
-      setMessage('');
+      setMessage("");
       if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
+        textareaRef.current.style.height = "auto";
       }
     }
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     // Enter to send, Shift+Enter for new line
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
@@ -46,7 +46,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       setMessage(value);
       // Auto-resize textarea
       if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
+        textareaRef.current.style.height = "auto";
         textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 150)}px`;
       }
     }
@@ -69,16 +69,20 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             disabled={disabled}
             rows={1}
             data-testid="chat-input"
-            className={`w-full px-4 py-2 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 ${ disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white dark:bg-slate-800' } ${isAtLimit ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'}`}
-            style={{ minHeight: '44px', maxHeight: '150px' }}
+            className={`w-full px-4 py-2 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 ${disabled ? "bg-gray-100 cursor-not-allowed" : "bg-white dark:bg-slate-800"} ${isAtLimit ? "border-red-500" : "border-gray-300 dark:border-slate-600"}`}
+            style={{ minHeight: "44px", maxHeight: "150px" }}
           />
-          
+
           {/* Character count */}
           <div
-            data-testid={isAtLimit ? 'char-counter-error' : 'char-counter'}
+            data-testid={isAtLimit ? "char-counter-error" : "char-counter"}
             className={`absolute bottom-2 right-2 text-xs ${
-            isAtLimit ? 'text-red-600 font-semibold' : isNearLimit ? 'text-yellow-600' : 'text-gray-400 dark:text-slate-500'
-          }`}
+              isAtLimit
+                ? "text-red-600 font-semibold"
+                : isNearLimit
+                  ? "text-yellow-600"
+                  : "text-gray-400 dark:text-slate-500"
+            }`}
           >
             {characterCount}/{maxLength}
           </div>
@@ -90,10 +94,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           data-testid="send-button"
           className={`px-6 py-2 rounded-lg font-medium transition-colors ${
             disabled || !message.trim()
-              ? 'bg-gray-300 text-gray-500 dark:text-slate-400 cursor-not-allowed'
-              : 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800'
+              ? "bg-gray-300 text-gray-500 dark:text-slate-400 cursor-not-allowed"
+              : "bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800"
           }`}
-          style={{ minHeight: '44px' }}
+          style={{ minHeight: "44px" }}
         >
           <svg
             className="w-5 h-5"

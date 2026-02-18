@@ -6,27 +6,27 @@
  * - In-app notifications (Supabase)
  */
 
-import { Resend } from 'resend';
-import { getSupabase } from '../supabase/client';
-import type { Database } from '../supabase/types';
+import { Resend } from "resend";
+import { getSupabase } from "../supabase/client";
+import type { Database } from "../supabase/types";
 
 // Type helpers for Supabase operations
-type NotificationRow = Database['public']['Tables']['notifications']['Row'];
+type NotificationRow = Database["public"]["Tables"]["notifications"]["Row"];
 type NotificationInsert =
-  Database['public']['Tables']['notifications']['Insert'];
+  Database["public"]["Tables"]["notifications"]["Insert"];
 type NotificationUpdate =
-  Database['public']['Tables']['notifications']['Update'];
+  Database["public"]["Tables"]["notifications"]["Update"];
 
 // Helper to get typed table reference
-const notifications = () => getSupabase().from('notifications');
+const notifications = () => getSupabase().from("notifications");
 
-const resend = new Resend(process.env.RESEND_API_KEY || 'dummy_key_for_build');
+const resend = new Resend(process.env.RESEND_API_KEY || "dummy_key_for_build");
 
 export type NotificationType =
-  | 'dispute_update'
-  | 'payment_success'
-  | 'document_uploaded'
-  | 'tip';
+  | "dispute_update"
+  | "payment_success"
+  | "document_uploaded"
+  | "tip";
 
 export interface Notification {
   id: string;
@@ -49,11 +49,11 @@ class NotificationServiceDB {
     to: string,
     subject: string,
     html: string,
-    from?: string
+    from?: string,
   ): Promise<void> {
     try {
       await resend.emails.send({
-        from: from || process.env.EMAIL_FROM || 'Fynvita <noreply@fynvita.com>',
+        from: from || process.env.EMAIL_FROM || "Fynvita <noreply@fynvita.com>",
         to,
         subject,
         html,
@@ -73,7 +73,7 @@ class NotificationServiceDB {
     userId: string,
     type: NotificationType,
     title: string,
-    message: string
+    message: string,
   ): Promise<Notification> {
     const insertData: NotificationInsert = {
       user_id: userId,
@@ -101,12 +101,12 @@ class NotificationServiceDB {
    */
   async getUserNotifications(
     userId: string,
-    limit: number = 50
+    limit: number = 50,
   ): Promise<Notification[]> {
     const { data, error } = await notifications()
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
       .limit(limit);
 
     if (error) {
@@ -123,7 +123,7 @@ class NotificationServiceDB {
   async markAsRead(notificationId: string): Promise<boolean> {
     const updateData: NotificationUpdate = { read: true };
     const query = notifications();
-    const { error } = await query.update(updateData).eq('id', notificationId);
+    const { error } = await query.update(updateData).eq("id", notificationId);
 
     if (error) {
       // NotificationServiceDB error: Failed to mark notification as read
@@ -142,8 +142,8 @@ class NotificationServiceDB {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (query2 as any)
       .update(updateData)
-      .eq('user_id', userId)
-      .eq('read', false)
+      .eq("user_id", userId)
+      .eq("read", false)
       .select();
 
     if (error) {
@@ -158,7 +158,7 @@ class NotificationServiceDB {
    * Delete notification
    */
   async deleteNotification(notificationId: string): Promise<boolean> {
-    const { error } = await notifications().delete().eq('id', notificationId);
+    const { error } = await notifications().delete().eq("id", notificationId);
 
     if (error) {
       // NotificationServiceDB error: Failed to delete notification
@@ -173,9 +173,9 @@ class NotificationServiceDB {
    */
   async getUnreadCount(userId: string): Promise<number> {
     const { count, error } = await notifications()
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .eq('read', false);
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("read", false);
 
     if (error) {
       // NotificationServiceDB error: Failed to get unread count
@@ -191,7 +191,7 @@ class NotificationServiceDB {
    * Send welcome email
    */
   async sendWelcomeEmail(to: string, name: string): Promise<void> {
-    const subject = 'Welcome to Fynvita!';
+    const subject = "Welcome to Fynvita!";
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #4F46E5;">Welcome to Fynvita!</h1>
@@ -225,18 +225,18 @@ class NotificationServiceDB {
     userId: string,
     userEmail: string,
     disputeId: string,
-    bureau: string
+    bureau: string,
   ): Promise<void> {
     // In-app notification
     await this.createNotification(
       userId,
-      'dispute_update',
-      'Dispute Letter Created',
-      `Your dispute letter for ${bureau} has been created and is ready to send.`
+      "dispute_update",
+      "Dispute Letter Created",
+      `Your dispute letter for ${bureau} has been created and is ready to send.`,
     );
 
     // Email notification
-    const subject = 'Your Dispute Letter is Ready';
+    const subject = "Your Dispute Letter is Ready";
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #4F46E5;">Dispute Letter Created</h1>
@@ -259,18 +259,18 @@ class NotificationServiceDB {
     userId: string,
     userEmail: string,
     amount: number,
-    planName: string
+    planName: string,
   ): Promise<void> {
     // In-app notification
     await this.createNotification(
       userId,
-      'payment_success',
-      'Payment Successful',
-      `Your payment of $${amount} for the ${planName} plan was successful.`
+      "payment_success",
+      "Payment Successful",
+      `Your payment of $${amount} for the ${planName} plan was successful.`,
     );
 
     // Email notification
-    const subject = 'Payment Received - Thank You!';
+    const subject = "Payment Received - Thank You!";
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #4F46E5;">Payment Successful</h1>
@@ -297,13 +297,13 @@ class NotificationServiceDB {
   async notifyDocumentUploaded(
     userId: string,
     fileName: string,
-    documentType: string
+    documentType: string,
   ): Promise<void> {
     await this.createNotification(
       userId,
-      'document_uploaded',
-      'Document Uploaded',
-      `${fileName} (${documentType}) has been successfully uploaded.`
+      "document_uploaded",
+      "Document Uploaded",
+      `${fileName} (${documentType}) has been successfully uploaded.`,
     );
   }
 
@@ -311,7 +311,7 @@ class NotificationServiceDB {
    * Map database row to Notification interface
    */
   private mapToNotification(
-    row: Database['public']['Tables']['notifications']['Row']
+    row: Database["public"]["Tables"]["notifications"]["Row"],
   ): Notification {
     return {
       id: row.id,

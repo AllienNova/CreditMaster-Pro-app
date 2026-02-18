@@ -1,6 +1,12 @@
-import { create } from 'zustand';
-import { supabase, signIn, signUp, signOut, getCurrentUser } from '../services/supabase';
-import type { User } from '../types';
+import { create } from "zustand";
+import {
+  supabase,
+  signIn,
+  signUp,
+  signOut,
+  getCurrentUser,
+} from "../services/supabase";
+import type { User } from "../types";
 
 interface AuthState {
   user: User | null;
@@ -36,21 +42,21 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const { user, error } = await getCurrentUser();
       if (error) throw error;
-      
+
       if (user) {
         // Fetch user profile from database
         const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
           .single();
 
         set({
-          user: profile as User || {
+          user: (profile as User) || {
             id: user.id,
-            email: user.email || '',
-            name: user.user_metadata?.name || '',
-            subscription_tier: 'free',
+            email: user.email || "",
+            name: user.user_metadata?.name || "",
+            subscription_tier: "free",
             created_at: user.created_at,
             updated_at: user.updated_at || user.created_at,
           },
@@ -61,11 +67,11 @@ export const useAuthStore = create<AuthState>((set) => ({
         set({ user: null, isAuthenticated: false, isLoading: false });
       }
     } catch (error) {
-      set({ 
-        user: null, 
-        isAuthenticated: false, 
+      set({
+        user: null,
+        isAuthenticated: false,
         isLoading: false,
-        error: error instanceof Error ? error.message : 'Failed to initialize',
+        error: error instanceof Error ? error.message : "Failed to initialize",
       });
     }
   },
@@ -75,20 +81,20 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const { data, error } = await signIn(email, password);
       if (error) throw error;
-      
+
       if (data.user) {
         const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', data.user.id)
+          .from("profiles")
+          .select("*")
+          .eq("id", data.user.id)
           .single();
 
         set({
-          user: profile as User || {
+          user: (profile as User) || {
             id: data.user.id,
-            email: data.user.email || '',
-            name: data.user.user_metadata?.name || '',
-            subscription_tier: 'free',
+            email: data.user.email || "",
+            name: data.user.user_metadata?.name || "",
+            subscription_tier: "free",
             created_at: data.user.created_at,
             updated_at: data.user.updated_at || data.user.created_at,
           },
@@ -99,9 +105,9 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
       return false;
     } catch (error) {
-      set({ 
+      set({
         isLoading: false,
-        error: error instanceof Error ? error.message : 'Login failed',
+        error: error instanceof Error ? error.message : "Login failed",
       });
       return false;
     }
@@ -112,14 +118,14 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const { data, error } = await signUp(email, password, name);
       if (error) throw error;
-      
+
       if (data.user) {
         // Create profile in database
-        await supabase.from('profiles').insert({
+        await supabase.from("profiles").insert({
           id: data.user.id,
           email,
           name,
-          subscription_tier: 'free',
+          subscription_tier: "free",
         });
 
         set({
@@ -127,7 +133,7 @@ export const useAuthStore = create<AuthState>((set) => ({
             id: data.user.id,
             email,
             name,
-            subscription_tier: 'free',
+            subscription_tier: "free",
             created_at: data.user.created_at,
             updated_at: data.user.created_at,
           },
@@ -138,9 +144,9 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
       return false;
     } catch (error) {
-      set({ 
+      set({
         isLoading: false,
-        error: error instanceof Error ? error.message : 'Registration failed',
+        error: error instanceof Error ? error.message : "Registration failed",
       });
       return false;
     }
@@ -160,9 +166,9 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     try {
       const { error } = await supabase
-        .from('profiles')
+        .from("profiles")
         .update(updates)
-        .eq('id', currentUser.id);
+        .eq("id", currentUser.id);
 
       if (error) throw error;
 
@@ -170,7 +176,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         user: { ...currentUser, ...updates },
       });
     } catch (error) {
-      if (__DEV__) console.error('Failed to update profile:', error);
+      if (__DEV__) console.error("Failed to update profile:", error);
       throw error;
     }
   },
@@ -181,15 +187,14 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     try {
       const { error } = await supabase
-        .from('profiles')
+        .from("profiles")
         .update({ onboarding_completed: true })
-        .eq('id', currentUser.id);
+        .eq("id", currentUser.id);
 
       if (error) throw error;
     } catch (error) {
-      if (__DEV__) console.error('Failed to complete onboarding:', error);
+      if (__DEV__) console.error("Failed to complete onboarding:", error);
       throw error;
     }
   },
 }));
-

@@ -10,43 +10,43 @@
 // ============================================================================
 
 export enum FilingStatus {
-  SINGLE = 'single',
-  MARRIED_FILING_JOINTLY = 'married_filing_jointly',
-  MARRIED_FILING_SEPARATELY = 'married_filing_separately',
-  HEAD_OF_HOUSEHOLD = 'head_of_household',
-  QUALIFYING_SURVIVING_SPOUSE = 'qualifying_surviving_spouse',
+  SINGLE = "single",
+  MARRIED_FILING_JOINTLY = "married_filing_jointly",
+  MARRIED_FILING_SEPARATELY = "married_filing_separately",
+  HEAD_OF_HOUSEHOLD = "head_of_household",
+  QUALIFYING_SURVIVING_SPOUSE = "qualifying_surviving_spouse",
 }
 
 export enum BusinessType {
-  NONE = 'none',
-  SOLE_PROPRIETORSHIP = 'sole_proprietorship',
-  LLC_SINGLE_MEMBER = 'llc_single_member',
-  LLC_MULTI_MEMBER = 'llc_multi_member',
-  S_CORPORATION = 's_corporation',
-  C_CORPORATION = 'c_corporation',
-  PARTNERSHIP = 'partnership',
+  NONE = "none",
+  SOLE_PROPRIETORSHIP = "sole_proprietorship",
+  LLC_SINGLE_MEMBER = "llc_single_member",
+  LLC_MULTI_MEMBER = "llc_multi_member",
+  S_CORPORATION = "s_corporation",
+  C_CORPORATION = "c_corporation",
+  PARTNERSHIP = "partnership",
 }
 
 export enum TaxAccountType {
-  TRADITIONAL_401K = 'traditional_401k',
-  ROTH_401K = 'roth_401k',
-  TRADITIONAL_IRA = 'traditional_ira',
-  ROTH_IRA = 'roth_ira',
-  SEP_IRA = 'sep_ira',
-  SIMPLE_IRA = 'simple_ira',
-  HSA = 'hsa',
-  FSA = 'fsa',
-  DCFSA = 'dcfsa',
-  PLAN_529 = '529',
-  TAXABLE_BROKERAGE = 'taxable_brokerage',
-  ESPP = 'espp',
+  TRADITIONAL_401K = "traditional_401k",
+  ROTH_401K = "roth_401k",
+  TRADITIONAL_IRA = "traditional_ira",
+  ROTH_IRA = "roth_ira",
+  SEP_IRA = "sep_ira",
+  SIMPLE_IRA = "simple_ira",
+  HSA = "hsa",
+  FSA = "fsa",
+  DCFSA = "dcfsa",
+  PLAN_529 = "529",
+  TAXABLE_BROKERAGE = "taxable_brokerage",
+  ESPP = "espp",
 }
 
 export enum OptimizationGoal {
-  MINIMIZE_CURRENT_YEAR = 'minimize_current_year',
-  MINIMIZE_LIFETIME = 'minimize_lifetime',
-  BALANCED = 'balanced',
-  MAXIMIZE_RETIREMENT = 'maximize_retirement',
+  MINIMIZE_CURRENT_YEAR = "minimize_current_year",
+  MINIMIZE_LIFETIME = "minimize_lifetime",
+  BALANCED = "balanced",
+  MAXIMIZE_RETIREMENT = "maximize_retirement",
 }
 
 // ============================================================================
@@ -56,7 +56,7 @@ export enum OptimizationGoal {
 export interface Dependent {
   id: string;
   name: string;
-  relationship: 'child' | 'parent' | 'other';
+  relationship: "child" | "parent" | "other";
   dateOfBirth: Date;
   isStudent: boolean;
   livesWithUser: boolean;
@@ -66,12 +66,12 @@ export interface Dependent {
 export interface IncomeSource {
   id: string;
   type:
-    | 'w2'
-    | 'self_employment'
-    | 'investment'
-    | 'rental'
-    | 'retirement'
-    | 'other';
+    | "w2"
+    | "self_employment"
+    | "investment"
+    | "rental"
+    | "retirement"
+    | "other";
   name: string;
   annualAmount: number;
   isRecurring: boolean;
@@ -146,12 +146,12 @@ export interface TaxProfile {
   // Health Insurance
   hasHdhp: boolean; // High Deductible Health Plan (for HSA eligibility)
   healthInsuranceType:
-    | 'employer'
-    | 'marketplace'
-    | 'private'
-    | 'medicare'
-    | 'medicaid'
-    | 'none';
+    | "employer"
+    | "marketplace"
+    | "private"
+    | "medicare"
+    | "medicaid"
+    | "none";
 
   // Retirement Accounts
   accounts: TaxAccount[];
@@ -165,7 +165,7 @@ export interface TaxProfile {
 
   // Preferences
   optimizationGoal: OptimizationGoal;
-  riskTolerance: 'conservative' | 'moderate' | 'aggressive';
+  riskTolerance: "conservative" | "moderate" | "aggressive";
 
   // Metadata
   createdAt: Date;
@@ -188,9 +188,9 @@ export interface CreateTaxProfileInput {
   optimizationGoal?: OptimizationGoal;
 }
 
-export interface UpdateTaxProfileInput extends Partial<
-  Omit<TaxProfile, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
-> {}
+export type UpdateTaxProfileInput = Partial<
+  Omit<TaxProfile, "id" | "userId" | "createdAt" | "updatedAt">
+>;
 
 // ============================================================================
 // CONTRIBUTION LIMITS (2024)

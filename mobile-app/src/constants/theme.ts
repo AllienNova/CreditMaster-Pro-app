@@ -1,5 +1,5 @@
-import { Platform } from 'react-native';
-import type { Theme, ThemeColors, ThemeShadow } from '../types';
+import { Platform } from "react-native";
+import type { Theme, ThemeColors, ThemeShadow } from "../types";
 
 // ============================================================================
 // COLOR UTILITIES
@@ -23,30 +23,30 @@ export function withOpacity(hex: string, opacity: number): string {
 // ============================================================================
 
 const baseColors = {
-  primary: '#3B82F6',
-  primaryDark: '#2563EB',
-  primaryLight: '#60A5FA',
-  secondary: '#10B981',
-  secondaryDark: '#059669',
-  accent: '#8B5CF6',
+  primary: "#3B82F6",
+  primaryDark: "#2563EB",
+  primaryLight: "#60A5FA",
+  secondary: "#10B981",
+  secondaryDark: "#059669",
+  accent: "#8B5CF6",
 
-  success: '#22C55E',
-  warning: '#F59E0B',
-  error: '#EF4444',
-  info: '#3B82F6',
+  success: "#22C55E",
+  warning: "#F59E0B",
+  error: "#EF4444",
+  info: "#3B82F6",
 
-  white: '#FFFFFF',
-  black: '#000000',
-  gray50: '#F9FAFB',
-  gray100: '#F3F4F6',
-  gray200: '#E5E7EB',
-  gray300: '#D1D5DB',
-  gray400: '#9CA3AF',
-  gray500: '#6B7280',
-  gray600: '#4B5563',
-  gray700: '#374151',
-  gray800: '#1F2937',
-  gray900: '#111827',
+  white: "#FFFFFF",
+  black: "#000000",
+  gray50: "#F9FAFB",
+  gray100: "#F3F4F6",
+  gray200: "#E5E7EB",
+  gray300: "#D1D5DB",
+  gray400: "#9CA3AF",
+  gray500: "#6B7280",
+  gray600: "#4B5563",
+  gray700: "#374151",
+  gray800: "#1F2937",
+  gray900: "#111827",
 };
 
 const spacing = {
@@ -77,10 +77,10 @@ const fontSize = {
 } as const;
 
 const fontWeight = {
-  normal: '400' as const,
-  medium: '500' as const,
-  semibold: '600' as const,
-  bold: '700' as const,
+  normal: "400" as const,
+  medium: "500" as const,
+  semibold: "600" as const,
+  bold: "700" as const,
 };
 
 const iconSize = {
@@ -100,7 +100,7 @@ function makeShadow(
   opacity: number,
   radius: number,
   elevation: number,
-  color = '#000000',
+  color = "#000000",
 ): ThemeShadow {
   return Platform.select({
     ios: {
@@ -133,17 +133,17 @@ const shadow = {
 
 const lightColors: ThemeColors = {
   ...baseColors,
-  background: '#FFFFFF',
-  backgroundSecondary: '#F9FAFB',
-  surface: '#FFFFFF',
-  card: '#FFFFFF',
-  text: '#111827',
-  textSecondary: '#6B7280',
-  textMuted: '#9CA3AF',
-  textInverse: '#FFFFFF',
-  border: '#E5E7EB',
-  borderLight: '#F3F4F6',
-  borderDark: '#D1D5DB',
+  background: "#FFFFFF",
+  backgroundSecondary: "#F9FAFB",
+  surface: "#FFFFFF",
+  card: "#FFFFFF",
+  text: "#111827",
+  textSecondary: "#6B7280",
+  textMuted: "#9CA3AF",
+  textInverse: "#FFFFFF",
+  border: "#E5E7EB",
+  borderLight: "#F3F4F6",
+  borderDark: "#D1D5DB",
 };
 
 export const lightTheme: Theme = {
@@ -162,27 +162,27 @@ export const lightTheme: Theme = {
 
 const darkColors: ThemeColors = {
   ...baseColors,
-  primary: '#60A5FA',
-  primaryDark: '#3B82F6',
-  primaryLight: '#93C5FD',
-  secondary: '#34D399',
-  secondaryDark: '#10B981',
-  accent: '#A78BFA',
-  background: '#0F172A',
-  backgroundSecondary: '#1E293B',
-  surface: '#1E293B',
-  card: '#1E293B',
-  text: '#F8FAFC',
-  textSecondary: '#94A3B8',
-  textMuted: '#64748B',
-  textInverse: '#0F172A',
-  border: '#334155',
-  borderLight: '#475569',
-  borderDark: '#1E293B',
-  error: '#F87171',
-  success: '#4ADE80',
-  warning: '#FBBF24',
-  info: '#60A5FA',
+  primary: "#60A5FA",
+  primaryDark: "#3B82F6",
+  primaryLight: "#93C5FD",
+  secondary: "#34D399",
+  secondaryDark: "#10B981",
+  accent: "#A78BFA",
+  background: "#0F172A",
+  backgroundSecondary: "#1E293B",
+  surface: "#1E293B",
+  card: "#1E293B",
+  text: "#F8FAFC",
+  textSecondary: "#94A3B8",
+  textMuted: "#64748B",
+  textInverse: "#0F172A",
+  border: "#334155",
+  borderLight: "#475569",
+  borderDark: "#1E293B",
+  error: "#F87171",
+  success: "#4ADE80",
+  warning: "#FBBF24",
+  info: "#60A5FA",
 };
 
 export const darkTheme: Theme = {
@@ -193,9 +193,9 @@ export const darkTheme: Theme = {
   fontWeight,
   shadow: {
     none: makeShadow(0, 0, 0, 0),
-    sm: makeShadow(1, 0.2, 2, 1, '#000000'),
-    md: makeShadow(2, 0.3, 4, 3, '#000000'),
-    lg: makeShadow(4, 0.4, 8, 6, '#000000'),
+    sm: makeShadow(1, 0.2, 2, 1, "#000000"),
+    md: makeShadow(2, 0.3, 4, 3, "#000000"),
+    lg: makeShadow(4, 0.4, 8, 6, "#000000"),
   },
   iconSize,
 };
@@ -206,22 +206,22 @@ export const darkTheme: Theme = {
 
 export const colors = {
   bureaus: {
-    experian: '#0066CC',
-    equifax: '#CC0000',
-    transunion: '#00AA00',
+    experian: "#0066CC",
+    equifax: "#CC0000",
+    transunion: "#00AA00",
   },
   status: {
-    draft: '#6B7280',
-    sent: '#3B82F6',
-    under_review: '#F59E0B',
-    resolved: '#22C55E',
-    rejected: '#EF4444',
+    draft: "#6B7280",
+    sent: "#3B82F6",
+    under_review: "#F59E0B",
+    resolved: "#22C55E",
+    rejected: "#EF4444",
   },
   score: {
-    excellent: '#22C55E',
-    good: '#84CC16',
-    fair: '#F59E0B',
-    poor: '#EF4444',
+    excellent: "#22C55E",
+    good: "#84CC16",
+    fair: "#F59E0B",
+    poor: "#EF4444",
   },
 };
 
@@ -237,10 +237,10 @@ export const getScoreColor = (score: number): string => {
 };
 
 export const getScoreLabel = (score: number): string => {
-  if (score >= 750) return 'Excellent';
-  if (score >= 700) return 'Good';
-  if (score >= 650) return 'Fair';
-  return 'Poor';
+  if (score >= 750) return "Excellent";
+  if (score >= 700) return "Good";
+  if (score >= 650) return "Fair";
+  return "Poor";
 };
 
 // ============================================================================
@@ -249,12 +249,36 @@ export const getScoreLabel = (score: number): string => {
 
 export const typography = {
   h1: { fontSize: fontSize.xxxl, fontWeight: fontWeight.bold, lineHeight: 40 },
-  h2: { fontSize: fontSize.xxl, fontWeight: fontWeight.semibold, lineHeight: 32 },
-  h3: { fontSize: fontSize.xl, fontWeight: fontWeight.semibold, lineHeight: 28 },
-  body: { fontSize: fontSize.md, fontWeight: fontWeight.normal, lineHeight: 24 },
-  bodySmall: { fontSize: fontSize.sm, fontWeight: fontWeight.normal, lineHeight: 20 },
-  caption: { fontSize: fontSize.xs, fontWeight: fontWeight.normal, lineHeight: 16 },
-  button: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, lineHeight: 24 },
+  h2: {
+    fontSize: fontSize.xxl,
+    fontWeight: fontWeight.semibold,
+    lineHeight: 32,
+  },
+  h3: {
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.semibold,
+    lineHeight: 28,
+  },
+  body: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.normal,
+    lineHeight: 24,
+  },
+  bodySmall: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.normal,
+    lineHeight: 20,
+  },
+  caption: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.normal,
+    lineHeight: 16,
+  },
+  button: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+    lineHeight: 24,
+  },
 };
 
 export default lightTheme;

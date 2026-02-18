@@ -3,9 +3,9 @@
  * Manages XP, levels, badges, quests, streak, and leaderboard state
  */
 
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   gamificationApi,
   type GamificationProgress,
@@ -20,7 +20,7 @@ import {
   type LeaderboardType,
   type StreakUpdateResponse,
   type BadgeCategory,
-} from '../services/api/gamification';
+} from "../services/api/gamification";
 
 // ============================================================================
 // STATE INTERFACE
@@ -105,7 +105,7 @@ const initialState = {
   earnedBadges: [] as UserBadge[],
   inProgressBadges: [] as BadgeProgress[],
   lockedBadges: [] as Badge[],
-  badgeStats: null as GamificationState['badgeStats'],
+  badgeStats: null as GamificationState["badgeStats"],
   lastBadgesFetch: null as string | null,
 
   // Quests
@@ -117,7 +117,7 @@ const initialState = {
 
   // Leaderboard
   leaderboard: [] as LeaderboardEntry[],
-  leaderboardType: 'weekly_xp' as LeaderboardType,
+  leaderboardType: "weekly_xp" as LeaderboardType,
   leaderboardPeriod: null as { start: string; end: string } | null,
   userRank: null as number | null,
   userPercentile: null as number | null,
@@ -163,14 +163,17 @@ export const useGamificationStore = create<GamificationState>()(
             });
           } else {
             set({
-              progressError: response.error?.message || 'Failed to fetch progress',
+              progressError:
+                response.error?.message || "Failed to fetch progress",
               isLoadingProgress: false,
             });
           }
         } catch (error) {
           set({
             progressError:
-              error instanceof Error ? error.message : 'Failed to fetch progress',
+              error instanceof Error
+                ? error.message
+                : "Failed to fetch progress",
             isLoadingProgress: false,
           });
         }
@@ -190,22 +193,21 @@ export const useGamificationStore = create<GamificationState>()(
                   ...currentProgress,
                   xp: {
                     ...currentProgress.xp,
-                    current:
-                      currentProgress.xp.current +
-                      (data.xpEarned || 0),
+                    current: currentProgress.xp.current + (data.xpEarned || 0),
                   },
                   streak: {
                     days: data.streak.currentStreak,
                     multiplier: data.streak.multiplier,
                     longestStreak: data.streak.longestStreak,
                   },
-                  level: data.levelUp && data.newLevel
-                    ? {
-                        current: data.newLevel,
-                        title: data.newTitle || currentProgress.level.title,
-                        progress: 0,
-                      }
-                    : currentProgress.level,
+                  level:
+                    data.levelUp && data.newLevel
+                      ? {
+                          current: data.newLevel,
+                          title: data.newTitle || currentProgress.level.title,
+                          progress: 0,
+                        }
+                      : currentProgress.level,
                 },
                 isUpdatingStreak: false,
               });
@@ -240,14 +242,14 @@ export const useGamificationStore = create<GamificationState>()(
             });
           } else {
             set({
-              badgesError: response.error?.message || 'Failed to fetch badges',
+              badgesError: response.error?.message || "Failed to fetch badges",
               isLoadingBadges: false,
             });
           }
         } catch (error) {
           set({
             badgesError:
-              error instanceof Error ? error.message : 'Failed to fetch badges',
+              error instanceof Error ? error.message : "Failed to fetch badges",
             isLoadingBadges: false,
           });
         }
@@ -287,14 +289,14 @@ export const useGamificationStore = create<GamificationState>()(
             });
           } else {
             set({
-              questsError: response.error?.message || 'Failed to fetch quests',
+              questsError: response.error?.message || "Failed to fetch quests",
               isLoadingQuests: false,
             });
           }
         } catch (error) {
           set({
             questsError:
-              error instanceof Error ? error.message : 'Failed to fetch quests',
+              error instanceof Error ? error.message : "Failed to fetch quests",
             isLoadingQuests: false,
           });
         }
@@ -315,7 +317,7 @@ export const useGamificationStore = create<GamificationState>()(
                       isCompleted: true,
                       completedAt: new Date().toISOString(),
                     }
-                  : q
+                  : q,
               ),
               questsCompletedToday: state.questsCompletedToday + 1,
               availableXp: Math.max(0, state.availableXp - xpEarned),
@@ -337,7 +339,7 @@ export const useGamificationStore = create<GamificationState>()(
       // Leaderboard Actions
       // ========================================
 
-      fetchLeaderboard: async (type: LeaderboardType = 'weekly_xp') => {
+      fetchLeaderboard: async (type: LeaderboardType = "weekly_xp") => {
         set({ isLoadingLeaderboard: true, leaderboardError: null });
         try {
           const response = await gamificationApi.getLeaderboard(type);
@@ -358,7 +360,7 @@ export const useGamificationStore = create<GamificationState>()(
           } else {
             set({
               leaderboardError:
-                response.error?.message || 'Failed to fetch leaderboard',
+                response.error?.message || "Failed to fetch leaderboard",
               isLoadingLeaderboard: false,
             });
           }
@@ -367,7 +369,7 @@ export const useGamificationStore = create<GamificationState>()(
             leaderboardError:
               error instanceof Error
                 ? error.message
-                : 'Failed to fetch leaderboard',
+                : "Failed to fetch leaderboard",
             isLoadingLeaderboard: false,
           });
         }
@@ -402,7 +404,7 @@ export const useGamificationStore = create<GamificationState>()(
       },
     }),
     {
-      name: 'fynvita-gamification-store',
+      name: "fynvita-gamification-store",
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         // Only persist essential data
@@ -416,8 +418,8 @@ export const useGamificationStore = create<GamificationState>()(
         lastBadgesFetch: state.lastBadgesFetch,
         lastQuestsFetch: state.lastQuestsFetch,
       }),
-    }
-  )
+    },
+  ),
 );
 
 export default useGamificationStore;

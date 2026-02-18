@@ -1,4 +1,5 @@
 # Phase 2.7 Fix Action Plan
+
 **Date**: 2026-01-02  
 **Objective**: Resolve all critical TypeScript errors and test failures identified in QC Checkpoint
 
@@ -71,15 +72,16 @@
 ```json
 {
   "compilerOptions": {
-    "target": "ES2020",  // Changed from "es5"
-    "downlevelIteration": true,  // NEW: Required for Map/Set iteration
-    "isolatedModules": true,
+    "target": "ES2020", // Changed from "es5"
+    "downlevelIteration": true, // NEW: Required for Map/Set iteration
+    "isolatedModules": true
     // ... rest of config
   }
 }
 ```
 
 **Verification**:
+
 ```bash
 npx tsc --noEmit | grep "downlevelIteration"  # Should return no errors
 ```
@@ -93,10 +95,11 @@ npx tsc --noEmit | grep "downlevelIteration"  # Should return no errors
 **Action**: Remove duplicate `BudgetRecommendation` interface at line 471
 
 **Keep This Definition** (line 291):
+
 ```typescript
 export interface BudgetRecommendation {
   id: string;
-  type: BudgetRecommendationType;  // Use enum
+  type: BudgetRecommendationType; // Use enum
   category?: string;
   currentAmount: number;
   recommendedAmount: number;
@@ -106,23 +109,30 @@ export interface BudgetRecommendation {
     description: string;
   };
   reasoning: string;
-  priority: 'high' | 'medium' | 'low';
+  priority: "high" | "medium" | "low";
   confidence: number;
 }
 ```
 
 **Delete This Definition** (line 471):
+
 ```typescript
 // DELETE THIS ENTIRE BLOCK
 export interface BudgetRecommendation {
-  type: 'increase' | 'decrease' | 'reallocate' | 'new_category' | 'remove_category';
-  category: string;  // Required (conflicts with optional above)
-  impact: string;    // String (conflicts with object above)
+  type:
+    | "increase"
+    | "decrease"
+    | "reallocate"
+    | "new_category"
+    | "remove_category";
+  category: string; // Required (conflicts with optional above)
+  impact: string; // String (conflicts with object above)
   // ...
 }
 ```
 
 **Verification**:
+
 ```bash
 grep -n "interface BudgetRecommendation" src/lib/financial/types/budget.types.ts
 # Should return only ONE line number
@@ -138,23 +148,24 @@ grep -n "interface BudgetRecommendation" src/lib/financial/types/budget.types.ts
 // ❌ BEFORE (Next.js 14)
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
-  const billId = params.id;  // Direct access
+  const billId = params.id; // Direct access
   // ...
 }
 
 // ✅ AFTER (Next.js 15)
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const { id: billId } = await params;  // Await the promise
+  const { id: billId } = await params; // Await the promise
   // ...
 }
 ```
 
 **Files to Update**:
+
 1. `src/app/api/financial/bills/[id]/negotiate/route.ts`
 2. `src/app/api/financial/bills/[id]/outcome/route.ts`
 3. `src/app/api/financial/goals/[id]/route.ts`
@@ -167,6 +178,7 @@ export async function GET(
 10. `src/app/api/financial/accounts/[id]/route.ts`
 
 **Verification**:
+
 ```bash
 npx tsc --noEmit | grep "params"  # Should return no errors
 ```
@@ -180,31 +192,28 @@ npx tsc --noEmit | grep "params"  # Should return no errors
 **File**: `src/lib/api/middleware/financial-api-middleware.ts`
 
 ```typescript
-import { NextRequest, NextResponse } from 'next/server';
-import { getUser } from '@/lib/auth/session';
+import { NextRequest, NextResponse } from "next/server";
+import { getUser } from "@/lib/auth/session";
 
 export async function applyFinancialAPIMiddleware(
   request: NextRequest,
-  handler: (userId: string, request: NextRequest) => Promise<NextResponse>
+  handler: (userId: string, request: NextRequest) => Promise<NextResponse>,
 ): Promise<NextResponse> {
   try {
     // Get authenticated user
     const user = await getUser();
-    
+
     if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Call the handler with userId
     return await handler(user.id, request);
   } catch (error) {
-    console.error('Financial API middleware error:', error);
+    console.error("Financial API middleware error:", error);
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: "Internal server error" },
+      { status: 500 },
     );
   }
 }
@@ -215,8 +224,8 @@ export async function applyFinancialAPIMiddleware(
 **File**: `src/lib/auth/session.ts`
 
 ```typescript
-import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
+import { cookies } from "next/headers";
+import { createServerClient } from "@supabase/ssr";
 
 export interface User {
   id: string;
@@ -226,7 +235,7 @@ export interface User {
 
 export async function getUser(): Promise<User | null> {
   const cookieStore = await cookies();
-  
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -236,11 +245,13 @@ export async function getUser(): Promise<User | null> {
           return cookieStore.get(name)?.value;
         },
       },
-    }
+    },
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
-  
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   if (!user) return null;
 
   return {
@@ -252,6 +263,7 @@ export async function getUser(): Promise<User | null> {
 ```
 
 **Verification**:
+
 ```bash
 npx tsc --noEmit | grep "financial-api-middleware\|session"  # Should return no errors
 ```
@@ -263,19 +275,21 @@ npx tsc --noEmit | grep "financial-api-middleware\|session"  # Should return no 
 **File**: `src/lib/financial/types/health-score.types.ts`
 
 **Find and Replace**:
+
 ```typescript
 // ❌ BEFORE
-export { FinancialHealthScoreV2 } from './health-score-v2.types';
-export { HealthScoreComponent } from './health-score-v2.types';
+export { FinancialHealthScoreV2 } from "./health-score-v2.types";
+export { HealthScoreComponent } from "./health-score-v2.types";
 
 // ✅ AFTER
-export type { FinancialHealthScoreV2 } from './health-score-v2.types';
-export type { HealthScoreComponent } from './health-score-v2.types';
+export type { FinancialHealthScoreV2 } from "./health-score-v2.types";
+export type { HealthScoreComponent } from "./health-score-v2.types";
 ```
 
 **Pattern**: Add `type` keyword after `export` for all type-only exports
 
 **Verification**:
+
 ```bash
 npx tsc --noEmit | grep "isolatedModules"  # Should return no errors
 ```
@@ -292,7 +306,7 @@ npx tsc --noEmit | grep "isolatedModules"  # Should return no errors
 export interface AggregatedAccounts {
   totalAssets: number;
   totalLiabilities: number;
-  totalSavings: number;  // ADD THIS
+  totalSavings: number; // ADD THIS
   netWorth: number;
   accounts: Account[];
 }
@@ -306,7 +320,7 @@ export interface AggregatedAccounts {
 export interface DebtAnalysis {
   totalDebt: number;
   monthlyPayment: number;
-  averageInterestRate: number;  // ADD THIS
+  averageInterestRate: number; // ADD THIS
   debtToIncomeRatio: number;
   payoffTimeline: number;
   recommendations: string[];
@@ -320,9 +334,9 @@ export interface DebtAnalysis {
 ```typescript
 export interface QuickWin {
   id: string;
-  title: string;        // ADD THIS
-  description: string;  // ADD THIS
-  impact: number;       // ADD THIS
+  title: string; // ADD THIS
+  description: string; // ADD THIS
+  impact: number; // ADD THIS
   category: string;
   action: string;
   estimatedSavings?: number;
@@ -330,6 +344,7 @@ export interface QuickWin {
 ```
 
 **Verification**:
+
 ```bash
 npx tsc --noEmit | grep "Property.*does not exist"  # Should return no errors
 ```
@@ -344,7 +359,7 @@ npx tsc --noEmit | grep "Property.*does not exist"  # Should return no errors
 
 ```typescript
 // BEFORE
-jest.mock('@/lib/supabase', () => ({
+jest.mock("@/lib/supabase", () => ({
   supabase: {
     from: jest.fn().mockReturnValue({
       select: jest.fn().mockReturnThis(),
@@ -354,15 +369,15 @@ jest.mock('@/lib/supabase', () => ({
 }));
 
 // AFTER - Complete chain
-jest.mock('@/lib/supabase', () => ({
+jest.mock("@/lib/supabase", () => ({
   supabase: {
     from: jest.fn().mockReturnValue({
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
-      order: jest.fn().mockReturnThis(),  // ADD THIS
-      single: jest.fn().mockResolvedValue({ data: null, error: null }),  // ADD THIS
-      insert: jest.fn().mockResolvedValue({ data: null, error: null }),  // ADD THIS
-      update: jest.fn().mockResolvedValue({ data: null, error: null }),  // ADD THIS
+      order: jest.fn().mockReturnThis(), // ADD THIS
+      single: jest.fn().mockResolvedValue({ data: null, error: null }), // ADD THIS
+      insert: jest.fn().mockResolvedValue({ data: null, error: null }), // ADD THIS
+      update: jest.fn().mockResolvedValue({ data: null, error: null }), // ADD THIS
     }),
   },
 }));
@@ -374,11 +389,11 @@ jest.mock('@/lib/supabase', () => ({
 
 ```typescript
 // ADD THIS MOCK
-jest.mock('@/lib/ai/aiml-service', () => ({
+jest.mock("@/lib/ai/aiml-service", () => ({
   AIMLService: {
     getInstance: jest.fn().mockReturnValue({
-      generateText: jest.fn().mockResolvedValue('Mock AI response'),
-      chat: jest.fn().mockResolvedValue({ content: 'Mock chat response' }),
+      generateText: jest.fn().mockResolvedValue("Mock AI response"),
+      chat: jest.fn().mockResolvedValue({ content: "Mock chat response" }),
     }),
   },
 }));
@@ -391,11 +406,12 @@ jest.mock('@/lib/ai/aiml-service', () => ({
 ```javascript
 module.exports = {
   // ... existing config
-  testTimeout: 30000,  // Changed from default 5000 to 30000 (30 seconds)
+  testTimeout: 30000, // Changed from default 5000 to 30000 (30 seconds)
 };
 ```
 
 **Verification**:
+
 ```bash
 npm test -- --testPathPattern="bill-negotiator" --passWithNoTests
 # Should pass without timeout errors
@@ -431,7 +447,7 @@ npm test -- --testPathPattern="(smart-budget|savings-optim|spending-analy|bill-n
 ✅ **Unit Tests**: All 1,461 tests passing  
 ✅ **Test Coverage**: 90%+ on financial services  
 ✅ **Build**: Successful production build  
-✅ **No Warnings**: Clean console output  
+✅ **No Warnings**: Clean console output
 
 ---
 
@@ -448,4 +464,3 @@ npm test -- --testPathPattern="(smart-budget|savings-optim|spending-analy|bill-n
 
 **Action Plan Created**: 2026-01-02  
 **Estimated Completion**: 2026-01-03 (with dedicated effort)
-

@@ -5,8 +5,8 @@
  * based on user profile, spending habits, and preferences.
  */
 
-import { createClient } from '@supabase/supabase-js';
-import { offerService, Offer, UserProfile, MatchResult } from '../offers';
+import { createClient } from "@supabase/supabase-js";
+import { offerService, Offer, UserProfile, MatchResult } from "../offers";
 
 // =============================================================================
 // Configuration
@@ -35,14 +35,19 @@ export interface SpendingProfile {
       other?: number;
     };
   };
-  travelFrequency?: 'none' | 'occasional' | 'frequent' | 'very_frequent';
+  travelFrequency?: "none" | "occasional" | "frequent" | "very_frequent";
   internationalSpend?: boolean;
   balanceCarrying?: boolean;
   averageBalance?: number;
 }
 
 export interface CardPreferences {
-  primaryGoal: 'cashback' | 'travel' | 'balance_transfer' | 'build_credit' | 'low_interest';
+  primaryGoal:
+    | "cashback"
+    | "travel"
+    | "balance_transfer"
+    | "build_credit"
+    | "low_interest";
   wantSignupBonus?: boolean;
   noAnnualFee?: boolean;
   prioritizeRewards?: boolean;
@@ -104,7 +109,9 @@ class CreditCardMatcher {
       preferences: {
         rewardsType: this.mapRewardsPreference(input.preferences.primaryGoal),
         noAnnualFee: input.preferences.noAnnualFee,
-        lowApr: input.preferences.primaryGoal === 'balance_transfer' || input.preferences.primaryGoal === 'low_interest',
+        lowApr:
+          input.preferences.primaryGoal === "balance_transfer" ||
+          input.preferences.primaryGoal === "low_interest",
         signupBonus: input.preferences.wantSignupBonus,
       },
     };
@@ -112,7 +119,7 @@ class CreditCardMatcher {
     // Get matching offers
     const matchResults = await offerService.matchOffers({
       userId: input.userId,
-      category: 'credit_card',
+      category: "credit_card",
       profile: userProfile,
       limit: 50, // Get more for filtering
       includeSponsored: true,
@@ -121,20 +128,23 @@ class CreditCardMatcher {
     });
 
     // Calculate value for each card
-    const recommendations = matchResults.map(match =>
-      this.calculateCardValue(match, input.spending, input.preferences)
+    const recommendations = matchResults.map((match) =>
+      this.calculateCardValue(match, input.spending, input.preferences),
     );
 
     // Sort by appropriate metric based on goal
     recommendations.sort((a, b) => {
-      if (input.preferences.primaryGoal === 'cashback' || input.preferences.primaryGoal === 'travel') {
+      if (
+        input.preferences.primaryGoal === "cashback" ||
+        input.preferences.primaryGoal === "travel"
+      ) {
         return b.annualValue - a.annualValue;
-      } else if (input.preferences.primaryGoal === 'balance_transfer') {
+      } else if (input.preferences.primaryGoal === "balance_transfer") {
         // Sort by lowest APR
         const aprA = a.offer.apr?.min || 100;
         const aprB = b.offer.apr?.min || 100;
         return aprA - aprB;
-      } else if (input.preferences.primaryGoal === 'build_credit') {
+      } else if (input.preferences.primaryGoal === "build_credit") {
         // Sort by approval likelihood
         return b.matchScore - a.matchScore;
       }
@@ -152,8 +162,8 @@ class CreditCardMatcher {
    * Get top card for a specific category
    */
   async getTopCardForCategory(
-    category: keyof SpendingProfile['monthlySpend']['categories'],
-    input: MatcherInput
+    category: keyof SpendingProfile["monthlySpend"]["categories"],
+    input: MatcherInput,
   ): Promise<CardRecommendation | null> {
     const recommendations = await this.getRecommendations(input);
 
@@ -178,7 +188,7 @@ class CreditCardMatcher {
   async compareCards(
     cardId1: string,
     cardId2: string,
-    input: MatcherInput
+    input: MatcherInput,
   ): Promise<{
     card1: CardRecommendation;
     card2: CardRecommendation;
@@ -194,7 +204,7 @@ class CreditCardMatcher {
     const offer2 = await offerService.getOffer(cardId2);
 
     if (!offer1 || !offer2) {
-      throw new Error('One or both cards not found');
+      throw new Error("One or both cards not found");
     }
 
     const userProfile: UserProfile = {
@@ -206,7 +216,8 @@ class CreditCardMatcher {
       offer: offer1,
       matchScore: offerService.calculateMatchScore(offer1, userProfile),
       eligibility: offerService.checkEligibility(offer1, userProfile).result,
-      eligibilityReasons: offerService.checkEligibility(offer1, userProfile).reasons,
+      eligibilityReasons: offerService.checkEligibility(offer1, userProfile)
+        .reasons,
       highlights: [],
       disclosures: [],
     };
@@ -215,55 +226,77 @@ class CreditCardMatcher {
       offer: offer2,
       matchScore: offerService.calculateMatchScore(offer2, userProfile),
       eligibility: offerService.checkEligibility(offer2, userProfile).result,
-      eligibilityReasons: offerService.checkEligibility(offer2, userProfile).reasons,
+      eligibilityReasons: offerService.checkEligibility(offer2, userProfile)
+        .reasons,
       highlights: [],
       disclosures: [],
     };
 
-    const rec1 = this.calculateCardValue(match1, input.spending, input.preferences);
-    const rec2 = this.calculateCardValue(match2, input.spending, input.preferences);
+    const rec1 = this.calculateCardValue(
+      match1,
+      input.spending,
+      input.preferences,
+    );
+    const rec2 = this.calculateCardValue(
+      match2,
+      input.spending,
+      input.preferences,
+    );
 
     const comparison = [
       {
-        metric: 'Annual Value',
+        metric: "Annual Value",
         card1Value: `$${rec1.annualValue.toFixed(0)}`,
         card2Value: `$${rec2.annualValue.toFixed(0)}`,
-        winner: rec1.annualValue > rec2.annualValue ? 'card1' : 'card2',
+        winner: rec1.annualValue > rec2.annualValue ? "card1" : "card2",
       },
       {
-        metric: 'First Year Value',
+        metric: "First Year Value",
         card1Value: `$${rec1.firstYearValue.toFixed(0)}`,
         card2Value: `$${rec2.firstYearValue.toFixed(0)}`,
-        winner: rec1.firstYearValue > rec2.firstYearValue ? 'card1' : 'card2',
+        winner: rec1.firstYearValue > rec2.firstYearValue ? "card1" : "card2",
       },
       {
-        metric: 'Annual Fee',
+        metric: "Annual Fee",
         card1Value: offer1.fees?.annual || 0,
         card2Value: offer2.fees?.annual || 0,
-        winner: (offer1.fees?.annual || 0) < (offer2.fees?.annual || 0) ? 'card1' : 'card2',
+        winner:
+          (offer1.fees?.annual || 0) < (offer2.fees?.annual || 0)
+            ? "card1"
+            : "card2",
       },
       {
-        metric: 'Signup Bonus',
+        metric: "Signup Bonus",
         card1Value: offer1.rewards?.signupBonus || 0,
         card2Value: offer2.rewards?.signupBonus || 0,
-        winner: (offer1.rewards?.signupBonus || 0) > (offer2.rewards?.signupBonus || 0) ? 'card1' : 'card2',
+        winner:
+          (offer1.rewards?.signupBonus || 0) >
+          (offer2.rewards?.signupBonus || 0)
+            ? "card1"
+            : "card2",
       },
       {
-        metric: 'Base Rewards Rate',
+        metric: "Base Rewards Rate",
         card1Value: `${offer1.rewards?.earnRate || 0}%`,
         card2Value: `${offer2.rewards?.earnRate || 0}%`,
-        winner: (offer1.rewards?.earnRate || 0) > (offer2.rewards?.earnRate || 0) ? 'card1' : 'card2',
+        winner:
+          (offer1.rewards?.earnRate || 0) > (offer2.rewards?.earnRate || 0)
+            ? "card1"
+            : "card2",
       },
       {
-        metric: 'Regular APR',
+        metric: "Regular APR",
         card1Value: `${offer1.apr?.min || 0}%`,
         card2Value: `${offer2.apr?.min || 0}%`,
-        winner: (offer1.apr?.min || 100) < (offer2.apr?.min || 100) ? 'card1' : 'card2',
+        winner:
+          (offer1.apr?.min || 100) < (offer2.apr?.min || 100)
+            ? "card1"
+            : "card2",
       },
     ];
 
     // Determine overall winner
-    const card1Wins = comparison.filter(c => c.winner === 'card1').length;
+    const card1Wins = comparison.filter((c) => c.winner === "card1").length;
     const winner = card1Wins > comparison.length / 2 ? cardId1 : cardId2;
 
     return {
@@ -284,10 +317,10 @@ class CreditCardMatcher {
   private calculateCardValue(
     match: MatchResult,
     spending: SpendingProfile,
-    preferences: CardPreferences
+    preferences: CardPreferences,
   ): CardRecommendation {
     const offer = match.offer;
-    const spendingOptimization: CardRecommendation['spendingOptimization'] = [];
+    const spendingOptimization: CardRecommendation["spendingOptimization"] = [];
 
     let categoryRewards = 0;
 
@@ -309,7 +342,10 @@ class CreditCardMatcher {
     }
 
     // Add base rewards for uncategorized spending
-    const categorizedSpend = Object.values(categories).reduce((sum, val) => sum + (val || 0), 0);
+    const categorizedSpend = Object.values(categories).reduce(
+      (sum, val) => sum + (val || 0),
+      0,
+    );
     const uncategorizedSpend = spending.monthlySpend.total - categorizedSpend;
     if (uncategorizedSpend > 0) {
       const baseRate = offer.rewards?.earnRate || 1;
@@ -317,7 +353,7 @@ class CreditCardMatcher {
       categoryRewards += annualReward;
 
       spendingOptimization.push({
-        category: 'other',
+        category: "other",
         currentSpend: uncategorizedSpend * 12,
         rewardRate: baseRate,
         annualReward,
@@ -327,11 +363,11 @@ class CreditCardMatcher {
     // Calculate signup bonus value (prorated if cash, or with points valuation)
     let signupBonusValue = 0;
     if (offer.rewards?.signupBonus) {
-      if (offer.rewards.type === 'cashback') {
+      if (offer.rewards.type === "cashback") {
         signupBonusValue = offer.rewards.signupBonus;
-      } else if (offer.rewards.type === 'points') {
+      } else if (offer.rewards.type === "points") {
         signupBonusValue = offer.rewards.signupBonus * 0.01; // 1 cent per point
-      } else if (offer.rewards.type === 'miles') {
+      } else if (offer.rewards.type === "miles") {
         signupBonusValue = offer.rewards.signupBonus * 0.012; // 1.2 cents per mile
       }
     }
@@ -387,19 +423,24 @@ class CreditCardMatcher {
   /**
    * Check if a bonus category matches a spending category
    */
-  private categoryMatches(bonusCategory: string, spendingCategory: string): boolean {
+  private categoryMatches(
+    bonusCategory: string,
+    spendingCategory: string,
+  ): boolean {
     const categoryMappings: Record<string, string[]> = {
-      groceries: ['grocery', 'supermarket', 'groceries'],
-      dining: ['restaurant', 'dining', 'food'],
-      travel: ['airline', 'hotel', 'travel', 'transportation'],
-      gas: ['gas', 'fuel', 'petrol'],
-      entertainment: ['entertainment', 'streaming', 'movies'],
-      shopping: ['retail', 'shopping', 'online shopping'],
-      utilities: ['utilities', 'phone', 'internet'],
+      groceries: ["grocery", "supermarket", "groceries"],
+      dining: ["restaurant", "dining", "food"],
+      travel: ["airline", "hotel", "travel", "transportation"],
+      gas: ["gas", "fuel", "petrol"],
+      entertainment: ["entertainment", "streaming", "movies"],
+      shopping: ["retail", "shopping", "online shopping"],
+      utilities: ["utilities", "phone", "internet"],
     };
 
-    const mappings = categoryMappings[spendingCategory.toLowerCase()] || [spendingCategory.toLowerCase()];
-    return mappings.some(m => bonusCategory.toLowerCase().includes(m));
+    const mappings = categoryMappings[spendingCategory.toLowerCase()] || [
+      spendingCategory.toLowerCase(),
+    ];
+    return mappings.some((m) => bonusCategory.toLowerCase().includes(m));
   }
 
   /**
@@ -408,7 +449,7 @@ class CreditCardMatcher {
   private calculatePerksValue(
     offer: Offer,
     preferences: CardPreferences,
-    spending: SpendingProfile
+    spending: SpendingProfile,
   ): number {
     let perksValue = 0;
 
@@ -420,31 +461,38 @@ class CreditCardMatcher {
     }
 
     // Travel perks for travelers
-    if (preferences.primaryGoal === 'travel' && spending.travelFrequency !== 'none') {
-      if (offer.tags?.includes('lounge_access')) {
-        const loungeVisits = spending.travelFrequency === 'very_frequent' ? 12 :
-                            spending.travelFrequency === 'frequent' ? 6 : 2;
+    if (
+      preferences.primaryGoal === "travel" &&
+      spending.travelFrequency !== "none"
+    ) {
+      if (offer.tags?.includes("lounge_access")) {
+        const loungeVisits =
+          spending.travelFrequency === "very_frequent"
+            ? 12
+            : spending.travelFrequency === "frequent"
+              ? 6
+              : 2;
         perksValue += loungeVisits * 35; // $35 per lounge visit
       }
 
-      if (offer.tags?.includes('tsa_precheck_credit')) {
+      if (offer.tags?.includes("tsa_precheck_credit")) {
         perksValue += 85 / 5; // $85 over 5 years = $17/year
       }
 
-      if (offer.tags?.includes('hotel_status')) {
+      if (offer.tags?.includes("hotel_status")) {
         perksValue += 100; // Estimated value of hotel status
       }
     }
 
     // Premium card perks
     if (preferences.wantPremiumPerks) {
-      if (offer.tags?.includes('concierge')) {
+      if (offer.tags?.includes("concierge")) {
         perksValue += 50;
       }
-      if (offer.tags?.includes('travel_insurance')) {
+      if (offer.tags?.includes("travel_insurance")) {
         perksValue += 75;
       }
-      if (offer.tags?.includes('purchase_protection')) {
+      if (offer.tags?.includes("purchase_protection")) {
         perksValue += 50;
       }
     }
@@ -459,7 +507,9 @@ class CreditCardMatcher {
   /**
    * Add comparison data to recommendations
    */
-  private addComparisons(recommendations: CardRecommendation[]): CardRecommendation[] {
+  private addComparisons(
+    recommendations: CardRecommendation[],
+  ): CardRecommendation[] {
     for (let i = 0; i < recommendations.length; i++) {
       const current = recommendations[i];
       const betterThan: string[] = [];
@@ -490,13 +540,13 @@ class CreditCardMatcher {
    * Map primary goal to rewards preference
    */
   private mapRewardsPreference(
-    goal: CardPreferences['primaryGoal']
-  ): 'cashback' | 'points' | 'miles' | undefined {
+    goal: CardPreferences["primaryGoal"],
+  ): "cashback" | "points" | "miles" | undefined {
     switch (goal) {
-      case 'cashback':
-        return 'cashback';
-      case 'travel':
-        return 'miles';
+      case "cashback":
+        return "cashback";
+      case "travel":
+        return "miles";
       default:
         return undefined;
     }
@@ -515,11 +565,11 @@ class CreditCardMatcher {
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
     const { data: transactions } = await supabase
-      .from('transactions')
-      .select('amount, category, merchant_name')
-      .eq('user_id', userId)
-      .gte('date', threeMonthsAgo.toISOString())
-      .eq('type', 'expense');
+      .from("transactions")
+      .select("amount, category, merchant_name")
+      .eq("user_id", userId)
+      .gte("date", threeMonthsAgo.toISOString())
+      .eq("type", "expense");
 
     if (!transactions || transactions.length === 0) {
       return {
@@ -548,7 +598,10 @@ class CreditCardMatcher {
       const amount = Math.abs(tx.amount);
       totalSpend += amount;
 
-      const category = this.mapTransactionCategory(tx.category, tx.merchant_name);
+      const category = this.mapTransactionCategory(
+        tx.category,
+        tx.merchant_name,
+      );
       categoryTotals[category] += amount;
     }
 
@@ -575,68 +628,74 @@ class CreditCardMatcher {
   /**
    * Map transaction category to spending category
    */
-  private mapTransactionCategory(category: string, merchantName?: string): string {
-    const categoryLower = category?.toLowerCase() || '';
-    const merchantLower = merchantName?.toLowerCase() || '';
+  private mapTransactionCategory(
+    category: string,
+    merchantName?: string,
+  ): string {
+    const categoryLower = category?.toLowerCase() || "";
+    const merchantLower = merchantName?.toLowerCase() || "";
 
     // Groceries
     if (
-      categoryLower.includes('grocery') ||
-      categoryLower.includes('supermarket') ||
-      merchantLower.includes('walmart') ||
-      merchantLower.includes('kroger') ||
-      merchantLower.includes('safeway')
+      categoryLower.includes("grocery") ||
+      categoryLower.includes("supermarket") ||
+      merchantLower.includes("walmart") ||
+      merchantLower.includes("kroger") ||
+      merchantLower.includes("safeway")
     ) {
-      return 'groceries';
+      return "groceries";
     }
 
     // Dining
     if (
-      categoryLower.includes('restaurant') ||
-      categoryLower.includes('food') ||
-      categoryLower.includes('dining')
+      categoryLower.includes("restaurant") ||
+      categoryLower.includes("food") ||
+      categoryLower.includes("dining")
     ) {
-      return 'dining';
+      return "dining";
     }
 
     // Travel
     if (
-      categoryLower.includes('airline') ||
-      categoryLower.includes('hotel') ||
-      categoryLower.includes('travel')
+      categoryLower.includes("airline") ||
+      categoryLower.includes("hotel") ||
+      categoryLower.includes("travel")
     ) {
-      return 'travel';
+      return "travel";
     }
 
     // Gas
-    if (categoryLower.includes('gas') || categoryLower.includes('fuel')) {
-      return 'gas';
+    if (categoryLower.includes("gas") || categoryLower.includes("fuel")) {
+      return "gas";
     }
 
     // Entertainment
     if (
-      categoryLower.includes('entertainment') ||
-      categoryLower.includes('streaming') ||
-      categoryLower.includes('movie')
+      categoryLower.includes("entertainment") ||
+      categoryLower.includes("streaming") ||
+      categoryLower.includes("movie")
     ) {
-      return 'entertainment';
+      return "entertainment";
     }
 
     // Shopping
-    if (categoryLower.includes('shopping') || categoryLower.includes('retail')) {
-      return 'shopping';
+    if (
+      categoryLower.includes("shopping") ||
+      categoryLower.includes("retail")
+    ) {
+      return "shopping";
     }
 
     // Utilities
     if (
-      categoryLower.includes('utility') ||
-      categoryLower.includes('phone') ||
-      categoryLower.includes('internet')
+      categoryLower.includes("utility") ||
+      categoryLower.includes("phone") ||
+      categoryLower.includes("internet")
     ) {
-      return 'utilities';
+      return "utilities";
     }
 
-    return 'other';
+    return "other";
   }
 }
 

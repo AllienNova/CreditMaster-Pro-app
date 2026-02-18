@@ -3,13 +3,13 @@
  * Displays individual credit score factors with impact indicators
  */
 
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { lightTheme as theme } from '../constants/theme';
+import React from "react";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { lightTheme as theme } from "../constants/theme";
 
-type ImpactLevel = 'high' | 'medium' | 'low';
-type FactorStatus = 'excellent' | 'good' | 'fair' | 'poor' | 'very_poor';
+type ImpactLevel = "high" | "medium" | "low";
+type FactorStatus = "excellent" | "good" | "fair" | "poor" | "very_poor";
 
 interface CreditFactorCardProps {
   name: string;
@@ -22,17 +22,20 @@ interface CreditFactorCardProps {
 }
 
 const impactConfig: Record<ImpactLevel, { label: string; color: string }> = {
-  high: { label: 'High Impact', color: '#DC2626' },
-  medium: { label: 'Medium Impact', color: '#F59E0B' },
-  low: { label: 'Low Impact', color: '#10B981' },
+  high: { label: "High Impact", color: "#DC2626" },
+  medium: { label: "Medium Impact", color: "#F59E0B" },
+  low: { label: "Low Impact", color: "#10B981" },
 };
 
-const statusConfig: Record<FactorStatus, { label: string; color: string; icon: string }> = {
-  excellent: { label: 'Excellent', color: '#10B981', icon: 'checkmark-circle' },
-  good: { label: 'Good', color: '#22C55E', icon: 'checkmark-circle-outline' },
-  fair: { label: 'Fair', color: '#F59E0B', icon: 'alert-circle-outline' },
-  poor: { label: 'Poor', color: '#EF4444', icon: 'alert-circle' },
-  very_poor: { label: 'Very Poor', color: '#DC2626', icon: 'close-circle' },
+const statusConfig: Record<
+  FactorStatus,
+  { label: string; color: string; icon: string }
+> = {
+  excellent: { label: "Excellent", color: "#10B981", icon: "checkmark-circle" },
+  good: { label: "Good", color: "#22C55E", icon: "checkmark-circle-outline" },
+  fair: { label: "Fair", color: "#F59E0B", icon: "alert-circle-outline" },
+  poor: { label: "Poor", color: "#EF4444", icon: "alert-circle" },
+  very_poor: { label: "Very Poor", color: "#DC2626", icon: "close-circle" },
 };
 
 export function CreditFactorCard({
@@ -51,14 +54,19 @@ export function CreditFactorCard({
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.titleRow}>
-          <Ionicons 
-            name={statusInfo.icon as keyof typeof Ionicons.glyphMap} 
-            size={24} 
-            color={statusInfo.color} 
+          <Ionicons
+            name={statusInfo.icon as keyof typeof Ionicons.glyphMap}
+            size={24}
+            color={statusInfo.color}
           />
           <Text style={styles.name}>{name}</Text>
         </View>
-        <View style={[styles.impactBadge, { backgroundColor: `${impactInfo.color}15` }]}>
+        <View
+          style={[
+            styles.impactBadge,
+            { backgroundColor: `${impactInfo.color}15` },
+          ]}
+        >
           <Text style={[styles.impactText, { color: impactInfo.color }]}>
             {impactInfo.label}
           </Text>
@@ -68,7 +76,12 @@ export function CreditFactorCard({
       <Text style={styles.description}>{description}</Text>
 
       <View style={styles.statusRow}>
-        <View style={[styles.statusBadge, { backgroundColor: `${statusInfo.color}15` }]}>
+        <View
+          style={[
+            styles.statusBadge,
+            { backgroundColor: `${statusInfo.color}15` },
+          ]}
+        >
           <Text style={[styles.statusText, { color: statusInfo.color }]}>
             {statusInfo.label}
           </Text>
@@ -78,14 +91,22 @@ export function CreditFactorCard({
 
       {recommendation && (
         <View style={styles.recommendationContainer}>
-          <Ionicons name="bulb-outline" size={16} color={theme.colors.primary} />
+          <Ionicons
+            name="bulb-outline"
+            size={16}
+            color={theme.colors.primary}
+          />
           <Text style={styles.recommendation}>{recommendation}</Text>
         </View>
       )}
 
       {onPress && (
         <View style={styles.chevronContainer}>
-          <Ionicons name="chevron-forward" size={20} color={theme.colors.textSecondary} />
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={theme.colors.textSecondary}
+          />
         </View>
       )}
     </View>
@@ -112,19 +133,19 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     marginBottom: theme.spacing.sm,
   },
   titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
   },
   name: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginLeft: theme.spacing.sm,
   },
@@ -135,7 +156,7 @@ const styles = StyleSheet.create({
   },
   impactText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   description: {
     fontSize: 14,
@@ -144,9 +165,9 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   statusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   statusBadge: {
     paddingHorizontal: theme.spacing.sm,
@@ -155,16 +176,16 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   value: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   recommendationContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     marginTop: theme.spacing.sm,
     paddingTop: theme.spacing.sm,
     borderTopWidth: 1,
@@ -178,9 +199,9 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   chevronContainer: {
-    position: 'absolute',
+    position: "absolute",
     right: theme.spacing.md,
-    top: '50%',
+    top: "50%",
     marginTop: -10,
   },
 });

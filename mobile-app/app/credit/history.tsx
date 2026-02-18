@@ -3,7 +3,7 @@
  * Interactive timeline chart with date range selector
  */
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -14,44 +14,44 @@ import {
   Dimensions,
   Alert,
   Share,
-} from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
+} from "react-native";
+import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
 import {
   lightTheme as theme,
   getScoreColor,
   getScoreLabel,
-} from '../../src/constants/theme';
-import { Card } from '../../src/components/Card';
-import { LineChart } from '../../src/components/charts/LineChart';
-import { useCreditStore } from '../../src/store/creditStore';
+} from "../../src/constants/theme";
+import { Card } from "../../src/components/Card";
+import { LineChart } from "../../src/components/charts/LineChart";
+import { useCreditStore } from "../../src/store/creditStore";
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
-type DateRange = '3m' | '6m' | '1y' | '2y' | 'all';
+type DateRange = "3m" | "6m" | "1y" | "2y" | "all";
 
 interface Milestone {
   date: string;
   score: number;
-  type: 'high' | 'low' | 'threshold' | 'improvement';
+  type: "high" | "low" | "threshold" | "improvement";
   description: string;
   icon: keyof typeof Ionicons.glyphMap;
   color: string;
 }
 
 const DATE_RANGES: { key: DateRange; label: string; months: number }[] = [
-  { key: '3m', label: '3M', months: 3 },
-  { key: '6m', label: '6M', months: 6 },
-  { key: '1y', label: '1Y', months: 12 },
-  { key: '2y', label: '2Y', months: 24 },
-  { key: 'all', label: 'All', months: 60 },
+  { key: "3m", label: "3M", months: 3 },
+  { key: "6m", label: "6M", months: 6 },
+  { key: "1y", label: "1Y", months: 12 },
+  { key: "2y", label: "2Y", months: 24 },
+  { key: "all", label: "All", months: 60 },
 ];
 
 export default function HistoryScreen() {
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedRange, setSelectedRange] = useState<DateRange>('6m');
-  const [selectedBureau, setSelectedBureau] = useState<string>('all');
+  const [selectedRange, setSelectedRange] = useState<DateRange>("6m");
+  const [selectedBureau, setSelectedBureau] = useState<string>("all");
 
   const {
     scores,
@@ -77,13 +77,13 @@ export default function HistoryScreen() {
   // Prepare chart data with bureau filtering
   const filteredHistory =
     scoreHistory?.history?.filter(
-      (h) => selectedBureau === 'all' || h.bureau === selectedBureau
+      (h) => selectedBureau === "all" || h.bureau === selectedBureau,
     ) || [];
 
   const chartData = filteredHistory.map((h) => ({
-    label: new Date(h.date).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
+    label: new Date(h.date).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
     }),
     value: h.score,
   }));
@@ -98,7 +98,7 @@ export default function HistoryScreen() {
   const avgScore =
     historyData.length > 0
       ? Math.round(
-          historyData.reduce((sum, h) => sum + h.score, 0) / historyData.length
+          historyData.reduce((sum, h) => sum + h.score, 0) / historyData.length,
         )
       : 0;
 
@@ -110,35 +110,35 @@ export default function HistoryScreen() {
 
     // Highest score
     const highestEntry = historyData.reduce((max, curr) =>
-      curr.score > max.score ? curr : max
+      curr.score > max.score ? curr : max,
     );
     result.push({
       date: highestEntry.date,
       score: highestEntry.score,
-      type: 'high',
-      description: 'Highest score achieved',
-      icon: 'trophy',
-      color: '#22C55E',
+      type: "high",
+      description: "Highest score achieved",
+      icon: "trophy",
+      color: "#22C55E",
     });
 
     // Lowest score
     const lowestEntry = historyData.reduce((min, curr) =>
-      curr.score < min.score ? curr : min
+      curr.score < min.score ? curr : min,
     );
     if (lowestEntry.score !== highestEntry.score) {
       result.push({
         date: lowestEntry.date,
         score: lowestEntry.score,
-        type: 'low',
-        description: 'Lowest score in period',
-        icon: 'alert-circle',
-        color: '#EF4444',
+        type: "low",
+        description: "Lowest score in period",
+        icon: "alert-circle",
+        color: "#EF4444",
       });
     }
 
     // Threshold crossings (e.g., 700, 750, 800)
     const thresholds = [700, 750, 800];
-    thresholds.forEach(threshold => {
+    thresholds.forEach((threshold) => {
       const crossingIndex = historyData.findIndex((item, idx) => {
         if (idx === 0) return false;
         const prev = historyData[idx - 1];
@@ -149,10 +149,10 @@ export default function HistoryScreen() {
         result.push({
           date: historyData[crossingIndex].date,
           score: historyData[crossingIndex].score,
-          type: 'threshold',
+          type: "threshold",
           description: `Crossed ${threshold} threshold`,
-          icon: 'checkmark-circle',
-          color: '#84CC16',
+          icon: "checkmark-circle",
+          color: "#84CC16",
         });
       }
     });
@@ -173,32 +173,34 @@ export default function HistoryScreen() {
       result.push({
         date: historyData[improvementIndex].date,
         score: historyData[improvementIndex].score,
-        type: 'improvement',
+        type: "improvement",
         description: `+${maxImprovement} point improvement`,
-        icon: 'trending-up',
-        color: '#3B82F6',
+        icon: "trending-up",
+        color: "#3B82F6",
       });
     }
 
-    return result.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return result.sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    );
   }, [historyData]);
 
   // Export/Share functionality
   const handleShare = async () => {
     try {
-      const message = `My Credit Score Progress:\n\nCurrent: ${currentScore}\nChange: ${totalChange >= 0 ? '+' : ''}${totalChange} points\nHigh: ${highScore}\nLow: ${lowScore}\nAverage: ${avgScore}\n\nTracked with Fynvita Pro`;
+      const message = `My Credit Score Progress:\n\nCurrent: ${currentScore}\nChange: ${totalChange >= 0 ? "+" : ""}${totalChange} points\nHigh: ${highScore}\nLow: ${lowScore}\nAverage: ${avgScore}\n\nTracked with Fynvita Pro`;
 
       await Share.share({
         message,
-        title: 'Credit Score History',
+        title: "Credit Score History",
       });
     } catch (error) {
-      if (__DEV__) console.error('Error sharing:', error);
+      if (__DEV__) console.error("Error sharing:", error);
     }
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView
         style={styles.scrollView}
         refreshControl={
@@ -261,14 +263,14 @@ export default function HistoryScreen() {
           <TouchableOpacity
             style={[
               styles.bureauChip,
-              selectedBureau === 'all' && styles.bureauChipActive,
+              selectedBureau === "all" && styles.bureauChipActive,
             ]}
-            onPress={() => setSelectedBureau('all')}
+            onPress={() => setSelectedBureau("all")}
           >
             <Text
               style={[
                 styles.bureauChipText,
-                selectedBureau === 'all' && styles.bureauChipTextActive,
+                selectedBureau === "all" && styles.bureauChipTextActive,
               ]}
             >
               All Bureaus
@@ -313,21 +315,21 @@ export default function HistoryScreen() {
             <View
               style={[
                 styles.changeBadge,
-                { backgroundColor: totalChange >= 0 ? '#D1FAE5' : '#FEE2E2' },
+                { backgroundColor: totalChange >= 0 ? "#D1FAE5" : "#FEE2E2" },
               ]}
             >
               <Ionicons
-                name={totalChange >= 0 ? 'trending-up' : 'trending-down'}
+                name={totalChange >= 0 ? "trending-up" : "trending-down"}
                 size={16}
-                color={totalChange >= 0 ? '#10B981' : '#EF4444'}
+                color={totalChange >= 0 ? "#10B981" : "#EF4444"}
               />
               <Text
                 style={[
                   styles.changeText,
-                  { color: totalChange >= 0 ? '#10B981' : '#EF4444' },
+                  { color: totalChange >= 0 ? "#10B981" : "#EF4444" },
                 ]}
               >
-                {totalChange >= 0 ? '+' : ''}
+                {totalChange >= 0 ? "+" : ""}
                 {totalChange} pts
               </Text>
             </View>
@@ -359,9 +361,9 @@ export default function HistoryScreen() {
                 No history data available
               </Text>
               <Text style={styles.emptyChartSubtext}>
-                {selectedBureau !== 'all'
+                {selectedBureau !== "all"
                   ? `No data for ${selectedBureau}. Try selecting "All Bureaus".`
-                  : 'Pull to refresh or connect to a credit bureau.'}
+                  : "Pull to refresh or connect to a credit bureau."}
               </Text>
             </View>
           )}
@@ -371,13 +373,13 @@ export default function HistoryScreen() {
         <View style={styles.statsRow}>
           <Card style={styles.statCard}>
             <Text style={styles.statLabel}>High</Text>
-            <Text style={[styles.statValue, { color: '#22C55E' }]}>
+            <Text style={[styles.statValue, { color: "#22C55E" }]}>
               {highScore}
             </Text>
           </Card>
           <Card style={styles.statCard}>
             <Text style={styles.statLabel}>Low</Text>
-            <Text style={[styles.statValue, { color: '#EF4444' }]}>
+            <Text style={[styles.statValue, { color: "#EF4444" }]}>
               {lowScore}
             </Text>
           </Card>
@@ -395,20 +397,36 @@ export default function HistoryScreen() {
             <Text style={styles.cardTitle}>Milestones</Text>
             {milestones.map((milestone, index) => (
               <View key={index} style={styles.milestoneItem}>
-                <View style={[styles.milestoneIcon, { backgroundColor: `${milestone.color}20` }]}>
-                  <Ionicons name={milestone.icon} size={20} color={milestone.color} />
+                <View
+                  style={[
+                    styles.milestoneIcon,
+                    { backgroundColor: `${milestone.color}20` },
+                  ]}
+                >
+                  <Ionicons
+                    name={milestone.icon}
+                    size={20}
+                    color={milestone.color}
+                  />
                 </View>
                 <View style={styles.milestoneContent}>
-                  <Text style={styles.milestoneDescription}>{milestone.description}</Text>
+                  <Text style={styles.milestoneDescription}>
+                    {milestone.description}
+                  </Text>
                   <View style={styles.milestoneDetails}>
                     <Text style={styles.milestoneDate}>
-                      {new Date(milestone.date).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
+                      {new Date(milestone.date).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
                       })}
                     </Text>
-                    <Text style={[styles.milestoneScore, { color: milestone.color }]}>
+                    <Text
+                      style={[
+                        styles.milestoneScore,
+                        { color: milestone.color },
+                      ]}
+                    >
                       {milestone.score}
                     </Text>
                   </View>
@@ -445,10 +463,10 @@ export default function HistoryScreen() {
                 <View style={styles.timelineContent}>
                   <View style={styles.timelineHeader}>
                     <Text style={styles.timelineDate}>
-                      {new Date(item.date).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
+                      {new Date(item.date).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
                       })}
                     </Text>
                     <Text
@@ -475,23 +493,23 @@ export default function HistoryScreen() {
             <Ionicons
               name="trending-up"
               size={20}
-              color={totalChange >= 0 ? '#22C55E' : '#EF4444'}
+              color={totalChange >= 0 ? "#22C55E" : "#EF4444"}
             />
             <Text style={styles.insightText}>
-              Your score has {totalChange >= 0 ? 'increased' : 'decreased'} by{' '}
+              Your score has {totalChange >= 0 ? "increased" : "decreased"} by{" "}
               {Math.abs(totalChange)} points in this period
             </Text>
           </View>
           <View style={styles.insightItem}>
             <Ionicons name="analytics" size={20} color={theme.colors.primary} />
             <Text style={styles.insightText}>
-              Your average score is {avgScore}, which is{' '}
-              {avgScore >= 670 ? 'above' : 'below'} the national average
+              Your average score is {avgScore}, which is{" "}
+              {avgScore >= 670 ? "above" : "below"} the national average
             </Text>
           </View>
           <TouchableOpacity
             style={styles.viewFactorsButton}
-            onPress={() => router.push('/credit/factors')}
+            onPress={() => router.push("/credit/factors")}
           >
             <Text style={styles.viewFactorsText}>View Credit Factors</Text>
             <Ionicons
@@ -511,16 +529,16 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1 },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.md,
   },
   backButton: { padding: 4 },
-  title: { fontSize: 20, fontWeight: '700', color: theme.colors.text },
+  title: { fontSize: 20, fontWeight: "700", color: theme.colors.text },
   rangeSelector: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.md,
     backgroundColor: theme.colors.surface,
@@ -530,16 +548,16 @@ const styles = StyleSheet.create({
   rangeButton: {
     flex: 1,
     paddingVertical: theme.spacing.sm,
-    alignItems: 'center',
+    alignItems: "center",
     borderRadius: theme.borderRadius.md,
   },
   rangeButtonActive: { backgroundColor: theme.colors.primary },
   rangeButtonText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     color: theme.colors.textSecondary,
   },
-  rangeButtonTextActive: { color: '#fff' },
+  rangeButtonTextActive: { color: "#fff" },
   bureauFilter: { marginBottom: theme.spacing.md },
   bureauFilterContent: { paddingHorizontal: theme.spacing.lg },
   bureauChip: {
@@ -553,30 +571,30 @@ const styles = StyleSheet.create({
   bureauChipText: {
     fontSize: 13,
     color: theme.colors.textSecondary,
-    textTransform: 'capitalize',
+    textTransform: "capitalize",
   },
-  bureauChipTextActive: { color: '#fff' },
+  bureauChipTextActive: { color: "#fff" },
   chartCard: {
     marginHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.md,
   },
   chartHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     marginBottom: theme.spacing.md,
   },
   currentScoreLabel: { fontSize: 12, color: theme.colors.textSecondary },
-  currentScore: { fontSize: 36, fontWeight: '700' },
+  currentScore: { fontSize: 36, fontWeight: "700" },
   changeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 16,
   },
-  changeText: { fontSize: 14, fontWeight: '600', marginLeft: 4 },
-  emptyChart: { height: 200, justifyContent: 'center', alignItems: 'center' },
+  changeText: { fontSize: 14, fontWeight: "600", marginLeft: 4 },
+  emptyChart: { height: 200, justifyContent: "center", alignItems: "center" },
   emptyChartText: {
     fontSize: 14,
     color: theme.colors.textSecondary,
@@ -586,18 +604,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: theme.colors.textSecondary,
     marginTop: theme.spacing.xs,
-    textAlign: 'center',
+    textAlign: "center",
     paddingHorizontal: theme.spacing.lg,
   },
   statsRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.md,
   },
   statCard: {
     flex: 1,
     marginHorizontal: 4,
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: theme.spacing.md,
   },
   statLabel: {
@@ -605,15 +623,15 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
     marginBottom: 4,
   },
-  statValue: { fontSize: 24, fontWeight: '700' },
+  statValue: { fontSize: 24, fontWeight: "700" },
   // Milestones Styles
   milestonesCard: {
     marginHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.md,
   },
   milestoneItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: theme.spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
@@ -622,8 +640,8 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: theme.spacing.md,
   },
   milestoneContent: {
@@ -631,14 +649,14 @@ const styles = StyleSheet.create({
   },
   milestoneDescription: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     color: theme.colors.text,
     marginBottom: 4,
   },
   milestoneDetails: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   milestoneDate: {
     fontSize: 12,
@@ -646,7 +664,7 @@ const styles = StyleSheet.create({
   },
   milestoneScore: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   timelineCard: {
     marginHorizontal: theme.spacing.lg,
@@ -654,13 +672,13 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: theme.spacing.md,
   },
-  timelineItem: { flexDirection: 'row', marginBottom: 0 },
+  timelineItem: { flexDirection: "row", marginBottom: 0 },
   timelineItemFirst: {},
-  timelineDot: { alignItems: 'center', marginRight: theme.spacing.md },
+  timelineDot: { alignItems: "center", marginRight: theme.spacing.md },
   dot: { width: 12, height: 12, borderRadius: 6 },
   timelineLine: {
     width: 2,
@@ -670,12 +688,12 @@ const styles = StyleSheet.create({
   },
   timelineContent: { flex: 1, paddingBottom: theme.spacing.md },
   timelineHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
-  timelineDate: { fontSize: 14, fontWeight: '500', color: theme.colors.text },
-  timelineScore: { fontSize: 18, fontWeight: '700' },
+  timelineDate: { fontSize: 14, fontWeight: "500", color: theme.colors.text },
+  timelineScore: { fontSize: 18, fontWeight: "700" },
   timelineLabel: {
     fontSize: 12,
     color: theme.colors.textSecondary,
@@ -686,8 +704,8 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   insightItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     marginBottom: theme.spacing.sm,
   },
   insightText: {
@@ -698,9 +716,9 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   viewFactorsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: theme.spacing.sm,
     backgroundColor: `${theme.colors.primary}10`,
     borderRadius: theme.borderRadius.md,
@@ -708,7 +726,7 @@ const styles = StyleSheet.create({
   },
   viewFactorsText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     color: theme.colors.primary,
     marginRight: 4,
   },

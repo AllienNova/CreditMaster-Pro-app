@@ -15,9 +15,27 @@ const mockUser = {
   joinedAt: "January 15, 2024",
   lastLogin: "2 hours ago",
   disputes: [
-    { id: "D001", type: "Late Payment", status: "resolved", bureau: "Experian", date: "2024-11-15" },
-    { id: "D002", type: "Collection Account", status: "pending", bureau: "Equifax", date: "2024-11-20" },
-    { id: "D003", type: "Inquiry", status: "in_progress", bureau: "TransUnion", date: "2024-11-25" },
+    {
+      id: "D001",
+      type: "Late Payment",
+      status: "resolved",
+      bureau: "Experian",
+      date: "2024-11-15",
+    },
+    {
+      id: "D002",
+      type: "Collection Account",
+      status: "pending",
+      bureau: "Equifax",
+      date: "2024-11-20",
+    },
+    {
+      id: "D003",
+      type: "Inquiry",
+      status: "in_progress",
+      bureau: "TransUnion",
+      date: "2024-11-25",
+    },
   ],
   payments: [
     { id: "P001", amount: "$79.00", date: "Dec 1, 2024", status: "paid" },
@@ -32,7 +50,12 @@ export default function AdminUserDetailPage() {
   return (
     <div>
       <div className="flex items-center gap-4 mb-8">
-        <Link href="/admin/users" className="text-gray-500 hover:text-gray-700 dark:hover:text-slate-200 dark:text-slate-200">← Back to Users</Link>
+        <Link
+          href="/admin/users"
+          className="text-gray-500 hover:text-gray-700 dark:hover:text-slate-200 dark:text-slate-200"
+        >
+          ← Back to Users
+        </Link>
       </div>
 
       {/* User Header */}
@@ -40,12 +63,21 @@ export default function AdminUserDetailPage() {
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-full bg-gradient-to-r from-emerald-400 to-blue-500 flex items-center justify-center text-white text-2xl font-bold">
-              {mockUser.name.split(" ").map((n) => n[0]).join("")}
+              {mockUser.name
+                .split(" ")
+                .map((n) => n[0])
+                .join("")}
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{mockUser.name}</h1>
-              <p className="text-gray-500 dark:text-slate-400">{mockUser.email}</p>
-              <p className="text-sm text-gray-400 dark:text-slate-500">{mockUser.phone}</p>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                {mockUser.name}
+              </h1>
+              <p className="text-gray-500 dark:text-slate-400">
+                {mockUser.email}
+              </p>
+              <p className="text-sm text-gray-400 dark:text-slate-500">
+                {mockUser.phone}
+              </p>
             </div>
           </div>
           <div className="flex gap-3">
@@ -62,24 +94,44 @@ export default function AdminUserDetailPage() {
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-slate-700">
-          <p className="text-sm text-gray-500 dark:text-slate-400">Credit Score</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">{mockUser.creditScore}</p>
-          <p className="text-sm text-emerald-500">{mockUser.scoreChange} points</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400">
+            Credit Score
+          </p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">
+            {mockUser.creditScore}
+          </p>
+          <p className="text-sm text-emerald-500">
+            {mockUser.scoreChange} points
+          </p>
         </div>
         <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-slate-700">
           <p className="text-sm text-gray-500 dark:text-slate-400">Plan</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">{mockUser.plan}</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">
+            {mockUser.plan}
+          </p>
           <p className="text-sm text-gray-400 dark:text-slate-500">$79/month</p>
         </div>
         <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-slate-700">
-          <p className="text-sm text-gray-500 dark:text-slate-400">Total Disputes</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">{mockUser.disputes.length}</p>
-          <p className="text-sm text-gray-400 dark:text-slate-500">1 resolved</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400">
+            Total Disputes
+          </p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">
+            {mockUser.disputes.length}
+          </p>
+          <p className="text-sm text-gray-400 dark:text-slate-500">
+            1 resolved
+          </p>
         </div>
         <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-slate-700">
-          <p className="text-sm text-gray-500 dark:text-slate-400">Member Since</p>
-          <p className="text-lg font-bold text-gray-900 dark:text-white">{mockUser.joinedAt}</p>
-          <p className="text-sm text-gray-400 dark:text-slate-500">Last login: {mockUser.lastLogin}</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400">
+            Member Since
+          </p>
+          <p className="text-lg font-bold text-gray-900 dark:text-white">
+            {mockUser.joinedAt}
+          </p>
+          <p className="text-sm text-gray-400 dark:text-slate-500">
+            Last login: {mockUser.lastLogin}
+          </p>
         </div>
       </div>
 
@@ -87,20 +139,33 @@ export default function AdminUserDetailPage() {
         {/* Disputes */}
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700">
           <div className="p-4 border-b border-gray-200 dark:border-slate-700">
-            <h2 className="font-semibold text-gray-900 dark:text-white">Recent Disputes</h2>
+            <h2 className="font-semibold text-gray-900 dark:text-white">
+              Recent Disputes
+            </h2>
           </div>
           <div className="divide-y divide-gray-100 dark:divide-slate-700">
             {mockUser.disputes.map((dispute) => (
-              <div key={dispute.id} className="p-4 flex items-center justify-between">
+              <div
+                key={dispute.id}
+                className="p-4 flex items-center justify-between"
+              >
                 <div>
-                  <p className="font-medium text-gray-900 dark:text-white">{dispute.type}</p>
-                  <p className="text-sm text-gray-500 dark:text-slate-400">{dispute.bureau} • {dispute.date}</p>
+                  <p className="font-medium text-gray-900 dark:text-white">
+                    {dispute.type}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-slate-400">
+                    {dispute.bureau} • {dispute.date}
+                  </p>
                 </div>
-                <span className={`px-2 py-1 text-xs rounded-full ${
-                  dispute.status === "resolved" ? "bg-emerald-100 text-emerald-700" :
-                  dispute.status === "pending" ? "bg-yellow-100 text-yellow-700" :
-                  "bg-blue-100 text-blue-700"
-                }`}>
+                <span
+                  className={`px-2 py-1 text-xs rounded-full ${
+                    dispute.status === "resolved"
+                      ? "bg-emerald-100 text-emerald-700"
+                      : dispute.status === "pending"
+                        ? "bg-yellow-100 text-yellow-700"
+                        : "bg-blue-100 text-blue-700"
+                  }`}
+                >
                   {dispute.status}
                 </span>
               </div>
@@ -111,14 +176,23 @@ export default function AdminUserDetailPage() {
         {/* Payments */}
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700">
           <div className="p-4 border-b border-gray-200 dark:border-slate-700">
-            <h2 className="font-semibold text-gray-900 dark:text-white">Payment History</h2>
+            <h2 className="font-semibold text-gray-900 dark:text-white">
+              Payment History
+            </h2>
           </div>
           <div className="divide-y divide-gray-100 dark:divide-slate-700">
             {mockUser.payments.map((payment) => (
-              <div key={payment.id} className="p-4 flex items-center justify-between">
+              <div
+                key={payment.id}
+                className="p-4 flex items-center justify-between"
+              >
                 <div>
-                  <p className="font-medium text-gray-900 dark:text-white">{payment.amount}</p>
-                  <p className="text-sm text-gray-500 dark:text-slate-400">{payment.date}</p>
+                  <p className="font-medium text-gray-900 dark:text-white">
+                    {payment.amount}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-slate-400">
+                    {payment.date}
+                  </p>
                 </div>
                 <span className="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700">
                   {payment.status}
@@ -131,4 +205,3 @@ export default function AdminUserDetailPage() {
     </div>
   );
 }
-

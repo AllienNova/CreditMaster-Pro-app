@@ -1,21 +1,21 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/components/ui/Toast';
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/components/ui/Toast";
 
 interface DisputeOpportunity {
   id: string;
   itemType: string;
   itemDescription: string;
-  bureau: 'experian' | 'equifax' | 'transunion' | 'all';
+  bureau: "experian" | "equifax" | "transunion" | "all";
   successProbability: number; // 0-100
   estimatedImpact: number; // credit score points
   recommendedStrategy: string;
   strategyDescription: string;
-  difficulty: 'easy' | 'medium' | 'hard';
+  difficulty: "easy" | "medium" | "hard";
   timeline: string;
-  priority: 'high' | 'medium' | 'low';
+  priority: "high" | "medium" | "low";
 }
 
 interface StrategyTemplate {
@@ -31,7 +31,7 @@ interface StrategyTemplate {
 interface EvidenceAssessment {
   itemId: string;
   itemDescription: string;
-  evidenceStrength: 'strong' | 'moderate' | 'weak';
+  evidenceStrength: "strong" | "moderate" | "weak";
   strengthScore: number; // 0-100
   missingEvidence: string[];
   recommendations: string[];
@@ -68,17 +68,17 @@ export default function AIDisputeStrategy() {
 
     try {
       setLoading(true);
-      const response = await fetch('/api/financial/disputes/ai-strategy');
-      
+      const response = await fetch("/api/financial/disputes/ai-strategy");
+
       if (!response.ok) {
-        throw new Error('Failed to fetch dispute strategy');
+        throw new Error("Failed to fetch dispute strategy");
       }
-      
+
       const result = await response.json();
       setData(result.data);
     } catch (_error) {
       // Error logged
-      toast.error('Failed to load AI strategy', 'Please try again later');
+      toast.error("Failed to load AI strategy", "Please try again later");
     } finally {
       setLoading(false);
     }
@@ -92,28 +92,40 @@ export default function AIDisputeStrategy() {
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case 'easy': return 'text-green-600 bg-green-100 border-green-200';
-      case 'medium': return 'text-yellow-600 bg-yellow-100 border-yellow-200';
-      case 'hard': return 'text-red-600 bg-red-100 border-red-200';
-      default: return 'text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700';
+      case "easy":
+        return "text-green-600 bg-green-100 border-green-200";
+      case "medium":
+        return "text-yellow-600 bg-yellow-100 border-yellow-200";
+      case "hard":
+        return "text-red-600 bg-red-100 border-red-200";
+      default:
+        return "text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-800 border-gray-200 dark:border-slate-700";
     }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'high': return 'bg-red-100 text-red-800 border-red-200';
-      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'low': return 'bg-blue-100 text-blue-800 border-blue-200';
-      default: return 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100 border-gray-200 dark:border-slate-700';
+      case "high":
+        return "bg-red-100 text-red-800 border-red-200";
+      case "medium":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "low":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      default:
+        return "bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100 border-gray-200 dark:border-slate-700";
     }
   };
 
   const getEvidenceColor = (strength: string) => {
     switch (strength) {
-      case 'strong': return 'text-green-600 bg-green-100';
-      case 'moderate': return 'text-yellow-600 bg-yellow-100';
-      case 'weak': return 'text-red-600 bg-red-100';
-      default: return 'text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-800';
+      case "strong":
+        return "text-green-600 bg-green-100";
+      case "moderate":
+        return "text-yellow-600 bg-yellow-100";
+      case "weak":
+        return "text-red-600 bg-red-100";
+      default:
+        return "text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-800";
     }
   };
 
@@ -141,14 +153,16 @@ export default function AIDisputeStrategy() {
           <div className="text-3xl"></div>
           <div>
             <h3 className="text-xl font-bold">AI Dispute Intelligence</h3>
-            <p className="text-sm opacity-90">Strategy recommendations and success predictions</p>
+            <p className="text-sm opacity-90">
+              Strategy recommendations and success predictions
+            </p>
           </div>
         </div>
         <button
           onClick={() => setExpanded(!expanded)}
           className="px-4 py-2 bg-white hover:bg-white dark:bg-slate-800/30 rounded-lg transition-colors text-sm font-medium"
         >
-          {expanded ? 'Collapse' : 'Expand'}
+          {expanded ? "Collapse" : "Expand"}
         </button>
       </div>
 
@@ -159,8 +173,12 @@ export default function AIDisputeStrategy() {
             {/* Overall Success Score */}
             <div className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium opacity-90">Success Probability</span>
-                <span className="text-2xl font-bold">{data.overallSuccessScore}%</span>
+                <span className="text-sm font-medium opacity-90">
+                  Success Probability
+                </span>
+                <span className="text-2xl font-bold">
+                  {data.overallSuccessScore}%
+                </span>
               </div>
               <div className="w-full bg-white dark:bg-slate-800/20 rounded-full h-2">
                 <div
@@ -169,24 +187,40 @@ export default function AIDisputeStrategy() {
                 ></div>
               </div>
               <p className="text-xs opacity-75 mt-2">
-                {data.overallSuccessScore >= 70 ? 'High success rate' : data.overallSuccessScore >= 50 ? 'Moderate success rate' : 'Challenging cases'}
+                {data.overallSuccessScore >= 70
+                  ? "High success rate"
+                  : data.overallSuccessScore >= 50
+                    ? "Moderate success rate"
+                    : "Challenging cases"}
               </p>
             </div>
 
             {/* Opportunities Count */}
             <div className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium opacity-90">Dispute Opportunities</span>
-                <span className="text-2xl font-bold">{data.opportunities.length}</span>
+                <span className="text-sm font-medium opacity-90">
+                  Dispute Opportunities
+                </span>
+                <span className="text-2xl font-bold">
+                  {data.opportunities.length}
+                </span>
               </div>
               <div className="flex items-center gap-2 text-xs mt-2">
                 <span className="opacity-75">High Priority:</span>
                 <span className="font-semibold">
-                  {data.opportunities.filter(o => o.priority === 'high').length}
+                  {
+                    data.opportunities.filter((o) => o.priority === "high")
+                      .length
+                  }
                 </span>
               </div>
               <p className="text-xs opacity-75 mt-1">
-                Potential impact: +{data.opportunities.reduce((sum, o) => sum + o.estimatedImpact, 0)} points
+                Potential impact: +
+                {data.opportunities.reduce(
+                  (sum, o) => sum + o.estimatedImpact,
+                  0,
+                )}{" "}
+                points
               </p>
             </div>
           </div>
@@ -199,27 +233,42 @@ export default function AIDisputeStrategy() {
             </h4>
             <div className="space-y-2">
               {data.opportunities.slice(0, 3).map((opp) => (
-                <div key={opp.id} className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-3">
+                <div
+                  key={opp.id}
+                  className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-3"
+                >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-sm">{opp.itemType}</span>
-                        <span className={`text-xs px-2 py-0.5 rounded border ${getPriorityColor(opp.priority)}`}>
+                        <span className="font-medium text-sm">
+                          {opp.itemType}
+                        </span>
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded border ${getPriorityColor(opp.priority)}`}
+                        >
                           {opp.priority}
                         </span>
-                        <span className={`text-xs px-2 py-0.5 rounded border ${getDifficultyColor(opp.difficulty)}`}>
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded border ${getDifficultyColor(opp.difficulty)}`}
+                        >
                           {opp.difficulty}
                         </span>
                       </div>
-                      <p className="text-xs opacity-75 mb-2">{opp.itemDescription}</p>
+                      <p className="text-xs opacity-75 mb-2">
+                        {opp.itemDescription}
+                      </p>
                       <p className="text-xs bg-white dark:bg-slate-800/10 rounded px-2 py-1">
                         Strategy: {opp.recommendedStrategy}
                       </p>
                     </div>
                     <div className="text-right ml-3">
-                      <div className="text-sm font-bold text-green-300">{opp.successProbability}%</div>
+                      <div className="text-sm font-bold text-green-300">
+                        {opp.successProbability}%
+                      </div>
                       <div className="text-xs opacity-75">success</div>
-                      <div className="text-sm font-bold text-yellow-300 mt-1">+{opp.estimatedImpact}</div>
+                      <div className="text-sm font-bold text-yellow-300 mt-1">
+                        +{opp.estimatedImpact}
+                      </div>
                       <div className="text-xs opacity-75">points</div>
                     </div>
                   </div>
@@ -240,20 +289,29 @@ export default function AIDisputeStrategy() {
             </h4>
             <div className="space-y-2">
               {data.templates.slice(0, 3).map((template) => (
-                <div key={template.id} className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-3">
+                <div
+                  key={template.id}
+                  className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-3"
+                >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
-                      <div className="font-medium text-sm mb-1">{template.name}</div>
-                      <p className="text-xs opacity-75 mb-2">{template.description}</p>
+                      <div className="font-medium text-sm mb-1">
+                        {template.name}
+                      </div>
+                      <p className="text-xs opacity-75 mb-2">
+                        {template.description}
+                      </p>
                       <div className="text-xs bg-white dark:bg-slate-800/10 rounded px-2 py-1 mb-2">
                         Legal Basis: {template.legalBasis}
                       </div>
                       <div className="text-xs opacity-75">
-                        Best for: {template.bestFor.join(', ')}
+                        Best for: {template.bestFor.join(", ")}
                       </div>
                     </div>
                     <div className="text-right ml-3">
-                      <div className="text-lg font-bold text-green-300">{template.successRate}%</div>
+                      <div className="text-lg font-bold text-green-300">
+                        {template.successRate}%
+                      </div>
                       <div className="text-xs opacity-75">success rate</div>
                     </div>
                   </div>
@@ -271,18 +329,25 @@ export default function AIDisputeStrategy() {
               </h4>
               <div className="space-y-2">
                 {data.evidenceAssessments.slice(0, 3).map((assessment, idx) => (
-                  <div key={idx} className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-3">
+                  <div
+                    key={idx}
+                    className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-3"
+                  >
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-sm">{assessment.itemDescription}</span>
-                          <span className={`text-xs px-2 py-1 rounded font-semibold ${getEvidenceColor(assessment.evidenceStrength)}`}>
+                          <span className="font-medium text-sm">
+                            {assessment.itemDescription}
+                          </span>
+                          <span
+                            className={`text-xs px-2 py-1 rounded font-semibold ${getEvidenceColor(assessment.evidenceStrength)}`}
+                          >
                             {assessment.evidenceStrength}
                           </span>
                         </div>
                         {assessment.missingEvidence.length > 0 && (
                           <div className="text-xs opacity-75 mb-2">
-                            Missing: {assessment.missingEvidence.join(', ')}
+                            Missing: {assessment.missingEvidence.join(", ")}
                           </div>
                         )}
                         <p className="text-xs bg-white dark:bg-slate-800/10 rounded px-2 py-1">
@@ -290,7 +355,9 @@ export default function AIDisputeStrategy() {
                         </p>
                       </div>
                       <div className="text-right ml-3">
-                        <div className="text-lg font-bold">{assessment.strengthScore}/100</div>
+                        <div className="text-lg font-bold">
+                          {assessment.strengthScore}/100
+                        </div>
                         <div className="text-xs opacity-75">strength</div>
                       </div>
                     </div>
@@ -308,20 +375,29 @@ export default function AIDisputeStrategy() {
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {data.timelinePredictions.slice(0, 2).map((prediction, idx) => (
-                <div key={idx} className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-3">
+                <div
+                  key={idx}
+                  className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-3"
+                >
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">{prediction.disputeType}</span>
-                    <span className="text-lg font-bold">{prediction.estimatedDays} days</span>
+                    <span className="text-sm font-medium">
+                      {prediction.disputeType}
+                    </span>
+                    <span className="text-lg font-bold">
+                      {prediction.estimatedDays} days
+                    </span>
                   </div>
                   <div className="text-xs opacity-75 mb-2">
                     {prediction.confidence}% confidence
                   </div>
                   <div className="space-y-1">
-                    {prediction.milestones.slice(0, 2).map((milestone, mIdx) => (
-                      <div key={mIdx} className="text-xs opacity-75">
-                        Day {milestone.day}: {milestone.event}
-                      </div>
-                    ))}
+                    {prediction.milestones
+                      .slice(0, 2)
+                      .map((milestone, mIdx) => (
+                        <div key={mIdx} className="text-xs opacity-75">
+                          Day {milestone.day}: {milestone.event}
+                        </div>
+                      ))}
                   </div>
                 </div>
               ))}
@@ -330,7 +406,9 @@ export default function AIDisputeStrategy() {
 
           {/* Recommended Next Steps */}
           <div className="bg-white dark:bg-slate-800/10 backdrop-blur-sm rounded-lg p-4">
-            <h4 className="text-sm font-semibold mb-3">Recommended Next Steps</h4>
+            <h4 className="text-sm font-semibold mb-3">
+              Recommended Next Steps
+            </h4>
             <ul className="space-y-2">
               {data.recommendedNextSteps.slice(0, 4).map((step, idx) => (
                 <li key={idx} className="flex items-start gap-2 text-sm">
@@ -345,4 +423,3 @@ export default function AIDisputeStrategy() {
     </div>
   );
 }
-

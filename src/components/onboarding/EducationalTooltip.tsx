@@ -1,20 +1,20 @@
 /**
  * Educational Tooltip Component (Web)
- * 
+ *
  * Displays contextual help and educational content with portal-based rendering
  */
 
-'use client';
+"use client";
 
-import React, { useState, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { InformationCircleIcon } from '@heroicons/react/24/outline';
+import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { InformationCircleIcon } from "@heroicons/react/24/outline";
 
 export interface EducationalTooltipProps {
   title: string;
   content: string;
   learnMoreUrl?: string;
-  position?: 'top' | 'bottom' | 'left' | 'right';
+  position?: "top" | "bottom" | "left" | "right";
   children?: React.ReactNode;
   className?: string;
 }
@@ -23,9 +23,9 @@ export function EducationalTooltip({
   title,
   content,
   learnMoreUrl,
-  position = 'top',
+  position = "top",
   children,
-  className = '',
+  className = "",
 }: EducationalTooltipProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
@@ -37,33 +37,43 @@ export function EducationalTooltip({
     if (isOpen && triggerRef.current && tooltipRef.current) {
       const triggerRect = triggerRef.current.getBoundingClientRect();
       const tooltipRect = tooltipRef.current.getBoundingClientRect();
-      
+
       let top = 0;
       let left = 0;
 
       switch (position) {
-        case 'top':
+        case "top":
           top = triggerRect.top - tooltipRect.height - 8;
-          left = triggerRect.left + (triggerRect.width / 2) - (tooltipRect.width / 2);
+          left =
+            triggerRect.left + triggerRect.width / 2 - tooltipRect.width / 2;
           break;
-        case 'bottom':
+        case "bottom":
           top = triggerRect.bottom + 8;
-          left = triggerRect.left + (triggerRect.width / 2) - (tooltipRect.width / 2);
+          left =
+            triggerRect.left + triggerRect.width / 2 - tooltipRect.width / 2;
           break;
-        case 'left':
-          top = triggerRect.top + (triggerRect.height / 2) - (tooltipRect.height / 2);
+        case "left":
+          top =
+            triggerRect.top + triggerRect.height / 2 - tooltipRect.height / 2;
           left = triggerRect.left - tooltipRect.width - 8;
           break;
-        case 'right':
-          top = triggerRect.top + (triggerRect.height / 2) - (tooltipRect.height / 2);
+        case "right":
+          top =
+            triggerRect.top + triggerRect.height / 2 - tooltipRect.height / 2;
           left = triggerRect.right + 8;
           break;
       }
 
       // Keep tooltip within viewport
       const padding = 16;
-      top = Math.max(padding, Math.min(top, window.innerHeight - tooltipRect.height - padding));
-      left = Math.max(padding, Math.min(left, window.innerWidth - tooltipRect.width - padding));
+      top = Math.max(
+        padding,
+        Math.min(top, window.innerHeight - tooltipRect.height - padding),
+      );
+      left = Math.max(
+        padding,
+        Math.min(left, window.innerWidth - tooltipRect.width - padding),
+      );
 
       setTooltipPosition({ top, left });
     }
@@ -72,14 +82,14 @@ export function EducationalTooltip({
   // Close on escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         setIsOpen(false);
       }
     };
 
     if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
-      return () => document.removeEventListener('keydown', handleEscape);
+      document.addEventListener("keydown", handleEscape);
+      return () => document.removeEventListener("keydown", handleEscape);
     }
   }, [isOpen]);
 
@@ -112,8 +122,18 @@ export function EducationalTooltip({
               className="inline-flex items-center mt-3 text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
             >
               Learn more
-              <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              <svg
+                className="w-4 h-4 ml-1"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </a>
           )}
@@ -123,8 +143,18 @@ export function EducationalTooltip({
           className="text-gray-400 hover:text-gray-600 dark:text-slate-300 dark:hover:text-gray-200"
           aria-label="Close tooltip"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
           </svg>
         </button>
       </div>
@@ -143,21 +173,22 @@ export function EducationalTooltip({
       >
         {children || <InformationCircleIcon className="w-5 h-5" />}
       </button>
-      
-      {isOpen && typeof window !== 'undefined' && createPortal(
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setIsOpen(false)}
-            aria-hidden="true"
-          />
-          {/* Tooltip */}
-          {tooltipContent}
-        </>,
-        document.body
-      )}
+
+      {isOpen &&
+        typeof window !== "undefined" &&
+        createPortal(
+          <>
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => setIsOpen(false)}
+              aria-hidden="true"
+            />
+            {/* Tooltip */}
+            {tooltipContent}
+          </>,
+          document.body,
+        )}
     </>
   );
 }
-

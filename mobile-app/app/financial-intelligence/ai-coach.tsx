@@ -3,15 +3,24 @@
  * Personalized financial coaching based on Dave Ramsey's Baby Steps
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, TextInput } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
-import { lightTheme as theme } from '../../src/constants/theme';
-import { Card } from '../../src/components/Card';
-import { ProgressBar } from '../../src/components/ProgressBar';
-import { BottomSheet } from '../../src/components/BottomSheet';
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  RefreshControl,
+  TextInput,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { router } from "expo-router";
+import { lightTheme as theme } from "../../src/constants/theme";
+import { Card } from "../../src/components/Card";
+import { ProgressBar } from "../../src/components/ProgressBar";
+import { BottomSheet } from "../../src/components/BottomSheet";
 
 interface BabyStep {
   step: number;
@@ -23,10 +32,10 @@ interface BabyStep {
 
 interface Recommendation {
   id: string;
-  type: 'opportunity' | 'warning' | 'tip';
+  type: "opportunity" | "warning" | "tip";
   title: string;
   description: string;
-  priority: 'critical' | 'high' | 'medium' | 'low';
+  priority: "critical" | "high" | "medium" | "low";
   actionable: boolean;
 }
 
@@ -36,18 +45,18 @@ export default function AICoachScreen() {
   const [babySteps, setBabySteps] = useState<BabyStep[]>([]);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [healthScore, setHealthScore] = useState(0);
-  const [userName, setUserName] = useState('');
+  const [userName, setUserName] = useState("");
   const [currentBabyStep, setCurrentBabyStep] = useState(1);
   const [showAskModal, setShowAskModal] = useState(false);
-  const [question, setQuestion] = useState('');
+  const [question, setQuestion] = useState("");
   const [askingQuestion, setAskingQuestion] = useState(false);
 
   const fetchCoachData = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/ai/financial-coach/dashboard', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/ai/financial-coach/dashboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
       });
       if (response.ok) {
         const result = await response.json();
@@ -55,11 +64,11 @@ export default function AICoachScreen() {
         setBabySteps(data.babySteps || []);
         setRecommendations(data.recommendations || []);
         setHealthScore(data.healthScore || 0);
-        setUserName(data.userName || 'there');
+        setUserName(data.userName || "there");
         setCurrentBabyStep(data.currentBabyStep || 1);
       }
     } catch (error) {
-      console.error('Error fetching coach data:', error);
+      console.error("Error fetching coach data:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -77,29 +86,42 @@ export default function AICoachScreen() {
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'opportunity': return 'trending-up';
-      case 'warning': return 'warning';
-      case 'tip': return 'bulb';
-      default: return 'information-circle';
+      case "opportunity":
+        return "trending-up";
+      case "warning":
+        return "warning";
+      case "tip":
+        return "bulb";
+      default:
+        return "information-circle";
     }
   };
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'opportunity': return '#10B981';
-      case 'warning': return '#F59E0B';
-      case 'tip': return theme.colors.primary;
-      default: return '#6B7280';
+      case "opportunity":
+        return "#10B981";
+      case "warning":
+        return "#F59E0B";
+      case "tip":
+        return theme.colors.primary;
+      default:
+        return "#6B7280";
     }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'critical': return '#EF4444';
-      case 'high': return '#F59E0B';
-      case 'medium': return '#F59E0B';
-      case 'low': return theme.colors.primary;
-      default: return '#6B7280';
+      case "critical":
+        return "#EF4444";
+      case "high":
+        return "#F59E0B";
+      case "medium":
+        return "#F59E0B";
+      case "low":
+        return theme.colors.primary;
+      default:
+        return "#6B7280";
     }
   };
 
@@ -108,23 +130,23 @@ export default function AICoachScreen() {
 
     try {
       setAskingQuestion(true);
-      const response = await fetch('/api/ai/financial-coach/advice', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/ai/financial-coach/advice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question: question.trim() }),
       });
 
       if (response.ok) {
         // Navigate to chat screen with the question
         router.push({
-          pathname: '/financial-intelligence/chat',
+          pathname: "/financial-intelligence/chat",
           params: { initialQuestion: question.trim() },
         });
         setShowAskModal(false);
-        setQuestion('');
+        setQuestion("");
       }
     } catch (error) {
-      console.error('Error asking question:', error);
+      console.error("Error asking question:", error);
     } finally {
       setAskingQuestion(false);
     }
@@ -132,22 +154,22 @@ export default function AICoachScreen() {
 
   const quickActions = [
     {
-      icon: 'chatbubble-ellipses',
-      label: 'Ask Question',
+      icon: "chatbubble-ellipses",
+      label: "Ask Question",
       color: theme.colors.primary,
       onPress: () => setShowAskModal(true),
     },
     {
-      icon: 'list',
-      label: 'View Plan',
-      color: '#10B981',
-      onPress: () => router.push('/financial-intelligence/action-plan'),
+      icon: "list",
+      label: "View Plan",
+      color: "#10B981",
+      onPress: () => router.push("/financial-intelligence/action-plan"),
     },
     {
-      icon: 'stats-chart',
-      label: 'Check Progress',
-      color: '#8B5CF6',
-      onPress: () => router.push('/financial-intelligence/debt-payoff'),
+      icon: "stats-chart",
+      label: "Check Progress",
+      color: "#8B5CF6",
+      onPress: () => router.push("/financial-intelligence/debt-payoff"),
     },
   ];
 
@@ -167,7 +189,11 @@ export default function AICoachScreen() {
       <ScrollView
         style={styles.scrollView}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[theme.colors.primary]}
+          />
         }
       >
         {/* Coach Avatar & Greeting */}
@@ -182,7 +208,9 @@ export default function AICoachScreen() {
           </View>
           <View style={styles.greetingContainer}>
             <Text style={styles.greeting}>Hello, {userName}! 👋</Text>
-            <Text style={styles.subGreeting}>You're on Baby Step {currentBabyStep}</Text>
+            <Text style={styles.subGreeting}>
+              You're on Baby Step {currentBabyStep}
+            </Text>
           </View>
         </View>
 
@@ -191,11 +219,20 @@ export default function AICoachScreen() {
           {quickActions.map((action, index) => (
             <TouchableOpacity
               key={index}
-              style={[styles.quickActionButton, { backgroundColor: `${action.color}15` }]}
+              style={[
+                styles.quickActionButton,
+                { backgroundColor: `${action.color}15` },
+              ]}
               onPress={action.onPress}
             >
-              <Ionicons name={action.icon as any} size={24} color={action.color} />
-              <Text style={[styles.quickActionLabel, { color: action.color }]}>{action.label}</Text>
+              <Ionicons
+                name={action.icon as any}
+                size={24}
+                color={action.color}
+              />
+              <Text style={[styles.quickActionLabel, { color: action.color }]}>
+                {action.label}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -207,7 +244,10 @@ export default function AICoachScreen() {
             <Text style={styles.scoreText}>{healthScore}</Text>
             <Text style={styles.scoreLabel}>out of 100</Text>
           </View>
-          <ProgressBar progress={healthScore / 100} color={theme.colors.primary} />
+          <ProgressBar
+            progress={healthScore / 100}
+            color={theme.colors.primary}
+          />
         </Card>
 
         {/* Baby Steps */}
@@ -229,8 +269,13 @@ export default function AICoachScreen() {
               </View>
               {!step.completed && step.progress > 0 && (
                 <View style={styles.stepProgress}>
-                  <ProgressBar progress={step.progress / 100} color={theme.colors.primary} />
-                  <Text style={styles.progressText}>{step.progress}% complete</Text>
+                  <ProgressBar
+                    progress={step.progress / 100}
+                    color={theme.colors.primary}
+                  />
+                  <Text style={styles.progressText}>
+                    {step.progress}% complete
+                  </Text>
                 </View>
               )}
             </Card>
@@ -243,16 +288,34 @@ export default function AICoachScreen() {
           {recommendations.map((rec) => (
             <Card key={rec.id} style={styles.recommendationCard}>
               <View style={styles.recommendationHeader}>
-                <View style={[styles.typeIcon, { backgroundColor: `${getTypeColor(rec.type)}15` }]}>
-                  <Ionicons name={getTypeIcon(rec.type) as any} size={20} color={getTypeColor(rec.type)} />
+                <View
+                  style={[
+                    styles.typeIcon,
+                    { backgroundColor: `${getTypeColor(rec.type)}15` },
+                  ]}
+                >
+                  <Ionicons
+                    name={getTypeIcon(rec.type) as any}
+                    size={20}
+                    color={getTypeColor(rec.type)}
+                  />
                 </View>
                 <View style={styles.recommendationContent}>
                   <Text style={styles.recommendationTitle}>{rec.title}</Text>
-                  <Text style={styles.recommendationDescription}>{rec.description}</Text>
+                  <Text style={styles.recommendationDescription}>
+                    {rec.description}
+                  </Text>
                 </View>
               </View>
-              <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(rec.priority) }]}>
-                <Text style={styles.priorityText}>{rec.priority.toUpperCase()}</Text>
+              <View
+                style={[
+                  styles.priorityBadge,
+                  { backgroundColor: getPriorityColor(rec.priority) },
+                ]}
+              >
+                <Text style={styles.priorityText}>
+                  {rec.priority.toUpperCase()}
+                </Text>
               </View>
             </Card>
           ))}
@@ -268,7 +331,8 @@ export default function AICoachScreen() {
       >
         <View style={styles.askModalContent}>
           <Text style={styles.askModalDescription}>
-            Ask me anything about your finances, budgeting, debt payoff, or financial goals.
+            Ask me anything about your finances, budgeting, debt payoff, or
+            financial goals.
           </Text>
           <TextInput
             style={styles.askInput}
@@ -281,7 +345,10 @@ export default function AICoachScreen() {
             textAlignVertical="top"
           />
           <TouchableOpacity
-            style={[styles.askButton, (!question.trim() || askingQuestion) && styles.askButtonDisabled]}
+            style={[
+              styles.askButton,
+              (!question.trim() || askingQuestion) && styles.askButtonDisabled,
+            ]}
             onPress={handleAskQuestion}
             disabled={!question.trim() || askingQuestion}
           >
@@ -307,8 +374,8 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     marginTop: theme.spacing.md,
@@ -319,15 +386,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   coachHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: theme.spacing.lg,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: "#E5E7EB",
   },
   avatarContainer: {
-    position: 'relative',
+    position: "relative",
     marginRight: theme.spacing.md,
   },
   avatar: {
@@ -335,34 +402,34 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 30,
     backgroundColor: theme.colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   statusBadge: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     right: 0,
     width: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#FFFFFF",
+    justifyContent: "center",
+    alignItems: "center",
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: "#FFFFFF",
   },
   statusDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#10B981',
+    backgroundColor: "#10B981",
   },
   greetingContainer: {
     flex: 1,
   },
   greeting: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: theme.colors.text,
     marginBottom: 4,
   },
@@ -371,23 +438,23 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   quickActionsContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     padding: theme.spacing.md,
     gap: theme.spacing.sm,
   },
   quickActionButton: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
     padding: theme.spacing.md,
     borderRadius: theme.borderRadius.lg,
     minHeight: 80,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   quickActionLabel: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
     marginTop: theme.spacing.xs,
-    textAlign: 'center',
+    textAlign: "center",
   },
   card: {
     margin: theme.spacing.md,
@@ -397,17 +464,17 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: theme.colors.text,
     marginBottom: theme.spacing.md,
   },
   scoreContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginVertical: theme.spacing.md,
   },
   scoreText: {
     fontSize: 48,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: theme.colors.primary,
   },
   scoreLabel: {
@@ -419,29 +486,29 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   stepHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
   },
   stepNumber: {
     width: 40,
     height: 40,
     borderRadius: 20,
     backgroundColor: theme.colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: theme.spacing.md,
   },
   stepNumberText: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontWeight: "bold",
+    color: "#FFFFFF",
   },
   stepContent: {
     flex: 1,
   },
   stepTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: 4,
   },
@@ -456,21 +523,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: theme.colors.textSecondary,
     marginTop: 4,
-    textAlign: 'right',
+    textAlign: "right",
   },
   recommendationCard: {
     marginBottom: theme.spacing.md,
   },
   recommendationHeader: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: theme.spacing.sm,
   },
   typeIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: theme.spacing.md,
   },
   recommendationContent: {
@@ -478,7 +545,7 @@ const styles = StyleSheet.create({
   },
   recommendationTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: 4,
   },
@@ -487,7 +554,7 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   priorityBadge: {
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: 4,
     borderRadius: theme.borderRadius.sm,
@@ -495,8 +562,8 @@ const styles = StyleSheet.create({
   },
   priorityText: {
     fontSize: 10,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontWeight: "bold",
+    color: "#FFFFFF",
   },
   askModalContent: {
     padding: theme.spacing.md,
@@ -509,7 +576,7 @@ const styles = StyleSheet.create({
   },
   askInput: {
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: "#E5E7EB",
     borderRadius: theme.borderRadius.md,
     padding: theme.spacing.md,
     fontSize: 16,
@@ -518,9 +585,9 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   askButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: theme.colors.primary,
     padding: theme.spacing.md,
     borderRadius: theme.borderRadius.md,
@@ -531,8 +598,7 @@ const styles = StyleSheet.create({
   },
   askButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
 });
-

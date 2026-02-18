@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Payment Optimizer
@@ -7,56 +7,56 @@
  * Features timeline visualization, interest savings calculator, and score projections.
  */
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { useAuth } from '@/hooks/useAuth';
+import { useState } from "react";
+import Link from "next/link";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Account {
   id: string;
   name: string;
-  type: 'credit_card' | 'loan' | 'medical' | 'collection';
+  type: "credit_card" | "loan" | "medical" | "collection";
   balance: number;
   minPayment: number;
   apr: number;
   dueDate: number;
 }
 
-type Strategy = 'avalanche' | 'snowball' | 'utilization';
+type Strategy = "avalanche" | "snowball" | "utilization";
 
 export default function PaymentOptimizerPage() {
   const { user, loading: authLoading } = useAuth();
   const [accounts, setAccounts] = useState<Account[]>([
     {
-      id: '1',
-      name: 'Chase Freedom',
-      type: 'credit_card',
+      id: "1",
+      name: "Chase Freedom",
+      type: "credit_card",
       balance: 3500,
       minPayment: 105,
       apr: 18.99,
       dueDate: 15,
     },
     {
-      id: '2',
-      name: 'Capital One',
-      type: 'credit_card',
+      id: "2",
+      name: "Capital One",
+      type: "credit_card",
       balance: 2800,
       minPayment: 84,
       apr: 24.99,
       dueDate: 20,
     },
     {
-      id: '3',
-      name: 'Personal Loan',
-      type: 'loan',
+      id: "3",
+      name: "Personal Loan",
+      type: "loan",
       balance: 5000,
       minPayment: 150,
       apr: 12.5,
       dueDate: 1,
     },
     {
-      id: '4',
-      name: 'Medical Bill',
-      type: 'medical',
+      id: "4",
+      name: "Medical Bill",
+      type: "medical",
       balance: 800,
       minPayment: 50,
       apr: 0,
@@ -64,7 +64,7 @@ export default function PaymentOptimizerPage() {
     },
   ]);
   const [monthlyBudget, setMonthlyBudget] = useState(600);
-  const [strategy, setStrategy] = useState<Strategy>('avalanche');
+  const [strategy, setStrategy] = useState<Strategy>("avalanche");
 
   if (authLoading) {
     return (
@@ -80,20 +80,20 @@ export default function PaymentOptimizerPage() {
   const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
   const totalMinPayment = accounts.reduce(
     (sum, acc) => sum + acc.minPayment,
-    0
+    0,
   );
 
   const getSortedAccounts = () => {
     const sorted = [...accounts];
     switch (strategy) {
-      case 'avalanche':
+      case "avalanche":
         return sorted.sort((a, b) => b.apr - a.apr);
-      case 'snowball':
+      case "snowball":
         return sorted.sort((a, b) => a.balance - b.balance);
-      case 'utilization':
+      case "utilization":
         return sorted.sort((a, b) => {
-          if (a.type === 'credit_card' && b.type !== 'credit_card') return -1;
-          if (a.type !== 'credit_card' && b.type === 'credit_card') return 1;
+          if (a.type === "credit_card" && b.type !== "credit_card") return -1;
+          if (a.type !== "credit_card" && b.type === "credit_card") return 1;
           return b.apr - a.apr;
         });
       default:
@@ -104,7 +104,7 @@ export default function PaymentOptimizerPage() {
   interface PaymentEntry {
     name: string;
     amount: number;
-    type: 'minimum' | 'extra';
+    type: "minimum" | "extra";
   }
 
   interface PlanEntry {
@@ -128,7 +128,7 @@ export default function PaymentOptimizerPage() {
       // Pay minimums
       for (const account of tempAccounts) {
         const payment = Math.min(account.minPayment, account.balance);
-        payments.push({ name: account.name, amount: payment, type: 'minimum' });
+        payments.push({ name: account.name, amount: payment, type: "minimum" });
         account.balance -= payment;
         budgetRemaining -= payment;
       }
@@ -140,7 +140,7 @@ export default function PaymentOptimizerPage() {
         const existingPayment = payments.find((p) => p.name === priority.name);
         if (existingPayment) {
           existingPayment.amount += extra;
-          existingPayment.type = extra > 0 ? 'extra' : 'minimum';
+          existingPayment.type = extra > 0 ? "extra" : "minimum";
         }
         priority.balance -= extra;
       }
@@ -149,7 +149,7 @@ export default function PaymentOptimizerPage() {
       tempAccounts = tempAccounts.filter((acc) => acc.balance > 0);
 
       // Score projection
-      if (payments.some((p) => p.type === 'extra')) currentScore += 3;
+      if (payments.some((p) => p.type === "extra")) currentScore += 3;
 
       plan.push({
         month,
@@ -228,18 +228,18 @@ export default function PaymentOptimizerPage() {
 
           <div className="grid md:grid-cols-3 gap-4 mb-6">
             <button
-              onClick={() => setStrategy('avalanche')}
+              onClick={() => setStrategy("avalanche")}
               className={`p-6 rounded-lg border-2 transition-all ${
-                strategy === 'avalanche'
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 dark:border-slate-700 hover:border-blue-300'
+                strategy === "avalanche"
+                  ? "border-blue-500 bg-blue-50"
+                  : "border-gray-200 dark:border-slate-700 hover:border-blue-300"
               }`}
             >
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                   Avalanche
                 </h3>
-                {strategy === 'avalanche' && (
+                {strategy === "avalanche" && (
                   <svg
                     className="w-6 h-6 text-blue-600"
                     fill="currentColor"
@@ -262,18 +262,18 @@ export default function PaymentOptimizerPage() {
             </button>
 
             <button
-              onClick={() => setStrategy('snowball')}
+              onClick={() => setStrategy("snowball")}
               className={`p-6 rounded-lg border-2 transition-all ${
-                strategy === 'snowball'
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 dark:border-slate-700 hover:border-blue-300'
+                strategy === "snowball"
+                  ? "border-blue-500 bg-blue-50"
+                  : "border-gray-200 dark:border-slate-700 hover:border-blue-300"
               }`}
             >
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                   Snowball
                 </h3>
-                {strategy === 'snowball' && (
+                {strategy === "snowball" && (
                   <svg
                     className="w-6 h-6 text-blue-600"
                     fill="currentColor"
@@ -296,18 +296,18 @@ export default function PaymentOptimizerPage() {
             </button>
 
             <button
-              onClick={() => setStrategy('utilization')}
+              onClick={() => setStrategy("utilization")}
               className={`p-6 rounded-lg border-2 transition-all ${
-                strategy === 'utilization'
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 dark:border-slate-700 hover:border-blue-300'
+                strategy === "utilization"
+                  ? "border-blue-500 bg-blue-50"
+                  : "border-gray-200 dark:border-slate-700 hover:border-blue-300"
               }`}
             >
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                   Utilization
                 </h3>
-                {strategy === 'utilization' && (
+                {strategy === "utilization" && (
                   <svg
                     className="w-6 h-6 text-blue-600"
                     fill="currentColor"
@@ -332,12 +332,12 @@ export default function PaymentOptimizerPage() {
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-sm text-blue-900">
-              {strategy === 'avalanche' &&
-                'Avalanche method saves the most money by targeting high-interest debt first. Best for maximizing savings.'}
-              {strategy === 'snowball' &&
-                'Snowball method builds momentum with quick wins. Psychological boost from eliminating accounts faster.'}
-              {strategy === 'utilization' &&
-                'Utilization-first method improves your credit score fastest by reducing credit card balances.'}
+              {strategy === "avalanche" &&
+                "Avalanche method saves the most money by targeting high-interest debt first. Best for maximizing savings."}
+              {strategy === "snowball" &&
+                "Snowball method builds momentum with quick wins. Psychological boost from eliminating accounts faster."}
+              {strategy === "utilization" &&
+                "Utilization-first method improves your credit score fastest by reducing credit card balances."}
             </p>
           </div>
         </div>
@@ -374,19 +374,25 @@ export default function PaymentOptimizerPage() {
 
           <div className="grid md:grid-cols-3 gap-4">
             <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-4">
-              <div className="text-sm text-gray-600 dark:text-slate-300 mb-1">Minimum Payments</div>
+              <div className="text-sm text-gray-600 dark:text-slate-300 mb-1">
+                Minimum Payments
+              </div>
               <div className="text-2xl font-bold text-gray-900 dark:text-white">
                 ${totalMinPayment}
               </div>
             </div>
             <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-4">
-              <div className="text-sm text-gray-600 dark:text-slate-300 mb-1">Extra Payment</div>
+              <div className="text-sm text-gray-600 dark:text-slate-300 mb-1">
+                Extra Payment
+              </div>
               <div className="text-2xl font-bold text-green-600">
                 ${monthlyBudget - totalMinPayment}
               </div>
             </div>
             <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-4">
-              <div className="text-sm text-gray-600 dark:text-slate-300 mb-1">Payoff Timeline</div>
+              <div className="text-sm text-gray-600 dark:text-slate-300 mb-1">
+                Payoff Timeline
+              </div>
               <div className="text-2xl font-bold text-blue-600">
                 {payoffMonths} months
               </div>
@@ -418,7 +424,7 @@ export default function PaymentOptimizerPage() {
                         {account.name}
                       </h3>
                       <p className="text-sm text-gray-600 dark:text-slate-300 capitalize">
-                        {account.type.replace('_', ' ')}
+                        {account.type.replace("_", " ")}
                       </p>
                     </div>
                   </div>
@@ -434,13 +440,17 @@ export default function PaymentOptimizerPage() {
 
                 <div className="grid grid-cols-3 gap-4">
                   <div className="bg-gray-50 dark:bg-slate-900 rounded p-3">
-                    <div className="text-xs text-gray-600 dark:text-slate-300">Min Payment</div>
+                    <div className="text-xs text-gray-600 dark:text-slate-300">
+                      Min Payment
+                    </div>
                     <div className="text-lg font-bold text-gray-900 dark:text-white">
                       ${account.minPayment}
                     </div>
                   </div>
                   <div className="bg-gray-50 dark:bg-slate-900 rounded p-3">
-                    <div className="text-xs text-gray-600 dark:text-slate-300">Due Date</div>
+                    <div className="text-xs text-gray-600 dark:text-slate-300">
+                      Due Date
+                    </div>
                     <div className="text-lg font-bold text-gray-900 dark:text-white">
                       {account.dueDate}th
                     </div>
@@ -482,7 +492,7 @@ export default function PaymentOptimizerPage() {
                       <span className="text-xs font-semibold text-white">
                         {month.remainingDebt > 0
                           ? `$${month.remainingDebt.toLocaleString()} left`
-                          : 'Paid Off!'}
+                          : "Paid Off!"}
                       </span>
                     </div>
                   </div>

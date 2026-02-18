@@ -5,10 +5,8 @@
  * and generates rebalancing recommendations.
  */
 
-import { PortfolioService } from './PortfolioService';
-import {
-  AssetType,
-} from '../types/portfolio-db.types';
+import { PortfolioService } from "./PortfolioService";
+import { AssetType } from "../types/portfolio-db.types";
 
 /**
  * Asset allocation breakdown by type
@@ -49,9 +47,9 @@ export interface RebalanceRecommendation {
   current_allocation: number;
   target_allocation: number;
   deviation: number;
-  action: 'buy' | 'sell';
+  action: "buy" | "sell";
   amount: number;
-  priority: 'high' | 'medium' | 'low';
+  priority: "high" | "medium" | "low";
 }
 
 /**
@@ -61,7 +59,7 @@ export interface ConcentrationRisk {
   symbol: string;
   name: string;
   percentage: number;
-  risk_level: 'low' | 'medium' | 'high' | 'critical';
+  risk_level: "low" | "medium" | "high" | "critical";
   recommendation: string;
 }
 
@@ -77,7 +75,9 @@ export class AllocationAnalyzer {
    * @param portfolioId Portfolio ID
    * @returns Asset allocation by type
    */
-  async calculateAssetAllocation(portfolioId: string): Promise<AssetAllocationBreakdown> {
+  async calculateAssetAllocation(
+    portfolioId: string,
+  ): Promise<AssetAllocationBreakdown> {
     const portfolio = await this.portfolioService.getPortfolio(portfolioId);
     if (!portfolio) {
       throw new Error(`Portfolio ${portfolioId} not found`);
@@ -94,7 +94,10 @@ export class AllocationAnalyzer {
       };
     }
 
-    const totalValue = holdings.reduce((sum, h) => sum + (h.current_value || 0), 0);
+    const totalValue = holdings.reduce(
+      (sum, h) => sum + (h.current_value || 0),
+      0,
+    );
 
     if (totalValue === 0) {
       return {
@@ -121,14 +124,21 @@ export class AllocationAnalyzer {
 
     // Convert to percentages
     const result: AssetAllocationBreakdown = {
-      stocks: ((allocation[AssetType.STOCK] || 0) + (allocation[AssetType.ETF] || 0)) / totalValue * 100,
-      bonds: (allocation[AssetType.BOND] || 0) / totalValue * 100,
-      cash: (allocation[AssetType.CASH] || 0) / totalValue * 100,
-      crypto: (allocation[AssetType.CRYPTO] || 0) / totalValue * 100,
-      other: ((allocation[AssetType.MUTUAL_FUND] || 0) +
-              (allocation[AssetType.OPTION] || 0) +
-              (allocation[AssetType.FUTURE] || 0) +
-              (allocation[AssetType.OTHER] || 0)) / totalValue * 100,
+      stocks:
+        (((allocation[AssetType.STOCK] || 0) +
+          (allocation[AssetType.ETF] || 0)) /
+          totalValue) *
+        100,
+      bonds: ((allocation[AssetType.BOND] || 0) / totalValue) * 100,
+      cash: ((allocation[AssetType.CASH] || 0) / totalValue) * 100,
+      crypto: ((allocation[AssetType.CRYPTO] || 0) / totalValue) * 100,
+      other:
+        (((allocation[AssetType.MUTUAL_FUND] || 0) +
+          (allocation[AssetType.OPTION] || 0) +
+          (allocation[AssetType.FUTURE] || 0) +
+          (allocation[AssetType.OTHER] || 0)) /
+          totalValue) *
+        100,
     };
 
     return result;
@@ -139,7 +149,9 @@ export class AllocationAnalyzer {
    * @param portfolioId Portfolio ID
    * @returns Sector allocation array
    */
-  async calculateSectorAllocation(portfolioId: string): Promise<SectorAllocation[]> {
+  async calculateSectorAllocation(
+    portfolioId: string,
+  ): Promise<SectorAllocation[]> {
     const portfolio = await this.portfolioService.getPortfolio(portfolioId);
     if (!portfolio) {
       throw new Error(`Portfolio ${portfolioId} not found`);
@@ -150,7 +162,10 @@ export class AllocationAnalyzer {
       return [];
     }
 
-    const totalValue = holdings.reduce((sum, h) => sum + (h.current_value || 0), 0);
+    const totalValue = holdings.reduce(
+      (sum, h) => sum + (h.current_value || 0),
+      0,
+    );
 
     if (totalValue === 0) {
       return [];
@@ -160,7 +175,7 @@ export class AllocationAnalyzer {
     const sectorMap = new Map<string, { value: number; count: number }>();
 
     holdings.forEach((holding) => {
-      const sector = holding.sector || 'Unknown';
+      const sector = holding.sector || "Unknown";
       const value = holding.current_value || 0;
 
       if (!sectorMap.has(sector)) {
@@ -173,7 +188,9 @@ export class AllocationAnalyzer {
     });
 
     // Convert to array and sort by value
-    const sectorAllocations: SectorAllocation[] = Array.from(sectorMap.entries())
+    const sectorAllocations: SectorAllocation[] = Array.from(
+      sectorMap.entries(),
+    )
       .map(([sector, data]) => ({
         sector,
         value: data.value,
@@ -190,7 +207,9 @@ export class AllocationAnalyzer {
    * @param portfolioId Portfolio ID
    * @returns Diversification metrics including Herfindahl index
    */
-  async calculateDiversificationScore(portfolioId: string): Promise<DiversificationMetrics> {
+  async calculateDiversificationScore(
+    portfolioId: string,
+  ): Promise<DiversificationMetrics> {
     const portfolio = await this.portfolioService.getPortfolio(portfolioId);
     if (!portfolio) {
       throw new Error(`Portfolio ${portfolioId} not found`);
@@ -206,7 +225,10 @@ export class AllocationAnalyzer {
       };
     }
 
-    const totalValue = holdings.reduce((sum, h) => sum + (h.current_value || 0), 0);
+    const totalValue = holdings.reduce(
+      (sum, h) => sum + (h.current_value || 0),
+      0,
+    );
 
     if (totalValue === 0) {
       return {
@@ -229,7 +251,7 @@ export class AllocationAnalyzer {
     const effectiveHoldings = hhi > 0 ? 10000 / hhi : 0;
 
     // Concentration score (0-100, higher = more concentrated)
-    const concentrationScore = Math.min((hhi / 100), 100);
+    const concentrationScore = Math.min(hhi / 100, 100);
 
     // Diversification score (0-100, higher = more diversified)
     const diversificationScore = 100 - concentrationScore;
@@ -247,7 +269,9 @@ export class AllocationAnalyzer {
    * @param portfolioId Portfolio ID
    * @returns Array of concentration risk assessments
    */
-  async assessConcentrationRisk(portfolioId: string): Promise<ConcentrationRisk[]> {
+  async assessConcentrationRisk(
+    portfolioId: string,
+  ): Promise<ConcentrationRisk[]> {
     const portfolio = await this.portfolioService.getPortfolio(portfolioId);
     if (!portfolio) {
       throw new Error(`Portfolio ${portfolioId} not found`);
@@ -258,7 +282,10 @@ export class AllocationAnalyzer {
       return [];
     }
 
-    const totalValue = holdings.reduce((sum, h) => sum + (h.current_value || 0), 0);
+    const totalValue = holdings.reduce(
+      (sum, h) => sum + (h.current_value || 0),
+      0,
+    );
 
     if (totalValue === 0) {
       return [];
@@ -269,21 +296,23 @@ export class AllocationAnalyzer {
         const percentage = ((holding.current_value || 0) / totalValue) * 100;
 
         // Determine risk level based on percentage
-        let riskLevel: 'low' | 'medium' | 'high' | 'critical';
+        let riskLevel: "low" | "medium" | "high" | "critical";
         let recommendation: string;
 
         if (percentage < 5) {
-          riskLevel = 'low';
-          recommendation = 'Position size is well-balanced.';
+          riskLevel = "low";
+          recommendation = "Position size is well-balanced.";
         } else if (percentage < 10) {
-          riskLevel = 'medium';
-          recommendation = 'Consider monitoring this position closely.';
+          riskLevel = "medium";
+          recommendation = "Consider monitoring this position closely.";
         } else if (percentage < 20) {
-          riskLevel = 'high';
-          recommendation = 'Position is concentrated. Consider reducing exposure.';
+          riskLevel = "high";
+          recommendation =
+            "Position is concentrated. Consider reducing exposure.";
         } else {
-          riskLevel = 'critical';
-          recommendation = 'Position is highly concentrated. Strongly recommend diversifying.';
+          riskLevel = "critical";
+          recommendation =
+            "Position is highly concentrated. Strongly recommend diversifying.";
         }
 
         return {
@@ -294,7 +323,7 @@ export class AllocationAnalyzer {
           recommendation,
         };
       })
-      .filter((risk) => risk.risk_level !== 'low') // Only return medium+ risks
+      .filter((risk) => risk.risk_level !== "low") // Only return medium+ risks
       .sort((a, b) => b.percentage - a.percentage);
 
     return risks;
@@ -306,7 +335,7 @@ export class AllocationAnalyzer {
    * @returns Array of rebalancing recommendations
    */
   async generateRebalancingRecommendations(
-    portfolioId: string
+    portfolioId: string,
   ): Promise<RebalanceRecommendation[]> {
     const portfolio = await this.portfolioService.getPortfolio(portfolioId);
     if (!portfolio) {
@@ -327,12 +356,21 @@ export class AllocationAnalyzer {
     }
 
     const currentAllocation = await this.calculateAssetAllocation(portfolioId);
-    const totalValue = holdings.reduce((sum, h) => sum + (h.current_value || 0), 0);
+    const totalValue = holdings.reduce(
+      (sum, h) => sum + (h.current_value || 0),
+      0,
+    );
 
     const recommendations: RebalanceRecommendation[] = [];
 
     // Check each asset type
-    const assetTypes: Array<keyof AssetAllocationBreakdown> = ['stocks', 'bonds', 'cash', 'crypto', 'other'];
+    const assetTypes: Array<keyof AssetAllocationBreakdown> = [
+      "stocks",
+      "bonds",
+      "cash",
+      "crypto",
+      "other",
+    ];
 
     assetTypes.forEach((assetType) => {
       const currentPercent = currentAllocation[assetType] || 0;
@@ -341,7 +379,7 @@ export class AllocationAnalyzer {
 
       // Only recommend if deviation exceeds threshold
       if (Math.abs(deviation) > rebalanceThreshold) {
-        const action = deviation > 0 ? 'sell' : 'buy';
+        const action = deviation > 0 ? "sell" : "buy";
         const amount = Math.abs((deviation / 100) * totalValue);
 
         recommendations.push({
@@ -351,15 +389,17 @@ export class AllocationAnalyzer {
           deviation,
           action,
           amount,
-          priority: Math.abs(deviation) > rebalanceThreshold * 2 ? 'high' : 'medium',
+          priority:
+            Math.abs(deviation) > rebalanceThreshold * 2 ? "high" : "medium",
         });
       }
     });
 
     // Sort by absolute deviation (highest priority first)
-    recommendations.sort((a, b) => Math.abs(b.deviation) - Math.abs(a.deviation));
+    recommendations.sort(
+      (a, b) => Math.abs(b.deviation) - Math.abs(a.deviation),
+    );
 
     return recommendations;
   }
 }
-

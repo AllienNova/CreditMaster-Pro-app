@@ -29,10 +29,9 @@ export {}; // Make this a module
 declare global {
   namespace Cypress {
     interface Chainable {
-      login(email: string, password: string): Chainable<void>
-      drag(subject: string, options?: any): Chainable<void>
-      dismiss(subject: string, options?: any): Chainable<void>
+      login(email: string, password: string): Chainable<void>;
+      drag(subject: string, options?: any): Chainable<void>;
+      dismiss(subject: string, options?: any): Chainable<void>;
     }
   }
 }
-

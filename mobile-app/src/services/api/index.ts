@@ -17,11 +17,11 @@ export {
   apiRequest,
   initializeApiClient,
   processOfflineQueue,
-} from './client';
+} from "./client";
 
 // API modules
-export { creditScoreApi, creditMonitoringApi, creditReportApi } from './credit';
-export { disputeApi, disputeLetterApi, disputeResourcesApi } from './disputes';
+export { creditScoreApi, creditMonitoringApi, creditReportApi } from "./credit";
+export { disputeApi, disputeLetterApi, disputeResourcesApi } from "./disputes";
 export {
   financialOverviewApi,
   bankAccountApi,
@@ -32,7 +32,7 @@ export {
   billsApi,
   type PlaidLinkToken,
   type PlaidExchangeResult,
-} from './financial';
+} from "./financial";
 export {
   userProfileApi,
   subscriptionApi,
@@ -41,7 +41,7 @@ export {
   identityProtectionApi,
   documentApi,
   settingsApi,
-} from './user';
+} from "./user";
 export {
   investmentsApi,
   type AssetType,
@@ -55,7 +55,7 @@ export {
   type CreateHoldingInput,
   type UpdateHoldingInput,
   type PortfolioAnalysisResponse,
-} from './investments';
+} from "./investments";
 export {
   studentLoansApi,
   type StudentLoan,
@@ -66,7 +66,7 @@ export {
   type FinancialSituation,
   type LoanType,
   type LoanStatus,
-} from './studentLoans';
+} from "./studentLoans";
 export {
   gamificationApi,
   type GamificationProgress,
@@ -82,7 +82,7 @@ export {
   type LeaderboardType,
   type BadgeCategory,
   type BadgeRarity,
-} from './gamification';
+} from "./gamification";
 export {
   taxAnalysisApi,
   taxScenariosApi,
@@ -102,19 +102,19 @@ export {
   type TaxDocument,
   type TaxBracket,
   type TaxBracketVisualization,
-} from './tax';
+} from "./tax";
 
 // Type exports
-export * from './types';
+export * from "./types";
 
 // Default exports for convenience
-import creditApiDefault from './credit';
-import disputesApiDefault from './disputes';
-import financialApiDefault from './financial';
-import userApiDefault from './user';
-import investmentsApiDefault from './investments';
-import { studentLoansApi } from './studentLoans';
-import { gamificationApi } from './gamification';
+import creditApiDefault from "./credit";
+import disputesApiDefault from "./disputes";
+import financialApiDefault from "./financial";
+import userApiDefault from "./user";
+import investmentsApiDefault from "./investments";
+import { studentLoansApi } from "./studentLoans";
+import { gamificationApi } from "./gamification";
 import {
   taxAnalysisApi,
   taxScenariosApi,
@@ -123,7 +123,7 @@ import {
   taxDocumentsApi,
   taxTipsApi,
   taxComparisonApi,
-} from './tax';
+} from "./tax";
 
 /**
  * Unified API object for easy access to all services
@@ -170,8 +170,8 @@ export default cpfiApi;
  * Also initializes the centralized OfflineSyncService with network awareness.
  */
 export async function initializeServices(): Promise<void> {
-  const { initializeApiClient } = await import('./client');
-  const { offlineSyncService } = await import('../offline-sync');
+  const { initializeApiClient } = await import("./client");
+  const { offlineSyncService } = await import("../offline-sync");
   await initializeApiClient();
   await offlineSyncService.initialize();
 }
@@ -184,8 +184,8 @@ export async function syncOfflineData(): Promise<{
   processed: number;
   failed: number;
 }> {
-  const { processOfflineQueue } = await import('./client');
-  const { offlineSyncService } = await import('../offline-sync');
+  const { processOfflineQueue } = await import("./client");
+  const { offlineSyncService } = await import("../offline-sync");
 
   // Process both queues
   const [legacyResult, syncResult] = await Promise.all([

@@ -8,11 +8,11 @@
 /// <reference types="detox/detox" />
 
 declare global {
-  const device: import('detox').Device;
-  const element: import('detox').Element;
-  const by: import('detox').Matchers;
-  const waitFor: import('detox').WaitFor;
-  const expect: import('detox').Expect;
+  const device: import("detox").Device;
+  const element: import("detox").Element;
+  const by: import("detox").Matchers;
+  const waitFor: import("detox").WaitFor;
+  const expect: import("detox").Expect;
 }
 
 export {};

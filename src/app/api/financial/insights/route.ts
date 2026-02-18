@@ -6,23 +6,23 @@
  * PATCH /api/financial/insights - Bulk operations on insights
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { rbac } from '@/lib/auth/rbac';
-import { smartInsightsEngine } from '@/lib/financial/smart-insights-engine';
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { rbac } from "@/lib/auth/rbac";
+import { smartInsightsEngine } from "@/lib/financial/smart-insights-engine";
 import {
   InsightType,
   InsightCategory,
   InsightPriority,
   InsightGenerationOptions,
-} from '@/lib/financial/types/insight.types';
+} from "@/lib/financial/types/insight.types";
 
 // Zod validation schema for bulk operations
 const bulkOperationSchema = z.object({
-  insightIds: z.array(z.string()).min(1, 'At least one insight ID is required'),
-  action: z.enum(['mark_read', 'dismiss'], {
-    errorMap: () => ({ message: 'Action must be either mark_read or dismiss' }),
+  insightIds: z.array(z.string()).min(1, "At least one insight ID is required"),
+  action: z.enum(["mark_read", "dismiss"], {
+    errorMap: () => ({ message: "Action must be either mark_read or dismiss" }),
   }),
 });
 
@@ -49,17 +49,17 @@ export async function GET(request: NextRequest) {
     const validation = await jwtValidation.validateFromHeaders(request);
 
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check permissions
     if (
       !rbac.hasPermission(
         validation.user as Parameters<typeof rbac.hasPermission>[0],
-        'financial:read'
+        "financial:read",
       )
     ) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const searchParams = request.nextUrl.searchParams;
@@ -67,71 +67,81 @@ export async function GET(request: NextRequest) {
     // Parse options from query params
     const options: InsightGenerationOptions = {};
 
-    const typesParam = searchParams.get('types');
+    const typesParam = searchParams.get("types");
     if (typesParam) {
-      options.types = typesParam.split(',') as InsightType[];
+      options.types = typesParam.split(",") as InsightType[];
     }
 
-    const categoriesParam = searchParams.get('categories');
+    const categoriesParam = searchParams.get("categories");
     if (categoriesParam) {
-      options.categories = categoriesParam.split(',') as InsightCategory[];
+      options.categories = categoriesParam.split(",") as InsightCategory[];
     }
 
-    const minPriority = searchParams.get('minPriority');
+    const minPriority = searchParams.get("minPriority");
     if (minPriority) {
       options.minPriority = minPriority as InsightPriority;
     }
 
-    const limit = searchParams.get('limit');
+    const limit = searchParams.get("limit");
     if (limit) {
       options.limit = parseInt(limit, 10);
     }
 
-    const offset = parseInt(searchParams.get('offset') || '0', 10);
-    const isReadFilter = searchParams.get('is_read');
-    const sortField = searchParams.get('sort') || 'priority';
-    const sortOrder = searchParams.get('order') || 'desc';
+    const offset = parseInt(searchParams.get("offset") || "0", 10);
+    const isReadFilter = searchParams.get("is_read");
+    const sortField = searchParams.get("sort") || "priority";
+    const sortOrder = searchParams.get("order") || "desc";
 
-    options.includeAI = searchParams.get('includeAI') !== 'false';
-    options.includeDismissed = searchParams.get('includeDismissed') === 'true';
+    options.includeAI = searchParams.get("includeAI") !== "false";
+    options.includeDismissed = searchParams.get("includeDismissed") === "true";
 
     // Check if requesting stored insights or generating new ones
-    const useStored = searchParams.get('stored') === 'true';
+    const useStored = searchParams.get("stored") === "true";
 
     if (useStored) {
       let insights = await smartInsightsEngine.getStoredInsights(
         validation.user.id,
-        options
+        options,
       );
 
       // Apply additional filters
       if (isReadFilter !== null) {
-        const isRead = isReadFilter === 'true';
+        const isRead = isReadFilter === "true";
         insights = insights.filter((insight) => !insight.dismissed === isRead);
       }
 
       // Apply sorting
       insights.sort((a, b) => {
-        if (sortField === 'priority') {
-          const priorityOrder = { critical: 5, high: 4, medium: 3, low: 2, info: 1 };
+        if (sortField === "priority") {
+          const priorityOrder = {
+            critical: 5,
+            high: 4,
+            medium: 3,
+            low: 2,
+            info: 1,
+          };
           const diff = priorityOrder[a.priority] - priorityOrder[b.priority];
-          return sortOrder === 'desc' ? -diff : diff;
-        } else if (sortField === 'created_at') {
-          const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-          return sortOrder === 'desc' ? -diff : diff;
+          return sortOrder === "desc" ? -diff : diff;
+        } else if (sortField === "created_at") {
+          const diff =
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          return sortOrder === "desc" ? -diff : diff;
         }
         return 0;
       });
 
       // Apply pagination
       const total = insights.length;
-      const paginatedInsights = insights.slice(offset, offset + (options.limit || 20));
+      const paginatedInsights = insights.slice(
+        offset,
+        offset + (options.limit || 20),
+      );
 
       return NextResponse.json({
         success: true,
         data: paginatedInsights,
         _meta: {
-          source: 'stored',
+          source: "stored",
           total,
           offset,
           limit: options.limit || 20,
@@ -143,39 +153,49 @@ export async function GET(request: NextRequest) {
     // Generate new insights
     const result = await smartInsightsEngine.generateInsights(
       validation.user.id,
-      options
+      options,
     );
 
     let insights = result.insights;
 
     // Apply additional filters
     if (isReadFilter !== null) {
-      const isRead = isReadFilter === 'true';
+      const isRead = isReadFilter === "true";
       insights = insights.filter((insight) => !insight.dismissed === isRead);
     }
 
     // Apply sorting
     insights.sort((a, b) => {
-      if (sortField === 'priority') {
-        const priorityOrder = { critical: 5, high: 4, medium: 3, low: 2, info: 1 };
+      if (sortField === "priority") {
+        const priorityOrder = {
+          critical: 5,
+          high: 4,
+          medium: 3,
+          low: 2,
+          info: 1,
+        };
         const diff = priorityOrder[a.priority] - priorityOrder[b.priority];
-        return sortOrder === 'desc' ? -diff : diff;
-      } else if (sortField === 'created_at') {
-        const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-        return sortOrder === 'desc' ? -diff : diff;
+        return sortOrder === "desc" ? -diff : diff;
+      } else if (sortField === "created_at") {
+        const diff =
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        return sortOrder === "desc" ? -diff : diff;
       }
       return 0;
     });
 
     // Apply pagination
     const total = insights.length;
-    const paginatedInsights = insights.slice(offset, offset + (options.limit || 20));
+    const paginatedInsights = insights.slice(
+      offset,
+      offset + (options.limit || 20),
+    );
 
     return NextResponse.json({
       success: true,
       data: paginatedInsights,
       _meta: {
-        source: 'generated',
+        source: "generated",
         generatedAt: result.generatedAt,
         processingTimeMs: result.processingTimeMs,
         aiModelUsed: result.aiModelUsed,
@@ -189,7 +209,10 @@ export async function GET(request: NextRequest) {
   } catch (_error) {
     // FinancialInsightsRoute error: Failed to fetch insights
 
-    const errorMessage = _error instanceof Error ? _error.message : 'Failed to fetch financial insights';
+    const errorMessage =
+      _error instanceof Error
+        ? _error.message
+        : "Failed to fetch financial insights";
 
     return NextResponse.json(
       {
@@ -199,7 +222,7 @@ export async function GET(request: NextRequest) {
           timestamp: new Date().toISOString(),
         },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -213,16 +236,16 @@ export async function POST(request: NextRequest) {
     const validation = await jwtValidation.validateFromHeaders(request);
 
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     if (
       !rbac.hasPermission(
         validation.user as Parameters<typeof rbac.hasPermission>[0],
-        'financial:write'
+        "financial:write",
       )
     ) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const body = await request.json();
@@ -230,15 +253,15 @@ export async function POST(request: NextRequest) {
 
     if (!insightId) {
       return NextResponse.json(
-        { error: 'insightId is required' },
-        { status: 400 }
+        { error: "insightId is required" },
+        { status: 400 },
       );
     }
 
-    if (action === 'dismiss') {
+    if (action === "dismiss") {
       const success = await smartInsightsEngine.dismissInsight(
         insightId,
-        validation.user.id
+        validation.user.id,
       );
       return NextResponse.json({ success });
     }
@@ -247,19 +270,19 @@ export async function POST(request: NextRequest) {
       const success = await smartInsightsEngine.recordAction(
         insightId,
         validation.user.id,
-        action
+        action,
       );
       return NextResponse.json({ success });
     }
 
-    return NextResponse.json(
-      { error: 'action is required' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "action is required" }, { status: 400 });
   } catch (_error) {
     // FinancialInsightsRoute error: Failed to process action
 
-    const errorMessage = _error instanceof Error ? _error.message : 'Failed to process insight action';
+    const errorMessage =
+      _error instanceof Error
+        ? _error.message
+        : "Failed to process insight action";
 
     return NextResponse.json(
       {
@@ -269,7 +292,7 @@ export async function POST(request: NextRequest) {
           timestamp: new Date().toISOString(),
         },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -286,24 +309,24 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Unauthorized - Invalid or missing JWT token',
+          error: "Unauthorized - Invalid or missing JWT token",
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     if (
       !rbac.hasPermission(
         validation.user as Parameters<typeof rbac.hasPermission>[0],
-        'financial:write'
+        "financial:write",
       )
     ) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Forbidden - Insufficient permissions',
+          error: "Forbidden - Insufficient permissions",
         },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -315,13 +338,13 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Validation failed',
+          error: "Validation failed",
           details: validationResult.error.errors.map((err) => ({
-            field: err.path.join('.'),
+            field: err.path.join("."),
             message: err.message,
           })),
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -331,18 +354,22 @@ export async function PATCH(request: NextRequest) {
     // Process bulk operation
     const results = await Promise.allSettled(
       insightIds.map(async (insightId) => {
-        if (action === 'dismiss') {
+        if (action === "dismiss") {
           return await smartInsightsEngine.dismissInsight(insightId, userId);
-        } else if (action === 'mark_read') {
+        } else if (action === "mark_read") {
           // Assuming there's a method to mark as read
-          return await smartInsightsEngine.recordAction(insightId, userId, 'viewed');
+          return await smartInsightsEngine.recordAction(
+            insightId,
+            userId,
+            "viewed",
+          );
         }
         return false;
-      })
+      }),
     );
 
     const successCount = results.filter(
-      (r) => r.status === 'fulfilled' && r.value === true
+      (r) => r.status === "fulfilled" && r.value === true,
     ).length;
     const failureCount = results.length - successCount;
 
@@ -358,7 +385,10 @@ export async function PATCH(request: NextRequest) {
   } catch (_error) {
     // FinancialInsightsRoute error: Bulk operation failed
 
-    const errorMessage = _error instanceof Error ? _error.message : 'Failed to process bulk operation';
+    const errorMessage =
+      _error instanceof Error
+        ? _error.message
+        : "Failed to process bulk operation";
 
     return NextResponse.json(
       {
@@ -368,7 +398,7 @@ export async function PATCH(request: NextRequest) {
           timestamp: new Date().toISOString(),
         },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

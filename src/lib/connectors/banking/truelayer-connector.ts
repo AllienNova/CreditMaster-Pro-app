@@ -11,7 +11,7 @@
  * @see https://docs.truelayer.com/
  */
 
-import { randomBytes } from 'crypto';
+import { randomBytes } from "crypto";
 import {
   BaseConnector,
   TrueLayerConfig,
@@ -20,7 +20,7 @@ import {
   UnifiedTransaction,
   ConnectorError,
   REGIONS,
-} from '../types';
+} from "../types";
 
 // =============================================================================
 // TrueLayer Types
@@ -135,8 +135,8 @@ interface AuthLinkSession {
 // =============================================================================
 
 export class TrueLayerConnector extends BaseConnector<TrueLayerConfig> {
-  readonly name = 'truelayer';
-  readonly type = 'banking' as const;
+  readonly name = "truelayer";
+  readonly type = "banking" as const;
 
   private baseUrl: string;
   private authUrl: string;
@@ -145,12 +145,12 @@ export class TrueLayerConnector extends BaseConnector<TrueLayerConfig> {
     super(config);
 
     // Set URLs based on environment
-    if (config.environment === 'sandbox') {
-      this.baseUrl = 'https://api.truelayer-sandbox.com';
-      this.authUrl = 'https://auth.truelayer-sandbox.com';
+    if (config.environment === "sandbox") {
+      this.baseUrl = "https://api.truelayer-sandbox.com";
+      this.authUrl = "https://auth.truelayer-sandbox.com";
     } else {
-      this.baseUrl = 'https://api.truelayer.com';
-      this.authUrl = 'https://auth.truelayer.com';
+      this.baseUrl = "https://api.truelayer.com";
+      this.authUrl = "https://auth.truelayer.com";
     }
   }
 
@@ -163,13 +163,15 @@ export class TrueLayerConnector extends BaseConnector<TrueLayerConfig> {
 
     // Validate configuration
     if (!this.config.clientId || !this.config.clientSecret) {
-      throw new Error('TrueLayer client credentials are required');
+      throw new Error("TrueLayer client credentials are required");
     }
 
     // Test connectivity
     const health = await this.healthCheck();
     if (!health.success) {
-      throw new Error(`TrueLayer health check failed: ${health.error?.message}`);
+      throw new Error(
+        `TrueLayer health check failed: ${health.error?.message}`,
+      );
     }
 
     this.initialized = true;
@@ -184,7 +186,7 @@ export class TrueLayerConnector extends BaseConnector<TrueLayerConfig> {
       // so we check the auth server's well-known configuration
       const response = await fetch(
         `${this.authUrl}/.well-known/openid-configuration`,
-        { method: 'GET' }
+        { method: "GET" },
       );
 
       if (!response.ok) {
@@ -225,13 +227,13 @@ export class TrueLayerConnector extends BaseConnector<TrueLayerConfig> {
     const nonce = this.generateNonce();
 
     const params = new URLSearchParams({
-      response_type: 'code',
+      response_type: "code",
       client_id: this.config.clientId,
       redirect_uri: redirectUri || this.config.redirectUri,
-      scope: this.config.scopes.join(' '),
+      scope: this.config.scopes.join(" "),
       state,
       nonce,
-      providers: 'uk-ob-all uk-oauth-all', // All UK banks
+      providers: "uk-ob-all uk-oauth-all", // All UK banks
     });
 
     return {
@@ -246,15 +248,15 @@ export class TrueLayerConnector extends BaseConnector<TrueLayerConfig> {
    */
   async exchangeCode(
     code: string,
-    redirectUri?: string
+    redirectUri?: string,
   ): Promise<TrueLayerAuthResponse> {
     const response = await fetch(`${this.authUrl}/connect/token`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        "Content-Type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams({
-        grant_type: 'authorization_code',
+        grant_type: "authorization_code",
         client_id: this.config.clientId,
         client_secret: this.config.clientSecret,
         redirect_uri: redirectUri || this.config.redirectUri,
@@ -264,7 +266,10 @@ export class TrueLayerConnector extends BaseConnector<TrueLayerConfig> {
 
     if (!response.ok) {
       const error = await response.json();
-      throw this.createError('TOKEN_EXCHANGE_FAILED', error.error_description || 'Failed to exchange code');
+      throw this.createError(
+        "TOKEN_EXCHANGE_FAILED",
+        error.error_description || "Failed to exchange code",
+      );
     }
 
     return response.json();
@@ -275,12 +280,12 @@ export class TrueLayerConnector extends BaseConnector<TrueLayerConfig> {
    */
   async refreshToken(refreshToken: string): Promise<TrueLayerAuthResponse> {
     const response = await fetch(`${this.authUrl}/connect/token`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        "Content-Type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams({
-        grant_type: 'refresh_token',
+        grant_type: "refresh_token",
         client_id: this.config.clientId,
         client_secret: this.config.clientSecret,
         refresh_token: refreshToken,
@@ -289,7 +294,10 @@ export class TrueLayerConnector extends BaseConnector<TrueLayerConfig> {
 
     if (!response.ok) {
       const error = await response.json();
-      throw this.createError('TOKEN_REFRESH_FAILED', error.error_description || 'Failed to refresh token');
+      throw this.createError(
+        "TOKEN_REFRESH_FAILED",
+        error.error_description || "Failed to refresh token",
+      );
     }
 
     return response.json();
@@ -303,25 +311,34 @@ export class TrueLayerConnector extends BaseConnector<TrueLayerConfig> {
    * Get all accounts for a user
    */
   async getAccounts(accessToken: string): Promise<TrueLayerAccount[]> {
-    const response = await this.apiRequest('/data/v1/accounts', accessToken);
+    const response = await this.apiRequest("/data/v1/accounts", accessToken);
     return response.results || [];
   }
 
   /**
    * Get a specific account
    */
-  async getAccount(accessToken: string, accountId: string): Promise<TrueLayerAccount> {
-    const response = await this.apiRequest(`/data/v1/accounts/${accountId}`, accessToken);
+  async getAccount(
+    accessToken: string,
+    accountId: string,
+  ): Promise<TrueLayerAccount> {
+    const response = await this.apiRequest(
+      `/data/v1/accounts/${accountId}`,
+      accessToken,
+    );
     return response.results[0];
   }
 
   /**
    * Get account balance
    */
-  async getBalance(accessToken: string, accountId: string): Promise<TrueLayerBalance> {
+  async getBalance(
+    accessToken: string,
+    accountId: string,
+  ): Promise<TrueLayerBalance> {
     const response = await this.apiRequest(
       `/data/v1/accounts/${accountId}/balance`,
-      accessToken
+      accessToken,
     );
     return response.results[0];
   }
@@ -329,7 +346,9 @@ export class TrueLayerConnector extends BaseConnector<TrueLayerConfig> {
   /**
    * Get all accounts with balances (unified format)
    */
-  async getAccountsWithBalances(accessToken: string): Promise<UnifiedAccount[]> {
+  async getAccountsWithBalances(
+    accessToken: string,
+  ): Promise<UnifiedAccount[]> {
     const accounts = await this.getAccounts(accessToken);
     const unifiedAccounts: UnifiedAccount[] = [];
 
@@ -339,7 +358,7 @@ export class TrueLayerConnector extends BaseConnector<TrueLayerConfig> {
 
         unifiedAccounts.push({
           id: account.account_id,
-          provider: 'truelayer',
+          provider: "truelayer",
           providerAccountId: account.account_id,
           institutionId: account.provider.provider_id,
           institutionName: account.provider.display_name,
@@ -375,19 +394,19 @@ export class TrueLayerConnector extends BaseConnector<TrueLayerConfig> {
     accessToken: string,
     accountId: string,
     from?: Date,
-    to?: Date
+    to?: Date,
   ): Promise<TrueLayerTransaction[]> {
     const params = new URLSearchParams();
 
     if (from) {
-      params.set('from', from.toISOString());
+      params.set("from", from.toISOString());
     }
     if (to) {
-      params.set('to', to.toISOString());
+      params.set("to", to.toISOString());
     }
 
     const url = `/data/v1/accounts/${accountId}/transactions${
-      params.toString() ? `?${params.toString()}` : ''
+      params.toString() ? `?${params.toString()}` : ""
     }`;
 
     const response = await this.apiRequest(url, accessToken);
@@ -399,11 +418,11 @@ export class TrueLayerConnector extends BaseConnector<TrueLayerConfig> {
    */
   async getPendingTransactions(
     accessToken: string,
-    accountId: string
+    accountId: string,
   ): Promise<TrueLayerTransaction[]> {
     const response = await this.apiRequest(
       `/data/v1/accounts/${accountId}/transactions/pending`,
-      accessToken
+      accessToken,
     );
     return response.results || [];
   }
@@ -415,7 +434,7 @@ export class TrueLayerConnector extends BaseConnector<TrueLayerConfig> {
     accessToken: string,
     accountId: string,
     from?: Date,
-    to?: Date
+    to?: Date,
   ): Promise<UnifiedTransaction[]> {
     const [settled, pending] = await Promise.all([
       this.getTransactions(accessToken, accountId, from, to),
@@ -427,7 +446,7 @@ export class TrueLayerConnector extends BaseConnector<TrueLayerConfig> {
     for (const tx of [...settled, ...pending]) {
       unified.push({
         id: tx.transaction_id,
-        provider: 'truelayer',
+        provider: "truelayer",
         providerTransactionId: tx.transaction_id,
         accountId,
         amount: Math.abs(tx.amount),
@@ -437,7 +456,7 @@ export class TrueLayerConnector extends BaseConnector<TrueLayerConfig> {
         merchantName: tx.merchant_name,
         category: tx.transaction_classification || [tx.transaction_category],
         pending: pending.some((p) => p.transaction_id === tx.transaction_id),
-        type: tx.amount < 0 ? 'debit' : 'credit',
+        type: tx.amount < 0 ? "debit" : "credit",
       });
     }
 
@@ -452,17 +471,20 @@ export class TrueLayerConnector extends BaseConnector<TrueLayerConfig> {
    * Get all cards
    */
   async getCards(accessToken: string): Promise<TrueLayerCard[]> {
-    const response = await this.apiRequest('/data/v1/cards', accessToken);
+    const response = await this.apiRequest("/data/v1/cards", accessToken);
     return response.results || [];
   }
 
   /**
    * Get card balance
    */
-  async getCardBalance(accessToken: string, accountId: string): Promise<TrueLayerCardBalance> {
+  async getCardBalance(
+    accessToken: string,
+    accountId: string,
+  ): Promise<TrueLayerCardBalance> {
     const response = await this.apiRequest(
       `/data/v1/cards/${accountId}/balance`,
-      accessToken
+      accessToken,
     );
     return response.results[0];
   }
@@ -474,19 +496,19 @@ export class TrueLayerConnector extends BaseConnector<TrueLayerConfig> {
     accessToken: string,
     accountId: string,
     from?: Date,
-    to?: Date
+    to?: Date,
   ): Promise<TrueLayerTransaction[]> {
     const params = new URLSearchParams();
 
     if (from) {
-      params.set('from', from.toISOString());
+      params.set("from", from.toISOString());
     }
     if (to) {
-      params.set('to', to.toISOString());
+      params.set("to", to.toISOString());
     }
 
     const url = `/data/v1/cards/${accountId}/transactions${
-      params.toString() ? `?${params.toString()}` : ''
+      params.toString() ? `?${params.toString()}` : ""
     }`;
 
     const response = await this.apiRequest(url, accessToken);
@@ -506,12 +528,12 @@ export class TrueLayerConnector extends BaseConnector<TrueLayerConfig> {
 
         unifiedAccounts.push({
           id: card.account_id,
-          provider: 'truelayer',
+          provider: "truelayer",
           providerAccountId: card.account_id,
           institutionId: card.provider.provider_id,
           institutionName: card.provider.display_name,
           name: card.display_name,
-          type: 'credit',
+          type: "credit",
           subtype: card.card_type,
           mask: card.partial_card_number,
           currency: card.currency,
@@ -539,7 +561,7 @@ export class TrueLayerConnector extends BaseConnector<TrueLayerConfig> {
    * Get account holder identity
    */
   async getIdentity(accessToken: string): Promise<TrueLayerIdentity> {
-    const response = await this.apiRequest('/data/v1/info', accessToken);
+    const response = await this.apiRequest("/data/v1/info", accessToken);
     return response.results[0];
   }
 
@@ -569,13 +591,13 @@ export class TrueLayerConnector extends BaseConnector<TrueLayerConfig> {
   private async apiRequest(
     path: string,
     accessToken: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
   ): Promise<any> {
     const response = await fetch(`${this.baseUrl}${path}`, {
       ...options,
       headers: {
         Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...options.headers,
       },
     });
@@ -585,26 +607,34 @@ export class TrueLayerConnector extends BaseConnector<TrueLayerConfig> {
       try {
         errorBody = await response.json();
       } catch {
-        errorBody = { error: 'Unknown error' };
+        errorBody = { error: "Unknown error" };
       }
 
       // Handle specific TrueLayer errors
       if (response.status === 401) {
-        throw this.createError('TOKEN_EXPIRED', 'Access token has expired', true);
+        throw this.createError(
+          "TOKEN_EXPIRED",
+          "Access token has expired",
+          true,
+        );
       }
 
       if (response.status === 403) {
-        throw this.createError('CONSENT_REQUIRED', 'User consent required', false);
+        throw this.createError(
+          "CONSENT_REQUIRED",
+          "User consent required",
+          false,
+        );
       }
 
       if (response.status === 429) {
-        throw this.createError('RATE_LIMITED', 'Rate limit exceeded', true);
+        throw this.createError("RATE_LIMITED", "Rate limit exceeded", true);
       }
 
       throw this.createError(
-        'API_ERROR',
-        errorBody.error_description || errorBody.error || 'API request failed',
-        response.status >= 500
+        "API_ERROR",
+        errorBody.error_description || errorBody.error || "API request failed",
+        response.status >= 500,
       );
     }
 
@@ -614,19 +644,19 @@ export class TrueLayerConnector extends BaseConnector<TrueLayerConfig> {
   /**
    * Map TrueLayer account type to unified type
    */
-  private mapAccountType(type: string): UnifiedAccount['type'] {
-    const mapping: Record<string, UnifiedAccount['type']> = {
-      TRANSACTION: 'depository',
-      SAVINGS: 'depository',
-      BUSINESS_TRANSACTION: 'depository',
-      BUSINESS_SAVINGS: 'depository',
-      ISA: 'investment',
-      CREDIT_CARD: 'credit',
-      LOAN: 'loan',
-      MORTGAGE: 'loan',
+  private mapAccountType(type: string): UnifiedAccount["type"] {
+    const mapping: Record<string, UnifiedAccount["type"]> = {
+      TRANSACTION: "depository",
+      SAVINGS: "depository",
+      BUSINESS_TRANSACTION: "depository",
+      BUSINESS_SAVINGS: "depository",
+      ISA: "investment",
+      CREDIT_CARD: "credit",
+      LOAN: "loan",
+      MORTGAGE: "loan",
     };
 
-    return mapping[type.toUpperCase()] || 'other';
+    return mapping[type.toUpperCase()] || "other";
   }
 
   /**
@@ -634,8 +664,10 @@ export class TrueLayerConnector extends BaseConnector<TrueLayerConfig> {
    * Uses cryptographically secure random bytes for CSRF protection
    */
   private generateState(userId: string): string {
-    const random = randomBytes(16).toString('hex');
-    return Buffer.from(JSON.stringify({ userId, random, ts: Date.now() })).toString('base64url');
+    const random = randomBytes(16).toString("hex");
+    return Buffer.from(
+      JSON.stringify({ userId, random, ts: Date.now() }),
+    ).toString("base64url");
   }
 
   /**
@@ -643,17 +675,21 @@ export class TrueLayerConnector extends BaseConnector<TrueLayerConfig> {
    * Uses cryptographically secure random bytes to prevent replay attacks
    */
   private generateNonce(): string {
-    return randomBytes(16).toString('hex');
+    return randomBytes(16).toString("hex");
   }
 
   /**
    * Create a standardized connector error
    */
-  private createError(code: string, message: string, retryable = false): ConnectorError {
+  private createError(
+    code: string,
+    message: string,
+    retryable = false,
+  ): ConnectorError {
     return {
       code,
       message,
-      provider: 'truelayer',
+      provider: "truelayer",
       retryable,
     };
   }
@@ -670,24 +706,38 @@ export function createTrueLayerConnector(
   clientId: string,
   clientSecret: string,
   options: {
-    environment?: 'sandbox' | 'live';
+    environment?: "sandbox" | "live";
     redirectUri?: string;
     scopes?: string[];
-  } = {}
+  } = {},
 ): TrueLayerConnector {
   const config: TrueLayerConfig = {
-    name: 'truelayer',
-    provider: 'truelayer',
-    version: '1.0.0',
+    name: "truelayer",
+    provider: "truelayer",
+    version: "1.0.0",
     priority: 10, // High priority for EU/UK
     regions: [
       REGIONS.GB,
       REGIONS.IE,
       ...Object.keys(REGIONS).filter((r) =>
-        ['DE', 'FR', 'ES', 'IT', 'NL', 'BE', 'AT', 'PT', 'PL', 'SE', 'NO', 'DK', 'FI'].includes(r)
+        [
+          "DE",
+          "FR",
+          "ES",
+          "IT",
+          "NL",
+          "BE",
+          "AT",
+          "PT",
+          "PL",
+          "SE",
+          "NO",
+          "DK",
+          "FI",
+        ].includes(r),
       ),
     ],
-    capabilities: ['accounts', 'transactions', 'balances', 'identity'],
+    capabilities: ["accounts", "transactions", "balances", "identity"],
     rateLimits: {
       requestsPerMinute: 100,
       requestsPerHour: 1000,
@@ -707,17 +757,17 @@ export function createTrueLayerConnector(
     enabled: true,
     clientId,
     clientSecret,
-    environment: options.environment || 'sandbox',
-    redirectUri: options.redirectUri || '',
+    environment: options.environment || "sandbox",
+    redirectUri: options.redirectUri || "",
     scopes: options.scopes || [
-      'info',
-      'accounts',
-      'balance',
-      'cards',
-      'transactions',
-      'direct_debits',
-      'standing_orders',
-      'offline_access',
+      "info",
+      "accounts",
+      "balance",
+      "cards",
+      "transactions",
+      "direct_debits",
+      "standing_orders",
+      "offline_access",
     ],
   };
 

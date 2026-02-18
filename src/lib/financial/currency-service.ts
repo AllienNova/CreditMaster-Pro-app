@@ -9,7 +9,7 @@
  * Supabase is used for persistence; in-memory caches provide fast lookups.
  */
 
-import { supabaseAdmin } from '@/lib/supabase/server';
+import { supabaseAdmin } from "@/lib/supabase/server";
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -17,16 +17,16 @@ import { supabaseAdmin } from '@/lib/supabase/server';
 
 /** ISO 4217 currency codes supported by the service */
 export type CurrencyCode =
-  | 'USD'
-  | 'EUR'
-  | 'GBP'
-  | 'JPY'
-  | 'CAD'
-  | 'AUD'
-  | 'CHF'
-  | 'CNY'
-  | 'INR'
-  | 'BRL';
+  | "USD"
+  | "EUR"
+  | "GBP"
+  | "JPY"
+  | "CAD"
+  | "AUD"
+  | "CHF"
+  | "CNY"
+  | "INR"
+  | "BRL";
 
 /** Metadata for each supported currency */
 export interface CurrencyInfo {
@@ -135,30 +135,90 @@ export interface RateChangeAlertRow {
 
 /** All supported currency codes */
 export const SUPPORTED_CURRENCIES: readonly CurrencyCode[] = [
-  'USD',
-  'EUR',
-  'GBP',
-  'JPY',
-  'CAD',
-  'AUD',
-  'CHF',
-  'CNY',
-  'INR',
-  'BRL',
+  "USD",
+  "EUR",
+  "GBP",
+  "JPY",
+  "CAD",
+  "AUD",
+  "CHF",
+  "CNY",
+  "INR",
+  "BRL",
 ] as const;
 
 /** Metadata for each supported currency */
 export const CURRENCY_INFO: Record<CurrencyCode, CurrencyInfo> = {
-  USD: { code: 'USD', name: 'US Dollar', symbol: '$', locale: 'en-US', decimalDigits: 2 },
-  EUR: { code: 'EUR', name: 'Euro', symbol: '\u20AC', locale: 'de-DE', decimalDigits: 2 },
-  GBP: { code: 'GBP', name: 'British Pound', symbol: '\u00A3', locale: 'en-GB', decimalDigits: 2 },
-  JPY: { code: 'JPY', name: 'Japanese Yen', symbol: '\u00A5', locale: 'ja-JP', decimalDigits: 0 },
-  CAD: { code: 'CAD', name: 'Canadian Dollar', symbol: 'CA$', locale: 'en-CA', decimalDigits: 2 },
-  AUD: { code: 'AUD', name: 'Australian Dollar', symbol: 'A$', locale: 'en-AU', decimalDigits: 2 },
-  CHF: { code: 'CHF', name: 'Swiss Franc', symbol: 'CHF', locale: 'de-CH', decimalDigits: 2 },
-  CNY: { code: 'CNY', name: 'Chinese Yuan', symbol: '\u00A5', locale: 'zh-CN', decimalDigits: 2 },
-  INR: { code: 'INR', name: 'Indian Rupee', symbol: '\u20B9', locale: 'en-IN', decimalDigits: 2 },
-  BRL: { code: 'BRL', name: 'Brazilian Real', symbol: 'R$', locale: 'pt-BR', decimalDigits: 2 },
+  USD: {
+    code: "USD",
+    name: "US Dollar",
+    symbol: "$",
+    locale: "en-US",
+    decimalDigits: 2,
+  },
+  EUR: {
+    code: "EUR",
+    name: "Euro",
+    symbol: "\u20AC",
+    locale: "de-DE",
+    decimalDigits: 2,
+  },
+  GBP: {
+    code: "GBP",
+    name: "British Pound",
+    symbol: "\u00A3",
+    locale: "en-GB",
+    decimalDigits: 2,
+  },
+  JPY: {
+    code: "JPY",
+    name: "Japanese Yen",
+    symbol: "\u00A5",
+    locale: "ja-JP",
+    decimalDigits: 0,
+  },
+  CAD: {
+    code: "CAD",
+    name: "Canadian Dollar",
+    symbol: "CA$",
+    locale: "en-CA",
+    decimalDigits: 2,
+  },
+  AUD: {
+    code: "AUD",
+    name: "Australian Dollar",
+    symbol: "A$",
+    locale: "en-AU",
+    decimalDigits: 2,
+  },
+  CHF: {
+    code: "CHF",
+    name: "Swiss Franc",
+    symbol: "CHF",
+    locale: "de-CH",
+    decimalDigits: 2,
+  },
+  CNY: {
+    code: "CNY",
+    name: "Chinese Yuan",
+    symbol: "\u00A5",
+    locale: "zh-CN",
+    decimalDigits: 2,
+  },
+  INR: {
+    code: "INR",
+    name: "Indian Rupee",
+    symbol: "\u20B9",
+    locale: "en-IN",
+    decimalDigits: 2,
+  },
+  BRL: {
+    code: "BRL",
+    name: "Brazilian Real",
+    symbol: "R$",
+    locale: "pt-BR",
+    decimalDigits: 2,
+  },
 };
 
 /**
@@ -214,12 +274,15 @@ export class CurrencyService {
   private refreshIntervalMs: number;
 
   /** Callback invoked when rates refresh is due (caller provides new rates) */
-  private onRefreshCallback: (() => Promise<ExchangeRateMap> | ExchangeRateMap) | null = null;
+  private onRefreshCallback:
+    | (() => Promise<ExchangeRateMap> | ExchangeRateMap)
+    | null = null;
 
   constructor(options?: { refreshIntervalMs?: number }) {
     this.currentRates = { ...DEFAULT_RATES };
     this.lastUpdated = new Date();
-    this.refreshIntervalMs = options?.refreshIntervalMs ?? DEFAULT_REFRESH_INTERVAL_MS;
+    this.refreshIntervalMs =
+      options?.refreshIntervalMs ?? DEFAULT_REFRESH_INTERVAL_MS;
   }
 
   // ==========================================================================
@@ -235,12 +298,12 @@ export class CurrencyService {
   async setRates(rates: ExchangeRateMap): Promise<void> {
     // Validate that USD base rate is always 1
     if (rates.USD !== undefined && rates.USD !== 1) {
-      throw new Error('USD base rate must be 1.0');
+      throw new Error("USD base rate must be 1.0");
     }
 
     // Validate all provided currencies
     for (const code of Object.keys(rates)) {
-      if (typeof rates[code] !== 'number' || rates[code] <= 0) {
+      if (typeof rates[code] !== "number" || rates[code] <= 0) {
         throw new Error(`Invalid rate for ${code}: must be a positive number`);
       }
     }
@@ -253,7 +316,7 @@ export class CurrencyService {
     this.pushToHistory({
       rates: { ...this.currentRates },
       timestamp: this.lastUpdated,
-      base: 'USD',
+      base: "USD",
     });
 
     // Evaluate alert thresholds
@@ -317,9 +380,13 @@ export class CurrencyService {
    * @param toCurrency    Target currency code
    * @returns The converted amount (not rounded — caller decides precision)
    */
-  convert(amount: number, fromCurrency: CurrencyCode, toCurrency: CurrencyCode): number {
+  convert(
+    amount: number,
+    fromCurrency: CurrencyCode,
+    toCurrency: CurrencyCode,
+  ): number {
     if (amount < 0) {
-      throw new Error('Amount must be non-negative');
+      throw new Error("Amount must be non-negative");
     }
 
     if (fromCurrency === toCurrency) {
@@ -333,7 +400,11 @@ export class CurrencyService {
   /**
    * Convert and round to the target currency's standard decimal digits.
    */
-  convertAndRound(amount: number, fromCurrency: CurrencyCode, toCurrency: CurrencyCode): number {
+  convertAndRound(
+    amount: number,
+    fromCurrency: CurrencyCode,
+    toCurrency: CurrencyCode,
+  ): number {
     const converted = this.convert(amount, fromCurrency, toCurrency);
     const digits = CURRENCY_INFO[toCurrency].decimalDigits;
     const factor = Math.pow(10, digits);
@@ -352,7 +423,11 @@ export class CurrencyService {
    * @param overrideLocale  Optional locale override (e.g. "en-US")
    * @returns A locale-formatted currency string (e.g. "$1,234.56")
    */
-  formatCurrency(amount: number, currency: CurrencyCode, overrideLocale?: string): string {
+  formatCurrency(
+    amount: number,
+    currency: CurrencyCode,
+    overrideLocale?: string,
+  ): string {
     const info = CURRENCY_INFO[currency];
     if (!info) {
       throw new Error(`Unsupported currency: ${currency}`);
@@ -361,7 +436,7 @@ export class CurrencyService {
     const locale = overrideLocale ?? info.locale;
 
     return new Intl.NumberFormat(locale, {
-      style: 'currency',
+      style: "currency",
       currency: info.code,
       minimumFractionDigits: info.decimalDigits,
       maximumFractionDigits: info.decimalDigits,
@@ -382,7 +457,10 @@ export class CurrencyService {
   /**
    * Get historical rates for a specific currency pair over the buffer window.
    */
-  getHistoricalRates(from: CurrencyCode, to: CurrencyCode): HistoricalRateEntry[] {
+  getHistoricalRates(
+    from: CurrencyCode,
+    to: CurrencyCode,
+  ): HistoricalRateEntry[] {
     return this.historyBuffer.map((snapshot) => {
       const fromRate = snapshot.rates[from] ?? 1;
       const toRate = snapshot.rates[to] ?? 1;
@@ -400,13 +478,15 @@ export class CurrencyService {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - HISTORY_BUFFER_DAYS);
 
-    const { data, error } = await (supabaseAdmin.from as any)('exchange_rate_history')
-      .select('*')
-      .gte('recorded_at', cutoffDate.toISOString())
-      .order('recorded_at', { ascending: true });
+    const { data, error } = await (supabaseAdmin.from as any)(
+      "exchange_rate_history",
+    )
+      .select("*")
+      .gte("recorded_at", cutoffDate.toISOString())
+      .order("recorded_at", { ascending: true });
 
     if (error) {
-      console.error('Failed to load exchange rate history:', error.message);
+      console.error("Failed to load exchange rate history:", error.message);
       return;
     }
 
@@ -429,7 +509,7 @@ export class CurrencyService {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - HISTORY_BUFFER_DAYS);
     this.historyBuffer = this.historyBuffer.filter(
-      (entry) => entry.timestamp.getTime() >= cutoff.getTime()
+      (entry) => entry.timestamp.getTime() >= cutoff.getTime(),
     );
   }
 
@@ -438,15 +518,14 @@ export class CurrencyService {
    */
   private async persistRateSnapshot(): Promise<void> {
     try {
-      await (supabaseAdmin.from as any)('exchange_rate_history')
-        .insert({
-          base_currency: 'USD',
-          rates: { ...this.currentRates },
-          recorded_at: this.lastUpdated.toISOString(),
-          created_at: new Date().toISOString(),
-        });
+      await (supabaseAdmin.from as any)("exchange_rate_history").insert({
+        base_currency: "USD",
+        rates: { ...this.currentRates },
+        recorded_at: this.lastUpdated.toISOString(),
+        created_at: new Date().toISOString(),
+      });
     } catch (err) {
-      console.error('Failed to persist rate snapshot:', err);
+      console.error("Failed to persist rate snapshot:", err);
     }
   }
 
@@ -462,9 +541,13 @@ export class CurrencyService {
    * @param to        Target currency
    * @param threshold Percentage change to trigger alert (e.g. 2.0 = 2%)
    */
-  setAlertThreshold(from: CurrencyCode, to: CurrencyCode, threshold: number): void {
+  setAlertThreshold(
+    from: CurrencyCode,
+    to: CurrencyCode,
+    threshold: number,
+  ): void {
     if (threshold <= 0) {
-      throw new Error('Alert threshold must be a positive number');
+      throw new Error("Alert threshold must be a positive number");
     }
     const pair = `${from}/${to}`;
     this.alertThresholds.set(pair, threshold);
@@ -515,7 +598,7 @@ export class CurrencyService {
     }
 
     this.alertThresholds.forEach((threshold, pair) => {
-      const [fromStr, toStr] = pair.split('/');
+      const [fromStr, toStr] = pair.split("/");
       const from = fromStr as CurrencyCode;
       const to = toStr as CurrencyCode;
 
@@ -541,7 +624,7 @@ export class CurrencyService {
       }
 
       const changePercent = Math.abs(
-        ((currentCrossRate - previousCrossRate) / previousCrossRate) * 100
+        ((currentCrossRate - previousCrossRate) / previousCrossRate) * 100,
       );
 
       if (changePercent >= threshold) {
@@ -565,21 +648,20 @@ export class CurrencyService {
    */
   async persistAlert(userId: string, alert: RateChangeAlert): Promise<void> {
     try {
-      await (supabaseAdmin.from as any)('rate_change_alerts')
-        .insert({
-          user_id: userId,
-          pair: alert.pair,
-          from_currency: alert.from,
-          to_currency: alert.to,
-          previous_rate: alert.previousRate,
-          current_rate: alert.currentRate,
-          change_percent: alert.changePercent,
-          threshold: alert.threshold,
-          triggered_at: alert.triggeredAt.toISOString(),
-          created_at: new Date().toISOString(),
-        });
+      await (supabaseAdmin.from as any)("rate_change_alerts").insert({
+        user_id: userId,
+        pair: alert.pair,
+        from_currency: alert.from,
+        to_currency: alert.to,
+        previous_rate: alert.previousRate,
+        current_rate: alert.currentRate,
+        change_percent: alert.changePercent,
+        threshold: alert.threshold,
+        triggered_at: alert.triggeredAt.toISOString(),
+        created_at: new Date().toISOString(),
+      });
     } catch (err) {
-      console.error('Failed to persist rate change alert:', err);
+      console.error("Failed to persist rate change alert:", err);
     }
   }
 
@@ -588,15 +670,15 @@ export class CurrencyService {
    */
   async loadAlerts(
     userId: string,
-    options?: { limit?: number; since?: Date }
+    options?: { limit?: number; since?: Date },
   ): Promise<RateChangeAlert[]> {
-    let query = (supabaseAdmin.from as any)('rate_change_alerts')
-      .select('*')
-      .eq('user_id', userId)
-      .order('triggered_at', { ascending: false });
+    let query = (supabaseAdmin.from as any)("rate_change_alerts")
+      .select("*")
+      .eq("user_id", userId)
+      .order("triggered_at", { ascending: false });
 
     if (options?.since) {
-      query = query.gte('triggered_at', options.since.toISOString());
+      query = query.gte("triggered_at", options.since.toISOString());
     }
 
     if (options?.limit) {
@@ -606,7 +688,7 @@ export class CurrencyService {
     const { data, error } = await query;
 
     if (error) {
-      console.error('Failed to load rate change alerts:', error.message);
+      console.error("Failed to load rate change alerts:", error.message);
       return [];
     }
 
@@ -640,10 +722,10 @@ export class CurrencyService {
    */
   valuatePortfolio(
     positions: PortfolioPosition[],
-    baseCurrency: CurrencyCode
+    baseCurrency: CurrencyCode,
   ): PortfolioValuation {
     let totalValue = 0;
-    const valuedPositions: PortfolioValuation['positions'] = [];
+    const valuedPositions: PortfolioValuation["positions"] = [];
 
     for (const position of positions) {
       const exchangeRate = this.getCrossRate(position.currency, baseCurrency);
@@ -678,7 +760,7 @@ export class CurrencyService {
    * to supply new rates. The callback should return an ExchangeRateMap.
    */
   setRefreshCallback(
-    callback: () => Promise<ExchangeRateMap> | ExchangeRateMap
+    callback: () => Promise<ExchangeRateMap> | ExchangeRateMap,
   ): void {
     this.onRefreshCallback = callback;
   }
@@ -693,7 +775,9 @@ export class CurrencyService {
     }
 
     if (!this.onRefreshCallback) {
-      throw new Error('Set a refresh callback via setRefreshCallback() before starting auto-refresh');
+      throw new Error(
+        "Set a refresh callback via setRefreshCallback() before starting auto-refresh",
+      );
     }
 
     this.refreshTimer = setInterval(async () => {
@@ -704,7 +788,7 @@ export class CurrencyService {
         const newRates = await this.onRefreshCallback();
         await this.setRates(newRates);
       } catch (err) {
-        console.error('Auto-refresh failed:', err);
+        console.error("Auto-refresh failed:", err);
       }
     }, this.refreshIntervalMs);
   }

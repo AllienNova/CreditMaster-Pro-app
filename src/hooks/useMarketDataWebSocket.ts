@@ -4,12 +4,12 @@
  * Provides real-time market data updates via WebSocket
  */
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from "react";
 import {
   getMarketDataWebSocketService,
   PriceUpdate,
   WebSocketStatus,
-} from '@/lib/investments/services/MarketDataWebSocketService';
+} from "@/lib/investments/services/MarketDataWebSocketService";
 
 export interface UseMarketDataWebSocketOptions {
   symbol?: string;
@@ -47,12 +47,12 @@ export interface UseMarketDataWebSocketReturn {
  * ```
  */
 export function useMarketDataWebSocket(
-  options: UseMarketDataWebSocketOptions = {}
+  options: UseMarketDataWebSocketOptions = {},
 ): UseMarketDataWebSocketReturn {
   const { symbol, autoConnect = true } = options;
 
   const [priceUpdate, setPriceUpdate] = useState<PriceUpdate | null>(null);
-  const [status, setStatus] = useState<WebSocketStatus>('disconnected');
+  const [status, setStatus] = useState<WebSocketStatus>("disconnected");
   const [subscribedSymbols, setSubscribedSymbols] = useState<string[]>([]);
 
   const service = getMarketDataWebSocketService();
@@ -78,7 +78,7 @@ export function useMarketDataWebSocket(
 
       return unsubscribe;
     },
-    [service]
+    [service],
   );
 
   // Unsubscribe from a symbol
@@ -87,7 +87,7 @@ export function useMarketDataWebSocket(
       // The service handles unsubscription internally
       setSubscribedSymbols(service.getSubscribedSymbols());
     },
-    [service]
+    [service],
   );
 
   // Auto-connect on mount
@@ -151,8 +151,10 @@ export function useMarketDataWebSocket(
  * ```
  */
 export function useMultiSymbolWebSocket(symbols: string[], autoConnect = true) {
-  const [priceUpdates, setPriceUpdates] = useState<Map<string, PriceUpdate>>(new Map());
-  const [status, setStatus] = useState<WebSocketStatus>('disconnected');
+  const [priceUpdates, setPriceUpdates] = useState<Map<string, PriceUpdate>>(
+    new Map(),
+  );
+  const [status, setStatus] = useState<WebSocketStatus>("disconnected");
 
   const service = getMarketDataWebSocketService();
 
@@ -197,4 +199,3 @@ export function useMultiSymbolWebSocket(symbols: string[], autoConnect = true) {
     status,
   };
 }
-

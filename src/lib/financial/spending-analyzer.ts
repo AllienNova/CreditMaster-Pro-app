@@ -13,11 +13,11 @@
  * - AI-generated insights and recommendations
  */
 
-import { getSupabase } from '@/lib/supabase/client';
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
-import { AIMLService } from '@/lib/aiml-service';
-import { ModelRouter } from '@/lib/model-router';
+import { AIMLService } from "@/lib/aiml-service";
+import { ModelRouter } from "@/lib/model-router";
 import type {
   SpendingPatternAnalysis,
   DetectedPattern,
@@ -47,14 +47,16 @@ import type {
   InsightGenerationRequest,
   InsightGenerationResult,
   InsightSummary,
-} from './types/spending-intelligence.types';
+} from "./types/spending-intelligence.types";
 
 // ============================================================================
 // CONFIGURATION
 // ============================================================================
 
-const AI_MODEL = process.env.AIML_DEFAULT_CHAT_MODEL || 'anthropic/claude-4.5-sonnet';
-const AI_REASONING_MODEL = process.env.AIML_REASONING_MODEL || 'deepseek/deepseek-r1';
+const AI_MODEL =
+  process.env.AIML_DEFAULT_CHAT_MODEL || "anthropic/claude-4.5-sonnet";
+const AI_REASONING_MODEL =
+  process.env.AIML_REASONING_MODEL || "deepseek/deepseek-r1";
 const AI_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 // Anomaly detection thresholds
@@ -110,7 +112,8 @@ interface CategoryStats {
 export class SpendingAnalyzer {
   private aiService: AIMLService | null = null;
   private modelRouter: ModelRouter;
-  private aiCache: Map<string, { data: unknown; timestamp: number }> = new Map();
+  private aiCache: Map<string, { data: unknown; timestamp: number }> =
+    new Map();
 
   constructor() {
     this.modelRouter = new ModelRouter();
@@ -136,7 +139,7 @@ export class SpendingAnalyzer {
    */
   async analyzeSpendingPatterns(
     userId: string,
-    period: 'weekly' | 'monthly' | 'quarterly' | 'yearly' = 'monthly'
+    period: "weekly" | "monthly" | "quarterly" | "yearly" = "monthly",
   ): Promise<SpendingPatternAnalysis> {
     const { startDate, endDate } = this.getPeriodDates(period);
 
@@ -150,13 +153,22 @@ export class SpendingAnalyzer {
     const habits = await this.identifyHabits(transactions, patterns);
 
     // Calculate velocity
-    const velocity = this.calculateSpendingVelocity(transactions, startDate, endDate);
+    const velocity = this.calculateSpendingVelocity(
+      transactions,
+      startDate,
+      endDate,
+    );
 
     // Identify triggers
     const triggers = await this.identifySpendingTriggers(transactions);
 
     // Calculate spending score
-    const score = await this.calculateSpendingScore(userId, transactions, patterns, habits);
+    const score = await this.calculateSpendingScore(
+      userId,
+      transactions,
+      patterns,
+      habits,
+    );
 
     // Generate AI insights
     const aiInsights = await this.generateAIInsights(userId, {
@@ -188,8 +200,8 @@ export class SpendingAnalyzer {
    */
   async detectAnomalies(
     userId: string,
-    sensitivity: 'low' | 'medium' | 'high' = 'medium',
-    timeframe: number = 30
+    sensitivity: "low" | "medium" | "high" = "medium",
+    timeframe: number = 30,
   ): Promise<AnomalyDetectionResult> {
     const endDate = new Date();
     const startDate = new Date();
@@ -213,7 +225,7 @@ export class SpendingAnalyzer {
       if (zScore > threshold) {
         anomalies.push({
           id: `anomaly-${transaction.id}`,
-          type: 'unusual_large_transaction',
+          type: "unusual_large_transaction",
           severity: this.getSeverityFromZScore(zScore),
           title: `Unusual ${transaction.category} spending`,
           description: `Transaction of $${transaction.amount.toFixed(2)} is ${zScore.toFixed(1)} standard deviations above average`,
@@ -225,7 +237,7 @@ export class SpendingAnalyzer {
           merchant: transaction.merchant_name,
           date: transaction.date,
           confidence: Math.min(95, 50 + zScore * 10),
-          detectionMethod: 'zscore',
+          detectionMethod: "zscore",
           requiresAction: zScore > threshold * 1.5,
           actionSuggestion: `Review this ${transaction.category} transaction with ${transaction.merchant_name}`,
         });
@@ -234,23 +246,26 @@ export class SpendingAnalyzer {
       // IQR method for outlier detection
       const iqrOutlier = this.detectIQROutlier(transaction.amount, stats);
       if (iqrOutlier) {
-        const existingAnomaly = anomalies.find(a => a.transactionId === transaction.id);
+        const existingAnomaly = anomalies.find(
+          (a) => a.transactionId === transaction.id,
+        );
         if (!existingAnomaly) {
           anomalies.push({
             id: `anomaly-${transaction.id}`,
-            type: 'unusual_large_transaction',
-            severity: 'medium',
+            type: "unusual_large_transaction",
+            severity: "medium",
             title: `Outlier ${transaction.category} spending`,
             description: `Transaction amount is outside normal range for this category`,
             transactionId: transaction.id,
             amount: transaction.amount,
             expectedAmount: stats.median,
-            deviation: ((transaction.amount - stats.median) / stats.median) * 100,
+            deviation:
+              ((transaction.amount - stats.median) / stats.median) * 100,
             category: transaction.category,
             merchant: transaction.merchant_name,
             date: transaction.date,
             confidence: 75,
-            detectionMethod: 'iqr',
+            detectionMethod: "iqr",
             requiresAction: false,
           });
         }
@@ -262,13 +277,17 @@ export class SpendingAnalyzer {
     anomalies.push(...duplicates);
 
     // Detect unusual merchants
-    const unusualMerchants = await this.detectUnusualMerchants(userId, transactions);
+    const unusualMerchants = await this.detectUnusualMerchants(
+      userId,
+      transactions,
+    );
     anomalies.push(...unusualMerchants);
 
     // Sort by severity and confidence
     anomalies.sort((a, b) => {
       const severityOrder = { critical: 4, high: 3, medium: 2, low: 1 };
-      const severityDiff = severityOrder[b.severity] - severityOrder[a.severity];
+      const severityDiff =
+        severityOrder[b.severity] - severityOrder[a.severity];
       if (severityDiff !== 0) return severityDiff;
       return b.confidence - a.confidence;
     });
@@ -291,14 +310,14 @@ export class SpendingAnalyzer {
   async getSpendingTrends(
     userId: string,
     period: string,
-    categories?: string[]
+    categories?: string[],
   ): Promise<SpendingTrendAnalysis> {
     const { startDate, endDate } = this.parsePeriod(period);
     const transactions = await this.getTransactions(userId, startDate, endDate);
 
     // Filter by categories if specified
     const filteredTransactions = categories
-      ? transactions.filter(t => categories.includes(t.category))
+      ? transactions.filter((t) => categories.includes(t.category))
       : transactions;
 
     // Calculate trends by category
@@ -306,31 +325,44 @@ export class SpendingAnalyzer {
       userId,
       filteredTransactions,
       startDate,
-      endDate
+      endDate,
     );
 
     // Determine overall trend
     const overallTrend = this.determineOverallTrend(categoryTrends);
 
     // Calculate growth rate
-    const growthRate = this.calculateGrowthRate(filteredTransactions, startDate, endDate);
+    const growthRate = this.calculateGrowthRate(
+      filteredTransactions,
+      startDate,
+      endDate,
+    );
 
     // Analyze seasonality
     const seasonality = await this.analyzeSeasonality(userId, categories);
 
     // Generate forecast
-    const forecast = this.generateForecast(filteredTransactions, categoryTrends, seasonality);
+    const forecast = this.generateForecast(
+      filteredTransactions,
+      categoryTrends,
+      seasonality,
+    );
 
     // Compare with previous period
     const comparison = await this.compareWithPreviousPeriod(
       userId,
       filteredTransactions,
       startDate,
-      endDate
+      endDate,
     );
 
     // Generate insights
-    const insights = this.generateTrendInsights(categoryTrends, overallTrend, growthRate, seasonality);
+    const insights = this.generateTrendInsights(
+      categoryTrends,
+      overallTrend,
+      growthRate,
+      seasonality,
+    );
 
     return {
       userId,
@@ -352,33 +384,39 @@ export class SpendingAnalyzer {
    */
   async generateInsights(
     userId: string,
-    analysisType: 'patterns' | 'trends' | 'anomalies' | 'all' = 'all'
+    analysisType: "patterns" | "trends" | "anomalies" | "all" = "all",
   ): Promise<InsightGenerationResult> {
     const startTime = Date.now();
     const insights: AIInsight[] = [];
 
     // Get data based on analysis type
-    if (analysisType === 'patterns' || analysisType === 'all') {
-      const patternAnalysis = await this.analyzeSpendingPatterns(userId, 'monthly');
+    if (analysisType === "patterns" || analysisType === "all") {
+      const patternAnalysis = await this.analyzeSpendingPatterns(
+        userId,
+        "monthly",
+      );
       insights.push(...patternAnalysis.aiInsights);
     }
 
-    if (analysisType === 'trends' || analysisType === 'all') {
-      const trendAnalysis = await this.getSpendingTrends(userId, '3m');
+    if (analysisType === "trends" || analysisType === "all") {
+      const trendAnalysis = await this.getSpendingTrends(userId, "3m");
       const trendInsights = await this.convertTrendInsightsToAI(trendAnalysis);
       insights.push(...trendInsights);
     }
 
-    if (analysisType === 'anomalies' || analysisType === 'all') {
-      const anomalyResult = await this.detectAnomalies(userId, 'medium', 30);
-      const anomalyInsights = this.convertAnomaliesToInsights(anomalyResult.anomalies);
+    if (analysisType === "anomalies" || analysisType === "all") {
+      const anomalyResult = await this.detectAnomalies(userId, "medium", 30);
+      const anomalyInsights = this.convertAnomaliesToInsights(
+        anomalyResult.anomalies,
+      );
       insights.push(...anomalyInsights);
     }
 
     // Sort by priority and confidence
     insights.sort((a, b) => {
       const priorityOrder = { high: 3, medium: 2, low: 1 };
-      const priorityDiff = priorityOrder[b.priority] - priorityOrder[a.priority];
+      const priorityDiff =
+        priorityOrder[b.priority] - priorityOrder[a.priority];
       if (priorityDiff !== 0) return priorityDiff;
       return b.confidence - a.confidence;
     });
@@ -402,40 +440,58 @@ export class SpendingAnalyzer {
   async compareToLastPeriod(
     userId: string,
     period: string,
-    metric: 'total' | 'category' | 'merchant' = 'total'
+    metric: "total" | "category" | "merchant" = "total",
   ): Promise<PeriodComparison> {
     const { startDate, endDate } = this.parsePeriod(period);
-    const currentTransactions = await this.getTransactions(userId, startDate, endDate);
+    const currentTransactions = await this.getTransactions(
+      userId,
+      startDate,
+      endDate,
+    );
 
     // Calculate previous period dates
     const periodLength = endDate.getTime() - startDate.getTime();
     const prevEndDate = new Date(startDate.getTime() - 1);
     const prevStartDate = new Date(prevEndDate.getTime() - periodLength);
 
-    const previousTransactions = await this.getTransactions(userId, prevStartDate, prevEndDate);
+    const previousTransactions = await this.getTransactions(
+      userId,
+      prevStartDate,
+      prevEndDate,
+    );
 
-    const currentAmount = currentTransactions.reduce((sum, t) => sum + t.amount, 0);
-    const previousAmount = previousTransactions.reduce((sum, t) => sum + t.amount, 0);
+    const currentAmount = currentTransactions.reduce(
+      (sum, t) => sum + t.amount,
+      0,
+    );
+    const previousAmount = previousTransactions.reduce(
+      (sum, t) => sum + t.amount,
+      0,
+    );
 
     const change = currentAmount - previousAmount;
-    const changePercent = previousAmount > 0 ? (change / previousAmount) * 100 : 0;
+    const changePercent =
+      previousAmount > 0 ? (change / previousAmount) * 100 : 0;
 
     // Calculate category changes
-    const categoryChanges = this.calculateCategoryChanges(currentTransactions, previousTransactions);
+    const categoryChanges = this.calculateCategoryChanges(
+      currentTransactions,
+      previousTransactions,
+    );
 
     // Identify significant changes
     const significantChanges = categoryChanges
-      .filter(c => Math.abs(c.changePercent) > 20 || Math.abs(c.change) > 100)
-      .map(c => ({
+      .filter((c) => Math.abs(c.changePercent) > 20 || Math.abs(c.change) > 100)
+      .map((c) => ({
         category: c.category,
-        type: c.change > 0 ? ('increase' as const) : ('decrease' as const),
+        type: c.change > 0 ? ("increase" as const) : ("decrease" as const),
         amount: Math.abs(c.change),
         percent: Math.abs(c.changePercent),
-        impact: c.change > 0 ? ('negative' as const) : ('positive' as const),
+        impact: c.change > 0 ? ("negative" as const) : ("positive" as const),
       }));
 
     return {
-      compareWith: 'previous',
+      compareWith: "previous",
       currentPeriod: {
         start: startDate,
         end: endDate,
@@ -473,7 +529,7 @@ export class SpendingAnalyzer {
     userId: string,
     transactions?: Transaction[],
     patterns?: DetectedPattern[],
-    habits?: SpendingHabit[]
+    habits?: SpendingHabit[],
   ): Promise<SpendingHealthScore> {
     // Fetch data if not provided
     if (!transactions) {
@@ -499,7 +555,11 @@ export class SpendingAnalyzer {
     const sustainability = this.calculateSustainabilityScore(transactions);
 
     const overall = Math.round(
-      (consistency * 0.2 + control * 0.25 + planning * 0.2 + efficiency * 0.15 + sustainability * 0.2)
+      consistency * 0.2 +
+        control * 0.25 +
+        planning * 0.2 +
+        efficiency * 0.15 +
+        sustainability * 0.2,
     );
 
     const grade = this.getGradeFromScore(overall);
@@ -523,8 +583,6 @@ export class SpendingAnalyzer {
     };
   }
 
-
-
   // ============================================================================
   // PRIVATE HELPER METHODS
   // ============================================================================
@@ -535,22 +593,22 @@ export class SpendingAnalyzer {
   private async getTransactions(
     userId: string,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
   ): Promise<Transaction[]> {
     const { data, error } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('user_id', userId)
-      .gte('date', startDate.toISOString())
-      .lte('date', endDate.toISOString())
-      .order('date', { ascending: false });
+      .from("transactions")
+      .select("*")
+      .eq("user_id", userId)
+      .gte("date", startDate.toISOString())
+      .lte("date", endDate.toISOString())
+      .order("date", { ascending: false });
 
     if (error) {
       // SpendingAnalyzer error: Error fetching transactions
       return [];
     }
 
-    return (data || []).map(t => ({
+    return (data || []).map((t) => ({
       ...t,
       date: new Date(t.date),
       created_at: new Date(t.created_at),
@@ -560,7 +618,9 @@ export class SpendingAnalyzer {
   /**
    * Get period dates
    */
-  private getPeriodDates(period: 'weekly' | 'monthly' | 'quarterly' | 'yearly'): {
+  private getPeriodDates(
+    period: "weekly" | "monthly" | "quarterly" | "yearly",
+  ): {
     startDate: Date;
     endDate: Date;
   } {
@@ -568,16 +628,16 @@ export class SpendingAnalyzer {
     const startDate = new Date();
 
     switch (period) {
-      case 'weekly':
+      case "weekly":
         startDate.setDate(startDate.getDate() - 7);
         break;
-      case 'monthly':
+      case "monthly":
         startDate.setMonth(startDate.getMonth() - 1);
         break;
-      case 'quarterly':
+      case "quarterly":
         startDate.setMonth(startDate.getMonth() - 3);
         break;
-      case 'yearly':
+      case "yearly":
         startDate.setFullYear(startDate.getFullYear() - 1);
         break;
     }
@@ -603,19 +663,19 @@ export class SpendingAnalyzer {
     const num = parseInt(amount, 10);
 
     switch (unit) {
-      case 'd':
+      case "d":
         startDate.setDate(startDate.getDate() - num);
         break;
-      case 'w':
+      case "w":
         startDate.setDate(startDate.getDate() - num * 7);
         break;
-      case 'm':
+      case "m":
         startDate.setMonth(startDate.getMonth() - num);
         break;
-      case 'q':
+      case "q":
         startDate.setMonth(startDate.getMonth() - num * 3);
         break;
-      case 'y':
+      case "y":
         startDate.setFullYear(startDate.getFullYear() - num);
         break;
     }
@@ -626,7 +686,9 @@ export class SpendingAnalyzer {
   /**
    * Detect spending patterns
    */
-  private async detectPatterns(transactions: Transaction[]): Promise<DetectedPattern[]> {
+  private async detectPatterns(
+    transactions: Transaction[],
+  ): Promise<DetectedPattern[]> {
     const patterns: DetectedPattern[] = [];
 
     // Group transactions by merchant
@@ -661,56 +723,70 @@ export class SpendingAnalyzer {
    */
   private analyzeRecurringPattern(
     merchant: string,
-    transactions: Transaction[]
+    transactions: Transaction[],
   ): DetectedPattern | null {
     if (transactions.length < 2) return null;
 
-    const sortedTxns = [...transactions].sort((a, b) => a.date.getTime() - b.date.getTime());
+    const sortedTxns = [...transactions].sort(
+      (a, b) => a.date.getTime() - b.date.getTime(),
+    );
 
     // Calculate intervals
     const intervals: number[] = [];
     for (let i = 1; i < sortedTxns.length; i++) {
       const days = Math.round(
-        (sortedTxns[i].date.getTime() - sortedTxns[i - 1].date.getTime()) / (1000 * 60 * 60 * 24)
+        (sortedTxns[i].date.getTime() - sortedTxns[i - 1].date.getTime()) /
+          (1000 * 60 * 60 * 24),
       );
       intervals.push(days);
     }
 
-    const avgInterval = intervals.reduce((sum, i) => sum + i, 0) / intervals.length;
+    const avgInterval =
+      intervals.reduce((sum, i) => sum + i, 0) / intervals.length;
 
     // Determine frequency
-    let frequency: DetectedPattern['frequency'] = 'irregular';
+    let frequency: DetectedPattern["frequency"] = "irregular";
     let confidence = 50;
 
     if (Math.abs(avgInterval - 1) <= PATTERN_FREQUENCY_TOLERANCE.daily) {
-      frequency = 'daily';
+      frequency = "daily";
       confidence = 85;
-    } else if (Math.abs(avgInterval - 7) <= PATTERN_FREQUENCY_TOLERANCE.weekly) {
-      frequency = 'weekly';
+    } else if (
+      Math.abs(avgInterval - 7) <= PATTERN_FREQUENCY_TOLERANCE.weekly
+    ) {
+      frequency = "weekly";
       confidence = 90;
-    } else if (Math.abs(avgInterval - 14) <= PATTERN_FREQUENCY_TOLERANCE.biweekly) {
-      frequency = 'biweekly';
+    } else if (
+      Math.abs(avgInterval - 14) <= PATTERN_FREQUENCY_TOLERANCE.biweekly
+    ) {
+      frequency = "biweekly";
       confidence = 85;
-    } else if (Math.abs(avgInterval - 30) <= PATTERN_FREQUENCY_TOLERANCE.monthly) {
-      frequency = 'monthly';
+    } else if (
+      Math.abs(avgInterval - 30) <= PATTERN_FREQUENCY_TOLERANCE.monthly
+    ) {
+      frequency = "monthly";
       confidence = 95;
-    } else if (Math.abs(avgInterval - 91) <= PATTERN_FREQUENCY_TOLERANCE.quarterly) {
-      frequency = 'quarterly';
+    } else if (
+      Math.abs(avgInterval - 91) <= PATTERN_FREQUENCY_TOLERANCE.quarterly
+    ) {
+      frequency = "quarterly";
       confidence = 85;
-    } else if (Math.abs(avgInterval - 365) <= PATTERN_FREQUENCY_TOLERANCE.yearly) {
-      frequency = 'yearly';
+    } else if (
+      Math.abs(avgInterval - 365) <= PATTERN_FREQUENCY_TOLERANCE.yearly
+    ) {
+      frequency = "yearly";
       confidence = 80;
     }
 
-    if (frequency === 'irregular') return null;
+    if (frequency === "irregular") return null;
 
-    const amounts = sortedTxns.map(t => t.amount);
+    const amounts = sortedTxns.map((t) => t.amount);
     const avgAmount = amounts.reduce((sum, a) => sum + a, 0) / amounts.length;
     const totalAmount = amounts.reduce((sum, a) => sum + a, 0);
 
     return {
       id: `pattern-${merchant}-${frequency}`,
-      type: 'recurring_subscription',
+      type: "recurring_subscription",
       name: `${merchant} ${frequency} charge`,
       description: `Recurring ${frequency} charge from ${merchant}`,
       frequency,
@@ -720,7 +796,7 @@ export class SpendingAnalyzer {
       occurrences: sortedTxns.length,
       category: sortedTxns[0].category,
       merchant: sortedTxns[0].merchant_name,
-      relatedTransactionIds: sortedTxns.map(t => t.id),
+      relatedTransactionIds: sortedTxns.map((t) => t.id),
       firstDetected: sortedTxns[0].date,
       lastOccurrence: sortedTxns[sortedTxns.length - 1].date,
       aiGenerated: false,
@@ -730,30 +806,33 @@ export class SpendingAnalyzer {
   /**
    * Detect behavioral patterns
    */
-  private detectBehavioralPatterns(transactions: Transaction[]): DetectedPattern[] {
+  private detectBehavioralPatterns(
+    transactions: Transaction[],
+  ): DetectedPattern[] {
     const patterns: DetectedPattern[] = [];
 
     // Weekend spending pattern
-    const weekendTxns = transactions.filter(t => {
+    const weekendTxns = transactions.filter((t) => {
       const day = t.date.getDay();
       return day === 0 || day === 6;
     });
 
     if (weekendTxns.length >= 5) {
-      const avgAmount = weekendTxns.reduce((sum, t) => sum + t.amount, 0) / weekendTxns.length;
+      const avgAmount =
+        weekendTxns.reduce((sum, t) => sum + t.amount, 0) / weekendTxns.length;
       const totalAmount = weekendTxns.reduce((sum, t) => sum + t.amount, 0);
 
       patterns.push({
-        id: 'pattern-weekend-spending',
-        type: 'weekend_spending',
-        name: 'Weekend Spending Pattern',
-        description: 'Increased spending on weekends',
-        frequency: 'weekly',
+        id: "pattern-weekend-spending",
+        type: "weekend_spending",
+        name: "Weekend Spending Pattern",
+        description: "Increased spending on weekends",
+        frequency: "weekly",
         confidence: 80,
         averageAmount: avgAmount,
         totalAmount,
         occurrences: weekendTxns.length,
-        relatedTransactionIds: weekendTxns.map(t => t.id),
+        relatedTransactionIds: weekendTxns.map((t) => t.id),
         firstDetected: weekendTxns[0].date,
         lastOccurrence: weekendTxns[weekendTxns.length - 1].date,
         aiGenerated: false,
@@ -768,55 +847,67 @@ export class SpendingAnalyzer {
    */
   private async identifyHabits(
     transactions: Transaction[],
-    patterns: DetectedPattern[]
+    patterns: DetectedPattern[],
   ): Promise<SpendingHabit[]> {
     const habits: SpendingHabit[] = [];
 
     // Daily coffee habit
-    const coffeeTransactions = transactions.filter(t =>
-      t.category.toLowerCase().includes('coffee') ||
-      t.merchant_name.toLowerCase().includes('coffee') ||
-      t.merchant_name.toLowerCase().includes('starbucks') ||
-      t.merchant_name.toLowerCase().includes('dunkin')
+    const coffeeTransactions = transactions.filter(
+      (t) =>
+        t.category.toLowerCase().includes("coffee") ||
+        t.merchant_name.toLowerCase().includes("coffee") ||
+        t.merchant_name.toLowerCase().includes("starbucks") ||
+        t.merchant_name.toLowerCase().includes("dunkin"),
     );
 
     if (coffeeTransactions.length >= 10) {
-      const avgAmount = coffeeTransactions.reduce((sum, t) => sum + t.amount, 0) / coffeeTransactions.length;
+      const avgAmount =
+        coffeeTransactions.reduce((sum, t) => sum + t.amount, 0) /
+        coffeeTransactions.length;
       const monthlySpend = avgAmount * 30;
 
       habits.push({
-        id: 'habit-daily-coffee',
-        type: 'daily_coffee',
+        id: "habit-daily-coffee",
+        type: "daily_coffee",
         description: `Daily coffee purchases averaging $${avgAmount.toFixed(2)}`,
-        frequency: 'daily',
+        frequency: "daily",
         averageAmount: avgAmount,
-        impact: monthlySpend > 100 ? 'negative' : 'neutral',
+        impact: monthlySpend > 100 ? "negative" : "neutral",
         healthScore: monthlySpend > 150 ? 40 : monthlySpend > 100 ? 60 : 80,
-        recommendation: monthlySpend > 100 ? 'Consider brewing coffee at home to save money' : undefined,
+        recommendation:
+          monthlySpend > 100
+            ? "Consider brewing coffee at home to save money"
+            : undefined,
         potentialSavings: monthlySpend > 100 ? monthlySpend * 0.7 : undefined,
       });
     }
 
     // Frequent dining out
-    const diningTransactions = transactions.filter(t =>
-      t.category.toLowerCase().includes('dining') ||
-      t.category.toLowerCase().includes('restaurant') ||
-      t.category.toLowerCase().includes('food')
+    const diningTransactions = transactions.filter(
+      (t) =>
+        t.category.toLowerCase().includes("dining") ||
+        t.category.toLowerCase().includes("restaurant") ||
+        t.category.toLowerCase().includes("food"),
     );
 
     if (diningTransactions.length >= 15) {
-      const avgAmount = diningTransactions.reduce((sum, t) => sum + t.amount, 0) / diningTransactions.length;
+      const avgAmount =
+        diningTransactions.reduce((sum, t) => sum + t.amount, 0) /
+        diningTransactions.length;
       const monthlySpend = (diningTransactions.length / 30) * avgAmount * 30;
 
       habits.push({
-        id: 'habit-frequent-dining',
-        type: 'frequent_dining_out',
+        id: "habit-frequent-dining",
+        type: "frequent_dining_out",
         description: `Frequent dining out (${diningTransactions.length} times)`,
         frequency: `${Math.round(diningTransactions.length / 4)} times per week`,
         averageAmount: avgAmount,
-        impact: monthlySpend > 300 ? 'negative' : 'neutral',
+        impact: monthlySpend > 300 ? "negative" : "neutral",
         healthScore: monthlySpend > 500 ? 30 : monthlySpend > 300 ? 50 : 70,
-        recommendation: monthlySpend > 300 ? 'Try meal prepping to reduce dining out expenses' : undefined,
+        recommendation:
+          monthlySpend > 300
+            ? "Try meal prepping to reduce dining out expenses"
+            : undefined,
         potentialSavings: monthlySpend > 300 ? monthlySpend * 0.5 : undefined,
       });
     }
@@ -830,9 +921,14 @@ export class SpendingAnalyzer {
   private calculateSpendingVelocity(
     transactions: Transaction[],
     startDate: Date,
-    endDate: Date
+    endDate: Date,
   ): SpendingVelocity {
-    const totalDays = Math.max(1, Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+    const totalDays = Math.max(
+      1,
+      Math.round(
+        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+      ),
+    );
     const totalSpending = transactions.reduce((sum, t) => sum + t.amount, 0);
     const current = totalSpending / totalDays;
 
@@ -841,12 +937,12 @@ export class SpendingAnalyzer {
 
     const acceleration = ((current - average) / average) * 100;
 
-    let trend: 'accelerating' | 'decelerating' | 'stable' = 'stable';
-    if (acceleration > 10) trend = 'accelerating';
-    else if (acceleration < -10) trend = 'decelerating';
+    let trend: "accelerating" | "decelerating" | "stable" = "stable";
+    if (acceleration > 10) trend = "accelerating";
+    else if (acceleration < -10) trend = "decelerating";
 
     const daysInMonth = 30;
-    const daysRemaining = Math.max(0, daysInMonth - (new Date().getDate()));
+    const daysRemaining = Math.max(0, daysInMonth - new Date().getDate());
     const projectedMonthEnd = current * daysInMonth;
 
     // Simplified burn rate calculation
@@ -875,32 +971,35 @@ export class SpendingAnalyzer {
       velocity: SpendingVelocity;
       triggers: BehavioralTrigger[];
       score: SpendingHealthScore;
-    }
+    },
   ): Promise<AIInsight[]> {
     const insights: AIInsight[] = [];
 
     // Rule-based insights (always available)
-    if (context.velocity.trend === 'accelerating') {
+    if (context.velocity.trend === "accelerating") {
       insights.push({
-        id: 'insight-spending-acceleration',
-        type: 'trend_alert',
-        priority: 'high',
-        title: 'Spending is Accelerating',
+        id: "insight-spending-acceleration",
+        type: "trend_alert",
+        priority: "high",
+        title: "Spending is Accelerating",
         description: `Your spending rate has increased by ${context.velocity.acceleration.toFixed(1)}%`,
-        reasoning: ['Daily spending rate is higher than average', 'Projected month-end spending is elevated'],
+        reasoning: [
+          "Daily spending rate is higher than average",
+          "Projected month-end spending is elevated",
+        ],
         confidence: 85,
-        impact: 'negative',
+        impact: "negative",
         actionItems: [
           {
-            id: 'action-review-budget',
-            action: 'Review your budget and identify areas to cut back',
-            difficulty: 'easy',
+            id: "action-review-budget",
+            action: "Review your budget and identify areas to cut back",
+            difficulty: "easy",
             estimatedImpact: context.velocity.projectedMonthEnd * 0.1,
-            estimatedTime: '15 minutes',
+            estimatedTime: "15 minutes",
             priority: 1,
           },
         ],
-        aiModel: 'rule-based',
+        aiModel: "rule-based",
         generatedAt: new Date(),
       });
     }
@@ -922,11 +1021,13 @@ export class SpendingAnalyzer {
   /**
    * Identify spending triggers (time-based, location-based, event-based)
    */
-  private async identifySpendingTriggers(transactions: Transaction[]): Promise<BehavioralTrigger[]> {
+  private async identifySpendingTriggers(
+    transactions: Transaction[],
+  ): Promise<BehavioralTrigger[]> {
     const triggers: BehavioralTrigger[] = [];
 
     // Time-based triggers (weekend, late night, payday)
-    const weekendTxns = transactions.filter(t => {
+    const weekendTxns = transactions.filter((t) => {
       const day = t.date.getDay();
       return day === 0 || day === 6;
     });
@@ -935,18 +1036,19 @@ export class SpendingAnalyzer {
       const totalSpending = weekendTxns.reduce((sum, t) => sum + t.amount, 0);
       triggers.push({
         id: crypto.randomUUID(),
-        type: 'weekend',
-        pattern: 'weekend_spending',
-        description: 'Increased spending on weekends',
+        type: "weekend",
+        pattern: "weekend_spending",
+        description: "Increased spending on weekends",
         occurrences: weekendTxns.length,
         associatedSpending: totalSpending,
         confidence: 80,
-        recommendation: 'Consider setting a weekend spending budget to control discretionary expenses',
+        recommendation:
+          "Consider setting a weekend spending budget to control discretionary expenses",
       });
     }
 
     // Late night spending (after 10 PM)
-    const lateNightTxns = transactions.filter(t => {
+    const lateNightTxns = transactions.filter((t) => {
       const hour = t.date.getHours();
       return hour >= 22 || hour <= 2;
     });
@@ -955,33 +1057,36 @@ export class SpendingAnalyzer {
       const totalSpending = lateNightTxns.reduce((sum, t) => sum + t.amount, 0);
       triggers.push({
         id: crypto.randomUUID(),
-        type: 'time_of_day',
-        pattern: 'late_night_spending',
-        description: 'Spending late at night',
+        type: "time_of_day",
+        pattern: "late_night_spending",
+        description: "Spending late at night",
         occurrences: lateNightTxns.length,
         associatedSpending: totalSpending,
         confidence: 75,
-        recommendation: 'Late night purchases are often impulsive. Try to avoid shopping after 10 PM',
+        recommendation:
+          "Late night purchases are often impulsive. Try to avoid shopping after 10 PM",
       });
     }
 
     // Event-based triggers (social spending)
-    const diningTxns = transactions.filter(t =>
-      t.category.toLowerCase().includes('dining') ||
-      t.category.toLowerCase().includes('restaurant')
+    const diningTxns = transactions.filter(
+      (t) =>
+        t.category.toLowerCase().includes("dining") ||
+        t.category.toLowerCase().includes("restaurant"),
     );
 
     if (diningTxns.length > 10) {
       const totalSpending = diningTxns.reduce((sum, t) => sum + t.amount, 0);
       triggers.push({
         id: crypto.randomUUID(),
-        type: 'social_event',
-        pattern: 'social_dining',
-        description: 'Frequent dining out',
+        type: "social_event",
+        pattern: "social_dining",
+        description: "Frequent dining out",
         occurrences: diningTxns.length,
         associatedSpending: totalSpending,
         confidence: 85,
-        recommendation: 'Consider meal prepping or setting a monthly dining out budget',
+        recommendation:
+          "Consider meal prepping or setting a monthly dining out budget",
       });
     }
 
@@ -991,7 +1096,9 @@ export class SpendingAnalyzer {
   /**
    * Calculate category statistics for anomaly detection
    */
-  private calculateCategoryStats(transactions: Transaction[]): Map<string, CategoryStats> {
+  private calculateCategoryStats(
+    transactions: Transaction[],
+  ): Map<string, CategoryStats> {
     const categoryMap = new Map<string, Transaction[]>();
 
     // Group by category
@@ -1005,12 +1112,19 @@ export class SpendingAnalyzer {
     const stats = new Map<string, CategoryStats>();
 
     for (const [category, txns] of Array.from(categoryMap)) {
-      const amounts = txns.map((t: Transaction) => t.amount).sort((a: number, b: number) => a - b);
-      const mean = amounts.reduce((sum: number, a: number) => sum + a, 0) / amounts.length;
+      const amounts = txns
+        .map((t: Transaction) => t.amount)
+        .sort((a: number, b: number) => a - b);
+      const mean =
+        amounts.reduce((sum: number, a: number) => sum + a, 0) / amounts.length;
       const median = amounts[Math.floor(amounts.length / 2)];
 
       // Calculate standard deviation
-      const variance = amounts.reduce((sum: number, a: number) => sum + Math.pow(a - mean, 2), 0) / amounts.length;
+      const variance =
+        amounts.reduce(
+          (sum: number, a: number) => sum + Math.pow(a - mean, 2),
+          0,
+        ) / amounts.length;
       const stdDev = Math.sqrt(variance);
 
       // Calculate IQR
@@ -1037,13 +1151,13 @@ export class SpendingAnalyzer {
   /**
    * Get z-score threshold based on sensitivity
    */
-  private getZScoreThreshold(sensitivity: 'low' | 'medium' | 'high'): number {
+  private getZScoreThreshold(sensitivity: "low" | "medium" | "high"): number {
     switch (sensitivity) {
-      case 'low':
+      case "low":
         return 3.0;
-      case 'medium':
+      case "medium":
         return 2.5;
-      case 'high':
+      case "high":
         return 2.0;
     }
   }
@@ -1051,11 +1165,13 @@ export class SpendingAnalyzer {
   /**
    * Get severity from z-score
    */
-  private getSeverityFromZScore(zScore: number): 'low' | 'medium' | 'high' | 'critical' {
-    if (zScore > 4) return 'critical';
-    if (zScore > 3) return 'high';
-    if (zScore > 2.5) return 'medium';
-    return 'low';
+  private getSeverityFromZScore(
+    zScore: number,
+  ): "low" | "medium" | "high" | "critical" {
+    if (zScore > 4) return "critical";
+    if (zScore > 3) return "high";
+    if (zScore > 2.5) return "medium";
+    return "low";
   }
 
   /**
@@ -1070,7 +1186,9 @@ export class SpendingAnalyzer {
   /**
    * Detect duplicate charges
    */
-  private detectDuplicateCharges(transactions: Transaction[]): SpendingAnomaly[] {
+  private detectDuplicateCharges(
+    transactions: Transaction[],
+  ): SpendingAnomaly[] {
     const anomalies: SpendingAnomaly[] = [];
     const seen = new Map<string, Transaction>();
 
@@ -1081,9 +1199,9 @@ export class SpendingAnalyzer {
         const original = seen.get(key)!;
         anomalies.push({
           id: `anomaly-duplicate-${txn.id}`,
-          type: 'duplicate_charge',
-          severity: 'high',
-          title: 'Potential Duplicate Charge',
+          type: "duplicate_charge",
+          severity: "high",
+          title: "Potential Duplicate Charge",
           description: `Duplicate charge of $${txn.amount.toFixed(2)} from ${txn.merchant_name}`,
           transactionId: txn.id,
           amount: txn.amount,
@@ -1092,9 +1210,9 @@ export class SpendingAnalyzer {
           merchant: txn.merchant_name,
           date: txn.date,
           confidence: 90,
-          detectionMethod: 'zscore',
+          detectionMethod: "zscore",
           requiresAction: true,
-          actionSuggestion: 'Contact merchant to verify this charge',
+          actionSuggestion: "Contact merchant to verify this charge",
           relatedAnomalies: [original.id],
         });
       } else {
@@ -1110,10 +1228,12 @@ export class SpendingAnalyzer {
    */
   private async detectUnusualMerchants(
     userId: string,
-    transactions: Transaction[]
+    transactions: Transaction[],
   ): Promise<SpendingAnomaly[]> {
     // Get historical merchants (simplified - in production, query database)
-    const knownMerchants = new Set(transactions.map(t => t.merchant_name.toLowerCase()));
+    const knownMerchants = new Set(
+      transactions.map((t) => t.merchant_name.toLowerCase()),
+    );
 
     // For now, return empty array (would need historical data)
     return [];
@@ -1124,10 +1244,10 @@ export class SpendingAnalyzer {
    */
   private createAnomalySummary(anomalies: SpendingAnomaly[]): AnomalySummary {
     const bySeverity = {
-      critical: anomalies.filter(a => a.severity === 'critical').length,
-      high: anomalies.filter(a => a.severity === 'high').length,
-      medium: anomalies.filter(a => a.severity === 'medium').length,
-      low: anomalies.filter(a => a.severity === 'low').length,
+      critical: anomalies.filter((a) => a.severity === "critical").length,
+      high: anomalies.filter((a) => a.severity === "high").length,
+      medium: anomalies.filter((a) => a.severity === "medium").length,
+      low: anomalies.filter((a) => a.severity === "low").length,
     };
 
     const byType: Record<AnomalyType, number> = {
@@ -1147,8 +1267,13 @@ export class SpendingAnalyzer {
       byType[anomaly.type]++;
     }
 
-    const totalImpact = anomalies.reduce((sum, a) => sum + (a.amount - (a.expectedAmount || 0)), 0);
-    const requiresImmediateAction = anomalies.filter(a => a.requiresAction).length;
+    const totalImpact = anomalies.reduce(
+      (sum, a) => sum + (a.amount - (a.expectedAmount || 0)),
+      0,
+    );
+    const requiresImmediateAction = anomalies.filter(
+      (a) => a.requiresAction,
+    ).length;
 
     return {
       totalAnomalies: anomalies.length,
@@ -1166,7 +1291,7 @@ export class SpendingAnalyzer {
     userId: string,
     transactions: Transaction[],
     startDate: Date,
-    endDate: Date
+    endDate: Date,
   ): Promise<CategoryTrend[]> {
     const categoryMap = new Map<string, Transaction[]>();
 
@@ -1186,13 +1311,14 @@ export class SpendingAnalyzer {
       const previousAmount = currentAmount * 0.9; // Placeholder
 
       const change = currentAmount - previousAmount;
-      const changePercent = previousAmount > 0 ? (change / previousAmount) * 100 : 0;
+      const changePercent =
+        previousAmount > 0 ? (change / previousAmount) * 100 : 0;
 
-      let trend: TrendDirection = 'stable';
-      if (changePercent > 10) trend = 'increasing';
-      else if (changePercent < -10) trend = 'decreasing';
+      let trend: TrendDirection = "stable";
+      if (changePercent > 10) trend = "increasing";
+      else if (changePercent < -10) trend = "decreasing";
 
-      const dataPoints: TrendDataPoint[] = txns.map(t => ({
+      const dataPoints: TrendDataPoint[] = txns.map((t) => ({
         date: t.date,
         amount: t.amount,
         transactionCount: 1,
@@ -1220,12 +1346,12 @@ export class SpendingAnalyzer {
    * Determine overall trend
    */
   private determineOverallTrend(trends: CategoryTrend[]): TrendDirection {
-    const increasing = trends.filter(t => t.trend === 'increasing').length;
-    const decreasing = trends.filter(t => t.trend === 'decreasing').length;
+    const increasing = trends.filter((t) => t.trend === "increasing").length;
+    const decreasing = trends.filter((t) => t.trend === "decreasing").length;
 
-    if (increasing > decreasing * 1.5) return 'increasing';
-    if (decreasing > increasing * 1.5) return 'decreasing';
-    return 'stable';
+    if (increasing > decreasing * 1.5) return "increasing";
+    if (decreasing > increasing * 1.5) return "decreasing";
+    return "stable";
   }
 
   /**
@@ -1234,11 +1360,14 @@ export class SpendingAnalyzer {
   private calculateGrowthRate(
     transactions: Transaction[],
     startDate: Date,
-    endDate: Date
+    endDate: Date,
   ): number {
     // Simplified growth rate calculation
     const totalSpending = transactions.reduce((sum, t) => sum + t.amount, 0);
-    const days = Math.max(1, (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    const days = Math.max(
+      1,
+      (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+    );
     const dailyAverage = totalSpending / days;
 
     // Compare to historical average (placeholder)
@@ -1252,7 +1381,7 @@ export class SpendingAnalyzer {
    */
   private async analyzeSeasonality(
     userId: string,
-    categories?: string[]
+    categories?: string[],
   ): Promise<SeasonalityAnalysis> {
     // Simplified seasonality analysis
     return {
@@ -1260,8 +1389,8 @@ export class SpendingAnalyzer {
       seasonalityStrength: 0,
       peakPeriods: [],
       lowPeriods: [],
-      seasonalPattern: 'none',
-      adjustedTrend: 'stable',
+      seasonalPattern: "none",
+      adjustedTrend: "stable",
     };
   }
 
@@ -1271,7 +1400,7 @@ export class SpendingAnalyzer {
   private generateForecast(
     transactions: Transaction[],
     trends: CategoryTrend[],
-    seasonality: SeasonalityAnalysis
+    seasonality: SeasonalityAnalysis,
   ): SpendingForecast {
     const totalSpending = transactions.reduce((sum, t) => sum + t.amount, 0);
     const avgDaily = totalSpending / Math.max(1, transactions.length);
@@ -1290,7 +1419,10 @@ export class SpendingAnalyzer {
         expected: nextPeriod,
         high: nextPeriod * 1.15,
       },
-      assumptions: ['Based on current spending patterns', 'Assumes no major lifestyle changes'],
+      assumptions: [
+        "Based on current spending patterns",
+        "Assumes no major lifestyle changes",
+      ],
     };
   }
 
@@ -1301,34 +1433,48 @@ export class SpendingAnalyzer {
     userId: string,
     currentTransactions: Transaction[],
     startDate: Date,
-    endDate: Date
+    endDate: Date,
   ): Promise<PeriodComparison> {
     const periodLength = endDate.getTime() - startDate.getTime();
     const prevEndDate = new Date(startDate.getTime() - 1);
     const prevStartDate = new Date(prevEndDate.getTime() - periodLength);
 
-    const previousTransactions = await this.getTransactions(userId, prevStartDate, prevEndDate);
+    const previousTransactions = await this.getTransactions(
+      userId,
+      prevStartDate,
+      prevEndDate,
+    );
 
-    const currentAmount = currentTransactions.reduce((sum, t) => sum + t.amount, 0);
-    const previousAmount = previousTransactions.reduce((sum, t) => sum + t.amount, 0);
+    const currentAmount = currentTransactions.reduce(
+      (sum, t) => sum + t.amount,
+      0,
+    );
+    const previousAmount = previousTransactions.reduce(
+      (sum, t) => sum + t.amount,
+      0,
+    );
 
     const change = currentAmount - previousAmount;
-    const changePercent = previousAmount > 0 ? (change / previousAmount) * 100 : 0;
+    const changePercent =
+      previousAmount > 0 ? (change / previousAmount) * 100 : 0;
 
-    const categoryChanges = this.calculateCategoryChanges(currentTransactions, previousTransactions);
+    const categoryChanges = this.calculateCategoryChanges(
+      currentTransactions,
+      previousTransactions,
+    );
 
     const significantChanges = categoryChanges
-      .filter(c => Math.abs(c.changePercent) > 20)
-      .map(c => ({
+      .filter((c) => Math.abs(c.changePercent) > 20)
+      .map((c) => ({
         category: c.category,
-        type: c.change > 0 ? ('increase' as const) : ('decrease' as const),
+        type: c.change > 0 ? ("increase" as const) : ("decrease" as const),
         amount: Math.abs(c.change),
         percent: Math.abs(c.changePercent),
-        impact: c.change > 0 ? ('negative' as const) : ('positive' as const),
+        impact: c.change > 0 ? ("negative" as const) : ("positive" as const),
       }));
 
     return {
-      compareWith: 'previous',
+      compareWith: "previous",
       currentPeriod: {
         start: startDate,
         end: endDate,
@@ -1351,27 +1497,37 @@ export class SpendingAnalyzer {
    */
   private calculateCategoryChanges(
     currentTransactions: Transaction[],
-    previousTransactions: Transaction[]
+    previousTransactions: Transaction[],
   ): CategoryChange[] {
     const currentByCategory = new Map<string, number>();
     const previousByCategory = new Map<string, number>();
 
     for (const txn of currentTransactions) {
-      currentByCategory.set(txn.category, (currentByCategory.get(txn.category) || 0) + txn.amount);
+      currentByCategory.set(
+        txn.category,
+        (currentByCategory.get(txn.category) || 0) + txn.amount,
+      );
     }
 
     for (const txn of previousTransactions) {
-      previousByCategory.set(txn.category, (previousByCategory.get(txn.category) || 0) + txn.amount);
+      previousByCategory.set(
+        txn.category,
+        (previousByCategory.get(txn.category) || 0) + txn.amount,
+      );
     }
 
-    const allCategories = new Set([...currentByCategory.keys(), ...previousByCategory.keys()]);
+    const allCategories = new Set([
+      ...currentByCategory.keys(),
+      ...previousByCategory.keys(),
+    ]);
     const changes: CategoryChange[] = [];
 
     for (const category of allCategories) {
       const currentAmount = currentByCategory.get(category) || 0;
       const previousAmount = previousByCategory.get(category) || 0;
       const change = currentAmount - previousAmount;
-      const changePercent = previousAmount > 0 ? (change / previousAmount) * 100 : 0;
+      const changePercent =
+        previousAmount > 0 ? (change / previousAmount) * 100 : 0;
 
       changes.push({
         category,
@@ -1383,7 +1539,9 @@ export class SpendingAnalyzer {
       });
     }
 
-    return changes.sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent));
+    return changes.sort(
+      (a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent),
+    );
   }
 
   /**
@@ -1393,19 +1551,27 @@ export class SpendingAnalyzer {
     trends: CategoryTrend[],
     overallTrend: TrendDirection,
     growthRate: number,
-    seasonality: SeasonalityAnalysis
+    seasonality: SeasonalityAnalysis,
   ): string[] {
     const insights: string[] = [];
 
-    if (overallTrend === 'increasing') {
-      insights.push(`Overall spending is trending upward with a ${growthRate.toFixed(1)}% growth rate`);
-    } else if (overallTrend === 'decreasing') {
-      insights.push(`Overall spending is trending downward with a ${Math.abs(growthRate).toFixed(1)}% reduction`);
+    if (overallTrend === "increasing") {
+      insights.push(
+        `Overall spending is trending upward with a ${growthRate.toFixed(1)}% growth rate`,
+      );
+    } else if (overallTrend === "decreasing") {
+      insights.push(
+        `Overall spending is trending downward with a ${Math.abs(growthRate).toFixed(1)}% reduction`,
+      );
     }
 
-    const topIncreasing = trends.filter(t => t.trend === 'increasing').slice(0, 3);
+    const topIncreasing = trends
+      .filter((t) => t.trend === "increasing")
+      .slice(0, 3);
     if (topIncreasing.length > 0) {
-      insights.push(`Top increasing categories: ${topIncreasing.map(t => t.category).join(', ')}`);
+      insights.push(
+        `Top increasing categories: ${topIncreasing.map((t) => t.category).join(", ")}`,
+      );
     }
 
     return insights;
@@ -1414,21 +1580,26 @@ export class SpendingAnalyzer {
   /**
    * Convert trend insights to AI insights
    */
-  private async convertTrendInsightsToAI(analysis: SpendingTrendAnalysis): Promise<AIInsight[]> {
+  private async convertTrendInsightsToAI(
+    analysis: SpendingTrendAnalysis,
+  ): Promise<AIInsight[]> {
     const insights: AIInsight[] = [];
 
-    if (analysis.overallTrend === 'increasing' && analysis.growthRate > 15) {
+    if (analysis.overallTrend === "increasing" && analysis.growthRate > 15) {
       insights.push({
-        id: 'insight-trend-increasing',
-        type: 'trend_alert',
-        priority: 'high',
-        title: 'Spending Trend Alert',
+        id: "insight-trend-increasing",
+        type: "trend_alert",
+        priority: "high",
+        title: "Spending Trend Alert",
         description: `Your spending has increased by ${analysis.growthRate.toFixed(1)}% compared to the previous period`,
-        reasoning: ['Overall spending trend is increasing', 'Growth rate exceeds 15%'],
+        reasoning: [
+          "Overall spending trend is increasing",
+          "Growth rate exceeds 15%",
+        ],
         confidence: 85,
-        impact: 'negative',
+        impact: "negative",
         actionItems: [],
-        aiModel: 'rule-based',
+        aiModel: "rule-based",
         generatedAt: new Date(),
       });
     }
@@ -1439,31 +1610,39 @@ export class SpendingAnalyzer {
   /**
    * Convert anomalies to insights
    */
-  private convertAnomaliesToInsights(anomalies: SpendingAnomaly[]): AIInsight[] {
-    return anomalies.slice(0, 5).map(anomaly => ({
+  private convertAnomaliesToInsights(
+    anomalies: SpendingAnomaly[],
+  ): AIInsight[] {
+    return anomalies.slice(0, 5).map((anomaly) => ({
       id: `insight-${anomaly.id}`,
-      type: 'anomaly_detected' as InsightType,
-      priority: anomaly.severity === 'critical' || anomaly.severity === 'high' ? 'high' : 'medium',
+      type: "anomaly_detected" as InsightType,
+      priority:
+        anomaly.severity === "critical" || anomaly.severity === "high"
+          ? "high"
+          : "medium",
       title: anomaly.title,
       description: anomaly.description,
-      reasoning: [`Detected using ${anomaly.detectionMethod} method`, `Confidence: ${anomaly.confidence}%`],
+      reasoning: [
+        `Detected using ${anomaly.detectionMethod} method`,
+        `Confidence: ${anomaly.confidence}%`,
+      ],
       confidence: anomaly.confidence,
-      impact: 'negative',
+      impact: "negative",
       actionItems: anomaly.actionSuggestion
         ? [
             {
               id: `action-${anomaly.id}`,
               action: anomaly.actionSuggestion,
-              difficulty: 'easy',
+              difficulty: "easy",
               estimatedImpact: 0,
-              estimatedTime: '5 minutes',
+              estimatedTime: "5 minutes",
               priority: 1,
             },
           ]
         : [],
       relatedCategory: anomaly.category,
       relatedMerchant: anomaly.merchant,
-      aiModel: 'rule-based',
+      aiModel: "rule-based",
       generatedAt: new Date(),
     }));
   }
@@ -1473,9 +1652,9 @@ export class SpendingAnalyzer {
    */
   private createInsightSummary(insights: AIInsight[]): InsightSummary {
     const byPriority = {
-      high: insights.filter(i => i.priority === 'high').length,
-      medium: insights.filter(i => i.priority === 'medium').length,
-      low: insights.filter(i => i.priority === 'low').length,
+      high: insights.filter((i) => i.priority === "high").length,
+      medium: insights.filter((i) => i.priority === "medium").length,
+      low: insights.filter((i) => i.priority === "low").length,
     };
 
     const byType: Record<InsightType, number> = {
@@ -1493,8 +1672,13 @@ export class SpendingAnalyzer {
       byType[insight.type]++;
     }
 
-    const totalPotentialSavings = insights.reduce((sum, i) => sum + (i.potentialSavings || 0), 0);
-    const actionableInsights = insights.filter(i => i.actionItems.length > 0).length;
+    const totalPotentialSavings = insights.reduce(
+      (sum, i) => sum + (i.potentialSavings || 0),
+      0,
+    );
+    const actionableInsights = insights.filter(
+      (i) => i.actionItems.length > 0,
+    ).length;
 
     return {
       totalInsights: insights.length,
@@ -1506,15 +1690,24 @@ export class SpendingAnalyzer {
   }
 
   // Placeholder methods for scoring
-  private calculateConsistencyScore(transactions: Transaction[], patterns: DetectedPattern[]): number {
+  private calculateConsistencyScore(
+    transactions: Transaction[],
+    patterns: DetectedPattern[],
+  ): number {
     return 75; // Placeholder
   }
 
-  private calculateControlScore(transactions: Transaction[], habits: SpendingHabit[]): number {
+  private calculateControlScore(
+    transactions: Transaction[],
+    habits: SpendingHabit[],
+  ): number {
     return 70; // Placeholder
   }
 
-  private calculatePlanningScore(transactions: Transaction[], patterns: DetectedPattern[]): number {
+  private calculatePlanningScore(
+    transactions: Transaction[],
+    patterns: DetectedPattern[],
+  ): number {
     return 65; // Placeholder
   }
 
@@ -1526,46 +1719,60 @@ export class SpendingAnalyzer {
     return 75; // Placeholder
   }
 
-  private getGradeFromScore(score: number): SpendingHealthScore['grade'] {
-    if (score >= 97) return 'A+';
-    if (score >= 93) return 'A';
-    if (score >= 87) return 'B+';
-    if (score >= 83) return 'B';
-    if (score >= 77) return 'C+';
-    if (score >= 73) return 'C';
-    if (score >= 60) return 'D';
-    return 'F';
+  private getGradeFromScore(score: number): SpendingHealthScore["grade"] {
+    if (score >= 97) return "A+";
+    if (score >= 93) return "A";
+    if (score >= 87) return "B+";
+    if (score >= 83) return "B";
+    if (score >= 77) return "C+";
+    if (score >= 73) return "C";
+    if (score >= 60) return "D";
+    return "F";
   }
 
   private async getPreviousSpendingScore(userId: string): Promise<number> {
     return 70; // Placeholder
   }
 
-  private determineTrend(current: number, previous: number): 'improving' | 'declining' | 'stable' {
+  private determineTrend(
+    current: number,
+    previous: number,
+  ): "improving" | "declining" | "stable" {
     const diff = current - previous;
-    if (diff > 5) return 'improving';
-    if (diff < -5) return 'declining';
-    return 'stable';
+    if (diff > 5) return "improving";
+    if (diff < -5) return "declining";
+    return "stable";
   }
 
   // Placeholder trigger analysis methods
-  private analyzeTimeOfDayTrigger(transactions: Transaction[]): BehavioralTrigger | null {
+  private analyzeTimeOfDayTrigger(
+    transactions: Transaction[],
+  ): BehavioralTrigger | null {
     return null; // Placeholder
   }
 
-  private analyzeDayOfWeekTrigger(transactions: Transaction[]): BehavioralTrigger | null {
+  private analyzeDayOfWeekTrigger(
+    transactions: Transaction[],
+  ): BehavioralTrigger | null {
     return null; // Placeholder
   }
 
-  private analyzePaydayTrigger(transactions: Transaction[]): BehavioralTrigger | null {
+  private analyzePaydayTrigger(
+    transactions: Transaction[],
+  ): BehavioralTrigger | null {
     return null; // Placeholder
   }
 
-  private analyzeWeekendTrigger(transactions: Transaction[]): BehavioralTrigger | null {
+  private analyzeWeekendTrigger(
+    transactions: Transaction[],
+  ): BehavioralTrigger | null {
     return null; // Placeholder
   }
 
-  private async getAIInsights(userId: string, context: any): Promise<AIInsight[]> {
+  private async getAIInsights(
+    userId: string,
+    context: any,
+  ): Promise<AIInsight[]> {
     // Placeholder for AI-powered insights
     return [];
   }
@@ -1583,4 +1790,3 @@ export function getSpendingAnalyzer(): SpendingAnalyzer {
   }
   return spendingAnalyzerInstance;
 }
-

@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
 /**
  * AI Insights Page
  * Personalized financial insights and coaching
  */
 
-import React, { useEffect, useState } from 'react';
-import { InsightCard, NudgeToast } from '@/components/ai';
-import { useAIInsights } from '@/hooks/useAIInsights';
-import type { CoachingInsight } from '@/lib/ai-personalization';
+import React, { useEffect, useState } from "react";
+import { InsightCard, NudgeToast } from "@/components/ai";
+import { useAIInsights } from "@/hooks/useAIInsights";
+import type { CoachingInsight } from "@/lib/ai-personalization";
 
 export default function InsightsPage() {
   const {
@@ -22,7 +22,7 @@ export default function InsightsPage() {
   } = useAIInsights();
 
   const [dismissedInsights, setDismissedInsights] = useState<Set<number>>(
-    new Set()
+    new Set(),
   );
 
   const handleDismissInsight = (index: number) => {
@@ -31,7 +31,7 @@ export default function InsightsPage() {
 
   const handleNudgeAction = async (
     nudgeId: string,
-    action: 'accepted' | 'dismissed' | 'snoozed'
+    action: "accepted" | "dismissed" | "snoozed",
   ) => {
     await respondToNudge(nudgeId, action);
   };
@@ -89,7 +89,7 @@ export default function InsightsPage() {
                   Your Financial Personality
                 </h2>
                 <p className="text-blue-200 capitalize">
-                  {insights.personality.type.replace('_', ' ')}
+                  {insights.personality.type.replace("_", " ")}
                 </p>
               </div>
             </div>
@@ -127,9 +127,9 @@ export default function InsightsPage() {
                 <NudgeToast
                   key={nudge.id}
                   nudge={nudge}
-                  onAccept={() => handleNudgeAction(nudge.id, 'accepted')}
-                  onDismiss={() => handleNudgeAction(nudge.id, 'dismissed')}
-                  onSnooze={() => handleNudgeAction(nudge.id, 'snoozed')}
+                  onAccept={() => handleNudgeAction(nudge.id, "accepted")}
+                  onDismiss={() => handleNudgeAction(nudge.id, "dismissed")}
+                  onSnooze={() => handleNudgeAction(nudge.id, "snoozed")}
                 />
               ))}
             </div>
@@ -169,7 +169,7 @@ export default function InsightsPage() {
                     Total Analyzed
                   </p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    ${spendingAnalysis.totalSpending?.toLocaleString() ?? '0'}
+                    ${spendingAnalysis.totalSpending?.toLocaleString() ?? "0"}
                   </p>
                 </div>
                 <div className="text-center">
@@ -185,7 +185,7 @@ export default function InsightsPage() {
                     Avg Transaction
                   </p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    ${spendingAnalysis.averageTransaction?.toFixed(0) ?? '0'}
+                    ${spendingAnalysis.averageTransaction?.toFixed(0) ?? "0"}
                   </p>
                 </div>
                 <div className="text-center">
@@ -195,13 +195,13 @@ export default function InsightsPage() {
                   <p
                     className={`text-2xl font-bold ${
                       (spendingAnalysis.overallRiskScore ?? 0) > 7
-                        ? 'text-red-500'
+                        ? "text-red-500"
                         : (spendingAnalysis.overallRiskScore ?? 0) > 4
-                          ? 'text-yellow-500'
-                          : 'text-green-500'
+                          ? "text-yellow-500"
+                          : "text-green-500"
                     }`}
                   >
-                    {spendingAnalysis.overallRiskScore?.toFixed(1) ?? '0'}/10
+                    {spendingAnalysis.overallRiskScore?.toFixed(1) ?? "0"}/10
                   </p>
                 </div>
               </div>
@@ -247,11 +247,11 @@ export default function InsightsPage() {
                       <div className="flex items-center gap-3">
                         <div
                           className={`w-2 h-2 rounded-full ${
-                            action.priority === 'high'
-                              ? 'bg-red-500'
-                              : action.priority === 'medium'
-                                ? 'bg-yellow-500'
-                                : 'bg-green-500'
+                            action.priority === "high"
+                              ? "bg-red-500"
+                              : action.priority === "medium"
+                                ? "bg-yellow-500"
+                                : "bg-green-500"
                           }`}
                         />
                         <div>

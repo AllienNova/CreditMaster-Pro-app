@@ -4,7 +4,7 @@
  * Features loan comparison, ROI calculations, and application guidance
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -14,13 +14,13 @@ import {
   Modal,
   Linking,
   ActivityIndicator,
-} from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { lightTheme as theme } from '../../src/constants/theme';
-import { Card } from '../../src/components/Card';
-import { LineChart } from '../../src/components/charts';
+} from "react-native";
+import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { lightTheme as theme } from "../../src/constants/theme";
+import { Card } from "../../src/components/Card";
+import { LineChart } from "../../src/components/charts";
 
 // Types
 interface CreditBuilderLoan {
@@ -52,9 +52,9 @@ interface CreditBuilderLoan {
 // Mock loan data
 const CREDIT_BUILDER_LOANS: CreditBuilderLoan[] = [
   {
-    id: 'cbl-1',
-    provider: 'Self',
-    name: 'Credit Builder Account',
+    id: "cbl-1",
+    provider: "Self",
+    name: "Credit Builder Account",
     loanAmount: 1000,
     monthlyPayment: 48,
     term: 24,
@@ -64,12 +64,12 @@ const CREDIT_BUILDER_LOANS: CreditBuilderLoan[] = [
       bankAccountRequired: true,
     },
     benefits: [
-      'No credit check required',
-      'Reports to all 3 bureaus',
-      'Build savings while building credit',
-      'Average 49-point increase',
+      "No credit check required",
+      "Reports to all 3 bureaus",
+      "Build savings while building credit",
+      "Average 49-point increase",
     ],
-    reporting: ['Experian', 'Equifax', 'TransUnion'],
+    reporting: ["Experian", "Equifax", "TransUnion"],
     fees: {
       application: 0,
       monthly: 0,
@@ -77,14 +77,14 @@ const CREDIT_BUILDER_LOANS: CreditBuilderLoan[] = [
     },
     recommended: true,
     aiReasoning:
-      'Recommended for beginners with no credit history. No credit check makes approval virtually guaranteed, and reporting to all 3 bureaus maximizes impact.',
+      "Recommended for beginners with no credit history. No credit check makes approval virtually guaranteed, and reporting to all 3 bureaus maximizes impact.",
     rating: 4.8,
-    website: 'https://self.inc',
+    website: "https://self.inc",
   },
   {
-    id: 'cbl-2',
-    provider: 'MoneyLion',
-    name: 'Credit Builder Plus',
+    id: "cbl-2",
+    provider: "MoneyLion",
+    name: "Credit Builder Plus",
     loanAmount: 1000,
     monthlyPayment: 19.99,
     term: 12,
@@ -94,25 +94,25 @@ const CREDIT_BUILDER_LOANS: CreditBuilderLoan[] = [
       bankAccountRequired: true,
     },
     benefits: [
-      'Low APR',
-      'Fast credit building',
-      'Managed investment account',
-      'Cash advances available',
+      "Low APR",
+      "Fast credit building",
+      "Managed investment account",
+      "Cash advances available",
     ],
-    reporting: ['Experian', 'Equifax', 'TransUnion'],
+    reporting: ["Experian", "Equifax", "TransUnion"],
     fees: {
       monthly: 19.99,
     },
     recommended: false,
     aiReasoning:
-      'Best for employed individuals seeking fast results. Lower APR saves money, but requires employment verification.',
+      "Best for employed individuals seeking fast results. Lower APR saves money, but requires employment verification.",
     rating: 4.3,
-    website: 'https://moneylion.com',
+    website: "https://moneylion.com",
   },
   {
-    id: 'cbl-3',
-    provider: 'Kikoff',
-    name: 'Credit Account',
+    id: "cbl-3",
+    provider: "Kikoff",
+    name: "Credit Account",
     loanAmount: 500,
     monthlyPayment: 5,
     term: 12,
@@ -123,26 +123,26 @@ const CREDIT_BUILDER_LOANS: CreditBuilderLoan[] = [
       bankAccountRequired: true,
     },
     benefits: [
-      '0% APR',
-      'Lowest monthly payment',
-      'Reports to all 3 bureaus',
-      'No credit check',
+      "0% APR",
+      "Lowest monthly payment",
+      "Reports to all 3 bureaus",
+      "No credit check",
     ],
-    reporting: ['Experian', 'Equifax', 'TransUnion'],
+    reporting: ["Experian", "Equifax", "TransUnion"],
     fees: {
       application: 0,
       monthly: 0,
     },
     recommended: true,
     aiReasoning:
-      '0% APR makes this the most affordable option. Perfect for those on tight budgets who want to build credit slowly.',
+      "0% APR makes this the most affordable option. Perfect for those on tight budgets who want to build credit slowly.",
     rating: 4.7,
-    website: 'https://kikoff.com',
+    website: "https://kikoff.com",
   },
   {
-    id: 'cbl-4',
-    provider: 'Chime',
-    name: 'Credit Builder',
+    id: "cbl-4",
+    provider: "Chime",
+    name: "Credit Builder",
     loanAmount: 200,
     monthlyPayment: 0,
     term: 0,
@@ -152,65 +152,69 @@ const CREDIT_BUILDER_LOANS: CreditBuilderLoan[] = [
       bankAccountRequired: true,
     },
     benefits: [
-      'No credit check',
-      'No fees whatsoever',
-      'No minimum security deposit',
-      'Automatic payment reporting',
+      "No credit check",
+      "No fees whatsoever",
+      "No minimum security deposit",
+      "Automatic payment reporting",
     ],
-    reporting: ['Experian', 'Equifax', 'TransUnion'],
+    reporting: ["Experian", "Equifax", "TransUnion"],
     fees: {
       application: 0,
       monthly: 0,
     },
     recommended: true,
     aiReasoning:
-      'Zero-cost credit building through their secured card. Great for those who already use Chime banking.',
+      "Zero-cost credit building through their secured card. Great for those who already use Chime banking.",
     rating: 4.6,
-    website: 'https://chime.com',
+    website: "https://chime.com",
   },
 ];
 
 // Credit impact projection data
 const CREDIT_IMPACT_DATA = [
-  { value: 580, label: 'Start' },
-  { value: 595, label: '3 mo' },
-  { value: 615, label: '6 mo' },
-  { value: 640, label: '9 mo' },
-  { value: 670, label: '12 mo' },
+  { value: 580, label: "Start" },
+  { value: 595, label: "3 mo" },
+  { value: 615, label: "6 mo" },
+  { value: 640, label: "9 mo" },
+  { value: 670, label: "12 mo" },
 ];
 
 // How it works steps
 const HOW_IT_WORKS = [
   {
     step: 1,
-    title: 'Apply',
-    description: 'Choose a loan amount and submit your application online',
-    icon: 'document-text',
+    title: "Apply",
+    description: "Choose a loan amount and submit your application online",
+    icon: "document-text",
   },
   {
     step: 2,
-    title: 'Get Approved',
-    description: 'Most approvals happen instantly, even with no credit',
-    icon: 'checkmark-circle',
+    title: "Get Approved",
+    description: "Most approvals happen instantly, even with no credit",
+    icon: "checkmark-circle",
   },
   {
     step: 3,
-    title: 'Make Payments',
-    description: 'Your payments are held in a savings account and reported to bureaus',
-    icon: 'calendar',
+    title: "Make Payments",
+    description:
+      "Your payments are held in a savings account and reported to bureaus",
+    icon: "calendar",
   },
   {
     step: 4,
-    title: 'Build Credit',
-    description: 'After completing payments, receive your savings plus interest',
-    icon: 'trending-up',
+    title: "Build Credit",
+    description:
+      "After completing payments, receive your savings plus interest",
+    icon: "trending-up",
   },
 ];
 
 export default function CreditBuilderLoanScreen() {
   const [loans, setLoans] = useState<CreditBuilderLoan[]>(CREDIT_BUILDER_LOANS);
   const [loading, setLoading] = useState(false);
-  const [selectedLoan, setSelectedLoan] = useState<CreditBuilderLoan | null>(null);
+  const [selectedLoan, setSelectedLoan] = useState<CreditBuilderLoan | null>(
+    null,
+  );
   const [compareLoans, setCompareLoans] = useState<CreditBuilderLoan[]>([]);
   const [showComparison, setShowComparison] = useState(false);
 
@@ -242,39 +246,58 @@ export default function CreditBuilderLoanScreen() {
       stars.push(<Ionicons key={i} name="star" size={14} color="#F59E0B" />);
     }
     if (hasHalfStar) {
-      stars.push(<Ionicons key="half" name="star-half" size={14} color="#F59E0B" />);
+      stars.push(
+        <Ionicons key="half" name="star-half" size={14} color="#F59E0B" />,
+      );
     }
     const emptyStars = 5 - Math.ceil(rating);
     for (let i = 0; i < emptyStars; i++) {
-      stars.push(<Ionicons key={`empty-${i}`} name="star-outline" size={14} color="#F59E0B" />);
+      stars.push(
+        <Ionicons
+          key={`empty-${i}`}
+          name="star-outline"
+          size={14}
+          color="#F59E0B"
+        />,
+      );
     }
     return stars;
   };
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={["top"]}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.loadingText}>Loading credit builder loans...</Text>
+          <Text style={styles.loadingText}>
+            Loading credit builder loans...
+          </Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
             <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
           </TouchableOpacity>
           <Text style={styles.title}>Credit Builder Loans</Text>
           {compareLoans.length > 0 ? (
             <TouchableOpacity onPress={() => setShowComparison(true)}>
               <View style={styles.compareBadge}>
-                <Text style={styles.compareBadgeText}>{compareLoans.length}</Text>
+                <Text style={styles.compareBadgeText}>
+                  {compareLoans.length}
+                </Text>
               </View>
             </TouchableOpacity>
           ) : (
@@ -312,9 +335,9 @@ export default function CreditBuilderLoanScreen() {
             <View style={styles.aiContent}>
               <Text style={styles.aiTitle}>AI Recommendation</Text>
               <Text style={styles.aiText}>
-                Based on your credit profile, we recommend starting with a{' '}
-                <Text style={styles.aiBold}>no credit check</Text> option that reports to all 3
-                bureaus.
+                Based on your credit profile, we recommend starting with a{" "}
+                <Text style={styles.aiBold}>no credit check</Text> option that
+                reports to all 3 bureaus.
               </Text>
             </View>
           </View>
@@ -349,7 +372,8 @@ export default function CreditBuilderLoanScreen() {
               style={[
                 styles.loanCard,
                 loan.recommended && styles.loanCardRecommended,
-                compareLoans.find((l) => l.id === loan.id) && styles.loanCardCompare,
+                compareLoans.find((l) => l.id === loan.id) &&
+                  styles.loanCardCompare,
               ]}
             >
               {/* Recommended Badge */}
@@ -365,7 +389,9 @@ export default function CreditBuilderLoanScreen() {
                 <View style={styles.loanProviderInfo}>
                   <Text style={styles.loanProvider}>{loan.provider}</Text>
                   <Text style={styles.loanName}>{loan.name}</Text>
-                  <View style={styles.ratingRow}>{renderStars(loan.rating)}</View>
+                  <View style={styles.ratingRow}>
+                    {renderStars(loan.rating)}
+                  </View>
                 </View>
                 <TouchableOpacity
                   onPress={(e) => {
@@ -374,16 +400,20 @@ export default function CreditBuilderLoanScreen() {
                   }}
                   style={[
                     styles.compareButton,
-                    compareLoans.find((l) => l.id === loan.id) && styles.compareButtonActive,
+                    compareLoans.find((l) => l.id === loan.id) &&
+                      styles.compareButtonActive,
                   ]}
                 >
                   <Text
                     style={[
                       styles.compareButtonText,
-                      compareLoans.find((l) => l.id === loan.id) && styles.compareButtonTextActive,
+                      compareLoans.find((l) => l.id === loan.id) &&
+                        styles.compareButtonTextActive,
                     ]}
                   >
-                    {compareLoans.find((l) => l.id === loan.id) ? 'Added' : 'Compare'}
+                    {compareLoans.find((l) => l.id === loan.id)
+                      ? "Added"
+                      : "Compare"}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -391,7 +421,11 @@ export default function CreditBuilderLoanScreen() {
               {/* AI Reasoning */}
               {loan.aiReasoning && (
                 <View style={styles.reasoningBox}>
-                  <Ionicons name="information-circle" size={16} color={theme.colors.primary} />
+                  <Ionicons
+                    name="information-circle"
+                    size={16}
+                    color={theme.colors.primary}
+                  />
                   <Text style={styles.reasoningText}>{loan.aiReasoning}</Text>
                 </View>
               )}
@@ -399,23 +433,30 @@ export default function CreditBuilderLoanScreen() {
               {/* Loan Stats */}
               <View style={styles.loanStats}>
                 <View style={styles.loanStat}>
-                  <Text style={styles.loanStatValue}>${loan.loanAmount.toLocaleString()}</Text>
+                  <Text style={styles.loanStatValue}>
+                    ${loan.loanAmount.toLocaleString()}
+                  </Text>
                   <Text style={styles.loanStatLabel}>Loan Amount</Text>
                 </View>
                 <View style={styles.loanStat}>
                   <Text style={styles.loanStatValue}>
-                    ${loan.monthlyPayment > 0 ? loan.monthlyPayment : 'Varies'}
+                    ${loan.monthlyPayment > 0 ? loan.monthlyPayment : "Varies"}
                   </Text>
                   <Text style={styles.loanStatLabel}>Monthly</Text>
                 </View>
                 <View style={styles.loanStat}>
                   <Text style={styles.loanStatValue}>
-                    {loan.term > 0 ? `${loan.term} mo` : 'Flexible'}
+                    {loan.term > 0 ? `${loan.term} mo` : "Flexible"}
                   </Text>
                   <Text style={styles.loanStatLabel}>Term</Text>
                 </View>
                 <View style={styles.loanStat}>
-                  <Text style={[styles.loanStatValue, loan.apr === 0 && styles.freeText]}>
+                  <Text
+                    style={[
+                      styles.loanStatValue,
+                      loan.apr === 0 && styles.freeText,
+                    ]}
+                  >
                     {loan.apr}%
                   </Text>
                   <Text style={styles.loanStatLabel}>APR</Text>
@@ -447,7 +488,11 @@ export default function CreditBuilderLoanScreen() {
               {/* View Details Button */}
               <View style={styles.viewDetailsRow}>
                 <Text style={styles.viewDetailsText}>View Details</Text>
-                <Ionicons name="chevron-forward" size={20} color={theme.colors.primary} />
+                <Ionicons
+                  name="chevron-forward"
+                  size={20}
+                  color={theme.colors.primary}
+                />
               </View>
             </Card>
           </TouchableOpacity>
@@ -459,7 +504,10 @@ export default function CreditBuilderLoanScreen() {
           {HOW_IT_WORKS.map((step, idx) => (
             <View
               key={step.step}
-              style={[styles.stepRow, idx < HOW_IT_WORKS.length - 1 && styles.stepRowBorder]}
+              style={[
+                styles.stepRow,
+                idx < HOW_IT_WORKS.length - 1 && styles.stepRowBorder,
+              ]}
             >
               <View style={styles.stepNumber}>
                 <Text style={styles.stepNumberText}>{step.step}</Text>
@@ -482,7 +530,9 @@ export default function CreditBuilderLoanScreen() {
           <Text style={styles.tipsTitle}>Tips for Success</Text>
           <View style={styles.tipItem}>
             <Ionicons name="checkmark-circle" size={18} color="#22C55E" />
-            <Text style={styles.tipText}>Set up autopay to never miss a payment</Text>
+            <Text style={styles.tipText}>
+              Set up autopay to never miss a payment
+            </Text>
           </View>
           <View style={styles.tipItem}>
             <Ionicons name="checkmark-circle" size={18} color="#22C55E" />
@@ -513,7 +563,9 @@ export default function CreditBuilderLoanScreen() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <View>
-                <Text style={styles.modalProvider}>{selectedLoan?.provider}</Text>
+                <Text style={styles.modalProvider}>
+                  {selectedLoan?.provider}
+                </Text>
                 <Text style={styles.modalName}>{selectedLoan?.name}</Text>
               </View>
               <TouchableOpacity onPress={() => setSelectedLoan(null)}>
@@ -521,7 +573,10 @@ export default function CreditBuilderLoanScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              style={styles.modalScroll}
+              showsVerticalScrollIndicator={false}
+            >
               {/* Stats Grid */}
               <View style={styles.modalStats}>
                 <View style={styles.modalStatItem}>
@@ -531,15 +586,21 @@ export default function CreditBuilderLoanScreen() {
                   <Text style={styles.modalStatLabel}>Loan Amount</Text>
                 </View>
                 <View style={styles.modalStatItem}>
-                  <Text style={styles.modalStatValue}>${selectedLoan?.monthlyPayment}</Text>
+                  <Text style={styles.modalStatValue}>
+                    ${selectedLoan?.monthlyPayment}
+                  </Text>
                   <Text style={styles.modalStatLabel}>Monthly Payment</Text>
                 </View>
                 <View style={styles.modalStatItem}>
-                  <Text style={styles.modalStatValue}>{selectedLoan?.term} mo</Text>
+                  <Text style={styles.modalStatValue}>
+                    {selectedLoan?.term} mo
+                  </Text>
                   <Text style={styles.modalStatLabel}>Term</Text>
                 </View>
                 <View style={styles.modalStatItem}>
-                  <Text style={styles.modalStatValue}>{selectedLoan?.apr}%</Text>
+                  <Text style={styles.modalStatValue}>
+                    {selectedLoan?.apr}%
+                  </Text>
                   <Text style={styles.modalStatLabel}>APR</Text>
                 </View>
               </View>
@@ -551,7 +612,10 @@ export default function CreditBuilderLoanScreen() {
                   <View style={styles.costRow}>
                     <Text style={styles.costLabel}>Total Payments</Text>
                     <Text style={styles.costValue}>
-                      ${(selectedLoan.monthlyPayment * selectedLoan.term).toLocaleString()}
+                      $
+                      {(
+                        selectedLoan.monthlyPayment * selectedLoan.term
+                      ).toLocaleString()}
                     </Text>
                   </View>
                   <View style={styles.costRow}>
@@ -574,9 +638,14 @@ export default function CreditBuilderLoanScreen() {
               <View style={styles.requirementsList}>
                 {selectedLoan?.requirements.minCreditScore && (
                   <View style={styles.requirementRow}>
-                    <Ionicons name="checkmark-circle" size={18} color="#22C55E" />
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={18}
+                      color="#22C55E"
+                    />
                     <Text style={styles.requirementText}>
-                      Min Credit Score: {selectedLoan.requirements.minCreditScore}
+                      Min Credit Score:{" "}
+                      {selectedLoan.requirements.minCreditScore}
                     </Text>
                   </View>
                 )}
@@ -584,21 +653,27 @@ export default function CreditBuilderLoanScreen() {
                   <Ionicons
                     name={
                       selectedLoan?.requirements.employmentRequired
-                        ? 'alert-circle'
-                        : 'checkmark-circle'
+                        ? "alert-circle"
+                        : "checkmark-circle"
                     }
                     size={18}
-                    color={selectedLoan?.requirements.employmentRequired ? '#F59E0B' : '#22C55E'}
+                    color={
+                      selectedLoan?.requirements.employmentRequired
+                        ? "#F59E0B"
+                        : "#22C55E"
+                    }
                   />
                   <Text style={styles.requirementText}>
                     {selectedLoan?.requirements.employmentRequired
-                      ? 'Employment Required'
-                      : 'No Employment Required'}
+                      ? "Employment Required"
+                      : "No Employment Required"}
                   </Text>
                 </View>
                 <View style={styles.requirementRow}>
                   <Ionicons name="checkmark-circle" size={18} color="#22C55E" />
-                  <Text style={styles.requirementText}>Bank Account Required</Text>
+                  <Text style={styles.requirementText}>
+                    Bank Account Required
+                  </Text>
                 </View>
               </View>
 
@@ -607,7 +682,11 @@ export default function CreditBuilderLoanScreen() {
               <View style={styles.benefitsList}>
                 {selectedLoan?.benefits.map((benefit, idx) => (
                   <View key={idx} style={styles.benefitItemModal}>
-                    <Ionicons name="checkmark-circle" size={18} color="#22C55E" />
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={18}
+                      color="#22C55E"
+                    />
                     <Text style={styles.benefitTextModal}>{benefit}</Text>
                   </View>
                 ))}
@@ -617,11 +696,21 @@ export default function CreditBuilderLoanScreen() {
               <Card style={styles.applicationCard}>
                 <Text style={styles.applicationTitle}>How to Apply</Text>
                 <View style={styles.applicationSteps}>
-                  <Text style={styles.applicationStep}>1. Click "Apply Now" below</Text>
-                  <Text style={styles.applicationStep}>2. Provide basic personal information</Text>
-                  <Text style={styles.applicationStep}>3. Link your bank account</Text>
-                  <Text style={styles.applicationStep}>4. Choose your loan amount and term</Text>
-                  <Text style={styles.applicationStep}>5. Get instant approval decision</Text>
+                  <Text style={styles.applicationStep}>
+                    1. Click "Apply Now" below
+                  </Text>
+                  <Text style={styles.applicationStep}>
+                    2. Provide basic personal information
+                  </Text>
+                  <Text style={styles.applicationStep}>
+                    3. Link your bank account
+                  </Text>
+                  <Text style={styles.applicationStep}>
+                    4. Choose your loan amount and term
+                  </Text>
+                  <Text style={styles.applicationStep}>
+                    5. Get instant approval decision
+                  </Text>
                 </View>
               </Card>
 
@@ -639,8 +728,8 @@ export default function CreditBuilderLoanScreen() {
               </TouchableOpacity>
 
               <Text style={styles.disclaimer}>
-                This will open {selectedLoan?.provider}'s secure application page. Fynvita may
-                receive a commission.
+                This will open {selectedLoan?.provider}'s secure application
+                page. Fynvita may receive a commission.
               </Text>
             </ScrollView>
           </View>
@@ -661,7 +750,9 @@ export default function CreditBuilderLoanScreen() {
               <View style={styles.comparisonTable}>
                 {compareLoans.map((loan) => (
                   <View key={loan.id} style={styles.comparisonColumn}>
-                    <Text style={styles.comparisonProvider}>{loan.provider}</Text>
+                    <Text style={styles.comparisonProvider}>
+                      {loan.provider}
+                    </Text>
                     <Text style={styles.comparisonName}>{loan.name}</Text>
 
                     <View style={styles.comparisonDivider} />
@@ -672,10 +763,14 @@ export default function CreditBuilderLoanScreen() {
                     </Text>
 
                     <Text style={styles.comparisonLabel}>Monthly Payment</Text>
-                    <Text style={styles.comparisonValue}>${loan.monthlyPayment}</Text>
+                    <Text style={styles.comparisonValue}>
+                      ${loan.monthlyPayment}
+                    </Text>
 
                     <Text style={styles.comparisonLabel}>Term</Text>
-                    <Text style={styles.comparisonValue}>{loan.term} months</Text>
+                    <Text style={styles.comparisonValue}>
+                      {loan.term} months
+                    </Text>
 
                     <Text style={styles.comparisonLabel}>APR</Text>
                     <Text style={styles.comparisonValue}>{loan.apr}%</Text>
@@ -713,78 +808,92 @@ export default function CreditBuilderLoanScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1, padding: theme.spacing.lg },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   loadingText: { marginTop: 12, color: theme.colors.textSecondary },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: theme.spacing.lg,
   },
   backButton: { padding: 4 },
-  title: { fontSize: 20, fontWeight: '700', color: theme.colors.text },
+  title: { fontSize: 20, fontWeight: "700", color: theme.colors.text },
   compareBadge: {
     width: 24,
     height: 24,
     borderRadius: 12,
     backgroundColor: theme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
-  compareBadgeText: { color: '#fff', fontSize: 12, fontWeight: '600' },
+  compareBadgeText: { color: "#fff", fontSize: 12, fontWeight: "600" },
   infoBanner: { marginBottom: theme.spacing.md },
-  infoRow: { flexDirection: 'row', justifyContent: 'space-around' },
-  infoItem: { alignItems: 'center' },
-  infoTitle: { fontSize: 14, fontWeight: '600', color: theme.colors.text, marginTop: 8 },
+  infoRow: { flexDirection: "row", justifyContent: "space-around" },
+  infoItem: { alignItems: "center" },
+  infoTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: theme.colors.text,
+    marginTop: 8,
+  },
   infoSubtext: { fontSize: 12, color: theme.colors.textSecondary },
-  aiCard: { marginBottom: theme.spacing.md, backgroundColor: '#FEF3C720' },
-  aiHeader: { flexDirection: 'row' },
+  aiCard: { marginBottom: theme.spacing.md, backgroundColor: "#FEF3C720" },
+  aiHeader: { flexDirection: "row" },
   aiIcon: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#FEF3C7',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#FEF3C7",
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 12,
   },
   aiContent: { flex: 1 },
-  aiTitle: { fontSize: 15, fontWeight: '600', color: theme.colors.text },
-  aiText: { fontSize: 13, color: theme.colors.textSecondary, marginTop: 4, lineHeight: 18 },
-  aiBold: { fontWeight: '600', color: theme.colors.text },
+  aiTitle: { fontSize: 15, fontWeight: "600", color: theme.colors.text },
+  aiText: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    marginTop: 4,
+    lineHeight: 18,
+  },
+  aiBold: { fontWeight: "600", color: theme.colors.text },
   chartCard: { marginBottom: theme.spacing.lg },
   chartNote: {
     fontSize: 12,
     color: theme.colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 8,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: theme.spacing.md,
   },
   loanCard: { marginBottom: theme.spacing.md },
   loanCardRecommended: { borderColor: theme.colors.primary, borderWidth: 2 },
-  loanCardCompare: { borderColor: '#22C55E', borderWidth: 2 },
+  loanCardCompare: { borderColor: "#22C55E", borderWidth: 2 },
   recommendedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: theme.colors.primary,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
     marginBottom: theme.spacing.sm,
     gap: 4,
   },
-  recommendedText: { color: '#fff', fontSize: 11, fontWeight: '600' },
-  loanHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  recommendedText: { color: "#fff", fontSize: 11, fontWeight: "600" },
+  loanHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
   loanProviderInfo: { flex: 1 },
-  loanProvider: { fontSize: 18, fontWeight: '700', color: theme.colors.text },
+  loanProvider: { fontSize: 18, fontWeight: "700", color: theme.colors.text },
   loanName: { fontSize: 14, color: theme.colors.textSecondary, marginTop: 2 },
-  ratingRow: { flexDirection: 'row', marginTop: 4 },
+  ratingRow: { flexDirection: "row", marginTop: 4 },
   compareButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -792,155 +901,229 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.border,
   },
-  compareButtonActive: { backgroundColor: '#22C55E', borderColor: '#22C55E' },
+  compareButtonActive: { backgroundColor: "#22C55E", borderColor: "#22C55E" },
   compareButtonText: { fontSize: 12, color: theme.colors.textSecondary },
-  compareButtonTextActive: { color: '#fff' },
+  compareButtonTextActive: { color: "#fff" },
   reasoningBox: {
-    flexDirection: 'row',
-    backgroundColor: theme.colors.primary + '10',
+    flexDirection: "row",
+    backgroundColor: theme.colors.primary + "10",
     borderRadius: 8,
     padding: 10,
     marginTop: theme.spacing.sm,
     gap: 8,
   },
-  reasoningText: { flex: 1, fontSize: 13, color: theme.colors.text, lineHeight: 18 },
+  reasoningText: {
+    flex: 1,
+    fontSize: 13,
+    color: theme.colors.text,
+    lineHeight: 18,
+  },
   loanStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginTop: theme.spacing.md,
     paddingTop: theme.spacing.md,
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
   },
-  loanStat: { alignItems: 'center', flex: 1 },
-  loanStatValue: { fontSize: 18, fontWeight: '700', color: theme.colors.text },
-  loanStatLabel: { fontSize: 11, color: theme.colors.textSecondary, marginTop: 2 },
-  freeText: { color: '#22C55E' },
+  loanStat: { alignItems: "center", flex: 1 },
+  loanStatValue: { fontSize: 18, fontWeight: "700", color: theme.colors.text },
+  loanStatLabel: {
+    fontSize: 11,
+    color: theme.colors.textSecondary,
+    marginTop: 2,
+  },
+  freeText: { color: "#22C55E" },
   benefitsPreview: { marginTop: theme.spacing.md },
-  benefitRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
-  benefitText: { fontSize: 13, color: theme.colors.textSecondary, marginLeft: 8 },
+  benefitRow: { flexDirection: "row", alignItems: "center", marginBottom: 6 },
+  benefitText: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    marginLeft: 8,
+  },
   bureauRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: theme.spacing.md,
     paddingTop: theme.spacing.md,
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
   },
-  bureauLabel: { fontSize: 12, color: theme.colors.textSecondary, marginRight: 8 },
-  bureauTags: { flexDirection: 'row', gap: 6 },
-  bureauTag: { backgroundColor: '#3B82F620', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 },
-  bureauTagText: { fontSize: 11, color: '#3B82F6', fontWeight: '500' },
+  bureauLabel: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    marginRight: 8,
+  },
+  bureauTags: { flexDirection: "row", gap: 6 },
+  bureauTag: {
+    backgroundColor: "#3B82F620",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  bureauTagText: { fontSize: 11, color: "#3B82F6", fontWeight: "500" },
   viewDetailsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     marginTop: theme.spacing.md,
     paddingTop: theme.spacing.md,
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
   },
-  viewDetailsText: { fontSize: 14, color: theme.colors.primary, fontWeight: '600' },
+  viewDetailsText: {
+    fontSize: 14,
+    color: theme.colors.primary,
+    fontWeight: "600",
+  },
   howItWorksCard: { marginTop: theme.spacing.md },
-  stepRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
-  stepRowBorder: { borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  stepRow: { flexDirection: "row", alignItems: "center", paddingVertical: 12 },
+  stepRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+  },
   stepNumber: {
     width: 32,
     height: 32,
     borderRadius: 16,
     backgroundColor: theme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 12,
   },
-  stepNumberText: { color: '#fff', fontWeight: '600' },
+  stepNumberText: { color: "#fff", fontWeight: "600" },
   stepContent: { flex: 1 },
-  stepTitle: { fontSize: 15, fontWeight: '600', color: theme.colors.text },
-  stepDescription: { fontSize: 13, color: theme.colors.textSecondary, marginTop: 2 },
+  stepTitle: { fontSize: 15, fontWeight: "600", color: theme.colors.text },
+  stepDescription: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    marginTop: 2,
+  },
   tipsCard: { marginTop: theme.spacing.lg },
-  tipsTitle: { fontSize: 16, fontWeight: '600', color: theme.colors.text, marginBottom: 12 },
-  tipItem: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  tipText: { fontSize: 14, color: theme.colors.textSecondary, marginLeft: 10, flex: 1 },
+  tipsTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: theme.colors.text,
+    marginBottom: 12,
+  },
+  tipItem: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
+  tipText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginLeft: 10,
+    flex: 1,
+  },
   // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
   },
   modalContent: {
     backgroundColor: theme.colors.background,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: theme.spacing.lg,
-    maxHeight: '90%',
+    maxHeight: "90%",
   },
   modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     marginBottom: theme.spacing.lg,
   },
-  modalProvider: { fontSize: 24, fontWeight: '700', color: theme.colors.text },
+  modalProvider: { fontSize: 24, fontWeight: "700", color: theme.colors.text },
   modalName: { fontSize: 16, color: theme.colors.textSecondary, marginTop: 4 },
-  modalTitle: { fontSize: 20, fontWeight: '700', color: theme.colors.text },
+  modalTitle: { fontSize: 20, fontWeight: "700", color: theme.colors.text },
   modalScroll: {},
   modalStats: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 12,
   },
   modalStatItem: {
     flex: 1,
-    minWidth: '45%',
+    minWidth: "45%",
     backgroundColor: theme.colors.surface,
     padding: 12,
     borderRadius: 12,
   },
-  modalStatValue: { fontSize: 20, fontWeight: '700', color: theme.colors.text },
-  modalStatLabel: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 4 },
+  modalStatValue: { fontSize: 20, fontWeight: "700", color: theme.colors.text },
+  modalStatLabel: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    marginTop: 4,
+  },
   costCard: { marginTop: theme.spacing.lg },
-  costTitle: { fontSize: 16, fontWeight: '600', color: theme.colors.text, marginBottom: 12 },
-  costRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  costTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: theme.colors.text,
+    marginBottom: 12,
+  },
+  costRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
   costLabel: { fontSize: 14, color: theme.colors.textSecondary },
-  costValue: { fontSize: 14, fontWeight: '600', color: theme.colors.text },
-  positiveValue: { color: '#22C55E' },
+  costValue: { fontSize: 14, fontWeight: "600", color: theme.colors.text },
+  positiveValue: { color: "#22C55E" },
   modalSectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginTop: theme.spacing.lg,
     marginBottom: 12,
   },
   requirementsList: {},
-  requirementRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  requirementRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
   requirementText: { fontSize: 14, color: theme.colors.text, marginLeft: 10 },
   benefitsList: {},
-  benefitItemModal: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 },
-  benefitTextModal: { fontSize: 14, color: theme.colors.text, marginLeft: 10, flex: 1 },
-  applicationCard: { marginTop: theme.spacing.lg, backgroundColor: '#EFF6FF' },
-  applicationTitle: { fontSize: 15, fontWeight: '600', color: theme.colors.text, marginBottom: 12 },
+  benefitItemModal: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 8,
+  },
+  benefitTextModal: {
+    fontSize: 14,
+    color: theme.colors.text,
+    marginLeft: 10,
+    flex: 1,
+  },
+  applicationCard: { marginTop: theme.spacing.lg, backgroundColor: "#EFF6FF" },
+  applicationTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: theme.colors.text,
+    marginBottom: 12,
+  },
   applicationSteps: {},
   applicationStep: { fontSize: 14, color: theme.colors.text, marginBottom: 6 },
   applyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: theme.colors.primary,
     paddingVertical: 16,
     borderRadius: 12,
     marginTop: theme.spacing.lg,
     gap: 8,
   },
-  applyButtonText: { color: '#fff', fontWeight: '600', fontSize: 16 },
+  applyButtonText: { color: "#fff", fontWeight: "600", fontSize: 16 },
   disclaimer: {
     fontSize: 11,
     color: theme.colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 12,
     marginBottom: 20,
   },
   // Comparison styles
-  comparisonTable: { flexDirection: 'row', paddingVertical: theme.spacing.md },
+  comparisonTable: { flexDirection: "row", paddingVertical: theme.spacing.md },
   comparisonColumn: {
     width: 160,
     backgroundColor: theme.colors.surface,
@@ -948,21 +1131,38 @@ const styles = StyleSheet.create({
     padding: 16,
     marginRight: 12,
   },
-  comparisonProvider: { fontSize: 16, fontWeight: '700', color: theme.colors.text },
-  comparisonName: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 2 },
+  comparisonProvider: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: theme.colors.text,
+  },
+  comparisonName: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    marginTop: 2,
+  },
   comparisonDivider: {
     height: 1,
     backgroundColor: theme.colors.border,
     marginVertical: 12,
   },
-  comparisonLabel: { fontSize: 11, color: theme.colors.textSecondary, marginTop: 12 },
-  comparisonValue: { fontSize: 15, fontWeight: '600', color: theme.colors.text, marginTop: 2 },
+  comparisonLabel: {
+    fontSize: 11,
+    color: theme.colors.textSecondary,
+    marginTop: 12,
+  },
+  comparisonValue: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: theme.colors.text,
+    marginTop: 2,
+  },
   comparisonSelect: {
     backgroundColor: theme.colors.primary,
     paddingVertical: 10,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 16,
   },
-  comparisonSelectText: { color: '#fff', fontWeight: '600' },
+  comparisonSelectText: { color: "#fff", fontWeight: "600" },
 });

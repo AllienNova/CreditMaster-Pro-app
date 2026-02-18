@@ -10,30 +10,30 @@
  * - Historical rebalance tracking
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 export type AssetClass =
-  | 'us_stocks'
-  | 'international_stocks'
-  | 'emerging_markets'
-  | 'bonds'
-  | 'real_estate'
-  | 'commodities'
-  | 'cash'
-  | 'crypto'
-  | 'alternatives';
+  | "us_stocks"
+  | "international_stocks"
+  | "emerging_markets"
+  | "bonds"
+  | "real_estate"
+  | "commodities"
+  | "cash"
+  | "crypto"
+  | "alternatives";
 
 export type RebalanceStrategy =
-  | 'threshold' // Rebalance when drift exceeds threshold
-  | 'calendar' // Rebalance on schedule
-  | 'cash_flow' // Rebalance using new contributions
-  | 'tax_optimized'; // Consider tax implications
+  | "threshold" // Rebalance when drift exceeds threshold
+  | "calendar" // Rebalance on schedule
+  | "cash_flow" // Rebalance using new contributions
+  | "tax_optimized"; // Consider tax implications
 
-export type AlertPriority = 'low' | 'medium' | 'high';
+export type AlertPriority = "low" | "medium" | "high";
 
 export interface TargetAllocation {
   assetClass: AssetClass;
@@ -79,7 +79,7 @@ export interface RebalanceAlert {
 
 export interface RebalanceTrade {
   assetClass: AssetClass;
-  action: 'buy' | 'sell';
+  action: "buy" | "sell";
   currentValue: number;
   targetValue: number;
   tradeAmount: number;
@@ -125,79 +125,79 @@ export interface DriftAnalysis {
 export const PORTFOLIO_MODELS: Record<string, TargetAllocation[]> = {
   aggressive: [
     {
-      assetClass: 'us_stocks',
+      assetClass: "us_stocks",
       targetPercent: 50,
       minPercent: 45,
       maxPercent: 55,
     },
     {
-      assetClass: 'international_stocks',
+      assetClass: "international_stocks",
       targetPercent: 25,
       minPercent: 20,
       maxPercent: 30,
     },
     {
-      assetClass: 'emerging_markets',
+      assetClass: "emerging_markets",
       targetPercent: 10,
       minPercent: 5,
       maxPercent: 15,
     },
-    { assetClass: 'bonds', targetPercent: 10, minPercent: 5, maxPercent: 15 },
-    { assetClass: 'cash', targetPercent: 5, minPercent: 0, maxPercent: 10 },
+    { assetClass: "bonds", targetPercent: 10, minPercent: 5, maxPercent: 15 },
+    { assetClass: "cash", targetPercent: 5, minPercent: 0, maxPercent: 10 },
   ],
   moderate: [
     {
-      assetClass: 'us_stocks',
+      assetClass: "us_stocks",
       targetPercent: 40,
       minPercent: 35,
       maxPercent: 45,
     },
     {
-      assetClass: 'international_stocks',
+      assetClass: "international_stocks",
       targetPercent: 15,
       minPercent: 10,
       maxPercent: 20,
     },
-    { assetClass: 'bonds', targetPercent: 35, minPercent: 30, maxPercent: 40 },
+    { assetClass: "bonds", targetPercent: 35, minPercent: 30, maxPercent: 40 },
     {
-      assetClass: 'real_estate',
+      assetClass: "real_estate",
       targetPercent: 5,
       minPercent: 0,
       maxPercent: 10,
     },
-    { assetClass: 'cash', targetPercent: 5, minPercent: 0, maxPercent: 10 },
+    { assetClass: "cash", targetPercent: 5, minPercent: 0, maxPercent: 10 },
   ],
   conservative: [
     {
-      assetClass: 'us_stocks',
+      assetClass: "us_stocks",
       targetPercent: 25,
       minPercent: 20,
       maxPercent: 30,
     },
     {
-      assetClass: 'international_stocks',
+      assetClass: "international_stocks",
       targetPercent: 10,
       minPercent: 5,
       maxPercent: 15,
     },
-    { assetClass: 'bonds', targetPercent: 50, minPercent: 45, maxPercent: 55 },
-    { assetClass: 'cash', targetPercent: 15, minPercent: 10, maxPercent: 20 },
+    { assetClass: "bonds", targetPercent: 50, minPercent: 45, maxPercent: 55 },
+    { assetClass: "cash", targetPercent: 15, minPercent: 10, maxPercent: 20 },
   ],
   income: [
     {
-      assetClass: 'us_stocks',
+      assetClass: "us_stocks",
       targetPercent: 20,
       minPercent: 15,
       maxPercent: 25,
     },
-    { assetClass: 'bonds', targetPercent: 50, minPercent: 45, maxPercent: 55 },
+    { assetClass: "bonds", targetPercent: 50, minPercent: 45, maxPercent: 55 },
     {
-      assetClass: 'real_estate',
+      assetClass: "real_estate",
       targetPercent: 15,
       minPercent: 10,
       maxPercent: 20,
     },
-    { assetClass: 'cash', targetPercent: 15, minPercent: 10, maxPercent: 20 },
+    { assetClass: "cash", targetPercent: 15, minPercent: 10, maxPercent: 20 },
   ],
 };
 
@@ -223,21 +223,21 @@ export class PortfolioRebalanceService {
     options?: {
       rebalanceStrategy?: RebalanceStrategy;
       driftThreshold?: number;
-    }
+    },
   ): Promise<Portfolio> {
-    const portfolio: Omit<Portfolio, 'id' | 'currentAllocations'> = {
+    const portfolio: Omit<Portfolio, "id" | "currentAllocations"> = {
       userId,
       name,
       totalValue: 0,
       targetAllocations,
-      rebalanceStrategy: options?.rebalanceStrategy || 'threshold',
+      rebalanceStrategy: options?.rebalanceStrategy || "threshold",
       driftThreshold: options?.driftThreshold || 5,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
     const { data, error } = await this.supabase
-      .from('portfolios')
+      .from("portfolios")
       .insert({
         user_id: portfolio.userId,
         name: portfolio.name,
@@ -258,13 +258,13 @@ export class PortfolioRebalanceService {
 
   async getPortfolio(
     portfolioId: string,
-    userId: string
+    userId: string,
   ): Promise<Portfolio | null> {
     const { data, error } = await this.supabase
-      .from('portfolios')
-      .select('*')
-      .eq('id', portfolioId)
-      .eq('user_id', userId)
+      .from("portfolios")
+      .select("*")
+      .eq("id", portfolioId)
+      .eq("user_id", userId)
       .single();
 
     if (error) return null;
@@ -274,10 +274,10 @@ export class PortfolioRebalanceService {
 
   async getUserPortfolios(userId: string): Promise<Portfolio[]> {
     const { data, error } = await this.supabase
-      .from('portfolios')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .from("portfolios")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
     if (error) throw new Error(`Failed to get portfolios: ${error.message}`);
 
@@ -287,25 +287,25 @@ export class PortfolioRebalanceService {
   async updateTargetAllocations(
     portfolioId: string,
     userId: string,
-    targetAllocations: TargetAllocation[]
+    targetAllocations: TargetAllocation[],
   ): Promise<Portfolio> {
     // Validate allocations sum to 100%
     const total = targetAllocations.reduce(
       (sum, a) => sum + a.targetPercent,
-      0
+      0,
     );
     if (Math.abs(total - 100) > 0.01) {
       throw new Error(`Target allocations must sum to 100%, got ${total}%`);
     }
 
     const { data, error } = await this.supabase
-      .from('portfolios')
+      .from("portfolios")
       .update({
         target_allocations: targetAllocations,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', portfolioId)
-      .eq('user_id', userId)
+      .eq("id", portfolioId)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -321,7 +321,7 @@ export class PortfolioRebalanceService {
 
   calculateDrift(
     targetAllocations: TargetAllocation[],
-    currentAllocations: CurrentAllocation[]
+    currentAllocations: CurrentAllocation[],
   ): {
     totalDrift: number;
     maxDrift: number;
@@ -335,7 +335,7 @@ export class PortfolioRebalanceService {
 
     for (const target of targetAllocations) {
       const current = currentAllocations.find(
-        (c) => c.assetClass === target.assetClass
+        (c) => c.assetClass === target.assetClass,
       );
       const currentPercent = current?.currentPercent || 0;
       const drift = currentPercent - target.targetPercent;
@@ -359,32 +359,37 @@ export class PortfolioRebalanceService {
 
   async analyzePortfolioDrift(
     portfolioId: string,
-    userId: string
+    userId: string,
   ): Promise<{
     portfolio: Portfolio;
-    driftAnalysis: { totalDrift: number; maxDrift: number; driftByAsset: Map<AssetClass, number>; outOfBounds: AssetClass[] };
+    driftAnalysis: {
+      totalDrift: number;
+      maxDrift: number;
+      driftByAsset: Map<AssetClass, number>;
+      outOfBounds: AssetClass[];
+    };
     needsRebalance: boolean;
     alertPriority: AlertPriority;
   }> {
     const portfolio = await this.getPortfolio(portfolioId, userId);
     if (!portfolio) {
-      throw new Error('Portfolio not found');
+      throw new Error("Portfolio not found");
     }
 
     const driftAnalysis = this.calculateDrift(
       portfolio.targetAllocations,
-      portfolio.currentAllocations
+      portfolio.currentAllocations,
     );
 
     const needsRebalance =
       driftAnalysis.maxDrift > portfolio.driftThreshold ||
       driftAnalysis.outOfBounds.length > 0;
 
-    let alertPriority: AlertPriority = 'low';
+    let alertPriority: AlertPriority = "low";
     if (driftAnalysis.maxDrift > portfolio.driftThreshold * 2) {
-      alertPriority = 'high';
+      alertPriority = "high";
     } else if (driftAnalysis.maxDrift > portfolio.driftThreshold) {
-      alertPriority = 'medium';
+      alertPriority = "medium";
     }
 
     return { portfolio, driftAnalysis, needsRebalance, alertPriority };
@@ -396,18 +401,18 @@ export class PortfolioRebalanceService {
 
   generateRebalanceRecommendation(
     portfolio: Portfolio,
-    options?: { taxOptimized?: boolean }
+    options?: { taxOptimized?: boolean },
   ): RebalanceRecommendation {
     const driftAnalysis = this.calculateDrift(
       portfolio.targetAllocations,
-      portfolio.currentAllocations
+      portfolio.currentAllocations,
     );
 
     const trades: RebalanceTrade[] = [];
 
     for (const target of portfolio.targetAllocations) {
       const current = portfolio.currentAllocations.find(
-        (c) => c.assetClass === target.assetClass
+        (c) => c.assetClass === target.assetClass,
       );
       const currentValue = current?.currentValue || 0;
       const targetValue = (target.targetPercent / 100) * portfolio.totalValue;
@@ -417,7 +422,7 @@ export class PortfolioRebalanceService {
         // Minimum trade threshold
         trades.push({
           assetClass: target.assetClass,
-          action: tradeAmount > 0 ? 'buy' : 'sell',
+          action: tradeAmount > 0 ? "buy" : "sell",
           currentValue,
           targetValue,
           tradeAmount: Math.abs(tradeAmount),
@@ -428,10 +433,10 @@ export class PortfolioRebalanceService {
 
     // Sort by trade amount (largest first for sells, then buys)
     const sells = trades
-      .filter((t) => t.action === 'sell')
+      .filter((t) => t.action === "sell")
       .sort((a, b) => b.tradeAmount - a.tradeAmount);
     const buys = trades
-      .filter((t) => t.action === 'buy')
+      .filter((t) => t.action === "buy")
       .sort((a, b) => b.tradeAmount - a.tradeAmount);
     const sortedTrades = [...sells, ...buys];
 
@@ -447,13 +452,13 @@ export class PortfolioRebalanceService {
     if (options?.taxOptimized) {
       recommendation.alternativeStrategies = [
         {
-          strategy: 'cash_flow',
-          description: 'Direct new contributions to underweighted assets',
+          strategy: "cash_flow",
+          description: "Direct new contributions to underweighted assets",
           trades: buys,
         },
         {
-          strategy: 'partial',
-          description: 'Rebalance only the most out-of-balance assets',
+          strategy: "partial",
+          description: "Rebalance only the most out-of-balance assets",
           trades: sortedTrades.filter((t) => t.percentChange > 20),
         },
       ];
@@ -470,12 +475,12 @@ export class PortfolioRebalanceService {
     portfolioId: string,
     userId: string,
     driftAnalysis: ReturnType<typeof this.calculateDrift>,
-    priority: AlertPriority
+    priority: AlertPriority,
   ): Promise<RebalanceAlert> {
     const recommendation = this.generateAlertRecommendation(driftAnalysis);
 
     const { data, error } = await this.supabase
-      .from('rebalance_alerts')
+      .from("rebalance_alerts")
       .insert({
         portfolio_id: portfolioId,
         user_id: userId,
@@ -497,11 +502,11 @@ export class PortfolioRebalanceService {
 
   async getActiveAlerts(userId: string): Promise<RebalanceAlert[]> {
     const { data, error } = await this.supabase
-      .from('rebalance_alerts')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('dismissed', false)
-      .order('created_at', { ascending: false });
+      .from("rebalance_alerts")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("dismissed", false)
+      .order("created_at", { ascending: false });
 
     if (error) throw new Error(`Failed to get alerts: ${error.message}`);
 
@@ -510,10 +515,10 @@ export class PortfolioRebalanceService {
 
   async dismissAlert(alertId: string, userId: string): Promise<void> {
     await this.supabase
-      .from('rebalance_alerts')
+      .from("rebalance_alerts")
       .update({ dismissed: true })
-      .eq('id', alertId)
-      .eq('user_id', userId);
+      .eq("id", alertId)
+      .eq("user_id", userId);
   }
 
   // ==========================================================================
@@ -525,12 +530,12 @@ export class PortfolioRebalanceService {
     userId: string,
     preAllocations: CurrentAllocation[],
     postAllocations: CurrentAllocation[],
-    trades: RebalanceTrade[]
+    trades: RebalanceTrade[],
   ): Promise<RebalanceHistory> {
     const totalTradeValue = trades.reduce((sum, t) => sum + t.tradeAmount, 0);
 
     const { data, error } = await this.supabase
-      .from('rebalance_history')
+      .from("rebalance_history")
       .insert({
         portfolio_id: portfolioId,
         user_id: userId,
@@ -547,21 +552,21 @@ export class PortfolioRebalanceService {
 
     // Update portfolio last rebalance date
     await this.supabase
-      .from('portfolios')
+      .from("portfolios")
       .update({
         last_rebalance_date: new Date().toISOString(),
         current_allocations: postAllocations,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', portfolioId)
-      .eq('user_id', userId);
+      .eq("id", portfolioId)
+      .eq("user_id", userId);
 
     // Dismiss any active alerts
     await this.supabase
-      .from('rebalance_alerts')
+      .from("rebalance_alerts")
       .update({ dismissed: true })
-      .eq('portfolio_id', portfolioId)
-      .eq('dismissed', false);
+      .eq("portfolio_id", portfolioId)
+      .eq("dismissed", false);
 
     return this.mapRowToHistory(data);
   }
@@ -569,14 +574,14 @@ export class PortfolioRebalanceService {
   async getRebalanceHistory(
     portfolioId: string,
     userId: string,
-    limit?: number
+    limit?: number,
   ): Promise<RebalanceHistory[]> {
     let query = this.supabase
-      .from('rebalance_history')
-      .select('*')
-      .eq('portfolio_id', portfolioId)
-      .eq('user_id', userId)
-      .order('executed_at', { ascending: false });
+      .from("rebalance_history")
+      .select("*")
+      .eq("portfolio_id", portfolioId)
+      .eq("user_id", userId)
+      .order("executed_at", { ascending: false });
 
     if (limit) {
       query = query.limit(limit);
@@ -594,15 +599,15 @@ export class PortfolioRebalanceService {
   // ==========================================================================
 
   private generateAlertRecommendation(
-    driftAnalysis: ReturnType<typeof this.calculateDrift>
+    driftAnalysis: ReturnType<typeof this.calculateDrift>,
   ): string {
     if (driftAnalysis.outOfBounds.length === 0) {
       return `Portfolio drift of ${driftAnalysis.maxDrift.toFixed(1)}% detected. Consider rebalancing to maintain target allocation.`;
     }
 
     const assetNames = driftAnalysis.outOfBounds
-      .map((a) => a.replace(/_/g, ' '))
-      .join(', ');
+      .map((a) => a.replace(/_/g, " "))
+      .join(", ");
 
     return `${driftAnalysis.outOfBounds.length} asset class(es) are outside target bounds: ${assetNames}. Rebalancing recommended.`;
   }
@@ -669,7 +674,7 @@ export function getPortfolioRebalanceService(): PortfolioRebalanceService {
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     portfolioRebalanceServiceInstance = new PortfolioRebalanceService(
       supabaseUrl,
-      supabaseKey
+      supabaseKey,
     );
   }
   return portfolioRebalanceServiceInstance;

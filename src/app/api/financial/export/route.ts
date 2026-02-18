@@ -3,31 +3,31 @@
  * Generates CSV exports for budgets, bills, and spending data
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { budgetService } from '@/lib/financial/budget-service';
-import { billDetectionService } from '@/lib/financial/bill-detection-service';
-import { spendingAnalysisService } from '@/lib/financial/spending-analysis-service';
-import { FinancialExportService } from '@/lib/financial/export-service';
+import { NextRequest, NextResponse } from "next/server";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { budgetService } from "@/lib/financial/budget-service";
+import { billDetectionService } from "@/lib/financial/bill-detection-service";
+import { spendingAnalysisService } from "@/lib/financial/spending-analysis-service";
+import { FinancialExportService } from "@/lib/financial/export-service";
 
 export async function GET(request: NextRequest) {
   try {
     // Validate JWT
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const userId = validation.user.id;
     const { searchParams } = new URL(request.url);
 
     // Get export type
-    const exportType = searchParams.get('type') || 'all'; // budgets, bills, spending, all
-    const format = searchParams.get('format') || 'csv'; // csv, json
+    const exportType = searchParams.get("type") || "all"; // budgets, bills, spending, all
+    const format = searchParams.get("format") || "csv"; // csv, json
 
     // Get date range
-    const startDateStr = searchParams.get('startDate');
-    const endDateStr = searchParams.get('endDate');
+    const startDateStr = searchParams.get("startDate");
+    const endDateStr = searchParams.get("endDate");
     const dateRange =
       startDateStr && endDateStr
         ? {
@@ -38,24 +38,24 @@ export async function GET(request: NextRequest) {
 
     let exportResult;
 
-    if (exportType === 'budgets') {
+    if (exportType === "budgets") {
       const budgets = await budgetService.getBudgetsByUser(userId);
       exportResult =
-        format === 'json'
+        format === "json"
           ? FinancialExportService.exportToJSON(budgets, {
-              filename: 'budgets.json',
+              filename: "budgets.json",
             })
           : FinancialExportService.exportBudgetsToCSV(budgets);
-    } else if (exportType === 'bills') {
+    } else if (exportType === "bills") {
       const bills = await billDetectionService.getBillsByUser(userId);
       exportResult =
-        format === 'json'
+        format === "json"
           ? FinancialExportService.exportToJSON(bills, {
-              filename: 'bills.json',
+              filename: "bills.json",
             })
           : FinancialExportService.exportBillsToCSV(bills);
-    } else if (exportType === 'spending') {
-      const days = parseInt(searchParams.get('days') || '90');
+    } else if (exportType === "spending") {
+      const days = parseInt(searchParams.get("days") || "90");
       const endDate = new Date();
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
@@ -82,9 +82,9 @@ export async function GET(request: NextRequest) {
         cashFlow: spending.netCashFlow,
       };
       exportResult =
-        format === 'json'
+        format === "json"
           ? FinancialExportService.exportToJSON(spending, {
-              filename: 'spending.json',
+              filename: "spending.json",
             })
           : FinancialExportService.exportSpendingToCSV(exportData);
     } else {
@@ -94,37 +94,37 @@ export async function GET(request: NextRequest) {
         billDetectionService.getBillsByUser(userId),
       ]);
 
-      if (format === 'json') {
+      if (format === "json") {
         exportResult = FinancialExportService.exportToJSON(
           { budgets, bills },
-          { filename: 'financial-report.json' }
+          { filename: "financial-report.json" },
         );
       } else {
         exportResult = FinancialExportService.generateFinancialReport(
           { budgets, bills },
-          { dateRange }
+          { dateRange },
         );
       }
     }
 
     // Return file as download
     const headers = new Headers();
-    headers.set('Content-Type', exportResult.mimeType);
+    headers.set("Content-Type", exportResult.mimeType);
     headers.set(
-      'Content-Disposition',
-      `attachment; filename="${exportResult.filename}"`
+      "Content-Disposition",
+      `attachment; filename="${exportResult.filename}"`,
     );
-    headers.set('Content-Length', String(exportResult.size));
+    headers.set("Content-Length", String(exportResult.size));
 
     return new NextResponse(exportResult.content as string, {
       status: 200,
       headers,
     });
   } catch (error) {
-    console.error('Export error:', error);
+    console.error("Export error:", error);
     return NextResponse.json(
-      { error: 'Failed to generate export' },
-      { status: 500 }
+      { error: "Failed to generate export" },
+      { status: 500 },
     );
   }
 }

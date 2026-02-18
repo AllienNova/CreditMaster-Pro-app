@@ -4,10 +4,10 @@
  * GET /api/financial/spending/summary - Get quick spending summary
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { spendingAnalysisService } from '@/lib/financial/spending-analysis-service';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { rbac } from '@/lib/auth/rbac';
+import { NextRequest, NextResponse } from "next/server";
+import { spendingAnalysisService } from "@/lib/financial/spending-analysis-service";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { rbac } from "@/lib/auth/rbac";
 
 /**
  * GET /api/financial/spending/summary
@@ -19,14 +19,14 @@ export async function GET(request: NextRequest) {
     const validation = await jwtValidation.validateFromHeaders(request);
 
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check permissions
-    if (!rbac.hasPermission(validation.user, 'financial:read')) {
+    if (!rbac.hasPermission(validation.user, "financial:read")) {
       return NextResponse.json(
-        { error: 'Forbidden - Premium feature' },
-        { status: 403 }
+        { error: "Forbidden - Premium feature" },
+        { status: 403 },
       );
     }
 
@@ -39,13 +39,13 @@ export async function GET(request: NextRequest) {
       data: summary,
     });
   } catch (error) {
-    console.error('Error fetching spending summary:', error);
+    console.error("Error fetching spending summary:", error);
     return NextResponse.json(
       {
-        error: 'Failed to fetch spending summary',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to fetch spending summary",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

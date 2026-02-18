@@ -5,7 +5,7 @@
  * Integrates with Supabase tables: financial_chat_sessions and financial_chat_messages
  */
 
-import { getSupabase } from '@/lib/supabase/client';
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
 import type {
@@ -23,7 +23,7 @@ import type {
   ListSessionsRequest,
   UpdateSessionRequest,
   Paginated,
-} from './types/chat.types';
+} from "./types/chat.types";
 
 // ============================================================================
 // TYPES
@@ -83,7 +83,9 @@ function dbSessionToSession(dbSession: DatabaseChatSession): ChatSession {
     status: dbSession.status,
     createdAt: new Date(dbSession.created_at),
     updatedAt: new Date(dbSession.updated_at),
-    lastMessageAt: dbSession.last_message_at ? new Date(dbSession.last_message_at) : null,
+    lastMessageAt: dbSession.last_message_at
+      ? new Date(dbSession.last_message_at)
+      : null,
   };
 }
 
@@ -125,10 +127,10 @@ class ChatDatabaseService {
    */
   async createSession(
     userId: string,
-    request: CreateSessionRequest
+    request: CreateSessionRequest,
   ): Promise<ChatSession> {
     const { data, error } = await supabase
-      .from('financial_chat_sessions')
+      .from("financial_chat_sessions")
       .insert({
         user_id: userId,
         title: this.generateSessionTitle(request.sessionType),
@@ -137,7 +139,7 @@ class ChatDatabaseService {
         financial_snapshot: null,
         message_count: 0,
         total_tokens_used: 0,
-        status: 'active' as SessionStatus,
+        status: "active" as SessionStatus,
         last_message_at: null,
       })
       .select()
@@ -154,16 +156,19 @@ class ChatDatabaseService {
   /**
    * Get a session by ID
    */
-  async getSession(sessionId: string, userId: string): Promise<ChatSession | null> {
+  async getSession(
+    sessionId: string,
+    userId: string,
+  ): Promise<ChatSession | null> {
     const { data, error } = await supabase
-      .from('financial_chat_sessions')
-      .select('*')
-      .eq('id', sessionId)
-      .eq('user_id', userId)
+      .from("financial_chat_sessions")
+      .select("*")
+      .eq("id", sessionId)
+      .eq("user_id", userId)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
+      if (error.code === "PGRST116") {
         // Not found
         return null;
       }
@@ -179,39 +184,39 @@ class ChatDatabaseService {
    */
   async listSessions(
     userId: string,
-    request: ListSessionsRequest = {}
+    request: ListSessionsRequest = {},
   ): Promise<Paginated<ChatSession>> {
     const {
       status,
       sessionType,
       limit = 20,
       offset = 0,
-      sortBy = 'updatedAt',
-      sortOrder = 'desc',
+      sortBy = "updatedAt",
+      sortOrder = "desc",
     } = request;
 
     // Build query
     let query = supabase
-      .from('financial_chat_sessions')
-      .select('*', { count: 'exact' })
-      .eq('user_id', userId);
+      .from("financial_chat_sessions")
+      .select("*", { count: "exact" })
+      .eq("user_id", userId);
 
     // Apply filters
     if (status) {
-      query = query.eq('status', status);
+      query = query.eq("status", status);
     }
     if (sessionType) {
-      query = query.eq('session_type', sessionType);
+      query = query.eq("session_type", sessionType);
     }
 
     // Apply sorting
     const sortColumn =
-      sortBy === 'createdAt'
-        ? 'created_at'
-        : sortBy === 'updatedAt'
-        ? 'updated_at'
-        : 'last_message_at';
-    query = query.order(sortColumn, { ascending: sortOrder === 'asc' });
+      sortBy === "createdAt"
+        ? "created_at"
+        : sortBy === "updatedAt"
+          ? "updated_at"
+          : "last_message_at";
+    query = query.order(sortColumn, { ascending: sortOrder === "asc" });
 
     // Apply pagination
     query = query.range(offset, offset + limit - 1);
@@ -240,7 +245,7 @@ class ChatDatabaseService {
   async updateSession(
     sessionId: string,
     userId: string,
-    update: UpdateSessionRequest
+    update: UpdateSessionRequest,
   ): Promise<ChatSession> {
     const updateData: Partial<DatabaseChatSession> = {};
 
@@ -255,10 +260,10 @@ class ChatDatabaseService {
     }
 
     const { data, error } = await supabase
-      .from('financial_chat_sessions')
+      .from("financial_chat_sessions")
       .update(updateData)
-      .eq('id', sessionId)
-      .eq('user_id', userId)
+      .eq("id", sessionId)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -275,10 +280,10 @@ class ChatDatabaseService {
    */
   async deleteSession(sessionId: string, userId: string): Promise<void> {
     const { error } = await supabase
-      .from('financial_chat_sessions')
-      .update({ status: 'deleted' as SessionStatus })
-      .eq('id', sessionId)
-      .eq('user_id', userId);
+      .from("financial_chat_sessions")
+      .update({ status: "deleted" as SessionStatus })
+      .eq("id", sessionId)
+      .eq("user_id", userId);
 
     if (error) {
       // Database error:('Failed to delete chat session:', error);
@@ -289,8 +294,11 @@ class ChatDatabaseService {
   /**
    * Archive a session
    */
-  async archiveSession(sessionId: string, userId: string): Promise<ChatSession> {
-    return this.updateSession(sessionId, userId, { status: 'archived' });
+  async archiveSession(
+    sessionId: string,
+    userId: string,
+  ): Promise<ChatSession> {
+    return this.updateSession(sessionId, userId, { status: "archived" });
   }
 
   /**
@@ -299,13 +307,13 @@ class ChatDatabaseService {
   async updateFinancialSnapshot(
     sessionId: string,
     userId: string,
-    snapshot: FinancialSnapshot
+    snapshot: FinancialSnapshot,
   ): Promise<void> {
     const { error } = await supabase
-      .from('financial_chat_sessions')
+      .from("financial_chat_sessions")
       .update({ financial_snapshot: snapshot })
-      .eq('id', sessionId)
-      .eq('user_id', userId);
+      .eq("id", sessionId)
+      .eq("user_id", userId);
 
     if (error) {
       // Database error:('Failed to update financial snapshot:', error);
@@ -323,11 +331,11 @@ class ChatDatabaseService {
   async createMessage(
     sessionId: string,
     userId: string,
-    message: Omit<ChatMessage, 'id' | 'createdAt'>
+    message: Omit<ChatMessage, "id" | "createdAt">,
   ): Promise<ChatMessage> {
     // Insert message
     const { data: messageData, error: messageError } = await supabase
-      .from('financial_chat_messages')
+      .from("financial_chat_messages")
       .insert({
         session_id: sessionId,
         user_id: userId,
@@ -353,10 +361,13 @@ class ChatDatabaseService {
     }
 
     // Update session stats
-    const { error: updateError } = await supabase.rpc('increment_session_stats', {
-      p_session_id: sessionId,
-      p_tokens: message.tokensUsed,
-    });
+    const { error: updateError } = await supabase.rpc(
+      "increment_session_stats",
+      {
+        p_session_id: sessionId,
+        p_tokens: message.tokensUsed,
+      },
+    );
 
     if (updateError) {
       // Database error:('Failed to update session stats:', updateError);
@@ -371,17 +382,17 @@ class ChatDatabaseService {
    */
   async getMessage(
     messageId: string,
-    userId: string
+    userId: string,
   ): Promise<ChatMessage | null> {
     const { data, error } = await supabase
-      .from('financial_chat_messages')
-      .select('*')
-      .eq('id', messageId)
-      .eq('user_id', userId)
+      .from("financial_chat_messages")
+      .select("*")
+      .eq("id", messageId)
+      .eq("user_id", userId)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
+      if (error.code === "PGRST116") {
         return null;
       }
       // Database error:('Failed to get message:', error);
@@ -398,14 +409,14 @@ class ChatDatabaseService {
     sessionId: string,
     userId: string,
     limit = 50,
-    offset = 0
+    offset = 0,
   ): Promise<Paginated<ChatMessage>> {
     const { data, error, count } = await supabase
-      .from('financial_chat_messages')
-      .select('*', { count: 'exact' })
-      .eq('session_id', sessionId)
-      .eq('user_id', userId)
-      .order('created_at', { ascending: true })
+      .from("financial_chat_messages")
+      .select("*", { count: "exact" })
+      .eq("session_id", sessionId)
+      .eq("user_id", userId)
+      .order("created_at", { ascending: true })
       .range(offset, offset + limit - 1);
 
     if (error) {
@@ -430,14 +441,14 @@ class ChatDatabaseService {
   async getRecentMessages(
     sessionId: string,
     userId: string,
-    limit = 10
+    limit = 10,
   ): Promise<ChatMessage[]> {
     const { data, error } = await supabase
-      .from('financial_chat_messages')
-      .select('*')
-      .eq('session_id', sessionId)
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
+      .from("financial_chat_messages")
+      .select("*")
+      .eq("session_id", sessionId)
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
       .limit(limit);
 
     if (error) {
@@ -446,9 +457,7 @@ class ChatDatabaseService {
     }
 
     // Reverse to chronological order
-    return (data as DatabaseChatMessage[])
-      .reverse()
-      .map(dbMessageToMessage);
+    return (data as DatabaseChatMessage[]).reverse().map(dbMessageToMessage);
   }
 
   /**
@@ -458,16 +467,16 @@ class ChatDatabaseService {
     messageId: string,
     userId: string,
     rating: number,
-    text?: string
+    text?: string,
   ): Promise<void> {
     const { error } = await supabase
-      .from('financial_chat_messages')
+      .from("financial_chat_messages")
       .update({
         feedback_rating: rating,
         feedback_text: text || null,
       })
-      .eq('id', messageId)
-      .eq('user_id', userId);
+      .eq("id", messageId)
+      .eq("user_id", userId);
 
     if (error) {
       // Database error:('Failed to update message feedback:', error);
@@ -484,10 +493,10 @@ class ChatDatabaseService {
    */
   async getSessionStats(sessionId: string, userId: string) {
     const { data, error } = await supabase
-      .from('financial_chat_sessions')
-      .select('message_count, total_tokens_used')
-      .eq('id', sessionId)
-      .eq('user_id', userId)
+      .from("financial_chat_sessions")
+      .select("message_count, total_tokens_used")
+      .eq("id", sessionId)
+      .eq("user_id", userId)
       .single();
 
     if (error) {
@@ -508,19 +517,19 @@ class ChatDatabaseService {
     userId: string,
     query: string,
     sessionId?: string,
-    limit = 20
+    limit = 20,
   ): Promise<ChatMessage[]> {
     let dbQuery = supabase
-      .from('financial_chat_messages')
-      .select('*')
-      .eq('user_id', userId)
-      .ilike('content', `%${query}%`);
+      .from("financial_chat_messages")
+      .select("*")
+      .eq("user_id", userId)
+      .ilike("content", `%${query}%`);
 
     if (sessionId) {
-      dbQuery = dbQuery.eq('session_id', sessionId);
+      dbQuery = dbQuery.eq("session_id", sessionId);
     }
 
-    dbQuery = dbQuery.order('created_at', { ascending: false }).limit(limit);
+    dbQuery = dbQuery.order("created_at", { ascending: false }).limit(limit);
 
     const { data, error } = await dbQuery;
 
@@ -536,7 +545,7 @@ class ChatDatabaseService {
    * Get user's total chat statistics
    */
   async getUserChatStats(userId: string) {
-    const { data, error } = await supabase.rpc('get_user_chat_stats', {
+    const { data, error } = await supabase.rpc("get_user_chat_stats", {
       p_user_id: userId,
     });
 
@@ -563,19 +572,19 @@ class ChatDatabaseService {
    */
   private generateSessionTitle(sessionType: SessionType): string {
     const now = new Date();
-    const date = now.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
+    const date = now.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
     });
 
     const typeLabels: Record<SessionType, string> = {
-      general: 'Financial Chat',
-      budget: 'Budget Planning',
-      goals: 'Goal Discussion',
-      debt: 'Debt Strategy',
-      investing: 'Investment Advice',
-      credit_repair: 'Credit Repair',
-      tax_planning: 'Tax Planning',
+      general: "Financial Chat",
+      budget: "Budget Planning",
+      goals: "Goal Discussion",
+      debt: "Debt Strategy",
+      investing: "Investment Advice",
+      credit_repair: "Credit Repair",
+      tax_planning: "Tax Planning",
     };
 
     return `${typeLabels[sessionType]} - ${date}`;
@@ -589,11 +598,11 @@ class ChatDatabaseService {
     cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
 
     const { data, error } = await supabase
-      .from('financial_chat_sessions')
+      .from("financial_chat_sessions")
       .delete()
-      .eq('status', 'deleted')
-      .lt('updated_at', cutoffDate.toISOString())
-      .select('id');
+      .eq("status", "deleted")
+      .lt("updated_at", cutoffDate.toISOString())
+      .select("id");
 
     if (error) {
       // Database error:('Failed to cleanup deleted sessions:', error);

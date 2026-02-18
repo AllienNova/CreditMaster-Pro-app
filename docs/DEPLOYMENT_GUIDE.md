@@ -41,6 +41,7 @@
 ### 1. Supabase Project Setup
 
 **Create Project**:
+
 1. Log in to Supabase Dashboard
 2. Click **"New Project"**
 3. Enter project details:
@@ -50,6 +51,7 @@
 4. Wait for project to be created (~2 minutes)
 
 **Get Connection Details**:
+
 1. Go to **Settings** → **API**
 2. Copy the following:
    - Project URL: `https://[project-id].supabase.co`
@@ -59,6 +61,7 @@
 ### 2. Run Database Migrations
 
 **Using Supabase CLI**:
+
 ```bash
 # Install Supabase CLI
 npm install -g supabase
@@ -77,6 +80,7 @@ supabase db diff
 ```
 
 **Manual Migration** (if CLI not available):
+
 1. Go to Supabase Dashboard → **SQL Editor**
 2. Run migrations in order:
    - `supabase/migrations/20260115_create_financial_chat_tables.sql`
@@ -132,6 +136,7 @@ NEXT_PUBLIC_GA_ID=your-google-analytics-id
 ```
 
 **Generate Secrets**:
+
 ```bash
 # Generate NEXTAUTH_SECRET
 openssl rand -base64 32
@@ -139,7 +144,7 @@ openssl rand -base64 32
 
 ### 2. Build & Test Locally
 
-```bash
+````bash
 # Install dependencies
 npm install
 
@@ -174,25 +179,29 @@ module.exports = {
     ];
   },
 };
-```
+````
 
 **Supabase Connection Pooling**:
+
 - Enabled by default
 - Max connections: 100 (adjust based on load)
 
 ### 2. Configure CDN
 
 **Static Assets**:
+
 - Automatically served via Vercel Edge Network
 - Images optimized with Next.js Image component
 
 **Database Connection**:
+
 - Use connection pooling
 - Enable read replicas for high traffic
 
 ### 3. Monitor Performance
 
 **Vercel Analytics**:
+
 ```bash
 # Install Vercel Analytics
 npm install @vercel/analytics
@@ -211,6 +220,7 @@ export default function App({ Component, pageProps }) {
 ```
 
 **Supabase Monitoring**:
+
 - Dashboard → **Reports** → **Database**
 - Monitor query performance
 - Check connection pool usage
@@ -248,23 +258,24 @@ k6 run load-test.js
 ```
 
 **load-test.js**:
+
 ```javascript
-import http from 'k6/http';
-import { check, sleep } from 'k6';
+import http from "k6/http";
+import { check, sleep } from "k6";
 
 export let options = {
   stages: [
-    { duration: '2m', target: 100 }, // Ramp up to 100 users
-    { duration: '5m', target: 100 }, // Stay at 100 users
-    { duration: '2m', target: 0 },   // Ramp down
+    { duration: "2m", target: 100 }, // Ramp up to 100 users
+    { duration: "5m", target: 100 }, // Stay at 100 users
+    { duration: "2m", target: 0 }, // Ramp down
   ],
 };
 
 export default function () {
-  let response = http.get('https://your-domain.com/api/health');
+  let response = http.get("https://your-domain.com/api/health");
   check(response, {
-    'status is 200': (r) => r.status === 200,
-    'response time < 500ms': (r) => r.timings.duration < 500,
+    "status is 200": (r) => r.status === 200,
+    "response time < 500ms": (r) => r.timings.duration < 500,
   });
   sleep(1);
 }
@@ -291,6 +302,7 @@ docker run -t owasp/zap2docker-stable zap-baseline.py \
 ### 1. Application Monitoring
 
 **Vercel Logs**:
+
 ```bash
 # View real-time logs
 vercel logs
@@ -300,6 +312,7 @@ vercel logs [deployment-url]
 ```
 
 **Supabase Logs**:
+
 - Dashboard → **Logs** → **Postgres Logs**
 - Monitor slow queries
 - Check error logs
@@ -307,6 +320,7 @@ vercel logs [deployment-url]
 ### 2. Error Tracking
 
 **Sentry Integration**:
+
 ```bash
 # Install Sentry
 npm install @sentry/nextjs
@@ -316,9 +330,10 @@ npx @sentry/wizard -i nextjs
 ```
 
 **Configure Sentry**:
+
 ```typescript
 // sentry.client.config.ts
-import * as Sentry from '@sentry/nextjs';
+import * as Sentry from "@sentry/nextjs";
 
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
@@ -330,11 +345,13 @@ Sentry.init({
 ### 3. Uptime Monitoring
 
 **UptimeRobot** (free):
+
 1. Sign up at https://uptimerobot.com
 2. Add monitor for your domain
 3. Configure alerts (email, SMS, Slack)
 
 **Pingdom** (paid):
+
 - More detailed monitoring
 - Performance insights
 - Global monitoring locations
@@ -346,6 +363,7 @@ Sentry.init({
 ### 1. GitHub Actions Workflow
 
 **`.github/workflows/deploy.yml`**:
+
 ```yaml
 name: Deploy to Production
 
@@ -360,7 +378,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: "18"
       - run: npm ci
       - run: npm run test
       - run: npm run lint
@@ -375,7 +393,7 @@ jobs:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: '--prod'
+          vercel-args: "--prod"
 ```
 
 ### 2. Automated Testing
@@ -408,7 +426,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'supabase/migrations/**'
+      - "supabase/migrations/**"
 
 jobs:
   migrate:
@@ -428,11 +446,13 @@ jobs:
 ### 1. Vercel Rollback
 
 **Via Dashboard**:
+
 1. Go to Vercel Dashboard → **Deployments**
 2. Find previous working deployment
 3. Click **"..."** → **"Promote to Production"**
 
 **Via CLI**:
+
 ```bash
 # List deployments
 vercel ls
@@ -444,6 +464,7 @@ vercel rollback [deployment-url]
 ### 2. Database Rollback
 
 **Restore from Backup**:
+
 ```bash
 # List backups
 supabase db backups list
@@ -453,6 +474,7 @@ supabase db backups restore [backup-id]
 ```
 
 **Manual Rollback**:
+
 ```sql
 -- Rollback specific migration
 -- Create reverse migration in supabase/migrations/
@@ -466,6 +488,7 @@ DROP FUNCTION IF EXISTS get_recent_sessions_with_preview;
 ### 3. Mobile App Rollback
 
 **Expo OTA Rollback**:
+
 ```bash
 # Publish previous version
 expo publish --release-channel production-rollback
@@ -521,24 +544,28 @@ expo publish --release-channel production-rollback
 ### Common Issues
 
 **Issue: "Failed to connect to database"**
+
 - Check Supabase project status
 - Verify connection string
 - Check firewall rules
 - Verify RLS policies
 
 **Issue: "Authentication failed"**
+
 - Check API keys are correct
 - Verify JWT token not expired
 - Check user exists in database
 - Verify RLS policies allow access
 
 **Issue: "Slow API responses"**
+
 - Check database query performance
 - Verify caching is working
 - Check connection pool usage
 - Review slow query logs
 
 **Issue: "Build failed on Vercel"**
+
 - Check build logs for errors
 - Verify all dependencies installed
 - Check TypeScript errors
@@ -547,12 +574,14 @@ expo publish --release-channel production-rollback
 ### Getting Help
 
 **Support Channels**:
+
 - **Email**: support@creditmasterpro.com
 - **Discord**: discord.gg/creditmasterpro
 - **GitHub Issues**: github.com/creditmasterpro/issues
 - **Documentation**: docs.creditmasterpro.com
 
 **Emergency Contact**:
+
 - **On-Call Engineer**: +1-800-CREDIT-PRO
 - **Security Issues**: security@creditmasterpro.com
 - **Response Time**: Within 1 hour for critical issues
@@ -570,7 +599,8 @@ expo publish --release-channel production-rollback
 - [Expo Deployment](https://docs.expo.dev/distribution/introduction/)
 
 # Open http://localhost:3000
-```
+
+````
 
 ### 3. Deploy to Vercel
 
@@ -603,7 +633,7 @@ vercel --prod
 vercel env add NEXT_PUBLIC_SUPABASE_URL
 vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY
 # ... add all other variables
-```
+````
 
 ### 4. Configure Custom Domain
 
@@ -619,6 +649,7 @@ vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY
 ### 1. Configure App Settings
 
 **Update `app.json`**:
+
 ```json
 {
   "expo": {
@@ -635,9 +666,7 @@ vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY
     "updates": {
       "fallbackToCacheTimeout": 0
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.creditmasterpro.app"
@@ -711,16 +740,19 @@ ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
 ### 2. Configure CORS
 
 **Supabase Dashboard** → **Settings** → **API**:
+
 - Add your domain to allowed origins
 - Example: `https://your-domain.com`
 
 ### 3. Set Up SSL/TLS
 
 **Vercel** (automatic):
+
 - SSL certificates are automatically provisioned
 - HTTPS is enforced by default
 
 **Custom Server**:
+
 ```bash
 # Install certbot
 sudo apt-get install certbot
@@ -743,10 +775,9 @@ server {
 ### 4. Configure Security Headers
 
 Already configured in `next.config.js`:
+
 - Content-Security-Policy
 - X-Frame-Options
 - X-Content-Type-Options
 - Referrer-Policy
 - Permissions-Policy
-
-

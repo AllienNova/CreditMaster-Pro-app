@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Authorized User Strategy Page
@@ -7,13 +7,13 @@
  * Compares family, friend, and professional tradeline options.
  */
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { useAuth } from '@/hooks/useAuth';
+import { useState } from "react";
+import Link from "next/link";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Strategy {
   id: string;
-  type: 'family' | 'friend' | 'professional';
+  type: "family" | "friend" | "professional";
   title: string;
   description: string;
   pros: string[];
@@ -21,7 +21,7 @@ interface Strategy {
   requirements: string[];
   expectedImpact: number;
   timeline: string;
-  riskLevel: 'low' | 'medium' | 'high';
+  riskLevel: "low" | "medium" | "high";
   cost: string;
   steps: string[];
 }
@@ -29,7 +29,7 @@ interface Strategy {
 export default function AuthorizedUserPage() {
   const { user, loading: authLoading } = useAuth();
   const [selectedStrategy, setSelectedStrategy] = useState<Strategy | null>(
-    null
+    null,
   );
 
   if (authLoading) {
@@ -45,147 +45,147 @@ export default function AuthorizedUserPage() {
 
   const strategies: Strategy[] = [
     {
-      id: 'family',
-      type: 'family',
-      title: 'Family Member Strategy',
+      id: "family",
+      type: "family",
+      title: "Family Member Strategy",
       description:
         "Get added to a family member's credit card as an authorized user",
       pros: [
-        'Easiest to arrange',
-        'Inherit full account history',
-        'No credit check required',
-        'Can boost score quickly (30-60 days)',
-        'Free - no cost',
-        'Builds long-term relationship',
+        "Easiest to arrange",
+        "Inherit full account history",
+        "No credit check required",
+        "Can boost score quickly (30-60 days)",
+        "Free - no cost",
+        "Builds long-term relationship",
       ],
       cons: [
-        'Depends on their credit behavior',
-        'May strain relationship if misused',
-        'Account age must be significant (2+ years)',
-        'Their late payments will hurt you',
-        'Limited control over account',
+        "Depends on their credit behavior",
+        "May strain relationship if misused",
+        "Account age must be significant (2+ years)",
+        "Their late payments will hurt you",
+        "Limited control over account",
       ],
       requirements: [
-        'Trustworthy family member with excellent credit (720+)',
-        'Account must be at least 2 years old',
-        'Low utilization (< 30%)',
-        'Perfect payment history (no late payments)',
-        'Reports to all 3 credit bureaus',
+        "Trustworthy family member with excellent credit (720+)",
+        "Account must be at least 2 years old",
+        "Low utilization (< 30%)",
+        "Perfect payment history (no late payments)",
+        "Reports to all 3 credit bureaus",
       ],
       expectedImpact: 40,
-      timeline: '1-2 months to see impact',
-      riskLevel: 'low',
-      cost: 'Free',
+      timeline: "1-2 months to see impact",
+      riskLevel: "low",
+      cost: "Free",
       steps: [
-        'Identify family member with excellent credit (parent, spouse, sibling)',
-        'Have conversation about becoming authorized user',
-        'Verify their account age (check statement or call issuer)',
-        'Confirm perfect payment history',
-        'Verify card reports to all 3 bureaus',
-        'Provide your information to primary cardholder',
-        'Primary cardholder calls bank to add you',
-        'Wait 30-45 days for account to appear on your report',
-        'Monitor credit report for changes',
-        'Thank them and maintain trust',
+        "Identify family member with excellent credit (parent, spouse, sibling)",
+        "Have conversation about becoming authorized user",
+        "Verify their account age (check statement or call issuer)",
+        "Confirm perfect payment history",
+        "Verify card reports to all 3 bureaus",
+        "Provide your information to primary cardholder",
+        "Primary cardholder calls bank to add you",
+        "Wait 30-45 days for account to appear on your report",
+        "Monitor credit report for changes",
+        "Thank them and maintain trust",
       ],
     },
     {
-      id: 'friend',
-      type: 'friend',
-      title: 'Trusted Friend Strategy',
+      id: "friend",
+      type: "friend",
+      title: "Trusted Friend Strategy",
       description: "Get added to a friend's credit card account",
       pros: [
-        'Still relatively easy to arrange',
-        'No financial obligation',
-        'Inherit account history',
-        'Can negotiate terms',
-        'Free or low cost',
+        "Still relatively easy to arrange",
+        "No financial obligation",
+        "Inherit account history",
+        "Can negotiate terms",
+        "Free or low cost",
       ],
       cons: [
-        'May strain friendship',
-        'Less stable than family',
-        'Friend may close account',
-        'Requires high trust level',
-        'Their behavior affects your credit',
+        "May strain friendship",
+        "Less stable than family",
+        "Friend may close account",
+        "Requires high trust level",
+        "Their behavior affects your credit",
       ],
       requirements: [
-        'Friend with excellent credit (700+)',
-        'Account at least 1 year old',
-        'Low utilization',
-        'Good payment history',
-        'Mutual trust and clear agreement',
+        "Friend with excellent credit (700+)",
+        "Account at least 1 year old",
+        "Low utilization",
+        "Good payment history",
+        "Mutual trust and clear agreement",
       ],
       expectedImpact: 35,
-      timeline: '1-2 months to see impact',
-      riskLevel: 'medium',
-      cost: 'Free - $100 (optional gift)',
+      timeline: "1-2 months to see impact",
+      riskLevel: "medium",
+      cost: "Free - $100 (optional gift)",
       steps: [
-        'Choose friend with excellent credit history',
-        'Have honest conversation about expectations',
-        'Set clear boundaries and agreements',
-        'Verify account quality',
-        'Get added as authorized user',
-        'Monitor account regularly',
-        'Maintain open communication',
-        'Show appreciation',
+        "Choose friend with excellent credit history",
+        "Have honest conversation about expectations",
+        "Set clear boundaries and agreements",
+        "Verify account quality",
+        "Get added as authorized user",
+        "Monitor account regularly",
+        "Maintain open communication",
+        "Show appreciation",
       ],
     },
     {
-      id: 'professional',
-      type: 'professional',
-      title: 'Professional Tradeline',
-      description: 'Purchase authorized user access from a tradeline company',
+      id: "professional",
+      type: "professional",
+      title: "Professional Tradeline",
+      description: "Purchase authorized user access from a tradeline company",
       pros: [
-        'Guaranteed account quality',
-        'Predictable results',
-        'No personal relationship risk',
-        'Quick setup (1-2 weeks)',
-        'Choose specific account characteristics',
-        'Professional and reliable',
+        "Guaranteed account quality",
+        "Predictable results",
+        "No personal relationship risk",
+        "Quick setup (1-2 weeks)",
+        "Choose specific account characteristics",
+        "Professional and reliable",
       ],
       cons: [
-        'Costs $200-$800 per tradeline',
-        'Temporary boost (typically 60-90 days)',
-        'Not recognized by all lenders',
-        'Gray area for some scoring models',
-        'Multiple tradelines needed for best results',
-        'Potential fraud concerns if using wrong company',
+        "Costs $200-$800 per tradeline",
+        "Temporary boost (typically 60-90 days)",
+        "Not recognized by all lenders",
+        "Gray area for some scoring models",
+        "Multiple tradelines needed for best results",
+        "Potential fraud concerns if using wrong company",
       ],
       requirements: [
-        'Budget for tradeline purchase ($200-800)',
-        'Reputable tradeline company (research reviews)',
-        'Clean credit report (no recent defaults)',
-        'Specific credit goal (mortgage, auto loan)',
-        'Time-sensitive need',
+        "Budget for tradeline purchase ($200-800)",
+        "Reputable tradeline company (research reviews)",
+        "Clean credit report (no recent defaults)",
+        "Specific credit goal (mortgage, auto loan)",
+        "Time-sensitive need",
       ],
       expectedImpact: 30,
-      timeline: '2-3 weeks to see impact',
-      riskLevel: 'medium',
-      cost: '$200 - $800 per tradeline',
+      timeline: "2-3 weeks to see impact",
+      riskLevel: "medium",
+      cost: "$200 - $800 per tradeline",
       steps: [
-        'Research reputable tradeline companies (Google reviews)',
-        'Compare pricing and account options',
-        'Select tradeline matching your needs (age, limit, history)',
-        'Purchase and provide required information',
+        "Research reputable tradeline companies (Google reviews)",
+        "Compare pricing and account options",
+        "Select tradeline matching your needs (age, limit, history)",
+        "Purchase and provide required information",
         "Company adds you to cardholder's account",
-        'Wait 2-3 weeks for reporting cycle',
-        'Monitor credit report for account appearance',
-        'Use boost for specific credit application',
-        'Account typically removed after 60-90 days',
+        "Wait 2-3 weeks for reporting cycle",
+        "Monitor credit report for account appearance",
+        "Use boost for specific credit application",
+        "Account typically removed after 60-90 days",
       ],
     },
   ];
 
   const getRiskColor = (risk: string) => {
     switch (risk) {
-      case 'low':
-        return 'text-green-600 bg-green-100';
-      case 'medium':
-        return 'text-yellow-600 bg-yellow-100';
-      case 'high':
-        return 'text-red-600 bg-red-100';
+      case "low":
+        return "text-green-600 bg-green-100";
+      case "medium":
+        return "text-yellow-600 bg-yellow-100";
+      case "high":
+        return "text-red-600 bg-red-100";
       default:
-        return 'text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-800';
+        return "text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-800";
     }
   };
 
@@ -316,7 +316,9 @@ export default function AuthorizedUserPage() {
             <div
               key={strategy.id}
               className={`bg-white dark:bg-slate-800 rounded-xl shadow-sm border-2 transition-all ${
-                index === 0 ? 'border-green-500 shadow-lg' : 'border-gray-200 dark:border-slate-700'
+                index === 0
+                  ? "border-green-500 shadow-lg"
+                  : "border-gray-200 dark:border-slate-700"
               }`}
             >
               {index === 0 && (
@@ -340,31 +342,41 @@ export default function AuthorizedUserPage() {
                     <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
                       {strategy.title}
                     </h3>
-                    <p className="text-gray-600 dark:text-slate-300">{strategy.description}</p>
+                    <p className="text-gray-600 dark:text-slate-300">
+                      {strategy.description}
+                    </p>
                   </div>
                   <div className="text-right">
                     <div className="text-3xl font-bold text-green-600">
                       +{strategy.expectedImpact}
                     </div>
-                    <div className="text-sm text-gray-600 dark:text-slate-300">points</div>
+                    <div className="text-sm text-gray-600 dark:text-slate-300">
+                      points
+                    </div>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                   <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-3">
-                    <div className="text-xs text-gray-600 dark:text-slate-300">Timeline</div>
+                    <div className="text-xs text-gray-600 dark:text-slate-300">
+                      Timeline
+                    </div>
                     <div className="text-sm font-bold text-gray-900 dark:text-white">
                       {strategy.timeline}
                     </div>
                   </div>
                   <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-3">
-                    <div className="text-xs text-gray-600 dark:text-slate-300">Cost</div>
+                    <div className="text-xs text-gray-600 dark:text-slate-300">
+                      Cost
+                    </div>
                     <div className="text-sm font-bold text-gray-900 dark:text-white">
                       {strategy.cost}
                     </div>
                   </div>
                   <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-3">
-                    <div className="text-xs text-gray-600 dark:text-slate-300">Risk Level</div>
+                    <div className="text-xs text-gray-600 dark:text-slate-300">
+                      Risk Level
+                    </div>
                     <div
                       className={`text-sm font-bold ${getRiskColor(strategy.riskLevel)} px-2 py-1 rounded capitalize inline-block`}
                     >
@@ -372,7 +384,9 @@ export default function AuthorizedUserPage() {
                     </div>
                   </div>
                   <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-3">
-                    <div className="text-xs text-gray-600 dark:text-slate-300">Impact</div>
+                    <div className="text-xs text-gray-600 dark:text-slate-300">
+                      Impact
+                    </div>
                     <div className="text-sm font-bold text-green-600">
                       +{strategy.expectedImpact} pts
                     </div>
@@ -410,7 +424,9 @@ export default function AuthorizedUserPage() {
                               clipRule="evenodd"
                             />
                           </svg>
-                          <span className="text-sm text-gray-700 dark:text-slate-200">{pro}</span>
+                          <span className="text-sm text-gray-700 dark:text-slate-200">
+                            {pro}
+                          </span>
                         </li>
                       ))}
                     </ul>
@@ -446,7 +462,9 @@ export default function AuthorizedUserPage() {
                               clipRule="evenodd"
                             />
                           </svg>
-                          <span className="text-sm text-gray-700 dark:text-slate-200">{con}</span>
+                          <span className="text-sm text-gray-700 dark:text-slate-200">
+                            {con}
+                          </span>
                         </li>
                       ))}
                     </ul>
@@ -482,8 +500,8 @@ export default function AuthorizedUserPage() {
                   onClick={() => setSelectedStrategy(strategy)}
                   className={`w-full py-3 rounded-lg font-semibold transition-all ${
                     index === 0
-                      ? 'bg-green-600 text-white hover:bg-green-700'
-                      : 'bg-gray-900 text-white hover:bg-gray-800'
+                      ? "bg-green-600 text-white hover:bg-green-700"
+                      : "bg-gray-900 text-white hover:bg-gray-800"
                   }`}
                 >
                   View Step-by-Step Guide
@@ -531,7 +549,7 @@ export default function AuthorizedUserPage() {
                   className="mt-1 w-5 h-5 text-green-600"
                 />
                 <label className="text-sm text-gray-700 dark:text-slate-200">
-                  <span className="font-semibold">Credit Utilization:</span>{' '}
+                  <span className="font-semibold">Credit Utilization:</span>{" "}
                   Below 30% (below 10% is ideal)
                 </label>
               </div>
@@ -554,7 +572,7 @@ export default function AuthorizedUserPage() {
                   className="mt-1 w-5 h-5 text-green-600"
                 />
                 <label className="text-sm text-gray-700 dark:text-slate-200">
-                  <span className="font-semibold">Bureau Reporting:</span>{' '}
+                  <span className="font-semibold">Bureau Reporting:</span>{" "}
                   Reports to all 3 bureaus
                 </label>
               </div>

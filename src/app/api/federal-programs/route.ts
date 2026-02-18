@@ -12,24 +12,27 @@ export async function POST(req: NextRequest) {
 
   switch (programType) {
     case "fresh-start":
-      result = await federalIntegrationService.submitFreshStartApplication(
-        applicationData
-      );
+      result =
+        await federalIntegrationService.submitFreshStartApplication(
+          applicationData,
+        );
       break;
     case "rehabilitation":
-      result = await federalIntegrationService.submitRehabilitationApplication(
-        applicationData
-      );
+      result =
+        await federalIntegrationService.submitRehabilitationApplication(
+          applicationData,
+        );
       break;
     case "consolidation":
-      result = await federalIntegrationService.submitConsolidationApplication(
-        applicationData
-      );
+      result =
+        await federalIntegrationService.submitConsolidationApplication(
+          applicationData,
+        );
       break;
     default:
       return NextResponse.json(
         { error: "Invalid program type" },
-        { status: 400 }
+        { status: 400 },
       );
   }
 
@@ -37,20 +40,18 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url, 'http://localhost');
+  const { searchParams } = new URL(req.url, "http://localhost");
   const applicationId = searchParams.get("applicationId");
 
   if (!applicationId) {
     return NextResponse.json(
       { error: "Application ID is required" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
-  const result = await federalIntegrationService.trackApplicationStatus(
-    applicationId
-  );
+  const result =
+    await federalIntegrationService.trackApplicationStatus(applicationId);
 
   return NextResponse.json(result);
 }
-

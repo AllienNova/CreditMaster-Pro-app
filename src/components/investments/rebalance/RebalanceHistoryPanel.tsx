@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Rebalance History Panel
@@ -7,8 +7,8 @@
  * performance metrics, and export capabilities.
  */
 
-import React, { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   History,
   Calendar,
@@ -24,18 +24,18 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
-} from 'lucide-react';
+} from "lucide-react";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type RebalanceStatus = 'completed' | 'partial' | 'failed' | 'cancelled';
+export type RebalanceStatus = "completed" | "partial" | "failed" | "cancelled";
 
 export interface HistoricalTrade {
   assetClass: string;
   label: string;
-  action: 'buy' | 'sell';
+  action: "buy" | "sell";
   amount: number;
   shares?: number;
   executedPrice?: number;
@@ -55,7 +55,7 @@ export interface RebalanceHistoryItem {
   portfolioName: string;
   executedAt: Date;
   status: RebalanceStatus;
-  triggerType: 'scheduled' | 'threshold' | 'manual';
+  triggerType: "scheduled" | "threshold" | "manual";
   preAllocations: AllocationSnapshot[];
   postAllocations: AllocationSnapshot[];
   trades: HistoricalTrade[];
@@ -77,7 +77,7 @@ export interface RebalanceStats {
 
 export interface RebalanceHistoryPanelProps {
   history: RebalanceHistoryItem[];
-  onExport?: (format: 'csv' | 'pdf') => void;
+  onExport?: (format: "csv" | "pdf") => void;
   onViewDetails?: (itemId: string) => void;
 }
 
@@ -90,33 +90,33 @@ const STATUS_CONFIG: Record<
   { color: string; icon: React.ReactNode; label: string }
 > = {
   completed: {
-    color: 'text-emerald-400',
+    color: "text-emerald-400",
     icon: <CheckCircle className="w-4 h-4" />,
-    label: 'Completed',
+    label: "Completed",
   },
   partial: {
-    color: 'text-amber-400',
+    color: "text-amber-400",
     icon: <AlertTriangle className="w-4 h-4" />,
-    label: 'Partial',
+    label: "Partial",
   },
   failed: {
-    color: 'text-red-400',
+    color: "text-red-400",
     icon: <XCircle className="w-4 h-4" />,
-    label: 'Failed',
+    label: "Failed",
   },
   cancelled: {
-    color: 'text-gray-400 dark:text-slate-500',
+    color: "text-gray-400 dark:text-slate-500",
     icon: <XCircle className="w-4 h-4" />,
-    label: 'Cancelled',
+    label: "Cancelled",
   },
 };
 
 const TIME_FILTERS = [
-  { value: 'all', label: 'All Time' },
-  { value: '7d', label: 'Last 7 Days' },
-  { value: '30d', label: 'Last 30 Days' },
-  { value: '90d', label: 'Last 90 Days' },
-  { value: '1y', label: 'Last Year' },
+  { value: "all", label: "All Time" },
+  { value: "7d", label: "Last 7 Days" },
+  { value: "30d", label: "Last 30 Days" },
+  { value: "90d", label: "Last 90 Days" },
+  { value: "1y", label: "Last Year" },
 ];
 
 // ============================================================================
@@ -129,9 +129,9 @@ export function RebalanceHistoryPanel({
   onViewDetails,
 }: RebalanceHistoryPanelProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [timeFilter, setTimeFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState<RebalanceStatus | 'all'>(
-    'all'
+  const [timeFilter, setTimeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState<RebalanceStatus | "all">(
+    "all",
   );
 
   // Filter history
@@ -139,14 +139,14 @@ export function RebalanceHistoryPanel({
     let filtered = [...history];
 
     // Time filter
-    if (timeFilter !== 'all') {
+    if (timeFilter !== "all") {
       const now = new Date();
       const days =
         {
-          '7d': 7,
-          '30d': 30,
-          '90d': 90,
-          '1y': 365,
+          "7d": 7,
+          "30d": 30,
+          "90d": 90,
+          "1y": 365,
         }[timeFilter] || 0;
 
       const cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
@@ -154,35 +154,35 @@ export function RebalanceHistoryPanel({
     }
 
     // Status filter
-    if (statusFilter !== 'all') {
+    if (statusFilter !== "all") {
       filtered = filtered.filter((h) => h.status === statusFilter);
     }
 
     // Sort by date descending
     return filtered.sort(
       (a, b) =>
-        new Date(b.executedAt).getTime() - new Date(a.executedAt).getTime()
+        new Date(b.executedAt).getTime() - new Date(a.executedAt).getTime(),
     );
   }, [history, timeFilter, statusFilter]);
 
   // Calculate stats
   const stats: RebalanceStats = useMemo(() => {
-    const completed = filteredHistory.filter((h) => h.status === 'completed');
+    const completed = filteredHistory.filter((h) => h.status === "completed");
     return {
       totalRebalances: filteredHistory.length,
       totalTradeValue: filteredHistory.reduce(
         (sum, h) => sum + h.totalTradeValue,
-        0
+        0,
       ),
       totalCommissions: filteredHistory.reduce(
         (sum, h) => sum + h.totalCommission,
-        0
+        0,
       ),
       avgDriftReduction:
         completed.length > 0
           ? completed.reduce(
               (sum, h) => sum + (h.driftBefore - h.driftAfter),
-              0
+              0,
             ) / completed.length
           : 0,
       successRate:
@@ -210,14 +210,14 @@ export function RebalanceHistoryPanel({
         {onExport && (
           <div className="flex items-center gap-2">
             <button
-              onClick={() => onExport('csv')}
+              onClick={() => onExport("csv")}
               className="px-3 py-1.5 text-sm text-gray-400 dark:text-slate-500 hover:text-white border border-gray-700 hover:border-gray-600 rounded-lg transition-colors flex items-center gap-2"
             >
               <Download className="w-4 h-4" />
               CSV
             </button>
             <button
-              onClick={() => onExport('pdf')}
+              onClick={() => onExport("pdf")}
               className="px-3 py-1.5 text-sm text-gray-400 dark:text-slate-500 hover:text-white border border-gray-700 hover:border-gray-600 rounded-lg transition-colors flex items-center gap-2"
             >
               <Download className="w-4 h-4" />
@@ -233,31 +233,41 @@ export function RebalanceHistoryPanel({
           <p className="text-2xl font-bold text-white">
             {stats.totalRebalances}
           </p>
-          <p className="text-xs text-gray-500 dark:text-slate-400">Rebalances</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400">
+            Rebalances
+          </p>
         </div>
         <div className="text-center">
           <p className="text-2xl font-bold text-white">
             ${(stats.totalTradeValue / 1000).toFixed(1)}K
           </p>
-          <p className="text-xs text-gray-500 dark:text-slate-400">Trade Volume</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400">
+            Trade Volume
+          </p>
         </div>
         <div className="text-center">
           <p className="text-2xl font-bold text-white">
             ${stats.totalCommissions.toFixed(2)}
           </p>
-          <p className="text-xs text-gray-500 dark:text-slate-400">Commissions</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400">
+            Commissions
+          </p>
         </div>
         <div className="text-center">
           <p className="text-2xl font-bold text-emerald-400">
             {stats.avgDriftReduction.toFixed(1)}%
           </p>
-          <p className="text-xs text-gray-500 dark:text-slate-400">Avg Drift Reduction</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400">
+            Avg Drift Reduction
+          </p>
         </div>
         <div className="text-center">
           <p className="text-2xl font-bold text-blue-400">
             {stats.successRate.toFixed(0)}%
           </p>
-          <p className="text-xs text-gray-500 dark:text-slate-400">Success Rate</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400">
+            Success Rate
+          </p>
         </div>
       </div>
 
@@ -265,7 +275,9 @@ export function RebalanceHistoryPanel({
       <div className="px-6 py-3 border-b border-gray-800 flex items-center gap-4 bg-gray-800/30">
         <div className="flex items-center gap-2">
           <Filter className="w-4 h-4 text-gray-500 dark:text-slate-400" />
-          <span className="text-sm text-gray-500 dark:text-slate-400">Filters:</span>
+          <span className="text-sm text-gray-500 dark:text-slate-400">
+            Filters:
+          </span>
         </div>
 
         <select
@@ -283,7 +295,7 @@ export function RebalanceHistoryPanel({
         <select
           value={statusFilter}
           onChange={(e) =>
-            setStatusFilter(e.target.value as RebalanceStatus | 'all')
+            setStatusFilter(e.target.value as RebalanceStatus | "all")
           }
           className="px-3 py-1.5 text-sm bg-gray-800 border border-gray-700 rounded-lg text-gray-300"
         >
@@ -300,11 +312,13 @@ export function RebalanceHistoryPanel({
         {filteredHistory.length === 0 ? (
           <div className="px-6 py-12 text-center">
             <BarChart3 className="w-12 h-12 text-gray-600 dark:text-slate-300 mx-auto mb-3" />
-            <p className="text-gray-400 dark:text-slate-500">No rebalancing history found</p>
+            <p className="text-gray-400 dark:text-slate-500">
+              No rebalancing history found
+            </p>
             <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
-              {timeFilter !== 'all' || statusFilter !== 'all'
-                ? 'Try adjusting your filters'
-                : 'Rebalancing events will appear here'}
+              {timeFilter !== "all" || statusFilter !== "all"
+                ? "Try adjusting your filters"
+                : "Rebalancing events will appear here"}
             </p>
           </div>
         ) : (
@@ -341,8 +355,8 @@ export function RebalanceHistoryPanel({
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
                             {new Date(item.executedAt).toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit',
+                              hour: "2-digit",
+                              minute: "2-digit",
                             })}
                           </span>
                           <span className="capitalize">{item.triggerType}</span>
@@ -361,10 +375,12 @@ export function RebalanceHistoryPanel({
                       </div>
                       <div className="text-right">
                         <p className="text-sm text-emerald-400">
-                          {item.driftBefore.toFixed(1)}% →{' '}
+                          {item.driftBefore.toFixed(1)}% →{" "}
                           {item.driftAfter.toFixed(1)}%
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-slate-400">drift</p>
+                        <p className="text-xs text-gray-500 dark:text-slate-400">
+                          drift
+                        </p>
                       </div>
                       {isExpanded ? (
                         <ChevronUp className="w-5 h-5 text-gray-500 dark:text-slate-400" />
@@ -380,7 +396,7 @@ export function RebalanceHistoryPanel({
                   {isExpanded && (
                     <motion.div
                       initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
+                      animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       className="overflow-hidden"
                     >
@@ -395,13 +411,13 @@ export function RebalanceHistoryPanel({
                               <div
                                 key={idx}
                                 className={`flex items-center justify-between p-3 rounded-lg ${
-                                  trade.action === 'buy'
-                                    ? 'bg-emerald-500/5 border border-emerald-500/20'
-                                    : 'bg-red-500/5 border border-red-500/20'
+                                  trade.action === "buy"
+                                    ? "bg-emerald-500/5 border border-emerald-500/20"
+                                    : "bg-red-500/5 border border-red-500/20"
                                 }`}
                               >
                                 <div className="flex items-center gap-3">
-                                  {trade.action === 'buy' ? (
+                                  {trade.action === "buy" ? (
                                     <TrendingUp className="w-4 h-4 text-emerald-400" />
                                   ) : (
                                     <TrendingDown className="w-4 h-4 text-red-400" />
@@ -421,12 +437,12 @@ export function RebalanceHistoryPanel({
                                 <div className="text-right">
                                   <p
                                     className={`text-sm font-medium ${
-                                      trade.action === 'buy'
-                                        ? 'text-emerald-400'
-                                        : 'text-red-400'
+                                      trade.action === "buy"
+                                        ? "text-emerald-400"
+                                        : "text-red-400"
                                     }`}
                                   >
-                                    {trade.action === 'buy' ? '+' : '-'}$
+                                    {trade.action === "buy" ? "+" : "-"}$
                                     {trade.amount.toLocaleString()}
                                   </p>
                                   {trade.commission !== undefined && (
@@ -488,7 +504,9 @@ export function RebalanceHistoryPanel({
                         <div className="flex items-center justify-between text-sm bg-gray-800/50 rounded-lg p-4">
                           <div className="flex items-center gap-6">
                             <div>
-                              <span className="text-gray-500 dark:text-slate-400">Commission:</span>
+                              <span className="text-gray-500 dark:text-slate-400">
+                                Commission:
+                              </span>
                               <span className="text-white ml-2">
                                 ${item.totalCommission.toFixed(2)}
                               </span>

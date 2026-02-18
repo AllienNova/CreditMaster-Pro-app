@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 
 export default function AdminConfigPage() {
   const [config, setConfig] = useState({
     rateLimits: { api: 1000, disputes: 50, reports: 10 },
     emailSettings: {
-      fromName: 'Fynvita',
-      fromEmail: 'noreply@fynvita.com',
-      replyTo: 'support@fynvita.com',
+      fromName: "Fynvita",
+      fromEmail: "noreply@fynvita.com",
+      replyTo: "support@fynvita.com",
     },
     security: { sessionTimeout: 30, maxLoginAttempts: 5, lockoutDuration: 15 },
     features: { maintenanceMode: false, signupEnabled: true, trialDays: 7 },
@@ -19,7 +19,7 @@ export default function AdminConfigPage() {
     setSaving(true);
     await new Promise((resolve) => setTimeout(resolve, 1000));
     setSaving(false);
-    alert('Configuration saved!');
+    alert("Configuration saved!");
   };
 
   return (
@@ -33,7 +33,7 @@ export default function AdminConfigPage() {
           disabled={saving}
           className="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 disabled:opacity-50 transition"
         >
-          {saving ? 'Saving...' : 'Save Changes'}
+          {saving ? "Saving..." : "Save Changes"}
         </button>
       </div>
 
@@ -244,7 +244,9 @@ export default function AdminConfigPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-gray-900 dark:text-white">Maintenance Mode</p>
+                <p className="font-medium text-gray-900 dark:text-white">
+                  Maintenance Mode
+                </p>
                 <p className="text-sm text-gray-500 dark:text-slate-400">
                   Disable access for non-admin users
                 </p>
@@ -259,16 +261,18 @@ export default function AdminConfigPage() {
                     },
                   })
                 }
-                className={`w-12 h-6 rounded-full transition ${config.features.maintenanceMode ? 'bg-red-500' : 'bg-gray-300'}`}
+                className={`w-12 h-6 rounded-full transition ${config.features.maintenanceMode ? "bg-red-500" : "bg-gray-300"}`}
               >
                 <span
-                  className={`block w-5 h-5 bg-white dark:bg-slate-800 rounded-full shadow transform transition ${config.features.maintenanceMode ? 'translate-x-6' : 'translate-x-0.5'}`}
+                  className={`block w-5 h-5 bg-white dark:bg-slate-800 rounded-full shadow transform transition ${config.features.maintenanceMode ? "translate-x-6" : "translate-x-0.5"}`}
                 />
               </button>
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-gray-900 dark:text-white">Signup Enabled</p>
+                <p className="font-medium text-gray-900 dark:text-white">
+                  Signup Enabled
+                </p>
                 <p className="text-sm text-gray-500 dark:text-slate-400">
                   Allow new user registrations
                 </p>
@@ -283,16 +287,18 @@ export default function AdminConfigPage() {
                     },
                   })
                 }
-                className={`w-12 h-6 rounded-full transition ${config.features.signupEnabled ? 'bg-emerald-500' : 'bg-gray-300'}`}
+                className={`w-12 h-6 rounded-full transition ${config.features.signupEnabled ? "bg-emerald-500" : "bg-gray-300"}`}
               >
                 <span
-                  className={`block w-5 h-5 bg-white dark:bg-slate-800 rounded-full shadow transform transition ${config.features.signupEnabled ? 'translate-x-6' : 'translate-x-0.5'}`}
+                  className={`block w-5 h-5 bg-white dark:bg-slate-800 rounded-full shadow transform transition ${config.features.signupEnabled ? "translate-x-6" : "translate-x-0.5"}`}
                 />
               </button>
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-gray-900 dark:text-white">Free Trial Days</p>
+                <p className="font-medium text-gray-900 dark:text-white">
+                  Free Trial Days
+                </p>
                 <p className="text-sm text-gray-500 dark:text-slate-400">
                   Number of days for free trial
                 </p>

@@ -4,7 +4,7 @@
  * Manages financial product offers, matching, and compliance.
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 import {
   Offer,
   OfferCategory,
@@ -20,8 +20,8 @@ import {
   OfferClick,
   OfferComparison,
   ComparisonField,
-} from './types';
-import { trackingService } from '../affiliate/tracking-service';
+} from "./types";
+import { trackingService } from "../affiliate/tracking-service";
 
 // =============================================================================
 // Configuration
@@ -49,14 +49,14 @@ class OfferService {
 
     // Get partner name
     const { data: partner } = await supabase
-      .from('affiliate_partners')
-      .select('name')
-      .eq('id', input.partnerId)
+      .from("affiliate_partners")
+      .select("name")
+      .eq("id", input.partnerId)
       .single();
 
     const offerData = {
       partner_id: input.partnerId,
-      partner_name: partner?.name || 'Unknown Partner',
+      partner_name: partner?.name || "Unknown Partner",
       category: input.category,
       name: input.name,
       headline: input.headline,
@@ -83,17 +83,17 @@ class OfferService {
       disclosure_id: input.disclosureId,
       legal_disclaimer: input.legalDisclaimer,
       sponsored_content: input.sponsoredContent || false,
-      status: 'active' as OfferStatus,
+      status: "active" as OfferStatus,
       start_date: input.startDate?.toISOString(),
       end_date: input.endDate?.toISOString(),
-      regions: input.regions || ['US'],
+      regions: input.regions || ["US"],
       created_at: now.toISOString(),
       updated_at: now.toISOString(),
       metadata: input.metadata,
     };
 
     const { data, error } = await supabase
-      .from('offers')
+      .from("offers")
       .insert(offerData)
       .select()
       .single();
@@ -115,41 +115,55 @@ class OfferService {
 
     if (input.name !== undefined) updateData.name = input.name;
     if (input.headline !== undefined) updateData.headline = input.headline;
-    if (input.description !== undefined) updateData.description = input.description;
+    if (input.description !== undefined)
+      updateData.description = input.description;
     if (input.imageUrl !== undefined) updateData.image_url = input.imageUrl;
-    if (input.destinationUrl !== undefined) updateData.destination_url = input.destinationUrl;
+    if (input.destinationUrl !== undefined)
+      updateData.destination_url = input.destinationUrl;
     if (input.apr !== undefined) updateData.apr = input.apr;
     if (input.fees !== undefined) updateData.fees = input.fees;
     if (input.rewards !== undefined) updateData.rewards = input.rewards;
-    if (input.creditLimit !== undefined) updateData.credit_limit = input.creditLimit;
-    if (input.loanAmount !== undefined) updateData.loan_amount = input.loanAmount;
-    if (input.minCreditScore !== undefined) updateData.min_credit_score = input.minCreditScore;
-    if (input.maxCreditScore !== undefined) updateData.max_credit_score = input.maxCreditScore;
+    if (input.creditLimit !== undefined)
+      updateData.credit_limit = input.creditLimit;
+    if (input.loanAmount !== undefined)
+      updateData.loan_amount = input.loanAmount;
+    if (input.minCreditScore !== undefined)
+      updateData.min_credit_score = input.minCreditScore;
+    if (input.maxCreditScore !== undefined)
+      updateData.max_credit_score = input.maxCreditScore;
     if (input.minIncome !== undefined) updateData.min_income = input.minIncome;
     if (input.residencyRequirements !== undefined)
       updateData.residency_requirements = input.residencyRequirements;
-    if (input.ageRequirement !== undefined) updateData.age_requirement = input.ageRequirement;
+    if (input.ageRequirement !== undefined)
+      updateData.age_requirement = input.ageRequirement;
     if (input.affiliateOfferId !== undefined)
       updateData.affiliate_offer_id = input.affiliateOfferId;
-    if (input.commissionType !== undefined) updateData.commission_type = input.commissionType;
-    if (input.commissionValue !== undefined) updateData.commission_value = input.commissionValue;
+    if (input.commissionType !== undefined)
+      updateData.commission_type = input.commissionType;
+    if (input.commissionValue !== undefined)
+      updateData.commission_value = input.commissionValue;
     if (input.rank !== undefined) updateData.rank = input.rank;
     if (input.featured !== undefined) updateData.featured = input.featured;
     if (input.badge !== undefined) updateData.badge = input.badge;
     if (input.tags !== undefined) updateData.tags = input.tags;
-    if (input.disclosureId !== undefined) updateData.disclosure_id = input.disclosureId;
-    if (input.legalDisclaimer !== undefined) updateData.legal_disclaimer = input.legalDisclaimer;
-    if (input.sponsoredContent !== undefined) updateData.sponsored_content = input.sponsoredContent;
+    if (input.disclosureId !== undefined)
+      updateData.disclosure_id = input.disclosureId;
+    if (input.legalDisclaimer !== undefined)
+      updateData.legal_disclaimer = input.legalDisclaimer;
+    if (input.sponsoredContent !== undefined)
+      updateData.sponsored_content = input.sponsoredContent;
     if (input.status !== undefined) updateData.status = input.status;
-    if (input.startDate !== undefined) updateData.start_date = input.startDate?.toISOString();
-    if (input.endDate !== undefined) updateData.end_date = input.endDate?.toISOString();
+    if (input.startDate !== undefined)
+      updateData.start_date = input.startDate?.toISOString();
+    if (input.endDate !== undefined)
+      updateData.end_date = input.endDate?.toISOString();
     if (input.regions !== undefined) updateData.regions = input.regions;
     if (input.metadata !== undefined) updateData.metadata = input.metadata;
 
     const { data, error } = await supabase
-      .from('offers')
+      .from("offers")
       .update(updateData)
-      .eq('id', id)
+      .eq("id", id)
       .select()
       .single();
 
@@ -164,10 +178,14 @@ class OfferService {
    * Get offer by ID
    */
   async getOffer(id: string): Promise<Offer | null> {
-    const { data, error } = await supabase.from('offers').select().eq('id', id).single();
+    const { data, error } = await supabase
+      .from("offers")
+      .select()
+      .eq("id", id)
+      .single();
 
     if (error) {
-      if (error.code === 'PGRST116') return null;
+      if (error.code === "PGRST116") return null;
       throw new Error(`Failed to get offer: ${error.message}`);
     }
 
@@ -186,31 +204,34 @@ class OfferService {
     limit?: number;
     offset?: number;
   }): Promise<Offer[]> {
-    let query = supabase.from('offers').select();
+    let query = supabase.from("offers").select();
 
     if (filters?.category) {
-      query = query.eq('category', filters.category);
+      query = query.eq("category", filters.category);
     }
     if (filters?.status) {
-      query = query.eq('status', filters.status);
+      query = query.eq("status", filters.status);
     }
     if (filters?.partnerId) {
-      query = query.eq('partner_id', filters.partnerId);
+      query = query.eq("partner_id", filters.partnerId);
     }
     if (filters?.featured !== undefined) {
-      query = query.eq('featured', filters.featured);
+      query = query.eq("featured", filters.featured);
     }
     if (filters?.region) {
-      query = query.contains('regions', [filters.region]);
+      query = query.contains("regions", [filters.region]);
     }
 
-    query = query.order('rank', { ascending: true });
+    query = query.order("rank", { ascending: true });
 
     if (filters?.limit) {
       query = query.limit(filters.limit);
     }
     if (filters?.offset) {
-      query = query.range(filters.offset, filters.offset + (filters.limit || 10) - 1);
+      query = query.range(
+        filters.offset,
+        filters.offset + (filters.limit || 10) - 1,
+      );
     }
 
     const { data, error } = await query;
@@ -226,7 +247,7 @@ class OfferService {
    * Archive an offer
    */
   async archiveOffer(id: string): Promise<void> {
-    await this.updateOffer(id, { status: 'archived' });
+    await this.updateOffer(id, { status: "archived" });
   }
 
   // ===========================================================================
@@ -239,24 +260,30 @@ class OfferService {
   async matchOffers(request: MatchRequest): Promise<MatchResult[]> {
     // Get active offers for the category
     let query = supabase
-      .from('offers')
+      .from("offers")
       .select()
-      .eq('category', request.category)
-      .eq('status', 'active');
+      .eq("category", request.category)
+      .eq("status", "active");
 
     if (request.region) {
-      query = query.contains('regions', [request.region]);
+      query = query.contains("regions", [request.region]);
     }
 
     if (request.excludePartners && request.excludePartners.length > 0) {
-      query = query.not('partner_id', 'in', `(${request.excludePartners.join(',')})`);
+      query = query.not(
+        "partner_id",
+        "in",
+        `(${request.excludePartners.join(",")})`,
+      );
     }
 
     if (!request.includeSponsored) {
-      query = query.eq('sponsored_content', false);
+      query = query.eq("sponsored_content", false);
     }
 
-    const { data: offers, error } = await query.order('rank', { ascending: true });
+    const { data: offers, error } = await query.order("rank", {
+      ascending: true,
+    });
 
     if (error) {
       throw new Error(`Failed to match offers: ${error.message}`);
@@ -297,31 +324,33 @@ class OfferService {
    */
   checkEligibility(
     offer: Offer,
-    profile: UserProfile
+    profile: UserProfile,
   ): { result: EligibilityResult; reasons: string[] } {
     const reasons: string[] = [];
-    let result: EligibilityResult = 'eligible';
+    let result: EligibilityResult = "eligible";
 
     // Credit score check
     if (offer.minCreditScore && profile.creditScore) {
       if (profile.creditScore < offer.minCreditScore) {
         reasons.push(`Minimum credit score ${offer.minCreditScore} required`);
-        result = 'ineligible';
+        result = "ineligible";
       }
     }
 
     if (offer.maxCreditScore && profile.creditScore) {
       if (profile.creditScore > offer.maxCreditScore) {
         reasons.push(`Maximum credit score ${offer.maxCreditScore}`);
-        result = 'ineligible';
+        result = "ineligible";
       }
     }
 
     // Income check
     if (offer.minIncome && profile.income) {
       if (profile.income < offer.minIncome) {
-        reasons.push(`Minimum income $${offer.minIncome.toLocaleString()} required`);
-        result = 'ineligible';
+        reasons.push(
+          `Minimum income $${offer.minIncome.toLocaleString()} required`,
+        );
+        result = "ineligible";
       }
     }
 
@@ -329,36 +358,39 @@ class OfferService {
     if (offer.ageRequirement && profile.age) {
       if (profile.age < offer.ageRequirement.min) {
         reasons.push(`Minimum age ${offer.ageRequirement.min} required`);
-        result = 'ineligible';
+        result = "ineligible";
       }
       if (offer.ageRequirement.max && profile.age > offer.ageRequirement.max) {
         reasons.push(`Maximum age ${offer.ageRequirement.max}`);
-        result = 'ineligible';
+        result = "ineligible";
       }
     }
 
     // Residency check
     if (offer.residencyRequirements && offer.residencyRequirements.length > 0) {
-      if (profile.residency && !offer.residencyRequirements.includes(profile.residency)) {
-        reasons.push('Not available in your state/country');
-        result = 'ineligible';
+      if (
+        profile.residency &&
+        !offer.residencyRequirements.includes(profile.residency)
+      ) {
+        reasons.push("Not available in your state/country");
+        result = "ineligible";
       }
     }
 
     // If missing required info, mark for review
-    if (result === 'eligible') {
+    if (result === "eligible") {
       if (!profile.creditScore && offer.minCreditScore) {
-        result = 'needs_review';
-        reasons.push('Credit score needed for final eligibility');
+        result = "needs_review";
+        reasons.push("Credit score needed for final eligibility");
       }
       if (!profile.income && offer.minIncome) {
-        result = 'needs_review';
-        reasons.push('Income verification needed');
+        result = "needs_review";
+        reasons.push("Income verification needed");
       }
     }
 
-    if (result === 'eligible') {
-      reasons.push('You meet all eligibility requirements');
+    if (result === "eligible") {
+      reasons.push("You meet all eligibility requirements");
     }
 
     return { result, reasons };
@@ -435,7 +467,9 @@ class OfferService {
     // APR highlight
     if (offer.apr) {
       if (offer.apr.introRate !== undefined && offer.apr.introPeriodMonths) {
-        highlights.push(`${offer.apr.introRate}% intro APR for ${offer.apr.introPeriodMonths} months`);
+        highlights.push(
+          `${offer.apr.introRate}% intro APR for ${offer.apr.introPeriodMonths} months`,
+        );
       } else if (offer.apr.min < 15) {
         highlights.push(`Low ${offer.apr.min}% APR`);
       }
@@ -444,20 +478,24 @@ class OfferService {
     // Rewards highlight
     if (offer.rewards) {
       if (offer.rewards.signupBonus) {
-        highlights.push(`Earn ${offer.rewards.signupBonus} bonus after spending $${offer.rewards.signupBonusSpend}`);
+        highlights.push(
+          `Earn ${offer.rewards.signupBonus} bonus after spending $${offer.rewards.signupBonusSpend}`,
+        );
       }
       if (offer.rewards.earnRate > 1.5) {
-        highlights.push(`Earn ${offer.rewards.earnRate}% ${offer.rewards.type}`);
+        highlights.push(
+          `Earn ${offer.rewards.earnRate}% ${offer.rewards.type}`,
+        );
       }
     }
 
     // Fee highlight
     if (offer.fees) {
       if (offer.fees.noFees || offer.fees.annual === 0) {
-        highlights.push('No annual fee');
+        highlights.push("No annual fee");
       }
       if (offer.fees.foreignTransaction === 0) {
-        highlights.push('No foreign transaction fees');
+        highlights.push("No foreign transaction fees");
       }
     }
 
@@ -468,7 +506,7 @@ class OfferService {
 
     // Credit limit highlight
     if (offer.creditLimit?.prequalification) {
-      highlights.push('Check your rate without affecting credit score');
+      highlights.push("Check your rate without affecting credit score");
     }
 
     // Badge
@@ -495,7 +533,7 @@ class OfferService {
     }
 
     if (offers.length === 0) {
-      throw new Error('No valid offers found for comparison');
+      throw new Error("No valid offers found for comparison");
     }
 
     // Determine comparison fields based on category
@@ -525,33 +563,73 @@ class OfferService {
    */
   private getComparisonFields(category: OfferCategory): ComparisonField[] {
     const commonFields: ComparisonField[] = [
-      { key: 'apr', label: 'APR', type: 'percentage', higherIsBetter: false },
-      { key: 'annualFee', label: 'Annual Fee', type: 'currency', higherIsBetter: false },
+      { key: "apr", label: "APR", type: "percentage", higherIsBetter: false },
+      {
+        key: "annualFee",
+        label: "Annual Fee",
+        type: "currency",
+        higherIsBetter: false,
+      },
     ];
 
     switch (category) {
-      case 'credit_card':
+      case "credit_card":
         return [
           ...commonFields,
-          { key: 'rewardsRate', label: 'Rewards Rate', type: 'percentage', higherIsBetter: true },
-          { key: 'signupBonus', label: 'Signup Bonus', type: 'currency', higherIsBetter: true },
-          { key: 'foreignTxFee', label: 'Foreign Transaction Fee', type: 'percentage', higherIsBetter: false },
+          {
+            key: "rewardsRate",
+            label: "Rewards Rate",
+            type: "percentage",
+            higherIsBetter: true,
+          },
+          {
+            key: "signupBonus",
+            label: "Signup Bonus",
+            type: "currency",
+            higherIsBetter: true,
+          },
+          {
+            key: "foreignTxFee",
+            label: "Foreign Transaction Fee",
+            type: "percentage",
+            higherIsBetter: false,
+          },
         ];
 
-      case 'personal_loan':
-      case 'debt_consolidation':
+      case "personal_loan":
+      case "debt_consolidation":
         return [
           ...commonFields,
-          { key: 'minAmount', label: 'Min Loan Amount', type: 'currency' },
-          { key: 'maxAmount', label: 'Max Loan Amount', type: 'currency', higherIsBetter: true },
-          { key: 'originationFee', label: 'Origination Fee', type: 'percentage', higherIsBetter: false },
+          { key: "minAmount", label: "Min Loan Amount", type: "currency" },
+          {
+            key: "maxAmount",
+            label: "Max Loan Amount",
+            type: "currency",
+            higherIsBetter: true,
+          },
+          {
+            key: "originationFee",
+            label: "Origination Fee",
+            type: "percentage",
+            higherIsBetter: false,
+          },
         ];
 
-      case 'mortgage':
+      case "mortgage":
         return [
-          { key: 'apr', label: 'APR', type: 'percentage', higherIsBetter: false },
-          { key: 'points', label: 'Points', type: 'number', higherIsBetter: false },
-          { key: 'closingCosts', label: 'Closing Costs', type: 'text' },
+          {
+            key: "apr",
+            label: "APR",
+            type: "percentage",
+            higherIsBetter: false,
+          },
+          {
+            key: "points",
+            label: "Points",
+            type: "number",
+            higherIsBetter: false,
+          },
+          { key: "closingCosts", label: "Closing Costs", type: "text" },
         ];
 
       default:
@@ -564,34 +642,34 @@ class OfferService {
    */
   private extractComparisonValues(
     offer: Offer,
-    fields: ComparisonField[]
+    fields: ComparisonField[],
   ): Record<string, unknown> {
     const values: Record<string, unknown> = {};
 
     for (const field of fields) {
       switch (field.key) {
-        case 'apr':
+        case "apr":
           values[field.key] = offer.apr?.min;
           break;
-        case 'annualFee':
+        case "annualFee":
           values[field.key] = offer.fees?.annual || 0;
           break;
-        case 'rewardsRate':
+        case "rewardsRate":
           values[field.key] = offer.rewards?.earnRate;
           break;
-        case 'signupBonus':
+        case "signupBonus":
           values[field.key] = offer.rewards?.signupBonus;
           break;
-        case 'foreignTxFee':
+        case "foreignTxFee":
           values[field.key] = offer.fees?.foreignTransaction;
           break;
-        case 'minAmount':
+        case "minAmount":
           values[field.key] = offer.loanAmount?.min;
           break;
-        case 'maxAmount':
+        case "maxAmount":
           values[field.key] = offer.loanAmount?.max;
           break;
-        case 'originationFee':
+        case "originationFee":
           values[field.key] = offer.fees?.originationPercent;
           break;
         default:
@@ -608,7 +686,7 @@ class OfferService {
   private determineWinner(
     offers: Offer[],
     fields: ComparisonField[],
-    values: Record<string, Record<string, unknown>>
+    values: Record<string, Record<string, unknown>>,
   ): { offerId: string; reason: string } | undefined {
     const scores: Record<string, number> = {};
 
@@ -620,14 +698,17 @@ class OfferService {
     // Score each field
     for (const field of fields) {
       const fieldValues = offers
-        .map(o => ({ offerId: o.id, value: values[o.id][field.key] as number }))
-        .filter(v => v.value !== null && v.value !== undefined);
+        .map((o) => ({
+          offerId: o.id,
+          value: values[o.id][field.key] as number,
+        }))
+        .filter((v) => v.value !== null && v.value !== undefined);
 
       if (fieldValues.length === 0) continue;
 
       // Sort and assign points
       fieldValues.sort((a, b) =>
-        field.higherIsBetter ? b.value - a.value : a.value - b.value
+        field.higherIsBetter ? b.value - a.value : a.value - b.value,
       );
 
       // Best gets 3 points, second gets 1
@@ -648,7 +729,7 @@ class OfferService {
 
     if (!winnerId) return undefined;
 
-    const winner = offers.find(o => o.id === winnerId);
+    const winner = offers.find((o) => o.id === winnerId);
     return {
       offerId: winnerId,
       reason: `${winner?.name} offers the best overall value`,
@@ -667,7 +748,7 @@ class OfferService {
     page: string,
     position: number,
     userId?: string,
-    sessionId?: string
+    sessionId?: string,
   ): Promise<Impression> {
     const impressionData = {
       offer_id: offerId,
@@ -679,7 +760,7 @@ class OfferService {
     };
 
     const { data, error } = await supabase
-      .from('offer_impressions')
+      .from("offer_impressions")
       .insert(impressionData)
       .select()
       .single();
@@ -708,7 +789,7 @@ class OfferService {
     userId?: string,
     sessionId?: string,
     userAgent?: string,
-    ipAddress?: string
+    ipAddress?: string,
   ): Promise<{ clickId: string; destinationUrl: string }> {
     const offer = await this.getOffer(offerId);
     if (!offer) {
@@ -728,7 +809,7 @@ class OfferService {
     });
 
     // Record in offer clicks table
-    await supabase.from('offer_clicks').insert({
+    await supabase.from("offer_clicks").insert({
       offer_id: offerId,
       user_id: userId,
       session_id: sessionId,
@@ -738,7 +819,10 @@ class OfferService {
     });
 
     // Build tracking URL
-    const destinationUrl = this.buildTrackingUrl(offer.destinationUrl, click.clickId);
+    const destinationUrl = this.buildTrackingUrl(
+      offer.destinationUrl,
+      click.clickId,
+    );
 
     return {
       clickId: click.clickId,
@@ -751,7 +835,7 @@ class OfferService {
    */
   private buildTrackingUrl(baseUrl: string, clickId: string): string {
     const url = new URL(baseUrl);
-    url.searchParams.set('fynvita_click', clickId);
+    url.searchParams.set("fynvita_click", clickId);
     return url.toString();
   }
 
@@ -764,7 +848,7 @@ class OfferService {
    */
   async getOfferDisclosures(offerId: string): Promise<OfferDisclosure[]> {
     const { data, error } = await supabase
-      .from('offer_disclosures')
+      .from("offer_disclosures")
       .select(
         `
         offer_id,
@@ -776,9 +860,9 @@ class OfferService {
           short_text,
           full_text
         )
-      `
+      `,
       )
-      .eq('offer_id', offerId);
+      .eq("offer_id", offerId);
 
     if (error) {
       throw new Error(`Failed to get disclosures: ${error.message}`);
@@ -787,11 +871,15 @@ class OfferService {
     return (data || []).map((row: Record<string, unknown>) => ({
       offerId: row.offer_id as string,
       disclosureId: row.disclosure_id as string,
-      disclosureType: (row.disclosures as Record<string, unknown>)?.type as OfferDisclosure['disclosureType'],
-      shortText: (row.disclosures as Record<string, unknown>)?.short_text as string,
-      fullText: (row.disclosures as Record<string, unknown>)?.full_text as string,
+      disclosureType: (row.disclosures as Record<string, unknown>)
+        ?.type as OfferDisclosure["disclosureType"],
+      shortText: (row.disclosures as Record<string, unknown>)
+        ?.short_text as string,
+      fullText: (row.disclosures as Record<string, unknown>)
+        ?.full_text as string,
       mustDisplay: row.must_display as boolean,
-      displayLocation: row.display_location as OfferDisclosure['displayLocation'],
+      displayLocation:
+        row.display_location as OfferDisclosure["displayLocation"],
     }));
   }
 
@@ -800,17 +888,17 @@ class OfferService {
    */
   async getAdvertiserDisclosure(): Promise<string> {
     const { data } = await supabase
-      .from('disclosures')
-      .select('full_text')
-      .eq('type', 'advertiser_disclosure')
-      .eq('is_active', true)
-      .order('effective_date', { ascending: false })
+      .from("disclosures")
+      .select("full_text")
+      .eq("type", "advertiser_disclosure")
+      .eq("is_active", true)
+      .order("effective_date", { ascending: false })
       .limit(1)
       .single();
 
     return (
       data?.full_text ||
-      'We may receive compensation from our partners for featured products. This does not influence our editorial content.'
+      "We may receive compensation from our partners for featured products. This does not influence our editorial content."
     );
   }
 
@@ -832,18 +920,18 @@ class OfferService {
       description: row.description as string,
       imageUrl: row.image_url as string | undefined,
       destinationUrl: row.destination_url as string,
-      apr: row.apr as Offer['apr'],
-      fees: row.fees as Offer['fees'],
-      rewards: row.rewards as Offer['rewards'],
-      creditLimit: row.credit_limit as Offer['creditLimit'],
-      loanAmount: row.loan_amount as Offer['loanAmount'],
+      apr: row.apr as Offer["apr"],
+      fees: row.fees as Offer["fees"],
+      rewards: row.rewards as Offer["rewards"],
+      creditLimit: row.credit_limit as Offer["creditLimit"],
+      loanAmount: row.loan_amount as Offer["loanAmount"],
       minCreditScore: row.min_credit_score as number | undefined,
       maxCreditScore: row.max_credit_score as number | undefined,
       minIncome: row.min_income as number | undefined,
       residencyRequirements: row.residency_requirements as string[] | undefined,
-      ageRequirement: row.age_requirement as Offer['ageRequirement'],
+      ageRequirement: row.age_requirement as Offer["ageRequirement"],
       affiliateOfferId: row.affiliate_offer_id as string | undefined,
-      commissionType: row.commission_type as Offer['commissionType'],
+      commissionType: row.commission_type as Offer["commissionType"],
       commissionValue: row.commission_value as number,
       rank: row.rank as number,
       featured: row.featured as boolean,
@@ -853,7 +941,9 @@ class OfferService {
       legalDisclaimer: row.legal_disclaimer as string | undefined,
       sponsoredContent: row.sponsored_content as boolean,
       status: row.status as OfferStatus,
-      startDate: row.start_date ? new Date(row.start_date as string) : undefined,
+      startDate: row.start_date
+        ? new Date(row.start_date as string)
+        : undefined,
       endDate: row.end_date ? new Date(row.end_date as string) : undefined,
       regions: row.regions as string[],
       createdAt: new Date(row.created_at as string),

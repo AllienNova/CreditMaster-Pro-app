@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 export interface StrategyRegulation {
   name: string;
@@ -11,7 +11,11 @@ export interface Strategy {
   regulation: StrategyRegulation;
 }
 
-export const StrategyDashboard = ({ strategies }: { strategies: Strategy[] }) => {
+export const StrategyDashboard = ({
+  strategies,
+}: {
+  strategies: Strategy[];
+}) => {
   return (
     <div className="p-4">
       <h2 className="text-2xl font-bold mb-4">Strategy Dashboard</h2>
@@ -20,7 +24,14 @@ export const StrategyDashboard = ({ strategies }: { strategies: Strategy[] }) =>
           <div key={index} className="border p-4 rounded-lg">
             <h3 className="text-xl font-semibold mb-2">{strategy.name}</h3>
             <p className="mb-4">{strategy.description}</p>
-            <a href={strategy.regulation.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Learn More</a>
+            <a
+              href={strategy.regulation.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500 hover:underline"
+            >
+              Learn More
+            </a>
           </div>
         ))}
       </div>

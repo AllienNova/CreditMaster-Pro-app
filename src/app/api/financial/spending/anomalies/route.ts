@@ -7,22 +7,22 @@
  * Phase 2.3: Spending Intelligence
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getSpendingAnalyzer } from '@/lib/financial/spending-analyzer';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { rbac } from '@/lib/auth/rbac';
+import { NextRequest, NextResponse } from "next/server";
+import { getSpendingAnalyzer } from "@/lib/financial/spending-analyzer";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { rbac } from "@/lib/auth/rbac";
 import {
   applyFinancialAPIMiddleware,
   finalizeResponse,
-} from '@/lib/api/financial-api-middleware';
-import { z } from 'zod';
+} from "@/lib/api/financial-api-middleware";
+import { z } from "zod";
 
 // ============================================================================
 // VALIDATION SCHEMA
 // ============================================================================
 
 const AnomaliesQuerySchema = z.object({
-  sensitivity: z.enum(['low', 'medium', 'high']).optional().default('medium'),
+  sensitivity: z.enum(["low", "medium", "high"]).optional().default("medium"),
   timeframe: z.coerce.number().min(7).max(365).optional().default(30),
 });
 
@@ -96,8 +96,8 @@ export async function GET(request: NextRequest) {
     // Validate query parameters
     const { searchParams } = new URL(request.url);
     const queryParams = {
-      sensitivity: searchParams.get('sensitivity') || 'medium',
-      timeframe: searchParams.get('timeframe') || '30',
+      sensitivity: searchParams.get("sensitivity") || "medium",
+      timeframe: searchParams.get("timeframe") || "30",
     };
 
     const validatedParams = AnomaliesQuerySchema.parse(queryParams);
@@ -108,8 +108,8 @@ export async function GET(request: NextRequest) {
     // Detect anomalies
     const result = await analyzer.detectAnomalies(
       userId!,
-      validatedParams.sensitivity as 'low' | 'medium' | 'high',
-      validatedParams.timeframe
+      validatedParams.sensitivity as "low" | "medium" | "high",
+      validatedParams.timeframe,
     );
 
     return finalizeResponse(
@@ -128,10 +128,10 @@ export async function GET(request: NextRequest) {
         },
       }),
       middlewareStartTime,
-      userId
+      userId,
     );
   } catch (error) {
-    console.error('Error detecting spending anomalies:', error);
+    console.error("Error detecting spending anomalies:", error);
 
     return finalizeResponse(
       request,
@@ -139,16 +139,15 @@ export async function GET(request: NextRequest) {
         {
           success: false,
           error: {
-            code: 'INTERNAL_ERROR',
-            message: 'Failed to detect spending anomalies',
-            details: error instanceof Error ? error.message : 'Unknown error',
+            code: "INTERNAL_ERROR",
+            message: "Failed to detect spending anomalies",
+            details: error instanceof Error ? error.message : "Unknown error",
           },
         },
-        { status: 500 }
+        { status: 500 },
       ),
       middlewareStartTime,
-      userId
+      userId,
     );
   }
 }
-

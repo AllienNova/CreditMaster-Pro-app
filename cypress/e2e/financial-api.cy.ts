@@ -5,13 +5,13 @@
  * All financial endpoints require authentication.
  */
 
-describe('Financial API — Auth Required', () => {
+describe("Financial API — Auth Required", () => {
   const authProtectedEndpoints = [
-    { url: '/api/financial/budgets', label: 'Budgets' },
-    { url: '/api/financial/spending', label: 'Spending' },
-    { url: '/api/financial/bills', label: 'Bills' },
-    { url: '/api/financial/goals', label: 'Goals' },
-    { url: '/api/financial/savings', label: 'Savings' },
+    { url: "/api/financial/budgets", label: "Budgets" },
+    { url: "/api/financial/spending", label: "Spending" },
+    { url: "/api/financial/bills", label: "Bills" },
+    { url: "/api/financial/goals", label: "Goals" },
+    { url: "/api/financial/savings", label: "Savings" },
   ];
 
   authProtectedEndpoints.forEach(({ url, label }) => {
@@ -23,21 +23,21 @@ describe('Financial API — Auth Required', () => {
         // Should return 401 or 404 (not yet implemented)
         expect(resp.status).to.be.oneOf([401, 404]);
         if (resp.status === 401) {
-          expect(resp.body).to.have.property('error');
+          expect(resp.body).to.have.property("error");
         }
       });
     });
   });
 
-  it('Budgets POST → requires authentication', () => {
+  it("Budgets POST → requires authentication", () => {
     cy.request({
-      method: 'POST',
-      url: '/api/financial/budgets',
+      method: "POST",
+      url: "/api/financial/budgets",
       body: {
-        name: 'Groceries',
+        name: "Groceries",
         amount: 500,
-        category: 'food',
-        period: 'monthly',
+        category: "food",
+        period: "monthly",
       },
       failOnStatusCode: false,
     }).then((resp) => {
@@ -46,10 +46,10 @@ describe('Financial API — Auth Required', () => {
   });
 });
 
-describe('Analytics API', () => {
-  it('GET /api/analytics → requires authentication', () => {
+describe("Analytics API", () => {
+  it("GET /api/analytics → requires authentication", () => {
     cy.request({
-      url: '/api/analytics',
+      url: "/api/analytics",
       failOnStatusCode: false,
     }).then((resp) => {
       expect(resp.status).to.be.oneOf([401, 404]);
@@ -57,14 +57,14 @@ describe('Analytics API', () => {
   });
 });
 
-describe('Onboarding API', () => {
-  it('GET /api/onboarding/progress → requires authentication', () => {
+describe("Onboarding API", () => {
+  it("GET /api/onboarding/progress → requires authentication", () => {
     cy.request({
-      url: '/api/onboarding/progress',
+      url: "/api/onboarding/progress",
       failOnStatusCode: false,
     }).then((resp) => {
       expect(resp.status).to.eq(401);
-      expect(resp.body).to.have.property('error');
+      expect(resp.body).to.have.property("error");
     });
   });
 });

@@ -23,22 +23,24 @@ Authorization: Bearer <your-access-token>
 Get portfolio summary with performance metrics.
 
 **Query Parameters:**
+
 - `period` (optional): Time period for performance data
   - Values: `1D`, `1W`, `1M`, `3M`, `6M`, `1Y`, `ALL`
   - Default: `1M`
 
 **Response:**
+
 ```json
 {
   "success": true,
   "data": {
     "id": "portfolio-id",
     "userId": "user-id",
-    "totalValue": 125000.50,
-    "totalCost": 100000.00,
-    "totalGain": 25000.50,
-    "totalGainPercent": 25.00,
-    "dayChange": 1250.00,
+    "totalValue": 125000.5,
+    "totalCost": 100000.0,
+    "totalGain": 25000.5,
+    "totalGainPercent": 25.0,
+    "dayChange": 1250.0,
     "dayChangePercent": 1.01,
     "holdings": [
       {
@@ -46,12 +48,12 @@ Get portfolio summary with performance metrics.
         "symbol": "AAPL",
         "name": "Apple Inc.",
         "quantity": 100,
-        "averagePrice": 150.00,
-        "currentPrice": 175.50,
-        "currentValue": 17550.00,
-        "gainLoss": 2550.00,
-        "gainLossPercent": 17.00,
-        "dayChange": 250.00,
+        "averagePrice": 150.0,
+        "currentPrice": 175.5,
+        "currentValue": 17550.0,
+        "gainLoss": 2550.0,
+        "gainLossPercent": 17.0,
+        "dayChange": 250.0,
         "dayChangePercent": 1.45
       }
     ],
@@ -77,6 +79,7 @@ Get portfolio summary with performance metrics.
 Get all holdings for the authenticated user.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -88,12 +91,12 @@ Get all holdings for the authenticated user.
       "name": "Apple Inc.",
       "assetType": "stock",
       "quantity": 100,
-      "averagePrice": 150.00,
-      "currentPrice": 175.50,
-      "currentValue": 17550.00,
-      "gainLoss": 2550.00,
-      "gainLossPercent": 17.00,
-      "dayChange": 250.00,
+      "averagePrice": 150.0,
+      "currentPrice": 175.5,
+      "currentValue": 17550.0,
+      "gainLoss": 2550.0,
+      "gainLossPercent": 17.0,
+      "dayChange": 250.0,
       "dayChangePercent": 1.45,
       "createdAt": "2024-01-01T00:00:00Z",
       "updatedAt": "2024-01-15T12:00:00Z"
@@ -107,17 +110,19 @@ Get all holdings for the authenticated user.
 Create a new holding.
 
 **Request Body:**
+
 ```json
 {
   "symbol": "TSLA",
   "quantity": 50,
-  "purchasePrice": 250.00,
+  "purchasePrice": 250.0,
   "purchaseDate": "2024-01-15",
   "assetType": "stock"
 }
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -125,9 +130,9 @@ Create a new holding.
     "id": "new-holding-id",
     "symbol": "TSLA",
     "quantity": 50,
-    "averagePrice": 250.00,
-    "currentPrice": 265.00,
-    "currentValue": 13250.00
+    "averagePrice": 250.0,
+    "currentPrice": 265.0,
+    "currentValue": 13250.0
   }
 }
 ```
@@ -137,21 +142,23 @@ Create a new holding.
 Update an existing holding.
 
 **Request Body:**
+
 ```json
 {
   "quantity": 75,
-  "averagePrice": 245.00
+  "averagePrice": 245.0
 }
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
   "data": {
     "id": "holding-id",
     "quantity": 75,
-    "averagePrice": 245.00
+    "averagePrice": 245.0
   }
 }
 ```
@@ -161,6 +168,7 @@ Update an existing holding.
 Delete a holding.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -177,35 +185,32 @@ Delete a holding.
 Get comprehensive AI-powered stock analysis.
 
 **Path Parameters:**
+
 - `symbol` (required): Stock ticker symbol (e.g., AAPL, GOOGL)
 
 **Query Parameters:**
+
 - `timeframe` (optional): Analysis timeframe
   - Values: `1D`, `1W`, `1M`, `3M`, `6M`, `1Y`
   - Default: `1M`
 
 **Response:**
+
 ```json
 {
   "success": true,
   "data": {
     "symbol": "AAPL",
     "companyName": "Apple Inc.",
-    "currentPrice": 175.50,
-    "priceChange": 2.50,
+    "currentPrice": 175.5,
+    "priceChange": 2.5,
     "priceChangePercent": 1.45,
     "recommendation": "buy",
     "confidenceScore": 0.85,
-    "targetPrice": 200.00,
+    "targetPrice": 200.0,
     "analysisSummary": "Strong fundamentals with positive momentum...",
-    "bullishFactors": [
-      "Strong revenue growth",
-      "Expanding market share"
-    ],
-    "bearishFactors": [
-      "High valuation",
-      "Regulatory concerns"
-    ],
+    "bullishFactors": ["Strong revenue growth", "Expanding market share"],
+    "bearishFactors": ["High valuation", "Regulatory concerns"],
     "technicalIndicators": {
       "rsi": 65.5,
       "macdSignal": "bullish",
@@ -235,16 +240,18 @@ Get comprehensive AI-powered stock analysis.
 Get real-time market data for a symbol.
 
 **Query Parameters:**
+
 - `symbol` (required): Stock ticker symbol
 
 **Response:**
+
 ```json
 {
   "success": true,
   "data": {
     "symbol": "AAPL",
-    "price": 175.50,
-    "change": 2.50,
+    "price": 175.5,
+    "change": 2.5,
     "changePercent": 1.45,
     "volume": 50000000,
     "marketCap": 2800000000000,
@@ -269,6 +276,7 @@ All endpoints return errors in the following format:
 ```
 
 **Common Error Codes:**
+
 - `401`: Unauthorized - Invalid or missing authentication token
 - `403`: Forbidden - Insufficient permissions
 - `404`: Not Found - Resource not found
@@ -285,6 +293,7 @@ All endpoints return errors in the following format:
 - **AI Analysis**: 20 requests per minute
 
 Rate limit headers are included in all responses:
+
 ```
 X-RateLimit-Limit: 100
 X-RateLimit-Remaining: 95
@@ -298,18 +307,20 @@ X-RateLimit-Reset: 1640000000
 Subscribe to real-time portfolio updates via WebSocket:
 
 ```javascript
-const ws = new WebSocket('wss://api.creditmaster-pro.com/api/investments/ws');
+const ws = new WebSocket("wss://api.creditmaster-pro.com/api/investments/ws");
 
 ws.onopen = () => {
-  ws.send(JSON.stringify({
-    type: 'subscribe',
-    symbols: ['AAPL', 'GOOGL']
-  }));
+  ws.send(
+    JSON.stringify({
+      type: "subscribe",
+      symbols: ["AAPL", "GOOGL"],
+    }),
+  );
 };
 
 ws.onmessage = (event) => {
   const update = JSON.parse(event.data);
-  console.log('Price update:', update);
+  console.log("Price update:", update);
 };
 ```
 
@@ -326,4 +337,3 @@ ws.onmessage = (event) => {
 ## Support
 
 For API support, contact: api-support@creditmaster-pro.com
-

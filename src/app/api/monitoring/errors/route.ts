@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { logger } from '@/lib/monitoring/logger';
+import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/lib/monitoring/logger";
 
 interface ClientErrorReport {
   name: string;
@@ -22,8 +22,8 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (!body.name || !body.message) {
       return NextResponse.json(
-        { success: false, error: 'Invalid error report' },
-        { status: 400 }
+        { success: false, error: "Invalid error report" },
+        { status: 400 },
       );
     }
 
@@ -33,9 +33,10 @@ export async function POST(request: NextRequest) {
       userAgent: body.userAgent,
       componentStack: body.componentStack,
       clientTimestamp: body.timestamp,
-      ipAddress: request.headers.get('x-forwarded-for') ||
-                 request.headers.get('x-real-ip') ||
-                 'unknown',
+      ipAddress:
+        request.headers.get("x-forwarded-for") ||
+        request.headers.get("x-real-ip") ||
+        "unknown",
     });
 
     // If SENTRY_DSN is configured, forward to Sentry
@@ -49,8 +50,8 @@ export async function POST(request: NextRequest) {
     // ErrorsRoute error: Failed to process error report
     void _error;
     return NextResponse.json(
-      { success: false, error: 'Failed to process error report' },
-      { status: 500 }
+      { success: false, error: "Failed to process error report" },
+      { status: 500 },
     );
   }
 }
@@ -58,7 +59,10 @@ export async function POST(request: NextRequest) {
 /**
  * Forward error to Sentry if configured
  */
-async function forwardToSentry(errorReport: ClientErrorReport, dsn: string): Promise<void> {
+async function forwardToSentry(
+  errorReport: ClientErrorReport,
+  dsn: string,
+): Promise<void> {
   try {
     // Parse DSN to get project ID and public key
     const dsnMatch = dsn.match(/https:\/\/([^@]+)@([^/]+)\/(\d+)/);
@@ -71,26 +75,28 @@ async function forwardToSentry(errorReport: ClientErrorReport, dsn: string): Pro
     const sentryUrl = `https://${host}/api/${projectId}/store/`;
 
     const sentryPayload = {
-      event_id: crypto.randomUUID().replace(/-/g, ''),
+      event_id: crypto.randomUUID().replace(/-/g, ""),
       timestamp: new Date(errorReport.timestamp).toISOString(),
-      platform: 'javascript',
-      level: 'error',
-      logger: 'javascript',
+      platform: "javascript",
+      level: "error",
+      logger: "javascript",
       exception: {
         values: [
           {
             type: errorReport.name,
             value: errorReport.message,
-            stacktrace: errorReport.stack ? {
-              frames: parseStackTrace(errorReport.stack),
-            } : undefined,
+            stacktrace: errorReport.stack
+              ? {
+                  frames: parseStackTrace(errorReport.stack),
+                }
+              : undefined,
           },
         ],
       },
       request: {
         url: errorReport.url,
         headers: {
-          'User-Agent': errorReport.userAgent,
+          "User-Agent": errorReport.userAgent,
         },
       },
       extra: {
@@ -99,10 +105,10 @@ async function forwardToSentry(errorReport: ClientErrorReport, dsn: string): Pro
     };
 
     await fetch(sentryUrl, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'X-Sentry-Auth': `Sentry sentry_version=7, sentry_client=fynvita/1.0.0, sentry_key=${publicKey}`,
+        "Content-Type": "application/json",
+        "X-Sentry-Auth": `Sentry sentry_version=7, sentry_client=fynvita/1.0.0, sentry_key=${publicKey}`,
       },
       body: JSON.stringify(sentryPayload),
     });
@@ -115,9 +121,21 @@ async function forwardToSentry(errorReport: ClientErrorReport, dsn: string): Pro
 /**
  * Parse stack trace string into Sentry frames format
  */
-function parseStackTrace(stack: string): Array<{ filename: string; function: string; lineno?: number; colno?: number }> {
-  const lines = stack.split('\n').slice(1); // Skip the error message line
-  const frames: Array<{ filename: string; function: string; lineno?: number; colno?: number }> = [];
+function parseStackTrace(
+  stack: string,
+): Array<{
+  filename: string;
+  function: string;
+  lineno?: number;
+  colno?: number;
+}> {
+  const lines = stack.split("\n").slice(1); // Skip the error message line
+  const frames: Array<{
+    filename: string;
+    function: string;
+    lineno?: number;
+    colno?: number;
+  }> = [];
 
   for (const line of lines) {
     const match = line.match(/at\s+(.+?)\s+\((.+?):(\d+):(\d+)\)/);
@@ -133,7 +151,7 @@ function parseStackTrace(stack: string): Array<{ filename: string; function: str
       const simpleMatch = line.match(/at\s+(.+?):(\d+):(\d+)/);
       if (simpleMatch) {
         frames.push({
-          function: '<anonymous>',
+          function: "<anonymous>",
           filename: simpleMatch[1],
           lineno: parseInt(simpleMatch[2], 10),
           colno: parseInt(simpleMatch[3], 10),

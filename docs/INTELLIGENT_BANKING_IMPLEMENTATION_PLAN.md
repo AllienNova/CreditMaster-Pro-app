@@ -1,9 +1,10 @@
 # CPFI Intelligent Banking & Financial Intelligence Suite
+
 ## Comprehensive Implementation Plan
 
 **Version**: 1.0  
 **Created**: December 7, 2025  
-**Target Completion**: 14 weeks  
+**Target Completion**: 14 weeks
 
 ---
 
@@ -200,6 +201,7 @@ CREATE INDEX idx_financial_conversations_user ON financial_conversations(user_id
 **File:** `src/lib/ai/financial-coach.ts`
 
 **Core Methods:**
+
 - `analyzeFinancialSituation(userId)` - Comprehensive financial analysis
 - `generatePersonalizedAdvice(userId, focusArea)` - Dave Ramsey-style advice
 - `createDebtPayoffStrategy(userId, method)` - Snowball/Avalanche optimization
@@ -211,18 +213,19 @@ CREATE INDEX idx_financial_conversations_user ON financial_conversations(user_id
 **File:** `src/lib/financial/debt-strategy-engine.ts`
 
 **Strategies:**
+
 1. **Snowball Method** - Pay smallest debts first for psychological wins
 2. **Avalanche Method** - Pay highest interest first for mathematical optimization
 3. **AI Optimized** - Hybrid approach based on user behavior patterns
 
 ### 2.3 API Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/ai/financial-coach/analyze` | POST | Analyze user's financial situation |
-| `/api/ai/financial-coach/debt-strategy` | POST | Generate debt payoff plan |
-| `/api/ai/financial-coach/action-plan` | POST | Create personalized action plan |
-| `/api/ai/financial-coach/progress` | GET | Track goal progress |
+| Endpoint                                | Method | Description                        |
+| --------------------------------------- | ------ | ---------------------------------- |
+| `/api/ai/financial-coach/analyze`       | POST   | Analyze user's financial situation |
+| `/api/ai/financial-coach/debt-strategy` | POST   | Generate debt payoff plan          |
+| `/api/ai/financial-coach/action-plan`   | POST   | Create personalized action plan    |
+| `/api/ai/financial-coach/progress`      | GET    | Track goal progress                |
 
 ---
 
@@ -233,6 +236,7 @@ CREATE INDEX idx_financial_conversations_user ON financial_conversations(user_id
 **File:** `src/lib/investments/signal-generator.ts`
 
 **Features:**
+
 - Multi-asset support (stocks, ETFs, crypto, options)
 - Technical analysis (RSI, MACD, Bollinger Bands, etc.)
 - Fundamental analysis integration
@@ -245,6 +249,7 @@ CREATE INDEX idx_financial_conversations_user ON financial_conversations(user_id
 **File:** `src/lib/investments/crypto-analyst.ts`
 
 **Features:**
+
 - CoinGecko integration for market data
 - On-chain metrics analysis
 - DeFi protocol evaluation
@@ -256,6 +261,7 @@ CREATE INDEX idx_financial_conversations_user ON financial_conversations(user_id
 **File:** `src/lib/investments/portfolio-analytics.ts`
 
 **Features:**
+
 - Real-time portfolio valuation
 - Diversification scoring
 - Risk-adjusted returns calculation
@@ -264,13 +270,13 @@ CREATE INDEX idx_financial_conversations_user ON financial_conversations(user_id
 
 ### 3.4 API Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/investments/signals` | GET | Get active trading signals |
-| `/api/investments/signals` | POST | Generate new signal |
-| `/api/investments/crypto/[coinId]` | GET | Analyze cryptocurrency |
-| `/api/investments/portfolio/analyze` | GET | Portfolio analysis |
-| `/api/investments/comprehensive-analysis` | POST | Full stock analysis |
+| Endpoint                                  | Method | Description                |
+| ----------------------------------------- | ------ | -------------------------- |
+| `/api/investments/signals`                | GET    | Get active trading signals |
+| `/api/investments/signals`                | POST   | Generate new signal        |
+| `/api/investments/crypto/[coinId]`        | GET    | Analyze cryptocurrency     |
+| `/api/investments/portfolio/analyze`      | GET    | Portfolio analysis         |
+| `/api/investments/comprehensive-analysis` | POST   | Full stock analysis        |
 
 ---
 
@@ -281,6 +287,7 @@ CREATE INDEX idx_financial_conversations_user ON financial_conversations(user_id
 **File:** `src/lib/ai/financial-chat-engine.ts`
 
 **Features:**
+
 - Context-aware financial conversations
 - Intent recognition for user queries
 - Entity extraction (amounts, dates, account names)
@@ -289,20 +296,20 @@ CREATE INDEX idx_financial_conversations_user ON financial_conversations(user_id
 
 ### 4.2 Supporting Services
 
-| Service | File | Purpose |
-|---------|------|---------|
-| Intent Recognizer | `intent-recognizer.ts` | Classify user intents |
-| Entity Extractor | `entity-extractor.ts` | Extract financial entities |
-| Action Executor | `action-executor.ts` | Execute financial actions |
-| Chat DB Service | `chat-db-service.ts` | Persist conversations |
+| Service           | File                   | Purpose                    |
+| ----------------- | ---------------------- | -------------------------- |
+| Intent Recognizer | `intent-recognizer.ts` | Classify user intents      |
+| Entity Extractor  | `entity-extractor.ts`  | Extract financial entities |
+| Action Executor   | `action-executor.ts`   | Execute financial actions  |
+| Chat DB Service   | `chat-db-service.ts`   | Persist conversations      |
 
 ### 4.3 API Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/chat/financial` | POST | Send message to financial chat |
-| `/api/chat/financial/sessions` | GET | List chat sessions |
-| `/api/chat/financial/sessions/[id]` | GET | Get session history |
+| Endpoint                            | Method | Description                    |
+| ----------------------------------- | ------ | ------------------------------ |
+| `/api/chat/financial`               | POST   | Send message to financial chat |
+| `/api/chat/financial/sessions`      | GET    | List chat sessions             |
+| `/api/chat/financial/sessions/[id]` | GET    | Get session history            |
 
 ---
 
@@ -310,28 +317,28 @@ CREATE INDEX idx_financial_conversations_user ON financial_conversations(user_id
 
 ### 5.1 Financial Intelligence Screens
 
-| Screen | Route | Status |
-|--------|-------|--------|
-| Financial Dashboard | `/financial-intelligence/index.tsx` | ✅ Complete |
-| AI Financial Coach | `/financial-intelligence/ai-coach.tsx` | ✅ Complete |
-| Debt Payoff Planner | `/financial-intelligence/debt-planner.tsx` | ✅ Complete |
-| Action Plan Manager | `/financial-intelligence/action-plans.tsx` | ✅ Complete |
-| Smart Budget | `/financial-intelligence/smart-budget.tsx` | ✅ Complete |
-| Goals Manager | `/financial-intelligence/goals.tsx` | ✅ Complete |
-| Spending Insights | `/financial-intelligence/spending-insights.tsx` | ✅ Complete |
-| Bill Negotiator | `/financial-intelligence/bill-negotiator.tsx` | ✅ Complete |
-| Financial Chat | `/financial-intelligence/chat.tsx` | ✅ Complete |
+| Screen              | Route                                           | Status      |
+| ------------------- | ----------------------------------------------- | ----------- |
+| Financial Dashboard | `/financial-intelligence/index.tsx`             | ✅ Complete |
+| AI Financial Coach  | `/financial-intelligence/ai-coach.tsx`          | ✅ Complete |
+| Debt Payoff Planner | `/financial-intelligence/debt-planner.tsx`      | ✅ Complete |
+| Action Plan Manager | `/financial-intelligence/action-plans.tsx`      | ✅ Complete |
+| Smart Budget        | `/financial-intelligence/smart-budget.tsx`      | ✅ Complete |
+| Goals Manager       | `/financial-intelligence/goals.tsx`             | ✅ Complete |
+| Spending Insights   | `/financial-intelligence/spending-insights.tsx` | ✅ Complete |
+| Bill Negotiator     | `/financial-intelligence/bill-negotiator.tsx`   | ✅ Complete |
+| Financial Chat      | `/financial-intelligence/chat.tsx`              | ✅ Complete |
 
 ### 5.2 Investment Screens
 
-| Screen | Route | Status |
-|--------|-------|--------|
-| Investment Dashboard | `/investments/index.tsx` | ✅ Complete |
-| Holdings Management | `/investments/holdings.tsx` | ✅ Complete |
-| Asset Analysis | `/investments/analyze/[symbol].tsx` | ✅ Complete |
-| Trading Signals | `/investments/signals.tsx` | ✅ Complete |
-| Crypto Analysis | `/investments/crypto-analysis.tsx` | ✅ Complete |
-| Watchlist | `/investments/watchlist.tsx` | ✅ Complete |
+| Screen               | Route                               | Status      |
+| -------------------- | ----------------------------------- | ----------- |
+| Investment Dashboard | `/investments/index.tsx`            | ✅ Complete |
+| Holdings Management  | `/investments/holdings.tsx`         | ✅ Complete |
+| Asset Analysis       | `/investments/analyze/[symbol].tsx` | ✅ Complete |
+| Trading Signals      | `/investments/signals.tsx`          | ✅ Complete |
+| Crypto Analysis      | `/investments/crypto-analysis.tsx`  | ✅ Complete |
+| Watchlist            | `/investments/watchlist.tsx`        | ✅ Complete |
 
 ---
 
@@ -339,18 +346,19 @@ CREATE INDEX idx_financial_conversations_user ON financial_conversations(user_id
 
 ### 6.1 Test Coverage
 
-| Component | Test File | Coverage |
-|-----------|-----------|----------|
+| Component              | Test File                                   | Coverage    |
+| ---------------------- | ------------------------------------------- | ----------- |
 | AICreditRepairStrategy | `__tests__/AICreditRepairStrategy.test.tsx` | ✅ Complete |
-| AIDisputeStrategy | `__tests__/AIDisputeStrategy.test.tsx` | ✅ Complete |
-| AICreditInsights | `__tests__/AICreditInsights.test.tsx` | ✅ Complete |
-| AIInvestmentInsights | `__tests__/AIInvestmentInsights.test.tsx` | ✅ Complete |
-| Signal Generator | `__tests__/signal-generator.test.ts` | ✅ Complete |
-| Portfolio Analytics | `__tests__/portfolio-analytics.test.ts` | ✅ Complete |
+| AIDisputeStrategy      | `__tests__/AIDisputeStrategy.test.tsx`      | ✅ Complete |
+| AICreditInsights       | `__tests__/AICreditInsights.test.tsx`       | ✅ Complete |
+| AIInvestmentInsights   | `__tests__/AIInvestmentInsights.test.tsx`   | ✅ Complete |
+| Signal Generator       | `__tests__/signal-generator.test.ts`        | ✅ Complete |
+| Portfolio Analytics    | `__tests__/portfolio-analytics.test.ts`     | ✅ Complete |
 
 ### 6.2 MSW Mock Handlers
 
 All API endpoints have corresponding MSW handlers in `src/__tests__/mocks/handlers.ts`:
+
 - Financial AI insights
 - Budget optimization
 - Goals optimization
@@ -368,43 +376,43 @@ All API endpoints have corresponding MSW handlers in `src/__tests__/mocks/handle
 
 ### Backend Services (90% Complete)
 
-| Service | Status | File |
-|---------|--------|------|
-| Financial Context Engine | ✅ | `financial-context-engine.ts` |
-| Health Score Calculator | ✅ | `health-score-calculator.ts` |
-| Budget Optimizer | ✅ | `budget-optimizer.ts` |
-| Savings Automation | ✅ | `savings-automation-service.ts` |
-| Spending Analysis | ✅ | `spending-analysis-service.ts` |
-| Bill Detection | ✅ | `bill-detection-service.ts` |
-| Smart Insights Engine | ✅ | `smart-insights-engine.ts` |
-| Financial Coach | ✅ | `financial-coach.ts` |
-| Debt Strategy Engine | ✅ | `debt-strategy-engine.ts` |
-| Goal Planner | ✅ | `goal-planner.ts` |
-| Market Data Service | ✅ | `market-data-service.ts` |
-| AI Stock Analyst | ✅ | `ai-stock-analyst.ts` |
-| Signal Generator | ✅ | `signal-generator.ts` |
-| Crypto Analyst | ✅ | `crypto-analyst.ts` |
-| Portfolio Analytics | ✅ | `portfolio-analytics.ts` |
-| Financial Chat Engine | ✅ | `financial-chat-engine.ts` |
-| Intent Recognizer | ✅ | `intent-recognizer.ts` |
-| Entity Extractor | ✅ | `entity-extractor.ts` |
-| Action Executor | ✅ | `action-executor.ts` |
+| Service                  | Status | File                            |
+| ------------------------ | ------ | ------------------------------- |
+| Financial Context Engine | ✅     | `financial-context-engine.ts`   |
+| Health Score Calculator  | ✅     | `health-score-calculator.ts`    |
+| Budget Optimizer         | ✅     | `budget-optimizer.ts`           |
+| Savings Automation       | ✅     | `savings-automation-service.ts` |
+| Spending Analysis        | ✅     | `spending-analysis-service.ts`  |
+| Bill Detection           | ✅     | `bill-detection-service.ts`     |
+| Smart Insights Engine    | ✅     | `smart-insights-engine.ts`      |
+| Financial Coach          | ✅     | `financial-coach.ts`            |
+| Debt Strategy Engine     | ✅     | `debt-strategy-engine.ts`       |
+| Goal Planner             | ✅     | `goal-planner.ts`               |
+| Market Data Service      | ✅     | `market-data-service.ts`        |
+| AI Stock Analyst         | ✅     | `ai-stock-analyst.ts`           |
+| Signal Generator         | ✅     | `signal-generator.ts`           |
+| Crypto Analyst           | ✅     | `crypto-analyst.ts`             |
+| Portfolio Analytics      | ✅     | `portfolio-analytics.ts`        |
+| Financial Chat Engine    | ✅     | `financial-chat-engine.ts`      |
+| Intent Recognizer        | ✅     | `intent-recognizer.ts`          |
+| Entity Extractor         | ✅     | `entity-extractor.ts`           |
+| Action Executor          | ✅     | `action-executor.ts`            |
 
 ### Web Components (85% Complete)
 
-| Component | Status |
-|-----------|--------|
-| AIBudgetOptimizer | ✅ Working |
-| AIGoalsOptimizer | ✅ Working |
-| AISpendingInsights | ✅ Working |
-| AIBillsOptimizer | ✅ Working |
-| AIFinancialCoach | ✅ Working |
+| Component              | Status     |
+| ---------------------- | ---------- |
+| AIBudgetOptimizer      | ✅ Working |
+| AIGoalsOptimizer       | ✅ Working |
+| AISpendingInsights     | ✅ Working |
+| AIBillsOptimizer       | ✅ Working |
+| AIFinancialCoach       | ✅ Working |
 | AICreditRepairStrategy | ✅ Working |
-| AIDisputeStrategy | ✅ Working |
-| AICreditInsights | ✅ Working |
-| AIInvestmentInsights | ✅ Working |
-| ActionPlanManager | ✅ Working |
-| DebtPayoffPlanner | ✅ Working |
+| AIDisputeStrategy      | ✅ Working |
+| AICreditInsights       | ✅ Working |
+| AIInvestmentInsights   | ✅ Working |
+| ActionPlanManager      | ✅ Working |
+| DebtPayoffPlanner      | ✅ Working |
 
 ### Mobile App (95% Complete)
 
@@ -415,16 +423,19 @@ All financial intelligence and investment screens are implemented and functional
 ## Remaining Tasks
 
 ### High Priority
+
 1. ☐ Run full test suite and fix any failing tests
 2. ☐ Verify all API endpoints are connected to frontend
 3. ☐ Complete integration testing
 
 ### Medium Priority
+
 1. ☐ Performance optimization (Redis caching)
 2. ☐ Add more comprehensive error handling
 3. ☐ Implement rate limiting for external APIs
 
 ### Low Priority
+
 1. ☐ Add analytics tracking
 2. ☐ Implement A/B testing for AI recommendations
 3. ☐ Add user feedback collection
@@ -433,16 +444,15 @@ All financial intelligence and investment screens are implemented and functional
 
 ## Success Metrics
 
-| Metric | Target | Current |
-|--------|--------|---------|
-| Test Pass Rate | 95% | 88.9% |
-| API Response Time | <200ms | ✅ Met |
-| Code Coverage | 80% | ~75% |
-| Mobile Screen Completion | 100% | 95% |
-| Backend Service Completion | 100% | 90% |
+| Metric                     | Target | Current |
+| -------------------------- | ------ | ------- |
+| Test Pass Rate             | 95%    | 88.9%   |
+| API Response Time          | <200ms | ✅ Met  |
+| Code Coverage              | 80%    | ~75%    |
+| Mobile Screen Completion   | 100%   | 95%     |
+| Backend Service Completion | 100%   | 90%     |
 
 ---
 
 **Last Updated:** January 21, 2026
 **Next Review:** January 28, 2026
-

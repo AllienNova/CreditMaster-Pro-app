@@ -5,8 +5,8 @@
  * DELETE /api/tax/documents/:id - Delete a tax document
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase/client';
+import { NextRequest, NextResponse } from "next/server";
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
 
@@ -37,37 +37,37 @@ export async function GET(request: NextRequest) {
 
     if (authError || !user) {
       return NextResponse.json(
-        { error: 'Unauthorized', message: 'Please sign in to view documents.' },
-        { status: 401 }
+        { error: "Unauthorized", message: "Please sign in to view documents." },
+        { status: 401 },
       );
     }
 
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;
-    const year = searchParams.get('year');
-    const documentType = searchParams.get('type');
-    const status = searchParams.get('status');
+    const year = searchParams.get("year");
+    const documentType = searchParams.get("type");
+    const status = searchParams.get("status");
 
     // Build query
     let query = supabase
-      .from('tax_documents')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+      .from("tax_documents")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
 
     // Apply filters
     if (year) {
-      query = query.eq('tax_year', parseInt(year));
+      query = query.eq("tax_year", parseInt(year));
     }
 
     if (documentType) {
-      query = query.eq('document_type', documentType);
+      query = query.eq("document_type", documentType);
     }
 
-    if (status === 'verified') {
-      query = query.eq('is_verified', true);
-    } else if (status === 'pending') {
-      query = query.eq('is_verified', false);
+    if (status === "verified") {
+      query = query.eq("is_verified", true);
+    } else if (status === "pending") {
+      query = query.eq("is_verified", false);
     }
 
     const { data: documents, error: dbError } = await query;
@@ -75,8 +75,8 @@ export async function GET(request: NextRequest) {
     if (dbError) {
       // TaxDocumentsAPI error: Database error fetching documents
       return NextResponse.json(
-        { error: 'Database error', message: 'Failed to fetch documents.' },
-        { status: 500 }
+        { error: "Database error", message: "Failed to fetch documents." },
+        { status: 500 },
       );
     }
 
@@ -110,8 +110,8 @@ export async function GET(request: NextRequest) {
     // TaxDocumentsAPI error: Documents fetch error
     void _error;
     return NextResponse.json(
-      { error: 'Server error', message: 'Unable to fetch documents.' },
-      { status: 500 }
+      { error: "Server error", message: "Unable to fetch documents." },
+      { status: 500 },
     );
   }
 }
@@ -127,88 +127,88 @@ export async function DELETE(request: NextRequest) {
     if (authError || !user) {
       return NextResponse.json(
         {
-          error: 'Unauthorized',
-          message: 'Please sign in to delete documents.',
+          error: "Unauthorized",
+          message: "Please sign in to delete documents.",
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     // Get document ID from query params
     const searchParams = request.nextUrl.searchParams;
-    const documentId = searchParams.get('id');
+    const documentId = searchParams.get("id");
 
     if (!documentId) {
       return NextResponse.json(
-        { error: 'Bad request', message: 'Document ID is required.' },
-        { status: 400 }
+        { error: "Bad request", message: "Document ID is required." },
+        { status: 400 },
       );
     }
 
     // Verify document belongs to user and delete
     const { data: document, error: fetchError } = await supabase
-      .from('tax_documents')
-      .select('id, user_id, storage_path')
-      .eq('id', documentId)
+      .from("tax_documents")
+      .select("id, user_id, storage_path")
+      .eq("id", documentId)
       .single();
 
     if (fetchError || !document) {
       return NextResponse.json(
-        { error: 'Not found', message: 'Document not found.' },
-        { status: 404 }
+        { error: "Not found", message: "Document not found." },
+        { status: 404 },
       );
     }
 
     if (document.user_id !== user.id) {
       return NextResponse.json(
         {
-          error: 'Forbidden',
-          message: 'You do not have permission to delete this document.',
+          error: "Forbidden",
+          message: "You do not have permission to delete this document.",
         },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
     // Delete from storage if path exists
     if (document.storage_path) {
       await supabase.storage
-        .from('tax-documents')
+        .from("tax-documents")
         .remove([document.storage_path]);
     }
 
     // Delete from database
     const { error: deleteError } = await supabase
-      .from('tax_documents')
+      .from("tax_documents")
       .delete()
-      .eq('id', documentId);
+      .eq("id", documentId);
 
     if (deleteError) {
       // TaxDocumentsAPI error: Delete error
       return NextResponse.json(
-        { error: 'Database error', message: 'Failed to delete document.' },
-        { status: 500 }
+        { error: "Database error", message: "Failed to delete document." },
+        { status: 500 },
       );
     }
 
     // Log deletion
-    await supabase.from('tax_audit_log').insert({
+    await supabase.from("tax_audit_log").insert({
       user_id: user.id,
-      action_type: 'document_deleted',
-      entity_type: 'tax_document',
+      action_type: "document_deleted",
+      entity_type: "tax_document",
       entity_id: documentId,
       created_at: new Date().toISOString(),
     });
 
     return NextResponse.json({
       success: true,
-      message: 'Document deleted successfully.',
+      message: "Document deleted successfully.",
     });
   } catch (_error) {
     // TaxDocumentsAPI error: Document delete error
     void _error;
     return NextResponse.json(
-      { error: 'Server error', message: 'Unable to delete document.' },
-      { status: 500 }
+      { error: "Server error", message: "Unable to delete document." },
+      { status: 500 },
     );
   }
 }

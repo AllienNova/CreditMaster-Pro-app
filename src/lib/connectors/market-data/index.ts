@@ -14,4 +14,4 @@ export {
   type SentimentData,
   type CompanyFinancials,
   type TechnicalPattern,
-} from './finnhub-connector';
+} from "./finnhub-connector";

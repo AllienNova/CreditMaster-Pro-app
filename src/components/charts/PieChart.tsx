@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Pie Chart Component
@@ -7,16 +7,23 @@
  * Used for category breakdowns, budget allocations, etc.
  */
 
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, PieLabelRenderProps } from 'recharts';
-import { ChartLegend } from './ChartHelpers';
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  ResponsiveContainer,
+  PieLabelRenderProps,
+} from "recharts";
+import { ChartLegend } from "./ChartHelpers";
 import {
   CHART_COLOR_ARRAY,
   formatCurrency,
   formatPercentage,
   getCategoryColor,
   generateChartDescription,
-} from './chartUtils';
-import { useState } from 'react';
+} from "./chartUtils";
+import { useState } from "react";
 
 export interface PieChartDataPoint {
   name: string;
@@ -56,7 +63,7 @@ export default function PieChartComponent({
   useCategyColors = false,
   onSliceClick,
   activeSlice,
-  className = '',
+  className = "",
   ariaLabel,
 }: PieChartProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
@@ -64,12 +71,9 @@ export default function PieChartComponent({
   const total = data.reduce((sum, item) => sum + item.value, 0);
 
   // Generate accessible description
-  const accessibleDescription = ariaLabel || generateChartDescription(
-    'Pie chart',
-    data.length,
-    undefined,
-    currency
-  );
+  const accessibleDescription =
+    ariaLabel ||
+    generateChartDescription("Pie chart", data.length, undefined, currency);
 
   const getColor = (item: PieChartDataPoint, index: number): string => {
     if (item.color) return item.color;
@@ -163,12 +167,12 @@ export default function PieChartComponent({
                 style={{
                   filter:
                     hoveredIndex === index || activeSlice === entry.name
-                      ? 'brightness(1.1)'
-                      : 'none',
+                      ? "brightness(1.1)"
+                      : "none",
                   transform:
-                    hoveredIndex === index ? 'scale(1.02)' : 'scale(1)',
-                  transformOrigin: 'center',
-                  cursor: onSliceClick ? 'pointer' : 'default',
+                    hoveredIndex === index ? "scale(1.02)" : "scale(1)",
+                  transformOrigin: "center",
+                  cursor: onSliceClick ? "pointer" : "default",
                 }}
               />
             ))}

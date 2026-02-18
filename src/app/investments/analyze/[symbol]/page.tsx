@@ -1,7 +1,7 @@
-import { Suspense } from 'react';
-import { Metadata } from 'next';
-import Link from 'next/link';
-import StockAnalysisView from '@/components/investments/StockAnalysisView';
+import { Suspense } from "react";
+import { Metadata } from "next";
+import Link from "next/link";
+import StockAnalysisView from "@/components/investments/StockAnalysisView";
 
 interface PageProps {
   params: Promise<{ symbol: string }>;
@@ -19,7 +19,7 @@ export async function generateMetadata({
     openGraph: {
       title: `${upperSymbol} Stock Analysis | Fynvita`,
       description: `Comprehensive AI-powered analysis of ${upperSymbol} including technical, fundamental, and sentiment analysis`,
-      type: 'website',
+      type: "website",
     },
   };
 }

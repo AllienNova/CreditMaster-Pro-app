@@ -4,7 +4,7 @@
  * Feature flag experiments with variant assignment and tracking
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 
 // Experiment types
 export interface Experiment {
@@ -13,7 +13,7 @@ export interface Experiment {
   description: string;
   variants: Variant[];
   targetPercentage: number; // 0-100
-  status: 'draft' | 'running' | 'paused' | 'completed';
+  status: "draft" | "running" | "paused" | "completed";
   startDate?: string;
   endDate?: string;
   targetAudience?: AudienceFilter;
@@ -49,7 +49,7 @@ const CACHE_TTL = 60 * 1000; // 1 minute
 function getSupabaseClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 }
 
@@ -61,9 +61,9 @@ async function loadExperiments(): Promise<void> {
 
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
-    .from('experiments')
-    .select('*')
-    .eq('status', 'running');
+    .from("experiments")
+    .select("*")
+    .eq("status", "running");
 
   if (error) {
     // ABTesting error: Failed to load experiments
@@ -80,12 +80,12 @@ async function loadExperiments(): Promise<void> {
  */
 export async function getVariant(
   experimentId: string,
-  userId: string
+  userId: string,
 ): Promise<Variant | null> {
   await loadExperiments();
 
   const experiment = experimentsCache.get(experimentId);
-  if (!experiment || experiment.status !== 'running') {
+  if (!experiment || experiment.status !== "running") {
     return null;
   }
 
@@ -93,10 +93,10 @@ export async function getVariant(
 
   // Check for existing assignment
   const { data: existing } = await supabase
-    .from('experiment_assignments')
-    .select('variant_id')
-    .eq('experiment_id', experimentId)
-    .eq('user_id', userId)
+    .from("experiment_assignments")
+    .select("variant_id")
+    .eq("experiment_id", experimentId)
+    .eq("user_id", userId)
     .single();
 
   if (existing) {
@@ -110,7 +110,7 @@ export async function getVariant(
   if (!variant) return null;
 
   // Store assignment
-  await supabase.from('experiment_assignments').insert({
+  await supabase.from("experiment_assignments").insert({
     experiment_id: experimentId,
     variant_id: variant.id,
     user_id: userId,
@@ -166,10 +166,10 @@ export async function trackConversion(
   experimentId: string,
   userId: string,
   eventName: string,
-  value?: number
+  value?: number,
 ): Promise<void> {
   const supabase = getSupabaseClient();
-  await supabase.from('experiment_conversions').insert({
+  await supabase.from("experiment_conversions").insert({
     experiment_id: experimentId,
     user_id: userId,
     event_name: eventName,
@@ -184,7 +184,7 @@ export async function trackConversion(
 export async function isFeatureEnabled(
   featureKey: string,
   userId: string,
-  defaultValue = false
+  defaultValue = false,
 ): Promise<boolean> {
   const variant = await getVariant(featureKey, userId);
   return variant?.config?.enabled ?? defaultValue;
@@ -196,7 +196,7 @@ export async function isFeatureEnabled(
 export async function getFeatureConfig<T>(
   featureKey: string,
   userId: string,
-  defaultConfig: T
+  defaultConfig: T,
 ): Promise<T> {
   const variant = await getVariant(featureKey, userId);
   return (variant?.config as T) ?? defaultConfig;

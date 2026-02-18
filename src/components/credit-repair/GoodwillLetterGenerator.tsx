@@ -1,6 +1,6 @@
 /**
  * Goodwill Letter Generator Component
- * 
+ *
  * AI-powered goodwill letter generator for late payment removal:
  * - Personalized letters based on user's situation
  * - 60% success rate
@@ -8,9 +8,9 @@
  * - Works best for customers with good payment history
  */
 
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 
 interface GoodwillFormData {
   accountId: string;
@@ -24,12 +24,12 @@ interface GoodwillFormData {
 
 export default function GoodwillLetterGenerator() {
   const [formData, setFormData] = useState<GoodwillFormData>({
-    accountId: '',
-    creditorName: '',
-    latePaymentDate: '',
-    reason: 'financial_hardship',
-    accountAge: '1-2',
-    paymentHistory: 'excellent',
+    accountId: "",
+    creditorName: "",
+    latePaymentDate: "",
+    reason: "financial_hardship",
+    accountAge: "1-2",
+    paymentHistory: "excellent",
   });
   const [generatedLetter, setGeneratedLetter] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -37,13 +37,37 @@ export default function GoodwillLetterGenerator() {
   const [showPreview, setShowPreview] = useState(false);
 
   const reasons = [
-    { value: 'financial_hardship', label: 'Financial Hardship', description: 'Job loss, medical bills, etc.' },
-    { value: 'oversight', label: 'Oversight/Mistake', description: 'Forgot to pay, autopay failed' },
-    { value: 'medical_emergency', label: 'Medical Emergency', description: 'Hospitalization, illness' },
-    { value: 'family_emergency', label: 'Family Emergency', description: 'Death, divorce, etc.' },
-    { value: 'natural_disaster', label: 'Natural Disaster', description: 'Hurricane, fire, etc.' },
-    { value: 'identity_theft', label: 'Identity Theft', description: 'Fraudulent charges' },
-    { value: 'other', label: 'Other', description: 'Other valid reason' },
+    {
+      value: "financial_hardship",
+      label: "Financial Hardship",
+      description: "Job loss, medical bills, etc.",
+    },
+    {
+      value: "oversight",
+      label: "Oversight/Mistake",
+      description: "Forgot to pay, autopay failed",
+    },
+    {
+      value: "medical_emergency",
+      label: "Medical Emergency",
+      description: "Hospitalization, illness",
+    },
+    {
+      value: "family_emergency",
+      label: "Family Emergency",
+      description: "Death, divorce, etc.",
+    },
+    {
+      value: "natural_disaster",
+      label: "Natural Disaster",
+      description: "Hurricane, fire, etc.",
+    },
+    {
+      value: "identity_theft",
+      label: "Identity Theft",
+      description: "Fraudulent charges",
+    },
+    { value: "other", label: "Other", description: "Other valid reason" },
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -52,17 +76,17 @@ export default function GoodwillLetterGenerator() {
     setError(null);
 
     try {
-      const response = await fetch('/api/credit-repair/goodwill', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/credit-repair/goodwill", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           accountId: formData.accountId,
           creditorName: formData.creditorName,
           latePaymentDate: new Date(formData.latePaymentDate),
           reason: formData.reason,
           userInfo: {
-            name: 'User Name', // Would come from auth
-            address: '123 Main St, City, ST 12345',
+            name: "User Name", // Would come from auth
+            address: "123 Main St, City, ST 12345",
             accountAge: formData.accountAge,
             paymentHistory: formData.paymentHistory,
             additionalContext: formData.additionalContext,
@@ -71,14 +95,14 @@ export default function GoodwillLetterGenerator() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate goodwill letter');
+        throw new Error("Failed to generate goodwill letter");
       }
 
       const data = await response.json();
       setGeneratedLetter(data.data.letter);
       setShowPreview(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setLoading(false);
     }
@@ -87,9 +111,9 @@ export default function GoodwillLetterGenerator() {
   const handleDownload = () => {
     if (!generatedLetter) return;
 
-    const blob = new Blob([generatedLetter], { type: 'text/plain' });
+    const blob = new Blob([generatedLetter], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = `goodwill-letter-${formData.creditorName}-${Date.now()}.txt`;
     document.body.appendChild(a);
@@ -100,15 +124,15 @@ export default function GoodwillLetterGenerator() {
 
   const getSuccessRate = () => {
     let baseRate = 60;
-    
+
     // Adjust based on payment history
-    if (formData.paymentHistory === 'excellent') baseRate += 10;
-    if (formData.paymentHistory === 'poor') baseRate -= 20;
-    
+    if (formData.paymentHistory === "excellent") baseRate += 10;
+    if (formData.paymentHistory === "poor") baseRate -= 20;
+
     // Adjust based on account age
-    if (formData.accountAge === '5+') baseRate += 10;
-    if (formData.accountAge === '<1') baseRate -= 10;
-    
+    if (formData.accountAge === "5+") baseRate += 10;
+    if (formData.accountAge === "<1") baseRate -= 10;
+
     return Math.max(30, Math.min(80, baseRate));
   };
 
@@ -118,15 +142,19 @@ export default function GoodwillLetterGenerator() {
       <div className="bg-gradient-to-r from-blue-600 to-emerald-600 rounded-lg p-8 text-white mb-6">
         <h1 className="text-3xl font-bold mb-2">Goodwill Letter Generator</h1>
         <p className="text-blue-100">
-          AI-powered personalized letters - 60% success rate for late payment removal
+          AI-powered personalized letters - 60% success rate for late payment
+          removal
         </p>
       </div>
 
       {/* Info Banner */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-        <h3 className="font-semibold text-blue-800 mb-2">What is a Goodwill Letter?</h3>
+        <h3 className="font-semibold text-blue-800 mb-2">
+          What is a Goodwill Letter?
+        </h3>
         <p className="text-sm text-blue-700">
-          A goodwill letter asks your creditor to remove a late payment as a courtesy. It works best if:
+          A goodwill letter asks your creditor to remove a late payment as a
+          courtesy. It works best if:
         </p>
         <ul className="list-disc list-inside text-sm text-blue-700 mt-2 space-y-1">
           <li>You have a good payment history (one-time mistake)</li>
@@ -140,7 +168,7 @@ export default function GoodwillLetterGenerator() {
         {/* Form */}
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6">
           <h2 className="text-2xl font-bold mb-4">Generate Goodwill Letter</h2>
-          
+
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Creditor Name */}
             <div>
@@ -150,7 +178,9 @@ export default function GoodwillLetterGenerator() {
               <input
                 type="text"
                 value={formData.creditorName}
-                onChange={(e) => setFormData({ ...formData, creditorName: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, creditorName: e.target.value })
+                }
                 placeholder="e.g., Capital One, Chase, Discover"
                 required
                 className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -165,7 +195,9 @@ export default function GoodwillLetterGenerator() {
               <input
                 type="text"
                 value={formData.accountId}
-                onChange={(e) => setFormData({ ...formData, accountId: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, accountId: e.target.value })
+                }
                 placeholder="XXXX"
                 maxLength={4}
                 required
@@ -181,7 +213,9 @@ export default function GoodwillLetterGenerator() {
               <input
                 type="date"
                 value={formData.latePaymentDate}
-                onChange={(e) => setFormData({ ...formData, latePaymentDate: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, latePaymentDate: e.target.value })
+                }
                 required
                 className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
@@ -194,7 +228,9 @@ export default function GoodwillLetterGenerator() {
               </label>
               <select
                 value={formData.reason}
-                onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, reason: e.target.value })
+                }
                 className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               >
@@ -213,7 +249,9 @@ export default function GoodwillLetterGenerator() {
               </label>
               <select
                 value={formData.accountAge}
-                onChange={(e) => setFormData({ ...formData, accountAge: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, accountAge: e.target.value })
+                }
                 className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               >
@@ -231,11 +269,15 @@ export default function GoodwillLetterGenerator() {
               </label>
               <select
                 value={formData.paymentHistory}
-                onChange={(e) => setFormData({ ...formData, paymentHistory: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, paymentHistory: e.target.value })
+                }
                 className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               >
-                <option value="excellent">Excellent (no other late payments)</option>
+                <option value="excellent">
+                  Excellent (no other late payments)
+                </option>
                 <option value="good">Good (1-2 other late payments)</option>
                 <option value="fair">Fair (3-5 other late payments)</option>
                 <option value="poor">Poor (6+ other late payments)</option>
@@ -248,8 +290,13 @@ export default function GoodwillLetterGenerator() {
                 Additional Context (Optional)
               </label>
               <textarea
-                value={formData.additionalContext || ''}
-                onChange={(e) => setFormData({ ...formData, additionalContext: e.target.value })}
+                value={formData.additionalContext || ""}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    additionalContext: e.target.value,
+                  })
+                }
                 placeholder="Any additional details about your situation..."
                 rows={3}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -259,8 +306,12 @@ export default function GoodwillLetterGenerator() {
             {/* Success Rate Indicator */}
             <div className="p-3 bg-green-50 rounded-lg">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-green-800">Estimated Success Rate:</span>
-                <span className="text-lg font-bold text-green-600">{getSuccessRate()}%</span>
+                <span className="text-sm text-green-800">
+                  Estimated Success Rate:
+                </span>
+                <span className="text-lg font-bold text-green-600">
+                  {getSuccessRate()}%
+                </span>
               </div>
             </div>
 
@@ -270,7 +321,7 @@ export default function GoodwillLetterGenerator() {
               disabled={loading}
               className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold"
             >
-              {loading ? 'Generating Letter...' : 'Generate Goodwill Letter'}
+              {loading ? "Generating Letter..." : "Generate Goodwill Letter"}
             </button>
 
             {error && (
@@ -284,10 +335,12 @@ export default function GoodwillLetterGenerator() {
         {/* Preview */}
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6">
           <h2 className="text-2xl font-bold mb-4">Letter Preview</h2>
-          
+
           {!showPreview && (
             <div className="flex items-center justify-center h-64 bg-gray-50 dark:bg-slate-900 rounded-lg">
-              <p className="text-gray-500 dark:text-slate-400">Fill out the form to generate your goodwill letter</p>
+              <p className="text-gray-500 dark:text-slate-400">
+                Fill out the form to generate your goodwill letter
+              </p>
             </div>
           )}
 
@@ -315,7 +368,9 @@ export default function GoodwillLetterGenerator() {
               </div>
 
               <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <h3 className="font-semibold text-yellow-800 mb-2">Next Steps:</h3>
+                <h3 className="font-semibold text-yellow-800 mb-2">
+                  Next Steps:
+                </h3>
                 <ol className="list-decimal list-inside space-y-1 text-sm text-yellow-700">
                   <li>Print and sign the letter</li>
                   <li>Send via certified mail with return receipt</li>
@@ -342,4 +397,3 @@ export default function GoodwillLetterGenerator() {
     </div>
   );
 }
-

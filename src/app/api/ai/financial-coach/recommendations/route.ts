@@ -5,10 +5,10 @@
  * POST /api/ai/financial-coach/recommendations - Generate new recommendations
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { recommendationEngine } from '@/lib/financial/recommendation-engine';
-import { RecommendationType } from '@/lib/financial/types/ai-coach.types';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { recommendationEngine } from "@/lib/financial/recommendation-engine";
+import { RecommendationType } from "@/lib/financial/types/ai-coach.types";
 
 async function getUser() {
   const supabase = await createClient();
@@ -23,15 +23,15 @@ export async function GET(request: NextRequest) {
     const user = await getUser();
 
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const searchParams = request.nextUrl.searchParams;
-    const types = searchParams.get('types')?.split(',') as
+    const types = searchParams.get("types")?.split(",") as
       | RecommendationType[]
       | undefined;
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const includeAI = searchParams.get('includeAI') !== 'false';
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const includeAI = searchParams.get("includeAI") !== "false";
 
     const result = await recommendationEngine.generateRecommendations({
       userId: user.id,
@@ -45,8 +45,8 @@ export async function GET(request: NextRequest) {
     // RecommendationsRoute error: Failed to fetch
     void _error;
     return NextResponse.json(
-      { error: 'Failed to fetch recommendations' },
-      { status: 500 }
+      { error: "Failed to fetch recommendations" },
+      { status: 500 },
     );
   }
 }
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     const user = await getUser();
 
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
@@ -75,8 +75,8 @@ export async function POST(request: NextRequest) {
     // RecommendationsRoute error: Generation failed
     void _error;
     return NextResponse.json(
-      { error: 'Failed to generate recommendations' },
-      { status: 500 }
+      { error: "Failed to generate recommendations" },
+      { status: 500 },
     );
   }
 }

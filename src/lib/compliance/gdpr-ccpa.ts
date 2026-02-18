@@ -61,12 +61,12 @@ export interface UserDataExport {
     aiInteractions: AIInteractionRecord[];
     logs: LogRecord[];
   };
-  format: 'json' | 'csv' | 'xml';
+  format: "json" | "csv" | "xml";
 }
 
 export interface ConsentRecord {
   userId: string;
-  consentType: 'marketing' | 'analytics' | 'ai_processing' | 'data_sharing';
+  consentType: "marketing" | "analytics" | "ai_processing" | "data_sharing";
   granted: boolean;
   timestamp: Date;
   ipAddress?: string;
@@ -77,7 +77,7 @@ export interface DataDeletionRequest {
   userId: string;
   requestDate: Date;
   reason?: string;
-  status: 'pending' | 'processing' | 'completed' | 'rejected';
+  status: "pending" | "processing" | "completed" | "rejected";
   completionDate?: Date;
 }
 
@@ -87,7 +87,7 @@ export interface DataBreachNotification {
   notifiedDate: Date;
   affectedUsers: string[];
   dataTypes: string[];
-  severity: 'low' | 'medium' | 'high' | 'critical';
+  severity: "low" | "medium" | "high" | "critical";
   mitigationSteps: string[];
 }
 
@@ -101,7 +101,7 @@ class GDPRComplianceService {
    */
   async exportUserData(
     userId: string,
-    format: 'json' | 'csv' | 'xml' = 'json'
+    format: "json" | "csv" | "xml" = "json",
   ): Promise<UserDataExport> {
     // In production, fetch from database
     const userData: UserDataExport = {
@@ -126,7 +126,7 @@ class GDPRComplianceService {
    */
   async rectifyUserData(
     userId: string,
-    corrections: Record<string, string | number | boolean>
+    corrections: Record<string, string | number | boolean>,
   ): Promise<boolean> {
     // In production, update database
     // Data rectification in progress
@@ -139,13 +139,13 @@ class GDPRComplianceService {
    */
   async deleteUserData(
     userId: string,
-    reason?: string
+    reason?: string,
   ): Promise<DataDeletionRequest> {
     const request: DataDeletionRequest = {
       userId,
       requestDate: new Date(),
       reason,
-      status: 'pending',
+      status: "pending",
     };
 
     // In production:
@@ -166,16 +166,16 @@ class GDPRComplianceService {
    */
   async portUserData(
     userId: string,
-    targetFormat: 'json' | 'csv' | 'xml'
+    targetFormat: "json" | "csv" | "xml",
   ): Promise<string> {
     const userData = await this.exportUserData(userId, targetFormat);
 
     switch (targetFormat) {
-      case 'json':
+      case "json":
         return JSON.stringify(userData, null, 2);
-      case 'csv':
+      case "csv":
         return this.convertToCSV(userData.data);
-      case 'xml':
+      case "xml":
         return this.convertToXML(userData.data);
       default:
         return JSON.stringify(userData, null, 2);
@@ -187,7 +187,7 @@ class GDPRComplianceService {
    */
   async restrictProcessing(
     userId: string,
-    restrictions: string[]
+    restrictions: string[],
   ): Promise<boolean> {
     // In production, update user preferences
     // Processing restriction applied
@@ -199,7 +199,7 @@ class GDPRComplianceService {
    */
   async objectToProcessing(
     userId: string,
-    processingType: string
+    processingType: string,
   ): Promise<boolean> {
     // In production, update user preferences
     // User objection recorded
@@ -211,7 +211,7 @@ class GDPRComplianceService {
    * Must notify within 72 hours
    */
   async notifyDataBreach(
-    breach: Omit<DataBreachNotification, 'notifiedDate'>
+    breach: Omit<DataBreachNotification, "notifiedDate">,
   ): Promise<void> {
     const notification: DataBreachNotification = {
       ...breach,
@@ -238,14 +238,16 @@ class GDPRComplianceService {
     // In production, fetch from database
     return {
       id: userId,
-      email: '[User Email]',
-      name: '[User Name]',
+      email: "[User Email]",
+      name: "[User Name]",
       createdAt: new Date(),
       updatedAt: new Date(),
     };
   }
 
-  private async getUserCreditReports(_userId: string): Promise<CreditReportRecord[]> {
+  private async getUserCreditReports(
+    _userId: string,
+  ): Promise<CreditReportRecord[]> {
     // In production, fetch from database
     return [];
   }
@@ -255,7 +257,9 @@ class GDPRComplianceService {
     return [];
   }
 
-  private async getUserAIInteractions(_userId: string): Promise<AIInteractionRecord[]> {
+  private async getUserAIInteractions(
+    _userId: string,
+  ): Promise<AIInteractionRecord[]> {
     // In production, fetch from database
     return [];
   }
@@ -265,19 +269,19 @@ class GDPRComplianceService {
     return [];
   }
 
-  private convertToCSV(data: UserDataExport['data']): string {
+  private convertToCSV(data: UserDataExport["data"]): string {
     // Simple CSV conversion
     return JSON.stringify(data);
   }
 
-  private convertToXML(data: UserDataExport['data']): string {
+  private convertToXML(data: UserDataExport["data"]): string {
     // Simple XML conversion
     return `<?xml version="1.0"?><data>${JSON.stringify(data)}</data>`;
   }
 
   private async sendBreachNotification(
     userId: string,
-    notification: DataBreachNotification
+    notification: DataBreachNotification,
   ): Promise<void> {
     // In production, send email
     // Breach notification being sent
@@ -300,29 +304,29 @@ class CCPAComplianceService {
   }> {
     return {
       categoriesCollected: [
-        'Personal identifiers (name, email, phone)',
-        'Financial information (credit reports, account numbers)',
-        'Internet activity (AI interactions, usage logs)',
-        'Geolocation data (IP address)',
+        "Personal identifiers (name, email, phone)",
+        "Financial information (credit reports, account numbers)",
+        "Internet activity (AI interactions, usage logs)",
+        "Geolocation data (IP address)",
       ],
       purposesOfCollection: [
-        'Providing credit repair services',
-        'Generating dispute letters',
-        'Credit report analysis',
-        'Customer support',
-        'Service improvement',
+        "Providing credit repair services",
+        "Generating dispute letters",
+        "Credit report analysis",
+        "Customer support",
+        "Service improvement",
       ],
       categoriesOfSources: [
-        'Directly from user',
-        'Credit bureaus',
-        'Public records',
-        'Automated technologies (cookies, logs)',
+        "Directly from user",
+        "Credit bureaus",
+        "Public records",
+        "Automated technologies (cookies, logs)",
       ],
       thirdPartiesSharedWith: [
-        'AI service providers (AIML API)',
-        'Credit bureaus',
-        'Payment processors',
-        'Analytics providers',
+        "AI service providers (AIML API)",
+        "Credit bureaus",
+        "Payment processors",
+        "Analytics providers",
       ],
     };
   }
@@ -335,7 +339,7 @@ class CCPAComplianceService {
     return {
       userId,
       requestDate: new Date(),
-      status: 'pending',
+      status: "pending",
     };
   }
 
@@ -386,7 +390,7 @@ class ConsentManagementService {
    */
   hasConsent(
     userId: string,
-    consentType: ConsentRecord['consentType']
+    consentType: ConsentRecord["consentType"],
   ): boolean {
     const userConsents = this.consents.get(userId) || [];
     const latestConsent = userConsents
@@ -401,7 +405,7 @@ class ConsentManagementService {
    */
   withdrawConsent(
     userId: string,
-    consentType: ConsentRecord['consentType']
+    consentType: ConsentRecord["consentType"],
   ): void {
     this.recordConsent({
       userId,
@@ -439,37 +443,37 @@ export const PRIVACY_POLICY_TEMPLATE = {
   lastUpdated: new Date().toISOString(),
   sections: [
     {
-      title: 'Information We Collect',
+      title: "Information We Collect",
       content:
-        'We collect personal identifiers, financial information, and usage data.',
+        "We collect personal identifiers, financial information, and usage data.",
     },
     {
-      title: 'How We Use Your Information',
+      title: "How We Use Your Information",
       content:
-        'We use your information to provide credit repair services and improve our platform.',
+        "We use your information to provide credit repair services and improve our platform.",
     },
     {
-      title: 'Data Sharing',
+      title: "Data Sharing",
       content:
-        'We share data with AI service providers, credit bureaus, and payment processors.',
+        "We share data with AI service providers, credit bureaus, and payment processors.",
     },
     {
-      title: 'Your Rights',
+      title: "Your Rights",
       content:
-        'You have the right to access, rectify, delete, and port your data.',
+        "You have the right to access, rectify, delete, and port your data.",
     },
     {
-      title: 'Data Security',
+      title: "Data Security",
       content:
-        'We implement industry-standard security measures to protect your data.',
+        "We implement industry-standard security measures to protect your data.",
     },
     {
-      title: 'Cookies',
-      content: 'We use cookies for analytics and service improvement.',
+      title: "Cookies",
+      content: "We use cookies for analytics and service improvement.",
     },
     {
-      title: 'Contact Us',
-      content: 'For privacy inquiries, contact privacy@fynvita.com',
+      title: "Contact Us",
+      content: "For privacy inquiries, contact privacy@fynvita.com",
     },
   ],
 };
@@ -480,21 +484,21 @@ export const PRIVACY_POLICY_TEMPLATE = {
 export const COOKIE_CONSENT_CONFIG = {
   categories: [
     {
-      id: 'necessary',
-      name: 'Necessary Cookies',
-      description: 'Required for the website to function',
+      id: "necessary",
+      name: "Necessary Cookies",
+      description: "Required for the website to function",
       required: true,
     },
     {
-      id: 'analytics',
-      name: 'Analytics Cookies',
-      description: 'Help us understand how you use our website',
+      id: "analytics",
+      name: "Analytics Cookies",
+      description: "Help us understand how you use our website",
       required: false,
     },
     {
-      id: 'marketing',
-      name: 'Marketing Cookies',
-      description: 'Used to show relevant advertisements',
+      id: "marketing",
+      name: "Marketing Cookies",
+      description: "Used to show relevant advertisements",
       required: false,
     },
   ],

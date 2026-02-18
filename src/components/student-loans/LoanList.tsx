@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import LoanCard from './LoanCard';
+import { useState } from "react";
+import LoanCard from "./LoanCard";
 
 interface StudentLoan {
   loan_id: string;
@@ -20,26 +20,36 @@ interface LoanListProps {
   onCreateDispute: (loanId: string) => void;
 }
 
-export default function LoanList({ loans, onViewStrategies, onCreateDispute }: LoanListProps) {
-  const [sortBy, setSortBy] = useState<'balance' | 'rate' | 'status'>('balance');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
+export default function LoanList({
+  loans,
+  onViewStrategies,
+  onCreateDispute,
+}: LoanListProps) {
+  const [sortBy, setSortBy] = useState<"balance" | "rate" | "status">(
+    "balance",
+  );
+  const [filterStatus, setFilterStatus] = useState<string>("all");
 
   // Get unique statuses for filter
-  const statuses = ['all', ...Array.from(new Set(loans.map(loan => loan.loan_status)))];
+  const statuses = [
+    "all",
+    ...Array.from(new Set(loans.map((loan) => loan.loan_status))),
+  ];
 
   // Filter loans
-  const filteredLoans = filterStatus === 'all'
-    ? loans
-    : loans.filter(loan => loan.loan_status === filterStatus);
+  const filteredLoans =
+    filterStatus === "all"
+      ? loans
+      : loans.filter((loan) => loan.loan_status === filterStatus);
 
   // Sort loans
   const sortedLoans = [...filteredLoans].sort((a, b) => {
     switch (sortBy) {
-      case 'balance':
+      case "balance":
         return b.current_balance - a.current_balance;
-      case 'rate':
+      case "rate":
         return b.interest_rate - a.interest_rate;
-      case 'status':
+      case "status":
         return a.loan_status.localeCompare(b.loan_status);
       default:
         return 0;
@@ -51,10 +61,14 @@ export default function LoanList({ loans, onViewStrategies, onCreateDispute }: L
       {/* Filters and Sort */}
       <div className="p-6 border-b border-gray-200 dark:border-slate-700 flex flex-wrap gap-4">
         <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-700 dark:text-slate-200">Sort by:</label>
+          <label className="text-sm font-medium text-gray-700 dark:text-slate-200">
+            Sort by:
+          </label>
           <select
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as 'balance' | 'rate' | 'status')}
+            onChange={(e) =>
+              setSortBy(e.target.value as "balance" | "rate" | "status")
+            }
             className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="balance">Balance (High to Low)</option>
@@ -64,15 +78,21 @@ export default function LoanList({ loans, onViewStrategies, onCreateDispute }: L
         </div>
 
         <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-700 dark:text-slate-200">Filter:</label>
+          <label className="text-sm font-medium text-gray-700 dark:text-slate-200">
+            Filter:
+          </label>
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
             className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
-            {statuses.map(status => (
+            {statuses.map((status) => (
               <option key={status} value={status}>
-                {status === 'all' ? 'All Statuses' : status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                {status === "all"
+                  ? "All Statuses"
+                  : status
+                      .replace(/_/g, " ")
+                      .replace(/\b\w/g, (l) => l.toUpperCase())}
               </option>
             ))}
           </select>
@@ -87,10 +107,12 @@ export default function LoanList({ loans, onViewStrategies, onCreateDispute }: L
       <div className="p-6 space-y-4">
         {sortedLoans.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500 dark:text-slate-400">No loans match your filters</p>
+            <p className="text-gray-500 dark:text-slate-400">
+              No loans match your filters
+            </p>
           </div>
         ) : (
-          sortedLoans.map(loan => (
+          sortedLoans.map((loan) => (
             <LoanCard
               key={loan.loan_id}
               loan={loan}

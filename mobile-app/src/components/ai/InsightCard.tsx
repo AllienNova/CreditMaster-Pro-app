@@ -3,19 +3,19 @@
  * Displays AI-generated insights with actions
  */
 
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { lightTheme as theme } from '../../constants/theme';
+import React from "react";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { lightTheme as theme } from "../../constants/theme";
 
 type InsightType =
-  | 'spending'
-  | 'savings'
-  | 'debt'
-  | 'credit'
-  | 'investment'
-  | 'general';
-type InsightPriority = 'high' | 'medium' | 'low';
+  | "spending"
+  | "savings"
+  | "debt"
+  | "credit"
+  | "investment"
+  | "general";
+type InsightPriority = "high" | "medium" | "low";
 
 interface Insight {
   id: string;
@@ -37,18 +37,18 @@ const typeConfig: Record<
   InsightType,
   { icon: keyof typeof Ionicons.glyphMap; color: string }
 > = {
-  spending: { icon: 'wallet', color: '#EF4444' },
-  savings: { icon: 'trending-up', color: '#22C55E' },
-  debt: { icon: 'card', color: '#F59E0B' },
-  credit: { icon: 'analytics', color: '#3B82F6' },
-  investment: { icon: 'pie-chart', color: '#8B5CF6' },
-  general: { icon: 'bulb', color: '#06B6D4' },
+  spending: { icon: "wallet", color: "#EF4444" },
+  savings: { icon: "trending-up", color: "#22C55E" },
+  debt: { icon: "card", color: "#F59E0B" },
+  credit: { icon: "analytics", color: "#3B82F6" },
+  investment: { icon: "pie-chart", color: "#8B5CF6" },
+  general: { icon: "bulb", color: "#06B6D4" },
 };
 
 const priorityStyles: Record<InsightPriority, { borderColor: string }> = {
-  high: { borderColor: '#EF4444' },
-  medium: { borderColor: '#F59E0B' },
-  low: { borderColor: '#22C55E' },
+  high: { borderColor: "#EF4444" },
+  medium: { borderColor: "#F59E0B" },
+  low: { borderColor: "#22C55E" },
 };
 
 export function InsightCard({
@@ -107,23 +107,23 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     marginBottom: 12,
   },
   iconContainer: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 12,
   },
   headerText: {
@@ -131,12 +131,12 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   impact: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: "500",
     marginTop: 2,
   },
   dismissButton: {
@@ -149,17 +149,17 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 10,
     borderRadius: 8,
     gap: 4,
   },
   actionButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#fff',
+    fontWeight: "600",
+    color: "#fff",
   },
 });
 

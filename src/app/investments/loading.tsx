@@ -12,7 +12,10 @@ export default function InvestmentsLoading() {
           {/* Portfolio stats */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+              <div
+                key={i}
+                className="bg-white dark:bg-slate-800 rounded-lg shadow p-6"
+              >
                 <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/2 mb-4" />
                 <div className="h-8 bg-gray-200 dark:bg-slate-700 rounded w-3/4" />
               </div>
@@ -30,7 +33,10 @@ export default function InvestmentsLoading() {
             <div className="h-6 bg-gray-200 dark:bg-slate-700 rounded w-32 mb-4" />
             <div className="space-y-3">
               {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-slate-700 last:border-0">
+                <div
+                  key={i}
+                  className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-slate-700 last:border-0"
+                >
                   <div className="flex items-center">
                     <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-slate-700" />
                     <div className="ml-4">

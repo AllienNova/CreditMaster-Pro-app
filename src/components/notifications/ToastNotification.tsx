@@ -1,7 +1,13 @@
 "use client";
 
-import { useState, useEffect, createContext, useContext, useCallback } from "react";
-import { Icon } from '@/components/ui/Icon';
+import {
+  useState,
+  useEffect,
+  createContext,
+  useContext,
+  useCallback,
+} from "react";
+import { Icon } from "@/components/ui/Icon";
 
 interface Toast {
   id: string;
@@ -51,13 +57,23 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-function ToastContainer({ toasts, onClose }: { toasts: Toast[]; onClose: (id: string) => void }) {
+function ToastContainer({
+  toasts,
+  onClose,
+}: {
+  toasts: Toast[];
+  onClose: (id: string) => void;
+}) {
   if (toasts.length === 0) return null;
 
   return (
     <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
       {toasts.map((toast) => (
-        <ToastItem key={toast.id} toast={toast} onClose={() => onClose(toast.id)} />
+        <ToastItem
+          key={toast.id}
+          toast={toast}
+          onClose={() => onClose(toast.id)}
+        />
       ))}
     </div>
   );
@@ -74,13 +90,33 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
   const getTypeStyles = () => {
     switch (toast.type) {
       case "success":
-        return { bg: "bg-emerald-50", border: "border-emerald-200", icon: "sparkles", iconColor: "text-emerald-500" };
+        return {
+          bg: "bg-emerald-50",
+          border: "border-emerald-200",
+          icon: "sparkles",
+          iconColor: "text-emerald-500",
+        };
       case "error":
-        return { bg: "bg-red-50", border: "border-red-200", icon: "sparkles", iconColor: "text-red-500" };
+        return {
+          bg: "bg-red-50",
+          border: "border-red-200",
+          icon: "sparkles",
+          iconColor: "text-red-500",
+        };
       case "warning":
-        return { bg: "bg-yellow-50", border: "border-yellow-200", icon: "sparkles", iconColor: "text-yellow-500" };
+        return {
+          bg: "bg-yellow-50",
+          border: "border-yellow-200",
+          icon: "sparkles",
+          iconColor: "text-yellow-500",
+        };
       case "info":
-        return { bg: "bg-blue-50", border: "border-blue-200", icon: "ℹ️", iconColor: "text-blue-500" };
+        return {
+          bg: "bg-blue-50",
+          border: "border-blue-200",
+          icon: "ℹ️",
+          iconColor: "text-blue-500",
+        };
     }
   };
 
@@ -95,15 +131,20 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
       <div className="flex items-start gap-3">
         <span className={`text-xl ${styles.iconColor}`}>{styles.icon}</span>
         <div className="flex-1">
-          <p className="font-semibold text-gray-900 dark:text-white">{toast.title}</p>
-          {toast.message && <p className="text-sm text-gray-600 dark:text-slate-300 mt-1">{toast.message}</p>}
+          <p className="font-semibold text-gray-900 dark:text-white">
+            {toast.title}
+          </p>
+          {toast.message && (
+            <p className="text-sm text-gray-600 dark:text-slate-300 mt-1">
+              {toast.message}
+            </p>
+          )}
         </div>
         <button
           onClick={handleClose}
           className="text-gray-400 hover:text-gray-600 dark:text-slate-300 transition"
           aria-label="Close"
-        >
-                  </button>
+        ></button>
       </div>
     </div>
   );
@@ -120,13 +161,18 @@ export function toast(options: Omit<Toast, "id">) {
   if (toastHandler) {
     toastHandler(options);
   } else {
-    console.warn("Toast handler not initialized. Wrap your app with ToastProvider.");
+    console.warn(
+      "Toast handler not initialized. Wrap your app with ToastProvider.",
+    );
   }
 }
 
 // Convenience methods
-toast.success = (title: string, message?: string) => toast({ type: "success", title, message });
-toast.error = (title: string, message?: string) => toast({ type: "error", title, message });
-toast.warning = (title: string, message?: string) => toast({ type: "warning", title, message });
-toast.info = (title: string, message?: string) => toast({ type: "info", title, message });
-
+toast.success = (title: string, message?: string) =>
+  toast({ type: "success", title, message });
+toast.error = (title: string, message?: string) =>
+  toast({ type: "error", title, message });
+toast.warning = (title: string, message?: string) =>
+  toast({ type: "warning", title, message });
+toast.info = (title: string, message?: string) =>
+  toast({ type: "info", title, message });

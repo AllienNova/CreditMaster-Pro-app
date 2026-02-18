@@ -2,7 +2,7 @@
  * Aggregated Financial Context API
  *
  * GET /api/financial/aggregated - Get complete aggregated financial context
- * 
+ *
  * Query Parameters:
  * - snapshot=true - Include point-in-time snapshot
  * - trends=true - Include trend analysis
@@ -10,11 +10,11 @@
  * - refresh=true - Force cache refresh
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { rbac } from '@/lib/auth/rbac';
-import { financialAggregationService } from '@/lib/financial/financial-aggregation-service';
-import { TrendPeriod } from '@/lib/financial/types/aggregated-context.types';
+import { NextRequest, NextResponse } from "next/server";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { rbac } from "@/lib/auth/rbac";
+import { financialAggregationService } from "@/lib/financial/financial-aggregation-service";
+import { TrendPeriod } from "@/lib/financial/types/aggregated-context.types";
 
 /**
  * GET /api/financial/aggregated
@@ -26,32 +26,32 @@ export async function GET(request: NextRequest) {
     const validation = await jwtValidation.validateFromHeaders(request);
 
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check permissions
     if (
       !rbac.hasPermission(
         validation.user as Parameters<typeof rbac.hasPermission>[0],
-        'financial:read'
+        "financial:read",
       )
     ) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const userId = validation.user.id;
     const searchParams = request.nextUrl.searchParams;
 
     // Parse query parameters
-    const includeSnapshot = searchParams.get('snapshot') === 'true';
-    const includeTrends = searchParams.get('trends') === 'true';
-    const dateRange = (searchParams.get('dateRange') || '30d') as TrendPeriod;
-    const forceRefresh = searchParams.get('refresh') === 'true';
+    const includeSnapshot = searchParams.get("snapshot") === "true";
+    const includeTrends = searchParams.get("trends") === "true";
+    const dateRange = (searchParams.get("dateRange") || "30d") as TrendPeriod;
+    const forceRefresh = searchParams.get("refresh") === "true";
 
     // Get aggregated context
     const context = await financialAggregationService.getAggregatedContext(
       userId,
-      { forceRefresh }
+      { forceRefresh },
     );
 
     // Build response
@@ -59,8 +59,12 @@ export async function GET(request: NextRequest) {
       success: boolean;
       data: {
         context: typeof context;
-        snapshot?: Awaited<ReturnType<typeof financialAggregationService.getFinancialSnapshot>>;
-        trends?: Awaited<ReturnType<typeof financialAggregationService.getFinancialTrends>>;
+        snapshot?: Awaited<
+          ReturnType<typeof financialAggregationService.getFinancialSnapshot>
+        >;
+        trends?: Awaited<
+          ReturnType<typeof financialAggregationService.getFinancialTrends>
+        >;
       };
       meta: {
         cachedAt: Date;
@@ -83,22 +87,24 @@ export async function GET(request: NextRequest) {
 
     // Add snapshot if requested
     if (includeSnapshot) {
-      response.data.snapshot = await financialAggregationService.getFinancialSnapshot(userId);
+      response.data.snapshot =
+        await financialAggregationService.getFinancialSnapshot(userId);
     }
 
     // Add trends if requested
     if (includeTrends) {
-      response.data.trends = await financialAggregationService.getFinancialTrends(userId, {
-        period: dateRange,
-      });
+      response.data.trends =
+        await financialAggregationService.getFinancialTrends(userId, {
+          period: dateRange,
+        });
     }
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error('Error fetching aggregated financial context:', error);
+    console.error("Error fetching aggregated financial context:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch aggregated financial context' },
-      { status: 500 }
+      { error: "Failed to fetch aggregated financial context" },
+      { status: 500 },
     );
   }
 }
@@ -113,7 +119,7 @@ export async function DELETE(request: NextRequest) {
     const validation = await jwtValidation.validateFromHeaders(request);
 
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Clear cache for user
@@ -121,14 +127,13 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Cache cleared successfully',
+      message: "Cache cleared successfully",
     });
   } catch (error) {
-    console.error('Error clearing cache:', error);
+    console.error("Error clearing cache:", error);
     return NextResponse.json(
-      { error: 'Failed to clear cache' },
-      { status: 500 }
+      { error: "Failed to clear cache" },
+      { status: 500 },
     );
   }
 }
-

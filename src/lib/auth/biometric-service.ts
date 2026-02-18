@@ -8,20 +8,20 @@
  * expo-local-authentication or react-native-biometrics.
  */
 
-import { webAuthnService, WebAuthnCredential } from './webauthn-service';
+import { webAuthnService, WebAuthnCredential } from "./webauthn-service";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type BiometricType = 'fingerprint' | 'face' | 'iris' | 'unknown';
+export type BiometricType = "fingerprint" | "face" | "iris" | "unknown";
 
 export interface BiometricCapabilities {
   isAvailable: boolean;
   biometricType: BiometricType;
   isEnrolled: boolean;
   canAuthenticate: boolean;
-  securityLevel: 'weak' | 'strong';
+  securityLevel: "weak" | "strong";
 }
 
 export interface BiometricEnrollmentResult {
@@ -65,10 +65,10 @@ export class BiometricService {
     if (!isAvailable) {
       return {
         isAvailable: false,
-        biometricType: 'unknown',
+        biometricType: "unknown",
         isEnrolled: false,
         canAuthenticate: false,
-        securityLevel: 'weak',
+        securityLevel: "weak",
       };
     }
 
@@ -80,7 +80,7 @@ export class BiometricService {
       biometricType,
       isEnrolled: true, // Platform authenticator implies biometrics are enrolled
       canAuthenticate: true,
-      securityLevel: 'strong',
+      securityLevel: "strong",
     };
   }
 
@@ -88,34 +88,34 @@ export class BiometricService {
    * Detect the type of biometric available on the device
    */
   private detectBiometricType(): BiometricType {
-    if (typeof window === 'undefined') return 'unknown';
+    if (typeof window === "undefined") return "unknown";
 
     const userAgent = navigator.userAgent.toLowerCase();
-    const platform = navigator.platform?.toLowerCase() || '';
+    const platform = navigator.platform?.toLowerCase() || "";
 
     // iOS devices (Face ID on newer, Touch ID on older)
     if (/iphone|ipad|ipod/.test(userAgent)) {
       // iPhone X and newer typically have Face ID
       // This is a simplification - in a real app, you'd use native APIs
-      return 'face';
+      return "face";
     }
 
     // macOS (Touch ID on MacBooks with Touch Bar)
-    if (platform.includes('mac')) {
-      return 'fingerprint';
+    if (platform.includes("mac")) {
+      return "fingerprint";
     }
 
     // Android devices
     if (/android/.test(userAgent)) {
-      return 'fingerprint'; // Most Android devices use fingerprint
+      return "fingerprint"; // Most Android devices use fingerprint
     }
 
     // Windows (Windows Hello can be face or fingerprint)
-    if (platform.includes('win')) {
-      return 'face'; // Windows Hello often uses face recognition
+    if (platform.includes("win")) {
+      return "face"; // Windows Hello often uses face recognition
     }
 
-    return 'unknown';
+    return "unknown";
   }
 
   // ==========================================================================
@@ -129,14 +129,14 @@ export class BiometricService {
     userId: string,
     userName: string,
     displayName: string,
-    deviceName?: string
+    deviceName?: string,
   ): Promise<BiometricEnrollmentResult> {
     const capabilities = await this.checkCapabilities();
 
     if (!capabilities.isAvailable) {
       return {
         success: false,
-        error: 'Biometric authentication is not available on this device',
+        error: "Biometric authentication is not available on this device",
       };
     }
 
@@ -144,7 +144,7 @@ export class BiometricService {
       return {
         success: false,
         error:
-          'Biometrics are not set up on this device. Please configure biometrics in your device settings.',
+          "Biometrics are not set up on this device. Please configure biometrics in your device settings.",
       };
     }
 
@@ -154,16 +154,16 @@ export class BiometricService {
       userName,
       displayName,
       {
-        authenticatorType: 'platform',
+        authenticatorType: "platform",
         credentialName:
           deviceName || this.getDefaultDeviceName(capabilities.biometricType),
-      }
+      },
     );
 
     if (!result.success) {
       return {
         success: false,
-        error: result.error || 'Failed to enroll biometric',
+        error: result.error || "Failed to enroll biometric",
       };
     }
 
@@ -178,14 +178,14 @@ export class BiometricService {
    */
   private getDefaultDeviceName(biometricType: BiometricType): string {
     switch (biometricType) {
-      case 'face':
-        return 'Face ID';
-      case 'fingerprint':
-        return 'Touch ID';
-      case 'iris':
-        return 'Iris Scanner';
+      case "face":
+        return "Face ID";
+      case "fingerprint":
+        return "Touch ID";
+      case "iris":
+        return "Iris Scanner";
       default:
-        return 'Biometric';
+        return "Biometric";
     }
   }
 
@@ -202,7 +202,7 @@ export class BiometricService {
     if (!capabilities.isAvailable) {
       return {
         success: false,
-        error: 'Biometric authentication is not available',
+        error: "Biometric authentication is not available",
       };
     }
 
@@ -212,7 +212,7 @@ export class BiometricService {
     if (!result.success) {
       return {
         success: false,
-        error: result.error || 'Biometric authentication failed',
+        error: result.error || "Biometric authentication failed",
       };
     }
 
@@ -233,7 +233,7 @@ export class BiometricService {
       description?: string;
       cancelLabel?: string;
       fallbackLabel?: string;
-    } = {}
+    } = {},
   ): Promise<BiometricAuthResult> {
     // In a React Native app, you would use expo-local-authentication here
     // For web, we just use the standard WebAuthn flow
@@ -251,12 +251,12 @@ export class BiometricService {
    * Get enrolled biometric credentials for a user
    */
   async getEnrolledCredentials(
-    userId: string
+    userId: string,
   ): Promise<StoredBiometricCredential[]> {
     const credentials = await webAuthnService.getCredentials(userId);
 
     return credentials
-      .filter((cred) => cred.type === 'platform')
+      .filter((cred) => cred.type === "platform")
       .map((cred) => ({
         id: cred.id,
         userId,
@@ -287,7 +287,7 @@ export class BiometricService {
    */
   async renameCredential(
     credentialId: string,
-    newName: string
+    newName: string,
   ): Promise<boolean> {
     return webAuthnService.renameCredential(credentialId, newName);
   }
@@ -297,11 +297,11 @@ export class BiometricService {
    */
   private inferBiometricType(name: string): BiometricType {
     const lowerName = name.toLowerCase();
-    if (lowerName.includes('face')) return 'face';
-    if (lowerName.includes('touch') || lowerName.includes('finger'))
-      return 'fingerprint';
-    if (lowerName.includes('iris')) return 'iris';
-    return 'unknown';
+    if (lowerName.includes("face")) return "face";
+    if (lowerName.includes("touch") || lowerName.includes("finger"))
+      return "fingerprint";
+    if (lowerName.includes("iris")) return "iris";
+    return "unknown";
   }
 
   // ==========================================================================
@@ -312,41 +312,41 @@ export class BiometricService {
    * Check if biometric login is enabled for quick access
    */
   async isBiometricLoginEnabled(): Promise<boolean> {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('biometric_login_enabled') === 'true';
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("biometric_login_enabled") === "true";
   }
 
   /**
    * Enable/disable biometric login for quick access
    */
   async setBiometricLoginEnabled(enabled: boolean): Promise<void> {
-    if (typeof window === 'undefined') return;
-    localStorage.setItem('biometric_login_enabled', enabled ? 'true' : 'false');
+    if (typeof window === "undefined") return;
+    localStorage.setItem("biometric_login_enabled", enabled ? "true" : "false");
   }
 
   /**
    * Get the stored user ID for biometric login
    */
   async getStoredUserId(): Promise<string | null> {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem('biometric_user_id');
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("biometric_user_id");
   }
 
   /**
    * Store user ID for biometric login
    */
   async storeUserId(userId: string): Promise<void> {
-    if (typeof window === 'undefined') return;
-    localStorage.setItem('biometric_user_id', userId);
+    if (typeof window === "undefined") return;
+    localStorage.setItem("biometric_user_id", userId);
   }
 
   /**
    * Clear stored biometric login data
    */
   async clearStoredData(): Promise<void> {
-    if (typeof window === 'undefined') return;
-    localStorage.removeItem('biometric_login_enabled');
-    localStorage.removeItem('biometric_user_id');
+    if (typeof window === "undefined") return;
+    localStorage.removeItem("biometric_login_enabled");
+    localStorage.removeItem("biometric_user_id");
   }
 }
 

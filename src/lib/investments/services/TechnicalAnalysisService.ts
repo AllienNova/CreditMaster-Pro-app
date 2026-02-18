@@ -21,8 +21,12 @@ import type {
   ChartPattern,
   IndicatorResult,
   PriceLevel,
-} from '../types/technical-analysis.types';
-import type { SignalStrength, TrendDirection, Timeframe } from '../types/investment.types';
+} from "../types/technical-analysis.types";
+import type {
+  SignalStrength,
+  TrendDirection,
+  Timeframe,
+} from "../types/investment.types";
 
 // ============================================================================
 // HELPER TYPES
@@ -74,16 +78,19 @@ export class TechnicalAnalysisService {
   async analyzeTechnical(
     symbol: string,
     timeframe: Timeframe,
-    historicalData: { close: number; high: number; low: number; volume: number; timestamp: Date }[],
+    historicalData: {
+      close: number;
+      high: number;
+      low: number;
+      volume: number;
+      timestamp: Date;
+    }[],
     options?: {
       includePatterns?: boolean;
       includeSignals?: boolean;
-    }
+    },
   ): Promise<TechnicalAnalysis> {
-    const {
-      includePatterns = true,
-      includeSignals = true,
-    } = options || {};
+    const { includePatterns = true, includeSignals = true } = options || {};
 
     const closes = historicalData.map((d) => d.close);
     const highs = historicalData.map((d) => d.high);
@@ -107,7 +114,13 @@ export class TechnicalAnalysisService {
     const volume = this.buildVolumeAnalysis(closes, volumes, indicators);
 
     // Find support and resistance levels
-    const supportResistance = this.buildSupportResistance(symbol, timeframe, highs, lows, closes);
+    const supportResistance = this.buildSupportResistance(
+      symbol,
+      timeframe,
+      highs,
+      lows,
+      closes,
+    );
 
     // Generate trading signals
     const signals = includeSignals
@@ -115,10 +128,19 @@ export class TechnicalAnalysisService {
       : [];
 
     // Calculate overall signal and score
-    const { overallSignal, overallScore } = this.calculateOverallSignal(trend, momentum, signals);
+    const { overallSignal, overallScore } = this.calculateOverallSignal(
+      trend,
+      momentum,
+      signals,
+    );
 
     // Generate summary
-    const summary = this.generateSummary(trend, momentum, volatility, overallSignal);
+    const summary = this.generateSummary(
+      trend,
+      momentum,
+      volatility,
+      overallSignal,
+    );
 
     return {
       symbol,
@@ -145,7 +167,7 @@ export class TechnicalAnalysisService {
     closes: number[],
     highs: number[],
     lows: number[],
-    volumes: number[]
+    volumes: number[],
   ): TechnicalIndicators {
     return {
       sma20: this.calculateSMA(closes, 20),
@@ -213,8 +235,6 @@ export class TechnicalAnalysisService {
     return 100 - 100 / (1 + rs);
   }
 
-
-
   /**
    * Calculate MACD (Moving Average Convergence Divergence)
    */
@@ -248,7 +268,7 @@ export class TechnicalAnalysisService {
     closes: number[],
     highs: number[],
     lows: number[],
-    period: number = 14
+    period: number = 14,
   ): StochasticData {
     if (closes.length < period) {
       return { k: 50, d: 50 };
@@ -281,12 +301,16 @@ export class TechnicalAnalysisService {
   /**
    * Calculate Bollinger Bands
    */
-  private calculateBollingerBands(closes: number[], period: number = 20): BollingerBands {
+  private calculateBollingerBands(
+    closes: number[],
+    period: number = 20,
+  ): BollingerBands {
     const middle = this.calculateSMA(closes, period);
     const slice = closes.slice(-period);
 
     // Calculate standard deviation
-    const variance = slice.reduce((sum, val) => sum + Math.pow(val - middle, 2), 0) / period;
+    const variance =
+      slice.reduce((sum, val) => sum + Math.pow(val - middle, 2), 0) / period;
     const stdDev = Math.sqrt(variance);
 
     return {
@@ -304,7 +328,7 @@ export class TechnicalAnalysisService {
     highs: number[],
     lows: number[],
     closes: number[],
-    period: number = 14
+    period: number = 14,
   ): number {
     if (highs.length < period + 1) return 0;
 
@@ -317,7 +341,7 @@ export class TechnicalAnalysisService {
       const tr = Math.max(
         high - low,
         Math.abs(high - prevClose),
-        Math.abs(low - prevClose)
+        Math.abs(low - prevClose),
       );
       trueRanges.push(tr);
     }
@@ -347,7 +371,7 @@ export class TechnicalAnalysisService {
     closes: number[],
     highs: number[],
     lows: number[],
-    volumes: number[]
+    volumes: number[],
   ): number {
     let totalVolume = 0;
     let totalPriceVolume = 0;
@@ -358,7 +382,9 @@ export class TechnicalAnalysisService {
       totalVolume += volumes[i];
     }
 
-    return totalVolume > 0 ? totalPriceVolume / totalVolume : closes[closes.length - 1];
+    return totalVolume > 0
+      ? totalPriceVolume / totalVolume
+      : closes[closes.length - 1];
   }
 
   /**
@@ -368,7 +394,7 @@ export class TechnicalAnalysisService {
     highs: number[],
     lows: number[],
     closes: number[],
-    period: number = 14
+    period: number = 14,
   ): number {
     if (highs.length < period + 1) return 25;
 
@@ -381,7 +407,7 @@ export class TechnicalAnalysisService {
       const tr = Math.max(
         highs[i] - lows[i],
         Math.abs(highs[i] - closes[i - 1]),
-        Math.abs(lows[i] - closes[i - 1])
+        Math.abs(lows[i] - closes[i - 1]),
       );
       trueRanges.push(tr);
 
@@ -410,7 +436,7 @@ export class TechnicalAnalysisService {
     highs: number[],
     lows: number[],
     closes: number[],
-    period: number = 20
+    period: number = 20,
   ): number {
     if (closes.length < period) return 0;
 
@@ -432,7 +458,11 @@ export class TechnicalAnalysisService {
   /**
    * Generate trading signals based on indicators
    */
-  private generateSignals(indicators: TechnicalIndicators, currentPrice: number, symbol: string): TechnicalSignal[] {
+  private generateSignals(
+    indicators: TechnicalIndicators,
+    currentPrice: number,
+    symbol: string,
+  ): TechnicalSignal[] {
     const signals: TechnicalSignal[] = [];
     let signalId = 1;
 
@@ -440,9 +470,9 @@ export class TechnicalAnalysisService {
     if (indicators.rsi < 30) {
       signals.push({
         id: `${symbol}-rsi-${signalId++}`,
-        type: 'indicator',
-        name: 'RSI Oversold',
-        signal: 'strong_buy',
+        type: "indicator",
+        name: "RSI Oversold",
+        signal: "strong_buy",
         price: currentPrice,
         timestamp: new Date(),
         description: `RSI is oversold at ${indicators.rsi.toFixed(2)}`,
@@ -451,9 +481,9 @@ export class TechnicalAnalysisService {
     } else if (indicators.rsi > 70) {
       signals.push({
         id: `${symbol}-rsi-${signalId++}`,
-        type: 'indicator',
-        name: 'RSI Overbought',
-        signal: 'strong_sell',
+        type: "indicator",
+        name: "RSI Overbought",
+        signal: "strong_sell",
         price: currentPrice,
         timestamp: new Date(),
         description: `RSI is overbought at ${indicators.rsi.toFixed(2)}`,
@@ -462,51 +492,63 @@ export class TechnicalAnalysisService {
     }
 
     // MACD signals
-    if (indicators.macd.histogram > 0 && indicators.macd.line > indicators.macd.signal) {
+    if (
+      indicators.macd.histogram > 0 &&
+      indicators.macd.line > indicators.macd.signal
+    ) {
       signals.push({
         id: `${symbol}-macd-${signalId++}`,
-        type: 'crossover',
-        name: 'MACD Bullish Crossover',
-        signal: 'buy',
+        type: "crossover",
+        name: "MACD Bullish Crossover",
+        signal: "buy",
         price: currentPrice,
         timestamp: new Date(),
-        description: 'MACD line crossed above signal line',
+        description: "MACD line crossed above signal line",
         reliability: 70,
       });
-    } else if (indicators.macd.histogram < 0 && indicators.macd.line < indicators.macd.signal) {
+    } else if (
+      indicators.macd.histogram < 0 &&
+      indicators.macd.line < indicators.macd.signal
+    ) {
       signals.push({
         id: `${symbol}-macd-${signalId++}`,
-        type: 'crossover',
-        name: 'MACD Bearish Crossover',
-        signal: 'sell',
+        type: "crossover",
+        name: "MACD Bearish Crossover",
+        signal: "sell",
         price: currentPrice,
         timestamp: new Date(),
-        description: 'MACD line crossed below signal line',
+        description: "MACD line crossed below signal line",
         reliability: 70,
       });
     }
 
     // Moving Average signals
-    if (currentPrice > indicators.sma50 && indicators.sma50 > indicators.sma200) {
+    if (
+      currentPrice > indicators.sma50 &&
+      indicators.sma50 > indicators.sma200
+    ) {
       signals.push({
         id: `${symbol}-ma-${signalId++}`,
-        type: 'crossover',
-        name: 'Golden Cross',
-        signal: 'buy',
+        type: "crossover",
+        name: "Golden Cross",
+        signal: "buy",
         price: currentPrice,
         timestamp: new Date(),
-        description: 'Golden Cross pattern (SMA50 > SMA200)',
+        description: "Golden Cross pattern (SMA50 > SMA200)",
         reliability: 80,
       });
-    } else if (currentPrice < indicators.sma50 && indicators.sma50 < indicators.sma200) {
+    } else if (
+      currentPrice < indicators.sma50 &&
+      indicators.sma50 < indicators.sma200
+    ) {
       signals.push({
         id: `${symbol}-ma-${signalId++}`,
-        type: 'crossover',
-        name: 'Death Cross',
-        signal: 'sell',
+        type: "crossover",
+        name: "Death Cross",
+        signal: "sell",
         price: currentPrice,
         timestamp: new Date(),
-        description: 'Death Cross pattern (SMA50 < SMA200)',
+        description: "Death Cross pattern (SMA50 < SMA200)",
         reliability: 80,
       });
     }
@@ -515,23 +557,23 @@ export class TechnicalAnalysisService {
     if (currentPrice < indicators.bollingerBands.lower) {
       signals.push({
         id: `${symbol}-bb-${signalId++}`,
-        type: 'breakout',
-        name: 'Bollinger Band Breakout',
-        signal: 'buy',
+        type: "breakout",
+        name: "Bollinger Band Breakout",
+        signal: "buy",
         price: currentPrice,
         timestamp: new Date(),
-        description: 'Price below lower Bollinger Band',
+        description: "Price below lower Bollinger Band",
         reliability: 65,
       });
     } else if (currentPrice > indicators.bollingerBands.upper) {
       signals.push({
         id: `${symbol}-bb-${signalId++}`,
-        type: 'breakout',
-        name: 'Bollinger Band Breakout',
-        signal: 'sell',
+        type: "breakout",
+        name: "Bollinger Band Breakout",
+        signal: "sell",
         price: currentPrice,
         timestamp: new Date(),
-        description: 'Price above upper Bollinger Band',
+        description: "Price above upper Bollinger Band",
         reliability: 65,
       });
     }
@@ -542,18 +584,34 @@ export class TechnicalAnalysisService {
   /**
    * Build trend summary
    */
-  private buildTrendSummary(closes: number[], indicators: TechnicalIndicators, currentPrice: number): TrendSummary {
+  private buildTrendSummary(
+    closes: number[],
+    indicators: TechnicalIndicators,
+    currentPrice: number,
+  ): TrendSummary {
     // Short-term trend (20-day SMA)
     const shortTerm: TrendDirection =
-      currentPrice > indicators.sma20 ? 'bullish' : currentPrice < indicators.sma20 ? 'bearish' : 'neutral';
+      currentPrice > indicators.sma20
+        ? "bullish"
+        : currentPrice < indicators.sma20
+          ? "bearish"
+          : "neutral";
 
     // Medium-term trend (50-day SMA)
     const mediumTerm: TrendDirection =
-      currentPrice > indicators.sma50 ? 'bullish' : currentPrice < indicators.sma50 ? 'bearish' : 'neutral';
+      currentPrice > indicators.sma50
+        ? "bullish"
+        : currentPrice < indicators.sma50
+          ? "bearish"
+          : "neutral";
 
     // Long-term trend (200-day SMA)
     const longTerm: TrendDirection =
-      currentPrice > indicators.sma200 ? 'bullish' : currentPrice < indicators.sma200 ? 'bearish' : 'neutral';
+      currentPrice > indicators.sma200
+        ? "bullish"
+        : currentPrice < indicators.sma200
+          ? "bearish"
+          : "neutral";
 
     return {
       shortTerm,
@@ -565,9 +623,9 @@ export class TechnicalAnalysisService {
         ma20: indicators.sma20,
         ma50: indicators.sma50,
         ma200: indicators.sma200,
-        priceVs20: currentPrice > indicators.sma20 ? 'above' : 'below',
-        priceVs50: currentPrice > indicators.sma50 ? 'above' : 'below',
-        priceVs200: currentPrice > indicators.sma200 ? 'above' : 'below',
+        priceVs20: currentPrice > indicators.sma20 ? "above" : "below",
+        priceVs50: currentPrice > indicators.sma50 ? "above" : "below",
+        priceVs200: currentPrice > indicators.sma200 ? "above" : "below",
       },
     };
   }
@@ -575,21 +633,32 @@ export class TechnicalAnalysisService {
   /**
    * Build momentum summary
    */
-  private buildMomentumSummary(indicators: TechnicalIndicators): MomentumSummary {
-    const rsiZone: 'overbought' | 'oversold' | 'neutral' =
-      indicators.rsi > 70 ? 'overbought' : indicators.rsi < 30 ? 'oversold' : 'neutral';
+  private buildMomentumSummary(
+    indicators: TechnicalIndicators,
+  ): MomentumSummary {
+    const rsiZone: "overbought" | "oversold" | "neutral" =
+      indicators.rsi > 70
+        ? "overbought"
+        : indicators.rsi < 30
+          ? "oversold"
+          : "neutral";
 
-    let overallMomentum: 'strong_bullish' | 'bullish' | 'neutral' | 'bearish' | 'strong_bearish';
+    let overallMomentum:
+      | "strong_bullish"
+      | "bullish"
+      | "neutral"
+      | "bearish"
+      | "strong_bearish";
     if (indicators.rsi > 70 && indicators.macd.histogram > 0) {
-      overallMomentum = 'strong_bullish';
+      overallMomentum = "strong_bullish";
     } else if (indicators.rsi > 50 && indicators.macd.histogram > 0) {
-      overallMomentum = 'bullish';
+      overallMomentum = "bullish";
     } else if (indicators.rsi < 30 && indicators.macd.histogram < 0) {
-      overallMomentum = 'strong_bearish';
+      overallMomentum = "strong_bearish";
     } else if (indicators.rsi < 50 && indicators.macd.histogram < 0) {
-      overallMomentum = 'bearish';
+      overallMomentum = "bearish";
     } else {
-      overallMomentum = 'neutral';
+      overallMomentum = "neutral";
     }
 
     return {
@@ -608,17 +677,20 @@ export class TechnicalAnalysisService {
   /**
    * Build volatility summary
    */
-  private buildVolatilitySummary(indicators: TechnicalIndicators, currentPrice: number): VolatilitySummary {
+  private buildVolatilitySummary(
+    indicators: TechnicalIndicators,
+    currentPrice: number,
+  ): VolatilitySummary {
     const atrPercent = (indicators.atr / currentPrice) * 100;
     const bollingerPercentB =
       (currentPrice - indicators.bollingerBands.lower) /
       (indicators.bollingerBands.upper - indicators.bollingerBands.lower);
 
-    let volatilityLevel: 'low' | 'normal' | 'high' | 'extreme';
-    if (atrPercent < 1) volatilityLevel = 'low';
-    else if (atrPercent < 2) volatilityLevel = 'normal';
-    else if (atrPercent < 4) volatilityLevel = 'high';
-    else volatilityLevel = 'extreme';
+    let volatilityLevel: "low" | "normal" | "high" | "extreme";
+    if (atrPercent < 1) volatilityLevel = "low";
+    else if (atrPercent < 2) volatilityLevel = "normal";
+    else if (atrPercent < 4) volatilityLevel = "high";
+    else volatilityLevel = "extreme";
 
     const isSqueezing = indicators.bollingerBands.bandwidth < 10;
 
@@ -635,23 +707,39 @@ export class TechnicalAnalysisService {
   /**
    * Build volume analysis
    */
-  private buildVolumeAnalysis(closes: number[], volumes: number[], indicators: TechnicalIndicators): VolumeAnalysis {
+  private buildVolumeAnalysis(
+    closes: number[],
+    volumes: number[],
+    indicators: TechnicalIndicators,
+  ): VolumeAnalysis {
     const currentVolume = volumes[volumes.length - 1];
     const avgVolume = volumes.reduce((sum, v) => sum + v, 0) / volumes.length;
     const volumeRatio = currentVolume / avgVolume;
 
     // Determine volume trend
     const recentVolumes = volumes.slice(-10);
-    const avgRecentVolume = recentVolumes.reduce((sum, v) => sum + v, 0) / recentVolumes.length;
+    const avgRecentVolume =
+      recentVolumes.reduce((sum, v) => sum + v, 0) / recentVolumes.length;
     const volumeTrend: TrendDirection =
-      avgRecentVolume > avgVolume * 1.1 ? 'bullish' : avgRecentVolume < avgVolume * 0.9 ? 'bearish' : 'neutral';
+      avgRecentVolume > avgVolume * 1.1
+        ? "bullish"
+        : avgRecentVolume < avgVolume * 0.9
+          ? "bearish"
+          : "neutral";
 
     // Price-volume correlation (simplified)
     const priceVolumeCorrelation = 0.5; // Would need more complex calculation
 
     // Accumulation/Distribution
-    const accumulationDistribution: 'accumulation' | 'distribution' | 'neutral' =
-      indicators.obv > 0 ? 'accumulation' : indicators.obv < 0 ? 'distribution' : 'neutral';
+    const accumulationDistribution:
+      | "accumulation"
+      | "distribution"
+      | "neutral" =
+      indicators.obv > 0
+        ? "accumulation"
+        : indicators.obv < 0
+          ? "distribution"
+          : "neutral";
 
     return {
       currentVolume,
@@ -663,7 +751,7 @@ export class TechnicalAnalysisService {
       onBalanceVolume: indicators.obv,
       obvTrend: volumeTrend,
       moneyFlowIndex: 50, // Simplified
-      mfiZone: 'neutral',
+      mfiZone: "neutral",
     };
   }
 
@@ -675,22 +763,26 @@ export class TechnicalAnalysisService {
     timeframe: Timeframe,
     highs: number[],
     lows: number[],
-    closes: number[]
+    closes: number[],
   ): SupportResistance {
-    const { support, resistance } = this.findSupportResistance(highs, lows, closes);
+    const { support, resistance } = this.findSupportResistance(
+      highs,
+      lows,
+      closes,
+    );
 
     const supports: PriceLevel[] = support.map((price, index) => ({
-      type: 'support' as const,
+      type: "support" as const,
       price,
-      strength: index === 0 ? 'strong' : index === 1 ? 'moderate' : 'weak',
+      strength: index === 0 ? "strong" : index === 1 ? "moderate" : "weak",
       touchCount: 2,
       lastTouched: new Date(),
     }));
 
     const resistances: PriceLevel[] = resistance.map((price, index) => ({
-      type: 'resistance' as const,
+      type: "resistance" as const,
       price,
-      strength: index === 0 ? 'strong' : index === 1 ? 'moderate' : 'weak',
+      strength: index === 0 ? "strong" : index === 1 ? "moderate" : "weak",
       touchCount: 2,
       lastTouched: new Date(),
     }));
@@ -709,7 +801,7 @@ export class TechnicalAnalysisService {
   private findSupportResistance(
     highs: number[],
     lows: number[],
-    closes: number[]
+    closes: number[],
   ): { support: number[]; resistance: number[] } {
     const support: number[] = [];
     const resistance: number[] = [];
@@ -750,33 +842,33 @@ export class TechnicalAnalysisService {
   private calculateOverallSignal(
     trend: TrendSummary,
     momentum: MomentumSummary,
-    signals: TechnicalSignal[]
+    signals: TechnicalSignal[],
   ): { overallSignal: SignalStrength; overallScore: number } {
     let score = 50; // Start at neutral (0-100 scale)
 
     // Trend contribution (30%)
-    if (trend.shortTerm === 'bullish') score += 10;
-    else if (trend.shortTerm === 'bearish') score -= 10;
+    if (trend.shortTerm === "bullish") score += 10;
+    else if (trend.shortTerm === "bearish") score -= 10;
 
-    if (trend.mediumTerm === 'bullish') score += 15;
-    else if (trend.mediumTerm === 'bearish') score -= 15;
+    if (trend.mediumTerm === "bullish") score += 15;
+    else if (trend.mediumTerm === "bearish") score -= 15;
 
-    if (trend.longTerm === 'bullish') score += 5;
-    else if (trend.longTerm === 'bearish') score -= 5;
+    if (trend.longTerm === "bullish") score += 5;
+    else if (trend.longTerm === "bearish") score -= 5;
 
     // Momentum contribution (30%)
-    if (momentum.overallMomentum === 'strong_bullish') score += 15;
-    else if (momentum.overallMomentum === 'bullish') score += 10;
-    else if (momentum.overallMomentum === 'strong_bearish') score -= 15;
-    else if (momentum.overallMomentum === 'bearish') score -= 10;
+    if (momentum.overallMomentum === "strong_bullish") score += 15;
+    else if (momentum.overallMomentum === "bullish") score += 10;
+    else if (momentum.overallMomentum === "strong_bearish") score -= 15;
+    else if (momentum.overallMomentum === "bearish") score -= 10;
 
     // Signals contribution (40%)
     signals.forEach((signal) => {
       const weight = signal.reliability / 100;
-      if (signal.signal === 'strong_buy') score += 8 * weight;
-      else if (signal.signal === 'buy') score += 5 * weight;
-      else if (signal.signal === 'strong_sell') score -= 8 * weight;
-      else if (signal.signal === 'sell') score -= 5 * weight;
+      if (signal.signal === "strong_buy") score += 8 * weight;
+      else if (signal.signal === "buy") score += 5 * weight;
+      else if (signal.signal === "strong_sell") score -= 8 * weight;
+      else if (signal.signal === "sell") score -= 5 * weight;
     });
 
     // Clamp score to 0-100
@@ -784,11 +876,11 @@ export class TechnicalAnalysisService {
 
     // Determine overall signal
     let overallSignal: SignalStrength;
-    if (score >= 75) overallSignal = 'strong_buy';
-    else if (score >= 60) overallSignal = 'buy';
-    else if (score <= 25) overallSignal = 'strong_sell';
-    else if (score <= 40) overallSignal = 'sell';
-    else overallSignal = 'neutral';
+    if (score >= 75) overallSignal = "strong_buy";
+    else if (score >= 60) overallSignal = "buy";
+    else if (score <= 25) overallSignal = "strong_sell";
+    else if (score <= 40) overallSignal = "sell";
+    else overallSignal = "neutral";
 
     return { overallSignal, overallScore: score };
   }
@@ -800,27 +892,34 @@ export class TechnicalAnalysisService {
     trend: TrendSummary,
     momentum: MomentumSummary,
     volatility: VolatilitySummary,
-    overallSignal: SignalStrength
+    overallSignal: SignalStrength,
   ): string {
     const parts: string[] = [];
 
     // Trend summary
-    if (trend.shortTerm === trend.mediumTerm && trend.mediumTerm === trend.longTerm) {
+    if (
+      trend.shortTerm === trend.mediumTerm &&
+      trend.mediumTerm === trend.longTerm
+    ) {
       parts.push(`Strong ${trend.mediumTerm} trend across all timeframes`);
     } else {
-      parts.push(`Mixed trend: short-term ${trend.shortTerm}, medium-term ${trend.mediumTerm}, long-term ${trend.longTerm}`);
+      parts.push(
+        `Mixed trend: short-term ${trend.shortTerm}, medium-term ${trend.mediumTerm}, long-term ${trend.longTerm}`,
+      );
     }
 
     // Momentum summary
-    parts.push(`Momentum is ${momentum.overallMomentum.replace('_', ' ')}`);
+    parts.push(`Momentum is ${momentum.overallMomentum.replace("_", " ")}`);
 
     // Volatility summary
     parts.push(`Volatility is ${volatility.volatilityLevel}`);
 
     // Overall signal
-    parts.push(`Overall signal: ${overallSignal.replace('_', ' ').toUpperCase()}`);
+    parts.push(
+      `Overall signal: ${overallSignal.replace("_", " ").toUpperCase()}`,
+    );
 
-    return parts.join('. ') + '.';
+    return parts.join(". ") + ".";
   }
 }
 
@@ -836,4 +935,3 @@ export function getTechnicalAnalysisService(): TechnicalAnalysisService {
   }
   return technicalAnalysisServiceInstance;
 }
-

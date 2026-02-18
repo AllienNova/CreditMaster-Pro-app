@@ -1,6 +1,10 @@
-import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Circle, G } from 'react-native-svg';
-import { lightTheme as theme, getScoreColor, getScoreLabel } from '../constants/theme';
+import { View, Text, StyleSheet } from "react-native";
+import Svg, { Circle, G } from "react-native-svg";
+import {
+  lightTheme as theme,
+  getScoreColor,
+  getScoreLabel,
+} from "../constants/theme";
 
 interface ScoreGaugeProps {
   score: number;
@@ -59,9 +63,23 @@ export function ScoreGauge({
           <Text style={styles.scoreLabel}>{getScoreLabel(score)}</Text>
         )}
         {change !== undefined && (
-          <View style={[styles.changeBadge, { backgroundColor: change >= 0 ? '#DCFCE7' : '#FEE2E2' }]}>
-            <Text style={[styles.changeText, { color: change >= 0 ? theme.colors.success : theme.colors.error }]}>
-              {change >= 0 ? '+' : ''}{change}
+          <View
+            style={[
+              styles.changeBadge,
+              { backgroundColor: change >= 0 ? "#DCFCE7" : "#FEE2E2" },
+            ]}
+          >
+            <Text
+              style={[
+                styles.changeText,
+                {
+                  color:
+                    change >= 0 ? theme.colors.success : theme.colors.error,
+                },
+              ]}
+            >
+              {change >= 0 ? "+" : ""}
+              {change}
             </Text>
           </View>
         )}
@@ -72,16 +90,16 @@ export function ScoreGauge({
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   scoreContainer: {
-    position: 'absolute',
-    alignItems: 'center',
+    position: "absolute",
+    alignItems: "center",
   },
   scoreValue: {
     fontSize: 48,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   scoreLabel: {
     fontSize: 16,
@@ -96,7 +114,6 @@ const styles = StyleSheet.create({
   },
   changeText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });
-

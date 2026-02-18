@@ -4,10 +4,10 @@
  * Review operations: getReviews, createReview, markHelpful
  */
 
-import { getSupabase } from '../supabase/client';
-import type { Database } from '../supabase/types';
+import { getSupabase } from "../supabase/client";
+import type { Database } from "../supabase/types";
 
-type ReviewRow = Database['public']['Tables']['marketplace_reviews']['Row'];
+type ReviewRow = Database["public"]["Tables"]["marketplace_reviews"]["Row"];
 
 export interface Review {
   id: string;
@@ -30,14 +30,14 @@ export interface CreateReviewInput {
   content: string;
 }
 
-const reviews = () => getSupabase().from('marketplace_reviews');
+const reviews = () => getSupabase().from("marketplace_reviews");
 
 class ReviewService {
   async getReviewsForProduct(productId: string): Promise<Review[]> {
     const { data, error } = await reviews()
-      .select('*')
-      .eq('product_id', productId)
-      .order('created_at', { ascending: false });
+      .select("*")
+      .eq("product_id", productId)
+      .order("created_at", { ascending: false });
 
     if (error) {
       // ReviewService error: Error fetching product reviews
@@ -49,9 +49,9 @@ class ReviewService {
 
   async getReviewsForProvider(providerId: string): Promise<Review[]> {
     const { data, error } = await reviews()
-      .select('*')
-      .eq('provider_id', providerId)
-      .order('created_at', { ascending: false });
+      .select("*")
+      .eq("provider_id", providerId)
+      .order("created_at", { ascending: false });
 
     if (error) {
       // ReviewService error: Error fetching provider reviews
@@ -63,9 +63,9 @@ class ReviewService {
 
   async getUserReviews(userId: string): Promise<Review[]> {
     const { data, error } = await reviews()
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
     if (error) {
       // ReviewService error: Error fetching user reviews
@@ -77,7 +77,7 @@ class ReviewService {
 
   async createReview(
     userId: string,
-    input: CreateReviewInput
+    input: CreateReviewInput,
   ): Promise<Review | null> {
     if (!input.productId && !input.providerId) {
       // ReviewService error: Review must have either productId or providerId
@@ -108,8 +108,8 @@ class ReviewService {
 
   async markHelpful(reviewId: string): Promise<boolean> {
     const { data: current, error: fetchError } = await reviews()
-      .select('helpful_count')
-      .eq('id', reviewId)
+      .select("helpful_count")
+      .eq("id", reviewId)
       .single();
 
     if (fetchError || !current) {
@@ -121,21 +121,21 @@ class ReviewService {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (query as any)
       .update({ helpful_count: currentCount + 1 })
-      .eq('id', reviewId);
+      .eq("id", reviewId);
 
     return !error;
   }
 
   async getAverageRating(
     productId?: string,
-    providerId?: string
+    providerId?: string,
   ): Promise<number> {
-    let query = reviews().select('rating');
+    let query = reviews().select("rating");
 
     if (productId) {
-      query = query.eq('product_id', productId);
+      query = query.eq("product_id", productId);
     } else if (providerId) {
-      query = query.eq('provider_id', providerId);
+      query = query.eq("provider_id", providerId);
     } else {
       return 0;
     }

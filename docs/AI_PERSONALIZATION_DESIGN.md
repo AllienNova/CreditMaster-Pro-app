@@ -581,22 +581,29 @@ interface BadgeProps {
   id: string;
   name: string;
   description: string;
-  icon: string;           // Emoji or icon name
-  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+  icon: string; // Emoji or icon name
+  rarity: "common" | "uncommon" | "rare" | "epic" | "legendary";
   xpReward: number;
   isEarned: boolean;
   earnedDate?: Date;
-  progress?: number;      // 0-100 for unearned badges
-  category: 'savings' | 'debt' | 'budget' | 'credit' | 'investing' | 'streak' | 'special';
+  progress?: number; // 0-100 for unearned badges
+  category:
+    | "savings"
+    | "debt"
+    | "budget"
+    | "credit"
+    | "investing"
+    | "streak"
+    | "special";
 }
 
 // Rarity Colors
 const rarityColors = {
-  common: '#9CA3AF',      // Gray
-  uncommon: '#22C55E',    // Green
-  rare: '#3B82F6',        // Blue
-  epic: '#A855F7',        // Purple
-  legendary: '#F59E0B',   // Gold
+  common: "#9CA3AF", // Gray
+  uncommon: "#22C55E", // Green
+  rare: "#3B82F6", // Blue
+  epic: "#A855F7", // Purple
+  legendary: "#F59E0B", // Gold
 };
 ```
 
@@ -609,39 +616,39 @@ interface UserProgress {
   xpToNextLevel: number;
   totalXPEarned: number;
   streakDays: number;
-  streakMultiplier: number;  // 1.0 - 2.0 based on streak
+  streakMultiplier: number; // 1.0 - 2.0 based on streak
 }
 
 // Level Thresholds
 const levels = [
-  { level: 1, title: 'Financial Newbie', xpRequired: 0 },
-  { level: 2, title: 'Budget Beginner', xpRequired: 500 },
-  { level: 3, title: 'Savings Starter', xpRequired: 1200 },
-  { level: 4, title: 'Money Manager', xpRequired: 2100 },
-  { level: 5, title: 'Finance Fighter', xpRequired: 3200 },
-  { level: 10, title: 'Wealth Builder', xpRequired: 12000 },
-  { level: 15, title: 'Wealth Warrior', xpRequired: 28000 },
-  { level: 20, title: 'Finance Master', xpRequired: 52000 },
-  { level: 25, title: 'Money Maven', xpRequired: 85000 },
-  { level: 30, title: 'Financial Legend', xpRequired: 150000 },
+  { level: 1, title: "Financial Newbie", xpRequired: 0 },
+  { level: 2, title: "Budget Beginner", xpRequired: 500 },
+  { level: 3, title: "Savings Starter", xpRequired: 1200 },
+  { level: 4, title: "Money Manager", xpRequired: 2100 },
+  { level: 5, title: "Finance Fighter", xpRequired: 3200 },
+  { level: 10, title: "Wealth Builder", xpRequired: 12000 },
+  { level: 15, title: "Wealth Warrior", xpRequired: 28000 },
+  { level: 20, title: "Finance Master", xpRequired: 52000 },
+  { level: 25, title: "Money Maven", xpRequired: 85000 },
+  { level: 30, title: "Financial Legend", xpRequired: 150000 },
 ];
 
 // XP Rewards Table
 const xpRewards = {
-  'transaction.logged': 10,
-  'budget.under': 25,
-  'savings.contribution': 50,
-  'goal.milestone.25': 100,
-  'goal.milestone.50': 200,
-  'goal.milestone.75': 300,
-  'goal.completed': 500,
-  'streak.7days': 100,
-  'streak.30days': 500,
-  'badge.common': 100,
-  'badge.uncommon': 250,
-  'badge.rare': 500,
-  'badge.epic': 1000,
-  'badge.legendary': 2500,
+  "transaction.logged": 10,
+  "budget.under": 25,
+  "savings.contribution": 50,
+  "goal.milestone.25": 100,
+  "goal.milestone.50": 200,
+  "goal.milestone.75": 300,
+  "goal.completed": 500,
+  "streak.7days": 100,
+  "streak.30days": 500,
+  "badge.common": 100,
+  "badge.uncommon": 250,
+  "badge.rare": 500,
+  "badge.epic": 1000,
+  "badge.legendary": 2500,
 };
 ```
 
@@ -743,7 +750,7 @@ interface BadgesResponse {
 
 // POST /api/gamification/events
 interface GameEventRequest {
-  eventType: string;  // e.g., 'transaction.logged'
+  eventType: string; // e.g., 'transaction.logged'
   metadata?: Record<string, unknown>;
 }
 
@@ -799,7 +806,7 @@ interface InsightsResponse {
 // POST /api/ai/nudge/response
 interface NudgeResponseRequest {
   nudgeId: string;
-  response: 'accepted' | 'dismissed' | 'snoozed';
+  response: "accepted" | "dismissed" | "snoozed";
   feedback?: string;
 }
 
@@ -823,20 +830,20 @@ interface SpendingAnalysisResponse {
 
 ## Implementation Priority
 
-| Component | Priority | Sprint | Dependencies |
-|-----------|----------|--------|--------------|
-| XP/Level System | P0 | 1 | User auth, DB schema |
-| Progress Rings | P0 | 1 | UI components |
-| Badge System | P0 | 2 | XP system |
-| Daily Quests | P1 | 2 | Badge system |
-| Streak Tracking | P1 | 2 | XP system |
-| Spending Analysis AI | P0 | 3 | Transaction data |
-| Nudge Engine | P1 | 3 | Spending analysis |
-| Community Challenges | P2 | 4 | Badge system |
-| Leaderboards | P2 | 4 | XP system |
-| Accountability Partners | P3 | 5 | Social features |
+| Component               | Priority | Sprint | Dependencies         |
+| ----------------------- | -------- | ------ | -------------------- |
+| XP/Level System         | P0       | 1      | User auth, DB schema |
+| Progress Rings          | P0       | 1      | UI components        |
+| Badge System            | P0       | 2      | XP system            |
+| Daily Quests            | P1       | 2      | Badge system         |
+| Streak Tracking         | P1       | 2      | XP system            |
+| Spending Analysis AI    | P0       | 3      | Transaction data     |
+| Nudge Engine            | P1       | 3      | Spending analysis    |
+| Community Challenges    | P2       | 4      | Badge system         |
+| Leaderboards            | P2       | 4      | XP system            |
+| Accountability Partners | P3       | 5      | Social features      |
 
 ---
 
-*Design Document Version 1.0 - January 2026*
-*For internal use - Fynvita Development Team*
+_Design Document Version 1.0 - January 2026_
+_For internal use - Fynvita Development Team_

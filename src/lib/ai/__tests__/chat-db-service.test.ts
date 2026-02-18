@@ -4,28 +4,28 @@
  * Comprehensive test suite for chat database operations
  */
 
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { chatDbService } from '../chat-db-service';
+import { describe, it, expect, beforeEach, jest } from "@jest/globals";
+import { chatDbService } from "../chat-db-service";
 import type {
   ChatSession,
   ChatMessage,
   SessionType,
   CreateSessionRequest,
-} from '../types/chat.types';
+} from "../types/chat.types";
 
 // Mock Supabase — define inside factory to avoid TDZ with jest.mock hoisting
-jest.mock('@/lib/supabase/client', () => {
+jest.mock("@/lib/supabase/client", () => {
   const _client = { from: jest.fn(), rpc: jest.fn() };
   return { getSupabase: () => _client };
 });
 
-import { getSupabase } from '@/lib/supabase/client';
+import { getSupabase } from "@/lib/supabase/client";
 const supabase = getSupabase() as any;
 
-describe('ChatDatabaseService', () => {
-  const mockUserId = 'user-123';
-  const mockSessionId = 'session-456';
-  const mockMessageId = 'message-789';
+describe("ChatDatabaseService", () => {
+  const mockUserId = "user-123";
+  const mockSessionId = "session-456";
+  const mockMessageId = "message-789";
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -35,32 +35,34 @@ describe('ChatDatabaseService', () => {
   // SESSION CREATION TESTS
   // ============================================================================
 
-  describe('createSession', () => {
-    it('should create a new chat session', async () => {
+  describe("createSession", () => {
+    it("should create a new chat session", async () => {
       const request: CreateSessionRequest = {
-        sessionType: 'budget',
-        context: { source: 'mobile' },
+        sessionType: "budget",
+        context: { source: "mobile" },
       };
 
       const mockDbSession = {
         id: mockSessionId,
         user_id: mockUserId,
-        title: 'Budget Planning - Dec 18',
-        session_type: 'budget',
-        context: { source: 'mobile' },
+        title: "Budget Planning - Dec 18",
+        session_type: "budget",
+        context: { source: "mobile" },
         financial_snapshot: null,
         message_count: 0,
         total_tokens_used: 0,
-        status: 'active',
-        created_at: '2025-12-18T00:00:00Z',
-        updated_at: '2025-12-18T00:00:00Z',
+        status: "active",
+        created_at: "2025-12-18T00:00:00Z",
+        updated_at: "2025-12-18T00:00:00Z",
         last_message_at: null,
       };
 
       const mockFrom = {
         insert: jest.fn<any>().mockReturnThis(),
         select: jest.fn<any>().mockReturnThis(),
-        single: jest.fn<any>().mockResolvedValue({ data: mockDbSession, error: null }),
+        single: jest
+          .fn<any>()
+          .mockResolvedValue({ data: mockDbSession, error: null }),
       };
 
       (supabase.from as jest.Mock<any>).mockReturnValue(mockFrom);
@@ -70,15 +72,15 @@ describe('ChatDatabaseService', () => {
       expect(session).toBeDefined();
       expect(session.id).toBe(mockSessionId);
       expect(session.userId).toBe(mockUserId);
-      expect(session.sessionType).toBe('budget');
-      expect(session.status).toBe('active');
+      expect(session.sessionType).toBe("budget");
+      expect(session.status).toBe("active");
       expect(session.messageCount).toBe(0);
-      expect(supabase.from).toHaveBeenCalledWith('financial_chat_sessions');
+      expect(supabase.from).toHaveBeenCalledWith("financial_chat_sessions");
     });
 
-    it('should throw error if session creation fails', async () => {
+    it("should throw error if session creation fails", async () => {
       const request: CreateSessionRequest = {
-        sessionType: 'general',
+        sessionType: "general",
       };
 
       const mockFrom = {
@@ -86,25 +88,25 @@ describe('ChatDatabaseService', () => {
         select: jest.fn<any>().mockReturnThis(),
         single: jest
           .fn<any>()
-          .mockResolvedValue({ data: null, error: { message: 'DB error' } }),
+          .mockResolvedValue({ data: null, error: { message: "DB error" } }),
       };
 
       (supabase.from as jest.Mock<any>).mockReturnValue(mockFrom);
 
       await expect(
-        chatDbService.createSession(mockUserId, request)
-      ).rejects.toThrow('Failed to create chat session');
+        chatDbService.createSession(mockUserId, request),
+      ).rejects.toThrow("Failed to create chat session");
     });
 
-    it('should generate appropriate title for different session types', async () => {
+    it("should generate appropriate title for different session types", async () => {
       const sessionTypes: SessionType[] = [
-        'general',
-        'budget',
-        'goals',
-        'debt',
-        'investing',
-        'credit_repair',
-        'tax_planning',
+        "general",
+        "budget",
+        "goals",
+        "debt",
+        "investing",
+        "credit_repair",
+        "tax_planning",
       ];
 
       for (const sessionType of sessionTypes) {
@@ -121,9 +123,9 @@ describe('ChatDatabaseService', () => {
               financial_snapshot: null,
               message_count: 0,
               total_tokens_used: 0,
-              status: 'active',
-              created_at: '2025-12-18T00:00:00Z',
-              updated_at: '2025-12-18T00:00:00Z',
+              status: "active",
+              created_at: "2025-12-18T00:00:00Z",
+              updated_at: "2025-12-18T00:00:00Z",
               last_message_at: null,
             },
             error: null,
@@ -145,27 +147,29 @@ describe('ChatDatabaseService', () => {
   // SESSION RETRIEVAL TESTS
   // ============================================================================
 
-  describe('getSession', () => {
-    it('should retrieve a session by ID', async () => {
+  describe("getSession", () => {
+    it("should retrieve a session by ID", async () => {
       const mockDbSession = {
         id: mockSessionId,
         user_id: mockUserId,
-        title: 'Budget Planning',
-        session_type: 'budget',
+        title: "Budget Planning",
+        session_type: "budget",
         context: {},
         financial_snapshot: null,
         message_count: 5,
         total_tokens_used: 1500,
-        status: 'active',
-        created_at: '2025-12-18T00:00:00Z',
-        updated_at: '2025-12-18T00:00:00Z',
-        last_message_at: '2025-12-18T01:00:00Z',
+        status: "active",
+        created_at: "2025-12-18T00:00:00Z",
+        updated_at: "2025-12-18T00:00:00Z",
+        last_message_at: "2025-12-18T01:00:00Z",
       };
 
       const mockFrom = {
         select: jest.fn<any>().mockReturnThis(),
         eq: jest.fn<any>().mockReturnThis(),
-        single: jest.fn<any>().mockResolvedValue({ data: mockDbSession, error: null }),
+        single: jest
+          .fn<any>()
+          .mockResolvedValue({ data: mockDbSession, error: null }),
       };
 
       (supabase.from as jest.Mock<any>).mockReturnValue(mockFrom);
@@ -178,13 +182,13 @@ describe('ChatDatabaseService', () => {
       expect(session!.totalTokensUsed).toBe(1500);
     });
 
-    it('should return null if session not found', async () => {
+    it("should return null if session not found", async () => {
       const mockFrom = {
         select: jest.fn<any>().mockReturnThis(),
         eq: jest.fn<any>().mockReturnThis(),
         single: jest
           .fn<any>()
-          .mockResolvedValue({ data: null, error: { code: 'PGRST116' } }),
+          .mockResolvedValue({ data: null, error: { code: "PGRST116" } }),
       };
 
       (supabase.from as jest.Mock<any>).mockReturnValue(mockFrom);
@@ -194,20 +198,20 @@ describe('ChatDatabaseService', () => {
       expect(session).toBeNull();
     });
 
-    it('should throw error for database errors', async () => {
+    it("should throw error for database errors", async () => {
       const mockFrom = {
         select: jest.fn<any>().mockReturnThis(),
         eq: jest.fn<any>().mockReturnThis(),
         single: jest
           .fn<any>()
-          .mockResolvedValue({ data: null, error: { message: 'DB error' } }),
+          .mockResolvedValue({ data: null, error: { message: "DB error" } }),
       };
 
       (supabase.from as jest.Mock<any>).mockReturnValue(mockFrom);
 
       await expect(
-        chatDbService.getSession(mockSessionId, mockUserId)
-      ).rejects.toThrow('Failed to get chat session');
+        chatDbService.getSession(mockSessionId, mockUserId),
+      ).rejects.toThrow("Failed to get chat session");
     });
   });
 
@@ -215,35 +219,35 @@ describe('ChatDatabaseService', () => {
   // SESSION LISTING TESTS
   // ============================================================================
 
-  describe('listSessions', () => {
-    it('should list all sessions for a user', async () => {
+  describe("listSessions", () => {
+    it("should list all sessions for a user", async () => {
       const mockSessions = [
         {
-          id: 'session-1',
+          id: "session-1",
           user_id: mockUserId,
-          title: 'Session 1',
-          session_type: 'general',
+          title: "Session 1",
+          session_type: "general",
           context: {},
           financial_snapshot: null,
           message_count: 3,
           total_tokens_used: 500,
-          status: 'active',
-          created_at: '2025-12-18T00:00:00Z',
-          updated_at: '2025-12-18T00:00:00Z',
+          status: "active",
+          created_at: "2025-12-18T00:00:00Z",
+          updated_at: "2025-12-18T00:00:00Z",
           last_message_at: null,
         },
         {
-          id: 'session-2',
+          id: "session-2",
           user_id: mockUserId,
-          title: 'Session 2',
-          session_type: 'budget',
+          title: "Session 2",
+          session_type: "budget",
           context: {},
           financial_snapshot: null,
           message_count: 5,
           total_tokens_used: 1000,
-          status: 'active',
-          created_at: '2025-12-17T00:00:00Z',
-          updated_at: '2025-12-17T00:00:00Z',
+          status: "active",
+          created_at: "2025-12-17T00:00:00Z",
+          updated_at: "2025-12-17T00:00:00Z",
           last_message_at: null,
         },
       ];
@@ -268,7 +272,7 @@ describe('ChatDatabaseService', () => {
       expect(result.hasMore).toBe(false);
     });
 
-    it('should filter by session type', async () => {
+    it("should filter by session type", async () => {
       const mockFrom = {
         select: jest.fn<any>().mockReturnThis(),
         eq: jest.fn<any>().mockReturnThis(),
@@ -283,13 +287,13 @@ describe('ChatDatabaseService', () => {
       (supabase.from as jest.Mock<any>).mockReturnValue(mockFrom);
 
       await chatDbService.listSessions(mockUserId, {
-        sessionType: 'budget',
+        sessionType: "budget",
       });
 
-      expect(mockFrom.eq).toHaveBeenCalledWith('session_type', 'budget');
+      expect(mockFrom.eq).toHaveBeenCalledWith("session_type", "budget");
     });
 
-    it('should filter by status', async () => {
+    it("should filter by status", async () => {
       const mockFrom = {
         select: jest.fn<any>().mockReturnThis(),
         eq: jest.fn<any>().mockReturnThis(),
@@ -304,13 +308,13 @@ describe('ChatDatabaseService', () => {
       (supabase.from as jest.Mock<any>).mockReturnValue(mockFrom);
 
       await chatDbService.listSessions(mockUserId, {
-        status: 'archived',
+        status: "archived",
       });
 
-      expect(mockFrom.eq).toHaveBeenCalledWith('status', 'archived');
+      expect(mockFrom.eq).toHaveBeenCalledWith("status", "archived");
     });
 
-    it('should support pagination', async () => {
+    it("should support pagination", async () => {
       const mockFrom = {
         select: jest.fn<any>().mockReturnThis(),
         eq: jest.fn<any>().mockReturnThis(),
@@ -340,8 +344,8 @@ describe('ChatDatabaseService', () => {
   // SESSION UPDATE TESTS
   // ============================================================================
 
-  describe('updateSession', () => {
-    it('should update session title', async () => {
+  describe("updateSession", () => {
+    it("should update session title", async () => {
       const mockFrom = {
         update: jest.fn<any>().mockReturnThis(),
         eq: jest.fn<any>().mockReturnThis(),
@@ -350,15 +354,15 @@ describe('ChatDatabaseService', () => {
           data: {
             id: mockSessionId,
             user_id: mockUserId,
-            title: 'New Title',
-            session_type: 'general',
+            title: "New Title",
+            session_type: "general",
             context: {},
             financial_snapshot: null,
             message_count: 0,
             total_tokens_used: 0,
-            status: 'active',
-            created_at: '2025-12-18T00:00:00Z',
-            updated_at: '2025-12-18T00:00:00Z',
+            status: "active",
+            created_at: "2025-12-18T00:00:00Z",
+            updated_at: "2025-12-18T00:00:00Z",
             last_message_at: null,
           },
           error: null,
@@ -370,13 +374,13 @@ describe('ChatDatabaseService', () => {
       const session = await chatDbService.updateSession(
         mockSessionId,
         mockUserId,
-        { title: 'New Title' }
+        { title: "New Title" },
       );
 
-      expect(session.title).toBe('New Title');
+      expect(session.title).toBe("New Title");
     });
 
-    it('should update session status', async () => {
+    it("should update session status", async () => {
       const mockFrom = {
         update: jest.fn<any>().mockReturnThis(),
         eq: jest.fn<any>().mockReturnThis(),
@@ -385,15 +389,15 @@ describe('ChatDatabaseService', () => {
           data: {
             id: mockSessionId,
             user_id: mockUserId,
-            title: 'Session',
-            session_type: 'general',
+            title: "Session",
+            session_type: "general",
             context: {},
             financial_snapshot: null,
             message_count: 0,
             total_tokens_used: 0,
-            status: 'archived',
-            created_at: '2025-12-18T00:00:00Z',
-            updated_at: '2025-12-18T00:00:00Z',
+            status: "archived",
+            created_at: "2025-12-18T00:00:00Z",
+            updated_at: "2025-12-18T00:00:00Z",
             last_message_at: null,
           },
           error: null,
@@ -405,10 +409,10 @@ describe('ChatDatabaseService', () => {
       const session = await chatDbService.updateSession(
         mockSessionId,
         mockUserId,
-        { status: 'archived' }
+        { status: "archived" },
       );
 
-      expect(session.status).toBe('archived');
+      expect(session.status).toBe("archived");
     });
   });
 
@@ -416,15 +420,15 @@ describe('ChatDatabaseService', () => {
   // MESSAGE CREATION TESTS
   // ============================================================================
 
-  describe('createMessage', () => {
-    it('should create a new message', async () => {
+  describe("createMessage", () => {
+    it("should create a new message", async () => {
       const mockDbMessage = {
         id: mockMessageId,
         session_id: mockSessionId,
         user_id: mockUserId,
-        role: 'user',
-        content: 'Hello, I need help with budgeting',
-        intent: 'create_budget',
+        role: "user",
+        content: "Hello, I need help with budgeting",
+        intent: "create_budget",
         entities: null,
         action_taken: null,
         action_result: null,
@@ -434,13 +438,15 @@ describe('ChatDatabaseService', () => {
         latency_ms: 0,
         feedback_rating: null,
         feedback_text: null,
-        created_at: '2025-12-18T00:00:00Z',
+        created_at: "2025-12-18T00:00:00Z",
       };
 
       const mockFrom = {
         insert: jest.fn<any>().mockReturnThis(),
         select: jest.fn<any>().mockReturnThis(),
-        single: jest.fn<any>().mockResolvedValue({ data: mockDbMessage, error: null }),
+        single: jest
+          .fn<any>()
+          .mockResolvedValue({ data: mockDbMessage, error: null }),
       };
 
       (supabase.from as jest.Mock<any>).mockReturnValue(mockFrom);
@@ -452,9 +458,9 @@ describe('ChatDatabaseService', () => {
         {
           sessionId: mockSessionId,
           userId: mockUserId,
-          role: 'user',
-          content: 'Hello, I need help with budgeting',
-          intent: 'create_budget',
+          role: "user",
+          content: "Hello, I need help with budgeting",
+          intent: "create_budget",
           entities: null,
           actionTaken: null,
           actionResult: null,
@@ -464,13 +470,13 @@ describe('ChatDatabaseService', () => {
           latencyMs: 0,
           feedbackRating: null,
           feedbackText: null,
-        }
+        },
       );
 
       expect(message).toBeDefined();
-      expect(message.content).toBe('Hello, I need help with budgeting');
-      expect(message.intent).toBe('create_budget');
-      expect(supabase.rpc).toHaveBeenCalledWith('increment_session_stats', {
+      expect(message.content).toBe("Hello, I need help with budgeting");
+      expect(message.intent).toBe("create_budget");
+      expect(supabase.rpc).toHaveBeenCalledWith("increment_session_stats", {
         p_session_id: mockSessionId,
         p_tokens: 50,
       });
@@ -481,15 +487,15 @@ describe('ChatDatabaseService', () => {
   // MESSAGE RETRIEVAL TESTS
   // ============================================================================
 
-  describe('listMessages', () => {
-    it('should list messages for a session', async () => {
+  describe("listMessages", () => {
+    it("should list messages for a session", async () => {
       const mockMessages = [
         {
-          id: 'msg-1',
+          id: "msg-1",
           session_id: mockSessionId,
           user_id: mockUserId,
-          role: 'user',
-          content: 'Message 1',
+          role: "user",
+          content: "Message 1",
           intent: null,
           entities: null,
           action_taken: null,
@@ -500,25 +506,25 @@ describe('ChatDatabaseService', () => {
           latency_ms: 0,
           feedback_rating: null,
           feedback_text: null,
-          created_at: '2025-12-18T00:00:00Z',
+          created_at: "2025-12-18T00:00:00Z",
         },
         {
-          id: 'msg-2',
+          id: "msg-2",
           session_id: mockSessionId,
           user_id: mockUserId,
-          role: 'assistant',
-          content: 'Message 2',
+          role: "assistant",
+          content: "Message 2",
           intent: null,
           entities: null,
           action_taken: null,
           action_result: null,
           referenced_data: null,
           tokens_used: 20,
-          model_used: 'gpt-4o',
+          model_used: "gpt-4o",
           latency_ms: 500,
           feedback_rating: null,
           feedback_text: null,
-          created_at: '2025-12-18T00:01:00Z',
+          created_at: "2025-12-18T00:01:00Z",
         },
       ];
 
@@ -537,42 +543,42 @@ describe('ChatDatabaseService', () => {
 
       const result = await chatDbService.listMessages(
         mockSessionId,
-        mockUserId
+        mockUserId,
       );
 
       expect(result.items).toHaveLength(2);
-      expect(result.items[0].role).toBe('user');
-      expect(result.items[1].role).toBe('assistant');
+      expect(result.items[0].role).toBe("user");
+      expect(result.items[1].role).toBe("assistant");
     });
   });
 
-  describe('getRecentMessages', () => {
-    it('should retrieve recent messages in chronological order', async () => {
+  describe("getRecentMessages", () => {
+    it("should retrieve recent messages in chronological order", async () => {
       const mockMessages = [
         {
-          id: 'msg-2',
+          id: "msg-2",
           session_id: mockSessionId,
           user_id: mockUserId,
-          role: 'assistant',
-          content: 'Recent message',
+          role: "assistant",
+          content: "Recent message",
           intent: null,
           entities: null,
           action_taken: null,
           action_result: null,
           referenced_data: null,
           tokens_used: 20,
-          model_used: 'gpt-4o',
+          model_used: "gpt-4o",
           latency_ms: 500,
           feedback_rating: null,
           feedback_text: null,
-          created_at: '2025-12-18T00:01:00Z',
+          created_at: "2025-12-18T00:01:00Z",
         },
         {
-          id: 'msg-1',
+          id: "msg-1",
           session_id: mockSessionId,
           user_id: mockUserId,
-          role: 'user',
-          content: 'Older message',
+          role: "user",
+          content: "Older message",
           intent: null,
           entities: null,
           action_taken: null,
@@ -583,7 +589,7 @@ describe('ChatDatabaseService', () => {
           latency_ms: 0,
           feedback_rating: null,
           feedback_text: null,
-          created_at: '2025-12-18T00:00:00Z',
+          created_at: "2025-12-18T00:00:00Z",
         },
       ];
 
@@ -591,7 +597,9 @@ describe('ChatDatabaseService', () => {
         select: jest.fn<any>().mockReturnThis(),
         eq: jest.fn<any>().mockReturnThis(),
         order: jest.fn<any>().mockReturnThis(),
-        limit: jest.fn<any>().mockResolvedValue({ data: mockMessages, error: null }),
+        limit: jest
+          .fn<any>()
+          .mockResolvedValue({ data: mockMessages, error: null }),
       };
 
       (supabase.from as jest.Mock<any>).mockReturnValue(mockFrom);
@@ -599,12 +607,12 @@ describe('ChatDatabaseService', () => {
       const messages = await chatDbService.getRecentMessages(
         mockSessionId,
         mockUserId,
-        10
+        10,
       );
 
       // Should be reversed to chronological order
-      expect(messages[0].content).toBe('Older message');
-      expect(messages[1].content).toBe('Recent message');
+      expect(messages[0].content).toBe("Older message");
+      expect(messages[1].content).toBe("Recent message");
     });
   });
 
@@ -612,8 +620,8 @@ describe('ChatDatabaseService', () => {
   // SEARCH & ANALYTICS TESTS
   // ============================================================================
 
-  describe('searchMessages', () => {
-    it('should search messages by content', async () => {
+  describe("searchMessages", () => {
+    it("should search messages by content", async () => {
       const mockFrom = {
         select: jest.fn<any>().mockReturnThis(),
         eq: jest.fn<any>().mockReturnThis(),
@@ -624,12 +632,12 @@ describe('ChatDatabaseService', () => {
 
       (supabase.from as jest.Mock<any>).mockReturnValue(mockFrom);
 
-      await chatDbService.searchMessages(mockUserId, 'budget');
+      await chatDbService.searchMessages(mockUserId, "budget");
 
-      expect(mockFrom.ilike).toHaveBeenCalledWith('content', '%budget%');
+      expect(mockFrom.ilike).toHaveBeenCalledWith("content", "%budget%");
     });
 
-    it('should filter search by session ID', async () => {
+    it("should filter search by session ID", async () => {
       const mockFrom = {
         select: jest.fn<any>().mockReturnThis(),
         eq: jest.fn<any>().mockReturnThis(),
@@ -640,13 +648,9 @@ describe('ChatDatabaseService', () => {
 
       (supabase.from as jest.Mock<any>).mockReturnValue(mockFrom);
 
-      await chatDbService.searchMessages(
-        mockUserId,
-        'budget',
-        mockSessionId
-      );
+      await chatDbService.searchMessages(mockUserId, "budget", mockSessionId);
 
-      expect(mockFrom.eq).toHaveBeenCalledWith('session_id', mockSessionId);
+      expect(mockFrom.eq).toHaveBeenCalledWith("session_id", mockSessionId);
     });
   });
 });

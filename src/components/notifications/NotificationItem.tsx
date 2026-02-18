@@ -1,7 +1,10 @@
-'use client';
+"use client";
 
-import { Notification, NotificationType } from '@/lib/notifications/notification-service';
-import { useRouter } from 'next/navigation';
+import {
+  Notification,
+  NotificationType,
+} from "@/lib/notifications/notification-service";
+import { useRouter } from "next/navigation";
 
 interface NotificationItemProps {
   notification: Notification;
@@ -18,53 +21,53 @@ export default function NotificationItem({
 
   const getNotificationIcon = (type: NotificationType): string => {
     switch (type) {
-      case 'dispute_created':
-      case 'dispute_updated':
-      case 'dispute_resolved':
-        return '';
-      case 'credit_score_changed':
-        return '';
-      case 'payment_successful':
-        return '';
-      case 'payment_failed':
-        return '';
-      case 'subscription_renewed':
-      case 'subscription_canceled':
-        return '';
-      case 'document_uploaded':
-        return '';
-      case 'welcome':
-        return '';
-      case 'password_reset':
-        return '';
+      case "dispute_created":
+      case "dispute_updated":
+      case "dispute_resolved":
+        return "";
+      case "credit_score_changed":
+        return "";
+      case "payment_successful":
+        return "";
+      case "payment_failed":
+        return "";
+      case "subscription_renewed":
+      case "subscription_canceled":
+        return "";
+      case "document_uploaded":
+        return "";
+      case "welcome":
+        return "";
+      case "password_reset":
+        return "";
       default:
-        return '';
+        return "";
     }
   };
 
   const getNotificationColor = (type: NotificationType): string => {
     switch (type) {
-      case 'dispute_created':
-      case 'dispute_updated':
-        return 'bg-blue-50 text-blue-700 border-blue-200';
-      case 'dispute_resolved':
-        return 'bg-green-50 text-green-700 border-green-200';
-      case 'credit_score_changed':
-        return 'bg-blue-50 text-blue-700 border-blue-200';
-      case 'payment_successful':
-      case 'subscription_renewed':
-        return 'bg-green-50 text-green-700 border-green-200';
-      case 'payment_failed':
-      case 'subscription_canceled':
-        return 'bg-red-50 text-red-700 border-red-200';
-      case 'document_uploaded':
-        return 'bg-orange-50 text-orange-700 border-orange-200';
-      case 'welcome':
-        return 'bg-blue-50 text-blue-700 border-blue-200';
-      case 'password_reset':
-        return 'bg-yellow-50 text-yellow-700 border-yellow-200';
+      case "dispute_created":
+      case "dispute_updated":
+        return "bg-blue-50 text-blue-700 border-blue-200";
+      case "dispute_resolved":
+        return "bg-green-50 text-green-700 border-green-200";
+      case "credit_score_changed":
+        return "bg-blue-50 text-blue-700 border-blue-200";
+      case "payment_successful":
+      case "subscription_renewed":
+        return "bg-green-50 text-green-700 border-green-200";
+      case "payment_failed":
+      case "subscription_canceled":
+        return "bg-red-50 text-red-700 border-red-200";
+      case "document_uploaded":
+        return "bg-orange-50 text-orange-700 border-orange-200";
+      case "welcome":
+        return "bg-blue-50 text-blue-700 border-blue-200";
+      case "password_reset":
+        return "bg-yellow-50 text-yellow-700 border-yellow-200";
       default:
-        return 'bg-gray-50 dark:bg-slate-900 text-gray-700 dark:text-slate-200 border-gray-200 dark:border-slate-700';
+        return "bg-gray-50 dark:bg-slate-900 text-gray-700 dark:text-slate-200 border-gray-200 dark:border-slate-700";
     }
   };
 
@@ -76,15 +79,16 @@ export default function NotificationItem({
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return 'Just now';
+    if (diffMins < 1) return "Just now";
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
-    
-    return notifDate.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: notifDate.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
+
+    return notifDate.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year:
+        notifDate.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
     });
   };
 
@@ -93,21 +97,24 @@ export default function NotificationItem({
     if (!notification.read) {
       onMarkAsRead(notification.id);
     }
-    
+
     // Navigate based on notification type
     if (notification.data?.disputeId) {
       router.push(`/disputes/${notification.data.disputeId}`);
     } else if (notification.data?.documentId) {
       router.push(`/documents/${notification.data.documentId}`);
-    } else if (notification.type.startsWith('payment_') || notification.type.startsWith('subscription_')) {
-      router.push('/billing');
+    } else if (
+      notification.type.startsWith("payment_") ||
+      notification.type.startsWith("subscription_")
+    ) {
+      router.push("/billing");
     }
   };
 
   return (
     <div
       className={`p-6 hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors cursor-pointer ${
-        !notification.read ? 'bg-blue-50/30' : ''
+        !notification.read ? "bg-blue-50/30" : ""
       }`}
       onClick={handleClick}
     >
@@ -115,35 +122,38 @@ export default function NotificationItem({
         {/* Icon */}
         <div
           className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl flex-shrink-0 border ${getNotificationColor(
-            notification.type
+            notification.type,
           )}`}
         >
           {getNotificationIcon(notification.type)}
         </div>
-        
+
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
               <h3
-                className={`text-sm font-semibold mb-1 ${ !notification.read ? 'text-gray-900' : 'text-gray-700 dark:text-slate-200' }`}
+                className={`text-sm font-semibold mb-1 ${!notification.read ? "text-gray-900" : "text-gray-700 dark:text-slate-200"}`}
               >
                 {notification.title}
                 {!notification.read && (
                   <span className="ml-2 inline-block w-2 h-2 bg-blue-600 rounded-full"></span>
                 )}
               </h3>
-              <p className="text-sm text-gray-600 dark:text-slate-300 mb-2">{notification.message}</p>
+              <p className="text-sm text-gray-600 dark:text-slate-300 mb-2">
+                {notification.message}
+              </p>
               <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-slate-400">
                 <span>{formatDate(notification.createdAt)}</span>
-                {notification.data && Object.keys(notification.data).length > 0 && (
-                  <span className="px-2 py-1 bg-gray-100 dark:bg-slate-800 rounded">
-                    {notification.type.replace(/_/g, ' ')}
-                  </span>
-                )}
+                {notification.data &&
+                  Object.keys(notification.data).length > 0 && (
+                    <span className="px-2 py-1 bg-gray-100 dark:bg-slate-800 rounded">
+                      {notification.type.replace(/_/g, " ")}
+                    </span>
+                  )}
               </div>
             </div>
-            
+
             {/* Actions */}
             <div className="flex items-center gap-2">
               {!notification.read && (
@@ -177,4 +187,3 @@ export default function NotificationItem({
     </div>
   );
 }
-

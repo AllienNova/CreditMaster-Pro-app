@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Budget Management Component
@@ -7,15 +7,15 @@
  * and visual analytics using charts.
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { Modal, ConfirmDialog, useToast } from '@/components/ui';
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { Modal, ConfirmDialog, useToast } from "@/components/ui";
 import {
   DonutChartComponent,
   BarChartComponent,
   ChartContainer,
-} from '@/components/charts';
-import AIBudgetOptimizer from './AIBudgetOptimizer';
+} from "@/components/charts";
+import AIBudgetOptimizer from "./AIBudgetOptimizer";
 
 // Types
 interface Budget {
@@ -24,7 +24,7 @@ interface Budget {
   category: string;
   amount: number;
   spent: number;
-  period: 'weekly' | 'monthly' | 'yearly';
+  period: "weekly" | "monthly" | "yearly";
   startDate: string;
   endDate: string;
   alertThreshold: number;
@@ -46,31 +46,31 @@ interface BudgetFormData {
   name: string;
   category: string;
   amount: number;
-  period: 'weekly' | 'monthly' | 'yearly';
+  period: "weekly" | "monthly" | "yearly";
   alertThreshold: number;
   rolloverEnabled: boolean;
 }
 
 const CATEGORIES = [
-  'Food & Dining',
-  'Transportation',
-  'Shopping',
-  'Entertainment',
-  'Bills & Utilities',
-  'Healthcare',
-  'Personal Care',
-  'Education',
-  'Travel',
-  'Subscriptions',
-  'Groceries',
-  'Other',
+  "Food & Dining",
+  "Transportation",
+  "Shopping",
+  "Entertainment",
+  "Bills & Utilities",
+  "Healthcare",
+  "Personal Care",
+  "Education",
+  "Travel",
+  "Subscriptions",
+  "Groceries",
+  "Other",
 ];
 
 const initialFormData: BudgetFormData = {
-  name: '',
-  category: 'Food & Dining',
+  name: "",
+  category: "Food & Dining",
   amount: 0,
-  period: 'monthly',
+  period: "monthly",
   alertThreshold: 80,
   rolloverEnabled: false,
 };
@@ -99,10 +99,10 @@ export default function BudgetManagement() {
 
     try {
       setLoading(true);
-      const response = await fetch('/api/financial/budgets');
+      const response = await fetch("/api/financial/budgets");
 
       if (!response.ok) {
-        throw new Error('Failed to fetch budgets');
+        throw new Error("Failed to fetch budgets");
       }
 
       const result = await response.json();
@@ -110,7 +110,7 @@ export default function BudgetManagement() {
       setSummary(result.data.summary || null);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load budgets');
+      setError(err instanceof Error ? err.message : "Failed to load budgets");
     } finally {
       setLoading(false);
     }
@@ -124,9 +124,9 @@ export default function BudgetManagement() {
 
   // Format currency
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
@@ -139,19 +139,19 @@ export default function BudgetManagement() {
 
   // Get progress color based on percentage
   const getProgressColor = (percentage: number): string => {
-    if (percentage >= 100) return 'bg-red-500';
-    if (percentage >= 80) return 'bg-yellow-500';
-    return 'bg-green-500';
+    if (percentage >= 100) return "bg-red-500";
+    if (percentage >= 80) return "bg-yellow-500";
+    return "bg-green-500";
   };
 
   // Handle form input changes
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value, type } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'number' ? parseFloat(value) || 0 : value,
+      [name]: type === "number" ? parseFloat(value) || 0 : value,
     }));
   };
 
@@ -191,23 +191,23 @@ export default function BudgetManagement() {
   const handleCreate = async () => {
     try {
       setIsSubmitting(true);
-      const response = await fetch('/api/financial/budgets', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/financial/budgets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create budget');
+        throw new Error(errorData.error || "Failed to create budget");
       }
 
-      toast.success('Budget created successfully');
+      toast.success("Budget created successfully");
       setIsCreateModalOpen(false);
       void fetchBudgets();
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : 'Failed to create budget'
+        err instanceof Error ? err.message : "Failed to create budget",
       );
     } finally {
       setIsSubmitting(false);
@@ -223,23 +223,23 @@ export default function BudgetManagement() {
       const response = await fetch(
         `/api/financial/budgets/${selectedBudget.id}`,
         {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formData),
-        }
+        },
       );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update budget');
+        throw new Error(errorData.error || "Failed to update budget");
       }
 
-      toast.success('Budget updated successfully');
+      toast.success("Budget updated successfully");
       setIsEditModalOpen(false);
       void fetchBudgets();
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : 'Failed to update budget'
+        err instanceof Error ? err.message : "Failed to update budget",
       );
     } finally {
       setIsSubmitting(false);
@@ -255,21 +255,21 @@ export default function BudgetManagement() {
       const response = await fetch(
         `/api/financial/budgets/${selectedBudget.id}`,
         {
-          method: 'DELETE',
-        }
+          method: "DELETE",
+        },
       );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete budget');
+        throw new Error(errorData.error || "Failed to delete budget");
       }
 
-      toast.success('Budget deleted successfully');
+      toast.success("Budget deleted successfully");
       setIsDeleteDialogOpen(false);
       void fetchBudgets();
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : 'Failed to delete budget'
+        err instanceof Error ? err.message : "Failed to delete budget",
       );
     } finally {
       setIsSubmitting(false);
@@ -284,7 +284,7 @@ export default function BudgetManagement() {
   }));
 
   const barChartData = budgets.map((b) => ({
-    label: b.name.length > 10 ? b.name.substring(0, 10) + '...' : b.name,
+    label: b.name.length > 10 ? b.name.substring(0, 10) + "..." : b.name,
     value: b.amount,
     budgeted: b.amount,
     spent: b.spent,
@@ -345,13 +345,13 @@ export default function BudgetManagement() {
             title="Remaining"
             value={formatCurrency(summary.totalRemaining)}
             icon=""
-            color={summary.totalRemaining >= 0 ? 'emerald' : 'red'}
+            color={summary.totalRemaining >= 0 ? "emerald" : "red"}
           />
           <SummaryCard
             title="Over Budget"
             value={`${summary.overBudgetCount} of ${summary.budgetCount}`}
             icon=""
-            color={summary.overBudgetCount > 0 ? 'red' : 'gray'}
+            color={summary.overBudgetCount > 0 ? "red" : "gray"}
           />
         </div>
       )}
@@ -372,8 +372,8 @@ export default function BudgetManagement() {
             <BarChartComponent
               data={barChartData}
               bars={[
-                { dataKey: 'budgeted', name: 'Budgeted', color: '#3B82F6' },
-                { dataKey: 'spent', name: 'Spent', color: '#10B981' },
+                { dataKey: "budgeted", name: "Budgeted", color: "#3B82F6" },
+                { dataKey: "spent", name: "Spent", color: "#10B981" },
               ]}
               height={250}
               currency
@@ -393,7 +393,7 @@ export default function BudgetManagement() {
             <button
               onClick={() => {
                 window.location.href =
-                  '/api/financial/export?type=budgets&format=csv';
+                  "/api/financial/export?type=budgets&format=csv";
               }}
               className="px-3 py-2 bg-gray-100 text-gray-700 dark:text-slate-300 rounded-lg hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 flex items-center gap-2 text-sm"
               title="Export to CSV"
@@ -511,13 +511,13 @@ function SummaryCard({
   color: string;
 }) {
   const colorClasses: Record<string, string> = {
-    blue: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800',
+    blue: "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800",
     green:
-      'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800',
+      "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800",
     emerald:
-      'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800',
-    red: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800',
-    gray: 'bg-gray-50 dark:bg-slate-900/20 border-gray-200 dark:border-slate-700',
+      "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800",
+    red: "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800",
+    gray: "bg-gray-50 dark:bg-slate-900/20 border-gray-200 dark:border-slate-700",
   };
 
   return (
@@ -683,17 +683,17 @@ function BudgetList({
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-500 dark:text-slate-400">
-                {formatCurrency(budget.spent)} of{' '}
+                {formatCurrency(budget.spent)} of{" "}
                 {formatCurrency(effectiveBudget)}
                 {budget.rolloverEnabled && budget.rolloverAmount > 0 && (
                   <span className="text-xs ml-1">
-                    ({formatCurrency(budget.amount)} +{' '}
+                    ({formatCurrency(budget.amount)} +{" "}
                     {formatCurrency(budget.rolloverAmount)})
                   </span>
                 )}
               </span>
               <span
-                className={remaining >= 0 ? 'text-green-600' : 'text-red-600'}
+                className={remaining >= 0 ? "text-green-600" : "text-red-600"}
               >
                 {remaining >= 0
                   ? `${formatCurrency(remaining)} left`
@@ -710,7 +710,7 @@ function BudgetList({
 interface BudgetFormProps {
   formData: BudgetFormData;
   onInputChange: (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => void;
   onCheckboxChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSubmit: () => void;
@@ -843,7 +843,7 @@ function BudgetForm({
           disabled={isSubmitting}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
         >
-          {isSubmitting ? 'Saving...' : submitLabel}
+          {isSubmitting ? "Saving..." : submitLabel}
         </button>
       </div>
     </form>

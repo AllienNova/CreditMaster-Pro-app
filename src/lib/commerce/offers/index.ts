@@ -5,8 +5,11 @@
  */
 
 // Types
-export * from './types';
+export * from "./types";
 
 // Services
-export { offerService, default as offerServiceDefault } from './offer-service';
-export { disclosureService, default as disclosureServiceDefault } from './disclosure-service';
+export { offerService, default as offerServiceDefault } from "./offer-service";
+export {
+  disclosureService,
+  default as disclosureServiceDefault,
+} from "./disclosure-service";

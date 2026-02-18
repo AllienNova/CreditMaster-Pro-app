@@ -3,22 +3,22 @@
  * Enable families and friends to be financially accountable together
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 // Types
-export type MemberRole = 'owner' | 'admin' | 'contributor';
-export type GoalVisibility = 'private' | 'members_only' | 'public';
+export type MemberRole = "owner" | "admin" | "contributor";
+export type GoalVisibility = "private" | "members_only" | "public";
 export type ContributionFrequency =
-  | 'one_time'
-  | 'weekly'
-  | 'biweekly'
-  | 'monthly';
+  | "one_time"
+  | "weekly"
+  | "biweekly"
+  | "monthly";
 export type SharedGoalStatus =
-  | 'planning'
-  | 'active'
-  | 'paused'
-  | 'completed'
-  | 'cancelled';
+  | "planning"
+  | "active"
+  | "paused"
+  | "completed"
+  | "cancelled";
 
 export interface SharedGoal {
   id: string;
@@ -74,7 +74,7 @@ export interface GoalInvitation {
   recipientEmail: string;
   role: MemberRole;
   personalMessage?: string;
-  status: 'pending' | 'accepted' | 'declined' | 'expired';
+  status: "pending" | "accepted" | "declined" | "expired";
   expiresAt: Date;
   createdAt: Date;
 }
@@ -83,59 +83,59 @@ export interface GoalUpdate {
   id: string;
   goalId: string;
   authorName: string;
-  type: 'message' | 'milestone' | 'nudge' | 'celebration' | 'system';
+  type: "message" | "milestone" | "nudge" | "celebration" | "system";
   content: string;
   createdAt: Date;
 }
 
 export const RELATIONSHIP_TYPES = [
-  { value: 'spouse', label: 'Spouse/Partner', emoji: '' },
-  { value: 'parent', label: 'Parent', emoji: '‍‍' },
-  { value: 'sibling', label: 'Sibling', emoji: '' },
-  { value: 'friend', label: 'Friend', emoji: '' },
-  { value: 'roommate', label: 'Roommate', emoji: '' },
-  { value: 'other', label: 'Other', emoji: '' },
+  { value: "spouse", label: "Spouse/Partner", emoji: "" },
+  { value: "parent", label: "Parent", emoji: "‍‍" },
+  { value: "sibling", label: "Sibling", emoji: "" },
+  { value: "friend", label: "Friend", emoji: "" },
+  { value: "roommate", label: "Roommate", emoji: "" },
+  { value: "other", label: "Other", emoji: "" },
 ] as const;
 
 export const SHARED_GOAL_TEMPLATES = [
   {
-    id: 'emergency_fund',
-    name: 'Family Emergency Fund',
-    emoji: '',
+    id: "emergency_fund",
+    name: "Family Emergency Fund",
+    emoji: "",
     suggestedAmount: 10000,
   },
   {
-    id: 'house_down_payment',
-    name: 'House Down Payment',
-    emoji: '',
+    id: "house_down_payment",
+    name: "House Down Payment",
+    emoji: "",
     suggestedAmount: 50000,
   },
-  { id: 'wedding', name: 'Wedding Fund', emoji: '', suggestedAmount: 25000 },
+  { id: "wedding", name: "Wedding Fund", emoji: "", suggestedAmount: 25000 },
   {
-    id: 'vacation',
-    name: 'Group Vacation',
-    emoji: '',
+    id: "vacation",
+    name: "Group Vacation",
+    emoji: "",
     suggestedAmount: 5000,
   },
   {
-    id: 'parents_gift',
+    id: "parents_gift",
     name: "Parents' Gift",
-    emoji: '',
+    emoji: "",
     suggestedAmount: 1500,
   },
   {
-    id: 'debt_payoff',
-    name: 'Joint Debt Payoff',
-    emoji: '',
+    id: "debt_payoff",
+    name: "Joint Debt Payoff",
+    emoji: "",
     suggestedAmount: 15000,
   },
   {
-    id: 'baby_fund',
-    name: 'Baby/Adoption Fund',
-    emoji: '',
+    id: "baby_fund",
+    name: "Baby/Adoption Fund",
+    emoji: "",
     suggestedAmount: 15000,
   },
-  { id: 'custom', name: 'Custom Goal', emoji: '', suggestedAmount: 5000 },
+  { id: "custom", name: "Custom Goal", emoji: "", suggestedAmount: 5000 },
 ];
 
 export class SharedGoalsService {
@@ -148,42 +148,42 @@ export class SharedGoalsService {
   async createGoal(
     creatorId: string,
     creatorName: string,
-    goal: Partial<SharedGoal>
+    goal: Partial<SharedGoal>,
   ): Promise<SharedGoal> {
     const now = new Date();
     const newGoal = {
       id: crypto.randomUUID(),
-      name: goal.name || 'Shared Goal',
-      description: goal.description || '',
-      emoji: goal.emoji || '',
+      name: goal.name || "Shared Goal",
+      description: goal.description || "",
+      emoji: goal.emoji || "",
       target_amount: goal.targetAmount || 0,
       current_amount: 0,
-      currency: 'USD',
+      currency: "USD",
       start_date: now.toISOString(),
       target_date:
         goal.targetDate?.toISOString() ||
         new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-      visibility: goal.visibility || 'members_only',
-      status: 'active',
+      visibility: goal.visibility || "members_only",
+      status: "active",
       total_contributions: 0,
       created_at: now.toISOString(),
       updated_at: now.toISOString(),
     };
 
     const { data, error } = await this.supabase
-      .from('shared_goals')
+      .from("shared_goals")
       .insert(newGoal)
       .select()
       .single();
     if (error) throw error;
 
     // Add creator as owner
-    await this.supabase.from('shared_goal_members').insert({
+    await this.supabase.from("shared_goal_members").insert({
       id: crypto.randomUUID(),
       goal_id: newGoal.id,
       user_id: creatorId,
       display_name: creatorName,
-      role: 'owner',
+      role: "owner",
       total_contributed: 0,
       contribution_count: 0,
       show_contribution_amounts: true,
@@ -196,9 +196,9 @@ export class SharedGoalsService {
 
   async getGoal(goalId: string): Promise<SharedGoal | null> {
     const { data } = await this.supabase
-      .from('shared_goals')
-      .select('*')
-      .eq('id', goalId)
+      .from("shared_goals")
+      .select("*")
+      .eq("id", goalId)
       .single();
     if (!data) return null;
     const goal = this.goalFromDb(data);
@@ -208,28 +208,28 @@ export class SharedGoalsService {
 
   async getUserGoals(userId: string): Promise<SharedGoal[]> {
     const { data: memberData } = await this.supabase
-      .from('shared_goal_members')
-      .select('goal_id')
-      .eq('user_id', userId)
-      .eq('is_active', true);
+      .from("shared_goal_members")
+      .select("goal_id")
+      .eq("user_id", userId)
+      .eq("is_active", true);
     if (!memberData?.length) return [];
 
     const { data } = await this.supabase
-      .from('shared_goals')
-      .select('*')
+      .from("shared_goals")
+      .select("*")
       .in(
-        'id',
-        memberData.map((m) => m.goal_id)
+        "id",
+        memberData.map((m) => m.goal_id),
       );
     return (data || []).map(this.goalFromDb);
   }
 
   async getMembers(goalId: string): Promise<SharedGoalMember[]> {
     const { data } = await this.supabase
-      .from('shared_goal_members')
-      .select('*')
-      .eq('goal_id', goalId)
-      .eq('is_active', true);
+      .from("shared_goal_members")
+      .select("*")
+      .eq("goal_id", goalId)
+      .eq("is_active", true);
     return (data || []).map(this.memberFromDb);
   }
 
@@ -237,22 +237,22 @@ export class SharedGoalsService {
     goalId: string,
     inviterName: string,
     email: string,
-    role: MemberRole = 'contributor'
+    role: MemberRole = "contributor",
   ): Promise<GoalInvitation> {
     const goal = await this.getGoal(goalId);
     const inv = {
       id: crypto.randomUUID(),
       goal_id: goalId,
-      goal_name: goal?.name || '',
+      goal_name: goal?.name || "",
       inviter_name: inviterName,
       recipient_email: email,
       role,
-      status: 'pending',
+      status: "pending",
       expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
       created_at: new Date().toISOString(),
     };
     const { data, error } = await this.supabase
-      .from('shared_goal_invitations')
+      .from("shared_goal_invitations")
       .insert(inv)
       .select()
       .single();
@@ -263,16 +263,16 @@ export class SharedGoalsService {
   async acceptInvitation(
     invitationId: string,
     userId: string,
-    displayName: string
+    displayName: string,
   ): Promise<void> {
     const { data: inv } = await this.supabase
-      .from('shared_goal_invitations')
-      .select('*')
-      .eq('id', invitationId)
+      .from("shared_goal_invitations")
+      .select("*")
+      .eq("id", invitationId)
       .single();
-    if (!inv || inv.status !== 'pending') throw new Error('Invalid invitation');
+    if (!inv || inv.status !== "pending") throw new Error("Invalid invitation");
 
-    await this.supabase.from('shared_goal_members').insert({
+    await this.supabase.from("shared_goal_members").insert({
       id: crypto.randomUUID(),
       goal_id: inv.goal_id,
       user_id: userId,
@@ -286,9 +286,9 @@ export class SharedGoalsService {
     });
 
     await this.supabase
-      .from('shared_goal_invitations')
-      .update({ status: 'accepted' })
-      .eq('id', invitationId);
+      .from("shared_goal_invitations")
+      .update({ status: "accepted" })
+      .eq("id", invitationId);
   }
 
   async recordContribution(
@@ -296,7 +296,7 @@ export class SharedGoalsService {
     memberId: string,
     memberName: string,
     amount: number,
-    note?: string
+    note?: string,
   ): Promise<Contribution> {
     const contrib = {
       id: crypto.randomUUID(),
@@ -308,7 +308,7 @@ export class SharedGoalsService {
       created_at: new Date().toISOString(),
     };
     const { data, error } = await this.supabase
-      .from('shared_goal_contributions')
+      .from("shared_goal_contributions")
       .insert(contrib)
       .select()
       .single();
@@ -318,13 +318,13 @@ export class SharedGoalsService {
     const goal = await this.getGoal(goalId);
     if (goal) {
       await this.supabase
-        .from('shared_goals')
+        .from("shared_goals")
         .update({
           current_amount: goal.currentAmount + amount,
           total_contributions: goal.totalContributions + 1,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', goalId);
+        .eq("id", goalId);
     }
 
     return this.contributionFromDb(data);
@@ -333,10 +333,10 @@ export class SharedGoalsService {
   async postUpdate(
     goalId: string,
     authorName: string,
-    type: GoalUpdate['type'],
-    content: string
+    type: GoalUpdate["type"],
+    content: string,
   ): Promise<void> {
-    await this.supabase.from('shared_goal_updates').insert({
+    await this.supabase.from("shared_goal_updates").insert({
       id: crypto.randomUUID(),
       goal_id: goalId,
       author_name: authorName,
@@ -348,10 +348,10 @@ export class SharedGoalsService {
 
   async getUpdates(goalId: string): Promise<GoalUpdate[]> {
     const { data } = await this.supabase
-      .from('shared_goal_updates')
-      .select('*')
-      .eq('goal_id', goalId)
-      .order('created_at', { ascending: false })
+      .from("shared_goal_updates")
+      .select("*")
+      .eq("goal_id", goalId)
+      .order("created_at", { ascending: false })
       .limit(50);
     return (data || []).map(this.updateFromDb);
   }
@@ -359,13 +359,13 @@ export class SharedGoalsService {
   async sendNudge(
     goalId: string,
     senderName: string,
-    message?: string
+    message?: string,
   ): Promise<void> {
     await this.postUpdate(
       goalId,
       senderName,
-      'nudge',
-      message || `${senderName} sent a friendly nudge! `
+      "nudge",
+      message || `${senderName} sent a friendly nudge! `,
     );
   }
 
@@ -382,7 +382,7 @@ export class SharedGoalsService {
     return {
       id: d.id as string,
       name: d.name as string,
-      description: (d.description as string) || '',
+      description: (d.description as string) || "",
       emoji: d.emoji as string,
       targetAmount: target,
       currentAmount: current,
@@ -427,7 +427,7 @@ export class SharedGoalsService {
       recipientEmail: d.recipient_email as string,
       role: d.role as MemberRole,
       personalMessage: d.personal_message as string,
-      status: d.status as GoalInvitation['status'],
+      status: d.status as GoalInvitation["status"],
       expiresAt: new Date(d.expires_at as string),
       createdAt: new Date(d.created_at as string),
     };
@@ -450,7 +450,7 @@ export class SharedGoalsService {
       id: d.id as string,
       goalId: d.goal_id as string,
       authorName: d.author_name as string,
-      type: d.type as GoalUpdate['type'],
+      type: d.type as GoalUpdate["type"],
       content: d.content as string,
       createdAt: new Date(d.created_at as string),
     };
@@ -462,7 +462,7 @@ export function getSharedGoalsService(): SharedGoalsService {
   if (!instance) {
     instance = new SharedGoalsService(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
     );
   }
   return instance;

@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
 /**
  * Voice Assistant Component
- * 
+ *
  * Provides voice input/output capabilities for credit repair assistance.
  * Uses Web Speech API for speech recognition and synthesis.
  */
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect } from "react";
 
 interface VoiceAssistantProps {
   onTranscript?: (text: string) => void;
@@ -71,33 +71,36 @@ declare global {
 export default function VoiceAssistant({
   onTranscript,
   onResponse,
-  placeholder = 'Click the microphone to start speaking...',
-  className = '',
+  placeholder = "Click the microphone to start speaking...",
+  className = "",
 }: VoiceAssistantProps) {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [transcript, setTranscript] = useState('');
-  const [response, setResponse] = useState('');
+  const [transcript, setTranscript] = useState("");
+  const [response, setResponse] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSupported, setIsSupported] = useState(true);
-  
+
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
 
   // Initialize speech recognition
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (typeof window !== "undefined") {
+      const SpeechRecognitionAPI =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
 
       if (SpeechRecognitionAPI) {
         recognitionRef.current = new SpeechRecognitionAPI();
         recognitionRef.current.continuous = true;
         recognitionRef.current.interimResults = true;
-        recognitionRef.current.lang = 'en-US';
+        recognitionRef.current.lang = "en-US";
 
-        recognitionRef.current.onresult = (event: SpeechRecognitionEventCustom) => {
-          let finalTranscript = '';
-          let interimTranscript = '';
+        recognitionRef.current.onresult = (
+          event: SpeechRecognitionEventCustom,
+        ) => {
+          let finalTranscript = "";
+          let interimTranscript = "";
 
           for (let i = event.resultIndex; i < event.results.length; i++) {
             const result = event.results[i];
@@ -116,7 +119,9 @@ export default function VoiceAssistant({
           }
         };
 
-        recognitionRef.current.onerror = (event: SpeechRecognitionErrorEventCustom) => {
+        recognitionRef.current.onerror = (
+          event: SpeechRecognitionErrorEventCustom,
+        ) => {
           setError(`Speech recognition error: ${event.error}`);
           setIsListening(false);
         };
@@ -126,7 +131,7 @@ export default function VoiceAssistant({
         };
       } else {
         setIsSupported(false);
-        setError('Speech recognition is not supported in this browser');
+        setError("Speech recognition is not supported in this browser");
       }
 
       synthRef.current = window.speechSynthesis;
@@ -145,12 +150,12 @@ export default function VoiceAssistant({
   const startListening = useCallback(() => {
     if (recognitionRef.current && !isListening) {
       setError(null);
-      setTranscript('');
+      setTranscript("");
       try {
         recognitionRef.current.start();
         setIsListening(true);
       } catch (err) {
-        setError('Failed to start speech recognition');
+        setError("Failed to start speech recognition");
       }
     }
   }, [isListening]);
@@ -162,26 +167,29 @@ export default function VoiceAssistant({
     }
   }, [isListening]);
 
-  const speak = useCallback((text: string) => {
-    if (synthRef.current && text) {
-      synthRef.current.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
-      
-      utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => setIsSpeaking(false);
-      utterance.onerror = () => {
-        setIsSpeaking(false);
-        setError('Failed to speak response');
-      };
+  const speak = useCallback(
+    (text: string) => {
+      if (synthRef.current && text) {
+        synthRef.current.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
 
-      synthRef.current.speak(utterance);
-      setResponse(text);
-      if (onResponse) onResponse(text);
-    }
-  }, [onResponse]);
+        utterance.onstart = () => setIsSpeaking(true);
+        utterance.onend = () => setIsSpeaking(false);
+        utterance.onerror = () => {
+          setIsSpeaking(false);
+          setError("Failed to speak response");
+        };
+
+        synthRef.current.speak(utterance);
+        setResponse(text);
+        if (onResponse) onResponse(text);
+      }
+    },
+    [onResponse],
+  );
 
   const stopSpeaking = useCallback(() => {
     if (synthRef.current) {
@@ -192,18 +200,25 @@ export default function VoiceAssistant({
 
   if (!isSupported) {
     return (
-      <div className={`bg-yellow-50 border border-yellow-200 rounded-lg p-4 ${className}`}>
+      <div
+        className={`bg-yellow-50 border border-yellow-200 rounded-lg p-4 ${className}`}
+      >
         <p className="text-yellow-800 text-sm">
-          Voice assistant is not supported in this browser. Please use Chrome, Edge, or Safari.
+          Voice assistant is not supported in this browser. Please use Chrome,
+          Edge, or Safari.
         </p>
       </div>
     );
   }
 
   return (
-    <div className={`bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 ${className}`}>
+    <div
+      className={`bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 ${className}`}
+    >
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Voice Assistant</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          Voice Assistant
+        </h3>
         <div className="flex items-center gap-2">
           {isListening && (
             <span className="flex items-center gap-1 text-sm text-red-600">
@@ -228,8 +243,12 @@ export default function VoiceAssistant({
 
       {/* Transcript Display */}
       <div className="mb-4 p-4 bg-gray-50 dark:bg-slate-900 rounded-lg min-h-[80px]">
-        <p className="text-sm text-gray-500 dark:text-slate-400 mb-1">You said:</p>
-        <p className="text-gray-900 dark:text-white">{transcript || placeholder}</p>
+        <p className="text-sm text-gray-500 dark:text-slate-400 mb-1">
+          You said:
+        </p>
+        <p className="text-gray-900 dark:text-white">
+          {transcript || placeholder}
+        </p>
       </div>
 
       {/* Response Display */}
@@ -247,10 +266,10 @@ export default function VoiceAssistant({
           onClick={isListening ? stopListening : startListening}
           className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
             isListening
-              ? 'bg-red-500 hover:bg-red-600 text-white scale-110'
-              : 'bg-blue-500 hover:bg-blue-600 text-white'
+              ? "bg-red-500 hover:bg-red-600 text-white scale-110"
+              : "bg-blue-500 hover:bg-blue-600 text-white"
           }`}
-          aria-label={isListening ? 'Stop listening' : 'Start listening'}
+          aria-label={isListening ? "Stop listening" : "Start listening"}
         >
           {isListening ? (
             <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
@@ -271,7 +290,11 @@ export default function VoiceAssistant({
             className="w-12 h-12 rounded-full bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 flex items-center justify-center"
             aria-label="Stop speaking"
           >
-            <svg className="w-6 h-6 text-gray-600 dark:text-slate-300" fill="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="w-6 h-6 text-gray-600 dark:text-slate-300"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
             </svg>
           </button>
@@ -279,9 +302,9 @@ export default function VoiceAssistant({
       </div>
 
       <p className="text-center text-xs text-gray-500 dark:text-slate-400 mt-4">
-        Tap the microphone to ask about credit repair, disputes, or your credit score
+        Tap the microphone to ask about credit repair, disputes, or your credit
+        score
       </p>
     </div>
   );
 }
-

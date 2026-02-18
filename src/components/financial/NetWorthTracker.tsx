@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/components/ui/Toast';
-import AreaChartComponent from '@/components/charts/AreaChart';
-import PieChartComponent from '@/components/charts/PieChart';
-import { Icon } from '@/components/ui/Icon';
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/components/ui/Toast";
+import AreaChartComponent from "@/components/charts/AreaChart";
+import PieChartComponent from "@/components/charts/PieChart";
+import { Icon } from "@/components/ui/Icon";
 
 // Types
 interface Asset {
@@ -31,19 +31,19 @@ interface Liability {
 }
 
 type AssetCategory =
-  | 'cash'
-  | 'investments'
-  | 'retirement'
-  | 'real_estate'
-  | 'vehicles'
-  | 'other';
+  | "cash"
+  | "investments"
+  | "retirement"
+  | "real_estate"
+  | "vehicles"
+  | "other";
 type LiabilityCategory =
-  | 'credit_card'
-  | 'mortgage'
-  | 'auto_loan'
-  | 'student_loan'
-  | 'personal_loan'
-  | 'other';
+  | "credit_card"
+  | "mortgage"
+  | "auto_loan"
+  | "student_loan"
+  | "personal_loan"
+  | "other";
 
 interface NetWorthHistory {
   date: string;
@@ -70,7 +70,7 @@ interface NetWorthData {
   yearlyChange: number;
 }
 
-type TabType = 'overview' | 'assets' | 'liabilities' | 'history';
+type TabType = "overview" | "assets" | "liabilities" | "history";
 
 const ASSET_CATEGORIES: {
   value: AssetCategory;
@@ -78,12 +78,27 @@ const ASSET_CATEGORIES: {
   icon: string;
   color: string;
 }[] = [
-  { value: 'cash', label: 'Cash & Savings', icon: "wallet", color: '#10B981' },
-  { value: 'investments', label: 'Investments', icon: "trending-up", color: '#3B82F6' },
-  { value: 'retirement', label: 'Retirement', icon: "shield", color: '#8B5CF6' },
-  { value: 'real_estate', label: 'Real Estate', icon: "home", color: '#F59E0B' },
-  { value: 'vehicles', label: 'Vehicles', icon: "truck", color: '#6366F1' },
-  { value: 'other', label: 'Other', icon: "puzzle-piece", color: '#6B7280' },
+  { value: "cash", label: "Cash & Savings", icon: "wallet", color: "#10B981" },
+  {
+    value: "investments",
+    label: "Investments",
+    icon: "trending-up",
+    color: "#3B82F6",
+  },
+  {
+    value: "retirement",
+    label: "Retirement",
+    icon: "shield",
+    color: "#8B5CF6",
+  },
+  {
+    value: "real_estate",
+    label: "Real Estate",
+    icon: "home",
+    color: "#F59E0B",
+  },
+  { value: "vehicles", label: "Vehicles", icon: "truck", color: "#6366F1" },
+  { value: "other", label: "Other", icon: "puzzle-piece", color: "#6B7280" },
 ];
 
 const LIABILITY_CATEGORIES: {
@@ -92,22 +107,27 @@ const LIABILITY_CATEGORIES: {
   icon: string;
   color: string;
 }[] = [
-  { value: 'credit_card', label: 'Credit Cards', icon: "credit-card", color: '#EF4444' },
-  { value: 'mortgage', label: 'Mortgage', icon: "home", color: '#F97316' },
-  { value: 'auto_loan', label: 'Auto Loans', icon: "truck", color: '#F59E0B' },
   {
-    value: 'student_loan',
-    label: 'Student Loans',
+    value: "credit_card",
+    label: "Credit Cards",
+    icon: "credit-card",
+    color: "#EF4444",
+  },
+  { value: "mortgage", label: "Mortgage", icon: "home", color: "#F97316" },
+  { value: "auto_loan", label: "Auto Loans", icon: "truck", color: "#F59E0B" },
+  {
+    value: "student_loan",
+    label: "Student Loans",
     icon: "academic-cap",
-    color: '#EAB308',
+    color: "#EAB308",
   },
   {
-    value: 'personal_loan',
-    label: 'Personal Loans',
+    value: "personal_loan",
+    label: "Personal Loans",
     icon: "banknotes",
-    color: '#84CC16',
+    color: "#84CC16",
   },
-  { value: 'other', label: 'Other', icon: "puzzle-piece", color: '#6B7280' },
+  { value: "other", label: "Other", icon: "puzzle-piece", color: "#6B7280" },
 ];
 
 export default function NetWorthTracker() {
@@ -115,17 +135,17 @@ export default function NetWorthTracker() {
   const { success: showSuccess, error: showError } = useToast();
   const [data, setData] = useState<NetWorthData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [showAddAssetModal, setShowAddAssetModal] = useState(false);
   const [showAddLiabilityModal, setShowAddLiabilityModal] = useState(false);
 
   // Form state for adding assets/liabilities
   const [newAsset, setNewAsset] = useState<Partial<Asset>>({
-    category: 'cash',
+    category: "cash",
     value: 0,
   });
   const [newLiability, setNewLiability] = useState<Partial<Liability>>({
-    category: 'credit_card',
+    category: "credit_card",
     balance: 0,
   });
 
@@ -135,7 +155,7 @@ export default function NetWorthTracker() {
     try {
       setLoading(true);
       const response = await fetch(`/api/financial/dashboard`);
-      if (!response.ok) throw new Error('Failed to fetch data');
+      if (!response.ok) throw new Error("Failed to fetch data");
 
       const result = await response.json();
       const dashboard = result.data;
@@ -147,9 +167,9 @@ export default function NetWorthTracker() {
         date.setMonth(date.getMonth() - i);
         const variance = Math.random() * 2000 - 1000;
         history.push({
-          date: date.toLocaleDateString('en-US', {
-            month: 'short',
-            year: 'numeric',
+          date: date.toLocaleDateString("en-US", {
+            month: "short",
+            year: "numeric",
           }),
           netWorth: dashboard.netWorth - i * 500 + variance,
           assets: dashboard.totalAssets - i * 300 + variance * 0.6,
@@ -160,53 +180,53 @@ export default function NetWorthTracker() {
       // Generate sample assets based on total
       const assetsList: Asset[] = [
         {
-          id: '1',
-          name: 'Checking Account',
-          category: 'cash',
+          id: "1",
+          name: "Checking Account",
+          category: "cash",
           value: dashboard.totalAssets * 0.15,
-          institution: 'Chase Bank',
+          institution: "Chase Bank",
           lastUpdated: new Date(),
           isLinked: true,
         },
         {
-          id: '2',
-          name: 'Savings Account',
-          category: 'cash',
+          id: "2",
+          name: "Savings Account",
+          category: "cash",
           value: dashboard.totalAssets * 0.15,
-          institution: 'Chase Bank',
+          institution: "Chase Bank",
           lastUpdated: new Date(),
           isLinked: true,
         },
         {
-          id: '3',
-          name: 'Brokerage Account',
-          category: 'investments',
+          id: "3",
+          name: "Brokerage Account",
+          category: "investments",
           value: dashboard.totalAssets * 0.25,
-          institution: 'Fidelity',
+          institution: "Fidelity",
           lastUpdated: new Date(),
           isLinked: true,
         },
         {
-          id: '4',
-          name: '401(k)',
-          category: 'retirement',
+          id: "4",
+          name: "401(k)",
+          category: "retirement",
           value: dashboard.totalAssets * 0.3,
-          institution: 'Vanguard',
+          institution: "Vanguard",
           lastUpdated: new Date(),
           isLinked: true,
         },
         {
-          id: '5',
-          name: 'Primary Residence',
-          category: 'real_estate',
+          id: "5",
+          name: "Primary Residence",
+          category: "real_estate",
           value: dashboard.totalAssets * 0.1,
           lastUpdated: new Date(),
           isLinked: false,
         },
         {
-          id: '6',
-          name: 'Vehicle',
-          category: 'vehicles',
+          id: "6",
+          name: "Vehicle",
+          category: "vehicles",
           value: dashboard.totalAssets * 0.05,
           lastUpdated: new Date(),
           isLinked: false,
@@ -216,46 +236,46 @@ export default function NetWorthTracker() {
       // Generate sample liabilities
       const liabilitiesList: Liability[] = [
         {
-          id: '1',
-          name: 'Chase Sapphire',
-          category: 'credit_card',
+          id: "1",
+          name: "Chase Sapphire",
+          category: "credit_card",
           balance: dashboard.totalLiabilities * 0.15,
           interestRate: 24.99,
           minimumPayment: 50,
-          institution: 'Chase',
+          institution: "Chase",
           lastUpdated: new Date(),
           isLinked: true,
         },
         {
-          id: '2',
-          name: 'Home Mortgage',
-          category: 'mortgage',
+          id: "2",
+          name: "Home Mortgage",
+          category: "mortgage",
           balance: dashboard.totalLiabilities * 0.5,
           interestRate: 6.5,
           minimumPayment: 1500,
-          institution: 'Wells Fargo',
+          institution: "Wells Fargo",
           lastUpdated: new Date(),
           isLinked: true,
         },
         {
-          id: '3',
-          name: 'Auto Loan',
-          category: 'auto_loan',
+          id: "3",
+          name: "Auto Loan",
+          category: "auto_loan",
           balance: dashboard.totalLiabilities * 0.15,
           interestRate: 5.9,
           minimumPayment: 350,
-          institution: 'Capital One',
+          institution: "Capital One",
           lastUpdated: new Date(),
           isLinked: true,
         },
         {
-          id: '4',
-          name: 'Student Loans',
-          category: 'student_loan',
+          id: "4",
+          name: "Student Loans",
+          category: "student_loan",
           balance: dashboard.totalLiabilities * 0.2,
           interestRate: 4.5,
           minimumPayment: 250,
-          institution: 'Navient',
+          institution: "Navient",
           lastUpdated: new Date(),
           isLinked: true,
         },
@@ -322,8 +342,8 @@ export default function NetWorthTracker() {
         yearlyChange,
       });
     } catch (error) {
-      console.error('Error fetching net worth data:', error);
-      showError('Failed to load net worth data');
+      console.error("Error fetching net worth data:", error);
+      showError("Failed to load net worth data");
     } finally {
       setLoading(false);
     }
@@ -336,37 +356,37 @@ export default function NetWorthTracker() {
   }, [authLoading, user, fetchNetWorthData]);
 
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
   };
 
   const formatPercent = (value: number): string => {
-    return `${value >= 0 ? '+' : ''}${value.toFixed(1)}%`;
+    return `${value >= 0 ? "+" : ""}${value.toFixed(1)}%`;
   };
 
   const handleAddAsset = () => {
     if (!newAsset.name || !newAsset.value) {
-      showError('Please fill in all required fields');
+      showError("Please fill in all required fields");
       return;
     }
     showSuccess(`Added ${newAsset.name} to assets`);
     setShowAddAssetModal(false);
-    setNewAsset({ category: 'cash', value: 0 });
+    setNewAsset({ category: "cash", value: 0 });
     void fetchNetWorthData();
   };
 
   const handleAddLiability = () => {
     if (!newLiability.name || !newLiability.balance) {
-      showError('Please fill in all required fields');
+      showError("Please fill in all required fields");
       return;
     }
     showSuccess(`Added ${newLiability.name} to liabilities`);
     setShowAddLiabilityModal(false);
-    setNewLiability({ category: 'credit_card', balance: 0 });
+    setNewLiability({ category: "credit_card", balance: 0 });
     void fetchNetWorthData();
   };
 
@@ -377,7 +397,7 @@ export default function NetWorthTracker() {
     data.assetsList.forEach((asset) => {
       categoryTotals.set(
         asset.category,
-        (categoryTotals.get(asset.category) || 0) + asset.value
+        (categoryTotals.get(asset.category) || 0) + asset.value,
       );
     });
     return ASSET_CATEGORIES.map((cat) => ({
@@ -393,7 +413,7 @@ export default function NetWorthTracker() {
     data.liabilitiesList.forEach((liability) => {
       categoryTotals.set(
         liability.category,
-        (categoryTotals.get(liability.category) || 0) + liability.balance
+        (categoryTotals.get(liability.category) || 0) + liability.balance,
       );
     });
     return LIABILITY_CATEGORIES.map((cat) => ({
@@ -429,10 +449,10 @@ export default function NetWorthTracker() {
       : 0;
 
   const tabs: { id: TabType; label: string; icon: string }[] = [
-    { id: 'overview', label: 'Overview', icon: "chart-bar" },
-    { id: 'assets', label: 'Assets', icon: "trending-up" },
-    { id: 'liabilities', label: 'Liabilities', icon: "credit-card" },
-    { id: 'history', label: 'History', icon: "clock" },
+    { id: "overview", label: "Overview", icon: "chart-bar" },
+    { id: "assets", label: "Assets", icon: "trending-up" },
+    { id: "liabilities", label: "Liabilities", icon: "credit-card" },
+    { id: "history", label: "History", icon: "clock" },
   ];
 
   return (
@@ -488,13 +508,13 @@ export default function NetWorthTracker() {
               Monthly Change
             </h3>
             <span className="text-2xl">
-              {data.monthlyChange >= 0 ? '' : ''}
+              {data.monthlyChange >= 0 ? "" : ""}
             </span>
           </div>
           <div
-            className={`text-3xl font-bold ${data.monthlyChange >= 0 ? 'text-green-600' : 'text-red-600 dark:text-red-400'}`}
+            className={`text-3xl font-bold ${data.monthlyChange >= 0 ? "text-green-600" : "text-red-600 dark:text-red-400"}`}
           >
-            {data.monthlyChange >= 0 ? '+' : ''}
+            {data.monthlyChange >= 0 ? "+" : ""}
             {formatCurrency(data.monthlyChange)}
           </div>
           <div className="text-sm text-gray-500 dark:text-slate-400 mt-1">
@@ -511,7 +531,7 @@ export default function NetWorthTracker() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-6 py-4 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${ activeTab === tab.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-200 dark:hover:text-gray-300 hover:border-gray-300 dark:border-slate-600' }`}
+                className={`flex items-center gap-2 px-6 py-4 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${activeTab === tab.id ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-200 dark:hover:text-gray-300 hover:border-gray-300 dark:border-slate-600"}`}
               >
                 <Icon name={tab.icon} className="w-4 h-4 inline-block" />
                 {tab.label}
@@ -522,7 +542,7 @@ export default function NetWorthTracker() {
 
         <div className="p-6">
           {/* Overview Tab */}
-          {activeTab === 'overview' && (
+          {activeTab === "overview" && (
             <div className="space-y-6">
               {/* Net Worth Trend Chart */}
               <div>
@@ -537,9 +557,9 @@ export default function NetWorthTracker() {
                     }))}
                     areas={[
                       {
-                        dataKey: 'netWorth',
-                        name: 'Net Worth',
-                        color: '#8B5CF6',
+                        dataKey: "netWorth",
+                        name: "Net Worth",
+                        color: "#8B5CF6",
                       },
                     ]}
                     height={256}
@@ -586,13 +606,13 @@ export default function NetWorthTracker() {
                   {data.milestones.map((milestone) => (
                     <div
                       key={milestone.amount}
-                      className={`p-3 rounded-lg text-center ${ milestone.achieved ? 'bg-green-100 border-2 border-green-500' : 'bg-gray-100 dark:bg-slate-700 border-2 border-gray-300 dark:border-slate-600' }`}
+                      className={`p-3 rounded-lg text-center ${milestone.achieved ? "bg-green-100 border-2 border-green-500" : "bg-gray-100 dark:bg-slate-700 border-2 border-gray-300 dark:border-slate-600"}`}
                     >
                       <div className="text-2xl mb-1">
-                        {milestone.achieved ? '' : ''}
+                        {milestone.achieved ? "" : ""}
                       </div>
                       <div
-                        className={`text-sm font-bold ${milestone.achieved ? 'text-green-700' : 'text-gray-600 dark:text-slate-400'}`}
+                        className={`text-sm font-bold ${milestone.achieved ? "text-green-700" : "text-gray-600 dark:text-slate-400"}`}
                       >
                         {formatCurrency(milestone.amount)}
                       </div>
@@ -604,7 +624,7 @@ export default function NetWorthTracker() {
           )}
 
           {/* Assets Tab */}
-          {activeTab === 'assets' && (
+          {activeTab === "assets" && (
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -620,12 +640,12 @@ export default function NetWorthTracker() {
 
               {ASSET_CATEGORIES.map((category) => {
                 const categoryAssets = data.assetsList.filter(
-                  (a) => a.category === category.value
+                  (a) => a.category === category.value,
                 );
                 if (categoryAssets.length === 0) return null;
                 const categoryTotal = categoryAssets.reduce(
                   (sum, a) => sum + a.value,
-                  0
+                  0,
                 );
 
                 return (
@@ -635,7 +655,10 @@ export default function NetWorthTracker() {
                   >
                     <div className="bg-gray-50 dark:bg-slate-700 px-4 py-3 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Icon name={category.icon} className="w-5 h-5 inline-block" />
+                        <Icon
+                          name={category.icon}
+                          className="w-5 h-5 inline-block"
+                        />
                         <span className="font-semibold text-gray-900 dark:text-white">
                           {category.label}
                         </span>
@@ -680,7 +703,7 @@ export default function NetWorthTracker() {
           )}
 
           {/* Liabilities Tab */}
-          {activeTab === 'liabilities' && (
+          {activeTab === "liabilities" && (
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -696,12 +719,12 @@ export default function NetWorthTracker() {
 
               {LIABILITY_CATEGORIES.map((category) => {
                 const categoryLiabilities = data.liabilitiesList.filter(
-                  (l) => l.category === category.value
+                  (l) => l.category === category.value,
                 );
                 if (categoryLiabilities.length === 0) return null;
                 const categoryTotal = categoryLiabilities.reduce(
                   (sum, l) => sum + l.balance,
-                  0
+                  0,
                 );
 
                 return (
@@ -711,7 +734,10 @@ export default function NetWorthTracker() {
                   >
                     <div className="bg-gray-50 dark:bg-slate-700 px-4 py-3 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Icon name={category.icon} className="w-5 h-5 inline-block" />
+                        <Icon
+                          name={category.icon}
+                          className="w-5 h-5 inline-block"
+                        />
                         <span className="font-semibold text-gray-900 dark:text-white">
                           {category.label}
                         </span>
@@ -731,7 +757,7 @@ export default function NetWorthTracker() {
                               {liability.name}
                             </div>
                             <div className="text-sm text-gray-500 dark:text-slate-400">
-                              {liability.institution}{' '}
+                              {liability.institution}{" "}
                               {liability.interestRate &&
                                 `• ${liability.interestRate}% APR`}
                             </div>
@@ -757,7 +783,7 @@ export default function NetWorthTracker() {
           )}
 
           {/* History Tab */}
-          {activeTab === 'history' && (
+          {activeTab === "history" && (
             <div className="space-y-6">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
@@ -771,11 +797,11 @@ export default function NetWorthTracker() {
                       liabilities: h.liabilities,
                     }))}
                     areas={[
-                      { dataKey: 'assets', name: 'Assets', color: '#10B981' },
+                      { dataKey: "assets", name: "Assets", color: "#10B981" },
                       {
-                        dataKey: 'liabilities',
-                        name: 'Liabilities',
-                        color: '#EF4444',
+                        dataKey: "liabilities",
+                        name: "Liabilities",
+                        color: "#EF4444",
                       },
                     ]}
                     height={256}
@@ -830,11 +856,11 @@ export default function NetWorthTracker() {
                             {formatCurrency(month.netWorth)}
                           </td>
                           <td
-                            className={`py-3 px-4 text-right ${change >= 0 ? 'text-green-600' : 'text-red-600 dark:text-red-400'}`}
+                            className={`py-3 px-4 text-right ${change >= 0 ? "text-green-600" : "text-red-600 dark:text-red-400"}`}
                           >
                             {index < arr.length - 1
-                              ? `${change >= 0 ? '+' : ''}${formatCurrency(change)}`
-                              : '-'}
+                              ? `${change >= 0 ? "+" : ""}${formatCurrency(change)}`
+                              : "-"}
                           </td>
                         </tr>
                       );
@@ -861,7 +887,7 @@ export default function NetWorthTracker() {
                 </label>
                 <input
                   type="text"
-                  value={newAsset.name || ''}
+                  value={newAsset.name || ""}
                   onChange={(e) =>
                     setNewAsset({ ...newAsset, name: e.target.value })
                   }
@@ -896,7 +922,7 @@ export default function NetWorthTracker() {
                 </label>
                 <input
                   type="number"
-                  value={newAsset.value || ''}
+                  value={newAsset.value || ""}
                   onChange={(e) =>
                     setNewAsset({
                       ...newAsset,
@@ -913,7 +939,7 @@ export default function NetWorthTracker() {
                 </label>
                 <input
                   type="text"
-                  value={newAsset.institution || ''}
+                  value={newAsset.institution || ""}
                   onChange={(e) =>
                     setNewAsset({ ...newAsset, institution: e.target.value })
                   }
@@ -954,7 +980,7 @@ export default function NetWorthTracker() {
                 </label>
                 <input
                   type="text"
-                  value={newLiability.name || ''}
+                  value={newLiability.name || ""}
                   onChange={(e) =>
                     setNewLiability({ ...newLiability, name: e.target.value })
                   }
@@ -989,7 +1015,7 @@ export default function NetWorthTracker() {
                 </label>
                 <input
                   type="number"
-                  value={newLiability.balance || ''}
+                  value={newLiability.balance || ""}
                   onChange={(e) =>
                     setNewLiability({
                       ...newLiability,
@@ -1008,7 +1034,7 @@ export default function NetWorthTracker() {
                   <input
                     type="number"
                     step="0.01"
-                    value={newLiability.interestRate || ''}
+                    value={newLiability.interestRate || ""}
                     onChange={(e) =>
                       setNewLiability({
                         ...newLiability,
@@ -1025,7 +1051,7 @@ export default function NetWorthTracker() {
                   </label>
                   <input
                     type="number"
-                    value={newLiability.minimumPayment || ''}
+                    value={newLiability.minimumPayment || ""}
                     onChange={(e) =>
                       setNewLiability({
                         ...newLiability,
@@ -1043,7 +1069,7 @@ export default function NetWorthTracker() {
                 </label>
                 <input
                   type="text"
-                  value={newLiability.institution || ''}
+                  value={newLiability.institution || ""}
                   onChange={(e) =>
                     setNewLiability({
                       ...newLiability,

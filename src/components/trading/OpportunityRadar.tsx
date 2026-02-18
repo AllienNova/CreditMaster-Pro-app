@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   ArrowTrendingUpIcon as TrendingUp,
   ArrowTrendingDownIcon as TrendingDown,
@@ -12,13 +12,13 @@ import {
   ClockIcon as Clock,
   AdjustmentsHorizontalIcon as Target,
   InformationCircleIcon as AlertCircle,
-} from '@heroicons/react/24/outline';
+} from "@heroicons/react/24/outline";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-type UserTier = 'beginner' | 'pro' | 'quant';
+type UserTier = "beginner" | "pro" | "quant";
 
 interface InstrumentRanking {
   symbol: string;
@@ -34,7 +34,7 @@ interface InstrumentRanking {
     userFit: number;
   };
   signals: {
-    side: 'long' | 'short' | 'neutral';
+    side: "long" | "short" | "neutral";
     confidence: number;
     structure?: string;
   };
@@ -47,7 +47,7 @@ interface AgentThought {
   id: string;
   timestamp: Date;
   message: string;
-  type: 'rotation' | 'signal' | 'risk' | 'info';
+  type: "rotation" | "signal" | "risk" | "info";
 }
 
 // ============================================================================
@@ -57,11 +57,11 @@ interface AgentThought {
 export function OpportunityRadar() {
   const [rankings, setRankings] = useState<InstrumentRanking[]>([]);
   const [thoughts, setThoughts] = useState<AgentThought[]>([]);
-  const [tier, setTier] = useState<UserTier>('pro');
+  const [tier, setTier] = useState<UserTier>("pro");
   const [isLoading, setIsLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<
-    'all' | 'active' | 'opportunities'
-  >('all');
+    "all" | "active" | "opportunities"
+  >("all");
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
 
   // Fetch data
@@ -69,7 +69,7 @@ export function OpportunityRadar() {
     try {
       const [rankingsRes, iseRes] = await Promise.all([
         fetch(`/api/trading/ise?action=rankings&tier=${tier}`),
-        fetch('/api/trading/ise?action=status'),
+        fetch("/api/trading/ise?action=status"),
       ]);
 
       if (rankingsRes.ok) {
@@ -84,7 +84,7 @@ export function OpportunityRadar() {
         }
       }
     } catch (error) {
-      console.error('Failed to fetch ISE data:', error);
+      console.error("Failed to fetch ISE data:", error);
       setRankings(generateMockRankings());
     } finally {
       setIsLoading(false);
@@ -99,25 +99,25 @@ export function OpportunityRadar() {
 
   // Filter rankings
   const filteredRankings = rankings.filter((r) => {
-    if (activeFilter === 'active') return r.isActive;
-    if (activeFilter === 'opportunities')
+    if (activeFilter === "active") return r.isActive;
+    if (activeFilter === "opportunities")
       return r.totalScore > 0.7 && !r.inCooldown;
     return true;
   });
 
   // Get score color
   const getScoreColor = (score: number): string => {
-    if (score >= 0.8) return 'text-green-600 dark:text-green-400';
-    if (score >= 0.6) return 'text-blue-600 dark:text-blue-400';
-    if (score >= 0.4) return 'text-yellow-600 dark:text-yellow-400';
-    return 'text-gray-500 dark:text-slate-400';
+    if (score >= 0.8) return "text-green-600 dark:text-green-400";
+    if (score >= 0.6) return "text-blue-600 dark:text-blue-400";
+    if (score >= 0.4) return "text-yellow-600 dark:text-yellow-400";
+    return "text-gray-500 dark:text-slate-400";
   };
 
   const getScoreBg = (score: number): string => {
-    if (score >= 0.8) return 'bg-green-100 dark:bg-green-900/30';
-    if (score >= 0.6) return 'bg-blue-100 dark:bg-blue-900/30';
-    if (score >= 0.4) return 'bg-yellow-100 dark:bg-yellow-900/30';
-    return 'bg-gray-100 dark:bg-slate-700';
+    if (score >= 0.8) return "bg-green-100 dark:bg-green-900/30";
+    if (score >= 0.6) return "bg-blue-100 dark:bg-blue-900/30";
+    if (score >= 0.4) return "bg-yellow-100 dark:bg-yellow-900/30";
+    return "bg-gray-100 dark:bg-slate-700";
   };
 
   return (
@@ -146,18 +146,18 @@ export function OpportunityRadar() {
             title="Refresh"
           >
             <RefreshCw
-              className={`w-5 h-5 text-gray-500 dark:text-slate-400 ${isLoading ? 'animate-spin' : ''}`}
+              className={`w-5 h-5 text-gray-500 dark:text-slate-400 ${isLoading ? "animate-spin" : ""}`}
             />
           </button>
         </div>
 
         {/* Tier Selector */}
         <div className="flex items-center gap-2 mb-4">
-          {(['beginner', 'pro', 'quant'] as const).map((t) => (
+          {(["beginner", "pro", "quant"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTier(t)}
-              className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${ tier === t ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600' }`}
+              className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${tier === t ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600"}`}
             >
               {t.charAt(0).toUpperCase() + t.slice(1)}
             </button>
@@ -166,11 +166,11 @@ export function OpportunityRadar() {
 
         {/* Filter Tabs */}
         <div className="flex items-center gap-1 p-1 bg-gray-100 dark:bg-slate-700 rounded-lg">
-          {(['all', 'active', 'opportunities'] as const).map((filter) => (
+          {(["all", "active", "opportunities"] as const).map((filter) => (
             <button
               key={filter}
               onClick={() => setActiveFilter(filter)}
-              className={`flex-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${ activeFilter === filter ? 'bg-white dark:bg-slate-600 text-gray-900 shadow-sm' : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white' }`}
+              className={`flex-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${activeFilter === filter ? "bg-white dark:bg-slate-600 text-gray-900 shadow-sm" : "text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"}`}
             >
               {filter.charAt(0).toUpperCase() + filter.slice(1)}
             </button>
@@ -193,20 +193,20 @@ export function OpportunityRadar() {
               key={ranking.symbol}
               onClick={() =>
                 setSelectedSymbol(
-                  selectedSymbol === ranking.symbol ? null : ranking.symbol
+                  selectedSymbol === ranking.symbol ? null : ranking.symbol,
                 )
               }
               className={`p-4 hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors ${
                 selectedSymbol === ranking.symbol
-                  ? 'bg-blue-50 dark:bg-blue-900/20'
-                  : ''
+                  ? "bg-blue-50 dark:bg-blue-900/20"
+                  : ""
               }`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   {/* Rank Badge */}
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${ ranking.rank <= 3 ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-400' }`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${ranking.rank <= 3 ? "bg-yellow-100 text-yellow-700" : "bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-400"}`}
                   >
                     {ranking.rank}
                   </div>
@@ -234,11 +234,11 @@ export function OpportunityRadar() {
                 <div className="flex items-center gap-4">
                   {/* Signal Direction */}
                   <div
-                    className={`flex items-center gap-1 px-2 py-1 rounded ${ ranking.signals.side === 'long' ? 'bg-green-100 text-green-700' : ranking.signals.side === 'short' ? 'bg-red-100 text-red-700' : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-400' }`}
+                    className={`flex items-center gap-1 px-2 py-1 rounded ${ranking.signals.side === "long" ? "bg-green-100 text-green-700" : ranking.signals.side === "short" ? "bg-red-100 text-red-700" : "bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-400"}`}
                   >
-                    {ranking.signals.side === 'long' ? (
+                    {ranking.signals.side === "long" ? (
                       <TrendingUp className="w-4 h-4" />
-                    ) : ranking.signals.side === 'short' ? (
+                    ) : ranking.signals.side === "short" ? (
                       <TrendingDown className="w-4 h-4" />
                     ) : (
                       <Activity className="w-4 h-4" />
@@ -257,7 +257,7 @@ export function OpportunityRadar() {
 
                   <ChevronRight
                     className={`w-5 h-5 text-gray-400 dark:text-slate-500 transition-transform ${
-                      selectedSymbol === ranking.symbol ? 'rotate-90' : ''
+                      selectedSymbol === ranking.symbol ? "rotate-90" : ""
                     }`}
                   />
                 </div>
@@ -319,7 +319,7 @@ export function OpportunityRadar() {
             <AlertCircle className="w-4 h-4 text-blue-500 flex-shrink-0" />
             <div className="overflow-hidden">
               <p className="text-gray-700 dark:text-slate-300 truncate">
-                {thoughts[0]?.message || 'Analyzing market conditions...'}
+                {thoughts[0]?.message || "Analyzing market conditions..."}
               </p>
             </div>
           </div>
@@ -335,10 +335,10 @@ export function OpportunityRadar() {
 
 function ScoreBar({ label, value }: { label: string; value: number }) {
   const getBarColor = (v: number): string => {
-    if (v >= 0.8) return 'bg-green-500';
-    if (v >= 0.6) return 'bg-blue-500';
-    if (v >= 0.4) return 'bg-yellow-500';
-    return 'bg-gray-400';
+    if (v >= 0.8) return "bg-green-500";
+    if (v >= 0.6) return "bg-blue-500";
+    if (v >= 0.4) return "bg-yellow-500";
+    return "bg-gray-400";
   };
 
   return (
@@ -368,16 +368,16 @@ function ScoreBar({ label, value }: { label: string; value: number }) {
 
 function generateMockRankings(): InstrumentRanking[] {
   const symbols = [
-    { symbol: 'AAPL', name: 'Apple Inc.', assetClass: 'equity' },
-    { symbol: 'MSFT', name: 'Microsoft Corp.', assetClass: 'equity' },
-    { symbol: 'GOOGL', name: 'Alphabet Inc.', assetClass: 'equity' },
-    { symbol: 'AMZN', name: 'Amazon.com Inc.', assetClass: 'equity' },
-    { symbol: 'NVDA', name: 'NVIDIA Corp.', assetClass: 'equity' },
-    { symbol: 'TSLA', name: 'Tesla Inc.', assetClass: 'equity' },
-    { symbol: 'META', name: 'Meta Platforms', assetClass: 'equity' },
-    { symbol: 'ES', name: 'E-mini S&P 500', assetClass: 'futures' },
-    { symbol: 'NQ', name: 'E-mini Nasdaq', assetClass: 'futures' },
-    { symbol: 'EUR/USD', name: 'Euro/US Dollar', assetClass: 'forex' },
+    { symbol: "AAPL", name: "Apple Inc.", assetClass: "equity" },
+    { symbol: "MSFT", name: "Microsoft Corp.", assetClass: "equity" },
+    { symbol: "GOOGL", name: "Alphabet Inc.", assetClass: "equity" },
+    { symbol: "AMZN", name: "Amazon.com Inc.", assetClass: "equity" },
+    { symbol: "NVDA", name: "NVIDIA Corp.", assetClass: "equity" },
+    { symbol: "TSLA", name: "Tesla Inc.", assetClass: "equity" },
+    { symbol: "META", name: "Meta Platforms", assetClass: "equity" },
+    { symbol: "ES", name: "E-mini S&P 500", assetClass: "futures" },
+    { symbol: "NQ", name: "E-mini Nasdaq", assetClass: "futures" },
+    { symbol: "EUR/USD", name: "Euro/US Dollar", assetClass: "forex" },
   ];
 
   return symbols.map((s, i) => ({
@@ -394,13 +394,13 @@ function generateMockRankings(): InstrumentRanking[] {
     signals: {
       side:
         Math.random() > 0.5
-          ? 'long'
-          : ((Math.random() > 0.5 ? 'short' : 'neutral') as
-              | 'long'
-              | 'short'
-              | 'neutral'),
+          ? "long"
+          : ((Math.random() > 0.5 ? "short" : "neutral") as
+              | "long"
+              | "short"
+              | "neutral"),
       confidence: 0.5 + Math.random() * 0.5,
-      structure: i < 3 ? 'Support bounce forming near key level' : undefined,
+      structure: i < 3 ? "Support bounce forming near key level" : undefined,
     },
     isActive: i < 5,
     inCooldown: i === 5 || i === 6,

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Trading Signals Dashboard Page
@@ -7,15 +7,15 @@
  * filtering, performance tracking, and manual signal generation
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   TradingSignal,
   SignalType,
   SignalStatus,
   SignalPerformance,
-  AnalysisType
-} from '@/lib/investments/types/trading-signals.types';
+  AnalysisType,
+} from "@/lib/investments/types/trading-signals.types";
 
 // ============================================================================
 // PERFORMANCE STATS COMPONENT
@@ -28,40 +28,47 @@ interface PerformanceStatsProps {
 function PerformanceStats({ performance }: PerformanceStatsProps) {
   const stats = [
     {
-      label: 'Success Rate',
+      label: "Success Rate",
       value: `${(performance.successRate * 100).toFixed(1)}%`,
-      color: performance.successRate >= 0.6 ? 'text-green-600' : 'text-yellow-600',
-      bgColor: performance.successRate >= 0.6 ? 'bg-green-50' : 'bg-yellow-50',
+      color:
+        performance.successRate >= 0.6 ? "text-green-600" : "text-yellow-600",
+      bgColor: performance.successRate >= 0.6 ? "bg-green-50" : "bg-yellow-50",
     },
     {
-      label: 'Avg Return',
+      label: "Avg Return",
       value: `${(performance.averageReturn * 100).toFixed(2)}%`,
-      color: performance.averageReturn >= 0 ? 'text-green-600' : 'text-red-600',
-      bgColor: performance.averageReturn >= 0 ? 'bg-green-50' : 'bg-red-50',
+      color: performance.averageReturn >= 0 ? "text-green-600" : "text-red-600",
+      bgColor: performance.averageReturn >= 0 ? "bg-green-50" : "bg-red-50",
     },
     {
-      label: 'Sharpe Ratio',
-      value: performance.sharpeRatio?.toFixed(2) ?? 'N/A',
-      color: (performance.sharpeRatio ?? 0) >= 1 ? 'text-green-600' : 'text-gray-600 dark:text-slate-300',
-      bgColor: (performance.sharpeRatio ?? 0) >= 1 ? 'bg-green-50' : 'bg-gray-50 dark:bg-slate-900',
+      label: "Sharpe Ratio",
+      value: performance.sharpeRatio?.toFixed(2) ?? "N/A",
+      color:
+        (performance.sharpeRatio ?? 0) >= 1
+          ? "text-green-600"
+          : "text-gray-600 dark:text-slate-300",
+      bgColor:
+        (performance.sharpeRatio ?? 0) >= 1
+          ? "bg-green-50"
+          : "bg-gray-50 dark:bg-slate-900",
     },
     {
-      label: 'Total Signals',
+      label: "Total Signals",
       value: performance.totalSignals.toString(),
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
+      color: "text-blue-600",
+      bgColor: "bg-blue-50",
     },
     {
-      label: 'Executed',
+      label: "Executed",
       value: performance.executedSignals.toString(),
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
+      color: "text-green-600",
+      bgColor: "bg-green-50",
     },
     {
-      label: 'Total Return',
+      label: "Total Return",
       value: `${(performance.totalReturn * 100).toFixed(2)}%`,
-      color: performance.totalReturn >= 0 ? 'text-green-600' : 'text-red-600',
-      bgColor: performance.totalReturn >= 0 ? 'bg-green-50' : 'bg-red-50',
+      color: performance.totalReturn >= 0 ? "text-green-600" : "text-red-600",
+      bgColor: performance.totalReturn >= 0 ? "bg-green-50" : "bg-red-50",
     },
   ];
 
@@ -72,7 +79,9 @@ function PerformanceStats({ performance }: PerformanceStatsProps) {
           key={stat.label}
           className={`${stat.bgColor} rounded-lg p-4 border border-gray-200 dark:border-slate-700`}
         >
-          <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">{stat.label}</p>
+          <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">
+            {stat.label}
+          </p>
           <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
         </div>
       ))}
@@ -109,12 +118,12 @@ function SignalFilters({
   onConfidenceChange,
   onTimeframeChange,
 }: SignalFiltersProps) {
-  const [symbolInput, setSymbolInput] = useState('');
+  const [symbolInput, setSymbolInput] = useState("");
 
   const handleAddSymbol = () => {
     if (symbolInput && !selectedSymbols.includes(symbolInput.toUpperCase())) {
       onSymbolsChange([...selectedSymbols, symbolInput.toUpperCase()]);
-      setSymbolInput('');
+      setSymbolInput("");
     }
   };
 
@@ -140,7 +149,9 @@ function SignalFilters({
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6 mb-6">
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Filters</h2>
+      <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        Filters
+      </h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Symbol Filter */}
@@ -153,7 +164,7 @@ function SignalFilters({
               type="text"
               value={symbolInput}
               onChange={(e) => setSymbolInput(e.target.value.toUpperCase())}
-              onKeyPress={(e) => e.key === 'Enter' && handleAddSymbol()}
+              onKeyPress={(e) => e.key === "Enter" && handleAddSymbol()}
               placeholder="e.g., AAPL"
               className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
             />
@@ -171,7 +182,10 @@ function SignalFilters({
                 className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full text-sm"
               >
                 {symbol}
-                <button onClick={() => handleRemoveSymbol(symbol)} className="hover:text-blue-900">
+                <button
+                  onClick={() => handleRemoveSymbol(symbol)}
+                  className="hover:text-blue-900"
+                >
                   ×
                 </button>
               </span>
@@ -194,7 +208,7 @@ function SignalFilters({
                   className="mr-2"
                 />
                 <span className="text-sm text-gray-700 dark:text-slate-300 capitalize">
-                  {type.replace('_', ' ')}
+                  {type.replace("_", " ")}
                 </span>
               </label>
             ))}
@@ -269,7 +283,9 @@ function SignalFilters({
 export default function TradingSignalsPage() {
   const router = useRouter();
   const [signals, setSignals] = useState<TradingSignal[]>([]);
-  const [performance, setPerformance] = useState<SignalPerformance | null>(null);
+  const [performance, setPerformance] = useState<SignalPerformance | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -277,46 +293,60 @@ export default function TradingSignalsPage() {
   // Filter states
   const [selectedSymbols, setSelectedSymbols] = useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<SignalType[]>([]);
-  const [selectedStatuses, setSelectedStatuses] = useState<SignalStatus[]>([SignalStatus.ACTIVE]);
+  const [selectedStatuses, setSelectedStatuses] = useState<SignalStatus[]>([
+    SignalStatus.ACTIVE,
+  ]);
   const [minConfidence, setMinConfidence] = useState(0);
-  const [timeframe, setTimeframe] = useState<string>('1d');
+  const [timeframe, setTimeframe] = useState<string>("1d");
 
   // Fetch signals
   const fetchSignals = useCallback(async () => {
     try {
       const params = new URLSearchParams();
-      if (selectedSymbols.length > 0) params.append('symbols', selectedSymbols.join(','));
-      if (selectedTypes.length > 0) params.append('signalTypes', selectedTypes.join(','));
-      if (selectedStatuses.length > 0) params.append('statuses', selectedStatuses.join(','));
-      if (minConfidence > 0) params.append('minConfidence', minConfidence.toString());
-      if (timeframe) params.append('timeframe', timeframe);
+      if (selectedSymbols.length > 0)
+        params.append("symbols", selectedSymbols.join(","));
+      if (selectedTypes.length > 0)
+        params.append("signalTypes", selectedTypes.join(","));
+      if (selectedStatuses.length > 0)
+        params.append("statuses", selectedStatuses.join(","));
+      if (minConfidence > 0)
+        params.append("minConfidence", minConfidence.toString());
+      if (timeframe) params.append("timeframe", timeframe);
 
-      const response = await fetch(`/api/investments/signals?${params.toString()}`);
-      
+      const response = await fetch(
+        `/api/investments/signals?${params.toString()}`,
+      );
+
       if (!response.ok) {
-        throw new Error('Failed to fetch signals');
+        throw new Error("Failed to fetch signals");
       }
 
       const data = await response.json();
       setSignals(data.data || []);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load signals');
+      setError(err instanceof Error ? err.message : "Failed to load signals");
     } finally {
       setLoading(false);
     }
-  }, [selectedSymbols, selectedTypes, selectedStatuses, minConfidence, timeframe]);
+  }, [
+    selectedSymbols,
+    selectedTypes,
+    selectedStatuses,
+    minConfidence,
+    timeframe,
+  ]);
 
   // Fetch performance stats
   const fetchPerformance = useCallback(async () => {
     try {
-      const response = await fetch('/api/investments/signals/history');
-      if (!response.ok) throw new Error('Failed to fetch performance');
-      
+      const response = await fetch("/api/investments/signals/history");
+      if (!response.ok) throw new Error("Failed to fetch performance");
+
       const data = await response.json();
       setPerformance(data.data);
     } catch (err) {
-      console.error('Failed to load performance:', err);
+      console.error("Failed to load performance:", err);
     }
   }, []);
 
@@ -355,11 +385,11 @@ export default function TradingSignalsPage() {
                 onClick={() => setAutoRefresh(!autoRefresh)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   autoRefresh
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300'
+                    ? "bg-green-100 text-green-700"
+                    : "bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-300"
                 }`}
               >
-                {autoRefresh ? 'Auto-refresh ON' : '⏸️ Auto-refresh OFF'}
+                {autoRefresh ? "Auto-refresh ON" : "⏸️ Auto-refresh OFF"}
               </button>
               <GenerateSignalButton onGenerated={fetchSignals} />
             </div>
@@ -386,7 +416,9 @@ export default function TradingSignalsPage() {
         {/* Signals List */}
         {loading && <LoadingState />}
         {error && <ErrorState message={error} onRetry={fetchSignals} />}
-        {!loading && !error && <SignalsList signals={signals} onRefresh={fetchSignals} />}
+        {!loading && !error && (
+          <SignalsList signals={signals} onRefresh={fetchSignals} />
+        )}
       </div>
     </div>
   );
@@ -447,34 +479,36 @@ function SignalCard({ signal }: SignalCardProps) {
     switch (type) {
       case SignalType.STRONG_BUY:
       case SignalType.BUY:
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
       case SignalType.STRONG_SELL:
       case SignalType.SELL:
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
       case SignalType.HOLD:
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
       default:
-        return 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100 dark:bg-slate-900 dark:text-slate-300';
+        return "bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100 dark:bg-slate-900 dark:text-slate-300";
     }
   };
 
   const getStatusColor = (status: SignalStatus) => {
     switch (status) {
       case SignalStatus.ACTIVE:
-        return 'bg-blue-100 text-blue-800';
+        return "bg-blue-100 text-blue-800";
       case SignalStatus.EXECUTED:
-        return 'bg-green-100 text-green-800';
+        return "bg-green-100 text-green-800";
       case SignalStatus.EXPIRED:
-        return 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100';
+        return "bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100";
       case SignalStatus.CANCELLED:
-        return 'bg-red-100 text-red-800';
+        return "bg-red-100 text-red-800";
       default:
-        return 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100';
+        return "bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100";
     }
   };
 
   const priceChange = signal.currentPrice - signal.entryPrice!;
-  const priceChangePercent = signal.entryPrice ? (priceChange / signal.entryPrice) * 100 : 0;
+  const priceChangePercent = signal.entryPrice
+    ? (priceChange / signal.entryPrice) * 100
+    : 0;
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow hover:shadow-lg transition-shadow p-6">
@@ -482,16 +516,22 @@ function SignalCard({ signal }: SignalCardProps) {
       <div className="flex items-start justify-between mb-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white">{signal.symbol}</h3>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+              {signal.symbol}
+            </h3>
             <span className="text-sm text-gray-500 dark:text-slate-400 capitalize">
               {signal.assetType}
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getSignalColor(signal.signalType)}`}>
-              {signal.signalType.replace('_', ' ').toUpperCase()}
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-semibold ${getSignalColor(signal.signalType)}`}
+            >
+              {signal.signalType.replace("_", " ").toUpperCase()}
             </span>
-            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(signal.status)}`}>
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(signal.status)}`}
+            >
               {signal.status.toUpperCase()}
             </span>
           </div>
@@ -501,8 +541,11 @@ function SignalCard({ signal }: SignalCardProps) {
             ${signal.currentPrice.toFixed(2)}
           </p>
           {signal.entryPrice && (
-            <p className={`text-sm font-medium ${priceChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {priceChange >= 0 ? '+' : ''}{priceChangePercent.toFixed(2)}%
+            <p
+              className={`text-sm font-medium ${priceChange >= 0 ? "text-green-600" : "text-red-600"}`}
+            >
+              {priceChange >= 0 ? "+" : ""}
+              {priceChangePercent.toFixed(2)}%
             </p>
           )}
         </div>
@@ -511,25 +554,37 @@ function SignalCard({ signal }: SignalCardProps) {
       {/* Price Targets */}
       <div className="grid grid-cols-3 gap-4 mb-4 p-4 bg-gray-50 dark:bg-slate-700 rounded-lg">
         <div>
-          <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Entry</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">
+            Entry
+          </p>
           <p className="text-sm font-semibold text-gray-900 dark:text-white">
             ${signal.entryPrice?.toFixed(2) || signal.currentPrice.toFixed(2)}
           </p>
         </div>
         <div>
-          <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Target</p>
-          <p className="text-sm font-semibold text-green-600">${signal.targetPrice.toFixed(2)}</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">
+            Target
+          </p>
+          <p className="text-sm font-semibold text-green-600">
+            ${signal.targetPrice.toFixed(2)}
+          </p>
         </div>
         <div>
-          <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Stop Loss</p>
-          <p className="text-sm font-semibold text-red-600">${signal.stopLoss.toFixed(2)}</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">
+            Stop Loss
+          </p>
+          <p className="text-sm font-semibold text-red-600">
+            ${signal.stopLoss.toFixed(2)}
+          </p>
         </div>
       </div>
 
       {/* Metrics */}
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div>
-          <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Confidence</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">
+            Confidence
+          </p>
           <div className="flex items-center gap-2">
             <div className="flex-1 bg-gray-200 dark:bg-slate-600 rounded-full h-2">
               <div
@@ -543,7 +598,9 @@ function SignalCard({ signal }: SignalCardProps) {
           </div>
         </div>
         <div>
-          <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Risk/Reward</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">
+            Risk/Reward
+          </p>
           <p className="text-sm font-semibold text-gray-900 dark:text-white">
             1:{signal.riskRewardRatio.toFixed(2)}
           </p>
@@ -564,7 +621,7 @@ function SignalCard({ signal }: SignalCardProps) {
             key={type}
             className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded text-xs font-medium"
           >
-            {type.replace('_', ' ').toUpperCase()}
+            {type.replace("_", " ").toUpperCase()}
           </span>
         ))}
       </div>
@@ -572,7 +629,9 @@ function SignalCard({ signal }: SignalCardProps) {
       {/* Footer */}
       <div className="flex items-center justify-between text-xs text-gray-500 dark:text-slate-400 pt-4 border-t border-gray-200 dark:border-slate-700">
         <span>Timeframe: {signal.timeframe}</span>
-        <span>Generated: {new Date(signal.generatedAt).toLocaleDateString()}</span>
+        <span>
+          Generated: {new Date(signal.generatedAt).toLocaleDateString()}
+        </span>
       </div>
     </div>
   );
@@ -589,8 +648,10 @@ interface GenerateSignalButtonProps {
 function GenerateSignalButton({ onGenerated }: GenerateSignalButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [symbol, setSymbol] = useState('');
-  const [assetType, setAssetType] = useState<'stock' | 'etf' | 'crypto' | 'option'>('stock');
+  const [symbol, setSymbol] = useState("");
+  const [assetType, setAssetType] = useState<
+    "stock" | "etf" | "crypto" | "option"
+  >("stock");
   const [analysisTypes, setAnalysisTypes] = useState<AnalysisType[]>([
     AnalysisType.TECHNICAL,
     AnalysisType.FUNDAMENTAL,
@@ -603,26 +664,26 @@ function GenerateSignalButton({ onGenerated }: GenerateSignalButtonProps) {
 
     setLoading(true);
     try {
-      const response = await fetch('/api/investments/signals/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/investments/signals/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           symbol: symbol.toUpperCase(),
           assetType,
           analysisTypes,
-          timeframe: '1d',
+          timeframe: "1d",
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate signal');
+        throw new Error("Failed to generate signal");
       }
 
       setIsOpen(false);
-      setSymbol('');
+      setSymbol("");
       onGenerated();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to generate signal');
+      alert(err instanceof Error ? err.message : "Failed to generate signal");
     } finally {
       setLoading(false);
     }
@@ -696,7 +757,7 @@ function GenerateSignalButton({ onGenerated }: GenerateSignalButtonProps) {
                         className="mr-2"
                       />
                       <span className="text-sm text-gray-700 dark:text-slate-300 capitalize">
-                        {type.replace('_', ' ')}
+                        {type.replace("_", " ")}
                       </span>
                     </label>
                   ))}
@@ -716,7 +777,7 @@ function GenerateSignalButton({ onGenerated }: GenerateSignalButtonProps) {
                 disabled={loading || !symbol}
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Generating...' : 'Generate'}
+                {loading ? "Generating..." : "Generate"}
               </button>
             </div>
           </div>
@@ -751,7 +812,9 @@ function ErrorState({ message, onRetry }: ErrorStateProps) {
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-12">
       <div className="flex flex-col items-center justify-center">
         <div className="text-red-500 text-5xl mb-4"></div>
-        <p className="text-gray-900 dark:text-white font-semibold mb-2">Error Loading Signals</p>
+        <p className="text-gray-900 dark:text-white font-semibold mb-2">
+          Error Loading Signals
+        </p>
         <p className="text-gray-500 dark:text-slate-400 mb-4">{message}</p>
         <button
           onClick={onRetry}
@@ -763,4 +826,3 @@ function ErrorState({ message, onRetry }: ErrorStateProps) {
     </div>
   );
 }
-

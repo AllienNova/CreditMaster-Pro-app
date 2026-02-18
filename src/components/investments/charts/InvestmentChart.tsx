@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
 /**
  * InvestmentChart - TradingView Lightweight Charts Integration
- * 
+ *
  * Core chart component supporting candlestick, line, and area charts
  * with real-time updates and technical indicators
  */
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
   createChart,
   IChartApi,
@@ -27,9 +27,13 @@ import {
   LineSeriesPartialOptions,
   AreaSeriesPartialOptions,
   HistogramSeriesPartialOptions,
-} from 'lightweight-charts';
-import { CandleData, ChartType, ChartColors } from '@/lib/investments/types/charting.types';
-import { Timeframe } from '@/lib/investments/types/investment.types';
+} from "lightweight-charts";
+import {
+  CandleData,
+  ChartType,
+  ChartColors,
+} from "@/lib/investments/types/charting.types";
+import { Timeframe } from "@/lib/investments/types/investment.types";
 
 // ============================================================================
 // TYPES
@@ -43,7 +47,7 @@ export interface InvestmentChartProps {
   height?: number;
   showVolume?: boolean;
   showGrid?: boolean;
-  theme?: 'light' | 'dark';
+  theme?: "light" | "dark";
   indicators?: IndicatorConfig[];
   onCrosshairMove?: (data: CrosshairData | null) => void;
   onTimeRangeChange?: (from: number, to: number) => void;
@@ -51,7 +55,7 @@ export interface InvestmentChartProps {
 }
 
 export interface IndicatorConfig {
-  type: 'sma' | 'ema' | 'bollinger' | 'rsi' | 'macd';
+  type: "sma" | "ema" | "bollinger" | "rsi" | "macd";
   period?: number;
   color?: string;
   visible?: boolean;
@@ -72,29 +76,29 @@ export interface CrosshairData {
 // ============================================================================
 
 const lightTheme: ChartColors = {
-  background: '#ffffff',
-  gridLines: '#f0f0f0',
-  text: '#333333',
-  bullCandle: '#26a69a',
-  bearCandle: '#ef5350',
-  bullWick: '#26a69a',
-  bearWick: '#ef5350',
-  volumeBull: 'rgba(38, 166, 154, 0.5)',
-  volumeBear: 'rgba(239, 83, 80, 0.5)',
-  crosshair: '#758696',
+  background: "#ffffff",
+  gridLines: "#f0f0f0",
+  text: "#333333",
+  bullCandle: "#26a69a",
+  bearCandle: "#ef5350",
+  bullWick: "#26a69a",
+  bearWick: "#ef5350",
+  volumeBull: "rgba(38, 166, 154, 0.5)",
+  volumeBear: "rgba(239, 83, 80, 0.5)",
+  crosshair: "#758696",
 };
 
 const darkTheme: ChartColors = {
-  background: '#1e222d',
-  gridLines: '#2b2f3a',
-  text: '#d1d4dc',
-  bullCandle: '#26a69a',
-  bearCandle: '#ef5350',
-  bullWick: '#26a69a',
-  bearWick: '#ef5350',
-  volumeBull: 'rgba(38, 166, 154, 0.5)',
-  volumeBear: 'rgba(239, 83, 80, 0.5)',
-  crosshair: '#758696',
+  background: "#1e222d",
+  gridLines: "#2b2f3a",
+  text: "#d1d4dc",
+  bullCandle: "#26a69a",
+  bearCandle: "#ef5350",
+  bullWick: "#26a69a",
+  bearWick: "#ef5350",
+  volumeBull: "rgba(38, 166, 154, 0.5)",
+  volumeBear: "rgba(239, 83, 80, 0.5)",
+  crosshair: "#758696",
 };
 
 // ============================================================================
@@ -104,24 +108,24 @@ const darkTheme: ChartColors = {
 export function InvestmentChart({
   symbol,
   data,
-  chartType = 'candlestick',
-  timeframe = '1d',
+  chartType = "candlestick",
+  timeframe = "1d",
   height = 400,
   showVolume = true,
   showGrid = true,
-  theme = 'dark',
+  theme = "dark",
   indicators = [],
   onCrosshairMove,
   onTimeRangeChange,
-  className = '',
+  className = "",
 }: InvestmentChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const mainSeriesRef = useRef<ISeriesApi<any> | null>(null);
   const volumeSeriesRef = useRef<ISeriesApi<any> | null>(null);
   const indicatorSeriesRef = useRef<Map<string, ISeriesApi<any>>>(new Map());
-  
-  const colors = theme === 'dark' ? darkTheme : lightTheme;
+
+  const colors = theme === "dark" ? darkTheme : lightTheme;
 
   // Initialize chart
   useEffect(() => {
@@ -135,13 +139,21 @@ export function InvestmentChart({
         textColor: colors.text,
       },
       grid: {
-        vertLines: { color: showGrid ? colors.gridLines : 'transparent' },
-        horzLines: { color: showGrid ? colors.gridLines : 'transparent' },
+        vertLines: { color: showGrid ? colors.gridLines : "transparent" },
+        horzLines: { color: showGrid ? colors.gridLines : "transparent" },
       },
       crosshair: {
         mode: CrosshairMode.Normal,
-        vertLine: { color: colors.crosshair, width: 1, style: LineStyle.Dashed },
-        horzLine: { color: colors.crosshair, width: 1, style: LineStyle.Dashed },
+        vertLine: {
+          color: colors.crosshair,
+          width: 1,
+          style: LineStyle.Dashed,
+        },
+        horzLine: {
+          color: colors.crosshair,
+          width: 1,
+          style: LineStyle.Dashed,
+        },
       },
       rightPriceScale: {
         borderColor: colors.gridLines,
@@ -159,14 +171,16 @@ export function InvestmentChart({
     // Handle resize
     const handleResize = () => {
       if (chartContainerRef.current && chartRef.current) {
-        chartRef.current.applyOptions({ width: chartContainerRef.current.clientWidth });
+        chartRef.current.applyOptions({
+          width: chartContainerRef.current.clientWidth,
+        });
       }
     };
 
-    window.addEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
 
     return () => {
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener("resize", handleResize);
       chart.remove();
       chartRef.current = null;
     };
@@ -194,8 +208,8 @@ export function InvestmentChart({
     const formattedData = formatChartData(data, chartType);
 
     switch (chartType) {
-      case 'candlestick':
-      case 'heikin_ashi': {
+      case "candlestick":
+      case "heikin_ashi": {
         const options: CandlestickSeriesPartialOptions = {
           upColor: colors.bullCandle,
           downColor: colors.bearCandle,
@@ -209,7 +223,7 @@ export function InvestmentChart({
         mainSeriesRef.current = series;
         break;
       }
-      case 'line': {
+      case "line": {
         const options: LineSeriesPartialOptions = {
           color: colors.bullCandle,
           lineWidth: 2,
@@ -219,10 +233,10 @@ export function InvestmentChart({
         mainSeriesRef.current = series;
         break;
       }
-      case 'area': {
+      case "area": {
         const options: AreaSeriesPartialOptions = {
-          topColor: 'rgba(38, 166, 154, 0.4)',
-          bottomColor: 'rgba(38, 166, 154, 0.0)',
+          topColor: "rgba(38, 166, 154, 0.4)",
+          bottomColor: "rgba(38, 166, 154, 0.0)",
           lineColor: colors.bullCandle,
           lineWidth: 2,
         };
@@ -243,32 +257,35 @@ export function InvestmentChart({
   }, [data, chartType, colors, showVolume]);
 
   // Add volume series
-  const addVolumeSeries = useCallback((candleData: CandleData[]) => {
-    if (!chartRef.current) return;
+  const addVolumeSeries = useCallback(
+    (candleData: CandleData[]) => {
+      if (!chartRef.current) return;
 
-    if (volumeSeriesRef.current) {
-      chartRef.current.removeSeries(volumeSeriesRef.current);
-    }
+      if (volumeSeriesRef.current) {
+        chartRef.current.removeSeries(volumeSeriesRef.current);
+      }
 
-    const options: HistogramSeriesPartialOptions = {
-      priceFormat: { type: 'volume' },
-      priceScaleId: 'volume',
-    };
-    const volumeSeries = chartRef.current.addSeries(HistogramSeries, options);
+      const options: HistogramSeriesPartialOptions = {
+        priceFormat: { type: "volume" },
+        priceScaleId: "volume",
+      };
+      const volumeSeries = chartRef.current.addSeries(HistogramSeries, options);
 
-    chartRef.current.priceScale('volume').applyOptions({
-      scaleMargins: { top: 0.8, bottom: 0 },
-    });
+      chartRef.current.priceScale("volume").applyOptions({
+        scaleMargins: { top: 0.8, bottom: 0 },
+      });
 
-    const volumeData: HistogramData<Time>[] = candleData.map((d) => ({
-      time: (d.timestamp / 1000) as Time,
-      value: d.volume,
-      color: d.close >= d.open ? colors.volumeBull : colors.volumeBear,
-    }));
+      const volumeData: HistogramData<Time>[] = candleData.map((d) => ({
+        time: (d.timestamp / 1000) as Time,
+        value: d.volume,
+        color: d.close >= d.open ? colors.volumeBull : colors.volumeBear,
+      }));
 
-    volumeSeries.setData(volumeData);
-    volumeSeriesRef.current = volumeSeries;
-  }, [colors]);
+      volumeSeries.setData(volumeData);
+      volumeSeriesRef.current = volumeSeries;
+    },
+    [colors],
+  );
 
   // Handle crosshair movement
   useEffect(() => {
@@ -310,24 +327,34 @@ export function InvestmentChart({
   }, [createMainSeries]);
 
   // Update data in real-time
-  const updateData = useCallback((newCandle: CandleData) => {
-    if (!mainSeriesRef.current) return;
+  const updateData = useCallback(
+    (newCandle: CandleData) => {
+      if (!mainSeriesRef.current) return;
 
-    const formattedCandle = formatSingleCandle(newCandle, chartType);
-    mainSeriesRef.current.update(formattedCandle as any);
+      const formattedCandle = formatSingleCandle(newCandle, chartType);
+      mainSeriesRef.current.update(formattedCandle as any);
 
-    if (volumeSeriesRef.current) {
-      volumeSeriesRef.current.update({
-        time: (newCandle.timestamp / 1000) as Time,
-        value: newCandle.volume,
-        color: newCandle.close >= newCandle.open ? colors.volumeBull : colors.volumeBear,
-      });
-    }
-  }, [chartType, colors]);
+      if (volumeSeriesRef.current) {
+        volumeSeriesRef.current.update({
+          time: (newCandle.timestamp / 1000) as Time,
+          value: newCandle.volume,
+          color:
+            newCandle.close >= newCandle.open
+              ? colors.volumeBull
+              : colors.volumeBear,
+        });
+      }
+    },
+    [chartType, colors],
+  );
 
   return (
     <div className={`investment-chart-container ${className}`}>
-      <div ref={chartContainerRef} className="chart-wrapper" style={{ height }} />
+      <div
+        ref={chartContainerRef}
+        className="chart-wrapper"
+        style={{ height }}
+      />
     </div>
   );
 }
@@ -336,15 +363,18 @@ export function InvestmentChart({
 // HELPER FUNCTIONS
 // ============================================================================
 
-function formatChartData(data: CandleData[], chartType: ChartType): CandlestickData<Time>[] | LineData<Time>[] {
-  if (chartType === 'line' || chartType === 'area') {
+function formatChartData(
+  data: CandleData[],
+  chartType: ChartType,
+): CandlestickData<Time>[] | LineData<Time>[] {
+  if (chartType === "line" || chartType === "area") {
     return data.map((d) => ({
       time: (d.timestamp / 1000) as Time,
       value: d.close,
     }));
   }
 
-  if (chartType === 'heikin_ashi') {
+  if (chartType === "heikin_ashi") {
     return calculateHeikinAshi(data);
   }
 
@@ -357,8 +387,11 @@ function formatChartData(data: CandleData[], chartType: ChartType): CandlestickD
   }));
 }
 
-function formatSingleCandle(candle: CandleData, chartType: ChartType): CandlestickData<Time> | LineData<Time> {
-  if (chartType === 'line' || chartType === 'area') {
+function formatSingleCandle(
+  candle: CandleData,
+  chartType: ChartType,
+): CandlestickData<Time> | LineData<Time> {
+  if (chartType === "line" || chartType === "area") {
     return {
       time: (candle.timestamp / 1000) as Time,
       value: candle.close,
@@ -381,8 +414,11 @@ function calculateHeikinAshi(data: CandleData[]): CandlestickData<Time>[] {
     const current = data[i];
     const prev = i > 0 ? result[i - 1] : null;
 
-    const haClose = (current.open + current.high + current.low + current.close) / 4;
-    const haOpen = prev ? (prev.open + prev.close) / 2 : (current.open + current.close) / 2;
+    const haClose =
+      (current.open + current.high + current.low + current.close) / 4;
+    const haOpen = prev
+      ? (prev.open + prev.close) / 2
+      : (current.open + current.close) / 2;
     const haHigh = Math.max(current.high, haOpen, haClose);
     const haLow = Math.min(current.low, haOpen, haClose);
 
@@ -399,4 +435,3 @@ function calculateHeikinAshi(data: CandleData[]): CandlestickData<Time>[] {
 }
 
 export default InvestmentChart;
-

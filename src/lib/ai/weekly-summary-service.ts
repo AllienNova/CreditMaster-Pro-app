@@ -11,15 +11,15 @@
  * - Goal progress
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type SummaryPeriod = 'weekly' | 'monthly' | 'quarterly';
+export type SummaryPeriod = "weekly" | "monthly" | "quarterly";
 
-export type TrendDirection = 'up' | 'down' | 'stable';
+export type TrendDirection = "up" | "down" | "stable";
 
 export interface SpendingSummary {
   totalSpent: number;
@@ -51,7 +51,7 @@ export interface BudgetSummary {
     budget: number;
     spent: number;
     percentUsed: number;
-    status: 'on_track' | 'warning' | 'over_budget';
+    status: "on_track" | "warning" | "over_budget";
   }[];
 }
 
@@ -61,7 +61,7 @@ export interface CreditSummary {
   scoreChangeDirection: TrendDirection;
   factors: {
     factor: string;
-    impact: 'positive' | 'negative' | 'neutral';
+    impact: "positive" | "negative" | "neutral";
     description: string;
   }[];
   upcomingImpacts: string[];
@@ -105,7 +105,7 @@ export interface GoalsSummary {
 
 export interface Insight {
   id: string;
-  type: 'tip' | 'alert' | 'achievement' | 'opportunity';
+  type: "tip" | "alert" | "achievement" | "opportunity";
   title: string;
   description: string;
   actionLabel?: string;
@@ -185,7 +185,7 @@ export class WeeklySummaryService {
       credit,
       bills,
       investments,
-      goals
+      goals,
     );
 
     // Calculate overall health score
@@ -193,13 +193,13 @@ export class WeeklySummaryService {
       spending,
       budget,
       credit,
-      goals
+      goals,
     );
     const previousScore = await this.getPreviousHealthScore(userId);
     const healthScoreChange = healthScore - (previousScore || healthScore);
 
     const summary: WeeklySummary = {
-      id: `summary-${userId}-${weekStart.toISOString().split('T')[0]}`,
+      id: `summary-${userId}-${weekStart.toISOString().split("T")[0]}`,
       userId,
       periodStart: weekStart,
       periodEnd: weekEnd,
@@ -228,20 +228,20 @@ export class WeeklySummaryService {
   private async generateSpendingSummary(
     userId: string,
     weekStart: Date,
-    weekEnd: Date
+    weekEnd: Date,
   ): Promise<SpendingSummary> {
     // Get transactions for this week
     const { data: transactions } = await this.supabase
-      .from('transactions')
-      .select('*')
-      .eq('user_id', userId)
-      .gte('date', weekStart.toISOString())
-      .lte('date', weekEnd.toISOString())
-      .lt('amount', 0); // Expenses only
+      .from("transactions")
+      .select("*")
+      .eq("user_id", userId)
+      .gte("date", weekStart.toISOString())
+      .lte("date", weekEnd.toISOString())
+      .lt("amount", 0); // Expenses only
 
     const thisWeekTotal = (transactions || []).reduce(
       (sum, t) => sum + Math.abs(t.amount),
-      0
+      0,
     );
 
     // Get last week's spending
@@ -251,16 +251,16 @@ export class WeeklySummaryService {
     lastWeekEnd.setDate(lastWeekEnd.getDate() - 7);
 
     const { data: lastWeekTx } = await this.supabase
-      .from('transactions')
-      .select('amount')
-      .eq('user_id', userId)
-      .gte('date', lastWeekStart.toISOString())
-      .lte('date', lastWeekEnd.toISOString())
-      .lt('amount', 0);
+      .from("transactions")
+      .select("amount")
+      .eq("user_id", userId)
+      .gte("date", lastWeekStart.toISOString())
+      .lte("date", lastWeekEnd.toISOString())
+      .lt("amount", 0);
 
     const lastWeekTotal = (lastWeekTx || []).reduce(
       (sum, t) => sum + Math.abs(t.amount),
-      0
+      0,
     );
 
     // Calculate by category
@@ -275,7 +275,7 @@ export class WeeklySummaryService {
         category,
         amount,
         percentOfTotal: thisWeekTotal > 0 ? (amount / thisWeekTotal) * 100 : 0,
-        trend: 'stable' as TrendDirection,
+        trend: "stable" as TrendDirection,
       }))
       .sort((a, b) => b.amount - a.amount)
       .slice(0, 5);
@@ -285,10 +285,10 @@ export class WeeklySummaryService {
       .filter((t) => Math.abs(t.amount) > 200)
       .slice(0, 3)
       .map((t) => ({
-        merchant: t.merchant_name || 'Unknown',
+        merchant: t.merchant_name || "Unknown",
         amount: Math.abs(t.amount),
         category: t.category,
-        reason: 'Large transaction',
+        reason: "Large transaction",
       }));
 
     const comparedToLastWeek =
@@ -302,10 +302,10 @@ export class WeeklySummaryService {
       comparedToAverage: 0, // Would need historical data
       trend:
         comparedToLastWeek > 5
-          ? 'up'
+          ? "up"
           : comparedToLastWeek < -5
-            ? 'down'
-            : 'stable',
+            ? "down"
+            : "stable",
       topCategories,
       unusualTransactions,
     };
@@ -317,15 +317,15 @@ export class WeeklySummaryService {
 
   private async generateBudgetSummary(userId: string): Promise<BudgetSummary> {
     const { data: budgets } = await this.supabase
-      .from('budgets')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('status', 'active');
+      .from("budgets")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", "active");
 
     const totalBudget = (budgets || []).reduce((sum, b) => sum + b.amount, 0);
     const totalSpent = (budgets || []).reduce(
       (sum, b) => sum + (b.spent || 0),
-      0
+      0,
     );
     const percentUsed = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
 
@@ -333,7 +333,7 @@ export class WeeklySummaryService {
     const now = new Date();
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     const daysRemaining = Math.ceil(
-      (endOfMonth.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+      (endOfMonth.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
     );
 
     // Project overage
@@ -351,10 +351,10 @@ export class WeeklySummaryService {
         percentUsed: pctUsed,
         status:
           pctUsed >= 100
-            ? ('over_budget' as const)
+            ? ("over_budget" as const)
             : pctUsed >= 80
-              ? ('warning' as const)
-              : ('on_track' as const),
+              ? ("warning" as const)
+              : ("on_track" as const),
       };
     });
 
@@ -374,10 +374,10 @@ export class WeeklySummaryService {
 
   private async generateCreditSummary(userId: string): Promise<CreditSummary> {
     const { data: scores } = await this.supabase
-      .from('credit_scores')
-      .select('*')
-      .eq('user_id', userId)
-      .order('recorded_at', { ascending: false })
+      .from("credit_scores")
+      .select("*")
+      .eq("user_id", userId)
+      .order("recorded_at", { ascending: false })
       .limit(2);
 
     const currentScore = scores?.[0]?.score || 0;
@@ -386,15 +386,15 @@ export class WeeklySummaryService {
 
     // Get credit factors
     const { data: factors } = await this.supabase
-      .from('credit_factors')
-      .select('*')
-      .eq('user_id', userId)
-      .order('impact_score', { ascending: false })
+      .from("credit_factors")
+      .select("*")
+      .eq("user_id", userId)
+      .order("impact_score", { ascending: false })
       .limit(5);
 
     const creditFactors = (factors || []).map((f) => ({
       factor: f.factor_name,
-      impact: f.impact_type as 'positive' | 'negative' | 'neutral',
+      impact: f.impact_type as "positive" | "negative" | "neutral",
       description: f.description,
     }));
 
@@ -402,7 +402,7 @@ export class WeeklySummaryService {
       currentScore,
       scoreChange,
       scoreChangeDirection:
-        scoreChange > 0 ? 'up' : scoreChange < 0 ? 'down' : 'stable',
+        scoreChange > 0 ? "up" : scoreChange < 0 ? "down" : "stable",
       factors: creditFactors,
       upcomingImpacts: [],
     };
@@ -419,29 +419,29 @@ export class WeeklySummaryService {
 
     // Get upcoming bills
     const { data: upcomingBills } = await this.supabase
-      .from('bills')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('is_active', true)
-      .gte('next_due_date', now.toISOString())
-      .lte('next_due_date', weekFromNow.toISOString())
-      .order('next_due_date', { ascending: true });
+      .from("bills")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("is_active", true)
+      .gte("next_due_date", now.toISOString())
+      .lte("next_due_date", weekFromNow.toISOString())
+      .order("next_due_date", { ascending: true });
 
     // Get paid bills from last week
     const { data: paidBills } = await this.supabase
-      .from('bill_payments')
-      .select('amount')
-      .eq('user_id', userId)
-      .gte('paid_date', weekAgo.toISOString())
-      .lte('paid_date', now.toISOString());
+      .from("bill_payments")
+      .select("amount")
+      .eq("user_id", userId)
+      .gte("paid_date", weekAgo.toISOString())
+      .lte("paid_date", now.toISOString());
 
     // Get overdue bills
     const { data: overdueBills } = await this.supabase
-      .from('bills')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('is_active', true)
-      .lt('next_due_date', now.toISOString());
+      .from("bills")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("is_active", true)
+      .lt("next_due_date", now.toISOString());
 
     const upcoming = (upcomingBills || []).map((b) => ({
       name: b.name,
@@ -449,7 +449,7 @@ export class WeeklySummaryService {
       dueDate: new Date(b.next_due_date),
       daysUntilDue: Math.ceil(
         (new Date(b.next_due_date).getTime() - now.getTime()) /
-          (1000 * 60 * 60 * 24)
+          (1000 * 60 * 60 * 24),
       ),
       autopay: b.autopay_enabled,
     }));
@@ -469,27 +469,27 @@ export class WeeklySummaryService {
   private async generateInvestmentSummary(
     userId: string,
     weekStart: Date,
-    weekEnd: Date
+    weekEnd: Date,
   ): Promise<InvestmentSummary> {
     // Get current portfolio value
     const { data: holdings } = await this.supabase
-      .from('holdings')
-      .select('*')
-      .eq('user_id', userId)
-      .gt('shares', 0);
+      .from("holdings")
+      .select("*")
+      .eq("user_id", userId)
+      .gt("shares", 0);
 
     const portfolioValue = (holdings || []).reduce(
       (sum, h) => sum + h.current_price * h.shares,
-      0
+      0,
     );
 
     // Get portfolio value from week ago
     const { data: snapshot } = await this.supabase
-      .from('portfolio_snapshots')
-      .select('total_value')
-      .eq('user_id', userId)
-      .lte('snapshot_date', weekStart.toISOString())
-      .order('snapshot_date', { ascending: false })
+      .from("portfolio_snapshots")
+      .select("total_value")
+      .eq("user_id", userId)
+      .lte("snapshot_date", weekStart.toISOString())
+      .order("snapshot_date", { ascending: false })
       .limit(1)
       .single();
 
@@ -520,22 +520,22 @@ export class WeeklySummaryService {
 
     // Get dividends received
     const { data: dividends } = await this.supabase
-      .from('dividend_payments')
-      .select('total_amount')
-      .eq('user_id', userId)
-      .gte('pay_date', weekStart.toISOString())
-      .lte('pay_date', weekEnd.toISOString());
+      .from("dividend_payments")
+      .select("total_amount")
+      .eq("user_id", userId)
+      .gte("pay_date", weekStart.toISOString())
+      .lte("pay_date", weekEnd.toISOString());
 
     const dividendsReceived = (dividends || []).reduce(
       (sum, d) => sum + d.total_amount,
-      0
+      0,
     );
 
     return {
       portfolioValue,
       weeklyChange,
       weeklyChangePercent,
-      trend: weeklyChange > 0 ? 'up' : weeklyChange < 0 ? 'down' : 'stable',
+      trend: weeklyChange > 0 ? "up" : weeklyChange < 0 ? "down" : "stable",
       topGainers,
       topLosers,
       dividendsReceived,
@@ -549,10 +549,10 @@ export class WeeklySummaryService {
 
   private async generateGoalsSummary(userId: string): Promise<GoalsSummary> {
     const { data: goals } = await this.supabase
-      .from('financial_goals')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('status', 'active');
+      .from("financial_goals")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", "active");
 
     const activeGoals = (goals || []).length;
     const goalsOnTrack = (goals || []).filter((g) => {
@@ -560,10 +560,10 @@ export class WeeklySummaryService {
         g.target_amount > 0 ? (g.current_amount / g.target_amount) * 100 : 0;
       const daysTotal = Math.ceil(
         (new Date(g.target_date).getTime() - new Date(g.created_at).getTime()) /
-          (1000 * 60 * 60 * 24)
+          (1000 * 60 * 60 * 24),
       );
       const daysElapsed = Math.ceil(
-        (Date.now() - new Date(g.created_at).getTime()) / (1000 * 60 * 60 * 24)
+        (Date.now() - new Date(g.created_at).getTime()) / (1000 * 60 * 60 * 24),
       );
       const expectedProgress =
         daysTotal > 0 ? (daysElapsed / daysTotal) * 100 : 0;
@@ -577,7 +577,8 @@ export class WeeklySummaryService {
       progress:
         g.target_amount > 0 ? (g.current_amount / g.target_amount) * 100 : 0,
       daysToTarget: Math.ceil(
-        (new Date(g.target_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+        (new Date(g.target_date).getTime() - Date.now()) /
+          (1000 * 60 * 60 * 24),
       ),
     }));
 
@@ -599,35 +600,35 @@ export class WeeklySummaryService {
     credit: CreditSummary,
     bills: BillsSummary,
     investments: InvestmentSummary,
-    goals: GoalsSummary
+    goals: GoalsSummary,
   ): Insight[] {
     const insights: Insight[] = [];
 
     // Spending insights
     if (spending.comparedToLastWeek > 20) {
       insights.push({
-        id: 'spending-increase',
-        type: 'alert',
-        title: 'Spending Up This Week',
+        id: "spending-increase",
+        type: "alert",
+        title: "Spending Up This Week",
         description: `Your spending is ${Math.round(spending.comparedToLastWeek)}% higher than last week. Consider reviewing your recent purchases.`,
-        actionLabel: 'View Transactions',
-        actionUrl: '/financial/transactions',
+        actionLabel: "View Transactions",
+        actionUrl: "/financial/transactions",
         priority: 2,
       });
     }
 
     // Budget insights
     const overBudgetCategories = budget.categories.filter(
-      (c) => c.status === 'over_budget'
+      (c) => c.status === "over_budget",
     );
     if (overBudgetCategories.length > 0) {
       insights.push({
-        id: 'over-budget',
-        type: 'alert',
-        title: 'Budget Categories Exceeded',
-        description: `${overBudgetCategories.length} budget categor${overBudgetCategories.length === 1 ? 'y has' : 'ies have'} exceeded their limits.`,
-        actionLabel: 'Adjust Budget',
-        actionUrl: '/budgeting',
+        id: "over-budget",
+        type: "alert",
+        title: "Budget Categories Exceeded",
+        description: `${overBudgetCategories.length} budget categor${overBudgetCategories.length === 1 ? "y has" : "ies have"} exceeded their limits.`,
+        actionLabel: "Adjust Budget",
+        actionUrl: "/budgeting",
         priority: 1,
       });
     }
@@ -635,22 +636,22 @@ export class WeeklySummaryService {
     // Credit insights
     if (credit.scoreChange > 0) {
       insights.push({
-        id: 'credit-increase',
-        type: 'achievement',
-        title: 'Credit Score Improved!',
+        id: "credit-increase",
+        type: "achievement",
+        title: "Credit Score Improved!",
         description: `Your credit score increased by ${credit.scoreChange} points. Keep up the good work!`,
-        actionLabel: 'View Details',
-        actionUrl: '/credit',
+        actionLabel: "View Details",
+        actionUrl: "/credit",
         priority: 3,
       });
     } else if (credit.scoreChange < -10) {
       insights.push({
-        id: 'credit-decrease',
-        type: 'alert',
-        title: 'Credit Score Dropped',
+        id: "credit-decrease",
+        type: "alert",
+        title: "Credit Score Dropped",
         description: `Your credit score decreased by ${Math.abs(credit.scoreChange)} points. Review the factors affecting your score.`,
-        actionLabel: 'See Factors',
-        actionUrl: '/credit',
+        actionLabel: "See Factors",
+        actionUrl: "/credit",
         priority: 1,
       });
     }
@@ -658,12 +659,12 @@ export class WeeklySummaryService {
     // Bills insights
     if (bills.overdueBills > 0) {
       insights.push({
-        id: 'overdue-bills',
-        type: 'alert',
-        title: 'Overdue Bills',
-        description: `You have ${bills.overdueBills} overdue bill${bills.overdueBills === 1 ? '' : 's'}. Pay them to avoid late fees and credit impact.`,
-        actionLabel: 'Pay Now',
-        actionUrl: '/budgeting/bills',
+        id: "overdue-bills",
+        type: "alert",
+        title: "Overdue Bills",
+        description: `You have ${bills.overdueBills} overdue bill${bills.overdueBills === 1 ? "" : "s"}. Pay them to avoid late fees and credit impact.`,
+        actionLabel: "Pay Now",
+        actionUrl: "/budgeting/bills",
         priority: 1,
       });
     }
@@ -671,12 +672,12 @@ export class WeeklySummaryService {
     // Investment insights
     if (investments.dividendsReceived > 0) {
       insights.push({
-        id: 'dividends-received',
-        type: 'achievement',
-        title: 'Dividend Income Received',
+        id: "dividends-received",
+        type: "achievement",
+        title: "Dividend Income Received",
         description: `You earned $${investments.dividendsReceived.toFixed(2)} in dividends this week.`,
-        actionLabel: 'View Dividends',
-        actionUrl: '/investments/dividends',
+        actionLabel: "View Dividends",
+        actionUrl: "/investments/dividends",
         priority: 4,
       });
     }
@@ -684,12 +685,12 @@ export class WeeklySummaryService {
     // Goals insights
     if (goals.goalsAtRisk > 0) {
       insights.push({
-        id: 'goals-at-risk',
-        type: 'tip',
-        title: 'Goals Need Attention',
+        id: "goals-at-risk",
+        type: "tip",
+        title: "Goals Need Attention",
         description: `${goals.goalsAtRisk} of your goals are behind schedule. Consider increasing contributions.`,
-        actionLabel: 'View Goals',
-        actionUrl: '/financial/goals',
+        actionLabel: "View Goals",
+        actionUrl: "/financial/goals",
         priority: 2,
       });
     }
@@ -705,7 +706,7 @@ export class WeeklySummaryService {
     spending: SpendingSummary,
     budget: BudgetSummary,
     credit: CreditSummary,
-    goals: GoalsSummary
+    goals: GoalsSummary,
   ): number {
     let score = 100;
 
@@ -718,9 +719,9 @@ export class WeeklySummaryService {
     score -= 25 - creditScore;
 
     // Spending trend (20 points)
-    if (spending.trend === 'up' && spending.comparedToLastWeek > 20) {
+    if (spending.trend === "up" && spending.comparedToLastWeek > 20) {
       score -= 15;
-    } else if (spending.trend === 'down') {
+    } else if (spending.trend === "down") {
       score += 5; // Bonus for reducing spending
     }
 
@@ -736,10 +737,10 @@ export class WeeklySummaryService {
 
   private async getPreviousHealthScore(userId: string): Promise<number | null> {
     const { data } = await this.supabase
-      .from('weekly_summaries')
-      .select('health_score')
-      .eq('user_id', userId)
-      .order('generated_at', { ascending: false })
+      .from("weekly_summaries")
+      .select("health_score")
+      .eq("user_id", userId)
+      .order("generated_at", { ascending: false })
       .limit(1)
       .single();
 
@@ -751,7 +752,7 @@ export class WeeklySummaryService {
   // ==========================================================================
 
   private async storeSummary(summary: WeeklySummary): Promise<void> {
-    await this.supabase.from('weekly_summaries').upsert({
+    await this.supabase.from("weekly_summaries").upsert({
       id: summary.id,
       user_id: summary.userId,
       period_start: summary.periodStart.toISOString(),
@@ -771,13 +772,13 @@ export class WeeklySummaryService {
 
   async getSummaryHistory(
     userId: string,
-    limit: number = 12
+    limit: number = 12,
   ): Promise<WeeklySummary[]> {
     const { data, error } = await this.supabase
-      .from('weekly_summaries')
-      .select('*')
-      .eq('user_id', userId)
-      .order('generated_at', { ascending: false })
+      .from("weekly_summaries")
+      .select("*")
+      .eq("user_id", userId)
+      .order("generated_at", { ascending: false })
       .limit(limit);
 
     if (error)
@@ -792,9 +793,9 @@ export class WeeklySummaryService {
 
   async getPreferences(userId: string): Promise<SummaryPreferences> {
     const { data } = await this.supabase
-      .from('summary_preferences')
-      .select('*')
-      .eq('user_id', userId)
+      .from("summary_preferences")
+      .select("*")
+      .eq("user_id", userId)
       .single();
 
     if (data) {
@@ -814,7 +815,7 @@ export class WeeklySummaryService {
       userId,
       enabled: true,
       dayOfWeek: 1, // Monday
-      timeOfDay: '08:00',
+      timeOfDay: "08:00",
       emailEnabled: true,
       pushEnabled: true,
       includeSections: {
@@ -830,9 +831,9 @@ export class WeeklySummaryService {
 
   async updatePreferences(
     userId: string,
-    preferences: Partial<SummaryPreferences>
+    preferences: Partial<SummaryPreferences>,
   ): Promise<void> {
-    await this.supabase.from('summary_preferences').upsert({
+    await this.supabase.from("summary_preferences").upsert({
       user_id: userId,
       enabled: preferences.enabled,
       day_of_week: preferences.dayOfWeek,
@@ -897,7 +898,7 @@ export function getWeeklySummaryService(): WeeklySummaryService {
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     weeklySummaryServiceInstance = new WeeklySummaryService(
       supabaseUrl,
-      supabaseKey
+      supabaseKey,
     );
   }
   return weeklySummaryServiceInstance;

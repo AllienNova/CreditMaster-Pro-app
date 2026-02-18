@@ -5,6 +5,7 @@
 This document provides a comprehensive analysis and enhancement plan for the onboarding experience across both web and mobile platforms. The goal is to create an optimal user experience that educates users, streamlines the setup process, and ensures smooth user flow.
 
 **Current State:**
+
 - **Web:** 5-step onboarding (Welcome → Profile → Goals → Connect → Complete)
 - **Mobile:** 4-slide intro + 4-step onboarding (Profile → Goals → Connect → Complete)
 - **Issues Identified:** 12 critical UX improvements needed
@@ -15,7 +16,9 @@ This document provides a comprehensive analysis and enhancement plan for the onb
 ## 📊 Current State Analysis
 
 ### Web Onboarding Flow
+
 **Screens:** 5 total steps
+
 1. Welcome page with feature overview
 2. Profile setup (9 fields including SSN)
 3. Goals selection (6 goals + score ranges + timeframe)
@@ -39,6 +42,7 @@ This document provides a comprehensive analysis and enhancement plan for the onb
 ❌ No mobile-responsive optimizations
 
 ### Mobile Onboarding Flow
+
 **Screens:** 4 intro slides + 4 setup steps
 
 **Strengths:**
@@ -63,14 +67,17 @@ This document provides a comprehensive analysis and enhancement plan for the onb
 ### Priority 1: Educational Content (High Impact)
 
 #### 1.1 Add Interactive Tooltips
+
 **Location:** All screens with complex concepts
 **Implementation:**
+
 - Credit score ranges: Explain what each range means
 - SSN field: Why it's needed, how it's protected
 - Bureau connections: What data is pulled, how it's used
 - Goals: Impact of each goal on credit strategy
 
 **Example:**
+
 ```tsx
 <Tooltip content="A 670-739 score is considered 'Good' and qualifies you for most loans with competitive rates">
   <InfoIcon />
@@ -78,17 +85,21 @@ This document provides a comprehensive analysis and enhancement plan for the onb
 ```
 
 #### 1.2 Progressive Disclosure
+
 **Current:** All features shown at once
 **Enhanced:** Show features based on user goals
 
 **Example Flow:**
+
 - User selects "Buy a Home" goal
 - System highlights mortgage-specific features
 - Shows relevant credit score target (740+)
 - Suggests timeline based on current score
 
 #### 1.3 Educational Micro-Content
+
 **Add to each screen:**
+
 - "💡 Did you know?" tips
 - "🎯 Why this matters" explanations
 - "📈 Expected impact" metrics
@@ -100,11 +111,13 @@ This document provides a comprehensive analysis and enhancement plan for the onb
 ### Enhancement 1: Welcome Screen (Web & Mobile)
 
 **Current Issues:**
+
 - Generic feature list
 - No personalization
 - Passive content
 
 **Enhancements:**
+
 ```markdown
 1. Add animated value proposition
    - "Join 50,000+ users who improved their credit"
@@ -129,11 +142,13 @@ This document provides a comprehensive analysis and enhancement plan for the onb
 ### Enhancement 2: Profile Screen
 
 **Current Issues:**
+
 - 9 fields overwhelming
 - No validation feedback
 - SSN anxiety
 
 **Enhancements:**
+
 ```markdown
 1. Split into 2 sub-steps
    Step 2a: Basic Info (Name, Phone, DOB) - Required
@@ -163,11 +178,13 @@ This document provides a comprehensive analysis and enhancement plan for the onb
 ### Enhancement 3: Goals Screen
 
 **Current Issues:**
+
 - No guidance on goal selection
 - Score ranges not explained
 - Timeframe selection arbitrary
 
 **Enhancements:**
+
 ```markdown
 1. Add goal recommendations
    - "Based on your score range, we recommend..."
@@ -193,11 +210,13 @@ This document provides a comprehensive analysis and enhancement plan for the onb
 ### Enhancement 4: Connect Screen
 
 **Current Issues:**
+
 - No explanation of why connections needed
 - Coming soon bureaus create confusion
 - Bank connection feels forced
 
 **Enhancements:**
+
 ```markdown
 1. Add "Why connect?" section
    - Explain benefits of each connection
@@ -228,12 +247,14 @@ This document provides a comprehensive analysis and enhancement plan for the onb
 ### Enhancement 5: Completion Screen
 
 **Current Issues:**
+
 - Generic success message
 - Fake analysis animation
 - No personalization
 - Unclear next steps
 
 **Enhancements:**
+
 ```markdown
 1. Personalized welcome
    - Use user's name and goals
@@ -416,6 +437,7 @@ This document provides a comprehensive analysis and enhancement plan for the onb
 ### 1. Progress Save/Resume System
 
 **Database Schema:**
+
 ```sql
 CREATE TABLE onboarding_progress (
   id UUID PRIMARY KEY,
@@ -429,6 +451,7 @@ CREATE TABLE onboarding_progress (
 ```
 
 **Implementation:**
+
 ```typescript
 // Auto-save hook
 const useOnboardingProgress = () => {
@@ -445,7 +468,7 @@ const useOnboardingProgress = () => {
 
   // Load saved progress on mount
   useEffect(() => {
-    loadProgress().then(data => {
+    loadProgress().then((data) => {
       if (data) {
         setCurrentStep(data.current_step);
         setFormData(data.form_data);
@@ -460,6 +483,7 @@ const useOnboardingProgress = () => {
 ### 2. Educational Tooltip Component
 
 **Component:**
+
 ```typescript
 interface TooltipProps {
   content: string;
@@ -506,34 +530,35 @@ const EducationalTooltip: React.FC<TooltipProps> = ({
 ### 3. Smart Form Validation
 
 **Implementation:**
+
 ```typescript
 const validationRules = {
   firstName: {
     required: true,
     minLength: 2,
     pattern: /^[a-zA-Z\s-']+$/,
-    message: 'Please enter a valid first name'
+    message: "Please enter a valid first name",
   },
   phone: {
     required: true,
     pattern: /^\(?([0-9]{3})\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})$/,
-    message: 'Please enter a valid phone number',
+    message: "Please enter a valid phone number",
     format: (value: string) => {
       // Auto-format as (555) 123-4567
-      const cleaned = value.replace(/\D/g, '');
+      const cleaned = value.replace(/\D/g, "");
       const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/);
       if (match) {
         return `(${match[1]}) ${match[2]}-${match[3]}`;
       }
       return value;
-    }
+    },
   },
   ssn: {
     required: false,
     pattern: /^\d{3}-?\d{2}-?\d{4}$/,
-    message: 'Please enter a valid SSN (XXX-XX-XXXX)',
-    secure: true // Mask input
-  }
+    message: "Please enter a valid SSN (XXX-XX-XXXX)",
+    secure: true, // Mask input
+  },
 };
 
 const useFormValidation = (rules: typeof validationRules) => {
@@ -545,16 +570,16 @@ const useFormValidation = (rules: typeof validationRules) => {
     if (!rule) return true;
 
     if (rule.required && !value) {
-      setErrors(prev => ({ ...prev, [field]: 'This field is required' }));
+      setErrors((prev) => ({ ...prev, [field]: "This field is required" }));
       return false;
     }
 
     if (rule.pattern && !rule.pattern.test(value)) {
-      setErrors(prev => ({ ...prev, [field]: rule.message }));
+      setErrors((prev) => ({ ...prev, [field]: rule.message }));
       return false;
     }
 
-    setErrors(prev => {
+    setErrors((prev) => {
       const newErrors = { ...prev };
       delete newErrors[field];
       return newErrors;
@@ -569,6 +594,7 @@ const useFormValidation = (rules: typeof validationRules) => {
 ### 4. Progress Indicator Component
 
 **Enhanced Progress Bar:**
+
 ```typescript
 interface ProgressIndicatorProps {
   steps: Array<{ label: string; step: number }>;
@@ -639,6 +665,7 @@ const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
 ### 5. Mobile Gesture Handling
 
 **Swipe Navigation:**
+
 ```typescript
 // React Native implementation
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
@@ -686,10 +713,12 @@ const OnboardingSwipeNavigation = ({ currentStep, onNext, onPrev }) => {
 ## 📋 Implementation Roadmap
 
 ### Phase 1: Critical Improvements (Week 1-2)
+
 **Priority: High | Effort: Medium | Impact: High**
 
 ```markdown
 ✅ Tasks:
+
 1. Add progress save/resume functionality
    - Implement database schema
    - Create auto-save hooks
@@ -724,10 +753,12 @@ Total: 30 hours
 ```
 
 ### Phase 2: Enhanced UX (Week 3-4)
+
 **Priority: Medium | Effort: High | Impact: High**
 
 ```markdown
 ✅ Tasks:
+
 1. Add goal recommendations
    - Implement recommendation engine
    - Create personalized suggestions
@@ -762,10 +793,12 @@ Total: 48 hours
 ```
 
 ### Phase 3: Polish & Optimization (Week 5-6)
+
 **Priority: Low | Effort: Medium | Impact: Medium**
 
 ```markdown
 ✅ Tasks:
+
 1. Add illustrations and animations
    - Design custom illustrations
    - Implement micro-interactions
@@ -853,24 +886,24 @@ const trackOnboardingEvent = (event: string, properties?: object) => {
     ...properties,
     timestamp: new Date().toISOString(),
     platform: Platform.OS, // 'web' | 'ios' | 'android'
-    version: APP_VERSION
+    version: APP_VERSION,
   });
 };
 
 // Key events to track
 const ONBOARDING_EVENTS = {
-  STARTED: 'onboarding_started',
-  STEP_VIEWED: 'onboarding_step_viewed',
-  STEP_COMPLETED: 'onboarding_step_completed',
-  FIELD_FOCUSED: 'onboarding_field_focused',
-  FIELD_COMPLETED: 'onboarding_field_completed',
-  ERROR_SHOWN: 'onboarding_error_shown',
-  TOOLTIP_VIEWED: 'onboarding_tooltip_viewed',
-  PROGRESS_SAVED: 'onboarding_progress_saved',
-  RESUMED: 'onboarding_resumed',
-  SKIPPED: 'onboarding_skipped',
-  COMPLETED: 'onboarding_completed',
-  ABANDONED: 'onboarding_abandoned'
+  STARTED: "onboarding_started",
+  STEP_VIEWED: "onboarding_step_viewed",
+  STEP_COMPLETED: "onboarding_step_completed",
+  FIELD_FOCUSED: "onboarding_field_focused",
+  FIELD_COMPLETED: "onboarding_field_completed",
+  ERROR_SHOWN: "onboarding_error_shown",
+  TOOLTIP_VIEWED: "onboarding_tooltip_viewed",
+  PROGRESS_SAVED: "onboarding_progress_saved",
+  RESUMED: "onboarding_resumed",
+  SKIPPED: "onboarding_skipped",
+  COMPLETED: "onboarding_completed",
+  ABANDONED: "onboarding_abandoned",
 };
 ```
 
@@ -1171,6 +1204,7 @@ describe('Mobile Onboarding', () => {
 
 ```markdown
 ✅ Development
+
 - [ ] All components implemented
 - [ ] Unit tests passing (95%+ coverage)
 - [ ] Integration tests passing
@@ -1180,6 +1214,7 @@ describe('Mobile Onboarding', () => {
 - [ ] Documentation updated
 
 ✅ Design
+
 - [ ] Design system components finalized
 - [ ] Illustrations created
 - [ ] Animations optimized
@@ -1188,6 +1223,7 @@ describe('Mobile Onboarding', () => {
 - [ ] Brand guidelines followed
 
 ✅ Content
+
 - [ ] Educational content written
 - [ ] Tooltips reviewed for clarity
 - [ ] Error messages user-friendly
@@ -1195,6 +1231,7 @@ describe('Mobile Onboarding', () => {
 - [ ] Translations (if multi-language)
 
 ✅ Testing
+
 - [ ] Cross-browser testing (Chrome, Safari, Firefox, Edge)
 - [ ] Mobile device testing (iOS 14+, Android 10+)
 - [ ] Tablet testing
@@ -1204,6 +1241,7 @@ describe('Mobile Onboarding', () => {
 - [ ] Load testing
 
 ✅ Analytics
+
 - [ ] Event tracking implemented
 - [ ] Conversion funnels set up
 - [ ] A/B test variants ready
@@ -1211,6 +1249,7 @@ describe('Mobile Onboarding', () => {
 - [ ] Alerts configured
 
 ✅ Infrastructure
+
 - [ ] Database migrations run
 - [ ] API endpoints tested
 - [ ] Error monitoring set up
@@ -1218,6 +1257,7 @@ describe('Mobile Onboarding', () => {
 - [ ] Rollback plan documented
 
 ✅ Launch
+
 - [ ] Staged rollout plan (10% → 50% → 100%)
 - [ ] Feature flags configured
 - [ ] Support team trained
@@ -1321,18 +1361,21 @@ describe('Mobile Onboarding', () => {
 ## 📞 Support & Resources
 
 ### Documentation
+
 - [Design System](../design-system/README.md)
 - [Component Library](../components/README.md)
 - [API Documentation](../api/README.md)
 - [Testing Guide](../testing/README.md)
 
 ### Tools
+
 - Figma: Design mockups and prototypes
 - Storybook: Component development and testing
 - Analytics: Mixpanel/Amplitude for tracking
 - A/B Testing: Optimizely/LaunchDarkly
 
 ### Team Contacts
+
 - Product Manager: [Name]
 - UX Designer: [Name]
 - Frontend Lead: [Name]
@@ -1345,4 +1388,3 @@ describe('Mobile Onboarding', () => {
 **Last Updated:** 2026-01-07
 **Author:** CreditMaster Pro Development Team
 **Status:** Ready for Implementation
-

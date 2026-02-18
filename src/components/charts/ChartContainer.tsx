@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
 /**
  * Chart Container Component
- * 
+ *
  * Provides consistent styling and responsive behavior for all charts.
  * Includes title, subtitle, loading state, and error handling.
  */
 
-import { ReactNode } from 'react';
-import { ResponsiveContainer } from 'recharts';
+import { ReactNode } from "react";
+import { ResponsiveContainer } from "recharts";
 
 export interface ChartContainerProps {
   title?: string;
@@ -33,20 +33,22 @@ export default function ChartContainer({
   height = 300,
   loading = false,
   error = null,
-  className = '',
+  className = "",
   actions,
   footer,
   ariaLabel,
   ariaDescription,
 }: ChartContainerProps) {
   // Generate unique ID for accessibility
-  const chartId = title ? `chart-${title.toLowerCase().replace(/\s+/g, '-')}` : 'chart';
+  const chartId = title
+    ? `chart-${title.toLowerCase().replace(/\s+/g, "-")}`
+    : "chart";
   if (loading) {
     return (
       <div
         className={`bg-white dark:bg-slate-800 rounded-lg shadow p-4 sm:p-6 ${className}`}
         role="status"
-        aria-label={`Loading ${title || 'chart'}`}
+        aria-label={`Loading ${title || "chart"}`}
         aria-busy="true"
       >
         {title && (
@@ -59,12 +61,29 @@ export default function ChartContainer({
         )}
         <div
           className="bg-gray-100 dark:bg-slate-700 rounded animate-pulse flex items-center justify-center"
-          style={{ height: typeof height === 'number' ? `${height}px` : height }}
+          style={{
+            height: typeof height === "number" ? `${height}px` : height,
+          }}
         >
           <span className="sr-only">Loading chart data...</span>
-          <svg className="w-8 h-8 text-gray-300 dark:text-slate-600 animate-spin" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          <svg
+            className="w-8 h-8 text-gray-300 dark:text-slate-600 animate-spin"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            />
           </svg>
         </div>
       </div>
@@ -80,12 +99,16 @@ export default function ChartContainer({
       >
         {title && (
           <div className="mb-4">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">{title}</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+              {title}
+            </h3>
           </div>
         )}
         <div
           className="flex items-center justify-center bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800"
-          style={{ height: typeof height === 'number' ? `${height}px` : height }}
+          style={{
+            height: typeof height === "number" ? `${height}px` : height,
+          }}
         >
           <div className="text-center px-4">
             <svg
@@ -95,10 +118,19 @@ export default function ChartContainer({
               viewBox="0 0 24 24"
               aria-hidden="true"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
-            <p className="text-red-600 dark:text-red-400 text-sm sm:text-base font-medium">{error}</p>
-            <p className="text-red-500 dark:text-red-500 text-xs sm:text-sm mt-1">Please try refreshing the page</p>
+            <p className="text-red-600 dark:text-red-400 text-sm sm:text-base font-medium">
+              {error}
+            </p>
+            <p className="text-red-500 dark:text-red-500 text-xs sm:text-sm mt-1">
+              Please try refreshing the page
+            </p>
           </div>
         </div>
       </div>
@@ -124,24 +156,30 @@ export default function ChartContainer({
               </h3>
             )}
             {subtitle && (
-              <p className="text-xs sm:text-sm text-gray-600 dark:text-slate-400 mt-1">{subtitle}</p>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-slate-400 mt-1">
+                {subtitle}
+              </p>
             )}
           </div>
-          {actions && <div className="flex items-center gap-2 flex-shrink-0">{actions}</div>}
+          {actions && (
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {actions}
+            </div>
+          )}
         </div>
       )}
 
       {ariaDescription && (
-        <p id={`${chartId}-desc`} className="sr-only">{ariaDescription}</p>
+        <p id={`${chartId}-desc`} className="sr-only">
+          {ariaDescription}
+        </p>
       )}
 
-      {ariaLabel && !ariaDescription && (
-        <p className="sr-only">{ariaLabel}</p>
-      )}
+      {ariaLabel && !ariaDescription && <p className="sr-only">{ariaLabel}</p>}
 
       <div
-        style={{ height: typeof height === 'number' ? `${height}px` : height }}
-        aria-label={ariaLabel || `${title || 'Chart'} visualization`}
+        style={{ height: typeof height === "number" ? `${height}px` : height }}
+        aria-label={ariaLabel || `${title || "Chart"} visualization`}
       >
         <ResponsiveContainer width="100%" height="100%">
           {children as React.ReactElement}
@@ -156,4 +194,3 @@ export default function ChartContainer({
     </div>
   );
 }
-

@@ -11,9 +11,9 @@
  * - Priority-based ranking
  */
 
-import { AIMLService } from '@/lib/aiml-service';
-import { financialContextEngine } from './financial-context-engine';
-import { FinancialContext } from './types/financial-context.types';
+import { AIMLService } from "@/lib/aiml-service";
+import { financialContextEngine } from "./financial-context-engine";
+import { FinancialContext } from "./types/financial-context.types";
 import {
   Recommendation,
   RecommendationType,
@@ -21,13 +21,13 @@ import {
   RecommendationStep,
   GenerateRecommendationsRequest,
   GenerateRecommendationsResponse,
-} from './types/ai-coach.types';
+} from "./types/ai-coach.types";
 
 // ============================================================================
 // CONSTANTS
 // ============================================================================
 
-const AI_MODEL = 'anthropic/claude-4.5-sonnet';
+const AI_MODEL = "anthropic/claude-4.5-sonnet";
 
 const RECOMMENDATION_GENERATORS: Record<
   RecommendationType,
@@ -68,7 +68,7 @@ class RecommendationEngine {
    * Generate personalized recommendations for a user
    */
   async generateRecommendations(
-    request: GenerateRecommendationsRequest
+    request: GenerateRecommendationsRequest,
   ): Promise<GenerateRecommendationsResponse> {
     const startTime = Date.now();
     const { userId, types, limit = 10, includeAI = true } = request;
@@ -102,7 +102,7 @@ class RecommendationEngine {
       low: 1,
     };
     recommendations.sort(
-      (a, b) => priorityOrder[b.priority] - priorityOrder[a.priority]
+      (a, b) => priorityOrder[b.priority] - priorityOrder[a.priority],
     );
 
     // Limit results
@@ -127,7 +127,7 @@ class RecommendationEngine {
    */
   private async enrichWithAI(
     recommendations: Recommendation[],
-    context: FinancialContext
+    context: FinancialContext,
   ): Promise<Recommendation[]> {
     const aiService = this.getAIService();
     if (!aiService || recommendations.length === 0) {
@@ -141,15 +141,15 @@ class RecommendationEngine {
         AI_MODEL,
         [
           {
-            role: 'system',
+            role: "system",
             content: `You are an expert financial advisor. Analyze the user's financial situation and enhance recommendations with personalized insights. Respond in JSON format with an array of objects containing "id" and "insight" fields.`,
           },
-          { role: 'user', content: prompt },
+          { role: "user", content: prompt },
         ],
-        { temperature: 0.3, max_tokens: 1500 }
+        { temperature: 0.3, max_tokens: 1500 },
       );
 
-      const content = response.choices[0]?.message?.content || '';
+      const content = response.choices[0]?.message?.content || "";
       const insights = this.parseAIResponse(content);
 
       for (const rec of recommendations) {
@@ -168,7 +168,7 @@ class RecommendationEngine {
 
   private buildAIPrompt(
     recommendations: Recommendation[],
-    context: FinancialContext
+    context: FinancialContext,
   ): string {
     const summary = `User Profile:
 - Net Worth: $${context.accounts.netWorth.toFixed(0)}
@@ -179,13 +179,13 @@ class RecommendationEngine {
 - Health Score: ${context.healthScore.overallScore}
 
 Recommendations to enhance:
-${recommendations.map((r) => `- ID: ${r.id}, Type: ${r.type}, Title: ${r.title}`).join('\n')}`;
+${recommendations.map((r) => `- ID: ${r.id}, Type: ${r.type}, Title: ${r.title}`).join("\n")}`;
 
     return summary;
   }
 
   private parseAIResponse(
-    content: string
+    content: string,
   ): Array<{ id: string; insight: string }> {
     try {
       const jsonMatch = content.match(/\[[\s\S]*\]/);
@@ -201,7 +201,7 @@ ${recommendations.map((r) => `- ID: ${r.id}, Type: ${r.type}, Title: ${r.title}`
    */
   async getRecommendation(
     userId: string,
-    recommendationId: string
+    recommendationId: string,
   ): Promise<Recommendation | null> {
     // In a real implementation, this would fetch from database
     // For now, generate fresh recommendations and find the one requested
@@ -217,7 +217,7 @@ ${recommendations.map((r) => `- ID: ${r.id}, Type: ${r.type}, Title: ${r.title}`
   async updateRecommendationStatus(
     _userId: string,
     _recommendationId: string,
-    _status: 'in_progress' | 'completed' | 'dismissed'
+    _status: "in_progress" | "completed" | "dismissed",
   ): Promise<boolean> {
     // In a real implementation, this would update the database
     // RecommendationEngine: Updating recommendation status
@@ -233,7 +233,7 @@ ${recommendations.map((r) => `- ID: ${r.id}, Type: ${r.type}, Title: ${r.title}`
 // ============================================================================
 
 function generateSavingsRecommendation(
-  context: FinancialContext
+  context: FinancialContext,
 ): Recommendation | null {
   const savingsRate =
     context.transactions.totalIncome > 0
@@ -247,26 +247,26 @@ function generateSavingsRecommendation(
     const gap = targetSavings - currentSavings;
 
     return createRecommendation({
-      type: 'savings_strategy',
-      priority: savingsRate < 10 ? 'high' : 'medium',
-      title: 'Increase Your Savings Rate',
+      type: "savings_strategy",
+      priority: savingsRate < 10 ? "high" : "medium",
+      title: "Increase Your Savings Rate",
       description: `Your current savings rate is ${savingsRate.toFixed(1)}%. Financial experts recommend saving at least 20% of your income.`,
       rationale: `With your income of $${context.transactions.totalIncome.toFixed(0)}/month, you could be saving $${targetSavings.toFixed(0)}/month instead of $${Math.max(0, currentSavings).toFixed(0)}.`,
       potentialSavings: gap * 12,
-      timeframe: 'immediate',
-      estimatedEffort: 'moderate',
+      timeframe: "immediate",
+      estimatedEffort: "moderate",
       actionSteps: [
         {
-          title: 'Review your spending',
-          description: 'Identify categories where you can cut back',
+          title: "Review your spending",
+          description: "Identify categories where you can cut back",
         },
         {
-          title: 'Set up automatic transfers',
-          description: 'Move money to savings on payday',
+          title: "Set up automatic transfers",
+          description: "Move money to savings on payday",
         },
         {
-          title: 'Create a budget',
-          description: 'Allocate 20% of income to savings first',
+          title: "Create a budget",
+          description: "Allocate 20% of income to savings first",
         },
       ],
     });
@@ -275,11 +275,11 @@ function generateSavingsRecommendation(
 }
 
 function generateDebtRecommendation(
-  context: FinancialContext
+  context: FinancialContext,
 ): Recommendation | null {
   // Filter for high-interest debts (typically > 10% APR)
   const highInterestDebts = context.debts.debts.filter(
-    (d) => d.interestRate > 10
+    (d) => d.interestRate > 10,
   );
 
   if (context.debts.totalDebt > 0 && highInterestDebts.length > 0) {
@@ -287,27 +287,27 @@ function generateDebtRecommendation(
     const potentialSavings = calculateInterestSavings(highInterestDebt);
 
     return createRecommendation({
-      type: 'debt_payoff',
-      priority: context.debts.debtToIncomeRatio > 40 ? 'critical' : 'high',
-      title: 'Accelerate High-Interest Debt Payoff',
+      type: "debt_payoff",
+      priority: context.debts.debtToIncomeRatio > 40 ? "critical" : "high",
+      title: "Accelerate High-Interest Debt Payoff",
       description: `You have $${context.debts.totalDebt.toFixed(0)} in debt. Focus on paying off high-interest debt first to save on interest.`,
       rationale: `Your highest interest debt at ${highInterestDebt.interestRate}% APR is costing you significantly in interest charges.`,
       potentialSavings,
-      riskLevel: 'low',
-      timeframe: 'short_term',
-      estimatedEffort: 'significant',
+      riskLevel: "low",
+      timeframe: "short_term",
+      estimatedEffort: "significant",
       actionSteps: [
         {
-          title: 'List all debts by interest rate',
-          description: 'Use the avalanche method to prioritize',
+          title: "List all debts by interest rate",
+          description: "Use the avalanche method to prioritize",
         },
         {
-          title: 'Find extra payment money',
-          description: 'Redirect savings from other categories',
+          title: "Find extra payment money",
+          description: "Redirect savings from other categories",
         },
         {
-          title: 'Consider balance transfer',
-          description: 'Look for 0% APR offers if eligible',
+          title: "Consider balance transfer",
+          description: "Look for 0% APR offers if eligible",
         },
       ],
     });
@@ -316,7 +316,7 @@ function generateDebtRecommendation(
 }
 
 function generateInvestmentRecommendation(
-  context: FinancialContext
+  context: FinancialContext,
 ): Recommendation | null {
   const hasEmergencyFund =
     context.accounts.totalSavings >= context.transactions.totalExpenses * 3;
@@ -329,29 +329,29 @@ function generateInvestmentRecommendation(
     investmentTotal < context.transactions.totalIncome * 6
   ) {
     return createRecommendation({
-      type: 'investment_suggestion',
-      priority: 'medium',
-      title: 'Start or Increase Investments',
+      type: "investment_suggestion",
+      priority: "medium",
+      title: "Start or Increase Investments",
       description:
-        'You have a solid emergency fund and low debt. Consider investing for long-term growth.',
+        "You have a solid emergency fund and low debt. Consider investing for long-term growth.",
       rationale:
-        'With your strong financial foundation, investing can help build wealth over time.',
+        "With your strong financial foundation, investing can help build wealth over time.",
       potentialReturn: context.transactions.totalIncome * 0.1 * 12 * 0.08, // Assume 8% return
-      riskLevel: 'medium',
-      timeframe: 'long_term',
-      estimatedEffort: 'moderate',
+      riskLevel: "medium",
+      timeframe: "long_term",
+      estimatedEffort: "moderate",
       actionSteps: [
         {
-          title: 'Max out retirement accounts',
-          description: 'Contribute to 401(k) and IRA',
+          title: "Max out retirement accounts",
+          description: "Contribute to 401(k) and IRA",
         },
         {
-          title: 'Consider index funds',
-          description: 'Low-cost diversified investments',
+          title: "Consider index funds",
+          description: "Low-cost diversified investments",
         },
         {
-          title: 'Automate contributions',
-          description: 'Set up regular investment transfers',
+          title: "Automate contributions",
+          description: "Set up regular investment transfers",
         },
       ],
     });
@@ -360,40 +360,40 @@ function generateInvestmentRecommendation(
 }
 
 function generateBudgetRecommendation(
-  context: FinancialContext
+  context: FinancialContext,
 ): Recommendation | null {
   const overBudgetCategories = context.budgets.filter(
-    (b) => b.status === 'over_budget'
+    (b) => b.status === "over_budget",
   );
 
   if (overBudgetCategories.length > 0) {
     const totalOverage = overBudgetCategories.reduce(
       (sum, b) => sum + Math.max(0, b.spentAmount - b.budgetedAmount),
-      0
+      0,
     );
 
     return createRecommendation({
-      type: 'budget_adjustment',
-      priority: overBudgetCategories.length >= 3 ? 'high' : 'medium',
-      title: 'Adjust Your Budget Categories',
+      type: "budget_adjustment",
+      priority: overBudgetCategories.length >= 3 ? "high" : "medium",
+      title: "Adjust Your Budget Categories",
       description: `You're over budget in ${overBudgetCategories.length} categories totaling $${totalOverage.toFixed(0)}.`,
       rationale:
-        'Either adjust your budget to match reality or find ways to reduce spending.',
+        "Either adjust your budget to match reality or find ways to reduce spending.",
       potentialSavings: totalOverage * 12,
-      timeframe: 'immediate',
-      estimatedEffort: 'minimal',
+      timeframe: "immediate",
+      estimatedEffort: "minimal",
       actionSteps: [
         {
-          title: 'Review overspent categories',
-          description: 'Identify why you exceeded budget',
+          title: "Review overspent categories",
+          description: "Identify why you exceeded budget",
         },
         {
-          title: 'Reallocate funds',
-          description: 'Move money from underspent categories',
+          title: "Reallocate funds",
+          description: "Move money from underspent categories",
         },
         {
-          title: 'Set realistic limits',
-          description: 'Adjust budgets based on actual spending',
+          title: "Set realistic limits",
+          description: "Adjust budgets based on actual spending",
         },
       ],
     });
@@ -402,11 +402,11 @@ function generateBudgetRecommendation(
 }
 
 function generateAccountRecommendation(
-  context: FinancialContext
+  context: FinancialContext,
 ): Recommendation | null {
   // Filter savings accounts with low interest rates (< 4%)
   const lowYieldSavings = context.accounts.savings.filter(
-    (a) => (a.interestRate || 0) < 4
+    (a) => (a.interestRate || 0) < 4,
   );
 
   if (lowYieldSavings.length > 0 && context.accounts.totalSavings > 1000) {
@@ -414,32 +414,32 @@ function generateAccountRecommendation(
       context.accounts.totalSavings * 0.04 -
       lowYieldSavings.reduce(
         (sum, a) => sum + (a.currentBalance * (a.interestRate || 0.01)) / 100,
-        0
+        0,
       );
 
     return createRecommendation({
-      type: 'account_optimization',
-      priority: 'medium',
-      title: 'Move Savings to High-Yield Account',
+      type: "account_optimization",
+      priority: "medium",
+      title: "Move Savings to High-Yield Account",
       description:
-        'Your savings accounts may be earning below-market interest rates.',
+        "Your savings accounts may be earning below-market interest rates.",
       rationale:
-        'High-yield savings accounts currently offer 4-5% APY vs traditional 0.01-0.5%.',
+        "High-yield savings accounts currently offer 4-5% APY vs traditional 0.01-0.5%.",
       potentialSavings: potentialEarnings,
-      timeframe: 'short_term',
-      estimatedEffort: 'minimal',
+      timeframe: "short_term",
+      estimatedEffort: "minimal",
       actionSteps: [
         {
-          title: 'Research high-yield accounts',
-          description: 'Compare rates at online banks',
+          title: "Research high-yield accounts",
+          description: "Compare rates at online banks",
         },
         {
-          title: 'Open new account',
-          description: 'Process typically takes 10-15 minutes',
+          title: "Open new account",
+          description: "Process typically takes 10-15 minutes",
         },
         {
-          title: 'Transfer funds',
-          description: 'Move savings to earn more interest',
+          title: "Transfer funds",
+          description: "Move savings to earn more interest",
         },
       ],
     });
@@ -448,7 +448,7 @@ function generateAccountRecommendation(
 }
 
 function generateCreditRecommendation(
-  context: FinancialContext
+  context: FinancialContext,
 ): Recommendation | null {
   const creditScore = context.creditProfile.currentScore;
 
@@ -457,31 +457,31 @@ function generateCreditRecommendation(
     const topIssue = factors[0];
 
     return createRecommendation({
-      type: 'credit_improvement',
-      priority: creditScore < 650 ? 'high' : 'medium',
-      title: 'Improve Your Credit Score',
+      type: "credit_improvement",
+      priority: creditScore < 650 ? "high" : "medium",
+      title: "Improve Your Credit Score",
       description: `Your credit score of ${creditScore} has room for improvement.`,
       rationale: topIssue
         ? `Focus on: ${topIssue.name}`
-        : 'A higher score means better loan rates and more opportunities.',
+        : "A higher score means better loan rates and more opportunities.",
       potentialSavings: calculateCreditImprovementSavings(
         creditScore,
-        context.debts.totalDebt
+        context.debts.totalDebt,
       ),
-      timeframe: 'medium_term',
-      estimatedEffort: 'moderate',
+      timeframe: "medium_term",
+      estimatedEffort: "moderate",
       actionSteps: [
         {
-          title: 'Check for errors',
-          description: 'Review credit reports for mistakes',
+          title: "Check for errors",
+          description: "Review credit reports for mistakes",
         },
         {
-          title: 'Pay down balances',
-          description: 'Keep credit utilization under 30%',
+          title: "Pay down balances",
+          description: "Keep credit utilization under 30%",
         },
         {
-          title: 'Make on-time payments',
-          description: 'Set up autopay for all accounts',
+          title: "Make on-time payments",
+          description: "Set up autopay for all accounts",
         },
       ],
     });
@@ -490,7 +490,7 @@ function generateCreditRecommendation(
 }
 
 function generateInsuranceRecommendation(
-  context: FinancialContext
+  context: FinancialContext,
 ): Recommendation | null {
   const hasEmergencyFund =
     context.accounts.totalSavings >= context.transactions.totalExpenses * 6;
@@ -498,27 +498,27 @@ function generateInsuranceRecommendation(
 
   if (netWorth > 100000 && !hasEmergencyFund) {
     return createRecommendation({
-      type: 'insurance_needs',
-      priority: 'low',
-      title: 'Review Your Insurance Coverage',
+      type: "insurance_needs",
+      priority: "low",
+      title: "Review Your Insurance Coverage",
       description:
-        'As your net worth grows, ensure you have adequate protection.',
+        "As your net worth grows, ensure you have adequate protection.",
       rationale:
-        'Proper insurance protects your assets and provides peace of mind.',
-      timeframe: 'medium_term',
-      estimatedEffort: 'moderate',
+        "Proper insurance protects your assets and provides peace of mind.",
+      timeframe: "medium_term",
+      estimatedEffort: "moderate",
       actionSteps: [
         {
-          title: 'Review life insurance',
-          description: 'Ensure coverage matches your needs',
+          title: "Review life insurance",
+          description: "Ensure coverage matches your needs",
         },
         {
-          title: 'Check disability insurance',
-          description: 'Protect your income if unable to work',
+          title: "Check disability insurance",
+          description: "Protect your income if unable to work",
         },
         {
-          title: 'Consider umbrella policy',
-          description: 'Extra liability protection for assets',
+          title: "Consider umbrella policy",
+          description: "Extra liability protection for assets",
         },
       ],
     });
@@ -527,7 +527,7 @@ function generateInsuranceRecommendation(
 }
 
 function generateTaxRecommendation(
-  context: FinancialContext
+  context: FinancialContext,
 ): Recommendation | null {
   const monthlyIncome = context.transactions.totalIncome;
   const annualIncome = monthlyIncome * 12;
@@ -536,60 +536,60 @@ function generateTaxRecommendation(
   if (annualIncome > 200000) {
     // High earner: advanced strategies
     return createRecommendation({
-      type: 'tax_optimization',
-      priority: 'high',
-      title: 'Advanced Tax Optimization Available',
+      type: "tax_optimization",
+      priority: "high",
+      title: "Advanced Tax Optimization Available",
       description:
-        'At your income level, significant tax savings are possible through strategic planning.',
+        "At your income level, significant tax savings are possible through strategic planning.",
       rationale:
-        'High earners benefit most from tax-advantaged accounts, backdoor Roth strategies, and tax-loss harvesting.',
+        "High earners benefit most from tax-advantaged accounts, backdoor Roth strategies, and tax-loss harvesting.",
       potentialSavings: annualIncome * 0.08, // Estimate 8% savings potential
-      timeframe: 'medium_term',
-      estimatedEffort: 'moderate',
+      timeframe: "medium_term",
+      estimatedEffort: "moderate",
       actionSteps: [
         {
-          title: 'Max 401(k) contributions',
+          title: "Max 401(k) contributions",
           description:
-            'Contribute $23,000 (or $30,500 if 50+) to reduce taxable income',
+            "Contribute $23,000 (or $30,500 if 50+) to reduce taxable income",
         },
         {
-          title: 'Backdoor Roth IRA',
-          description: 'Contribute $7,000 to Roth via backdoor strategy',
+          title: "Backdoor Roth IRA",
+          description: "Contribute $7,000 to Roth via backdoor strategy",
         },
         {
-          title: 'HSA Triple Tax Benefit',
-          description: 'Max HSA for tax-free healthcare savings',
+          title: "HSA Triple Tax Benefit",
+          description: "Max HSA for tax-free healthcare savings",
         },
         {
-          title: 'Tax-Loss Harvesting',
-          description: 'Offset capital gains with strategic losses',
+          title: "Tax-Loss Harvesting",
+          description: "Offset capital gains with strategic losses",
         },
       ],
     });
   } else if (annualIncome > 75000) {
     return createRecommendation({
-      type: 'tax_optimization',
-      priority: 'medium',
-      title: 'Optimize Your Tax Strategy',
+      type: "tax_optimization",
+      priority: "medium",
+      title: "Optimize Your Tax Strategy",
       description:
-        'Your income level presents opportunities for tax optimization.',
+        "Your income level presents opportunities for tax optimization.",
       rationale:
-        'Tax-advantaged accounts and deductions can significantly reduce your tax burden.',
+        "Tax-advantaged accounts and deductions can significantly reduce your tax burden.",
       potentialSavings: annualIncome * 0.05, // Estimate 5% savings potential
-      timeframe: 'medium_term',
-      estimatedEffort: 'moderate',
+      timeframe: "medium_term",
+      estimatedEffort: "moderate",
       actionSteps: [
         {
-          title: 'Max retirement contributions',
-          description: 'Reduce taxable income with 401(k)/IRA',
+          title: "Max retirement contributions",
+          description: "Reduce taxable income with 401(k)/IRA",
         },
         {
-          title: 'Use HSA if eligible',
-          description: 'Triple tax advantage for healthcare',
+          title: "Use HSA if eligible",
+          description: "Triple tax advantage for healthcare",
         },
         {
-          title: 'Review deductions',
-          description: 'Itemize if it exceeds standard deduction',
+          title: "Review deductions",
+          description: "Itemize if it exceeds standard deduction",
         },
       ],
     });
@@ -609,23 +609,23 @@ function createRecommendation(params: {
   rationale: string;
   potentialSavings?: number;
   potentialReturn?: number;
-  riskLevel?: 'low' | 'medium' | 'high';
-  timeframe: 'immediate' | 'short_term' | 'medium_term' | 'long_term';
-  estimatedEffort: 'minimal' | 'moderate' | 'significant';
+  riskLevel?: "low" | "medium" | "high";
+  timeframe: "immediate" | "short_term" | "medium_term" | "long_term";
+  estimatedEffort: "minimal" | "moderate" | "significant";
   actionSteps: Array<{ title: string; description: string }>;
 }): Recommendation {
   return {
     id: `rec_${params.type}_${Date.now()}`,
-    userId: '', // Will be set by caller
+    userId: "", // Will be set by caller
     type: params.type,
     priority: params.priority,
-    status: 'pending',
+    status: "pending",
     title: params.title,
     description: params.description,
     rationale: params.rationale,
     potentialSavings: params.potentialSavings,
     potentialReturn: params.potentialReturn,
-    riskLevel: params.riskLevel || 'low',
+    riskLevel: params.riskLevel || "low",
     timeframe: params.timeframe,
     estimatedEffort: params.estimatedEffort,
     actionSteps: params.actionSteps.map((step, idx) => ({
@@ -633,7 +633,7 @@ function createRecommendation(params: {
       order: idx + 1,
       title: step.title,
       description: step.description,
-      actionType: 'manual' as const,
+      actionType: "manual" as const,
       isCompleted: false,
     })),
     confidenceScore: 75,
@@ -652,7 +652,7 @@ function calculateInterestSavings(debt: {
 
 function calculateCreditImprovementSavings(
   currentScore: number,
-  totalDebt: number
+  totalDebt: number,
 ): number {
   // Estimate savings from better interest rates with improved credit
   const rateImprovement =

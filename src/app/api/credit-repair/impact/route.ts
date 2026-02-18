@@ -11,11 +11,11 @@
  * - Audit logging
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { creditRepairService } from '@/lib/credit-repair';
-import { auditLogger } from '@/lib/security/audit-logging';
-import type { OpportunityType } from '@/lib/credit-repair';
+import { NextRequest, NextResponse } from "next/server";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { creditRepairService } from "@/lib/credit-repair";
+import { auditLogger } from "@/lib/security/audit-logging";
+import type { OpportunityType } from "@/lib/credit-repair";
 
 /**
  * POST /api/credit-repair/impact
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     // 1. Authenticate
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = validation.user;
@@ -37,28 +37,28 @@ export async function POST(request: NextRequest) {
 
     if (!action) {
       return NextResponse.json(
-        { error: 'Missing required field: action' },
-        { status: 400 }
+        { error: "Missing required field: action" },
+        { status: 400 },
       );
     }
 
     // Validate action type
     const validActions: OpportunityType[] = [
-      'dispute_inaccuracy',
-      'pay_down_utilization',
-      'goodwill_letter',
-      'pay_for_delete',
-      'remove_inquiry',
-      'optimize_payment_timing',
-      'piggybacking',
-      'credit_builder_loan',
-      'secured_card',
+      "dispute_inaccuracy",
+      "pay_down_utilization",
+      "goodwill_letter",
+      "pay_for_delete",
+      "remove_inquiry",
+      "optimize_payment_timing",
+      "piggybacking",
+      "credit_builder_loan",
+      "secured_card",
     ];
 
     if (!validActions.includes(action as OpportunityType)) {
       return NextResponse.json(
-        { error: 'Invalid action type', validActions },
-        { status: 400 }
+        { error: "Invalid action type", validActions },
+        { status: 400 },
       );
     }
 
@@ -66,13 +66,13 @@ export async function POST(request: NextRequest) {
     const impact = await creditRepairService.calculateImpact(
       action as OpportunityType,
       user.id,
-      data
+      data,
     );
 
     // 4. Audit log
     await auditLogger.logAIInteraction({
       userId: user.id,
-      action: 'calculate_impact',
+      action: "calculate_impact",
       input: { action, data },
       output: { impact },
       success: true,
@@ -93,17 +93,17 @@ export async function POST(request: NextRequest) {
     // Audit log error
     try {
       await auditLogger.logSecurityEvent({
-        type: 'api_error',
+        type: "api_error",
         message: `Failed to calculate impact: ${(error as Error).message}`,
-        severity: 'medium',
+        severity: "medium",
       });
     } catch (_auditError) {
       // Audit error silently caught
     }
 
     return NextResponse.json(
-      { error: 'Failed to calculate impact' },
-      { status: 500 }
+      { error: "Failed to calculate impact" },
+      { status: 500 },
     );
   }
 }
@@ -112,11 +112,11 @@ export async function POST(request: NextRequest) {
  * Get impact description based on estimated points
  */
 function getImpactDescription(impact: number): string {
-  if (impact >= 100) return 'Very High Impact (100+ points)';
-  if (impact >= 50) return 'High Impact (50-100 points)';
-  if (impact >= 20) return 'Medium Impact (20-50 points)';
-  if (impact >= 10) return 'Low Impact (10-20 points)';
-  return 'Minimal Impact (<10 points)';
+  if (impact >= 100) return "Very High Impact (100+ points)";
+  if (impact >= 50) return "High Impact (50-100 points)";
+  if (impact >= 20) return "Medium Impact (20-50 points)";
+  if (impact >= 10) return "Low Impact (10-20 points)";
+  return "Minimal Impact (<10 points)";
 }
 
 /**
@@ -124,17 +124,17 @@ function getImpactDescription(impact: number): string {
  */
 function getTimeline(action: OpportunityType): string {
   const timelines: Record<OpportunityType, string> = {
-    dispute_inaccuracy: '30-45 days',
-    pay_down_utilization: '30 days',
-    goodwill_letter: '30-60 days',
-    pay_for_delete: '30-90 days',
-    remove_inquiry: '30-45 days',
-    optimize_payment_timing: '30 days',
-    piggybacking: '30-60 days',
-    credit_builder_loan: '6-12 months',
-    secured_card: '6-12 months',
+    dispute_inaccuracy: "30-45 days",
+    pay_down_utilization: "30 days",
+    goodwill_letter: "30-60 days",
+    pay_for_delete: "30-90 days",
+    remove_inquiry: "30-45 days",
+    optimize_payment_timing: "30 days",
+    piggybacking: "30-60 days",
+    credit_builder_loan: "6-12 months",
+    secured_card: "6-12 months",
   };
-  return timelines[action] || '30-90 days';
+  return timelines[action] || "30-90 days";
 }
 
 /**
@@ -154,4 +154,3 @@ function getSuccessRate(action: OpportunityType): number {
   };
   return successRates[action] || 70;
 }
-

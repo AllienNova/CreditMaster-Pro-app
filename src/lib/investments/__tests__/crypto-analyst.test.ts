@@ -8,7 +8,7 @@
  */
 
 // Use global jest instead of @jest/globals to avoid type issues with mocked functions
-import { CryptoAnalyst } from '../crypto-analyst';
+import { CryptoAnalyst } from "../crypto-analyst";
 import {
   CryptoCategory,
   OnChainDataSource,
@@ -18,14 +18,14 @@ import {
   type DeFiMetrics,
   type TokenomicsAnalysis,
   type CryptoSentiment,
-} from '../types/crypto-analysis.types';
+} from "../types/crypto-analysis.types";
 
 // ============================================================================
 // MOCKS
 // ============================================================================
 
 // Mock CoinGecko Client
-jest.mock('../../integrations/coingecko', () => ({
+jest.mock("../../integrations/coingecko", () => ({
   CoinGeckoClient: jest.fn().mockImplementation(() => ({
     getCoinPrice: jest.fn(),
     getCoinHistory: jest.fn(),
@@ -35,7 +35,7 @@ jest.mock('../../integrations/coingecko', () => ({
 }));
 
 // Mock Redis Cache
-jest.mock('../../cache/redis-cache-service', () => ({
+jest.mock("../../cache/redis-cache-service", () => ({
   redisCache: {
     get: jest.fn(),
     set: jest.fn(),
@@ -44,18 +44,18 @@ jest.mock('../../cache/redis-cache-service', () => ({
 }));
 
 // Import mocked modules
-import { CoinGeckoClient } from '../../integrations/coingecko';
-import { redisCache } from '../../cache/redis-cache-service';
+import { CoinGeckoClient } from "../../integrations/coingecko";
+import { redisCache } from "../../cache/redis-cache-service";
 
 // ============================================================================
 // TEST DATA
 // ============================================================================
 
-const mockCoinId = 'bitcoin';
+const mockCoinId = "bitcoin";
 
 const mockPriceData = {
-  symbol: 'BTC',
-  name: 'Bitcoin',
+  symbol: "BTC",
+  name: "Bitcoin",
   currentPrice: 45000,
   marketCap: 850000000000,
   volume24h: 25000000000,
@@ -64,12 +64,12 @@ const mockPriceData = {
   priceChange30d: -3.1,
   allTimeHigh: 69000,
   allTimeLow: 67.81,
-  athDate: new Date('2021-11-10'),
-  atlDate: new Date('2013-07-06'),
+  athDate: new Date("2021-11-10"),
+  atlDate: new Date("2013-07-06"),
 };
 
 const mockOnChainMetrics: OnChainMetrics = {
-  coinId: 'bitcoin',
+  coinId: "bitcoin",
   dataSource: OnChainDataSource.BITCOIN,
   timestamp: new Date(),
   networkActivity: {
@@ -95,7 +95,7 @@ const mockOnChainMetrics: OnChainMetrics = {
 };
 
 const mockDeFiMetrics: DeFiMetrics = {
-  coinId: 'uniswap',
+  coinId: "uniswap",
   protocolType: DeFiProtocolType.DEX,
   timestamp: new Date(),
   tvl: {
@@ -127,7 +127,7 @@ const mockDeFiMetrics: DeFiMetrics = {
 };
 
 const mockTokenomics: TokenomicsAnalysis = {
-  coinId: 'ethereum',
+  coinId: "ethereum",
   timestamp: new Date(),
   supplyMechanics: {
     totalSupply: 120000000,
@@ -154,13 +154,13 @@ const mockTokenomics: TokenomicsAnalysis = {
 };
 
 const mockSentiment: CryptoSentiment = {
-  coinId: 'bitcoin',
+  coinId: "bitcoin",
   timestamp: new Date(),
-  overallSentiment: 'bullish',
+  overallSentiment: "bullish",
   sentimentScore: 68.5,
   fearGreedIndex: {
     value: 65,
-    classification: 'greed',
+    classification: "greed",
     change24h: 3,
   },
   socialMetrics: {
@@ -178,16 +178,16 @@ const mockSentiment: CryptoSentiment = {
     neutralNews: 12,
     sentimentRatio: 0.78,
     topHeadlines: [
-      'Bitcoin shows strong momentum in Q1',
-      'Institutional adoption continues to grow',
-      'Network upgrade scheduled for next month',
+      "Bitcoin shows strong momentum in Q1",
+      "Institutional adoption continues to grow",
+      "Network upgrade scheduled for next month",
     ],
   },
   communityEngagement: {
     engagementScore: 75,
     communityGrowth7d: 8.5,
     communityGrowth30d: 22.3,
-    developerActivity: 'very_high',
+    developerActivity: "very_high",
   },
 };
 
@@ -195,7 +195,7 @@ const mockSentiment: CryptoSentiment = {
 // TEST SUITE
 // ============================================================================
 
-describe('CryptoAnalyst', () => {
+describe("CryptoAnalyst", () => {
   let cryptoAnalyst: CryptoAnalyst;
   let mockCoinGecko: any;
 
@@ -217,14 +217,14 @@ describe('CryptoAnalyst', () => {
   // CRYPTO ANALYSIS TESTS (8 tests)
   // ==========================================================================
 
-  describe('analyzeCrypto', () => {
-    it('should perform complete cryptocurrency analysis', async () => {
+  describe("analyzeCrypto", () => {
+    it("should perform complete cryptocurrency analysis", async () => {
       // Mock fetch for price data
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: async () => ({
-          symbol: 'btc',
-          name: 'Bitcoin',
+          symbol: "btc",
+          name: "Bitcoin",
           market_data: {
             current_price: { usd: 45000 },
             market_cap: { usd: 850000000000 },
@@ -234,8 +234,8 @@ describe('CryptoAnalyst', () => {
             price_change_percentage_30d: -3.1,
             ath: { usd: 69000 },
             atl: { usd: 67.81 },
-            ath_date: { usd: '2021-11-10' },
-            atl_date: { usd: '2013-07-06' },
+            ath_date: { usd: "2021-11-10" },
+            atl_date: { usd: "2013-07-06" },
             total_supply: 21000000,
             circulating_supply: 19500000,
             max_supply: 21000000,
@@ -251,12 +251,12 @@ describe('CryptoAnalyst', () => {
         }),
       });
 
-      const analysis = await cryptoAnalyst.analyzeCrypto('bitcoin');
+      const analysis = await cryptoAnalyst.analyzeCrypto("bitcoin");
 
       expect(analysis).toBeDefined();
-      expect(analysis.coinId).toBe('bitcoin');
-      expect(analysis.symbol).toBe('BTC');
-      expect(analysis.name).toBe('Bitcoin');
+      expect(analysis.coinId).toBe("bitcoin");
+      expect(analysis.symbol).toBe("BTC");
+      expect(analysis.name).toBe("Bitcoin");
       expect(analysis.category).toBe(CryptoCategory.LAYER1);
       expect(analysis.overallScore).toBeGreaterThan(0);
       expect(analysis.overallScore).toBeLessThanOrEqual(100);
@@ -270,43 +270,43 @@ describe('CryptoAnalyst', () => {
       expect(analysis.metadata).toBeDefined();
     });
 
-    it('should use cached analysis when available', async () => {
+    it("should use cached analysis when available", async () => {
       const cachedAnalysis: CryptoAnalysis = {
-        coinId: 'bitcoin',
-        symbol: 'BTC',
-        name: 'Bitcoin',
+        coinId: "bitcoin",
+        symbol: "BTC",
+        name: "Bitcoin",
         category: CryptoCategory.LAYER1,
         timestamp: new Date(),
         overallScore: 75,
-        riskLevel: 'moderate',
-        investmentGrade: 'B',
+        riskLevel: "moderate",
+        investmentGrade: "B",
         priceData: mockPriceData,
         tokenomics: mockTokenomics,
         sentiment: mockSentiment,
-        recommendations: ['Test recommendation'],
-        warnings: ['Test warning'],
+        recommendations: ["Test recommendation"],
+        warnings: ["Test warning"],
         metadata: {
           dataQuality: 80,
           lastUpdated: new Date(),
-          sources: ['CoinGecko'],
+          sources: ["CoinGecko"],
         },
       };
 
       (redisCache.get as jest.Mock).mockResolvedValueOnce(cachedAnalysis);
 
-      const analysis = await cryptoAnalyst.analyzeCrypto('bitcoin');
+      const analysis = await cryptoAnalyst.analyzeCrypto("bitcoin");
 
       expect(analysis).toEqual(cachedAnalysis);
-      expect(redisCache.get).toHaveBeenCalledWith('crypto-analysis:bitcoin');
+      expect(redisCache.get).toHaveBeenCalledWith("crypto-analysis:bitcoin");
       expect(global.fetch).not.toHaveBeenCalled();
     });
 
-    it('should cache analysis results', async () => {
+    it("should cache analysis results", async () => {
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: async () => ({
-          symbol: 'btc',
-          name: 'Bitcoin',
+          symbol: "btc",
+          name: "Bitcoin",
           market_data: {
             current_price: { usd: 45000 },
             market_cap: { usd: 850000000000 },
@@ -324,25 +324,26 @@ describe('CryptoAnalyst', () => {
         }),
       });
 
-      await cryptoAnalyst.analyzeCrypto('bitcoin');
+      await cryptoAnalyst.analyzeCrypto("bitcoin");
 
       expect(redisCache.set).toHaveBeenCalled();
       // Find the crypto-analysis cache call (not on-chain or other metrics)
       const setCalls = (redisCache.set as jest.Mock).mock.calls;
-      const analysisCacheCall = setCalls.find((call) => call[0] === 'crypto-analysis:bitcoin');
+      const analysisCacheCall = setCalls.find(
+        (call) => call[0] === "crypto-analysis:bitcoin",
+      );
       expect(analysisCacheCall).toBeDefined();
       expect(analysisCacheCall[2]).toBe(900); // 15 minutes TTL
     });
 
-
-    it('should correctly categorize different cryptocurrencies', async () => {
+    it("should correctly categorize different cryptocurrencies", async () => {
       const testCases = [
-        { coinId: 'bitcoin', expectedCategory: CryptoCategory.LAYER1 },
-        { coinId: 'ethereum', expectedCategory: CryptoCategory.LAYER1 },
-        { coinId: 'polygon', expectedCategory: CryptoCategory.LAYER2 },
-        { coinId: 'uniswap', expectedCategory: CryptoCategory.DEFI },
-        { coinId: 'dogecoin', expectedCategory: CryptoCategory.MEME },
-        { coinId: 'binancecoin', expectedCategory: CryptoCategory.EXCHANGE },
+        { coinId: "bitcoin", expectedCategory: CryptoCategory.LAYER1 },
+        { coinId: "ethereum", expectedCategory: CryptoCategory.LAYER1 },
+        { coinId: "polygon", expectedCategory: CryptoCategory.LAYER2 },
+        { coinId: "uniswap", expectedCategory: CryptoCategory.DEFI },
+        { coinId: "dogecoin", expectedCategory: CryptoCategory.MEME },
+        { coinId: "binancecoin", expectedCategory: CryptoCategory.EXCHANGE },
       ];
 
       for (const testCase of testCases) {
@@ -373,21 +374,23 @@ describe('CryptoAnalyst', () => {
       }
     });
 
-    it('should handle API errors gracefully', async () => {
+    it("should handle API errors gracefully", async () => {
       global.fetch = jest.fn().mockResolvedValue({
         ok: false,
         status: 404,
       });
 
-      await expect(cryptoAnalyst.analyzeCrypto('invalid-coin')).rejects.toThrow();
+      await expect(
+        cryptoAnalyst.analyzeCrypto("invalid-coin"),
+      ).rejects.toThrow();
     });
 
-    it('should calculate overall score correctly', async () => {
+    it("should calculate overall score correctly", async () => {
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: async () => ({
-          symbol: 'btc',
-          name: 'Bitcoin',
+          symbol: "btc",
+          name: "Bitcoin",
           market_data: {
             current_price: { usd: 45000 },
             market_cap: { usd: 850000000000 },
@@ -412,19 +415,19 @@ describe('CryptoAnalyst', () => {
         }),
       });
 
-      const analysis = await cryptoAnalyst.analyzeCrypto('bitcoin');
+      const analysis = await cryptoAnalyst.analyzeCrypto("bitcoin");
 
       expect(analysis.overallScore).toBeGreaterThan(0);
       expect(analysis.overallScore).toBeLessThanOrEqual(100);
-      expect(typeof analysis.overallScore).toBe('number');
+      expect(typeof analysis.overallScore).toBe("number");
     });
 
-    it('should assign appropriate risk levels', async () => {
+    it("should assign appropriate risk levels", async () => {
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: async () => ({
-          symbol: 'test',
-          name: 'Test Coin',
+          symbol: "test",
+          name: "Test Coin",
           market_data: {
             current_price: { usd: 1 },
             market_cap: { usd: 1000000 },
@@ -442,17 +445,19 @@ describe('CryptoAnalyst', () => {
         }),
       });
 
-      const analysis = await cryptoAnalyst.analyzeCrypto('test-coin');
+      const analysis = await cryptoAnalyst.analyzeCrypto("test-coin");
 
-      expect(['very_low', 'low', 'moderate', 'high', 'very_high']).toContain(analysis.riskLevel);
+      expect(["very_low", "low", "moderate", "high", "very_high"]).toContain(
+        analysis.riskLevel,
+      );
     });
 
-    it('should assign investment grades', async () => {
+    it("should assign investment grades", async () => {
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: async () => ({
-          symbol: 'btc',
-          name: 'Bitcoin',
+          symbol: "btc",
+          name: "Bitcoin",
           market_data: {
             current_price: { usd: 45000 },
             market_cap: { usd: 850000000000 },
@@ -470,11 +475,21 @@ describe('CryptoAnalyst', () => {
         }),
       });
 
-      const analysis = await cryptoAnalyst.analyzeCrypto('bitcoin');
+      const analysis = await cryptoAnalyst.analyzeCrypto("bitcoin");
 
-      expect(['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F']).toContain(
-        analysis.investmentGrade
-      );
+      expect([
+        "A+",
+        "A",
+        "A-",
+        "B+",
+        "B",
+        "B-",
+        "C+",
+        "C",
+        "C-",
+        "D",
+        "F",
+      ]).toContain(analysis.investmentGrade);
     });
   });
 
@@ -482,12 +497,12 @@ describe('CryptoAnalyst', () => {
   // ON-CHAIN METRICS TESTS (6 tests)
   // ==========================================================================
 
-  describe('getOnChainMetrics', () => {
-    it('should fetch on-chain metrics for Bitcoin', async () => {
-      const metrics = await cryptoAnalyst.getOnChainMetrics('bitcoin');
+  describe("getOnChainMetrics", () => {
+    it("should fetch on-chain metrics for Bitcoin", async () => {
+      const metrics = await cryptoAnalyst.getOnChainMetrics("bitcoin");
 
       expect(metrics).toBeDefined();
-      expect(metrics.coinId).toBe('bitcoin');
+      expect(metrics.coinId).toBe("bitcoin");
       expect(metrics.dataSource).toBe(OnChainDataSource.BITCOIN);
       expect(metrics.networkActivity).toBeDefined();
       expect(metrics.transactionMetrics).toBeDefined();
@@ -495,51 +510,65 @@ describe('CryptoAnalyst', () => {
       expect(metrics.networkSecurity?.hashRate).toBeGreaterThan(0);
     });
 
-    it('should fetch on-chain metrics for Ethereum', async () => {
-      const metrics = await cryptoAnalyst.getOnChainMetrics('ethereum');
+    it("should fetch on-chain metrics for Ethereum", async () => {
+      const metrics = await cryptoAnalyst.getOnChainMetrics("ethereum");
 
       expect(metrics).toBeDefined();
-      expect(metrics.coinId).toBe('ethereum');
+      expect(metrics.coinId).toBe("ethereum");
       expect(metrics.dataSource).toBe(OnChainDataSource.ETHEREUM);
       expect(metrics.validatorMetrics).toBeDefined();
       expect(metrics.validatorMetrics?.totalValidators).toBeGreaterThan(0);
     });
 
-    it('should use cached on-chain metrics when available', async () => {
+    it("should use cached on-chain metrics when available", async () => {
       (redisCache.get as jest.Mock).mockResolvedValueOnce(mockOnChainMetrics);
 
-      const metrics = await cryptoAnalyst.getOnChainMetrics('bitcoin');
+      const metrics = await cryptoAnalyst.getOnChainMetrics("bitcoin");
 
       expect(metrics).toEqual(mockOnChainMetrics);
-      expect(redisCache.get).toHaveBeenCalledWith('onchain-metrics:bitcoin');
+      expect(redisCache.get).toHaveBeenCalledWith("onchain-metrics:bitcoin");
     });
 
-    it('should cache on-chain metrics', async () => {
-      await cryptoAnalyst.getOnChainMetrics('bitcoin');
+    it("should cache on-chain metrics", async () => {
+      await cryptoAnalyst.getOnChainMetrics("bitcoin");
 
       expect(redisCache.set).toHaveBeenCalled();
       const setCall = (redisCache.set as jest.Mock).mock.calls[0];
-      expect(setCall[0]).toBe('onchain-metrics:bitcoin');
+      expect(setCall[0]).toBe("onchain-metrics:bitcoin");
       expect(setCall[2]).toBe(3600); // 1 hour TTL
     });
 
-    it('should validate network activity metrics', async () => {
-      const metrics = await cryptoAnalyst.getOnChainMetrics('bitcoin');
+    it("should validate network activity metrics", async () => {
+      const metrics = await cryptoAnalyst.getOnChainMetrics("bitcoin");
 
-      expect(metrics.networkActivity.activeAddresses24h).toBeGreaterThanOrEqual(0);
-      expect(metrics.networkActivity.activeAddresses7d).toBeGreaterThanOrEqual(0);
-      expect(metrics.networkActivity.activeAddresses30d).toBeGreaterThanOrEqual(0);
+      expect(metrics.networkActivity.activeAddresses24h).toBeGreaterThanOrEqual(
+        0,
+      );
+      expect(metrics.networkActivity.activeAddresses7d).toBeGreaterThanOrEqual(
+        0,
+      );
+      expect(metrics.networkActivity.activeAddresses30d).toBeGreaterThanOrEqual(
+        0,
+      );
       expect(metrics.networkActivity.newAddresses24h).toBeGreaterThanOrEqual(0);
-      expect(typeof metrics.networkActivity.addressGrowthRate).toBe('number');
+      expect(typeof metrics.networkActivity.addressGrowthRate).toBe("number");
     });
 
-    it('should validate transaction metrics', async () => {
-      const metrics = await cryptoAnalyst.getOnChainMetrics('ethereum');
+    it("should validate transaction metrics", async () => {
+      const metrics = await cryptoAnalyst.getOnChainMetrics("ethereum");
 
-      expect(metrics.transactionMetrics.transactionCount24h).toBeGreaterThanOrEqual(0);
-      expect(metrics.transactionMetrics.transactionVolume24h).toBeGreaterThanOrEqual(0);
-      expect(metrics.transactionMetrics.averageTransactionValue).toBeGreaterThanOrEqual(0);
-      expect(metrics.transactionMetrics.transactionFees24h).toBeGreaterThanOrEqual(0);
+      expect(
+        metrics.transactionMetrics.transactionCount24h,
+      ).toBeGreaterThanOrEqual(0);
+      expect(
+        metrics.transactionMetrics.transactionVolume24h,
+      ).toBeGreaterThanOrEqual(0);
+      expect(
+        metrics.transactionMetrics.averageTransactionValue,
+      ).toBeGreaterThanOrEqual(0);
+      expect(
+        metrics.transactionMetrics.transactionFees24h,
+      ).toBeGreaterThanOrEqual(0);
       expect(metrics.transactionMetrics.averageFee).toBeGreaterThanOrEqual(0);
     });
   });
@@ -548,8 +577,8 @@ describe('CryptoAnalyst', () => {
   // DEFI METRICS TESTS (5 tests)
   // ==========================================================================
 
-  describe('getDeFiMetrics', () => {
-    it('should fetch DeFi metrics from DefiLlama', async () => {
+  describe("getDeFiMetrics", () => {
+    it("should fetch DeFi metrics from DefiLlama", async () => {
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: async () => ({
@@ -558,8 +587,8 @@ describe('CryptoAnalyst', () => {
           change_7d: 5.8,
           change_1m: 12.5,
           tvlRank: 5,
-          category: 'Dexes',
-          chains: ['ethereum', 'polygon', 'arbitrum'],
+          category: "Dexes",
+          chains: ["ethereum", "polygon", "arbitrum"],
           chainTvls: {
             ethereum: 3000000000,
             polygon: 1000000000,
@@ -568,53 +597,53 @@ describe('CryptoAnalyst', () => {
         }),
       });
 
-      const metrics = await cryptoAnalyst.getDeFiMetrics('uniswap');
+      const metrics = await cryptoAnalyst.getDeFiMetrics("uniswap");
 
       expect(metrics).toBeDefined();
-      expect(metrics.coinId).toBe('uniswap');
+      expect(metrics.coinId).toBe("uniswap");
       expect(metrics.protocolType).toBe(DeFiProtocolType.DEX);
       expect(metrics.tvl).toBeDefined();
       expect(metrics.tvl.current).toBeGreaterThan(0);
       expect(metrics.liquidityMetrics).toBeDefined();
     });
 
-    it('should handle DefiLlama API errors gracefully', async () => {
+    it("should handle DefiLlama API errors gracefully", async () => {
       global.fetch = jest.fn().mockResolvedValue({
         ok: false,
         status: 404,
       });
 
-      const metrics = await cryptoAnalyst.getDeFiMetrics('unknown-protocol');
+      const metrics = await cryptoAnalyst.getDeFiMetrics("unknown-protocol");
 
       // Should return mock data on error
       expect(metrics).toBeDefined();
       expect(metrics.tvl).toBeDefined();
     });
 
-    it('should use cached DeFi metrics when available', async () => {
+    it("should use cached DeFi metrics when available", async () => {
       (redisCache.get as jest.Mock).mockResolvedValueOnce(mockDeFiMetrics);
 
-      const metrics = await cryptoAnalyst.getDeFiMetrics('uniswap');
+      const metrics = await cryptoAnalyst.getDeFiMetrics("uniswap");
 
       expect(metrics).toEqual(mockDeFiMetrics);
-      expect(redisCache.get).toHaveBeenCalledWith('defi-metrics:uniswap');
+      expect(redisCache.get).toHaveBeenCalledWith("defi-metrics:uniswap");
     });
 
-    it('should cache DeFi metrics', async () => {
+    it("should cache DeFi metrics", async () => {
       global.fetch = jest.fn().mockResolvedValue({
         ok: false,
         status: 404,
       });
 
-      await cryptoAnalyst.getDeFiMetrics('uniswap');
+      await cryptoAnalyst.getDeFiMetrics("uniswap");
 
       expect(redisCache.set).toHaveBeenCalled();
       const setCall = (redisCache.set as jest.Mock).mock.calls[0];
-      expect(setCall[0]).toBe('defi-metrics:uniswap');
+      expect(setCall[0]).toBe("defi-metrics:uniswap");
       expect(setCall[2]).toBe(1800); // 30 minutes TTL
     });
 
-    it('should validate TVL metrics', async () => {
+    it("should validate TVL metrics", async () => {
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: async () => ({
@@ -622,16 +651,16 @@ describe('CryptoAnalyst', () => {
           change_1d: 2.3,
           change_7d: 5.8,
           change_1m: 12.5,
-          category: 'Dexes',
+          category: "Dexes",
         }),
       });
 
-      const metrics = await cryptoAnalyst.getDeFiMetrics('uniswap');
+      const metrics = await cryptoAnalyst.getDeFiMetrics("uniswap");
 
       expect(metrics.tvl.current).toBeGreaterThanOrEqual(0);
-      expect(typeof metrics.tvl.change24h).toBe('number');
-      expect(typeof metrics.tvl.change7d).toBe('number');
-      expect(typeof metrics.tvl.change30d).toBe('number');
+      expect(typeof metrics.tvl.change24h).toBe("number");
+      expect(typeof metrics.tvl.change7d).toBe("number");
+      expect(typeof metrics.tvl.change30d).toBe("number");
     });
   });
 
@@ -639,8 +668,8 @@ describe('CryptoAnalyst', () => {
   // TOKENOMICS TESTS (4 tests)
   // ==========================================================================
 
-  describe('getTokenomics', () => {
-    it('should fetch tokenomics data from CoinGecko', async () => {
+  describe("getTokenomics", () => {
+    it("should fetch tokenomics data from CoinGecko", async () => {
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: async () => ({
@@ -649,29 +678,29 @@ describe('CryptoAnalyst', () => {
             circulating_supply: 120000000,
             max_supply: 120000000,
           },
-          categories: ['governance', 'staking'],
+          categories: ["governance", "staking"],
         }),
       });
 
-      const tokenomics = await cryptoAnalyst.getTokenomics('ethereum');
+      const tokenomics = await cryptoAnalyst.getTokenomics("ethereum");
 
       expect(tokenomics).toBeDefined();
-      expect(tokenomics.coinId).toBe('ethereum');
+      expect(tokenomics.coinId).toBe("ethereum");
       expect(tokenomics.supplyMechanics).toBeDefined();
       expect(tokenomics.distribution).toBeDefined();
       expect(tokenomics.tokenUtility).toBeDefined();
     });
 
-    it('should use cached tokenomics when available', async () => {
+    it("should use cached tokenomics when available", async () => {
       (redisCache.get as jest.Mock).mockResolvedValueOnce(mockTokenomics);
 
-      const tokenomics = await cryptoAnalyst.getTokenomics('ethereum');
+      const tokenomics = await cryptoAnalyst.getTokenomics("ethereum");
 
       expect(tokenomics).toEqual(mockTokenomics);
-      expect(redisCache.get).toHaveBeenCalledWith('tokenomics:ethereum');
+      expect(redisCache.get).toHaveBeenCalledWith("tokenomics:ethereum");
     });
 
-    it('should cache tokenomics data', async () => {
+    it("should cache tokenomics data", async () => {
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: async () => ({
@@ -682,14 +711,14 @@ describe('CryptoAnalyst', () => {
         }),
       });
 
-      await cryptoAnalyst.getTokenomics('ethereum');
+      await cryptoAnalyst.getTokenomics("ethereum");
 
       expect(redisCache.set).toHaveBeenCalled();
       const setCall = (redisCache.set as jest.Mock).mock.calls[0];
-      expect(setCall[0]).toBe('tokenomics:ethereum');
+      expect(setCall[0]).toBe("tokenomics:ethereum");
     });
 
-    it('should validate supply mechanics', async () => {
+    it("should validate supply mechanics", async () => {
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: async () => ({
@@ -701,7 +730,7 @@ describe('CryptoAnalyst', () => {
         }),
       });
 
-      const tokenomics = await cryptoAnalyst.getTokenomics('bitcoin');
+      const tokenomics = await cryptoAnalyst.getTokenomics("bitcoin");
 
       expect(tokenomics.supplyMechanics.totalSupply).toBeGreaterThan(0);
       expect(tokenomics.supplyMechanics.circulatingSupply).toBeGreaterThan(0);
@@ -714,9 +743,10 @@ describe('CryptoAnalyst', () => {
   // SENTIMENT ANALYSIS TESTS (7 tests)
   // ==========================================================================
 
-  describe('getCryptoSentiment', () => {
-    it('should fetch sentiment data from multiple sources', async () => {
-      global.fetch = jest.fn()
+  describe("getCryptoSentiment", () => {
+    it("should fetch sentiment data from multiple sources", async () => {
+      global.fetch = jest
+        .fn()
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({
@@ -736,17 +766,17 @@ describe('CryptoAnalyst', () => {
           json: async () => ({
             data: [
               {
-                value: '65',
-                value_classification: 'Greed',
+                value: "65",
+                value_classification: "Greed",
               },
             ],
           }),
         });
 
-      const sentiment = await cryptoAnalyst.getCryptoSentiment('bitcoin');
+      const sentiment = await cryptoAnalyst.getCryptoSentiment("bitcoin");
 
       expect(sentiment).toBeDefined();
-      expect(sentiment.coinId).toBe('bitcoin');
+      expect(sentiment.coinId).toBe("bitcoin");
       expect(sentiment.overallSentiment).toBeDefined();
       expect(sentiment.sentimentScore).toBeGreaterThanOrEqual(0);
       expect(sentiment.sentimentScore).toBeLessThanOrEqual(100);
@@ -755,17 +785,18 @@ describe('CryptoAnalyst', () => {
       expect(sentiment.communityEngagement).toBeDefined();
     });
 
-    it('should use cached sentiment when available', async () => {
+    it("should use cached sentiment when available", async () => {
       (redisCache.get as jest.Mock).mockResolvedValueOnce(mockSentiment);
 
-      const sentiment = await cryptoAnalyst.getCryptoSentiment('bitcoin');
+      const sentiment = await cryptoAnalyst.getCryptoSentiment("bitcoin");
 
       expect(sentiment).toEqual(mockSentiment);
-      expect(redisCache.get).toHaveBeenCalledWith('crypto-sentiment:bitcoin');
+      expect(redisCache.get).toHaveBeenCalledWith("crypto-sentiment:bitcoin");
     });
 
-    it('should cache sentiment data', async () => {
-      global.fetch = jest.fn()
+    it("should cache sentiment data", async () => {
+      global.fetch = jest
+        .fn()
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({
@@ -776,29 +807,30 @@ describe('CryptoAnalyst', () => {
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({
-            data: [{ value: '50', value_classification: 'Neutral' }],
+            data: [{ value: "50", value_classification: "Neutral" }],
           }),
         });
 
-      await cryptoAnalyst.getCryptoSentiment('bitcoin');
+      await cryptoAnalyst.getCryptoSentiment("bitcoin");
 
       expect(redisCache.set).toHaveBeenCalled();
       const setCall = (redisCache.set as jest.Mock).mock.calls[0];
-      expect(setCall[0]).toBe('crypto-sentiment:bitcoin');
+      expect(setCall[0]).toBe("crypto-sentiment:bitcoin");
       expect(setCall[2]).toBe(1800); // 30 minutes TTL
     });
 
-    it('should classify sentiment correctly', async () => {
+    it("should classify sentiment correctly", async () => {
       const testCases = [
-        { score: 85, expected: 'very_bullish' },
-        { score: 65, expected: 'bullish' },
-        { score: 50, expected: 'neutral' },
-        { score: 35, expected: 'bearish' },
-        { score: 15, expected: 'very_bearish' },
+        { score: 85, expected: "very_bullish" },
+        { score: 65, expected: "bullish" },
+        { score: 50, expected: "neutral" },
+        { score: 35, expected: "bearish" },
+        { score: 15, expected: "very_bearish" },
       ];
 
       for (const testCase of testCases) {
-        global.fetch = jest.fn()
+        global.fetch = jest
+          .fn()
           .mockResolvedValueOnce({
             ok: true,
             json: async () => ({
@@ -811,19 +843,29 @@ describe('CryptoAnalyst', () => {
           .mockResolvedValueOnce({
             ok: true,
             json: async () => ({
-              data: [{ value: testCase.score.toString(), value_classification: 'Neutral' }],
+              data: [
+                {
+                  value: testCase.score.toString(),
+                  value_classification: "Neutral",
+                },
+              ],
             }),
           });
 
-        const sentiment = await cryptoAnalyst.getCryptoSentiment('test-coin');
-        expect(['very_bullish', 'bullish', 'neutral', 'bearish', 'very_bearish']).toContain(
-          sentiment.overallSentiment
-        );
+        const sentiment = await cryptoAnalyst.getCryptoSentiment("test-coin");
+        expect([
+          "very_bullish",
+          "bullish",
+          "neutral",
+          "bearish",
+          "very_bearish",
+        ]).toContain(sentiment.overallSentiment);
       }
     });
 
-    it('should calculate engagement score', async () => {
-      global.fetch = jest.fn()
+    it("should calculate engagement score", async () => {
+      global.fetch = jest
+        .fn()
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({
@@ -840,18 +882,23 @@ describe('CryptoAnalyst', () => {
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({
-            data: [{ value: '65', value_classification: 'Greed' }],
+            data: [{ value: "65", value_classification: "Greed" }],
           }),
         });
 
-      const sentiment = await cryptoAnalyst.getCryptoSentiment('bitcoin');
+      const sentiment = await cryptoAnalyst.getCryptoSentiment("bitcoin");
 
-      expect(sentiment.communityEngagement.engagementScore).toBeGreaterThanOrEqual(0);
-      expect(sentiment.communityEngagement.engagementScore).toBeLessThanOrEqual(100);
+      expect(
+        sentiment.communityEngagement.engagementScore,
+      ).toBeGreaterThanOrEqual(0);
+      expect(sentiment.communityEngagement.engagementScore).toBeLessThanOrEqual(
+        100,
+      );
     });
 
-    it('should classify developer activity', async () => {
-      global.fetch = jest.fn()
+    it("should classify developer activity", async () => {
+      global.fetch = jest
+        .fn()
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({
@@ -864,19 +911,20 @@ describe('CryptoAnalyst', () => {
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({
-            data: [{ value: '50', value_classification: 'Neutral' }],
+            data: [{ value: "50", value_classification: "Neutral" }],
           }),
         });
 
-      const sentiment = await cryptoAnalyst.getCryptoSentiment('ethereum');
+      const sentiment = await cryptoAnalyst.getCryptoSentiment("ethereum");
 
-      expect(['very_low', 'low', 'moderate', 'high', 'very_high']).toContain(
-        sentiment.communityEngagement.developerActivity
+      expect(["very_low", "low", "moderate", "high", "very_high"]).toContain(
+        sentiment.communityEngagement.developerActivity,
       );
     });
 
-    it('should handle Fear & Greed Index API errors', async () => {
-      global.fetch = jest.fn()
+    it("should handle Fear & Greed Index API errors", async () => {
+      global.fetch = jest
+        .fn()
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({
@@ -889,7 +937,7 @@ describe('CryptoAnalyst', () => {
           status: 500,
         });
 
-      const sentiment = await cryptoAnalyst.getCryptoSentiment('bitcoin');
+      const sentiment = await cryptoAnalyst.getCryptoSentiment("bitcoin");
 
       // Should use fallback value
       expect(sentiment.fearGreedIndex).toBeDefined();
@@ -902,40 +950,40 @@ describe('CryptoAnalyst', () => {
   // API INTEGRATION TESTS (5 tests)
   // ==========================================================================
 
-  describe('API Integration', () => {
-    it('should handle CoinGecko rate limiting', async () => {
+  describe("API Integration", () => {
+    it("should handle CoinGecko rate limiting", async () => {
       global.fetch = jest.fn().mockResolvedValue({
         ok: false,
         status: 429,
-        statusText: 'Too Many Requests',
+        statusText: "Too Many Requests",
       });
 
-      await expect(cryptoAnalyst.analyzeCrypto('bitcoin')).rejects.toThrow();
+      await expect(cryptoAnalyst.analyzeCrypto("bitcoin")).rejects.toThrow();
     });
 
-    it('should handle network errors', async () => {
-      global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
+    it("should handle network errors", async () => {
+      global.fetch = jest.fn().mockRejectedValue(new Error("Network error"));
 
-      await expect(cryptoAnalyst.analyzeCrypto('bitcoin')).rejects.toThrow();
+      await expect(cryptoAnalyst.analyzeCrypto("bitcoin")).rejects.toThrow();
     });
 
-    it('should handle invalid JSON responses', async () => {
+    it("should handle invalid JSON responses", async () => {
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: async () => {
-          throw new Error('Invalid JSON');
+          throw new Error("Invalid JSON");
         },
       });
 
-      await expect(cryptoAnalyst.analyzeCrypto('bitcoin')).rejects.toThrow();
+      await expect(cryptoAnalyst.analyzeCrypto("bitcoin")).rejects.toThrow();
     });
 
-    it('should handle missing data fields gracefully', async () => {
+    it("should handle missing data fields gracefully", async () => {
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: async () => ({
-          symbol: 'test',
-          name: 'Test Coin',
+          symbol: "test",
+          name: "Test Coin",
           market_data: {
             current_price: { usd: 1 },
             // Missing other fields
@@ -943,21 +991,21 @@ describe('CryptoAnalyst', () => {
         }),
       });
 
-      const analysis = await cryptoAnalyst.analyzeCrypto('test-coin');
+      const analysis = await cryptoAnalyst.analyzeCrypto("test-coin");
 
       expect(analysis).toBeDefined();
       expect(analysis.priceData).toBeDefined();
     });
 
-    it('should respect cache TTL settings', async () => {
-      const cacheKey = 'crypto-analysis:bitcoin';
+    it("should respect cache TTL settings", async () => {
+      const cacheKey = "crypto-analysis:bitcoin";
       const ttl = 900; // 15 minutes
 
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: async () => ({
-          symbol: 'btc',
-          name: 'Bitcoin',
+          symbol: "btc",
+          name: "Bitcoin",
           market_data: {
             current_price: { usd: 45000 },
             market_cap: { usd: 850000000000 },
@@ -971,7 +1019,7 @@ describe('CryptoAnalyst', () => {
         }),
       });
 
-      await cryptoAnalyst.analyzeCrypto('bitcoin');
+      await cryptoAnalyst.analyzeCrypto("bitcoin");
 
       expect(redisCache.set).toHaveBeenCalled();
       // Find the crypto-analysis cache call
@@ -982,5 +1030,3 @@ describe('CryptoAnalyst', () => {
     });
   });
 });
-
-

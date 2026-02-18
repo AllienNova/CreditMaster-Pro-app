@@ -5,14 +5,14 @@
  * and investment performance into a single holistic financial health score.
  */
 
-import { supabaseAdmin } from '@/lib/supabase/server';
+import { supabaseAdmin } from "@/lib/supabase/server";
 
 // ============================================================================
 // Types
 // ============================================================================
 
-export type VitalityGrade = 'A' | 'B' | 'C' | 'D' | 'F';
-export type TrendDirection = 'improving' | 'stable' | 'declining';
+export type VitalityGrade = "A" | "B" | "C" | "D" | "F";
+export type TrendDirection = "improving" | "stable" | "declining";
 
 export interface ComponentScore<T = Record<string, unknown>> {
   score: number; // 0-100
@@ -65,9 +65,9 @@ export interface QuickWin {
   id: string;
   title: string;
   description: string;
-  impact: 'high' | 'medium' | 'low';
+  impact: "high" | "medium" | "low";
   estimatedPoints: number;
-  category: 'credit' | 'spending' | 'savings' | 'debt' | 'investments';
+  category: "credit" | "spending" | "savings" | "debt" | "investments";
   actionUrl?: string;
 }
 
@@ -111,18 +111,18 @@ export interface VitalityScoreHistory {
 
 const COMPONENT_WEIGHTS = {
   credit: 0.25,
-  spending: 0.20,
-  savings: 0.20,
-  debt: 0.20,
+  spending: 0.2,
+  savings: 0.2,
+  debt: 0.2,
   investments: 0.15,
 };
 
 const GRADE_THRESHOLDS: { min: number; grade: VitalityGrade }[] = [
-  { min: 90, grade: 'A' },
-  { min: 80, grade: 'B' },
-  { min: 70, grade: 'C' },
-  { min: 60, grade: 'D' },
-  { min: 0, grade: 'F' },
+  { min: 90, grade: "A" },
+  { min: 80, grade: "B" },
+  { min: 70, grade: "C" },
+  { min: 60, grade: "D" },
+  { min: 0, grade: "F" },
 ];
 
 // ============================================================================
@@ -133,7 +133,9 @@ class FinancialVitalityScoreService {
   /**
    * Calculate the complete Financial Vitality Score
    */
-  async calculateVitalityScore(userId: string): Promise<FinancialVitalityScore> {
+  async calculateVitalityScore(
+    userId: string,
+  ): Promise<FinancialVitalityScore> {
     // Fetch all component data
     const [credit, spending, savings, debt, investments] = await Promise.all([
       this.calculateCreditScore(userId),
@@ -146,10 +148,10 @@ class FinancialVitalityScoreService {
     // Calculate overall score
     const overall = Math.round(
       credit.score * COMPONENT_WEIGHTS.credit +
-      spending.score * COMPONENT_WEIGHTS.spending +
-      savings.score * COMPONENT_WEIGHTS.savings +
-      debt.score * COMPONENT_WEIGHTS.debt +
-      investments.score * COMPONENT_WEIGHTS.investments
+        spending.score * COMPONENT_WEIGHTS.spending +
+        savings.score * COMPONENT_WEIGHTS.savings +
+        debt.score * COMPONENT_WEIGHTS.debt +
+        investments.score * COMPONENT_WEIGHTS.investments,
     );
 
     // Determine grade
@@ -207,46 +209,58 @@ class FinancialVitalityScoreService {
   /**
    * Get vitality score history
    */
-  async getScoreHistory(userId: string, days: number = 30): Promise<VitalityScoreHistory[]> {
+  async getScoreHistory(
+    userId: string,
+    days: number = 30,
+  ): Promise<VitalityScoreHistory[]> {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabaseAdmin as any)
-      .from('vitality_score_history')
-      .select('*')
-      .eq('user_id', userId)
-      .gte('date', startDate.toISOString())
-      .order('date', { ascending: true });
+      .from("vitality_score_history")
+      .select("*")
+      .eq("user_id", userId)
+      .gte("date", startDate.toISOString())
+      .order("date", { ascending: true });
 
     if (error) {
       // Error logged
       return [];
     }
 
-    return (data || []).map((row: {
-      date: string;
-      overall: number;
-      credit: number;
-      spending: number;
-      savings: number;
-      debt: number;
-      investments: number;
-    }) => ({
-      date: new Date(row.date),
-      overall: row.overall,
-      credit: row.credit,
-      spending: row.spending,
-      savings: row.savings,
-      debt: row.debt,
-      investments: row.investments,
-    }));
+    return (data || []).map(
+      (row: {
+        date: string;
+        overall: number;
+        credit: number;
+        spending: number;
+        savings: number;
+        debt: number;
+        investments: number;
+      }) => ({
+        date: new Date(row.date),
+        overall: row.overall,
+        credit: row.credit,
+        spending: row.spending,
+        savings: row.savings,
+        debt: row.debt,
+        investments: row.investments,
+      }),
+    );
   }
 
   /**
    * Calculate credit component score
    */
-  private async calculateCreditScore(userId: string): Promise<{ score: number; grade: VitalityGrade; trend: TrendDirection; details: CreditDetails }> {
+  private async calculateCreditScore(
+    userId: string,
+  ): Promise<{
+    score: number;
+    grade: VitalityGrade;
+    trend: TrendDirection;
+    details: CreditDetails;
+  }> {
     // In production, this would fetch from credit monitoring service
     // Using mock data for now
     const mockDetails: CreditDetails = {
@@ -282,7 +296,12 @@ class FinancialVitalityScoreService {
     else if (mockDetails.accountAge >= 36) score += 7;
     else score += 3;
 
-    const trend: TrendDirection = mockDetails.scoreChange > 0 ? 'improving' : mockDetails.scoreChange < 0 ? 'declining' : 'stable';
+    const trend: TrendDirection =
+      mockDetails.scoreChange > 0
+        ? "improving"
+        : mockDetails.scoreChange < 0
+          ? "declining"
+          : "stable";
 
     return {
       score: Math.round(score),
@@ -295,7 +314,14 @@ class FinancialVitalityScoreService {
   /**
    * Calculate spending component score
    */
-  private async calculateSpendingScore(userId: string): Promise<{ score: number; grade: VitalityGrade; trend: TrendDirection; details: SpendingDetails }> {
+  private async calculateSpendingScore(
+    userId: string,
+  ): Promise<{
+    score: number;
+    grade: VitalityGrade;
+    trend: TrendDirection;
+    details: SpendingDetails;
+  }> {
     const mockDetails: SpendingDetails = {
       budgetAdherence: 85,
       savingsRate: 15,
@@ -325,7 +351,12 @@ class FinancialVitalityScoreService {
     else if (mockDetails.monthlyTrend < 5) score += 7;
     else score += 3;
 
-    const trend: TrendDirection = mockDetails.monthlyTrend < 0 ? 'improving' : mockDetails.monthlyTrend > 5 ? 'declining' : 'stable';
+    const trend: TrendDirection =
+      mockDetails.monthlyTrend < 0
+        ? "improving"
+        : mockDetails.monthlyTrend > 5
+          ? "declining"
+          : "stable";
 
     return {
       score: Math.round(score),
@@ -338,7 +369,14 @@ class FinancialVitalityScoreService {
   /**
    * Calculate savings component score
    */
-  private async calculateSavingsScore(userId: string): Promise<{ score: number; grade: VitalityGrade; trend: TrendDirection; details: SavingsDetails }> {
+  private async calculateSavingsScore(
+    userId: string,
+  ): Promise<{
+    score: number;
+    grade: VitalityGrade;
+    trend: TrendDirection;
+    details: SavingsDetails;
+  }> {
     const mockDetails: SavingsDetails = {
       emergencyFundMonths: 4,
       savingsRate: 15,
@@ -363,7 +401,12 @@ class FinancialVitalityScoreService {
     // Goal progress (25%)
     score += (mockDetails.savingsGoalProgress / 100) * 25;
 
-    const trend: TrendDirection = mockDetails.savingsRate >= 15 ? 'improving' : mockDetails.savingsRate >= 10 ? 'stable' : 'declining';
+    const trend: TrendDirection =
+      mockDetails.savingsRate >= 15
+        ? "improving"
+        : mockDetails.savingsRate >= 10
+          ? "stable"
+          : "declining";
 
     return {
       score: Math.round(score),
@@ -376,7 +419,14 @@ class FinancialVitalityScoreService {
   /**
    * Calculate debt component score
    */
-  private async calculateDebtScore(userId: string): Promise<{ score: number; grade: VitalityGrade; trend: TrendDirection; details: DebtDetails }> {
+  private async calculateDebtScore(
+    userId: string,
+  ): Promise<{
+    score: number;
+    grade: VitalityGrade;
+    trend: TrendDirection;
+    details: DebtDetails;
+  }> {
     const mockDetails: DebtDetails = {
       debtToIncomeRatio: 0.35,
       totalDebt: 45000,
@@ -402,7 +452,12 @@ class FinancialVitalityScoreService {
     // Payoff progress (30%)
     score += (mockDetails.payoffProgress / 100) * 30;
 
-    const trend: TrendDirection = mockDetails.payoffProgress > 50 ? 'improving' : mockDetails.payoffProgress > 25 ? 'stable' : 'declining';
+    const trend: TrendDirection =
+      mockDetails.payoffProgress > 50
+        ? "improving"
+        : mockDetails.payoffProgress > 25
+          ? "stable"
+          : "declining";
 
     return {
       score: Math.round(score),
@@ -415,7 +470,14 @@ class FinancialVitalityScoreService {
   /**
    * Calculate investments component score
    */
-  private async calculateInvestmentsScore(userId: string): Promise<{ score: number; grade: VitalityGrade; trend: TrendDirection; details: InvestmentDetails }> {
+  private async calculateInvestmentsScore(
+    userId: string,
+  ): Promise<{
+    score: number;
+    grade: VitalityGrade;
+    trend: TrendDirection;
+    details: InvestmentDetails;
+  }> {
     const mockDetails: InvestmentDetails = {
       portfolioValue: 85000,
       ytdReturn: 8.5,
@@ -446,7 +508,12 @@ class FinancialVitalityScoreService {
     else if (mockDetails.riskAdjustedReturn >= 1) score += 7;
     else score += 4;
 
-    const trend: TrendDirection = mockDetails.ytdReturn > 5 ? 'improving' : mockDetails.ytdReturn > 0 ? 'stable' : 'declining';
+    const trend: TrendDirection =
+      mockDetails.ytdReturn > 5
+        ? "improving"
+        : mockDetails.ytdReturn > 0
+          ? "stable"
+          : "declining";
 
     return {
       score: Math.round(score),
@@ -471,65 +538,65 @@ class FinancialVitalityScoreService {
     // Credit quick wins
     if (components.credit.details.utilizationRate > 30) {
       quickWins.push({
-        id: 'lower-utilization',
-        title: 'Lower Credit Utilization',
-        description: 'Pay down credit card balances to below 30% utilization',
-        impact: 'high',
+        id: "lower-utilization",
+        title: "Lower Credit Utilization",
+        description: "Pay down credit card balances to below 30% utilization",
+        impact: "high",
         estimatedPoints: 5,
-        category: 'credit',
-        actionUrl: '/dashboard/credit',
+        category: "credit",
+        actionUrl: "/dashboard/credit",
       });
     }
 
     // Savings quick wins
     if (components.savings.details.emergencyFundMonths < 3) {
       quickWins.push({
-        id: 'emergency-fund',
-        title: 'Build Emergency Fund',
-        description: 'Save 3 months of expenses for emergencies',
-        impact: 'high',
+        id: "emergency-fund",
+        title: "Build Emergency Fund",
+        description: "Save 3 months of expenses for emergencies",
+        impact: "high",
         estimatedPoints: 8,
-        category: 'savings',
-        actionUrl: '/dashboard/savings',
+        category: "savings",
+        actionUrl: "/dashboard/savings",
       });
     }
 
     // Debt quick wins
     if (components.debt.details.highInterestDebt > 0) {
       quickWins.push({
-        id: 'pay-high-interest',
-        title: 'Pay Off High-Interest Debt',
-        description: 'Focus on paying down high-interest credit cards first',
-        impact: 'high',
+        id: "pay-high-interest",
+        title: "Pay Off High-Interest Debt",
+        description: "Focus on paying down high-interest credit cards first",
+        impact: "high",
         estimatedPoints: 6,
-        category: 'debt',
-        actionUrl: '/dashboard/debt',
+        category: "debt",
+        actionUrl: "/dashboard/debt",
       });
     }
 
     // Investment quick wins
     if (components.investments.details.contributionRate < 15) {
       quickWins.push({
-        id: 'increase-contributions',
-        title: 'Increase Investment Contributions',
-        description: 'Try to save at least 15% of income for retirement',
-        impact: 'medium',
+        id: "increase-contributions",
+        title: "Increase Investment Contributions",
+        description: "Try to save at least 15% of income for retirement",
+        impact: "medium",
         estimatedPoints: 4,
-        category: 'investments',
-        actionUrl: '/dashboard/investments',
+        category: "investments",
+        actionUrl: "/dashboard/investments",
       });
     }
 
     // Spending quick wins
     if (components.spending.details.budgetAdherence < 80) {
       quickWins.push({
-        id: 'track-spending',
-        title: 'Stick to Your Budget',
-        description: 'Review and adjust your budget categories',
-        impact: 'medium',
+        id: "track-spending",
+        title: "Stick to Your Budget",
+        description: "Review and adjust your budget categories",
+        impact: "medium",
         estimatedPoints: 3,
-        category: 'spending',
-        actionUrl: '/dashboard/spending',
+        category: "spending",
+        actionUrl: "/dashboard/spending",
       });
     }
 
@@ -541,11 +608,31 @@ class FinancialVitalityScoreService {
    */
   private getNextMilestone(currentScore: number): Milestone {
     const milestones = [
-      { target: 60, description: 'Financial Starter', reward: 'Basic financial health achieved' },
-      { target: 70, description: 'Financial Foundational', reward: 'Solid financial footing' },
-      { target: 80, description: 'Financial Fit', reward: 'Above average financial health' },
-      { target: 90, description: 'Financial Champion', reward: 'Excellent financial wellness' },
-      { target: 100, description: 'Financial Master', reward: 'Peak financial vitality' },
+      {
+        target: 60,
+        description: "Financial Starter",
+        reward: "Basic financial health achieved",
+      },
+      {
+        target: 70,
+        description: "Financial Foundational",
+        reward: "Solid financial footing",
+      },
+      {
+        target: 80,
+        description: "Financial Fit",
+        reward: "Above average financial health",
+      },
+      {
+        target: 90,
+        description: "Financial Champion",
+        reward: "Excellent financial wellness",
+      },
+      {
+        target: 100,
+        description: "Financial Master",
+        reward: "Peak financial vitality",
+      },
     ];
 
     for (const milestone of milestones) {
@@ -561,21 +648,23 @@ class FinancialVitalityScoreService {
    * Calculate trend from history
    */
   private calculateTrend(history: VitalityScoreHistory[]): TrendDirection {
-    if (history.length < 2) return 'stable';
+    if (history.length < 2) return "stable";
 
     const recent = history.slice(-7);
     const older = history.slice(-14, -7);
 
-    if (recent.length === 0 || older.length === 0) return 'stable';
+    if (recent.length === 0 || older.length === 0) return "stable";
 
-    const recentAvg = recent.reduce((sum, h) => sum + h.overall, 0) / recent.length;
-    const olderAvg = older.reduce((sum, h) => sum + h.overall, 0) / older.length;
+    const recentAvg =
+      recent.reduce((sum, h) => sum + h.overall, 0) / recent.length;
+    const olderAvg =
+      older.reduce((sum, h) => sum + h.overall, 0) / older.length;
 
     const diff = recentAvg - olderAvg;
 
-    if (diff > 2) return 'improving';
-    if (diff < -2) return 'declining';
-    return 'stable';
+    if (diff > 2) return "improving";
+    if (diff < -2) return "declining";
+    return "stable";
   }
 
   /**
@@ -613,7 +702,7 @@ class FinancialVitalityScoreService {
         return threshold.grade;
       }
     }
-    return 'F';
+    return "F";
   }
 
   /**
@@ -628,24 +717,25 @@ class FinancialVitalityScoreService {
       savings: number;
       debt: number;
       investments: number;
-    }
+    },
   ): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = supabaseAdmin as any;
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split("T")[0];
 
     // Upsert to avoid duplicates for same day
-    await supabase
-      .from('vitality_score_history')
-      .upsert({
+    await supabase.from("vitality_score_history").upsert(
+      {
         user_id: userId,
         date: today,
         ...scores,
         updated_at: new Date().toISOString(),
-      }, {
-        onConflict: 'user_id,date',
-      });
+      },
+      {
+        onConflict: "user_id,date",
+      },
+    );
   }
 }
 

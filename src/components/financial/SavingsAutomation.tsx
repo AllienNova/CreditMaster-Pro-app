@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/components/ui/Toast';
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/components/ui/Toast";
 import {
   SavingsRule,
   SavingsGoal,
@@ -11,7 +11,7 @@ import {
   SavingsRecommendation,
   SavingsRuleType,
   SavingsGoalCategory,
-} from '@/lib/financial/types/savings.types';
+} from "@/lib/financial/types/savings.types";
 
 interface SavingsAutomationData {
   summary: SavingsSummary;
@@ -22,33 +22,33 @@ interface SavingsAutomationData {
 }
 
 const RULE_TYPE_LABELS: Record<SavingsRuleType, string> = {
-  round_up: 'Round-Up',
-  percentage: 'Percentage',
-  fixed: 'Fixed Amount',
-  surplus: 'Surplus',
-  goal_based: 'Goal-Based',
+  round_up: "Round-Up",
+  percentage: "Percentage",
+  fixed: "Fixed Amount",
+  surplus: "Surplus",
+  goal_based: "Goal-Based",
 };
 
 const GOAL_CATEGORY_LABELS: Record<SavingsGoalCategory, string> = {
-  emergency_fund: 'Emergency Fund',
-  vacation: 'Vacation',
-  major_purchase: 'Major Purchase',
-  education: 'Education',
-  retirement: 'Retirement',
-  home_down_payment: 'Home Down Payment',
-  debt_payoff: 'Debt Payoff',
-  custom: 'Custom',
+  emergency_fund: "Emergency Fund",
+  vacation: "Vacation",
+  major_purchase: "Major Purchase",
+  education: "Education",
+  retirement: "Retirement",
+  home_down_payment: "Home Down Payment",
+  debt_payoff: "Debt Payoff",
+  custom: "Custom",
 };
 
 const GOAL_ICONS: Record<SavingsGoalCategory, string> = {
-  emergency_fund: '',
-  vacation: '',
-  major_purchase: '',
-  education: '',
-  retirement: '',
-  home_down_payment: '',
-  debt_payoff: '',
-  custom: '',
+  emergency_fund: "",
+  vacation: "",
+  major_purchase: "",
+  education: "",
+  retirement: "",
+  home_down_payment: "",
+  debt_payoff: "",
+  custom: "",
 };
 
 export default function SavingsAutomation() {
@@ -56,8 +56,8 @@ export default function SavingsAutomation() {
   const toast = useToast();
   const [data, setData] = useState<SavingsAutomationData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'rules' | 'goals'>(
-    'overview'
+  const [activeTab, setActiveTab] = useState<"overview" | "rules" | "goals">(
+    "overview",
   );
   const [showCreateRuleModal, setShowCreateRuleModal] = useState(false);
   const [showCreateGoalModal, setShowCreateGoalModal] = useState(false);
@@ -67,15 +67,15 @@ export default function SavingsAutomation() {
 
     try {
       setLoading(true);
-      const response = await fetch('/api/financial/savings?type=all');
-      if (!response.ok) throw new Error('Failed to fetch data');
+      const response = await fetch("/api/financial/savings?type=all");
+      if (!response.ok) throw new Error("Failed to fetch data");
 
       const result = await response.json();
       setData(result.data);
     } catch (_error) {
       // SavingsAutomation error: Error fetching savings automation data
       void _error;
-      toast.error('Failed to load savings data');
+      toast.error("Failed to load savings data");
     } finally {
       setLoading(false);
     }
@@ -90,45 +90,45 @@ export default function SavingsAutomation() {
   const handleToggleRule = async (ruleId: string) => {
     try {
       const response = await fetch(`/api/financial/savings/rules/${ruleId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'toggle' }),
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "toggle" }),
       });
 
-      if (!response.ok) throw new Error('Failed to toggle rule');
+      if (!response.ok) throw new Error("Failed to toggle rule");
 
-      toast.success('Rule updated successfully');
+      toast.success("Rule updated successfully");
       void fetchData();
     } catch (_error) {
       // SavingsAutomation error: Error toggling rule
       void _error;
-      toast.error('Failed to update rule');
+      toast.error("Failed to update rule");
     }
   };
 
   const handleAddContribution = async (goalId: string, amount: number) => {
     try {
       const response = await fetch(`/api/financial/savings/goals/${goalId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'contribute', amount }),
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "contribute", amount }),
       });
 
-      if (!response.ok) throw new Error('Failed to add contribution');
+      if (!response.ok) throw new Error("Failed to add contribution");
 
       toast.success(`Added $${amount.toFixed(2)} to goal`);
       void fetchData();
     } catch (_error) {
       // SavingsAutomation error: Error adding contribution
       void _error;
-      toast.error('Failed to add contribution');
+      toast.error("Failed to add contribution");
     }
   };
 
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
@@ -225,11 +225,11 @@ export default function SavingsAutomation() {
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow">
         <div className="border-b border-gray-200 dark:border-slate-700">
           <nav className="flex -mb-px">
-            {(['overview', 'rules', 'goals'] as const).map((tab) => (
+            {(["overview", "rules", "goals"] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${ activeTab === tab ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-gray-300' }`}
+                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === tab ? "border-green-500 text-green-600" : "border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-gray-300"}`}
               >
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
               </button>
@@ -239,7 +239,7 @@ export default function SavingsAutomation() {
 
         <div className="p-6">
           {/* Overview Tab */}
-          {activeTab === 'overview' && (
+          {activeTab === "overview" && (
             <div className="space-y-6">
               {/* Insights */}
               {insights.length > 0 && (
@@ -251,7 +251,7 @@ export default function SavingsAutomation() {
                     {insights.map((insight, index) => (
                       <div
                         key={index}
-                        className={`p-4 rounded-lg border ${ insight.type === 'warning' ? 'bg-yellow-50 border-yellow-200' : insight.type === 'achievement' ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800' }`}
+                        className={`p-4 rounded-lg border ${insight.type === "warning" ? "bg-yellow-50 border-yellow-200" : insight.type === "achievement" ? "bg-green-50 border-green-200" : "bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800"}`}
                       >
                         <div className="flex items-start justify-between">
                           <div>
@@ -294,21 +294,21 @@ export default function SavingsAutomation() {
                         </p>
                         {rec.potentialSavings > 0 && (
                           <p className="text-sm text-green-600 dark:text-green-400 mt-2">
-                            Potential savings:{' '}
+                            Potential savings:{" "}
                             {formatCurrency(rec.potentialSavings)}/month
                           </p>
                         )}
                         <button
                           onClick={() =>
-                            rec.type === 'new_rule'
+                            rec.type === "new_rule"
                               ? setShowCreateRuleModal(true)
                               : setShowCreateGoalModal(true)
                           }
                           className="mt-3 px-4 py-2 text-sm bg-green-500 text-white rounded-lg hover:bg-green-600"
                         >
-                          {rec.type === 'new_rule'
-                            ? 'Create Rule'
-                            : 'Create Goal'}
+                          {rec.type === "new_rule"
+                            ? "Create Rule"
+                            : "Create Goal"}
                         </button>
                       </div>
                     ))}
@@ -319,7 +319,7 @@ export default function SavingsAutomation() {
           )}
 
           {/* Rules Tab */}
-          {activeTab === 'rules' && (
+          {activeTab === "rules" && (
             <div className="space-y-4">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -350,27 +350,27 @@ export default function SavingsAutomation() {
                     >
                       <div className="flex items-center gap-4">
                         <div
-                          className={`w-12 h-12 rounded-full flex items-center justify-center text-xl ${ rule.status === 'active' ? 'bg-green-100' : 'bg-gray-200 dark:bg-slate-600' }`}
+                          className={`w-12 h-12 rounded-full flex items-center justify-center text-xl ${rule.status === "active" ? "bg-green-100" : "bg-gray-200 dark:bg-slate-600"}`}
                         >
-                          {rule.type === 'round_up'
-                            ? ''
-                            : rule.type === 'percentage'
-                              ? ''
-                              : ''}
+                          {rule.type === "round_up"
+                            ? ""
+                            : rule.type === "percentage"
+                              ? ""
+                              : ""}
                         </div>
                         <div>
                           <h4 className="font-semibold text-gray-900 dark:text-white">
                             {rule.name}
                           </h4>
                           <p className="text-sm text-gray-500 dark:text-slate-400">
-                            {RULE_TYPE_LABELS[rule.type]} •{' '}
+                            {RULE_TYPE_LABELS[rule.type]} •{" "}
                             {formatCurrency(rule.totalSaved)} saved
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
                         <span
-                          className={`px-2 py-1 text-xs rounded-full ${ rule.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800 dark:bg-slate-600 dark:text-slate-200' }`}
+                          className={`px-2 py-1 text-xs rounded-full ${rule.status === "active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800 dark:bg-slate-600 dark:text-slate-200"}`}
                         >
                           {rule.status}
                         </span>
@@ -378,7 +378,7 @@ export default function SavingsAutomation() {
                           onClick={() => handleToggleRule(rule.id)}
                           className="px-3 py-1 text-sm border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-600"
                         >
-                          {rule.status === 'active' ? 'Pause' : 'Resume'}
+                          {rule.status === "active" ? "Pause" : "Resume"}
                         </button>
                       </div>
                     </div>
@@ -389,7 +389,7 @@ export default function SavingsAutomation() {
           )}
 
           {/* Goals Tab */}
-          {activeTab === 'goals' && (
+          {activeTab === "goals" && (
             <div className="space-y-4">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -435,7 +435,7 @@ export default function SavingsAutomation() {
                       <div className="mb-3">
                         <div className="flex justify-between text-sm mb-1">
                           <span className="text-gray-600 dark:text-slate-400">
-                            {formatCurrency(goal.currentAmount)} of{' '}
+                            {formatCurrency(goal.currentAmount)} of{" "}
                             {formatCurrency(goal.targetAmount)}
                           </span>
                           <span className="font-semibold text-green-600">
@@ -445,7 +445,7 @@ export default function SavingsAutomation() {
                         <div className="w-full bg-gray-200 dark:bg-slate-600 rounded-full h-2">
                           <div
                             className={`h-2 rounded-full transition-all ${
-                              goal.onTrack ? 'bg-green-500' : 'bg-yellow-500'
+                              goal.onTrack ? "bg-green-500" : "bg-yellow-500"
                             }`}
                             style={{
                               width: `${Math.min(100, goal.progressPercentage)}%`,
@@ -456,9 +456,9 @@ export default function SavingsAutomation() {
 
                       <div className="flex items-center justify-between">
                         <span
-                          className={`text-xs px-2 py-1 rounded-full ${ goal.onTrack ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' }`}
+                          className={`text-xs px-2 py-1 rounded-full ${goal.onTrack ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"}`}
                         >
-                          {goal.onTrack ? 'On Track' : 'Behind'}
+                          {goal.onTrack ? "On Track" : "Behind"}
                         </span>
                         <button
                           onClick={() => handleAddContribution(goal.id, 50)}

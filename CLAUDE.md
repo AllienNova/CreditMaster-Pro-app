@@ -64,9 +64,11 @@ Fynvita is your complete financial health platform. We combine AI-powered credit
 ## 🚀 Development Journey
 
 ### Phase 1: Foundation (Weeks 1-2)
+
 **Goal**: Build core application structure
 
 **What Was Built**:
+
 - Next.js 15 + React 19 + TypeScript 5.7 setup
 - Supabase authentication
 - Basic dashboard and login pages
@@ -75,6 +77,7 @@ Fynvita is your complete financial health platform. We combine AI-powered credit
 - Pricing page
 
 **Key Files Created**:
+
 - `src/app/layout.tsx` - Root layout
 - `src/app/page.tsx` - Landing page
 - `src/app/dashboard/page.tsx` - User dashboard
@@ -83,14 +86,17 @@ Fynvita is your complete financial health platform. We combine AI-powered credit
 - `src/lib/student-loan-agent/` - Student loan logic
 
 **Challenges**:
+
 - TypeScript configuration for Next.js 15
 - Supabase auth integration
 - Component architecture decisions
 
 ### Phase 2: AI Integration (Week 3)
+
 **Goal**: Integrate AIML API with 300+ models
 
 **What Was Built**:
+
 - AIML service wrapper (400+ lines)
 - Model router with intelligent selection (400+ lines)
 - AI orchestrator for high-level workflows (600+ lines)
@@ -98,6 +104,7 @@ Fynvita is your complete financial health platform. We combine AI-powered credit
 - Advanced prompt templates with few-shot learning
 
 **Key Files Created**:
+
 - `src/lib/aiml-service.ts` - Direct API access
 - `src/lib/model-router.ts` - Model selection logic
 - `src/lib/ai-orchestrator.ts` - Workflow orchestration
@@ -107,18 +114,22 @@ Fynvita is your complete financial health platform. We combine AI-powered credit
 - `src/app/api/student-loans/strategy/route.ts` - Loan strategy
 
 **Breakthrough Moment**:
+
 - Implemented multi-model consensus for critical decisions
 - Created intelligent routing based on task complexity and cost
 
 **Challenges**:
+
 - Managing 300+ model configurations
 - Balancing cost vs. quality
 - Prompt engineering for consistent outputs
 
 ### Phase 3: Security & Compliance (Week 4)
+
 **Goal**: Enterprise-grade security and compliance
 
 **What Was Built**:
+
 - Input validation with prompt injection detection (400+ lines)
 - Output validation with PII detection (350+ lines)
 - Rate limiting with cost tracking (350+ lines)
@@ -130,6 +141,7 @@ Fynvita is your complete financial health platform. We combine AI-powered credit
 - Metrics tracking (450+ lines)
 
 **Key Files Created**:
+
 - `src/lib/security/input-validation.ts`
 - `src/lib/security/output-validation.ts`
 - `src/lib/security/rate-limiting.ts`
@@ -141,19 +153,23 @@ Fynvita is your complete financial health platform. We combine AI-powered credit
 - `src/lib/monitoring/metrics.ts`
 
 **Impact**:
+
 - Security score: 45 → 85 (+40 points)
 - Compliance score: 55 → 90 (+35 points)
 - Production readiness: 70 → 95 (+25 points)
 
 **Challenges**:
+
 - Balancing security with user experience
 - PII detection accuracy
 - Performance impact of validation layers
 
 ### Phase 4: UI Components (Week 5)
+
 **Goal**: Build user-facing AI-powered components
 
 **What Was Built**:
+
 - DisputeGenerator component (350+ lines)
 - CreditAnalyzer component (300+ lines)
 - LoanStrategyCalculator component (350+ lines)
@@ -161,6 +177,7 @@ Fynvita is your complete financial health platform. We combine AI-powered credit
 - AI Tools page to showcase all components
 
 **Key Files Created**:
+
 - `src/components/aiml/DisputeGenerator.tsx`
 - `src/components/aiml/CreditAnalyzer.tsx`
 - `src/components/aiml/LoanStrategyCalculator.tsx`
@@ -168,20 +185,24 @@ Fynvita is your complete financial health platform. We combine AI-powered credit
 - `src/app/ai-tools/page.tsx`
 
 **User Experience**:
+
 - Real-time AI responses with streaming
 - Loading states and error handling
 - Professional UI with Tailwind CSS
 - Mobile-responsive design
 
 **Challenges**:
+
 - Managing async AI responses
 - Error handling and retry logic
 - Streaming UI updates
 
 ### Phase 5: Critical Features (Week 6)
+
 **Goal**: Implement payment, notifications, disputes, documents
 
 **What Was Built**:
+
 - Stripe payment integration (500+ lines)
 - Notification service with email (450+ lines)
 - Dispute tracking system (450+ lines)
@@ -189,6 +210,7 @@ Fynvita is your complete financial health platform. We combine AI-powered credit
 - 10+ new API routes
 
 **Key Files Created**:
+
 - `src/lib/payment/stripe-service.ts`
 - `src/lib/notifications/notification-service.ts`
 - `src/lib/disputes/dispute-service.ts`
@@ -201,21 +223,25 @@ Fynvita is your complete financial health platform. We combine AI-powered credit
 - `src/app/api/documents/upload/route.ts`
 
 **Business Impact**:
+
 - Monetization: 3 subscription tiers ($29, $79, $199/month)
 - User engagement: Email + in-app notifications
 - Core functionality: Complete dispute lifecycle
 - Document storage: Secure S3 integration
 
 **Challenges**:
+
 - Stripe webhook handling
 - S3 presigned URL management
 - Email template design
 - Dispute status transitions
 
 ### Phase 6: Testing & Quality (Week 7)
+
 **Goal**: Achieve 90%+ test coverage
 
 **What Was Accomplished**:
+
 - Fixed 161 TypeScript errors → 0 errors
 - Fixed 15 failing tests → 83 passing tests
 - Increased coverage from 67.34% → 81.42%
@@ -223,6 +249,7 @@ Fynvita is your complete financial health platform. We combine AI-powered credit
 - 100% coverage on critical paths
 
 **Test Files Created**:
+
 - `src/lib/__tests__/aiml-service.test.ts`
 - `src/lib/__tests__/model-router.test.ts`
 - `src/lib/__tests__/ai-orchestrator.test.ts`
@@ -233,20 +260,24 @@ Fynvita is your complete financial health platform. We combine AI-powered credit
 - `src/app/pricing/__tests__/page.test.tsx`
 
 **Quality Metrics**:
+
 - TypeScript: Strict mode enabled, 0 errors
 - Linting: ESLint passing
 - Build: Production build successful
 - Performance: First Load JS < 110 kB
 
 **Challenges**:
+
 - Testing async AI responses
 - Mocking external services
 - Testing React Server Components
 
 ### Phase 7: E2E Testing & Production Hardening (Week 8)
+
 **Goal**: Add end-to-end testing and production validation
 
 **What Was Accomplished**:
+
 - Cypress E2E testing framework setup
 - 3 comprehensive user workflow tests
 - Full user journey testing (landing → dashboard → pricing)
@@ -256,12 +287,14 @@ Fynvita is your complete financial health platform. We combine AI-powered credit
 - Configured for CI/CD integration
 
 **Test Files Created**:
+
 - `cypress.config.ts` - Cypress configuration
 - `cypress/e2e/user-workflow.cy.ts` - User journey tests
 - `cypress/support/commands.ts` - Custom commands
 - `cypress/support/e2e.ts` - E2E setup
 
 **Test Coverage**:
+
 - Landing page navigation
 - Dashboard elements validation
 - Student loan agent page
@@ -270,6 +303,7 @@ Fynvita is your complete financial health platform. We combine AI-powered credit
 - UI element visibility checks
 
 **Infrastructure**:
+
 - Viewport configuration (1280x720)
 - Base URL setup for local development
 - Component testing support
@@ -277,6 +311,7 @@ Fynvita is your complete financial health platform. We combine AI-powered credit
 - wait-on for server readiness
 
 **Challenges**:
+
 - Server startup timing for CI/CD
 - Screenshot directory management
 - File upload simulation
@@ -289,23 +324,27 @@ Fynvita is your complete financial health platform. We combine AI-powered credit
 ### Technology Stack
 
 **Frontend**:
+
 - Next.js 15.5 (App Router)
 - React 19.0 (Server Components + Client Components)
 - TypeScript 5.7 (Strict mode)
 - Tailwind CSS (Utility-first styling)
 
 **Backend**:
+
 - Next.js API Routes (Serverless functions)
 - Node.js 22.13
 - Supabase PostgreSQL (Database)
 - Supabase Auth (Authentication)
 
 **AI/ML**:
+
 - AIML API (Gateway to 300+ models)
 - Custom model router (Intelligent selection)
 - Multi-model orchestration
 
 **External Services**:
+
 - Stripe (Payment processing)
 - Resend (Email delivery)
 - AWS S3 (File storage)
@@ -381,29 +420,34 @@ Fynvita is your complete financial health platform. We combine AI-powered credit
 ### Request Flow
 
 **1. User Authentication**:
+
 ```
 User → Login Page → Supabase Auth → JWT Token → Client Storage
 ```
 
 **2. AI Request**:
+
 ```
 User → AI Component → API Route → Auth Middleware → Input Validation
 → Model Router → AIML API → Output Validation → Response → User
 ```
 
 **3. Payment**:
+
 ```
 User → Pricing Page → Checkout → Stripe → Webhook → Database Update
 → Email Notification → User
 ```
 
 **4. Dispute Creation**:
+
 ```
 User → Dispute Form → API Route → Dispute Service → AI Generation
 → Database → Notification → User
 ```
 
 **5. Document Upload**:
+
 ```
 User → Upload Form → API Route → Validation → S3 Upload
 → Database Record → User
@@ -412,12 +456,13 @@ User → Upload Form → API Route → Validation → S3 Upload
 ### Data Models
 
 **User**:
+
 ```typescript
 interface User {
   id: string;
   email: string;
   name: string;
-  role: 'user' | 'premium' | 'admin' | 'super_admin';
+  role: "user" | "premium" | "admin" | "super_admin";
   subscriptionId?: string;
   subscriptionStatus?: string;
   createdAt: Date;
@@ -425,17 +470,18 @@ interface User {
 ```
 
 **Dispute**:
+
 ```typescript
 interface Dispute {
   id: string;
   userId: string;
-  bureau: 'experian' | 'equifax' | 'transunion';
-  status: 'draft' | 'sent' | 'under_review' | 'resolved' | 'rejected';
+  bureau: "experian" | "equifax" | "transunion";
+  status: "draft" | "sent" | "under_review" | "resolved" | "rejected";
   itemType: string;
   itemDescription: string;
   reason: string;
   letterContent: string;
-  outcome?: 'removed' | 'updated' | 'verified';
+  outcome?: "removed" | "updated" | "verified";
   createdAt: Date;
   sentAt?: Date;
   resolvedAt?: Date;
@@ -444,6 +490,7 @@ interface Dispute {
 ```
 
 **Document**:
+
 ```typescript
 interface Document {
   id: string;
@@ -462,6 +509,7 @@ interface Document {
 ```
 
 **Notification**:
+
 ```typescript
 interface Notification {
   id: string;
@@ -478,6 +526,7 @@ interface Notification {
 ### Security Architecture
 
 **Defense in Depth**:
+
 1. **Network Layer**: HTTPS, CORS, CSP headers
 2. **Authentication**: JWT tokens, session management
 3. **Authorization**: Role-based access control
@@ -488,6 +537,7 @@ interface Notification {
 8. **Monitoring Layer**: Audit logs, security events
 
 **Security Services**:
+
 - `input-validation.ts`: Validates and sanitizes all inputs
 - `output-validation.ts`: Validates and filters all outputs
 - `rate-limiting.ts`: Prevents abuse with quotas
@@ -598,11 +648,13 @@ src/
 ### Key Files Explained
 
 **Core AI Files**:
+
 - `aiml-service.ts`: Direct wrapper around AIML API. Handles chat, image generation, voice, embeddings.
 - `model-router.ts`: Intelligent model selection based on task type, cost, and quality requirements.
 - `ai-orchestrator.ts`: High-level workflows like dispute generation, credit analysis, multi-model consensus.
 
 **Security Files**:
+
 - `input-validation.ts`: Validates all inputs, detects prompt injection, PII, malicious content.
 - `output-validation.ts`: Validates all outputs, detects harmful content, PII leakage, hallucinations.
 - `rate-limiting.ts`: Prevents abuse with per-IP, per-user, per-API-key limits.
@@ -610,12 +662,14 @@ src/
 - `audit-logging.ts`: Logs all AI interactions and security events.
 
 **Business Logic Files**:
+
 - `dispute-service.ts`: Complete dispute lifecycle management with status tracking.
 - `document-service.ts`: S3 file storage with presigned URLs and validation.
 - `stripe-service.ts`: Stripe integration for subscriptions and payments.
 - `notification-service.ts`: Email and in-app notifications.
 
 **Prompt Files**:
+
 - `dispute-prompts.ts`: Advanced prompt templates with few-shot learning, chain-of-thought, self-consistency.
 
 ---
@@ -627,22 +681,25 @@ src/
 **Purpose**: Access to 300+ AI models
 
 **Configuration**:
+
 ```env
 AIML_API_KEY=your_key
 AIML_API_URL=https://api.aimlapi.com/v1
 ```
 
 **Usage**:
+
 ```typescript
-import { aimlService } from '@/lib/aiml-service';
+import { aimlService } from "@/lib/aiml-service";
 
 const response = await aimlService.chat({
-  model: 'claude-4-5-sonnet-20250514',
-  messages: [{ role: 'user', content: 'Hello' }],
+  model: "claude-4-5-sonnet-20250514",
+  messages: [{ role: "user", content: "Hello" }],
 });
 ```
 
 **Models Available**:
+
 - **Anthropic**: Claude 4.5 Sonnet, Haiku, Opus
 - **OpenAI**: GPT-5 Pro, GPT-4o, GPT-4o-mini
 - **DeepSeek**: DeepSeek R1, DeepSeek V3.1 Terminus
@@ -659,29 +716,32 @@ const response = await aimlService.chat({
 **Purpose**: Authentication and database
 
 **Configuration**:
+
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_key
 ```
 
 **Usage**:
+
 ```typescript
-import { supabase } from '@/lib/supabase';
+import { supabase } from "@/lib/supabase";
 
 // Authentication
 const { data, error } = await supabase.auth.signInWithPassword({
-  email: 'user@example.com',
-  password: 'password',
+  email: "user@example.com",
+  password: "password",
 });
 
 // Database
 const { data, error } = await supabase
-  .from('users')
-  .select('*')
-  .eq('id', userId);
+  .from("users")
+  .select("*")
+  .eq("id", userId);
 ```
 
 **Features Used**:
+
 - Authentication (email/password)
 - JWT tokens
 - PostgreSQL database
@@ -694,6 +754,7 @@ const { data, error } = await supabase
 **Purpose**: Payment processing
 
 **Configuration**:
+
 ```env
 STRIPE_SECRET_KEY=sk_test_xxx
 STRIPE_BASIC_PRICE_ID=price_xxx
@@ -703,30 +764,33 @@ STRIPE_WEBHOOK_SECRET=whsec_xxx
 ```
 
 **Usage**:
+
 ```typescript
-import { stripeService } from '@/lib/payment/stripe-service';
+import { stripeService } from "@/lib/payment/stripe-service";
 
 // Create subscription
 const subscription = await stripeService.createSubscription(
   customerId,
-  'price_xxx'
+  "price_xxx",
 );
 
 // Create checkout session
 const session = await stripeService.createCheckoutSession({
-  priceId: 'price_xxx',
-  customerId: 'cus_xxx',
-  successUrl: 'https://app.com/success',
-  cancelUrl: 'https://app.com/cancel',
+  priceId: "price_xxx",
+  customerId: "cus_xxx",
+  successUrl: "https://app.com/success",
+  cancelUrl: "https://app.com/cancel",
 });
 ```
 
 **Pricing Plans**:
+
 - Basic: $29/month (5 disputes, basic AI)
 - Premium: $79/month (unlimited disputes, advanced AI)
 - Enterprise: $199/month (multi-user, API access)
 
 **Webhook Events**:
+
 - `customer.subscription.created`
 - `customer.subscription.updated`
 - `customer.subscription.deleted`
@@ -741,22 +805,22 @@ const session = await stripeService.createCheckoutSession({
 **Purpose**: Email delivery
 
 **Configuration**:
+
 ```env
 RESEND_API_KEY=re_xxx
 EMAIL_FROM=CPFI (Credit Pro & Financial Intelligence) <noreply@CPFI-pro.com>
 ```
 
 **Usage**:
-```typescript
-import { notificationService } from '@/lib/notifications/notification-service';
 
-await notificationService.sendWelcomeEmail(
-  'user@example.com',
-  'John Doe'
-);
+```typescript
+import { notificationService } from "@/lib/notifications/notification-service";
+
+await notificationService.sendWelcomeEmail("user@example.com", "John Doe");
 ```
 
 **Email Templates**:
+
 - Welcome email
 - Dispute created
 - Dispute updated
@@ -775,6 +839,7 @@ await notificationService.sendWelcomeEmail(
 **Purpose**: File storage
 
 **Configuration**:
+
 ```env
 AWS_REGION=us-east-1
 AWS_ACCESS_KEY_ID=AKIA...
@@ -783,8 +848,9 @@ AWS_S3_BUCKET=CPFI-pro-documents
 ```
 
 **Usage**:
+
 ```typescript
-import { documentService } from '@/lib/documents/document-service';
+import { documentService } from "@/lib/documents/document-service";
 
 // Upload document
 const document = await documentService.uploadDocument(
@@ -792,7 +858,7 @@ const document = await documentService.uploadDocument(
   fileBuffer,
   fileName,
   mimeType,
-  'credit_report'
+  "credit_report",
 );
 
 // Get document (with auto-refreshed URL)
@@ -800,6 +866,7 @@ const document = await documentService.getDocument(documentId);
 ```
 
 **Features**:
+
 - Presigned URLs (7-day expiration)
 - Automatic URL refresh
 - File type validation
@@ -815,51 +882,52 @@ const document = await documentService.getDocument(documentId);
 ### Pattern 1: API Route Structure
 
 **Standard API Route**:
+
 ```typescript
-import { NextRequest, NextResponse } from 'next/server';
-import { authMiddleware } from '@/lib/security/auth-middleware';
-import { inputValidation } from '@/lib/security/input-validation';
-import { auditLogger } from '@/lib/security/audit-logging';
+import { NextRequest, NextResponse } from "next/server";
+import { authMiddleware } from "@/lib/security/auth-middleware";
+import { inputValidation } from "@/lib/security/input-validation";
+import { auditLogger } from "@/lib/security/audit-logging";
 
 export async function POST(request: NextRequest) {
   try {
     // 1. Authenticate
     const user = await authMiddleware.authenticate(request);
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    
+
     // 2. Authorize
-    if (!authMiddleware.hasPermission(user, 'feature_name')) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!authMiddleware.hasPermission(user, "feature_name")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
-    
+
     // 3. Parse and validate input
     const body = await request.json();
-    const validation = inputValidation.validateInput(body.input, 'task_type');
+    const validation = inputValidation.validateInput(body.input, "task_type");
     if (!validation.isValid) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
-    
+
     // 4. Business logic
     const result = await someService.doSomething(validation.sanitized);
-    
+
     // 5. Audit log
     await auditLogger.logAIInteraction({
       userId: user.id,
-      action: 'feature_used',
+      action: "feature_used",
       input: validation.sanitized,
       output: result,
       success: true,
     });
-    
+
     // 6. Return response
     return NextResponse.json({ result });
   } catch (error) {
-    console.error('Error:', error);
+    console.error("Error:", error);
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: "Internal server error" },
+      { status: 500 },
     );
   }
 }
@@ -868,15 +936,16 @@ export async function POST(request: NextRequest) {
 ### Pattern 2: Service Layer Structure
 
 **Standard Service**:
+
 ```typescript
 /**
  * Service Name
- * 
+ *
  * Description of what this service does
  */
 
 // Imports
-import { externalDependency } from 'external-package';
+import { externalDependency } from "external-package";
 
 // Types
 export interface ServiceInput {
@@ -892,18 +961,18 @@ export interface ServiceOutput {
 // Service Class
 class ServiceName {
   private internalState: Map<string, any> = new Map();
-  
+
   /**
    * Main method description
    */
   async mainMethod(input: ServiceInput): Promise<ServiceOutput> {
     // Implementation
     return {
-      result: 'success',
+      result: "success",
       metadata: {},
     };
   }
-  
+
   /**
    * Helper method description
    */
@@ -921,6 +990,7 @@ export default serviceName;
 ### Pattern 3: Component Structure
 
 **Standard Component**:
+
 ```typescript
 'use client';
 
@@ -936,28 +1006,28 @@ export default function ComponentName({ prop1, prop2 }: ComponentProps) {
   const [state, setState] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Effects
   useEffect(() => {
     // Effect logic
   }, []);
-  
+
   // Handlers
   const handleAction = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const response = await fetch('/api/endpoint', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ data: state }),
       });
-      
+
       if (!response.ok) {
         throw new Error('Request failed');
       }
-      
+
       const result = await response.json();
       // Handle success
     } catch (err) {
@@ -966,7 +1036,7 @@ export default function ComponentName({ prop1, prop2 }: ComponentProps) {
       setLoading(false);
     }
   };
-  
+
   // Render
   return (
     <div className="container">
@@ -984,6 +1054,7 @@ export default function ComponentName({ prop1, prop2 }: ComponentProps) {
 ### Pattern 4: Error Handling
 
 **Consistent Error Handling**:
+
 ```typescript
 try {
   // Operation
@@ -991,19 +1062,19 @@ try {
   return { success: true, data: result };
 } catch (error) {
   // Log error
-  console.error('Operation failed:', error);
-  
+  console.error("Operation failed:", error);
+
   // Audit log
   await auditLogger.logSecurityEvent({
-    type: 'error',
-    message: error instanceof Error ? error.message : 'Unknown error',
-    severity: 'high',
+    type: "error",
+    message: error instanceof Error ? error.message : "Unknown error",
+    severity: "high",
   });
-  
+
   // Return user-friendly error
   return {
     success: false,
-    error: 'Operation failed. Please try again.',
+    error: "Operation failed. Please try again.",
   };
 }
 ```
@@ -1011,10 +1082,11 @@ try {
 ### Pattern 5: AI Request Pattern
 
 **Standard AI Request**:
+
 ```typescript
-import { modelRouter } from '@/lib/model-router';
-import { inputValidation } from '@/lib/security/input-validation';
-import { outputValidation } from '@/lib/security/output-validation';
+import { modelRouter } from "@/lib/model-router";
+import { inputValidation } from "@/lib/security/input-validation";
+import { outputValidation } from "@/lib/security/output-validation";
 
 async function aiRequest(userInput: string, taskType: string) {
   // 1. Validate input
@@ -1022,29 +1094,29 @@ async function aiRequest(userInput: string, taskType: string) {
   if (!validation.isValid) {
     throw new Error(validation.error);
   }
-  
+
   // 2. Select model
   const model = modelRouter.selectModel(taskType, {
-    quality: 'high',
-    cost: 'medium',
+    quality: "high",
+    cost: "medium",
   });
-  
+
   // 3. Make AI request
   const response = await aimlService.chat({
     model: model.id,
-    messages: [{ role: 'user', content: validation.sanitized }],
+    messages: [{ role: "user", content: validation.sanitized }],
   });
-  
+
   // 4. Validate output
   const outputCheck = outputValidation.validateOutput(
     response.content,
-    taskType
+    taskType,
   );
-  
+
   if (!outputCheck.isValid) {
-    throw new Error('AI response failed validation');
+    throw new Error("AI response failed validation");
   }
-  
+
   // 5. Return sanitized output
   return outputCheck.sanitized;
 }
@@ -1057,20 +1129,21 @@ async function aiRequest(userInput: string, taskType: string) {
 ### Test Structure
 
 **Unit Tests**:
-```typescript
-import { describe, it, expect } from '@jest/globals';
-import { serviceName } from '../service-name';
 
-describe('ServiceName', () => {
-  describe('mainMethod', () => {
-    it('should return expected output for valid input', () => {
-      const input = { field1: 'test', field2: 123 };
+```typescript
+import { describe, it, expect } from "@jest/globals";
+import { serviceName } from "../service-name";
+
+describe("ServiceName", () => {
+  describe("mainMethod", () => {
+    it("should return expected output for valid input", () => {
+      const input = { field1: "test", field2: 123 };
       const result = serviceName.mainMethod(input);
-      expect(result.result).toBe('success');
+      expect(result.result).toBe("success");
     });
-    
-    it('should throw error for invalid input', () => {
-      const input = { field1: '', field2: -1 };
+
+    it("should throw error for invalid input", () => {
+      const input = { field1: "", field2: -1 };
       expect(() => serviceName.mainMethod(input)).toThrow();
     });
   });
@@ -1078,6 +1151,7 @@ describe('ServiceName', () => {
 ```
 
 **Component Tests**:
+
 ```typescript
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import ComponentName from '../ComponentName';
@@ -1087,13 +1161,13 @@ describe('ComponentName', () => {
     render(<ComponentName prop1="test" />);
     expect(screen.getByText('Expected Text')).toBeInTheDocument();
   });
-  
+
   it('handles user interaction', async () => {
     render(<ComponentName prop1="test" />);
-    
+
     const button = screen.getByRole('button');
     fireEvent.click(button);
-    
+
     await waitFor(() => {
       expect(screen.getByText('Success')).toBeInTheDocument();
     });
@@ -1130,6 +1204,7 @@ npm test -- src/lib/__tests__/aiml-service.test.ts
 **Purpose**: Validate complete user workflows from browser perspective
 
 **Setup**:
+
 ```bash
 # Install Cypress
 npm install --save-dev cypress wait-on
@@ -1142,6 +1217,7 @@ npm run cypress:run
 ```
 
 **Configuration** (`cypress.config.ts`):
+
 ```typescript
 export default defineConfig({
   e2e: {
@@ -1159,32 +1235,35 @@ export default defineConfig({
 ```
 
 **Test Structure**:
+
 ```typescript
-describe('User Workflow', () => {
+describe("User Workflow", () => {
   beforeEach(() => {
-    cy.visit('http://localhost:3000');
+    cy.visit("http://localhost:3000");
   });
 
-  it('should complete the full user journey', () => {
+  it("should complete the full user journey", () => {
     // Test landing page
-    cy.contains('Agentic Credit Repair').should('be.visible');
+    cy.contains("Agentic Credit Repair").should("be.visible");
 
     // Navigate to dashboard
-    cy.contains('Dashboard').click();
-    cy.url().should('include', '/dashboard');
+    cy.contains("Dashboard").click();
+    cy.url().should("include", "/dashboard");
 
     // Verify dashboard elements
-    cy.contains('Credit Score Overview').should('be.visible');
+    cy.contains("Credit Score Overview").should("be.visible");
   });
 });
 ```
 
 **Test Workflows**:
+
 1. **Full User Journey**: Landing → Dashboard → Student Loans → Pricing
 2. **Document Upload**: Student loan document upload workflow
 3. **Pricing Display**: All tiers and features validation
 
 **Best Practices**:
+
 - Use `cy.contains()` for text-based selections
 - Add `data-testid` attributes for reliable selection
 - Use `cy.wait()` sparingly, prefer `should()` assertions
@@ -1192,12 +1271,14 @@ describe('User Workflow', () => {
 - Test critical paths only
 
 **Running in CI/CD**:
+
 ```bash
 # Start dev server and run tests
 npm run dev & npm run cypress:run
 ```
 
 **Debugging Failed Tests**:
+
 - Check `cypress/screenshots/` for failure screenshots
 - Check `cypress/videos/` for test recordings
 - Use Cypress Test Runner for interactive debugging
@@ -1210,6 +1291,7 @@ npm run dev & npm run cypress:run
 ### Task 0: Add a New E2E Test
 
 **Steps**:
+
 1. Create test file in `cypress/e2e/`
 2. Define test scenarios
 3. Write test assertions
@@ -1218,35 +1300,37 @@ npm run dev & npm run cypress:run
 6. Commit test file
 
 **Template**:
+
 ```typescript
-describe('Feature Name', () => {
+describe("Feature Name", () => {
   beforeEach(() => {
-    cy.visit('/feature-page');
+    cy.visit("/feature-page");
   });
 
-  it('should perform expected action', () => {
+  it("should perform expected action", () => {
     // Arrange
-    cy.contains('Button Text').should('be.visible');
+    cy.contains("Button Text").should("be.visible");
 
     // Act
-    cy.contains('Button Text').click();
+    cy.contains("Button Text").click();
     cy.wait(1000);
 
     // Assert
-    cy.url().should('include', '/expected-path');
-    cy.contains('Expected Result').should('be.visible');
+    cy.url().should("include", "/expected-path");
+    cy.contains("Expected Result").should("be.visible");
   });
 
-  it('should handle edge case', () => {
+  it("should handle edge case", () => {
     // Test edge case
-    cy.get('[data-testid="input-field"]').type('invalid-input');
-    cy.contains('Submit').click();
-    cy.contains('Error message').should('be.visible');
+    cy.get('[data-testid="input-field"]').type("invalid-input");
+    cy.contains("Submit").click();
+    cy.contains("Error message").should("be.visible");
   });
 });
 ```
 
 **Running Tests**:
+
 ```bash
 # Open interactive test runner
 npm run cypress:open
@@ -1261,6 +1345,7 @@ npx cypress run --spec "cypress/e2e/feature-name.cy.ts"
 ### Task 1: Add a New AI Feature
 
 **Steps**:
+
 1. Create prompt template in `src/lib/prompts/`
 2. Add method to `ai-orchestrator.ts`
 3. Create API route in `src/app/api/`
@@ -1270,6 +1355,7 @@ npx cypress run --spec "cypress/e2e/feature-name.cy.ts"
 7. Update documentation
 
 **Example**:
+
 ```typescript
 // 1. Prompt template
 export const newFeaturePrompt = {
@@ -1303,6 +1389,7 @@ export async function POST(request: NextRequest) {
 ### Task 2: Add a New API Route
 
 **Steps**:
+
 1. Create route file in `src/app/api/`
 2. Implement authentication
 3. Add input validation
@@ -1311,21 +1398,22 @@ export async function POST(request: NextRequest) {
 6. Write tests
 
 **Template**:
+
 ```typescript
-import { NextRequest, NextResponse } from 'next/server';
-import { authMiddleware } from '@/lib/security/auth-middleware';
+import { NextRequest, NextResponse } from "next/server";
+import { authMiddleware } from "@/lib/security/auth-middleware";
 
 export async function POST(request: NextRequest) {
   // Auth
   const user = await authMiddleware.authenticate(request);
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  
+
   // Logic
   const body = await request.json();
   const result = await someService.doSomething(body);
-  
+
   return NextResponse.json({ result });
 }
 ```
@@ -1333,6 +1421,7 @@ export async function POST(request: NextRequest) {
 ### Task 3: Add a New Component
 
 **Steps**:
+
 1. Create component file in `src/components/`
 2. Define props interface
 3. Implement UI
@@ -1341,6 +1430,7 @@ export async function POST(request: NextRequest) {
 6. Write tests
 
 **Template**:
+
 ```typescript
 'use client';
 
@@ -1352,7 +1442,7 @@ interface NewComponentProps {
 
 export default function NewComponent({ prop1 }: NewComponentProps) {
   const [loading, setLoading] = useState(false);
-  
+
   return (
     <div>
       {loading ? <div>Loading...</div> : <div>Content</div>}
@@ -1364,6 +1454,7 @@ export default function NewComponent({ prop1 }: NewComponentProps) {
 ### Task 4: Fix a Bug
 
 **Steps**:
+
 1. Reproduce the bug
 2. Write a failing test
 3. Fix the bug
@@ -1372,6 +1463,7 @@ export default function NewComponent({ prop1 }: NewComponentProps) {
 6. Commit with descriptive message
 
 **Example**:
+
 ```typescript
 // 1. Write failing test
 it('should handle edge case', () => {
@@ -1395,6 +1487,7 @@ git commit -m "fix: handle edge case in buggyFunction"
 ### Task 5: Add Environment Variable
 
 **Steps**:
+
 1. Add to `.env.example`
 2. Add to `.env.local`
 3. Update TypeScript types (if needed)
@@ -1402,6 +1495,7 @@ git commit -m "fix: handle edge case in buggyFunction"
 5. Use in code
 
 **Example**:
+
 ```bash
 # .env.example
 NEW_SERVICE_API_KEY=your_key_here
@@ -1414,7 +1508,7 @@ NEW_SERVICE_API_KEY=actual_key_value
 // Usage
 const apiKey = process.env.NEW_SERVICE_API_KEY;
 if (!apiKey) {
-  throw new Error('NEW_SERVICE_API_KEY is required');
+  throw new Error("NEW_SERVICE_API_KEY is required");
 }
 ```
 
@@ -1427,6 +1521,7 @@ if (!apiKey) {
 **Issue 1: Build Fails with TypeScript Errors**
 
 **Solution**:
+
 ```bash
 # Check for errors
 npm run type-check
@@ -1440,6 +1535,7 @@ npm run type-check
 **Issue 2: Tests Failing**
 
 **Solution**:
+
 ```bash
 # Run tests with verbose output
 npm test -- --verbose
@@ -1453,6 +1549,7 @@ npm test -- --verbose
 **Issue 3: API Route Returns 500**
 
 **Solution**:
+
 1. Check server logs
 2. Verify environment variables
 3. Test external service connections
@@ -1462,6 +1559,7 @@ npm test -- --verbose
 **Issue 4: Stripe Webhook Not Working**
 
 **Solution**:
+
 1. Verify webhook secret
 2. Check endpoint URL
 3. Test with Stripe CLI:
@@ -1473,6 +1571,7 @@ npm test -- --verbose
 **Issue 5: S3 Upload Fails**
 
 **Solution**:
+
 1. Check AWS credentials
 2. Verify bucket permissions
 3. Check file size limits
@@ -1550,6 +1649,7 @@ npm test -- --verbose
 ### What is a Git Worktree?
 
 A git worktree allows you to have multiple working directories for the same repository. This is useful for:
+
 - Working on multiple features simultaneously
 - Code review without switching branches
 - Running tests while developing
@@ -1565,11 +1665,13 @@ A git worktree allows you to have multiple working directories for the same repo
 ### Worktree Commands
 
 **List Worktrees**:
+
 ```bash
 git worktree list
 ```
 
 **Create New Worktree**:
+
 ```bash
 # From main repository
 cd C:\Githhub\CPFI-Pro-app
@@ -1577,6 +1679,7 @@ git worktree add ../worktrees/feature-name -b feature-name
 ```
 
 **Remove Worktree**:
+
 ```bash
 # From main repository
 git worktree remove ../worktrees/feature-name
@@ -1587,6 +1690,7 @@ git worktree prune
 ```
 
 **Move Between Worktrees**:
+
 ```bash
 # Switch to main repository
 cd C:\Githhub\CPFI-Pro-app
@@ -1618,6 +1722,7 @@ cd C:\Users\khono\.claude-worktrees\CPFI-Pro-app\vigilant-albattani
 ### Syncing Changes
 
 **Pull Latest Changes**:
+
 ```bash
 # In worktree
 git fetch origin
@@ -1628,6 +1733,7 @@ git rebase main
 ```
 
 **Push Changes**:
+
 ```bash
 # In worktree
 git add .
@@ -1636,6 +1742,7 @@ git push origin vigilant-albattani
 ```
 
 **Merge to Main**:
+
 ```bash
 # Option 1: Via Pull Request (recommended)
 # Create PR on GitHub and merge there
@@ -1650,18 +1757,21 @@ git push origin main
 ### Troubleshooting Worktrees
 
 **Issue 1: Worktree Not Showing**:
+
 ```bash
 git worktree prune
 git worktree list
 ```
 
 **Issue 2: Cannot Remove Worktree**:
+
 ```bash
 # Force remove
 git worktree remove --force path/to/worktree
 ```
 
 **Issue 3: Locked Worktree**:
+
 ```bash
 git worktree unlock path/to/worktree
 ```
@@ -1708,6 +1818,7 @@ Before deploying to production:
 ### Deployment to Vercel
 
 **Initial Setup**:
+
 ```bash
 # Install Vercel CLI
 npm i -g vercel
@@ -1720,18 +1831,21 @@ vercel link
 ```
 
 **Deploy to Preview**:
+
 ```bash
 # Deploy to preview URL
 vercel
 ```
 
 **Deploy to Production**:
+
 ```bash
 # Deploy to production
 vercel --prod
 ```
 
 **Environment Variables**:
+
 1. Go to Vercel Dashboard
 2. Select Project → Settings → Environment Variables
 3. Add all variables from `.env.local`:
@@ -1746,6 +1860,7 @@ vercel --prod
    - `AWS_S3_BUCKET`
 
 **Automatic Deployments**:
+
 - Vercel auto-deploys from `main` branch
 - Preview deployments for all PRs
 - Production deployment on merge to `main`
@@ -1753,6 +1868,7 @@ vercel --prod
 ### Monitoring Production
 
 **Key Metrics to Monitor**:
+
 - Response times (< 200ms)
 - Error rates (< 1%)
 - API usage
@@ -1761,6 +1877,7 @@ vercel --prod
 - Lighthouse scores
 
 **Vercel Analytics**:
+
 - Web Vitals (LCP, FID, CLS)
 - Serverless function execution
 - Edge network performance
@@ -1773,6 +1890,7 @@ vercel --prod
 ### VS Code Setup
 
 **Recommended Extensions**:
+
 - **ESLint**: Real-time linting
 - **Prettier**: Code formatting
 - **TypeScript**: Language support
@@ -1782,6 +1900,7 @@ vercel --prod
 - **Error Lens**: Inline error display
 
 **Settings** (`.vscode/settings.json`):
+
 ```json
 {
   "editor.formatOnSave": true,
@@ -1797,6 +1916,7 @@ vercel --prod
 ```
 
 **Launch Configuration** (`.vscode/launch.json`):
+
 ```json
 {
   "version": "0.2.0",
@@ -1820,6 +1940,7 @@ vercel --prod
 ### Chrome DevTools
 
 **Useful Panels**:
+
 - **Network**: Monitor API requests
 - **Console**: View logs and errors
 - **Application**: Check localStorage, cookies
@@ -1827,12 +1948,14 @@ vercel --prod
 - **Lighthouse**: Run audits
 
 **React DevTools**:
+
 ```bash
 # Install extension
 # https://chrome.google.com/webstore/detail/react-developer-tools
 ```
 
 **Features**:
+
 - Component tree inspection
 - Props and state viewing
 - Performance profiling
@@ -1841,22 +1964,24 @@ vercel --prod
 ### Debugging Next.js
 
 **Server-Side Debugging**:
+
 ```typescript
 // Add debugger statement
 export async function GET(request: Request) {
   debugger; // Will pause in VS Code
-  console.log('Request:', request);
-  return Response.json({ data: 'test' });
+  console.log("Request:", request);
+  return Response.json({ data: "test" });
 }
 ```
 
 **Client-Side Debugging**:
+
 ```typescript
-'use client';
+"use client";
 
 export default function Component() {
   // Add console logs
-  console.log('Component rendered');
+  console.log("Component rendered");
 
   // Use debugger
   const handleClick = () => {
@@ -1867,6 +1992,7 @@ export default function Component() {
 ```
 
 **Network Debugging**:
+
 ```bash
 # View all API calls
 # Open Chrome DevTools → Network tab
@@ -1879,15 +2005,17 @@ export default function Component() {
 ### Environment Variables Debugging
 
 **Check Variables**:
+
 ```typescript
 // In API route or server component
-console.log('AIML_API_KEY exists:', !!process.env.AIML_API_KEY);
+console.log("AIML_API_KEY exists:", !!process.env.AIML_API_KEY);
 
 // In client component
-console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+console.log("Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
 ```
 
 **Common Issues**:
+
 - Missing `.env.local` file
 - Incorrect variable names
 - Forgot `NEXT_PUBLIC_` prefix for client vars
@@ -1896,6 +2024,7 @@ console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
 ### Performance Profiling
 
 **React Profiler**:
+
 ```typescript
 import { Profiler } from 'react';
 
@@ -1913,6 +2042,7 @@ function onRenderCallback(
 ```
 
 **Next.js Build Analysis**:
+
 ```bash
 # Analyze bundle size
 npm run build
@@ -1924,6 +2054,7 @@ npm run build
 ```
 
 **Lighthouse Audit**:
+
 ```bash
 # Run in Chrome DevTools
 # DevTools → Lighthouse → Generate report
@@ -1938,35 +2069,34 @@ npm run build
 ### Common Debugging Patterns
 
 **API Route Debugging**:
+
 ```typescript
 export async function POST(request: NextRequest) {
   try {
-    console.log('=== API Route Debug ===');
-    console.log('Method:', request.method);
-    console.log('Headers:', Object.fromEntries(request.headers));
+    console.log("=== API Route Debug ===");
+    console.log("Method:", request.method);
+    console.log("Headers:", Object.fromEntries(request.headers));
 
     const body = await request.json();
-    console.log('Body:', body);
+    console.log("Body:", body);
 
     const result = await someService(body);
-    console.log('Result:', result);
+    console.log("Result:", result);
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error('Error details:', {
+    console.error("Error details:", {
       message: error.message,
       stack: error.stack,
       name: error.name,
     });
-    return NextResponse.json(
-      { error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 ```
 
 **Component State Debugging**:
+
 ```typescript
 'use client';
 
@@ -1990,24 +2120,25 @@ export default function Component() {
 ```
 
 **Async Operation Debugging**:
+
 ```typescript
 async function fetchData() {
-  console.time('fetchData');
+  console.time("fetchData");
 
   try {
-    console.log('Starting fetch...');
-    const response = await fetch('/api/data');
-    console.log('Response status:', response.status);
+    console.log("Starting fetch...");
+    const response = await fetch("/api/data");
+    console.log("Response status:", response.status);
 
     const data = await response.json();
-    console.log('Data received:', data);
+    console.log("Data received:", data);
 
     return data;
   } catch (error) {
-    console.error('Fetch failed:', error);
+    console.error("Fetch failed:", error);
     throw error;
   } finally {
-    console.timeEnd('fetchData');
+    console.timeEnd("fetchData");
   }
 }
 ```
@@ -2015,27 +2146,30 @@ async function fetchData() {
 ### Log Levels
 
 **Development**:
+
 ```typescript
 // Use all log levels
-console.log('Info:', data);
-console.warn('Warning:', issue);
-console.error('Error:', error);
-console.debug('Debug:', details);
+console.log("Info:", data);
+console.warn("Warning:", issue);
+console.error("Error:", error);
+console.debug("Debug:", details);
 ```
 
 **Production**:
+
 ```typescript
 // Only errors and important info
-if (process.env.NODE_ENV === 'production') {
-  console.error('Critical error:', error);
+if (process.env.NODE_ENV === "production") {
+  console.error("Critical error:", error);
 } else {
-  console.log('Debug info:', data);
+  console.log("Debug info:", data);
 }
 ```
 
 ### Testing in Development
 
 **Quick Test Commands**:
+
 ```bash
 # Run tests for specific file
 npm test -- src/lib/aiml-service
@@ -2065,6 +2199,7 @@ npm run type-check
 ### Commit Messages
 
 Follow conventional commits:
+
 - `feat:` New feature
 - `fix:` Bug fix
 - `docs:` Documentation
@@ -2093,19 +2228,23 @@ Follow conventional commits:
 ## 🎓 Learning Resources
 
 ### Next.js
+
 - [Next.js Documentation](https://nextjs.org/docs)
 - [App Router Guide](https://nextjs.org/docs/app)
 - [API Routes](https://nextjs.org/docs/app/building-your-application/routing/route-handlers)
 
 ### TypeScript
+
 - [TypeScript Handbook](https://www.typescriptlang.org/docs/handbook/intro.html)
 - [TypeScript Deep Dive](https://basarat.gitbook.io/typescript/)
 
 ### Testing
+
 - [Jest Documentation](https://jestjs.io/docs/getting-started)
 - [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/)
 
 ### AI/ML
+
 - [AIML API Documentation](https://aimlapi.com/docs)
 - [Prompt Engineering Guide](https://www.promptingguide.ai/)
 
@@ -2116,6 +2255,7 @@ Follow conventional commits:
 ### When Working with Me (Claude)
 
 **Do**:
+
 - ✅ Be specific about what you want to build
 - ✅ Share error messages in full
 - ✅ Ask for explanations of complex code
@@ -2123,6 +2263,7 @@ Follow conventional commits:
 - ✅ Point out if I make mistakes
 
 **Don't**:
+
 - ❌ Assume I remember previous conversations
 - ❌ Skip error messages
 - ❌ Accept code without understanding it
@@ -2218,4 +2359,3 @@ You now have complete context about CPFI (Credit Pro & Financial Intelligence)! 
 
 - **v1.1.0** (Nov 29, 2025): Added E2E testing, Git worktree workflow, CI/CD deployment guide
 - **v1.0.0** (Oct 27, 2025): Initial comprehensive documentation
-

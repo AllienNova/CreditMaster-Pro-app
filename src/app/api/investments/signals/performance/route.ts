@@ -5,11 +5,11 @@
  * Endpoint for getting trading signal performance metrics
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { SignalGenerator } from '@/lib/investments/signal-generator';
-import { getUser } from '@/lib/auth/session';
-import { rateLimit } from '@/lib/rate-limit';
-import { z } from 'zod';
+import { NextRequest, NextResponse } from "next/server";
+import { SignalGenerator } from "@/lib/investments/signal-generator";
+import { getUser } from "@/lib/auth/session";
+import { rateLimit } from "@/lib/rate-limit";
+import { z } from "zod";
 
 // Initialize signal generator
 const signalGenerator = new SignalGenerator();
@@ -21,7 +21,7 @@ const limiter = rateLimit({
 });
 
 // Validation schema
-const PeriodSchema = z.enum(['week', 'month', 'quarter', 'year', 'all']);
+const PeriodSchema = z.enum(["week", "month", "quarter", "year", "all"]);
 
 /**
  * GET /api/investments/signals/performance
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
   try {
     const user = await getUser();
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Rate limiting
@@ -42,18 +42,21 @@ export async function GET(request: NextRequest) {
       await limiter.check(100, user.id); // 100 requests per hour
     } catch {
       return NextResponse.json(
-        { error: 'Rate limit exceeded. Maximum 100 requests per hour.' },
-        { status: 429 }
+        { error: "Rate limit exceeded. Maximum 100 requests per hour." },
+        { status: 429 },
       );
     }
 
     const searchParams = request.nextUrl.searchParams;
-    const periodParam = searchParams.get('period') || 'month';
+    const periodParam = searchParams.get("period") || "month";
 
     // Validate period with Zod
     const period = PeriodSchema.parse(periodParam);
 
-    const performance = await signalGenerator.getSignalPerformance(user.id, period);
+    const performance = await signalGenerator.getSignalPerformance(
+      user.id,
+      period,
+    );
 
     return NextResponse.json({
       success: true,
@@ -64,22 +67,21 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching signal performance:', error);
+    console.error("Error fetching signal performance:", error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         {
-          error: 'Invalid period parameter',
-          details: 'Period must be one of: week, month, quarter, year, all',
+          error: "Invalid period parameter",
+          details: "Period must be one of: week, month, quarter, year, all",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     return NextResponse.json(
-      { error: 'Failed to fetch signal performance' },
-      { status: 500 }
+      { error: "Failed to fetch signal performance" },
+      { status: 500 },
     );
   }
 }
-

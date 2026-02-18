@@ -11,7 +11,7 @@ import {
   beforeAll,
   afterAll,
   beforeEach,
-} from '@jest/globals';
+} from "@jest/globals";
 
 // ============================================================================
 // MOCKS
@@ -55,11 +55,11 @@ const createChainableMock = () => {
 
 const mockSupabaseClient = createChainableMock();
 
-jest.mock('@/lib/supabase/client', () => ({
+jest.mock("@/lib/supabase/client", () => ({
   getSupabase: () => mockSupabaseClient,
 }));
 
-jest.mock('@/lib/supabase/server', () => ({
+jest.mock("@/lib/supabase/server", () => ({
   supabaseAdmin: mockSupabaseClient,
 }));
 
@@ -67,37 +67,37 @@ jest.mock('@/lib/supabase/server', () => ({
 // TEST DATA
 // ============================================================================
 
-const testUserId = 'test-user-123';
+const testUserId = "test-user-123";
 
 const mockUser = {
   id: testUserId,
-  email: 'test@example.com',
+  email: "test@example.com",
   created_at: new Date().toISOString(),
 };
 
 const mockCreditScore = {
-  id: 'score-123',
+  id: "score-123",
   user_id: testUserId,
   score: 720,
-  provider: 'equifax',
+  provider: "equifax",
   factors: {
-    payment_history: 'good',
+    payment_history: "good",
     credit_utilization: 25,
     credit_age: 7,
-    credit_mix: 'diverse',
+    credit_mix: "diverse",
     new_credit: 1,
   },
   created_at: new Date().toISOString(),
 };
 
 const mockBudget = {
-  id: 'budget-123',
+  id: "budget-123",
   user_id: testUserId,
-  name: 'Monthly Budget',
-  category: 'groceries',
+  name: "Monthly Budget",
+  category: "groceries",
   budgeted_amount: 500,
   spent_amount: 350,
-  period: 'monthly',
+  period: "monthly",
   period_start: new Date(2024, 0, 1).toISOString(),
   period_end: new Date(2024, 0, 31).toISOString(),
   is_active: true,
@@ -106,14 +106,14 @@ const mockBudget = {
 };
 
 const mockSubscription = {
-  id: 'sub-123',
+  id: "sub-123",
   user_id: testUserId,
-  name: 'Netflix',
-  merchant_name: 'Netflix',
+  name: "Netflix",
+  merchant_name: "Netflix",
   amount: 15.99,
-  frequency: 'monthly',
-  category: 'streaming',
-  status: 'active',
+  frequency: "monthly",
+  category: "streaming",
+  status: "active",
   next_billing_date: new Date(2024, 1, 15).toISOString(),
   annual_cost: 191.88,
   created_at: new Date().toISOString(),
@@ -121,14 +121,14 @@ const mockSubscription = {
 };
 
 const mockTransaction = {
-  id: 'tx-123',
+  id: "tx-123",
   user_id: testUserId,
-  account_id: 'account-123',
+  account_id: "account-123",
   amount: -45.99,
-  merchant_name: 'Grocery Store',
-  category: 'groceries',
+  merchant_name: "Grocery Store",
+  category: "groceries",
   date: new Date().toISOString(),
-  description: 'Weekly groceries',
+  description: "Weekly groceries",
   created_at: new Date().toISOString(),
 };
 
@@ -136,7 +136,7 @@ const mockTransaction = {
 // API INTEGRATION TESTS
 // ============================================================================
 
-describe('API Integration Tests', () => {
+describe("API Integration Tests", () => {
   beforeAll(() => {
     // Setup
   });
@@ -179,23 +179,23 @@ describe('API Integration Tests', () => {
   // AUTHENTICATION API TESTS
   // ==========================================================================
 
-  describe('Authentication API', () => {
-    describe('POST /api/auth/login', () => {
-      it('should authenticate user with valid credentials', async () => {
+  describe("Authentication API", () => {
+    describe("POST /api/auth/login", () => {
+      it("should authenticate user with valid credentials", async () => {
         mockSupabaseClient.auth.signInWithPassword.mockResolvedValue({
           data: {
             user: mockUser,
             session: {
-              access_token: 'test-token',
-              refresh_token: 'refresh-token',
+              access_token: "test-token",
+              refresh_token: "refresh-token",
             },
           },
           error: null,
         });
 
         const result = await mockSupabaseClient.auth.signInWithPassword({
-          email: 'test@example.com',
-          password: 'password123',
+          email: "test@example.com",
+          password: "password123",
         });
 
         expect(result.error).toBeNull();
@@ -203,15 +203,15 @@ describe('API Integration Tests', () => {
         expect(result.data.session.access_token).toBeDefined();
       });
 
-      it('should reject invalid credentials', async () => {
+      it("should reject invalid credentials", async () => {
         mockSupabaseClient.auth.signInWithPassword.mockResolvedValue({
           data: { user: null, session: null },
-          error: { message: 'Invalid login credentials' },
+          error: { message: "Invalid login credentials" },
         });
 
         const result = await mockSupabaseClient.auth.signInWithPassword({
-          email: 'test@example.com',
-          password: 'wrongpassword',
+          email: "test@example.com",
+          password: "wrongpassword",
         });
 
         expect(result.error).toBeDefined();
@@ -219,8 +219,8 @@ describe('API Integration Tests', () => {
       });
     });
 
-    describe('GET /api/auth/user', () => {
-      it('should return authenticated user', async () => {
+    describe("GET /api/auth/user", () => {
+      it("should return authenticated user", async () => {
         mockSupabaseClient.auth.getUser.mockResolvedValue({
           data: { user: mockUser },
           error: null,
@@ -229,13 +229,13 @@ describe('API Integration Tests', () => {
         const result = await mockSupabaseClient.auth.getUser();
 
         expect(result.data.user).toBeDefined();
-        expect(result.data.user.email).toBe('test@example.com');
+        expect(result.data.user.email).toBe("test@example.com");
       });
 
-      it('should return error for unauthenticated request', async () => {
+      it("should return error for unauthenticated request", async () => {
         mockSupabaseClient.auth.getUser.mockResolvedValue({
           data: { user: null },
-          error: { message: 'Not authenticated' },
+          error: { message: "Not authenticated" },
         });
 
         const result = await mockSupabaseClient.auth.getUser();
@@ -245,8 +245,8 @@ describe('API Integration Tests', () => {
       });
     });
 
-    describe('POST /api/auth/logout', () => {
-      it('should sign out user successfully', async () => {
+    describe("POST /api/auth/logout", () => {
+      it("should sign out user successfully", async () => {
         mockSupabaseClient.auth.signOut.mockResolvedValue({ error: null });
 
         const result = await mockSupabaseClient.auth.signOut();
@@ -260,19 +260,19 @@ describe('API Integration Tests', () => {
   // CREDIT API TESTS
   // ==========================================================================
 
-  describe('Credit API', () => {
-    describe('GET /api/credit/score', () => {
-      it('should return user credit score', async () => {
+  describe("Credit API", () => {
+    describe("GET /api/credit/score", () => {
+      it("should return user credit score", async () => {
         mockSupabaseClient.single.mockResolvedValue({
           data: mockCreditScore,
           error: null,
         });
 
         const result = await mockSupabaseClient
-          .from('credit_scores')
-          .select('*')
-          .eq('user_id', testUserId)
-          .order('created_at', { ascending: false })
+          .from("credit_scores")
+          .select("*")
+          .eq("user_id", testUserId)
+          .order("created_at", { ascending: false })
           .limit(1)
           .single();
 
@@ -281,7 +281,7 @@ describe('API Integration Tests', () => {
         expect(result.data.factors).toBeDefined();
       });
 
-      it('should return score history', async () => {
+      it("should return score history", async () => {
         const scoreHistory = [
           {
             ...mockCreditScore,
@@ -306,26 +306,26 @@ describe('API Integration Tests', () => {
         });
 
         const result = await mockSupabaseClient
-          .from('credit_scores')
-          .select('*')
-          .eq('user_id', testUserId)
-          .order('created_at', { ascending: false });
+          .from("credit_scores")
+          .select("*")
+          .eq("user_id", testUserId)
+          .order("created_at", { ascending: false });
 
         expect(result.data).toHaveLength(3);
         expect(result.data[0].score).toBe(720);
       });
     });
 
-    describe('POST /api/credit/disputes', () => {
-      it('should create a dispute request', async () => {
+    describe("POST /api/credit/disputes", () => {
+      it("should create a dispute request", async () => {
         const disputeRequest = {
-          id: 'dispute-123',
+          id: "dispute-123",
           user_id: testUserId,
-          bureau: 'equifax',
-          item_type: 'late_payment',
-          account_name: 'Credit Card',
-          reason: 'inaccurate_payment_history',
-          status: 'pending',
+          bureau: "equifax",
+          item_type: "late_payment",
+          account_name: "Credit Card",
+          reason: "inaccurate_payment_history",
+          status: "pending",
           created_at: new Date().toISOString(),
         };
 
@@ -335,31 +335,31 @@ describe('API Integration Tests', () => {
         });
 
         const result = await mockSupabaseClient
-          .from('credit_disputes')
+          .from("credit_disputes")
           .insert(disputeRequest)
           .select()
           .single();
 
         expect(result.data).toBeDefined();
-        expect(result.data.status).toBe('pending');
+        expect(result.data.status).toBe("pending");
       });
     });
 
-    describe('GET /api/credit/simulator', () => {
-      it('should return score simulation results', async () => {
+    describe("GET /api/credit/simulator", () => {
+      it("should return score simulation results", async () => {
         const simulationResult = {
           currentScore: 720,
           projectedScore: 745,
           scoreChange: 25,
           actions: [
-            { type: 'pay_down_debt', amount: 5000, impact: 15 },
-            { type: 'increase_credit_limit', amount: 2000, impact: 10 },
+            { type: "pay_down_debt", amount: 5000, impact: 15 },
+            { type: "increase_credit_limit", amount: 2000, impact: 10 },
           ],
           confidence: 85,
         };
 
         expect(simulationResult.projectedScore).toBeGreaterThan(
-          simulationResult.currentScore
+          simulationResult.currentScore,
         );
         expect(simulationResult.confidence).toBeGreaterThan(0);
       });
@@ -370,66 +370,66 @@ describe('API Integration Tests', () => {
   // BUDGET API TESTS
   // ==========================================================================
 
-  describe('Budget API', () => {
-    describe('GET /api/budgets', () => {
-      it('should return user budgets', async () => {
+  describe("Budget API", () => {
+    describe("GET /api/budgets", () => {
+      it("should return user budgets", async () => {
         mockSupabaseClient.order.mockResolvedValue({
           data: [mockBudget],
           error: null,
         });
 
         const result = await mockSupabaseClient
-          .from('budgets')
-          .select('*')
-          .eq('user_id', testUserId)
-          .order('created_at', { ascending: false });
+          .from("budgets")
+          .select("*")
+          .eq("user_id", testUserId)
+          .order("created_at", { ascending: false });
 
         expect(result.data).toHaveLength(1);
-        expect(result.data[0].name).toBe('Monthly Budget');
+        expect(result.data[0].name).toBe("Monthly Budget");
       });
 
-      it('should filter by category', async () => {
+      it("should filter by category", async () => {
         mockSupabaseClient.eq
           .mockReturnValueOnce(mockSupabaseClient)
           .mockResolvedValueOnce({ data: [mockBudget], error: null });
 
         const result = await mockSupabaseClient
-          .from('budgets')
-          .select('*')
-          .eq('user_id', testUserId)
-          .eq('category', 'groceries');
+          .from("budgets")
+          .select("*")
+          .eq("user_id", testUserId)
+          .eq("category", "groceries");
 
         expect(result.data).toHaveLength(1);
-        expect(result.data[0].category).toBe('groceries');
+        expect(result.data[0].category).toBe("groceries");
       });
     });
 
-    describe('POST /api/budgets', () => {
-      it('should create a new budget', async () => {
+    describe("POST /api/budgets", () => {
+      it("should create a new budget", async () => {
         const newBudget = {
           user_id: testUserId,
-          name: 'Entertainment Budget',
-          category: 'entertainment',
+          name: "Entertainment Budget",
+          category: "entertainment",
           budgeted_amount: 200,
-          period: 'monthly',
+          period: "monthly",
         };
 
         mockSupabaseClient.single.mockResolvedValue({
-          data: { id: 'new-budget-123', ...newBudget },
+          data: { id: "new-budget-123", ...newBudget },
           error: null,
         });
 
         const result = await mockSupabaseClient
-          .from('budgets')
+          .from("budgets")
           .insert(newBudget)
           .select()
           .single();
 
         expect(result.data).toBeDefined();
-        expect(result.data.category).toBe('entertainment');
+        expect(result.data.category).toBe("entertainment");
       });
 
-      it('should validate budget amount', async () => {
+      it("should validate budget amount", async () => {
         const invalidBudget = {
           budgeted_amount: -100, // Invalid negative amount
         };
@@ -439,18 +439,18 @@ describe('API Integration Tests', () => {
       });
     });
 
-    describe('PUT /api/budgets/:id', () => {
-      it('should update budget amount', async () => {
+    describe("PUT /api/budgets/:id", () => {
+      it("should update budget amount", async () => {
         mockSupabaseClient.single.mockResolvedValue({
           data: { ...mockBudget, budgeted_amount: 600 },
           error: null,
         });
 
         const result = await mockSupabaseClient
-          .from('budgets')
+          .from("budgets")
           .update({ budgeted_amount: 600 })
-          .eq('id', 'budget-123')
-          .eq('user_id', testUserId)
+          .eq("id", "budget-123")
+          .eq("user_id", testUserId)
           .select()
           .single();
 
@@ -458,33 +458,33 @@ describe('API Integration Tests', () => {
       });
     });
 
-    describe('DELETE /api/budgets/:id', () => {
-      it('should delete a budget', async () => {
+    describe("DELETE /api/budgets/:id", () => {
+      it("should delete a budget", async () => {
         mockSupabaseClient.eq
           .mockReturnValueOnce(mockSupabaseClient)
           .mockResolvedValueOnce({ data: null, error: null });
 
         const result = await mockSupabaseClient
-          .from('budgets')
+          .from("budgets")
           .delete()
-          .eq('id', 'budget-123')
-          .eq('user_id', testUserId);
+          .eq("id", "budget-123")
+          .eq("user_id", testUserId);
 
         expect(result.error).toBeNull();
       });
     });
 
-    describe('GET /api/budgets/summary', () => {
-      it('should return budget summary', async () => {
+    describe("GET /api/budgets/summary", () => {
+      it("should return budget summary", async () => {
         const summary = {
           totalBudgeted: 2500,
           totalSpent: 1800,
           totalRemaining: 700,
           percentUsed: 72,
           categorySummary: [
-            { category: 'groceries', budgeted: 500, spent: 350, percent: 70 },
+            { category: "groceries", budgeted: 500, spent: 350, percent: 70 },
             {
-              category: 'entertainment',
+              category: "entertainment",
               budgeted: 200,
               spent: 180,
               percent: 90,
@@ -493,7 +493,7 @@ describe('API Integration Tests', () => {
         };
 
         expect(summary.totalRemaining).toBe(
-          summary.totalBudgeted - summary.totalSpent
+          summary.totalBudgeted - summary.totalSpent,
         );
         expect(summary.percentUsed).toBeLessThan(100);
       });
@@ -504,54 +504,54 @@ describe('API Integration Tests', () => {
   // SUBSCRIPTION API TESTS
   // ==========================================================================
 
-  describe('Subscription API', () => {
-    describe('GET /api/subscriptions', () => {
-      it('should return user subscriptions', async () => {
+  describe("Subscription API", () => {
+    describe("GET /api/subscriptions", () => {
+      it("should return user subscriptions", async () => {
         mockSupabaseClient.order.mockResolvedValue({
           data: [mockSubscription],
           error: null,
         });
 
         const result = await mockSupabaseClient
-          .from('subscriptions')
-          .select('*')
-          .eq('user_id', testUserId)
-          .order('next_billing_date', { ascending: true });
+          .from("subscriptions")
+          .select("*")
+          .eq("user_id", testUserId)
+          .order("next_billing_date", { ascending: true });
 
         expect(result.data).toHaveLength(1);
-        expect(result.data[0].name).toBe('Netflix');
+        expect(result.data[0].name).toBe("Netflix");
       });
 
-      it('should filter by status', async () => {
+      it("should filter by status", async () => {
         // Use mockReturnValueOnce to keep chain working, then resolve on last call
         mockSupabaseClient.eq
           .mockReturnValueOnce(mockSupabaseClient) // first .eq() returns chain
           .mockResolvedValueOnce({ data: [mockSubscription], error: null }); // second .eq() resolves
 
         const result = await mockSupabaseClient
-          .from('subscriptions')
-          .select('*')
-          .eq('user_id', testUserId)
-          .eq('status', 'active');
+          .from("subscriptions")
+          .select("*")
+          .eq("user_id", testUserId)
+          .eq("status", "active");
 
-        expect(result.data[0].status).toBe('active');
+        expect(result.data[0].status).toBe("active");
       });
     });
 
-    describe('POST /api/subscriptions/detect', () => {
-      it('should detect subscriptions from transactions', async () => {
+    describe("POST /api/subscriptions/detect", () => {
+      it("should detect subscriptions from transactions", async () => {
         const detectedSubscriptions = [
           {
-            merchantName: 'Spotify',
+            merchantName: "Spotify",
             amount: 9.99,
-            frequency: 'monthly',
+            frequency: "monthly",
             confidence: 95,
             chargeCount: 6,
           },
           {
-            merchantName: 'Adobe',
+            merchantName: "Adobe",
             amount: 54.99,
-            frequency: 'monthly',
+            frequency: "monthly",
             confidence: 90,
             chargeCount: 4,
           },
@@ -562,36 +562,36 @@ describe('API Integration Tests', () => {
       });
     });
 
-    describe('GET /api/subscriptions/insights', () => {
-      it('should return subscription insights', async () => {
+    describe("GET /api/subscriptions/insights", () => {
+      it("should return subscription insights", async () => {
         const insights = [
           {
-            type: 'duplicate',
-            title: 'Multiple streaming subscriptions',
+            type: "duplicate",
+            title: "Multiple streaming subscriptions",
             potentialSavings: 15.99,
-            priority: 'medium',
+            priority: "medium",
           },
           {
-            type: 'unused',
-            title: 'Gym membership unused for 2 months',
+            type: "unused",
+            title: "Gym membership unused for 2 months",
             potentialSavings: 49.99,
-            priority: 'high',
+            priority: "high",
           },
         ];
 
         expect(insights).toHaveLength(2);
-        expect(insights[1].priority).toBe('high');
+        expect(insights[1].priority).toBe("high");
       });
     });
 
-    describe('POST /api/subscriptions/:id/cancel', () => {
-      it('should initiate cancellation request', async () => {
+    describe("POST /api/subscriptions/:id/cancel", () => {
+      it("should initiate cancellation request", async () => {
         const cancellationRequest = {
-          id: 'cancel-123',
-          subscriptionId: 'sub-123',
-          status: 'pending',
-          method: 'website',
-          instructions: ['Go to account settings', 'Click Cancel Subscription'],
+          id: "cancel-123",
+          subscriptionId: "sub-123",
+          status: "pending",
+          method: "website",
+          instructions: ["Go to account settings", "Click Cancel Subscription"],
         };
 
         mockSupabaseClient.single.mockResolvedValue({
@@ -600,12 +600,12 @@ describe('API Integration Tests', () => {
         });
 
         const result = await mockSupabaseClient
-          .from('cancellation_requests')
+          .from("cancellation_requests")
           .insert(cancellationRequest)
           .select()
           .single();
 
-        expect(result.data.status).toBe('pending');
+        expect(result.data.status).toBe("pending");
         expect(result.data.instructions).toBeDefined();
       });
     });
@@ -615,25 +615,25 @@ describe('API Integration Tests', () => {
   // TRANSACTION API TESTS
   // ==========================================================================
 
-  describe('Transaction API', () => {
-    describe('GET /api/transactions', () => {
-      it('should return user transactions', async () => {
+  describe("Transaction API", () => {
+    describe("GET /api/transactions", () => {
+      it("should return user transactions", async () => {
         mockSupabaseClient.order.mockResolvedValue({
           data: [mockTransaction],
           error: null,
         });
 
         const result = await mockSupabaseClient
-          .from('transactions')
-          .select('*')
-          .eq('user_id', testUserId)
-          .order('date', { ascending: false });
+          .from("transactions")
+          .select("*")
+          .eq("user_id", testUserId)
+          .order("date", { ascending: false });
 
         expect(result.data).toHaveLength(1);
         expect(result.data[0].amount).toBeLessThan(0); // Expense
       });
 
-      it('should filter by date range', async () => {
+      it("should filter by date range", async () => {
         const startDate = new Date(2024, 0, 1).toISOString();
         const endDate = new Date(2024, 0, 31).toISOString();
 
@@ -643,46 +643,46 @@ describe('API Integration Tests', () => {
         });
 
         const result = await mockSupabaseClient
-          .from('transactions')
-          .select('*')
-          .eq('user_id', testUserId)
-          .gte('date', startDate)
-          .lte('date', endDate);
+          .from("transactions")
+          .select("*")
+          .eq("user_id", testUserId)
+          .gte("date", startDate)
+          .lte("date", endDate);
 
         expect(result.data).toBeDefined();
       });
 
-      it('should filter by category', async () => {
+      it("should filter by category", async () => {
         mockSupabaseClient.eq
           .mockReturnValueOnce(mockSupabaseClient)
           .mockResolvedValueOnce({ data: [mockTransaction], error: null });
 
         const result = await mockSupabaseClient
-          .from('transactions')
-          .select('*')
-          .eq('user_id', testUserId)
-          .eq('category', 'groceries');
+          .from("transactions")
+          .select("*")
+          .eq("user_id", testUserId)
+          .eq("category", "groceries");
 
-        expect(result.data[0].category).toBe('groceries');
+        expect(result.data[0].category).toBe("groceries");
       });
     });
 
-    describe('PUT /api/transactions/:id/categorize', () => {
-      it('should update transaction category', async () => {
+    describe("PUT /api/transactions/:id/categorize", () => {
+      it("should update transaction category", async () => {
         mockSupabaseClient.single.mockResolvedValue({
-          data: { ...mockTransaction, category: 'food_delivery' },
+          data: { ...mockTransaction, category: "food_delivery" },
           error: null,
         });
 
         const result = await mockSupabaseClient
-          .from('transactions')
-          .update({ category: 'food_delivery' })
-          .eq('id', 'tx-123')
-          .eq('user_id', testUserId)
+          .from("transactions")
+          .update({ category: "food_delivery" })
+          .eq("id", "tx-123")
+          .eq("user_id", testUserId)
           .select()
           .single();
 
-        expect(result.data.category).toBe('food_delivery');
+        expect(result.data.category).toBe("food_delivery");
       });
     });
   });
@@ -691,16 +691,16 @@ describe('API Integration Tests', () => {
   // BILL CALENDAR API TESTS
   // ==========================================================================
 
-  describe('Bill Calendar API', () => {
-    describe('GET /api/bills', () => {
-      it('should return user bills', async () => {
+  describe("Bill Calendar API", () => {
+    describe("GET /api/bills", () => {
+      it("should return user bills", async () => {
         const mockBill = {
-          id: 'bill-123',
+          id: "bill-123",
           user_id: testUserId,
-          name: 'Electric Bill',
-          payee: 'Power Company',
+          name: "Electric Bill",
+          payee: "Power Company",
           amount: 150,
-          frequency: 'monthly',
+          frequency: "monthly",
           due_day: 15,
           next_due_date: new Date(2024, 1, 15).toISOString(),
           autopay_enabled: true,
@@ -712,27 +712,27 @@ describe('API Integration Tests', () => {
         });
 
         const result = await mockSupabaseClient
-          .from('bills')
-          .select('*')
-          .eq('user_id', testUserId)
-          .order('next_due_date', { ascending: true });
+          .from("bills")
+          .select("*")
+          .eq("user_id", testUserId)
+          .order("next_due_date", { ascending: true });
 
         expect(result.data).toHaveLength(1);
-        expect(result.data[0].name).toBe('Electric Bill');
+        expect(result.data[0].name).toBe("Electric Bill");
       });
     });
 
-    describe('GET /api/bills/calendar', () => {
-      it('should return calendar view for month', async () => {
+    describe("GET /api/bills/calendar", () => {
+      it("should return calendar view for month", async () => {
         const calendarData = {
-          month: 'February',
+          month: "February",
           year: 2024,
           totalDue: 450,
           days: [
-            { date: '2024-02-01', bills: [], totalDue: 0 },
+            { date: "2024-02-01", bills: [], totalDue: 0 },
             {
-              date: '2024-02-15',
-              bills: [{ name: 'Electric Bill', amount: 150 }],
+              date: "2024-02-15",
+              bills: [{ name: "Electric Bill", amount: 150 }],
               totalDue: 150,
             },
           ],
@@ -743,15 +743,15 @@ describe('API Integration Tests', () => {
       });
     });
 
-    describe('POST /api/bills/:id/pay', () => {
-      it('should record bill payment', async () => {
+    describe("POST /api/bills/:id/pay", () => {
+      it("should record bill payment", async () => {
         const payment = {
-          id: 'payment-123',
-          bill_id: 'bill-123',
+          id: "payment-123",
+          bill_id: "bill-123",
           user_id: testUserId,
           amount: 150,
           paid_date: new Date().toISOString(),
-          status: 'paid',
+          status: "paid",
         };
 
         mockSupabaseClient.single.mockResolvedValue({
@@ -760,12 +760,12 @@ describe('API Integration Tests', () => {
         });
 
         const result = await mockSupabaseClient
-          .from('bill_payments')
+          .from("bill_payments")
           .insert(payment)
           .select()
           .single();
 
-        expect(result.data.status).toBe('paid');
+        expect(result.data.status).toBe("paid");
       });
     });
   });
@@ -774,11 +774,11 @@ describe('API Integration Tests', () => {
   // ERROR HANDLING TESTS
   // ==========================================================================
 
-  describe('Error Handling', () => {
-    it('should return 401 for unauthenticated requests', async () => {
+  describe("Error Handling", () => {
+    it("should return 401 for unauthenticated requests", async () => {
       mockSupabaseClient.auth.getUser.mockResolvedValue({
         data: { user: null },
-        error: { message: 'Not authenticated', status: 401 },
+        error: { message: "Not authenticated", status: 401 },
       });
 
       const result = await mockSupabaseClient.auth.getUser();
@@ -787,40 +787,40 @@ describe('API Integration Tests', () => {
       expect(result.data.user).toBeNull();
     });
 
-    it('should return 404 for non-existent resources', async () => {
+    it("should return 404 for non-existent resources", async () => {
       mockSupabaseClient.single.mockResolvedValue({
         data: null,
-        error: { code: 'PGRST116', message: 'Not found' },
+        error: { code: "PGRST116", message: "Not found" },
       });
 
       const result = await mockSupabaseClient
-        .from('budgets')
-        .select('*')
-        .eq('id', 'non-existent')
+        .from("budgets")
+        .select("*")
+        .eq("id", "non-existent")
         .single();
 
-      expect(result.error?.code).toBe('PGRST116');
+      expect(result.error?.code).toBe("PGRST116");
     });
 
-    it('should return 400 for invalid request data', async () => {
+    it("should return 400 for invalid request data", async () => {
       const invalidData = {
-        budgeted_amount: 'invalid', // Should be number
+        budgeted_amount: "invalid", // Should be number
       };
 
-      const isValid = typeof invalidData.budgeted_amount === 'number';
+      const isValid = typeof invalidData.budgeted_amount === "number";
       expect(isValid).toBe(false);
     });
 
-    it('should handle database connection errors', async () => {
+    it("should handle database connection errors", async () => {
       mockSupabaseClient.select.mockRejectedValue(
-        new Error('Connection timeout')
+        new Error("Connection timeout"),
       );
 
       try {
-        await mockSupabaseClient.from('budgets').select('*');
+        await mockSupabaseClient.from("budgets").select("*");
       } catch (error) {
         expect(error).toBeDefined();
-        expect((error as Error).message).toBe('Connection timeout');
+        expect((error as Error).message).toBe("Connection timeout");
       }
     });
   });
@@ -829,8 +829,8 @@ describe('API Integration Tests', () => {
   // RATE LIMITING TESTS
   // ==========================================================================
 
-  describe('Rate Limiting', () => {
-    it('should track request counts', async () => {
+  describe("Rate Limiting", () => {
+    it("should track request counts", async () => {
       const requestTracker = {
         count: 0,
         limit: 100,
@@ -852,7 +852,7 @@ describe('API Integration Tests', () => {
       expect(requestTracker.count).toBe(50);
     });
 
-    it('should enforce rate limits', async () => {
+    it("should enforce rate limits", async () => {
       const requestTracker = {
         count: 101,
         limit: 100,

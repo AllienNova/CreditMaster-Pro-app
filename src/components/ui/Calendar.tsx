@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Calendar Component
@@ -7,13 +7,13 @@
  * and bill due date highlighting.
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo } from "react";
 
 export interface CalendarEvent {
   date: Date;
   title: string;
   color?: string;
-  type?: 'bill' | 'income' | 'reminder' | 'custom';
+  type?: "bill" | "income" | "reminder" | "custom";
 }
 
 export interface CalendarProps {
@@ -27,27 +27,27 @@ export interface CalendarProps {
   className?: string;
 }
 
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 const eventColors: Record<string, string> = {
-  bill: 'bg-red-500',
-  income: 'bg-green-500',
-  reminder: 'bg-yellow-500',
-  custom: 'bg-blue-500',
+  bill: "bg-red-500",
+  income: "bg-green-500",
+  reminder: "bg-yellow-500",
+  custom: "bg-blue-500",
 };
 
 export default function Calendar({
@@ -58,7 +58,7 @@ export default function Calendar({
   maxDate,
   highlightToday = true,
   showEventDots = true,
-  className = '',
+  className = "",
 }: CalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(() => {
     const date = selectedDate || new Date();
@@ -101,13 +101,13 @@ export default function Calendar({
 
   const goToPreviousMonth = () => {
     setCurrentMonth(
-      new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)
+      new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1),
     );
   };
 
   const goToNextMonth = () => {
     setCurrentMonth(
-      new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)
+      new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1),
     );
   };
 
@@ -226,7 +226,7 @@ export default function Calendar({
               type="button"
               onClick={() => !disabled && onDateSelect?.(date)}
               disabled={disabled}
-              className={`aspect-square p-1 rounded-lg text-sm font-medium relative transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${disabled ? 'text-gray-300 cursor-not-allowed' : 'hover:bg-gray-100 dark:hover:bg-slate-700'} ${todayDate && !selected ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' : ''} ${selected ? 'bg-blue-600 text-white hover:bg-blue-700' : 'text-gray-900 dark:text-white'}`}
+              className={`aspect-square p-1 rounded-lg text-sm font-medium relative transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${disabled ? "text-gray-300 cursor-not-allowed" : "hover:bg-gray-100 dark:hover:bg-slate-700"} ${todayDate && !selected ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600" : ""} ${selected ? "bg-blue-600 text-white hover:bg-blue-700" : "text-gray-900 dark:text-white"}`}
             >
               <span>{date.getDate()}</span>
               {/* Event dots */}
@@ -235,7 +235,7 @@ export default function Calendar({
                   {dateEvents.slice(0, 3).map((event, i) => (
                     <span
                       key={i}
-                      className={`w-1 h-1 rounded-full ${event.color || eventColors[event.type || 'custom']}`}
+                      className={`w-1 h-1 rounded-full ${event.color || eventColors[event.type || "custom"]}`}
                       title={event.title}
                     />
                   ))}

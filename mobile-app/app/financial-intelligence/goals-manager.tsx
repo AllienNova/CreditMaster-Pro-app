@@ -3,7 +3,7 @@
  * Financial goals tracking with CRUD operations and auto-save
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -18,13 +18,13 @@ import {
   PanResponder,
   Alert,
   Dimensions,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { lightTheme as theme } from '../../src/constants/theme';
-import { Card } from '../../src/components/Card';
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { lightTheme as theme } from "../../src/constants/theme";
+import { Card } from "../../src/components/Card";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 // TypeScript Interfaces
 interface Goal {
@@ -34,8 +34,8 @@ interface Goal {
   targetAmount: number;
   currentAmount: number;
   targetDate: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  status: 'active' | 'completed' | 'paused';
+  priority: "low" | "medium" | "high" | "urgent";
+  status: "active" | "completed" | "paused";
   category: string;
   autoSaveEnabled: boolean;
   autoSaveAmount?: number;
@@ -58,7 +58,7 @@ interface Milestone {
 interface AutoSaveConfig {
   enabled: boolean;
   amount: number;
-  frequency: 'daily' | 'weekly' | 'biweekly' | 'monthly';
+  frequency: "daily" | "weekly" | "biweekly" | "monthly";
   recommendedAmount?: number;
 }
 
@@ -73,13 +73,18 @@ interface GoalCardsProps {
   onToggleAutoSave: (goalId: string, enabled: boolean) => void;
 }
 
-const GoalCards: React.FC<GoalCardsProps> = ({ goals, onEditGoal, onDeleteGoal, onToggleAutoSave }) => {
+const GoalCards: React.FC<GoalCardsProps> = ({
+  goals,
+  onEditGoal,
+  onDeleteGoal,
+  onToggleAutoSave,
+}) => {
   const [swipedGoalId, setSwipedGoalId] = useState<string | null>(null);
 
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
@@ -87,48 +92,66 @@ const GoalCards: React.FC<GoalCardsProps> = ({ goals, onEditGoal, onDeleteGoal, 
 
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   };
 
   const getPriorityColor = (priority: string): string => {
     switch (priority) {
-      case 'urgent': return theme.colors.error;
-      case 'high': return theme.colors.warning;
-      case 'medium': return theme.colors.primary;
-      case 'low': return theme.colors.textSecondary;
-      default: return theme.colors.text;
+      case "urgent":
+        return theme.colors.error;
+      case "high":
+        return theme.colors.warning;
+      case "medium":
+        return theme.colors.primary;
+      case "low":
+        return theme.colors.textSecondary;
+      default:
+        return theme.colors.text;
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed': return 'checkmark-circle';
-      case 'paused': return 'pause-circle';
-      default: return 'play-circle';
+      case "completed":
+        return "checkmark-circle";
+      case "paused":
+        return "pause-circle";
+      default:
+        return "play-circle";
     }
   };
 
   const handleDelete = (goal: Goal) => {
     Alert.alert(
-      'Delete Goal',
+      "Delete Goal",
       `Are you sure you want to delete "${goal.name}"?`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Delete',
-          style: 'destructive',
+          text: "Delete",
+          style: "destructive",
           onPress: () => onDeleteGoal(goal.id),
         },
-      ]
+      ],
     );
   };
 
   if (goals.length === 0) {
     return (
       <Card style={styles.emptyCard}>
-        <Ionicons name="flag-outline" size={64} color={theme.colors.textSecondary} />
+        <Ionicons
+          name="flag-outline"
+          size={64}
+          color={theme.colors.textSecondary}
+        />
         <Text style={styles.emptyTitle}>No Goals Yet</Text>
-        <Text style={styles.emptySubtitle}>Create your first financial goal to get started!</Text>
+        <Text style={styles.emptySubtitle}>
+          Create your first financial goal to get started!
+        </Text>
       </Card>
     );
   }
@@ -150,7 +173,11 @@ const GoalCards: React.FC<GoalCardsProps> = ({ goals, onEditGoal, onDeleteGoal, 
               </View>
             </View>
             <TouchableOpacity onPress={() => onEditGoal(goal)}>
-              <Ionicons name="create-outline" size={24} color={theme.colors.primary} />
+              <Ionicons
+                name="create-outline"
+                size={24}
+                color={theme.colors.primary}
+              />
             </TouchableOpacity>
           </View>
 
@@ -161,20 +188,36 @@ const GoalCards: React.FC<GoalCardsProps> = ({ goals, onEditGoal, onDeleteGoal, 
           {/* Progress Section */}
           <View style={styles.progressSection}>
             <View style={styles.amountRow}>
-              <Text style={styles.currentAmount}>{formatCurrency(goal.currentAmount)}</Text>
-              <Text style={styles.targetAmount}>of {formatCurrency(goal.targetAmount)}</Text>
+              <Text style={styles.currentAmount}>
+                {formatCurrency(goal.currentAmount)}
+              </Text>
+              <Text style={styles.targetAmount}>
+                of {formatCurrency(goal.targetAmount)}
+              </Text>
             </View>
 
             <ProgressBars progress={goal.progress.percentage} />
 
             <View style={styles.progressMeta}>
               <View style={styles.metaItem}>
-                <Ionicons name="calendar-outline" size={16} color={theme.colors.textSecondary} />
-                <Text style={styles.metaText}>Due {formatDate(goal.targetDate)}</Text>
+                <Ionicons
+                  name="calendar-outline"
+                  size={16}
+                  color={theme.colors.textSecondary}
+                />
+                <Text style={styles.metaText}>
+                  Due {formatDate(goal.targetDate)}
+                </Text>
               </View>
               <View style={styles.metaItem}>
-                <Ionicons name="trending-up" size={16} color={theme.colors.success} />
-                <Text style={styles.metaText}>{goal.progress.velocity.toFixed(1)}% velocity</Text>
+                <Ionicons
+                  name="trending-up"
+                  size={16}
+                  color={theme.colors.success}
+                />
+                <Text style={styles.metaText}>
+                  {goal.progress.velocity.toFixed(1)}% velocity
+                </Text>
               </View>
             </View>
           </View>
@@ -197,8 +240,12 @@ const GoalCards: React.FC<GoalCardsProps> = ({ goals, onEditGoal, onDeleteGoal, 
                       )}
                     </View>
                     <View style={styles.milestoneContent}>
-                      <Text style={styles.milestoneAmount}>{formatCurrency(milestone.amount)}</Text>
-                      <Text style={styles.milestoneDate}>{formatDate(milestone.date)}</Text>
+                      <Text style={styles.milestoneAmount}>
+                        {formatCurrency(milestone.amount)}
+                      </Text>
+                      <Text style={styles.milestoneDate}>
+                        {formatDate(milestone.date)}
+                      </Text>
                     </View>
                   </View>
                 ))}
@@ -211,12 +258,16 @@ const GoalCards: React.FC<GoalCardsProps> = ({ goals, onEditGoal, onDeleteGoal, 
             <View style={styles.autoSaveInfo}>
               <Ionicons name="sync" size={20} color={theme.colors.primary} />
               <Text style={styles.autoSaveText}>
-                Auto-Save {goal.autoSaveEnabled ? 'ON' : 'OFF'}
-                {goal.autoSaveAmount && ` - ${formatCurrency(goal.autoSaveAmount)}/month`}
+                Auto-Save {goal.autoSaveEnabled ? "ON" : "OFF"}
+                {goal.autoSaveAmount &&
+                  ` - ${formatCurrency(goal.autoSaveAmount)}/month`}
               </Text>
             </View>
             <TouchableOpacity
-              style={[styles.autoSaveToggle, goal.autoSaveEnabled && styles.autoSaveToggleActive]}
+              style={[
+                styles.autoSaveToggle,
+                goal.autoSaveEnabled && styles.autoSaveToggleActive,
+              ]}
               onPress={() => onToggleAutoSave(goal.id, !goal.autoSaveEnabled)}
             >
               <View
@@ -242,7 +293,11 @@ const GoalCards: React.FC<GoalCardsProps> = ({ goals, onEditGoal, onDeleteGoal, 
               onPress={() => handleDelete(goal)}
             >
               <Ionicons name="trash" size={18} color={theme.colors.error} />
-              <Text style={[styles.actionButtonText, { color: theme.colors.error }]}>Delete</Text>
+              <Text
+                style={[styles.actionButtonText, { color: theme.colors.error }]}
+              >
+                Delete
+              </Text>
             </TouchableOpacity>
           </View>
         </Card>
@@ -279,7 +334,7 @@ const ProgressBars: React.FC<ProgressBarsProps> = ({ progress }) => {
 
   const widthInterpolation = animatedWidth.interpolate({
     inputRange: [0, 100],
-    outputRange: ['0%', '100%'],
+    outputRange: ["0%", "100%"],
   });
 
   return (
@@ -311,14 +366,21 @@ interface AddGoalSheetProps {
   onSave: (goalData: Partial<Goal>) => void;
 }
 
-const AddGoalSheet: React.FC<AddGoalSheetProps> = ({ visible, goal, onClose, onSave }) => {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [targetAmount, setTargetAmount] = useState('');
-  const [currentAmount, setCurrentAmount] = useState('');
-  const [targetDate, setTargetDate] = useState('');
-  const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
-  const [category, setCategory] = useState('');
+const AddGoalSheet: React.FC<AddGoalSheetProps> = ({
+  visible,
+  goal,
+  onClose,
+  onSave,
+}) => {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [targetAmount, setTargetAmount] = useState("");
+  const [currentAmount, setCurrentAmount] = useState("");
+  const [targetDate, setTargetDate] = useState("");
+  const [priority, setPriority] = useState<
+    "low" | "medium" | "high" | "urgent"
+  >("medium");
+  const [category, setCategory] = useState("");
 
   useEffect(() => {
     if (goal) {
@@ -331,19 +393,19 @@ const AddGoalSheet: React.FC<AddGoalSheetProps> = ({ visible, goal, onClose, onS
       setCategory(goal.category);
     } else {
       // Reset form
-      setName('');
-      setDescription('');
-      setTargetAmount('');
-      setCurrentAmount('0');
-      setTargetDate('');
-      setPriority('medium');
-      setCategory('');
+      setName("");
+      setDescription("");
+      setTargetAmount("");
+      setCurrentAmount("0");
+      setTargetDate("");
+      setPriority("medium");
+      setCategory("");
     }
   }, [goal, visible]);
 
   const handleSave = () => {
     if (!name || !targetAmount || !targetDate) {
-      Alert.alert('Error', 'Please fill in all required fields');
+      Alert.alert("Error", "Please fill in all required fields");
       return;
     }
 
@@ -371,7 +433,9 @@ const AddGoalSheet: React.FC<AddGoalSheetProps> = ({ visible, goal, onClose, onS
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>{goal ? 'Edit Goal' : 'Create New Goal'}</Text>
+            <Text style={styles.modalTitle}>
+              {goal ? "Edit Goal" : "Create New Goal"}
+            </Text>
             <TouchableOpacity onPress={onClose}>
               <Ionicons name="close" size={24} color={theme.colors.text} />
             </TouchableOpacity>
@@ -403,7 +467,12 @@ const AddGoalSheet: React.FC<AddGoalSheetProps> = ({ visible, goal, onClose, onS
             </View>
 
             <View style={styles.formRow}>
-              <View style={[styles.formGroup, { flex: 1, marginRight: theme.spacing.sm }]}>
+              <View
+                style={[
+                  styles.formGroup,
+                  { flex: 1, marginRight: theme.spacing.sm },
+                ]}
+              >
                 <Text style={styles.formLabel}>Target Amount *</Text>
                 <TextInput
                   style={styles.formInput}
@@ -415,7 +484,12 @@ const AddGoalSheet: React.FC<AddGoalSheetProps> = ({ visible, goal, onClose, onS
                 />
               </View>
 
-              <View style={[styles.formGroup, { flex: 1, marginLeft: theme.spacing.sm }]}>
+              <View
+                style={[
+                  styles.formGroup,
+                  { flex: 1, marginLeft: theme.spacing.sm },
+                ]}
+              >
                 <Text style={styles.formLabel}>Current Amount</Text>
                 <TextInput
                   style={styles.formInput}
@@ -453,7 +527,7 @@ const AddGoalSheet: React.FC<AddGoalSheetProps> = ({ visible, goal, onClose, onS
             <View style={styles.formGroup}>
               <Text style={styles.formLabel}>Priority</Text>
               <View style={styles.priorityButtons}>
-                {(['low', 'medium', 'high', 'urgent'] as const).map((p) => (
+                {(["low", "medium", "high", "urgent"] as const).map((p) => (
                   <TouchableOpacity
                     key={p}
                     style={[
@@ -477,10 +551,16 @@ const AddGoalSheet: React.FC<AddGoalSheetProps> = ({ visible, goal, onClose, onS
           </ScrollView>
 
           <View style={styles.modalFooter}>
-            <TouchableOpacity style={styles.cancelModalButton} onPress={onClose}>
+            <TouchableOpacity
+              style={styles.cancelModalButton}
+              onPress={onClose}
+            >
               <Text style={styles.cancelModalButtonText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.saveModalButton} onPress={handleSave}>
+            <TouchableOpacity
+              style={styles.saveModalButton}
+              onPress={handleSave}
+            >
               <Text style={styles.saveModalButtonText}>Save Goal</Text>
             </TouchableOpacity>
           </View>
@@ -500,7 +580,11 @@ interface AutoSaveConfigProps {
   onUpdate: (goalId: string, config: AutoSaveConfig) => void;
 }
 
-const AutoSaveConfigComponent: React.FC<AutoSaveConfigProps> = ({ goalId, config, onUpdate }) => {
+const AutoSaveConfigComponent: React.FC<AutoSaveConfigProps> = ({
+  goalId,
+  config,
+  onUpdate,
+}) => {
   const [localConfig, setLocalConfig] = useState(config);
 
   const handleToggle = () => {
@@ -515,7 +599,9 @@ const AutoSaveConfigComponent: React.FC<AutoSaveConfigProps> = ({ goalId, config
     setLocalConfig(newConfig);
   };
 
-  const handleFrequencyChange = (frequency: 'daily' | 'weekly' | 'biweekly' | 'monthly') => {
+  const handleFrequencyChange = (
+    frequency: "daily" | "weekly" | "biweekly" | "monthly",
+  ) => {
     const newConfig = { ...localConfig, frequency };
     setLocalConfig(newConfig);
     onUpdate(goalId, newConfig);
@@ -523,7 +609,7 @@ const AutoSaveConfigComponent: React.FC<AutoSaveConfigProps> = ({ goalId, config
 
   const handleSave = () => {
     onUpdate(goalId, localConfig);
-    Alert.alert('Success', 'Auto-save settings updated!');
+    Alert.alert("Success", "Auto-save settings updated!");
   };
 
   return (
@@ -531,7 +617,10 @@ const AutoSaveConfigComponent: React.FC<AutoSaveConfigProps> = ({ goalId, config
       <View style={styles.autoSaveConfigHeader}>
         <Text style={styles.cardTitle}>Auto-Save Configuration</Text>
         <TouchableOpacity
-          style={[styles.autoSaveToggle, localConfig.enabled && styles.autoSaveToggleActive]}
+          style={[
+            styles.autoSaveToggle,
+            localConfig.enabled && styles.autoSaveToggleActive,
+          ]}
           onPress={handleToggle}
         >
           <View
@@ -565,29 +654,36 @@ const AutoSaveConfigComponent: React.FC<AutoSaveConfigProps> = ({ goalId, config
           <View style={styles.formGroup}>
             <Text style={styles.formLabel}>Frequency</Text>
             <View style={styles.frequencyButtons}>
-              {(['daily', 'weekly', 'biweekly', 'monthly'] as const).map((freq) => (
-                <TouchableOpacity
-                  key={freq}
-                  style={[
-                    styles.frequencyButton,
-                    localConfig.frequency === freq && styles.frequencyButtonActive,
-                  ]}
-                  onPress={() => handleFrequencyChange(freq)}
-                >
-                  <Text
+              {(["daily", "weekly", "biweekly", "monthly"] as const).map(
+                (freq) => (
+                  <TouchableOpacity
+                    key={freq}
                     style={[
-                      styles.frequencyButtonText,
-                      localConfig.frequency === freq && styles.frequencyButtonTextActive,
+                      styles.frequencyButton,
+                      localConfig.frequency === freq &&
+                        styles.frequencyButtonActive,
                     ]}
+                    onPress={() => handleFrequencyChange(freq)}
                   >
-                    {freq.charAt(0).toUpperCase() + freq.slice(1)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                    <Text
+                      style={[
+                        styles.frequencyButtonText,
+                        localConfig.frequency === freq &&
+                          styles.frequencyButtonTextActive,
+                      ]}
+                    >
+                      {freq.charAt(0).toUpperCase() + freq.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                ),
+              )}
             </View>
           </View>
 
-          <TouchableOpacity style={styles.saveConfigButton} onPress={handleSave}>
+          <TouchableOpacity
+            style={styles.saveConfigButton}
+            onPress={handleSave}
+          >
             <Text style={styles.saveConfigButtonText}>Save Configuration</Text>
           </TouchableOpacity>
         </>
@@ -609,15 +705,15 @@ export default function GoalsManagerScreen() {
   const fetchGoals = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/financial/goals');
+      const response = await fetch("/api/financial/goals");
 
       if (response.ok) {
         const data = await response.json();
         setGoals(data.goals || []);
       }
     } catch (error) {
-      if (__DEV__) console.error('Error fetching goals:', error);
-      Alert.alert('Error', 'Failed to load goals. Please try again.');
+      if (__DEV__) console.error("Error fetching goals:", error);
+      Alert.alert("Error", "Failed to load goals. Please try again.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -647,51 +743,54 @@ export default function GoalsManagerScreen() {
     try {
       const url = editingGoal
         ? `/api/financial/goals/${editingGoal.id}`
-        : '/api/financial/goals';
+        : "/api/financial/goals";
 
-      const method = editingGoal ? 'PATCH' : 'POST';
+      const method = editingGoal ? "PATCH" : "POST";
 
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(goalData),
       });
 
       if (response.ok) {
-        Alert.alert('Success', `Goal ${editingGoal ? 'updated' : 'created'} successfully!`);
+        Alert.alert(
+          "Success",
+          `Goal ${editingGoal ? "updated" : "created"} successfully!`,
+        );
         fetchGoals();
       } else {
-        Alert.alert('Error', 'Failed to save goal. Please try again.');
+        Alert.alert("Error", "Failed to save goal. Please try again.");
       }
     } catch (error) {
-      if (__DEV__) console.error('Error saving goal:', error);
-      Alert.alert('Error', 'Failed to save goal. Please try again.');
+      if (__DEV__) console.error("Error saving goal:", error);
+      Alert.alert("Error", "Failed to save goal. Please try again.");
     }
   };
 
   const handleDeleteGoal = async (goalId: string) => {
     try {
       const response = await fetch(`/api/financial/goals/${goalId}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       if (response.ok) {
-        Alert.alert('Success', 'Goal deleted successfully!');
+        Alert.alert("Success", "Goal deleted successfully!");
         fetchGoals();
       } else {
-        Alert.alert('Error', 'Failed to delete goal. Please try again.');
+        Alert.alert("Error", "Failed to delete goal. Please try again.");
       }
     } catch (error) {
-      if (__DEV__) console.error('Error deleting goal:', error);
-      Alert.alert('Error', 'Failed to delete goal. Please try again.');
+      if (__DEV__) console.error("Error deleting goal:", error);
+      Alert.alert("Error", "Failed to delete goal. Please try again.");
     }
   };
 
   const handleToggleAutoSave = async (goalId: string, enabled: boolean) => {
     try {
       const response = await fetch(`/api/financial/goals/${goalId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ autoSaveEnabled: enabled }),
       });
 
@@ -699,7 +798,7 @@ export default function GoalsManagerScreen() {
         fetchGoals();
       }
     } catch (error) {
-      if (__DEV__) console.error('Error toggling auto-save:', error);
+      if (__DEV__) console.error("Error toggling auto-save:", error);
     }
   };
 
@@ -719,7 +818,11 @@ export default function GoalsManagerScreen() {
       <ScrollView
         style={styles.scrollView}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[theme.colors.primary]}
+          />
         }
       >
         <GoalCards
@@ -755,8 +858,8 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     marginTop: theme.spacing.md,
@@ -767,11 +870,11 @@ const styles = StyleSheet.create({
   emptyCard: {
     margin: theme.spacing.md,
     padding: theme.spacing.xl * 2,
-    alignItems: 'center',
+    alignItems: "center",
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginTop: theme.spacing.md,
   },
@@ -779,7 +882,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: theme.colors.textSecondary,
     marginTop: theme.spacing.sm,
-    textAlign: 'center',
+    textAlign: "center",
   },
   // GoalCards styles
   goalsContainer: {
@@ -790,14 +893,14 @@ const styles = StyleSheet.create({
     padding: theme.spacing.lg,
   },
   goalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     marginBottom: theme.spacing.md,
   },
   goalTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
   },
   goalTitleContainer: {
@@ -806,14 +909,14 @@ const styles = StyleSheet.create({
   },
   goalName: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   goalCategory: {
     fontSize: 14,
     color: theme.colors.textSecondary,
     marginTop: 2,
-    textTransform: 'capitalize',
+    textTransform: "capitalize",
   },
   goalDescription: {
     fontSize: 14,
@@ -826,13 +929,13 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   amountRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
+    flexDirection: "row",
+    alignItems: "baseline",
     marginBottom: theme.spacing.sm,
   },
   currentAmount: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: theme.colors.text,
     marginRight: theme.spacing.sm,
   },
@@ -841,13 +944,13 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   progressMeta: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginTop: theme.spacing.sm,
   },
   metaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   metaText: {
@@ -856,8 +959,8 @@ const styles = StyleSheet.create({
   },
   // ProgressBars styles
   progressBarContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: theme.spacing.md,
   },
   progressBarBackground: {
@@ -865,18 +968,18 @@ const styles = StyleSheet.create({
     height: 12,
     backgroundColor: theme.colors.border,
     borderRadius: 6,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   progressBarFill: {
-    height: '100%',
+    height: "100%",
     borderRadius: 6,
   },
   progressPercentage: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     minWidth: 50,
-    textAlign: 'right',
+    textAlign: "right",
   },
   // Milestones
   milestonesSection: {
@@ -887,16 +990,16 @@ const styles = StyleSheet.create({
   },
   milestonesTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: theme.spacing.sm,
   },
   milestonesTimeline: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   milestoneItem: {
-    alignItems: 'center',
+    alignItems: "center",
     flex: 1,
   },
   milestoneMarker: {
@@ -906,8 +1009,8 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: theme.colors.border,
     backgroundColor: theme.colors.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 4,
   },
   milestoneAchieved: {
@@ -915,11 +1018,11 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.success,
   },
   milestoneContent: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   milestoneAmount: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   milestoneDate: {
@@ -928,17 +1031,17 @@ const styles = StyleSheet.create({
   },
   // Auto-save section
   autoSaveSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginTop: theme.spacing.md,
     paddingTop: theme.spacing.md,
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
   },
   autoSaveInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: theme.spacing.sm,
     flex: 1,
   },
@@ -952,7 +1055,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: theme.colors.border,
     padding: 2,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   autoSaveToggleActive: {
     backgroundColor: theme.colors.success,
@@ -961,22 +1064,22 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#FFF',
+    backgroundColor: "#FFF",
   },
   autoSaveThumbActive: {
-    alignSelf: 'flex-end',
+    alignSelf: "flex-end",
   },
   // Goal actions
   goalActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: theme.spacing.sm,
     marginTop: theme.spacing.md,
   },
   actionButton: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 4,
     paddingVertical: theme.spacing.sm,
     borderRadius: theme.borderRadius.sm,
@@ -988,22 +1091,22 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.primary,
   },
   // FAB
   fab: {
-    position: 'absolute',
+    position: "absolute",
     right: theme.spacing.lg,
     bottom: theme.spacing.lg,
     width: 56,
     height: 56,
     borderRadius: 28,
     backgroundColor: theme.colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     elevation: 4,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
@@ -1011,33 +1114,33 @@ const styles = StyleSheet.create({
   // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
   },
   modalContent: {
     backgroundColor: theme.colors.surface,
     borderTopLeftRadius: theme.borderRadius.lg,
     borderTopRightRadius: theme.borderRadius.lg,
-    maxHeight: '90%',
+    maxHeight: "90%",
   },
   modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     padding: theme.spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   modalBody: {
     padding: theme.spacing.lg,
   },
   modalFooter: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: theme.spacing.md,
     padding: theme.spacing.lg,
     borderTopWidth: 1,
@@ -1049,7 +1152,7 @@ const styles = StyleSheet.create({
   },
   formLabel: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: theme.spacing.sm,
   },
@@ -1066,10 +1169,10 @@ const styles = StyleSheet.create({
   formTextArea: {
     height: 80,
     paddingTop: theme.spacing.md,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
   },
   formRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   recommendedText: {
     fontSize: 12,
@@ -1078,7 +1181,7 @@ const styles = StyleSheet.create({
   },
   // Priority buttons
   priorityButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: theme.spacing.sm,
   },
   priorityButton: {
@@ -1087,7 +1190,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.sm,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    alignItems: 'center',
+    alignItems: "center",
   },
   priorityButtonActive: {
     backgroundColor: theme.colors.primary,
@@ -1098,13 +1201,13 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
   },
   priorityButtonTextActive: {
-    color: '#FFF',
-    fontWeight: '600',
+    color: "#FFF",
+    fontWeight: "600",
   },
   // Frequency buttons
   frequencyButtons: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: theme.spacing.sm,
   },
   frequencyButton: {
@@ -1123,8 +1226,8 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
   },
   frequencyButtonTextActive: {
-    color: '#FFF',
-    fontWeight: '600',
+    color: "#FFF",
+    fontWeight: "600",
   },
   // Modal buttons
   cancelModalButton: {
@@ -1133,11 +1236,11 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.sm,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    alignItems: 'center',
+    alignItems: "center",
   },
   cancelModalButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   saveModalButton: {
@@ -1145,12 +1248,12 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.md,
     borderRadius: theme.borderRadius.sm,
     backgroundColor: theme.colors.primary,
-    alignItems: 'center',
+    alignItems: "center",
   },
   saveModalButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFF',
+    fontWeight: "600",
+    color: "#FFF",
   },
   // AutoSaveConfig styles
   autoSaveConfigCard: {
@@ -1158,27 +1261,26 @@ const styles = StyleSheet.create({
     padding: theme.spacing.lg,
   },
   autoSaveConfigHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: theme.spacing.md,
   },
   cardTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   saveConfigButton: {
     backgroundColor: theme.colors.primary,
     paddingVertical: theme.spacing.md,
     borderRadius: theme.borderRadius.sm,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: theme.spacing.md,
   },
   saveConfigButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFF',
+    fontWeight: "600",
+    color: "#FFF",
   },
 });
-

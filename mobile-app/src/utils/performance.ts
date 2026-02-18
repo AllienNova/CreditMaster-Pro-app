@@ -3,7 +3,7 @@
  * Provides performance monitoring and optimization helpers
  */
 
-import { InteractionManager, Platform } from 'react-native';
+import { InteractionManager, Platform } from "react-native";
 
 /**
  * Performance metrics storage
@@ -33,20 +33,20 @@ export const startMeasure = (name: string): void => {
 export const endMeasure = (name: string): number | null => {
   const metric = metrics.get(name);
   if (!metric) return null;
-  
+
   const endTime = performance.now();
   const duration = endTime - metric.startTime;
-  
+
   metrics.set(name, {
     ...metric,
     endTime,
     duration,
   });
-  
+
   if (__DEV__) {
     console.log(`[Performance] ${name}: ${duration.toFixed(2)}ms`);
   }
-  
+
   return duration;
 };
 
@@ -68,7 +68,7 @@ export const clearMetrics = (): void => {
  * Run task after interactions complete (for non-critical operations)
  */
 export const runAfterInteractions = <T>(
-  task: () => T | Promise<T>
+  task: () => T | Promise<T>,
 ): Promise<T> => {
   return new Promise((resolve, reject) => {
     InteractionManager.runAfterInteractions(() => {
@@ -91,10 +91,10 @@ export const runAfterInteractions = <T>(
  */
 export const debounce = <T extends (...args: unknown[]) => unknown>(
   func: T,
-  wait: number
+  wait: number,
 ): ((...args: Parameters<T>) => void) => {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
-  
+
   return (...args: Parameters<T>) => {
     if (timeoutId) {
       clearTimeout(timeoutId);
@@ -110,10 +110,10 @@ export const debounce = <T extends (...args: unknown[]) => unknown>(
  */
 export const throttle = <T extends (...args: unknown[]) => unknown>(
   func: T,
-  limit: number
+  limit: number,
 ): ((...args: Parameters<T>) => void) => {
   let inThrottle = false;
-  
+
   return (...args: Parameters<T>) => {
     if (!inThrottle) {
       func(...args);
@@ -130,17 +130,17 @@ export const throttle = <T extends (...args: unknown[]) => unknown>(
  */
 export const memoize = <T extends (...args: unknown[]) => unknown>(
   func: T,
-  keyResolver?: (...args: Parameters<T>) => string
+  keyResolver?: (...args: Parameters<T>) => string,
 ): T => {
   const cache = new Map<string, ReturnType<T>>();
-  
+
   return ((...args: Parameters<T>) => {
     const key = keyResolver ? keyResolver(...args) : JSON.stringify(args);
-    
+
     if (cache.has(key)) {
       return cache.get(key);
     }
-    
+
     const result = func(...args) as ReturnType<T>;
     cache.set(key, result);
     return result;
@@ -171,7 +171,7 @@ export const imageOptimization = {
     });
     return Math.ceil(baseSize * pixelRatio);
   },
-  
+
   /**
    * Get image cache key
    */
@@ -190,14 +190,14 @@ export const listOptimization = {
   getWindowSize: (itemHeight: number, screenHeight: number): number => {
     return Math.ceil(screenHeight / itemHeight) + 5;
   },
-  
+
   /**
    * Get optimal initial render count
    */
   getInitialNumToRender: (itemHeight: number, screenHeight: number): number => {
     return Math.ceil(screenHeight / itemHeight) + 2;
   },
-  
+
   /**
    * Get optimal max to render per batch
    */
@@ -209,4 +209,3 @@ export const listOptimization = {
     });
   },
 };
-

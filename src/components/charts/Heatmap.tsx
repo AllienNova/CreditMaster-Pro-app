@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Heatmap Component
@@ -7,8 +7,8 @@
  * Used for spending patterns by day/time, activity heatmaps, etc.
  */
 
-import { useMemo } from 'react';
-import { formatCurrency, formatNumber } from './chartUtils';
+import { useMemo } from "react";
+import { formatCurrency, formatNumber } from "./chartUtils";
 
 export interface HeatmapDataPoint {
   x: string | number;
@@ -21,7 +21,7 @@ export interface HeatmapProps {
   xLabels: string[];
   yLabels: string[];
   height?: number;
-  colorScale?: 'blue' | 'green' | 'red' | 'purple' | 'custom';
+  colorScale?: "blue" | "green" | "red" | "purple" | "custom";
   customColors?: { low: string; mid: string; high: string };
   showValues?: boolean;
   currency?: boolean;
@@ -34,10 +34,10 @@ export interface HeatmapProps {
 
 const COLOR_SCALES: Record<string, { low: string; mid: string; high: string }> =
   {
-    blue: { low: '#EFF6FF', mid: '#60A5FA', high: '#1D4ED8' },
-    green: { low: '#ECFDF5', mid: '#34D399', high: '#059669' },
-    red: { low: '#FEF2F2', mid: '#F87171', high: '#DC2626' },
-    purple: { low: '#FAF5FF', mid: '#A78BFA', high: '#7C3AED' },
+    blue: { low: "#EFF6FF", mid: "#60A5FA", high: "#1D4ED8" },
+    green: { low: "#ECFDF5", mid: "#34D399", high: "#059669" },
+    red: { low: "#FEF2F2", mid: "#F87171", high: "#DC2626" },
+    purple: { low: "#FAF5FF", mid: "#A78BFA", high: "#7C3AED" },
   };
 
 export default function HeatmapComponent({
@@ -45,19 +45,21 @@ export default function HeatmapComponent({
   xLabels,
   yLabels,
   height = 300,
-  colorScale = 'blue',
+  colorScale = "blue",
   customColors,
   showValues = true,
   currency = false,
   cellSize = 40,
   onCellClick,
-  className = '',
+  className = "",
   ariaLabel,
 }: HeatmapProps) {
   const colors = customColors || COLOR_SCALES[colorScale];
 
   // Generate accessible description
-  const accessibleDescription = ariaLabel || `Heatmap with ${xLabels.length} columns and ${yLabels.length} rows showing data intensity. Use Tab to navigate cells.`;
+  const accessibleDescription =
+    ariaLabel ||
+    `Heatmap with ${xLabels.length} columns and ${yLabels.length} rows showing data intensity. Use Tab to navigate cells.`;
 
   // Create a map for quick value lookup
   const valueMap = useMemo(() => {
@@ -96,9 +98,9 @@ export default function HeatmapComponent({
   // Get text color based on background
   const getTextColor = (bgColor: string): string => {
     const rgb = hexToRgb(bgColor);
-    if (!rgb) return '#000000';
+    if (!rgb) return "#000000";
     const luminance = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
-    return luminance > 0.5 ? '#374151' : '#FFFFFF';
+    return luminance > 0.5 ? "#374151" : "#FFFFFF";
   };
 
   return (
@@ -153,7 +155,7 @@ export default function HeatmapComponent({
                       height: cellSize,
                       minWidth: cellSize,
                       backgroundColor: bgColor,
-                      cursor: onCellClick ? 'pointer' : 'default',
+                      cursor: onCellClick ? "pointer" : "default",
                     }}
                     title={`${xLabel}, ${yLabel}: ${formatValue(value)}`}
                   >
@@ -202,7 +204,7 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
 function interpolateColor(
   color1: string,
   color2: string,
-  ratio: number
+  ratio: number,
 ): string {
   const rgb1 = hexToRgb(color1);
   const rgb2 = hexToRgb(color2);
@@ -212,5 +214,5 @@ function interpolateColor(
   const g = Math.round(rgb1.g + (rgb2.g - rgb1.g) * ratio);
   const b = Math.round(rgb1.b + (rgb2.b - rgb1.b) * ratio);
 
-  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
 }

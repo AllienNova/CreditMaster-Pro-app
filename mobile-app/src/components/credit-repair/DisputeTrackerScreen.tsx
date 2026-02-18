@@ -1,11 +1,11 @@
 /**
  * Dispute Tracker Screen (Mobile)
- * 
+ *
  * Mobile-optimized dispute tracking with swipe actions,
  * progress indicators, and AI recommendations.
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -14,8 +14,8 @@ import {
   TouchableOpacity,
   FlatList,
   Dimensions,
-} from 'react-native';
-import { lightTheme as theme } from '../../constants/theme';
+} from "react-native";
+import { lightTheme as theme } from "../../constants/theme";
 
 // ============================================================================
 // TYPES
@@ -23,11 +23,11 @@ import { lightTheme as theme } from '../../constants/theme';
 
 export interface Dispute {
   id: string;
-  itemType: 'account' | 'inquiry' | 'collection' | 'public_record';
+  itemType: "account" | "inquiry" | "collection" | "public_record";
   creditorName: string;
   accountNumber?: string;
-  bureau: 'experian' | 'equifax' | 'transunion';
-  status: 'draft' | 'pending' | 'in_review' | 'resolved' | 'rejected';
+  bureau: "experian" | "equifax" | "transunion";
+  status: "draft" | "pending" | "in_review" | "resolved" | "rejected";
   reason: string;
   submittedDate?: Date;
   estimatedImpact: number;
@@ -55,20 +55,20 @@ export interface DisputeTrackerScreenProps {
 // CONSTANTS
 // ============================================================================
 
-const { width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get("window");
 
 const STATUS_CONFIG = {
-  draft: { label: 'Draft', color: '#6B7280', bg: '#6B728020' },
-  pending: { label: 'Pending', color: '#F59E0B', bg: '#F59E0B20' },
-  in_review: { label: 'In Review', color: '#3B82F6', bg: '#3B82F620' },
-  resolved: { label: 'Resolved', color: '#10B981', bg: '#10B98120' },
-  rejected: { label: 'Rejected', color: '#EF4444', bg: '#EF444420' },
+  draft: { label: "Draft", color: "#6B7280", bg: "#6B728020" },
+  pending: { label: "Pending", color: "#F59E0B", bg: "#F59E0B20" },
+  in_review: { label: "In Review", color: "#3B82F6", bg: "#3B82F620" },
+  resolved: { label: "Resolved", color: "#10B981", bg: "#10B98120" },
+  rejected: { label: "Rejected", color: "#EF4444", bg: "#EF444420" },
 };
 
 const BUREAU_CONFIG = {
-  experian: { color: '#1a4480', label: 'Experian' },
-  equifax: { color: '#c41230', label: 'Equifax' },
-  transunion: { color: '#00a3e0', label: 'TransUnion' },
+  experian: { color: "#1a4480", label: "Experian" },
+  equifax: { color: "#c41230", label: "Equifax" },
+  transunion: { color: "#00a3e0", label: "TransUnion" },
 };
 
 // ============================================================================
@@ -83,21 +83,24 @@ export function DisputeTrackerScreen({
   onCreateDispute,
   onSendDispute,
 }: DisputeTrackerScreenProps) {
-  const [filter, setFilter] = useState<'all' | Dispute['status']>('all');
+  const [filter, setFilter] = useState<"all" | Dispute["status"]>("all");
 
   // Filter disputes
   const filteredDisputes = useMemo(() => {
-    if (filter === 'all') return disputes;
-    return disputes.filter(d => d.status === filter);
+    if (filter === "all") return disputes;
+    return disputes.filter((d) => d.status === filter);
   }, [disputes, filter]);
 
   // Group by status for summary
-  const statusCounts = useMemo(() => ({
-    draft: disputes.filter(d => d.status === 'draft').length,
-    pending: disputes.filter(d => d.status === 'pending').length,
-    in_review: disputes.filter(d => d.status === 'in_review').length,
-    resolved: disputes.filter(d => d.status === 'resolved').length,
-  }), [disputes]);
+  const statusCounts = useMemo(
+    () => ({
+      draft: disputes.filter((d) => d.status === "draft").length,
+      pending: disputes.filter((d) => d.status === "pending").length,
+      in_review: disputes.filter((d) => d.status === "in_review").length,
+      resolved: disputes.filter((d) => d.status === "resolved").length,
+    }),
+    [disputes],
+  );
 
   return (
     <View style={styles.container}>
@@ -116,7 +119,7 @@ export function DisputeTrackerScreen({
               <Text style={styles.statLabel}>Total Disputes</Text>
             </View>
             <View style={styles.statRow}>
-              <Text style={[styles.statValue, { color: '#10B981' }]}>
+              <Text style={[styles.statValue, { color: "#10B981" }]}>
                 +{stats.estimatedScoreGain}
               </Text>
               <Text style={styles.statLabel}>Est. Score Gain</Text>
@@ -125,31 +128,52 @@ export function DisputeTrackerScreen({
         </View>
 
         {/* Quick Stats Pills */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.pillsContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.pillsContainer}
+        >
           <TouchableOpacity
-            style={[styles.pill, filter === 'all' && styles.pillActive]}
-            onPress={() => setFilter('all')}
+            style={[styles.pill, filter === "all" && styles.pillActive]}
+            onPress={() => setFilter("all")}
           >
-            <Text style={[styles.pillText, filter === 'all' && styles.pillTextActive]}>
+            <Text
+              style={[
+                styles.pillText,
+                filter === "all" && styles.pillTextActive,
+              ]}
+            >
               All ({disputes.length})
             </Text>
           </TouchableOpacity>
-          {(['draft', 'pending', 'in_review', 'resolved'] as const).map(status => (
-            <TouchableOpacity
-              key={status}
-              style={[
-                styles.pill,
-                filter === status && styles.pillActive,
-                { borderColor: STATUS_CONFIG[status].color }
-              ]}
-              onPress={() => setFilter(status)}
-            >
-              <View style={[styles.pillDot, { backgroundColor: STATUS_CONFIG[status].color }]} />
-              <Text style={[styles.pillText, filter === status && styles.pillTextActive]}>
-                {STATUS_CONFIG[status].label} ({statusCounts[status]})
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {(["draft", "pending", "in_review", "resolved"] as const).map(
+            (status) => (
+              <TouchableOpacity
+                key={status}
+                style={[
+                  styles.pill,
+                  filter === status && styles.pillActive,
+                  { borderColor: STATUS_CONFIG[status].color },
+                ]}
+                onPress={() => setFilter(status)}
+              >
+                <View
+                  style={[
+                    styles.pillDot,
+                    { backgroundColor: STATUS_CONFIG[status].color },
+                  ]}
+                />
+                <Text
+                  style={[
+                    styles.pillText,
+                    filter === status && styles.pillTextActive,
+                  ]}
+                >
+                  {STATUS_CONFIG[status].label} ({statusCounts[status]})
+                </Text>
+              </TouchableOpacity>
+            ),
+          )}
         </ScrollView>
       </View>
 
@@ -157,7 +181,8 @@ export function DisputeTrackerScreen({
       {stats.successRate > 0 && (
         <View style={styles.successBanner}>
           <Text style={styles.successText}>
-            🎯 {stats.successRate.toFixed(0)}% Success Rate • {stats.resolved} disputes resolved
+            🎯 {stats.successRate.toFixed(0)}% Success Rate • {stats.resolved}{" "}
+            disputes resolved
           </Text>
         </View>
       )}
@@ -181,7 +206,10 @@ export function DisputeTrackerScreen({
             <Text style={styles.emptySubtitle}>
               Start improving your credit by disputing inaccurate items
             </Text>
-            <TouchableOpacity style={styles.createButton} onPress={onCreateDispute}>
+            <TouchableOpacity
+              style={styles.createButton}
+              onPress={onCreateDispute}
+            >
               <Text style={styles.createButtonText}>Create Dispute</Text>
             </TouchableOpacity>
           </View>
@@ -215,21 +243,28 @@ function DisputeCard({ dispute, onPress, onSend }: DisputeCardProps) {
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
       {/* Bureau indicator */}
-      <View style={[styles.bureauIndicator, { backgroundColor: bureauConfig.color }]} />
+      <View
+        style={[
+          styles.bureauIndicator,
+          { backgroundColor: bureauConfig.color },
+        ]}
+      />
 
       <View style={styles.cardContent}>
         {/* Header */}
         <View style={styles.cardHeader}>
           <View style={styles.cardTitleRow}>
             <Text style={styles.creditorName}>{dispute.creditorName}</Text>
-            <View style={[styles.statusBadge, { backgroundColor: statusConfig.bg }]}>
+            <View
+              style={[styles.statusBadge, { backgroundColor: statusConfig.bg }]}
+            >
               <Text style={[styles.statusText, { color: statusConfig.color }]}>
                 {statusConfig.label}
               </Text>
             </View>
           </View>
           <Text style={styles.itemType}>
-            {dispute.itemType.replace('_', ' ')} • {bureauConfig.label}
+            {dispute.itemType.replace("_", " ")} • {bureauConfig.label}
           </Text>
         </View>
 
@@ -242,7 +277,9 @@ function DisputeCard({ dispute, onPress, onSend }: DisputeCardProps) {
         <View style={styles.cardFooter}>
           <View style={styles.impactContainer}>
             <Text style={styles.impactLabel}>Est. Impact</Text>
-            <Text style={styles.impactValue}>+{dispute.estimatedImpact} pts</Text>
+            <Text style={styles.impactValue}>
+              +{dispute.estimatedImpact} pts
+            </Text>
           </View>
           <View style={styles.confidenceContainer}>
             <Text style={styles.confidenceLabel}>Confidence</Text>
@@ -250,7 +287,7 @@ function DisputeCard({ dispute, onPress, onSend }: DisputeCardProps) {
               <View
                 style={[
                   styles.confidenceFill,
-                  { width: `${dispute.confidenceScore * 100}%` }
+                  { width: `${dispute.confidenceScore * 100}%` },
                 ]}
               />
             </View>
@@ -259,7 +296,7 @@ function DisputeCard({ dispute, onPress, onSend }: DisputeCardProps) {
             </Text>
           </View>
 
-          {dispute.status === 'draft' && (
+          {dispute.status === "draft" && (
             <TouchableOpacity style={styles.sendButton} onPress={onSend}>
               <Text style={styles.sendButtonText}>Send</Text>
             </TouchableOpacity>
@@ -282,9 +319,9 @@ function DisputeCard({ dispute, onPress, onSend }: DisputeCardProps) {
 // ============================================================================
 
 function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
   }).format(date);
 }
 
@@ -305,8 +342,8 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.border,
   },
   scoreCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
     marginBottom: 16,
   },
@@ -315,18 +352,18 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     backgroundColor: theme.colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 16,
   },
   scoreValue: {
     fontSize: 24,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: "700",
+    color: "#fff",
   },
   scoreLabel: {
     fontSize: 11,
-    color: 'rgba(255,255,255,0.8)',
+    color: "rgba(255,255,255,0.8)",
   },
   statsColumn: {
     flex: 1,
@@ -336,7 +373,7 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
   },
   statLabel: {
@@ -347,8 +384,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
@@ -372,17 +409,17 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   pillTextActive: {
-    color: '#fff',
+    color: "#fff",
   },
   successBanner: {
-    backgroundColor: '#10B98120',
+    backgroundColor: "#10B98120",
     paddingVertical: 8,
     paddingHorizontal: 16,
   },
   successText: {
     fontSize: 13,
-    color: '#10B981',
-    textAlign: 'center',
+    color: "#10B981",
+    textAlign: "center",
   },
   listContent: {
     padding: 16,
@@ -392,8 +429,8 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface,
     borderRadius: 12,
     marginBottom: 12,
-    flexDirection: 'row',
-    overflow: 'hidden',
+    flexDirection: "row",
+    overflow: "hidden",
   },
   bureauIndicator: {
     width: 4,
@@ -406,13 +443,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   cardTitleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   creditorName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     flex: 1,
   },
@@ -424,7 +461,7 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   itemType: {
     fontSize: 12,
@@ -437,8 +474,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   cardFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   impactContainer: {
     marginRight: 16,
@@ -449,8 +486,8 @@ const styles = StyleSheet.create({
   },
   impactValue: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#10B981',
+    fontWeight: "600",
+    color: "#10B981",
   },
   confidenceContainer: {
     flex: 1,
@@ -464,10 +501,10 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.border,
     borderRadius: 2,
     marginTop: 4,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   confidenceFill: {
-    height: '100%',
+    height: "100%",
     backgroundColor: theme.colors.primary,
     borderRadius: 2,
   },
@@ -484,9 +521,9 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   sendButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   timeline: {
     fontSize: 11,
@@ -497,7 +534,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   emptyState: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 60,
   },
   emptyIcon: {
@@ -506,14 +543,14 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
     color: theme.colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
     paddingHorizontal: 40,
     marginBottom: 24,
   },
@@ -524,30 +561,30 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   createButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   fab: {
-    position: 'absolute',
+    position: "absolute",
     right: 20,
     bottom: 20,
     width: 56,
     height: 56,
     borderRadius: 28,
     backgroundColor: theme.colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     elevation: 4,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
   },
   fabText: {
     fontSize: 28,
-    color: '#fff',
-    fontWeight: '300',
+    color: "#fff",
+    fontWeight: "300",
   },
 });
 

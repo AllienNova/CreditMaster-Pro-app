@@ -9,7 +9,7 @@
  * - Portfolio exposure analysis
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from "@/lib/supabase/server";
 import {
   Position,
   PositionSide,
@@ -20,8 +20,8 @@ import {
   TradeRecord,
   PositionManagerConfig,
   DEFAULT_POSITION_MANAGER_CONFIG,
-} from './position-types';
-import { Order, Fill } from '../orders/order-types';
+} from "./position-types";
+import { Order, Fill } from "../orders/order-types";
 
 // ============================================================================
 // POSITION MANAGER CLASS
@@ -47,7 +47,7 @@ export class PositionManager {
     fill: Fill,
     order: Order,
     userId: string,
-    accountId: string
+    accountId: string,
   ): Promise<Position> {
     // Check if position already exists for this symbol
     const existingPositionId = this.positionsBySymbol.get(fill.symbol);
@@ -63,7 +63,7 @@ export class PositionManager {
       userId,
       accountId,
       symbol: fill.symbol,
-      side: order.side === 'buy' ? 'long' : 'short',
+      side: order.side === "buy" ? "long" : "short",
       quantity: fill.quantity,
       avgEntryPrice: fill.price,
       currentPrice: fill.price,
@@ -79,7 +79,7 @@ export class PositionManager {
       signalId: order.signalId,
       openedAt: new Date(),
       lastUpdatedAt: new Date(),
-      status: 'open',
+      status: "open",
     };
 
     // Calculate risk
@@ -107,7 +107,7 @@ export class PositionManager {
   private async addToPosition(
     positionId: string,
     fill: Fill,
-    order: Order
+    order: Order,
   ): Promise<Position> {
     const position = this.positions.get(positionId);
     if (!position) {
@@ -139,7 +139,7 @@ export class PositionManager {
   async reducePosition(
     positionId: string,
     fill: Fill,
-    order: Order
+    order: Order,
   ): Promise<{ position: Position; realizedPL: number }> {
     const position = this.positions.get(positionId);
     if (!position) {
@@ -150,7 +150,7 @@ export class PositionManager {
 
     // Calculate realized P&L for this portion
     const realizedPL =
-      position.side === 'long'
+      position.side === "long"
         ? (fill.price - position.avgEntryPrice) * closeQuantity
         : (position.avgEntryPrice - fill.price) * closeQuantity;
 
@@ -163,7 +163,7 @@ export class PositionManager {
     // Check if fully closed
     if (position.quantity <= 0) {
       position.quantity = 0;
-      position.status = 'closed';
+      position.status = "closed";
       position.closedAt = new Date();
       this.positionsBySymbol.delete(position.symbol);
     }
@@ -181,7 +181,7 @@ export class PositionManager {
   }
 
   async closePosition(
-    close: PositionClose
+    close: PositionClose,
   ): Promise<{ position: Position; realizedPL: number }> {
     const position = this.positions.get(close.positionId);
     if (!position) {
@@ -192,7 +192,7 @@ export class PositionManager {
 
     // Calculate realized P&L
     const realizedPL =
-      position.side === 'long'
+      position.side === "long"
         ? (close.closePrice - position.avgEntryPrice) * closeQuantity
         : (position.avgEntryPrice - close.closePrice) * closeQuantity;
 
@@ -209,7 +209,7 @@ export class PositionManager {
       position.quantity = 0;
       position.unrealizedPL = 0;
       position.unrealizedPLPercent = 0;
-      position.status = 'closed';
+      position.status = "closed";
       position.closedAt = close.timestamp;
       this.positionsBySymbol.delete(position.symbol);
     } else {
@@ -231,7 +231,7 @@ export class PositionManager {
 
     const positionId = this.positionsBySymbol.get(symbol);
     const position = positionId ? this.positions.get(positionId) : undefined;
-    if (position?.status === 'open') {
+    if (position?.status === "open") {
       position.currentPrice = price;
       position.marketValue = position.quantity * price;
       this.calculatePositionPL(position);
@@ -246,12 +246,12 @@ export class PositionManager {
   }
 
   private calculatePositionPL(position: Position): void {
-    if (position.status !== 'open') return;
+    if (position.status !== "open") return;
 
     const priceDiff = position.currentPrice - position.avgEntryPrice;
 
     position.unrealizedPL =
-      position.side === 'long'
+      position.side === "long"
         ? priceDiff * position.quantity
         : -priceDiff * position.quantity;
 
@@ -280,7 +280,7 @@ export class PositionManager {
 
   getOpenPositions(): Position[] {
     return Array.from(this.positions.values()).filter(
-      (p) => p.status === 'open'
+      (p) => p.status === "open",
     );
   }
 
@@ -335,7 +335,7 @@ export class PositionManager {
     let totalRealizedPL = 0;
     let longExposure = 0;
     let shortExposure = 0;
-    let largestPosition: PositionSummary['largestPosition'] = null;
+    let largestPosition: PositionSummary["largestPosition"] = null;
     const sectorExposure: Record<string, number> = {};
 
     for (const position of openPositions) {
@@ -344,7 +344,7 @@ export class PositionManager {
       totalUnrealizedPL += position.unrealizedPL;
       totalRealizedPL += position.realizedPL;
 
-      if (position.side === 'long') {
+      if (position.side === "long") {
         longExposure += position.marketValue;
       } else {
         shortExposure += position.marketValue;
@@ -363,15 +363,15 @@ export class PositionManager {
       }
 
       // Track sector exposure
-      const sector = position.assetClass || 'Unknown';
+      const sector = position.assetClass || "Unknown";
       sectorExposure[sector] =
         (sectorExposure[sector] || 0) + position.marketValue;
     }
 
     return {
       totalPositions: openPositions.length,
-      longPositions: openPositions.filter((p) => p.side === 'long').length,
-      shortPositions: openPositions.filter((p) => p.side === 'short').length,
+      longPositions: openPositions.filter((p) => p.side === "long").length,
+      shortPositions: openPositions.filter((p) => p.side === "short").length,
       totalMarketValue,
       totalCostBasis,
       totalUnrealizedPL,
@@ -388,9 +388,9 @@ export class PositionManager {
   }
 
   private calculateDayPL(): number {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split("T")[0];
     return this.trades
-      .filter((t) => t.executedAt.toISOString().split('T')[0] === today)
+      .filter((t) => t.executedAt.toISOString().split("T")[0] === today)
       .reduce((sum, t) => sum + (t.realizedPL || 0), 0);
   }
 
@@ -418,7 +418,7 @@ export class PositionManager {
     fill: Fill,
     order: Order,
     positionId: string,
-    realizedPL?: number
+    realizedPL?: number,
   ): void {
     const trade: TradeRecord = {
       id: `TRD-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
@@ -473,7 +473,7 @@ export class PositionManager {
   // ==========================================================================
 
   async reconcileWithBroker(
-    brokerPositions: BrokerPosition[]
+    brokerPositions: BrokerPosition[],
   ): Promise<ReconciliationResult> {
     const result: ReconciliationResult = {
       matched: 0,
@@ -484,7 +484,7 @@ export class PositionManager {
     };
 
     const brokerPositionMap = new Map(
-      brokerPositions.map((p) => [p.symbol, p])
+      brokerPositions.map((p) => [p.symbol, p]),
     );
 
     // Check local positions against broker
@@ -497,11 +497,11 @@ export class PositionManager {
       if (brokerPosition) {
         // Compare quantities
         const brokerQty =
-          brokerPosition.side === 'long'
+          brokerPosition.side === "long"
             ? brokerPosition.qty
             : -brokerPosition.qty;
         const localQty =
-          localPosition.side === 'long'
+          localPosition.side === "long"
             ? localPosition.quantity
             : -localPosition.quantity;
 
@@ -509,8 +509,8 @@ export class PositionManager {
           result.mismatched++;
           result.corrections.push({
             symbol,
-            type: 'quantity_mismatch',
-            action: 'adjust',
+            type: "quantity_mismatch",
+            action: "adjust",
             localQty: localPosition.quantity,
             brokerQty: Math.abs(brokerPosition.qty),
           });
@@ -533,8 +533,8 @@ export class PositionManager {
         result.missingBroker++;
         result.corrections.push({
           symbol,
-          type: 'missing_broker',
-          action: 'close_local',
+          type: "missing_broker",
+          action: "close_local",
           localQty: localPosition.quantity,
           brokerQty: 0,
         });
@@ -544,7 +544,7 @@ export class PositionManager {
             positionId,
             closePrice: localPosition.currentPrice,
             timestamp: new Date(),
-            reason: 'liquidation',
+            reason: "liquidation",
           });
         }
       }
@@ -555,8 +555,8 @@ export class PositionManager {
       result.missingLocal++;
       result.corrections.push({
         symbol,
-        type: 'missing_local',
-        action: 'import',
+        type: "missing_local",
+        action: "import",
         localQty: 0,
         brokerQty: brokerPosition.qty,
       });
@@ -581,7 +581,7 @@ export class PositionManager {
 
       // Using type assertion since 'positions' table schema not yet defined in Supabase types
       await (
-        supabase.from('positions') as unknown as {
+        supabase.from("positions") as unknown as {
           upsert: (data: Record<string, unknown>) => Promise<unknown>;
         }
       ).upsert({
@@ -623,10 +623,10 @@ export class PositionManager {
     try {
       const supabase = await createClient();
       const { data, error } = await supabase
-        .from('positions')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('status', 'open');
+        .from("positions")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("status", "open");
 
       if (error) throw error;
 
@@ -680,7 +680,7 @@ export class PositionManager {
 
 export interface BrokerPosition {
   symbol: string;
-  side: 'long' | 'short';
+  side: "long" | "short";
   qty: number;
   avg_entry_price: number;
   market_value: number;
@@ -697,7 +697,7 @@ export interface ReconciliationResult {
 
 export interface ReconciliationCorrection {
   symbol: string;
-  type: 'quantity_mismatch' | 'missing_broker' | 'missing_local';
+  type: "quantity_mismatch" | "missing_broker" | "missing_local";
   action: string;
   localQty: number;
   brokerQty: number;
@@ -710,14 +710,14 @@ export interface ReconciliationCorrection {
 let positionManagerInstance: PositionManager | null = null;
 
 export function getPositionManager(
-  config?: Partial<PositionManagerConfig>
+  config?: Partial<PositionManagerConfig>,
 ): PositionManager {
   positionManagerInstance ??= new PositionManager(config);
   return positionManagerInstance;
 }
 
 export function createPositionManager(
-  config?: Partial<PositionManagerConfig>
+  config?: Partial<PositionManagerConfig>,
 ): PositionManager {
   return new PositionManager(config);
 }

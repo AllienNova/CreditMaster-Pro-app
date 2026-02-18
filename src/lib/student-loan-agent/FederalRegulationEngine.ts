@@ -1,4 +1,4 @@
-import regulationsData from './regulations.json';
+import regulationsData from "./regulations.json";
 
 // Types for regulation data
 export interface Regulation {
@@ -26,8 +26,8 @@ export interface ValidationResult {
 }
 
 export interface Scenario {
-  loanType: 'federal' | 'private';
-  status?: 'current' | 'default' | 'delinquent';
+  loanType: "federal" | "private";
+  status?: "current" | "default" | "delinquent";
 }
 
 export interface Strategy {
@@ -71,15 +71,18 @@ export class FederalRegulationEngine {
     await this.loadRegulations();
   }
 
-  public checkCompliance(regulationType: string, _data: Record<string, unknown>): ComplianceResult {
+  public checkCompliance(
+    regulationType: string,
+    _data: Record<string, unknown>,
+  ): ComplianceResult {
     // Check compliance with a specific regulation
     const regulation = this.regulationDatabase[regulationType.toLowerCase()];
-    
+
     if (!regulation) {
       return {
         isCompliant: false,
         message: `Unknown regulation type: ${regulationType}`,
-        violations: []
+        violations: [],
       };
     }
 
@@ -88,7 +91,7 @@ export class FederalRegulationEngine {
       isCompliant: true,
       regulation: regulation.name,
       message: `Compliance check passed for ${regulation.name}`,
-      violations: []
+      violations: [],
     };
   }
 
@@ -97,21 +100,21 @@ export class FederalRegulationEngine {
     const { loanType, status } = scenario;
     const applicable: (Regulation | undefined)[] = [];
 
-    if (loanType === 'federal') {
+    if (loanType === "federal") {
       applicable.push(this.regulationDatabase.fcra);
       applicable.push(this.regulationDatabase.hea);
       applicable.push(this.regulationDatabase.cfpb);
-      
-      if (status === 'default') {
+
+      if (status === "default") {
         applicable.push(this.regulationDatabase.fresh_start_program);
         applicable.push(this.regulationDatabase.loan_rehabilitation);
       }
-    } else if (loanType === 'private') {
+    } else if (loanType === "private") {
       applicable.push(this.regulationDatabase.fcra);
       applicable.push(this.regulationDatabase.cfpb);
     }
 
-    return applicable.filter(reg => reg !== undefined);
+    return applicable.filter((reg) => reg !== undefined);
   }
 
   public validateStrategy(strategy: Strategy): ValidationResult {
@@ -122,24 +125,23 @@ export class FederalRegulationEngine {
       return {
         isValid: false,
         message: `Invalid or unknown regulation: ${regulation}`,
-        violations: ['Unknown regulation']
+        violations: ["Unknown regulation"],
       };
     }
 
     if (!actions || actions.length === 0) {
       return {
         isValid: false,
-        message: 'Strategy must include actions',
-        violations: ['No actions specified']
+        message: "Strategy must include actions",
+        violations: ["No actions specified"],
       };
     }
 
     // Mock validation - in production, this would perform detailed checks
     return {
       isValid: true,
-      message: 'Strategy is compliant',
-      violations: []
+      message: "Strategy is compliant",
+      violations: [],
     };
   }
 }
-

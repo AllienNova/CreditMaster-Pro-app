@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { DisputeStats as DisputeStatsType } from '@/lib/disputes/dispute-service';
-import { useAuth } from '@/hooks/useAuth';
-import { Icon } from '@/components/ui/Icon';
+import { useState, useEffect, useCallback } from "react";
+import { DisputeStats as DisputeStatsType } from "@/lib/disputes/dispute-service";
+import { useAuth } from "@/hooks/useAuth";
+import { Icon } from "@/components/ui/Icon";
 
 export default function DisputeStats() {
   const { user, loading: authLoading } = useAuth();
@@ -15,9 +15,9 @@ export default function DisputeStats() {
 
     try {
       const response = await fetch(`/api/disputes`);
-      
+
       if (!response.ok) {
-        throw new Error('Failed to fetch stats');
+        throw new Error("Failed to fetch stats");
       }
 
       const data = await response.json();
@@ -41,28 +41,28 @@ export default function DisputeStats() {
 
   const statCards = [
     {
-      label: 'Total Disputes',
+      label: "Total Disputes",
       value: stats.total,
       icon: "document-text",
-      color: 'bg-blue-50 text-blue-700',
+      color: "bg-blue-50 text-blue-700",
     },
     {
-      label: 'Active Disputes',
+      label: "Active Disputes",
       value: stats.active,
-      icon: 'clock',
-      color: 'bg-yellow-50 text-yellow-700',
+      icon: "clock",
+      color: "bg-yellow-50 text-yellow-700",
     },
     {
-      label: 'Resolved',
+      label: "Resolved",
       value: stats.resolved,
       icon: "check",
-      color: 'bg-green-50 text-green-700',
+      color: "bg-green-50 text-green-700",
     },
     {
-      label: 'Success Rate',
+      label: "Success Rate",
       value: `${Math.round(stats.successRate)}%`,
       icon: "chart-bar",
-      color: 'bg-blue-50 text-blue-700',
+      color: "bg-blue-50 text-blue-700",
     },
   ];
 

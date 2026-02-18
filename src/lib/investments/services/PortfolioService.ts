@@ -5,8 +5,8 @@
  * Integrates with Supabase for data persistence and market data service for real-time prices.
  */
 
-import { getSupabase } from '../../supabase/client';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import { getSupabase } from "../../supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   Portfolio,
   PortfolioCreateInput,
@@ -23,7 +23,7 @@ import {
   TransactionCreateSchema,
   AssetType,
   TransactionType,
-} from '../types/portfolio-db.types';
+} from "../types/portfolio-db.types";
 
 export class PortfolioService {
   private supabase: SupabaseClient;
@@ -43,10 +43,10 @@ export class PortfolioService {
    */
   async getPortfolios(): Promise<Portfolio[]> {
     const { data, error } = await this.supabase
-      .from('investment_portfolios')
-      .select('*')
-      .eq('user_id', this.userId)
-      .order('created_at', { ascending: false });
+      .from("investment_portfolios")
+      .select("*")
+      .eq("user_id", this.userId)
+      .order("created_at", { ascending: false });
 
     if (error) {
       throw new Error(`Failed to fetch portfolios: ${error.message}`);
@@ -60,14 +60,14 @@ export class PortfolioService {
    */
   async getPortfolio(portfolioId: string): Promise<Portfolio | null> {
     const { data, error } = await this.supabase
-      .from('investment_portfolios')
-      .select('*')
-      .eq('id', portfolioId)
-      .eq('user_id', this.userId)
+      .from("investment_portfolios")
+      .select("*")
+      .eq("id", portfolioId)
+      .eq("user_id", this.userId)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') return null; // Not found
+      if (error.code === "PGRST116") return null; // Not found
       throw new Error(`Failed to fetch portfolio: ${error.message}`);
     }
 
@@ -82,7 +82,7 @@ export class PortfolioService {
     const validated = PortfolioCreateSchema.parse(input);
 
     const { data, error } = await this.supabase
-      .from('investment_portfolios')
+      .from("investment_portfolios")
       .insert({
         user_id: this.userId,
         name: validated.name,
@@ -108,13 +108,13 @@ export class PortfolioService {
    */
   async updatePortfolio(
     portfolioId: string,
-    input: PortfolioUpdateInput
+    input: PortfolioUpdateInput,
   ): Promise<Portfolio> {
     // Validate input
     const validated = PortfolioUpdateSchema.parse(input);
 
     const { data, error } = await this.supabase
-      .from('investment_portfolios')
+      .from("investment_portfolios")
       .update({
         name: validated.name,
         description: validated.description,
@@ -123,8 +123,8 @@ export class PortfolioService {
         rebalance_threshold: validated.rebalance_threshold,
         last_updated_at: new Date().toISOString(),
       })
-      .eq('id', portfolioId)
-      .eq('user_id', this.userId)
+      .eq("id", portfolioId)
+      .eq("user_id", this.userId)
       .select()
       .single();
 
@@ -140,10 +140,10 @@ export class PortfolioService {
    */
   async deletePortfolio(portfolioId: string): Promise<void> {
     const { error } = await this.supabase
-      .from('investment_portfolios')
+      .from("investment_portfolios")
       .delete()
-      .eq('id', portfolioId)
-      .eq('user_id', this.userId);
+      .eq("id", portfolioId)
+      .eq("user_id", this.userId);
 
     if (error) {
       throw new Error(`Failed to delete portfolio: ${error.message}`);
@@ -158,12 +158,12 @@ export class PortfolioService {
    * Get all holdings for a portfolio
    */
   async getHoldings(portfolioId: string): Promise<Holding[]> {
-    const { data, error} = await this.supabase
-      .from('investment_holdings')
-      .select('*')
-      .eq('portfolio_id', portfolioId)
-      .eq('user_id', this.userId)
-      .order('current_value', { ascending: false, nullsFirst: false });
+    const { data, error } = await this.supabase
+      .from("investment_holdings")
+      .select("*")
+      .eq("portfolio_id", portfolioId)
+      .eq("user_id", this.userId)
+      .order("current_value", { ascending: false, nullsFirst: false });
 
     if (error) {
       throw new Error(`Failed to fetch holdings: ${error.message}`);
@@ -177,14 +177,14 @@ export class PortfolioService {
    */
   async getHolding(holdingId: string): Promise<Holding | null> {
     const { data, error } = await this.supabase
-      .from('investment_holdings')
-      .select('*')
-      .eq('id', holdingId)
-      .eq('user_id', this.userId)
+      .from("investment_holdings")
+      .select("*")
+      .eq("id", holdingId)
+      .eq("user_id", this.userId)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') return null;
+      if (error.code === "PGRST116") return null;
       throw new Error(`Failed to fetch holding: ${error.message}`);
     }
 
@@ -199,7 +199,7 @@ export class PortfolioService {
     const validated = HoldingCreateSchema.parse(input);
 
     const { data, error } = await this.supabase
-      .from('investment_holdings')
+      .from("investment_holdings")
       .insert({
         portfolio_id: validated.portfolio_id,
         user_id: this.userId,
@@ -210,8 +210,8 @@ export class PortfolioService {
         average_cost: validated.average_cost,
         sector: validated.sector,
         industry: validated.industry,
-        country: validated.country || 'US',
-        currency: validated.currency || 'USD',
+        country: validated.country || "US",
+        currency: validated.currency || "USD",
       })
       .select()
       .single();
@@ -228,13 +228,13 @@ export class PortfolioService {
    */
   async updateHolding(
     holdingId: string,
-    input: HoldingUpdateInput
+    input: HoldingUpdateInput,
   ): Promise<Holding> {
     // Validate input
     const validated = HoldingUpdateSchema.parse(input);
 
     const { data, error } = await this.supabase
-      .from('investment_holdings')
+      .from("investment_holdings")
       .update({
         quantity: validated.quantity,
         average_cost: validated.average_cost,
@@ -243,8 +243,8 @@ export class PortfolioService {
         industry: validated.industry,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', holdingId)
-      .eq('user_id', this.userId)
+      .eq("id", holdingId)
+      .eq("user_id", this.userId)
       .select()
       .single();
 
@@ -260,10 +260,10 @@ export class PortfolioService {
    */
   async deleteHolding(holdingId: string): Promise<void> {
     const { error } = await this.supabase
-      .from('investment_holdings')
+      .from("investment_holdings")
       .delete()
-      .eq('id', holdingId)
-      .eq('user_id', this.userId);
+      .eq("id", holdingId)
+      .eq("user_id", this.userId);
 
     if (error) {
       throw new Error(`Failed to delete holding: ${error.message}`);
@@ -277,13 +277,16 @@ export class PortfolioService {
   /**
    * Get all transactions for a portfolio
    */
-  async getTransactions(portfolioId: string, limit = 100): Promise<Transaction[]> {
+  async getTransactions(
+    portfolioId: string,
+    limit = 100,
+  ): Promise<Transaction[]> {
     const { data, error } = await this.supabase
-      .from('investment_transactions')
-      .select('*')
-      .eq('portfolio_id', portfolioId)
-      .eq('user_id', this.userId)
-      .order('transaction_date', { ascending: false })
+      .from("investment_transactions")
+      .select("*")
+      .eq("portfolio_id", portfolioId)
+      .eq("user_id", this.userId)
+      .order("transaction_date", { ascending: false })
       .limit(limit);
 
     if (error) {
@@ -298,11 +301,11 @@ export class PortfolioService {
    */
   async getHoldingTransactions(holdingId: string): Promise<Transaction[]> {
     const { data, error } = await this.supabase
-      .from('investment_transactions')
-      .select('*')
-      .eq('holding_id', holdingId)
-      .eq('user_id', this.userId)
-      .order('transaction_date', { ascending: false });
+      .from("investment_transactions")
+      .select("*")
+      .eq("holding_id", holdingId)
+      .eq("user_id", this.userId)
+      .order("transaction_date", { ascending: false });
 
     if (error) {
       throw new Error(`Failed to fetch holding transactions: ${error.message}`);
@@ -319,10 +322,11 @@ export class PortfolioService {
     const validated = TransactionCreateSchema.parse(input);
 
     // Calculate total amount if not provided
-    const totalAmount = validated.quantity * validated.price + (validated.fees || 0);
+    const totalAmount =
+      validated.quantity * validated.price + (validated.fees || 0);
 
     const { data, error } = await this.supabase
-      .from('investment_transactions')
+      .from("investment_transactions")
       .insert({
         portfolio_id: validated.portfolio_id,
         holding_id: validated.holding_id,
@@ -347,12 +351,16 @@ export class PortfolioService {
     }
 
     // Update holding if this is a buy/sell transaction
-    if (validated.holding_id && (validated.transaction_type === 'buy' || validated.transaction_type === 'sell')) {
+    if (
+      validated.holding_id &&
+      (validated.transaction_type === "buy" ||
+        validated.transaction_type === "sell")
+    ) {
       await this.updateHoldingFromTransaction(
         validated.holding_id,
         validated.transaction_type as TransactionType,
         validated.quantity,
-        validated.price
+        validated.price,
       );
     }
 
@@ -366,7 +374,7 @@ export class PortfolioService {
     holdingId: string,
     transactionType: TransactionType,
     quantity: number,
-    price: number
+    price: number,
   ): Promise<void> {
     const holding = await this.getHolding(holdingId);
     if (!holding) return;
@@ -376,7 +384,8 @@ export class PortfolioService {
 
     if (transactionType === TransactionType.BUY) {
       // Calculate new average cost
-      const totalCost = holding.quantity * holding.average_cost + quantity * price;
+      const totalCost =
+        holding.quantity * holding.average_cost + quantity * price;
       newQuantity = holding.quantity + quantity;
       newAverageCost = totalCost / newQuantity;
     } else if (transactionType === TransactionType.SELL) {
@@ -397,7 +406,9 @@ export class PortfolioService {
   private mapPortfolioFromDB(data: any): Portfolio {
     return {
       ...data,
-      last_rebalance_at: data.last_rebalance_at ? new Date(data.last_rebalance_at) : undefined,
+      last_rebalance_at: data.last_rebalance_at
+        ? new Date(data.last_rebalance_at)
+        : undefined,
       last_updated_at: new Date(data.last_updated_at),
       created_at: new Date(data.created_at),
     };
@@ -406,8 +417,12 @@ export class PortfolioService {
   private mapHoldingFromDB(data: any): Holding {
     return {
       ...data,
-      ex_dividend_date: data.ex_dividend_date ? new Date(data.ex_dividend_date) : undefined,
-      last_price_update: data.last_price_update ? new Date(data.last_price_update) : undefined,
+      ex_dividend_date: data.ex_dividend_date
+        ? new Date(data.ex_dividend_date)
+        : undefined,
+      last_price_update: data.last_price_update
+        ? new Date(data.last_price_update)
+        : undefined,
       created_at: new Date(data.created_at),
       updated_at: new Date(data.updated_at),
     };
@@ -417,9 +432,10 @@ export class PortfolioService {
     return {
       ...data,
       transaction_date: new Date(data.transaction_date),
-      settlement_date: data.settlement_date ? new Date(data.settlement_date) : undefined,
+      settlement_date: data.settlement_date
+        ? new Date(data.settlement_date)
+        : undefined,
       created_at: new Date(data.created_at),
     };
   }
 }
-

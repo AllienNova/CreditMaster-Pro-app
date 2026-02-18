@@ -5,17 +5,36 @@
  * Phase 2.4: Bill Negotiation Assistant
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
-import { getBillNegotiator } from '@/lib/financial/bill-negotiator';
-import { applyFinancialAPIMiddleware, finalizeResponse } from '@/lib/api/financial-api-middleware';
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { getBillNegotiator } from "@/lib/financial/bill-negotiator";
+import {
+  applyFinancialAPIMiddleware,
+  finalizeResponse,
+} from "@/lib/api/financial-api-middleware";
 
 // ============================================================================
 // VALIDATION SCHEMAS
 // ============================================================================
 
 const analysisQuerySchema = z.object({
-  billType: z.enum(['telecom', 'utilities', 'insurance', 'subscription', 'internet', 'cable', 'mobile', 'electricity', 'gas', 'water', 'home_insurance', 'auto_insurance', 'streaming']).optional(),
+  billType: z
+    .enum([
+      "telecom",
+      "utilities",
+      "insurance",
+      "subscription",
+      "internet",
+      "cable",
+      "mobile",
+      "electricity",
+      "gas",
+      "water",
+      "home_insurance",
+      "auto_insurance",
+      "streaming",
+    ])
+    .optional(),
   provider: z.string().optional(),
   location: z.string().optional(),
   includeSavingsEstimate: z.coerce.boolean().default(true),
@@ -46,10 +65,10 @@ export async function GET(request: NextRequest) {
     // Parse and validate query parameters
     const searchParams = request.nextUrl.searchParams;
     const queryParams = {
-      billType: searchParams.get('billType'),
-      provider: searchParams.get('provider'),
-      location: searchParams.get('location'),
-      includeSavingsEstimate: searchParams.get('includeSavingsEstimate'),
+      billType: searchParams.get("billType"),
+      provider: searchParams.get("provider"),
+      location: searchParams.get("location"),
+      includeSavingsEstimate: searchParams.get("includeSavingsEstimate"),
     };
 
     const validatedParams = analysisQuerySchema.parse(queryParams);
@@ -68,7 +87,7 @@ export async function GET(request: NextRequest) {
       marketAnalysis = await billNegotiator.analyzeMarketRates(
         validatedParams.billType,
         validatedParams.provider,
-        validatedParams.location
+        validatedParams.location,
       );
     }
 
@@ -76,87 +95,98 @@ export async function GET(request: NextRequest) {
     const history = await billNegotiator.getBillNegotiationHistory(userId!);
 
     // Calculate success metrics
-    const totalNegotiations = history.reduce((sum, h) => sum + h.attempts.length, 0);
-    const successfulNegotiations = history.reduce(
-      (sum, h) => sum + h.attempts.filter(a => a.outcome === 'success').length,
-      0
+    const totalNegotiations = history.reduce(
+      (sum, h) => sum + h.attempts.length,
+      0,
     );
-    const overallSuccessRate = totalNegotiations > 0 
-      ? (successfulNegotiations / totalNegotiations) * 100 
-      : 0;
-    const totalHistoricalSavings = history.reduce((sum, h) => sum + h.totalSavings, 0);
+    const successfulNegotiations = history.reduce(
+      (sum, h) =>
+        sum + h.attempts.filter((a) => a.outcome === "success").length,
+      0,
+    );
+    const overallSuccessRate =
+      totalNegotiations > 0
+        ? (successfulNegotiations / totalNegotiations) * 100
+        : 0;
+    const totalHistoricalSavings = history.reduce(
+      (sum, h) => sum + h.totalSavings,
+      0,
+    );
 
     const response = NextResponse.json({
-        success: true,
-        data: {
-          savingsEstimate: savingsEstimate ? {
-            totalPotentialSavings: savingsEstimate.totalPotentialSavings,
-            monthlyPotentialSavings: savingsEstimate.monthlyPotentialSavings,
-            annualPotentialSavings: savingsEstimate.annualPotentialSavings,
-            billCount: savingsEstimate.billCount,
-            highPotentialBills: savingsEstimate.highPotentialBills.map(b => ({
-              id: b.id,
-              provider: b.provider,
-              serviceName: b.serviceName,
-              currentAmount: b.currentAmount,
-              estimatedSavings: b.estimatedSavings,
-              negotiationPotential: b.negotiationPotential,
-              difficulty: b.difficulty,
-            })),
-            confidenceScore: savingsEstimate.confidenceScore,
-          } : null,
-          marketAnalysis,
-          negotiationHistory: {
-            totalNegotiations,
-            successfulNegotiations,
-            overallSuccessRate,
-            totalHistoricalSavings,
-            annualHistoricalSavings: totalHistoricalSavings * 12,
-            recentAttempts: history.slice(0, 5).map(h => ({
-              billId: h.billId,
-              provider: h.provider,
-              billType: h.billType,
-              totalSavings: h.totalSavings,
-              successRate: h.successRate,
-              lastAttemptDate: h.lastAttemptDate,
-            })),
-          },
+      success: true,
+      data: {
+        savingsEstimate: savingsEstimate
+          ? {
+              totalPotentialSavings: savingsEstimate.totalPotentialSavings,
+              monthlyPotentialSavings: savingsEstimate.monthlyPotentialSavings,
+              annualPotentialSavings: savingsEstimate.annualPotentialSavings,
+              billCount: savingsEstimate.billCount,
+              highPotentialBills: savingsEstimate.highPotentialBills.map(
+                (b) => ({
+                  id: b.id,
+                  provider: b.provider,
+                  serviceName: b.serviceName,
+                  currentAmount: b.currentAmount,
+                  estimatedSavings: b.estimatedSavings,
+                  negotiationPotential: b.negotiationPotential,
+                  difficulty: b.difficulty,
+                }),
+              ),
+              confidenceScore: savingsEstimate.confidenceScore,
+            }
+          : null,
+        marketAnalysis,
+        negotiationHistory: {
+          totalNegotiations,
+          successfulNegotiations,
+          overallSuccessRate,
+          totalHistoricalSavings,
+          annualHistoricalSavings: totalHistoricalSavings * 12,
+          recentAttempts: history.slice(0, 5).map((h) => ({
+            billId: h.billId,
+            provider: h.provider,
+            billType: h.billType,
+            totalSavings: h.totalSavings,
+            successRate: h.successRate,
+            lastAttemptDate: h.lastAttemptDate,
+          })),
         },
-        meta: {
-          userId,
-          filters: {
-            billType: validatedParams.billType,
-            provider: validatedParams.provider,
-            location: validatedParams.location,
-          },
-          generatedAt: new Date().toISOString(),
-          processingTimeMs: Date.now() - middlewareStartTime,
+      },
+      meta: {
+        userId,
+        filters: {
+          billType: validatedParams.billType,
+          provider: validatedParams.provider,
+          location: validatedParams.location,
         },
-      });
+        generatedAt: new Date().toISOString(),
+        processingTimeMs: Date.now() - middlewareStartTime,
+      },
+    });
 
     return finalizeResponse(request, response, middlewareStartTime, userId);
   } catch (error) {
-    console.error('Error in GET /api/financial/bills/analysis:', error);
+    console.error("Error in GET /api/financial/bills/analysis:", error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Validation error',
+          error: "Validation error",
           details: error.errors,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     return NextResponse.json(
       {
         success: false,
-        error: 'Internal server error',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Internal server error",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-

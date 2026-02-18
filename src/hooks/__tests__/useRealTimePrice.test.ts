@@ -2,15 +2,15 @@
  * useRealTimePrice Hook Tests
  */
 
-import { renderHook, waitFor, act } from '@testing-library/react';
-import { useRealTimePrice } from '../useRealTimePrice';
+import { renderHook, waitFor, act } from "@testing-library/react";
+import { useRealTimePrice } from "../useRealTimePrice";
 
 // Mock useAuth hook
-jest.mock('../useAuth', () => ({
+jest.mock("../useAuth", () => ({
   useAuth: jest.fn(),
 }));
 
-import { useAuth } from '../useAuth';
+import { useAuth } from "../useAuth";
 const mockUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
 
 // Mock WebSocket
@@ -48,21 +48,24 @@ global.WebSocket = MockWebSocket as any;
 const mockFetch = global.fetch as jest.Mock;
 
 // Helper to create proper Response objects with clone() method
-const createMockResponse = (data: any, options: { ok?: boolean; status?: number } = {}) => {
+const createMockResponse = (
+  data: any,
+  options: { ok?: boolean; status?: number } = {},
+) => {
   const responseBody = JSON.stringify(data);
   return new Response(responseBody, {
     status: options.status || (options.ok !== false ? 200 : 500),
-    headers: { 'Content-Type': 'application/json' },
+    headers: { "Content-Type": "application/json" },
   });
 };
 
-describe('useRealTimePrice', () => {
+describe("useRealTimePrice", () => {
   beforeEach(() => {
     mockFetch.mockClear();
     lastWebSocketInstance = null;
     jest.useFakeTimers();
     mockUseAuth.mockReturnValue({
-      user: { id: 'test-user-id', email: 'test@example.com' } as any,
+      user: { id: "test-user-id", email: "test@example.com" } as any,
       loading: false,
       error: null,
       signIn: jest.fn(),
@@ -75,9 +78,9 @@ describe('useRealTimePrice', () => {
     jest.useRealTimers();
   });
 
-  it('should connect to WebSocket on mount', async () => {
+  it("should connect to WebSocket on mount", async () => {
     const { result } = renderHook(() =>
-      useRealTimePrice({ symbols: ['AAPL', 'GOOGL'], useWebSocket: true })
+      useRealTimePrice({ symbols: ["AAPL", "GOOGL"], useWebSocket: true }),
     );
 
     await act(async () => {
@@ -89,9 +92,9 @@ describe('useRealTimePrice', () => {
     });
   });
 
-  it('should receive price updates via WebSocket', async () => {
+  it("should receive price updates via WebSocket", async () => {
     const { result } = renderHook(() =>
-      useRealTimePrice({ symbols: ['AAPL'], useWebSocket: true })
+      useRealTimePrice({ symbols: ["AAPL"], useWebSocket: true }),
     );
 
     await act(async () => {
@@ -99,7 +102,7 @@ describe('useRealTimePrice', () => {
     });
 
     const mockPriceUpdate = {
-      symbol: 'AAPL',
+      symbol: "AAPL",
       price: 160.5,
       change: 2.5,
       changePercent: 1.58,
@@ -112,7 +115,7 @@ describe('useRealTimePrice', () => {
       if (lastWebSocketInstance?.onmessage) {
         lastWebSocketInstance.onmessage({
           data: JSON.stringify({
-            type: 'price_update',
+            type: "price_update",
             symbol: mockPriceUpdate.symbol,
             price: mockPriceUpdate.price,
             change: mockPriceUpdate.change,
@@ -126,13 +129,13 @@ describe('useRealTimePrice', () => {
 
     await waitFor(() => {
       const prices = result.current.prices;
-      expect(prices.get('AAPL')).toEqual(mockPriceUpdate);
+      expect(prices.get("AAPL")).toEqual(mockPriceUpdate);
     });
   });
 
-  it('should subscribe to new symbols', async () => {
+  it("should subscribe to new symbols", async () => {
     const { result } = renderHook(() =>
-      useRealTimePrice({ symbols: ['AAPL'], useWebSocket: true })
+      useRealTimePrice({ symbols: ["AAPL"], useWebSocket: true }),
     );
 
     await act(async () => {
@@ -140,7 +143,7 @@ describe('useRealTimePrice', () => {
     });
 
     await act(async () => {
-      result.current.subscribe('GOOGL');
+      result.current.subscribe("GOOGL");
     });
 
     await waitFor(() => {
@@ -148,9 +151,9 @@ describe('useRealTimePrice', () => {
     });
   });
 
-  it('should unsubscribe from symbols', async () => {
+  it("should unsubscribe from symbols", async () => {
     const { result } = renderHook(() =>
-      useRealTimePrice({ symbols: ['AAPL', 'GOOGL'], useWebSocket: true })
+      useRealTimePrice({ symbols: ["AAPL", "GOOGL"], useWebSocket: true }),
     );
 
     await act(async () => {
@@ -163,33 +166,33 @@ describe('useRealTimePrice', () => {
 
     // Unsubscribe from one symbol
     act(() => {
-      result.current.unsubscribe('GOOGL');
+      result.current.unsubscribe("GOOGL");
     });
 
     // Verify unsubscribe function executed without errors
     expect(result.current.unsubscribe).toBeDefined();
   });
 
-  it('should fallback to polling when WebSocket disabled', async () => {
+  it("should fallback to polling when WebSocket disabled", async () => {
     mockFetch.mockResolvedValue(
       createMockResponse({
         success: true,
         data: {
-          symbol: 'AAPL',
+          symbol: "AAPL",
           price: 160.5,
           change: 2.5,
           changePercent: 1.58,
           timestamp: Date.now(),
         },
-      })
+      }),
     );
 
     const { result } = renderHook(() =>
       useRealTimePrice({
-        symbols: ['AAPL'],
+        symbols: ["AAPL"],
         useWebSocket: false,
         pollingInterval: 5000,
-      })
+      }),
     );
 
     await act(async () => {
@@ -201,9 +204,9 @@ describe('useRealTimePrice', () => {
     });
   });
 
-  it('should handle WebSocket errors', async () => {
+  it("should handle WebSocket errors", async () => {
     const { result } = renderHook(() =>
-      useRealTimePrice({ symbols: ['AAPL'], useWebSocket: true })
+      useRealTimePrice({ symbols: ["AAPL"], useWebSocket: true }),
     );
 
     await act(async () => {
@@ -213,7 +216,7 @@ describe('useRealTimePrice', () => {
     // Simulate WebSocket error
     await act(async () => {
       if (lastWebSocketInstance?.onerror) {
-        lastWebSocketInstance.onerror(new Error('WebSocket error'));
+        lastWebSocketInstance.onerror(new Error("WebSocket error"));
       }
     });
 
@@ -222,9 +225,9 @@ describe('useRealTimePrice', () => {
     });
   });
 
-  it('should cleanup on unmount', async () => {
+  it("should cleanup on unmount", async () => {
     const { unmount } = renderHook(() =>
-      useRealTimePrice({ symbols: ['AAPL'], useWebSocket: true })
+      useRealTimePrice({ symbols: ["AAPL"], useWebSocket: true }),
     );
 
     await act(async () => {
@@ -237,4 +240,3 @@ describe('useRealTimePrice', () => {
     expect(true).toBe(true);
   });
 });
-

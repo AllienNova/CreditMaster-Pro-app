@@ -5,11 +5,11 @@
  * Endpoint for calculating diversification scores across sectors, geography, and asset classes
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { PortfolioAnalytics } from '@/lib/investments/portfolio-analytics';
-import { getUser } from '@/lib/auth/session';
-import { z } from 'zod';
-import { rateLimit } from '@/lib/rate-limit';
+import { NextRequest, NextResponse } from "next/server";
+import { PortfolioAnalytics } from "@/lib/investments/portfolio-analytics";
+import { getUser } from "@/lib/auth/session";
+import { z } from "zod";
+import { rateLimit } from "@/lib/rate-limit";
 
 // Initialize portfolio analytics service
 const portfolioAnalytics = new PortfolioAnalytics();
@@ -22,7 +22,7 @@ const limiter = rateLimit({
 
 // Request validation schema
 const DiversificationQuerySchema = z.object({
-  portfolioId: z.string().uuid('Invalid portfolio ID format'),
+  portfolioId: z.string().uuid("Invalid portfolio ID format"),
 });
 
 /**
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     // Authentication
     const user = await getUser();
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Rate limiting
@@ -48,14 +48,14 @@ export async function GET(request: NextRequest) {
       await limiter.check(100, user.id); // 100 requests per hour
     } catch {
       return NextResponse.json(
-        { error: 'Rate limit exceeded. Maximum 100 requests per hour.' },
-        { status: 429 }
+        { error: "Rate limit exceeded. Maximum 100 requests per hour." },
+        { status: 429 },
       );
     }
 
     // Parse and validate query parameters
     const searchParams = request.nextUrl.searchParams;
-    const portfolioId = searchParams.get('portfolioId');
+    const portfolioId = searchParams.get("portfolioId");
 
     // Validate parameters
     const validationResult = DiversificationQuerySchema.safeParse({
@@ -65,19 +65,18 @@ export async function GET(request: NextRequest) {
     if (!validationResult.success) {
       return NextResponse.json(
         {
-          error: 'Invalid request parameters',
+          error: "Invalid request parameters",
           details: validationResult.error.errors,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const { portfolioId: validPortfolioId } = validationResult.data;
 
     // Calculate diversification score
-    const diversificationScore = await portfolioAnalytics.getDiversificationScore(
-      validPortfolioId
-    );
+    const diversificationScore =
+      await portfolioAnalytics.getDiversificationScore(validPortfolioId);
 
     return NextResponse.json({
       success: true,
@@ -85,22 +84,21 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Error calculating diversification score:', error);
+    console.error("Error calculating diversification score:", error);
 
     // Handle specific error types
     if (error instanceof Error) {
-      if (error.message.includes('not found') || error.message.includes('no holdings')) {
-        return NextResponse.json(
-          { error: error.message },
-          { status: 404 }
-        );
+      if (
+        error.message.includes("not found") ||
+        error.message.includes("no holdings")
+      ) {
+        return NextResponse.json({ error: error.message }, { status: 404 });
       }
     }
 
     return NextResponse.json(
-      { error: 'Failed to calculate diversification score' },
-      { status: 500 }
+      { error: "Failed to calculate diversification score" },
+      { status: 500 },
     );
   }
 }
-

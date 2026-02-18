@@ -3,14 +3,14 @@
  * FCM/APNs registration, background handling, deep linking
  */
 
-import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
-import { Platform } from 'react-native';
-import { router } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { api as apiClient } from '../api/client';
+import * as Notifications from "expo-notifications";
+import * as Device from "expo-device";
+import { Platform } from "react-native";
+import { router } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { api as apiClient } from "../api/client";
 
-const PUSH_TOKEN_KEY = '@cpfi_push_token';
+const PUSH_TOKEN_KEY = "@cpfi_push_token";
 
 // Configure notification behavior
 Notifications.setNotificationHandler({
@@ -22,7 +22,7 @@ Notifications.setNotificationHandler({
 });
 
 export interface PushNotificationPayload {
-  type: 'alert' | 'score_change' | 'dispute_update' | 'payment' | 'promo';
+  type: "alert" | "score_change" | "dispute_update" | "payment" | "promo";
   title: string;
   body: string;
   data?: {
@@ -43,24 +43,25 @@ class PushNotificationService {
   async initialize(): Promise<boolean> {
     if (!Device.isDevice) {
       if (__DEV__) {
-        console.log('Push notifications require a physical device');
+        console.log("Push notifications require a physical device");
       }
       return false;
     }
 
     try {
       // Request permissions
-      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      const { status: existingStatus } =
+        await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
 
-      if (existingStatus !== 'granted') {
+      if (existingStatus !== "granted") {
         const { status } = await Notifications.requestPermissionsAsync();
         finalStatus = status;
       }
 
-      if (finalStatus !== 'granted') {
+      if (finalStatus !== "granted") {
         if (__DEV__) {
-          console.log('Push notification permission denied');
+          console.log("Push notification permission denied");
         }
         return false;
       }
@@ -75,13 +76,14 @@ class PushNotificationService {
       this.setupListeners();
 
       // Configure Android channel
-      if (Platform.OS === 'android') {
+      if (Platform.OS === "android") {
         await this.setupAndroidChannel();
       }
 
       return true;
     } catch (error) {
-      if (__DEV__) console.error('Failed to initialize push notifications:', error);
+      if (__DEV__)
+        console.error("Failed to initialize push notifications:", error);
       return false;
     }
   }
@@ -98,7 +100,7 @@ class PushNotificationService {
       await AsyncStorage.setItem(PUSH_TOKEN_KEY, this.pushToken);
       return this.pushToken;
     } catch (error) {
-      if (__DEV__) console.error('Failed to get push token:', error);
+      if (__DEV__) console.error("Failed to get push token:", error);
       return null;
     }
   }
@@ -108,13 +110,13 @@ class PushNotificationService {
    */
   private async registerTokenWithServer(token: string): Promise<void> {
     try {
-      await apiClient.post('/api/notifications/register', {
+      await apiClient.post("/api/notifications/register", {
         token,
         platform: Platform.OS,
-        deviceId: Device.deviceName || 'unknown',
+        deviceId: Device.deviceName || "unknown",
       });
     } catch (error) {
-      if (__DEV__) console.error('Failed to register push token:', error);
+      if (__DEV__) console.error("Failed to register push token:", error);
     }
   }
 
@@ -126,40 +128,43 @@ class PushNotificationService {
     this.notificationListener = Notifications.addNotificationReceivedListener(
       (notification) => {
         if (__DEV__) {
-          console.log('Notification received:', notification);
+          console.log("Notification received:", notification);
         }
         this.handleNotification(notification);
-      }
+      },
     );
 
     // Handle notification taps
-    this.responseListener = Notifications.addNotificationResponseReceivedListener(
-      (response) => {
+    this.responseListener =
+      Notifications.addNotificationResponseReceivedListener((response) => {
         if (__DEV__) {
-          console.log('Notification tapped:', response);
+          console.log("Notification tapped:", response);
         }
         this.handleNotificationResponse(response);
-      }
-    );
+      });
   }
 
   /**
    * Handle incoming notification
    */
   private handleNotification(notification: Notifications.Notification): void {
-    const data = notification.request.content.data as PushNotificationPayload['data'];
+    const data = notification.request.content
+      .data as PushNotificationPayload["data"];
     // Could update badge count, show in-app notification, etc.
     if (__DEV__) {
-      console.log('Processing notification data:', data);
+      console.log("Processing notification data:", data);
     }
   }
 
   /**
    * Handle notification tap - deep linking
    */
-  private handleNotificationResponse(response: Notifications.NotificationResponse): void {
-    const data = response.notification.request.content.data as PushNotificationPayload['data'];
-    
+  private handleNotificationResponse(
+    response: Notifications.NotificationResponse,
+  ): void {
+    const data = response.notification.request.content
+      .data as PushNotificationPayload["data"];
+
     if (data?.screen) {
       // Navigate to the specified screen
       const route = data.id ? `${data.screen}/${data.id}` : data.screen;
@@ -171,18 +176,18 @@ class PushNotificationService {
    * Set up Android notification channel
    */
   private async setupAndroidChannel(): Promise<void> {
-    await Notifications.setNotificationChannelAsync('default', {
-      name: 'Fynvita Alerts',
+    await Notifications.setNotificationChannelAsync("default", {
+      name: "Fynvita Alerts",
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#2563EB',
+      lightColor: "#2563EB",
     });
 
-    await Notifications.setNotificationChannelAsync('credit-alerts', {
-      name: 'Credit Alerts',
-      description: 'Important credit score and monitoring alerts',
+    await Notifications.setNotificationChannelAsync("credit-alerts", {
+      name: "Credit Alerts",
+      description: "Important credit score and monitoring alerts",
       importance: Notifications.AndroidImportance.HIGH,
-      sound: 'default',
+      sound: "default",
     });
   }
 
@@ -192,15 +197,15 @@ class PushNotificationService {
   async scheduleLocalNotification(
     title: string,
     body: string,
-    data?: PushNotificationPayload['data'],
-    trigger?: Notifications.NotificationTriggerInput
+    data?: PushNotificationPayload["data"],
+    trigger?: Notifications.NotificationTriggerInput,
   ): Promise<string> {
     return await Notifications.scheduleNotificationAsync({
       content: {
         title,
         body,
         data,
-        sound: 'default',
+        sound: "default",
       },
       trigger: trigger || null,
     });
@@ -248,11 +253,11 @@ class PushNotificationService {
     try {
       const token = await AsyncStorage.getItem(PUSH_TOKEN_KEY);
       if (token) {
-        await apiClient.post('/api/notifications/unregister', { token });
+        await apiClient.post("/api/notifications/unregister", { token });
         await AsyncStorage.removeItem(PUSH_TOKEN_KEY);
       }
     } catch (error) {
-      if (__DEV__) console.error('Failed to unregister push token:', error);
+      if (__DEV__) console.error("Failed to unregister push token:", error);
     }
   }
 
@@ -280,9 +285,8 @@ class PushNotificationService {
    */
   async areNotificationsEnabled(): Promise<boolean> {
     const { status } = await Notifications.getPermissionsAsync();
-    return status === 'granted';
+    return status === "granted";
   }
 }
 
 export const pushNotificationService = new PushNotificationService();
-

@@ -3,23 +3,23 @@
  * Manages bank accounts, transactions, budgets, goals, and debt
  */
 
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { 
-  financialOverviewApi, 
-  bankAccountApi, 
-  transactionApi, 
-  budgetApi, 
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  financialOverviewApi,
+  bankAccountApi,
+  transactionApi,
+  budgetApi,
   financialGoalsApi,
-  debtApi 
-} from '../services/api';
-import type { 
-  BankAccount, 
-  Transaction, 
-  Budget, 
-  FinancialGoal 
-} from '../services/api/types';
+  debtApi,
+} from "../services/api";
+import type {
+  BankAccount,
+  Transaction,
+  Budget,
+  FinancialGoal,
+} from "../services/api/types";
 
 interface FinancialDashboard {
   netWorth: number;
@@ -47,26 +47,26 @@ interface DebtOverview {
 interface FinancialState {
   // Dashboard
   dashboard: FinancialDashboard | null;
-  
+
   // Accounts
   accounts: BankAccount[];
   selectedAccountId: string | null;
-  
+
   // Transactions
   transactions: Transaction[];
   transactionCategories: string[];
   totalTransactions: number;
-  
+
   // Budgets
   budgets: Budget[];
   budgetAlerts: { category: string; percentUsed: number; remaining: number }[];
-  
+
   // Goals
   goals: FinancialGoal[];
-  
+
   // Debt
   debtOverview: DebtOverview | null;
-  
+
   // Loading states
   isLoading: boolean; // General loading state
   isLoadingDashboard: boolean;
@@ -76,21 +76,24 @@ interface FinancialState {
   isLoadingGoals: boolean;
   isLoadingDebt: boolean;
   isConnectingAccount: boolean;
-  
+
   // Errors
   error: string | null;
-  
+
   // Actions - Dashboard
   fetchDashboard: () => Promise<void>;
-  
+
   // Actions - Accounts
   fetchAccounts: () => Promise<void>;
   connectAccount: () => Promise<{ linkToken: string } | null>;
-  exchangePlaidToken: (publicToken: string, metadata?: Record<string, unknown>) => Promise<boolean>;
+  exchangePlaidToken: (
+    publicToken: string,
+    metadata?: Record<string, unknown>,
+  ) => Promise<boolean>;
   refreshAccount: (accountId: string) => Promise<void>;
   disconnectAccount: (accountId: string) => Promise<boolean>;
   selectAccount: (accountId: string | null) => void;
-  
+
   // Actions - Transactions
   fetchTransactions: (params?: {
     page?: number;
@@ -100,30 +103,48 @@ interface FinancialState {
     endDate?: string;
   }) => Promise<void>;
   fetchCategories: () => Promise<void>;
-  updateTransactionCategory: (transactionId: string, category: string) => Promise<boolean>;
-  
+  updateTransactionCategory: (
+    transactionId: string,
+    category: string,
+  ) => Promise<boolean>;
+
   // Actions - Budgets
   fetchBudgets: () => Promise<void>;
-  createBudget: (budget: { category: string; limit: number; period: Budget['period'] }) => Promise<boolean>;
-  updateBudget: (category: string, updates: { limit?: number; period?: Budget['period'] }) => Promise<boolean>;
+  createBudget: (budget: {
+    category: string;
+    limit: number;
+    period: Budget["period"];
+  }) => Promise<boolean>;
+  updateBudget: (
+    category: string,
+    updates: { limit?: number; period?: Budget["period"] },
+  ) => Promise<boolean>;
   deleteBudget: (category: string) => Promise<boolean>;
   fetchBudgetAlerts: () => Promise<void>;
-  
+
   // Actions - Goals
   fetchGoals: () => Promise<void>;
-  createGoal: (goal: Omit<FinancialGoal, 'id' | 'userId' | 'currentAmount' | 'status'>) => Promise<boolean>;
-  updateGoal: (goalId: string, updates: Partial<FinancialGoal>) => Promise<boolean>;
+  createGoal: (
+    goal: Omit<FinancialGoal, "id" | "userId" | "currentAmount" | "status">,
+  ) => Promise<boolean>;
+  updateGoal: (
+    goalId: string,
+    updates: Partial<FinancialGoal>,
+  ) => Promise<boolean>;
   contributeToGoal: (goalId: string, amount: number) => Promise<boolean>;
   deleteGoal: (goalId: string) => Promise<boolean>;
-  
+
   // Actions - Debt
   fetchDebtOverview: () => Promise<void>;
-  calculatePayoff: (strategy: 'snowball' | 'avalanche', extraPayment?: number) => Promise<{
+  calculatePayoff: (
+    strategy: "snowball" | "avalanche",
+    extraPayment?: number,
+  ) => Promise<{
     timeline: { month: string; totalPaid: number; remainingDebt: number }[];
     payoffDate: string;
     interestSaved: number;
   } | null>;
-  
+
   // Actions - Utility
   clearError: () => void;
   resetStore: () => void;
@@ -167,8 +188,11 @@ export const useFinancialStore = create<FinancialState>()(
           }
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'Failed to fetch dashboard',
-            isLoadingDashboard: false
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to fetch dashboard",
+            isLoadingDashboard: false,
           });
         }
       },
@@ -184,8 +208,11 @@ export const useFinancialStore = create<FinancialState>()(
           }
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'Failed to fetch accounts',
-            isLoadingAccounts: false
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to fetch accounts",
+            isLoadingAccounts: false,
           });
         }
       },
@@ -202,8 +229,11 @@ export const useFinancialStore = create<FinancialState>()(
           return null;
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'Failed to get link token',
-            isConnectingAccount: false
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to get link token",
+            isConnectingAccount: false,
           });
           return null;
         }
@@ -212,7 +242,10 @@ export const useFinancialStore = create<FinancialState>()(
       exchangePlaidToken: async (publicToken, metadata) => {
         set({ isConnectingAccount: true });
         try {
-          const response = await bankAccountApi.exchangePlaidToken(publicToken, metadata);
+          const response = await bankAccountApi.exchangePlaidToken(
+            publicToken,
+            metadata,
+          );
           if (response.success) {
             await get().fetchAccounts();
             set({ isConnectingAccount: false });
@@ -231,11 +264,13 @@ export const useFinancialStore = create<FinancialState>()(
           const response = await bankAccountApi.refreshAccount(accountId);
           if (response.success && response.data) {
             set((state) => ({
-              accounts: state.accounts.map(a => a.id === accountId ? response.data! : a),
+              accounts: state.accounts.map((a) =>
+                a.id === accountId ? response.data! : a,
+              ),
             }));
           }
         } catch (error) {
-          if (__DEV__) console.error('Failed to refresh account:', error);
+          if (__DEV__) console.error("Failed to refresh account:", error);
         }
       },
 
@@ -244,8 +279,11 @@ export const useFinancialStore = create<FinancialState>()(
           const response = await bankAccountApi.disconnectAccount(accountId);
           if (response.success) {
             set((state) => ({
-              accounts: state.accounts.filter(a => a.id !== accountId),
-              selectedAccountId: state.selectedAccountId === accountId ? null : state.selectedAccountId,
+              accounts: state.accounts.filter((a) => a.id !== accountId),
+              selectedAccountId:
+                state.selectedAccountId === accountId
+                  ? null
+                  : state.selectedAccountId,
             }));
             return true;
           }
@@ -269,15 +307,21 @@ export const useFinancialStore = create<FinancialState>()(
             set({
               transactions: response.data.items,
               totalTransactions: response.data.total,
-              isLoadingTransactions: false
+              isLoadingTransactions: false,
             });
           } else {
-            set({ error: response.error?.message, isLoadingTransactions: false });
+            set({
+              error: response.error?.message,
+              isLoadingTransactions: false,
+            });
           }
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'Failed to fetch transactions',
-            isLoadingTransactions: false
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to fetch transactions",
+            isLoadingTransactions: false,
           });
         }
       },
@@ -289,17 +333,20 @@ export const useFinancialStore = create<FinancialState>()(
             set({ transactionCategories: response.data.categories });
           }
         } catch (error) {
-          if (__DEV__) console.error('Failed to fetch categories:', error);
+          if (__DEV__) console.error("Failed to fetch categories:", error);
         }
       },
 
       updateTransactionCategory: async (transactionId, category) => {
         try {
-          const response = await transactionApi.updateCategory(transactionId, category);
+          const response = await transactionApi.updateCategory(
+            transactionId,
+            category,
+          );
           if (response.success && response.data) {
             set((state) => ({
-              transactions: state.transactions.map(t =>
-                t.id === transactionId ? response.data! : t
+              transactions: state.transactions.map((t) =>
+                t.id === transactionId ? response.data! : t,
               ),
             }));
             return true;
@@ -321,8 +368,11 @@ export const useFinancialStore = create<FinancialState>()(
           }
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'Failed to fetch budgets',
-            isLoadingBudgets: false
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to fetch budgets",
+            isLoadingBudgets: false,
           });
         }
       },
@@ -332,7 +382,10 @@ export const useFinancialStore = create<FinancialState>()(
           const response = await budgetApi.upsert(budget);
           if (response.success && response.data) {
             set((state) => ({
-              budgets: [...state.budgets.filter(b => b.category !== budget.category), response.data!],
+              budgets: [
+                ...state.budgets.filter((b) => b.category !== budget.category),
+                response.data!,
+              ],
             }));
             return true;
           }
@@ -343,7 +396,7 @@ export const useFinancialStore = create<FinancialState>()(
       },
 
       updateBudget: async (category, updates) => {
-        const budget = get().budgets.find(b => b.category === category);
+        const budget = get().budgets.find((b) => b.category === category);
         if (!budget) return false;
         return get().createBudget({ ...budget, ...updates });
       },
@@ -353,7 +406,7 @@ export const useFinancialStore = create<FinancialState>()(
           const response = await budgetApi.delete(category);
           if (response.success) {
             set((state) => ({
-              budgets: state.budgets.filter(b => b.category !== category),
+              budgets: state.budgets.filter((b) => b.category !== category),
             }));
             return true;
           }
@@ -370,7 +423,7 @@ export const useFinancialStore = create<FinancialState>()(
             set({ budgetAlerts: response.data.alerts });
           }
         } catch (error) {
-          if (__DEV__) console.error('Failed to fetch budget alerts:', error);
+          if (__DEV__) console.error("Failed to fetch budget alerts:", error);
         }
       },
 
@@ -385,8 +438,9 @@ export const useFinancialStore = create<FinancialState>()(
           }
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'Failed to fetch goals',
-            isLoadingGoals: false
+            error:
+              error instanceof Error ? error.message : "Failed to fetch goals",
+            isLoadingGoals: false,
           });
         }
       },
@@ -409,7 +463,9 @@ export const useFinancialStore = create<FinancialState>()(
           const response = await financialGoalsApi.update(goalId, updates);
           if (response.success && response.data) {
             set((state) => ({
-              goals: state.goals.map(g => g.id === goalId ? response.data! : g),
+              goals: state.goals.map((g) =>
+                g.id === goalId ? response.data! : g,
+              ),
             }));
             return true;
           }
@@ -421,10 +477,15 @@ export const useFinancialStore = create<FinancialState>()(
 
       contributeToGoal: async (goalId, amount) => {
         try {
-          const response = await financialGoalsApi.addContribution(goalId, amount);
+          const response = await financialGoalsApi.addContribution(
+            goalId,
+            amount,
+          );
           if (response.success && response.data) {
             set((state) => ({
-              goals: state.goals.map(g => g.id === goalId ? response.data! : g),
+              goals: state.goals.map((g) =>
+                g.id === goalId ? response.data! : g,
+              ),
             }));
             return true;
           }
@@ -438,7 +499,9 @@ export const useFinancialStore = create<FinancialState>()(
         try {
           const response = await financialGoalsApi.delete(goalId);
           if (response.success) {
-            set((state) => ({ goals: state.goals.filter(g => g.id !== goalId) }));
+            set((state) => ({
+              goals: state.goals.filter((g) => g.id !== goalId),
+            }));
             return true;
           }
           return false;
@@ -458,15 +521,21 @@ export const useFinancialStore = create<FinancialState>()(
           }
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'Failed to fetch debt overview',
-            isLoadingDebt: false
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to fetch debt overview",
+            isLoadingDebt: false,
           });
         }
       },
 
       calculatePayoff: async (strategy, extraPayment) => {
         try {
-          const response = await debtApi.calculatePayoff(strategy, extraPayment);
+          const response = await debtApi.calculatePayoff(
+            strategy,
+            extraPayment,
+          );
           if (response.success && response.data) {
             return {
               timeline: response.data.timeline,
@@ -485,7 +554,7 @@ export const useFinancialStore = create<FinancialState>()(
       resetStore: () => set(initialState),
     }),
     {
-      name: 'cpfi-financial-store',
+      name: "cpfi-financial-store",
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         accounts: state.accounts,
@@ -493,29 +562,36 @@ export const useFinancialStore = create<FinancialState>()(
         budgets: state.budgets,
         goals: state.goals,
       }),
-    }
-  )
+    },
+  ),
 );
 
 // Selectors
-export const selectNetWorth = (state: FinancialState) => state.dashboard?.netWorth ?? 0;
-export const selectTotalAssets = (state: FinancialState) => state.dashboard?.totalAssets ?? 0;
-export const selectTotalLiabilities = (state: FinancialState) => state.dashboard?.totalLiabilities ?? 0;
-export const selectSavingsRate = (state: FinancialState) => state.dashboard?.savingsRate ?? 0;
-export const selectAccountsByType = (type: BankAccount['type']) => (state: FinancialState) =>
-  state.accounts.filter(a => a.type === type);
+export const selectNetWorth = (state: FinancialState) =>
+  state.dashboard?.netWorth ?? 0;
+export const selectTotalAssets = (state: FinancialState) =>
+  state.dashboard?.totalAssets ?? 0;
+export const selectTotalLiabilities = (state: FinancialState) =>
+  state.dashboard?.totalLiabilities ?? 0;
+export const selectSavingsRate = (state: FinancialState) =>
+  state.dashboard?.savingsRate ?? 0;
+export const selectAccountsByType =
+  (type: BankAccount["type"]) => (state: FinancialState) =>
+    state.accounts.filter((a) => a.type === type);
 export const selectTotalBalance = (state: FinancialState) =>
   state.accounts.reduce((sum, a) => sum + a.balance, 0);
 export const selectBudgetProgress = (state: FinancialState) =>
-  state.budgets.map(b => ({
+  state.budgets.map((b) => ({
     category: b.category,
     limit: b.limit,
     spent: b.spent,
     percentage: b.limit > 0 ? Math.round((b.spent / b.limit) * 100) : 0,
   }));
 export const selectGoalProgress = (state: FinancialState) =>
-  state.goals.map(g => ({
+  state.goals.map((g) => ({
     ...g,
-    percentage: g.targetAmount > 0 ? Math.round((g.currentAmount / g.targetAmount) * 100) : 0,
+    percentage:
+      g.targetAmount > 0
+        ? Math.round((g.currentAmount / g.targetAmount) * 100)
+        : 0,
   }));
-

@@ -20,15 +20,15 @@
  *   - saveScore: boolean (optional, default: false)
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { healthScoreCalculatorV2 } from '@/lib/financial/health-score-calculator-v2';
-import { financialAggregationService } from '@/lib/financial/financial-aggregation-service';
+import { NextRequest, NextResponse } from "next/server";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { healthScoreCalculatorV2 } from "@/lib/financial/health-score-calculator-v2";
+import { financialAggregationService } from "@/lib/financial/financial-aggregation-service";
 import {
   HealthScoreOptionsV2,
   AgeGroup,
   IncomeGroup,
-} from '@/lib/financial/types/health-score-v2.types';
+} from "@/lib/financial/types/health-score-v2.types";
 
 /**
  * GET - Calculate health score V2 with query parameters
@@ -39,33 +39,33 @@ export async function GET(request: NextRequest) {
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user?.id) {
       return NextResponse.json(
-        { error: 'Unauthorized', message: 'Invalid or missing authentication' },
-        { status: 401 }
+        { error: "Unauthorized", message: "Invalid or missing authentication" },
+        { status: 401 },
       );
     }
 
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId') || validation.user.id;
+    const userId = searchParams.get("userId") || validation.user.id;
 
     // Verify user can access this data
     if (userId !== validation.user.id) {
       return NextResponse.json(
-        { error: 'Forbidden', message: 'Cannot access other user data' },
-        { status: 403 }
+        { error: "Forbidden", message: "Cannot access other user data" },
+        { status: 403 },
       );
     }
 
     // Parse options from query params
     const options: HealthScoreOptionsV2 = {
-      includeProjections: searchParams.get('includeProjections') !== 'false',
-      includeBenchmarks: searchParams.get('includeBenchmarks') !== 'false',
-      includeHistory: searchParams.get('includeHistory') !== 'false',
+      includeProjections: searchParams.get("includeProjections") !== "false",
+      includeBenchmarks: searchParams.get("includeBenchmarks") !== "false",
+      includeHistory: searchParams.get("includeHistory") !== "false",
     };
 
-    const ageGroup = searchParams.get('ageGroup') as AgeGroup | null;
+    const ageGroup = searchParams.get("ageGroup") as AgeGroup | null;
     if (ageGroup) options.ageGroup = ageGroup;
 
-    const incomeGroup = searchParams.get('incomeGroup') as IncomeGroup | null;
+    const incomeGroup = searchParams.get("incomeGroup") as IncomeGroup | null;
     if (incomeGroup) options.incomeGroup = incomeGroup;
 
     // Get aggregated financial context
@@ -91,13 +91,13 @@ export async function GET(request: NextRequest) {
     // HealthScoreV2Route error: GET failed
     return NextResponse.json(
       {
-        error: 'Internal Server Error',
+        error: "Internal Server Error",
         message:
           _error instanceof Error
             ? _error.message
-            : 'Failed to calculate health score',
+            : "Failed to calculate health score",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -111,8 +111,8 @@ export async function POST(request: NextRequest) {
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user?.id) {
       return NextResponse.json(
-        { error: 'Unauthorized', message: 'Invalid or missing authentication' },
-        { status: 401 }
+        { error: "Unauthorized", message: "Invalid or missing authentication" },
+        { status: 401 },
       );
     }
 
@@ -125,8 +125,8 @@ export async function POST(request: NextRequest) {
     // Verify user can access this data
     if (targetUserId !== validation.user.id) {
       return NextResponse.json(
-        { error: 'Forbidden', message: 'Cannot access other user data' },
-        { status: 403 }
+        { error: "Forbidden", message: "Cannot access other user data" },
+        { status: 403 },
       );
     }
 
@@ -159,13 +159,13 @@ export async function POST(request: NextRequest) {
     // HealthScoreV2Route error: POST failed
     return NextResponse.json(
       {
-        error: 'Internal Server Error',
+        error: "Internal Server Error",
         message:
           _error instanceof Error
             ? _error.message
-            : 'Failed to calculate health score',
+            : "Failed to calculate health score",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

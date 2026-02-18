@@ -17,11 +17,13 @@ The Financial Chat feature provides an AI-powered conversational interface to he
 ### Accessing Financial Chat
 
 **Web**:
+
 1. Log in to CreditMaster Pro
 2. Navigate to **Financial Intelligence** → **Chat**
 3. Click **"New Chat"** to start a conversation
 
 **Mobile**:
+
 1. Open the CreditMaster Pro app
 2. Tap the **"Financial Intelligence"** tab
 3. Select **"Chat"**
@@ -46,34 +48,40 @@ The Financial Chat feature provides an AI-powered conversational interface to he
 ### Example Questions
 
 **Portfolio & Investments**:
+
 - "How should I allocate my investment portfolio?"
 - "What's the best strategy for my 401(k)?"
 - "Should I invest in stocks or bonds right now?"
 - "Analyze my current portfolio performance"
 
 **Budget & Savings**:
+
 - "Help me create a monthly budget"
 - "How can I save more money each month?"
 - "What's the best way to build an emergency fund?"
 - "Review my spending patterns"
 
 **Debt Management**:
+
 - "What's the best way to pay off my credit card debt?"
 - "Should I use the debt avalanche or snowball method?"
 - "How can I consolidate my debts?"
 - "Calculate my debt-to-income ratio"
 
 **Tax Planning**:
+
 - "How can I reduce my tax liability?"
 - "What tax deductions am I eligible for?"
 - "Should I contribute to a Roth or Traditional IRA?"
 
 **Retirement Planning**:
+
 - "Am I on track for retirement?"
 - "How much should I save for retirement?"
 - "When can I afford to retire?"
 
 **General Financial Questions**:
+
 - "What's my net worth?"
 - "How's my financial health?"
 - "Give me a financial overview"
@@ -106,6 +114,7 @@ The Financial Chat feature provides an AI-powered conversational interface to he
 ### Intent Detection
 
 The AI automatically detects what you're asking about:
+
 - **Portfolio Advice**: Investment allocation questions
 - **Budget Help**: Budget planning and tracking
 - **Debt Strategy**: Debt payoff strategies
@@ -122,11 +131,13 @@ The AI automatically detects what you're asking about:
 ### Viewing Chat History
 
 **Web**:
+
 - All your chat sessions appear in the left sidebar
 - Click any session to view its conversation history
 - Sessions are sorted by most recent activity
 
 **Mobile**:
+
 - Swipe from the left edge or tap the menu icon
 - Your chat sessions appear in a list
 - Tap any session to open it
@@ -134,12 +145,14 @@ The AI automatically detects what you're asking about:
 ### Renaming a Chat Session
 
 **Web**:
+
 1. Hover over the chat session in the sidebar
 2. Click the **"..."** menu icon
 3. Select **"Rename"**
 4. Enter a new title and press **Enter**
 
 **Mobile**:
+
 1. Long-press on a chat session
 2. Select **"Rename"** from the menu
 3. Enter a new title and tap **"Save"**
@@ -147,12 +160,14 @@ The AI automatically detects what you're asking about:
 ### Deleting a Chat Session
 
 **Web**:
+
 1. Hover over the chat session in the sidebar
 2. Click the **"..."** menu icon
 3. Select **"Delete"**
 4. Confirm the deletion
 
 **Mobile**:
+
 1. Swipe left on a chat session
 2. Tap the **"Delete"** button
 3. Confirm the deletion
@@ -178,11 +193,13 @@ Tap any chip to quickly send that query.
 ### Context-Aware Responses
 
 The AI remembers your conversation context:
+
 - You can ask follow-up questions without repeating information
 - The AI references previous messages in the conversation
 - Context is maintained throughout the entire chat session
 
 **Example**:
+
 ```
 You: "How should I allocate my portfolio?"
 AI: "Based on your moderate risk tolerance, I recommend 60% stocks, 30% bonds, 10% cash..."
@@ -243,10 +260,12 @@ AI: "For your portfolio, I'd suggest allocating 20% of your stock portion to int
 ### Theme Support
 
 **Web**:
+
 - Automatically matches your system theme (light/dark)
 - Toggle theme in user settings
 
 **Mobile**:
+
 - Follows system theme by default
 - Override in app settings
 
@@ -264,22 +283,26 @@ AI: "For your portfolio, I'd suggest allocating 20% of your stock portion to int
 ### Common Issues
 
 **"Failed to send message"**:
+
 - Check your internet connection
 - Verify you're logged in
 - Try refreshing the page/app
 - Check if you've exceeded rate limits (60 messages/minute)
 
 **"Session not found"**:
+
 - The session may have been deleted
 - Try creating a new session
 - Contact support if the issue persists
 
 **Slow responses**:
+
 - Complex queries take longer to process
 - Check your internet connection speed
 - Try during off-peak hours
 
 **Messages not appearing**:
+
 - Refresh the page/app
 - Check if the session is archived
 - Clear your browser cache (web)
@@ -316,6 +339,7 @@ AI: "For your portfolio, I'd suggest allocating 20% of your stock portion to int
 ### Multi-Turn Conversations
 
 The AI maintains context across multiple messages:
+
 - Ask clarifying questions
 - Request more details on specific points
 - Change topics naturally
@@ -323,6 +347,7 @@ The AI maintains context across multiple messages:
 ### Action Execution
 
 The AI can perform actions on your behalf:
+
 - View your portfolio
 - Analyze spending patterns
 - Calculate debt payoff timelines
@@ -331,6 +356,7 @@ The AI can perform actions on your behalf:
 ### Personalized Recommendations
 
 Responses are tailored to:
+
 - Your current financial situation
 - Your stated goals and preferences
 - Your risk tolerance
@@ -355,4 +381,3 @@ Need help? We're here for you!
 - **Live Chat**: Available 9 AM - 5 PM EST
 - **Phone**: 1-800-CREDIT-PRO
 - **Discord**: discord.gg/creditmasterpro
-

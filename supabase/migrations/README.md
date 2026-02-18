@@ -5,12 +5,14 @@ This directory contains all database migrations for the Credit Repair Accelerato
 ## Migrations
 
 ### 20250203000000_student_loan_schema.sql
+
 - Student loan management tables
 - Servicer intelligence
 - Federal program applications
 - Strategy tracking
 
 ### 20250204000000_credit_repair_schema.sql
+
 - **Credit Repair Accelerator schema** (NEW)
 - 8 tables with full schemas, indexes, and RLS policies
 - Comprehensive credit repair system
@@ -18,9 +20,11 @@ This directory contains all database migrations for the Credit Repair Accelerato
 ## Tables Created
 
 ### 1. credit_repair_scores
+
 Stores user credit repair scores over time with factors and opportunities.
 
 **Columns**:
+
 - `id` (UUID, PK)
 - `user_id` (UUID, FK to auth.users)
 - `score` (INTEGER, 0-100)
@@ -31,12 +35,15 @@ Stores user credit repair scores over time with factors and opportunities.
 - `created_at`, `updated_at` (TIMESTAMPTZ)
 
 **Indexes**:
+
 - `user_id`, `created_at`, `score`
 
 ### 2. credit_repair_actions
+
 Tracks all credit repair actions with status and outcomes.
 
 **Columns**:
+
 - `id` (UUID, PK)
 - `user_id` (UUID, FK)
 - `action_type` (TEXT, CHECK constraint)
@@ -49,6 +56,7 @@ Tracks all credit repair actions with status and outcomes.
 - `created_at`, `updated_at` (TIMESTAMPTZ)
 
 **Action Types**:
+
 - dispute_inaccuracy
 - pay_down_utilization
 - goodwill_letter
@@ -61,12 +69,15 @@ Tracks all credit repair actions with status and outcomes.
 - debt_consolidation
 
 **Indexes**:
+
 - `user_id`, `status`, `action_type`, `created_at`
 
 ### 3. credit_repair_progress
+
 Tracks milestones and progress over time.
 
 **Columns**:
+
 - `id` (UUID, PK)
 - `user_id` (UUID, FK)
 - `milestone_type` (TEXT)
@@ -77,12 +88,15 @@ Tracks milestones and progress over time.
 - `created_at` (TIMESTAMPTZ)
 
 **Indexes**:
+
 - `user_id`, `achieved_at`, `milestone_type`
 
 ### 4. credit_reports
+
 Stores credit report data from all three bureaus.
 
 **Columns**:
+
 - `id` (UUID, PK)
 - `user_id` (UUID, FK)
 - `report_data` (JSONB)
@@ -93,12 +107,15 @@ Stores credit report data from all three bureaus.
 - `created_at`, `updated_at` (TIMESTAMPTZ)
 
 **Indexes**:
+
 - `user_id`, `bureau`, `report_date`, `score`
 
 ### 5. disputes
+
 Tracks all credit report disputes with full lifecycle.
 
 **Columns**:
+
 - `id` (UUID, PK)
 - `user_id` (UUID, FK)
 - `item_type`, `item_description` (TEXT)
@@ -115,6 +132,7 @@ Tracks all credit report disputes with full lifecycle.
 - `created_at`, `updated_at` (TIMESTAMPTZ)
 
 **Strategies**:
+
 - basic_dispute
 - debt_validation
 - method_of_verification
@@ -127,12 +145,15 @@ Tracks all credit report disputes with full lifecycle.
 - pay_for_delete
 
 **Indexes**:
+
 - `user_id`, `status`, `bureau`, `strategy`, `created_at`
 
 ### 6. goodwill_letters
+
 Tracks goodwill letter requests to creditors.
 
 **Columns**:
+
 - `id` (UUID, PK)
 - `user_id` (UUID, FK)
 - `creditor_name`, `account_number` (TEXT)
@@ -146,12 +167,15 @@ Tracks goodwill letter requests to creditors.
 - `created_at`, `updated_at` (TIMESTAMPTZ)
 
 **Indexes**:
+
 - `user_id`, `status`, `created_at`
 
 ### 7. negotiations
+
 Tracks pay-for-delete negotiations with collection agencies.
 
 **Columns**:
+
 - `id` (UUID, PK)
 - `user_id` (UUID, FK)
 - `collection_agency`, `original_creditor` (TEXT)
@@ -166,12 +190,15 @@ Tracks pay-for-delete negotiations with collection agencies.
 - `created_at`, `updated_at` (TIMESTAMPTZ)
 
 **Indexes**:
+
 - `user_id`, `status`, `created_at`
 
 ### 8. credit_cards
+
 Stores user credit card data for utilization optimization.
 
 **Columns**:
+
 - `id` (UUID, PK)
 - `user_id` (UUID, FK)
 - `card_name` (TEXT)
@@ -183,20 +210,24 @@ Stores user credit card data for utilization optimization.
 - `created_at`, `updated_at` (TIMESTAMPTZ)
 
 **Indexes**:
+
 - `user_id`, `utilization`, `statement_date`
 
 ## Security
 
 ### Row Level Security (RLS)
+
 All tables have RLS enabled with policies ensuring users can only access their own data.
 
 **Policies per table**:
+
 - SELECT: Users can view their own records
 - INSERT: Users can insert their own records
 - UPDATE: Users can update their own records
 - DELETE: Users can delete their own records
 
 ### Triggers
+
 All tables with `updated_at` columns have triggers to automatically update the timestamp on row updates.
 
 ## How to Apply Migrations
@@ -239,6 +270,7 @@ psql -h your-supabase-host -U postgres -d postgres -f supabase/migrations/test_m
 ```
 
 The test script will verify:
+
 1. All tables exist
 2. All indexes exist
 3. RLS is enabled
@@ -286,6 +318,6 @@ After applying the migration:
 ## Support
 
 For issues or questions, refer to:
+
 - Supabase Documentation: https://supabase.com/docs
 - PostgreSQL Documentation: https://www.postgresql.org/docs/
-

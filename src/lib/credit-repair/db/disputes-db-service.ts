@@ -1,9 +1,9 @@
 /**
  * Disputes Database Service
- * 
+ *
  * Provides database operations for credit report disputes.
  * Includes full CRUD operations, error handling, and TypeScript types.
- * 
+ *
  * Features:
  * - Dispute CRUD operations
  * - Status tracking
@@ -14,10 +14,10 @@
  * - Transaction support
  */
 
-import { getSupabase } from '@/lib/supabase/client';
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
-import type { Dispute, DisputeStrategy, DisputeStatus, Bureau } from './types';
+import type { Dispute, DisputeStrategy, DisputeStatus, Bureau } from "./types";
 
 // ============================================================================
 // TYPES
@@ -51,7 +51,7 @@ export interface UpdateDisputeInput {
   bureau?: Bureau;
   sentAt?: Date;
   responseReceivedAt?: Date;
-  outcome?: 'removed' | 'updated' | 'verified' | 'pending';
+  outcome?: "removed" | "updated" | "verified" | "pending";
   notes?: string;
 }
 
@@ -78,7 +78,7 @@ interface DisputeRow {
   bureau: Bureau;
   sent_at?: string | null;
   response_received_at?: string | null;
-  outcome?: 'removed' | 'updated' | 'verified' | 'pending' | null;
+  outcome?: "removed" | "updated" | "verified" | "pending" | null;
   notes?: string | null;
   created_at: string;
   updated_at: string;
@@ -97,7 +97,7 @@ type DisputeUpdateRow = Partial<{
   bureau: Bureau;
   sent_at: string;
   response_received_at: string;
-  outcome: 'removed' | 'updated' | 'verified' | 'pending';
+  outcome: "removed" | "updated" | "verified" | "pending";
   notes: string;
 }>;
 
@@ -109,11 +109,11 @@ type DisputeUpdateRow = Partial<{
  * Create a new dispute
  */
 export async function createDispute(
-  input: CreateDisputeInput
+  input: CreateDisputeInput,
 ): Promise<Dispute> {
   try {
     const { data, error } = await supabase
-      .from('disputes')
+      .from("disputes")
       .insert({
         user_id: input.userId,
         item_type: input.itemType,
@@ -124,7 +124,7 @@ export async function createDispute(
         inaccuracy_type: input.inaccuracyType,
         strategy: input.strategy,
         letter_content: input.letterContent,
-        status: input.status || 'draft',
+        status: input.status || "draft",
         bureau: input.bureau,
         notes: input.notes,
       })
@@ -145,18 +145,18 @@ export async function createDispute(
  */
 export async function getDispute(
   disputeId: string,
-  userId: string
+  userId: string,
 ): Promise<Dispute | null> {
   try {
     const { data, error } = await supabase
-      .from('disputes')
-      .select('*')
-      .eq('id', disputeId)
-      .eq('user_id', userId)
+      .from("disputes")
+      .select("*")
+      .eq("id", disputeId)
+      .eq("user_id", userId)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
+      if (error.code === "PGRST116") {
         return null;
       }
       throw error;
@@ -174,25 +174,25 @@ export async function getDispute(
  */
 export async function getDisputesByUser(
   userId: string,
-  filters?: DisputeFilters
+  filters?: DisputeFilters,
 ): Promise<{ disputes: Dispute[]; total: number }> {
   try {
     let query = supabase
-      .from('disputes')
-      .select('*', { count: 'exact' })
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .from("disputes")
+      .select("*", { count: "exact" })
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
     if (filters?.status) {
-      query = query.eq('status', filters.status);
+      query = query.eq("status", filters.status);
     }
 
     if (filters?.bureau) {
-      query = query.eq('bureau', filters.bureau);
+      query = query.eq("bureau", filters.bureau);
     }
 
     if (filters?.strategy) {
-      query = query.eq('strategy', filters.strategy);
+      query = query.eq("strategy", filters.strategy);
     }
 
     if (filters?.limit) {
@@ -200,7 +200,10 @@ export async function getDisputesByUser(
     }
 
     if (filters?.offset) {
-      query = query.range(filters.offset, filters.offset + (filters.limit || 10) - 1);
+      query = query.range(
+        filters.offset,
+        filters.offset + (filters.limit || 10) - 1,
+      );
     }
 
     const { data, error, count } = await query;
@@ -223,15 +226,15 @@ export async function getDisputesByUser(
 export async function getDisputesByStatus(
   userId: string,
   status: DisputeStatus,
-  limit?: number
+  limit?: number,
 ): Promise<Dispute[]> {
   try {
     let query = supabase
-      .from('disputes')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('status', status)
-      .order('created_at', { ascending: false });
+      .from("disputes")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", status)
+      .order("created_at", { ascending: false });
 
     if (limit) {
       query = query.limit(limit);
@@ -245,7 +248,9 @@ export async function getDisputesByStatus(
     return rows.map(mapDisputeFromDb);
   } catch (error) {
     // DisputesDB error: Error getting disputes by status
-    throw new Error(`Failed to get disputes by status: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to get disputes by status: ${(error as Error).message}`,
+    );
   }
 }
 
@@ -255,15 +260,15 @@ export async function getDisputesByStatus(
 export async function getDisputesByBureau(
   userId: string,
   bureau: Bureau,
-  limit?: number
+  limit?: number,
 ): Promise<Dispute[]> {
   try {
     let query = supabase
-      .from('disputes')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('bureau', bureau)
-      .order('created_at', { ascending: false });
+      .from("disputes")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("bureau", bureau)
+      .order("created_at", { ascending: false });
 
     if (limit) {
       query = query.limit(limit);
@@ -277,7 +282,9 @@ export async function getDisputesByBureau(
     return rows.map(mapDisputeFromDb);
   } catch (error) {
     // DisputesDB error: Error getting disputes by bureau
-    throw new Error(`Failed to get disputes by bureau: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to get disputes by bureau: ${(error as Error).message}`,
+    );
   }
 }
 
@@ -288,48 +295,58 @@ export async function updateDispute(
   disputeId: string,
   userId: string,
   updates: UpdateDisputeInput,
-  expectedUpdatedAt?: Date
+  expectedUpdatedAt?: Date,
 ): Promise<Dispute> {
   try {
     // If optimistic locking is enabled, verify the record hasn't changed
     if (expectedUpdatedAt) {
       const { data: current, error: checkError } = await supabase
-        .from('disputes')
-        .select('updated_at')
-        .eq('id', disputeId)
-        .eq('user_id', userId)
+        .from("disputes")
+        .select("updated_at")
+        .eq("id", disputeId)
+        .eq("user_id", userId)
         .single();
 
       if (checkError) throw checkError;
 
       const currentUpdatedAt = new Date(current.updated_at);
       if (currentUpdatedAt.getTime() !== expectedUpdatedAt.getTime()) {
-        throw new Error('Dispute has been modified by another process. Please refresh and try again.');
+        throw new Error(
+          "Dispute has been modified by another process. Please refresh and try again.",
+        );
       }
     }
 
     const updateData: DisputeUpdateRow = {};
 
     if (updates.itemType !== undefined) updateData.item_type = updates.itemType;
-    if (updates.itemDescription !== undefined) updateData.item_description = updates.itemDescription;
-    if (updates.creditorName !== undefined) updateData.creditor_name = updates.creditorName;
-    if (updates.accountNumber !== undefined) updateData.account_number = updates.accountNumber;
+    if (updates.itemDescription !== undefined)
+      updateData.item_description = updates.itemDescription;
+    if (updates.creditorName !== undefined)
+      updateData.creditor_name = updates.creditorName;
+    if (updates.accountNumber !== undefined)
+      updateData.account_number = updates.accountNumber;
     if (updates.balance !== undefined) updateData.balance = updates.balance;
-    if (updates.inaccuracyType !== undefined) updateData.inaccuracy_type = updates.inaccuracyType;
+    if (updates.inaccuracyType !== undefined)
+      updateData.inaccuracy_type = updates.inaccuracyType;
     if (updates.strategy !== undefined) updateData.strategy = updates.strategy;
-    if (updates.letterContent !== undefined) updateData.letter_content = updates.letterContent;
+    if (updates.letterContent !== undefined)
+      updateData.letter_content = updates.letterContent;
     if (updates.status !== undefined) updateData.status = updates.status;
     if (updates.bureau !== undefined) updateData.bureau = updates.bureau;
-    if (updates.sentAt !== undefined) updateData.sent_at = updates.sentAt.toISOString();
-    if (updates.responseReceivedAt !== undefined) updateData.response_received_at = updates.responseReceivedAt.toISOString();
+    if (updates.sentAt !== undefined)
+      updateData.sent_at = updates.sentAt.toISOString();
+    if (updates.responseReceivedAt !== undefined)
+      updateData.response_received_at =
+        updates.responseReceivedAt.toISOString();
     if (updates.outcome !== undefined) updateData.outcome = updates.outcome;
     if (updates.notes !== undefined) updateData.notes = updates.notes;
 
     const { data, error } = await supabase
-      .from('disputes')
+      .from("disputes")
       .update(updateData)
-      .eq('id', disputeId)
-      .eq('user_id', userId)
+      .eq("id", disputeId)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -347,14 +364,14 @@ export async function updateDispute(
  */
 export async function deleteDispute(
   disputeId: string,
-  userId: string
+  userId: string,
 ): Promise<boolean> {
   try {
     const { error } = await supabase
-      .from('disputes')
+      .from("disputes")
       .delete()
-      .eq('id', disputeId)
-      .eq('user_id', userId);
+      .eq("id", disputeId)
+      .eq("user_id", userId);
 
     if (error) throw error;
 
@@ -372,9 +389,7 @@ export async function deleteDispute(
 /**
  * Get dispute statistics for a user
  */
-export async function getDisputeStats(
-  userId: string
-): Promise<{
+export async function getDisputeStats(userId: string): Promise<{
   total: number;
   byStatus: Record<DisputeStatus, number>;
   byBureau: Record<Bureau, number>;
@@ -383,9 +398,9 @@ export async function getDisputeStats(
 }> {
   try {
     const { data, error } = await supabase
-      .from('disputes')
-      .select('*')
-      .eq('user_id', userId);
+      .from("disputes")
+      .select("*")
+      .eq("user_id", userId);
 
     if (error) throw error;
 
@@ -412,9 +427,12 @@ export async function getDisputeStats(
     });
 
     // Calculate success rate
-    const resolved = disputes.filter((d) => d.status === 'resolved');
-    const successful = resolved.filter((d) => d.outcome === 'removed' || d.outcome === 'updated');
-    const successRate = resolved.length > 0 ? (successful.length / resolved.length) * 100 : 0;
+    const resolved = disputes.filter((d) => d.status === "resolved");
+    const successful = resolved.filter(
+      (d) => d.outcome === "removed" || d.outcome === "updated",
+    );
+    const successRate =
+      resolved.length > 0 ? (successful.length / resolved.length) * 100 : 0;
 
     return {
       total,
@@ -435,21 +453,23 @@ export async function getDisputeStats(
 export async function bulkUpdateDisputeStatus(
   disputeIds: string[],
   userId: string,
-  status: DisputeStatus
+  status: DisputeStatus,
 ): Promise<number> {
   try {
     const { error, count } = await supabase
-      .from('disputes')
+      .from("disputes")
       .update({ status })
-      .in('id', disputeIds)
-      .eq('user_id', userId);
+      .in("id", disputeIds)
+      .eq("user_id", userId);
 
     if (error) throw error;
 
     return count || 0;
   } catch (error) {
     // DisputesDB error: Error bulk updating dispute status
-    throw new Error(`Failed to bulk update dispute status: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to bulk update dispute status: ${(error as Error).message}`,
+    );
   }
 }
 
@@ -472,7 +492,9 @@ function mapDisputeFromDb(data: DisputeRow): Dispute {
     status: data.status,
     bureau: data.bureau,
     sentAt: data.sent_at ? new Date(data.sent_at) : undefined,
-    responseReceivedAt: data.response_received_at ? new Date(data.response_received_at) : undefined,
+    responseReceivedAt: data.response_received_at
+      ? new Date(data.response_received_at)
+      : undefined,
     outcome: data.outcome ?? undefined,
     notes: data.notes ?? undefined,
     createdAt: new Date(data.created_at),

@@ -3,7 +3,7 @@
  * Phase 6.3.1: Enhanced mobile chat with session management and Phase 6.1 backend integration
  */
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -16,18 +16,18 @@ import {
   RefreshControl,
   ActivityIndicator,
   Alert,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { lightTheme as theme } from '../../src/constants/theme';
-import { useAuth } from '../../hooks/useAuth';
-import DOMPurify from 'isomorphic-dompurify';
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { lightTheme as theme } from "../../src/constants/theme";
+import { useAuth } from "../../hooks/useAuth";
+import DOMPurify from "isomorphic-dompurify";
 
 // Types matching Phase 6.1 backend
 interface ChatMessage {
   id: string;
   sessionId: string;
-  role: 'user' | 'assistant' | 'system';
+  role: "user" | "assistant" | "system";
   content: string;
   timestamp: Date;
   metadata?: {
@@ -52,7 +52,7 @@ export default function FinancialChatScreen() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [inputText, setInputText] = useState('');
+  const [inputText, setInputText] = useState("");
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,13 +71,13 @@ export default function FinancialChatScreen() {
     if (!user) return;
 
     try {
-      const response = await fetch('/api/chat/financial/sessions?limit=20', {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+      const response = await fetch("/api/chat/financial/sessions?limit=20", {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
       });
 
-      if (!response.ok) throw new Error('Failed to load sessions');
+      if (!response.ok) throw new Error("Failed to load sessions");
 
       const data = await response.json();
       setSessions(data.sessions || []);
@@ -90,27 +90,30 @@ export default function FinancialChatScreen() {
         createNewSession();
       }
     } catch (err) {
-      if (__DEV__) console.error('Failed to load sessions:', err);
-      setError('Failed to load chat sessions');
+      if (__DEV__) console.error("Failed to load sessions:", err);
+      setError("Failed to load chat sessions");
     }
   }, [user]);
 
   // Load messages for session
   const loadMessages = useCallback(async (sessionId: string) => {
     try {
-      const response = await fetch(`/api/chat/financial/sessions/${sessionId}/messages?limit=100`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-      });
+      const response = await fetch(
+        `/api/chat/financial/sessions/${sessionId}/messages?limit=100`,
+        {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        },
+      );
 
-      if (!response.ok) throw new Error('Failed to load messages');
+      if (!response.ok) throw new Error("Failed to load messages");
 
       const data = await response.json();
       setMessages(data.messages || []);
     } catch (err) {
-      if (__DEV__) console.error('Failed to load messages:', err);
-      setError('Failed to load messages');
+      if (__DEV__) console.error("Failed to load messages:", err);
+      setError("Failed to load messages");
     }
   }, []);
 
@@ -119,24 +122,24 @@ export default function FinancialChatScreen() {
     if (!user) return;
 
     try {
-      const response = await fetch('/api/chat/financial/sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ title: 'New Chat' }),
+      const response = await fetch("/api/chat/financial/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ title: "New Chat" }),
       });
 
-      if (!response.ok) throw new Error('Failed to create session');
+      if (!response.ok) throw new Error("Failed to create session");
 
       const data = await response.json();
       const newSession = data.session;
 
-      setSessions(prev => [newSession, ...prev]);
+      setSessions((prev) => [newSession, ...prev]);
       setCurrentSessionId(newSession.id);
       setMessages([]);
     } catch (err) {
-      if (__DEV__) console.error('Failed to create session:', err);
-      setError('Failed to create new session');
+      if (__DEV__) console.error("Failed to create session:", err);
+      setError("Failed to create new session");
     }
   }, [user]);
 
@@ -151,12 +154,12 @@ export default function FinancialChatScreen() {
     });
 
     if (!sanitizedContent || sanitizedContent.length === 0) {
-      Alert.alert('Error', 'Message cannot be empty');
+      Alert.alert("Error", "Message cannot be empty");
       return;
     }
 
     if (sanitizedContent.length > MAX_CHARS) {
-      Alert.alert('Error', `Message too long (max ${MAX_CHARS} characters)`);
+      Alert.alert("Error", `Message too long (max ${MAX_CHARS} characters)`);
       return;
     }
 
@@ -164,21 +167,21 @@ export default function FinancialChatScreen() {
     const tempUserMessage: ChatMessage = {
       id: `temp-${Date.now()}`,
       sessionId: currentSessionId,
-      role: 'user',
+      role: "user",
       content: sanitizedContent,
       timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, tempUserMessage]);
-    setInputText('');
+    setMessages((prev) => [...prev, tempUserMessage]);
+    setInputText("");
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch('/api/chat/financial', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+      const response = await fetch("/api/chat/financial", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           sessionId: currentSessionId,
           message: sanitizedContent,
@@ -188,7 +191,7 @@ export default function FinancialChatScreen() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to send message');
+        throw new Error(errorData.message || "Failed to send message");
       }
 
       const data = await response.json();
@@ -197,24 +200,27 @@ export default function FinancialChatScreen() {
       const assistantMessage: ChatMessage = {
         id: `assistant-${Date.now()}`,
         sessionId: currentSessionId,
-        role: 'assistant',
+        role: "assistant",
         content: data.message,
         timestamp: new Date(),
         metadata: data.metadata,
       };
 
-      setMessages(prev => [...prev.filter(m => m.id !== tempUserMessage.id), assistantMessage]);
+      setMessages((prev) => [
+        ...prev.filter((m) => m.id !== tempUserMessage.id),
+        assistantMessage,
+      ]);
 
       // Scroll to bottom
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
     } catch (err: any) {
-      console.error('Failed to send message:', err);
-      setError(err.message || 'Failed to send message');
+      console.error("Failed to send message:", err);
+      setError(err.message || "Failed to send message");
       // Remove optimistic message on error
-      setMessages(prev => prev.filter(m => m.id !== tempUserMessage.id));
-      Alert.alert('Error', err.message || 'Failed to send message');
+      setMessages((prev) => prev.filter((m) => m.id !== tempUserMessage.id));
+      Alert.alert("Error", err.message || "Failed to send message");
     } finally {
       setLoading(false);
     }
@@ -234,11 +240,16 @@ export default function FinancialChatScreen() {
   }, [messages]);
 
   const renderMessage = ({ item }: { item: ChatMessage }) => {
-    const isUser = item.role === 'user';
-    const isSystem = item.role === 'system';
+    const isUser = item.role === "user";
+    const isSystem = item.role === "system";
 
     return (
-      <View style={[styles.messageContainer, isUser ? styles.userMessageContainer : styles.aiMessageContainer]}>
+      <View
+        style={[
+          styles.messageContainer,
+          isUser ? styles.userMessageContainer : styles.aiMessageContainer,
+        ]}
+      >
         {!isUser && !isSystem && (
           <View style={styles.aiAvatar}>
             <Ionicons name="chatbubbles" size={20} color="#FFFFFF" />
@@ -247,40 +258,70 @@ export default function FinancialChatScreen() {
         <View
           style={[
             styles.messageBubble,
-            isUser ? styles.userBubble : isSystem ? styles.systemBubble : styles.aiBubble,
+            isUser
+              ? styles.userBubble
+              : isSystem
+                ? styles.systemBubble
+                : styles.aiBubble,
           ]}
         >
-          <Text style={[styles.messageText, isUser ? styles.userText : styles.aiText]}>
+          <Text
+            style={[
+              styles.messageText,
+              isUser ? styles.userText : styles.aiText,
+            ]}
+          >
             {item.content}
           </Text>
-          <Text style={[styles.timestamp, isUser ? styles.userTimestamp : styles.aiTimestamp]}>
-            {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          <Text
+            style={[
+              styles.timestamp,
+              isUser ? styles.userTimestamp : styles.aiTimestamp,
+            ]}
+          >
+            {new Date(item.timestamp).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
           </Text>
 
           {/* Suggested Actions */}
-          {item.metadata?.suggestedActions && item.metadata.suggestedActions.length > 0 && (
-            <View style={styles.suggestedActionsContainer}>
-              <Text style={styles.suggestedActionsTitle}>Suggested Actions:</Text>
-              {item.metadata.suggestedActions.map((action, index) => (
-                <TouchableOpacity key={index} style={styles.suggestedActionButton}>
-                  <Text style={styles.suggestedActionText}>{action.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
+          {item.metadata?.suggestedActions &&
+            item.metadata.suggestedActions.length > 0 && (
+              <View style={styles.suggestedActionsContainer}>
+                <Text style={styles.suggestedActionsTitle}>
+                  Suggested Actions:
+                </Text>
+                {item.metadata.suggestedActions.map((action, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.suggestedActionButton}
+                  >
+                    <Text style={styles.suggestedActionText}>
+                      {action.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
 
           {/* Educational Content */}
-          {item.metadata?.educationalContent && item.metadata.educationalContent.length > 0 && (
-            <View style={styles.educationalContentContainer}>
-              <Text style={styles.educationalContentTitle}>Learn More:</Text>
-              {item.metadata.educationalContent.map((content, index) => (
-                <View key={index} style={styles.educationalContentCard}>
-                  <Text style={styles.educationalContentCardTitle}>{content.title}</Text>
-                  <Text style={styles.educationalContentCardSummary}>{content.summary}</Text>
-                </View>
-              ))}
-            </View>
-          )}
+          {item.metadata?.educationalContent &&
+            item.metadata.educationalContent.length > 0 && (
+              <View style={styles.educationalContentContainer}>
+                <Text style={styles.educationalContentTitle}>Learn More:</Text>
+                {item.metadata.educationalContent.map((content, index) => (
+                  <View key={index} style={styles.educationalContentCard}>
+                    <Text style={styles.educationalContentCardTitle}>
+                      {content.title}
+                    </Text>
+                    <Text style={styles.educationalContentCardSummary}>
+                      {content.summary}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
         </View>
         {isUser && (
           <View style={styles.userAvatar}>
@@ -292,10 +333,10 @@ export default function FinancialChatScreen() {
   };
 
   const quickActions = [
-    { id: '1', text: 'Check Portfolio', icon: 'briefcase' },
-    { id: '2', text: 'Budget Analysis', icon: 'calculator' },
-    { id: '3', text: 'Debt Strategy', icon: 'trending-down' },
-    { id: '4', text: 'Investment Ideas', icon: 'trending-up' },
+    { id: "1", text: "Check Portfolio", icon: "briefcase" },
+    { id: "2", text: "Budget Analysis", icon: "calculator" },
+    { id: "3", text: "Debt Strategy", icon: "trending-down" },
+    { id: "4", text: "Investment Ideas", icon: "trending-up" },
   ];
 
   const charCount = inputText.length;
@@ -306,7 +347,11 @@ export default function FinancialChatScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.centerContainer}>
-          <Ionicons name="lock-closed" size={48} color={theme.colors.textSecondary} />
+          <Ionicons
+            name="lock-closed"
+            size={48}
+            color={theme.colors.textSecondary}
+          />
           <Text style={styles.centerText}>Please log in to access chat</Text>
         </View>
       </SafeAreaView>
@@ -314,11 +359,11 @@ export default function FinancialChatScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={["bottom"]}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
       >
         {/* Error Banner */}
         {error && (
@@ -336,14 +381,24 @@ export default function FinancialChatScreen() {
           ref={flatListRef}
           data={messages}
           renderItem={renderMessage}
-          keyExtractor={item => item.id}
+          keyExtractor={(item) => item.id}
           contentContainerStyle={styles.messagesList}
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          onContentSizeChange={() =>
+            flatListRef.current?.scrollToEnd({ animated: true })
+          }
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Ionicons name="chatbubbles-outline" size={64} color={theme.colors.textSecondary} />
-              <Text style={styles.emptyText}>No messages yet. Start a conversation!</Text>
+              <Ionicons
+                name="chatbubbles-outline"
+                size={64}
+                color={theme.colors.textSecondary}
+              />
+              <Text style={styles.emptyText}>
+                No messages yet. Start a conversation!
+              </Text>
             </View>
           }
         />
@@ -353,13 +408,17 @@ export default function FinancialChatScreen() {
           <View style={styles.quickActionsContainer}>
             <Text style={styles.quickActionsTitle}>Quick Actions</Text>
             <View style={styles.quickActionsGrid}>
-              {quickActions.map(action => (
+              {quickActions.map((action) => (
                 <TouchableOpacity
                   key={action.id}
                   style={styles.quickActionButton}
                   onPress={() => setInputText(action.text)}
                 >
-                  <Ionicons name={action.icon as any} size={20} color={theme.colors.primary} />
+                  <Ionicons
+                    name={action.icon as any}
+                    size={20}
+                    color={theme.colors.primary}
+                  />
                   <Text style={styles.quickActionText}>{action.text}</Text>
                 </TouchableOpacity>
               ))}
@@ -382,14 +441,21 @@ export default function FinancialChatScreen() {
             <Text
               style={[
                 styles.charCounter,
-                isAtLimit ? styles.charCounterError : isNearLimit ? styles.charCounterWarning : {},
+                isAtLimit
+                  ? styles.charCounterError
+                  : isNearLimit
+                    ? styles.charCounterWarning
+                    : {},
               ]}
             >
               {charCount}/{MAX_CHARS}
             </Text>
           </View>
           <TouchableOpacity
-            style={[styles.sendButton, (!inputText.trim() || loading) && styles.sendButtonDisabled]}
+            style={[
+              styles.sendButton,
+              (!inputText.trim() || loading) && styles.sendButtonDisabled,
+            ]}
             onPress={sendMessage}
             disabled={!inputText.trim() || loading}
           >
@@ -412,77 +478,77 @@ const styles = StyleSheet.create({
   },
   centerContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: theme.spacing.xl,
   },
   centerText: {
     fontSize: 16,
     color: theme.colors.textSecondary,
     marginTop: theme.spacing.md,
-    textAlign: 'center',
+    textAlign: "center",
   },
   keyboardView: {
     flex: 1,
   },
   errorBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FEE2E2',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FEE2E2",
     padding: theme.spacing.md,
     gap: theme.spacing.sm,
   },
   errorText: {
     flex: 1,
     fontSize: 14,
-    color: '#DC2626',
+    color: "#DC2626",
   },
   messagesList: {
     padding: theme.spacing.md,
   },
   emptyContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingVertical: theme.spacing.xl * 2,
   },
   emptyText: {
     fontSize: 16,
     color: theme.colors.textSecondary,
     marginTop: theme.spacing.md,
-    textAlign: 'center',
+    textAlign: "center",
   },
   messageContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: theme.spacing.md,
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   userMessageContainer: {
-    justifyContent: 'flex-end',
+    justifyContent: "flex-end",
   },
   aiMessageContainer: {
-    justifyContent: 'flex-start',
+    justifyContent: "flex-start",
   },
   aiAvatar: {
     width: 32,
     height: 32,
     borderRadius: 16,
     backgroundColor: theme.colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: theme.spacing.sm,
   },
   userAvatar: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#6B7280',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#6B7280",
+    justifyContent: "center",
+    alignItems: "center",
     marginLeft: theme.spacing.sm,
   },
   messageBubble: {
-    maxWidth: '75%',
+    maxWidth: "75%",
     padding: theme.spacing.md,
     borderRadius: theme.borderRadius.md,
   },
@@ -491,11 +557,11 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 4,
   },
   aiBubble: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: "#F3F4F6",
     borderBottomLeftRadius: 4,
   },
   systemBubble: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: "#FEF3C7",
     borderRadius: theme.borderRadius.md,
   },
   messageText: {
@@ -503,7 +569,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   userText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
   aiText: {
     color: theme.colors.text,
@@ -513,8 +579,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   userTimestamp: {
-    color: '#E0E7FF',
-    textAlign: 'right',
+    color: "#E0E7FF",
+    textAlign: "right",
   },
   aiTimestamp: {
     color: theme.colors.textSecondary,
@@ -523,16 +589,16 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.md,
     paddingTop: theme.spacing.md,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: "#E5E7EB",
   },
   suggestedActionsTitle: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.textSecondary,
     marginBottom: theme.spacing.xs,
   },
   suggestedActionButton: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     paddingVertical: theme.spacing.xs,
     paddingHorizontal: theme.spacing.sm,
     borderRadius: theme.borderRadius.sm,
@@ -543,29 +609,29 @@ const styles = StyleSheet.create({
   suggestedActionText: {
     fontSize: 13,
     color: theme.colors.primary,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   educationalContentContainer: {
     marginTop: theme.spacing.md,
     paddingTop: theme.spacing.md,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: "#E5E7EB",
   },
   educationalContentTitle: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.textSecondary,
     marginBottom: theme.spacing.xs,
   },
   educationalContentCard: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: "#F9FAFB",
     padding: theme.spacing.sm,
     borderRadius: theme.borderRadius.sm,
     marginTop: theme.spacing.xs,
   },
   educationalContentCardTitle: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: 2,
   },
@@ -576,28 +642,28 @@ const styles = StyleSheet.create({
   quickActionsContainer: {
     padding: theme.spacing.md,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: "#E5E7EB",
   },
   quickActionsTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.textSecondary,
     marginBottom: theme.spacing.sm,
   },
   quickActionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: theme.spacing.sm,
   },
   quickActionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
     paddingVertical: theme.spacing.sm,
     paddingHorizontal: theme.spacing.md,
     borderRadius: theme.borderRadius.md,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: "#E5E7EB",
   },
   quickActionText: {
     fontSize: 13,
@@ -605,19 +671,19 @@ const styles = StyleSheet.create({
     marginLeft: theme.spacing.xs,
   },
   inputContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     padding: theme.spacing.md,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    alignItems: 'flex-end',
+    borderTopColor: "#E5E7EB",
+    alignItems: "flex-end",
   },
   inputWrapper: {
     flex: 1,
     marginRight: theme.spacing.sm,
   },
   input: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: "#F3F4F6",
     borderRadius: theme.borderRadius.md,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
@@ -626,30 +692,29 @@ const styles = StyleSheet.create({
   },
   inputError: {
     borderWidth: 1,
-    borderColor: '#DC2626',
+    borderColor: "#DC2626",
   },
   charCounter: {
     fontSize: 11,
     color: theme.colors.textSecondary,
-    textAlign: 'right',
+    textAlign: "right",
     marginTop: 4,
   },
   charCounterWarning: {
-    color: '#F59E0B',
+    color: "#F59E0B",
   },
   charCounterError: {
-    color: '#DC2626',
+    color: "#DC2626",
   },
   sendButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
     backgroundColor: theme.colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   sendButtonDisabled: {
-    backgroundColor: '#9CA3AF',
+    backgroundColor: "#9CA3AF",
   },
 });
-

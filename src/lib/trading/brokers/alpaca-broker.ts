@@ -1,11 +1,11 @@
 /**
  * Alpaca Broker Implementation
- * 
+ *
  * Commission-free trading via Alpaca API.
  * Supports stocks, ETFs, and crypto with paper trading mode.
  */
 
-import { Observable, Subject } from 'rxjs';
+import { Observable, Subject } from "rxjs";
 import {
   BrokerInterface,
   BrokerCredentials,
@@ -29,7 +29,7 @@ import {
   OrderSide,
   OrderStatus,
   TimeInForce,
-} from './broker-interface';
+} from "./broker-interface";
 
 // ============================================================================
 // ALPACA API TYPES
@@ -117,10 +117,10 @@ export class AlpacaBroker implements BrokerInterface {
   private websocket: WebSocket | null = null;
 
   constructor() {
-    this.baseUrl = '';
-    this.dataUrl = 'https://data.alpaca.markets';
-    this.apiKey = '';
-    this.apiSecret = '';
+    this.baseUrl = "";
+    this.dataUrl = "https://data.alpaca.markets";
+    this.apiKey = "";
+    this.apiSecret = "";
     this.paperTrading = true;
   }
 
@@ -132,14 +132,14 @@ export class AlpacaBroker implements BrokerInterface {
     this.apiKey = credentials.apiKey;
     this.apiSecret = credentials.apiSecret;
     this.paperTrading = credentials.paperTrading ?? true;
-    
+
     this.baseUrl = this.paperTrading
-      ? 'https://paper-api.alpaca.markets'
-      : 'https://api.alpaca.markets';
+      ? "https://paper-api.alpaca.markets"
+      : "https://api.alpaca.markets";
 
     // Validate connection by fetching account
     const account = await this.getAccount();
-    
+
     this.connected = true;
     this.lastHeartbeat = new Date();
 
@@ -176,13 +176,13 @@ export class AlpacaBroker implements BrokerInterface {
     const day = now.getUTCDay();
     const isWeekday = day >= 1 && day <= 5;
     const isMarketHours = etHour >= 9.5 && etHour < 16; // 9:30 AM - 4:00 PM ET
-    const marketStatus = isWeekday && isMarketHours ? 'open' : 'closed';
+    const marketStatus = isWeekday && isMarketHours ? "open" : "closed";
 
     return {
       connected: this.connected,
       lastHeartbeat: this.lastHeartbeat,
       latencyMs: Math.min(latencyMs, 10000), // Cap at 10 seconds
-      marketStatus: marketStatus as 'open' | 'closed',
+      marketStatus: marketStatus as "open" | "closed",
     };
   }
 
@@ -191,11 +191,11 @@ export class AlpacaBroker implements BrokerInterface {
   // ============================================================================
 
   async getAccount(): Promise<AccountInfo> {
-    const response = await this.request<AlpacaAccount>('/v2/account');
-    
+    const response = await this.request<AlpacaAccount>("/v2/account");
+
     return {
       id: response.id,
-      status: response.status as 'active' | 'restricted' | 'disabled',
+      status: response.status as "active" | "restricted" | "disabled",
       currency: response.currency,
       cash: parseFloat(response.cash),
       portfolioValue: parseFloat(response.portfolio_value),
@@ -212,13 +212,15 @@ export class AlpacaBroker implements BrokerInterface {
   }
 
   async getPositions(): Promise<Position[]> {
-    const response = await this.request<AlpacaPosition[]>('/v2/positions');
+    const response = await this.request<AlpacaPosition[]>("/v2/positions");
     return response.map(this.mapPosition);
   }
 
   async getPosition(symbol: string): Promise<Position | null> {
     try {
-      const response = await this.request<AlpacaPosition>(`/v2/positions/${symbol}`);
+      const response = await this.request<AlpacaPosition>(
+        `/v2/positions/${symbol}`,
+      );
       return this.mapPosition(response);
     } catch {
       return null;
@@ -228,13 +230,15 @@ export class AlpacaBroker implements BrokerInterface {
   async getOrders(filters?: OrderFilters): Promise<Order[]> {
     const params = new URLSearchParams();
     if (filters?.status) {
-      const statuses = Array.isArray(filters.status) ? filters.status : [filters.status];
-      params.set('status', statuses.join(','));
+      const statuses = Array.isArray(filters.status)
+        ? filters.status
+        : [filters.status];
+      params.set("status", statuses.join(","));
     }
-    if (filters?.symbol) params.set('symbols', filters.symbol);
-    if (filters?.limit) params.set('limit', filters.limit.toString());
-    if (filters?.after) params.set('after', filters.after.toISOString());
-    if (filters?.until) params.set('until', filters.until.toISOString());
+    if (filters?.symbol) params.set("symbols", filters.symbol);
+    if (filters?.limit) params.set("limit", filters.limit.toString());
+    if (filters?.after) params.set("after", filters.after.toISOString());
+    if (filters?.until) params.set("until", filters.until.toISOString());
 
     const response = await this.request<AlpacaOrder[]>(`/v2/orders?${params}`);
     return response.map(this.mapOrder);
@@ -249,9 +253,13 @@ export class AlpacaBroker implements BrokerInterface {
     }
   }
 
-  async getOrderHistory(params: { after?: Date; until?: Date; limit?: number }): Promise<Order[]> {
+  async getOrderHistory(params: {
+    after?: Date;
+    until?: Date;
+    limit?: number;
+  }): Promise<Order[]> {
     return this.getOrders({
-      status: ['filled', 'canceled', 'expired'] as OrderStatus[],
+      status: ["filled", "canceled", "expired"] as OrderStatus[],
       after: params.after,
       until: params.until,
       limit: params.limit,
@@ -269,18 +277,24 @@ export class AlpacaBroker implements BrokerInterface {
         qty: order.quantity.toString(),
         side: order.side,
         type: this.mapOrderType(order.type),
-        time_in_force: order.timeInForce || 'day',
+        time_in_force: order.timeInForce || "day",
         extended_hours: order.extendedHours ?? false,
       };
 
       if (order.limitPrice) body.limit_price = order.limitPrice.toString();
       if (order.stopPrice) body.stop_price = order.stopPrice.toString();
-      if (order.trailingPercent) body.trail_percent = order.trailingPercent.toString();
-      if (order.trailingAmount) body.trail_price = order.trailingAmount.toString();
+      if (order.trailingPercent)
+        body.trail_percent = order.trailingPercent.toString();
+      if (order.trailingAmount)
+        body.trail_price = order.trailingAmount.toString();
       if (order.clientOrderId) body.client_order_id = order.clientOrderId;
 
-      const response = await this.request<AlpacaOrder>('/v2/orders', 'POST', body);
-      
+      const response = await this.request<AlpacaOrder>(
+        "/v2/orders",
+        "POST",
+        body,
+      );
+
       return {
         success: true,
         order: this.mapOrder(response),
@@ -288,20 +302,22 @@ export class AlpacaBroker implements BrokerInterface {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
 
-  async placeBracketOrder(bracket: BracketOrderRequest): Promise<BracketOrderResult> {
+  async placeBracketOrder(
+    bracket: BracketOrderRequest,
+  ): Promise<BracketOrderResult> {
     try {
       const body: Record<string, unknown> = {
         symbol: bracket.symbol,
         qty: bracket.quantity.toString(),
         side: bracket.side,
         type: bracket.entryType,
-        time_in_force: bracket.timeInForce || 'gtc',
-        order_class: 'bracket',
+        time_in_force: bracket.timeInForce || "gtc",
+        order_class: "bracket",
         take_profit: {
           limit_price: bracket.takeProfitPrice.toString(),
         },
@@ -313,9 +329,13 @@ export class AlpacaBroker implements BrokerInterface {
 
       if (bracket.entryPrice) body.limit_price = bracket.entryPrice.toString();
 
-      const response = await this.request<AlpacaOrder>('/v2/orders', 'POST', body);
+      const response = await this.request<AlpacaOrder>(
+        "/v2/orders",
+        "POST",
+        body,
+      );
       const mainOrder = this.mapOrder(response);
-      
+
       return {
         success: true,
         entryOrder: mainOrder,
@@ -325,7 +345,7 @@ export class AlpacaBroker implements BrokerInterface {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
@@ -336,10 +356,10 @@ export class AlpacaBroker implements BrokerInterface {
         symbol: oco.symbol,
         qty: oco.quantity.toString(),
         side: oco.side,
-        type: 'limit',
-        time_in_force: oco.timeInForce || 'gtc',
+        type: "limit",
+        time_in_force: oco.timeInForce || "gtc",
         limit_price: oco.limitPrice.toString(),
-        order_class: 'oco',
+        order_class: "oco",
         take_profit: {
           limit_price: oco.takeProfitPrice.toString(),
         },
@@ -348,12 +368,16 @@ export class AlpacaBroker implements BrokerInterface {
         },
       };
 
-      const response = await this.request<AlpacaOrder>('/v2/orders', 'POST', body);
+      const response = await this.request<AlpacaOrder>(
+        "/v2/orders",
+        "POST",
+        body,
+      );
       const orders = [this.mapOrder(response)];
       if (response.legs) {
         orders.push(...response.legs.map(this.mapOrder));
       }
-      
+
       return {
         success: true,
         orders,
@@ -361,22 +385,33 @@ export class AlpacaBroker implements BrokerInterface {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
 
-  async modifyOrder(orderId: string, modifications: OrderModification): Promise<OrderResult> {
+  async modifyOrder(
+    orderId: string,
+    modifications: OrderModification,
+  ): Promise<OrderResult> {
     try {
       const body: Record<string, unknown> = {};
       if (modifications.quantity) body.qty = modifications.quantity.toString();
-      if (modifications.limitPrice) body.limit_price = modifications.limitPrice.toString();
-      if (modifications.stopPrice) body.stop_price = modifications.stopPrice.toString();
-      if (modifications.trailPercent) body.trail = modifications.trailPercent.toString();
-      if (modifications.timeInForce) body.time_in_force = modifications.timeInForce;
+      if (modifications.limitPrice)
+        body.limit_price = modifications.limitPrice.toString();
+      if (modifications.stopPrice)
+        body.stop_price = modifications.stopPrice.toString();
+      if (modifications.trailPercent)
+        body.trail = modifications.trailPercent.toString();
+      if (modifications.timeInForce)
+        body.time_in_force = modifications.timeInForce;
 
-      const response = await this.request<AlpacaOrder>(`/v2/orders/${orderId}`, 'PATCH', body);
-      
+      const response = await this.request<AlpacaOrder>(
+        `/v2/orders/${orderId}`,
+        "PATCH",
+        body,
+      );
+
       return {
         success: true,
         order: this.mapOrder(response),
@@ -384,28 +419,28 @@ export class AlpacaBroker implements BrokerInterface {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
 
   async cancelOrder(orderId: string): Promise<CancelResult> {
     try {
-      await this.request(`/v2/orders/${orderId}`, 'DELETE');
+      await this.request(`/v2/orders/${orderId}`, "DELETE");
       return { success: true, orderId };
     } catch (error) {
       return {
         success: false,
         orderId,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
 
   async cancelAllOrders(symbol?: string): Promise<CancelResult[]> {
-    const params = symbol ? `?symbols=${symbol}` : '';
-    await this.request(`/v2/orders${params}`, 'DELETE');
-    
+    const params = symbol ? `?symbols=${symbol}` : "";
+    await this.request(`/v2/orders${params}`, "DELETE");
+
     // Return empty array since Alpaca doesn't return individual results
     return [];
   }
@@ -416,12 +451,12 @@ export class AlpacaBroker implements BrokerInterface {
 
   async closePosition(symbol: string, percent?: number): Promise<OrderResult> {
     try {
-      const params = percent ? `?percentage=${percent}` : '';
+      const params = percent ? `?percentage=${percent}` : "";
       const response = await this.request<AlpacaOrder>(
         `/v2/positions/${symbol}${params}`,
-        'DELETE'
+        "DELETE",
       );
-      
+
       return {
         success: true,
         order: this.mapOrder(response),
@@ -429,23 +464,28 @@ export class AlpacaBroker implements BrokerInterface {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
 
   async closeAllPositions(): Promise<OrderResult[]> {
     try {
-      const response = await this.request<AlpacaOrder[]>('/v2/positions', 'DELETE');
-      return response.map(order => ({
+      const response = await this.request<AlpacaOrder[]>(
+        "/v2/positions",
+        "DELETE",
+      );
+      return response.map((order) => ({
         success: true,
         order: this.mapOrder(order),
       }));
     } catch (error) {
-      return [{
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      }];
+      return [
+        {
+          success: false,
+          error: error instanceof Error ? error.message : "Unknown error",
+        },
+      ];
     }
   }
 
@@ -456,36 +496,40 @@ export class AlpacaBroker implements BrokerInterface {
   async getQuote(symbol: string): Promise<Quote> {
     const response = await this.request<{ quote: AlpacaQuote }>(
       `/v2/stocks/${symbol}/quotes/latest`,
-      'GET',
+      "GET",
       undefined,
-      this.dataUrl
+      this.dataUrl,
     );
-    
+
     return this.mapQuote(response.quote, symbol);
   }
 
   async getQuotes(symbols: string[]): Promise<Quote[]> {
-    const response = await this.request<{ quotes: Record<string, AlpacaQuote> }>(
-      `/v2/stocks/quotes/latest?symbols=${symbols.join(',')}`,
-      'GET',
+    const response = await this.request<{
+      quotes: Record<string, AlpacaQuote>;
+    }>(
+      `/v2/stocks/quotes/latest?symbols=${symbols.join(",")}`,
+      "GET",
       undefined,
-      this.dataUrl
+      this.dataUrl,
     );
-    
-    return Object.entries(response.quotes).map(([symbol, quote]) => 
-      this.mapQuote(quote, symbol)
+
+    return Object.entries(response.quotes).map(([symbol, quote]) =>
+      this.mapQuote(quote, symbol),
     );
   }
 
   streamQuotes(symbols: string[]): Observable<Quote> {
     // Subscribe to symbols via WebSocket
     if (this.websocket?.readyState === WebSocket.OPEN) {
-      this.websocket.send(JSON.stringify({
-        action: 'subscribe',
-        quotes: symbols,
-      }));
+      this.websocket.send(
+        JSON.stringify({
+          action: "subscribe",
+          quotes: symbols,
+        }),
+      );
     }
-    
+
     return this.quoteSubject.asObservable();
   }
 
@@ -505,16 +549,16 @@ export class AlpacaBroker implements BrokerInterface {
   // ============================================================================
 
   async isMarketOpen(): Promise<boolean> {
-    const clock = await this.request<{ is_open: boolean }>('/v2/clock');
+    const clock = await this.request<{ is_open: boolean }>("/v2/clock");
     return clock.is_open;
   }
 
   async getMarketHours(): Promise<{ open: Date; close: Date }> {
-    const clock = await this.request<{ 
-      next_open: string; 
+    const clock = await this.request<{
+      next_open: string;
       next_close: string;
-    }>('/v2/clock');
-    
+    }>("/v2/clock");
+
     return {
       open: new Date(clock.next_open),
       close: new Date(clock.next_close),
@@ -522,7 +566,7 @@ export class AlpacaBroker implements BrokerInterface {
   }
 
   supportedOrderTypes(): OrderType[] {
-    return ['market', 'limit', 'stop', 'stop_limit', 'trailing_stop'];
+    return ["market", "limit", "stop", "stop_limit", "trailing_stop"];
   }
 
   // ============================================================================
@@ -531,24 +575,26 @@ export class AlpacaBroker implements BrokerInterface {
 
   private async request<T>(
     endpoint: string,
-    method: string = 'GET',
+    method: string = "GET",
     body?: Record<string, unknown>,
-    baseUrl?: string
+    baseUrl?: string,
   ): Promise<T> {
     const url = `${baseUrl || this.baseUrl}${endpoint}`;
-    
+
     const response = await fetch(url, {
       method,
       headers: {
-        'APCA-API-KEY-ID': this.apiKey,
-        'APCA-API-SECRET-KEY': this.apiSecret,
-        'Content-Type': 'application/json',
+        "APCA-API-KEY-ID": this.apiKey,
+        "APCA-API-SECRET-KEY": this.apiSecret,
+        "Content-Type": "application/json",
       },
       body: body ? JSON.stringify(body) : undefined,
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Unknown error' }));
+      const error = await response
+        .json()
+        .catch(() => ({ message: "Unknown error" }));
       throw new Error(error.message || `HTTP ${response.status}`);
     }
 
@@ -558,23 +604,25 @@ export class AlpacaBroker implements BrokerInterface {
 
   private async initWebSocket(): Promise<void> {
     const wsUrl = this.paperTrading
-      ? 'wss://stream.data.alpaca.markets/v2/iex'
-      : 'wss://stream.data.alpaca.markets/v2/sip';
+      ? "wss://stream.data.alpaca.markets/v2/iex"
+      : "wss://stream.data.alpaca.markets/v2/sip";
 
     this.websocket = new WebSocket(wsUrl);
 
     this.websocket.onopen = () => {
-      this.websocket?.send(JSON.stringify({
-        action: 'auth',
-        key: this.apiKey,
-        secret: this.apiSecret,
-      }));
+      this.websocket?.send(
+        JSON.stringify({
+          action: "auth",
+          key: this.apiKey,
+          secret: this.apiSecret,
+        }),
+      );
     };
 
     this.websocket.onmessage = (event) => {
       const messages = JSON.parse(event.data);
       for (const msg of messages) {
-        if (msg.T === 'q') {
+        if (msg.T === "q") {
           this.quoteSubject.next({
             symbol: msg.S,
             bid: msg.bp,
@@ -604,7 +652,7 @@ export class AlpacaBroker implements BrokerInterface {
     return {
       symbol: pos.symbol,
       quantity: parseFloat(pos.qty),
-      side: pos.side === 'long' ? 'long' : 'short',
+      side: pos.side === "long" ? "long" : "short",
       entryPrice: parseFloat(pos.avg_entry_price),
       currentPrice: parseFloat(pos.current_price),
       marketValue: parseFloat(pos.market_value),
@@ -612,7 +660,7 @@ export class AlpacaBroker implements BrokerInterface {
       unrealizedPL: parseFloat(pos.unrealized_pl),
       unrealizedPLPercent: parseFloat(pos.unrealized_plpc) * 100,
       realizedPL: 0, // Not provided by Alpaca
-      assetClass: pos.asset_class as 'stock' | 'crypto' | 'option',
+      assetClass: pos.asset_class as "stock" | "crypto" | "option",
     };
   }
 
@@ -628,15 +676,19 @@ export class AlpacaBroker implements BrokerInterface {
       status: order.status as OrderStatus,
       limitPrice: order.limit_price ? parseFloat(order.limit_price) : undefined,
       stopPrice: order.stop_price ? parseFloat(order.stop_price) : undefined,
-      trailPercent: order.trail_percent ? parseFloat(order.trail_percent) : undefined,
+      trailPercent: order.trail_percent
+        ? parseFloat(order.trail_percent)
+        : undefined,
       trailPrice: order.trail_price ? parseFloat(order.trail_price) : undefined,
       timeInForce: order.time_in_force as TimeInForce,
       extendedHours: order.extended_hours,
       createdAt: new Date(order.created_at),
       updatedAt: new Date(order.updated_at),
       filledAt: order.filled_at ? new Date(order.filled_at) : undefined,
-      filledAvgPrice: order.filled_avg_price ? parseFloat(order.filled_avg_price) : undefined,
-      legs: order.legs?.map(leg => this.mapOrder(leg)),
+      filledAvgPrice: order.filled_avg_price
+        ? parseFloat(order.filled_avg_price)
+        : undefined,
+      legs: order.legs?.map((leg) => this.mapOrder(leg)),
     };
   }
 
@@ -656,24 +708,24 @@ export class AlpacaBroker implements BrokerInterface {
 
   private mapOrderType(type: OrderType): string {
     const mapping: Record<OrderType, string> = {
-      market: 'market',
-      limit: 'limit',
-      stop: 'stop',
-      stop_limit: 'stop_limit',
-      trailing_stop: 'trailing_stop',
+      market: "market",
+      limit: "limit",
+      stop: "stop",
+      stop_limit: "stop_limit",
+      trailing_stop: "trailing_stop",
     };
     return mapping[type];
   }
 
   private reverseMapOrderType(type: string): OrderType {
     const mapping: Record<string, OrderType> = {
-      market: 'market',
-      limit: 'limit',
-      stop: 'stop',
-      stop_limit: 'stop_limit',
-      trailing_stop: 'trailing_stop',
+      market: "market",
+      limit: "limit",
+      stop: "stop",
+      stop_limit: "stop_limit",
+      trailing_stop: "trailing_stop",
     };
-    return mapping[type] || 'market';
+    return mapping[type] || "market";
   }
 }
 

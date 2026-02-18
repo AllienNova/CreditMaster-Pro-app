@@ -29,10 +29,10 @@ export const defaultLimits: Record<string, RateLimitConfig> = {
 
 export function checkRateLimit(
   identifier: string,
-  config: RateLimitConfig = defaultLimits.api
+  config: RateLimitConfig = defaultLimits.api,
 ): RateLimitResult {
   const now = Date.now();
-  const key = `${config.keyPrefix || 'rl'}:${identifier}`;
+  const key = `${config.keyPrefix || "rl"}:${identifier}`;
   const existing = rateLimitStore.get(key);
 
   // Reset if window expired
@@ -67,15 +67,17 @@ export function checkRateLimit(
   };
 }
 
-export function getRateLimitHeaders(result: RateLimitResult): Record<string, string> {
+export function getRateLimitHeaders(
+  result: RateLimitResult,
+): Record<string, string> {
   const headers: Record<string, string> = {
-    'X-RateLimit-Limit': String(defaultLimits.api.maxRequests),
-    'X-RateLimit-Remaining': String(result.remaining),
-    'X-RateLimit-Reset': String(result.resetTime),
+    "X-RateLimit-Limit": String(defaultLimits.api.maxRequests),
+    "X-RateLimit-Remaining": String(result.remaining),
+    "X-RateLimit-Reset": String(result.resetTime),
   };
 
   if (result.retryAfter) {
-    headers['Retry-After'] = String(result.retryAfter);
+    headers["Retry-After"] = String(result.retryAfter);
   }
 
   return headers;
@@ -91,4 +93,3 @@ setInterval(() => {
     }
   }
 }, 60 * 1000); // Clean up every minute
-

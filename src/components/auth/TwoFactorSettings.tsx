@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { authService } from '@/lib/auth/auth-service';
-import { useAuth } from '@/hooks/useAuth';
+import { useState, useEffect } from "react";
+import { authService } from "@/lib/auth/auth-service";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function TwoFactorSettings() {
   const { user } = useAuth();
@@ -12,7 +12,7 @@ export default function TwoFactorSettings() {
   const [isEnabled, setIsEnabled] = useState(false);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [secret, setSecret] = useState<string | null>(null);
-  const [verificationCode, setVerificationCode] = useState('');
+  const [verificationCode, setVerificationCode] = useState("");
   const [factorId, setFactorId] = useState<string | null>(null);
   const [showSetup, setShowSetup] = useState(false);
 
@@ -41,14 +41,14 @@ export default function TwoFactorSettings() {
       const response = await authService.enableTwoFactor();
 
       if (!response.success) {
-        throw new Error(response.error || 'Failed to enable 2FA');
+        throw new Error(response.error || "Failed to enable 2FA");
       }
 
       setQrCode(response.qrCode || null);
       setSecret(response.secret || null);
       setShowSetup(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to enable 2FA');
+      setError(err instanceof Error ? err.message : "Failed to enable 2FA");
     } finally {
       setLoading(false);
     }
@@ -62,39 +62,44 @@ export default function TwoFactorSettings() {
 
     try {
       if (!factorId && !secret) {
-        throw new Error('No factor ID available');
+        throw new Error("No factor ID available");
       }
 
       // For initial setup, we need to get the factor ID from the enrollment
       const factors = await authService.getMFAFactors();
-      const currentFactorId = factorId || (factors?.totp?.[0]?.id);
+      const currentFactorId = factorId || factors?.totp?.[0]?.id;
 
       if (!currentFactorId) {
-        throw new Error('Failed to get factor ID');
+        throw new Error("Failed to get factor ID");
       }
 
-      const response = await authService.verifyTwoFactor(currentFactorId, verificationCode);
+      const response = await authService.verifyTwoFactor(
+        currentFactorId,
+        verificationCode,
+      );
 
       if (!response.success) {
-        throw new Error(response.error || 'Invalid verification code');
+        throw new Error(response.error || "Invalid verification code");
       }
 
-      setSuccess('Two-factor authentication enabled successfully!');
+      setSuccess("Two-factor authentication enabled successfully!");
       setIsEnabled(true);
       setFactorId(currentFactorId);
       setShowSetup(false);
       setQrCode(null);
       setSecret(null);
-      setVerificationCode('');
+      setVerificationCode("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to verify code');
+      setError(err instanceof Error ? err.message : "Failed to verify code");
     } finally {
       setLoading(false);
     }
   };
 
   const handleDisableTwoFactor = async () => {
-    if (!confirm('Are you sure you want to disable two-factor authentication?')) {
+    if (
+      !confirm("Are you sure you want to disable two-factor authentication?")
+    ) {
       return;
     }
 
@@ -104,20 +109,20 @@ export default function TwoFactorSettings() {
 
     try {
       if (!factorId) {
-        throw new Error('No factor ID available');
+        throw new Error("No factor ID available");
       }
 
       const response = await authService.disableTwoFactor(factorId);
 
       if (!response.success) {
-        throw new Error(response.error || 'Failed to disable 2FA');
+        throw new Error(response.error || "Failed to disable 2FA");
       }
 
-      setSuccess('Two-factor authentication disabled successfully');
+      setSuccess("Two-factor authentication disabled successfully");
       setIsEnabled(false);
       setFactorId(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to disable 2FA');
+      setError(err instanceof Error ? err.message : "Failed to disable 2FA");
     } finally {
       setLoading(false);
     }
@@ -126,7 +131,9 @@ export default function TwoFactorSettings() {
   if (!user) {
     return (
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
-        <p className="text-gray-600 dark:text-slate-300">Please log in to manage two-factor authentication.</p>
+        <p className="text-gray-600 dark:text-slate-300">
+          Please log in to manage two-factor authentication.
+        </p>
       </div>
     );
   }
@@ -135,17 +142,21 @@ export default function TwoFactorSettings() {
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Two-Factor Authentication</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Two-Factor Authentication
+          </h3>
           <p className="text-sm text-gray-600 dark:text-slate-300 mt-1">
             Add an extra layer of security to your account
           </p>
         </div>
-        <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-          isEnabled 
-            ? 'bg-green-100 text-green-800' 
-            : 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100'
-        }`}>
-          {isEnabled ? 'Enabled' : 'Disabled'}
+        <div
+          className={`px-3 py-1 rounded-full text-sm font-medium ${
+            isEnabled
+              ? "bg-green-100 text-green-800"
+              : "bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100"
+          }`}
+        >
+          {isEnabled ? "Enabled" : "Disabled"}
         </div>
       </div>
 
@@ -177,7 +188,7 @@ export default function TwoFactorSettings() {
             disabled={loading}
             className="w-full bg-gradient-to-r from-blue-600 to-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Setting up...' : 'Enable Two-Factor Authentication'}
+            {loading ? "Setting up..." : "Enable Two-Factor Authentication"}
           </button>
         </div>
       )}
@@ -185,24 +196,34 @@ export default function TwoFactorSettings() {
       {showSetup && qrCode && (
         <div className="space-y-4">
           <div className="bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg p-6">
-            <h4 className="font-medium text-gray-900 dark:text-white mb-4">Scan QR Code</h4>
+            <h4 className="font-medium text-gray-900 dark:text-white mb-4">
+              Scan QR Code
+            </h4>
             <p className="text-sm text-gray-600 dark:text-slate-300 mb-4">
-              Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.)
+              Scan this QR code with your authenticator app (Google
+              Authenticator, Authy, etc.)
             </p>
             <div className="flex justify-center mb-4">
               <img src={qrCode} alt="2FA QR Code" className="w-48 h-48" />
             </div>
             {secret && (
               <div className="bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded p-3">
-                <p className="text-xs text-gray-600 dark:text-slate-300 mb-1">Or enter this code manually:</p>
-                <code className="text-sm font-mono text-gray-900 dark:text-white break-all">{secret}</code>
+                <p className="text-xs text-gray-600 dark:text-slate-300 mb-1">
+                  Or enter this code manually:
+                </p>
+                <code className="text-sm font-mono text-gray-900 dark:text-white break-all">
+                  {secret}
+                </code>
               </div>
             )}
           </div>
 
           <form onSubmit={handleVerifyCode} className="space-y-4">
             <div>
-              <label htmlFor="verificationCode" className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
+              <label
+                htmlFor="verificationCode"
+                className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2"
+              >
                 Verification Code
               </label>
               <input
@@ -228,7 +249,7 @@ export default function TwoFactorSettings() {
                   setShowSetup(false);
                   setQrCode(null);
                   setSecret(null);
-                  setVerificationCode('');
+                  setVerificationCode("");
                 }}
                 className="flex-1 px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-700 dark:text-slate-200 font-medium hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-all"
               >
@@ -239,7 +260,7 @@ export default function TwoFactorSettings() {
                 disabled={loading || verificationCode.length !== 6}
                 className="flex-1 bg-gradient-to-r from-blue-600 to-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Verifying...' : 'Verify & Enable'}
+                {loading ? "Verifying..." : "Verify & Enable"}
               </button>
             </div>
           </form>
@@ -259,11 +280,10 @@ export default function TwoFactorSettings() {
             disabled={loading}
             className="w-full bg-red-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Disabling...' : 'Disable Two-Factor Authentication'}
+            {loading ? "Disabling..." : "Disable Two-Factor Authentication"}
           </button>
         </div>
       )}
     </div>
   );
 }
-

@@ -4,10 +4,10 @@
  * GET /api/financial/budgets/recommendations - Get budget recommendations
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { budgetService } from '@/lib/financial/budget-service';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { rbac } from '@/lib/auth/rbac';
+import { NextRequest, NextResponse } from "next/server";
+import { budgetService } from "@/lib/financial/budget-service";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { rbac } from "@/lib/auth/rbac";
 
 /**
  * GET /api/financial/budgets/recommendations
@@ -19,14 +19,14 @@ export async function GET(request: NextRequest) {
     const validation = await jwtValidation.validateFromHeaders(request);
 
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check permissions
-    if (!rbac.hasPermission(validation.user, 'financial:read')) {
+    if (!rbac.hasPermission(validation.user, "financial:read")) {
       return NextResponse.json(
-        { error: 'Forbidden - Premium feature' },
-        { status: 403 }
+        { error: "Forbidden - Premium feature" },
+        { status: 403 },
       );
     }
 
@@ -40,13 +40,13 @@ export async function GET(request: NextRequest) {
       count: recommendations.length,
     });
   } catch (error) {
-    console.error('Error fetching budget recommendations:', error);
+    console.error("Error fetching budget recommendations:", error);
     return NextResponse.json(
       {
-        error: 'Failed to fetch budget recommendations',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to fetch budget recommendations",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
 /**
  * Rewards & Gamification Page
  * Main page for viewing XP, level, quests, and progress
  */
 
-import React from 'react';
-import { Metadata } from 'next';
-import { GamifiedDashboard } from '@/components/gamification';
+import React from "react";
+import { Metadata } from "next";
+import { GamifiedDashboard } from "@/components/gamification";
 
 export default function RewardsPage() {
   return (

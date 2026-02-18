@@ -3,7 +3,7 @@
  * Captures and reports errors for monitoring
  */
 
-import { logger } from './logger';
+import { logger } from "./logger";
 
 interface ErrorContext {
   userId?: string;
@@ -40,10 +40,10 @@ function generateFingerprint(error: Error, context: ErrorContext): string {
   const parts = [
     error.name,
     error.message.substring(0, 100),
-    context.url || '',
-    context.method || '',
+    context.url || "",
+    context.method || "",
   ];
-  return parts.join('|');
+  return parts.join("|");
 }
 
 // Track an error
@@ -75,7 +75,7 @@ export function trackError(error: Error, context: ErrorContext = {}): string {
   });
 
   // In production, send to external service
-  if (process.env.NODE_ENV === 'production' && process.env.SENTRY_DSN) {
+  if (process.env.NODE_ENV === "production" && process.env.SENTRY_DSN) {
     // Sentry integration would go here
     // Sentry.captureException(error, { extra: context });
   }
@@ -87,15 +87,15 @@ export function trackError(error: Error, context: ErrorContext = {}): string {
 export function trackApiError(
   error: Error,
   request: Request,
-  statusCode: number
+  statusCode: number,
 ): string {
   return trackError(error, {
     url: request.url,
     method: request.method,
-    userAgent: request.headers.get('user-agent') || undefined,
+    userAgent: request.headers.get("user-agent") || undefined,
     tags: {
       statusCode: String(statusCode),
-      type: 'api_error',
+      type: "api_error",
     },
   });
 }
@@ -104,7 +104,7 @@ export function trackApiError(
 export function trackUnhandledRejection(reason: unknown): string {
   const error = reason instanceof Error ? reason : new Error(String(reason));
   return trackError(error, {
-    tags: { type: 'unhandled_rejection' },
+    tags: { type: "unhandled_rejection" },
   });
 }
 
@@ -125,18 +125,21 @@ export function getErrorStats() {
   const oneDayAgo = now - 24 * 60 * 60 * 1000;
 
   const errorsLastHour = recentErrors.filter(
-    (e) => new Date(e.timestamp).getTime() > oneHourAgo
+    (e) => new Date(e.timestamp).getTime() > oneHourAgo,
   ).length;
 
   const errorsLastDay = recentErrors.filter(
-    (e) => new Date(e.timestamp).getTime() > oneDayAgo
+    (e) => new Date(e.timestamp).getTime() > oneDayAgo,
   ).length;
 
-  const errorsByType = recentErrors.reduce((acc, e) => {
-    const type = e.context.tags?.type || 'unknown';
-    acc[type] = (acc[type] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const errorsByType = recentErrors.reduce(
+    (acc, e) => {
+      const type = e.context.tags?.type || "unknown";
+      acc[type] = (acc[type] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
 
   return {
     total: recentErrors.length,
@@ -148,17 +151,16 @@ export function getErrorStats() {
 
 // Global error handler setup
 export function setupGlobalErrorHandlers() {
-  if (typeof window !== 'undefined') {
-    window.addEventListener('error', (event) => {
+  if (typeof window !== "undefined") {
+    window.addEventListener("error", (event) => {
       trackError(event.error || new Error(event.message), {
-        tags: { type: 'window_error' },
+        tags: { type: "window_error" },
         extra: { filename: event.filename, lineno: event.lineno },
       });
     });
 
-    window.addEventListener('unhandledrejection', (event) => {
+    window.addEventListener("unhandledrejection", (event) => {
       trackUnhandledRejection(event.reason);
     });
   }
 }
-

@@ -1,11 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
 export interface LoanAnalysisResult {
   defaultStatus: boolean;
   uploadedFiles: string[];
 }
 
-export const StudentLoanOnboarding = ({ onOnboardingComplete }: { onOnboardingComplete: (analysis: LoanAnalysisResult) => void }) => {
+export const StudentLoanOnboarding = ({
+  onOnboardingComplete,
+}: {
+  onOnboardingComplete: (analysis: LoanAnalysisResult) => void;
+}) => {
   const [step, setStep] = useState(1);
   const [files, setFiles] = useState<File[]>([]);
 
@@ -21,24 +25,28 @@ export const StudentLoanOnboarding = ({ onOnboardingComplete }: { onOnboardingCo
     // For now, we'll just create a mock analysis object.
     const mockAnalysis = {
       defaultStatus: true, // Assume the user is in default for demonstration purposes
-      uploadedFiles: files.map(file => file.name),
+      uploadedFiles: files.map((file) => file.name),
     };
     onOnboardingComplete(mockAnalysis);
   };
 
-  const nextStep = () => setStep(prev => prev + 1);
-  const prevStep = () => setStep(prev => prev - 1);
+  const nextStep = () => setStep((prev) => prev + 1);
+  const prevStep = () => setStep((prev) => prev - 1);
 
   const renderStep = () => {
     switch (step) {
       case 1:
-        return <Step1 nextStep={nextStep} handleFileChange={handleFileChange} />;
+        return (
+          <Step1 nextStep={nextStep} handleFileChange={handleFileChange} />
+        );
       case 2:
         return <Step2 nextStep={nextStep} prevStep={prevStep} />;
       case 3:
         return <Step3 prevStep={prevStep} onFinish={handleFinish} />;
       default:
-        return <Step1 nextStep={nextStep} handleFileChange={handleFileChange} />;
+        return (
+          <Step1 nextStep={nextStep} handleFileChange={handleFileChange} />
+        );
     }
   };
 
@@ -50,35 +58,92 @@ export const StudentLoanOnboarding = ({ onOnboardingComplete }: { onOnboardingCo
   );
 };
 
-const Step1 = ({ nextStep, handleFileChange }: { nextStep: () => void, handleFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void }) => (
+const Step1 = ({
+  nextStep,
+  handleFileChange,
+}: {
+  nextStep: () => void;
+  handleFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+}) => (
   <div>
     <h3 className="text-xl font-semibold mb-2">Step 1: Loan Discovery</h3>
-    <p className="mb-4">Let's start by identifying all of your student loans. Please upload any relevant documents, such as your credit report or statements from your loan servicer.</p>
+    <p className="mb-4">
+      Let's start by identifying all of your student loans. Please upload any
+      relevant documents, such as your credit report or statements from your
+      loan servicer.
+    </p>
     <input type="file" multiple className="mb-4" onChange={handleFileChange} />
-    <button onClick={nextStep} className="bg-blue-500 text-white px-4 py-2 rounded">Next</button>
+    <button
+      onClick={nextStep}
+      className="bg-blue-500 text-white px-4 py-2 rounded"
+    >
+      Next
+    </button>
   </div>
 );
 
-const Step2 = ({ nextStep, prevStep }: { nextStep: () => void, prevStep: () => void }) => (
+const Step2 = ({
+  nextStep,
+  prevStep,
+}: {
+  nextStep: () => void;
+  prevStep: () => void;
+}) => (
   <div>
-    <h3 className="text-xl font-semibold mb-2">Step 2: Servicer Identification</h3>
-    <p className="mb-4">Next, we need to identify your loan servicers. Please select your servicers from the list below.</p>
+    <h3 className="text-xl font-semibold mb-2">
+      Step 2: Servicer Identification
+    </h3>
+    <p className="mb-4">
+      Next, we need to identify your loan servicers. Please select your
+      servicers from the list below.
+    </p>
     {/* Add a list of servicers here */}
     <div className="flex justify-between mt-4">
-      <button onClick={prevStep} className="bg-gray-500 text-white px-4 py-2 rounded">Previous</button>
-      <button onClick={nextStep} className="bg-blue-500 text-white px-4 py-2 rounded">Next</button>
+      <button
+        onClick={prevStep}
+        className="bg-gray-500 text-white px-4 py-2 rounded"
+      >
+        Previous
+      </button>
+      <button
+        onClick={nextStep}
+        className="bg-blue-500 text-white px-4 py-2 rounded"
+      >
+        Next
+      </button>
     </div>
   </div>
 );
 
-const Step3 = ({ prevStep, onFinish }: { prevStep: () => void, onFinish: () => void }) => (
+const Step3 = ({
+  prevStep,
+  onFinish,
+}: {
+  prevStep: () => void;
+  onFinish: () => void;
+}) => (
   <div>
-    <h3 className="text-xl font-semibold mb-2">Step 3: Initial Strategy Assessment</h3>
-    <p className="mb-4">Based on the information you've provided, we're generating an initial set of credit repair strategies.</p>
+    <h3 className="text-xl font-semibold mb-2">
+      Step 3: Initial Strategy Assessment
+    </h3>
+    <p className="mb-4">
+      Based on the information you've provided, we're generating an initial set
+      of credit repair strategies.
+    </p>
     {/* Display a loading indicator or initial strategies here */}
     <div className="flex justify-between mt-4">
-      <button onClick={prevStep} className="bg-gray-500 text-white px-4 py-2 rounded">Previous</button>
-      <button onClick={onFinish} className="bg-green-500 text-white px-4 py-2 rounded">Finish</button>
+      <button
+        onClick={prevStep}
+        className="bg-gray-500 text-white px-4 py-2 rounded"
+      >
+        Previous
+      </button>
+      <button
+        onClick={onFinish}
+        className="bg-green-500 text-white px-4 py-2 rounded"
+      >
+        Finish
+      </button>
     </div>
   </div>
 );

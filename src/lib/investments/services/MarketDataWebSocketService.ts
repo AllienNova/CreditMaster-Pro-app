@@ -14,7 +14,11 @@ export type PriceUpdate = {
   timestamp: Date;
 };
 
-export type WebSocketStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
+export type WebSocketStatus =
+  | "connecting"
+  | "connected"
+  | "disconnected"
+  | "error";
 
 export type PriceUpdateCallback = (update: PriceUpdate) => void;
 export type StatusChangeCallback = (status: WebSocketStatus) => void;
@@ -26,7 +30,7 @@ export type StatusChangeCallback = (status: WebSocketStatus) => void;
  */
 export class MarketDataWebSocketService {
   private eventSource: EventSource | null = null;
-  private status: WebSocketStatus = 'disconnected';
+  private status: WebSocketStatus = "disconnected";
   private subscribers: Map<string, Set<PriceUpdateCallback>> = new Map();
   private statusCallbacks: Set<StatusChangeCallback> = new Set();
   private reconnectAttempts = 0;
@@ -35,13 +39,13 @@ export class MarketDataWebSocketService {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private subscribedSymbols: Set<string> = new Set();
 
-  constructor(private apiUrl: string = '/api/ws/market-data') {}
+  constructor(private apiUrl: string = "/api/ws/market-data") {}
 
   /**
    * Connect to SSE server
    */
   connect(): void {
-    if (this.eventSource && this.status === 'connected') {
+    if (this.eventSource && this.status === "connected") {
       return; // Already connected
     }
 
@@ -50,17 +54,17 @@ export class MarketDataWebSocketService {
       return;
     }
 
-    this.setStatus('connecting');
+    this.setStatus("connecting");
 
     try {
       // Create SSE connection with subscribed symbols
-      const symbols = Array.from(this.subscribedSymbols).join(',');
+      const symbols = Array.from(this.subscribedSymbols).join(",");
       const url = `${this.apiUrl}?symbols=${encodeURIComponent(symbols)}`;
 
       this.eventSource = new EventSource(url);
 
       this.eventSource.onopen = () => {
-        this.setStatus('connected');
+        this.setStatus("connected");
         this.reconnectAttempts = 0;
         this.reconnectDelay = 1000;
       };
@@ -71,14 +75,14 @@ export class MarketDataWebSocketService {
 
       this.eventSource.onerror = (_error) => {
         // MarketDataWebSocketService error: SSE error
-        this.setStatus('error');
+        this.setStatus("error");
         this.eventSource?.close();
         this.eventSource = null;
         this.attemptReconnect();
       };
     } catch (_error) {
       // MarketDataWebSocketService error: Failed to create SSE connection
-      this.setStatus('error');
+      this.setStatus("error");
       this.attemptReconnect();
     }
   }
@@ -97,7 +101,7 @@ export class MarketDataWebSocketService {
       this.eventSource = null;
     }
 
-    this.setStatus('disconnected');
+    this.setStatus("disconnected");
   }
 
   /**
@@ -116,7 +120,7 @@ export class MarketDataWebSocketService {
     this.subscribedSymbols.add(upperSymbol);
 
     // Reconnect if this is the first subscription or if we need to update symbols
-    if (wasEmpty || this.status === 'disconnected') {
+    if (wasEmpty || this.status === "disconnected") {
       this.disconnect(); // Close existing connection
       this.connect(); // Reconnect with new symbols
     }
@@ -141,7 +145,7 @@ export class MarketDataWebSocketService {
 
         // Note: SSE doesn't support sending messages to server
         // Reconnect with updated symbol list if needed
-        if (this.status === 'connected' && this.subscribedSymbols.size > 0) {
+        if (this.status === "connected" && this.subscribedSymbols.size > 0) {
           this.disconnect();
           this.connect();
         }
@@ -175,8 +179,6 @@ export class MarketDataWebSocketService {
     return Array.from(this.subscribedSymbols);
   }
 
-
-
   /**
    * Handle incoming WebSocket message
    */
@@ -184,7 +186,7 @@ export class MarketDataWebSocketService {
     try {
       const message = JSON.parse(data);
 
-      if (message.type === 'price_update') {
+      if (message.type === "price_update") {
         const update: PriceUpdate = {
           symbol: message.symbol,
           price: message.price,
@@ -199,7 +201,7 @@ export class MarketDataWebSocketService {
         if (callbacks) {
           callbacks.forEach((callback) => callback(update));
         }
-      } else if (message.type === 'pong') {
+      } else if (message.type === "pong") {
         // Heartbeat response received
       }
     } catch (_error) {
@@ -234,8 +236,6 @@ export class MarketDataWebSocketService {
       this.connect();
     }, delay);
   }
-
-
 }
 
 // Singleton instance
@@ -250,4 +250,3 @@ export function getMarketDataWebSocketService(): MarketDataWebSocketService {
   }
   return instance;
 }
-

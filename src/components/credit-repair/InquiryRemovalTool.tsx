@@ -1,6 +1,6 @@
 /**
  * Inquiry Removal Tool Component
- * 
+ *
  * Remove unauthorized hard inquiries:
  * - 50% success rate
  * - 5-10 points per inquiry removed
@@ -8,9 +8,9 @@
  * - Simple dispute process
  */
 
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 
 interface Inquiry {
   id: string;
@@ -22,11 +22,13 @@ interface Inquiry {
 export default function InquiryRemovalTool() {
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [newInquiry, setNewInquiry] = useState({
-    creditorName: '',
-    inquiryDate: '',
+    creditorName: "",
+    inquiryDate: "",
     authorized: false,
   });
-  const [generatedLetters, setGeneratedLetters] = useState<Record<string, string>>({});
+  const [generatedLetters, setGeneratedLetters] = useState<
+    Record<string, string>
+  >({});
   const [loading, setLoading] = useState(false);
 
   const addInquiry = () => {
@@ -41,22 +43,22 @@ export default function InquiryRemovalTool() {
     ]);
 
     setNewInquiry({
-      creditorName: '',
-      inquiryDate: '',
+      creditorName: "",
+      inquiryDate: "",
       authorized: false,
     });
   };
 
   const removeInquiry = (id: string) => {
-    setInquiries(inquiries.filter(inq => inq.id !== id));
+    setInquiries(inquiries.filter((inq) => inq.id !== id));
   };
 
   const generateLetter = async (inquiry: Inquiry) => {
     setLoading(true);
     try {
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       const letter = `[Your Name]
 [Your Address]
 [City, State ZIP]
@@ -95,9 +97,9 @@ Sincerely,
     const letter = generatedLetters[inquiry.id];
     if (!letter) return;
 
-    const blob = new Blob([letter], { type: 'text/plain' });
+    const blob = new Blob([letter], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = `inquiry-removal-${inquiry.creditorName}-${Date.now()}.txt`;
     document.body.appendChild(a);
@@ -106,7 +108,7 @@ Sincerely,
     URL.revokeObjectURL(url);
   };
 
-  const unauthorizedCount = inquiries.filter(inq => !inq.authorized).length;
+  const unauthorizedCount = inquiries.filter((inq) => !inq.authorized).length;
   const potentialImpact = unauthorizedCount * 7; // Average 7 points per inquiry
 
   return (
@@ -115,23 +117,36 @@ Sincerely,
       <div className="bg-gradient-to-r from-blue-600 to-blue-600 rounded-lg p-8 text-white mb-6">
         <h1 className="text-3xl font-bold mb-2">Inquiry Removal Tool</h1>
         <p className="text-blue-100">
-          Remove unauthorized hard inquiries - 50% success rate, 5-10 points each
+          Remove unauthorized hard inquiries - 50% success rate, 5-10 points
+          each
         </p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-4">
-          <div className="text-sm text-gray-600 dark:text-slate-300">Total Inquiries</div>
-          <div className="text-3xl font-bold text-gray-800 dark:text-slate-100">{inquiries.length}</div>
+          <div className="text-sm text-gray-600 dark:text-slate-300">
+            Total Inquiries
+          </div>
+          <div className="text-3xl font-bold text-gray-800 dark:text-slate-100">
+            {inquiries.length}
+          </div>
         </div>
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-4">
-          <div className="text-sm text-gray-600 dark:text-slate-300">Unauthorized</div>
-          <div className="text-3xl font-bold text-red-600">{unauthorizedCount}</div>
+          <div className="text-sm text-gray-600 dark:text-slate-300">
+            Unauthorized
+          </div>
+          <div className="text-3xl font-bold text-red-600">
+            {unauthorizedCount}
+          </div>
         </div>
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-4">
-          <div className="text-sm text-gray-600 dark:text-slate-300">Potential Impact</div>
-          <div className="text-3xl font-bold text-green-600">+{potentialImpact} pts</div>
+          <div className="text-sm text-gray-600 dark:text-slate-300">
+            Potential Impact
+          </div>
+          <div className="text-3xl font-bold text-green-600">
+            +{potentialImpact} pts
+          </div>
         </div>
       </div>
 
@@ -146,7 +161,9 @@ Sincerely,
             <input
               type="text"
               value={newInquiry.creditorName}
-              onChange={(e) => setNewInquiry({ ...newInquiry, creditorName: e.target.value })}
+              onChange={(e) =>
+                setNewInquiry({ ...newInquiry, creditorName: e.target.value })
+              }
               placeholder="e.g., Capital One, Chase"
               className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg"
             />
@@ -158,7 +175,9 @@ Sincerely,
             <input
               type="date"
               value={newInquiry.inquiryDate}
-              onChange={(e) => setNewInquiry({ ...newInquiry, inquiryDate: e.target.value })}
+              onChange={(e) =>
+                setNewInquiry({ ...newInquiry, inquiryDate: e.target.value })
+              }
               className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg"
             />
           </div>
@@ -176,10 +195,14 @@ Sincerely,
             <input
               type="checkbox"
               checked={newInquiry.authorized}
-              onChange={(e) => setNewInquiry({ ...newInquiry, authorized: e.target.checked })}
+              onChange={(e) =>
+                setNewInquiry({ ...newInquiry, authorized: e.target.checked })
+              }
               className="mr-2"
             />
-            <span className="text-sm text-gray-700 dark:text-slate-200">I authorized this inquiry (for tracking only)</span>
+            <span className="text-sm text-gray-700 dark:text-slate-200">
+              I authorized this inquiry (for tracking only)
+            </span>
           </label>
         </div>
       </div>
@@ -187,7 +210,7 @@ Sincerely,
       {/* Inquiries List */}
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6">
         <h2 className="text-2xl font-bold mb-4">Your Hard Inquiries</h2>
-        
+
         {inquiries.length === 0 && (
           <div className="text-center py-8 text-gray-500 dark:text-slate-400">
             No inquiries added yet. Add your hard inquiries above.
@@ -196,17 +219,24 @@ Sincerely,
 
         <div className="space-y-4">
           {inquiries.map((inquiry) => (
-            <div key={inquiry.id} className="border border-gray-200 dark:border-slate-700 rounded-lg p-4">
+            <div
+              key={inquiry.id}
+              className="border border-gray-200 dark:border-slate-700 rounded-lg p-4"
+            >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-1">
-                    <h3 className="text-lg font-semibold text-gray-800 dark:text-slate-100">{inquiry.creditorName}</h3>
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      inquiry.authorized 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {inquiry.authorized ? 'Authorized' : 'Unauthorized'}
+                    <h3 className="text-lg font-semibold text-gray-800 dark:text-slate-100">
+                      {inquiry.creditorName}
+                    </h3>
+                    <span
+                      className={`px-2 py-1 text-xs rounded-full ${
+                        inquiry.authorized
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      {inquiry.authorized ? "Authorized" : "Unauthorized"}
                     </span>
                   </div>
                   <p className="text-sm text-gray-600 dark:text-slate-300">
@@ -245,7 +275,11 @@ Sincerely,
                         Download Letter
                       </button>
                       <button
-                        onClick={() => navigator.clipboard.writeText(generatedLetters[inquiry.id])}
+                        onClick={() =>
+                          navigator.clipboard.writeText(
+                            generatedLetters[inquiry.id],
+                          )
+                        }
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                       >
                         Copy Letter
@@ -288,4 +322,3 @@ Sincerely,
     </div>
   );
 }
-

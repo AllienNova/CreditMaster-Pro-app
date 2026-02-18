@@ -5,9 +5,9 @@
  * POST /api/ai/financial-coach/debt/analyze - Generate debt payoff strategies
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { debtStrategyEngine } from '@/lib/financial/debt-strategy-engine';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { debtStrategyEngine } from "@/lib/financial/debt-strategy-engine";
 
 async function getUser() {
   const supabase = await createClient();
@@ -22,17 +22,17 @@ export async function GET(request: NextRequest) {
     const user = await getUser();
 
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const searchParams = request.nextUrl.searchParams;
-    const extraMonthlyPayment = searchParams.get('extraPayment')
-      ? parseFloat(searchParams.get('extraPayment')!)
+    const extraMonthlyPayment = searchParams.get("extraPayment")
+      ? parseFloat(searchParams.get("extraPayment")!)
       : 0;
     const includeRefinancing =
-      searchParams.get('includeRefinancing') !== 'false';
-    const targetPayoffDate = searchParams.get('targetPayoffDate')
-      ? new Date(searchParams.get('targetPayoffDate')!)
+      searchParams.get("includeRefinancing") !== "false";
+    const targetPayoffDate = searchParams.get("targetPayoffDate")
+      ? new Date(searchParams.get("targetPayoffDate")!)
       : undefined;
 
     const result = await debtStrategyEngine.analyzeDebtStrategy({
@@ -47,8 +47,8 @@ export async function GET(request: NextRequest) {
     // FinancialCoachDebtRoute error: Failed to fetch strategy
     void _error;
     return NextResponse.json(
-      { error: 'Failed to fetch debt strategy' },
-      { status: 500 }
+      { error: "Failed to fetch debt strategy" },
+      { status: 500 },
     );
   }
 }
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     const user = await getUser();
 
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
@@ -82,8 +82,8 @@ export async function POST(request: NextRequest) {
     // FinancialCoachDebtRoute error: Analysis failed
     void _error;
     return NextResponse.json(
-      { error: 'Failed to analyze debt strategy' },
-      { status: 500 }
+      { error: "Failed to analyze debt strategy" },
+      { status: 500 },
     );
   }
 }

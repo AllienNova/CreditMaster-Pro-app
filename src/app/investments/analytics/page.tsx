@@ -1,22 +1,26 @@
-'use client';
+"use client";
 
 /**
  * Portfolio Analytics Dashboard Page
- * 
+ *
  * Phase 5.4.2: Advanced portfolio analytics web UI with risk metrics,
  * diversification analysis, correlation heatmap, and rebalancing recommendations
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   RiskMetrics,
   DiversificationScore,
   CorrelationMatrix,
   RebalancingRecommendation,
   SectorExposure,
-} from '@/lib/investments/types/advanced-analytics.types';
-import { PieChartComponent, HeatmapComponent, BarChartComponent } from '@/components/charts';
+} from "@/lib/investments/types/advanced-analytics.types";
+import {
+  PieChartComponent,
+  HeatmapComponent,
+  BarChartComponent,
+} from "@/components/charts";
 
 // ============================================================================
 // MAIN PAGE COMPONENT
@@ -24,14 +28,21 @@ import { PieChartComponent, HeatmapComponent, BarChartComponent } from '@/compon
 
 export default function PortfolioAnalyticsPage() {
   const router = useRouter();
-  const [portfolioId, setPortfolioId] = useState<string>('');
+  const [portfolioId, setPortfolioId] = useState<string>("");
   const [riskMetrics, setRiskMetrics] = useState<RiskMetrics | null>(null);
-  const [diversification, setDiversification] = useState<DiversificationScore | null>(null);
-  const [correlation, setCorrelation] = useState<CorrelationMatrix | null>(null);
-  const [rebalance, setRebalance] = useState<RebalancingRecommendation | null>(null);
+  const [diversification, setDiversification] =
+    useState<DiversificationScore | null>(null);
+  const [correlation, setCorrelation] = useState<CorrelationMatrix | null>(
+    null,
+  );
+  const [rebalance, setRebalance] = useState<RebalancingRecommendation | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [timeHorizon, setTimeHorizon] = useState<'1M' | '3M' | '6M' | '1Y' | '3Y' | '5Y'>('1Y');
+  const [timeHorizon, setTimeHorizon] = useState<
+    "1M" | "3M" | "6M" | "1Y" | "3Y" | "5Y"
+  >("1Y");
 
   // Fetch all analytics data
   const fetchAnalytics = useCallback(async () => {
@@ -44,14 +55,22 @@ export default function PortfolioAnalyticsPage() {
     try {
       // Fetch all analytics in parallel
       const [riskRes, divRes, corrRes, rebalRes] = await Promise.all([
-        fetch(`/api/investments/analytics/risk?portfolioId=${portfolioId}&timeHorizon=${timeHorizon}`),
-        fetch(`/api/investments/analytics/diversification?portfolioId=${portfolioId}`),
-        fetch(`/api/investments/analytics/correlation?portfolioId=${portfolioId}`),
-        fetch(`/api/investments/analytics/rebalance?portfolioId=${portfolioId}`),
+        fetch(
+          `/api/investments/analytics/risk?portfolioId=${portfolioId}&timeHorizon=${timeHorizon}`,
+        ),
+        fetch(
+          `/api/investments/analytics/diversification?portfolioId=${portfolioId}`,
+        ),
+        fetch(
+          `/api/investments/analytics/correlation?portfolioId=${portfolioId}`,
+        ),
+        fetch(
+          `/api/investments/analytics/rebalance?portfolioId=${portfolioId}`,
+        ),
       ]);
 
       if (!riskRes.ok || !divRes.ok || !corrRes.ok || !rebalRes.ok) {
-        throw new Error('Failed to fetch analytics data');
+        throw new Error("Failed to fetch analytics data");
       }
 
       const [riskData, divData, corrData, rebalData] = await Promise.all([
@@ -67,7 +86,7 @@ export default function PortfolioAnalyticsPage() {
       setRebalance(rebalData.data);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load analytics');
+      setError(err instanceof Error ? err.message : "Failed to load analytics");
     } finally {
       setLoading(false);
     }
@@ -78,17 +97,19 @@ export default function PortfolioAnalyticsPage() {
     // Fetch user's default portfolio ID from their profile
     const loadDefaultPortfolio = async () => {
       try {
-        const response = await fetch('/api/investments/portfolio/default');
+        const response = await fetch("/api/investments/portfolio/default");
         if (response.ok) {
           const data = await response.json();
-          setPortfolioId(data.portfolioId || '00000000-0000-0000-0000-000000000000');
+          setPortfolioId(
+            data.portfolioId || "00000000-0000-0000-0000-000000000000",
+          );
         } else {
           // Use placeholder when no portfolio exists
-          setPortfolioId('00000000-0000-0000-0000-000000000000');
+          setPortfolioId("00000000-0000-0000-0000-000000000000");
         }
       } catch {
         // Fallback to placeholder on error
-        setPortfolioId('00000000-0000-0000-0000-000000000000');
+        setPortfolioId("00000000-0000-0000-0000-000000000000");
       }
     };
     void loadDefaultPortfolio();
@@ -152,7 +173,11 @@ export default function PortfolioAnalyticsPage() {
             {/* Diversification & Sector Charts */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <DiversificationChart diversification={diversification} />
-              <SectorPieChart sectorExposure={diversification.sectorDiversification.sectorExposures} />
+              <SectorPieChart
+                sectorExposure={
+                  diversification.sectorDiversification.sectorExposures
+                }
+              />
             </div>
 
             {/* Correlation Heatmap */}
@@ -176,35 +201,64 @@ interface RiskGaugeProps {
 }
 
 function RiskGauge({ riskMetrics }: RiskGaugeProps) {
-  const getRiskLevel = (sharpe: number): { level: string; color: string; bgColor: string } => {
-    if (sharpe >= 2) return { level: 'Low Risk', color: 'text-green-600', bgColor: 'bg-green-100' };
-    if (sharpe >= 1) return { level: 'Moderate Risk', color: 'text-yellow-600', bgColor: 'bg-yellow-100' };
-    if (sharpe >= 0) return { level: 'High Risk', color: 'text-orange-600', bgColor: 'bg-orange-100' };
-    return { level: 'Very High Risk', color: 'text-red-600', bgColor: 'bg-red-100' };
+  const getRiskLevel = (
+    sharpe: number,
+  ): { level: string; color: string; bgColor: string } => {
+    if (sharpe >= 2)
+      return {
+        level: "Low Risk",
+        color: "text-green-600",
+        bgColor: "bg-green-100",
+      };
+    if (sharpe >= 1)
+      return {
+        level: "Moderate Risk",
+        color: "text-yellow-600",
+        bgColor: "bg-yellow-100",
+      };
+    if (sharpe >= 0)
+      return {
+        level: "High Risk",
+        color: "text-orange-600",
+        bgColor: "bg-orange-100",
+      };
+    return {
+      level: "Very High Risk",
+      color: "text-red-600",
+      bgColor: "bg-red-100",
+    };
   };
 
   const risk = getRiskLevel(riskMetrics.sharpeRatio);
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Risk Metrics</h2>
+      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+        Risk Metrics
+      </h2>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
         {/* Risk Level Indicator */}
         <div className="col-span-2 md:col-span-1">
           <div className={`${risk.bgColor} rounded-lg p-6 text-center`}>
-            <p className="text-sm text-gray-600 dark:text-slate-400 mb-2">Risk Level</p>
+            <p className="text-sm text-gray-600 dark:text-slate-400 mb-2">
+              Risk Level
+            </p>
             <p className={`text-2xl font-bold ${risk.color}`}>{risk.level}</p>
           </div>
         </div>
 
         {/* Sharpe Ratio */}
         <div>
-          <p className="text-sm text-gray-600 dark:text-slate-400 mb-2">Sharpe Ratio</p>
+          <p className="text-sm text-gray-600 dark:text-slate-400 mb-2">
+            Sharpe Ratio
+          </p>
           <p className="text-3xl font-bold text-gray-900 dark:text-white">
             {riskMetrics.sharpeRatio.toFixed(2)}
           </p>
-          <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Risk-adjusted return</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+            Risk-adjusted return
+          </p>
         </div>
 
         {/* Beta */}
@@ -213,41 +267,57 @@ function RiskGauge({ riskMetrics }: RiskGaugeProps) {
           <p className="text-3xl font-bold text-gray-900 dark:text-white">
             {riskMetrics.beta.toFixed(2)}
           </p>
-          <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Market correlation</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+            Market correlation
+          </p>
         </div>
 
         {/* Alpha */}
         <div>
-          <p className="text-sm text-gray-600 dark:text-slate-400 mb-2">Alpha</p>
-          <p className={`text-3xl font-bold ${riskMetrics.alpha >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+          <p className="text-sm text-gray-600 dark:text-slate-400 mb-2">
+            Alpha
+          </p>
+          <p
+            className={`text-3xl font-bold ${riskMetrics.alpha >= 0 ? "text-green-600" : "text-red-600"}`}
+          >
             {(riskMetrics.alpha * 100).toFixed(2)}%
           </p>
-          <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Excess return</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+            Excess return
+          </p>
         </div>
       </div>
 
       {/* Additional Metrics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6 border-t border-gray-200 dark:border-slate-700">
         <div>
-          <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">VaR (95%)</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">
+            VaR (95%)
+          </p>
           <p className="text-lg font-semibold text-red-600">
             {(riskMetrics.valueAtRisk.var95 * 100).toFixed(2)}%
           </p>
         </div>
         <div>
-          <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">CVaR (95%)</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">
+            CVaR (95%)
+          </p>
           <p className="text-lg font-semibold text-red-600">
             {(riskMetrics.conditionalVaR.cvar95 * 100).toFixed(2)}%
           </p>
         </div>
         <div>
-          <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Max Drawdown</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">
+            Max Drawdown
+          </p>
           <p className="text-lg font-semibold text-red-600">
             {(riskMetrics.maxDrawdown * 100).toFixed(2)}%
           </p>
         </div>
         <div>
-          <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Volatility</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">
+            Volatility
+          </p>
           <p className="text-lg font-semibold text-gray-900 dark:text-white">
             {(riskMetrics.volatility.annualized * 100).toFixed(2)}%
           </p>
@@ -267,17 +337,23 @@ interface DiversificationChartProps {
 
 function DiversificationChart({ diversification }: DiversificationChartProps) {
   const getScoreColor = (score: number): string => {
-    if (score >= 80) return 'text-green-600';
-    if (score >= 60) return 'text-yellow-600';
-    if (score >= 40) return 'text-orange-600';
-    return 'text-red-600';
+    if (score >= 80) return "text-green-600";
+    if (score >= 60) return "text-yellow-600";
+    if (score >= 40) return "text-orange-600";
+    return "text-red-600";
   };
 
   const scoreData = [
-    { label: 'Overall', value: diversification.overallScore },
-    { label: 'Sector', value: diversification.sectorDiversification.score },
-    { label: 'Asset Class', value: diversification.assetClassDiversification.score },
-    { label: 'Geographic', value: diversification.geographicDiversification.score },
+    { label: "Overall", value: diversification.overallScore },
+    { label: "Sector", value: diversification.sectorDiversification.score },
+    {
+      label: "Asset Class",
+      value: diversification.assetClassDiversification.score,
+    },
+    {
+      label: "Geographic",
+      value: diversification.geographicDiversification.score,
+    },
   ];
 
   return (
@@ -288,10 +364,14 @@ function DiversificationChart({ diversification }: DiversificationChartProps) {
 
       {/* Overall Score */}
       <div className="text-center mb-6">
-        <p className={`text-6xl font-bold ${getScoreColor(diversification.overallScore)}`}>
+        <p
+          className={`text-6xl font-bold ${getScoreColor(diversification.overallScore)}`}
+        >
           {diversification.overallScore.toFixed(0)}
         </p>
-        <p className="text-sm text-gray-500 dark:text-slate-400 mt-2">Out of 100</p>
+        <p className="text-sm text-gray-500 dark:text-slate-400 mt-2">
+          Out of 100
+        </p>
       </div>
 
       {/* Score Breakdown */}
@@ -302,7 +382,9 @@ function DiversificationChart({ diversification }: DiversificationChartProps) {
               <span className="text-sm font-medium text-gray-700 dark:text-slate-300">
                 {item.label}
               </span>
-              <span className={`text-sm font-semibold ${getScoreColor(item.value)}`}>
+              <span
+                className={`text-sm font-semibold ${getScoreColor(item.value)}`}
+              >
                 {item.value.toFixed(0)}
               </span>
             </div>
@@ -310,12 +392,12 @@ function DiversificationChart({ diversification }: DiversificationChartProps) {
               <div
                 className={`h-2 rounded-full ${
                   item.value >= 80
-                    ? 'bg-green-600'
+                    ? "bg-green-600"
                     : item.value >= 60
-                    ? 'bg-yellow-600'
-                    : item.value >= 40
-                    ? 'bg-orange-600'
-                    : 'bg-red-600'
+                      ? "bg-yellow-600"
+                      : item.value >= 40
+                        ? "bg-orange-600"
+                        : "bg-red-600"
                 }`}
                 style={{ width: `${item.value}%` }}
               />
@@ -330,9 +412,13 @@ function DiversificationChart({ diversification }: DiversificationChartProps) {
           <span className="text-sm font-medium text-gray-700 dark:text-slate-300">
             Top Holding Concentration
           </span>
-          <span className={`text-sm font-semibold ${
-            diversification.concentrationRisk.topHoldingAllocation < 30 ? 'text-green-600' : 'text-red-600'
-          }`}>
+          <span
+            className={`text-sm font-semibold ${
+              diversification.concentrationRisk.topHoldingAllocation < 30
+                ? "text-green-600"
+                : "text-red-600"
+            }`}
+          >
             {diversification.concentrationRisk.topHoldingAllocation.toFixed(1)}%
           </span>
         </div>
@@ -359,7 +445,9 @@ interface SectorPieChartProps {
 
 function SectorPieChart({ sectorExposure }: SectorPieChartProps) {
   const chartData = sectorExposure.map((sector) => ({
-    name: sector.sector.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
+    name: sector.sector
+      .replace("_", " ")
+      .replace(/\b\w/g, (l) => l.toUpperCase()),
     value: sector.allocation,
   }));
 
@@ -384,9 +472,14 @@ function SectorPieChart({ sectorExposure }: SectorPieChartProps) {
         </h3>
         <div className="space-y-2">
           {sectorExposure.slice(0, 5).map((sector) => (
-            <div key={sector.sector} className="flex items-center justify-between">
+            <div
+              key={sector.sector}
+              className="flex items-center justify-between"
+            >
               <span className="text-sm text-gray-600 dark:text-slate-400">
-                {sector.sector.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+                {sector.sector
+                  .replace("_", " ")
+                  .replace(/\b\w/g, (l) => l.toUpperCase())}
               </span>
               <span className="text-sm font-semibold text-gray-900 dark:text-white">
                 {sector.allocation.toFixed(1)}%
@@ -409,12 +502,12 @@ interface CorrelationHeatmapProps {
 
 function CorrelationHeatmap({ correlation }: CorrelationHeatmapProps) {
   // Extract unique symbols from correlations
-  const symbols = Array.from(new Set(
-    correlation.correlations.flatMap(c => [c.symbol1, c.symbol2])
-  )).sort();
+  const symbols = Array.from(
+    new Set(correlation.correlations.flatMap((c) => [c.symbol1, c.symbol2])),
+  ).sort();
 
   // Build correlation matrix for heatmap
-  const heatmapData = correlation.correlations.map(c => ({
+  const heatmapData = correlation.correlations.map((c) => ({
     x: c.symbol1,
     y: c.symbol2,
     value: c.correlation,
@@ -428,13 +521,22 @@ function CorrelationHeatmap({ correlation }: CorrelationHeatmapProps) {
 
       <div className="mb-4 space-y-2">
         <p className="text-sm text-gray-600 dark:text-slate-400">
-          Average Correlation: <span className="font-semibold">{correlation.averageCorrelation.toFixed(2)}</span>
+          Average Correlation:{" "}
+          <span className="font-semibold">
+            {correlation.averageCorrelation.toFixed(2)}
+          </span>
         </p>
         <p className="text-sm text-gray-600 dark:text-slate-400">
-          Max Correlation: <span className="font-semibold">{correlation.maxCorrelation.toFixed(2)}</span>
+          Max Correlation:{" "}
+          <span className="font-semibold">
+            {correlation.maxCorrelation.toFixed(2)}
+          </span>
         </p>
         <p className="text-sm text-gray-600 dark:text-slate-400">
-          Min Correlation: <span className="font-semibold">{correlation.minCorrelation.toFixed(2)}</span>
+          Min Correlation:{" "}
+          <span className="font-semibold">
+            {correlation.minCorrelation.toFixed(2)}
+          </span>
         </p>
       </div>
 
@@ -460,9 +562,11 @@ function CorrelationHeatmap({ correlation }: CorrelationHeatmapProps) {
                 <span className="text-sm text-gray-600 dark:text-slate-400">
                   {pair.symbol1} ↔ {pair.symbol2}
                 </span>
-                <span className={`text-sm font-semibold ${
-                  pair.correlation > 0 ? 'text-red-600' : 'text-green-600'
-                }`}>
+                <span
+                  className={`text-sm font-semibold ${
+                    pair.correlation > 0 ? "text-red-600" : "text-green-600"
+                  }`}
+                >
                   {pair.correlation.toFixed(2)}
                 </span>
               </div>
@@ -482,9 +586,11 @@ interface RebalanceRecommendationsProps {
   rebalance: RebalancingRecommendation;
 }
 
-function RebalanceRecommendations({ rebalance }: RebalanceRecommendationsProps) {
-  const buyTrades = rebalance.trades.filter((t) => t.action === 'buy');
-  const sellTrades = rebalance.trades.filter((t) => t.action === 'sell');
+function RebalanceRecommendations({
+  rebalance,
+}: RebalanceRecommendationsProps) {
+  const buyTrades = rebalance.trades.filter((t) => t.action === "buy");
+  const sellTrades = rebalance.trades.filter((t) => t.action === "sell");
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
@@ -495,19 +601,25 @@ function RebalanceRecommendations({ rebalance }: RebalanceRecommendationsProps) 
       {/* Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-blue-50 dark:bg-blue-900 rounded-lg p-4">
-          <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">Total Trades</p>
+          <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">
+            Total Trades
+          </p>
           <p className="text-2xl font-bold text-blue-600 dark:text-blue-300">
             {rebalance.trades.length}
           </p>
         </div>
         <div className="bg-green-50 dark:bg-green-900 rounded-lg p-4">
-          <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">Expected Improvement</p>
+          <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">
+            Expected Improvement
+          </p>
           <p className="text-2xl font-bold text-green-600 dark:text-green-300">
             {(rebalance.expectedImprovement.sharpeRatio * 100).toFixed(1)}%
           </p>
         </div>
         <div className="bg-yellow-50 dark:bg-yellow-900 rounded-lg p-4">
-          <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">Trading Cost</p>
+          <p className="text-sm text-gray-600 dark:text-slate-400 mb-1">
+            Trading Cost
+          </p>
           <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-300">
             ${rebalance.totalTradingCost.toFixed(2)}
           </p>
@@ -529,8 +641,12 @@ function RebalanceRecommendations({ rebalance }: RebalanceRecommendationsProps) 
                   className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900 rounded-lg"
                 >
                   <div>
-                    <p className="font-semibold text-gray-900 dark:text-white">{trade.symbol}</p>
-                    <p className="text-sm text-gray-600 dark:text-slate-400">{trade.reason}</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">
+                      {trade.symbol}
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-slate-400">
+                      {trade.reason}
+                    </p>
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-green-600 dark:text-green-300">
@@ -559,8 +675,12 @@ function RebalanceRecommendations({ rebalance }: RebalanceRecommendationsProps) 
                   className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900 rounded-lg"
                 >
                   <div>
-                    <p className="font-semibold text-gray-900 dark:text-white">{trade.symbol}</p>
-                    <p className="text-sm text-gray-600 dark:text-slate-400">{trade.reason}</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">
+                      {trade.symbol}
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-slate-400">
+                      {trade.reason}
+                    </p>
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-red-600 dark:text-red-300">
@@ -607,7 +727,9 @@ function LoadingState() {
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-12">
       <div className="flex flex-col items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-        <p className="text-gray-500 dark:text-slate-400">Loading analytics...</p>
+        <p className="text-gray-500 dark:text-slate-400">
+          Loading analytics...
+        </p>
       </div>
     </div>
   );
@@ -623,7 +745,9 @@ function ErrorState({ message, onRetry }: ErrorStateProps) {
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-12">
       <div className="flex flex-col items-center justify-center">
         <div className="text-red-500 text-5xl mb-4"></div>
-        <p className="text-gray-900 dark:text-white font-semibold mb-2">Error Loading Analytics</p>
+        <p className="text-gray-900 dark:text-white font-semibold mb-2">
+          Error Loading Analytics
+        </p>
         <p className="text-gray-500 dark:text-slate-400 mb-4">{message}</p>
         <button
           onClick={onRetry}
@@ -635,4 +759,3 @@ function ErrorState({ message, onRetry }: ErrorStateProps) {
     </div>
   );
 }
-

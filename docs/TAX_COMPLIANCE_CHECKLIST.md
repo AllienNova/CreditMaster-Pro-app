@@ -26,14 +26,14 @@ The following disclaimers MUST be displayed to users:
 
 ## Disclaimer Placement Requirements
 
-| Location | Disclaimer Type | Dismissible |
-|----------|----------------|-------------|
-| Tax Dashboard (top banner) | Primary | Yes (session) |
-| Document Upload Results | Document Processing | No |
-| Scenario Modeler | Scenario Modeling | No |
-| Tax Calendar | Year-End Actions | No |
-| All Recommendation Cards | Primary (footer) | No |
-| Mobile App Tax Screen | Primary | Yes (session) |
+| Location                   | Disclaimer Type     | Dismissible   |
+| -------------------------- | ------------------- | ------------- |
+| Tax Dashboard (top banner) | Primary             | Yes (session) |
+| Document Upload Results    | Document Processing | No            |
+| Scenario Modeler           | Scenario Modeling   | No            |
+| Tax Calendar               | Year-End Actions    | No            |
+| All Recommendation Cards   | Primary (footer)    | No            |
+| Mobile App Tax Screen      | Primary             | Yes (session) |
 
 ## Data Protection Requirements
 
@@ -48,13 +48,13 @@ The following disclaimers MUST be displayed to users:
 
 ### Data Retention
 
-| Data Type | Retention Period | Deletion Method |
-|-----------|-----------------|-----------------|
-| Tax Documents | User-controlled | Hard delete on request |
-| Extracted Data | 7 years (IRS requirement) | Soft delete, then purge |
-| Audit Logs | 7 years | Archive after 1 year |
-| Processing Logs | 30 days | Auto-purge |
-| Raw OCR Responses | 7 days | Auto-purge |
+| Data Type         | Retention Period          | Deletion Method         |
+| ----------------- | ------------------------- | ----------------------- |
+| Tax Documents     | User-controlled           | Hard delete on request  |
+| Extracted Data    | 7 years (IRS requirement) | Soft delete, then purge |
+| Audit Logs        | 7 years                   | Archive after 1 year    |
+| Processing Logs   | 30 days                   | Auto-purge              |
+| Raw OCR Responses | 7 days                    | Auto-purge              |
 
 ### User Rights (GDPR/CCPA)
 
@@ -194,16 +194,16 @@ The Tax Optimization module does NOT provide tax advice as defined by IRS Circul
 
 ## Compliance Sign-Off
 
-| Requirement | Owner | Date | Status |
-|-------------|-------|------|--------|
-| Disclaimers implemented | Dev Team | | ☐ |
-| RLS policies applied | Dev Team | | ☐ |
-| Audit logging complete | Dev Team | | ☐ |
-| Security review | Security Team | | ☐ |
-| Legal review | Legal Team | | ☐ |
-| Privacy review | Privacy Officer | | ☐ |
+| Requirement             | Owner           | Date | Status |
+| ----------------------- | --------------- | ---- | ------ |
+| Disclaimers implemented | Dev Team        |      | ☐      |
+| RLS policies applied    | Dev Team        |      | ☐      |
+| Audit logging complete  | Dev Team        |      | ☐      |
+| Security review         | Security Team   |      | ☐      |
+| Legal review            | Legal Team      |      | ☐      |
+| Privacy review          | Privacy Officer |      | ☐      |
 
 ---
 
-*Last Updated: January 2026*
-*Version: 1.0*
+_Last Updated: January 2026_
+_Version: 1.0_

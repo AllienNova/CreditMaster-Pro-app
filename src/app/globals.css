@@ -15,7 +15,7 @@
    ═══════════════════════════════════════════════════════ */
 
 /* ─── Font Loading ─── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 
 @layer base {
   /* ═══ LIGHT THEME TOKENS ═══ */
@@ -29,11 +29,11 @@
     --popover-foreground: 222.2 84% 4.9%;
 
     /* Brand — Vital Green primary action */
-    --primary: 160 84% 39%;         /* #10B981 — Vital Green */
+    --primary: 160 84% 39%; /* #10B981 — Vital Green */
     --primary-foreground: 0 0% 100%;
 
     /* Secondary — Trust Blue */
-    --secondary: 217 91% 60%;       /* #3B82F6 — Trust Blue */
+    --secondary: 217 91% 60%; /* #3B82F6 — Trust Blue */
     --secondary-foreground: 0 0% 100%;
 
     /* Neutral surfaces */
@@ -45,22 +45,22 @@
     /* Semantic */
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
-    --success: 160 84% 39%;         /* Vital Green */
-    --warning: 38 92% 50%;          /* Energy Gold #F59E0B */
-    --info: 217 91% 60%;            /* Trust Blue */
+    --success: 160 84% 39%; /* Vital Green */
+    --warning: 38 92% 50%; /* Energy Gold #F59E0B */
+    --info: 217 91% 60%; /* Trust Blue */
 
     /* Chrome */
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 160 84% 39%;            /* Focus ring = primary */
+    --ring: 160 84% 39%; /* Focus ring = primary */
     --radius: 0.5rem;
 
     /* Fynvita brand tokens */
-    --fynvita-green: 160 84% 39%;   /* #10B981 */
-    --fynvita-blue: 217 91% 60%;    /* #3B82F6 */
-    --fynvita-navy: 224 76% 48%;    /* #1E40AF */
-    --fynvita-gold: 38 92% 50%;     /* #F59E0B */
-    --fynvita-purple: 271 81% 56%;  /* #A855F7 — AI/premium accent */
+    --fynvita-green: 160 84% 39%; /* #10B981 */
+    --fynvita-blue: 217 91% 60%; /* #3B82F6 */
+    --fynvita-navy: 224 76% 48%; /* #1E40AF */
+    --fynvita-gold: 38 92% 50%; /* #F59E0B */
+    --fynvita-purple: 271 81% 56%; /* #A855F7 — AI/premium accent */
 
     /* Elevation (light) */
     --shadow-color: 220 3% 15%;
@@ -69,24 +69,24 @@
   /* ═══ DARK THEME TOKENS ═══ */
   .dark {
     /* Surfaces — Slate tones, never pure black */
-    --background: 222.2 47.4% 11.2%;  /* #0F172A */
-    --foreground: 210 40% 98%;        /* #F8FAFC */
-    --card: 217.2 32.6% 17.5%;        /* #1E293B */
+    --background: 222.2 47.4% 11.2%; /* #0F172A */
+    --foreground: 210 40% 98%; /* #F8FAFC */
+    --card: 217.2 32.6% 17.5%; /* #1E293B */
     --card-foreground: 210 40% 98%;
     --popover: 217.2 32.6% 17.5%;
     --popover-foreground: 210 40% 98%;
 
     /* Brand — brighter for dark backgrounds */
-    --primary: 160 72% 55%;           /* #34D399 — bright Vital Green */
+    --primary: 160 72% 55%; /* #34D399 — bright Vital Green */
     --primary-foreground: 222.2 47.4% 11.2%;
 
     /* Secondary — brighter Trust Blue */
-    --secondary: 213 94% 68%;         /* #60A5FA */
+    --secondary: 213 94% 68%; /* #60A5FA */
     --secondary-foreground: 222.2 47.4% 11.2%;
 
     /* Neutral surfaces */
     --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;  /* #94A3B8 */
+    --muted-foreground: 215 20.2% 65.1%; /* #94A3B8 */
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
 
@@ -94,20 +94,20 @@
     --destructive: 0 72.2% 50.6%;
     --destructive-foreground: 210 40% 98%;
     --success: 160 72% 55%;
-    --warning: 43 96% 56%;           /* #FBBF24 */
-    --info: 213 94% 68%;             /* #60A5FA */
+    --warning: 43 96% 56%; /* #FBBF24 */
+    --info: 213 94% 68%; /* #60A5FA */
 
     /* Chrome */
-    --border: 217.2 32.6% 25%;       /* #334155 */
+    --border: 217.2 32.6% 25%; /* #334155 */
     --input: 217.2 32.6% 17.5%;
     --ring: 160 72% 55%;
 
     /* Fynvita brand tokens (dark) */
-    --fynvita-green: 160 72% 55%;    /* #34D399 */
-    --fynvita-blue: 213 94% 68%;     /* #60A5FA */
-    --fynvita-navy: 224 76% 48%;     /* Same — enough contrast on dark */
-    --fynvita-gold: 43 96% 56%;      /* #FBBF24 */
-    --fynvita-purple: 263 70% 71%;   /* #A78BFA */
+    --fynvita-green: 160 72% 55%; /* #34D399 */
+    --fynvita-blue: 213 94% 68%; /* #60A5FA */
+    --fynvita-navy: 224 76% 48%; /* Same — enough contrast on dark */
+    --fynvita-gold: 43 96% 56%; /* #FBBF24 */
+    --fynvita-purple: 263 70% 71%; /* #A78BFA */
 
     /* Elevation (dark) */
     --shadow-color: 220 40% 2%;
@@ -142,52 +142,108 @@
    ═══════════════════════════════════════════════════════ */
 
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(24px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to   { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @keyframes slideInLeft {
-  from { opacity: 0; transform: translateX(-24px); }
-  to   { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 @keyframes slideInRight {
-  from { opacity: 0; transform: translateX(24px); }
-  to   { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-16px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-16px);
+  }
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 16px hsl(var(--fynvita-blue) / 0.4); }
-  50%      { box-shadow: 0 0 32px hsl(var(--fynvita-blue) / 0.7); }
+  0%,
+  100% {
+    box-shadow: 0 0 16px hsl(var(--fynvita-blue) / 0.4);
+  }
+  50% {
+    box-shadow: 0 0 32px hsl(var(--fynvita-blue) / 0.7);
+  }
 }
 
 @keyframes shimmer {
-  0%   { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }
 
-.animate-fadeInUp    { animation: fadeInUp 0.6s cubic-bezier(0, 0, 0.2, 1) forwards; }
-.animate-fadeIn      { animation: fadeIn 0.5s cubic-bezier(0, 0, 0.2, 1) forwards; }
-.animate-scaleIn     { animation: scaleIn 0.25s cubic-bezier(0, 0, 0.2, 1) forwards; }
-.animate-slideInLeft { animation: slideInLeft 0.6s cubic-bezier(0, 0, 0.2, 1) forwards; }
-.animate-slideInRight{ animation: slideInRight 0.6s cubic-bezier(0, 0, 0.2, 1) forwards; }
-.animate-float       { animation: float 6s ease-in-out infinite; }
-.animate-pulse-glow  { animation: pulse-glow 2s ease-in-out infinite; }
+.animate-fadeInUp {
+  animation: fadeInUp 0.6s cubic-bezier(0, 0, 0.2, 1) forwards;
+}
+.animate-fadeIn {
+  animation: fadeIn 0.5s cubic-bezier(0, 0, 0.2, 1) forwards;
+}
+.animate-scaleIn {
+  animation: scaleIn 0.25s cubic-bezier(0, 0, 0.2, 1) forwards;
+}
+.animate-slideInLeft {
+  animation: slideInLeft 0.6s cubic-bezier(0, 0, 0.2, 1) forwards;
+}
+.animate-slideInRight {
+  animation: slideInRight 0.6s cubic-bezier(0, 0, 0.2, 1) forwards;
+}
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
 
 /* ═══════════════════════════════════════════════════════
    SURFACE EFFECTS
@@ -238,7 +294,9 @@
 }
 
 /* Legacy aliases — keep for backward compatibility */
-.gradient-primary { background: linear-gradient(135deg, #10b981, #3b82f6); }
+.gradient-primary {
+  background: linear-gradient(135deg, #10b981, #3b82f6);
+}
 
 /* Hero section background */
 .hero-gradient {
@@ -260,17 +318,22 @@
 
 /* Feature card hover — 2px lift, shadow increase */
 .feature-card {
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .feature-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 24px -8px rgb(0 0 0 / 0.12), 0 4px 8px -4px rgb(0 0 0 / 0.08);
+  box-shadow:
+    0 12px 24px -8px rgb(0 0 0 / 0.12),
+    0 4px 8px -4px rgb(0 0 0 / 0.08);
 }
 
 .dark .feature-card:hover {
-  box-shadow: 0 12px 24px -8px rgb(0 0 0 / 0.4), 0 4px 8px -4px rgb(0 0 0 / 0.3);
+  box-shadow:
+    0 12px 24px -8px rgb(0 0 0 / 0.4),
+    0 4px 8px -4px rgb(0 0 0 / 0.3);
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -463,7 +526,7 @@ textarea:focus-visible,
 }
 
 .skeleton-wave::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   transform: translateX(-100%);

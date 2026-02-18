@@ -1,14 +1,14 @@
 /**
  * Servicer Analysis API
- * 
+ *
  * Analyzes servicer vulnerabilities and identifies opportunities
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { rbac } from '@/lib/auth/rbac';
-import { servicerIntelligenceEngine } from '@/lib/servicer-intelligence-engine';
-import { logAIInteraction } from '@/lib/security/audit-logging';
+import { NextRequest, NextResponse } from "next/server";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { rbac } from "@/lib/auth/rbac";
+import { servicerIntelligenceEngine } from "@/lib/servicer-intelligence-engine";
+import { logAIInteraction } from "@/lib/security/audit-logging";
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,12 +16,12 @@ export async function POST(request: NextRequest) {
     const validation = await jwtValidation.validateFromHeaders(request);
 
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check permissions
-    if (!rbac.hasPermission(validation.user, 'servicers:analyze')) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!rbac.hasPermission(validation.user, "servicers:analyze")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const user = validation.user;
@@ -33,8 +33,8 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (!servicer_name) {
       return NextResponse.json(
-        { error: 'Missing required field: servicer_name' },
-        { status: 400 }
+        { error: "Missing required field: servicer_name" },
+        { status: 400 },
       );
     }
 
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     // Analyze servicer
     const analysis = await servicerIntelligenceEngine.analyzeServicer(
       servicer_name,
-      loans || []
+      loans || [],
     );
 
     const duration = Date.now() - startTime;
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     // Audit log
     logAIInteraction({
       userId: user.id,
-      model: 'servicer-intelligence-engine',
+      model: "servicer-intelligence-engine",
       prompt: JSON.stringify({ servicer_name, loans }),
       response: JSON.stringify(analysis),
       tokens: 0,
@@ -68,25 +68,26 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Servicer analysis error:', error);
+    console.error("Servicer analysis error:", error);
     return NextResponse.json(
-      { 
+      {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to analyze servicer' 
+        error:
+          error instanceof Error ? error.message : "Failed to analyze servicer",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function GET() {
   return NextResponse.json({
-    message: 'Servicer Analysis API',
-    method: 'POST',
-    endpoint: '/api/servicers/analyze',
-    requiredFields: ['servicer_name'],
-    optionalFields: ['loans'],
-    description: 'Analyzes servicer vulnerabilities and identifies opportunities',
+    message: "Servicer Analysis API",
+    method: "POST",
+    endpoint: "/api/servicers/analyze",
+    requiredFields: ["servicer_name"],
+    optionalFields: ["loans"],
+    description:
+      "Analyzes servicer vulnerabilities and identifies opportunities",
   });
 }
-

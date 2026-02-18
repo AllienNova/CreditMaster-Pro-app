@@ -1,6 +1,6 @@
 /**
  * LLM Guardrails for Autonomous Trading Engine
- * 
+ *
  * Provides safety layers for LLM-powered trading:
  * - Prompt injection detection and prevention
  * - Risk management guardrails
@@ -18,23 +18,23 @@ export interface GuardrailConfig {
   maxPromptLength: number;
   blockedPatterns: RegExp[];
   suspiciousPatterns: RegExp[];
-  
+
   // Risk limits
-  maxPositionSize: number;        // Max % of portfolio per trade
-  maxDailyTrades: number;         // Max trades per day
-  maxDailyLoss: number;           // Max % daily loss before halt
-  maxDrawdown: number;            // Max % drawdown before halt
-  maxLeverage: number;            // Max leverage allowed
-  
+  maxPositionSize: number; // Max % of portfolio per trade
+  maxDailyTrades: number; // Max trades per day
+  maxDailyLoss: number; // Max % daily loss before halt
+  maxDrawdown: number; // Max % drawdown before halt
+  maxLeverage: number; // Max leverage allowed
+
   // Output validation
-  requireConfirmation: boolean;   // Require user confirmation for trades
+  requireConfirmation: boolean; // Require user confirmation for trades
   minConfidenceThreshold: number; // Min AI confidence to execute
-  maxRiskRewardRequired: number;  // Min R:R ratio required
-  
+  maxRiskRewardRequired: number; // Min R:R ratio required
+
   // Circuit breakers
-  consecutiveLossLimit: number;   // Halt after N consecutive losses
-  volatilityThreshold: number;    // Halt in extreme volatility
-  
+  consecutiveLossLimit: number; // Halt after N consecutive losses
+  volatilityThreshold: number; // Halt in extreme volatility
+
   // Audit
   logAllDecisions: boolean;
   logPrompts: boolean;
@@ -44,11 +44,11 @@ export interface PromptValidationResult {
   isValid: boolean;
   sanitizedPrompt: string;
   threats: PromptThreat[];
-  riskLevel: 'low' | 'medium' | 'high' | 'critical';
+  riskLevel: "low" | "medium" | "high" | "critical";
 }
 
 export interface PromptThreat {
-  type: 'injection' | 'jailbreak' | 'data_exfil' | 'manipulation' | 'overflow';
+  type: "injection" | "jailbreak" | "data_exfil" | "manipulation" | "overflow";
   pattern: string;
   severity: number;
   description: string;
@@ -125,26 +125,26 @@ export const DEFAULT_GUARDRAIL_CONFIG: GuardrailConfig = {
     /unlimited/i,
     /no\s+limits?/i,
   ],
-  
+
   // Risk limits
-  maxPositionSize: 5,           // 5% max per trade
-  maxDailyTrades: 20,           // 20 trades per day max
-  maxDailyLoss: 3,              // 3% daily loss limit
-  maxDrawdown: 10,              // 10% max drawdown
-  maxLeverage: 2,               // 2x max leverage
-  
+  maxPositionSize: 5, // 5% max per trade
+  maxDailyTrades: 20, // 20 trades per day max
+  maxDailyLoss: 3, // 3% daily loss limit
+  maxDrawdown: 10, // 10% max drawdown
+  maxLeverage: 2, // 2x max leverage
+
   // Output validation
   requireConfirmation: true,
   minConfidenceThreshold: 0.6,
   maxRiskRewardRequired: 1.5,
-  
+
   // Circuit breakers
   consecutiveLossLimit: 5,
-  volatilityThreshold: 3,       // 3x normal volatility
-  
+  volatilityThreshold: 3, // 3x normal volatility
+
   // Audit
   logAllDecisions: true,
-  logPrompts: false,            // Privacy - don't log full prompts by default
+  logPrompts: false, // Privacy - don't log full prompts by default
 };
 
 // ============================================================================
@@ -159,7 +159,7 @@ const INJECTION_PATTERNS = {
     /forget\s+(everything|all|previous|your\s+training)/gi,
     /override\s+(your|the|all)\s+(rules?|constraints?|safety)/gi,
   ],
-  
+
   // Role/persona manipulation
   roleManipulation: [
     /you\s+are\s+now\s+(a|an)\s+\w+/gi,
@@ -170,7 +170,7 @@ const INJECTION_PATTERNS = {
     /enter\s+\w+\s+mode/gi,
     /you\s+have\s+no\s+(restrictions?|limits?|rules?)/gi,
   ],
-  
+
   // System prompt extraction
   systemExtraction: [
     /what\s+(is|are)\s+your\s+(system\s+)?prompt/gi,
@@ -179,7 +179,7 @@ const INJECTION_PATTERNS = {
     /print\s+(your\s+)?instructions/gi,
     /display\s+(your\s+)?rules/gi,
   ],
-  
+
   // Delimiter injection
   delimiterInjection: [
     /\[INST\]/gi,
@@ -191,7 +191,7 @@ const INJECTION_PATTERNS = {
     /<<SYS>>/gi,
     /<\/SYS>/gi,
   ],
-  
+
   // Code/command injection
   codeInjection: [
     /```\s*(python|javascript|bash|shell|sql)/gi,
@@ -251,8 +251,8 @@ export class LLMGuardrails {
     // Check prompt length
     if (prompt.length > this.config.maxPromptLength) {
       threats.push({
-        type: 'overflow',
-        pattern: 'length_exceeded',
+        type: "overflow",
+        pattern: "length_exceeded",
         severity: 7,
         description: `Prompt exceeds max length of ${this.config.maxPromptLength}`,
       });
@@ -264,12 +264,12 @@ export class LLMGuardrails {
       const match = prompt.match(pattern);
       if (match) {
         threats.push({
-          type: 'injection',
+          type: "injection",
           pattern: match[0],
           severity: 9,
-          description: 'Blocked injection pattern detected',
+          description: "Blocked injection pattern detected",
         });
-        sanitizedPrompt = sanitizedPrompt.replace(pattern, '[BLOCKED]');
+        sanitizedPrompt = sanitizedPrompt.replace(pattern, "[BLOCKED]");
       }
     }
 
@@ -279,13 +279,16 @@ export class LLMGuardrails {
         const match = prompt.match(pattern);
         if (match) {
           threats.push({
-            type: category.includes('role') ? 'jailbreak' : 
-                  category.includes('system') ? 'data_exfil' : 'injection',
+            type: category.includes("role")
+              ? "jailbreak"
+              : category.includes("system")
+                ? "data_exfil"
+                : "injection",
             pattern: match[0],
             severity: 8,
             description: `${category} attempt detected`,
           });
-          sanitizedPrompt = sanitizedPrompt.replace(pattern, '[FILTERED]');
+          sanitizedPrompt = sanitizedPrompt.replace(pattern, "[FILTERED]");
         }
       }
     }
@@ -295,33 +298,32 @@ export class LLMGuardrails {
       const match = prompt.match(pattern);
       if (match) {
         threats.push({
-          type: 'manipulation',
+          type: "manipulation",
           pattern: match[0],
           severity: 5,
-          description: 'Suspicious pattern detected',
+          description: "Suspicious pattern detected",
         });
       }
     }
 
     // Calculate risk level
-    const maxSeverity = threats.length > 0 
-      ? Math.max(...threats.map(t => t.severity))
-      : 0;
-    
-    let riskLevel: PromptValidationResult['riskLevel'] = 'low';
-    if (maxSeverity >= 8) riskLevel = 'critical';
-    else if (maxSeverity >= 6) riskLevel = 'high';
-    else if (maxSeverity >= 4) riskLevel = 'medium';
+    const maxSeverity =
+      threats.length > 0 ? Math.max(...threats.map((t) => t.severity)) : 0;
 
-    const isValid = threats.filter(t => t.severity >= 8).length === 0;
+    let riskLevel: PromptValidationResult["riskLevel"] = "low";
+    if (maxSeverity >= 8) riskLevel = "critical";
+    else if (maxSeverity >= 6) riskLevel = "high";
+    else if (maxSeverity >= 4) riskLevel = "medium";
+
+    const isValid = threats.filter((t) => t.severity >= 8).length === 0;
 
     // Log validation
     this.logAudit({
       timestamp: new Date(),
-      action: 'prompt_validation',
-      input: this.config.logPrompts ? prompt.slice(0, 500) : '[REDACTED]',
-      output: isValid ? 'passed' : 'blocked',
-      decision: isValid ? 'allow' : 'deny',
+      action: "prompt_validation",
+      input: this.config.logPrompts ? prompt.slice(0, 500) : "[REDACTED]",
+      output: isValid ? "passed" : "blocked",
+      decision: isValid ? "allow" : "deny",
       riskLevel,
       approved: isValid,
       metadata: { threats: threats.length, context },
@@ -340,8 +342,8 @@ export class LLMGuardrails {
   validateTrade(
     trade: {
       symbol: string;
-      direction: 'long' | 'short';
-      positionSize: number;      // % of portfolio
+      direction: "long" | "short";
+      positionSize: number; // % of portfolio
       entryPrice: number;
       stopLoss: number;
       targets: number[];
@@ -353,7 +355,7 @@ export class LLMGuardrails {
       dailyPnL: number;
       openPositions: number;
       currentDrawdown: number;
-    }
+    },
   ): TradeValidationResult {
     const reasons: string[] = [];
     const adjustments: TradeAdjustment[] = [];
@@ -380,7 +382,7 @@ export class LLMGuardrails {
     // Check position size
     if (trade.positionSize > this.config.maxPositionSize) {
       adjustments.push({
-        field: 'positionSize',
+        field: "positionSize",
         originalValue: trade.positionSize,
         adjustedValue: this.config.maxPositionSize,
         reason: `Exceeds max position size of ${this.config.maxPositionSize}%`,
@@ -391,7 +393,7 @@ export class LLMGuardrails {
     // Check leverage
     if (trade.leverage && trade.leverage > this.config.maxLeverage) {
       adjustments.push({
-        field: 'leverage',
+        field: "leverage",
         originalValue: trade.leverage,
         adjustedValue: this.config.maxLeverage,
         reason: `Exceeds max leverage of ${this.config.maxLeverage}x`,
@@ -401,65 +403,90 @@ export class LLMGuardrails {
 
     // Check confidence threshold
     if (trade.confidence < this.config.minConfidenceThreshold) {
-      reasons.push(`Confidence ${(trade.confidence * 100).toFixed(0)}% below threshold ${(this.config.minConfidenceThreshold * 100).toFixed(0)}%`);
+      reasons.push(
+        `Confidence ${(trade.confidence * 100).toFixed(0)}% below threshold ${(this.config.minConfidenceThreshold * 100).toFixed(0)}%`,
+      );
       riskScore += 15;
     }
 
     // Check risk/reward ratio
     const risk = Math.abs(trade.entryPrice - trade.stopLoss);
-    const reward = trade.targets.length > 0 
-      ? Math.abs(trade.targets[0] - trade.entryPrice)
-      : 0;
+    const reward =
+      trade.targets.length > 0
+        ? Math.abs(trade.targets[0] - trade.entryPrice)
+        : 0;
     const riskReward = reward / risk;
 
     if (riskReward < this.config.maxRiskRewardRequired) {
-      reasons.push(`R:R ratio ${riskReward.toFixed(2)} below minimum ${this.config.maxRiskRewardRequired}`);
+      reasons.push(
+        `R:R ratio ${riskReward.toFixed(2)} below minimum ${this.config.maxRiskRewardRequired}`,
+      );
       riskScore += 20;
     }
 
     // Check daily loss limit
-    const dailyLossPercent = (portfolioState.dailyPnL / portfolioState.equity) * 100;
+    const dailyLossPercent =
+      (portfolioState.dailyPnL / portfolioState.equity) * 100;
     if (dailyLossPercent <= -this.config.maxDailyLoss) {
       reasons.push(`Daily loss limit reached (${this.config.maxDailyLoss}%)`);
-      this.tripCircuitBreaker('Daily loss limit exceeded');
+      this.tripCircuitBreaker("Daily loss limit exceeded");
       riskScore += 50;
     }
 
     // Check drawdown
     if (portfolioState.currentDrawdown >= this.config.maxDrawdown) {
       reasons.push(`Max drawdown reached (${this.config.maxDrawdown}%)`);
-      this.tripCircuitBreaker('Max drawdown exceeded');
+      this.tripCircuitBreaker("Max drawdown exceeded");
       riskScore += 50;
     }
 
     // Check consecutive losses
-    if (this.circuitBreaker.consecutiveLosses >= this.config.consecutiveLossLimit) {
-      reasons.push(`Consecutive loss limit reached (${this.config.consecutiveLossLimit})`);
-      this.tripCircuitBreaker('Consecutive loss limit exceeded');
+    if (
+      this.circuitBreaker.consecutiveLosses >= this.config.consecutiveLossLimit
+    ) {
+      reasons.push(
+        `Consecutive loss limit reached (${this.config.consecutiveLossLimit})`,
+      );
+      this.tripCircuitBreaker("Consecutive loss limit exceeded");
       riskScore += 40;
     }
 
-    const isApproved = reasons.filter(r => 
-      r.includes('limit reached') || r.includes('exceeded')
-    ).length === 0;
+    const isApproved =
+      reasons.filter(
+        (r) => r.includes("limit reached") || r.includes("exceeded"),
+      ).length === 0;
 
-    const requiresConfirmation = this.config.requireConfirmation || 
-                                  riskScore >= 30 || 
-                                  adjustments.length > 0;
+    const requiresConfirmation =
+      this.config.requireConfirmation ||
+      riskScore >= 30 ||
+      adjustments.length > 0;
 
     // Log validation
     this.logAudit({
       timestamp: new Date(),
-      action: 'trade_validation',
-      input: JSON.stringify({ symbol: trade.symbol, direction: trade.direction }),
-      output: isApproved ? 'approved' : 'rejected',
-      decision: isApproved ? 'allow' : 'deny',
-      riskLevel: riskScore >= 50 ? 'high' : riskScore >= 25 ? 'medium' : 'low',
+      action: "trade_validation",
+      input: JSON.stringify({
+        symbol: trade.symbol,
+        direction: trade.direction,
+      }),
+      output: isApproved ? "approved" : "rejected",
+      decision: isApproved ? "allow" : "deny",
+      riskLevel: riskScore >= 50 ? "high" : riskScore >= 25 ? "medium" : "low",
       approved: isApproved,
-      metadata: { riskScore, adjustments: adjustments.length, reasons: reasons.length },
+      metadata: {
+        riskScore,
+        adjustments: adjustments.length,
+        reasons: reasons.length,
+      },
     });
 
-    return { isApproved, reasons, adjustments, riskScore, requiresConfirmation };
+    return {
+      isApproved,
+      reasons,
+      adjustments,
+      riskScore,
+      requiresConfirmation,
+    };
   }
 
   // ==========================================================================
@@ -471,7 +498,7 @@ export class LLMGuardrails {
    */
   validateOutput(
     output: string,
-    expectedType: 'trade' | 'analysis' | 'risk' | 'general'
+    expectedType: "trade" | "analysis" | "risk" | "general",
   ): { isValid: boolean; issues: string[]; sanitized: string } {
     const issues: string[] = [];
     let sanitized = output;
@@ -489,21 +516,24 @@ export class LLMGuardrails {
     for (const pattern of harmfulPatterns) {
       if (pattern.test(output)) {
         issues.push(`Potentially harmful language detected: ${pattern.source}`);
-        sanitized = sanitized.replace(pattern, '[REMOVED]');
+        sanitized = sanitized.replace(pattern, "[REMOVED]");
       }
     }
 
     // Validate trade-specific output
-    if (expectedType === 'trade') {
+    if (expectedType === "trade") {
       try {
         const parsed = JSON.parse(output);
-        
+
         // Check for unrealistic values
         if (parsed.confidence > 1 || parsed.confidence < 0) {
-          issues.push('Invalid confidence value');
+          issues.push("Invalid confidence value");
         }
-        if (parsed.positionSizePercent > 100 || parsed.positionSizePercent < 0) {
-          issues.push('Invalid position size');
+        if (
+          parsed.positionSizePercent > 100 ||
+          parsed.positionSizePercent < 0
+        ) {
+          issues.push("Invalid position size");
         }
       } catch {
         // Not JSON, might be okay depending on context
@@ -528,11 +558,11 @@ export class LLMGuardrails {
 
     this.logAudit({
       timestamp: new Date(),
-      action: 'circuit_breaker_trip',
+      action: "circuit_breaker_trip",
       input: reason,
-      output: 'trading_halted',
-      decision: 'emergency_stop',
-      riskLevel: 'critical',
+      output: "trading_halted",
+      decision: "emergency_stop",
+      riskLevel: "critical",
       approved: false,
       metadata: { ...this.circuitBreaker },
     });
@@ -567,7 +597,7 @@ export class LLMGuardrails {
 
   recordTradeResult(isWin: boolean, pnlPercent: number): void {
     this.checkDailyReset();
-    
+
     this.circuitBreaker.dailyTrades++;
     this.dailyStats.trades++;
     this.dailyStats.pnl += pnlPercent;
@@ -581,11 +611,14 @@ export class LLMGuardrails {
       this.circuitBreaker.dailyLoss += Math.abs(pnlPercent);
 
       // Check if we need to trip circuit breaker
-      if (this.circuitBreaker.consecutiveLosses >= this.config.consecutiveLossLimit) {
-        this.tripCircuitBreaker('Consecutive loss limit exceeded');
+      if (
+        this.circuitBreaker.consecutiveLosses >=
+        this.config.consecutiveLossLimit
+      ) {
+        this.tripCircuitBreaker("Consecutive loss limit exceeded");
       }
       if (this.circuitBreaker.dailyLoss >= this.config.maxDailyLoss) {
-        this.tripCircuitBreaker('Daily loss limit exceeded');
+        this.tripCircuitBreaker("Daily loss limit exceeded");
       }
     }
   }
@@ -597,7 +630,7 @@ export class LLMGuardrails {
   private logAudit(log: AuditLog): void {
     if (this.config.logAllDecisions) {
       this.auditLogs.push(log);
-      
+
       // Keep last 1000 logs in memory
       if (this.auditLogs.length > 1000) {
         this.auditLogs = this.auditLogs.slice(-1000);
@@ -657,7 +690,7 @@ AI recommendations are not financial advice. Always consult a licensed financial
 // ============================================================================
 
 export function createLLMGuardrails(
-  config?: Partial<GuardrailConfig>
+  config?: Partial<GuardrailConfig>,
 ): LLMGuardrails {
   return new LLMGuardrails(config);
 }

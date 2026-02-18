@@ -14,10 +14,10 @@
  * - Audit logging
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { db } from '@/lib/credit-repair/db';
-import { auditLogger } from '@/lib/security/audit-logging';
+import { NextRequest, NextResponse } from "next/server";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { db } from "@/lib/credit-repair/db";
+import { auditLogger } from "@/lib/security/audit-logging";
 
 interface GoodwillUpdatePayload {
   accountId?: string;
@@ -27,10 +27,10 @@ interface GoodwillUpdatePayload {
   latePaymentDate?: Date;
   reason?: string;
   letterContent?: string;
-  status?: 'draft' | 'sent' | 'response_received' | 'approved' | 'denied';
+  status?: "draft" | "sent" | "response_received" | "approved" | "denied";
   sentAt?: Date;
   responseReceivedAt?: Date;
-  outcome?: 'removed' | 'denied' | 'pending';
+  outcome?: "removed" | "denied" | "pending";
   notes?: string;
 }
 
@@ -40,13 +40,13 @@ interface GoodwillUpdatePayload {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     // 1. Authenticate
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = validation.user;
@@ -57,15 +57,15 @@ export async function GET(
 
     if (!letter) {
       return NextResponse.json(
-        { error: 'Goodwill letter not found' },
-        { status: 404 }
+        { error: "Goodwill letter not found" },
+        { status: 404 },
       );
     }
 
     // 3. Audit log
     await auditLogger.logAIInteraction({
       userId: user.id,
-      action: 'get_goodwill_letter',
+      action: "get_goodwill_letter",
       input: { letterId },
       output: { found: true },
       success: true,
@@ -80,8 +80,8 @@ export async function GET(
     // GoodwillRoute error: Failed to get goodwill letter
     void _error;
     return NextResponse.json(
-      { error: 'Failed to get goodwill letter' },
-      { status: 500 }
+      { error: "Failed to get goodwill letter" },
+      { status: 500 },
     );
   }
 }
@@ -92,13 +92,13 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     // 1. Authenticate
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = validation.user;
@@ -122,20 +122,20 @@ export async function PUT(
     } = body;
 
     // Validate status if provided
-    let normalizedStatus: GoodwillUpdatePayload['status'] | undefined;
+    let normalizedStatus: GoodwillUpdatePayload["status"] | undefined;
     if (status) {
-      const validStatuses: GoodwillUpdatePayload['status'][] = [
-        'draft',
-        'sent',
-        'response_received',
-        'approved',
-        'denied',
+      const validStatuses: GoodwillUpdatePayload["status"][] = [
+        "draft",
+        "sent",
+        "response_received",
+        "approved",
+        "denied",
       ];
-      normalizedStatus = status === 'rejected' ? 'denied' : status;
+      normalizedStatus = status === "rejected" ? "denied" : status;
       if (!validStatuses.includes(normalizedStatus)) {
         return NextResponse.json(
-          { error: 'Invalid status', validStatuses },
-          { status: 400 }
+          { error: "Invalid status", validStatuses },
+          { status: 400 },
         );
       }
     }
@@ -150,17 +150,17 @@ export async function PUT(
       updates.latePaymentDate = new Date(latePaymentDate);
     if (reason !== undefined) updates.reason = reason;
     if (letterContent !== undefined) updates.letterContent = letterContent;
-    let normalizedOutcome: GoodwillUpdatePayload['outcome'] | undefined;
+    let normalizedOutcome: GoodwillUpdatePayload["outcome"] | undefined;
     if (outcome) {
-      const validOutcomes: GoodwillUpdatePayload['outcome'][] = [
-        'removed',
-        'denied',
-        'pending',
+      const validOutcomes: GoodwillUpdatePayload["outcome"][] = [
+        "removed",
+        "denied",
+        "pending",
       ];
       if (!validOutcomes.includes(outcome)) {
         return NextResponse.json(
-          { error: 'Invalid outcome', validOutcomes },
-          { status: 400 }
+          { error: "Invalid outcome", validOutcomes },
+          { status: 400 },
         );
       }
       normalizedOutcome = outcome;
@@ -176,13 +176,13 @@ export async function PUT(
     const letter = await db.goodwill.updateGoodwillLetter(
       letterId,
       user.id,
-      updates
+      updates,
     );
 
     // 4. Audit log
     await auditLogger.logAIInteraction({
       userId: user.id,
-      action: 'update_goodwill_letter',
+      action: "update_goodwill_letter",
       input: { letterId, updates: Object.keys(updates) },
       output: { success: true },
       success: true,
@@ -197,8 +197,8 @@ export async function PUT(
     // GoodwillRoute error: Failed to update goodwill letter
     void _error;
     return NextResponse.json(
-      { error: 'Failed to update goodwill letter' },
-      { status: 500 }
+      { error: "Failed to update goodwill letter" },
+      { status: 500 },
     );
   }
 }
@@ -209,13 +209,13 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     // 1. Authenticate
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = validation.user;
@@ -226,15 +226,15 @@ export async function DELETE(
 
     if (!deleted) {
       return NextResponse.json(
-        { error: 'Goodwill letter not found' },
-        { status: 404 }
+        { error: "Goodwill letter not found" },
+        { status: 404 },
       );
     }
 
     // 3. Audit log
     await auditLogger.logAIInteraction({
       userId: user.id,
-      action: 'delete_goodwill_letter',
+      action: "delete_goodwill_letter",
       input: { letterId },
       output: { deleted: true },
       success: true,
@@ -243,14 +243,14 @@ export async function DELETE(
     // 4. Return response
     return NextResponse.json({
       success: true,
-      message: 'Goodwill letter deleted successfully',
+      message: "Goodwill letter deleted successfully",
     });
   } catch (_error) {
     // GoodwillRoute error: Failed to delete goodwill letter
     void _error;
     return NextResponse.json(
-      { error: 'Failed to delete goodwill letter' },
-      { status: 500 }
+      { error: "Failed to delete goodwill letter" },
+      { status: 500 },
     );
   }
 }

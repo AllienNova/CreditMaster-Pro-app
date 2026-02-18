@@ -1,6 +1,6 @@
 /**
  * Cache Service
- * 
+ *
  * In-memory caching with TTL (Time To Live) support
  * Improves performance by reducing database queries and API calls
  */
@@ -37,7 +37,7 @@ export class CacheService {
   private misses: number = 0;
   private defaultTTL: number = 5 * 60 * 1000; // 5 minutes
   private maxSize: number = 1000;
-  
+
   constructor(options?: CacheOptions) {
     if (options?.ttl) {
       this.defaultTTL = options.ttl;
@@ -45,33 +45,33 @@ export class CacheService {
     if (options?.maxSize) {
       this.maxSize = options.maxSize;
     }
-    
+
     // Start cleanup interval
     this.startCleanupInterval();
   }
-  
+
   /**
    * Get value from cache
    */
   get<T>(key: string): T | null {
     const entry = this.cache.get(key);
-    
+
     if (!entry) {
       this.misses++;
       return null;
     }
-    
+
     // Check if expired
     if (Date.now() > entry.expiresAt) {
       this.cache.delete(key);
       this.misses++;
       return null;
     }
-    
+
     this.hits++;
     return entry.value as T;
   }
-  
+
   /**
    * Set value in cache
    */
@@ -84,23 +84,23 @@ export class CacheService {
         this.cache.delete(firstKey);
       }
     }
-    
+
     const expiresAt = Date.now() + (ttl || this.defaultTTL);
-    
+
     this.cache.set(key, {
       value,
       expiresAt,
-      createdAt: Date.now()
+      createdAt: Date.now(),
     });
   }
-  
+
   /**
    * Delete value from cache
    */
   delete(key: string): boolean {
     return this.cache.delete(key);
   }
-  
+
   /**
    * Clear all cache
    */
@@ -109,69 +109,69 @@ export class CacheService {
     this.hits = 0;
     this.misses = 0;
   }
-  
+
   /**
    * Check if key exists and is not expired
    */
   has(key: string): boolean {
     const entry = this.cache.get(key);
     if (!entry) return false;
-    
+
     if (Date.now() > entry.expiresAt) {
       this.cache.delete(key);
       return false;
     }
-    
+
     return true;
   }
-  
+
   /**
    * Get or set value (fetch if not in cache)
    */
   async getOrSet<T>(
     key: string,
     fetchFn: () => Promise<T>,
-    ttl?: number
+    ttl?: number,
   ): Promise<T> {
     const cached = this.get<T>(key);
     if (cached !== null) {
       return cached;
     }
-    
+
     const value = await fetchFn();
     this.set(key, value, ttl);
     return value;
   }
-  
+
   /**
    * Get cache statistics
    */
   getStats(): CacheStats {
     const total = this.hits + this.misses;
     const hitRate = total > 0 ? (this.hits / total) * 100 : 0;
-    
+
     return {
       hits: this.hits,
       misses: this.misses,
       size: this.cache.size,
-      hitRate: Math.round(hitRate * 100) / 100
+      hitRate: Math.round(hitRate * 100) / 100,
     };
   }
-  
+
   /**
    * Get all keys
    */
   keys(): string[] {
     return Array.from(this.cache.keys());
   }
-  
+
   /**
    * Get cache size
    */
   size(): number {
     return this.cache.size;
   }
-  
+
   /**
    * Start cleanup interval to remove expired entries
    */
@@ -180,7 +180,7 @@ export class CacheService {
       this.cleanup();
     }, 60000); // Run every minute
   }
-  
+
   /**
    * Remove expired entries
    */
@@ -200,7 +200,7 @@ export class CacheService {
       // CacheService: Cache cleanup removed expired entries
     }
   }
-  
+
   /**
    * Invalidate cache by pattern
    */
@@ -218,17 +218,17 @@ export class CacheService {
 
     return removed;
   }
-  
+
   /**
    * Warm up cache with data
    */
   async warmUp<T>(
     keys: string[],
     fetchFn: (key: string) => Promise<T>,
-    ttl?: number
+    ttl?: number,
   ): Promise<void> {
     // CacheService: Warming up cache
-    
+
     await Promise.all(
       keys.map(async (key) => {
         try {
@@ -237,9 +237,9 @@ export class CacheService {
         } catch (error) {
           // CacheService error: Failed to warm up cache for key
         }
-      })
+      }),
     );
-    
+
     // CacheService: Cache warmed up
   }
 }

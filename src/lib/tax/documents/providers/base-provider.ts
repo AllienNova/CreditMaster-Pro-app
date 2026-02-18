@@ -10,7 +10,7 @@ import type {
   TaxDocumentType,
   ProviderExtractionResult,
   OCRProviderConfig,
-} from '../types';
+} from "../types";
 
 export interface DocumentInput {
   base64Image: string;
@@ -44,7 +44,7 @@ export abstract class BaseOCRProvider {
    * Classify the document type
    */
   abstract classifyDocument(
-    input: DocumentInput
+    input: DocumentInput,
   ): Promise<ClassificationResult>;
 
   /**
@@ -52,14 +52,14 @@ export abstract class BaseOCRProvider {
    */
   abstract extractFields(
     input: DocumentInput,
-    documentType: TaxDocumentType
+    documentType: TaxDocumentType,
   ): Promise<ProviderExtractionResult>;
 
   /**
    * Full pipeline: classify then extract
    */
   async processDocument(
-    input: DocumentInput
+    input: DocumentInput,
   ): Promise<ProviderExtractionResult> {
     const startTime = Date.now();
 
@@ -70,7 +70,7 @@ export abstract class BaseOCRProvider {
       // Step 2: Extract fields based on classification
       const result = await this.extractFields(
         input,
-        classification.documentType
+        classification.documentType,
       );
 
       return {
@@ -83,12 +83,12 @@ export abstract class BaseOCRProvider {
       return {
         provider: this.providerName,
         success: false,
-        documentType: 'unknown',
+        documentType: "unknown",
         documentTypeConfidence: 0,
         fields: {},
         fieldConfidences: [],
         processingTimeMs: Date.now() - startTime,
-        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        errorMessage: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
@@ -114,13 +114,13 @@ export abstract class BaseOCRProvider {
     // Remove markdown code blocks if present
     let jsonStr = text.trim();
 
-    if (jsonStr.startsWith('```json')) {
+    if (jsonStr.startsWith("```json")) {
       jsonStr = jsonStr.slice(7);
-    } else if (jsonStr.startsWith('```')) {
+    } else if (jsonStr.startsWith("```")) {
       jsonStr = jsonStr.slice(3);
     }
 
-    if (jsonStr.endsWith('```')) {
+    if (jsonStr.endsWith("```")) {
       jsonStr = jsonStr.slice(0, -3);
     }
 
@@ -134,7 +134,7 @@ export abstract class BaseOCRProvider {
       if (jsonMatch) {
         return JSON.parse(jsonMatch[0]);
       }
-      throw new Error('Failed to parse JSON from response');
+      throw new Error("Failed to parse JSON from response");
     }
   }
 
@@ -144,10 +144,10 @@ export abstract class BaseOCRProvider {
   protected calculateFieldConfidence(
     fieldName: string,
     value: unknown,
-    validationFn?: (val: unknown) => boolean
+    validationFn?: (val: unknown) => boolean,
   ): number {
     if (value === null || value === undefined) return 0;
-    if (value === '') return 0;
+    if (value === "") return 0;
 
     let confidence = 0.8; // Base confidence
 
@@ -157,11 +157,11 @@ export abstract class BaseOCRProvider {
     }
 
     // Specific validations based on field patterns
-    if (typeof value === 'string') {
+    if (typeof value === "string") {
       // SSN pattern
       if (
-        fieldName.toLowerCase().includes('ssn') ||
-        fieldName.toLowerCase().includes('tin')
+        fieldName.toLowerCase().includes("ssn") ||
+        fieldName.toLowerCase().includes("tin")
       ) {
         const ssnPattern = /^\d{3}-?\d{2}-?\d{4}$/;
         const einPattern = /^\d{2}-?\d{7}$/;
@@ -173,12 +173,12 @@ export abstract class BaseOCRProvider {
       }
 
       // State code
-      if (fieldName.toLowerCase().includes('statecode')) {
+      if (fieldName.toLowerCase().includes("statecode")) {
         confidence = value.length === 2 ? 0.95 : 0.5;
       }
     }
 
-    if (typeof value === 'number') {
+    if (typeof value === "number") {
       // Monetary values should be positive (usually)
       if (value >= 0) {
         confidence = 0.9;

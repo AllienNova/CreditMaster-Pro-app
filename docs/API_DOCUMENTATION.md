@@ -1,13 +1,16 @@
 # CPFI (Credit Pro & Financial Intelligence) - API Documentation
 
 ## Base URL
+
 ```
 Production: https://api.CPFI.pro
 Development: http://localhost:3000/api
 ```
 
 ## Authentication
+
 All API requests require authentication via Bearer token:
+
 ```http
 Authorization: Bearer <your_jwt_token>
 ```
@@ -17,9 +20,11 @@ Authorization: Bearer <your_jwt_token>
 ## AI Endpoints
 
 ### POST /api/ai/dispute
+
 Generate AI-powered dispute letters.
 
 **Request:**
+
 ```json
 {
   "creditBureau": "equifax" | "experian" | "transunion",
@@ -34,6 +39,7 @@ Generate AI-powered dispute letters.
 ```
 
 **Response:**
+
 ```json
 {
   "letter": "string",
@@ -44,9 +50,11 @@ Generate AI-powered dispute letters.
 ```
 
 ### POST /api/ai/analyze
+
 Analyze credit report for errors and opportunities.
 
 **Request:**
+
 ```json
 {
   "reportData": "string (JSON or Base64 PDF)",
@@ -55,6 +63,7 @@ Analyze credit report for errors and opportunities.
 ```
 
 **Response:**
+
 ```json
 {
   "errors": [{ "type": "string", "severity": "high" | "medium" | "low", "item": {} }],
@@ -64,9 +73,11 @@ Analyze credit report for errors and opportunities.
 ```
 
 ### POST /api/ai/chat
+
 Send message to AI assistant.
 
 **Request:**
+
 ```json
 {
   "message": "string",
@@ -76,6 +87,7 @@ Send message to AI assistant.
 ```
 
 **Response:**
+
 ```json
 {
   "response": "string",
@@ -85,9 +97,11 @@ Send message to AI assistant.
 ```
 
 ### POST /api/ai/voice
+
 Process voice input/output.
 
 **Request:**
+
 ```json
 {
   "audio": "base64_encoded_audio",
@@ -97,6 +111,7 @@ Process voice input/output.
 ```
 
 **Response:**
+
 ```json
 {
   "transcript": "string",
@@ -110,9 +125,11 @@ Process voice input/output.
 ## Credit Endpoints
 
 ### GET /api/credit-report
+
 Fetch user's credit report data.
 
 **Response:**
+
 ```json
 {
   "bureaus": {
@@ -125,9 +142,11 @@ Fetch user's credit report data.
 ```
 
 ### POST /api/credit-report/import
+
 Import credit report from external source.
 
 **Request:**
+
 ```json
 {
   "source": "annualcreditreport" | "creditkarma" | "manual",
@@ -140,24 +159,30 @@ Import credit report from external source.
 ## Dispute Endpoints
 
 ### GET /api/disputes
+
 List all disputes.
 
 **Query Parameters:**
+
 - `status`: pending | sent | resolved
 - `bureau`: equifax | experian | transunion
 - `page`: number
 - `limit`: number (max 50)
 
 ### POST /api/disputes
+
 Create new dispute.
 
 ### GET /api/disputes/:id
+
 Get dispute details.
 
 ### PATCH /api/disputes/:id
+
 Update dispute status.
 
 ### DELETE /api/disputes/:id
+
 Delete dispute.
 
 ---
@@ -165,50 +190,53 @@ Delete dispute.
 ## Analytics Endpoints
 
 ### GET /api/analytics/usage
+
 Get AI usage statistics.
 
 **Response:**
+
 ```json
 {
   "totalRequests": 1250,
   "totalCost": 45.32,
-  "byModel": [{ "model": "gpt-4o", "requests": 500, "cost": 25.00 }],
+  "byModel": [{ "model": "gpt-4o", "requests": 500, "cost": 25.0 }],
   "byFeature": [{ "feature": "disputes", "count": 300 }]
 }
 ```
 
 ### GET /api/analytics/performance
+
 Get model performance metrics.
 
 ---
 
 ## Rate Limits
 
-| Plan | Requests/min | Daily Limit |
-|------|-------------|-------------|
-| Free | 10 | 100 |
-| Basic | 30 | 500 |
-| Premium | 60 | 2000 |
-| Enterprise | 120 | Unlimited |
+| Plan       | Requests/min | Daily Limit |
+| ---------- | ------------ | ----------- |
+| Free       | 10           | 100         |
+| Basic      | 30           | 500         |
+| Premium    | 60           | 2000        |
+| Enterprise | 120          | Unlimited   |
 
 ---
 
 ## Error Codes
 
-| Code | Description |
-|------|-------------|
-| 400 | Bad Request - Invalid parameters |
-| 401 | Unauthorized - Invalid/missing token |
-| 403 | Forbidden - Insufficient permissions |
-| 404 | Not Found - Resource doesn't exist |
-| 429 | Too Many Requests - Rate limited |
-| 500 | Internal Server Error |
+| Code | Description                          |
+| ---- | ------------------------------------ |
+| 400  | Bad Request - Invalid parameters     |
+| 401  | Unauthorized - Invalid/missing token |
+| 403  | Forbidden - Insufficient permissions |
+| 404  | Not Found - Resource doesn't exist   |
+| 429  | Too Many Requests - Rate limited     |
+| 500  | Internal Server Error                |
 
 ## SDKs
+
 - JavaScript/TypeScript: `@CPFI/sdk`
 - Python: `CPFI-sdk`
 
 ---
 
-*API Version: 1.0.0 | Last Updated: December 2024*
-
+_API Version: 1.0.0 | Last Updated: December 2024_

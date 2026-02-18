@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function PaymentCancelPage() {
   const router = useRouter();
@@ -106,7 +106,9 @@ export default function PaymentCancelPage() {
                   />
                 </svg>
                 <div>
-                  <p className="font-medium text-gray-900 dark:text-white">Save Time & Money</p>
+                  <p className="font-medium text-gray-900 dark:text-white">
+                    Save Time & Money
+                  </p>
                   <p className="text-sm text-gray-600 dark:text-slate-300">
                     No expensive credit repair companies - do it yourself with
                     AI
@@ -149,14 +151,14 @@ export default function PaymentCancelPage() {
         {/* Questions */}
         <div className="mt-8 text-center text-sm text-gray-600 dark:text-slate-300">
           <p>
-            Have questions?{' '}
+            Have questions?{" "}
             <Link
               href="/support"
               className="text-blue-600 hover:text-blue-700 font-medium"
             >
               Contact Support
-            </Link>{' '}
-            or email{' '}
+            </Link>{" "}
+            or email{" "}
             <a
               href="mailto:support@fynvita.com"
               className="text-blue-600 hover:text-blue-700 font-medium"

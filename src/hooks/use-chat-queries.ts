@@ -5,8 +5,11 @@
  * Custom hooks for chat data fetching and mutations with optimistic updates
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { queryKeys, cacheInvalidation } from '@/lib/react-query/query-client-config';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  queryKeys,
+  cacheInvalidation,
+} from "@/lib/react-query/query-client-config";
 
 // ============================================================================
 // TYPES
@@ -34,7 +37,7 @@ interface ChatMessageMetadata {
 interface ChatMessage {
   id: string;
   sessionId: string;
-  role: 'user' | 'assistant' | 'system';
+  role: "user" | "assistant" | "system";
   content: string;
   timestamp: string;
   metadata?: ChatMessageMetadata;
@@ -61,9 +64,11 @@ export function useChatSessions(userId: string) {
   return useQuery({
     queryKey: queryKeys.chatSessions(userId),
     queryFn: async () => {
-      const response = await fetch(`/api/chat/financial/sessions?userId=${userId}`);
+      const response = await fetch(
+        `/api/chat/financial/sessions?userId=${userId}`,
+      );
       if (!response.ok) {
-        throw new Error('Failed to fetch chat sessions');
+        throw new Error("Failed to fetch chat sessions");
       }
       return response.json() as Promise<{ sessions: ChatSession[] }>;
     },
@@ -81,7 +86,7 @@ export function useChatSession(sessionId: string) {
     queryFn: async () => {
       const response = await fetch(`/api/chat/financial/sessions/${sessionId}`);
       if (!response.ok) {
-        throw new Error('Failed to fetch chat session');
+        throw new Error("Failed to fetch chat session");
       }
       return response.json() as Promise<ChatSession>;
     },
@@ -97,9 +102,11 @@ export function useChatMessages(sessionId: string) {
   return useQuery({
     queryKey: queryKeys.chatMessages(sessionId),
     queryFn: async () => {
-      const response = await fetch(`/api/chat/financial/sessions/${sessionId}/messages`);
+      const response = await fetch(
+        `/api/chat/financial/sessions/${sessionId}/messages`,
+      );
       if (!response.ok) {
-        throw new Error('Failed to fetch chat messages');
+        throw new Error("Failed to fetch chat messages");
       }
       return response.json() as Promise<{ messages: ChatMessage[] }>;
     },
@@ -120,14 +127,14 @@ export function useCreateChatSession() {
 
   return useMutation({
     mutationFn: async (input: CreateSessionInput) => {
-      const response = await fetch('/api/chat/financial/sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/chat/financial/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(input),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create chat session');
+        throw new Error("Failed to create chat session");
       }
 
       return response.json() as Promise<ChatSession>;
@@ -147,46 +154,62 @@ export function useSendChatMessage() {
 
   return useMutation({
     mutationFn: async (input: SendMessageInput) => {
-      const response = await fetch(`/api/chat/financial/sessions/${input.sessionId}/messages`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: input.content }),
-      });
+      const response = await fetch(
+        `/api/chat/financial/sessions/${input.sessionId}/messages`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: input.content }),
+        },
+      );
 
       if (!response.ok) {
-        throw new Error('Failed to send message');
+        throw new Error("Failed to send message");
       }
 
-      return response.json() as Promise<{ userMessage: ChatMessage; assistantMessage: ChatMessage }>;
+      return response.json() as Promise<{
+        userMessage: ChatMessage;
+        assistantMessage: ChatMessage;
+      }>;
     },
     onMutate: async (input) => {
       // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: queryKeys.chatMessages(input.sessionId) });
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.chatMessages(input.sessionId),
+      });
 
       // Snapshot previous value
-      const previousMessages = queryClient.getQueryData(queryKeys.chatMessages(input.sessionId));
+      const previousMessages = queryClient.getQueryData(
+        queryKeys.chatMessages(input.sessionId),
+      );
 
       // Optimistically update to the new value
-      queryClient.setQueryData(queryKeys.chatMessages(input.sessionId), (old: { messages: ChatMessage[] } | undefined) => {
-        const optimisticMessage: ChatMessage = {
-          id: `temp-${Date.now()}`,
-          sessionId: input.sessionId,
-          role: 'user',
-          content: input.content,
-          timestamp: new Date().toISOString(),
-        };
+      queryClient.setQueryData(
+        queryKeys.chatMessages(input.sessionId),
+        (old: { messages: ChatMessage[] } | undefined) => {
+          const optimisticMessage: ChatMessage = {
+            id: `temp-${Date.now()}`,
+            sessionId: input.sessionId,
+            role: "user",
+            content: input.content,
+            timestamp: new Date().toISOString(),
+          };
 
-        return {
-          messages: [...(old?.messages || []), optimisticMessage],
-        };
-      });
+          return {
+            messages: [...(old?.messages || []), optimisticMessage],
+          };
+        },
+      );
 
       return { previousMessages };
     },
     onError: (err, input, context) => {
       // Rollback on error
       if (context?.previousMessages) {
-        queryClient.setQueryData(queryKeys.chatMessages(input.sessionId), context.previousMessages);
+        queryClient.setQueryData(
+          queryKeys.chatMessages(input.sessionId),
+          context.previousMessages,
+        );
       }
     },
     onSuccess: (data, input) => {
@@ -205,33 +228,47 @@ export function useDeleteChatSession() {
 
   return useMutation({
     mutationFn: async (sessionId: string) => {
-      const response = await fetch(`/api/chat/financial/sessions/${sessionId}`, {
-        method: 'DELETE',
-      });
+      const response = await fetch(
+        `/api/chat/financial/sessions/${sessionId}`,
+        {
+          method: "DELETE",
+        },
+      );
 
       if (!response.ok) {
-        throw new Error('Failed to delete chat session');
+        throw new Error("Failed to delete chat session");
       }
 
       return { sessionId };
     },
     onMutate: async (sessionId) => {
       // Get session to find user ID
-      const session = queryClient.getQueryData(queryKeys.chatSession(sessionId)) as ChatSession | undefined;
+      const session = queryClient.getQueryData(
+        queryKeys.chatSession(sessionId),
+      ) as ChatSession | undefined;
 
       if (session) {
         // Cancel outgoing refetches
-        await queryClient.cancelQueries({ queryKey: queryKeys.chatSessions(session.userId) });
+        await queryClient.cancelQueries({
+          queryKey: queryKeys.chatSessions(session.userId),
+        });
 
         // Snapshot previous value
-        const previousSessions = queryClient.getQueryData(queryKeys.chatSessions(session.userId));
+        const previousSessions = queryClient.getQueryData(
+          queryKeys.chatSessions(session.userId),
+        );
 
         // Optimistically remove from list
-        queryClient.setQueryData(queryKeys.chatSessions(session.userId), (old: { sessions: ChatSession[] } | undefined) => {
-          return {
-            sessions: old?.sessions?.filter((s: ChatSession) => s.id !== sessionId) || [],
-          };
-        });
+        queryClient.setQueryData(
+          queryKeys.chatSessions(session.userId),
+          (old: { sessions: ChatSession[] } | undefined) => {
+            return {
+              sessions:
+                old?.sessions?.filter((s: ChatSession) => s.id !== sessionId) ||
+                [],
+            };
+          },
+        );
 
         return { previousSessions, userId: session.userId };
       }
@@ -241,7 +278,10 @@ export function useDeleteChatSession() {
     onError: (err, sessionId, context) => {
       // Rollback on error
       if (context?.previousSessions && context?.userId) {
-        queryClient.setQueryData(queryKeys.chatSessions(context.userId), context.previousSessions);
+        queryClient.setQueryData(
+          queryKeys.chatSessions(context.userId),
+          context.previousSessions,
+        );
       }
     },
     onSuccess: (data, sessionId, context) => {
@@ -261,26 +301,37 @@ export function useUpdateChatSession() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ sessionId, title }: { sessionId: string; title: string }) => {
-      const response = await fetch(`/api/chat/financial/sessions/${sessionId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title }),
-      });
+    mutationFn: async ({
+      sessionId,
+      title,
+    }: {
+      sessionId: string;
+      title: string;
+    }) => {
+      const response = await fetch(
+        `/api/chat/financial/sessions/${sessionId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title }),
+        },
+      );
 
       if (!response.ok) {
-        throw new Error('Failed to update chat session');
+        throw new Error("Failed to update chat session");
       }
 
       return response.json() as Promise<ChatSession>;
     },
     onSuccess: (data, variables) => {
       // Update cache with new data
-      queryClient.setQueryData(queryKeys.chatSession(variables.sessionId), data);
+      queryClient.setQueryData(
+        queryKeys.chatSession(variables.sessionId),
+        data,
+      );
 
       // Invalidate sessions list to reflect changes
       cacheInvalidation.invalidateChatSessions(data.userId);
     },
   });
 }
-

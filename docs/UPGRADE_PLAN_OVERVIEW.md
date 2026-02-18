@@ -8,14 +8,14 @@ This upgrade plan transforms Fynvita into a **world-class financial platform** w
 
 ## Target Scores
 
-| Category | Current | Target | Gap |
-|----------|---------|--------|-----|
-| Credit Repair | 88 | 102 | +14 |
-| Financial Management | 91 | 102 | +11 |
-| Investment Analysis | 82 | 102 | +20 |
-| Investment Execution | 25 | 102 | +77 |
-| Risk Management | 65 | 102 | +37 |
-| **Overall** | **76** | **102** | **+26** |
+| Category             | Current | Target  | Gap     |
+| -------------------- | ------- | ------- | ------- |
+| Credit Repair        | 88      | 102     | +14     |
+| Financial Management | 91      | 102     | +11     |
+| Investment Analysis  | 82      | 102     | +20     |
+| Investment Execution | 25      | 102     | +77     |
+| Risk Management      | 65      | 102     | +37     |
+| **Overall**          | **76**  | **102** | **+26** |
 
 ---
 
@@ -63,48 +63,56 @@ This upgrade plan transforms Fynvita into a **world-class financial platform** w
 ## Implementation Phases
 
 ### Phase 1: Foundation (Weeks 1-4)
+
 - Broker integration (Alpaca primary)
 - Trailing stop loss system
 - Basic order management
 - Paper trading mode
 
 ### Phase 2: Rule-Based Engine (Weeks 5-6)
+
 - Visual rule builder
 - Condition evaluators
 - Position sizing engine
 - Risk checks
 
 ### Phase 3: ML Engine (Weeks 7-10)
+
 - Feature engineering
 - Model training pipeline
 - Prediction service
 - Model versioning
 
 ### Phase 4: LLM Engine (Weeks 11-12)
+
 - Market analysis
 - Signal interpretation
 - Trade idea generation
 - Portfolio review
 
 ### Phase 5: Fusion & Risk (Weeks 13-14)
+
 - Signal fusion layer
 - Consensus algorithms
 - Risk gateway
 - Kill switch
 
 ### Phase 6: Credit Repair A+ (Weeks 15-16)
+
 - Live bureau APIs
 - OCR response processing
 - Dispute success ML model
 - Autonomous dispute agent
 
 ### Phase 7: Financial A+ (Weeks 17-18)
+
 - Predictive cash flow
 - Smart payment scheduler
 - Income smoother
 - Family collaboration
 
 ### Phase 8: Polish & Testing (Weeks 19-20)
+
 - Backtesting engine
 - Walk-forward optimization
 - Paper trading validation
@@ -115,6 +123,7 @@ This upgrade plan transforms Fynvita into a **world-class financial platform** w
 ## Key New Files to Create
 
 ### Trading System Core
+
 ```
 src/lib/trading/
 ├── brokers/
@@ -142,6 +151,7 @@ src/lib/trading/
 ```
 
 ### Credit Repair Enhancements
+
 ```
 src/lib/credit-repair/
 ├── live-bureau-connector.ts
@@ -151,6 +161,7 @@ src/lib/credit-repair/
 ```
 
 ### Financial Enhancements
+
 ```
 src/lib/financial/
 ├── predictive-cashflow-engine.ts
@@ -165,6 +176,7 @@ src/lib/financial/
 ## Risk Management Upgrades
 
 ### Trailing Stop Types
+
 1. **Percentage** - Fixed % below high
 2. **ATR-Based** - Dynamic based on volatility
 3. **Chandelier Exit** - ATR from highest high
@@ -173,18 +185,19 @@ src/lib/financial/
 6. **Time-Based Tightening** - Narrow over time
 
 ### Risk Rules Engine
+
 ```typescript
 interface RiskRules {
-  maxDailyLoss: number;        // % of portfolio
-  maxPositionSize: number;     // % per position
+  maxDailyLoss: number; // % of portfolio
+  maxPositionSize: number; // % per position
   maxCorrelatedExposure: number;
   maxSectorExposure: number;
   minCashReserve: number;
   maxOpenPositions: number;
-  maxDrawdown: number;         // Auto-close all
+  maxDrawdown: number; // Auto-close all
   tradingHoursOnly: boolean;
   noTradesDuringEarnings: boolean;
-  requireConsensus: number;    // Min agreement %
+  requireConsensus: number; // Min agreement %
 }
 ```
 
@@ -193,6 +206,7 @@ interface RiskRules {
 ## Success Metrics
 
 ### Trading System KPIs
+
 - Sharpe Ratio > 2.0
 - Sortino Ratio > 3.0
 - Max Drawdown < 15%
@@ -201,12 +215,14 @@ interface RiskRules {
 - Signal Accuracy > 65%
 
 ### Credit Repair KPIs
+
 - Dispute Success Rate > 75%
 - Avg Resolution Time < 35 days
 - AI Letter Effectiveness > 80%
 - Bureau Response Processing < 24hrs
 
 ### Financial Management KPIs
+
 - Cash Flow Prediction Accuracy > 90%
 - Bill Negotiation Savings > $500/user/year
 - Goal Achievement Rate > 85%
@@ -216,15 +232,15 @@ interface RiskRules {
 
 ## Budget Estimate
 
-| Component | Estimate |
-|-----------|----------|
-| Broker APIs | Free (Alpaca) |
-| ML Infrastructure | $500/mo (cloud GPUs) |
-| LLM API Costs | $2,000/mo (multi-model) |
-| Bureau APIs | $0.50-2/pull |
-| Market Data | $200/mo (Polygon/Finnhub) |
-| Development | 20 weeks |
-| **Total Monthly** | **~$3,000/mo** |
+| Component         | Estimate                  |
+| ----------------- | ------------------------- |
+| Broker APIs       | Free (Alpaca)             |
+| ML Infrastructure | $500/mo (cloud GPUs)      |
+| LLM API Costs     | $2,000/mo (multi-model)   |
+| Bureau APIs       | $0.50-2/pull              |
+| Market Data       | $200/mo (Polygon/Finnhub) |
+| Development       | 20 weeks                  |
+| **Total Monthly** | **~$3,000/mo**            |
 
 ---
 
@@ -237,6 +253,7 @@ interface RiskRules {
 5. Create ML training pipeline
 
 See companion documents:
+
 - `UPGRADE_CREDIT_REPAIR.md`
 - `UPGRADE_FINANCIAL.md`
 - `UPGRADE_TRADING_SYSTEM.md`

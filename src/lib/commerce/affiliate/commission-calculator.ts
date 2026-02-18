@@ -4,7 +4,7 @@
  * Handles commission calculation, payout processing, and commission reporting.
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 import {
   CommissionReport,
   CommissionType,
@@ -13,7 +13,7 @@ import {
   ConversionType,
   DateRange,
   Partner,
-} from './types';
+} from "./types";
 
 // =============================================================================
 // Configuration
@@ -44,7 +44,7 @@ interface PayoutRequest {
   partnerId: string;
   amount: number;
   conversionIds: string[];
-  paymentMethod: 'stripe' | 'bank_transfer' | 'check';
+  paymentMethod: "stripe" | "bank_transfer" | "check";
   stripeAccountId?: string;
   bankDetails?: {
     accountName: string;
@@ -58,7 +58,7 @@ interface PayoutResult {
   id: string;
   partnerId: string;
   amount: number;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
+  status: "pending" | "processing" | "completed" | "failed";
   paymentMethod: string;
   transactionId?: string;
   processedAt?: Date;
@@ -80,7 +80,7 @@ class CommissionCalculatorService {
   async calculateCommission(
     partnerId: string,
     conversionType: ConversionType,
-    value: number
+    value: number,
   ): Promise<number> {
     // Get partner settings
     const partner = await this.getPartner(partnerId);
@@ -96,28 +96,32 @@ class CommissionCalculatorService {
     let commission = 0;
 
     switch (commissionType) {
-      case 'cpa':
+      case "cpa":
         commission = commissionFixed || 0;
         break;
 
-      case 'cpl':
-        if (['lead', 'signup', 'application'].includes(conversionType)) {
+      case "cpl":
+        if (["lead", "signup", "application"].includes(conversionType)) {
           commission = commissionFixed || 0;
         }
         break;
 
-      case 'revenue_share':
+      case "revenue_share":
         commission = value * ((commissionRate || 0) / 100);
         break;
 
-      case 'hybrid':
+      case "hybrid":
         commission =
           (commissionFixed || 0) + value * ((commissionRate || 0) / 100);
         break;
     }
 
     // Apply bonus if applicable
-    if (rule?.bonusThreshold && value >= rule.bonusThreshold && rule.bonusRate) {
+    if (
+      rule?.bonusThreshold &&
+      value >= rule.bonusThreshold &&
+      rule.bonusRate
+    ) {
       commission += value * (rule.bonusRate / 100);
     }
 
@@ -131,7 +135,7 @@ class CommissionCalculatorService {
     partnerId: string,
     conversionType: ConversionType,
     value: number,
-    monthlyVolume: number
+    monthlyVolume: number,
   ): Promise<number> {
     // Get tier based on monthly volume
     const tiers = await this.getCommissionTiers(partnerId);
@@ -147,7 +151,7 @@ class CommissionCalculatorService {
     const baseCommission = await this.calculateCommission(
       partnerId,
       conversionType,
-      value
+      value,
     );
 
     return baseCommission * (appliedTier?.multiplier || 1);
@@ -158,9 +162,9 @@ class CommissionCalculatorService {
    */
   async recalculateCommission(conversionId: string): Promise<number> {
     const { data: conversion, error } = await supabase
-      .from('affiliate_conversions')
-      .select('*')
-      .eq('id', conversionId)
+      .from("affiliate_conversions")
+      .select("*")
+      .eq("id", conversionId)
       .single();
 
     if (error || !conversion) {
@@ -170,14 +174,14 @@ class CommissionCalculatorService {
     const newCommission = await this.calculateCommission(
       conversion.partner_id,
       conversion.type,
-      conversion.value || 0
+      conversion.value || 0,
     );
 
     // Update the conversion
     await supabase
-      .from('affiliate_conversions')
+      .from("affiliate_conversions")
       .update({ commission_earned: newCommission })
-      .eq('id', conversionId);
+      .eq("id", conversionId);
 
     return newCommission;
   }
@@ -191,14 +195,14 @@ class CommissionCalculatorService {
    */
   async getCommissionReport(
     partnerId: string,
-    dateRange: DateRange
+    dateRange: DateRange,
   ): Promise<CommissionReport> {
     const { data: conversions, error } = await supabase
-      .from('affiliate_conversions')
-      .select('*')
-      .eq('partner_id', partnerId)
-      .gte('converted_at', dateRange.from.toISOString())
-      .lte('converted_at', dateRange.to.toISOString());
+      .from("affiliate_conversions")
+      .select("*")
+      .eq("partner_id", partnerId)
+      .gte("converted_at", dateRange.from.toISOString())
+      .lte("converted_at", dateRange.to.toISOString());
 
     if (error) {
       throw new Error(`Failed to get commission report: ${error.message}`);
@@ -211,17 +215,17 @@ class CommissionCalculatorService {
     let confirmedCommission = 0;
     let paidCommission = 0;
 
-    conversionList.forEach(conv => {
+    conversionList.forEach((conv) => {
       const commission = conv.commission_earned || 0;
       switch (conv.status) {
-        case 'pending':
+        case "pending":
           pendingCommission += commission;
           break;
-        case 'confirmed':
-        case 'qualified':
+        case "confirmed":
+        case "qualified":
           confirmedCommission += commission;
           break;
-        case 'paid':
+        case "paid":
           paidCommission += commission;
           break;
       }
@@ -234,7 +238,7 @@ class CommissionCalculatorService {
       confirmedCommission,
       paidCommission,
       totalCommission: pendingCommission + confirmedCommission + paidCommission,
-      conversions: conversionList.map(conv => ({
+      conversions: conversionList.map((conv) => ({
         conversionId: conv.id,
         type: conv.type,
         value: conv.value || 0,
@@ -256,10 +260,10 @@ class CommissionCalculatorService {
   }> {
     // Get confirmed but unpaid conversions
     const { data: conversions, error } = await supabase
-      .from('affiliate_conversions')
-      .select('id, commission_earned')
-      .eq('partner_id', partnerId)
-      .in('status', ['confirmed', 'qualified']);
+      .from("affiliate_conversions")
+      .select("id, commission_earned")
+      .eq("partner_id", partnerId)
+      .in("status", ["confirmed", "qualified"]);
 
     if (error) {
       throw new Error(`Failed to get pending payout: ${error.message}`);
@@ -270,7 +274,7 @@ class CommissionCalculatorService {
 
     const totalAmount = (conversions || []).reduce(
       (sum, c) => sum + (c.commission_earned || 0),
-      0
+      0,
     );
 
     return {
@@ -286,26 +290,28 @@ class CommissionCalculatorService {
    */
   async getPayoutHistory(
     partnerId: string,
-    dateRange?: DateRange
+    dateRange?: DateRange,
   ): Promise<PayoutResult[]> {
     let query = supabase
-      .from('affiliate_payouts')
-      .select('*')
-      .eq('partner_id', partnerId);
+      .from("affiliate_payouts")
+      .select("*")
+      .eq("partner_id", partnerId);
 
     if (dateRange) {
       query = query
-        .gte('created_at', dateRange.from.toISOString())
-        .lte('created_at', dateRange.to.toISOString());
+        .gte("created_at", dateRange.from.toISOString())
+        .lte("created_at", dateRange.to.toISOString());
     }
 
-    const { data, error } = await query.order('created_at', { ascending: false });
+    const { data, error } = await query.order("created_at", {
+      ascending: false,
+    });
 
     if (error) {
       throw new Error(`Failed to get payout history: ${error.message}`);
     }
 
-    return (data || []).map(row => ({
+    return (data || []).map((row) => ({
       id: row.id,
       partnerId: row.partner_id,
       amount: row.amount,
@@ -329,13 +335,13 @@ class CommissionCalculatorService {
     const pending = await this.getPendingPayout(request.partnerId);
     if (!pending.eligibleForPayout) {
       throw new Error(
-        `Minimum payout of $${pending.minPayoutRequired} not reached. Current: $${pending.amount}`
+        `Minimum payout of $${pending.minPayoutRequired} not reached. Current: $${pending.amount}`,
       );
     }
 
     if (request.amount > pending.amount) {
       throw new Error(
-        `Requested payout $${request.amount} exceeds available $${pending.amount}`
+        `Requested payout $${request.amount} exceeds available $${pending.amount}`,
       );
     }
 
@@ -343,7 +349,7 @@ class CommissionCalculatorService {
     const payoutRecord = {
       partner_id: request.partnerId,
       amount: request.amount,
-      status: 'pending',
+      status: "pending",
       payment_method: request.paymentMethod,
       stripe_account_id: request.stripeAccountId,
       conversion_ids: request.conversionIds,
@@ -351,7 +357,7 @@ class CommissionCalculatorService {
     };
 
     const { data: payout, error } = await supabase
-      .from('affiliate_payouts')
+      .from("affiliate_payouts")
       .insert(payoutRecord)
       .select()
       .single();
@@ -364,56 +370,59 @@ class CommissionCalculatorService {
     try {
       let transactionId: string | undefined;
 
-      if (request.paymentMethod === 'stripe' && request.stripeAccountId) {
+      if (request.paymentMethod === "stripe" && request.stripeAccountId) {
         transactionId = await this.processStripePayout(
           request.stripeAccountId,
-          request.amount
+          request.amount,
         );
-      } else if (request.paymentMethod === 'bank_transfer' && request.bankDetails) {
+      } else if (
+        request.paymentMethod === "bank_transfer" &&
+        request.bankDetails
+      ) {
         transactionId = await this.processBankTransfer(
           request.bankDetails,
-          request.amount
+          request.amount,
         );
       }
 
       // Update payout status
       await supabase
-        .from('affiliate_payouts')
+        .from("affiliate_payouts")
         .update({
-          status: 'completed',
+          status: "completed",
           transaction_id: transactionId,
           processed_at: new Date().toISOString(),
         })
-        .eq('id', payout.id);
+        .eq("id", payout.id);
 
       // Mark conversions as paid
       await supabase
-        .from('affiliate_conversions')
-        .update({ status: 'paid', paid_at: new Date().toISOString() })
-        .in('id', request.conversionIds);
+        .from("affiliate_conversions")
+        .update({ status: "paid", paid_at: new Date().toISOString() })
+        .in("id", request.conversionIds);
 
       return {
         id: payout.id,
         partnerId: request.partnerId,
         amount: request.amount,
-        status: 'completed',
+        status: "completed",
         paymentMethod: request.paymentMethod,
         transactionId,
         processedAt: new Date(),
       };
     } catch (err) {
       // Update payout as failed
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
       await supabase
-        .from('affiliate_payouts')
-        .update({ status: 'failed', error: errorMessage })
-        .eq('id', payout.id);
+        .from("affiliate_payouts")
+        .update({ status: "failed", error: errorMessage })
+        .eq("id", payout.id);
 
       return {
         id: payout.id,
         partnerId: request.partnerId,
         amount: request.amount,
-        status: 'failed',
+        status: "failed",
         paymentMethod: request.paymentMethod,
         error: errorMessage,
       };
@@ -426,9 +435,9 @@ class CommissionCalculatorService {
   async processScheduledPayouts(): Promise<PayoutResult[]> {
     // Get partners eligible for payout
     const { data: partners, error } = await supabase
-      .from('affiliate_partners')
-      .select('id, payout_frequency, payment_method, stripe_account_id')
-      .eq('is_active', true);
+      .from("affiliate_partners")
+      .select("id, payout_frequency, payment_method, stripe_account_id")
+      .eq("is_active", true);
 
     if (error) {
       throw new Error(`Failed to get partners: ${error.message}`);
@@ -439,7 +448,10 @@ class CommissionCalculatorService {
 
     for (const partner of partners || []) {
       // Check if payout is due based on frequency
-      const isDue = await this.isPayoutDue(partner.id, partner.payout_frequency);
+      const isDue = await this.isPayoutDue(
+        partner.id,
+        partner.payout_frequency,
+      );
       if (!isDue) continue;
 
       // Get pending payout
@@ -448,12 +460,12 @@ class CommissionCalculatorService {
 
       // Get eligible conversions
       const { data: conversions } = await supabase
-        .from('affiliate_conversions')
-        .select('id')
-        .eq('partner_id', partner.id)
-        .in('status', ['confirmed', 'qualified']);
+        .from("affiliate_conversions")
+        .select("id")
+        .eq("partner_id", partner.id)
+        .in("status", ["confirmed", "qualified"]);
 
-      const conversionIds = (conversions || []).map(c => c.id);
+      const conversionIds = (conversions || []).map((c) => c.id);
 
       // Initiate payout
       try {
@@ -496,7 +508,7 @@ class CommissionCalculatorService {
     };
 
     const { data, error } = await supabase
-      .from('commission_rules')
+      .from("commission_rules")
       .insert(ruleRecord)
       .select()
       .single();
@@ -514,20 +526,20 @@ class CommissionCalculatorService {
   async getCommissionRule(
     partnerId: string,
     conversionType: ConversionType,
-    value: number
+    value: number,
   ): Promise<CommissionRule | null> {
     const { data, error } = await supabase
-      .from('commission_rules')
+      .from("commission_rules")
       .select()
-      .eq('partner_id', partnerId)
-      .eq('conversion_type', conversionType)
+      .eq("partner_id", partnerId)
+      .eq("conversion_type", conversionType)
       .or(`min_value.is.null,min_value.lte.${value}`)
       .or(`max_value.is.null,max_value.gte.${value}`)
       .limit(1)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') return null;
+      if (error.code === "PGRST116") return null;
       // Don't throw for "no rows" error, just return null
       return null;
     }
@@ -544,9 +556,9 @@ class CommissionCalculatorService {
    */
   private async getPartner(partnerId: string): Promise<Partner | null> {
     const { data, error } = await supabase
-      .from('affiliate_partners')
+      .from("affiliate_partners")
       .select()
-      .eq('id', partnerId)
+      .eq("id", partnerId)
       .single();
 
     if (error) return null;
@@ -579,15 +591,15 @@ class CommissionCalculatorService {
    * Get commission tiers for a partner
    */
   private async getCommissionTiers(
-    partnerId: string
+    partnerId: string,
   ): Promise<Array<{ minVolume: number; multiplier: number }>> {
     const { data } = await supabase
-      .from('commission_tiers')
-      .select('min_volume, multiplier')
-      .eq('partner_id', partnerId)
-      .order('min_volume', { ascending: true });
+      .from("commission_tiers")
+      .select("min_volume, multiplier")
+      .eq("partner_id", partnerId)
+      .order("min_volume", { ascending: true });
 
-    return (data || []).map(row => ({
+    return (data || []).map((row) => ({
       minVolume: row.min_volume,
       multiplier: row.multiplier,
     }));
@@ -598,15 +610,15 @@ class CommissionCalculatorService {
    */
   private async isPayoutDue(
     partnerId: string,
-    frequency: string
+    frequency: string,
   ): Promise<boolean> {
     // Get last payout date
     const { data } = await supabase
-      .from('affiliate_payouts')
-      .select('processed_at')
-      .eq('partner_id', partnerId)
-      .eq('status', 'completed')
-      .order('processed_at', { ascending: false })
+      .from("affiliate_payouts")
+      .select("processed_at")
+      .eq("partner_id", partnerId)
+      .eq("status", "completed")
+      .order("processed_at", { ascending: false })
       .limit(1)
       .single();
 
@@ -615,15 +627,15 @@ class CommissionCalculatorService {
     const lastPayout = new Date(data.processed_at);
     const now = new Date();
     const daysSince = Math.floor(
-      (now.getTime() - lastPayout.getTime()) / (1000 * 60 * 60 * 24)
+      (now.getTime() - lastPayout.getTime()) / (1000 * 60 * 60 * 24),
     );
 
     switch (frequency) {
-      case 'weekly':
+      case "weekly":
         return daysSince >= 7;
-      case 'biweekly':
+      case "biweekly":
         return daysSince >= 14;
-      case 'monthly':
+      case "monthly":
         return daysSince >= 30;
       default:
         return daysSince >= 30;
@@ -635,18 +647,18 @@ class CommissionCalculatorService {
    */
   private async processStripePayout(
     stripeAccountId: string,
-    amount: number
+    amount: number,
   ): Promise<string> {
     // Import Stripe service
-    const stripe = await import('stripe');
+    const stripe = await import("stripe");
     const stripeClient = new stripe.default(process.env.STRIPE_SECRET_KEY!);
 
     // Create a transfer to the connected account
     const transfer = await stripeClient.transfers.create({
       amount: Math.round(amount * 100), // Convert to cents
-      currency: 'usd',
+      currency: "usd",
       destination: stripeAccountId,
-      description: 'Fynvita affiliate commission payout',
+      description: "Fynvita affiliate commission payout",
     });
 
     return transfer.id;
@@ -662,14 +674,14 @@ class CommissionCalculatorService {
       routingNumber: string;
       bankName: string;
     },
-    amount: number
+    amount: number,
   ): Promise<string> {
     // For now, generate a reference and queue for manual processing
     // In production, integrate with a bank transfer API like Dwolla, Plaid Transfer, etc.
     const reference = `BT-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
     // Log the transfer request for manual processing
-    await supabase.from('pending_bank_transfers').insert({
+    await supabase.from("pending_bank_transfers").insert({
       reference,
       amount,
       account_name: bankDetails.accountName,

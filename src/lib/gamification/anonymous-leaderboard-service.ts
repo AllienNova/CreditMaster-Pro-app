@@ -8,27 +8,27 @@
  * - Anonymous usernames
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 export type LeaderboardCategory =
-  | 'savings_rate'
-  | 'debt_payoff'
-  | 'credit_score'
-  | 'net_worth_growth'
-  | 'budget_streak'
-  | 'investment_returns'
-  | 'vitality_score';
+  | "savings_rate"
+  | "debt_payoff"
+  | "credit_score"
+  | "net_worth_growth"
+  | "budget_streak"
+  | "investment_returns"
+  | "vitality_score";
 
 export type TimeFrame =
-  | 'weekly'
-  | 'monthly'
-  | 'quarterly'
-  | 'yearly'
-  | 'all_time';
+  | "weekly"
+  | "monthly"
+  | "quarterly"
+  | "yearly"
+  | "all_time";
 
 export interface LeaderboardEntry {
   rank: number;
@@ -97,67 +97,67 @@ export interface LeaderboardStats {
 // ============================================================================
 
 const ADJECTIVES = [
-  'Swift',
-  'Bold',
-  'Clever',
-  'Bright',
-  'Keen',
-  'Noble',
-  'Wise',
-  'Lucky',
-  'Steady',
-  'Golden',
-  'Silver',
-  'Crystal',
-  'Emerald',
-  'Ruby',
-  'Diamond',
-  'Cosmic',
-  'Stellar',
-  'Solar',
-  'Lunar',
-  'Thunder',
-  'Storm',
-  'Frost',
-  'Blazing',
-  'Silent',
-  'Mighty',
-  'Gentle',
-  'Fierce',
-  'Calm',
-  'Brave',
+  "Swift",
+  "Bold",
+  "Clever",
+  "Bright",
+  "Keen",
+  "Noble",
+  "Wise",
+  "Lucky",
+  "Steady",
+  "Golden",
+  "Silver",
+  "Crystal",
+  "Emerald",
+  "Ruby",
+  "Diamond",
+  "Cosmic",
+  "Stellar",
+  "Solar",
+  "Lunar",
+  "Thunder",
+  "Storm",
+  "Frost",
+  "Blazing",
+  "Silent",
+  "Mighty",
+  "Gentle",
+  "Fierce",
+  "Calm",
+  "Brave",
 ];
 
 const NOUNS = [
-  'Saver',
-  'Builder',
-  'Climber',
-  'Runner',
-  'Warrior',
-  'Knight',
-  'Wizard',
-  'Phoenix',
-  'Dragon',
-  'Eagle',
-  'Tiger',
-  'Lion',
-  'Wolf',
-  'Bear',
-  'Hawk',
-  'Pioneer',
-  'Champion',
-  'Master',
-  'Expert',
-  'Guru',
-  'Sage',
-  'Scholar',
-  'Trader',
-  'Investor',
-  'Planner',
-  'Achiever',
-  'Winner',
-  'Crusher',
-  'Slayer',
+  "Saver",
+  "Builder",
+  "Climber",
+  "Runner",
+  "Warrior",
+  "Knight",
+  "Wizard",
+  "Phoenix",
+  "Dragon",
+  "Eagle",
+  "Tiger",
+  "Lion",
+  "Wolf",
+  "Bear",
+  "Hawk",
+  "Pioneer",
+  "Champion",
+  "Master",
+  "Expert",
+  "Guru",
+  "Sage",
+  "Scholar",
+  "Trader",
+  "Investor",
+  "Planner",
+  "Achiever",
+  "Winner",
+  "Crusher",
+  "Slayer",
 ];
 
 function generateAnonymousName(): string {
@@ -182,53 +182,53 @@ const CATEGORY_CONFIG: Record<
   }
 > = {
   savings_rate: {
-    name: 'Savings Rate Champions',
-    description: 'Ranked by percentage of income saved',
-    unit: '%',
+    name: "Savings Rate Champions",
+    description: "Ranked by percentage of income saved",
+    unit: "%",
     higherIsBetter: true,
-    scoreCalculation: '(savings / income) * 100',
+    scoreCalculation: "(savings / income) * 100",
   },
   debt_payoff: {
-    name: 'Debt Crushers',
-    description: 'Ranked by debt paid off this period',
-    unit: '$',
+    name: "Debt Crushers",
+    description: "Ranked by debt paid off this period",
+    unit: "$",
     higherIsBetter: true,
-    scoreCalculation: 'total debt paid off',
+    scoreCalculation: "total debt paid off",
   },
   credit_score: {
-    name: 'Credit Climbers',
-    description: 'Ranked by credit score improvement',
-    unit: 'pts',
+    name: "Credit Climbers",
+    description: "Ranked by credit score improvement",
+    unit: "pts",
     higherIsBetter: true,
-    scoreCalculation: 'score change this period',
+    scoreCalculation: "score change this period",
   },
   net_worth_growth: {
-    name: 'Wealth Builders',
-    description: 'Ranked by net worth growth percentage',
-    unit: '%',
+    name: "Wealth Builders",
+    description: "Ranked by net worth growth percentage",
+    unit: "%",
     higherIsBetter: true,
-    scoreCalculation: '((current - previous) / previous) * 100',
+    scoreCalculation: "((current - previous) / previous) * 100",
   },
   budget_streak: {
-    name: 'Budget Bosses',
-    description: 'Ranked by consecutive days within budget',
-    unit: 'days',
+    name: "Budget Bosses",
+    description: "Ranked by consecutive days within budget",
+    unit: "days",
     higherIsBetter: true,
-    scoreCalculation: 'consecutive budget days',
+    scoreCalculation: "consecutive budget days",
   },
   investment_returns: {
-    name: 'Investment Aces',
-    description: 'Ranked by investment return percentage',
-    unit: '%',
+    name: "Investment Aces",
+    description: "Ranked by investment return percentage",
+    unit: "%",
     higherIsBetter: true,
-    scoreCalculation: 'portfolio return %',
+    scoreCalculation: "portfolio return %",
   },
   vitality_score: {
-    name: 'Financial Wellness',
-    description: 'Ranked by overall financial health score',
-    unit: 'pts',
+    name: "Financial Wellness",
+    description: "Ranked by overall financial health score",
+    unit: "pts",
     higherIsBetter: true,
-    scoreCalculation: 'vitality score',
+    scoreCalculation: "vitality score",
   },
 };
 
@@ -249,7 +249,7 @@ export class AnonymousLeaderboardService {
 
   async optIn(
     userId: string,
-    categories: LeaderboardCategory[]
+    categories: LeaderboardCategory[],
   ): Promise<LeaderboardParticipation> {
     const existing = await this.getParticipation(userId);
 
@@ -272,7 +272,7 @@ export class AnonymousLeaderboardService {
     };
 
     const { data, error } = await this.supabase
-      .from('leaderboard_participation')
+      .from("leaderboard_participation")
       .insert(this.participationToDb(participation))
       .select()
       .single();
@@ -283,18 +283,18 @@ export class AnonymousLeaderboardService {
 
   async optOut(userId: string): Promise<void> {
     await this.supabase
-      .from('leaderboard_participation')
+      .from("leaderboard_participation")
       .update({ opted_in: false, updated_at: new Date().toISOString() })
-      .eq('user_id', userId);
+      .eq("user_id", userId);
   }
 
   async getParticipation(
-    userId: string
+    userId: string,
   ): Promise<LeaderboardParticipation | null> {
     const { data } = await this.supabase
-      .from('leaderboard_participation')
-      .select('*')
-      .eq('user_id', userId)
+      .from("leaderboard_participation")
+      .select("*")
+      .eq("user_id", userId)
       .single();
 
     return data ? this.participationFromDb(data) : null;
@@ -302,15 +302,15 @@ export class AnonymousLeaderboardService {
 
   async updateParticipation(
     userId: string,
-    updates: Partial<LeaderboardParticipation>
+    updates: Partial<LeaderboardParticipation>,
   ): Promise<LeaderboardParticipation> {
     const { data, error } = await this.supabase
-      .from('leaderboard_participation')
+      .from("leaderboard_participation")
       .update({
         ...this.participationToDb(updates),
         updated_at: new Date().toISOString(),
       })
-      .eq('user_id', userId)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -332,15 +332,15 @@ export class AnonymousLeaderboardService {
     category: LeaderboardCategory,
     timeFrame: TimeFrame,
     userId?: string,
-    limit: number = 100
+    limit: number = 100,
   ): Promise<Leaderboard> {
     // Get all scores for this category and time frame
     const { data: scores, error } = await this.supabase
-      .from('leaderboard_scores')
-      .select('*, leaderboard_participation(*)')
-      .eq('category', category)
-      .eq('time_frame', timeFrame)
-      .order('score', { ascending: !CATEGORY_CONFIG[category].higherIsBetter })
+      .from("leaderboard_scores")
+      .select("*, leaderboard_participation(*)")
+      .eq("category", category)
+      .eq("time_frame", timeFrame)
+      .order("score", { ascending: !CATEGORY_CONFIG[category].higherIsBetter })
       .limit(limit);
 
     if (error) throw error;
@@ -349,8 +349,8 @@ export class AnonymousLeaderboardService {
       const participation = row.leaderboard_participation;
       return {
         rank: index + 1,
-        anonymousId: participation?.anonymous_id || 'unknown',
-        displayName: participation?.display_name || 'Anonymous',
+        anonymousId: participation?.anonymous_id || "unknown",
+        displayName: participation?.display_name || "Anonymous",
         score: row.score,
         percentile: 0, // Calculate below
         change: row.previous_rank ? row.previous_rank - (index + 1) : 0,
@@ -383,9 +383,7 @@ export class AnonymousLeaderboardService {
     };
   }
 
-  async getUserRankings(
-    userId: string
-  ): Promise<
+  async getUserRankings(userId: string): Promise<
     {
       category: LeaderboardCategory;
       rank: number;
@@ -406,8 +404,8 @@ export class AnonymousLeaderboardService {
     for (const category of participation.categories) {
       const leaderboard = await this.getLeaderboard(
         category,
-        'monthly',
-        userId
+        "monthly",
+        userId,
       );
       if (leaderboard.userRank) {
         rankings.push({
@@ -430,7 +428,7 @@ export class AnonymousLeaderboardService {
     userId: string,
     category: LeaderboardCategory,
     score: number,
-    timeFrame: TimeFrame = 'monthly'
+    timeFrame: TimeFrame = "monthly",
   ): Promise<void> {
     const participation = await this.getParticipation(userId);
     if (
@@ -442,29 +440,29 @@ export class AnonymousLeaderboardService {
 
     // Get previous score
     const { data: existing } = await this.supabase
-      .from('leaderboard_scores')
-      .select('score, rank')
-      .eq('user_id', userId)
-      .eq('category', category)
-      .eq('time_frame', timeFrame)
+      .from("leaderboard_scores")
+      .select("score, rank")
+      .eq("user_id", userId)
+      .eq("category", category)
+      .eq("time_frame", timeFrame)
       .single();
 
     const now = new Date();
 
     if (existing) {
       await this.supabase
-        .from('leaderboard_scores')
+        .from("leaderboard_scores")
         .update({
           score,
           previous_score: existing.score,
           previous_rank: existing.rank,
           calculated_at: now.toISOString(),
         })
-        .eq('user_id', userId)
-        .eq('category', category)
-        .eq('time_frame', timeFrame);
+        .eq("user_id", userId)
+        .eq("category", category)
+        .eq("time_frame", timeFrame);
     } else {
-      await this.supabase.from('leaderboard_scores').insert({
+      await this.supabase.from("leaderboard_scores").insert({
         id: crypto.randomUUID(),
         user_id: userId,
         category,
@@ -481,14 +479,14 @@ export class AnonymousLeaderboardService {
 
   async getLeaderboardStats(
     category: LeaderboardCategory,
-    timeFrame: TimeFrame = 'monthly'
+    timeFrame: TimeFrame = "monthly",
   ): Promise<LeaderboardStats> {
     const { data: scores } = await this.supabase
-      .from('leaderboard_scores')
-      .select('score')
-      .eq('category', category)
-      .eq('time_frame', timeFrame)
-      .order('score', { ascending: !CATEGORY_CONFIG[category].higherIsBetter });
+      .from("leaderboard_scores")
+      .select("score")
+      .eq("category", category)
+      .eq("time_frame", timeFrame)
+      .order("score", { ascending: !CATEGORY_CONFIG[category].higherIsBetter });
 
     if (!scores || scores.length === 0) {
       return {
@@ -541,7 +539,7 @@ export class AnonymousLeaderboardService {
   // ==========================================================================
 
   private participationToDb(
-    participation: Partial<LeaderboardParticipation>
+    participation: Partial<LeaderboardParticipation>,
   ): Record<string, unknown> {
     return {
       id: participation.id,
@@ -558,7 +556,7 @@ export class AnonymousLeaderboardService {
   }
 
   private participationFromDb(
-    data: Record<string, unknown>
+    data: Record<string, unknown>,
   ): LeaderboardParticipation {
     return {
       id: data.id as string,
@@ -588,7 +586,7 @@ export function getAnonymousLeaderboardService(): AnonymousLeaderboardService {
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     anonymousLeaderboardServiceInstance = new AnonymousLeaderboardService(
       supabaseUrl,
-      supabaseKey
+      supabaseKey,
     );
   }
   return anonymousLeaderboardServiceInstance;

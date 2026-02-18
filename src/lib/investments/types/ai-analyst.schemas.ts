@@ -5,59 +5,59 @@
  * Ensures type safety at runtime for API requests and responses
  */
 
-import { z } from 'zod';
+import { z } from "zod";
 
 // ============================================================================
 // ENUMS
 // ============================================================================
 
 export const AnalysisTypeEnum = z.enum([
-  'technical',
-  'fundamental',
-  'sentiment',
-  'comprehensive',
+  "technical",
+  "fundamental",
+  "sentiment",
+  "comprehensive",
 ]);
 
 export const RecommendationEnum = z.enum([
-  'strong_buy',
-  'buy',
-  'hold',
-  'sell',
-  'strong_sell',
+  "strong_buy",
+  "buy",
+  "hold",
+  "sell",
+  "strong_sell",
 ]);
 
-export const SignalStrengthEnum = z.enum(['weak', 'moderate', 'strong']);
+export const SignalStrengthEnum = z.enum(["weak", "moderate", "strong"]);
 
-export const TrendDirectionEnum = z.enum(['bullish', 'bearish', 'neutral']);
+export const TrendDirectionEnum = z.enum(["bullish", "bearish", "neutral"]);
 
 export const RiskLevelEnum = z.enum([
-  'very_low',
-  'low',
-  'moderate',
-  'high',
-  'very_high',
+  "very_low",
+  "low",
+  "moderate",
+  "high",
+  "very_high",
 ]);
 
 export const FundamentalRatingEnum = z.enum([
-  'excellent',
-  'good',
-  'fair',
-  'poor',
-  'very_poor',
+  "excellent",
+  "good",
+  "fair",
+  "poor",
+  "very_poor",
 ]);
 
 export const SentimentLabelEnum = z.enum([
-  'very_bearish',
-  'bearish',
-  'neutral',
-  'bullish',
-  'very_bullish',
+  "very_bearish",
+  "bearish",
+  "neutral",
+  "bullish",
+  "very_bullish",
 ]);
 
 export const TimeHorizonEnum = z.enum([
-  'short_term',
-  'medium_term',
-  'long_term',
+  "short_term",
+  "medium_term",
+  "long_term",
 ]);
 
 // ============================================================================
@@ -177,11 +177,11 @@ export const DividendMetricsSchema = z.object({
   yearsOfDividendGrowth: z.number(),
   exDividendDate: z.date().nullable(),
   dividendFrequency: z.enum([
-    'monthly',
-    'quarterly',
-    'semi-annual',
-    'annual',
-    'none',
+    "monthly",
+    "quarterly",
+    "semi-annual",
+    "annual",
+    "none",
   ]),
 });
 
@@ -200,12 +200,17 @@ export const PeerComparisonSchema = z.object({
   sectorAvgPE: z.number(),
   sectorAvgPB: z.number(),
   sectorAvgDividendYield: z.number(),
-  relativeValuation: z.enum(['undervalued', 'fairly_valued', 'overvalued']),
+  relativeValuation: z.enum(["undervalued", "fairly_valued", "overvalued"]),
 });
 
 export const FairValueEstimateSchema = z.object({
   value: z.number(),
-  method: z.enum(['dcf', 'comparable', 'dividend_discount', 'earnings_multiple']),
+  method: z.enum([
+    "dcf",
+    "comparable",
+    "dividend_discount",
+    "earnings_multiple",
+  ]),
   upside: z.number(),
   confidence: z.number().min(0).max(100),
 });
@@ -238,7 +243,7 @@ export const NewsHeadlineSchema = z.object({
   source: z.string(),
   url: z.string().url(),
   publishedAt: z.date(),
-  sentiment: z.enum(['positive', 'negative', 'neutral']),
+  sentiment: z.enum(["positive", "negative", "neutral"]),
   relevanceScore: z.number().min(0).max(1),
 });
 
@@ -290,7 +295,7 @@ export const AnalystSentimentSchema = z.object({
 export const InsiderTransactionSchema = z.object({
   name: z.string(),
   title: z.string(),
-  transactionType: z.enum(['buy', 'sell', 'exercise']),
+  transactionType: z.enum(["buy", "sell", "exercise"]),
   shares: z.number().int(),
   price: z.number().positive(),
   value: z.number(),
@@ -298,7 +303,7 @@ export const InsiderTransactionSchema = z.object({
 });
 
 export const InsiderActivitySchema = z.object({
-  netActivity: z.enum(['buying', 'selling', 'neutral']),
+  netActivity: z.enum(["buying", "selling", "neutral"]),
   buyCount: z.number().int().nonnegative(),
   sellCount: z.number().int().nonnegative(),
   netShares: z.number().int(),
@@ -340,15 +345,22 @@ export const SentimentAnalysisSchema = z.object({
 // ============================================================================
 
 export const CatalystSchema = z.object({
-  type: z.enum(['earnings', 'product', 'regulatory', 'macro', 'technical', 'other']),
+  type: z.enum([
+    "earnings",
+    "product",
+    "regulatory",
+    "macro",
+    "technical",
+    "other",
+  ]),
   description: z.string(),
   expectedDate: z.date().optional(),
-  potentialImpact: z.enum(['high', 'medium', 'low']),
-  direction: z.enum(['positive', 'negative', 'uncertain']),
+  potentialImpact: z.enum(["high", "medium", "low"]),
+  direction: z.enum(["positive", "negative", "uncertain"]),
 });
 
 export const PriceTargetSchema = z.object({
-  scenario: z.enum(['bull', 'base', 'bear']),
+  scenario: z.enum(["bull", "base", "bear"]),
   price: z.number().positive(),
   probability: z.number().min(0).max(100),
   timeframe: z.string(),
@@ -392,7 +404,7 @@ export const RiskAssessmentSchema = z.object({
 export const KeyMetricSchema = z.object({
   name: z.string(),
   value: z.union([z.string(), z.number()]),
-  interpretation: z.enum(['positive', 'negative', 'neutral']),
+  interpretation: z.enum(["positive", "negative", "neutral"]),
   weight: z.number().min(0).max(1),
 });
 
@@ -417,30 +429,37 @@ export const StockAnalysisRequestSchema = z.object({
   symbol: z.string().min(1).max(10).toUpperCase(),
   analysisTypes: z.array(AnalysisTypeEnum).optional(),
   includeAI: z.boolean().optional().default(true),
-  timeframe: z.enum(['short', 'medium', 'long']).optional().default('medium'),
+  timeframe: z.enum(["short", "medium", "long"]).optional().default("medium"),
   riskTolerance: z
-    .enum(['conservative', 'moderate', 'aggressive'])
+    .enum(["conservative", "moderate", "aggressive"])
     .optional()
-    .default('moderate'),
+    .default("moderate"),
 });
 
 export const AIRecommendationRequestSchema = z.object({
   symbol: z.string().min(1).max(10).toUpperCase(),
-  timeHorizon: TimeHorizonEnum.optional().default('medium_term'),
+  timeHorizon: TimeHorizonEnum.optional().default("medium_term"),
   riskTolerance: z
-    .enum(['conservative', 'moderate', 'aggressive'])
+    .enum(["conservative", "moderate", "aggressive"])
     .optional()
-    .default('moderate'),
+    .default("moderate"),
 });
 
 // Export type inference helpers
 export type AnalysisType = z.infer<typeof AnalysisTypeEnum>;
 export type Recommendation = z.infer<typeof RecommendationEnum>;
 export type TechnicalAnalysisInput = z.infer<typeof TechnicalAnalysisSchema>;
-export type FundamentalAnalysisInput = z.infer<typeof FundamentalAnalysisSchema>;
+export type FundamentalAnalysisInput = z.infer<
+  typeof FundamentalAnalysisSchema
+>;
 export type SentimentAnalysisInput = z.infer<typeof SentimentAnalysisSchema>;
 export type AIStockAnalysisInput = z.infer<typeof AIStockAnalysisSchema>;
-export type StockRecommendationInput = z.infer<typeof StockRecommendationSchema>;
-export type StockAnalysisRequestInput = z.infer<typeof StockAnalysisRequestSchema>;
-export type AIRecommendationRequestInput = z.infer<typeof AIRecommendationRequestSchema>;
-
+export type StockRecommendationInput = z.infer<
+  typeof StockRecommendationSchema
+>;
+export type StockAnalysisRequestInput = z.infer<
+  typeof StockAnalysisRequestSchema
+>;
+export type AIRecommendationRequestInput = z.infer<
+  typeof AIRecommendationRequestSchema
+>;

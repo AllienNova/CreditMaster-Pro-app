@@ -1,8 +1,8 @@
 /**
  * @jest-environment node
  */
-describe('Rate Limiter', () => {
-  describe('Token Bucket Algorithm', () => {
+describe("Rate Limiter", () => {
+  describe("Token Bucket Algorithm", () => {
     interface TokenBucket {
       tokens: number;
       maxTokens: number;
@@ -12,7 +12,7 @@ describe('Rate Limiter', () => {
 
     const createBucket = (
       maxTokens: number,
-      refillRate: number
+      refillRate: number,
     ): TokenBucket => ({
       tokens: maxTokens,
       maxTokens,
@@ -33,7 +33,7 @@ describe('Rate Limiter', () => {
     };
 
     const consumeToken = (
-      bucket: TokenBucket
+      bucket: TokenBucket,
     ): { success: boolean; bucket: TokenBucket } => {
       const refilled = refillBucket(bucket);
 
@@ -47,20 +47,20 @@ describe('Rate Limiter', () => {
       return { success: false, bucket: refilled };
     };
 
-    it('should create bucket with max tokens', () => {
+    it("should create bucket with max tokens", () => {
       const bucket = createBucket(10, 1);
       expect(bucket.tokens).toBe(10);
       expect(bucket.maxTokens).toBe(10);
     });
 
-    it('should consume tokens successfully', () => {
+    it("should consume tokens successfully", () => {
       const bucket = createBucket(10, 1);
       const result = consumeToken(bucket);
       expect(result.success).toBe(true);
       expect(result.bucket.tokens).toBeLessThan(10);
     });
 
-    it('should reject when no tokens available', () => {
+    it("should reject when no tokens available", () => {
       let bucket = createBucket(10, 1);
       // Exhaust all tokens
       for (let i = 0; i < 10; i++) {
@@ -72,7 +72,7 @@ describe('Rate Limiter', () => {
     });
   });
 
-  describe('Sliding Window', () => {
+  describe("Sliding Window", () => {
     interface WindowCounter {
       requests: number[];
       windowMs: number;
@@ -81,7 +81,7 @@ describe('Rate Limiter', () => {
 
     const createWindow = (
       windowMs: number,
-      maxRequests: number
+      maxRequests: number,
     ): WindowCounter => ({
       requests: [],
       windowMs,
@@ -90,7 +90,7 @@ describe('Rate Limiter', () => {
 
     const isAllowed = (
       counter: WindowCounter,
-      now: number
+      now: number,
     ): { allowed: boolean; counter: WindowCounter } => {
       // Remove old requests
       const cutoff = now - counter.windowMs;
@@ -112,7 +112,7 @@ describe('Rate Limiter', () => {
       };
     };
 
-    it('should allow requests within limit', () => {
+    it("should allow requests within limit", () => {
       let counter = createWindow(60000, 10);
       const now = Date.now();
 
@@ -123,7 +123,7 @@ describe('Rate Limiter', () => {
       }
     });
 
-    it('should reject requests over limit', () => {
+    it("should reject requests over limit", () => {
       let counter = createWindow(60000, 5);
       const now = Date.now();
 
@@ -136,7 +136,7 @@ describe('Rate Limiter', () => {
       expect(result.allowed).toBe(false);
     });
 
-    it('should allow requests after window expires', () => {
+    it("should allow requests after window expires", () => {
       let counter = createWindow(1000, 2); // 1 second window
       const now = Date.now();
 
@@ -152,39 +152,39 @@ describe('Rate Limiter', () => {
     });
   });
 
-  describe('Rate Limit Headers', () => {
+  describe("Rate Limit Headers", () => {
     const generateHeaders = (
       remaining: number,
       limit: number,
-      resetTime: number
+      resetTime: number,
     ) => ({
-      'X-RateLimit-Limit': String(limit),
-      'X-RateLimit-Remaining': String(remaining),
-      'X-RateLimit-Reset': String(resetTime),
-      'Retry-After':
+      "X-RateLimit-Limit": String(limit),
+      "X-RateLimit-Remaining": String(remaining),
+      "X-RateLimit-Reset": String(resetTime),
+      "Retry-After":
         remaining === 0
           ? String(Math.ceil((resetTime - Date.now()) / 1000))
           : undefined,
     });
 
-    it('should generate correct headers', () => {
+    it("should generate correct headers", () => {
       const headers = generateHeaders(5, 10, Date.now() + 60000);
-      expect(headers['X-RateLimit-Limit']).toBe('10');
-      expect(headers['X-RateLimit-Remaining']).toBe('5');
+      expect(headers["X-RateLimit-Limit"]).toBe("10");
+      expect(headers["X-RateLimit-Remaining"]).toBe("5");
     });
 
-    it('should include Retry-After when exhausted', () => {
+    it("should include Retry-After when exhausted", () => {
       const headers = generateHeaders(0, 10, Date.now() + 30000);
-      expect(headers['Retry-After']).toBeDefined();
+      expect(headers["Retry-After"]).toBeDefined();
     });
 
-    it('should not include Retry-After when not exhausted', () => {
+    it("should not include Retry-After when not exhausted", () => {
       const headers = generateHeaders(5, 10, Date.now() + 60000);
-      expect(headers['Retry-After']).toBeUndefined();
+      expect(headers["Retry-After"]).toBeUndefined();
     });
   });
 
-  describe('IP-based Rate Limiting', () => {
+  describe("IP-based Rate Limiting", () => {
     const ipLimits: Map<string, { count: number; resetAt: number }> = new Map();
 
     const checkIpLimit = (ip: string, limit: number, windowMs: number) => {
@@ -208,17 +208,17 @@ describe('Rate Limiter', () => {
       ipLimits.clear();
     });
 
-    it('should track requests per IP', () => {
-      const result1 = checkIpLimit('192.168.1.1', 10, 60000);
-      const result2 = checkIpLimit('192.168.1.1', 10, 60000);
+    it("should track requests per IP", () => {
+      const result1 = checkIpLimit("192.168.1.1", 10, 60000);
+      const result2 = checkIpLimit("192.168.1.1", 10, 60000);
 
       expect(result1.remaining).toBe(9);
       expect(result2.remaining).toBe(8);
     });
 
-    it('should track IPs independently', () => {
-      checkIpLimit('192.168.1.1', 10, 60000);
-      const result = checkIpLimit('192.168.1.2', 10, 60000);
+    it("should track IPs independently", () => {
+      checkIpLimit("192.168.1.1", 10, 60000);
+      const result = checkIpLimit("192.168.1.2", 10, 60000);
       expect(result.remaining).toBe(9);
     });
   });

@@ -4,24 +4,29 @@
 
 // Recommendation Types
 export type RecommendationType =
-  | 'savings_strategy'
-  | 'debt_payoff'
-  | 'investment_suggestion'
-  | 'budget_adjustment'
-  | 'account_optimization'
-  | 'credit_improvement'
-  | 'insurance_needs'
-  | 'tax_optimization';
+  | "savings_strategy"
+  | "debt_payoff"
+  | "investment_suggestion"
+  | "budget_adjustment"
+  | "account_optimization"
+  | "credit_improvement"
+  | "insurance_needs"
+  | "tax_optimization";
 
-export type RecommendationPriority = 'critical' | 'high' | 'medium' | 'low';
-export type RecommendationStatus = 'pending' | 'in_progress' | 'completed' | 'dismissed' | 'expired';
+export type RecommendationPriority = "critical" | "high" | "medium" | "low";
+export type RecommendationStatus =
+  | "pending"
+  | "in_progress"
+  | "completed"
+  | "dismissed"
+  | "expired";
 
 export interface RecommendationStep {
   id: string;
   order: number;
   title: string;
   description: string;
-  actionType: 'manual' | 'automated' | 'link' | 'in_app';
+  actionType: "manual" | "automated" | "link" | "in_app";
   actionUrl?: string;
   isCompleted: boolean;
   completedAt?: string;
@@ -39,9 +44,9 @@ export interface Recommendation {
   aiInsight?: string;
   potentialSavings?: number;
   potentialReturn?: number;
-  riskLevel: 'low' | 'medium' | 'high';
-  timeframe: 'immediate' | 'short_term' | 'medium_term' | 'long_term';
-  estimatedEffort: 'minimal' | 'moderate' | 'significant';
+  riskLevel: "low" | "medium" | "high";
+  timeframe: "immediate" | "short_term" | "medium_term" | "long_term";
+  estimatedEffort: "minimal" | "moderate" | "significant";
   actionSteps: RecommendationStep[];
   confidenceScore: number;
   personalizedFactors: string[];
@@ -51,18 +56,25 @@ export interface Recommendation {
 
 // Goal Types
 export type GoalType =
-  | 'emergency_fund'
-  | 'debt_payoff'
-  | 'savings'
-  | 'investment'
-  | 'major_purchase'
-  | 'retirement'
-  | 'education'
-  | 'vacation'
-  | 'home_down_payment'
-  | 'custom';
+  | "emergency_fund"
+  | "debt_payoff"
+  | "savings"
+  | "investment"
+  | "major_purchase"
+  | "retirement"
+  | "education"
+  | "vacation"
+  | "home_down_payment"
+  | "custom";
 
-export type GoalStatus = 'not_started' | 'in_progress' | 'on_track' | 'behind' | 'ahead' | 'completed' | 'paused';
+export type GoalStatus =
+  | "not_started"
+  | "in_progress"
+  | "on_track"
+  | "behind"
+  | "ahead"
+  | "completed"
+  | "paused";
 
 export interface GoalMilestone {
   id: string;
@@ -75,7 +87,7 @@ export interface GoalMilestone {
 }
 
 export interface GoalAdjustment {
-  type: 'increase_contribution' | 'extend_timeline' | 'reduce_target' | 'pause';
+  type: "increase_contribution" | "extend_timeline" | "reduce_target" | "pause";
   reason: string;
   suggestedValue?: number;
   impact: string;
@@ -98,7 +110,7 @@ export interface FinancialGoalPlan {
   milestones: GoalMilestone[];
   monthlyContribution: number;
   suggestedContribution: number;
-  contributionFrequency: 'weekly' | 'biweekly' | 'monthly';
+  contributionFrequency: "weekly" | "biweekly" | "monthly";
   linkedAccountId?: string;
   autoSaveEnabled: boolean;
   aiRecommendations: string[];
@@ -132,19 +144,19 @@ export interface BudgetCategorySummary {
   budgeted: number;
   spent: number;
   percentUsed: number;
-  trend: 'increasing' | 'decreasing' | 'stable';
+  trend: "increasing" | "decreasing" | "stable";
   benchmarkComparison?: number;
 }
 
 export interface BudgetOptimization {
   id: string;
   category: string;
-  type: 'reduce' | 'increase' | 'reallocate' | 'eliminate';
+  type: "reduce" | "increase" | "reallocate" | "eliminate";
   currentAmount: number;
   suggestedAmount: number;
   potentialSavings: number;
   reason: string;
-  difficulty: 'easy' | 'moderate' | 'hard';
+  difficulty: "easy" | "moderate" | "hard";
   priorityScore: number;
   actionSteps: string[];
 }
@@ -165,7 +177,7 @@ export interface BudgetOptimizationResult {
 // Debt Types
 export interface DebtStrategyPlan {
   id: string;
-  strategy: 'avalanche' | 'snowball' | 'hybrid' | 'consolidation';
+  strategy: "avalanche" | "snowball" | "hybrid" | "consolidation";
   name: string;
   description: string;
   payoffDate: string;
@@ -217,13 +229,13 @@ export interface CoachDashboard {
   userId: string;
   generatedAt: string;
   healthScore: number;
-  healthTrend: 'improving' | 'stable' | 'declining';
+  healthTrend: "improving" | "stable" | "declining";
   topRecommendations: Recommendation[];
   pendingActionsCount: number;
   activeGoals: number;
   goalsOnTrack: number;
   nextMilestone?: GoalMilestone & { goalName: string };
-  budgetHealth: 'healthy' | 'warning' | 'critical';
+  budgetHealth: "healthy" | "warning" | "critical";
   monthlyUnallocated: number;
   potentialSavings: number;
   debtFreeDate?: string;
@@ -232,4 +244,3 @@ export interface CoachDashboard {
   coachMessage: string;
   focusArea: string;
 }
-

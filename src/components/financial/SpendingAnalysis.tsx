@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import {
   PieChartComponent,
   LineChartComponent,
   BarChartComponent,
   AreaChartComponent,
   ChartContainer,
-} from '@/components/charts';
-import AISpendingInsights from './AISpendingInsights';
+} from "@/components/charts";
+import AISpendingInsights from "./AISpendingInsights";
 
 interface CategorySpending {
   category: string;
@@ -60,12 +60,12 @@ interface CashFlowData {
     avgSavingsRate: number;
   };
   trends: {
-    income: 'increasing' | 'decreasing' | 'stable';
-    expenses: 'increasing' | 'decreasing' | 'stable';
-    netFlow: 'increasing' | 'decreasing' | 'stable';
+    income: "increasing" | "decreasing" | "stable";
+    expenses: "increasing" | "decreasing" | "stable";
+    netFlow: "increasing" | "decreasing" | "stable";
   };
   health: {
-    status: 'excellent' | 'good' | 'fair' | 'poor';
+    status: "excellent" | "good" | "fair" | "poor";
     score: number;
     message: string;
   };
@@ -87,7 +87,7 @@ interface ForecastData {
     predictedIncome: number;
     predictedNetFlow: number;
     confidenceInterval: { low: number; high: number; confidence: number };
-    trend: 'increasing' | 'decreasing' | 'stable';
+    trend: "increasing" | "decreasing" | "stable";
     seasonalFactor: number;
   }>;
   categoryForecasts: Array<{
@@ -95,7 +95,7 @@ interface ForecastData {
     displayName: string;
     currentMonthlyAvg: number;
     predictedMonthlyAvg: number;
-    trend: 'increasing' | 'decreasing' | 'stable';
+    trend: "increasing" | "decreasing" | "stable";
     percentChange: number;
     confidenceInterval: { low: number; high: number; confidence: number };
   }>;
@@ -103,7 +103,7 @@ interface ForecastData {
     overallScore: number;
     mape: number;
     rmse: number;
-    dataQuality: 'excellent' | 'good' | 'fair' | 'poor';
+    dataQuality: "excellent" | "good" | "fair" | "poor";
     historicalMonths: number;
   };
   insights: Array<{
@@ -111,7 +111,7 @@ interface ForecastData {
     type: string;
     title: string;
     description: string;
-    impact: 'positive' | 'negative' | 'neutral';
+    impact: "positive" | "negative" | "neutral";
     confidence: number;
     relatedCategory?: string;
     potentialSavings?: number;
@@ -126,10 +126,10 @@ export default function SpendingAnalysis() {
   const [forecastData, setForecastData] = useState<ForecastData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [dateRange, setDateRange] = useState<'30' | '90' | '180' | '365'>('90');
+  const [dateRange, setDateRange] = useState<"30" | "90" | "180" | "365">("90");
   const [activeTab, setActiveTab] = useState<
-    'spending' | 'cashflow' | 'forecast'
-  >('spending');
+    "spending" | "cashflow" | "forecast"
+  >("spending");
 
   const fetchSpendingData = useCallback(async () => {
     if (!user) return;
@@ -140,7 +140,7 @@ export default function SpendingAnalysis() {
       const response = await fetch(`/api/financial/spending?days=${dateRange}`);
 
       if (!response.ok) {
-        throw new Error('Failed to fetch spending data');
+        throw new Error("Failed to fetch spending data");
       }
 
       const result = await response.json();
@@ -148,7 +148,7 @@ export default function SpendingAnalysis() {
       setError(null);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : 'Failed to load spending data'
+        err instanceof Error ? err.message : "Failed to load spending data",
       );
     } finally {
       setLoading(false);
@@ -160,15 +160,15 @@ export default function SpendingAnalysis() {
 
     try {
       const months =
-        dateRange === '30'
+        dateRange === "30"
           ? 1
-          : dateRange === '90'
+          : dateRange === "90"
             ? 3
-            : dateRange === '180'
+            : dateRange === "180"
               ? 6
               : 12;
       const response = await fetch(
-        `/api/financial/spending/cashflow?months=${months}`
+        `/api/financial/spending/cashflow?months=${months}`,
       );
 
       if (!response.ok) {
@@ -190,15 +190,15 @@ export default function SpendingAnalysis() {
 
     try {
       const months =
-        dateRange === '30'
+        dateRange === "30"
           ? 1
-          : dateRange === '90'
+          : dateRange === "90"
             ? 3
-            : dateRange === '180'
+            : dateRange === "180"
               ? 6
               : 12;
       const response = await fetch(
-        `/api/financial/spending/forecast?months=${Math.min(months, 6)}&includeCategories=true`
+        `/api/financial/spending/forecast?months=${Math.min(months, 6)}&includeCategories=true`,
       );
 
       if (!response.ok) {
@@ -228,9 +228,9 @@ export default function SpendingAnalysis() {
   ]);
 
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
@@ -238,35 +238,35 @@ export default function SpendingAnalysis() {
 
   const getCategoryIcon = (category: string): string => {
     const icons: Record<string, string> = {
-      'Food and Drink': '',
-      Restaurants: '',
-      Groceries: '',
-      Shopping: '',
-      Transportation: '',
-      Travel: '',
-      Entertainment: '',
-      Bills: '',
-      Healthcare: '',
-      Education: '',
-      Personal: '',
-      Transfer: '',
-      Payment: '',
+      "Food and Drink": "",
+      Restaurants: "",
+      Groceries: "",
+      Shopping: "",
+      Transportation: "",
+      Travel: "",
+      Entertainment: "",
+      Bills: "",
+      Healthcare: "",
+      Education: "",
+      Personal: "",
+      Transfer: "",
+      Payment: "",
     };
-    return icons[category] || '';
+    return icons[category] || "";
   };
 
   const getCategoryColor = (index: number): string => {
     const colors = [
-      'bg-blue-500',
-      'bg-blue-500',
-      'bg-emerald-500',
-      'bg-orange-500',
-      'bg-green-500',
-      'bg-yellow-500',
-      'bg-red-500',
-      'bg-blue-500',
-      'bg-teal-500',
-      'bg-blue-500',
+      "bg-blue-500",
+      "bg-blue-500",
+      "bg-emerald-500",
+      "bg-orange-500",
+      "bg-green-500",
+      "bg-yellow-500",
+      "bg-red-500",
+      "bg-blue-500",
+      "bg-teal-500",
+      "bg-blue-500",
     ];
     return colors[index % colors.length];
   };
@@ -285,12 +285,12 @@ export default function SpendingAnalysis() {
     })) || [];
 
   const lineConfig = [
-    { dataKey: 'spending', name: 'Spending', color: '#3B82F6', dot: true },
+    { dataKey: "spending", name: "Spending", color: "#3B82F6", dot: true },
   ];
 
   const barChartData =
     data?.topMerchants.slice(0, 6).map((m) => ({
-      label: m.name.length > 12 ? m.name.substring(0, 12) + '...' : m.name,
+      label: m.name.length > 12 ? m.name.substring(0, 12) + "..." : m.name,
       value: m.amount,
     })) || [];
 
@@ -304,33 +304,33 @@ export default function SpendingAnalysis() {
     })) || [];
 
   const cashFlowAreaConfig = [
-    { dataKey: 'income', name: 'Income', color: '#10B981', fillOpacity: 0.3 },
+    { dataKey: "income", name: "Income", color: "#10B981", fillOpacity: 0.3 },
     {
-      dataKey: 'expenses',
-      name: 'Expenses',
-      color: '#EF4444',
+      dataKey: "expenses",
+      name: "Expenses",
+      color: "#EF4444",
       fillOpacity: 0.3,
     },
   ];
 
-  const getTrendIcon = (trend: 'increasing' | 'decreasing' | 'stable') => {
-    if (trend === 'increasing') return '';
-    if (trend === 'decreasing') return '';
-    return '';
+  const getTrendIcon = (trend: "increasing" | "decreasing" | "stable") => {
+    if (trend === "increasing") return "";
+    if (trend === "decreasing") return "";
+    return "";
   };
 
   const getHealthColor = (status: string) => {
     switch (status) {
-      case 'excellent':
-        return 'text-green-600 bg-green-100 dark:bg-green-900/30';
-      case 'good':
-        return 'text-blue-600 bg-blue-100 dark:bg-blue-900/30';
-      case 'fair':
-        return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30';
-      case 'poor':
-        return 'text-red-600 bg-red-100 dark:bg-red-900/30';
+      case "excellent":
+        return "text-green-600 bg-green-100 dark:bg-green-900/30";
+      case "good":
+        return "text-blue-600 bg-blue-100 dark:bg-blue-900/30";
+      case "fair":
+        return "text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30";
+      case "poor":
+        return "text-red-600 bg-red-100 dark:bg-red-900/30";
       default:
-        return 'text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-900/30';
+        return "text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-900/30";
     }
   };
 
@@ -393,22 +393,22 @@ export default function SpendingAnalysis() {
           <div className="flex gap-2 border-b border-gray-200 dark:border-slate-700 pb-4">
             <button
               type="button"
-              onClick={() => setActiveTab('spending')}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${ activeTab === 'spending' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600' }`}
+              onClick={() => setActiveTab("spending")}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${activeTab === "spending" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600"}`}
             >
               Spending Analysis
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab('cashflow')}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${ activeTab === 'cashflow' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600' }`}
+              onClick={() => setActiveTab("cashflow")}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${activeTab === "cashflow" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600"}`}
             >
               Cash Flow
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab('forecast')}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${ activeTab === 'forecast' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600' }`}
+              onClick={() => setActiveTab("forecast")}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${activeTab === "forecast" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600"}`}
             >
               Forecast
             </button>
@@ -420,20 +420,20 @@ export default function SpendingAnalysis() {
               Time Period
             </h3>
             <div className="flex flex-wrap gap-2">
-              {(['30', '90', '180', '365'] as const).map((days) => (
+              {(["30", "90", "180", "365"] as const).map((days) => (
                 <button
                   key={days}
                   type="button"
                   onClick={() => setDateRange(days)}
-                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${ dateRange === days ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600' }`}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${dateRange === days ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600"}`}
                 >
-                  {days === '30'
-                    ? '30 Days'
-                    : days === '90'
-                      ? '3 Months'
-                      : days === '180'
-                        ? '6 Months'
-                        : '1 Year'}
+                  {days === "30"
+                    ? "30 Days"
+                    : days === "90"
+                      ? "3 Months"
+                      : days === "180"
+                        ? "6 Months"
+                        : "1 Year"}
                 </button>
               ))}
               <button
@@ -465,7 +465,7 @@ export default function SpendingAnalysis() {
       </div>
 
       {/* Cash Flow Tab Content */}
-      {activeTab === 'cashflow' && cashFlowData && (
+      {activeTab === "cashflow" && cashFlowData && (
         <>
           {/* Cash Flow Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -504,7 +504,7 @@ export default function SpendingAnalysis() {
             </div>
 
             <div
-              className={`bg-gradient-to-br ${cashFlowData.summary.totalNetFlow >= 0 ? 'from-emerald-500 to-emerald-600' : 'from-orange-500 to-orange-600'} rounded-lg shadow p-6 text-white`}
+              className={`bg-gradient-to-br ${cashFlowData.summary.totalNetFlow >= 0 ? "from-emerald-500 to-emerald-600" : "from-orange-500 to-orange-600"} rounded-lg shadow p-6 text-white`}
             >
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-semibold opacity-90">
@@ -595,7 +595,7 @@ export default function SpendingAnalysis() {
       )}
 
       {/* Spending Tab Content */}
-      {activeTab === 'spending' && (
+      {activeTab === "spending" && (
         <>
           {/* Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -628,19 +628,19 @@ export default function SpendingAnalysis() {
             </div>
 
             <div
-              className={`bg-gradient-to-br ${(data.cashFlow || 0) >= 0 ? 'from-emerald-500 to-emerald-600' : 'from-orange-500 to-orange-600'} rounded-lg shadow p-6 text-white`}
+              className={`bg-gradient-to-br ${(data.cashFlow || 0) >= 0 ? "from-emerald-500 to-emerald-600" : "from-orange-500 to-orange-600"} rounded-lg shadow p-6 text-white`}
             >
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-semibold opacity-90">Cash Flow</h3>
                 <span className="text-2xl">
-                  {(data.cashFlow || 0) >= 0 ? '' : ''}
+                  {(data.cashFlow || 0) >= 0 ? "" : ""}
                 </span>
               </div>
               <div className="text-3xl font-bold">
                 {formatCurrency(data.cashFlow || 0)}
               </div>
               <div className="text-sm opacity-90 mt-1">
-                {(data.cashFlow || 0) >= 0 ? 'Positive' : 'Negative'}
+                {(data.cashFlow || 0) >= 0 ? "Positive" : "Negative"}
               </div>
             </div>
 
@@ -783,11 +783,11 @@ export default function SpendingAnalysis() {
       )}
 
       {/* Forecast Tab Content */}
-      {activeTab === 'forecast' && forecastData && (
+      {activeTab === "forecast" && forecastData && (
         <>
           {/* Forecast Accuracy Banner */}
           <div
-            className={`rounded-lg shadow p-4 ${ forecastData.accuracy.dataQuality === 'excellent' ? 'bg-green-50' : forecastData.accuracy.dataQuality === 'good' ? 'bg-blue-50' : forecastData.accuracy.dataQuality === 'fair' ? 'bg-yellow-50' : 'bg-red-50 dark:bg-red-900/20' }`}
+            className={`rounded-lg shadow p-4 ${forecastData.accuracy.dataQuality === "excellent" ? "bg-green-50" : forecastData.accuracy.dataQuality === "good" ? "bg-blue-50" : forecastData.accuracy.dataQuality === "fair" ? "bg-yellow-50" : "bg-red-50 dark:bg-red-900/20"}`}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -817,25 +817,25 @@ export default function SpendingAnalysis() {
                     {pred.monthLabel}
                   </h3>
                   <span className="text-lg">
-                    {pred.trend === 'increasing'
-                      ? ''
-                      : pred.trend === 'decreasing'
-                        ? ''
-                        : ''}
+                    {pred.trend === "increasing"
+                      ? ""
+                      : pred.trend === "decreasing"
+                        ? ""
+                        : ""}
                   </span>
                 </div>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
                   {formatCurrency(pred.predictedSpending)}
                 </div>
                 <div className="text-xs text-gray-500 dark:text-slate-400">
-                  Range: {formatCurrency(pred.confidenceInterval.low)} -{' '}
+                  Range: {formatCurrency(pred.confidenceInterval.low)} -{" "}
                   {formatCurrency(pred.confidenceInterval.high)}
                 </div>
                 <div
                   className={`text-sm mt-2 ${
                     pred.predictedNetFlow >= 0
-                      ? 'text-green-600'
-                      : 'text-red-600'
+                      ? "text-green-600"
+                      : "text-red-600"
                   }`}
                 >
                   Net: {formatCurrency(pred.predictedNetFlow)}
@@ -855,21 +855,21 @@ export default function SpendingAnalysis() {
               }))}
               areas={[
                 {
-                  dataKey: 'predicted',
-                  name: 'Predicted',
-                  color: '#3B82F6',
+                  dataKey: "predicted",
+                  name: "Predicted",
+                  color: "#3B82F6",
                   fillOpacity: 0.3,
                 },
                 {
-                  dataKey: 'low',
-                  name: 'Lower Bound',
-                  color: '#93C5FD',
+                  dataKey: "low",
+                  name: "Lower Bound",
+                  color: "#93C5FD",
                   fillOpacity: 0.1,
                 },
                 {
-                  dataKey: 'high',
-                  name: 'Upper Bound',
-                  color: '#93C5FD',
+                  dataKey: "high",
+                  name: "Upper Bound",
+                  color: "#93C5FD",
                   fillOpacity: 0.1,
                 },
               ]}
@@ -894,13 +894,13 @@ export default function SpendingAnalysis() {
                         {cat.displayName}
                       </span>
                       <span
-                        className={`text-sm px-2 py-1 rounded ${ cat.trend === 'increasing' ? 'bg-red-100 text-red-700' : cat.trend === 'decreasing' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-slate-300' }`}
+                        className={`text-sm px-2 py-1 rounded ${cat.trend === "increasing" ? "bg-red-100 text-red-700" : cat.trend === "decreasing" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-slate-300"}`}
                       >
-                        {cat.trend === 'increasing'
-                          ? '↑'
-                          : cat.trend === 'decreasing'
-                            ? '↓'
-                            : '→'}{' '}
+                        {cat.trend === "increasing"
+                          ? "↑"
+                          : cat.trend === "decreasing"
+                            ? "↓"
+                            : "→"}{" "}
                         {Math.abs(cat.percentChange).toFixed(0)}%
                       </span>
                     </div>
@@ -929,14 +929,14 @@ export default function SpendingAnalysis() {
                 {forecastData.insights.map((insight) => (
                   <div
                     key={insight.id}
-                    className={`flex items-start gap-3 rounded-lg p-4 ${ insight.impact === 'positive' ? 'bg-green-50' : insight.impact === 'negative' ? 'bg-red-50' : 'bg-white dark:bg-slate-800' }`}
+                    className={`flex items-start gap-3 rounded-lg p-4 ${insight.impact === "positive" ? "bg-green-50" : insight.impact === "negative" ? "bg-red-50" : "bg-white dark:bg-slate-800"}`}
                   >
                     <span className="text-xl">
-                      {insight.impact === 'positive'
-                        ? ''
-                        : insight.impact === 'negative'
-                          ? ''
-                          : 'ℹ️'}
+                      {insight.impact === "positive"
+                        ? ""
+                        : insight.impact === "negative"
+                          ? ""
+                          : "ℹ️"}
                     </span>
                     <div>
                       <h4 className="font-semibold text-gray-900 dark:text-white">
@@ -947,7 +947,7 @@ export default function SpendingAnalysis() {
                       </p>
                       {insight.potentialSavings && (
                         <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-                          Potential savings:{' '}
+                          Potential savings:{" "}
                           {formatCurrency(insight.potentialSavings)}
                         </p>
                       )}
@@ -982,7 +982,7 @@ export default function SpendingAnalysis() {
       )}
 
       {/* Forecast Tab - No Data State */}
-      {activeTab === 'forecast' && !forecastData && (
+      {activeTab === "forecast" && !forecastData && (
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-12 text-center">
           <div className="text-4xl mb-4"></div>
           <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">

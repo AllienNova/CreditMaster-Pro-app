@@ -5,10 +5,10 @@
  * Uses cookies for authentication state management.
  */
 
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
-import { Database } from './types';
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { cookies } from "next/headers";
+import { Database } from "./types";
 
 /**
  * Admin client for server-side operations that bypass RLS
@@ -16,13 +16,14 @@ import { Database } from './types';
  */
 export const supabaseAdmin = createSupabaseClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
     },
-  }
+  },
 );
 
 /**
@@ -43,7 +44,7 @@ export async function createClient() {
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
+              cookieStore.set(name, value, options),
             );
           } catch {
             // The `setAll` method was called from a Server Component.
@@ -51,7 +52,7 @@ export async function createClient() {
           }
         },
       },
-    }
+    },
   );
 }
 
@@ -64,7 +65,7 @@ export async function createServiceClient() {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!serviceRoleKey) {
-    throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY environment variable');
+    throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY environment variable");
   }
 
   return createServerClient<Database>(
@@ -78,7 +79,7 @@ export async function createServiceClient() {
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
+              cookieStore.set(name, value, options),
             );
           } catch {
             // Ignore errors from Server Components
@@ -89,6 +90,6 @@ export async function createServiceClient() {
         persistSession: false,
         autoRefreshToken: false,
       },
-    }
+    },
   );
 }

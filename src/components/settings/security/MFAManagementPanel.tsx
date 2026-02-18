@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * MFA Management Panel
@@ -7,8 +7,8 @@
  * including TOTP, security keys, biometrics, and backup codes.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Shield,
   Smartphone,
@@ -29,14 +29,14 @@ import {
   Loader2,
   ChevronRight,
   Info,
-} from 'lucide-react';
+} from "lucide-react";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type MFAMethodType = 'totp' | 'webauthn' | 'biometric';
-export type MFAMethodStatus = 'verified' | 'pending' | 'disabled';
+export type MFAMethodType = "totp" | "webauthn" | "biometric";
+export type MFAMethodStatus = "verified" | "pending" | "disabled";
 
 export interface MFAMethod {
   id: string;
@@ -66,10 +66,10 @@ export interface MFAManagementPanelProps {
   onRemoveMethod: (methodId: string) => Promise<boolean>;
   onRenameMethod: (methodId: string, newName: string) => Promise<boolean>;
   onEnrollSecurityKey: (
-    name?: string
+    name?: string,
   ) => Promise<{ success: boolean; error?: string }>;
   onEnrollBiometric: (
-    name?: string
+    name?: string,
   ) => Promise<{ success: boolean; error?: string }>;
   onGenerateBackupCodes: () => Promise<string[]>;
   isLoading?: boolean;
@@ -87,9 +87,9 @@ const METHOD_ICONS: Record<MFAMethodType, React.ReactNode> = {
 };
 
 const METHOD_LABELS: Record<MFAMethodType, string> = {
-  totp: 'Authenticator App',
-  webauthn: 'Security Key',
-  biometric: 'Biometric',
+  totp: "Authenticator App",
+  webauthn: "Security Key",
+  biometric: "Biometric",
 };
 
 // ============================================================================
@@ -112,35 +112,35 @@ export function MFAManagementPanel({
 }: MFAManagementPanelProps) {
   // State
   const [activeModal, setActiveModal] = useState<
-    'totp' | 'security-key' | 'biometric' | 'backup-codes' | null
+    "totp" | "security-key" | "biometric" | "backup-codes" | null
   >(null);
   const [totpSetup, setTotpSetup] = useState<{
     qrCode: string;
     secret: string;
     factorId: string;
   } | null>(null);
-  const [totpCode, setTotpCode] = useState('');
+  const [totpCode, setTotpCode] = useState("");
   const [backupCodes, setBackupCodes] = useState<string[] | null>(null);
   const [showBackupCodes, setShowBackupCodes] = useState(false);
   const [editingMethod, setEditingMethod] = useState<string | null>(null);
-  const [editName, setEditName] = useState('');
+  const [editName, setEditName] = useState("");
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const verifiedMethods = methods.filter((m) => m.status === 'verified');
+  const verifiedMethods = methods.filter((m) => m.status === "verified");
   const hasMFA = verifiedMethods.length > 0;
 
   // Start TOTP enrollment
   const handleStartTOTP = useCallback(async () => {
     setError(null);
-    setProcessingId('totp-enroll');
+    setProcessingId("totp-enroll");
     try {
       const result = await onEnrollTOTP();
       setTotpSetup(result);
-      setActiveModal('totp');
+      setActiveModal("totp");
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : 'Failed to start enrollment'
+        err instanceof Error ? err.message : "Failed to start enrollment",
       );
     } finally {
       setProcessingId(null);
@@ -152,18 +152,18 @@ export function MFAManagementPanel({
     if (!totpSetup || totpCode.length !== 6) return;
 
     setError(null);
-    setProcessingId('totp-verify');
+    setProcessingId("totp-verify");
     try {
       const success = await onVerifyTOTP(totpSetup.factorId, totpCode);
       if (success) {
         setActiveModal(null);
         setTotpSetup(null);
-        setTotpCode('');
+        setTotpCode("");
       } else {
-        setError('Invalid code. Please try again.');
+        setError("Invalid code. Please try again.");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Verification failed');
+      setError(err instanceof Error ? err.message : "Verification failed");
     } finally {
       setProcessingId(null);
     }
@@ -172,16 +172,16 @@ export function MFAManagementPanel({
   // Enroll security key
   const handleEnrollSecurityKey = useCallback(async () => {
     setError(null);
-    setProcessingId('security-key');
+    setProcessingId("security-key");
     try {
       const result = await onEnrollSecurityKey();
       if (result.success) {
         setActiveModal(null);
       } else {
-        setError(result.error || 'Failed to enroll security key');
+        setError(result.error || "Failed to enroll security key");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Enrollment failed');
+      setError(err instanceof Error ? err.message : "Enrollment failed");
     } finally {
       setProcessingId(null);
     }
@@ -190,16 +190,16 @@ export function MFAManagementPanel({
   // Enroll biometric
   const handleEnrollBiometric = useCallback(async () => {
     setError(null);
-    setProcessingId('biometric');
+    setProcessingId("biometric");
     try {
       const result = await onEnrollBiometric();
       if (result.success) {
         setActiveModal(null);
       } else {
-        setError(result.error || 'Failed to enroll biometric');
+        setError(result.error || "Failed to enroll biometric");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Enrollment failed');
+      setError(err instanceof Error ? err.message : "Enrollment failed");
     } finally {
       setProcessingId(null);
     }
@@ -208,14 +208,14 @@ export function MFAManagementPanel({
   // Generate backup codes
   const handleGenerateBackupCodes = useCallback(async () => {
     setError(null);
-    setProcessingId('backup-codes');
+    setProcessingId("backup-codes");
     try {
       const codes = await onGenerateBackupCodes();
       setBackupCodes(codes);
       setShowBackupCodes(true);
-      setActiveModal('backup-codes');
+      setActiveModal("backup-codes");
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate codes');
+      setError(err instanceof Error ? err.message : "Failed to generate codes");
     } finally {
       setProcessingId(null);
     }
@@ -231,7 +231,7 @@ export function MFAManagementPanel({
         setProcessingId(null);
       }
     },
-    [onRemoveMethod]
+    [onRemoveMethod],
   );
 
   // Rename method
@@ -243,29 +243,29 @@ export function MFAManagementPanel({
       try {
         await onRenameMethod(methodId, editName.trim());
         setEditingMethod(null);
-        setEditName('');
+        setEditName("");
       } finally {
         setProcessingId(null);
       }
     },
-    [editName, onRenameMethod]
+    [editName, onRenameMethod],
   );
 
   // Copy backup codes to clipboard
   const copyBackupCodes = useCallback(() => {
     if (!backupCodes) return;
-    navigator.clipboard.writeText(backupCodes.join('\n'));
+    navigator.clipboard.writeText(backupCodes.join("\n"));
   }, [backupCodes]);
 
   // Download backup codes
   const downloadBackupCodes = useCallback(() => {
     if (!backupCodes) return;
-    const content = `Fynvita Backup Recovery Codes\n\nKeep these codes safe. Each code can only be used once.\n\n${backupCodes.join('\n')}\n\nGenerated: ${new Date().toISOString()}`;
-    const blob = new Blob([content], { type: 'text/plain' });
+    const content = `Fynvita Backup Recovery Codes\n\nKeep these codes safe. Each code can only be used once.\n\n${backupCodes.join("\n")}\n\nGenerated: ${new Date().toISOString()}`;
+    const blob = new Blob([content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = 'fynvita-backup-codes.txt';
+    a.download = "fynvita-backup-codes.txt";
     a.click();
     URL.revokeObjectURL(url);
   }, [backupCodes]);
@@ -277,7 +277,7 @@ export function MFAManagementPanel({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Shield
-              className={`w-5 h-5 ${hasMFA ? 'text-emerald-400' : 'text-gray-500 dark:text-slate-400'}`}
+              className={`w-5 h-5 ${hasMFA ? "text-emerald-400" : "text-gray-500 dark:text-slate-400"}`}
             />
             <div>
               <h2 className="text-lg font-semibold text-white">
@@ -285,8 +285,8 @@ export function MFAManagementPanel({
               </h2>
               <p className="text-sm text-gray-400 dark:text-slate-500">
                 {hasMFA
-                  ? `${verifiedMethods.length} method${verifiedMethods.length > 1 ? 's' : ''} enabled`
-                  : 'Add an extra layer of security'}
+                  ? `${verifiedMethods.length} method${verifiedMethods.length > 1 ? "s" : ""} enabled`
+                  : "Add an extra layer of security"}
               </p>
             </div>
           </div>
@@ -306,9 +306,9 @@ export function MFAManagementPanel({
               <div className="flex items-center gap-4">
                 <div
                   className={`p-2 rounded-lg ${
-                    method.status === 'verified'
-                      ? 'bg-emerald-500/10 text-emerald-400'
-                      : 'bg-gray-800 text-gray-500 dark:text-slate-400'
+                    method.status === "verified"
+                      ? "bg-emerald-500/10 text-emerald-400"
+                      : "bg-gray-800 text-gray-500 dark:text-slate-400"
                   }`}
                 >
                   {METHOD_ICONS[method.type]}
@@ -333,7 +333,7 @@ export function MFAManagementPanel({
                       <button
                         onClick={() => {
                           setEditingMethod(null);
-                          setEditName('');
+                          setEditName("");
                         }}
                         className="p-1 text-gray-400 dark:text-slate-500 hover:text-white"
                       >
@@ -344,7 +344,7 @@ export function MFAManagementPanel({
                     <>
                       <p className="text-white font-medium">{method.name}</p>
                       <p className="text-xs text-gray-500 dark:text-slate-400">
-                        {METHOD_LABELS[method.type]} • Added{' '}
+                        {METHOD_LABELS[method.type]} • Added{" "}
                         {method.createdAt.toLocaleDateString()}
                         {method.lastUsedAt &&
                           ` • Last used ${method.lastUsedAt.toLocaleDateString()}`}
@@ -355,7 +355,7 @@ export function MFAManagementPanel({
               </div>
 
               <div className="flex items-center gap-2">
-                {method.status === 'pending' && (
+                {method.status === "pending" && (
                   <span className="px-2 py-1 text-xs bg-amber-500/20 text-amber-400 rounded">
                     Pending
                   </span>
@@ -404,12 +404,14 @@ export function MFAManagementPanel({
 
       {/* Add Method Options */}
       <div className="px-6 py-4 border-t border-gray-800 bg-gray-800/30">
-        <p className="text-sm text-gray-400 dark:text-slate-500 mb-3">Add authentication method:</p>
+        <p className="text-sm text-gray-400 dark:text-slate-500 mb-3">
+          Add authentication method:
+        </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {/* Authenticator App */}
           <button
             onClick={handleStartTOTP}
-            disabled={processingId === 'totp-enroll' || isLoading}
+            disabled={processingId === "totp-enroll" || isLoading}
             className="flex items-center gap-3 p-4 bg-gray-800 hover:bg-gray-700 rounded-lg border border-gray-700 hover:border-gray-600 transition-colors text-left disabled:opacity-50"
           >
             <div className="p-2 bg-blue-500/10 text-blue-400 rounded-lg">
@@ -419,9 +421,11 @@ export function MFAManagementPanel({
               <p className="text-sm font-medium text-white">
                 Authenticator App
               </p>
-              <p className="text-xs text-gray-500 dark:text-slate-400">Google, Authy, etc.</p>
+              <p className="text-xs text-gray-500 dark:text-slate-400">
+                Google, Authy, etc.
+              </p>
             </div>
-            {processingId === 'totp-enroll' ? (
+            {processingId === "totp-enroll" ? (
               <Loader2 className="w-4 h-4 text-gray-500 dark:text-slate-400 animate-spin" />
             ) : (
               <Plus className="w-4 h-4 text-gray-500 dark:text-slate-400" />
@@ -430,7 +434,7 @@ export function MFAManagementPanel({
 
           {/* Security Key */}
           <button
-            onClick={() => setActiveModal('security-key')}
+            onClick={() => setActiveModal("security-key")}
             disabled={isLoading}
             className="flex items-center gap-3 p-4 bg-gray-800 hover:bg-gray-700 rounded-lg border border-gray-700 hover:border-gray-600 transition-colors text-left disabled:opacity-50"
           >
@@ -439,26 +443,28 @@ export function MFAManagementPanel({
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium text-white">Security Key</p>
-              <p className="text-xs text-gray-500 dark:text-slate-400">YubiKey, Titan, etc.</p>
+              <p className="text-xs text-gray-500 dark:text-slate-400">
+                YubiKey, Titan, etc.
+              </p>
             </div>
             <Plus className="w-4 h-4 text-gray-500 dark:text-slate-400" />
           </button>
 
           {/* Biometric */}
           <button
-            onClick={() => setActiveModal('biometric')}
+            onClick={() => setActiveModal("biometric")}
             disabled={!isBiometricAvailable || isLoading}
             className="flex items-center gap-3 p-4 bg-gray-800 hover:bg-gray-700 rounded-lg border border-gray-700 hover:border-gray-600 transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <div
-              className={`p-2 rounded-lg ${isBiometricAvailable ? 'bg-emerald-500/10 text-emerald-400' : 'bg-gray-700 text-gray-500 dark:text-slate-400'}`}
+              className={`p-2 rounded-lg ${isBiometricAvailable ? "bg-emerald-500/10 text-emerald-400" : "bg-gray-700 text-gray-500 dark:text-slate-400"}`}
             >
               <Fingerprint className="w-5 h-5" />
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium text-white">Biometric</p>
               <p className="text-xs text-gray-500 dark:text-slate-400">
-                {isBiometricAvailable ? 'Face ID, Touch ID' : 'Not available'}
+                {isBiometricAvailable ? "Face ID, Touch ID" : "Not available"}
               </p>
             </div>
             <Plus className="w-4 h-4 text-gray-500 dark:text-slate-400" />
@@ -474,20 +480,20 @@ export function MFAManagementPanel({
             <p className="text-sm text-gray-400 dark:text-slate-500">
               {backupCodesStatus.hasBackupCodes
                 ? `${backupCodesStatus.remaining} of ${backupCodesStatus.total} codes remaining`
-                : 'Generate codes for account recovery'}
+                : "Generate codes for account recovery"}
             </p>
           </div>
           <button
             onClick={handleGenerateBackupCodes}
-            disabled={processingId === 'backup-codes' || isLoading}
+            disabled={processingId === "backup-codes" || isLoading}
             className="px-4 py-2 text-sm text-white bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
           >
-            {processingId === 'backup-codes' ? (
+            {processingId === "backup-codes" ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <RefreshCw className="w-4 h-4" />
             )}
-            {backupCodesStatus.hasBackupCodes ? 'Regenerate' : 'Generate'}
+            {backupCodesStatus.hasBackupCodes ? "Regenerate" : "Generate"}
           </button>
         </div>
 
@@ -505,12 +511,12 @@ export function MFAManagementPanel({
 
       {/* TOTP Setup Modal */}
       <AnimatePresence>
-        {activeModal === 'totp' && totpSetup && (
+        {activeModal === "totp" && totpSetup && (
           <ModalOverlay
             onClose={() => {
               setActiveModal(null);
               setTotpSetup(null);
-              setTotpCode('');
+              setTotpCode("");
             }}
           >
             <div className="p-6 space-y-6">
@@ -553,7 +559,7 @@ export function MFAManagementPanel({
                   type="text"
                   value={totpCode}
                   onChange={(e) =>
-                    setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))
+                    setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))
                   }
                   placeholder="000000"
                   className="w-full px-4 py-3 text-center text-2xl font-mono tracking-widest bg-gray-800 border border-gray-700 rounded-lg text-white"
@@ -570,7 +576,7 @@ export function MFAManagementPanel({
                   onClick={() => {
                     setActiveModal(null);
                     setTotpSetup(null);
-                    setTotpCode('');
+                    setTotpCode("");
                   }}
                   className="flex-1 px-4 py-2 text-gray-300 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
                 >
@@ -579,11 +585,11 @@ export function MFAManagementPanel({
                 <button
                   onClick={handleVerifyTOTP}
                   disabled={
-                    totpCode.length !== 6 || processingId === 'totp-verify'
+                    totpCode.length !== 6 || processingId === "totp-verify"
                   }
                   className="flex-1 px-4 py-2 text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {processingId === 'totp-verify' && (
+                  {processingId === "totp-verify" && (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   )}
                   Verify
@@ -596,7 +602,7 @@ export function MFAManagementPanel({
 
       {/* Security Key Modal */}
       <AnimatePresence>
-        {activeModal === 'security-key' && (
+        {activeModal === "security-key" && (
           <ModalOverlay onClose={() => setActiveModal(null)}>
             <div className="p-6 space-y-6">
               <div className="text-center">
@@ -624,10 +630,10 @@ export function MFAManagementPanel({
                 </button>
                 <button
                   onClick={handleEnrollSecurityKey}
-                  disabled={processingId === 'security-key'}
+                  disabled={processingId === "security-key"}
                   className="flex-1 px-4 py-2 text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {processingId === 'security-key' && (
+                  {processingId === "security-key" && (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   )}
                   Register Key
@@ -640,7 +646,7 @@ export function MFAManagementPanel({
 
       {/* Biometric Modal */}
       <AnimatePresence>
-        {activeModal === 'biometric' && (
+        {activeModal === "biometric" && (
           <ModalOverlay onClose={() => setActiveModal(null)}>
             <div className="p-6 space-y-6">
               <div className="text-center">
@@ -668,10 +674,10 @@ export function MFAManagementPanel({
                 </button>
                 <button
                   onClick={handleEnrollBiometric}
-                  disabled={processingId === 'biometric'}
+                  disabled={processingId === "biometric"}
                   className="flex-1 px-4 py-2 text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {processingId === 'biometric' && (
+                  {processingId === "biometric" && (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   )}
                   Enable
@@ -684,7 +690,7 @@ export function MFAManagementPanel({
 
       {/* Backup Codes Modal */}
       <AnimatePresence>
-        {activeModal === 'backup-codes' && backupCodes && (
+        {activeModal === "backup-codes" && backupCodes && (
           <ModalOverlay
             onClose={() => {
               setActiveModal(null);
@@ -709,7 +715,7 @@ export function MFAManagementPanel({
                       key={idx}
                       className="font-mono text-sm text-center py-2 bg-gray-900 rounded"
                     >
-                      {showBackupCodes ? code : '••••••••'}
+                      {showBackupCodes ? code : "••••••••"}
                     </div>
                   ))}
                 </div>
@@ -725,7 +731,7 @@ export function MFAManagementPanel({
                   ) : (
                     <Eye className="w-4 h-4" />
                   )}
-                  {showBackupCodes ? 'Hide' : 'Show'}
+                  {showBackupCodes ? "Hide" : "Show"}
                 </button>
                 <button
                   onClick={copyBackupCodes}

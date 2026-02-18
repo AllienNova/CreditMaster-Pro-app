@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Allocation Config Panel
@@ -7,8 +7,8 @@
  * with visual sliders, preset models, and validation.
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useCallback, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   PieChart,
   Settings,
@@ -22,22 +22,22 @@ import {
   Shield,
   Briefcase,
   Wallet,
-} from 'lucide-react';
+} from "lucide-react";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 export type AssetClass =
-  | 'us_stocks'
-  | 'international_stocks'
-  | 'emerging_markets'
-  | 'bonds'
-  | 'real_estate'
-  | 'commodities'
-  | 'cash'
-  | 'crypto'
-  | 'alternatives';
+  | "us_stocks"
+  | "international_stocks"
+  | "emerging_markets"
+  | "bonds"
+  | "real_estate"
+  | "commodities"
+  | "cash"
+  | "crypto"
+  | "alternatives";
 
 export interface TargetAllocation {
   assetClass: AssetClass;
@@ -50,7 +50,7 @@ export interface PortfolioModel {
   id: string;
   name: string;
   description: string;
-  riskLevel: 'conservative' | 'moderate' | 'aggressive' | 'custom';
+  riskLevel: "conservative" | "moderate" | "aggressive" | "custom";
   allocations: TargetAllocation[];
 }
 
@@ -70,169 +70,169 @@ const ASSET_CLASS_INFO: Record<
   { label: string; color: string; icon: React.ReactNode }
 > = {
   us_stocks: {
-    label: 'US Stocks',
-    color: '#3B82F6',
+    label: "US Stocks",
+    color: "#3B82F6",
     icon: <TrendingUp className="w-4 h-4" />,
   },
   international_stocks: {
-    label: 'International Stocks',
-    color: '#8B5CF6',
+    label: "International Stocks",
+    color: "#8B5CF6",
     icon: <TrendingUp className="w-4 h-4" />,
   },
   emerging_markets: {
-    label: 'Emerging Markets',
-    color: '#EC4899',
+    label: "Emerging Markets",
+    color: "#EC4899",
     icon: <TrendingUp className="w-4 h-4" />,
   },
   bonds: {
-    label: 'Bonds',
-    color: '#10B981',
+    label: "Bonds",
+    color: "#10B981",
     icon: <Shield className="w-4 h-4" />,
   },
   real_estate: {
-    label: 'Real Estate',
-    color: '#F59E0B',
+    label: "Real Estate",
+    color: "#F59E0B",
     icon: <Briefcase className="w-4 h-4" />,
   },
   commodities: {
-    label: 'Commodities',
-    color: '#EF4444',
+    label: "Commodities",
+    color: "#EF4444",
     icon: <Briefcase className="w-4 h-4" />,
   },
   cash: {
-    label: 'Cash',
-    color: '#6B7280',
+    label: "Cash",
+    color: "#6B7280",
     icon: <Wallet className="w-4 h-4" />,
   },
   crypto: {
-    label: 'Crypto',
-    color: '#F97316',
+    label: "Crypto",
+    color: "#F97316",
     icon: <TrendingUp className="w-4 h-4" />,
   },
   alternatives: {
-    label: 'Alternatives',
-    color: '#14B8A6',
+    label: "Alternatives",
+    color: "#14B8A6",
     icon: <Briefcase className="w-4 h-4" />,
   },
 };
 
 const PORTFOLIO_MODELS: PortfolioModel[] = [
   {
-    id: 'aggressive',
-    name: 'Aggressive Growth',
+    id: "aggressive",
+    name: "Aggressive Growth",
     description:
-      'High growth potential with higher volatility. Best for long-term investors.',
-    riskLevel: 'aggressive',
+      "High growth potential with higher volatility. Best for long-term investors.",
+    riskLevel: "aggressive",
     allocations: [
       {
-        assetClass: 'us_stocks',
+        assetClass: "us_stocks",
         targetPercent: 50,
         minPercent: 45,
         maxPercent: 55,
       },
       {
-        assetClass: 'international_stocks',
+        assetClass: "international_stocks",
         targetPercent: 25,
         minPercent: 20,
         maxPercent: 30,
       },
       {
-        assetClass: 'emerging_markets',
+        assetClass: "emerging_markets",
         targetPercent: 10,
         minPercent: 5,
         maxPercent: 15,
       },
-      { assetClass: 'bonds', targetPercent: 10, minPercent: 5, maxPercent: 15 },
-      { assetClass: 'cash', targetPercent: 5, minPercent: 0, maxPercent: 10 },
+      { assetClass: "bonds", targetPercent: 10, minPercent: 5, maxPercent: 15 },
+      { assetClass: "cash", targetPercent: 5, minPercent: 0, maxPercent: 10 },
     ],
   },
   {
-    id: 'moderate',
-    name: 'Balanced',
+    id: "moderate",
+    name: "Balanced",
     description:
-      'Balance between growth and stability. Suitable for medium-term goals.',
-    riskLevel: 'moderate',
+      "Balance between growth and stability. Suitable for medium-term goals.",
+    riskLevel: "moderate",
     allocations: [
       {
-        assetClass: 'us_stocks',
+        assetClass: "us_stocks",
         targetPercent: 40,
         minPercent: 35,
         maxPercent: 45,
       },
       {
-        assetClass: 'international_stocks',
+        assetClass: "international_stocks",
         targetPercent: 15,
         minPercent: 10,
         maxPercent: 20,
       },
       {
-        assetClass: 'bonds',
+        assetClass: "bonds",
         targetPercent: 35,
         minPercent: 30,
         maxPercent: 40,
       },
       {
-        assetClass: 'real_estate',
+        assetClass: "real_estate",
         targetPercent: 5,
         minPercent: 0,
         maxPercent: 10,
       },
-      { assetClass: 'cash', targetPercent: 5, minPercent: 0, maxPercent: 10 },
+      { assetClass: "cash", targetPercent: 5, minPercent: 0, maxPercent: 10 },
     ],
   },
   {
-    id: 'conservative',
-    name: 'Conservative',
+    id: "conservative",
+    name: "Conservative",
     description:
-      'Focus on capital preservation with steady income. Ideal for near-term needs.',
-    riskLevel: 'conservative',
+      "Focus on capital preservation with steady income. Ideal for near-term needs.",
+    riskLevel: "conservative",
     allocations: [
       {
-        assetClass: 'us_stocks',
+        assetClass: "us_stocks",
         targetPercent: 25,
         minPercent: 20,
         maxPercent: 30,
       },
       {
-        assetClass: 'international_stocks',
+        assetClass: "international_stocks",
         targetPercent: 10,
         minPercent: 5,
         maxPercent: 15,
       },
       {
-        assetClass: 'bonds',
+        assetClass: "bonds",
         targetPercent: 50,
         minPercent: 45,
         maxPercent: 55,
       },
-      { assetClass: 'cash', targetPercent: 15, minPercent: 10, maxPercent: 20 },
+      { assetClass: "cash", targetPercent: 15, minPercent: 10, maxPercent: 20 },
     ],
   },
   {
-    id: 'income',
-    name: 'Income Focus',
-    description: 'Maximizes dividend and interest income. Good for retirees.',
-    riskLevel: 'conservative',
+    id: "income",
+    name: "Income Focus",
+    description: "Maximizes dividend and interest income. Good for retirees.",
+    riskLevel: "conservative",
     allocations: [
       {
-        assetClass: 'us_stocks',
+        assetClass: "us_stocks",
         targetPercent: 20,
         minPercent: 15,
         maxPercent: 25,
       },
       {
-        assetClass: 'bonds',
+        assetClass: "bonds",
         targetPercent: 50,
         minPercent: 45,
         maxPercent: 55,
       },
       {
-        assetClass: 'real_estate',
+        assetClass: "real_estate",
         targetPercent: 15,
         minPercent: 10,
         maxPercent: 20,
       },
-      { assetClass: 'cash', targetPercent: 15, minPercent: 10, maxPercent: 20 },
+      { assetClass: "cash", targetPercent: 15, minPercent: 10, maxPercent: 20 },
     ],
   },
 ];
@@ -259,7 +259,7 @@ export function AllocationConfigPanel({
   // Calculate total allocation
   const totalPercent = useMemo(
     () => allocations.reduce((sum, a) => sum + a.targetPercent, 0),
-    [allocations]
+    [allocations],
   );
 
   const isValid = Math.abs(totalPercent - 100) < 0.01;
@@ -282,7 +282,7 @@ export function AllocationConfigPanel({
       setSelectedModel(null);
       setError(null);
     },
-    []
+    [],
   );
 
   // Update min/max bounds
@@ -294,10 +294,10 @@ export function AllocationConfigPanel({
             return { ...a, minPercent: min, maxPercent: max };
           }
           return a;
-        })
+        }),
       );
     },
-    []
+    [],
   );
 
   // Apply a preset model
@@ -317,7 +317,7 @@ export function AllocationConfigPanel({
   // Save allocations
   const handleSave = useCallback(async () => {
     if (!isValid) {
-      setError('Allocations must total 100%');
+      setError("Allocations must total 100%");
       return;
     }
 
@@ -328,7 +328,7 @@ export function AllocationConfigPanel({
       await onSave(allocations);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : 'Failed to save allocations'
+        err instanceof Error ? err.message : "Failed to save allocations",
       );
     } finally {
       setIsSaving(false);
@@ -346,7 +346,7 @@ export function AllocationConfigPanel({
       ]);
       setSelectedModel(null);
     },
-    [allocations]
+    [allocations],
   );
 
   // Remove asset class
@@ -359,7 +359,7 @@ export function AllocationConfigPanel({
   const availableAssetClasses = useMemo(() => {
     const current = new Set(allocations.map((a) => a.assetClass));
     return (Object.keys(ASSET_CLASS_INFO) as AssetClass[]).filter(
-      (ac) => !current.has(ac)
+      (ac) => !current.has(ac),
     );
   }, [allocations]);
 
@@ -375,7 +375,7 @@ export function AllocationConfigPanel({
         </div>
         <div className="flex items-center gap-2">
           <span
-            className={`text-sm font-medium ${isValid ? 'text-emerald-400' : 'text-red-400'}`}
+            className={`text-sm font-medium ${isValid ? "text-emerald-400" : "text-red-400"}`}
           >
             {totalPercent.toFixed(1)}%
           </span>
@@ -399,12 +399,14 @@ export function AllocationConfigPanel({
               onClick={() => applyModel(model)}
               className={`p-3 rounded-lg border text-left transition-all ${
                 selectedModel === model.id
-                  ? 'border-blue-500 bg-blue-500/10'
-                  : 'border-gray-700 hover:border-gray-600 bg-gray-800/50'
+                  ? "border-blue-500 bg-blue-500/10"
+                  : "border-gray-700 hover:border-gray-600 bg-gray-800/50"
               }`}
             >
               <p className="text-sm font-medium text-white">{model.name}</p>
-              <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">{model.description}</p>
+              <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                {model.description}
+              </p>
             </button>
           ))}
         </div>
@@ -431,7 +433,7 @@ export function AllocationConfigPanel({
                     onChange={(e) =>
                       updateAllocation(
                         allocation.assetClass,
-                        parseFloat(e.target.value) || 0
+                        parseFloat(e.target.value) || 0,
                       )
                     }
                     className="w-16 px-2 py-1 text-right text-sm bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:border-blue-500"
@@ -439,7 +441,9 @@ export function AllocationConfigPanel({
                     max="100"
                     step="1"
                   />
-                  <span className="text-sm text-gray-500 dark:text-slate-400 w-4">%</span>
+                  <span className="text-sm text-gray-500 dark:text-slate-400 w-4">
+                    %
+                  </span>
                   <button
                     onClick={() => removeAssetClass(allocation.assetClass)}
                     className="p-1 text-gray-500 dark:text-slate-400 hover:text-red-400 transition-colors"
@@ -457,7 +461,7 @@ export function AllocationConfigPanel({
                   onChange={(e) =>
                     updateAllocation(
                       allocation.assetClass,
-                      parseFloat(e.target.value)
+                      parseFloat(e.target.value),
                     )
                   }
                   className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
@@ -474,7 +478,9 @@ export function AllocationConfigPanel({
               {showAdvanced && (
                 <div className="flex items-center gap-4 pl-5 text-xs">
                   <div className="flex items-center gap-1">
-                    <span className="text-gray-500 dark:text-slate-400">Min:</span>
+                    <span className="text-gray-500 dark:text-slate-400">
+                      Min:
+                    </span>
                     <input
                       type="number"
                       value={allocation.minPercent}
@@ -482,7 +488,7 @@ export function AllocationConfigPanel({
                         updateBounds(
                           allocation.assetClass,
                           parseFloat(e.target.value) || 0,
-                          allocation.maxPercent
+                          allocation.maxPercent,
                         )
                       }
                       className="w-12 px-1 py-0.5 text-center bg-gray-800 border border-gray-700 rounded text-gray-300"
@@ -492,7 +498,9 @@ export function AllocationConfigPanel({
                     <span className="text-gray-500 dark:text-slate-400">%</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="text-gray-500 dark:text-slate-400">Max:</span>
+                    <span className="text-gray-500 dark:text-slate-400">
+                      Max:
+                    </span>
                     <input
                       type="number"
                       value={allocation.maxPercent}
@@ -500,7 +508,7 @@ export function AllocationConfigPanel({
                         updateBounds(
                           allocation.assetClass,
                           allocation.minPercent,
-                          parseFloat(e.target.value) || 0
+                          parseFloat(e.target.value) || 0,
                         )
                       }
                       className="w-12 px-1 py-0.5 text-center bg-gray-800 border border-gray-700 rounded text-gray-300"
@@ -522,7 +530,7 @@ export function AllocationConfigPanel({
               onChange={(e) => {
                 if (e.target.value) {
                   addAssetClass(e.target.value as AssetClass);
-                  e.target.value = '';
+                  e.target.value = "";
                 }
               }}
               className="w-full px-3 py-2 bg-gray-800 border border-gray-700 border-dashed rounded-lg text-gray-400 dark:text-slate-500 text-sm cursor-pointer hover:border-gray-600"
@@ -584,7 +592,7 @@ export function AllocationConfigPanel({
 
                   return acc;
                 },
-                []
+                [],
               )
               .map((item) => item.element)}
             <circle cx="50" cy="50" r="20" fill="#111827" />
@@ -643,7 +651,7 @@ export function AllocationConfigPanel({
         {error && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
+            animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             className="px-6 py-3 bg-red-500/10 border-t border-red-500/30"
           >

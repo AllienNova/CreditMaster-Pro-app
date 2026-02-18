@@ -13,35 +13,35 @@ import {
   PutObjectCommand,
   GetObjectCommand,
   DeleteObjectCommand,
-} from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { getSupabase } from '../supabase/client';
-import type { Database } from '../supabase/types';
+} from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { getSupabase } from "../supabase/client";
+import type { Database } from "../supabase/types";
 
 // Type helpers for Supabase operations
-type DocumentRow = Database['public']['Tables']['documents']['Row'];
-type DocumentInsert = Database['public']['Tables']['documents']['Insert'];
-type DocumentUpdate = Database['public']['Tables']['documents']['Update'];
+type DocumentRow = Database["public"]["Tables"]["documents"]["Row"];
+type DocumentInsert = Database["public"]["Tables"]["documents"]["Insert"];
+type DocumentUpdate = Database["public"]["Tables"]["documents"]["Update"];
 
 // Helper to get typed table reference
-const documents = () => getSupabase().from('documents');
+const documents = () => getSupabase().from("documents");
 
 // Initialize S3 client
 const s3Client = new S3Client({
-  region: process.env.AWS_REGION || 'us-east-1',
+  region: process.env.AWS_REGION || "us-east-1",
   credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
   },
 });
 
-const BUCKET_NAME = process.env.AWS_S3_BUCKET || 'fynvita-documents';
+const BUCKET_NAME = process.env.AWS_S3_BUCKET || "fynvita-documents";
 
 export type DocumentType =
-  | 'credit_report'
-  | 'id'
-  | 'proof_of_address'
-  | 'supporting_doc';
+  | "credit_report"
+  | "id"
+  | "proof_of_address"
+  | "supporting_doc";
 
 export interface Document {
   id: string;
@@ -68,11 +68,11 @@ class DocumentServiceDB {
     file: Buffer,
     fileName: string,
     mimeType: string,
-    documentType: DocumentType
+    documentType: DocumentType,
   ): Promise<Document> {
     // Generate unique S3 key
     const timestamp = Date.now();
-    const fileExtension = fileName.split('.').pop();
+    const fileExtension = fileName.split(".").pop();
     const s3Key = `users/${userId}/${documentType}/${timestamp}.${fileExtension}`;
 
     // Upload to S3
@@ -128,12 +128,12 @@ class DocumentServiceDB {
    */
   async getDocument(documentId: string): Promise<Document | null> {
     const { data, error } = await documents()
-      .select('*')
-      .eq('id', documentId)
+      .select("*")
+      .eq("id", documentId)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
+      if (error.code === "PGRST116") {
         return null;
       }
       // DocumentServiceDB error: Failed to fetch document
@@ -162,7 +162,7 @@ class DocumentServiceDB {
       // Update URL in database
       const updateData: DocumentUpdate = { s3_url: url };
       const query = documents();
-      await query.update(updateData).eq('id', documentId);
+      await query.update(updateData).eq("id", documentId);
 
       docData.s3_url = url;
     }
@@ -175,15 +175,15 @@ class DocumentServiceDB {
    */
   async getUserDocuments(
     userId: string,
-    type?: DocumentType
+    type?: DocumentType,
   ): Promise<Document[]> {
     let query = documents()
-      .select('*')
-      .eq('user_id', userId)
-      .order('uploaded_at', { ascending: false });
+      .select("*")
+      .eq("user_id", userId)
+      .order("uploaded_at", { ascending: false });
 
     if (type) {
-      query = query.eq('type', type);
+      query = query.eq("type", type);
     }
 
     const { data, error } = await query;
@@ -202,8 +202,8 @@ class DocumentServiceDB {
   async deleteDocument(documentId: string): Promise<boolean> {
     // Get document first
     const { data: doc, error: fetchError } = await documents()
-      .select('*')
-      .eq('id', documentId)
+      .select("*")
+      .eq("id", documentId)
       .single();
 
     if (fetchError || !doc) {
@@ -227,7 +227,7 @@ class DocumentServiceDB {
     }
 
     // Delete from database
-    const { error: dbError } = await documents().delete().eq('id', documentId);
+    const { error: dbError } = await documents().delete().eq("id", documentId);
 
     if (dbError) {
       // DocumentServiceDB error: Failed to delete document from database
@@ -269,10 +269,10 @@ class DocumentServiceDB {
     userId: string,
     fileName: string,
     mimeType: string,
-    documentType: DocumentType
+    documentType: DocumentType,
   ): Promise<{ uploadUrl: string; documentId: string; s3Key: string }> {
     const timestamp = Date.now();
-    const fileExtension = fileName.split('.').pop();
+    const fileExtension = fileName.split(".").pop();
     const s3Key = `users/${userId}/${documentType}/${timestamp}.${fileExtension}`;
 
     const command = new PutObjectCommand({
@@ -322,12 +322,12 @@ class DocumentServiceDB {
   async confirmUpload(documentId: string, size: number): Promise<Document> {
     // Get document to get S3 key
     const { data: doc, error: fetchError } = await documents()
-      .select('*')
-      .eq('id', documentId)
+      .select("*")
+      .eq("id", documentId)
       .single();
 
     if (fetchError || !doc) {
-      throw new Error('Document not found');
+      throw new Error("Document not found");
     }
 
     const docData = doc as DocumentRow;
@@ -350,7 +350,7 @@ class DocumentServiceDB {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateResult = await (query2 as any)
       .update(updateData)
-      .eq('id', documentId)
+      .eq("id", documentId)
       .select()
       .single();
     const { data, error } = updateResult;
@@ -368,16 +368,16 @@ class DocumentServiceDB {
    */
   validateFileType(mimeType: string, documentType: DocumentType): boolean {
     const allowedTypes: Record<DocumentType, string[]> = {
-      credit_report: ['application/pdf', 'image/png', 'image/jpeg'],
-      id: ['application/pdf', 'image/png', 'image/jpeg'],
-      proof_of_address: ['application/pdf', 'image/png', 'image/jpeg'],
+      credit_report: ["application/pdf", "image/png", "image/jpeg"],
+      id: ["application/pdf", "image/png", "image/jpeg"],
+      proof_of_address: ["application/pdf", "image/png", "image/jpeg"],
       supporting_doc: [
-        'application/pdf',
-        'image/png',
-        'image/jpeg',
-        'image/jpg',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        "application/pdf",
+        "image/png",
+        "image/jpeg",
+        "image/jpg",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       ],
     };
 
@@ -396,7 +396,7 @@ class DocumentServiceDB {
    * Map database row to Document interface
    */
   private mapToDocument(
-    row: Database['public']['Tables']['documents']['Row']
+    row: Database["public"]["Tables"]["documents"]["Row"],
   ): Document {
     return {
       id: row.id,
@@ -406,7 +406,7 @@ class DocumentServiceDB {
       originalName: row.original_name,
       size: row.size,
       mimeType: row.mime_type,
-      url: row.s3_url || '',
+      url: row.s3_url || "",
       s3Key: row.s3_key,
       uploadedAt: new Date(row.uploaded_at),
     };

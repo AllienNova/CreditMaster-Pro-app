@@ -5,10 +5,10 @@
  * through intelligent negotiation scripts, market comparisons, and tracking.
  */
 
-import { getSupabase } from '@/lib/supabase/client';
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
-import type { Bill, BillCategory } from './types/bill.types';
+import type { Bill, BillCategory } from "./types/bill.types";
 import type {
   BillNegotiation,
   NegotiationScripts,
@@ -25,7 +25,7 @@ import type {
   MarketRateData,
   NegotiationType,
   NegotiationStatus,
-} from './types/bill-negotiation.types';
+} from "./types/bill-negotiation.types";
 
 // ============================================================================
 // MARKET DATA (Would be fetched from external APIs in production)
@@ -33,120 +33,120 @@ import type {
 
 const MARKET_RATES: Record<string, MarketRateData> = {
   internet: {
-    category: 'internet',
-    service: 'Internet Service',
+    category: "internet",
+    service: "Internet Service",
     averageRate: 65,
     minRate: 30,
     maxRate: 120,
     providers: [
       {
-        provider: 'Xfinity',
+        provider: "Xfinity",
         rate: 55,
-        features: ['200 Mbps', 'No contract'],
+        features: ["200 Mbps", "No contract"],
         promotionalRate: 30,
-        promotionalPeriod: '12 months',
+        promotionalPeriod: "12 months",
       },
       {
-        provider: 'AT&T Fiber',
+        provider: "AT&T Fiber",
         rate: 55,
-        features: ['300 Mbps', 'No data cap'],
+        features: ["300 Mbps", "No data cap"],
       },
       {
-        provider: 'Verizon Fios',
+        provider: "Verizon Fios",
         rate: 50,
-        features: ['300 Mbps', 'No contract'],
+        features: ["300 Mbps", "No contract"],
       },
       {
-        provider: 'T-Mobile Home',
+        provider: "T-Mobile Home",
         rate: 50,
-        features: ['Unlimited', 'No contract'],
+        features: ["Unlimited", "No contract"],
       },
     ],
     lastUpdated: new Date(),
   },
   phone: {
-    category: 'phone',
-    service: 'Mobile Phone',
+    category: "phone",
+    service: "Mobile Phone",
     averageRate: 75,
     minRate: 25,
     maxRate: 150,
     providers: [
       {
-        provider: 'Mint Mobile',
+        provider: "Mint Mobile",
         rate: 30,
-        features: ['Unlimited talk/text', '10GB data'],
+        features: ["Unlimited talk/text", "10GB data"],
       },
       {
-        provider: 'Visible',
+        provider: "Visible",
         rate: 30,
-        features: ['Unlimited everything', 'Verizon network'],
+        features: ["Unlimited everything", "Verizon network"],
       },
       {
-        provider: 'T-Mobile',
+        provider: "T-Mobile",
         rate: 50,
-        features: ['Unlimited', 'Netflix included'],
+        features: ["Unlimited", "Netflix included"],
         promotionalRate: 35,
-        promotionalPeriod: '6 months',
+        promotionalPeriod: "6 months",
       },
       {
-        provider: 'Cricket',
+        provider: "Cricket",
         rate: 40,
-        features: ['Unlimited', 'AT&T network'],
+        features: ["Unlimited", "AT&T network"],
       },
     ],
     lastUpdated: new Date(),
   },
   streaming: {
-    category: 'streaming',
-    service: 'Streaming Services',
+    category: "streaming",
+    service: "Streaming Services",
     averageRate: 15,
     minRate: 7,
     maxRate: 25,
     providers: [
       {
-        provider: 'Netflix',
+        provider: "Netflix",
         rate: 15.49,
-        features: ['Standard HD', '2 screens'],
+        features: ["Standard HD", "2 screens"],
       },
-      { provider: 'Disney+', rate: 7.99, features: ['4K', 'Downloads'] },
-      { provider: 'Hulu', rate: 7.99, features: ['With ads', 'Next-day TV'] },
-      { provider: 'Max', rate: 15.99, features: ['Ad-free', 'HBO content'] },
+      { provider: "Disney+", rate: 7.99, features: ["4K", "Downloads"] },
+      { provider: "Hulu", rate: 7.99, features: ["With ads", "Next-day TV"] },
+      { provider: "Max", rate: 15.99, features: ["Ad-free", "HBO content"] },
     ],
     lastUpdated: new Date(),
   },
   insurance: {
-    category: 'insurance',
-    service: 'Auto Insurance',
+    category: "insurance",
+    service: "Auto Insurance",
     averageRate: 150,
     minRate: 80,
     maxRate: 300,
     providers: [
       {
-        provider: 'GEICO',
+        provider: "GEICO",
         rate: 120,
-        features: ['Multi-policy discount', 'Good driver discount'],
+        features: ["Multi-policy discount", "Good driver discount"],
       },
       {
-        provider: 'Progressive',
+        provider: "Progressive",
         rate: 130,
-        features: ['Snapshot discount', 'Bundle savings'],
+        features: ["Snapshot discount", "Bundle savings"],
       },
       {
-        provider: 'State Farm',
+        provider: "State Farm",
         rate: 140,
-        features: ['Drive Safe discount', 'Local agent'],
+        features: ["Drive Safe discount", "Local agent"],
       },
       {
-        provider: 'USAA',
+        provider: "USAA",
         rate: 100,
-        features: ['Military discount', 'Excellent service'],
+        features: ["Military discount", "Excellent service"],
       },
     ],
     lastUpdated: new Date(),
   },
   utilities: {
-    category: 'utilities',
-    service: 'Electric/Gas',
+    category: "utilities",
+    service: "Electric/Gas",
     averageRate: 150,
     minRate: 80,
     maxRate: 300,
@@ -157,57 +157,57 @@ const MARKET_RATES: Record<string, MarketRateData> = {
 
 const MERCHANT_CONTACTS: Record<string, MerchantContactInfo> = {
   comcast: {
-    phone: '1-800-934-6489',
-    retentionDepartment: 'Ask for Retention',
-    bestTimeToCall: 'Tuesday-Thursday 10am-2pm',
-    tips: ['Mention competitor offers', 'Be prepared to cancel'],
+    phone: "1-800-934-6489",
+    retentionDepartment: "Ask for Retention",
+    bestTimeToCall: "Tuesday-Thursday 10am-2pm",
+    tips: ["Mention competitor offers", "Be prepared to cancel"],
   },
   xfinity: {
-    phone: '1-800-934-6489',
-    retentionDepartment: 'Ask for Retention',
-    bestTimeToCall: 'Tuesday-Thursday 10am-2pm',
-    tips: ['Mention competitor offers', 'Be prepared to cancel'],
+    phone: "1-800-934-6489",
+    retentionDepartment: "Ask for Retention",
+    bestTimeToCall: "Tuesday-Thursday 10am-2pm",
+    tips: ["Mention competitor offers", "Be prepared to cancel"],
   },
-  'at&t': {
-    phone: '1-800-288-2020',
-    retentionDepartment: 'Loyalty Department',
-    bestTimeToCall: 'Weekday mornings',
+  "at&t": {
+    phone: "1-800-288-2020",
+    retentionDepartment: "Loyalty Department",
+    bestTimeToCall: "Weekday mornings",
     tips: [
-      'Ask about unadvertised promotions',
-      'Mention long-term customer status',
+      "Ask about unadvertised promotions",
+      "Mention long-term customer status",
     ],
   },
   verizon: {
-    phone: '1-800-922-0204',
-    retentionDepartment: 'Customer Retention',
-    bestTimeToCall: 'Early morning',
-    tips: ['Reference competitor pricing', 'Ask about loyalty discounts'],
+    phone: "1-800-922-0204",
+    retentionDepartment: "Customer Retention",
+    bestTimeToCall: "Early morning",
+    tips: ["Reference competitor pricing", "Ask about loyalty discounts"],
   },
-  't-mobile': {
-    phone: '1-800-937-8997',
-    retentionDepartment: 'Account Services',
-    bestTimeToCall: 'Weekday afternoons',
-    tips: ['Mention switching to competitor', 'Ask about insider discounts'],
+  "t-mobile": {
+    phone: "1-800-937-8997",
+    retentionDepartment: "Account Services",
+    bestTimeToCall: "Weekday afternoons",
+    tips: ["Mention switching to competitor", "Ask about insider discounts"],
   },
   netflix: {
-    chatUrl: 'https://help.netflix.com',
-    tips: ['Downgrade plan temporarily', 'Ask about promotional rates'],
+    chatUrl: "https://help.netflix.com",
+    tips: ["Downgrade plan temporarily", "Ask about promotional rates"],
   },
   spotify: {
-    chatUrl: 'https://support.spotify.com',
-    tips: ['Student/family plans available', 'Annual subscription discount'],
+    chatUrl: "https://support.spotify.com",
+    tips: ["Student/family plans available", "Annual subscription discount"],
   },
   geico: {
-    phone: '1-800-841-3000',
-    tips: ['Bundle policies', 'Ask about all available discounts'],
+    phone: "1-800-841-3000",
+    tips: ["Bundle policies", "Ask about all available discounts"],
   },
   progressive: {
-    phone: '1-800-776-4737',
-    tips: ['Use Snapshot program', 'Bundle home and auto'],
+    phone: "1-800-776-4737",
+    tips: ["Use Snapshot program", "Bundle home and auto"],
   },
-  'state farm': {
-    phone: '1-800-782-8332',
-    tips: ['Ask local agent for discounts', 'Bundle policies'],
+  "state farm": {
+    phone: "1-800-782-8332",
+    tips: ["Ask local agent for discounts", "Bundle policies"],
   },
 };
 
@@ -223,7 +223,7 @@ class BillNegotiationService {
   async createNegotiation(
     userId: string,
     input: NegotiationCreateInput,
-    bill: Bill
+    bill: Bill,
   ): Promise<BillNegotiation> {
     const targetAmount = input.targetAmount ?? bill.amount * 0.8; // Default 20% reduction
     const comparisonData = this.getComparisonData(bill.category, bill.amount);
@@ -237,16 +237,16 @@ class BillNegotiationService {
         bill,
         input.negotiationType,
         targetAmount,
-        comparisonData
+        comparisonData,
       );
       talkingPoints = this.generateTalkingPoints(
         bill,
         input.negotiationType,
-        comparisonData
+        comparisonData,
       );
     }
 
-    const negotiation: Omit<BillNegotiation, 'id' | 'createdAt' | 'updatedAt'> =
+    const negotiation: Omit<BillNegotiation, "id" | "createdAt" | "updatedAt"> =
       {
         userId,
         billId: input.billId,
@@ -255,7 +255,7 @@ class BillNegotiationService {
         currentAmount: bill.amount,
         targetAmount,
         negotiationType: input.negotiationType,
-        status: 'researching',
+        status: "researching",
         scripts,
         talkingPoints,
         comparisonData,
@@ -265,7 +265,7 @@ class BillNegotiationService {
       };
 
     const { data, error } = await supabase
-      .from('bill_negotiations')
+      .from("bill_negotiations")
       .insert(this.mapNegotiationToDb(negotiation))
       .select()
       .single();
@@ -279,13 +279,13 @@ class BillNegotiationService {
 
   async getNegotiation(
     negotiationId: string,
-    userId: string
+    userId: string,
   ): Promise<BillNegotiation | null> {
     const { data, error } = await supabase
-      .from('bill_negotiations')
-      .select('*')
-      .eq('id', negotiationId)
-      .eq('user_id', userId)
+      .from("bill_negotiations")
+      .select("*")
+      .eq("id", negotiationId)
+      .eq("user_id", userId)
       .single();
 
     if (error || !data) return null;
@@ -294,16 +294,16 @@ class BillNegotiationService {
 
   async getUserNegotiations(
     userId: string,
-    status?: NegotiationStatus
+    status?: NegotiationStatus,
   ): Promise<BillNegotiation[]> {
     let query = supabase
-      .from('bill_negotiations')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .from("bill_negotiations")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
     if (status) {
-      query = query.eq('status', status);
+      query = query.eq("status", status);
     }
 
     const { data, error } = await query;
@@ -314,7 +314,7 @@ class BillNegotiationService {
   async updateNegotiation(
     negotiationId: string,
     userId: string,
-    input: NegotiationUpdateInput
+    input: NegotiationUpdateInput,
   ): Promise<BillNegotiation> {
     const updateData: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
@@ -327,15 +327,15 @@ class BillNegotiationService {
     if (input.notes) updateData.notes = input.notes;
     if (input.targetAmount) updateData.target_amount = input.targetAmount;
 
-    if (input.status === 'completed') {
+    if (input.status === "completed") {
       updateData.completed_at = new Date().toISOString();
     }
 
     const { data, error } = await supabase
-      .from('bill_negotiations')
+      .from("bill_negotiations")
       .update(updateData)
-      .eq('id', negotiationId)
-      .eq('user_id', userId)
+      .eq("id", negotiationId)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -347,10 +347,10 @@ class BillNegotiationService {
   async addAttempt(
     negotiationId: string,
     userId: string,
-    input: NegotiationAttemptInput
+    input: NegotiationAttemptInput,
   ): Promise<BillNegotiation> {
     const negotiation = await this.getNegotiation(negotiationId, userId);
-    if (!negotiation) throw new Error('Negotiation not found');
+    if (!negotiation) throw new Error("Negotiation not found");
 
     const attempt: NegotiationAttempt = {
       id: crypto.randomUUID(),
@@ -365,28 +365,28 @@ class BillNegotiationService {
 
     const updatedHistory = [...negotiation.attemptHistory, attempt];
     const newStatus: NegotiationStatus =
-      input.outcome === 'success'
-        ? 'completed'
-        : input.outcome === 'pending'
-          ? 'awaiting_response'
-          : 'in_progress';
+      input.outcome === "success"
+        ? "completed"
+        : input.outcome === "pending"
+          ? "awaiting_response"
+          : "in_progress";
 
     const { data, error } = await supabase
-      .from('bill_negotiations')
+      .from("bill_negotiations")
       .update({
         attempt_history: JSON.stringify(updatedHistory),
         status: newStatus,
-        outcome: input.outcome === 'success' ? 'success' : negotiation.outcome,
+        outcome: input.outcome === "success" ? "success" : negotiation.outcome,
         actual_savings:
-          input.outcome === 'success' && input.offeredAmount
+          input.outcome === "success" && input.offeredAmount
             ? negotiation.currentAmount - input.offeredAmount
             : negotiation.actualSavings,
         completed_at:
-          input.outcome === 'success' ? new Date().toISOString() : null,
+          input.outcome === "success" ? new Date().toISOString() : null,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', negotiationId)
-      .eq('user_id', userId)
+      .eq("id", negotiationId)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -400,12 +400,12 @@ class BillNegotiationService {
 
   async getNegotiationSummary(userId: string): Promise<NegotiationSummary> {
     const negotiations = await this.getUserNegotiations(userId);
-    const completed = negotiations.filter((n) => n.status === 'completed');
-    const successful = completed.filter((n) => n.outcome === 'success');
+    const completed = negotiations.filter((n) => n.status === "completed");
+    const successful = completed.filter((n) => n.outcome === "success");
 
     const totalSavings = successful.reduce(
       (sum, n) => sum + (n.actualSavings || 0),
-      0
+      0,
     );
     const monthlySavings = totalSavings; // Assuming monthly bills
     const annualSavings = monthlySavings * 12;
@@ -416,7 +416,7 @@ class BillNegotiationService {
     return {
       totalNegotiations: negotiations.length,
       activeNegotiations: negotiations.filter(
-        (n) => !['completed', 'cancelled', 'declined'].includes(n.status)
+        (n) => !["completed", "cancelled", "declined"].includes(n.status),
       ).length,
       completedNegotiations: completed.length,
       successRate:
@@ -430,14 +430,14 @@ class BillNegotiationService {
   }
 
   async identifyOpportunities(
-    userId: string
+    userId: string,
   ): Promise<NegotiationOpportunity[]> {
     // Get user's bills
     const { data: bills, error } = await supabase
-      .from('bills')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('status', 'active');
+      .from("bills")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", "active");
 
     if (error || !bills) return [];
 
@@ -447,7 +447,7 @@ class BillNegotiationService {
       const mappedBill = this.mapBillFromDb(bill);
       const comparison = this.getComparisonData(
         mappedBill.category,
-        mappedBill.amount
+        mappedBill.amount,
       );
 
       if (comparison && comparison.savingsPotential > 0) {
@@ -465,7 +465,7 @@ class BillNegotiationService {
     }
 
     return opportunities.sort(
-      (a, b) => b.potentialSavings - a.potentialSavings
+      (a, b) => b.potentialSavings - a.potentialSavings,
     );
   }
 
@@ -477,7 +477,7 @@ class BillNegotiationService {
     bill: Bill,
     negotiationType: NegotiationType,
     targetAmount: number,
-    comparison?: BillComparisonData
+    comparison?: BillComparisonData,
   ): Promise<NegotiationScripts> {
     const savings = bill.amount - targetAmount;
     const savingsPercent = Math.round((savings / bill.amount) * 100);
@@ -488,26 +488,26 @@ class BillNegotiationService {
       negotiationType,
       targetAmount,
       savingsPercent,
-      competitorInfo
+      competitorInfo,
     );
     const emailScript = this.buildEmailScript(
       bill,
       negotiationType,
       targetAmount,
       savingsPercent,
-      competitorInfo
+      competitorInfo,
     );
     const chatScript = this.buildChatScript(
       bill,
       negotiationType,
       targetAmount,
-      savingsPercent
+      savingsPercent,
     );
     const retentionScript = this.buildRetentionScript(
       bill,
       negotiationType,
       targetAmount,
-      competitorInfo
+      competitorInfo,
     );
 
     return { phoneScript, emailScript, chatScript, retentionScript };
@@ -518,22 +518,22 @@ class BillNegotiationService {
     negotiationType: NegotiationType,
     targetAmount: number,
     savingsPercent: number,
-    competitor?: CompetitorRate
+    competitor?: CompetitorRate,
   ): string {
     const intro = `Hi, my name is [YOUR NAME] and I've been a loyal ${bill.merchantName} customer. I'm calling about my account.`;
 
-    let body = '';
+    let body = "";
     switch (negotiationType) {
-      case 'rate_reduction':
-        body = `I've been reviewing my monthly expenses and noticed I'm paying $${bill.amount}/month for my service. I've been a loyal customer and I'm hoping you can help me get a better rate. ${competitor ? `I've seen that ${competitor.provider} is offering similar service for $${competitor.rate}/month.` : ''} Is there anything you can do to help me lower my bill to around $${targetAmount}/month?`;
+      case "rate_reduction":
+        body = `I've been reviewing my monthly expenses and noticed I'm paying $${bill.amount}/month for my service. I've been a loyal customer and I'm hoping you can help me get a better rate. ${competitor ? `I've seen that ${competitor.provider} is offering similar service for $${competitor.rate}/month.` : ""} Is there anything you can do to help me lower my bill to around $${targetAmount}/month?`;
         break;
-      case 'loyalty_discount':
+      case "loyalty_discount":
         body = `I've been a customer for a while now and I really enjoy your service. However, I've noticed that new customers often get better promotional rates. I'd like to stay with ${bill.merchantName}, but I'm wondering if there are any loyalty discounts or promotions available for existing customers like myself?`;
         break;
-      case 'price_match':
-        body = `I've been comparing prices and found that ${competitor?.provider || 'a competitor'} is offering a similar service for ${competitor ? `$${competitor.rate}` : 'less'}. I'd prefer to stay with ${bill.merchantName}, but I need to make sure I'm getting a competitive rate. Can you match or beat that price?`;
+      case "price_match":
+        body = `I've been comparing prices and found that ${competitor?.provider || "a competitor"} is offering a similar service for ${competitor ? `$${competitor.rate}` : "less"}. I'd prefer to stay with ${bill.merchantName}, but I need to make sure I'm getting a competitive rate. Can you match or beat that price?`;
         break;
-      case 'cancellation':
+      case "cancellation":
         body = `I'm calling to cancel my service. I've found a better deal elsewhere and need to reduce my monthly expenses. [PAUSE - Let them transfer you to retention]`;
         break;
       default:
@@ -550,7 +550,7 @@ class BillNegotiationService {
     negotiationType: NegotiationType,
     targetAmount: number,
     savingsPercent: number,
-    competitor?: CompetitorRate
+    competitor?: CompetitorRate,
   ): string {
     return `Subject: Request for Rate Review - Account Holder
 
@@ -558,7 +558,7 @@ Dear ${bill.merchantName} Customer Service,
 
 I am writing to request a review of my current rate. I have been a loyal customer and value the service you provide.
 
-Currently, I am paying $${bill.amount} per month. ${competitor ? `I have recently received offers from ${competitor.provider} for similar service at $${competitor.rate} per month.` : 'I have been researching competitive rates in the market.'}
+Currently, I am paying $${bill.amount} per month. ${competitor ? `I have recently received offers from ${competitor.provider} for similar service at $${competitor.rate} per month.` : "I have been researching competitive rates in the market."}
 
 I would prefer to continue my service with ${bill.merchantName}, but I need to ensure I am receiving a competitive rate. I am hoping you can offer me a rate closer to $${targetAmount} per month, which would represent a ${savingsPercent}% reduction.
 
@@ -576,7 +576,7 @@ Phone: [YOUR PHONE NUMBER]`;
     bill: Bill,
     negotiationType: NegotiationType,
     targetAmount: number,
-    savingsPercent: number
+    savingsPercent: number,
   ): string {
     return `Opening: "Hi, I'd like to discuss my current rate. I'm paying $${bill.amount}/month and I'm looking to reduce my bill."
 
@@ -595,11 +595,11 @@ If they can't help: "Can you please transfer me to someone who can help with rat
     bill: Bill,
     negotiationType: NegotiationType,
     targetAmount: number,
-    competitor?: CompetitorRate
+    competitor?: CompetitorRate,
   ): string {
     return `[FOR RETENTION DEPARTMENT]
 
-"Hi, I'm considering canceling my service because I've found a better rate elsewhere. ${competitor ? `${competitor.provider} is offering me $${competitor.rate}/month.` : 'I need to reduce my monthly expenses.'}"
+"Hi, I'm considering canceling my service because I've found a better rate elsewhere. ${competitor ? `${competitor.provider} is offering me $${competitor.rate}/month.` : "I need to reduce my monthly expenses."}"
 
 [PAUSE - Let them make an offer]
 
@@ -619,48 +619,48 @@ Remember:
   generateTalkingPoints(
     bill: Bill,
     negotiationType: NegotiationType,
-    comparison?: BillComparisonData
+    comparison?: BillComparisonData,
   ): string[] {
     const points: string[] = [
       `Current monthly payment: $${bill.amount}`,
-      'Mention your loyalty and payment history',
-      'Be polite but firm about needing a better rate',
-      'Ask to speak with retention if initial rep cannot help',
+      "Mention your loyalty and payment history",
+      "Be polite but firm about needing a better rate",
+      "Ask to speak with retention if initial rep cannot help",
     ];
 
     if (comparison) {
-      if (comparison.marketPosition === 'above_average') {
+      if (comparison.marketPosition === "above_average") {
         points.push(
-          `Your rate is above market average ($${comparison.averageMarketRate})`
+          `Your rate is above market average ($${comparison.averageMarketRate})`,
         );
       }
       if (comparison.lowestCompetitorRate < bill.amount) {
         points.push(
-          `Competitor rates start at $${comparison.lowestCompetitorRate}`
+          `Competitor rates start at $${comparison.lowestCompetitorRate}`,
         );
       }
       points.push(`Potential savings: $${comparison.savingsPotential}/month`);
     }
 
     switch (negotiationType) {
-      case 'rate_reduction':
-        points.push('Ask about current promotions for existing customers');
+      case "rate_reduction":
+        points.push("Ask about current promotions for existing customers");
         points.push(
-          'Inquire about lower-tier plans that might meet your needs'
+          "Inquire about lower-tier plans that might meet your needs",
         );
         break;
-      case 'loyalty_discount':
+      case "loyalty_discount":
         points.push("Emphasize how long you've been a customer");
-        points.push('Ask about loyalty rewards or anniversary discounts');
+        points.push("Ask about loyalty rewards or anniversary discounts");
         break;
-      case 'price_match':
-        points.push('Have competitor offer ready to reference');
-        points.push('Ask if they have a price match policy');
+      case "price_match":
+        points.push("Have competitor offer ready to reference");
+        points.push("Ask if they have a price match policy");
         break;
-      case 'cancellation':
-        points.push('Be prepared to actually cancel');
+      case "cancellation":
+        points.push("Be prepared to actually cancel");
         points.push(
-          'Retention department has more authority to offer discounts'
+          "Retention department has more authority to offer discounts",
         );
         break;
     }
@@ -674,22 +674,22 @@ Remember:
 
   getComparisonData(
     category: BillCategory,
-    currentAmount: number
+    currentAmount: number,
   ): BillComparisonData | undefined {
     const marketData = MARKET_RATES[category];
     if (!marketData || marketData.providers.length === 0) return undefined;
 
     const lowestRate = Math.min(
-      ...marketData.providers.map((p) => p.promotionalRate || p.rate)
+      ...marketData.providers.map((p) => p.promotionalRate || p.rate),
     );
     const savingsPotential = Math.max(0, currentAmount - lowestRate);
 
-    let marketPosition: 'below_average' | 'average' | 'above_average' =
-      'average';
+    let marketPosition: "below_average" | "average" | "above_average" =
+      "average";
     if (currentAmount > marketData.averageRate * 1.1)
-      marketPosition = 'above_average';
+      marketPosition = "above_average";
     else if (currentAmount < marketData.averageRate * 0.9)
-      marketPosition = 'below_average';
+      marketPosition = "below_average";
 
     return {
       averageMarketRate: marketData.averageRate,
@@ -701,9 +701,9 @@ Remember:
   }
 
   getMerchantContactInfo(
-    merchantName: string
+    merchantName: string,
   ): MerchantContactInfo | undefined {
-    const normalizedName = merchantName.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const normalizedName = merchantName.toLowerCase().replace(/[^a-z0-9]/g, "");
     for (const [key, info] of Object.entries(MERCHANT_CONTACTS)) {
       if (normalizedName.includes(key) || key.includes(normalizedName)) {
         return info;
@@ -724,8 +724,8 @@ Remember:
     if (summary.recentSuccesses.length > 0) {
       const recent = summary.recentSuccesses[0];
       insights.push({
-        type: 'success_story',
-        title: 'Recent Win!',
+        type: "success_story",
+        title: "Recent Win!",
         description: `You saved $${recent.actualSavings?.toFixed(2)}/month on ${recent.merchantName}`,
         category: recent.category,
         potentialSavings: recent.actualSavings,
@@ -735,7 +735,7 @@ Remember:
     // Opportunities
     for (const opp of summary.topOpportunities.slice(0, 3)) {
       insights.push({
-        type: 'opportunity',
+        type: "opportunity",
         title: `Save on ${opp.merchantName}`,
         description: opp.reason,
         category: opp.category,
@@ -745,16 +745,16 @@ Remember:
 
     // Tips
     insights.push({
-      type: 'tip',
-      title: 'Best Time to Negotiate',
+      type: "tip",
+      title: "Best Time to Negotiate",
       description:
-        'Call Tuesday-Thursday between 10am-2pm for shorter wait times and more helpful reps.',
+        "Call Tuesday-Thursday between 10am-2pm for shorter wait times and more helpful reps.",
     });
 
     if (summary.successRate < 50 && summary.completedNegotiations > 0) {
       insights.push({
-        type: 'warning',
-        title: 'Try the Retention Department',
+        type: "warning",
+        title: "Try the Retention Department",
         description:
           "If regular customer service can't help, ask to be transferred to the retention or loyalty department.",
       });
@@ -769,21 +769,21 @@ Remember:
 
   private calculateConfidence(
     bill: Bill,
-    comparison: BillComparisonData
+    comparison: BillComparisonData,
   ): number {
     let confidence = 50;
-    if (comparison.marketPosition === 'above_average') confidence += 20;
+    if (comparison.marketPosition === "above_average") confidence += 20;
     if (comparison.savingsPotential > 20) confidence += 15;
-    if (['internet', 'phone', 'streaming', 'insurance'].includes(bill.category))
+    if (["internet", "phone", "streaming", "insurance"].includes(bill.category))
       confidence += 10;
     return Math.min(95, confidence);
   }
 
   private getOpportunityReason(
     bill: Bill,
-    comparison: BillComparisonData
+    comparison: BillComparisonData,
   ): string {
-    if (comparison.marketPosition === 'above_average') {
+    if (comparison.marketPosition === "above_average") {
       return `Your rate of $${bill.amount} is above the market average of $${comparison.averageMarketRate}`;
     }
     if (comparison.lowestCompetitorRate < bill.amount * 0.8) {
@@ -794,12 +794,12 @@ Remember:
 
   private suggestApproach(
     bill: Bill,
-    comparison: BillComparisonData
+    comparison: BillComparisonData,
   ): NegotiationType {
     if (comparison.competitors.some((c) => c.promotionalRate))
-      return 'price_match';
-    if (comparison.marketPosition === 'above_average') return 'rate_reduction';
-    return 'loyalty_discount';
+      return "price_match";
+    if (comparison.marketPosition === "above_average") return "rate_reduction";
+    return "loyalty_discount";
   }
 
   // -------------------------------------------------------------------------
@@ -807,7 +807,7 @@ Remember:
   // -------------------------------------------------------------------------
 
   private mapNegotiationToDb(
-    negotiation: Omit<BillNegotiation, 'id' | 'createdAt' | 'updatedAt'>
+    negotiation: Omit<BillNegotiation, "id" | "createdAt" | "updatedAt">,
   ): Record<string, unknown> {
     return {
       user_id: negotiation.userId,
@@ -846,7 +846,7 @@ Remember:
       targetAmount: Number(data.target_amount),
       negotiationType: data.negotiation_type as NegotiationType,
       status: data.status as NegotiationStatus,
-      outcome: data.outcome as BillNegotiation['outcome'],
+      outcome: data.outcome as BillNegotiation["outcome"],
       actualSavings: data.actual_savings
         ? Number(data.actual_savings)
         : undefined,
@@ -879,7 +879,7 @@ Remember:
       merchantName: data.merchant_name as string,
       category: data.category as BillCategory,
       amount: Number(data.amount),
-      frequency: data.frequency as Bill['frequency'],
+      frequency: data.frequency as Bill["frequency"],
       nextDueDate: new Date(data.next_due_date as string),
       lastPaidDate: data.last_paid_date
         ? new Date(data.last_paid_date as string)
@@ -887,7 +887,7 @@ Remember:
       lastPaidAmount: data.last_paid_amount
         ? Number(data.last_paid_amount)
         : undefined,
-      status: data.status as Bill['status'],
+      status: data.status as Bill["status"],
       isAutoPay: Boolean(data.is_auto_pay),
       accountId: data.account_id as string | undefined,
       notes: data.notes as string | undefined,

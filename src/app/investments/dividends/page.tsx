@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState } from "react";
+import { motion } from "framer-motion";
 import {
   DollarSign,
   TrendingUp,
@@ -13,7 +13,7 @@ import {
   Filter,
   Download,
   RefreshCw,
-} from 'lucide-react';
+} from "lucide-react";
 
 interface DividendStock {
   symbol: string;
@@ -47,98 +47,98 @@ interface DividendSummary {
 
 const MOCK_STOCKS: DividendStock[] = [
   {
-    symbol: 'VYM',
-    companyName: 'Vanguard High Dividend Yield ETF',
+    symbol: "VYM",
+    companyName: "Vanguard High Dividend Yield ETF",
     sharesHeld: 50,
     annualDividend: 3.12,
     dividendYield: 3.1,
-    frequency: 'Quarterly',
-    nextPayDate: new Date('2026-03-15'),
+    frequency: "Quarterly",
+    nextPayDate: new Date("2026-03-15"),
     annualIncome: 156,
   },
   {
-    symbol: 'SCHD',
-    companyName: 'Schwab US Dividend Equity ETF',
+    symbol: "SCHD",
+    companyName: "Schwab US Dividend Equity ETF",
     sharesHeld: 40,
     annualDividend: 2.85,
     dividendYield: 3.5,
-    frequency: 'Quarterly',
-    nextPayDate: new Date('2026-03-20'),
+    frequency: "Quarterly",
+    nextPayDate: new Date("2026-03-20"),
     annualIncome: 114,
   },
   {
-    symbol: 'JNJ',
-    companyName: 'Johnson & Johnson',
+    symbol: "JNJ",
+    companyName: "Johnson & Johnson",
     sharesHeld: 15,
     annualDividend: 4.76,
     dividendYield: 3.0,
-    frequency: 'Quarterly',
-    nextPayDate: new Date('2026-03-10'),
+    frequency: "Quarterly",
+    nextPayDate: new Date("2026-03-10"),
     annualIncome: 71.4,
   },
   {
-    symbol: 'PG',
-    companyName: 'Procter & Gamble',
+    symbol: "PG",
+    companyName: "Procter & Gamble",
     sharesHeld: 20,
     annualDividend: 3.76,
     dividendYield: 2.5,
-    frequency: 'Quarterly',
-    nextPayDate: new Date('2026-02-15'),
+    frequency: "Quarterly",
+    nextPayDate: new Date("2026-02-15"),
     annualIncome: 75.2,
   },
   {
-    symbol: 'KO',
-    companyName: 'Coca-Cola',
+    symbol: "KO",
+    companyName: "Coca-Cola",
     sharesHeld: 30,
     annualDividend: 1.84,
     dividendYield: 3.1,
-    frequency: 'Quarterly',
-    nextPayDate: new Date('2026-04-01'),
+    frequency: "Quarterly",
+    nextPayDate: new Date("2026-04-01"),
     annualIncome: 55.2,
   },
 ];
 
 const MOCK_PAYMENTS: DividendPayment[] = [
   {
-    id: '1',
-    symbol: 'VYM',
-    payDate: new Date('2026-01-15'),
+    id: "1",
+    symbol: "VYM",
+    payDate: new Date("2026-01-15"),
     amount: 0.78,
     shares: 50,
     totalAmount: 39,
     reinvested: true,
   },
   {
-    id: '2',
-    symbol: 'SCHD',
-    payDate: new Date('2026-01-20'),
+    id: "2",
+    symbol: "SCHD",
+    payDate: new Date("2026-01-20"),
     amount: 0.71,
     shares: 40,
     totalAmount: 28.4,
     reinvested: false,
   },
   {
-    id: '3',
-    symbol: 'JNJ',
-    payDate: new Date('2025-12-10'),
+    id: "3",
+    symbol: "JNJ",
+    payDate: new Date("2025-12-10"),
     amount: 1.19,
     shares: 15,
     totalAmount: 17.85,
     reinvested: true,
   },
   {
-    id: '4',
-    symbol: 'PG',
-    payDate: new Date('2025-12-15'),
+    id: "4",
+    symbol: "PG",
+    payDate: new Date("2025-12-15"),
     amount: 0.94,
     shares: 20,
     totalAmount: 18.8,
     reinvested: false,
   },
   {
-    id: '5',
-    symbol: 'KO',
-    payDate: new Date('2025-12-01'),
+    id: "5",
+    symbol: "KO",
+    payDate: new Date("2025-12-01"),
     amount: 0.46,
     shares: 30,
     totalAmount: 13.8,
@@ -156,9 +156,9 @@ const MOCK_SUMMARY: DividendSummary = {
 };
 
 const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
   }).format(amount);
 };
 
@@ -167,14 +167,14 @@ export default function DividendTrackingPage() {
   const [payments] = useState<DividendPayment[]>(MOCK_PAYMENTS);
   const [summary] = useState<DividendSummary>(MOCK_SUMMARY);
   const [activeTab, setActiveTab] = useState<
-    'holdings' | 'history' | 'calendar'
-  >('holdings');
+    "holdings" | "history" | "calendar"
+  >("holdings");
 
   const upcomingPayments = stocks
     .filter((s) => s.nextPayDate && s.nextPayDate > new Date())
     .sort(
       (a, b) =>
-        (a.nextPayDate?.getTime() || 0) - (b.nextPayDate?.getTime() || 0)
+        (a.nextPayDate?.getTime() || 0) - (b.nextPayDate?.getTime() || 0),
     );
 
   return (
@@ -256,7 +256,9 @@ export default function DividendTrackingPage() {
             <p className="text-2xl font-bold text-gray-900 dark:text-white">
               {formatCurrency(summary.lastMonthIncome)}
             </p>
-            <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">5 payments</p>
+            <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
+              5 payments
+            </p>
           </div>
         </div>
 
@@ -286,7 +288,7 @@ export default function DividendTrackingPage() {
                 <p className="text-lg font-semibold text-green-600">
                   ~
                   {formatCurrency(
-                    (stock.annualDividend / 4) * stock.sharesHeld
+                    (stock.annualDividend / 4) * stock.sharesHeld,
                   )}
                 </p>
               </div>
@@ -299,14 +301,14 @@ export default function DividendTrackingPage() {
           <div className="border-b border-gray-200 dark:border-slate-700">
             <div className="flex">
               {[
-                { id: 'holdings', label: 'Holdings', icon: PieChart },
-                { id: 'history', label: 'Payment History', icon: BarChart3 },
-                { id: 'calendar', label: 'Calendar', icon: Calendar },
+                { id: "holdings", label: "Holdings", icon: PieChart },
+                { id: "history", label: "Payment History", icon: BarChart3 },
+                { id: "calendar", label: "Calendar", icon: Calendar },
               ].map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                  className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors border-b-2 ${ activeTab === tab.id ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-200 dark:hover:text-gray-300' }`}
+                  className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors border-b-2 ${activeTab === tab.id ? "border-green-500 text-green-600" : "border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-200 dark:hover:text-gray-300"}`}
                 >
                   <tab.icon className="w-4 h-4" />
                   {tab.label}
@@ -316,7 +318,7 @@ export default function DividendTrackingPage() {
           </div>
 
           <div className="p-6">
-            {activeTab === 'holdings' && (
+            {activeTab === "holdings" && (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
@@ -382,7 +384,7 @@ export default function DividendTrackingPage() {
               </div>
             )}
 
-            {activeTab === 'history' && (
+            {activeTab === "history" && (
               <div className="space-y-3">
                 {payments.map((payment) => (
                   <div
@@ -405,7 +407,7 @@ export default function DividendTrackingPage() {
                           )}
                         </div>
                         <p className="text-sm text-gray-500 dark:text-slate-400">
-                          {payment.shares} shares ×{' '}
+                          {payment.shares} shares ×{" "}
                           {formatCurrency(payment.amount)}
                         </p>
                       </div>
@@ -423,7 +425,7 @@ export default function DividendTrackingPage() {
               </div>
             )}
 
-            {activeTab === 'calendar' && (
+            {activeTab === "calendar" && (
               <div className="text-center py-12">
                 <Calendar className="w-12 h-12 text-gray-400 dark:text-slate-500 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Investment Dashboard
@@ -12,10 +12,10 @@
  * - Pattern recognition
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { AdvancedChartContainer } from '../charts/AdvancedChartContainer';
-import { AlertsPanel } from '../alerts/AlertsPanel';
-import { PatternOverlay } from '../patterns/PatternOverlay';
+import React, { useState, useEffect, useCallback } from "react";
+import { AdvancedChartContainer } from "../charts/AdvancedChartContainer";
+import { AlertsPanel } from "../alerts/AlertsPanel";
+import { PatternOverlay } from "../patterns/PatternOverlay";
 
 // ============================================================================
 // TYPES
@@ -43,11 +43,11 @@ interface PortfolioSummary {
 }
 
 type DashboardTab =
-  | 'overview'
-  | 'scanner'
-  | 'analysis'
-  | 'recommendations'
-  | 'alerts';
+  | "overview"
+  | "scanner"
+  | "analysis"
+  | "recommendations"
+  | "alerts";
 
 // ============================================================================
 // MAIN COMPONENT
@@ -55,10 +55,10 @@ type DashboardTab =
 
 export function InvestmentDashboard({
   userId,
-  className = '',
+  className = "",
 }: DashboardProps) {
-  const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
-  const [selectedSymbol, setSelectedSymbol] = useState('AAPL');
+  const [activeTab, setActiveTab] = useState<DashboardTab>("overview");
+  const [selectedSymbol, setSelectedSymbol] = useState("AAPL");
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
   const [portfolioSummary, setPortfolioSummary] =
     useState<PortfolioSummary | null>(null);
@@ -77,36 +77,36 @@ export function InvestmentDashboard({
       // Load watchlist (mock data for now)
       setWatchlist([
         {
-          symbol: 'AAPL',
-          name: 'Apple Inc.',
+          symbol: "AAPL",
+          name: "Apple Inc.",
           price: 178.5,
           change: 2.3,
           changePercent: 1.31,
         },
         {
-          symbol: 'GOOGL',
-          name: 'Alphabet Inc.',
+          symbol: "GOOGL",
+          name: "Alphabet Inc.",
           price: 141.25,
           change: -0.75,
           changePercent: -0.53,
         },
         {
-          symbol: 'MSFT',
-          name: 'Microsoft Corp.',
+          symbol: "MSFT",
+          name: "Microsoft Corp.",
           price: 378.9,
           change: 4.2,
           changePercent: 1.12,
         },
         {
-          symbol: 'TSLA',
-          name: 'Tesla Inc.',
+          symbol: "TSLA",
+          name: "Tesla Inc.",
           price: 248.3,
           change: -3.5,
           changePercent: -1.39,
         },
         {
-          symbol: 'NVDA',
-          name: 'NVIDIA Corp.',
+          symbol: "NVDA",
+          name: "NVIDIA Corp.",
           price: 495.2,
           change: 12.8,
           changePercent: 2.65,
@@ -131,7 +131,7 @@ export function InvestmentDashboard({
 
   const handleSymbolSelect = useCallback((symbol: string) => {
     setSelectedSymbol(symbol);
-    setActiveTab('analysis');
+    setActiveTab("analysis");
   }, []);
 
   return (
@@ -164,11 +164,11 @@ export function InvestmentDashboard({
         <div className="flex gap-1">
           {(
             [
-              'overview',
-              'scanner',
-              'analysis',
-              'recommendations',
-              'alerts',
+              "overview",
+              "scanner",
+              "analysis",
+              "recommendations",
+              "alerts",
             ] as DashboardTab[]
           ).map((tab) => (
             <button
@@ -176,15 +176,15 @@ export function InvestmentDashboard({
               onClick={() => setActiveTab(tab)}
               className={`px-4 py-3 text-sm font-medium transition-colors ${
                 activeTab === tab
-                  ? 'text-blue-400 border-b-2 border-blue-400'
-                  : 'text-gray-400 dark:text-slate-500 hover:text-white'
+                  ? "text-blue-400 border-b-2 border-blue-400"
+                  : "text-gray-400 dark:text-slate-500 hover:text-white"
               }`}
             >
-              {tab === 'overview' && ''}
-              {tab === 'scanner' && ''}
-              {tab === 'analysis' && ''}
-              {tab === 'recommendations' && ''}
-              {tab === 'alerts' && ''}
+              {tab === "overview" && ""}
+              {tab === "scanner" && ""}
+              {tab === "analysis" && ""}
+              {tab === "recommendations" && ""}
+              {tab === "alerts" && ""}
               <span className="ml-2 capitalize">{tab}</span>
             </button>
           ))}
@@ -197,27 +197,27 @@ export function InvestmentDashboard({
           <LoadingState />
         ) : (
           <>
-            {activeTab === 'overview' && (
+            {activeTab === "overview" && (
               <OverviewTab
                 portfolioSummary={portfolioSummary}
                 watchlist={watchlist}
                 onSymbolSelect={handleSymbolSelect}
               />
             )}
-            {activeTab === 'scanner' && (
+            {activeTab === "scanner" && (
               <ScannerTab onSymbolSelect={handleSymbolSelect} />
             )}
-            {activeTab === 'analysis' && (
+            {activeTab === "analysis" && (
               <AnalysisTab
                 symbol={selectedSymbol}
                 patternData={patternData}
                 onPatternScan={setPatternData}
               />
             )}
-            {activeTab === 'recommendations' && (
+            {activeTab === "recommendations" && (
               <RecommendationsTab symbol={selectedSymbol} />
             )}
-            {activeTab === 'alerts' && (
+            {activeTab === "alerts" && (
               <AlertsTab userId={userId} symbol={selectedSymbol} />
             )}
           </>
@@ -269,13 +269,13 @@ function OverviewTab({
           <SummaryCard
             title="Total Gain/Loss"
             value={`$${portfolioSummary.totalGainLoss.toLocaleString()}`}
-            subtitle={`${portfolioSummary.totalGainLossPercent >= 0 ? '+' : ''}${portfolioSummary.totalGainLossPercent.toFixed(2)}%`}
+            subtitle={`${portfolioSummary.totalGainLossPercent >= 0 ? "+" : ""}${portfolioSummary.totalGainLossPercent.toFixed(2)}%`}
             positive={portfolioSummary.totalGainLoss >= 0}
           />
           <SummaryCard
             title="Day Change"
             value={`$${portfolioSummary.dayChange.toLocaleString()}`}
-            subtitle={`${portfolioSummary.dayChangePercent >= 0 ? '+' : ''}${portfolioSummary.dayChangePercent.toFixed(2)}%`}
+            subtitle={`${portfolioSummary.dayChangePercent >= 0 ? "+" : ""}${portfolioSummary.dayChangePercent.toFixed(2)}%`}
             positive={portfolioSummary.dayChange >= 0}
           />
           <SummaryCard
@@ -308,12 +308,14 @@ function OverviewTab({
                   onClick={() => onSymbolSelect(item.symbol)}
                 >
                   <td className="py-3 font-medium">{item.symbol}</td>
-                  <td className="py-3 text-gray-400 dark:text-slate-500">{item.name}</td>
+                  <td className="py-3 text-gray-400 dark:text-slate-500">
+                    {item.name}
+                  </td>
                   <td className="py-3 text-right">${item.price.toFixed(2)}</td>
                   <td
-                    className={`py-3 text-right ${item.change >= 0 ? 'text-green-400' : 'text-red-400'}`}
+                    className={`py-3 text-right ${item.change >= 0 ? "text-green-400" : "text-red-400"}`}
                   >
-                    {item.change >= 0 ? '+' : ''}
+                    {item.change >= 0 ? "+" : ""}
                     {item.change.toFixed(2)} ({item.changePercent.toFixed(2)}%)
                   </td>
                   <td className="py-3 text-right">
@@ -349,10 +351,10 @@ function SummaryCard({
       <p
         className={`text-sm mt-1 ${
           positive === undefined
-            ? 'text-gray-400 dark:text-slate-500'
+            ? "text-gray-400 dark:text-slate-500"
             : positive
-              ? 'text-green-400'
-              : 'text-red-400'
+              ? "text-green-400"
+              : "text-red-400"
         }`}
       >
         {subtitle}
@@ -369,8 +371,8 @@ function ScannerTab({
   const [scanResults, setScanResults] = useState<any[]>([]);
   const [scanning, setScanning] = useState(false);
   const [scanType, setScanType] = useState<
-    'patterns' | 'breakouts' | 'oversold' | 'overbought'
-  >('patterns');
+    "patterns" | "breakouts" | "oversold" | "overbought"
+  >("patterns");
 
   const runScan = async () => {
     setScanning(true);
@@ -378,28 +380,28 @@ function ScannerTab({
     setTimeout(() => {
       setScanResults([
         {
-          symbol: 'AAPL',
-          pattern: 'Double Bottom',
+          symbol: "AAPL",
+          pattern: "Double Bottom",
           reliability: 78,
-          direction: 'bullish',
+          direction: "bullish",
         },
         {
-          symbol: 'NVDA',
-          pattern: 'Bull Flag',
+          symbol: "NVDA",
+          pattern: "Bull Flag",
           reliability: 82,
-          direction: 'bullish',
+          direction: "bullish",
         },
         {
-          symbol: 'TSLA',
-          pattern: 'Head & Shoulders',
+          symbol: "TSLA",
+          pattern: "Head & Shoulders",
           reliability: 65,
-          direction: 'bearish',
+          direction: "bearish",
         },
         {
-          symbol: 'AMD',
-          pattern: 'Ascending Triangle',
+          symbol: "AMD",
+          pattern: "Ascending Triangle",
           reliability: 71,
-          direction: 'bullish',
+          direction: "bullish",
         },
       ]);
       setScanning(false);
@@ -411,20 +413,20 @@ function ScannerTab({
       <div className="bg-gray-800 rounded-lg p-4">
         <h3 className="text-lg font-semibold mb-4">Market Scanner</h3>
         <div className="flex gap-4 mb-4">
-          {(['patterns', 'breakouts', 'oversold', 'overbought'] as const).map(
+          {(["patterns", "breakouts", "oversold", "overbought"] as const).map(
             (type) => (
               <button
                 key={type}
                 onClick={() => setScanType(type)}
                 className={`px-4 py-2 rounded-lg capitalize ${
                   scanType === type
-                    ? 'bg-blue-600'
-                    : 'bg-gray-700 hover:bg-gray-600'
+                    ? "bg-blue-600"
+                    : "bg-gray-700 hover:bg-gray-600"
                 }`}
               >
                 {type}
               </button>
-            )
+            ),
           )}
         </div>
         <button
@@ -432,7 +434,7 @@ function ScannerTab({
           disabled={scanning}
           className="px-6 py-2 bg-green-600 hover:bg-green-700 rounded-lg disabled:opacity-50"
         >
-          {scanning ? 'Scanning...' : 'Run Scan'}
+          {scanning ? "Scanning..." : "Run Scan"}
         </button>
       </div>
 
@@ -449,13 +451,15 @@ function ScannerTab({
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="font-semibold">{result.symbol}</p>
-                    <p className="text-sm text-gray-400 dark:text-slate-500">{result.pattern}</p>
+                    <p className="text-sm text-gray-400 dark:text-slate-500">
+                      {result.pattern}
+                    </p>
                   </div>
                   <span
                     className={`px-2 py-1 rounded text-xs ${
-                      result.direction === 'bullish'
-                        ? 'bg-green-600'
-                        : 'bg-red-600'
+                      result.direction === "bullish"
+                        ? "bg-green-600"
+                        : "bg-red-600"
                     }`}
                   >
                     {result.direction}
@@ -468,7 +472,7 @@ function ScannerTab({
                   </div>
                   <div className="w-full bg-gray-600 rounded-full h-2 mt-1">
                     <div
-                      className={`h-2 rounded-full ${result.reliability >= 70 ? 'bg-green-500' : 'bg-yellow-500'}`}
+                      className={`h-2 rounded-full ${result.reliability >= 70 ? "bg-green-500" : "bg-yellow-500"}`}
                       style={{ width: `${result.reliability}%` }}
                     />
                   </div>
@@ -496,9 +500,9 @@ function AnalysisTab({
   const scanPatterns = async () => {
     setScanning(true);
     try {
-      const response = await fetch('/api/investments/patterns', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/investments/patterns", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ symbol }),
       });
       const data = await response.json();
@@ -520,7 +524,7 @@ function AnalysisTab({
           disabled={scanning}
           className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50"
         >
-          {scanning ? 'Scanning...' : 'Scan Patterns'}
+          {scanning ? "Scanning..." : "Scan Patterns"}
         </button>
       </div>
 
@@ -542,7 +546,9 @@ function AnalysisTab({
             Detected Patterns ({patternData.patterns.length})
           </h4>
           {patternData.patterns.length === 0 ? (
-            <p className="text-gray-400 dark:text-slate-500">No patterns detected</p>
+            <p className="text-gray-400 dark:text-slate-500">
+              No patterns detected
+            </p>
           ) : (
             <div className="space-y-3">
               {patternData.patterns.map((pattern: any, idx: number) => (
@@ -551,16 +557,16 @@ function AnalysisTab({
                     <span className="font-medium">{pattern.type}</span>
                     <span
                       className={
-                        pattern.direction === 'bullish'
-                          ? 'text-green-400'
-                          : 'text-red-400'
+                        pattern.direction === "bullish"
+                          ? "text-green-400"
+                          : "text-red-400"
                       }
                     >
                       {pattern.direction}
                     </span>
                   </div>
                   <p className="text-sm text-gray-400 dark:text-slate-500 mt-1">
-                    Target: ${pattern.priceTarget?.toFixed(2)} | Reliability:{' '}
+                    Target: ${pattern.priceTarget?.toFixed(2)} | Reliability:{" "}
                     {pattern.reliability}%
                   </p>
                 </div>
@@ -580,9 +586,9 @@ function RecommendationsTab({ symbol }: { symbol: string }) {
   const getRecommendation = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/investments/recommendations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/investments/recommendations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ symbol, includePrice: true }),
       });
       const data = await response.json();
@@ -603,18 +609,18 @@ function RecommendationsTab({ symbol }: { symbol: string }) {
 
   const getActionColor = (action: string) => {
     switch (action) {
-      case 'strong_buy':
-        return 'bg-green-600';
-      case 'buy':
-        return 'bg-green-500';
-      case 'hold':
-        return 'bg-yellow-500';
-      case 'sell':
-        return 'bg-red-500';
-      case 'strong_sell':
-        return 'bg-red-600';
+      case "strong_buy":
+        return "bg-green-600";
+      case "buy":
+        return "bg-green-500";
+      case "hold":
+        return "bg-yellow-500";
+      case "sell":
+        return "bg-red-500";
+      case "strong_sell":
+        return "bg-red-600";
       default:
-        return 'bg-gray-500';
+        return "bg-gray-500";
     }
   };
 
@@ -627,7 +633,7 @@ function RecommendationsTab({ symbol }: { symbol: string }) {
           disabled={loading}
           className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50"
         >
-          {loading ? 'Analyzing...' : 'Refresh Analysis'}
+          {loading ? "Analyzing..." : "Refresh Analysis"}
         </button>
       </div>
 
@@ -643,38 +649,46 @@ function RecommendationsTab({ symbol }: { symbol: string }) {
                 className={`px-3 py-1 rounded-full text-sm font-medium ${getActionColor(recommendation.recommendation.action)}`}
               >
                 {recommendation.recommendation.action
-                  .replace('_', ' ')
+                  .replace("_", " ")
                   .toUpperCase()}
               </span>
             </div>
             <div className="space-y-3">
               <div className="flex justify-between">
-                <span className="text-gray-400 dark:text-slate-500">Confidence</span>
+                <span className="text-gray-400 dark:text-slate-500">
+                  Confidence
+                </span>
                 <span>
                   {recommendation.recommendation.confidence.toFixed(1)}%
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400 dark:text-slate-500">Price Target</span>
+                <span className="text-gray-400 dark:text-slate-500">
+                  Price Target
+                </span>
                 <span>
                   ${recommendation.recommendation.priceTarget.toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400 dark:text-slate-500">Expected Return</span>
+                <span className="text-gray-400 dark:text-slate-500">
+                  Expected Return
+                </span>
                 <span
                   className={
                     recommendation.recommendation.expectedReturn >= 0
-                      ? 'text-green-400'
-                      : 'text-red-400'
+                      ? "text-green-400"
+                      : "text-red-400"
                   }
                 >
-                  {recommendation.recommendation.expectedReturn >= 0 ? '+' : ''}
+                  {recommendation.recommendation.expectedReturn >= 0 ? "+" : ""}
                   {recommendation.recommendation.expectedReturn.toFixed(2)}%
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400 dark:text-slate-500">Risk Score</span>
+                <span className="text-gray-400 dark:text-slate-500">
+                  Risk Score
+                </span>
                 <span>
                   {recommendation.recommendation.riskScore.toFixed(0)}/100
                 </span>
@@ -687,25 +701,33 @@ function RecommendationsTab({ symbol }: { symbol: string }) {
             <h4 className="font-semibold mb-4">Entry/Exit Levels</h4>
             <div className="space-y-3">
               <div className="flex justify-between">
-                <span className="text-gray-400 dark:text-slate-500">Entry Price</span>
+                <span className="text-gray-400 dark:text-slate-500">
+                  Entry Price
+                </span>
                 <span className="text-blue-400">
                   ${recommendation.recommendation.entryPrice.toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400 dark:text-slate-500">Stop Loss</span>
+                <span className="text-gray-400 dark:text-slate-500">
+                  Stop Loss
+                </span>
                 <span className="text-red-400">
                   ${recommendation.recommendation.stopLoss.toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400 dark:text-slate-500">Take Profit 1</span>
+                <span className="text-gray-400 dark:text-slate-500">
+                  Take Profit 1
+                </span>
                 <span className="text-green-400">
                   ${recommendation.recommendation.takeProfit[0]?.toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400 dark:text-slate-500">Take Profit 2</span>
+                <span className="text-gray-400 dark:text-slate-500">
+                  Take Profit 2
+                </span>
                 <span className="text-green-400">
                   ${recommendation.recommendation.takeProfit[1]?.toFixed(2)}
                 </span>
@@ -723,16 +745,16 @@ function RecommendationsTab({ symbol }: { symbol: string }) {
                     <div key={idx} className="flex items-center gap-2">
                       <span
                         className={`w-2 h-2 rounded-full ${
-                          reason.impact === 'positive'
-                            ? 'bg-green-400'
-                            : reason.impact === 'negative'
-                              ? 'bg-red-400'
-                              : 'bg-yellow-400'
+                          reason.impact === "positive"
+                            ? "bg-green-400"
+                            : reason.impact === "negative"
+                              ? "bg-red-400"
+                              : "bg-yellow-400"
                         }`}
                       />
                       <span className="text-sm">{reason.description}</span>
                     </div>
-                  )
+                  ),
                 )}
               </div>
             </div>
@@ -749,7 +771,7 @@ function RecommendationsTab({ symbol }: { symbol: string }) {
                       <span className="text-red-400"></span>
                       <span className="text-sm">{risk}</span>
                     </div>
-                  )
+                  ),
                 )}
               </div>
             </div>

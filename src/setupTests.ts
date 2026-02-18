@@ -1,12 +1,12 @@
-import '@testing-library/jest-dom';
+import "@testing-library/jest-dom";
 
 // Import OpenAI shims for Node.js environment
-import 'openai/shims/node';
+import "openai/shims/node";
 
 // Polyfill fetch for tests (required by Stripe SDK, OpenAI SDK, etc.)
-import { TextEncoder, TextDecoder } from 'util';
-import fetch, { Response, Request, Headers } from 'node-fetch';
-import { ReadableStream, WritableStream, TransformStream } from 'stream/web';
+import { TextEncoder, TextDecoder } from "util";
+import fetch, { Response, Request, Headers } from "node-fetch";
+import { ReadableStream, WritableStream, TransformStream } from "stream/web";
 
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder as typeof global.TextDecoder;
@@ -25,7 +25,7 @@ global.TransformStream = TransformStream as any;
 
 // Fix for MSW v2 Promise compatibility
 // Ensure Promise constructor is properly available
-if (typeof global.Promise === 'undefined') {
+if (typeof global.Promise === "undefined") {
   global.Promise = Promise;
 }
 
@@ -36,7 +36,9 @@ class BroadcastChannelMock {
   close() {}
   addEventListener() {}
   removeEventListener() {}
-  dispatchEvent() { return true; }
+  dispatchEvent() {
+    return true;
+  }
 }
 global.BroadcastChannel = BroadcastChannelMock as any;
 
@@ -45,10 +47,10 @@ global.BroadcastChannel = BroadcastChannelMock as any;
 // Tests can mock window.location individually if needed
 
 // Import MSW server setup
-import './__tests__/mocks/server';
+import "./__tests__/mocks/server";
 
 // Mock Request and Response for Next.js API routes
-if (typeof Request === 'undefined') {
+if (typeof Request === "undefined") {
   global.Request = class Request {
     url: string;
     method: string;
@@ -56,24 +58,24 @@ if (typeof Request === 'undefined') {
     body: any;
 
     constructor(input: string | Request, init?: RequestInit) {
-      this.url = typeof input === 'string' ? input : input.url;
-      this.method = init?.method || 'GET';
+      this.url = typeof input === "string" ? input : input.url;
+      this.method = init?.method || "GET";
       this.headers = new Headers(init?.headers as any);
       this.body = init?.body;
     }
 
     async json() {
-      return JSON.parse(this.body || '{}');
+      return JSON.parse(this.body || "{}");
     }
 
     async text() {
-      return this.body || '';
+      return this.body || "";
     }
   } as any;
 }
 
 // Mock NextResponse for API routes
-jest.mock('next/server', () => ({
+jest.mock("next/server", () => ({
   NextResponse: {
     json: (data: any, init?: ResponseInit) => ({
       status: init?.status || 200,
@@ -92,8 +94,8 @@ jest.mock('next/server', () => ({
     nextUrl: URL;
 
     constructor(input: string | Request, init?: RequestInit) {
-      this.url = typeof input === 'string' ? input : input.url;
-      this.method = init?.method || 'GET';
+      this.url = typeof input === "string" ? input : input.url;
+      this.method = init?.method || "GET";
       this.headers = new Headers(init?.headers as any);
       this.nextUrl = new URL(this.url);
     }

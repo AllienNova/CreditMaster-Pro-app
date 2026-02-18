@@ -1,25 +1,25 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useMemo } from 'react';
-import Link from 'next/link';
-import { Icon } from '@/components/ui/Icon';
+import { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
+import { Icon } from "@/components/ui/Icon";
 
 interface CreditFactor {
   id: string;
   name: string;
   impact:
-    | 'high_positive'
-    | 'positive'
-    | 'neutral'
-    | 'negative'
-    | 'high_negative';
+    | "high_positive"
+    | "positive"
+    | "neutral"
+    | "negative"
+    | "high_negative";
   category:
-    | 'payment_history'
-    | 'credit_utilization'
-    | 'credit_age'
-    | 'credit_mix'
-    | 'new_credit';
-  status: 'excellent' | 'good' | 'fair' | 'poor' | 'very_poor';
+    | "payment_history"
+    | "credit_utilization"
+    | "credit_age"
+    | "credit_mix"
+    | "new_credit";
+  status: "excellent" | "good" | "fair" | "poor" | "very_poor";
   value?: string;
   description: string;
   recommendation?: string;
@@ -34,154 +34,154 @@ interface FactorInfo {
   tips: string[];
   improvementActions: {
     action: string;
-    impact: 'high' | 'medium' | 'low';
+    impact: "high" | "medium" | "low";
     timeframe: string;
   }[];
 }
 
 const FACTOR_INFO: Record<string, FactorInfo> = {
   payment_history: {
-    name: 'Payment History',
+    name: "Payment History",
     weight: 35,
     icon: "clock",
     description:
-      'Your track record of paying bills on time. This is the most important factor in your credit score.',
+      "Your track record of paying bills on time. This is the most important factor in your credit score.",
     tips: [
-      'Set up autopay for all accounts',
-      'Pay at least the minimum before due date',
-      'Contact creditors if you might miss a payment',
+      "Set up autopay for all accounts",
+      "Pay at least the minimum before due date",
+      "Contact creditors if you might miss a payment",
     ],
     improvementActions: [
       {
-        action: 'Set up automatic payments',
-        impact: 'high',
-        timeframe: 'Immediate',
+        action: "Set up automatic payments",
+        impact: "high",
+        timeframe: "Immediate",
       },
       {
-        action: 'Request goodwill adjustment for late payments',
-        impact: 'high',
-        timeframe: '30-60 days',
+        action: "Request goodwill adjustment for late payments",
+        impact: "high",
+        timeframe: "30-60 days",
       },
       {
-        action: 'Become an authorized user on account with perfect history',
-        impact: 'medium',
-        timeframe: '30-45 days',
+        action: "Become an authorized user on account with perfect history",
+        impact: "medium",
+        timeframe: "30-45 days",
       },
     ],
   },
   credit_utilization: {
-    name: 'Credit Utilization',
+    name: "Credit Utilization",
     weight: 30,
     icon: "credit-card",
     description:
       "How much of your available credit you're using. Lower is better - aim for under 30%.",
     tips: [
-      'Keep utilization below 30%',
-      'Pay down balances before statement closes',
-      'Request credit limit increases',
+      "Keep utilization below 30%",
+      "Pay down balances before statement closes",
+      "Request credit limit increases",
     ],
     improvementActions: [
       {
-        action: 'Pay down credit card balances',
-        impact: 'high',
-        timeframe: '1-2 billing cycles',
+        action: "Pay down credit card balances",
+        impact: "high",
+        timeframe: "1-2 billing cycles",
       },
       {
-        action: 'Request credit limit increase',
-        impact: 'medium',
-        timeframe: '7-14 days',
+        action: "Request credit limit increase",
+        impact: "medium",
+        timeframe: "7-14 days",
       },
       {
-        action: 'Open a new credit card (if appropriate)',
-        impact: 'medium',
-        timeframe: '30-45 days',
+        action: "Open a new credit card (if appropriate)",
+        impact: "medium",
+        timeframe: "30-45 days",
       },
     ],
   },
   credit_age: {
-    name: 'Credit Age',
+    name: "Credit Age",
     weight: 15,
     icon: "calendar",
     description:
-      'The average age of your credit accounts. Longer history shows stability.',
+      "The average age of your credit accounts. Longer history shows stability.",
     tips: [
-      'Keep old accounts open',
-      'Avoid opening too many new accounts',
-      'Become an authorized user on old accounts',
+      "Keep old accounts open",
+      "Avoid opening too many new accounts",
+      "Become an authorized user on old accounts",
     ],
     improvementActions: [
       {
-        action: 'Keep oldest accounts open and active',
-        impact: 'high',
-        timeframe: 'Ongoing',
+        action: "Keep oldest accounts open and active",
+        impact: "high",
+        timeframe: "Ongoing",
       },
       {
-        action: 'Become authorized user on old account',
-        impact: 'medium',
-        timeframe: '30-45 days',
+        action: "Become authorized user on old account",
+        impact: "medium",
+        timeframe: "30-45 days",
       },
       {
-        action: 'Avoid opening unnecessary new accounts',
-        impact: 'low',
-        timeframe: 'Ongoing',
+        action: "Avoid opening unnecessary new accounts",
+        impact: "low",
+        timeframe: "Ongoing",
       },
     ],
   },
   credit_mix: {
-    name: 'Credit Mix',
+    name: "Credit Mix",
     weight: 10,
     icon: "puzzle-piece",
     description:
-      'The variety of credit types you have. A healthy mix shows you can manage different types.',
+      "The variety of credit types you have. A healthy mix shows you can manage different types.",
     tips: [
-      'Have a mix of credit cards and loans',
-      'Consider a credit builder loan',
+      "Have a mix of credit cards and loans",
+      "Consider a credit builder loan",
       "Don't open accounts just for mix",
     ],
     improvementActions: [
       {
-        action: 'Consider a credit builder loan',
-        impact: 'medium',
-        timeframe: '30-60 days',
+        action: "Consider a credit builder loan",
+        impact: "medium",
+        timeframe: "30-60 days",
       },
       {
-        action: 'Add a secured credit card',
-        impact: 'medium',
-        timeframe: '14-30 days',
+        action: "Add a secured credit card",
+        impact: "medium",
+        timeframe: "14-30 days",
       },
       {
-        action: 'Keep existing account types active',
-        impact: 'low',
-        timeframe: 'Ongoing',
+        action: "Keep existing account types active",
+        impact: "low",
+        timeframe: "Ongoing",
       },
     ],
   },
   new_credit: {
-    name: 'New Credit',
+    name: "New Credit",
     weight: 10,
     icon: "document",
     description:
-      'Recent credit inquiries and new accounts. Too many can signal risk.',
+      "Recent credit inquiries and new accounts. Too many can signal risk.",
     tips: [
-      'Limit hard inquiries',
-      'Space out credit applications',
-      'Rate shop within 14-45 days',
+      "Limit hard inquiries",
+      "Space out credit applications",
+      "Rate shop within 14-45 days",
     ],
     improvementActions: [
       {
-        action: 'Wait before applying for new credit',
-        impact: 'medium',
-        timeframe: '6-12 months',
+        action: "Wait before applying for new credit",
+        impact: "medium",
+        timeframe: "6-12 months",
       },
       {
-        action: 'Rate shop within 14-45 day window',
-        impact: 'low',
-        timeframe: 'When needed',
+        action: "Rate shop within 14-45 day window",
+        impact: "low",
+        timeframe: "When needed",
       },
       {
-        action: 'Use pre-qualification tools (soft pulls)',
-        impact: 'low',
-        timeframe: 'Immediate',
+        action: "Use pre-qualification tools (soft pulls)",
+        impact: "low",
+        timeframe: "Immediate",
       },
     ],
   },
@@ -192,37 +192,37 @@ const SCORE_RANGES = [
   {
     min: 300,
     max: 579,
-    label: 'Poor',
-    color: '#EF4444',
-    bgColor: 'bg-red-500',
+    label: "Poor",
+    color: "#EF4444",
+    bgColor: "bg-red-500",
   },
   {
     min: 580,
     max: 669,
-    label: 'Fair',
-    color: '#F59E0B',
-    bgColor: 'bg-orange-500',
+    label: "Fair",
+    color: "#F59E0B",
+    bgColor: "bg-orange-500",
   },
   {
     min: 670,
     max: 739,
-    label: 'Good',
-    color: '#EAB308',
-    bgColor: 'bg-yellow-500',
+    label: "Good",
+    color: "#EAB308",
+    bgColor: "bg-yellow-500",
   },
   {
     min: 740,
     max: 799,
-    label: 'Very Good',
-    color: '#84CC16',
-    bgColor: 'bg-lime-500',
+    label: "Very Good",
+    color: "#84CC16",
+    bgColor: "bg-lime-500",
   },
   {
     min: 800,
     max: 850,
-    label: 'Excellent',
-    color: '#22C55E',
-    bgColor: 'bg-green-500',
+    label: "Excellent",
+    color: "#22C55E",
+    bgColor: "bg-green-500",
   },
 ];
 
@@ -249,17 +249,17 @@ export default function CreditFactorsPage() {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('/api/credit/factors');
+      const response = await fetch("/api/credit/factors");
       const data = await response.json();
 
       if (!data.success) {
-        throw new Error(data.error || 'Failed to fetch factors');
+        throw new Error(data.error || "Failed to fetch factors");
       }
 
       setFactors(data.data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-      console.error('Error fetching factors:', err);
+      setError(err instanceof Error ? err.message : "An error occurred");
+      console.error("Error fetching factors:", err);
     } finally {
       setLoading(false);
     }
@@ -279,7 +279,7 @@ export default function CreditFactorsPage() {
       return (
         total +
         Math.round(
-          factor.percentImpact * (statusMultiplier[factor.status] || 0.5)
+          factor.percentImpact * (statusMultiplier[factor.status] || 0.5),
         )
       );
     }, 0);
@@ -289,7 +289,7 @@ export default function CreditFactorsPage() {
   const factorsNeedingImprovement = useMemo(() => {
     return factors.filter(
       (f) =>
-        f.status === 'fair' || f.status === 'poor' || f.status === 'very_poor'
+        f.status === "fair" || f.status === "poor" || f.status === "very_poor",
     );
   }, [factors]);
 
@@ -363,8 +363,8 @@ export default function CreditFactorsPage() {
                 <div
                   className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm font-semibold ${
                     scoreChange >= 0
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-red-100 text-red-700'
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-700"
                   }`}
                 >
                   <svg
@@ -379,12 +379,12 @@ export default function CreditFactorsPage() {
                       strokeWidth={2}
                       d={
                         scoreChange >= 0
-                          ? 'M5 10l7-7m0 0l7 7m-7-7v18'
-                          : 'M19 14l-7 7m0 0l-7-7m7 7V3'
+                          ? "M5 10l7-7m0 0l7 7m-7-7v18"
+                          : "M19 14l-7 7m0 0l-7-7m7 7V3"
                       }
                     />
                   </svg>
-                  {scoreChange >= 0 ? '+' : ''}
+                  {scoreChange >= 0 ? "+" : ""}
                   {scoreChange} pts
                 </div>
               )}
@@ -399,15 +399,15 @@ export default function CreditFactorsPage() {
               {scoreRange.label}
             </div>
             <p className="text-gray-600 dark:text-slate-300 text-sm">
-              {scoreRange.label === 'Poor' &&
-                'Well below average - Significant improvement needed'}
-              {scoreRange.label === 'Fair' &&
-                'Below average - Room for improvement'}
-              {scoreRange.label === 'Good' && 'Near or slightly above average'}
-              {scoreRange.label === 'Very Good' &&
-                'Above average - Keep up the good work'}
-              {scoreRange.label === 'Excellent' &&
-                'Well above average - Outstanding credit'}
+              {scoreRange.label === "Poor" &&
+                "Well below average - Significant improvement needed"}
+              {scoreRange.label === "Fair" &&
+                "Below average - Room for improvement"}
+              {scoreRange.label === "Good" && "Near or slightly above average"}
+              {scoreRange.label === "Very Good" &&
+                "Above average - Keep up the good work"}
+              {scoreRange.label === "Excellent" &&
+                "Well above average - Outstanding credit"}
             </p>
           </div>
 
@@ -461,13 +461,13 @@ export default function CreditFactorsPage() {
                 key={index}
                 className={`text-center p-2 rounded-lg transition-all ${
                   currentScore >= range.min && currentScore <= range.max
-                    ? 'bg-gray-50 dark:bg-slate-900 ring-2 ring-offset-2'
-                    : 'opacity-50'
+                    ? "bg-gray-50 dark:bg-slate-900 ring-2 ring-offset-2"
+                    : "opacity-50"
                 }`}
                 style={
                   currentScore >= range.min && currentScore <= range.max
                     ? ({
-                        '--tw-ring-color': range.color,
+                        "--tw-ring-color": range.color,
                       } as React.CSSProperties)
                     : undefined
                 }
@@ -523,7 +523,9 @@ export default function CreditFactorsPage() {
                   <span className="text-4xl font-bold text-blue-600">
                     {totalImpactScore}
                   </span>
-                  <span className="text-lg text-gray-500 dark:text-slate-400 ml-1">/100</span>
+                  <span className="text-lg text-gray-500 dark:text-slate-400 ml-1">
+                    /100
+                  </span>
                 </div>
               </div>
               {factorsNeedingImprovement.length > 0 && (
@@ -541,8 +543,8 @@ export default function CreditFactorsPage() {
                   </svg>
                   <span className="text-sm text-amber-700 font-medium">
                     {factorsNeedingImprovement.length} factor
-                    {factorsNeedingImprovement.length > 1 ? 's' : ''} need
-                    {factorsNeedingImprovement.length === 1 ? 's' : ''}{' '}
+                    {factorsNeedingImprovement.length > 1 ? "s" : ""} need
+                    {factorsNeedingImprovement.length === 1 ? "s" : ""}{" "}
                     attention
                   </span>
                 </div>
@@ -587,17 +589,19 @@ export default function CreditFactorsPage() {
               {/* Legend */}
               <div className="flex flex-wrap gap-4 justify-center">
                 {[
-                  { label: 'Excellent', color: '#22C55E' },
-                  { label: 'Good', color: '#84CC16' },
-                  { label: 'Fair', color: '#F59E0B' },
-                  { label: 'Poor', color: '#EF4444' },
+                  { label: "Excellent", color: "#22C55E" },
+                  { label: "Good", color: "#84CC16" },
+                  { label: "Fair", color: "#F59E0B" },
+                  { label: "Poor", color: "#EF4444" },
                 ].map((item) => (
                   <div key={item.label} className="flex items-center">
                     <div
                       className="w-2 h-2 rounded-full mr-1.5"
                       style={{ backgroundColor: item.color }}
                     />
-                    <span className="text-xs text-gray-600 dark:text-slate-300">{item.label}</span>
+                    <span className="text-xs text-gray-600 dark:text-slate-300">
+                      {item.label}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -610,7 +614,7 @@ export default function CreditFactorsPage() {
                   name: factor.name,
                   weight: factor.percentImpact || 0,
                   icon: "sparkles",
-                  description: factor.description || '',
+                  description: factor.description || "",
                   tips: [],
                   improvementActions: [],
                 };
@@ -625,7 +629,7 @@ export default function CreditFactorsPage() {
                   very_poor: 0.0,
                 };
                 const impactPoints = Math.round(
-                  info.weight * (statusMultiplier[factor.status] || 0.5)
+                  info.weight * (statusMultiplier[factor.status] || 0.5),
                 );
 
                 return (
@@ -643,7 +647,10 @@ export default function CreditFactorsPage() {
                         {/* Icon */}
                         <div
                           className="w-12 h-12 rounded-full flex items-center justify-center mr-4"
-                          style={{ backgroundColor: `${statusColor}20`, color: statusColor }}
+                          style={{
+                            backgroundColor: `${statusColor}20`,
+                            color: statusColor,
+                          }}
                         >
                           <Icon name={info.icon} className="w-6 h-6" />
                         </div>
@@ -686,7 +693,7 @@ export default function CreditFactorsPage() {
                             {impactPoints} pts
                           </div>
                           <svg
-                            className={`w-5 h-5 text-gray-400 dark:text-slate-500 mt-1 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                            className={`w-5 h-5 text-gray-400 dark:text-slate-500 mt-1 transition-transform ${isExpanded ? "rotate-180" : ""}`}
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -773,11 +780,11 @@ export default function CreditFactorsPage() {
                                         className="w-2 h-2 rounded-full mt-2 mr-3"
                                         style={{
                                           backgroundColor:
-                                            action.impact === 'high'
-                                              ? '#22C55E'
-                                              : action.impact === 'medium'
-                                                ? '#F59E0B'
-                                                : '#6B7280',
+                                            action.impact === "high"
+                                              ? "#22C55E"
+                                              : action.impact === "medium"
+                                                ? "#F59E0B"
+                                                : "#6B7280",
                                         }}
                                       />
                                       <div className="flex-1">
@@ -792,17 +799,17 @@ export default function CreditFactorsPage() {
                                             className="text-xs font-semibold px-2 py-0.5 rounded"
                                             style={{
                                               backgroundColor:
-                                                action.impact === 'high'
-                                                  ? '#22C55E20'
-                                                  : action.impact === 'medium'
-                                                    ? '#F59E0B20'
-                                                    : '#6B728020',
+                                                action.impact === "high"
+                                                  ? "#22C55E20"
+                                                  : action.impact === "medium"
+                                                    ? "#F59E0B20"
+                                                    : "#6B728020",
                                               color:
-                                                action.impact === 'high'
-                                                  ? '#22C55E'
-                                                  : action.impact === 'medium'
-                                                    ? '#F59E0B'
-                                                    : '#6B7280',
+                                                action.impact === "high"
+                                                  ? "#22C55E"
+                                                  : action.impact === "medium"
+                                                    ? "#F59E0B"
+                                                    : "#6B7280",
                                             }}
                                           >
                                             {action.impact.toUpperCase()} IMPACT
@@ -810,7 +817,7 @@ export default function CreditFactorsPage() {
                                         </div>
                                       </div>
                                     </div>
-                                  )
+                                  ),
                                 )}
                               </div>
                             </div>
@@ -847,7 +854,7 @@ export default function CreditFactorsPage() {
 
                         {/* Action Button */}
                         <Link
-                          href={`/credit-builder/${factor.id.replace('_', '-')}`}
+                          href={`/credit-builder/${factor.id.replace("_", "-")}`}
                           className="flex items-center justify-center w-full px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors font-medium text-sm"
                         >
                           Improve This Factor
@@ -912,82 +919,82 @@ export default function CreditFactorsPage() {
 // Helper functions
 function getStatusColor(status: string): string {
   switch (status) {
-    case 'excellent':
-      return '#22C55E';
-    case 'good':
-      return '#84CC16';
-    case 'fair':
-      return '#F59E0B';
-    case 'poor':
-    case 'very_poor':
-      return '#EF4444';
+    case "excellent":
+      return "#22C55E";
+    case "good":
+      return "#84CC16";
+    case "fair":
+      return "#F59E0B";
+    case "poor":
+    case "very_poor":
+      return "#EF4444";
     default:
-      return '#6B7280';
+      return "#6B7280";
   }
 }
 
 function getStatusLabel(status: string): string {
   switch (status) {
-    case 'excellent':
-      return 'Excellent';
-    case 'good':
-      return 'Good';
-    case 'fair':
-      return 'Needs Work';
-    case 'poor':
-      return 'Poor';
-    case 'very_poor':
-      return 'Critical';
+    case "excellent":
+      return "Excellent";
+    case "good":
+      return "Good";
+    case "fair":
+      return "Needs Work";
+    case "poor":
+      return "Poor";
+    case "very_poor":
+      return "Critical";
     default:
-      return 'Unknown';
+      return "Unknown";
   }
 }
 
 function getImpactColor(impact: string): string {
   switch (impact) {
-    case 'high_positive':
-      return '#22C55E';
-    case 'positive':
-      return '#84CC16';
-    case 'neutral':
-      return '#6B7280';
-    case 'negative':
-      return '#F59E0B';
-    case 'high_negative':
-      return '#EF4444';
+    case "high_positive":
+      return "#22C55E";
+    case "positive":
+      return "#84CC16";
+    case "neutral":
+      return "#6B7280";
+    case "negative":
+      return "#F59E0B";
+    case "high_negative":
+      return "#EF4444";
     default:
-      return '#6B7280';
+      return "#6B7280";
   }
 }
 
 function getImpactLabel(impact: string): string {
   switch (impact) {
-    case 'high_positive':
-      return 'Strong Positive';
-    case 'positive':
-      return 'Positive';
-    case 'neutral':
-      return 'Neutral';
-    case 'negative':
-      return 'Negative';
-    case 'high_negative':
-      return 'Strong Negative';
+    case "high_positive":
+      return "Strong Positive";
+    case "positive":
+      return "Positive";
+    case "neutral":
+      return "Neutral";
+    case "negative":
+      return "Negative";
+    case "high_negative":
+      return "Strong Negative";
     default:
-      return 'Unknown';
+      return "Unknown";
   }
 }
 
 function getImpactIcon(impact: string): string {
   switch (impact) {
-    case 'high_positive':
-    case 'positive':
-      return '↗️';
-    case 'neutral':
-      return '';
-    case 'negative':
-    case 'high_negative':
-      return '↘️';
+    case "high_positive":
+    case "positive":
+      return "↗️";
+    case "neutral":
+      return "";
+    case "negative":
+    case "high_negative":
+      return "↘️";
     default:
-      return '';
+      return "";
   }
 }

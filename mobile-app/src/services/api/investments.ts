@@ -3,18 +3,18 @@
  * Handles all investment-related API calls using the core API client
  */
 
-import api from './client';
-import type { ApiResponse, RequestConfig } from './types';
+import api from "./client";
+import type { ApiResponse, RequestConfig } from "./types";
 
 // Investment Types
 export type AssetType =
-  | 'stock'
-  | 'etf'
-  | 'mutual_fund'
-  | 'bond'
-  | 'crypto'
-  | 'option'
-  | 'other';
+  | "stock"
+  | "etf"
+  | "mutual_fund"
+  | "bond"
+  | "crypto"
+  | "option"
+  | "other";
 
 export interface Holding {
   id: string;
@@ -81,7 +81,7 @@ export interface StockAnalysis {
   dividend_yield: number | null;
   volume: number;
   avg_volume: number;
-  recommendation: 'strong_buy' | 'buy' | 'hold' | 'sell' | 'strong_sell';
+  recommendation: "strong_buy" | "buy" | "hold" | "sell" | "strong_sell";
   confidence_score: number;
   target_price: number;
   analysis_summary: string;
@@ -121,32 +121,32 @@ export const investmentsApi = {
    */
   getPortfolio: (
     period?: string,
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<ApiResponse<PortfolioResponse>> =>
     api.get<PortfolioResponse>(
-      `/investments/portfolio${period ? `?period=${period}` : ''}`,
+      `/investments/portfolio${period ? `?period=${period}` : ""}`,
       {
         enableCache: true,
         cacheTime: 60000, // Cache for 1 minute
         ...config,
-      }
+      },
     ),
 
   /**
    * Get all holdings for the user
    */
   getHoldings: (
-    params?: { sortBy?: string; sortOrder?: 'asc' | 'desc'; type?: AssetType },
-    config?: RequestConfig
+    params?: { sortBy?: string; sortOrder?: "asc" | "desc"; type?: AssetType },
+    config?: RequestConfig,
   ): Promise<ApiResponse<{ holdings: Holding[] }>> => {
     const queryParams = new URLSearchParams();
-    if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
-    if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder);
-    if (params?.type) queryParams.append('type', params.type);
+    if (params?.sortBy) queryParams.append("sortBy", params.sortBy);
+    if (params?.sortOrder) queryParams.append("sortOrder", params.sortOrder);
+    if (params?.type) queryParams.append("type", params.type);
     const query = queryParams.toString();
     return api.get<{ holdings: Holding[] }>(
-      `/investments/holdings${query ? `?${query}` : ''}`,
-      config
+      `/investments/holdings${query ? `?${query}` : ""}`,
+      config,
     );
   },
 
@@ -155,7 +155,7 @@ export const investmentsApi = {
    */
   getHolding: (
     id: string,
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<ApiResponse<{ holding: Holding }>> =>
     api.get<{ holding: Holding }>(`/investments/holdings/${id}`, config),
 
@@ -164,9 +164,9 @@ export const investmentsApi = {
    */
   createHolding: (
     data: CreateHoldingInput,
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<ApiResponse<{ holding: Holding }>> =>
-    api.post<{ holding: Holding }>('/investments/holdings', data, config),
+    api.post<{ holding: Holding }>("/investments/holdings", data, config),
 
   /**
    * Update an existing holding
@@ -174,12 +174,12 @@ export const investmentsApi = {
   updateHolding: (
     id: string,
     data: UpdateHoldingInput,
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<ApiResponse<{ holding: Holding }>> =>
     api.patch<{ holding: Holding }>(
       `/investments/holdings/${id}`,
       data,
-      config
+      config,
     ),
 
   /**
@@ -187,7 +187,7 @@ export const investmentsApi = {
    */
   deleteHolding: (
     id: string,
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<ApiResponse<{ success: boolean }>> =>
     api.delete<{ success: boolean }>(`/investments/holdings/${id}`, config),
 
@@ -196,7 +196,7 @@ export const investmentsApi = {
    */
   analyzeStock: (
     symbol: string,
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<ApiResponse<StockAnalysisApiResponse>> =>
     api.get<StockAnalysisApiResponse>(`/investments/analyze/${symbol}`, {
       enableCache: true,
@@ -210,12 +210,16 @@ export const investmentsApi = {
   getRecommendation: (
     symbol: string,
     includePrice?: boolean,
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<ApiResponse<RecommendationResponse>> =>
-    api.post<RecommendationResponse>('/investments/recommendations', {
-      symbol,
-      includePrice: includePrice ?? true,
-    }, config),
+    api.post<RecommendationResponse>(
+      "/investments/recommendations",
+      {
+        symbol,
+        includePrice: includePrice ?? true,
+      },
+      config,
+    ),
 
   /**
    * Scan for chart patterns on a symbol
@@ -223,23 +227,27 @@ export const investmentsApi = {
   scanPatterns: (
     symbol: string,
     timeframe?: string,
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<ApiResponse<PatternScanResponse>> =>
-    api.post<PatternScanResponse>('/investments/patterns', {
-      symbol,
-      timeframe: timeframe ?? '1d',
-    }, config),
+    api.post<PatternScanResponse>(
+      "/investments/patterns",
+      {
+        symbol,
+        timeframe: timeframe ?? "1d",
+      },
+      config,
+    ),
 
   /**
    * Get pattern information
    */
   getPatternInfo: (
     patternType?: string,
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<ApiResponse<PatternInfoResponse>> =>
     api.get<PatternInfoResponse>(
-      `/investments/patterns${patternType ? `?type=${patternType}` : ''}`,
-      config
+      `/investments/patterns${patternType ? `?type=${patternType}` : ""}`,
+      config,
     ),
 
   /**
@@ -247,21 +255,29 @@ export const investmentsApi = {
    */
   analyzePortfolio: (
     holdings: PortfolioHoldingInput[],
-    options?: { includeStressTest?: boolean; includeRebalance?: boolean; targetAllocation?: Record<string, number> },
-    config?: RequestConfig
+    options?: {
+      includeStressTest?: boolean;
+      includeRebalance?: boolean;
+      targetAllocation?: Record<string, number>;
+    },
+    config?: RequestConfig,
   ): Promise<ApiResponse<PortfolioAnalysisResponse>> =>
-    api.post<PortfolioAnalysisResponse>('/investments/portfolio/analyze', {
-      holdings,
-      ...options,
-    }, config),
+    api.post<PortfolioAnalysisResponse>(
+      "/investments/portfolio/analyze",
+      {
+        holdings,
+        ...options,
+      },
+      config,
+    ),
 
   /**
    * Get user's portfolio analysis
    */
   getUserPortfolioAnalysis: (
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<ApiResponse<PortfolioAnalysisResponse>> =>
-    api.get<PortfolioAnalysisResponse>('/investments/portfolio/analyze', {
+    api.get<PortfolioAnalysisResponse>("/investments/portfolio/analyze", {
       enableCache: true,
       cacheTime: 60000, // Cache for 1 minute
       ...config,
@@ -273,13 +289,13 @@ export interface RecommendationResponse {
   recommendation: {
     id: string;
     symbol: string;
-    action: 'strong_buy' | 'buy' | 'hold' | 'sell' | 'strong_sell';
+    action: "strong_buy" | "buy" | "hold" | "sell" | "strong_sell";
     confidence: number;
     priceTarget: number;
     currentPrice: number;
     expectedReturn: number;
     riskScore: number;
-    timeHorizon: 'short_term' | 'medium_term' | 'long_term';
+    timeHorizon: "short_term" | "medium_term" | "long_term";
     entryPrice: number;
     stopLoss: number;
     takeProfit: number[];
@@ -289,7 +305,7 @@ export interface RecommendationResponse {
     reasons: Array<{
       category: string;
       description: string;
-      impact: 'positive' | 'negative' | 'neutral';
+      impact: "positive" | "negative" | "neutral";
       weight: number;
     }>;
     risks: string[];
@@ -298,8 +314,11 @@ export interface RecommendationResponse {
   pricePrediction?: {
     symbol: string;
     currentPrice: number;
-    predictions: Record<string, { price: number; confidence: number; range: [number, number] }>;
-    trend: 'bullish' | 'bearish' | 'neutral';
+    predictions: Record<
+      string,
+      { price: number; confidence: number; range: [number, number] }
+    >;
+    trend: "bullish" | "bearish" | "neutral";
     modelAccuracy: number;
   };
   technicalSummary: {
@@ -315,7 +334,7 @@ export interface PatternScanResponse {
   scannedAt: string;
   patterns: Array<{
     type: string;
-    direction: 'bullish' | 'bearish' | 'neutral';
+    direction: "bullish" | "bearish" | "neutral";
     reliability: number;
     priceTarget?: number;
     startIndex: number;
@@ -327,7 +346,7 @@ export interface PatternScanResponse {
   pivotPoints: Array<{
     index: number;
     price: number;
-    type: 'high' | 'low';
+    type: "high" | "low";
     strength: number;
   }>;
   supportLevels: number[];
@@ -366,7 +385,15 @@ export interface PortfolioHoldingInput {
   costBasis: number;
   currentPrice: number;
   sector?: string;
-  assetClass?: 'stock' | 'etf' | 'bond' | 'crypto' | 'commodity' | 'cash' | 'option' | 'reit';
+  assetClass?:
+    | "stock"
+    | "etf"
+    | "bond"
+    | "crypto"
+    | "commodity"
+    | "cash"
+    | "option"
+    | "reit";
 }
 
 export interface PortfolioAnalysisResponse {
@@ -416,7 +443,7 @@ export interface PortfolioAnalysisResponse {
   rebalanceRecommendation?: {
     trades: Array<{
       symbol: string;
-      action: 'buy' | 'sell';
+      action: "buy" | "sell";
       shares: number;
       value: number;
       currentWeight: number;
@@ -428,7 +455,7 @@ export interface PortfolioAnalysisResponse {
     taxImplications: Array<{
       symbol: string;
       gainLoss: number;
-      holdingPeriod: 'short_term' | 'long_term';
+      holdingPeriod: "short_term" | "long_term";
       estimatedTax: number;
     }>;
   };
@@ -437,7 +464,7 @@ export interface PortfolioAnalysisResponse {
     totalGainLoss: number;
     sharpeRatio: number;
     diversificationScore: number;
-    riskLevel?: 'low' | 'moderate' | 'high';
+    riskLevel?: "low" | "moderate" | "high";
   };
 }
 

@@ -3,14 +3,17 @@
  * Tests mobile-responsive features, accessibility, and collapsible sections
  */
 
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import '@testing-library/jest-dom';
-import { rest } from 'msw';
-import { server } from '@/__tests__/mocks/server';
-import AssetAllocationPanel from '../AssetAllocationPanel';
-import { Portfolio } from '@/lib/investments/types/investment.types';
-import { RiskTolerance, AssetClass } from '@/lib/investments/types/asset-allocation.types';
-import { ThemeProvider } from '@/contexts/ThemeContext';
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import "@testing-library/jest-dom";
+import { rest } from "msw";
+import { server } from "@/__tests__/mocks/server";
+import AssetAllocationPanel from "../AssetAllocationPanel";
+import { Portfolio } from "@/lib/investments/types/investment.types";
+import {
+  RiskTolerance,
+  AssetClass,
+} from "@/lib/investments/types/asset-allocation.types";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 
 // Mock the AssetAllocationService
 const mockGenerateEfficientFrontier = jest.fn(() => [
@@ -22,13 +25,15 @@ const mockService = {
   generateEfficientFrontier: mockGenerateEfficientFrontier,
 };
 
-jest.mock('@/lib/investments/services/AssetAllocationService', () => ({
+jest.mock("@/lib/investments/services/AssetAllocationService", () => ({
   getAssetAllocationService: () => mockService,
 }));
 
 // Mock the EfficientFrontierChart component
-jest.mock('../EfficientFrontierChart', () => ({
-  EfficientFrontierChart: () => <div data-testid="efficient-frontier-chart">Chart</div>,
+jest.mock("../EfficientFrontierChart", () => ({
+  EfficientFrontierChart: () => (
+    <div data-testid="efficient-frontier-chart">Chart</div>
+  ),
 }));
 
 // Mock useOnline hook
@@ -46,23 +51,19 @@ let mockUseOnlineReturn: {
   checkConnection: jest.fn(),
 };
 
-jest.mock('@/hooks/useOnline', () => ({
+jest.mock("@/hooks/useOnline", () => ({
   useOnline: () => mockUseOnlineReturn,
 }));
 
 // Helper function to render with ThemeProvider
 const renderWithTheme = (component: React.ReactElement) => {
-  return render(
-    <ThemeProvider defaultTheme="dark">
-      {component}
-    </ThemeProvider>
-  );
+  return render(<ThemeProvider defaultTheme="dark">{component}</ThemeProvider>);
 };
 
 const mockPortfolio: Portfolio = {
-  id: 'test-portfolio',
-  userId: 'user1',
-  name: 'Test Portfolio',
+  id: "test-portfolio",
+  userId: "user1",
+  name: "Test Portfolio",
   totalValue: 100000,
   totalCost: 90000,
   totalGain: 10000,
@@ -74,8 +75,8 @@ const mockPortfolio: Portfolio = {
   assetAllocation: [],
   sectorAllocation: [],
   performanceHistory: [],
-  createdAt: new Date('2023-01-01'),
-  updatedAt: new Date('2023-12-01'),
+  createdAt: new Date("2023-01-01"),
+  updatedAt: new Date("2023-12-01"),
 };
 
 const mockAnalysisResponse = {
@@ -88,7 +89,7 @@ const mockAnalysisResponse = {
     portfolioVolatility: 0.15,
     portfolioBeta: 1.1,
     valueAtRisk: 5000,
-    maxDrawdown: 0.20,
+    maxDrawdown: 0.2,
   },
   performanceMetrics: {
     expectedReturn: 0.08,
@@ -97,7 +98,7 @@ const mockAnalysisResponse = {
     informationRatio: 0.8,
   },
   recommendedModel: {
-    name: 'Moderate Growth',
+    name: "Moderate Growth",
     expectedReturn: 0.09,
     expectedVolatility: 0.14,
   },
@@ -106,247 +107,311 @@ const mockAnalysisResponse = {
   deviationFromTarget: 2.5,
 };
 
-describe('AssetAllocationPanel - Mobile Responsive', () => {
+describe("AssetAllocationPanel - Mobile Responsive", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     localStorage.clear();
   });
 
-  describe('Responsive Layout', () => {
-    it('should render header with mobile-friendly controls', () => {
+  describe("Responsive Layout", () => {
+    it("should render header with mobile-friendly controls", () => {
       renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
-      expect(screen.getByText('Asset Allocation Analysis')).toBeInTheDocument();
-      expect(screen.getByLabelText('Select Risk Tolerance Level')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Analyze portfolio allocation/i })).toBeInTheDocument();
+      expect(screen.getByText("Asset Allocation Analysis")).toBeInTheDocument();
+      expect(
+        screen.getByLabelText("Select Risk Tolerance Level"),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Analyze portfolio allocation/i }),
+      ).toBeInTheDocument();
     });
 
-    it('should have minimum 44px tap targets for buttons', () => {
+    it("should have minimum 44px tap targets for buttons", () => {
       renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
-      const analyzeButton = screen.getByRole('button', { name: /Analyze portfolio allocation/i });
+      const analyzeButton = screen.getByRole("button", {
+        name: /Analyze portfolio allocation/i,
+      });
       const styles = window.getComputedStyle(analyzeButton);
 
       // Check min-height class is applied
-      expect(analyzeButton.className).toContain('min-h-[44px]');
+      expect(analyzeButton.className).toContain("min-h-[44px]");
     });
 
-    it('should have proper focus indicators for accessibility', () => {
+    it("should have proper focus indicators for accessibility", () => {
       renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
-      const riskSelect = screen.getByLabelText('Select Risk Tolerance Level');
-      expect(riskSelect.className).toContain('focus:ring-2');
-      expect(riskSelect.className).toContain('focus:ring-blue-500');
+      const riskSelect = screen.getByLabelText("Select Risk Tolerance Level");
+      expect(riskSelect.className).toContain("focus:ring-2");
+      expect(riskSelect.className).toContain("focus:ring-blue-500");
     });
   });
 
-  describe('Collapsible Sections', () => {
-    it('should render collapsible sections when analysis is available', async () => {
+  describe("Collapsible Sections", () => {
+    it("should render collapsible sections when analysis is available", async () => {
       // Setup MSW handler for this test
       server.use(
-        rest.post('*/api/investments/allocation-analysis', (req, res, ctx) => {
+        rest.post("*/api/investments/allocation-analysis", (req, res, ctx) => {
           return res(ctx.json({ success: true, data: mockAnalysisResponse }));
-        })
+        }),
       );
 
       renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
-      const analyzeButton = screen.getByRole('button', { name: /Analyze portfolio allocation/i });
+      const analyzeButton = screen.getByRole("button", {
+        name: /Analyze portfolio allocation/i,
+      });
       fireEvent.click(analyzeButton);
 
-      await waitFor(() => {
-        expect(screen.getByText('Current Allocation')).toBeInTheDocument();
-        expect(screen.getByText('Diversification Score')).toBeInTheDocument();
-        expect(screen.getByText('Risk Metrics')).toBeInTheDocument();
-        expect(screen.getByText('Performance Metrics')).toBeInTheDocument();
-        expect(screen.getByText('Efficient Frontier')).toBeInTheDocument();
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          expect(screen.getByText("Current Allocation")).toBeInTheDocument();
+          expect(screen.getByText("Diversification Score")).toBeInTheDocument();
+          expect(screen.getByText("Risk Metrics")).toBeInTheDocument();
+          expect(screen.getByText("Performance Metrics")).toBeInTheDocument();
+          expect(screen.getByText("Efficient Frontier")).toBeInTheDocument();
+        },
+        { timeout: 3000 },
+      );
     });
 
-    it('should toggle collapsible sections on click', async () => {
+    it("should toggle collapsible sections on click", async () => {
       // Setup MSW handler for this test
       server.use(
-        rest.post('*/api/investments/allocation-analysis', (req, res, ctx) => {
+        rest.post("*/api/investments/allocation-analysis", (req, res, ctx) => {
           return res(ctx.json({ success: true, data: mockAnalysisResponse }));
-        })
+        }),
       );
 
       renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
-      const analyzeButton = screen.getByRole('button', { name: /Analyze portfolio allocation/i });
+      const analyzeButton = screen.getByRole("button", {
+        name: /Analyze portfolio allocation/i,
+      });
       fireEvent.click(analyzeButton);
 
-      await waitFor(() => {
-        expect(screen.getByText('Risk Metrics')).toBeInTheDocument();
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          expect(screen.getByText("Risk Metrics")).toBeInTheDocument();
+        },
+        { timeout: 3000 },
+      );
 
       // Find the Risk Metrics collapsible button
-      const riskMetricsButton = screen.getByRole('button', { name: /Risk Metrics/i });
+      const riskMetricsButton = screen.getByRole("button", {
+        name: /Risk Metrics/i,
+      });
 
       // Check initial state (collapsed by default)
-      expect(riskMetricsButton).toHaveAttribute('aria-expanded', 'false');
+      expect(riskMetricsButton).toHaveAttribute("aria-expanded", "false");
 
       // Click to expand
       fireEvent.click(riskMetricsButton);
-      expect(riskMetricsButton).toHaveAttribute('aria-expanded', 'true');
+      expect(riskMetricsButton).toHaveAttribute("aria-expanded", "true");
 
       // Click to collapse
       fireEvent.click(riskMetricsButton);
-      expect(riskMetricsButton).toHaveAttribute('aria-expanded', 'false');
+      expect(riskMetricsButton).toHaveAttribute("aria-expanded", "false");
     });
 
-    it('should persist collapsible section state in localStorage', async () => {
+    it("should persist collapsible section state in localStorage", async () => {
       // Setup MSW handler for this test
       server.use(
-        rest.post('*/api/investments/allocation-analysis', (req, res, ctx) => {
+        rest.post("*/api/investments/allocation-analysis", (req, res, ctx) => {
           return res(ctx.json({ success: true, data: mockAnalysisResponse }));
-        })
+        }),
       );
 
       renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
-      const analyzeButton = screen.getByRole('button', { name: /Analyze portfolio allocation/i });
+      const analyzeButton = screen.getByRole("button", {
+        name: /Analyze portfolio allocation/i,
+      });
       fireEvent.click(analyzeButton);
 
-      await waitFor(() => {
-        expect(screen.getByText('Risk Metrics')).toBeInTheDocument();
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          expect(screen.getByText("Risk Metrics")).toBeInTheDocument();
+        },
+        { timeout: 3000 },
+      );
 
-      const riskMetricsButton = screen.getByRole('button', { name: /Risk Metrics/i });
+      const riskMetricsButton = screen.getByRole("button", {
+        name: /Risk Metrics/i,
+      });
 
       // Expand section
       fireEvent.click(riskMetricsButton);
 
       // Check localStorage
-      expect(localStorage.getItem('allocation-section-risk-metrics')).toBe('true');
+      expect(localStorage.getItem("allocation-section-risk-metrics")).toBe(
+        "true",
+      );
 
       // Collapse section
       fireEvent.click(riskMetricsButton);
-      expect(localStorage.getItem('allocation-section-risk-metrics')).toBe('false');
+      expect(localStorage.getItem("allocation-section-risk-metrics")).toBe(
+        "false",
+      );
     });
   });
 
-  describe('Accessibility (WCAG 2.1 AA)', () => {
-    it('should have proper ARIA labels for interactive elements', () => {
+  describe("Accessibility (WCAG 2.1 AA)", () => {
+    it("should have proper ARIA labels for interactive elements", () => {
       renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
-      const riskSelect = screen.getByLabelText('Select Risk Tolerance Level');
-      expect(riskSelect).toHaveAttribute('aria-label', 'Risk tolerance level');
+      const riskSelect = screen.getByLabelText("Select Risk Tolerance Level");
+      expect(riskSelect).toHaveAttribute("aria-label", "Risk tolerance level");
 
-      const analyzeButton = screen.getByRole('button', { name: /Analyze portfolio allocation/i });
-      expect(analyzeButton).toHaveAttribute('aria-label');
+      const analyzeButton = screen.getByRole("button", {
+        name: /Analyze portfolio allocation/i,
+      });
+      expect(analyzeButton).toHaveAttribute("aria-label");
     });
 
-    it('should display error messages with proper ARIA attributes', async () => {
+    it("should display error messages with proper ARIA attributes", async () => {
       // Setup MSW handler to return error
       server.use(
-        rest.post('*/api/investments/allocation-analysis', (req, res, ctx) => {
-          return res(ctx.status(500), ctx.json({ success: false, error: 'Network error' }));
-        })
+        rest.post("*/api/investments/allocation-analysis", (req, res, ctx) => {
+          return res(
+            ctx.status(500),
+            ctx.json({ success: false, error: "Network error" }),
+          );
+        }),
       );
 
       renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
-      const analyzeButton = screen.getByRole('button', { name: /Analyze portfolio allocation/i });
+      const analyzeButton = screen.getByRole("button", {
+        name: /Analyze portfolio allocation/i,
+      });
       fireEvent.click(analyzeButton);
 
       await waitFor(() => {
-        const errorAlert = screen.getByRole('alert');
+        const errorAlert = screen.getByRole("alert");
         expect(errorAlert).toBeInTheDocument();
-        expect(errorAlert).toHaveAttribute('aria-live', 'assertive');
-        expect(errorAlert).toHaveTextContent('Network error');
+        expect(errorAlert).toHaveAttribute("aria-live", "assertive");
+        expect(errorAlert).toHaveTextContent("Network error");
       });
     });
 
-    it('should have proper color contrast for text elements', async () => {
+    it("should have proper color contrast for text elements", async () => {
       // Setup MSW handler for this test
       server.use(
-        rest.post('*/api/investments/allocation-analysis', (req, res, ctx) => {
+        rest.post("*/api/investments/allocation-analysis", (req, res, ctx) => {
           return res(ctx.json({ success: true, data: mockAnalysisResponse }));
-        })
+        }),
       );
 
       renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
-      const analyzeButton = screen.getByRole('button', { name: /Analyze portfolio allocation/i });
+      const analyzeButton = screen.getByRole("button", {
+        name: /Analyze portfolio allocation/i,
+      });
       fireEvent.click(analyzeButton);
 
-      await waitFor(() => {
-        // Check for well-balanced message
-        const successMessage = screen.getByRole('status');
-        expect(successMessage).toBeInTheDocument();
-        expect(successMessage).toHaveAttribute('aria-live', 'polite');
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          // Check for well-balanced message
+          const successMessage = screen.getByRole("status");
+          expect(successMessage).toBeInTheDocument();
+          expect(successMessage).toHaveAttribute("aria-live", "polite");
+        },
+        { timeout: 3000 },
+      );
     });
 
-    it('should have progress bars with proper ARIA attributes', async () => {
+    it("should have progress bars with proper ARIA attributes", async () => {
       // Setup MSW handler for this test
       server.use(
-        rest.post('*/api/investments/allocation-analysis', (req, res, ctx) => {
+        rest.post("*/api/investments/allocation-analysis", (req, res, ctx) => {
           return res(ctx.json({ success: true, data: mockAnalysisResponse }));
-        })
+        }),
       );
 
       renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
-      const analyzeButton = screen.getByRole('button', { name: /Analyze portfolio allocation/i });
+      const analyzeButton = screen.getByRole("button", {
+        name: /Analyze portfolio allocation/i,
+      });
       fireEvent.click(analyzeButton);
 
-      await waitFor(() => {
-        const progressBars = screen.getAllByRole('progressbar');
-        expect(progressBars.length).toBeGreaterThan(0);
+      await waitFor(
+        () => {
+          const progressBars = screen.getAllByRole("progressbar");
+          expect(progressBars.length).toBeGreaterThan(0);
 
-        progressBars.forEach((bar) => {
-          expect(bar).toHaveAttribute('aria-valuenow');
-          expect(bar).toHaveAttribute('aria-valuemin', '0');
-          expect(bar).toHaveAttribute('aria-valuemax', '100');
-          expect(bar).toHaveAttribute('aria-label');
-        });
-      }, { timeout: 3000 });
+          progressBars.forEach((bar) => {
+            expect(bar).toHaveAttribute("aria-valuenow");
+            expect(bar).toHaveAttribute("aria-valuemin", "0");
+            expect(bar).toHaveAttribute("aria-valuemax", "100");
+            expect(bar).toHaveAttribute("aria-label");
+          });
+        },
+        { timeout: 3000 },
+      );
     });
   });
 
-  describe('Touch-Friendly Interactions', () => {
-    it('should have active states for touch feedback', () => {
+  describe("Touch-Friendly Interactions", () => {
+    it("should have active states for touch feedback", () => {
       renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
-      const analyzeButton = screen.getByRole('button', { name: /Analyze portfolio allocation/i });
-      expect(analyzeButton.className).toContain('active:scale-95');
-      expect(analyzeButton.className).toContain('active:bg-blue-800');
+      const analyzeButton = screen.getByRole("button", {
+        name: /Analyze portfolio allocation/i,
+      });
+      expect(analyzeButton.className).toContain("active:scale-95");
+      expect(analyzeButton.className).toContain("active:bg-blue-800");
     });
   });
 
-  describe('Loading Skeleton', () => {
-    it('should show skeleton during initial loading', async () => {
+  describe("Loading Skeleton", () => {
+    it("should show skeleton during initial loading", async () => {
       // Setup MSW handler with delay to simulate loading
       server.use(
-        rest.post('*/api/investments/allocation-analysis', async (req, res, ctx) => {
-          await new Promise(resolve => setTimeout(resolve, 100));
-          return res(ctx.json({ success: true, data: mockAnalysisResponse }));
-        })
+        rest.post(
+          "*/api/investments/allocation-analysis",
+          async (req, res, ctx) => {
+            await new Promise((resolve) => setTimeout(resolve, 100));
+            return res(ctx.json({ success: true, data: mockAnalysisResponse }));
+          },
+        ),
       );
 
       renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
-      const analyzeButton = screen.getByRole('button', { name: /Analyze portfolio allocation/i });
+      const analyzeButton = screen.getByRole("button", {
+        name: /Analyze portfolio allocation/i,
+      });
       fireEvent.click(analyzeButton);
 
       // Should show skeleton immediately
       await waitFor(() => {
-        expect(screen.getByRole('status', { name: /Loading asset allocation analysis/i })).toBeInTheDocument();
+        expect(
+          screen.getByRole("status", {
+            name: /Loading asset allocation analysis/i,
+          }),
+        ).toBeInTheDocument();
       });
 
       // Wait for analysis to complete
-      await waitFor(() => {
-        expect(screen.getByText('Current Allocation')).toBeInTheDocument();
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          expect(screen.getByText("Current Allocation")).toBeInTheDocument();
+        },
+        { timeout: 3000 },
+      );
 
       // Skeleton should be gone
-      expect(screen.queryByRole('status', { name: /Loading asset allocation analysis/i })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("status", {
+          name: /Loading asset allocation analysis/i,
+        }),
+      ).not.toBeInTheDocument();
     });
   });
 
-  describe('Offline Support', () => {
+  describe("Offline Support", () => {
     beforeEach(() => {
       // Clear localStorage before each test
       localStorage.clear();
@@ -361,40 +426,48 @@ describe('AssetAllocationPanel - Mobile Responsive', () => {
       };
     });
 
-    it('should store cached timestamp when analysis succeeds', async () => {
+    it("should store cached timestamp when analysis succeeds", async () => {
       server.use(
-        rest.post('*/api/investments/allocation-analysis', (req, res, ctx) => {
+        rest.post("*/api/investments/allocation-analysis", (req, res, ctx) => {
           return res(ctx.json({ success: true, data: mockAnalysisResponse }));
-        })
+        }),
       );
 
       renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
-      const analyzeButton = screen.getByRole('button', { name: /Analyze portfolio allocation/i });
+      const analyzeButton = screen.getByRole("button", {
+        name: /Analyze portfolio allocation/i,
+      });
       fireEvent.click(analyzeButton);
 
       await waitFor(() => {
-        expect(screen.getByText('Current Allocation')).toBeInTheDocument();
+        expect(screen.getByText("Current Allocation")).toBeInTheDocument();
       });
 
       // Check that timestamp was stored in localStorage
-      const storedTimestamp = localStorage.getItem('allocation-analysis-timestamp');
+      const storedTimestamp = localStorage.getItem(
+        "allocation-analysis-timestamp",
+      );
       expect(storedTimestamp).toBeTruthy();
       expect(new Date(storedTimestamp!)).toBeInstanceOf(Date);
     });
 
-    it('should load cached timestamp on mount', () => {
-      const cachedTimestamp = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-      localStorage.setItem('allocation-analysis-timestamp', cachedTimestamp);
+    it("should load cached timestamp on mount", () => {
+      const cachedTimestamp = new Date(
+        Date.now() - 5 * 60 * 1000,
+      ).toISOString();
+      localStorage.setItem("allocation-analysis-timestamp", cachedTimestamp);
 
       renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
       // Component should load the cached timestamp
       // (We can't directly test state, but we can verify localStorage was accessed)
-      expect(localStorage.getItem('allocation-analysis-timestamp')).toBe(cachedTimestamp);
+      expect(localStorage.getItem("allocation-analysis-timestamp")).toBe(
+        cachedTimestamp,
+      );
     });
 
-    it('should queue action when offline', async () => {
+    it("should queue action when offline", async () => {
       mockUseOnlineReturn = {
         isOnline: false,
         wasOffline: true,
@@ -405,19 +478,23 @@ describe('AssetAllocationPanel - Mobile Responsive', () => {
 
       renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
-      const analyzeButton = screen.getByRole('button', { name: /Analyze portfolio allocation/i });
+      const analyzeButton = screen.getByRole("button", {
+        name: /Analyze portfolio allocation/i,
+      });
       fireEvent.click(analyzeButton);
 
       await waitFor(() => {
         expect(screen.getByText(/You are offline/i)).toBeInTheDocument();
-        expect(screen.getByText(/Analysis request queued/i)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Analysis request queued/i),
+        ).toBeInTheDocument();
       });
 
       // Should show pending action in queue status
       expect(screen.getByText(/1 pending action/i)).toBeInTheDocument();
     });
 
-    it('should show queued message when offline', async () => {
+    it("should show queued message when offline", async () => {
       mockUseOnlineReturn = {
         isOnline: false,
         wasOffline: true,
@@ -428,21 +505,27 @@ describe('AssetAllocationPanel - Mobile Responsive', () => {
 
       renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
-      const analyzeButton = screen.getByRole('button', { name: /Analyze portfolio allocation/i });
+      const analyzeButton = screen.getByRole("button", {
+        name: /Analyze portfolio allocation/i,
+      });
       fireEvent.click(analyzeButton);
 
       await waitFor(() => {
         expect(screen.getByText(/You are offline/i)).toBeInTheDocument();
-        expect(screen.getByText(/Analysis request queued for when you reconnect/i)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Analysis request queued for when you reconnect/i),
+        ).toBeInTheDocument();
       });
     });
 
-    it('should render OfflineIndicator component', () => {
+    it("should render OfflineIndicator component", () => {
       renderWithTheme(<AssetAllocationPanel portfolio={mockPortfolio} />);
 
       // OfflineIndicator should be in the DOM (even if not visible when online)
       // We can't test its visibility directly without mocking useOnline to return offline
-      expect(screen.getByRole('heading', { name: /Asset Allocation Analysis/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", { name: /Asset Allocation Analysis/i }),
+      ).toBeInTheDocument();
     });
   });
 });

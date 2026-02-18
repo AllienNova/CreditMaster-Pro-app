@@ -9,32 +9,32 @@
  * - Tax lot tracking for gains/losses
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type WalletType = 'hot' | 'cold' | 'exchange' | 'defi';
+export type WalletType = "hot" | "cold" | "exchange" | "defi";
 export type NetworkType =
-  | 'bitcoin'
-  | 'ethereum'
-  | 'solana'
-  | 'polygon'
-  | 'avalanche'
-  | 'arbitrum'
-  | 'optimism'
-  | 'base'
-  | 'bnb';
+  | "bitcoin"
+  | "ethereum"
+  | "solana"
+  | "polygon"
+  | "avalanche"
+  | "arbitrum"
+  | "optimism"
+  | "base"
+  | "bnb";
 
 export type ExchangeType =
-  | 'coinbase'
-  | 'binance'
-  | 'kraken'
-  | 'gemini'
-  | 'crypto_com'
-  | 'robinhood'
-  | 'other';
+  | "coinbase"
+  | "binance"
+  | "kraken"
+  | "gemini"
+  | "crypto_com"
+  | "robinhood"
+  | "other";
 
 export interface CryptoWallet {
   id: string;
@@ -94,14 +94,14 @@ export interface CryptoTransaction {
 
   // Transaction details
   type:
-    | 'buy'
-    | 'sell'
-    | 'transfer_in'
-    | 'transfer_out'
-    | 'swap'
-    | 'stake'
-    | 'unstake'
-    | 'reward';
+    | "buy"
+    | "sell"
+    | "transfer_in"
+    | "transfer_out"
+    | "swap"
+    | "stake"
+    | "unstake"
+    | "reward";
   symbol: string;
   quantity: number;
   priceUsd: number;
@@ -116,7 +116,7 @@ export interface CryptoTransaction {
   // Tax
   costBasis?: number;
   gainLoss?: number;
-  holdingPeriod?: 'short' | 'long';
+  holdingPeriod?: "short" | "long";
 
   // Blockchain
   txHash?: string;
@@ -175,7 +175,7 @@ export interface PriceAlert {
   id: string;
   userId: string;
   symbol: string;
-  condition: 'above' | 'below';
+  condition: "above" | "below";
   targetPrice: number;
   currentPrice: number;
   isTriggered: boolean;
@@ -191,16 +191,16 @@ const MOCK_PRICES: Record<
   string,
   { price: number; change24h: number; name: string; logo: string }
 > = {
-  BTC: { price: 97500, change24h: 2.5, name: 'Bitcoin', logo: '₿' },
-  ETH: { price: 3250, change24h: 1.8, name: 'Ethereum', logo: 'Ξ' },
-  SOL: { price: 185, change24h: 5.2, name: 'Solana', logo: '◎' },
-  MATIC: { price: 0.85, change24h: -1.2, name: 'Polygon', logo: '⬡' },
-  AVAX: { price: 38, change24h: 3.1, name: 'Avalanche', logo: '' },
-  LINK: { price: 22, change24h: 0.8, name: 'Chainlink', logo: '⬡' },
-  UNI: { price: 12.5, change24h: -0.5, name: 'Uniswap', logo: '' },
-  AAVE: { price: 285, change24h: 1.2, name: 'Aave', logo: '' },
-  ARB: { price: 1.15, change24h: 2.8, name: 'Arbitrum', logo: '' },
-  OP: { price: 2.45, change24h: 1.5, name: 'Optimism', logo: '' },
+  BTC: { price: 97500, change24h: 2.5, name: "Bitcoin", logo: "₿" },
+  ETH: { price: 3250, change24h: 1.8, name: "Ethereum", logo: "Ξ" },
+  SOL: { price: 185, change24h: 5.2, name: "Solana", logo: "◎" },
+  MATIC: { price: 0.85, change24h: -1.2, name: "Polygon", logo: "⬡" },
+  AVAX: { price: 38, change24h: 3.1, name: "Avalanche", logo: "" },
+  LINK: { price: 22, change24h: 0.8, name: "Chainlink", logo: "⬡" },
+  UNI: { price: 12.5, change24h: -0.5, name: "Uniswap", logo: "" },
+  AAVE: { price: 285, change24h: 1.2, name: "Aave", logo: "" },
+  ARB: { price: 1.15, change24h: 2.8, name: "Arbitrum", logo: "" },
+  OP: { price: 2.45, change24h: 1.5, name: "Optimism", logo: "" },
 };
 
 // ============================================================================
@@ -221,8 +221,8 @@ export class CryptoWalletService {
   async addWallet(
     wallet: Omit<
       CryptoWallet,
-      'id' | 'holdings' | 'totalValueUsd' | 'createdAt' | 'updatedAt'
-    >
+      "id" | "holdings" | "totalValueUsd" | "createdAt" | "updatedAt"
+    >,
   ): Promise<CryptoWallet> {
     const now = new Date();
     const newWallet: CryptoWallet = {
@@ -235,7 +235,7 @@ export class CryptoWalletService {
     };
 
     const { data, error } = await this.supabase
-      .from('crypto_wallets')
+      .from("crypto_wallets")
       .insert(this.walletToDb(newWallet))
       .select()
       .single();
@@ -246,15 +246,15 @@ export class CryptoWalletService {
 
   async updateWallet(
     walletId: string,
-    updates: Partial<CryptoWallet>
+    updates: Partial<CryptoWallet>,
   ): Promise<CryptoWallet> {
     const { data, error } = await this.supabase
-      .from('crypto_wallets')
+      .from("crypto_wallets")
       .update({
         ...this.walletToDb(updates),
         updated_at: new Date().toISOString(),
       })
-      .eq('id', walletId)
+      .eq("id", walletId)
       .select()
       .single();
 
@@ -264,9 +264,9 @@ export class CryptoWalletService {
 
   async getWallet(walletId: string): Promise<CryptoWallet | null> {
     const { data } = await this.supabase
-      .from('crypto_wallets')
-      .select('*')
-      .eq('id', walletId)
+      .from("crypto_wallets")
+      .select("*")
+      .eq("id", walletId)
       .single();
 
     if (!data) return null;
@@ -275,17 +275,17 @@ export class CryptoWalletService {
     wallet.holdings = await this.getWalletHoldings(walletId);
     wallet.totalValueUsd = wallet.holdings.reduce(
       (sum, h) => sum + h.valueUsd,
-      0
+      0,
     );
     return wallet;
   }
 
   async getUserWallets(userId: string): Promise<CryptoWallet[]> {
     const { data, error } = await this.supabase
-      .from('crypto_wallets')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .from("crypto_wallets")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
     if (error) throw error;
 
@@ -296,7 +296,7 @@ export class CryptoWalletService {
       wallet.holdings = await this.getWalletHoldings(wallet.id);
       wallet.totalValueUsd = wallet.holdings.reduce(
         (sum, h) => sum + h.valueUsd,
-        0
+        0,
       );
     }
 
@@ -305,10 +305,10 @@ export class CryptoWalletService {
 
   async deleteWallet(walletId: string): Promise<void> {
     await this.supabase
-      .from('crypto_holdings')
+      .from("crypto_holdings")
       .delete()
-      .eq('wallet_id', walletId);
-    await this.supabase.from('crypto_wallets').delete().eq('id', walletId);
+      .eq("wallet_id", walletId);
+    await this.supabase.from("crypto_wallets").delete().eq("id", walletId);
   }
 
   // ==========================================================================
@@ -316,7 +316,7 @@ export class CryptoWalletService {
   // ==========================================================================
 
   async addHolding(
-    holding: Omit<CryptoHolding, 'id' | 'lastUpdated'>
+    holding: Omit<CryptoHolding, "id" | "lastUpdated">,
   ): Promise<CryptoHolding> {
     const newHolding = {
       ...holding,
@@ -325,7 +325,7 @@ export class CryptoWalletService {
     };
 
     const { data, error } = await this.supabase
-      .from('crypto_holdings')
+      .from("crypto_holdings")
       .insert(this.holdingToDb(newHolding))
       .select()
       .single();
@@ -336,15 +336,15 @@ export class CryptoWalletService {
 
   async updateHolding(
     holdingId: string,
-    updates: Partial<CryptoHolding>
+    updates: Partial<CryptoHolding>,
   ): Promise<CryptoHolding> {
     const { data, error } = await this.supabase
-      .from('crypto_holdings')
+      .from("crypto_holdings")
       .update({
         ...this.holdingToDb(updates),
         last_updated: new Date().toISOString(),
       })
-      .eq('id', holdingId)
+      .eq("id", holdingId)
       .select()
       .single();
 
@@ -354,10 +354,10 @@ export class CryptoWalletService {
 
   async getWalletHoldings(walletId: string): Promise<CryptoHolding[]> {
     const { data, error } = await this.supabase
-      .from('crypto_holdings')
-      .select('*')
-      .eq('wallet_id', walletId)
-      .order('value_usd', { ascending: false });
+      .from("crypto_holdings")
+      .select("*")
+      .eq("wallet_id", walletId)
+      .order("value_usd", { ascending: false });
 
     if (error) throw error;
     return (data || []).map(this.holdingFromDb);
@@ -369,7 +369,7 @@ export class CryptoWalletService {
 
   async syncWallet(walletId: string): Promise<CryptoWallet> {
     const wallet = await this.getWallet(walletId);
-    if (!wallet) throw new Error('Wallet not found');
+    if (!wallet) throw new Error("Wallet not found");
 
     // In production, this would call blockchain APIs or exchange APIs
     // For now, just update prices for existing holdings
@@ -399,7 +399,7 @@ export class CryptoWalletService {
   }
 
   async getPrice(
-    symbol: string
+    symbol: string,
   ): Promise<{ price: number; change24h: number } | null> {
     const priceData = MOCK_PRICES[symbol.toUpperCase()];
     if (!priceData) return null;
@@ -407,7 +407,7 @@ export class CryptoWalletService {
   }
 
   async getPrices(
-    symbols: string[]
+    symbols: string[],
   ): Promise<Record<string, { price: number; change24h: number }>> {
     const result: Record<string, { price: number; change24h: number }> = {};
     for (const symbol of symbols) {
@@ -490,7 +490,7 @@ export class CryptoWalletService {
       .sort((a, b) => b.valueUsd - a.valueUsd);
 
     const holdingsByNetwork: NetworkAllocation[] = Array.from(
-      networkMap.entries()
+      networkMap.entries(),
     )
       .map(([network, data]) => ({
         network,
@@ -501,7 +501,7 @@ export class CryptoWalletService {
       .sort((a, b) => b.valueUsd - a.valueUsd);
 
     const holdingsByWalletType: WalletTypeAllocation[] = Array.from(
-      walletTypeMap.entries()
+      walletTypeMap.entries(),
     )
       .map(([type, data]) => ({
         type,
@@ -540,7 +540,7 @@ export class CryptoWalletService {
   // ==========================================================================
 
   async createPriceAlert(
-    alert: Omit<PriceAlert, 'id' | 'isTriggered' | 'triggeredAt' | 'createdAt'>
+    alert: Omit<PriceAlert, "id" | "isTriggered" | "triggeredAt" | "createdAt">,
   ): Promise<PriceAlert> {
     const newAlert: PriceAlert = {
       ...alert,
@@ -550,7 +550,7 @@ export class CryptoWalletService {
     };
 
     const { data, error } = await this.supabase
-      .from('crypto_price_alerts')
+      .from("crypto_price_alerts")
       .insert({
         id: newAlert.id,
         user_id: newAlert.userId,
@@ -570,18 +570,18 @@ export class CryptoWalletService {
 
   async getUserAlerts(userId: string): Promise<PriceAlert[]> {
     const { data, error } = await this.supabase
-      .from('crypto_price_alerts')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('is_triggered', false)
-      .order('created_at', { ascending: false });
+      .from("crypto_price_alerts")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("is_triggered", false)
+      .order("created_at", { ascending: false });
 
     if (error) throw error;
     return (data || []).map(this.alertFromDb);
   }
 
   async deleteAlert(alertId: string): Promise<void> {
-    await this.supabase.from('crypto_price_alerts').delete().eq('id', alertId);
+    await this.supabase.from("crypto_price_alerts").delete().eq("id", alertId);
   }
 
   // ==========================================================================
@@ -628,7 +628,7 @@ export class CryptoWalletService {
   }
 
   private holdingToDb(
-    holding: Partial<CryptoHolding>
+    holding: Partial<CryptoHolding>,
   ): Record<string, unknown> {
     return {
       id: holding.id,
@@ -676,7 +676,7 @@ export class CryptoWalletService {
       id: data.id as string,
       userId: data.user_id as string,
       symbol: data.symbol as string,
-      condition: data.condition as 'above' | 'below',
+      condition: data.condition as "above" | "below",
       targetPrice: data.target_price as number,
       currentPrice: data.current_price as number,
       isTriggered: data.is_triggered as boolean,
@@ -700,7 +700,7 @@ export function getCryptoWalletService(): CryptoWalletService {
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     cryptoWalletServiceInstance = new CryptoWalletService(
       supabaseUrl,
-      supabaseKey
+      supabaseKey,
     );
   }
   return cryptoWalletServiceInstance;

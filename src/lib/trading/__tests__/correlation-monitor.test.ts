@@ -3,7 +3,7 @@
  * TRD-008: 80%+ branch coverage
  */
 
-import { CorrelationMonitor } from '../correlation-monitor';
+import { CorrelationMonitor } from "../correlation-monitor";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -14,11 +14,11 @@ function makePrices(
   days: number,
   basePrice = 100,
   dailyReturn = 0.001,
-  noise = 0.01
+  noise = 0.01,
 ): { date: Date; close: number }[] {
   const prices: { date: Date; close: number }[] = [];
   let price = basePrice;
-  const startDate = new Date('2024-01-01');
+  const startDate = new Date("2024-01-01");
 
   for (let i = 0; i < days; i++) {
     const date = new Date(startDate);
@@ -38,7 +38,7 @@ function makeCorrelatedPrices(days: number): {
   const pricesB: { date: Date; close: number }[] = [];
   let pA = 100;
   let pB = 200;
-  const startDate = new Date('2024-01-01');
+  const startDate = new Date("2024-01-01");
 
   for (let i = 0; i < days; i++) {
     const date = new Date(startDate);
@@ -56,10 +56,10 @@ function makeCorrelatedPrices(days: number): {
 function makeReturns(
   days: number,
   mean = 0,
-  std = 0.01
+  std = 0.01,
 ): { date: Date; value: number }[] {
   const returns: { date: Date; value: number }[] = [];
-  const startDate = new Date('2024-01-01');
+  const startDate = new Date("2024-01-01");
   for (let i = 0; i < days; i++) {
     const date = new Date(startDate);
     date.setDate(date.getDate() + i);
@@ -73,7 +73,7 @@ function makeReturns(
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('CorrelationMonitor', () => {
+describe("CorrelationMonitor", () => {
   let monitor: CorrelationMonitor;
 
   beforeEach(() => {
@@ -82,63 +82,63 @@ describe('CorrelationMonitor', () => {
 
   // ---- Ingest ----
 
-  describe('ingestPrices', () => {
-    it('should accept prices and compute returns', () => {
-      monitor.ingestPrices('AAPL', makePrices(100));
-      expect(monitor.getSymbols()).toContain('AAPL');
+  describe("ingestPrices", () => {
+    it("should accept prices and compute returns", () => {
+      monitor.ingestPrices("AAPL", makePrices(100));
+      expect(monitor.getSymbols()).toContain("AAPL");
     });
 
-    it('should ignore series with fewer than 2 prices', () => {
-      monitor.ingestPrices('TINY', [{ date: new Date(), close: 100 }]);
+    it("should ignore series with fewer than 2 prices", () => {
+      monitor.ingestPrices("TINY", [{ date: new Date(), close: 100 }]);
       // Returns need at least 2 prices to compute
-      expect(monitor.getSymbols()).not.toContain('TINY');
+      expect(monitor.getSymbols()).not.toContain("TINY");
     });
   });
 
-  describe('ingestReturns', () => {
-    it('should store pre-computed returns', () => {
-      monitor.ingestReturns('AAPL', makeReturns(100));
-      expect(monitor.getSymbols()).toContain('AAPL');
+  describe("ingestReturns", () => {
+    it("should store pre-computed returns", () => {
+      monitor.ingestReturns("AAPL", makeReturns(100));
+      expect(monitor.getSymbols()).toContain("AAPL");
     });
   });
 
   // ---- Correlation Calculation ----
 
-  describe('calculateCorrelation', () => {
-    it('should return NaN correlation when a symbol is missing', () => {
-      monitor.ingestReturns('AAPL', makeReturns(100));
-      const result = monitor.calculateCorrelation('AAPL', 'UNKNOWN');
+  describe("calculateCorrelation", () => {
+    it("should return NaN correlation when a symbol is missing", () => {
+      monitor.ingestReturns("AAPL", makeReturns(100));
+      const result = monitor.calculateCorrelation("AAPL", "UNKNOWN");
       expect(isNaN(result.correlation)).toBe(true);
       expect(result.pValue).toBe(1);
       expect(result.sampleSize).toBe(0);
     });
 
-    it('should return NaN when aligned samples < 10', () => {
+    it("should return NaN when aligned samples < 10", () => {
       // Create two series with barely any date overlap
-      const now = new Date('2024-01-01');
+      const now = new Date("2024-01-01");
       const seriesA = Array.from({ length: 5 }, (_, i) => ({
         date: new Date(now.getTime() + i * 86400000),
         value: Math.random() * 0.02,
       }));
-      const later = new Date('2024-06-01');
+      const later = new Date("2024-06-01");
       const seriesB = Array.from({ length: 5 }, (_, i) => ({
         date: new Date(later.getTime() + i * 86400000),
         value: Math.random() * 0.02,
       }));
 
-      monitor.ingestReturns('A', seriesA);
-      monitor.ingestReturns('B', seriesB);
+      monitor.ingestReturns("A", seriesA);
+      monitor.ingestReturns("B", seriesB);
 
-      const result = monitor.calculateCorrelation('A', 'B');
+      const result = monitor.calculateCorrelation("A", "B");
       expect(isNaN(result.correlation)).toBe(true);
     });
 
-    it('should compute a valid Pearson correlation for aligned series', () => {
+    it("should compute a valid Pearson correlation for aligned series", () => {
       const { pricesA, pricesB } = makeCorrelatedPrices(150);
-      monitor.ingestPrices('AAPL', pricesA);
-      monitor.ingestPrices('MSFT', pricesB);
+      monitor.ingestPrices("AAPL", pricesA);
+      monitor.ingestPrices("MSFT", pricesB);
 
-      const result = monitor.calculateCorrelation('AAPL', 'MSFT');
+      const result = monitor.calculateCorrelation("AAPL", "MSFT");
       expect(result.correlation).not.toBeNaN();
       expect(result.correlation).toBeGreaterThan(0.3); // should be positively correlated
       expect(result.sampleSize).toBeGreaterThanOrEqual(10);
@@ -147,18 +147,18 @@ describe('CorrelationMonitor', () => {
 
   // ---- EW Correlation ----
 
-  describe('calculateEWCorrelation', () => {
-    it('should return NaN for missing symbols', () => {
-      const result = monitor.calculateEWCorrelation('A', 'B');
+  describe("calculateEWCorrelation", () => {
+    it("should return NaN for missing symbols", () => {
+      const result = monitor.calculateEWCorrelation("A", "B");
       expect(isNaN(result.correlation)).toBe(true);
     });
 
-    it('should return a value between -1 and 1 for valid data', () => {
+    it("should return a value between -1 and 1 for valid data", () => {
       const { pricesA, pricesB } = makeCorrelatedPrices(200);
-      monitor.ingestPrices('X', pricesA);
-      monitor.ingestPrices('Y', pricesB);
+      monitor.ingestPrices("X", pricesA);
+      monitor.ingestPrices("Y", pricesB);
 
-      const result = monitor.calculateEWCorrelation('X', 'Y', 30);
+      const result = monitor.calculateEWCorrelation("X", "Y", 30);
       expect(result.correlation).toBeGreaterThanOrEqual(-1);
       expect(result.correlation).toBeLessThanOrEqual(1);
     });
@@ -166,22 +166,22 @@ describe('CorrelationMonitor', () => {
 
   // ---- Correlation Matrix ----
 
-  describe('getCorrelationMatrix', () => {
-    it('should return a 1x1 matrix with self-correlation=1', () => {
-      monitor.ingestReturns('AAPL', makeReturns(100));
-      const matrix = monitor.getCorrelationMatrix(['AAPL']);
+  describe("getCorrelationMatrix", () => {
+    it("should return a 1x1 matrix with self-correlation=1", () => {
+      monitor.ingestReturns("AAPL", makeReturns(100));
+      const matrix = monitor.getCorrelationMatrix(["AAPL"]);
 
-      expect(matrix.symbols).toEqual(['AAPL']);
+      expect(matrix.symbols).toEqual(["AAPL"]);
       expect(matrix.matrix[0][0]).toBe(1);
     });
 
-    it('should produce symmetric NxN matrix', () => {
+    it("should produce symmetric NxN matrix", () => {
       const { pricesA, pricesB } = makeCorrelatedPrices(150);
-      monitor.ingestPrices('A', pricesA);
-      monitor.ingestPrices('B', pricesB);
-      monitor.ingestPrices('C', makePrices(150, 50, -0.001));
+      monitor.ingestPrices("A", pricesA);
+      monitor.ingestPrices("B", pricesB);
+      monitor.ingestPrices("C", makePrices(150, 50, -0.001));
 
-      const matrix = monitor.getCorrelationMatrix(['A', 'B', 'C']);
+      const matrix = monitor.getCorrelationMatrix(["A", "B", "C"]);
       expect(matrix.symbols).toHaveLength(3);
       expect(matrix.matrix).toHaveLength(3);
 
@@ -200,38 +200,38 @@ describe('CorrelationMonitor', () => {
 
   // ---- Average Correlation ----
 
-  describe('getAverageCorrelation', () => {
-    it('should return 0 for fewer than 2 symbols', () => {
-      monitor.ingestReturns('AAPL', makeReturns(100));
-      expect(monitor.getAverageCorrelation(['AAPL'])).toBe(0);
+  describe("getAverageCorrelation", () => {
+    it("should return 0 for fewer than 2 symbols", () => {
+      monitor.ingestReturns("AAPL", makeReturns(100));
+      expect(monitor.getAverageCorrelation(["AAPL"])).toBe(0);
     });
 
-    it('should return a non-negative value for correlated symbols', () => {
+    it("should return a non-negative value for correlated symbols", () => {
       const { pricesA, pricesB } = makeCorrelatedPrices(150);
-      monitor.ingestPrices('A', pricesA);
-      monitor.ingestPrices('B', pricesB);
+      monitor.ingestPrices("A", pricesA);
+      monitor.ingestPrices("B", pricesB);
 
-      const avg = monitor.getAverageCorrelation(['A', 'B']);
+      const avg = monitor.getAverageCorrelation(["A", "B"]);
       expect(avg).toBeGreaterThanOrEqual(0);
     });
   });
 
   // ---- Regime Change Detection ----
 
-  describe('detectRegimeChange', () => {
-    it('should return empty array for < 2 symbols', () => {
-      monitor.ingestPrices('AAPL', makePrices(200));
-      const events = monitor.detectRegimeChange(['AAPL']);
+  describe("detectRegimeChange", () => {
+    it("should return empty array for < 2 symbols", () => {
+      monitor.ingestPrices("AAPL", makePrices(200));
+      const events = monitor.detectRegimeChange(["AAPL"]);
       expect(events).toHaveLength(0);
     });
 
-    it('should return array of RegimeChangeEvent objects', () => {
+    it("should return array of RegimeChangeEvent objects", () => {
       const { pricesA, pricesB } = makeCorrelatedPrices(200);
-      monitor.ingestPrices('A', pricesA);
-      monitor.ingestPrices('B', pricesB);
-      monitor.ingestPrices('C', makePrices(200, 80, -0.002, 0.02));
+      monitor.ingestPrices("A", pricesA);
+      monitor.ingestPrices("B", pricesB);
+      monitor.ingestPrices("C", makePrices(200, 80, -0.002, 0.02));
 
-      const events = monitor.detectRegimeChange(['A', 'B', 'C']);
+      const events = monitor.detectRegimeChange(["A", "B", "C"]);
       // May or may not detect regimes depending on random data
       expect(Array.isArray(events)).toBe(true);
     });
@@ -239,36 +239,36 @@ describe('CorrelationMonitor', () => {
 
   // ---- Rolling Correlation ----
 
-  describe('getRollingCorrelation', () => {
-    it('should return empty for missing symbols', () => {
-      expect(monitor.getRollingCorrelation('A', 'B')).toHaveLength(0);
+  describe("getRollingCorrelation", () => {
+    it("should return empty for missing symbols", () => {
+      expect(monitor.getRollingCorrelation("A", "B")).toHaveLength(0);
     });
 
-    it('should return time series of correlations', () => {
+    it("should return time series of correlations", () => {
       const { pricesA, pricesB } = makeCorrelatedPrices(200);
-      monitor.ingestPrices('X', pricesA);
-      monitor.ingestPrices('Y', pricesB);
+      monitor.ingestPrices("X", pricesA);
+      monitor.ingestPrices("Y", pricesB);
 
-      const rolling = monitor.getRollingCorrelation('X', 'Y', 30, 5);
+      const rolling = monitor.getRollingCorrelation("X", "Y", 30, 5);
       expect(rolling.length).toBeGreaterThan(0);
       for (const point of rolling) {
         expect(point.date).toBeInstanceOf(Date);
-        expect(typeof point.correlation).toBe('number');
+        expect(typeof point.correlation).toBe("number");
       }
     });
   });
 
   // ---- Portfolio Variance ----
 
-  describe('estimatePortfolioVariance', () => {
-    it('should return a non-negative portfolio variance', () => {
+  describe("estimatePortfolioVariance", () => {
+    it("should return a non-negative portfolio variance", () => {
       const { pricesA, pricesB } = makeCorrelatedPrices(150);
-      monitor.ingestPrices('AAPL', pricesA);
-      monitor.ingestPrices('MSFT', pricesB);
+      monitor.ingestPrices("AAPL", pricesA);
+      monitor.ingestPrices("MSFT", pricesB);
 
       const variance = monitor.estimatePortfolioVariance([
-        { symbol: 'AAPL', weight: 0.6 },
-        { symbol: 'MSFT', weight: 0.4 },
+        { symbol: "AAPL", weight: 0.6 },
+        { symbol: "MSFT", weight: 0.4 },
       ]);
 
       expect(variance).toBeGreaterThanOrEqual(0);
@@ -277,13 +277,13 @@ describe('CorrelationMonitor', () => {
 
   // ---- Highly Correlated Pairs ----
 
-  describe('getHighlyCorrelatedPairs', () => {
-    it('should detect highly correlated pairs', () => {
+  describe("getHighlyCorrelatedPairs", () => {
+    it("should detect highly correlated pairs", () => {
       const { pricesA, pricesB } = makeCorrelatedPrices(200);
-      monitor.ingestPrices('A', pricesA);
-      monitor.ingestPrices('B', pricesB);
+      monitor.ingestPrices("A", pricesA);
+      monitor.ingestPrices("B", pricesB);
 
-      const pairs = monitor.getHighlyCorrelatedPairs(['A', 'B'], 0.3);
+      const pairs = monitor.getHighlyCorrelatedPairs(["A", "B"], 0.3);
       // With highly correlated data, should detect the pair
       expect(Array.isArray(pairs)).toBe(true);
       if (pairs.length > 0) {
@@ -294,24 +294,24 @@ describe('CorrelationMonitor', () => {
 
   // ---- Alerts ----
 
-  describe('getAlerts / clearAlerts', () => {
-    it('should start with no alerts', () => {
+  describe("getAlerts / clearAlerts", () => {
+    it("should start with no alerts", () => {
       expect(monitor.getAlerts()).toHaveLength(0);
     });
 
-    it('should generate high_correlation alert for strongly correlated pairs', () => {
+    it("should generate high_correlation alert for strongly correlated pairs", () => {
       const { pricesA, pricesB } = makeCorrelatedPrices(200);
-      monitor.ingestPrices('X', pricesA);
-      monitor.ingestPrices('Y', pricesB);
+      monitor.ingestPrices("X", pricesA);
+      monitor.ingestPrices("Y", pricesB);
 
       // Trigger correlation calculation which checks for alerts
-      monitor.calculateCorrelation('X', 'Y');
+      monitor.calculateCorrelation("X", "Y");
       const alerts = monitor.getAlerts();
       // May have alerts depending on correlation threshold
       expect(Array.isArray(alerts)).toBe(true);
     });
 
-    it('should clear alerts', () => {
+    it("should clear alerts", () => {
       monitor.clearAlerts();
       expect(monitor.getAlerts()).toHaveLength(0);
     });
@@ -319,8 +319,8 @@ describe('CorrelationMonitor', () => {
 
   // ---- Regime History ----
 
-  describe('getRegimeHistory', () => {
-    it('should start with empty history', () => {
+  describe("getRegimeHistory", () => {
+    it("should start with empty history", () => {
       expect(monitor.getRegimeHistory()).toHaveLength(0);
     });
   });

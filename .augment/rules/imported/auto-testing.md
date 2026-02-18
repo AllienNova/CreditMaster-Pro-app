@@ -18,7 +18,7 @@ description: Apply when working on tests, testing, Jest, Vitest, Playwright, or 
 ## Unit Test Structure
 
 ```typescript
-describe('FeatureName', () => {
+describe("FeatureName", () => {
   beforeEach(() => {
     // Setup
   });
@@ -27,17 +27,17 @@ describe('FeatureName', () => {
     // Cleanup
   });
 
-  it('should do expected behavior', () => {
+  it("should do expected behavior", () => {
     // Arrange
     // Act
     // Assert
   });
 
-  it('should handle edge case', () => {
+  it("should handle edge case", () => {
     // Test edge cases
   });
 
-  it('should throw for invalid input', () => {
+  it("should throw for invalid input", () => {
     // Test error cases
   });
 });

@@ -5,10 +5,10 @@
  * Endpoint for getting active trading signals
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { SignalGenerator } from '@/lib/investments/signal-generator';
-import { getUser } from '@/lib/auth/session';
-import { rateLimit } from '@/lib/rate-limit';
+import { NextRequest, NextResponse } from "next/server";
+import { SignalGenerator } from "@/lib/investments/signal-generator";
+import { getUser } from "@/lib/auth/session";
+import { rateLimit } from "@/lib/rate-limit";
 
 // Initialize signal generator
 const signalGenerator = new SignalGenerator();
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
   try {
     const user = await getUser();
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Rate limiting
@@ -38,8 +38,8 @@ export async function GET(request: NextRequest) {
       await limiter.check(100, user.id); // 100 requests per hour
     } catch {
       return NextResponse.json(
-        { error: 'Rate limit exceeded. Maximum 100 requests per hour.' },
-        { status: 429 }
+        { error: "Rate limit exceeded. Maximum 100 requests per hour." },
+        { status: 429 },
       );
     }
 
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
 
     // Optionally evaluate each signal's current strength
     const searchParams = request.nextUrl.searchParams;
-    const includeEvaluation = searchParams.get('includeEvaluation') === 'true';
+    const includeEvaluation = searchParams.get("includeEvaluation") === "true";
 
     let enrichedSignals = signals;
 
@@ -55,7 +55,9 @@ export async function GET(request: NextRequest) {
       enrichedSignals = await Promise.all(
         signals.map(async (signal) => {
           try {
-            const evaluation = await signalGenerator.evaluateSignalStrength(signal.id);
+            const evaluation = await signalGenerator.evaluateSignalStrength(
+              signal.id,
+            );
             return {
               ...signal,
               currentEvaluation: evaluation,
@@ -64,7 +66,7 @@ export async function GET(request: NextRequest) {
             console.error(`Failed to evaluate signal ${signal.id}:`, error);
             return signal;
           }
-        })
+        }),
       );
     }
 
@@ -78,11 +80,10 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching active signals:', error);
+    console.error("Error fetching active signals:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch active signals' },
-      { status: 500 }
+      { error: "Failed to fetch active signals" },
+      { status: 500 },
     );
   }
 }
-

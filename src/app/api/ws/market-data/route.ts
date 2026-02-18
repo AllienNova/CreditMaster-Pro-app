@@ -6,8 +6,8 @@
  * so we use SSE as an alternative for real-time updates
  */
 
-import { NextRequest } from 'next/server';
-import { getMarketDataService } from '@/lib/investments/services/MarketDataService';
+import { NextRequest } from "next/server";
+import { getMarketDataService } from "@/lib/investments/services/MarketDataService";
 
 /**
  * GET /api/ws/market-data
@@ -19,13 +19,13 @@ import { getMarketDataService } from '@/lib/investments/services/MarketDataServi
  */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const symbolsParam = searchParams.get('symbols');
+  const symbolsParam = searchParams.get("symbols");
 
   if (!symbolsParam) {
-    return new Response('Missing symbols parameter', { status: 400 });
+    return new Response("Missing symbols parameter", { status: 400 });
   }
 
-  const symbols = symbolsParam.split(',').map((s) => s.trim().toUpperCase());
+  const symbols = symbolsParam.split(",").map((s) => s.trim().toUpperCase());
 
   // Create a readable stream for SSE
   const encoder = new TextEncoder();
@@ -33,7 +33,9 @@ export async function GET(request: NextRequest) {
     async start(controller) {
       // Send initial connection message
       controller.enqueue(
-        encoder.encode(`data: ${JSON.stringify({ type: 'connected', symbols })}\n\n`)
+        encoder.encode(
+          `data: ${JSON.stringify({ type: "connected", symbols })}\n\n`,
+        ),
       );
 
       const marketDataService = getMarketDataService();
@@ -48,7 +50,7 @@ export async function GET(request: NextRequest) {
 
               if (quote) {
                 const update = {
-                  type: 'price_update',
+                  type: "price_update",
                   symbol: quote.symbol,
                   price: quote.price,
                   change: quote.change,
@@ -57,14 +59,16 @@ export async function GET(request: NextRequest) {
                   timestamp: new Date().toISOString(),
                 };
 
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify(update)}\n\n`));
+                controller.enqueue(
+                  encoder.encode(`data: ${JSON.stringify(update)}\n\n`),
+                );
               }
             } catch (error) {
               console.error(`Error fetching quote for ${symbol}:`, error);
             }
           }
         } catch (error) {
-          console.error('Error in sendPriceUpdates:', error);
+          console.error("Error in sendPriceUpdates:", error);
         }
       };
 
@@ -77,7 +81,7 @@ export async function GET(request: NextRequest) {
       }, 5000);
 
       // Clean up on close
-      request.signal.addEventListener('abort', () => {
+      request.signal.addEventListener("abort", () => {
         clearInterval(interval);
         controller.close();
       });
@@ -86,9 +90,9 @@ export async function GET(request: NextRequest) {
 
   return new Response(stream, {
     headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      Connection: 'keep-alive',
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
     },
   });
 }
@@ -102,11 +106,10 @@ export async function POST(request: NextRequest) {
   return Response.json({
     success: true,
     data: {
-      status: 'operational',
-      protocol: 'SSE',
+      status: "operational",
+      protocol: "SSE",
       updateInterval: 5000,
-      message: 'Market data streaming service is operational',
+      message: "Market data streaming service is operational",
     },
   });
 }
-

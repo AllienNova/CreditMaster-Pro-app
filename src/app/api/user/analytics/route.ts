@@ -1,23 +1,36 @@
 /**
  * User Analytics API
- * 
+ *
  * Returns personalized analytics data for the user dashboard.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const range = searchParams.get('range') || '6m';
+    const range = searchParams.get("range") || "6m";
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     // Generate months based on range
-    const months = range === '3m' ? 3 : range === '6m' ? 6 : 12;
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = range === "3m" ? 3 : range === "6m" ? 6 : 12;
+    const monthNames = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
     const currentMonth = new Date().getMonth();
 
     // Generate credit history
@@ -45,24 +58,30 @@ export async function GET(request: NextRequest) {
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
       // Get user from auth header (simplified - in production use proper auth)
-      const authHeader = request.headers.get('authorization');
+      const authHeader = request.headers.get("authorization");
       if (authHeader) {
-        const token = authHeader.replace('Bearer ', '');
-        const { data: { user } } = await supabase.auth.getUser(token);
+        const token = authHeader.replace("Bearer ", "");
+        const {
+          data: { user },
+        } = await supabase.auth.getUser(token);
 
         if (user) {
           // Fetch real dispute stats
           const { data: disputes } = await supabase
-            .from('disputes')
-            .select('status')
-            .eq('user_id', user.id);
+            .from("disputes")
+            .select("status")
+            .eq("user_id", user.id);
 
           if (disputes && disputes.length > 0) {
-            const resolved = disputes.filter(d => d.status === 'resolved').length;
+            const resolved = disputes.filter(
+              (d) => d.status === "resolved",
+            ).length;
             disputeStats = {
               total: disputes.length,
               resolved,
-              pending: disputes.filter(d => d.status !== 'resolved' && d.status !== 'rejected').length,
+              pending: disputes.filter(
+                (d) => d.status !== "resolved" && d.status !== "rejected",
+              ).length,
               successRate: Math.round((resolved / disputes.length) * 100),
             };
           }
@@ -72,21 +91,21 @@ export async function GET(request: NextRequest) {
 
     // Score factors (these would come from credit report analysis in production)
     const scoreFactors = [
-      { factor: 'Payment History', impact: 35, status: 'positive' as const },
-      { factor: 'Credit Utilization', impact: 30, status: 'negative' as const },
-      { factor: 'Credit Age', impact: 15, status: 'neutral' as const },
-      { factor: 'Credit Mix', impact: 10, status: 'positive' as const },
-      { factor: 'New Credit', impact: 10, status: 'neutral' as const },
+      { factor: "Payment History", impact: 35, status: "positive" as const },
+      { factor: "Credit Utilization", impact: 30, status: "negative" as const },
+      { factor: "Credit Age", impact: 15, status: "neutral" as const },
+      { factor: "Credit Mix", impact: 10, status: "positive" as const },
+      { factor: "New Credit", impact: 10, status: "neutral" as const },
     ];
 
     // AI-generated recommendations
     const recommendations = [
-      'Pay down credit card balances to reduce utilization below 30%',
-      'Continue making on-time payments to build positive history',
-      'Consider a secured credit card to improve credit mix',
-      'Avoid opening new credit accounts for the next 6 months',
-      'Request credit limit increases to lower utilization ratio',
-      'Set up autopay to ensure you never miss a payment',
+      "Pay down credit card balances to reduce utilization below 30%",
+      "Continue making on-time payments to build positive history",
+      "Consider a secured credit card to improve credit mix",
+      "Avoid opening new credit accounts for the next 6 months",
+      "Request credit limit increases to lower utilization ratio",
+      "Set up autopay to ensure you never miss a payment",
     ].slice(0, 4);
 
     return NextResponse.json({
@@ -97,8 +116,10 @@ export async function GET(request: NextRequest) {
       timeRange: range,
     });
   } catch (error) {
-    console.error('User analytics error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error("User analytics error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
-

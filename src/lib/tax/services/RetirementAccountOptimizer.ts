@@ -19,8 +19,8 @@ import {
   FilingStatus,
   CONTRIBUTION_LIMITS_2024,
   INCOME_THRESHOLDS_2024,
-} from '../types/tax-profile.types';
-import { TaxBracketCalculator } from './TaxBracketCalculator';
+} from "../types/tax-profile.types";
+import { TaxBracketCalculator } from "./TaxBracketCalculator";
 
 // ============================================================================
 // TYPES
@@ -49,7 +49,7 @@ export interface ContributionRecommendation {
   effectiveCostAfterTax: number;
 
   // Priority & Reasoning
-  priority: 'critical' | 'high' | 'medium' | 'low';
+  priority: "critical" | "high" | "medium" | "low";
   reasoning: string;
   warnings: string[];
 }
@@ -76,7 +76,7 @@ export interface RetirementOptimizationResult {
   contributionPriorityOrder: TaxAccountType[];
 
   // Roth vs Traditional Analysis
-  rothVsTraditionalRecommendation: 'roth' | 'traditional' | 'split';
+  rothVsTraditionalRecommendation: "roth" | "traditional" | "split";
   rothVsTraditionalReasoning: string;
 
   // Warnings
@@ -129,27 +129,27 @@ export class RetirementAccountOptimizer {
 
     const totalYtdContributions = recommendations.reduce(
       (sum, r) => sum + r.currentContribution,
-      0
+      0,
     );
 
     const totalContributionCapacity = recommendations.reduce(
       (sum, r) => sum + r.maxContribution,
-      0
+      0,
     );
 
     const totalUnusedCapacity = recommendations.reduce(
       (sum, r) => sum + r.remainingCapacity,
-      0
+      0,
     );
 
     const totalPotentialTaxSavings = recommendations.reduce(
       (sum, r) => sum + r.estimatedTaxSavings,
-      0
+      0,
     );
 
     const totalEmployerMatchMissed = recommendations.reduce(
       (sum, r) => sum + r.employerMatchMissed,
-      0
+      0,
     );
 
     // Determine Roth vs Traditional recommendation
@@ -165,7 +165,7 @@ export class RetirementAccountOptimizer {
       profile.filingStatus === FilingStatus.SINGLE
     ) {
       warnings.push(
-        'Your income exceeds Roth IRA limits. Consider a Backdoor Roth IRA strategy.'
+        "Your income exceeds Roth IRA limits. Consider a Backdoor Roth IRA strategy.",
       );
     }
 
@@ -191,9 +191,9 @@ export class RetirementAccountOptimizer {
 
       warnings,
       disclaimers: [
-        'Tax recommendations are for informational purposes only.',
-        'Consult a qualified tax professional before making retirement decisions.',
-        'Contribution limits and tax rules are subject to change.',
+        "Tax recommendations are for informational purposes only.",
+        "Consult a qualified tax professional before making retirement decisions.",
+        "Contribution limits and tax rules are subject to change.",
       ],
     };
   }
@@ -203,14 +203,14 @@ export class RetirementAccountOptimizer {
    */
   private analyze401k(profile: TaxProfile): ContributionRecommendation | null {
     const account = profile.accounts.find(
-      (a) => a.accountType === TaxAccountType.TRADITIONAL_401K
+      (a) => a.accountType === TaxAccountType.TRADITIONAL_401K,
     );
 
     const currentContribution = profile.ytd401kContribution;
     const maxContribution = CONTRIBUTION_LIMITS_2024.traditional401k;
     const remainingCapacity = Math.max(
       0,
-      maxContribution - currentContribution
+      maxContribution - currentContribution,
     );
 
     // Calculate employer match
@@ -222,7 +222,7 @@ export class RetirementAccountOptimizer {
         profile.w2Income * (account.employerMatchPercent / 100);
       employerMatchAvailable = Math.min(
         matchableContribution,
-        account.employerMatch
+        account.employerMatch,
       );
 
       // Estimate how much match has been captured based on YTD contribution
@@ -242,25 +242,25 @@ export class RetirementAccountOptimizer {
       remainingCapacity,
       profile.grossIncome,
       profile.filingStatus,
-      profile.stateOfResidence
+      profile.stateOfResidence,
     );
 
     // Determine priority
-    let priority: ContributionRecommendation['priority'] = 'medium';
-    let reasoning = '';
+    let priority: ContributionRecommendation["priority"] = "medium";
+    let reasoning = "";
     const warnings: string[] = [];
 
     if (employerMatchMissed > 0) {
-      priority = 'critical';
+      priority = "critical";
       reasoning = `You're missing $${employerMatchMissed.toLocaleString()} in free employer match! This is essentially a 50-100% immediate return on your contribution.`;
     } else if (remainingCapacity > 10000) {
-      priority = 'high';
+      priority = "high";
       reasoning = `Maxing your 401(k) could save you $${taxSavings.totalSavings.toLocaleString()} in taxes this year.`;
     } else if (remainingCapacity > 0) {
-      priority = 'medium';
+      priority = "medium";
       reasoning = `You have $${remainingCapacity.toLocaleString()} of 401(k) contribution room remaining.`;
     } else {
-      priority = 'low';
+      priority = "low";
       reasoning =
         "You've maxed out your 401(k) contributions for the year. Great job!";
     }
@@ -272,7 +272,7 @@ export class RetirementAccountOptimizer {
 
     return {
       accountType: TaxAccountType.TRADITIONAL_401K,
-      accountName: account?.accountName || '401(k)',
+      accountName: account?.accountName || "401(k)",
       currentContribution,
       maxContribution,
       remainingCapacity,
@@ -297,14 +297,14 @@ export class RetirementAccountOptimizer {
     const maxContribution = CONTRIBUTION_LIMITS_2024.traditionalIra;
     const remainingCapacity = Math.max(
       0,
-      maxContribution - currentContribution
+      maxContribution - currentContribution,
     );
 
     const warnings: string[] = [];
 
     // Check deductibility (if covered by workplace retirement plan)
     const hasWorkplacePlan = profile.accounts.some(
-      (a) => a.accountType === TaxAccountType.TRADITIONAL_401K
+      (a) => a.accountType === TaxAccountType.TRADITIONAL_401K,
     );
 
     let isDeductible = true;
@@ -317,11 +317,11 @@ export class RetirementAccountOptimizer {
       if (profile.grossIncome > phaseOut.end) {
         isDeductible = false;
         warnings.push(
-          'Your Traditional IRA contributions are NOT deductible due to income and workplace plan coverage.'
+          "Your Traditional IRA contributions are NOT deductible due to income and workplace plan coverage.",
         );
       } else if (profile.grossIncome > phaseOut.start) {
         warnings.push(
-          'Your Traditional IRA deduction is partially phased out.'
+          "Your Traditional IRA deduction is partially phased out.",
         );
       }
     }
@@ -332,22 +332,22 @@ export class RetirementAccountOptimizer {
           remainingCapacity,
           profile.grossIncome,
           profile.filingStatus,
-          profile.stateOfResidence
+          profile.stateOfResidence,
         )
       : { federalSavings: 0, stateSavings: 0, totalSavings: 0 };
 
-    let priority: ContributionRecommendation['priority'] = 'medium';
-    let reasoning = '';
+    let priority: ContributionRecommendation["priority"] = "medium";
+    let reasoning = "";
 
     if (!isDeductible) {
-      priority = 'low';
+      priority = "low";
       reasoning =
-        'Traditional IRA contributions are not deductible at your income level. Consider Backdoor Roth instead.';
+        "Traditional IRA contributions are not deductible at your income level. Consider Backdoor Roth instead.";
     } else if (remainingCapacity > 0) {
-      priority = 'medium';
+      priority = "medium";
       reasoning = `Contributing to your Traditional IRA could save you $${taxSavings.totalSavings.toLocaleString()} in taxes.`;
     } else {
-      priority = 'low';
+      priority = "low";
       reasoning = "You've maxed out your IRA contributions for the year.";
     }
 
@@ -355,7 +355,7 @@ export class RetirementAccountOptimizer {
 
     return {
       accountType: TaxAccountType.TRADITIONAL_IRA,
-      accountName: 'Traditional IRA',
+      accountName: "Traditional IRA",
       currentContribution,
       maxContribution,
       remainingCapacity,
@@ -379,7 +379,7 @@ export class RetirementAccountOptimizer {
    * Analyze Roth IRA contributions
    */
   private analyzeRothIRA(
-    profile: TaxProfile
+    profile: TaxProfile,
   ): ContributionRecommendation | null {
     const currentContribution = profile.ytdRothIraContribution;
     const maxContribution = CONTRIBUTION_LIMITS_2024.rothIra;
@@ -396,7 +396,7 @@ export class RetirementAccountOptimizer {
     if (profile.grossIncome > phaseOut.end) {
       effectiveLimit = 0;
       warnings.push(
-        'Your income exceeds Roth IRA limits. Consider Backdoor Roth IRA strategy.'
+        "Your income exceeds Roth IRA limits. Consider Backdoor Roth IRA strategy.",
       );
     } else if (profile.grossIncome > phaseOut.start) {
       // Calculate phased-out limit
@@ -405,24 +405,24 @@ export class RetirementAccountOptimizer {
       const reductionRatio = incomeOverThreshold / phaseOutRange;
       effectiveLimit = Math.round(maxContribution * (1 - reductionRatio));
       warnings.push(
-        `Your Roth IRA contribution limit is reduced to $${effectiveLimit.toLocaleString()} due to income.`
+        `Your Roth IRA contribution limit is reduced to $${effectiveLimit.toLocaleString()} due to income.`,
       );
     }
 
     const remainingCapacity = Math.max(0, effectiveLimit - currentContribution);
 
-    let priority: ContributionRecommendation['priority'] = 'medium';
-    let reasoning = '';
+    let priority: ContributionRecommendation["priority"] = "medium";
+    let reasoning = "";
 
     if (effectiveLimit === 0) {
-      priority = 'low';
+      priority = "low";
       reasoning =
-        'Direct Roth IRA contributions are not allowed at your income level. Use Backdoor Roth instead.';
+        "Direct Roth IRA contributions are not allowed at your income level. Use Backdoor Roth instead.";
     } else if (remainingCapacity > 0) {
-      priority = 'medium';
+      priority = "medium";
       reasoning = `Roth IRA offers tax-free growth and withdrawals in retirement. You have $${remainingCapacity.toLocaleString()} of contribution room.`;
     } else {
-      priority = 'low';
+      priority = "low";
       reasoning = "You've maxed out your Roth IRA contributions for the year.";
     }
 
@@ -430,7 +430,7 @@ export class RetirementAccountOptimizer {
 
     return {
       accountType: TaxAccountType.ROTH_IRA,
-      accountName: 'Roth IRA',
+      accountName: "Roth IRA",
       currentContribution,
       maxContribution: effectiveLimit,
       remainingCapacity,
@@ -470,7 +470,7 @@ export class RetirementAccountOptimizer {
 
     const remainingCapacity = Math.max(
       0,
-      maxContribution - currentContribution
+      maxContribution - currentContribution,
     );
 
     // HSA has triple tax benefit
@@ -478,25 +478,25 @@ export class RetirementAccountOptimizer {
       remainingCapacity,
       profile.grossIncome,
       profile.filingStatus,
-      profile.stateOfResidence
+      profile.stateOfResidence,
     );
 
     // Add FICA savings (7.65% if contributed via payroll)
     const ficaSavings = remainingCapacity * 0.0765;
     const totalSavings = taxSavings.totalSavings + ficaSavings;
 
-    let priority: ContributionRecommendation['priority'] = 'high';
+    let priority: ContributionRecommendation["priority"] = "high";
     const reasoning = `HSA offers triple tax benefits: deductible contributions, tax-free growth, and tax-free withdrawals for medical expenses. Contributing $${remainingCapacity.toLocaleString()} saves approximately $${totalSavings.toLocaleString()} in taxes.`;
 
     if (remainingCapacity === 0) {
-      priority = 'low';
+      priority = "low";
     }
 
     const monthsRemaining = 12 - new Date().getMonth();
 
     return {
       accountType: TaxAccountType.HSA,
-      accountName: 'Health Savings Account (HSA)',
+      accountName: "Health Savings Account (HSA)",
       currentContribution,
       maxContribution,
       remainingCapacity,
@@ -512,7 +512,7 @@ export class RetirementAccountOptimizer {
       effectiveCostAfterTax: remainingCapacity - totalSavings,
       priority,
       reasoning,
-      warnings: ['HSA requires a High Deductible Health Plan (HDHP).'],
+      warnings: ["HSA requires a High Deductible Health Plan (HDHP)."],
     };
   }
 
@@ -520,7 +520,7 @@ export class RetirementAccountOptimizer {
    * Analyze SEP IRA contributions (for self-employed)
    */
   private analyzeSEPIRA(
-    profile: TaxProfile
+    profile: TaxProfile,
   ): ContributionRecommendation | null {
     if (!profile.isSelfEmployed || profile.selfEmploymentIncome <= 0) {
       return null;
@@ -530,31 +530,31 @@ export class RetirementAccountOptimizer {
     const netSEIncome = profile.selfEmploymentIncome * 0.9235; // After SE tax adjustment
     const maxContribution = Math.min(
       netSEIncome * CONTRIBUTION_LIMITS_2024.sepIraPercentLimit,
-      CONTRIBUTION_LIMITS_2024.sepIra
+      CONTRIBUTION_LIMITS_2024.sepIra,
     );
 
     const currentContribution = 0; // Would come from profile
     const remainingCapacity = Math.max(
       0,
-      maxContribution - currentContribution
+      maxContribution - currentContribution,
     );
 
     const taxSavings = this.taxCalculator.calculateDeductionSavings(
       remainingCapacity,
       profile.grossIncome,
       profile.filingStatus,
-      profile.stateOfResidence
+      profile.stateOfResidence,
     );
 
-    const priority: ContributionRecommendation['priority'] =
-      remainingCapacity > 10000 ? 'high' : 'medium';
+    const priority: ContributionRecommendation["priority"] =
+      remainingCapacity > 10000 ? "high" : "medium";
     const reasoning = `As self-employed, you can contribute up to $${maxContribution.toLocaleString()} to a SEP IRA, saving approximately $${taxSavings.totalSavings.toLocaleString()} in taxes.`;
 
     const monthsRemaining = 12 - new Date().getMonth();
 
     return {
       accountType: TaxAccountType.SEP_IRA,
-      accountName: 'SEP IRA',
+      accountName: "SEP IRA",
       currentContribution,
       maxContribution,
       remainingCapacity,
@@ -571,7 +571,7 @@ export class RetirementAccountOptimizer {
       priority,
       reasoning,
       warnings: [
-        'SEP IRA deadline is your tax filing deadline (including extensions).',
+        "SEP IRA deadline is your tax filing deadline (including extensions).",
       ],
     };
   }
@@ -580,28 +580,28 @@ export class RetirementAccountOptimizer {
    * Analyze Roth vs Traditional recommendation
    */
   private analyzeRothVsTraditional(profile: TaxProfile): {
-    recommendation: 'roth' | 'traditional' | 'split';
+    recommendation: "roth" | "traditional" | "split";
     reasoning: string;
   } {
     const marginalRate = this.taxCalculator.getMarginalRate(
       profile.grossIncome,
-      profile.filingStatus
+      profile.filingStatus,
     );
 
     // General heuristic: Roth if in lower brackets, Traditional if in higher brackets
     if (marginalRate <= 0.22) {
       return {
-        recommendation: 'roth',
+        recommendation: "roth",
         reasoning: `At your ${(marginalRate * 100).toFixed(0)}% marginal tax rate, Roth contributions are likely better. You'll pay lower taxes now and enjoy tax-free withdrawals in retirement when you may be in a higher bracket.`,
       };
     } else if (marginalRate >= 0.32) {
       return {
-        recommendation: 'traditional',
+        recommendation: "traditional",
         reasoning: `At your ${(marginalRate * 100).toFixed(0)}% marginal tax rate, Traditional contributions are likely better. You'll save significant taxes now and can convert to Roth in lower-income years.`,
       };
     } else {
       return {
-        recommendation: 'split',
+        recommendation: "split",
         reasoning: `At your ${(marginalRate * 100).toFixed(0)}% marginal tax rate, a split strategy may be optimal. Contribute enough Traditional to get employer match and reduce AGI, then contribute to Roth for tax diversification.`,
       };
     }
@@ -626,7 +626,7 @@ export class RetirementAccountOptimizer {
 
     // 4. IRA (Roth or Traditional based on analysis)
     const rothAnalysis = this.analyzeRothVsTraditional(profile);
-    if (rothAnalysis.recommendation === 'roth') {
+    if (rothAnalysis.recommendation === "roth") {
       order.push(TaxAccountType.ROTH_IRA);
       order.push(TaxAccountType.TRADITIONAL_IRA);
     } else {

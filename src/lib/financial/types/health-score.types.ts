@@ -50,7 +50,7 @@ export type {
   // Enums
   AgeGroup,
   IncomeGroup,
-} from './health-score-v2.types';
+} from "./health-score-v2.types";
 
 // ============================================================================
 // V1 TYPES (LEGACY)
@@ -61,7 +61,7 @@ export type {
   FinancialHealthScore,
   HealthScoreBreakdown,
   ComponentScore,
-} from './financial-context.types';
+} from "./financial-context.types";
 
 // ============================================================================
 // CONVENIENCE TYPE ALIASES (Phase 1.3 Requirements)
@@ -73,39 +73,39 @@ import {
   ComponentRecommendation,
   BenchmarkComparison,
   ScoreHistoryPoint,
-} from './health-score-v2.types';
+} from "./health-score-v2.types";
 
 /**
  * Overall health score (0-100) with timestamp, user_id, and breakdown
- * 
+ *
  * @alias FinancialHealthScoreV2
  */
 export type HealthScore = FinancialHealthScoreV2;
 
 /**
  * Individual category score with value (0-100), weight, factors array, and trend
- * 
+ *
  * @alias ComponentScoreV2
  */
 export type CategoryScore = ComponentScoreV2;
 
 /**
  * Individual scoring factor with name, value, weight, impact (+/-), and description
- * 
+ *
  * Note: In V2, this is represented by SubScore within each ComponentScoreV2
  */
 export interface ScoreFactor {
   name: string;
   value: number;
   weight: number;
-  impact: 'positive' | 'negative' | 'neutral';
+  impact: "positive" | "negative" | "neutral";
   description: string;
 }
 
 /**
  * Actionable recommendation with priority, category, title, description,
  * estimated_impact, and action_steps array
- * 
+ *
  * @alias ComponentRecommendation (enhanced)
  */
 export type ScoreRecommendation = ComponentRecommendation;
@@ -113,7 +113,7 @@ export type ScoreRecommendation = ComponentRecommendation;
 /**
  * Benchmarking data with national_average, peer_group_average, percentile,
  * and age_income_bracket
- * 
+ *
  * @alias BenchmarkComparison (enhanced)
  */
 export type ScoreComparison = BenchmarkComparison;
@@ -124,7 +124,7 @@ export type ScoreComparison = BenchmarkComparison;
 export interface HealthScoreHistory {
   userId: string;
   scores: ScoreHistoryPoint[];
-  trendDirection: 'improving' | 'declining' | 'stable';
+  trendDirection: "improving" | "declining" | "stable";
   trendPercent: number;
   periodDays: number;
 }
@@ -137,30 +137,30 @@ export interface HealthScoreHistory {
  * Health score categories
  */
 export enum HealthScoreCategory {
-  SAVINGS = 'savings',
-  DEBT = 'debt',
-  SPENDING = 'spending',
-  CREDIT = 'credit',
-  INVESTMENTS = 'investments',
-  INSURANCE = 'insurance',
+  SAVINGS = "savings",
+  DEBT = "debt",
+  SPENDING = "spending",
+  CREDIT = "credit",
+  INVESTMENTS = "investments",
+  INSURANCE = "insurance",
 }
 
 /**
  * Recommendation priority levels
  */
 export enum RecommendationPriority {
-  HIGH = 'high',
-  MEDIUM = 'medium',
-  LOW = 'low',
+  HIGH = "high",
+  MEDIUM = "medium",
+  LOW = "low",
 }
 
 /**
  * Score trend directions
  */
 export enum ScoreTrend {
-  IMPROVING = 'improving',
-  DECLINING = 'declining',
-  STABLE = 'stable',
+  IMPROVING = "improving",
+  DECLINING = "declining",
+  STABLE = "stable",
 }
 
 // ============================================================================
@@ -170,15 +170,14 @@ export enum ScoreTrend {
 /**
  * Score grade (A-F)
  */
-export type ScoreGrade = 'A' | 'B' | 'C' | 'D' | 'F';
+export type ScoreGrade = "A" | "B" | "C" | "D" | "F";
 
 /**
  * Score status
  */
-export type ScoreStatus = 'excellent' | 'good' | 'fair' | 'poor' | 'critical';
+export type ScoreStatus = "excellent" | "good" | "fair" | "poor" | "critical";
 
 /**
  * Comparison result
  */
-export type ComparisonResult = 'above' | 'below' | 'average';
-
+export type ComparisonResult = "above" | "below" | "average";

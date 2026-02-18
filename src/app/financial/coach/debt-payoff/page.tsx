@@ -1,17 +1,17 @@
-import { Suspense } from 'react';
-import { Metadata } from 'next';
-import DebtPayoffPlanner from '@/components/financial/DebtPayoffPlanner';
-import Link from 'next/link';
+import { Suspense } from "react";
+import { Metadata } from "next";
+import DebtPayoffPlanner from "@/components/financial/DebtPayoffPlanner";
+import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: 'Debt Payoff Planner | Fynvita',
+  title: "Debt Payoff Planner | Fynvita",
   description:
-    'Create a strategic debt payoff plan using Avalanche, Snowball, or Hybrid strategies',
+    "Create a strategic debt payoff plan using Avalanche, Snowball, or Hybrid strategies",
   openGraph: {
-    title: 'Debt Payoff Planner | Fynvita',
+    title: "Debt Payoff Planner | Fynvita",
     description:
-      'Create a strategic debt payoff plan using Avalanche, Snowball, or Hybrid strategies',
-    type: 'website',
+      "Create a strategic debt payoff plan using Avalanche, Snowball, or Hybrid strategies",
+    type: "website",
   },
 };
 

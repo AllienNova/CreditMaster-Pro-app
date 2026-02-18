@@ -8,8 +8,8 @@
 // ENUMS
 // ============================================================================
 
-export type PositionSide = 'long' | 'short' | 'flat';
-export type PositionStatus = 'open' | 'closed' | 'liquidated';
+export type PositionSide = "long" | "short" | "flat";
+export type PositionStatus = "open" | "closed" | "liquidated";
 
 // ============================================================================
 // POSITION INTERFACES
@@ -72,7 +72,7 @@ export interface PositionClose {
   closePrice: number;
   closeQuantity?: number; // For partial closes
   timestamp: Date;
-  reason?: 'manual' | 'stop_loss' | 'take_profit' | 'signal' | 'liquidation';
+  reason?: "manual" | "stop_loss" | "take_profit" | "signal" | "liquidation";
 }
 
 // ============================================================================
@@ -129,7 +129,7 @@ export interface TradeRecord {
   symbol: string;
 
   // Trade details
-  side: 'buy' | 'sell';
+  side: "buy" | "sell";
   quantity: number;
   price: number;
   value: number;

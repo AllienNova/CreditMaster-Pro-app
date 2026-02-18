@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { DisputeTimelineEvent } from '@/lib/disputes/dispute-service';
+import { DisputeTimelineEvent } from "@/lib/disputes/dispute-service";
 
 interface DisputeTimelineProps {
   timeline: DisputeTimelineEvent[];
@@ -8,38 +8,40 @@ interface DisputeTimelineProps {
 
 export default function DisputeTimeline({ timeline }: DisputeTimelineProps) {
   const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+    return new Date(date).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'draft':
-        return '';
-      case 'sent':
-        return '';
-      case 'under_review':
-        return '';
-      case 'resolved':
-        return '';
-      case 'rejected':
-        return '';
-      case 'escalated':
-        return '';
+      case "draft":
+        return "";
+      case "sent":
+        return "";
+      case "under_review":
+        return "";
+      case "resolved":
+        return "";
+      case "rejected":
+        return "";
+      case "escalated":
+        return "";
       default:
-        return '';
+        return "";
     }
   };
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow">
       <div className="p-6 border-b border-gray-200 dark:border-slate-700">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Timeline</h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+          Timeline
+        </h2>
       </div>
       <div className="p-6">
         <div className="flow-root">
@@ -71,7 +73,9 @@ export default function DisputeTimeline({ timeline }: DisputeTimelineProps) {
                         <p className="mt-0.5 text-sm text-gray-500 dark:text-slate-400">
                           {formatDate(event.date)}
                           {event.automated && (
-                            <span className="ml-2 text-xs text-gray-400 dark:text-slate-500">(Automated)</span>
+                            <span className="ml-2 text-xs text-gray-400 dark:text-slate-500">
+                              (Automated)
+                            </span>
                           )}
                         </p>
                       </div>
@@ -86,4 +90,3 @@ export default function DisputeTimeline({ timeline }: DisputeTimelineProps) {
     </div>
   );
 }
-

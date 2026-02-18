@@ -1,6 +1,6 @@
 /**
  * Chart Drawing Tools
- * 
+ *
  * Implementation of manual analysis tools:
  * - Trend lines
  * - Horizontal/Vertical lines
@@ -9,8 +9,13 @@
  * - Annotations
  */
 
-import { IChartApi, ISeriesApi, Time, LineStyle } from 'lightweight-charts';
-import { ChartPoint, DrawingStyle, ChartDrawing, DrawingToolType } from '@/lib/investments/types/charting.types';
+import { IChartApi, ISeriesApi, Time, LineStyle } from "lightweight-charts";
+import {
+  ChartPoint,
+  DrawingStyle,
+  ChartDrawing,
+  DrawingToolType,
+} from "@/lib/investments/types/charting.types";
 
 // ============================================================================
 // TYPES
@@ -19,8 +24,15 @@ import { ChartPoint, DrawingStyle, ChartDrawing, DrawingToolType } from '@/lib/i
 export interface DrawingToolManager {
   addTrendLine: (points: ChartPoint[], style?: Partial<DrawingStyle>) => string;
   addHorizontalLine: (price: number, style?: Partial<DrawingStyle>) => string;
-  addFibonacciRetracement: (startPoint: ChartPoint, endPoint: ChartPoint) => string;
-  addAnnotation: (point: ChartPoint, text: string, style?: Partial<DrawingStyle>) => string;
+  addFibonacciRetracement: (
+    startPoint: ChartPoint,
+    endPoint: ChartPoint,
+  ) => string;
+  addAnnotation: (
+    point: ChartPoint,
+    text: string,
+    style?: Partial<DrawingStyle>,
+  ) => string;
   removeDrawing: (id: string) => void;
   clearAllDrawings: () => void;
   getDrawings: () => ChartDrawing[];
@@ -41,21 +53,21 @@ export interface PriceLineOptions {
 // ============================================================================
 
 const DEFAULT_LINE_STYLE: DrawingStyle = {
-  color: '#2962FF',
+  color: "#2962FF",
   lineWidth: 2,
-  lineStyle: 'solid',
+  lineStyle: "solid",
   showLabels: true,
-  extend: 'none',
+  extend: "none",
 };
 
 const FIBONACCI_COLORS = {
-  '0': 'rgba(128, 128, 128, 0.5)',
-  '0.236': 'rgba(255, 82, 82, 0.5)',
-  '0.382': 'rgba(255, 152, 0, 0.5)',
-  '0.5': 'rgba(76, 175, 80, 0.5)',
-  '0.618': 'rgba(33, 150, 243, 0.5)',
-  '0.786': 'rgba(156, 39, 176, 0.5)',
-  '1': 'rgba(128, 128, 128, 0.5)',
+  "0": "rgba(128, 128, 128, 0.5)",
+  "0.236": "rgba(255, 82, 82, 0.5)",
+  "0.382": "rgba(255, 152, 0, 0.5)",
+  "0.5": "rgba(76, 175, 80, 0.5)",
+  "0.618": "rgba(33, 150, 243, 0.5)",
+  "0.786": "rgba(156, 39, 176, 0.5)",
+  "1": "rgba(128, 128, 128, 0.5)",
 };
 
 const FIBONACCI_LEVELS = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
@@ -66,25 +78,32 @@ const FIBONACCI_LEVELS = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
 
 export function createDrawingToolManager(
   chart: IChartApi,
-  mainSeries: ISeriesApi<any>
+  mainSeries: ISeriesApi<any>,
 ): DrawingToolManager {
   const drawings = new Map<string, ChartDrawing>();
   const priceLines = new Map<string, any[]>();
 
   // Generate unique ID
-  const generateId = (): string => `drawing_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const generateId = (): string =>
+    `drawing_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
   // Convert line style
-  const toLineStyle = (style: 'solid' | 'dashed' | 'dotted'): LineStyle => {
+  const toLineStyle = (style: "solid" | "dashed" | "dotted"): LineStyle => {
     switch (style) {
-      case 'dashed': return LineStyle.Dashed;
-      case 'dotted': return LineStyle.Dotted;
-      default: return LineStyle.Solid;
+      case "dashed":
+        return LineStyle.Dashed;
+      case "dotted":
+        return LineStyle.Dotted;
+      default:
+        return LineStyle.Solid;
     }
   };
 
   // Add trend line (using price lines for simplicity)
-  const addTrendLine = (points: ChartPoint[], style?: Partial<DrawingStyle>): string => {
+  const addTrendLine = (
+    points: ChartPoint[],
+    style?: Partial<DrawingStyle>,
+  ): string => {
     const id = generateId();
     const mergedStyle = { ...DEFAULT_LINE_STYLE, ...style };
 
@@ -92,7 +111,7 @@ export function createDrawingToolManager(
     // Note: Full trend line implementation would require canvas overlay
     const drawing: ChartDrawing = {
       id,
-      type: 'trendline',
+      type: "trendline",
       points,
       style: mergedStyle,
       visible: true,
@@ -110,7 +129,7 @@ export function createDrawingToolManager(
         lineWidth: mergedStyle.lineWidth as 1 | 2 | 3 | 4,
         lineStyle: toLineStyle(mergedStyle.lineStyle),
         axisLabelVisible: mergedStyle.showLabels || false,
-        title: '',
+        title: "",
       });
       lines.push(priceLine);
     }
@@ -121,7 +140,10 @@ export function createDrawingToolManager(
   };
 
   // Add horizontal line
-  const addHorizontalLine = (price: number, style?: Partial<DrawingStyle>): string => {
+  const addHorizontalLine = (
+    price: number,
+    style?: Partial<DrawingStyle>,
+  ): string => {
     const id = generateId();
     const mergedStyle = { ...DEFAULT_LINE_STYLE, ...style };
 
@@ -131,12 +153,12 @@ export function createDrawingToolManager(
       lineWidth: mergedStyle.lineWidth as 1 | 2 | 3 | 4,
       lineStyle: toLineStyle(mergedStyle.lineStyle),
       axisLabelVisible: mergedStyle.showLabels || false,
-      title: style?.fontColor ? '' : `${price.toFixed(2)}`,
+      title: style?.fontColor ? "" : `${price.toFixed(2)}`,
     });
 
     const drawing: ChartDrawing = {
       id,
-      type: 'horizontal_line',
+      type: "horizontal_line",
       points: [{ x: 0, y: price }],
       style: mergedStyle,
       visible: true,
@@ -151,22 +173,25 @@ export function createDrawingToolManager(
   };
 
   // Add Fibonacci retracement
-  const addFibonacciRetracement = (startPoint: ChartPoint, endPoint: ChartPoint): string => {
+  const addFibonacciRetracement = (
+    startPoint: ChartPoint,
+    endPoint: ChartPoint,
+  ): string => {
     const id = generateId();
     const lines: any[] = [];
-    
+
     const priceRange = endPoint.y - startPoint.y;
     const isUptrend = priceRange > 0;
 
     for (const level of FIBONACCI_LEVELS) {
-      const price = isUptrend 
-        ? endPoint.y - (priceRange * level)
-        : startPoint.y + (Math.abs(priceRange) * level);
-      
+      const price = isUptrend
+        ? endPoint.y - priceRange * level
+        : startPoint.y + Math.abs(priceRange) * level;
+
       const colorKey = level.toString() as keyof typeof FIBONACCI_COLORS;
       const priceLine = mainSeries.createPriceLine({
         price,
-        color: FIBONACCI_COLORS[colorKey] || '#888888',
+        color: FIBONACCI_COLORS[colorKey] || "#888888",
         lineWidth: 1 as 1 | 2 | 3 | 4,
         lineStyle: LineStyle.Dashed,
         axisLabelVisible: true,
@@ -177,9 +202,9 @@ export function createDrawingToolManager(
 
     const drawing: ChartDrawing = {
       id,
-      type: 'fibonacci_retracement',
+      type: "fibonacci_retracement",
       points: [startPoint, endPoint],
-      style: { ...DEFAULT_LINE_STYLE, lineStyle: 'dashed' },
+      style: { ...DEFAULT_LINE_STYLE, lineStyle: "dashed" },
       visible: true,
       locked: false,
       data: { levels: FIBONACCI_LEVELS },
@@ -193,14 +218,18 @@ export function createDrawingToolManager(
   };
 
   // Add annotation/text
-  const addAnnotation = (point: ChartPoint, text: string, style?: Partial<DrawingStyle>): string => {
+  const addAnnotation = (
+    point: ChartPoint,
+    text: string,
+    style?: Partial<DrawingStyle>,
+  ): string => {
     const id = generateId();
     const mergedStyle = { ...DEFAULT_LINE_STYLE, ...style };
 
     // Use a price line with title as annotation
     const priceLine = mainSeries.createPriceLine({
       price: point.y,
-      color: 'transparent',
+      color: "transparent",
       lineWidth: 1 as 1 | 2 | 3 | 4,
       lineStyle: LineStyle.Solid,
       axisLabelVisible: true,
@@ -209,7 +238,7 @@ export function createDrawingToolManager(
 
     const drawing: ChartDrawing = {
       id,
-      type: 'text',
+      type: "text",
       points: [point],
       style: mergedStyle,
       visible: true,
@@ -261,19 +290,26 @@ export function createDrawingToolManager(
     const updatedDrawing = { ...drawing, ...updates, updatedAt: new Date() };
 
     switch (updatedDrawing.type) {
-      case 'horizontal_line':
+      case "horizontal_line":
         if (updatedDrawing.points[0]) {
           addHorizontalLine(updatedDrawing.points[0].y, updatedDrawing.style);
         }
         break;
-      case 'fibonacci_retracement':
+      case "fibonacci_retracement":
         if (updatedDrawing.points[0] && updatedDrawing.points[1]) {
-          addFibonacciRetracement(updatedDrawing.points[0], updatedDrawing.points[1]);
+          addFibonacciRetracement(
+            updatedDrawing.points[0],
+            updatedDrawing.points[1],
+          );
         }
         break;
-      case 'text':
+      case "text":
         if (updatedDrawing.points[0] && updatedDrawing.label) {
-          addAnnotation(updatedDrawing.points[0], updatedDrawing.label, updatedDrawing.style);
+          addAnnotation(
+            updatedDrawing.points[0],
+            updatedDrawing.label,
+            updatedDrawing.style,
+          );
         }
         break;
     }
@@ -297,7 +333,7 @@ export function createDrawingToolManager(
 
 export interface SupportResistanceLevel {
   price: number;
-  type: 'support' | 'resistance';
+  type: "support" | "resistance";
   strength: number;
   touchCount: number;
 }
@@ -306,7 +342,7 @@ export function detectSupportResistanceLevels(
   highs: number[],
   lows: number[],
   closes: number[],
-  sensitivity: number = 0.02
+  sensitivity: number = 0.02,
 ): SupportResistanceLevel[] {
   const levels: SupportResistanceLevel[] = [];
   const tolerance = sensitivity;
@@ -317,7 +353,7 @@ export function detectSupportResistanceLevels(
     if (cluster.count >= 2) {
       levels.push({
         price: cluster.avgPrice,
-        type: 'support',
+        type: "support",
         strength: Math.min(cluster.count / 5, 1),
         touchCount: cluster.count,
       });
@@ -330,7 +366,7 @@ export function detectSupportResistanceLevels(
     if (cluster.count >= 2) {
       levels.push({
         price: cluster.avgPrice,
-        type: 'resistance',
+        type: "resistance",
         strength: Math.min(cluster.count / 5, 1),
         touchCount: cluster.count,
       });
@@ -357,7 +393,8 @@ function clusterPrices(prices: number[], tolerance: number): PriceCluster[] {
   let currentCluster: number[] = [sortedPrices[0]];
 
   for (let i = 1; i < sortedPrices.length; i++) {
-    const avgCurrent = currentCluster.reduce((a, b) => a + b, 0) / currentCluster.length;
+    const avgCurrent =
+      currentCluster.reduce((a, b) => a + b, 0) / currentCluster.length;
     const priceDiff = Math.abs(sortedPrices[i] - avgCurrent) / avgCurrent;
 
     if (priceDiff <= tolerance) {
@@ -365,7 +402,8 @@ function clusterPrices(prices: number[], tolerance: number): PriceCluster[] {
     } else {
       if (currentCluster.length >= 2) {
         clusters.push({
-          avgPrice: currentCluster.reduce((a, b) => a + b, 0) / currentCluster.length,
+          avgPrice:
+            currentCluster.reduce((a, b) => a + b, 0) / currentCluster.length,
           count: currentCluster.length,
         });
       }
@@ -376,7 +414,8 @@ function clusterPrices(prices: number[], tolerance: number): PriceCluster[] {
   // Don't forget the last cluster
   if (currentCluster.length >= 2) {
     clusters.push({
-      avgPrice: currentCluster.reduce((a, b) => a + b, 0) / currentCluster.length,
+      avgPrice:
+        currentCluster.reduce((a, b) => a + b, 0) / currentCluster.length,
       count: currentCluster.length,
     });
   }

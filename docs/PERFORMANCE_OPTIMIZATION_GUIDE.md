@@ -21,24 +21,22 @@ supabase db push
 ### Using Optimized Stored Procedures
 
 ```typescript
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from "@/lib/supabase/client";
 
 const supabase = createClient();
 
 // Get recent sessions with message preview (optimized)
-const { data, error } = await supabase
-  .rpc('get_recent_sessions_with_preview', {
-    p_user_id: userId,
-    p_limit: 20
-  });
+const { data, error } = await supabase.rpc("get_recent_sessions_with_preview", {
+  p_user_id: userId,
+  p_limit: 20,
+});
 
 // Get paginated messages (optimized)
-const { data, error } = await supabase
-  .rpc('get_session_messages_paginated', {
-    p_session_id: sessionId,
-    p_limit: 50,
-    p_offset: 0
-  });
+const { data, error } = await supabase.rpc("get_session_messages_paginated", {
+  p_session_id: sessionId,
+  p_limit: 50,
+  p_offset: 0,
+});
 ```
 
 ### Refreshing Materialized View
@@ -47,7 +45,7 @@ The materialized view should be refreshed periodically (e.g., every hour):
 
 ```typescript
 // Refresh session statistics
-const { error } = await supabase.rpc('refresh_chat_session_stats');
+const { error } = await supabase.rpc("refresh_chat_session_stats");
 ```
 
 ---
@@ -59,7 +57,7 @@ const { error } = await supabase.rpc('refresh_chat_session_stats');
 The chat cache is automatically used in the `FinancialChatEngine`:
 
 ```typescript
-import { FinancialChatEngine } from '@/lib/ai/financial-chat-engine';
+import { FinancialChatEngine } from "@/lib/ai/financial-chat-engine";
 
 const chatEngine = new FinancialChatEngine();
 
@@ -71,7 +69,7 @@ const messages = await chatEngine.getSessionHistory(sessionId);
 ### Manual Cache Operations
 
 ```typescript
-import { chatCache } from '@/lib/cache/chat-cache';
+import { chatCache } from "@/lib/cache/chat-cache";
 
 // Get cache statistics
 const stats = chatCache.getStats();
@@ -95,17 +93,17 @@ import { useChatSessions, useSendChatMessage } from '@/hooks/use-chat-queries';
 function ChatComponent({ userId }: { userId: string }) {
   // Automatically cached with React Query
   const { data, isLoading, error } = useChatSessions(userId);
-  
+
   // Mutation with optimistic updates
   const sendMessage = useSendChatMessage();
-  
+
   const handleSend = async (content: string) => {
     await sendMessage.mutateAsync({
       sessionId: currentSessionId,
       content,
     });
   };
-  
+
   return (
     // Your component JSX
   );
@@ -115,7 +113,7 @@ function ChatComponent({ userId }: { userId: string }) {
 ### Cache Invalidation
 
 ```typescript
-import { cacheInvalidation } from '@/lib/react-query/query-client-config';
+import { cacheInvalidation } from "@/lib/react-query/query-client-config";
 
 // Invalidate specific caches
 await cacheInvalidation.invalidateChatSessions(userId);
@@ -212,7 +210,7 @@ export default function MyPage() {
 ### Cache Statistics
 
 ```typescript
-import { chatCache } from '@/lib/cache/chat-cache';
+import { chatCache } from "@/lib/cache/chat-cache";
 
 // Get cache stats
 const stats = chatCache.getStats();
@@ -253,24 +251,28 @@ export default function RootLayout({ children }) {
 ## 🎯 Best Practices
 
 ### Database Queries
+
 - ✅ Always use indexed columns in WHERE clauses
 - ✅ Use stored procedures for complex queries
 - ✅ Implement pagination for large result sets
 - ✅ Refresh materialized views periodically
 
 ### Caching
+
 - ✅ Set appropriate TTL values based on data volatility
 - ✅ Invalidate cache on data mutations
 - ✅ Monitor cache hit rates (target: >70%)
 - ✅ Use optimistic updates for better UX
 
 ### Bundle Size
+
 - ✅ Analyze bundle size regularly
 - ✅ Keep chunks under 500KB
 - ✅ Use dynamic imports for large components
 - ✅ Remove unused dependencies
 
 ### Lazy Loading
+
 - ✅ Lazy load components above the fold
 - ✅ Disable SSR for client-only components
 - ✅ Provide meaningful loading states
@@ -281,17 +283,20 @@ export default function RootLayout({ children }) {
 ## 🔧 Troubleshooting
 
 ### High Cache Miss Rate
+
 - Check TTL values (may be too short)
 - Verify cache invalidation isn't too aggressive
 - Monitor cache size (may be evicting too frequently)
 
 ### Large Bundle Size
+
 - Run bundle analyzer to identify large chunks
 - Check for duplicate dependencies
 - Ensure tree shaking is working
 - Consider lazy loading more components
 
 ### Slow Database Queries
+
 - Check if indexes are being used (EXPLAIN ANALYZE)
 - Verify materialized view is refreshed
 - Monitor query execution times
@@ -305,4 +310,3 @@ export default function RootLayout({ children }) {
 - [React Query Documentation](https://tanstack.com/query/latest/docs/react/overview)
 - [Supabase Performance Tips](https://supabase.com/docs/guides/database/performance)
 - [Web.dev Performance Guide](https://web.dev/performance/)
-

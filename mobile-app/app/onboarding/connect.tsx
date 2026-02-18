@@ -3,19 +3,34 @@
  * Connect credit bureaus and bank accounts
  */
 
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTheme } from '../../src/hooks/useTheme';
-import { withOpacity } from '../../src/constants/theme';
-import { Card } from '../../src/components/Card';
+import React, { useState } from "react";
+import { View, Text, ScrollView, TouchableOpacity, Alert } from "react-native";
+import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useTheme } from "../../src/hooks/useTheme";
+import { withOpacity } from "../../src/constants/theme";
+import { Card } from "../../src/components/Card";
 
 const BUREAUS = [
-  { id: 'experian', name: 'Experian', color: '#0066CC', description: 'Connect to pull your Experian credit report' },
-  { id: 'equifax', name: 'Equifax', color: '#C41230', description: 'Connect to pull your Equifax credit report' },
-  { id: 'transunion', name: 'TransUnion', color: '#00A3E0', description: 'Connect to pull your TransUnion credit report' },
+  {
+    id: "experian",
+    name: "Experian",
+    color: "#0066CC",
+    description: "Connect to pull your Experian credit report",
+  },
+  {
+    id: "equifax",
+    name: "Equifax",
+    color: "#C41230",
+    description: "Connect to pull your Equifax credit report",
+  },
+  {
+    id: "transunion",
+    name: "TransUnion",
+    color: "#00A3E0",
+    description: "Connect to pull your TransUnion credit report",
+  },
 ];
 
 export default function OnboardingConnectScreen() {
@@ -27,42 +42,56 @@ export default function OnboardingConnectScreen() {
   const handleConnectBureau = async (bureauId: string) => {
     setIsConnecting(bureauId);
     // Simulate connection
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setConnectedBureaus(prev => [...prev, bureauId]);
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    setConnectedBureaus((prev) => [...prev, bureauId]);
     setIsConnecting(null);
   };
 
   const handleConnectBank = async () => {
-    setIsConnecting('bank');
+    setIsConnecting("bank");
     // Simulate Plaid connection
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise((resolve) => setTimeout(resolve, 1500));
     setBankConnected(true);
     setIsConnecting(null);
   };
 
   const handleContinue = () => {
-    router.push('/onboarding/complete');
+    router.push("/onboarding/complete");
   };
 
   const handleSkip = () => {
     Alert.alert(
-      'Skip Account Connection?',
-      'You can connect your accounts later from Settings. Some features may be limited.',
+      "Skip Account Connection?",
+      "You can connect your accounts later from Settings. Some features may be limited.",
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Skip', onPress: () => router.push('/onboarding/complete') },
-      ]
+        { text: "Cancel", style: "cancel" },
+        { text: "Skip", onPress: () => router.push("/onboarding/complete") },
+      ],
     );
   };
 
   const progress = 3 / 4;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      edges={["top"]}
+    >
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.md }}>
-          <TouchableOpacity onPress={() => router.back()} style={{ padding: 4 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingHorizontal: spacing.lg,
+            paddingVertical: spacing.md,
+          }}
+        >
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={{ padding: 4 }}
+          >
             <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <TouchableOpacity onPress={handleSkip}>
@@ -71,47 +100,158 @@ export default function OnboardingConnectScreen() {
         </View>
 
         {/* Progress Bar */}
-        <View style={{ paddingHorizontal: spacing.lg, marginBottom: spacing.lg }}>
-          <View style={{ height: 4, backgroundColor: colors.border, borderRadius: 2 }}>
-            <View style={{ height: '100%', backgroundColor: colors.primary, borderRadius: 2, width: `${progress * 100}%` }} />
+        <View
+          style={{ paddingHorizontal: spacing.lg, marginBottom: spacing.lg }}
+        >
+          <View
+            style={{
+              height: 4,
+              backgroundColor: colors.border,
+              borderRadius: 2,
+            }}
+          >
+            <View
+              style={{
+                height: "100%",
+                backgroundColor: colors.primary,
+                borderRadius: 2,
+                width: `${progress * 100}%`,
+              }}
+            />
           </View>
-          <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 8, textAlign: 'center' }}>Step 3 of 4</Text>
+          <Text
+            style={{
+              fontSize: 12,
+              color: colors.textSecondary,
+              marginTop: 8,
+              textAlign: "center",
+            }}
+          >
+            Step 3 of 4
+          </Text>
         </View>
 
         {/* Content */}
         <View style={{ paddingHorizontal: spacing.lg }}>
-          <Text style={{ fontSize: 28, fontWeight: fontWeight.bold, color: colors.text, marginBottom: 8 }}>Connect your accounts</Text>
-          <Text style={{ fontSize: 16, color: colors.textSecondary, marginBottom: spacing.xl }}>Link your credit bureaus and bank to unlock all features</Text>
+          <Text
+            style={{
+              fontSize: 28,
+              fontWeight: fontWeight.bold,
+              color: colors.text,
+              marginBottom: 8,
+            }}
+          >
+            Connect your accounts
+          </Text>
+          <Text
+            style={{
+              fontSize: 16,
+              color: colors.textSecondary,
+              marginBottom: spacing.xl,
+            }}
+          >
+            Link your credit bureaus and bank to unlock all features
+          </Text>
 
           {/* Credit Bureaus */}
-          <Text style={{ fontSize: 16, fontWeight: fontWeight.semibold, color: colors.text, marginBottom: spacing.md }}>Credit Bureaus</Text>
+          <Text
+            style={{
+              fontSize: 16,
+              fontWeight: fontWeight.semibold,
+              color: colors.text,
+              marginBottom: spacing.md,
+            }}
+          >
+            Credit Bureaus
+          </Text>
           {BUREAUS.map((bureau) => {
             const isConnected = connectedBureaus.includes(bureau.id);
             const isLoading = isConnecting === bureau.id;
             return (
               <Card key={bureau.id} style={{ marginBottom: spacing.sm }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <View style={{ width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginRight: spacing.md, backgroundColor: withOpacity(bureau.color, 0.12) }}>
-                    <Text style={{ fontSize: 20, fontWeight: fontWeight.bold, color: bureau.color }}>{bureau.name[0]}</Text>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <View
+                    style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 24,
+                      justifyContent: "center",
+                      alignItems: "center",
+                      marginRight: spacing.md,
+                      backgroundColor: withOpacity(bureau.color, 0.12),
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 20,
+                        fontWeight: fontWeight.bold,
+                        color: bureau.color,
+                      }}
+                    >
+                      {bureau.name[0]}
+                    </Text>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 15, fontWeight: fontWeight.semibold, color: colors.text }}>{bureau.name}</Text>
-                    <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>{bureau.description}</Text>
+                    <Text
+                      style={{
+                        fontSize: 15,
+                        fontWeight: fontWeight.semibold,
+                        color: colors.text,
+                      }}
+                    >
+                      {bureau.name}
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        color: colors.textSecondary,
+                        marginTop: 2,
+                      }}
+                    >
+                      {bureau.description}
+                    </Text>
                   </View>
                   <TouchableOpacity
                     style={[
-                      { backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 8, borderRadius: borderRadius.md },
+                      {
+                        backgroundColor: colors.primary,
+                        paddingHorizontal: 16,
+                        paddingVertical: 8,
+                        borderRadius: borderRadius.md,
+                      },
                       isConnected && { backgroundColor: colors.success },
                     ]}
-                    onPress={() => !isConnected && handleConnectBureau(bureau.id)}
+                    onPress={() =>
+                      !isConnected && handleConnectBureau(bureau.id)
+                    }
                     disabled={isConnected || isLoading}
                   >
                     {isLoading ? (
-                      <Text style={{ fontSize: 14, fontWeight: fontWeight.medium, color: colors.white }}>...</Text>
+                      <Text
+                        style={{
+                          fontSize: 14,
+                          fontWeight: fontWeight.medium,
+                          color: colors.white,
+                        }}
+                      >
+                        ...
+                      </Text>
                     ) : isConnected ? (
-                      <Ionicons name="checkmark" size={18} color={colors.white} />
+                      <Ionicons
+                        name="checkmark"
+                        size={18}
+                        color={colors.white}
+                      />
                     ) : (
-                      <Text style={{ fontSize: 14, fontWeight: fontWeight.medium, color: colors.white }}>Connect</Text>
+                      <Text
+                        style={{
+                          fontSize: 14,
+                          fontWeight: fontWeight.medium,
+                          color: colors.white,
+                        }}
+                      >
+                        Connect
+                      </Text>
                     )}
                   </TouchableOpacity>
                 </View>
@@ -120,49 +260,158 @@ export default function OnboardingConnectScreen() {
           })}
 
           {/* Bank Account */}
-          <Text style={{ fontSize: 16, fontWeight: fontWeight.semibold, color: colors.text, marginBottom: spacing.md, marginTop: spacing.lg }}>Bank Account (Optional)</Text>
+          <Text
+            style={{
+              fontSize: 16,
+              fontWeight: fontWeight.semibold,
+              color: colors.text,
+              marginBottom: spacing.md,
+              marginTop: spacing.lg,
+            }}
+          >
+            Bank Account (Optional)
+          </Text>
           <Card style={{ marginBottom: spacing.sm }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <View style={{ width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginRight: spacing.md, backgroundColor: withOpacity(colors.success, 0.12) }}>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <View
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 24,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  marginRight: spacing.md,
+                  backgroundColor: withOpacity(colors.success, 0.12),
+                }}
+              >
                 <Ionicons name="business" size={24} color={colors.success} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 15, fontWeight: fontWeight.semibold, color: colors.text }}>Link Bank Account</Text>
-                <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>Track spending and get financial insights</Text>
+                <Text
+                  style={{
+                    fontSize: 15,
+                    fontWeight: fontWeight.semibold,
+                    color: colors.text,
+                  }}
+                >
+                  Link Bank Account
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: colors.textSecondary,
+                    marginTop: 2,
+                  }}
+                >
+                  Track spending and get financial insights
+                </Text>
               </View>
               <TouchableOpacity
                 style={[
-                  { backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 8, borderRadius: borderRadius.md },
+                  {
+                    backgroundColor: colors.primary,
+                    paddingHorizontal: 16,
+                    paddingVertical: 8,
+                    borderRadius: borderRadius.md,
+                  },
                   bankConnected && { backgroundColor: colors.success },
                 ]}
                 onPress={() => !bankConnected && handleConnectBank()}
-                disabled={bankConnected || isConnecting === 'bank'}
+                disabled={bankConnected || isConnecting === "bank"}
               >
-                {isConnecting === 'bank' ? (
-                  <Text style={{ fontSize: 14, fontWeight: fontWeight.medium, color: colors.white }}>...</Text>
+                {isConnecting === "bank" ? (
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: fontWeight.medium,
+                      color: colors.white,
+                    }}
+                  >
+                    ...
+                  </Text>
                 ) : bankConnected ? (
                   <Ionicons name="checkmark" size={18} color={colors.white} />
                 ) : (
-                  <Text style={{ fontSize: 14, fontWeight: fontWeight.medium, color: colors.white }}>Connect</Text>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: fontWeight.medium,
+                      color: colors.white,
+                    }}
+                  >
+                    Connect
+                  </Text>
                 )}
               </TouchableOpacity>
             </View>
           </Card>
 
-          <View style={{ flexDirection: 'row', alignItems: 'flex-start', backgroundColor: withOpacity(colors.success, 0.12), padding: spacing.md, borderRadius: borderRadius.md, marginTop: spacing.lg }}>
-            <Ionicons name="shield-checkmark" size={20} color={colors.success} />
-            <Text style={{ flex: 1, fontSize: 13, color: colors.textSecondary, marginLeft: 10, lineHeight: 18 }}>Bank-level encryption protects your data. We never store your login credentials.</Text>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "flex-start",
+              backgroundColor: withOpacity(colors.success, 0.12),
+              padding: spacing.md,
+              borderRadius: borderRadius.md,
+              marginTop: spacing.lg,
+            }}
+          >
+            <Ionicons
+              name="shield-checkmark"
+              size={20}
+              color={colors.success}
+            />
+            <Text
+              style={{
+                flex: 1,
+                fontSize: 13,
+                color: colors.textSecondary,
+                marginLeft: 10,
+                lineHeight: 18,
+              }}
+            >
+              Bank-level encryption protects your data. We never store your
+              login credentials.
+            </Text>
           </View>
         </View>
       </ScrollView>
 
       {/* Footer */}
       <View style={{ padding: spacing.lg, paddingBottom: spacing.xl }}>
-        <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary, paddingVertical: 16, borderRadius: borderRadius.lg }} onPress={handleContinue}>
-          <Text style={{ fontSize: 18, fontWeight: fontWeight.semibold, color: colors.white, marginRight: 8 }}>Continue</Text>
+        <TouchableOpacity
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: colors.primary,
+            paddingVertical: 16,
+            borderRadius: borderRadius.lg,
+          }}
+          onPress={handleContinue}
+        >
+          <Text
+            style={{
+              fontSize: 18,
+              fontWeight: fontWeight.semibold,
+              color: colors.white,
+              marginRight: 8,
+            }}
+          >
+            Continue
+          </Text>
           <Ionicons name="arrow-forward" size={20} color={colors.white} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 13, color: colors.textSecondary, textAlign: 'center', marginTop: 12 }}>{connectedBureaus.length} of 3 bureaus connected</Text>
+        <Text
+          style={{
+            fontSize: 13,
+            color: colors.textSecondary,
+            textAlign: "center",
+            marginTop: 12,
+          }}
+        >
+          {connectedBureaus.length} of 3 bureaus connected
+        </Text>
       </View>
     </SafeAreaView>
   );

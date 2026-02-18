@@ -5,47 +5,47 @@
  * Phase 5.1.1: Enhanced with Zod schemas and additional types
  */
 
-import { z } from 'zod';
+import { z } from "zod";
 
 // ============================================================================
 // ENUMS
 // ============================================================================
 
 export enum SignalType {
-  BUY = 'buy',
-  SELL = 'sell',
-  HOLD = 'hold',
-  STRONG_BUY = 'strong_buy',
-  STRONG_SELL = 'strong_sell',
+  BUY = "buy",
+  SELL = "sell",
+  HOLD = "hold",
+  STRONG_BUY = "strong_buy",
+  STRONG_SELL = "strong_sell",
 }
 
 export enum SignalStrength {
-  STRONG = 'strong',
-  MODERATE = 'moderate',
-  WEAK = 'weak',
+  STRONG = "strong",
+  MODERATE = "moderate",
+  WEAK = "weak",
 }
 
 export enum AnalysisType {
-  TECHNICAL = 'technical',
-  FUNDAMENTAL = 'fundamental',
-  SENTIMENT = 'sentiment',
-  AI_COMBINED = 'ai_combined',
-  MOMENTUM = 'momentum',
-  MEAN_REVERSION = 'mean_reversion',
+  TECHNICAL = "technical",
+  FUNDAMENTAL = "fundamental",
+  SENTIMENT = "sentiment",
+  AI_COMBINED = "ai_combined",
+  MOMENTUM = "momentum",
+  MEAN_REVERSION = "mean_reversion",
 }
 
 export enum SignalStatus {
-  ACTIVE = 'active',
-  EXECUTED = 'executed',
-  EXPIRED = 'expired',
-  CANCELLED = 'cancelled',
+  ACTIVE = "active",
+  EXECUTED = "executed",
+  EXPIRED = "expired",
+  CANCELLED = "cancelled",
 }
 
 export enum SignalOutcomeType {
-  PROFIT = 'profit',
-  LOSS = 'loss',
-  BREAKEVEN = 'breakeven',
-  PENDING = 'pending',
+  PROFIT = "profit",
+  LOSS = "loss",
+  BREAKEVEN = "breakeven",
+  PENDING = "pending",
 }
 
 // ============================================================================
@@ -66,7 +66,7 @@ export const TradingSignalSchema = z.object({
   id: z.string().uuid(),
   userId: z.string().uuid(),
   symbol: z.string().min(1).max(10).toUpperCase(),
-  assetType: z.enum(['stock', 'etf', 'crypto', 'option']),
+  assetType: z.enum(["stock", "etf", "crypto", "option"]),
   signalType: SignalTypeSchema,
   strength: z.number().min(0).max(100), // Changed to 0-100 scale
   confidence: z.number().min(0).max(1), // Changed to 0-1 scale
@@ -92,7 +92,7 @@ export const TradingSignalSchema = z.object({
   aiInsights: z.array(z.string()),
 
   // Timing
-  timeframe: z.enum(['1d', '1w', '1m', '3m', '6m', '1y']),
+  timeframe: z.enum(["1d", "1w", "1m", "3m", "6m", "1y"]),
   expiresAt: z.date(),
   generatedAt: z.date(),
   executedAt: z.date().optional(),
@@ -121,7 +121,7 @@ export const SignalAnalysisSchema = z.object({
   fundamentalScore: z.number().min(0).max(100),
   sentimentScore: z.number().min(0).max(100),
   aiConsensusScore: z.number().min(0).max(100),
-  riskAssessment: z.enum(['very_low', 'low', 'moderate', 'high', 'very_high']),
+  riskAssessment: z.enum(["very_low", "low", "moderate", "high", "very_high"]),
 
   technicalIndicators: z.object({
     rsi: z.number().min(0).max(100),
@@ -138,9 +138,9 @@ export const SignalAnalysisSchema = z.object({
     volume: z.object({
       current: z.number().nonnegative(),
       average: z.number().nonnegative(),
-      trend: z.enum(['increasing', 'decreasing', 'stable']),
+      trend: z.enum(["increasing", "decreasing", "stable"]),
     }),
-    trend: z.enum(['bullish', 'bearish', 'neutral']),
+    trend: z.enum(["bullish", "bearish", "neutral"]),
   }),
 
   fundamentalMetrics: z.object({
@@ -150,15 +150,15 @@ export const SignalAnalysisSchema = z.object({
     roe: z.number().optional(),
     revenueGrowth: z.number().optional(),
     earningsGrowth: z.number().optional(),
-    rating: z.enum(['strong_buy', 'buy', 'hold', 'sell', 'strong_sell']),
+    rating: z.enum(["strong_buy", "buy", "hold", "sell", "strong_sell"]),
   }),
 
   sentimentMetrics: z.object({
     newsScore: z.number().min(0).max(100),
     socialScore: z.number().min(0).max(100),
     analystRating: z.number().min(0).max(100),
-    insiderActivity: z.enum(['buying', 'selling', 'neutral']),
-    institutionalFlow: z.enum(['inflow', 'outflow', 'neutral']),
+    insiderActivity: z.enum(["buying", "selling", "neutral"]),
+    institutionalFlow: z.enum(["inflow", "outflow", "neutral"]),
   }),
 
   risks: z.array(z.string()),
@@ -226,7 +226,7 @@ const PerformanceBreakdownSchema = z.object({
 
 export const SignalPerformanceSchema = z.object({
   userId: z.string().uuid(),
-  period: z.enum(['week', 'month', 'quarter', 'year', 'all']),
+  period: z.enum(["week", "month", "quarter", "year", "all"]),
 
   // Overall metrics
   totalSignals: z.number().nonnegative(),
@@ -274,7 +274,7 @@ export const SignalFiltersSchema = z.object({
   symbols: z.array(z.string()).optional(),
   signalTypes: z.array(SignalTypeSchema).optional(),
   statuses: z.array(SignalStatusSchema).optional(),
-  assetTypes: z.array(z.enum(['stock', 'etf', 'crypto', 'option'])).optional(),
+  assetTypes: z.array(z.enum(["stock", "etf", "crypto", "option"])).optional(),
   minConfidence: z.number().min(0).max(1).optional(),
   minStrength: z.number().min(0).max(100).optional(),
   startDate: z.date().optional(),
@@ -284,4 +284,3 @@ export const SignalFiltersSchema = z.object({
 });
 
 export type SignalFilters = z.infer<typeof SignalFiltersSchema>;
-

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Donut Chart Component
@@ -7,16 +7,16 @@
  * with a total or summary value in the center.
  */
 
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
-import { ChartLegend } from './ChartHelpers';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import { ChartLegend } from "./ChartHelpers";
 import {
   CHART_COLOR_ARRAY,
   formatCurrency,
   formatPercentage,
   getCategoryColor,
   generateChartDescription,
-} from './chartUtils';
-import { useState } from 'react';
+} from "./chartUtils";
+import { useState } from "react";
 
 interface DonutDataPoint {
   name: string;
@@ -54,19 +54,16 @@ export default function DonutChartComponent({
   centerLabel,
   useCategyColors = false,
   onSliceClick,
-  className = '',
+  className = "",
   ariaLabel,
 }: DonutChartProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const total = data.reduce((sum, item) => sum + item.value, 0);
 
   // Generate accessible description
-  const accessibleDescription = ariaLabel || generateChartDescription(
-    'Donut chart',
-    data.length,
-    undefined,
-    currency
-  );
+  const accessibleDescription =
+    ariaLabel ||
+    generateChartDescription("Donut chart", data.length, undefined, currency);
 
   const getColor = (item: DonutDataPoint, index: number): string => {
     if (item.color) return item.color;
@@ -147,8 +144,8 @@ export default function DonutChartComponent({
                 stroke="white"
                 strokeWidth={2}
                 style={{
-                  filter: hoveredIndex === index ? 'brightness(1.1)' : 'none',
-                  cursor: onSliceClick ? 'pointer' : 'default',
+                  filter: hoveredIndex === index ? "brightness(1.1)" : "none",
+                  cursor: onSliceClick ? "pointer" : "default",
                 }}
               />
             ))}

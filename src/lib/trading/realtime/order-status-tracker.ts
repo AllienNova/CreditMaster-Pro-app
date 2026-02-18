@@ -5,19 +5,19 @@
  * Connects OrderExecutionEngine events to TradingNotificationService.
  */
 
-import { Subject, Observable, BehaviorSubject, Subscription } from 'rxjs';
-import { filter, map, takeUntil, distinctUntilChanged } from 'rxjs/operators';
+import { Subject, Observable, BehaviorSubject, Subscription } from "rxjs";
+import { filter, map, takeUntil, distinctUntilChanged } from "rxjs/operators";
 import {
   OrderExecutionEngine,
   ExecutionEvent,
   LivePriceInfo,
-} from './order-execution-engine';
+} from "./order-execution-engine";
 import {
   TradingNotificationService,
   getTradingNotificationService,
   TradingNotification,
-} from '../notifications/trading-notifications';
-import { Order, OrderStatus } from '../orders/order-types';
+} from "../notifications/trading-notifications";
+import { Order, OrderStatus } from "../orders/order-types";
 
 // ============================================================================
 // TYPES
@@ -91,7 +91,7 @@ export class OrderStatusTracker {
 
   constructor(
     executionEngine: OrderExecutionEngine,
-    config: Partial<OrderTrackerConfig> = {}
+    config: Partial<OrderTrackerConfig> = {},
   ) {
     this.config = { ...DEFAULT_TRACKER_CONFIG, ...config };
     this.executionEngine = executionEngine;
@@ -134,7 +134,7 @@ export class OrderStatusTracker {
         {
           orderId: order.id,
           symbol: order.symbol,
-          previousStatus: 'pending',
+          previousStatus: "pending",
           newStatus: order.status,
           timestamp: order.createdAt,
         },
@@ -213,22 +213,22 @@ export class OrderStatusTracker {
 
   private handleExecutionEvent(event: ExecutionEvent): void {
     switch (event.type) {
-      case 'order_created':
+      case "order_created":
         this.handleOrderCreated(event);
         break;
-      case 'order_submitted':
+      case "order_submitted":
         this.handleOrderSubmitted(event);
         break;
-      case 'order_filled':
+      case "order_filled":
         this.handleOrderFilled(event);
         break;
-      case 'order_cancelled':
+      case "order_cancelled":
         this.handleOrderCancelled(event);
         break;
-      case 'order_error':
+      case "order_error":
         this.handleOrderError(event);
         break;
-      case 'quote_update':
+      case "quote_update":
         // Handled by price update handler
         break;
     }
@@ -250,14 +250,14 @@ export class OrderStatusTracker {
     if (!tracked) return;
 
     const previousStatus = tracked.order.status;
-    tracked.order.status = 'submitted';
+    tracked.order.status = "submitted";
     tracked.lastUpdate = event.timestamp;
 
     const change: OrderStatusChange = {
       orderId: event.orderId,
       symbol: tracked.order.symbol,
       previousStatus,
-      newStatus: 'submitted',
+      newStatus: "submitted",
       timestamp: event.timestamp,
     };
 
@@ -267,7 +267,7 @@ export class OrderStatusTracker {
 
     // Send notification if enabled
     if (this.config.enableNotifications && this.config.notifyOnSubmit) {
-      this.notificationService.createNotification('signal_triggered', {
+      this.notificationService.createNotification("signal_triggered", {
         symbol: tracked.order.symbol,
         side: tracked.order.side,
         message: `Order submitted: ${tracked.order.side} ${tracked.order.quantity} ${tracked.order.symbol}`,
@@ -292,7 +292,7 @@ export class OrderStatusTracker {
     const isPartialFill =
       fillData?.filledQty && fillData.filledQty < tracked.order.quantity;
 
-    tracked.order.status = isPartialFill ? 'partial' : 'filled';
+    tracked.order.status = isPartialFill ? "partial" : "filled";
     tracked.order.filledQty = fillData?.filledQty || tracked.order.quantity;
     tracked.order.filledAvgPrice = fillData?.filledAvgPrice;
     tracked.lastUpdate = event.timestamp;
@@ -316,7 +316,7 @@ export class OrderStatusTracker {
     // Send notification
     if (this.config.enableNotifications) {
       if (isPartialFill && this.config.notifyOnPartialFill) {
-        this.notificationService.createNotification('order_partial', {
+        this.notificationService.createNotification("order_partial", {
           symbol: tracked.order.symbol,
           side: tracked.order.side,
           quantity: tracked.order.quantity,
@@ -328,18 +328,18 @@ export class OrderStatusTracker {
           tracked.order.symbol,
           tracked.order.side,
           tracked.order.filledQty,
-          tracked.order.filledAvgPrice || 0
+          tracked.order.filledAvgPrice || 0,
         );
       }
 
       // Play sound alert
       if (this.config.enableSoundAlerts) {
-        this.playAlertSound(isPartialFill ? 'partial' : 'fill');
+        this.playAlertSound(isPartialFill ? "partial" : "fill");
       }
     }
 
     // Auto-untrack completed orders after delay
-    if (tracked.order.status === 'filled') {
+    if (tracked.order.status === "filled") {
       setTimeout(() => this.untrackOrder(event.orderId!), 30000);
     }
   }
@@ -351,14 +351,14 @@ export class OrderStatusTracker {
     if (!tracked) return;
 
     const previousStatus = tracked.order.status;
-    tracked.order.status = 'cancelled';
+    tracked.order.status = "cancelled";
     tracked.lastUpdate = event.timestamp;
 
     const change: OrderStatusChange = {
       orderId: event.orderId,
       symbol: tracked.order.symbol,
       previousStatus,
-      newStatus: 'cancelled',
+      newStatus: "cancelled",
       timestamp: event.timestamp,
     };
 
@@ -368,9 +368,9 @@ export class OrderStatusTracker {
 
     // Send notification
     if (this.config.enableNotifications && this.config.notifyOnCancel) {
-      this.notificationService.createNotification('order_rejected', {
+      this.notificationService.createNotification("order_rejected", {
         symbol: tracked.order.symbol,
-        reason: 'Order cancelled',
+        reason: "Order cancelled",
       });
     }
 
@@ -386,7 +386,7 @@ export class OrderStatusTracker {
 
     const errorData = event.data as { error?: string } | undefined;
     const previousStatus = tracked.order.status;
-    tracked.order.status = 'rejected';
+    tracked.order.status = "rejected";
     tracked.order.errorMessage = errorData?.error;
     tracked.lastUpdate = event.timestamp;
 
@@ -394,7 +394,7 @@ export class OrderStatusTracker {
       orderId: event.orderId,
       symbol: tracked.order.symbol,
       previousStatus,
-      newStatus: 'rejected',
+      newStatus: "rejected",
       timestamp: event.timestamp,
       details: { reason: errorData?.error },
     };
@@ -405,13 +405,13 @@ export class OrderStatusTracker {
 
     // Send notification
     if (this.config.enableNotifications && this.config.notifyOnReject) {
-      this.notificationService.createNotification('order_rejected', {
+      this.notificationService.createNotification("order_rejected", {
         symbol: tracked.order.symbol,
-        reason: errorData?.error || 'Unknown error',
+        reason: errorData?.error || "Unknown error",
       });
 
       if (this.config.enableSoundAlerts) {
-        this.playAlertSound('error');
+        this.playAlertSound("error");
       }
     }
 
@@ -446,17 +446,16 @@ export class OrderStatusTracker {
   private handlePriceAlert(
     tracked: TrackedOrder,
     previousPrice: LivePriceInfo,
-    newPrice: LivePriceInfo
+    newPrice: LivePriceInfo,
   ): void {
     const changePercent =
       ((newPrice.mid - previousPrice.mid) / previousPrice.mid) * 100;
-    const direction = changePercent > 0 ? 'up' : 'down';
+    const direction = changePercent > 0 ? "up" : "down";
 
     // Only alert for unfilled orders
-    if (!['pending', 'submitted', 'accepted'].includes(tracked.order.status)) {
+    if (!["pending", "submitted", "accepted"].includes(tracked.order.status)) {
       return;
     }
-
   }
 
   // ============================================================================
@@ -467,15 +466,15 @@ export class OrderStatusTracker {
     this.trackedOrderSubject.next(this.getAllTrackedOrders());
   }
 
-  private playAlertSound(type: 'fill' | 'partial' | 'error'): void {
+  private playAlertSound(type: "fill" | "partial" | "error"): void {
     try {
       const soundMap = {
-        fill: '/sounds/order-fill.mp3',
-        partial: '/sounds/order-partial.mp3',
-        error: '/sounds/order-error.mp3',
+        fill: "/sounds/order-fill.mp3",
+        partial: "/sounds/order-partial.mp3",
+        error: "/sounds/order-error.mp3",
       };
 
-      if (typeof Audio !== 'undefined') {
+      if (typeof Audio !== "undefined") {
         const audio = new Audio(soundMap[type]);
         audio.volume = 0.5;
         audio.play().catch(() => {
@@ -510,7 +509,7 @@ export class OrderStatusTracker {
    */
   getOrderStatusChanges(orderId: string): Observable<OrderStatusChange> {
     return this.statusChangeSubject.pipe(
-      filter((change) => change.orderId === orderId)
+      filter((change) => change.orderId === orderId),
     );
   }
 
@@ -519,7 +518,7 @@ export class OrderStatusTracker {
    */
   getSymbolStatusChanges(symbol: string): Observable<OrderStatusChange> {
     return this.statusChangeSubject.pipe(
-      filter((change) => change.symbol === symbol)
+      filter((change) => change.symbol === symbol),
     );
   }
 
@@ -531,8 +530,9 @@ export class OrderStatusTracker {
       map((orders) => orders.find((o) => o.order.id === orderId)),
       distinctUntilChanged(
         (a, b) =>
-          a?.order.status === b?.order.status && a?.lastUpdate === b?.lastUpdate
-      )
+          a?.order.status === b?.order.status &&
+          a?.lastUpdate === b?.lastUpdate,
+      ),
     );
   }
 
@@ -567,7 +567,7 @@ export class OrderStatusTracker {
 
 export function createOrderStatusTracker(
   executionEngine: OrderExecutionEngine,
-  config?: Partial<OrderTrackerConfig>
+  config?: Partial<OrderTrackerConfig>,
 ): OrderStatusTracker {
   return new OrderStatusTracker(executionEngine, config);
 }

@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar,
   ChevronLeft,
@@ -20,7 +20,7 @@ import {
   Car,
   Shield,
   X,
-} from 'lucide-react';
+} from "lucide-react";
 
 interface Bill {
   id: string;
@@ -31,7 +31,7 @@ interface Bill {
   dueDay: number;
   nextDueDate: Date;
   autopayEnabled: boolean;
-  status: 'pending' | 'paid' | 'overdue';
+  status: "pending" | "paid" | "overdue";
   icon: React.ReactNode;
 }
 
@@ -54,63 +54,63 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
 
 const MOCK_BILLS: Bill[] = [
   {
-    id: '1',
-    name: 'Rent',
-    payee: 'Property Management',
+    id: "1",
+    name: "Rent",
+    payee: "Property Management",
     amount: 1500,
-    category: 'housing',
+    category: "housing",
     dueDay: 1,
     nextDueDate: new Date(2026, 1, 1),
     autopayEnabled: true,
-    status: 'pending',
+    status: "pending",
     icon: <Home className="w-4 h-4" />,
   },
   {
-    id: '2',
-    name: 'Electric Bill',
-    payee: 'Power Company',
+    id: "2",
+    name: "Electric Bill",
+    payee: "Power Company",
     amount: 125,
-    category: 'utilities',
+    category: "utilities",
     dueDay: 15,
     nextDueDate: new Date(2026, 0, 15),
     autopayEnabled: false,
-    status: 'overdue',
+    status: "overdue",
     icon: <Zap className="w-4 h-4" />,
   },
   {
-    id: '3',
-    name: 'Internet',
-    payee: 'ISP Provider',
+    id: "3",
+    name: "Internet",
+    payee: "ISP Provider",
     amount: 79.99,
-    category: 'internet',
+    category: "internet",
     dueDay: 20,
     nextDueDate: new Date(2026, 0, 20),
     autopayEnabled: true,
-    status: 'pending',
+    status: "pending",
     icon: <Wifi className="w-4 h-4" />,
   },
   {
-    id: '4',
-    name: 'Car Insurance',
-    payee: 'Insurance Co',
+    id: "4",
+    name: "Car Insurance",
+    payee: "Insurance Co",
     amount: 145,
-    category: 'insurance',
+    category: "insurance",
     dueDay: 25,
     nextDueDate: new Date(2026, 0, 25),
     autopayEnabled: true,
-    status: 'pending',
+    status: "pending",
     icon: <Shield className="w-4 h-4" />,
   },
   {
-    id: '5',
-    name: 'Credit Card',
-    payee: 'Chase Bank',
+    id: "5",
+    name: "Credit Card",
+    payee: "Chase Bank",
     amount: 350,
-    category: 'credit_card',
+    category: "credit_card",
     dueDay: 28,
     nextDueDate: new Date(2026, 0, 28),
     autopayEnabled: false,
-    status: 'pending',
+    status: "pending",
     icon: <CreditCard className="w-4 h-4" />,
   },
 ];
@@ -120,7 +120,7 @@ export default function BillCalendarPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [bills] = useState<Bill[]>(MOCK_BILLS);
   const [showAddBillModal, setShowAddBillModal] = useState(false);
-  const [view, setView] = useState<'calendar' | 'list'>('calendar');
+  const [view, setView] = useState<"calendar" | "list">("calendar");
 
   const getDaysInMonth = (date: Date): CalendarDay[] => {
     const year = date.getFullYear();
@@ -181,10 +181,10 @@ export default function BillCalendarPage() {
     });
   };
 
-  const navigateMonth = (direction: 'prev' | 'next') => {
+  const navigateMonth = (direction: "prev" | "next") => {
     setCurrentDate((prev) => {
       const newDate = new Date(prev);
-      if (direction === 'prev') {
+      if (direction === "prev") {
         newDate.setMonth(newDate.getMonth() - 1);
       } else {
         newDate.setMonth(newDate.getMonth() + 1);
@@ -205,7 +205,7 @@ export default function BillCalendarPage() {
     return {
       totalDue: monthBills.reduce((sum, b) => sum + b.amount, 0),
       billCount: monthBills.length,
-      overdue: monthBills.filter((b) => b.status === 'overdue').length,
+      overdue: monthBills.filter((b) => b.status === "overdue").length,
       autopay: monthBills.filter((b) => b.autopayEnabled).length,
     };
   };
@@ -214,18 +214,18 @@ export default function BillCalendarPage() {
   const calendarDays = getDaysInMonth(currentDate);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(amount);
   };
 
   const upcomingBills = bills
-    .filter((b) => b.status !== 'paid')
+    .filter((b) => b.status !== "paid")
     .sort((a, b) => a.nextDueDate.getTime() - b.nextDueDate.getTime())
     .slice(0, 5);
 
-  const overdueBills = bills.filter((b) => b.status === 'overdue');
+  const overdueBills = bills.filter((b) => b.status === "overdue");
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8">
@@ -249,14 +249,14 @@ export default function BillCalendarPage() {
           <div className="flex items-center gap-3 mt-4 sm:mt-0">
             <div className="flex bg-gray-100 dark:bg-slate-800 rounded-lg p-1">
               <button
-                onClick={() => setView('calendar')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${ view === 'calendar' ? 'bg-white dark:bg-slate-700 text-gray-900 shadow-sm' : 'text-gray-600 dark:text-slate-400' }`}
+                onClick={() => setView("calendar")}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${view === "calendar" ? "bg-white dark:bg-slate-700 text-gray-900 shadow-sm" : "text-gray-600 dark:text-slate-400"}`}
               >
                 Calendar
               </button>
               <button
-                onClick={() => setView('list')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${ view === 'list' ? 'bg-white dark:bg-slate-700 text-gray-900 shadow-sm' : 'text-gray-600 dark:text-slate-400' }`}
+                onClick={() => setView("list")}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${view === "list" ? "bg-white dark:bg-slate-700 text-gray-900 shadow-sm" : "text-gray-600 dark:text-slate-400"}`}
               >
                 List
               </button>
@@ -308,7 +308,7 @@ export default function BillCalendarPage() {
           <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm">
             <div className="flex items-center gap-3">
               <div
-                className={`p-2 rounded-lg ${ stats.overdue > 0 ? 'bg-red-100' : 'bg-green-100 dark:bg-green-900' }`}
+                className={`p-2 rounded-lg ${stats.overdue > 0 ? "bg-red-100" : "bg-green-100 dark:bg-green-900"}`}
               >
                 {stats.overdue > 0 ? (
                   <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
@@ -322,7 +322,7 @@ export default function BillCalendarPage() {
                 </p>
                 <p
                   className={`text-xl font-bold ${
-                    stats.overdue > 0 ? 'text-red-600' : 'text-green-600'
+                    stats.overdue > 0 ? "text-red-600" : "text-green-600"
                   }`}
                 >
                   {stats.overdue}
@@ -351,19 +351,19 @@ export default function BillCalendarPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Calendar / List View */}
           <div className="lg:col-span-2">
-            {view === 'calendar' ? (
+            {view === "calendar" ? (
               <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6">
                 {/* Calendar Header */}
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                    {currentDate.toLocaleDateString('en-US', {
-                      month: 'long',
-                      year: 'numeric',
+                    {currentDate.toLocaleDateString("en-US", {
+                      month: "long",
+                      year: "numeric",
                     })}
                   </h2>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => navigateMonth('prev')}
+                      onClick={() => navigateMonth("prev")}
                       className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
                       aria-label="Previous month"
                     >
@@ -376,7 +376,7 @@ export default function BillCalendarPage() {
                       Today
                     </button>
                     <button
-                      onClick={() => navigateMonth('next')}
+                      onClick={() => navigateMonth("next")}
                       className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
                       aria-label="Next month"
                     >
@@ -388,7 +388,7 @@ export default function BillCalendarPage() {
                 {/* Calendar Grid */}
                 <div className="grid grid-cols-7 gap-1">
                   {/* Day Headers */}
-                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(
+                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
                     (day) => (
                       <div
                         key={day}
@@ -396,7 +396,7 @@ export default function BillCalendarPage() {
                       >
                         {day}
                       </div>
-                    )
+                    ),
                   )}
 
                   {/* Calendar Days */}
@@ -404,10 +404,10 @@ export default function BillCalendarPage() {
                     <button
                       key={index}
                       onClick={() => setSelectedDate(day.date)}
-                      className={`min-h-[80px] p-2 rounded-lg border transition-all ${ day.isToday ? 'border-green-500 bg-green-50' : day.isCurrentMonth ? 'border-gray-200 hover:border-gray-300 dark:border-slate-600 dark:hover:border-gray-600' : 'border-transparent bg-gray-50 dark:bg-slate-800/50' } ${ selectedDate?.getTime() === day.date.getTime() ? 'ring-2 ring-green-500' : '' }`}
+                      className={`min-h-[80px] p-2 rounded-lg border transition-all ${day.isToday ? "border-green-500 bg-green-50" : day.isCurrentMonth ? "border-gray-200 hover:border-gray-300 dark:border-slate-600 dark:hover:border-gray-600" : "border-transparent bg-gray-50 dark:bg-slate-800/50"} ${selectedDate?.getTime() === day.date.getTime() ? "ring-2 ring-green-500" : ""}`}
                     >
                       <div
-                        className={`text-sm font-medium ${ day.isCurrentMonth ? 'text-gray-900' : 'text-gray-400 dark:text-slate-600' }`}
+                        className={`text-sm font-medium ${day.isCurrentMonth ? "text-gray-900" : "text-gray-400 dark:text-slate-600"}`}
                       >
                         {day.date.getDate()}
                       </div>
@@ -417,7 +417,7 @@ export default function BillCalendarPage() {
                           {day.bills.slice(0, 2).map((bill) => (
                             <div
                               key={bill.id}
-                              className={`text-xs px-1 py-0.5 rounded truncate ${ bill.status === 'overdue' ? 'bg-red-100 text-red-700' : bill.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' }`}
+                              className={`text-xs px-1 py-0.5 rounded truncate ${bill.status === "overdue" ? "bg-red-100 text-red-700" : bill.status === "paid" ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"}`}
                             >
                               {bill.name}
                             </div>
@@ -447,7 +447,7 @@ export default function BillCalendarPage() {
                     >
                       <div className="flex items-center gap-4">
                         <div
-                          className={`p-2 rounded-lg ${ bill.status === 'overdue' ? 'bg-red-100 text-red-600' : 'bg-gray-100 dark:bg-slate-600 text-gray-600 dark:text-slate-300' }`}
+                          className={`p-2 rounded-lg ${bill.status === "overdue" ? "bg-red-100 text-red-600" : "bg-gray-100 dark:bg-slate-600 text-gray-600 dark:text-slate-300"}`}
                         >
                           {bill.icon}
                         </div>
@@ -456,7 +456,7 @@ export default function BillCalendarPage() {
                             {bill.name}
                           </h3>
                           <p className="text-sm text-gray-500 dark:text-slate-400">
-                            {bill.payee} • Due{' '}
+                            {bill.payee} • Due{" "}
                             {bill.nextDueDate.toLocaleDateString()}
                           </p>
                         </div>
@@ -471,7 +471,7 @@ export default function BillCalendarPage() {
                               Autopay
                             </span>
                           )}
-                          {bill.status === 'overdue' && (
+                          {bill.status === "overdue" && (
                             <span className="text-xs px-2 py-0.5 bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 rounded">
                               Overdue
                             </span>
@@ -529,7 +529,7 @@ export default function BillCalendarPage() {
                 {upcomingBills.map((bill) => {
                   const daysUntil = Math.ceil(
                     (bill.nextDueDate.getTime() - Date.now()) /
-                      (1000 * 60 * 60 * 24)
+                      (1000 * 60 * 60 * 24),
                   );
                   return (
                     <div
@@ -546,7 +546,7 @@ export default function BillCalendarPage() {
                           </p>
                           <p className="text-xs text-gray-500 dark:text-slate-400">
                             {daysUntil <= 0
-                              ? 'Due today'
+                              ? "Due today"
                               : `Due in ${daysUntil} days`}
                           </p>
                         </div>

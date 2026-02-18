@@ -2,4 +2,4 @@
  * Tax Components Index
  */
 
-export { TaxDocumentUpload } from './TaxDocumentUpload';
+export { TaxDocumentUpload } from "./TaxDocumentUpload";

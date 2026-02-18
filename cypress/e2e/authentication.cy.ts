@@ -6,17 +6,17 @@
  * skipped unless TEST_USER_EMAIL and TEST_USER_PASSWORD env vars are set.
  */
 
-describe('Authentication — Login Page', () => {
-  it('should display login page at /login', () => {
-    cy.visit('/login');
-    cy.get('body').should('be.visible');
+describe("Authentication — Login Page", () => {
+  it("should display login page at /login", () => {
+    cy.visit("/login");
+    cy.get("body").should("be.visible");
     // Login page should have email and password inputs or auth UI
-    cy.get('input, button, a').should('have.length.at.least', 1);
+    cy.get("input, button, a").should("have.length.at.least", 1);
   });
 
-  it('/login returns 200 or redirects if already authenticated', () => {
+  it("/login returns 200 or redirects if already authenticated", () => {
     cy.request({
-      url: '/login',
+      url: "/login",
       followRedirect: false,
       failOnStatusCode: false,
     }).then((resp) => {
@@ -25,14 +25,14 @@ describe('Authentication — Login Page', () => {
   });
 });
 
-describe('Authentication — Protected Routes Redirect', () => {
+describe("Authentication — Protected Routes Redirect", () => {
   const protectedRoutes = [
-    '/dashboard',
-    '/ai-tools',
-    '/admin',
-    '/settings',
-    '/credit',
-    '/investments',
+    "/dashboard",
+    "/ai-tools",
+    "/admin",
+    "/settings",
+    "/credit",
+    "/investments",
   ];
 
   protectedRoutes.forEach((route) => {
@@ -43,17 +43,17 @@ describe('Authentication — Protected Routes Redirect', () => {
         failOnStatusCode: false,
       }).then((resp) => {
         expect(resp.status).to.eq(307);
-        const location = resp.headers['location'] as string;
-        expect(location).to.include('/login');
+        const location = resp.headers["location"] as string;
+        expect(location).to.include("/login");
       });
     });
   });
 });
 
-describe('Authentication — Public Pages Accessible', () => {
-  it('Landing page (/) is public', () => {
+describe("Authentication — Public Pages Accessible", () => {
+  it("Landing page (/) is public", () => {
     cy.request({
-      url: '/',
+      url: "/",
       followRedirect: false,
       failOnStatusCode: false,
     }).then((resp) => {
@@ -61,9 +61,9 @@ describe('Authentication — Public Pages Accessible', () => {
     });
   });
 
-  it('Pricing page (/pricing) is public', () => {
+  it("Pricing page (/pricing) is public", () => {
     cy.request({
-      url: '/pricing',
+      url: "/pricing",
       followRedirect: false,
       failOnStatusCode: false,
     }).then((resp) => {
@@ -71,9 +71,9 @@ describe('Authentication — Public Pages Accessible', () => {
     });
   });
 
-  it('Credit factors page (/credit/factors) is public', () => {
+  it("Credit factors page (/credit/factors) is public", () => {
     cy.request({
-      url: '/credit/factors',
+      url: "/credit/factors",
       followRedirect: false,
       failOnStatusCode: false,
     }).then((resp) => {
@@ -82,27 +82,27 @@ describe('Authentication — Public Pages Accessible', () => {
   });
 });
 
-describe('Authentication — API Auth Enforcement', () => {
-  it('Protected API returns 401 without auth token', () => {
+describe("Authentication — API Auth Enforcement", () => {
+  it("Protected API returns 401 without auth token", () => {
     cy.request({
-      url: '/api/credit-repair/disputes',
+      url: "/api/credit-repair/disputes",
       failOnStatusCode: false,
     }).then((resp) => {
       expect(resp.status).to.eq(401);
-      expect(resp.body).to.have.property('error');
+      expect(resp.body).to.have.property("error");
     });
   });
 
-  it('AI API returns 401 without auth token', () => {
+  it("AI API returns 401 without auth token", () => {
     cy.request({
-      method: 'POST',
-      url: '/api/ai/chat',
-      body: { message: 'test' },
+      method: "POST",
+      url: "/api/ai/chat",
+      body: { message: "test" },
       failOnStatusCode: false,
       timeout: 60000,
     }).then((resp) => {
       expect(resp.status).to.eq(401);
-      expect(resp.body).to.have.property('error');
+      expect(resp.body).to.have.property("error");
     });
   });
 });

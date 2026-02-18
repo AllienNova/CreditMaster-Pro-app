@@ -1,12 +1,18 @@
-import React, { useMemo } from 'react';
-import { TouchableOpacity, Text, ActivityIndicator, ViewStyle, TextStyle } from 'react-native';
-import { useTheme } from '../hooks/useTheme';
+import React, { useMemo } from "react";
+import {
+  TouchableOpacity,
+  Text,
+  ActivityIndicator,
+  ViewStyle,
+  TextStyle,
+} from "react-native";
+import { useTheme } from "../hooks/useTheme";
 
 interface ButtonProps {
   title: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
-  size?: 'sm' | 'md' | 'lg';
+  variant?: "primary" | "secondary" | "outline" | "ghost";
+  size?: "sm" | "md" | "lg";
   disabled?: boolean;
   loading?: boolean;
   icon?: React.ReactNode;
@@ -17,8 +23,8 @@ interface ButtonProps {
 export function Button({
   title,
   onPress,
-  variant = 'primary',
-  size = 'md',
+  variant = "primary",
+  size = "md",
   disabled = false,
   loading = false,
   icon,
@@ -29,18 +35,18 @@ export function Button({
 
   const buttonStyle = useMemo((): ViewStyle => {
     const base: ViewStyle = {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
       borderRadius: borderRadius.md,
     };
 
     switch (size) {
-      case 'sm':
+      case "sm":
         base.paddingVertical = 8;
         base.paddingHorizontal = 12;
         break;
-      case 'lg':
+      case "lg":
         base.paddingVertical = 16;
         base.paddingHorizontal = 24;
         break;
@@ -50,16 +56,16 @@ export function Button({
     }
 
     switch (variant) {
-      case 'secondary':
+      case "secondary":
         base.backgroundColor = colors.secondary;
         break;
-      case 'outline':
-        base.backgroundColor = 'transparent';
+      case "outline":
+        base.backgroundColor = "transparent";
         base.borderWidth = 1;
         base.borderColor = colors.primary;
         break;
-      case 'ghost':
-        base.backgroundColor = 'transparent';
+      case "ghost":
+        base.backgroundColor = "transparent";
         break;
       default:
         base.backgroundColor = colors.primary;
@@ -78,10 +84,10 @@ export function Button({
     };
 
     switch (size) {
-      case 'sm':
+      case "sm":
         base.fontSize = fontSize.sm;
         break;
-      case 'lg':
+      case "lg":
         base.fontSize = fontSize.lg;
         break;
       default:
@@ -89,8 +95,8 @@ export function Button({
     }
 
     switch (variant) {
-      case 'outline':
-      case 'ghost':
+      case "outline":
+      case "ghost":
         base.color = colors.primary;
         break;
       default:
@@ -100,7 +106,10 @@ export function Button({
     return base;
   }, [variant, size, colors, fontSize, fontWeight]);
 
-  const loaderColor = variant === 'outline' || variant === 'ghost' ? colors.primary : colors.white;
+  const loaderColor =
+    variant === "outline" || variant === "ghost"
+      ? colors.primary
+      : colors.white;
 
   return (
     <TouchableOpacity
@@ -114,7 +123,15 @@ export function Button({
       ) : (
         <>
           {icon}
-          <Text style={[labelStyle, icon ? { marginLeft: 8 } : undefined, textStyle]}>{title}</Text>
+          <Text
+            style={[
+              labelStyle,
+              icon ? { marginLeft: 8 } : undefined,
+              textStyle,
+            ]}
+          >
+            {title}
+          </Text>
         </>
       )}
     </TouchableOpacity>

@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React, { Component, ErrorInfo, ReactNode } from "react";
 
 interface Props {
   children: ReactNode;
@@ -34,9 +34,9 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.props.onError) {
       this.props.onError(error, errorInfo);
     }
-    
+
     // In production, send to error tracking service
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env.NODE_ENV === "production") {
       this.reportError(error, errorInfo);
     }
   }
@@ -53,15 +53,16 @@ export class ErrorBoundary extends Component<Props, State> {
         message: error.message,
         stack: error.stack,
         componentStack: errorInfo.componentStack,
-        url: typeof window !== 'undefined' ? window.location.href : 'unknown',
-        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+        url: typeof window !== "undefined" ? window.location.href : "unknown",
+        userAgent:
+          typeof navigator !== "undefined" ? navigator.userAgent : "unknown",
         timestamp: new Date().toISOString(),
       };
 
       // Report to backend error logging endpoint
-      await fetch('/api/monitoring/errors', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      await fetch("/api/monitoring/errors", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(errorReport),
       }).catch(() => {
         // Silently fail if error reporting endpoint is unavailable
@@ -91,7 +92,8 @@ export class ErrorBoundary extends Component<Props, State> {
               Something went wrong
             </h2>
             <p className="text-gray-600 dark:text-slate-300 mb-6">
-              We encountered an unexpected error. Please try again or contact support if the problem persists.
+              We encountered an unexpected error. Please try again or contact
+              support if the problem persists.
             </p>
             <div className="space-x-4">
               <button
@@ -101,20 +103,20 @@ export class ErrorBoundary extends Component<Props, State> {
                 Try Again
               </button>
               <button
-                onClick={() => window.location.href = '/'}
+                onClick={() => (window.location.href = "/")}
                 className="px-6 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition"
               >
                 Go Home
               </button>
             </div>
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {process.env.NODE_ENV === "development" && this.state.error && (
               <details className="mt-6 text-left bg-red-50 p-4 rounded-lg">
                 <summary className="cursor-pointer text-red-700 font-medium">
                   Error Details (Development Only)
                 </summary>
                 <pre className="mt-2 text-xs text-red-600 overflow-auto">
                   {this.state.error.message}
-                  {'\n\n'}
+                  {"\n\n"}
                   {this.state.error.stack}
                 </pre>
               </details>
@@ -170,11 +172,11 @@ export function PageErrorBoundary({ children }: { children: ReactNode }) {
 /**
  * API error boundary for data fetching components
  */
-export function ApiErrorBoundary({ 
-  children, 
-  onRetry 
-}: { 
-  children: ReactNode; 
+export function ApiErrorBoundary({
+  children,
+  onRetry,
+}: {
+  children: ReactNode;
   onRetry?: () => void;
 }) {
   return (
@@ -199,4 +201,3 @@ export function ApiErrorBoundary({
 }
 
 export default ErrorBoundary;
-

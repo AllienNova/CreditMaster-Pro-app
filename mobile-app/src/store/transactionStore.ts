@@ -4,11 +4,11 @@
  * Split from financialStore for better modularity
  */
 
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { transactionApi } from '../services/api';
-import type { Transaction } from '../services/api/types';
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { transactionApi } from "../services/api";
+import type { Transaction } from "../services/api/types";
 
 interface TransactionState {
   // State
@@ -34,7 +34,10 @@ interface TransactionState {
     endDate?: string;
   }) => Promise<void>;
   fetchCategories: () => Promise<void>;
-  updateTransactionCategory: (transactionId: string, category: string) => Promise<boolean>;
+  updateTransactionCategory: (
+    transactionId: string,
+    category: string,
+  ) => Promise<boolean>;
   refreshTransactions: () => Promise<void>;
 
   // Utility
@@ -67,18 +70,21 @@ export const useTransactionStore = create<TransactionState>()(
               transactions: response.data.items,
               totalCount: response.data.total || response.data.items.length,
               currentPage: params.page || 1,
-              isLoadingTransactions: false
+              isLoadingTransactions: false,
             });
           } else {
             set({
-              error: response.error?.message || 'Failed to fetch transactions',
-              isLoadingTransactions: false
+              error: response.error?.message || "Failed to fetch transactions",
+              isLoadingTransactions: false,
             });
           }
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'Failed to fetch transactions',
-            isLoadingTransactions: false
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to fetch transactions",
+            isLoadingTransactions: false,
           });
         }
       },
@@ -90,45 +96,57 @@ export const useTransactionStore = create<TransactionState>()(
           if (response.success && response.data) {
             set({
               categories: response.data.categories,
-              isLoadingCategories: false
+              isLoadingCategories: false,
             });
           } else {
             set({
-              error: response.error?.message || 'Failed to fetch categories',
-              isLoadingCategories: false
+              error: response.error?.message || "Failed to fetch categories",
+              isLoadingCategories: false,
             });
           }
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'Failed to fetch categories',
-            isLoadingCategories: false
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to fetch categories",
+            isLoadingCategories: false,
           });
         }
       },
 
-      updateTransactionCategory: async (transactionId: string, category: string) => {
+      updateTransactionCategory: async (
+        transactionId: string,
+        category: string,
+      ) => {
         set({ isUpdating: true, error: null });
         try {
-          const response = await transactionApi.updateCategory(transactionId, category);
+          const response = await transactionApi.updateCategory(
+            transactionId,
+            category,
+          );
           if (response.success) {
             // Update local transaction
             set({
-              transactions: get().transactions.map(t =>
-                t.id === transactionId ? { ...t, category } : t
+              transactions: get().transactions.map((t) =>
+                t.id === transactionId ? { ...t, category } : t,
               ),
-              isUpdating: false
+              isUpdating: false,
             });
             return true;
           }
           set({
-            error: response.error?.message || 'Failed to update category',
-            isUpdating: false
+            error: response.error?.message || "Failed to update category",
+            isUpdating: false,
           });
           return false;
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'Failed to update category',
-            isUpdating: false
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to update category",
+            isUpdating: false,
           });
           return false;
         }
@@ -144,24 +162,29 @@ export const useTransactionStore = create<TransactionState>()(
       resetStore: () => set(initialState),
     }),
     {
-      name: 'cpfi-transaction-store',
+      name: "cpfi-transaction-store",
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         transactions: state.transactions.slice(0, 50), // Only persist recent 50
         categories: state.categories,
       }),
-    }
-  )
+    },
+  ),
 );
 
 // Selectors
-export const selectTransactions = (state: TransactionState) => state.transactions;
+export const selectTransactions = (state: TransactionState) =>
+  state.transactions;
 export const selectCategories = (state: TransactionState) => state.categories;
-export const selectTransactionsByCategory = (category: string) => (state: TransactionState) =>
-  state.transactions.filter(t => t.category === category);
-export const selectTransactionsByAccount = (accountId: string) => (state: TransactionState) =>
-  state.transactions.filter(t => t.accountId === accountId);
-export const selectRecentTransactions = (limit: number = 10) => (state: TransactionState) =>
-  state.transactions.slice(0, limit);
+export const selectTransactionsByCategory =
+  (category: string) => (state: TransactionState) =>
+    state.transactions.filter((t) => t.category === category);
+export const selectTransactionsByAccount =
+  (accountId: string) => (state: TransactionState) =>
+    state.transactions.filter((t) => t.accountId === accountId);
+export const selectRecentTransactions =
+  (limit: number = 10) =>
+  (state: TransactionState) =>
+    state.transactions.slice(0, limit);
 export const selectIsLoading = (state: TransactionState) =>
   state.isLoadingTransactions || state.isLoadingCategories || state.isUpdating;

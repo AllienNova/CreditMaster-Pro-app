@@ -1,16 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+import { cookies } from "next/headers";
+import { createServerClient } from "@supabase/ssr";
 
 async function getUser() {
   const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { getAll: () => cookieStore.getAll() } }
+    { cookies: { getAll: () => cookieStore.getAll() } },
   );
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   return user;
 }
 
@@ -18,12 +20,12 @@ export async function GET() {
   try {
     const user = await getUser();
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
     );
 
     // Optimized query: Fetch profile with related data in single query
@@ -31,21 +33,28 @@ export async function GET() {
     const [profileResult, statsResult] = await Promise.all([
       // Get profile with latest subscription only
       supabase
-        .from('profiles')
-        .select(`
+        .from("profiles")
+        .select(
+          `
           id, full_name, avatar_url, phone, address, created_at, role,
           subscriptions!inner(plan, status, current_period_end)
-        `)
-        .eq('id', user.id)
-        .order('created_at', { referencedTable: 'subscriptions', ascending: false })
-        .limit(1, { referencedTable: 'subscriptions' })
+        `,
+        )
+        .eq("id", user.id)
+        .order("created_at", {
+          referencedTable: "subscriptions",
+          ascending: false,
+        })
+        .limit(1, { referencedTable: "subscriptions" })
         .maybeSingle(),
 
       // Get aggregated stats in single query
-      supabase.rpc('get_user_profile_stats', { p_user_id: user.id }).maybeSingle()
+      supabase
+        .rpc("get_user_profile_stats", { p_user_id: user.id })
+        .maybeSingle(),
     ]);
 
-    if (profileResult.error && profileResult.error.code !== 'PGRST116') {
+    if (profileResult.error && profileResult.error.code !== "PGRST116") {
       throw profileResult.error;
     }
 
@@ -72,16 +81,16 @@ export async function GET() {
       // Fallback: separate efficient queries
       const [disputeCount, scoreResult] = await Promise.all([
         supabase
-          .from('disputes')
-          .select('status', { count: 'exact', head: true })
-          .eq('user_id', user.id),
+          .from("disputes")
+          .select("status", { count: "exact", head: true })
+          .eq("user_id", user.id),
         supabase
-          .from('credit_scores')
-          .select('score')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
+          .from("credit_scores")
+          .select("score")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
           .limit(1)
-          .maybeSingle()
+          .maybeSingle(),
       ]);
 
       totalDisputes = disputeCount.count || 0;
@@ -97,19 +106,22 @@ export async function GET() {
         phone: profile?.phone,
         address: profile?.address,
         created_at: profile?.created_at,
-        role: profile?.role || 'user',
-        subscription: profile?.subscriptions?.[0] || null
+        role: profile?.role || "user",
+        subscription: profile?.subscriptions?.[0] || null,
       },
       stats: {
         creditScore: latestScore,
         totalDisputes,
         resolvedDisputes,
-        successRate
-      }
+        successRate,
+      },
     });
   } catch (error) {
-    console.error('Profile fetch error:', error);
-    return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 });
+    console.error("Profile fetch error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch profile" },
+      { status: 500 },
+    );
   }
 }
 
@@ -117,20 +129,20 @@ export async function PATCH(request: NextRequest) {
   try {
     const user = await getUser();
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const updates = await request.json();
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
     );
 
     // Only allow updating certain fields
-    const allowedFields = ['full_name', 'phone', 'address', 'avatar_url'];
+    const allowedFields = ["full_name", "phone", "address", "avatar_url"];
     const sanitizedUpdates: Record<string, any> = {};
-    
+
     for (const field of allowedFields) {
       if (updates[field] !== undefined) {
         sanitizedUpdates[field] = updates[field];
@@ -140,9 +152,9 @@ export async function PATCH(request: NextRequest) {
     sanitizedUpdates.updated_at = new Date().toISOString();
 
     const { data, error } = await supabase
-      .from('profiles')
+      .from("profiles")
       .update(sanitizedUpdates)
-      .eq('id', user.id)
+      .eq("id", user.id)
       .select()
       .single();
 
@@ -150,8 +162,10 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ profile: data });
   } catch (error) {
-    console.error('Profile update error:', error);
-    return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });
+    console.error("Profile update error:", error);
+    return NextResponse.json(
+      { error: "Failed to update profile" },
+      { status: 500 },
+    );
   }
 }
-

@@ -1,11 +1,11 @@
 /**
  * Negotiation Service
- * 
+ *
  * Handles goodwill letters and pay-for-delete negotiations
  * Uses AI to generate personalized negotiation letters
  */
 
-import type { LetterGenerationResponse } from './types';
+import type { LetterGenerationResponse } from "./types";
 
 interface NegotiationUserInfo {
   name: string;
@@ -28,7 +28,7 @@ class NegotiationService {
     creditorName: string,
     latePaymentDate: Date,
     reason: string,
-    userInfo: NegotiationUserInfo
+    userInfo: NegotiationUserInfo,
   ): Promise<LetterGenerationResponse> {
     try {
       // Create personalized goodwill letter using AI
@@ -52,24 +52,24 @@ The letter should:
 Tone: Professional but warm, humble but confident
 Length: 1 page maximum
       `.trim();
-      
+
       // Generate letter using AI (would use aiOrchestrator in production)
       const letter = await this.generateLetterWithAI(prompt);
-      
+
       // Generate tips
       const tips = [
-        'Send to the creditor, not the credit bureaus',
-        'Be honest and sincere in your explanation',
-        'Emphasize your positive payment history',
-        'Follow up after 2-3 weeks if no response',
-        'Be prepared for rejection - success rate is ~60%',
-        'Consider calling after sending the letter',
+        "Send to the creditor, not the credit bureaus",
+        "Be honest and sincere in your explanation",
+        "Emphasize your positive payment history",
+        "Follow up after 2-3 weeks if no response",
+        "Be prepared for rejection - success rate is ~60%",
+        "Consider calling after sending the letter",
       ];
-      
+
       // Calculate follow-up date (21 days from now)
       const followUpDate = new Date();
       followUpDate.setDate(followUpDate.getDate() + 21);
-      
+
       return {
         letter,
         subject: `Request for Goodwill Adjustment - Account ${accountId}`,
@@ -91,7 +91,7 @@ Length: 1 page maximum
     originalCreditor: string,
     originalBalance: number,
     currentBalance: number,
-    userInfo: NegotiationUserInfo
+    userInfo: NegotiationUserInfo,
   ): Promise<{
     phoneScript: string;
     emailScript: string;
@@ -101,7 +101,7 @@ Length: 1 page maximum
       // Calculate settlement offer (30-50% of balance)
       const settlementOffer = Math.round(currentBalance * 0.4); // 40% offer
       const settlementPercentage = 40;
-      
+
       // Generate phone script
       const phoneScript = `
 PHONE NEGOTIATION SCRIPT FOR PAY-FOR-DELETE
@@ -141,7 +141,7 @@ REMEMBER:
 - Get everything in writing
 - Don't pay until you have written agreement
       `.trim();
-      
+
       // Generate email script
       const emailScript = `
 Subject: Settlement Offer for Account ${collectionId}
@@ -161,7 +161,7 @@ I am offering to pay $${settlementOffer.toFixed(2)} (${settlementPercentage}% of
 
 If you agree to these terms, please send me a written agreement on company letterhead to:
 
-${userInfo.address || '[Your Address]'}
+${userInfo.address || "[Your Address]"}
 
 Or email to: ${userInfo.email}
 
@@ -172,12 +172,12 @@ Please respond within 7 days to confirm acceptance of this offer.
 Sincerely,
 ${userInfo.name}
       `.trim();
-      
+
       // Generate formal letter
       const letterScript = `
 ${userInfo.name}
-${userInfo.address || '[Your Address]'}
-${userInfo.city || '[City]'}, ${userInfo.state || '[State]'} ${userInfo.zip || '[ZIP]'}
+${userInfo.address || "[Your Address]"}
+${userInfo.city || "[City]"}, ${userInfo.state || "[State]"} ${userInfo.zip || "[ZIP]"}
 
 ${new Date().toLocaleDateString()}
 
@@ -215,7 +215,7 @@ Sincerely,
 
 ${userInfo.name}
       `.trim();
-      
+
       return {
         phoneScript,
         emailScript,
@@ -232,7 +232,7 @@ ${userInfo.name}
    */
   calculateSettlement(
     currentBalance: number,
-    percentage: number = 40
+    percentage: number = 40,
   ): {
     settlementAmount: number;
     percentage: number;
@@ -240,7 +240,7 @@ ${userInfo.name}
   } {
     const settlementAmount = Math.round(currentBalance * (percentage / 100));
     const savings = currentBalance - settlementAmount;
-    
+
     return {
       settlementAmount,
       percentage,
@@ -255,7 +255,7 @@ ${userInfo.name}
     collectionAgency: string,
     accountNumber: string,
     settlementAmount: number,
-    userInfo: NegotiationUserInfo
+    userInfo: NegotiationUserInfo,
   ): Promise<string> {
     const agreement = `
 PAY-FOR-DELETE AGREEMENT
@@ -303,7 +303,7 @@ Date: _____________
 
 IMPORTANT: Do not sign or pay until the creditor signs first!
     `.trim();
-    
+
     return agreement;
   }
 
@@ -313,12 +313,12 @@ IMPORTANT: Do not sign or pay until the creditor signs first!
   async generateValidationLetter(
     collectionAgency: string,
     accountNumber: string,
-    userInfo: NegotiationUserInfo
+    userInfo: NegotiationUserInfo,
   ): Promise<LetterGenerationResponse> {
     const letter = `
 ${userInfo.name}
-${userInfo.address || '[Your Address]'}
-${userInfo.city || '[City]'}, ${userInfo.state || '[State]'} ${userInfo.zip || '[ZIP]'}
+${userInfo.address || "[Your Address]"}
+${userInfo.city || "[City]"}, ${userInfo.state || "[State]"} ${userInfo.zip || "[ZIP]"}
 
 ${new Date().toLocaleDateString()}
 
@@ -356,19 +356,19 @@ ${userInfo.name}
 
 IMPORTANT: Send via certified mail with return receipt requested.
     `.trim();
-    
+
     const tips = [
-      'Send within 30 days of first contact from collector',
-      'Send via certified mail with return receipt',
-      'Keep copies of everything',
-      'Collector must stop collection until they validate',
-      'If they can\'t validate, they must delete from credit reports',
-      'This is your legal right under FDCPA',
+      "Send within 30 days of first contact from collector",
+      "Send via certified mail with return receipt",
+      "Keep copies of everything",
+      "Collector must stop collection until they validate",
+      "If they can't validate, they must delete from credit reports",
+      "This is your legal right under FDCPA",
     ];
-    
+
     const followUpDate = new Date();
     followUpDate.setDate(followUpDate.getDate() + 30);
-    
+
     return {
       letter,
       subject: `Debt Validation Request - Account ${accountNumber}`,

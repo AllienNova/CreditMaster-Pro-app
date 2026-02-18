@@ -1,9 +1,9 @@
 /**
  * Credit Report Parser Service
- * 
+ *
  * Parses credit reports from different bureaus (Experian, Equifax, TransUnion)
  * and normalizes them into a consistent format.
- * 
+ *
  * Currently supports:
  * - Mock credit reports (for development)
  * - Future: Plaid format
@@ -16,10 +16,15 @@ import {
   ValidationResult,
   MockCreditReportOptions,
   CreditBureauRawPayload,
-} from '@/types/credit-bureau';
-import { generateMockCreditReport } from './mock-credit-report-generator';
+} from "@/types/credit-bureau";
+import { generateMockCreditReport } from "./mock-credit-report-generator";
 
-type CreditReportFormat = 'mock' | 'plaid' | 'experian' | 'equifax' | 'transunion';
+type CreditReportFormat =
+  | "mock"
+  | "plaid"
+  | "experian"
+  | "equifax"
+  | "transunion";
 
 /**
  * Credit Report Parser Class
@@ -31,15 +36,15 @@ export class CreditReportParser {
   async parseReport(
     rawData: CreditBureauRawPayload | ParsedCreditReport,
     bureau: Bureau,
-    reportDate?: Date
+    reportDate?: Date,
   ): Promise<ParsedCreditReport> {
     // Validate input
     if (!rawData) {
-      throw new Error('Raw data is required');
+      throw new Error("Raw data is required");
     }
 
     if (!bureau) {
-      throw new Error('Bureau is required');
+      throw new Error("Bureau is required");
     }
 
     if (this.isParsedReport(rawData)) {
@@ -53,15 +58,15 @@ export class CreditReportParser {
     const format = this.detectFormat(rawData as CreditBureauRawPayload);
 
     switch (format) {
-      case 'mock':
+      case "mock":
         return this.parseMockReport(rawData, bureau);
-      case 'plaid':
+      case "plaid":
         return this.parsePlaidReport(rawData, bureau);
-      case 'experian':
+      case "experian":
         return this.parseExperianReport(rawData);
-      case 'equifax':
+      case "equifax":
         return this.parseEquifaxReport(rawData);
-      case 'transunion':
+      case "transunion":
         return this.parseTransUnionReport(rawData);
       default:
         throw new Error(`Unsupported credit report format: ${format}`);
@@ -72,45 +77,63 @@ export class CreditReportParser {
    * Detect the format of the credit report
    */
   private detectFormat(rawData: CreditBureauRawPayload): CreditReportFormat {
-    const formatFlag = this.getString(rawData, 'format');
-    const isMock = this.getBoolean(rawData, 'isMock');
-    if (formatFlag === 'mock' || isMock === true) {
-      return 'mock';
+    const formatFlag = this.getString(rawData, "format");
+    const isMock = this.getBoolean(rawData, "isMock");
+    if (formatFlag === "mock" || isMock === true) {
+      return "mock";
     }
 
     // Check for mock format
-    if (this.hasProperty(rawData, 'personalInfo') && this.hasProperty(rawData, 'accounts')) {
-      return 'mock';
+    if (
+      this.hasProperty(rawData, "personalInfo") &&
+      this.hasProperty(rawData, "accounts")
+    ) {
+      return "mock";
     }
 
     // Check for Plaid format
-    if (this.hasProperty(rawData, 'credit_report') || this.hasProperty(rawData, 'accounts')) {
-      return 'plaid';
+    if (
+      this.hasProperty(rawData, "credit_report") ||
+      this.hasProperty(rawData, "accounts")
+    ) {
+      return "plaid";
     }
 
     // Check for Experian format
-    if (this.hasProperty(rawData, 'CreditProfile') || this.hasProperty(rawData, 'experianData')) {
-      return 'experian';
+    if (
+      this.hasProperty(rawData, "CreditProfile") ||
+      this.hasProperty(rawData, "experianData")
+    ) {
+      return "experian";
     }
 
     // Check for Equifax format
-    if (this.hasProperty(rawData, 'equifaxCreditReport') || this.hasProperty(rawData, 'EFXReport')) {
-      return 'equifax';
+    if (
+      this.hasProperty(rawData, "equifaxCreditReport") ||
+      this.hasProperty(rawData, "EFXReport")
+    ) {
+      return "equifax";
     }
 
     // Check for TransUnion format
-    if (this.hasProperty(rawData, 'TransUnionReport') || this.hasProperty(rawData, 'TUReport')) {
-      return 'transunion';
+    if (
+      this.hasProperty(rawData, "TransUnionReport") ||
+      this.hasProperty(rawData, "TUReport")
+    ) {
+      return "transunion";
     }
 
     // Default to mock for development
-    return 'mock';
+    return "mock";
   }
 
   /**
    * Parse mock credit report
    */
-  private parseMockReport(rawData: CreditBureauRawPayload, bureau: Bureau): ParsedCreditReport {
+  private parseMockReport(
+    rawData: CreditBureauRawPayload,
+    bureau: Bureau,
+  ): ParsedCreditReport {
     const candidate = rawData as Partial<ParsedCreditReport>;
     if (candidate.personalInfo && candidate.accounts) {
       return candidate as ParsedCreditReport;
@@ -118,11 +141,11 @@ export class CreditReportParser {
 
     const options: MockCreditReportOptions = {
       bureau,
-      creditScore: this.getNumber(rawData, 'creditScore'),
-      accountCount: this.getNumber(rawData, 'accountCount'),
-      inquiryCount: this.getNumber(rawData, 'inquiryCount'),
-      publicRecordCount: this.getNumber(rawData, 'publicRecordCount'),
-      includeNegativeItems: this.getBoolean(rawData, 'includeNegativeItems'),
+      creditScore: this.getNumber(rawData, "creditScore"),
+      accountCount: this.getNumber(rawData, "accountCount"),
+      inquiryCount: this.getNumber(rawData, "inquiryCount"),
+      publicRecordCount: this.getNumber(rawData, "publicRecordCount"),
+      includeNegativeItems: this.getBoolean(rawData, "includeNegativeItems"),
     };
 
     return generateMockCreditReport(options);
@@ -135,11 +158,16 @@ export class CreditReportParser {
    * Requires PLAID_CLIENT_ID and PLAID_SECRET environment variables.
    * See Plaid dashboard for API access: https://dashboard.plaid.com
    */
-  private parsePlaidReport(rawData: CreditBureauRawPayload, bureau: Bureau): ParsedCreditReport {
+  private parsePlaidReport(
+    rawData: CreditBureauRawPayload,
+    bureau: Bureau,
+  ): ParsedCreditReport {
     // CreditReportParser: Plaid credit report parsing requires API integration
     void rawData;
     void bureau;
-    throw new Error('Plaid format parsing requires API integration - configure PLAID_CLIENT_ID and PLAID_SECRET');
+    throw new Error(
+      "Plaid format parsing requires API integration - configure PLAID_CLIENT_ID and PLAID_SECRET",
+    );
   }
 
   /**
@@ -148,10 +176,14 @@ export class CreditReportParser {
    * Requires Experian Connect API credentials.
    * See: https://developer.experian.com/products/consumer-credit
    */
-  private parseExperianReport(rawData: CreditBureauRawPayload): ParsedCreditReport {
+  private parseExperianReport(
+    rawData: CreditBureauRawPayload,
+  ): ParsedCreditReport {
     // CreditReportParser: Experian credit report parsing requires API integration
     void rawData;
-    throw new Error('Experian format parsing requires API integration - contact Experian for partner access');
+    throw new Error(
+      "Experian format parsing requires API integration - contact Experian for partner access",
+    );
   }
 
   /**
@@ -160,10 +192,14 @@ export class CreditReportParser {
    * Requires Equifax API credentials via partner program.
    * See: https://developer.equifax.com/products/credit-report
    */
-  private parseEquifaxReport(rawData: CreditBureauRawPayload): ParsedCreditReport {
+  private parseEquifaxReport(
+    rawData: CreditBureauRawPayload,
+  ): ParsedCreditReport {
     // CreditReportParser: Equifax credit report parsing requires API integration
     void rawData;
-    throw new Error('Equifax format parsing requires API integration - contact Equifax for partner access');
+    throw new Error(
+      "Equifax format parsing requires API integration - contact Equifax for partner access",
+    );
   }
 
   /**
@@ -172,10 +208,14 @@ export class CreditReportParser {
    * Requires TransUnion TrueVision API credentials.
    * See: https://developer.transunion.com/products
    */
-  private parseTransUnionReport(rawData: CreditBureauRawPayload): ParsedCreditReport {
+  private parseTransUnionReport(
+    rawData: CreditBureauRawPayload,
+  ): ParsedCreditReport {
     // CreditReportParser: TransUnion credit report parsing requires API integration
     void rawData;
-    throw new Error('TransUnion format parsing requires API integration - contact TransUnion for partner access');
+    throw new Error(
+      "TransUnion format parsing requires API integration - contact TransUnion for partner access",
+    );
   }
 
   /**
@@ -187,29 +227,32 @@ export class CreditReportParser {
 
     // Validate personal info
     if (!report.personalInfo) {
-      errors.push('Personal information is required');
+      errors.push("Personal information is required");
     } else {
       if (!report.personalInfo.firstName) {
-        errors.push('First name is required');
+        errors.push("First name is required");
       }
       if (!report.personalInfo.lastName) {
-        errors.push('Last name is required');
+        errors.push("Last name is required");
       }
-      if (!report.personalInfo.addresses || report.personalInfo.addresses.length === 0) {
-        warnings.push('No addresses found');
+      if (
+        !report.personalInfo.addresses ||
+        report.personalInfo.addresses.length === 0
+      ) {
+        warnings.push("No addresses found");
       }
     }
 
     // Validate credit score
     if (!report.creditScore) {
-      errors.push('Credit score is required');
+      errors.push("Credit score is required");
     } else if (report.creditScore < 300 || report.creditScore > 850) {
-      errors.push('Credit score must be between 300 and 850');
+      errors.push("Credit score must be between 300 and 850");
     }
 
     // Validate accounts
     if (!report.accounts || report.accounts.length === 0) {
-      warnings.push('No credit accounts found');
+      warnings.push("No credit accounts found");
     } else {
       report.accounts.forEach((account, index) => {
         if (!account.creditorName) {
@@ -260,13 +303,18 @@ export class CreditReportParser {
    */
   calculateUtilization(report: ParsedCreditReport): number {
     const revolvingAccounts = report.accounts.filter(
-      (account) => account.accountType === 'credit_card' || account.accountType === 'revolving'
+      (account) =>
+        account.accountType === "credit_card" ||
+        account.accountType === "revolving",
     );
 
-    const totalBalance = revolvingAccounts.reduce((sum, account) => sum + account.balance, 0);
+    const totalBalance = revolvingAccounts.reduce(
+      (sum, account) => sum + account.balance,
+      0,
+    );
     const totalLimit = revolvingAccounts.reduce(
       (sum, account) => sum + (account.creditLimit || 0),
-      0
+      0,
     );
 
     if (totalLimit === 0) return 0;
@@ -299,9 +347,14 @@ export class CreditReportParser {
 
     // Count late payments
     count += report.accounts.filter((account) =>
-      ['late_30', 'late_60', 'late_90', 'late_120', 'charge_off', 'collection'].includes(
-        account.paymentStatus
-      )
+      [
+        "late_30",
+        "late_60",
+        "late_90",
+        "late_120",
+        "charge_off",
+        "collection",
+      ].includes(account.paymentStatus),
     ).length;
 
     // Count public records
@@ -331,38 +384,47 @@ export class CreditReportParser {
   }
 
   private isParsedReport(value: unknown): value is ParsedCreditReport {
-    if (!value || typeof value !== 'object') {
+    if (!value || typeof value !== "object") {
       return false;
     }
     const candidate = value as Partial<ParsedCreditReport>;
     return Boolean(candidate.personalInfo) && Array.isArray(candidate.accounts);
   }
 
-  private getString(payload: CreditBureauRawPayload, key: string): string | undefined {
+  private getString(
+    payload: CreditBureauRawPayload,
+    key: string,
+  ): string | undefined {
     const value = payload[key];
-    return typeof value === 'string' ? value : undefined;
+    return typeof value === "string" ? value : undefined;
   }
 
-  private getNumber(payload: CreditBureauRawPayload, key: string): number | undefined {
+  private getNumber(
+    payload: CreditBureauRawPayload,
+    key: string,
+  ): number | undefined {
     const value = payload[key];
-    if (typeof value === 'number') {
+    if (typeof value === "number") {
       return value;
     }
-    if (typeof value === 'string') {
+    if (typeof value === "string") {
       const parsed = Number(value);
       return Number.isFinite(parsed) ? parsed : undefined;
     }
     return undefined;
   }
 
-  private getBoolean(payload: CreditBureauRawPayload, key: string): boolean | undefined {
+  private getBoolean(
+    payload: CreditBureauRawPayload,
+    key: string,
+  ): boolean | undefined {
     const value = payload[key];
-    if (typeof value === 'boolean') {
+    if (typeof value === "boolean") {
       return value;
     }
-    if (typeof value === 'string') {
-      if (value.toLowerCase() === 'true') return true;
-      if (value.toLowerCase() === 'false') return false;
+    if (typeof value === "string") {
+      if (value.toLowerCase() === "true") return true;
+      if (value.toLowerCase() === "false") return false;
     }
     return undefined;
   }

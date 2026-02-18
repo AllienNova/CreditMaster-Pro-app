@@ -17,8 +17,8 @@
  * - Credit age tracking
  */
 
-import { createClient } from '@/lib/supabase/client';
-import { getAIOrchestrator } from '@/lib/ai-orchestrator';
+import { createClient } from "@/lib/supabase/client";
+import { getAIOrchestrator } from "@/lib/ai-orchestrator";
 
 // ============================================================================
 // TYPES
@@ -33,20 +33,20 @@ export interface CreditBuilderScore {
     creditMix: number;
     newCredit: number;
   };
-  trending: 'up' | 'down' | 'stable';
+  trending: "up" | "down" | "stable";
   lastUpdated: Date;
 }
 
 export interface CreditBuilderAction {
   id: string;
-  type: 'quick_win' | 'short_term' | 'long_term';
-  category: 'payment' | 'utilization' | 'age' | 'mix' | 'inquiry';
+  type: "quick_win" | "short_term" | "long_term";
+  category: "payment" | "utilization" | "age" | "mix" | "inquiry";
   title: string;
   description: string;
-  impact: 'low' | 'medium' | 'high';
+  impact: "low" | "medium" | "high";
   pointsImpact: number; // Estimated points increase
   timeframe: string; // e.g., "1 week", "3 months"
-  difficulty: 'easy' | 'medium' | 'hard';
+  difficulty: "easy" | "medium" | "hard";
   completed: boolean;
   completedAt?: Date;
   aiGenerated: boolean;
@@ -119,7 +119,7 @@ export interface SecuredCard {
 }
 
 export interface AuthorizedUserStrategy {
-  strategy: 'family' | 'friend' | 'professional';
+  strategy: "family" | "friend" | "professional";
   title: string;
   description: string;
   pros: string[];
@@ -127,7 +127,7 @@ export interface AuthorizedUserStrategy {
   requirements: string[];
   timeline: string;
   expectedImpact: number; // Points
-  riskLevel: 'low' | 'medium' | 'high';
+  riskLevel: "low" | "medium" | "high";
   steps: string[];
   aiRecommendation: string;
 }
@@ -145,12 +145,12 @@ export interface CardUtilization {
   balance: number;
   limit: number;
   utilization: number;
-  status: 'good' | 'warning' | 'danger';
+  status: "good" | "warning" | "danger";
 }
 
 export interface UtilizationRecommendation {
   cardName: string;
-  action: 'pay_down' | 'increase_limit' | 'redistribute';
+  action: "pay_down" | "increase_limit" | "redistribute";
   currentBalance: number;
   recommendedBalance: number;
   amountToPay?: number;
@@ -159,7 +159,7 @@ export interface UtilizationRecommendation {
 }
 
 export interface PaymentOptimization {
-  strategy: 'avalanche' | 'snowball' | 'utilization' | 'custom';
+  strategy: "avalanche" | "snowball" | "utilization" | "custom";
   monthlyBudget: number;
   accounts: PaymentAccount[];
   plan: PaymentPlan[];
@@ -171,7 +171,7 @@ export interface PaymentOptimization {
 export interface PaymentAccount {
   id: string;
   name: string;
-  type: 'credit_card' | 'loan' | 'medical' | 'collection';
+  type: "credit_card" | "loan" | "medical" | "collection";
   balance: number;
   minPayment: number;
   apr: number;
@@ -186,7 +186,7 @@ export interface PaymentPlan {
     accountId: string;
     accountName: string;
     amount: number;
-    type: 'minimum' | 'extra' | 'payoff';
+    type: "minimum" | "extra" | "payoff";
   }[];
   totalPayment: number;
   remainingDebt: number;
@@ -212,11 +212,11 @@ export interface CreditMixAnalysis {
 }
 
 export interface CreditMixRecommendation {
-  type: 'add_installment' | 'add_revolving' | 'diversify';
+  type: "add_installment" | "add_revolving" | "diversify";
   product: string;
   reasoning: string;
   impact: number;
-  difficulty: 'easy' | 'medium' | 'hard';
+  difficulty: "easy" | "medium" | "hard";
   timeline: string;
 }
 
@@ -230,7 +230,7 @@ export interface CreditAgeAnalysis {
 }
 
 export interface CreditAgeRecommendation {
-  action: 'keep_open' | 'authorized_user' | 'credit_builder';
+  action: "keep_open" | "authorized_user" | "credit_builder";
   accountName?: string;
   reasoning: string;
   impact: number;
@@ -256,7 +256,7 @@ class CreditBuilderService {
    * Higher score = better credit building practices
    */
   async calculateCreditBuilderScore(
-    userId: string
+    userId: string,
   ): Promise<CreditBuilderScore> {
     // Type for credit score data
     interface CreditScoreData {
@@ -273,13 +273,13 @@ class CreditBuilderService {
     try {
       // Fetch user's credit data from database
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: creditData, error } = await (this.supabase as any)
-        .from('credit_scores')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
+      const { data: creditData, error } = (await (this.supabase as any)
+        .from("credit_scores")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
         .limit(1)
-        .single() as { data: CreditScoreData | null; error: Error | null };
+        .single()) as { data: CreditScoreData | null; error: Error | null };
 
       if (error || !creditData) {
         // Return default scores when no data available
@@ -292,13 +292,15 @@ class CreditBuilderService {
             creditMix: 70,
             newCredit: 80,
           },
-          trending: 'stable',
+          trending: "stable",
           lastUpdated: new Date(),
         };
       }
 
       // Calculate category scores from credit data
-      const paymentHistory = creditData.on_time_payments_pct ? Math.round(creditData.on_time_payments_pct) : 85;
+      const paymentHistory = creditData.on_time_payments_pct
+        ? Math.round(creditData.on_time_payments_pct)
+        : 85;
       const creditUtilization = creditData.utilization_pct
         ? Math.round(100 - Math.min(creditData.utilization_pct, 100))
         : 65;
@@ -315,29 +317,30 @@ class CreditBuilderService {
       // Calculate overall score (weighted average)
       const overall = Math.round(
         paymentHistory * 0.35 +
-        creditUtilization * 0.30 +
-        creditAge * 0.15 +
-        creditMix * 0.10 +
-        newCredit * 0.10
+          creditUtilization * 0.3 +
+          creditAge * 0.15 +
+          creditMix * 0.1 +
+          newCredit * 0.1,
       );
 
       // Determine trend from historical data
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: previousScore } = await (this.supabase as any)
-        .from('credit_scores')
-        .select('score')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
+      const { data: previousScore } = (await (this.supabase as any)
+        .from("credit_scores")
+        .select("score")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
         .range(1, 1)
-        .single() as { data: { score?: number } | null };
+        .single()) as { data: { score?: number } | null };
 
-      const trending = previousScore && creditData.score
-        ? creditData.score > (previousScore.score || 0)
-          ? 'up'
-          : creditData.score < (previousScore.score || 0)
-            ? 'down'
-            : 'stable'
-        : 'stable';
+      const trending =
+        previousScore && creditData.score
+          ? creditData.score > (previousScore.score || 0)
+            ? "up"
+            : creditData.score < (previousScore.score || 0)
+              ? "down"
+              : "stable"
+          : "stable";
 
       return {
         overall,
@@ -348,8 +351,12 @@ class CreditBuilderService {
           creditMix,
           newCredit,
         },
-        trending: trending as 'up' | 'down' | 'stable',
-        lastUpdated: new Date(creditData.updated_at || creditData.created_at || new Date().toISOString()),
+        trending: trending as "up" | "down" | "stable",
+        lastUpdated: new Date(
+          creditData.updated_at ||
+            creditData.created_at ||
+            new Date().toISOString(),
+        ),
       };
     } catch (error) {
       // CreditBuilderService error: Error calculating credit builder score
@@ -363,7 +370,7 @@ class CreditBuilderService {
           creditMix: 70,
           newCredit: 80,
         },
-        trending: 'stable',
+        trending: "stable",
         lastUpdated: new Date(),
       };
     }
@@ -382,7 +389,7 @@ class CreditBuilderService {
       .map(([key]) => key);
 
     // Use AI to generate personalized recommendations
-    const aiPrompt = `Based on a user's credit builder score of ${score.overall}/100 with weak areas in: ${weakAreas.join(', ')}, generate 5 specific, actionable recommendations to improve their credit. Each recommendation should include: type (quick_win/short_term/long_term), category, title, description, impact (low/medium/high), estimated points impact, timeframe, and difficulty level.`;
+    const aiPrompt = `Based on a user's credit builder score of ${score.overall}/100 with weak areas in: ${weakAreas.join(", ")}, generate 5 specific, actionable recommendations to improve their credit. Each recommendation should include: type (quick_win/short_term/long_term), category, title, description, impact (low/medium/high), estimated points impact, timeframe, and difficulty level.`;
 
     try {
       const orchestrator = getAIOrchestrator();
@@ -406,62 +413,62 @@ class CreditBuilderService {
 
     // Quick wins
     actions.push({
-      id: 'qw-1',
-      type: 'quick_win',
-      category: 'payment',
-      title: 'Set Up Autopay',
-      description: 'Enable automatic payments to never miss a due date',
-      impact: 'high',
+      id: "qw-1",
+      type: "quick_win",
+      category: "payment",
+      title: "Set Up Autopay",
+      description: "Enable automatic payments to never miss a due date",
+      impact: "high",
       pointsImpact: 15,
-      timeframe: '1 day',
-      difficulty: 'easy',
+      timeframe: "1 day",
+      difficulty: "easy",
       completed: false,
       aiGenerated: false,
     });
 
     actions.push({
-      id: 'qw-2',
-      type: 'quick_win',
-      category: 'utilization',
-      title: 'Pay Down High Balance Card',
-      description: 'Reduce your highest utilization card below 30%',
-      impact: 'high',
+      id: "qw-2",
+      type: "quick_win",
+      category: "utilization",
+      title: "Pay Down High Balance Card",
+      description: "Reduce your highest utilization card below 30%",
+      impact: "high",
       pointsImpact: 20,
-      timeframe: '1 week',
-      difficulty: 'medium',
+      timeframe: "1 week",
+      difficulty: "medium",
       completed: false,
       aiGenerated: false,
     });
 
     // Short term
-    if (weakAreas.includes('creditMix')) {
+    if (weakAreas.includes("creditMix")) {
       actions.push({
-        id: 'st-1',
-        type: 'short_term',
-        category: 'mix',
-        title: 'Add Credit Builder Loan',
-        description: 'Diversify your credit mix with a credit builder loan',
-        impact: 'medium',
+        id: "st-1",
+        type: "short_term",
+        category: "mix",
+        title: "Add Credit Builder Loan",
+        description: "Diversify your credit mix with a credit builder loan",
+        impact: "medium",
         pointsImpact: 25,
-        timeframe: '1 month',
-        difficulty: 'medium',
+        timeframe: "1 month",
+        difficulty: "medium",
         completed: false,
         aiGenerated: false,
       });
     }
 
     // Long term
-    if (weakAreas.includes('creditAge')) {
+    if (weakAreas.includes("creditAge")) {
       actions.push({
-        id: 'lt-1',
-        type: 'long_term',
-        category: 'age',
-        title: 'Become Authorized User',
-        description: 'Get added as authorized user on a seasoned account',
-        impact: 'high',
+        id: "lt-1",
+        type: "long_term",
+        category: "age",
+        title: "Become Authorized User",
+        description: "Get added as authorized user on a seasoned account",
+        impact: "high",
         pointsImpact: 40,
-        timeframe: '3-6 months',
-        difficulty: 'hard',
+        timeframe: "3-6 months",
+        difficulty: "hard",
         completed: false,
         aiGenerated: false,
       });
@@ -475,74 +482,103 @@ class CreditBuilderService {
    */
   async getProgress(userId: string): Promise<CreditBuilderProgress> {
     // Type definitions for database results
-    interface ScoreEntry { score: number; created_at: string; }
-    interface ActionEntry { id: string; completed: boolean; }
-    interface ProfileEntry { target_credit_score?: number; created_at?: string; }
+    interface ScoreEntry {
+      score: number;
+      created_at: string;
+    }
+    interface ActionEntry {
+      id: string;
+      completed: boolean;
+    }
+    interface ProfileEntry {
+      target_credit_score?: number;
+      created_at?: string;
+    }
 
     try {
       // Fetch user's credit score history
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: scores } = await (this.supabase as any)
-        .from('credit_scores')
-        .select('score, created_at')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: true }) as { data: ScoreEntry[] | null };
+      const { data: scores } = (await (this.supabase as any)
+        .from("credit_scores")
+        .select("score, created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: true })) as {
+        data: ScoreEntry[] | null;
+      };
 
       // Fetch user's completed actions
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: actions } = await (this.supabase as any)
-        .from('credit_builder_actions')
-        .select('id, completed')
-        .eq('user_id', userId) as { data: ActionEntry[] | null };
+      const { data: actions } = (await (this.supabase as any)
+        .from("credit_builder_actions")
+        .select("id, completed")
+        .eq("user_id", userId)) as { data: ActionEntry[] | null };
 
       // Fetch user profile for target score
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: profile } = await (this.supabase as any)
-        .from('user_profiles')
-        .select('target_credit_score, created_at')
-        .eq('user_id', userId)
-        .single() as { data: ProfileEntry | null };
+      const { data: profile } = (await (this.supabase as any)
+        .from("user_profiles")
+        .select("target_credit_score, created_at")
+        .eq("user_id", userId)
+        .single()) as { data: ProfileEntry | null };
 
       const startScore = scores && scores.length > 0 ? scores[0].score : 580;
-      const currentScore = scores && scores.length > 0 ? scores[scores.length - 1].score : 650;
+      const currentScore =
+        scores && scores.length > 0 ? scores[scores.length - 1].score : 650;
       const targetScore = profile?.target_credit_score || 720;
       const pointsGained = currentScore - startScore;
 
-      const startDate = profile?.created_at ? new Date(profile.created_at) : new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
-      const daysActive = Math.floor((Date.now() - startDate.getTime()) / (24 * 60 * 60 * 1000));
+      const startDate = profile?.created_at
+        ? new Date(profile.created_at)
+        : new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+      const daysActive = Math.floor(
+        (Date.now() - startDate.getTime()) / (24 * 60 * 60 * 1000),
+      );
 
-      const actionsCompleted = actions?.filter((a: any) => a.completed).length || 8;
+      const actionsCompleted =
+        actions?.filter((a: any) => a.completed).length || 8;
       const actionsTotal = actions?.length || 12;
 
       // Define standard milestones
       const milestones = [
         {
-          id: 'm1',
-          title: 'Fair Credit',
-          description: 'Reached 600+ credit score',
+          id: "m1",
+          title: "Fair Credit",
+          description: "Reached 600+ credit score",
           targetScore: 600,
           achieved: currentScore >= 600,
-          achievedAt: currentScore >= 600 ? this.findMilestoneDate(scores, 600) : undefined,
+          achievedAt:
+            currentScore >= 600
+              ? this.findMilestoneDate(scores, 600)
+              : undefined,
         },
         {
-          id: 'm2',
-          title: 'Good Credit',
-          description: 'Reached 670+ credit score',
+          id: "m2",
+          title: "Good Credit",
+          description: "Reached 670+ credit score",
           targetScore: 670,
           achieved: currentScore >= 670,
-          achievedAt: currentScore >= 670 ? this.findMilestoneDate(scores, 670) : undefined,
+          achievedAt:
+            currentScore >= 670
+              ? this.findMilestoneDate(scores, 670)
+              : undefined,
         },
         {
-          id: 'm3',
-          title: 'Excellent Credit',
-          description: 'Reached 740+ credit score',
+          id: "m3",
+          title: "Excellent Credit",
+          description: "Reached 740+ credit score",
           targetScore: 740,
           achieved: currentScore >= 740,
-          achievedAt: currentScore >= 740 ? this.findMilestoneDate(scores, 740) : undefined,
+          achievedAt:
+            currentScore >= 740
+              ? this.findMilestoneDate(scores, 740)
+              : undefined,
         },
       ];
 
-      const successRate = actionsTotal > 0 ? Math.round((actionsCompleted / actionsTotal) * 100) : 85;
+      const successRate =
+        actionsTotal > 0
+          ? Math.round((actionsCompleted / actionsTotal) * 100)
+          : 85;
 
       return {
         userId,
@@ -569,9 +605,28 @@ class CreditBuilderService {
         actionsCompleted: 8,
         actionsTotal: 12,
         milestones: [
-          { id: 'm1', title: 'Fair Credit', description: 'Reached 600+ credit score', targetScore: 600, achieved: true, achievedAt: new Date('2025-10-15') },
-          { id: 'm2', title: 'Good Credit', description: 'Reached 670+ credit score', targetScore: 670, achieved: false },
-          { id: 'm3', title: 'Excellent Credit', description: 'Reached 740+ credit score', targetScore: 740, achieved: false },
+          {
+            id: "m1",
+            title: "Fair Credit",
+            description: "Reached 600+ credit score",
+            targetScore: 600,
+            achieved: true,
+            achievedAt: new Date("2025-10-15"),
+          },
+          {
+            id: "m2",
+            title: "Good Credit",
+            description: "Reached 670+ credit score",
+            targetScore: 670,
+            achieved: false,
+          },
+          {
+            id: "m3",
+            title: "Excellent Credit",
+            description: "Reached 740+ credit score",
+            targetScore: 740,
+            achieved: false,
+          },
         ],
         successRate: 85,
       };
@@ -581,7 +636,10 @@ class CreditBuilderService {
   /**
    * Find the date when a milestone score was first achieved
    */
-  private findMilestoneDate(scores: any[] | null, targetScore: number): Date | undefined {
+  private findMilestoneDate(
+    scores: any[] | null,
+    targetScore: number,
+  ): Date | undefined {
     if (!scores) return undefined;
     const milestone = scores.find((s: any) => s.score >= targetScore);
     return milestone ? new Date(milestone.created_at) : undefined;
@@ -598,9 +656,9 @@ class CreditBuilderService {
 
     const loans: CreditBuilderLoan[] = [
       {
-        id: 'cbl-1',
-        provider: 'Self',
-        name: 'Credit Builder Account',
+        id: "cbl-1",
+        provider: "Self",
+        name: "Credit Builder Account",
         loanAmount: 1000,
         monthlyPayment: 48,
         term: 24,
@@ -610,24 +668,24 @@ class CreditBuilderService {
           bankAccountRequired: true,
         },
         benefits: [
-          'No credit check required',
-          'Reports to all 3 bureaus',
-          'Build savings while building credit',
-          'Average 49-point increase',
+          "No credit check required",
+          "Reports to all 3 bureaus",
+          "Build savings while building credit",
+          "Average 49-point increase",
         ],
-        reporting: ['Experian', 'Equifax', 'TransUnion'],
+        reporting: ["Experian", "Equifax", "TransUnion"],
         fees: {
           application: 0,
           monthly: 0,
           closing: 0,
         },
         recommended: userScore.overall < 70,
-        aiReasoning: 'Recommended for beginners with no credit history',
+        aiReasoning: "Recommended for beginners with no credit history",
       },
       {
-        id: 'cbl-2',
-        provider: 'MoneyLion',
-        name: 'Credit Builder Plus',
+        id: "cbl-2",
+        provider: "MoneyLion",
+        name: "Credit Builder Plus",
         loanAmount: 1000,
         monthlyPayment: 19.99,
         term: 12,
@@ -637,22 +695,22 @@ class CreditBuilderService {
           bankAccountRequired: true,
         },
         benefits: [
-          'Low APR',
-          'Fast credit building',
-          'Managed investment account',
-          'Cash advances available',
+          "Low APR",
+          "Fast credit building",
+          "Managed investment account",
+          "Cash advances available",
         ],
-        reporting: ['Experian', 'Equifax', 'TransUnion'],
+        reporting: ["Experian", "Equifax", "TransUnion"],
         fees: {
           monthly: 19.99,
         },
         recommended: userScore.overall >= 60,
-        aiReasoning: 'Best for employed individuals seeking fast results',
+        aiReasoning: "Best for employed individuals seeking fast results",
       },
     ];
 
     return loans.sort(
-      (a, b) => (b.recommended ? 1 : 0) - (a.recommended ? 1 : 0)
+      (a, b) => (b.recommended ? 1 : 0) - (a.recommended ? 1 : 0),
     );
   }
 
@@ -664,52 +722,52 @@ class CreditBuilderService {
 
     const cards: SecuredCard[] = [
       {
-        id: 'sc-1',
-        provider: 'Discover',
-        name: 'Discover it® Secured',
+        id: "sc-1",
+        provider: "Discover",
+        name: "Discover it® Secured",
         minDeposit: 200,
         maxDeposit: 2500,
         apr: 28.24,
         annualFee: 0,
         rewards:
-          '2% cash back at gas stations and restaurants (up to $1,000 in combined purchases each quarter), 1% on all other purchases',
+          "2% cash back at gas stations and restaurants (up to $1,000 in combined purchases each quarter), 1% on all other purchases",
         graduationPath: true,
         creditLineIncrease: true,
-        reporting: ['Experian', 'Equifax', 'TransUnion'],
+        reporting: ["Experian", "Equifax", "TransUnion"],
         benefits: [
-          'Cash back rewards',
-          'No annual fee',
-          'Automatic reviews for upgrade',
-          'Free FICO® Score',
+          "Cash back rewards",
+          "No annual fee",
+          "Automatic reviews for upgrade",
+          "Free FICO® Score",
         ],
         recommended: true,
         aiReasoning:
-          'Best overall secured card with rewards and graduation path',
+          "Best overall secured card with rewards and graduation path",
       },
       {
-        id: 'sc-2',
-        provider: 'Capital One',
-        name: 'Secured Mastercard',
+        id: "sc-2",
+        provider: "Capital One",
+        name: "Secured Mastercard",
         minDeposit: 49,
         maxDeposit: 1000,
         apr: 30.74,
         annualFee: 0,
         graduationPath: true,
         creditLineIncrease: true,
-        reporting: ['Experian', 'Equifax', 'TransUnion'],
+        reporting: ["Experian", "Equifax", "TransUnion"],
         benefits: [
-          'Low minimum deposit',
-          'Potential upgrade to unsecured',
-          'CreditWise® monitoring',
-          'No annual fee',
+          "Low minimum deposit",
+          "Potential upgrade to unsecured",
+          "CreditWise® monitoring",
+          "No annual fee",
         ],
         recommended: userScore.overall < 60,
-        aiReasoning: 'Lowest deposit requirement, ideal for beginners',
+        aiReasoning: "Lowest deposit requirement, ideal for beginners",
       },
     ];
 
     return cards.sort(
-      (a, b) => (b.recommended ? 1 : 0) - (a.recommended ? 1 : 0)
+      (a, b) => (b.recommended ? 1 : 0) - (a.recommended ? 1 : 0),
     );
   }
 
@@ -719,73 +777,73 @@ class CreditBuilderService {
   async getAuthorizedUserStrategies(): Promise<AuthorizedUserStrategy[]> {
     return [
       {
-        strategy: 'family',
-        title: 'Family Member Strategy',
+        strategy: "family",
+        title: "Family Member Strategy",
         description:
           "Get added to a family member's credit card as an authorized user",
         pros: [
-          'Easiest to arrange',
-          'Inherit account history',
-          'No credit check required',
-          'Can boost score quickly',
+          "Easiest to arrange",
+          "Inherit account history",
+          "No credit check required",
+          "Can boost score quickly",
         ],
         cons: [
-          'Depends on their credit behavior',
-          'May strain relationship if misused',
-          'Account age must be significant',
+          "Depends on their credit behavior",
+          "May strain relationship if misused",
+          "Account age must be significant",
         ],
         requirements: [
-          'Trustworthy family member with good credit (720+)',
-          'Account must be at least 2 years old',
-          'Low utilization (< 30%)',
-          'No late payments',
+          "Trustworthy family member with good credit (720+)",
+          "Account must be at least 2 years old",
+          "Low utilization (< 30%)",
+          "No late payments",
         ],
-        timeline: '1-2 months to see impact',
+        timeline: "1-2 months to see impact",
         expectedImpact: 40,
-        riskLevel: 'low',
+        riskLevel: "low",
         steps: [
-          'Find family member with excellent credit',
-          'Verify their account age and payment history',
-          'Request to be added as authorized user',
-          'Confirm they report to all 3 bureaus',
-          'Monitor for account to appear on your report',
+          "Find family member with excellent credit",
+          "Verify their account age and payment history",
+          "Request to be added as authorized user",
+          "Confirm they report to all 3 bureaus",
+          "Monitor for account to appear on your report",
         ],
         aiRecommendation:
-          'Best option for quick, significant boost with minimal risk',
+          "Best option for quick, significant boost with minimal risk",
       },
       {
-        strategy: 'professional',
-        title: 'Professional Tradeline',
-        description: 'Purchase tradeline access from authorized user service',
+        strategy: "professional",
+        title: "Professional Tradeline",
+        description: "Purchase tradeline access from authorized user service",
         pros: [
-          'Guaranteed account quality',
-          'Predictable results',
-          'No personal relationship risk',
-          'Quick setup',
+          "Guaranteed account quality",
+          "Predictable results",
+          "No personal relationship risk",
+          "Quick setup",
         ],
         cons: [
-          'Costs $200-$500 per tradeline',
-          'Temporary boost (typically 60 days)',
-          'Not recognized by all lenders',
-          'Gray area for some scoring models',
+          "Costs $200-$500 per tradeline",
+          "Temporary boost (typically 60 days)",
+          "Not recognized by all lenders",
+          "Gray area for some scoring models",
         ],
         requirements: [
-          'Budget for tradeline purchase',
-          'Reputable tradeline company',
-          'Clean credit report (no recent defaults)',
+          "Budget for tradeline purchase",
+          "Reputable tradeline company",
+          "Clean credit report (no recent defaults)",
         ],
-        timeline: '2-3 weeks to see impact',
+        timeline: "2-3 weeks to see impact",
         expectedImpact: 30,
-        riskLevel: 'medium',
+        riskLevel: "medium",
         steps: [
-          'Research reputable tradeline companies',
-          'Select tradeline matching your needs',
-          'Purchase and provide information',
-          'Wait for account to be added',
-          'Monitor credit report for appearance',
+          "Research reputable tradeline companies",
+          "Select tradeline matching your needs",
+          "Purchase and provide information",
+          "Wait for account to be added",
+          "Monitor credit report for appearance",
         ],
         aiRecommendation:
-          'Use for specific goals (mortgage, auto loan) with time constraints',
+          "Use for specific goals (mortgage, auto loan) with time constraints",
       },
     ];
   }
@@ -795,7 +853,7 @@ class CreditBuilderService {
    */
   async analyzeUtilization(
     userId: string,
-    cards: CardUtilization[]
+    cards: CardUtilization[],
   ): Promise<UtilizationAnalysis> {
     const totalBalance = cards.reduce((sum, card) => sum + card.balance, 0);
     const totalLimit = cards.reduce((sum, card) => sum + card.limit, 0);
@@ -810,10 +868,10 @@ class CreditBuilderService {
       ...card,
       status:
         card.utilization < 30
-          ? 'good'
+          ? "good"
           : card.utilization < 50
-            ? 'warning'
-            : ('danger' as 'good' | 'warning' | 'danger'),
+            ? "warning"
+            : ("danger" as "good" | "warning" | "danger"),
     }));
 
     // Generate recommendations
@@ -821,7 +879,7 @@ class CreditBuilderService {
 
     // Focus on high-utilization cards first
     const sortedCards = [...cards].sort(
-      (a, b) => b.utilization - a.utilization
+      (a, b) => b.utilization - a.utilization,
     );
 
     for (const card of sortedCards) {
@@ -832,14 +890,14 @@ class CreditBuilderService {
 
         recommendations.push({
           cardName: card.cardName,
-          action: 'pay_down',
+          action: "pay_down",
           currentBalance: card.balance,
           recommendedBalance: targetBalance,
           amountToPay,
           reasoning: `Reduce utilization from ${card.utilization.toFixed(1)}% to ${targetUtilization}% for maximum score impact`,
           impact: Math.min(
             30,
-            Math.floor((card.utilization - targetUtilization) / 2)
+            Math.floor((card.utilization - targetUtilization) / 2),
           ),
         });
       }
@@ -848,7 +906,7 @@ class CreditBuilderService {
     // Calculate projected impact
     const projectedImpact = recommendations.reduce(
       (sum, rec) => sum + rec.impact,
-      0
+      0,
     );
 
     return {
@@ -866,23 +924,23 @@ class CreditBuilderService {
   async optimizePayments(
     accounts: PaymentAccount[],
     monthlyBudget: number,
-    strategy: 'avalanche' | 'snowball' | 'utilization' | 'custom' = 'avalanche'
+    strategy: "avalanche" | "snowball" | "utilization" | "custom" = "avalanche",
   ): Promise<PaymentOptimization> {
     // Sort accounts based on strategy
     const sortedAccounts = [...accounts];
 
     switch (strategy) {
-      case 'avalanche':
+      case "avalanche":
         sortedAccounts.sort((a, b) => b.apr - a.apr);
         break;
-      case 'snowball':
+      case "snowball":
         sortedAccounts.sort((a, b) => a.balance - b.balance);
         break;
-      case 'utilization':
+      case "utilization":
         // Prioritize credit cards by utilization impact
         sortedAccounts.sort((a, b) => {
-          if (a.type === 'credit_card' && b.type !== 'credit_card') return -1;
-          if (a.type !== 'credit_card' && b.type === 'credit_card') return 1;
+          if (a.type === "credit_card" && b.type !== "credit_card") return -1;
+          if (a.type !== "credit_card" && b.type === "credit_card") return 1;
           return b.balance - a.balance;
         });
         break;
@@ -896,7 +954,7 @@ class CreditBuilderService {
     let currentScore = 650;
 
     while (remainingAccounts.length > 0 && month <= 60) {
-      const monthlyPayments: PaymentPlan['payments'] = [];
+      const monthlyPayments: PaymentPlan["payments"] = [];
       let budgetRemaining = monthlyBudget;
 
       // Pay minimums on all accounts first
@@ -906,7 +964,7 @@ class CreditBuilderService {
           accountId: account.id,
           accountName: account.name,
           amount: payment,
-          type: payment >= account.balance ? 'payoff' : 'minimum',
+          type: payment >= account.balance ? "payoff" : "minimum",
         });
         account.balance -= payment;
         budgetRemaining -= payment;
@@ -918,14 +976,14 @@ class CreditBuilderService {
         const extraPayment = Math.min(budgetRemaining, priorityAccount.balance);
 
         const existingPayment = monthlyPayments.find(
-          (p) => p.accountId === priorityAccount.id
+          (p) => p.accountId === priorityAccount.id,
         );
         if (existingPayment) {
           existingPayment.amount += extraPayment;
           existingPayment.type =
             existingPayment.amount >= priorityAccount.balance + extraPayment
-              ? 'payoff'
-              : 'extra';
+              ? "payoff"
+              : "extra";
         }
 
         priorityAccount.balance -= extraPayment;
@@ -936,7 +994,7 @@ class CreditBuilderService {
       remainingAccounts = remainingAccounts.filter((acc) => acc.balance > 0);
 
       // Estimate score increase (simplified)
-      if (monthlyPayments.some((p) => p.type === 'payoff')) {
+      if (monthlyPayments.some((p) => p.type === "payoff")) {
         currentScore += 5;
       } else {
         currentScore += 2;
@@ -948,7 +1006,7 @@ class CreditBuilderService {
         totalPayment: monthlyBudget - budgetRemaining,
         remainingDebt: remainingAccounts.reduce(
           (sum, acc) => sum + acc.balance,
-          0
+          0,
         ),
         estimatedScore: Math.min(850, currentScore),
       });
@@ -958,23 +1016,36 @@ class CreditBuilderService {
 
     // Calculate total interest saved vs minimum-only payments
     // Estimate: compare optimized plan length vs min-payment projection
-    const totalOriginalDebt = accounts.reduce((sum, acc) => sum + acc.balance, 0);
-    const avgApr = accounts.length > 0
-      ? accounts.reduce((sum, acc) => sum + acc.apr, 0) / accounts.length
-      : 18;
-    const minPaymentTotal = accounts.reduce((sum, acc) => sum + acc.minPayment, 0);
+    const totalOriginalDebt = accounts.reduce(
+      (sum, acc) => sum + acc.balance,
+      0,
+    );
+    const avgApr =
+      accounts.length > 0
+        ? accounts.reduce((sum, acc) => sum + acc.apr, 0) / accounts.length
+        : 18;
+    const minPaymentTotal = accounts.reduce(
+      (sum, acc) => sum + acc.minPayment,
+      0,
+    );
 
     // Estimate months to pay off with minimum payments only
-    const estimatedMinPaymentMonths = minPaymentTotal > 0
-      ? Math.ceil(totalOriginalDebt / (minPaymentTotal * 0.7)) // Approximate for interest
-      : plan.length * 2;
+    const estimatedMinPaymentMonths =
+      minPaymentTotal > 0
+        ? Math.ceil(totalOriginalDebt / (minPaymentTotal * 0.7)) // Approximate for interest
+        : plan.length * 2;
 
     // Interest saved = difference in months * average monthly interest
     const monthlyInterestRate = avgApr / 100 / 12;
     const avgBalance = totalOriginalDebt / 2; // Rough average balance during payoff
-    const interestWithMinPayments = avgBalance * monthlyInterestRate * estimatedMinPaymentMonths;
-    const interestWithOptimizedPlan = avgBalance * monthlyInterestRate * plan.length;
-    const totalInterestSaved = Math.max(0, Math.round(interestWithMinPayments - interestWithOptimizedPlan));
+    const interestWithMinPayments =
+      avgBalance * monthlyInterestRate * estimatedMinPaymentMonths;
+    const interestWithOptimizedPlan =
+      avgBalance * monthlyInterestRate * plan.length;
+    const totalInterestSaved = Math.max(
+      0,
+      Math.round(interestWithMinPayments - interestWithOptimizedPlan),
+    );
 
     return {
       strategy,
@@ -982,7 +1053,7 @@ class CreditBuilderService {
       accounts: sortedAccounts,
       plan,
       projectedCompletion: new Date(
-        Date.now() + plan.length * 30 * 24 * 60 * 60 * 1000
+        Date.now() + plan.length * 30 * 24 * 60 * 60 * 1000,
       ),
       totalInterestSaved,
       creditScoreImpact: plan[plan.length - 1]?.estimatedScore - 650 || 0,
@@ -1003,25 +1074,41 @@ class CreditBuilderService {
 
     try {
       const { data: accounts } = await this.supabase
-        .from('financial_accounts')
-        .select('account_type, account_subtype')
-        .eq('user_id', userId);
+        .from("financial_accounts")
+        .select("account_type, account_subtype")
+        .eq("user_id", userId);
 
       if (accounts && accounts.length > 0) {
         current = {
-          installment: accounts.filter((a: any) =>
-            ['loan', 'auto_loan', 'student_loan', 'personal_loan'].includes(a.account_type) ||
-            a.account_subtype?.includes('loan')
+          installment: accounts.filter(
+            (a: any) =>
+              ["loan", "auto_loan", "student_loan", "personal_loan"].includes(
+                a.account_type,
+              ) || a.account_subtype?.includes("loan"),
           ).length,
           revolving: accounts.filter((a: any) =>
-            ['credit_card', 'credit', 'line_of_credit'].includes(a.account_type)
+            ["credit_card", "credit", "line_of_credit"].includes(
+              a.account_type,
+            ),
           ).length,
-          mortgage: accounts.filter((a: any) =>
-            ['mortgage', 'home_loan'].includes(a.account_type) ||
-            a.account_subtype?.includes('mortgage')
+          mortgage: accounts.filter(
+            (a: any) =>
+              ["mortgage", "home_loan"].includes(a.account_type) ||
+              a.account_subtype?.includes("mortgage"),
           ).length,
-          other: accounts.filter((a: any) =>
-            !['loan', 'credit_card', 'mortgage', 'credit', 'auto_loan', 'student_loan', 'personal_loan', 'home_loan', 'line_of_credit'].includes(a.account_type)
+          other: accounts.filter(
+            (a: any) =>
+              ![
+                "loan",
+                "credit_card",
+                "mortgage",
+                "credit",
+                "auto_loan",
+                "student_loan",
+                "personal_loan",
+                "home_loan",
+                "line_of_credit",
+              ].includes(a.account_type),
           ).length,
         };
       }
@@ -1040,23 +1127,23 @@ class CreditBuilderService {
 
     if (current.installment < ideal.installment) {
       recommendations.push({
-        type: 'add_installment',
-        product: 'Credit Builder Loan',
-        reasoning: 'Adding an installment loan will diversify your credit mix',
+        type: "add_installment",
+        product: "Credit Builder Loan",
+        reasoning: "Adding an installment loan will diversify your credit mix",
         impact: 15,
-        difficulty: 'easy',
-        timeline: '1 month',
+        difficulty: "easy",
+        timeline: "1 month",
       });
     }
 
     if (current.revolving < ideal.revolving) {
       recommendations.push({
-        type: 'add_revolving',
-        product: 'Secured Credit Card',
-        reasoning: 'Adding a revolving account improves credit mix diversity',
+        type: "add_revolving",
+        product: "Secured Credit Card",
+        reasoning: "Adding a revolving account improves credit mix diversity",
         impact: 12,
-        difficulty: 'easy',
-        timeline: '2 weeks',
+        difficulty: "easy",
+        timeline: "2 weeks",
       });
     }
 
@@ -1064,7 +1151,7 @@ class CreditBuilderService {
       100,
       ((current.installment + current.revolving + current.mortgage) /
         (ideal.installment + ideal.revolving + ideal.mortgage)) *
-        100
+        100,
     );
 
     return {
@@ -1074,7 +1161,7 @@ class CreditBuilderService {
       recommendations,
       projectedImpact: recommendations.reduce(
         (sum, rec) => sum + rec.impact,
-        0
+        0,
       ),
     };
   }
@@ -1090,9 +1177,9 @@ class CreditBuilderService {
 
     try {
       const { data: accounts } = await this.supabase
-        .from('financial_accounts')
-        .select('opened_date, created_at')
-        .eq('user_id', userId);
+        .from("financial_accounts")
+        .select("opened_date, created_at")
+        .eq("user_id", userId);
 
       if (accounts && accounts.length > 0) {
         const now = Date.now();
@@ -1104,7 +1191,12 @@ class CreditBuilderService {
           .filter((age: number) => age >= 0);
 
         if (accountAges.length > 0) {
-          averageAge = Math.round((accountAges.reduce((sum: number, age: number) => sum + age, 0) / accountAges.length) * 10) / 10;
+          averageAge =
+            Math.round(
+              (accountAges.reduce((sum: number, age: number) => sum + age, 0) /
+                accountAges.length) *
+                10,
+            ) / 10;
           oldestAccount = Math.round(Math.max(...accountAges) * 10) / 10;
           newestAccount = Math.round(Math.min(...accountAges) * 10) / 10;
         }
@@ -1115,17 +1207,17 @@ class CreditBuilderService {
 
     const recommendations: CreditAgeRecommendation[] = [
       {
-        action: 'keep_open',
-        accountName: 'Oldest Credit Card',
-        reasoning: 'Keep your oldest account open to maintain average age',
+        action: "keep_open",
+        accountName: "Oldest Credit Card",
+        reasoning: "Keep your oldest account open to maintain average age",
         impact: 25,
-        timeline: 'Ongoing',
+        timeline: "Ongoing",
       },
       {
-        action: 'authorized_user',
-        reasoning: 'Get added to a seasoned account to boost average age',
+        action: "authorized_user",
+        reasoning: "Get added to a seasoned account to boost average age",
         impact: 40,
-        timeline: '1-2 months',
+        timeline: "1-2 months",
       },
     ];
 
@@ -1136,10 +1228,10 @@ class CreditBuilderService {
       closedAccountsImpact: 15,
       recommendations,
       keepAliveStrategy: [
-        'Use oldest card for small purchases monthly',
-        'Set up autopay to avoid missed payments',
-        'Never close oldest account unless necessary',
-        'Request to be authorized user on parent/spouse account',
+        "Use oldest card for small purchases monthly",
+        "Set up autopay to avoid missed payments",
+        "Never close oldest account unless necessary",
+        "Request to be authorized user on parent/spouse account",
       ],
     };
   }

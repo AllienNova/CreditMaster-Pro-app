@@ -6,15 +6,15 @@
  * DELETE /api/investments/holdings/[id] - Delete holding
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { getSupabase } from '@/lib/supabase/client';
+import { NextRequest, NextResponse } from "next/server";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
 import type {
   Holding,
   HoldingUpdateInput,
-} from '@/lib/investments/types/portfolio.types';
+} from "@/lib/investments/types/portfolio.types";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -25,23 +25,23 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user?.id) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
       );
     }
 
     const { id } = await params;
     const { data, error } = await supabase
-      .from('investment_holdings')
-      .select('*')
-      .eq('id', id)
-      .eq('user_id', validation.user.id)
+      .from("investment_holdings")
+      .select("*")
+      .eq("id", id)
+      .eq("user_id", validation.user.id)
       .single();
 
     if (error || !data) {
       return NextResponse.json(
-        { success: false, error: 'Holding not found' },
-        { status: 404 }
+        { success: false, error: "Holding not found" },
+        { status: 404 },
       );
     }
 
@@ -50,8 +50,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // HoldingsRoute error: Failed to get holding
     void _error;
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
+      { success: false, error: "Internal server error" },
+      { status: 500 },
     );
   }
 }
@@ -61,8 +61,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user?.id) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
       );
     }
 
@@ -71,16 +71,16 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     // Verify ownership
     const { data: existing, error: fetchError } = await supabase
-      .from('investment_holdings')
-      .select('id')
-      .eq('id', id)
-      .eq('user_id', validation.user.id)
+      .from("investment_holdings")
+      .select("id")
+      .eq("id", id)
+      .eq("user_id", validation.user.id)
       .single();
 
     if (fetchError || !existing) {
       return NextResponse.json(
-        { success: false, error: 'Holding not found' },
-        { status: 404 }
+        { success: false, error: "Holding not found" },
+        { status: 404 },
       );
     }
 
@@ -97,9 +97,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     const { data, error } = await supabase
-      .from('investment_holdings')
+      .from("investment_holdings")
       .update(updates)
-      .eq('id', id)
+      .eq("id", id)
       .select()
       .single();
 
@@ -110,8 +110,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     // HoldingsRoute error: Failed to update holding
     void _error;
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
+      { success: false, error: "Internal server error" },
+      { status: 500 },
     );
   }
 }
@@ -121,8 +121,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user?.id) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
       );
     }
 
@@ -130,33 +130,33 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     // Verify ownership before delete
     const { data: existing, error: fetchError } = await supabase
-      .from('investment_holdings')
-      .select('id')
-      .eq('id', id)
-      .eq('user_id', validation.user.id)
+      .from("investment_holdings")
+      .select("id")
+      .eq("id", id)
+      .eq("user_id", validation.user.id)
       .single();
 
     if (fetchError || !existing) {
       return NextResponse.json(
-        { success: false, error: 'Holding not found' },
-        { status: 404 }
+        { success: false, error: "Holding not found" },
+        { status: 404 },
       );
     }
 
     const { error } = await supabase
-      .from('investment_holdings')
+      .from("investment_holdings")
       .delete()
-      .eq('id', id);
+      .eq("id", id);
 
     if (error) throw error;
 
-    return NextResponse.json({ success: true, message: 'Holding deleted' });
+    return NextResponse.json({ success: true, message: "Holding deleted" });
   } catch (_error) {
     // HoldingsRoute error: Failed to delete holding
     void _error;
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
+      { success: false, error: "Internal server error" },
+      { status: 500 },
     );
   }
 }
@@ -178,7 +178,7 @@ function transformHolding(h: Record<string, unknown>): Holding {
     gainLoss: shares * currentPrice - shares * avgCost,
     gainLossPercent: (currentPrice / avgCost - 1) * 100,
     sector: h.sector as string | undefined,
-    assetType: h.asset_type as Holding['assetType'],
+    assetType: h.asset_type as Holding["assetType"],
     lastUpdated: new Date(h.updated_at as string),
     createdAt: new Date(h.created_at as string),
   };

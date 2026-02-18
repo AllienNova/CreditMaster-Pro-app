@@ -5,15 +5,15 @@
  * into a single comprehensive profile. Implements caching with 15-minute TTL.
  */
 
-import { getSupabase } from '@/lib/supabase/client';
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
-import { budgetService } from './budget-service';
-import { spendingAnalysisService } from './spending-analysis-service';
-import { billDetectionService } from './bill-detection-service';
-import { savingsAutomationService } from './savings-automation-service';
-import { DebtPayoffService } from './debt-payoff-service';
-import { HealthScoreCalculator } from './health-score-calculator';
+import { budgetService } from "./budget-service";
+import { spendingAnalysisService } from "./spending-analysis-service";
+import { billDetectionService } from "./bill-detection-service";
+import { savingsAutomationService } from "./savings-automation-service";
+import { DebtPayoffService } from "./debt-payoff-service";
+import { HealthScoreCalculator } from "./health-score-calculator";
 import {
   AggregatedFinancialContext,
   FinancialSnapshot,
@@ -32,7 +32,7 @@ import {
   HealthScoreHistoryPoint,
   TrendObservation,
   RiskLevel,
-} from './types/aggregated-context.types';
+} from "./types/aggregated-context.types";
 import {
   UserProfile,
   AggregatedAccounts,
@@ -48,9 +48,9 @@ import {
   RecommendationCategory,
   DebtAnalysis,
   DebtItem,
-} from './types/financial-context.types';
-import { Budget, BudgetCategoryValue } from './types/budget.types';
-import { Debt, DebtOverview } from './types/debt-payoff.types';
+} from "./types/financial-context.types";
+import { Budget, BudgetCategoryValue } from "./types/budget.types";
+import { Debt, DebtOverview } from "./types/debt-payoff.types";
 
 // ============================================================================
 // CACHE CONFIGURATION
@@ -88,7 +88,7 @@ export class FinancialAggregationService {
    */
   async getAggregatedContext(
     userId: string,
-    options: AggregationOptions = {}
+    options: AggregationOptions = {},
   ): Promise<AggregatedFinancialContext> {
     // Check cache first (unless forceRefresh)
     if (!options.forceRefresh) {
@@ -203,10 +203,10 @@ export class FinancialAggregationService {
    */
   async getFinancialSnapshot(
     userId: string,
-    options: SnapshotOptions = {}
+    options: SnapshotOptions = {},
   ): Promise<FinancialSnapshot> {
     const date = options.date || new Date();
-    const cacheKey = `${userId}-${date.toISOString().split('T')[0]}`;
+    const cacheKey = `${userId}-${date.toISOString().split("T")[0]}`;
 
     // Check cache
     const cached = snapshotCache.get(cacheKey);
@@ -245,13 +245,13 @@ export class FinancialAggregationService {
       creditScore: context.credit.currentScore || undefined,
       budgetUtilization: this.calculateBudgetUtilization(context.budgets.items),
       budgetsOnTrack: context.budgets.items.filter(
-        (b) => b.status === 'on_track'
+        (b) => b.status === "on_track",
       ).length,
       budgetsOverBudget: context.budgets.items.filter(
-        (b) => b.status === 'over_budget'
+        (b) => b.status === "over_budget",
       ).length,
       goalsProgress: this.calculateOverallGoalsProgress(context.goals),
-      activeGoalsCount: context.goals.filter((g) => g.status === 'active')
+      activeGoalsCount: context.goals.filter((g) => g.status === "active")
         .length,
       investmentReturn: context.investments.totalGainLoss,
       portfolioValue: context.investments.totalValue,
@@ -273,7 +273,7 @@ export class FinancialAggregationService {
    */
   async getFinancialTrends(
     userId: string,
-    options: TrendOptions
+    options: TrendOptions,
   ): Promise<FinancialTrends> {
     const { period, startDate, endDate } = this.resolveTrendDates(options);
 
@@ -302,7 +302,7 @@ export class FinancialAggregationService {
     const spendingTrend = this.buildTrendData(spendingHistory);
     const cashFlowTrend = this.buildCashFlowTrend(
       incomeHistory,
-      spendingHistory
+      spendingHistory,
     );
     const savingsTrend = this.buildTrendData(savingsHistory);
     const debtTrend = this.buildTrendData(debtHistory);
@@ -340,9 +340,9 @@ export class FinancialAggregationService {
 
   private async fetchUserProfile(userId: string): Promise<UserProfile> {
     const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
       .single();
 
     if (error || !data) {
@@ -351,14 +351,14 @@ export class FinancialAggregationService {
 
     return {
       id: data.id,
-      email: data.email || '',
-      fullName: data.full_name || '',
-      subscriptionTier: data.subscription_tier || 'free',
+      email: data.email || "",
+      fullName: data.full_name || "",
+      subscriptionTier: data.subscription_tier || "free",
       createdAt: new Date(data.created_at),
       onboardingCompleted: data.onboarding_completed || false,
       preferences: {
-        currency: data.currency || 'USD',
-        timezone: data.timezone || 'America/New_York',
+        currency: data.currency || "USD",
+        timezone: data.timezone || "America/New_York",
         budgetAlertThreshold: data.budget_alert_threshold || 80,
         goalRemindersEnabled: data.goal_reminders_enabled ?? true,
         insightNotificationsEnabled: data.insight_notifications_enabled ?? true,
@@ -368,33 +368,33 @@ export class FinancialAggregationService {
 
   private async fetchAccounts(userId: string): Promise<AggregatedAccounts> {
     const { data, error } = await supabase
-      .from('plaid_accounts')
-      .select('*')
-      .eq('user_id', userId);
+      .from("plaid_accounts")
+      .select("*")
+      .eq("user_id", userId);
 
     if (error || !data) {
       return this.getEmptyAccounts();
     }
 
     const accounts = data.map(this.mapAccountFromDb);
-    const checking = accounts.filter((a) => a.accountType === 'checking');
-    const savings = accounts.filter((a) => a.accountType === 'savings');
-    const credit = accounts.filter((a) => a.accountType === 'credit');
-    const investment = accounts.filter((a) => a.accountType === 'investment');
-    const loan = accounts.filter((a) => a.accountType === 'loan');
+    const checking = accounts.filter((a) => a.accountType === "checking");
+    const savings = accounts.filter((a) => a.accountType === "savings");
+    const credit = accounts.filter((a) => a.accountType === "credit");
+    const investment = accounts.filter((a) => a.accountType === "investment");
+    const loan = accounts.filter((a) => a.accountType === "loan");
 
     const totalAssets = [...checking, ...savings, ...investment].reduce(
       (sum, a) => sum + Math.max(0, a.currentBalance),
-      0
+      0,
     );
     const totalLiabilities = [...credit, ...loan].reduce(
       (sum, a) => sum + Math.abs(a.currentBalance),
-      0
+      0,
     );
 
     const totalSavings = savings.reduce(
       (sum, a) => sum + Math.max(0, a.currentBalance),
-      0
+      0,
     );
 
     return {
@@ -412,8 +412,8 @@ export class FinancialAggregationService {
   }
 
   private async fetchBudgetData(
-    userId: string
-  ): Promise<AggregatedFinancialContext['budgets']> {
+    userId: string,
+  ): Promise<AggregatedFinancialContext["budgets"]> {
     try {
       const [items, summary, alerts] = await Promise.all([
         budgetService.getBudgetsByUser(userId),
@@ -424,7 +424,7 @@ export class FinancialAggregationService {
       // Get trends for each unique category
       const categories = Array.from(new Set(items.map((b) => b.category)));
       const trendsPromises = categories.map((cat) =>
-        budgetService.getBudgetTrends(userId, cat as BudgetCategoryValue)
+        budgetService.getBudgetTrends(userId, cat as BudgetCategoryValue),
       );
       const trends = await Promise.all(trendsPromises);
 
@@ -436,8 +436,8 @@ export class FinancialAggregationService {
 
   private async fetchSpendingData(
     userId: string,
-    days: number = 30
-  ): Promise<AggregatedFinancialContext['spending']> {
+    days: number = 30,
+  ): Promise<AggregatedFinancialContext["spending"]> {
     try {
       const endDate = new Date();
       const startDate = new Date();
@@ -446,14 +446,14 @@ export class FinancialAggregationService {
       // Use analyzeSpending which is the public method
       const analysisResult = await spendingAnalysisService.analyzeSpending(
         userId,
-        { startDate, endDate }
+        { startDate, endDate },
       );
 
       // Map CategorySpending trend to CategoryBreakdown trend
-      const mapTrend = (trend: string): 'up' | 'down' | 'stable' => {
-        if (trend === 'increasing') return 'up';
-        if (trend === 'decreasing') return 'down';
-        return 'stable';
+      const mapTrend = (trend: string): "up" | "down" | "stable" => {
+        if (trend === "increasing") return "up";
+        if (trend === "decreasing") return "down";
+        return "stable";
       };
 
       const transactions: CategorizedTransactions = {
@@ -497,7 +497,7 @@ export class FinancialAggregationService {
         topCategories,
         anomalies: (analysisResult.anomalies || []).map((a) => ({
           id: a.id,
-          type: a.type as SpendingAnomaly['type'],
+          type: a.type as SpendingAnomaly["type"],
           description: a.description,
           amount: a.amount,
           category: a.category,
@@ -512,8 +512,8 @@ export class FinancialAggregationService {
   }
 
   private async fetchBillsData(
-    userId: string
-  ): Promise<AggregatedFinancialContext['bills']> {
+    userId: string,
+  ): Promise<AggregatedFinancialContext["bills"]> {
     try {
       const [items, summary] = await Promise.all([
         billDetectionService.getBillsByUser(userId),
@@ -521,9 +521,9 @@ export class FinancialAggregationService {
       ]);
 
       // Map bill frequency to RecurringBill frequency (yearly -> annually)
-      const mapFrequency = (freq: string): RecurringBill['frequency'] => {
-        if (freq === 'yearly') return 'annually';
-        return freq as RecurringBill['frequency'];
+      const mapFrequency = (freq: string): RecurringBill["frequency"] => {
+        if (freq === "yearly") return "annually";
+        return freq as RecurringBill["frequency"];
       };
 
       const recurring: RecurringBill[] = items.map((bill) => ({
@@ -537,7 +537,7 @@ export class FinancialAggregationService {
           : undefined,
         linkedAccountId: bill.accountId,
         autoDetected: false,
-        negotiationStatus: 'not_started' as const,
+        negotiationStatus: "not_started" as const,
         lastPaidAt: bill.lastPaidDate,
         nextDueAt: bill.nextDueDate,
         status: bill.status,
@@ -550,12 +550,12 @@ export class FinancialAggregationService {
         totalMonthly: summary.totalMonthlyBills,
         negotiationOpportunities: items.filter((b) =>
           [
-            'utilities',
-            'internet',
-            'phone',
-            'insurance',
-            'subscription',
-          ].includes(b.category)
+            "utilities",
+            "internet",
+            "phone",
+            "insurance",
+            "subscription",
+          ].includes(b.category),
         ).length,
       };
     } catch {
@@ -564,8 +564,8 @@ export class FinancialAggregationService {
   }
 
   private async fetchSavingsData(
-    userId: string
-  ): Promise<AggregatedFinancialContext['savings']> {
+    userId: string,
+  ): Promise<AggregatedFinancialContext["savings"]> {
     try {
       const [goals, rules, summary] = await Promise.all([
         savingsAutomationService.getGoals(userId),
@@ -586,14 +586,14 @@ export class FinancialAggregationService {
   }
 
   private async fetchDebtData(
-    userId: string
-  ): Promise<AggregatedFinancialContext['debt']> {
+    userId: string,
+  ): Promise<AggregatedFinancialContext["debt"]> {
     try {
       const { data, error } = await supabase
-        .from('debts')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('is_active', true);
+        .from("debts")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("is_active", true);
 
       if (error) throw error;
 
@@ -619,7 +619,7 @@ export class FinancialAggregationService {
       const overview = this.debtService.calculateOverview(debts);
       const payoffPlan =
         debts.length > 0
-          ? this.debtService.calculatePayoffPlan(debts, 'avalanche', 0)
+          ? this.debtService.calculatePayoffPlan(debts, "avalanche", 0)
           : undefined;
 
       return {
@@ -635,16 +635,16 @@ export class FinancialAggregationService {
   }
 
   private async fetchNetWorthData(
-    userId: string
-  ): Promise<AggregatedFinancialContext['netWorth']> {
+    userId: string,
+  ): Promise<AggregatedFinancialContext["netWorth"]> {
     const accounts = await this.fetchAccounts(userId);
 
     // Fetch historical net worth
     const { data: history } = await supabase
-      .from('net_worth_history')
-      .select('*')
-      .eq('user_id', userId)
-      .order('date', { ascending: false })
+      .from("net_worth_history")
+      .select("*")
+      .eq("user_id", userId)
+      .order("date", { ascending: false })
       .limit(12);
 
     const historyPoints: NetWorthHistoryPoint[] = (history || []).map((h) => ({
@@ -672,7 +672,7 @@ export class FinancialAggregationService {
           accounts.savings.reduce((s, a) => s + a.currentBalance, 0),
         investments: accounts.investment.reduce(
           (s, a) => s + a.currentBalance,
-          0
+          0,
         ),
         realEstate: 0, // Would come from manual entries
         vehicles: 0,
@@ -682,14 +682,14 @@ export class FinancialAggregationService {
       liabilities: {
         creditCards: accounts.credit.reduce(
           (s, a) => s + Math.abs(a.currentBalance),
-          0
+          0,
         ),
         mortgages: 0,
         studentLoans: 0,
         autoLoans: 0,
         personalLoans: accounts.loan.reduce(
           (s, a) => s + Math.abs(a.currentBalance),
-          0
+          0,
         ),
         other: 0,
         total: accounts.totalLiabilities,
@@ -699,13 +699,13 @@ export class FinancialAggregationService {
   }
 
   private async fetchInvestmentData(
-    userId: string
-  ): Promise<AggregatedFinancialContext['investments']> {
+    userId: string,
+  ): Promise<AggregatedFinancialContext["investments"]> {
     // Fetch investment portfolio data
     const { data } = await supabase
-      .from('investment_portfolios')
-      .select('*')
-      .eq('user_id', userId);
+      .from("investment_portfolios")
+      .select("*")
+      .eq("user_id", userId);
 
     if (!data || data.length === 0) {
       return this.getEmptyInvestmentData();
@@ -750,9 +750,9 @@ export class FinancialAggregationService {
 
   private async fetchCreditData(userId: string): Promise<CreditSummary> {
     const { data } = await supabase
-      .from('credit_profiles')
-      .select('*')
-      .eq('user_id', userId)
+      .from("credit_profiles")
+      .select("*")
+      .eq("user_id", userId)
       .single();
 
     if (!data) {
@@ -764,10 +764,10 @@ export class FinancialAggregationService {
       scoreChange: data.score_change || 0,
       scoreChangeDirection:
         data.score_change > 0
-          ? 'up'
+          ? "up"
           : data.score_change < 0
-            ? 'down'
-            : 'stable',
+            ? "down"
+            : "stable",
       lastUpdated: new Date(data.updated_at),
       scoreHistory: [],
       factors: [],
@@ -779,10 +779,10 @@ export class FinancialAggregationService {
 
   private async fetchGoalsData(userId: string): Promise<FinancialGoal[]> {
     const { data } = await supabase
-      .from('financial_goals')
-      .select('*')
-      .eq('user_id', userId)
-      .order('priority', { ascending: true });
+      .from("financial_goals")
+      .select("*")
+      .eq("user_id", userId)
+      .order("priority", { ascending: true });
 
     return (data || []).map((g) => ({
       id: g.id,
@@ -799,7 +799,7 @@ export class FinancialAggregationService {
       autoSaveFrequency: g.auto_save_frequency,
       linkedAccountId: g.linked_account_id,
       priority: g.priority || 1,
-      status: g.status || 'active',
+      status: g.status || "active",
       milestones: [],
       createdAt: new Date(g.created_at),
     }));
@@ -812,15 +812,15 @@ export class FinancialAggregationService {
   private async fetchNetWorthHistory(
     userId: string,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
   ): Promise<TrendDataPoint[]> {
     const { data } = await supabase
-      .from('net_worth_history')
-      .select('date, net_worth')
-      .eq('user_id', userId)
-      .gte('date', startDate.toISOString())
-      .lte('date', endDate.toISOString())
-      .order('date', { ascending: true });
+      .from("net_worth_history")
+      .select("date, net_worth")
+      .eq("user_id", userId)
+      .gte("date", startDate.toISOString())
+      .lte("date", endDate.toISOString())
+      .order("date", { ascending: true });
 
     return (data || []).map((d) => ({
       date: new Date(d.date),
@@ -831,15 +831,15 @@ export class FinancialAggregationService {
   private async fetchIncomeHistory(
     userId: string,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
   ): Promise<TrendDataPoint[]> {
     const { data } = await supabase
-      .from('monthly_summaries')
-      .select('month, total_income')
-      .eq('user_id', userId)
-      .gte('month', startDate.toISOString())
-      .lte('month', endDate.toISOString())
-      .order('month', { ascending: true });
+      .from("monthly_summaries")
+      .select("month, total_income")
+      .eq("user_id", userId)
+      .gte("month", startDate.toISOString())
+      .lte("month", endDate.toISOString())
+      .order("month", { ascending: true });
 
     return (data || []).map((d) => ({
       date: new Date(d.month),
@@ -850,15 +850,15 @@ export class FinancialAggregationService {
   private async fetchSpendingHistory(
     userId: string,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
   ): Promise<TrendDataPoint[]> {
     const { data } = await supabase
-      .from('monthly_summaries')
-      .select('month, total_expenses')
-      .eq('user_id', userId)
-      .gte('month', startDate.toISOString())
-      .lte('month', endDate.toISOString())
-      .order('month', { ascending: true });
+      .from("monthly_summaries")
+      .select("month, total_expenses")
+      .eq("user_id", userId)
+      .gte("month", startDate.toISOString())
+      .lte("month", endDate.toISOString())
+      .order("month", { ascending: true });
 
     return (data || []).map((d) => ({
       date: new Date(d.month),
@@ -869,15 +869,15 @@ export class FinancialAggregationService {
   private async fetchSavingsHistory(
     userId: string,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
   ): Promise<TrendDataPoint[]> {
     const { data } = await supabase
-      .from('savings_history')
-      .select('date, total_saved')
-      .eq('user_id', userId)
-      .gte('date', startDate.toISOString())
-      .lte('date', endDate.toISOString())
-      .order('date', { ascending: true });
+      .from("savings_history")
+      .select("date, total_saved")
+      .eq("user_id", userId)
+      .gte("date", startDate.toISOString())
+      .lte("date", endDate.toISOString())
+      .order("date", { ascending: true });
 
     return (data || []).map((d) => ({
       date: new Date(d.date),
@@ -888,15 +888,15 @@ export class FinancialAggregationService {
   private async fetchDebtHistory(
     userId: string,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
   ): Promise<TrendDataPoint[]> {
     const { data } = await supabase
-      .from('debt_history')
-      .select('date, total_debt')
-      .eq('user_id', userId)
-      .gte('date', startDate.toISOString())
-      .lte('date', endDate.toISOString())
-      .order('date', { ascending: true });
+      .from("debt_history")
+      .select("date, total_debt")
+      .eq("user_id", userId)
+      .gte("date", startDate.toISOString())
+      .lte("date", endDate.toISOString())
+      .order("date", { ascending: true });
 
     return (data || []).map((d) => ({
       date: new Date(d.date),
@@ -907,15 +907,15 @@ export class FinancialAggregationService {
   private async fetchInvestmentHistory(
     userId: string,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
   ): Promise<TrendDataPoint[]> {
     const { data } = await supabase
-      .from('investment_history')
-      .select('date, total_value')
-      .eq('user_id', userId)
-      .gte('date', startDate.toISOString())
-      .lte('date', endDate.toISOString())
-      .order('date', { ascending: true });
+      .from("investment_history")
+      .select("date, total_value")
+      .eq("user_id", userId)
+      .gte("date", startDate.toISOString())
+      .lte("date", endDate.toISOString())
+      .order("date", { ascending: true });
 
     return (data || []).map((d) => ({
       date: new Date(d.date),
@@ -926,15 +926,15 @@ export class FinancialAggregationService {
   private async fetchHealthScoreHistory(
     userId: string,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
   ): Promise<HealthScoreHistoryPoint[]> {
     const { data } = await supabase
-      .from('health_score_history')
-      .select('date, score, grade')
-      .eq('user_id', userId)
-      .gte('date', startDate.toISOString())
-      .lte('date', endDate.toISOString())
-      .order('date', { ascending: true });
+      .from("health_score_history")
+      .select("date, score, grade")
+      .eq("user_id", userId)
+      .gte("date", startDate.toISOString())
+      .lte("date", endDate.toISOString())
+      .order("date", { ascending: true });
 
     return (data || []).map((d) => ({
       date: new Date(d.date),
@@ -958,25 +958,25 @@ export class FinancialAggregationService {
     if (!startDate) {
       startDate = new Date(endDate);
       switch (options.period) {
-        case '7d':
+        case "7d":
           startDate.setDate(startDate.getDate() - 7);
           break;
-        case '30d':
+        case "30d":
           startDate.setDate(startDate.getDate() - 30);
           break;
-        case '90d':
+        case "90d":
           startDate.setDate(startDate.getDate() - 90);
           break;
-        case '180d':
+        case "180d":
           startDate.setDate(startDate.getDate() - 180);
           break;
-        case '1y':
+        case "1y":
           startDate.setFullYear(startDate.getFullYear() - 1);
           break;
-        case '2y':
+        case "2y":
           startDate.setFullYear(startDate.getFullYear() - 2);
           break;
-        case 'all':
+        case "all":
           startDate = new Date(2020, 0, 1);
           break;
         default:
@@ -995,7 +995,7 @@ export class FinancialAggregationService {
         endValue: 0,
         change: 0,
         changePercent: 0,
-        direction: 'stable',
+        direction: "stable",
         average: 0,
         min: 0,
         max: 0,
@@ -1015,7 +1015,7 @@ export class FinancialAggregationService {
       endValue,
       change,
       changePercent,
-      direction: change > 0 ? 'up' : change < 0 ? 'down' : 'stable',
+      direction: change > 0 ? "up" : change < 0 ? "down" : "stable",
       average: values.reduce((s, v) => s + v, 0) / values.length,
       min: Math.min(...values),
       max: Math.max(...values),
@@ -1024,7 +1024,7 @@ export class FinancialAggregationService {
 
   private buildCashFlowTrend(
     incomeHistory: TrendDataPoint[],
-    spendingHistory: TrendDataPoint[]
+    spendingHistory: TrendDataPoint[],
   ): TrendData {
     const cashFlowPoints: TrendDataPoint[] = incomeHistory.map((income, i) => ({
       date: income.date,
@@ -1046,56 +1046,56 @@ export class FinancialAggregationService {
     // Net worth observations
     if (trends.netWorthTrend.changePercent > 10) {
       observations.push({
-        type: 'improvement',
-        metric: 'netWorth',
+        type: "improvement",
+        metric: "netWorth",
         description: `Net worth increased by ${trends.netWorthTrend.changePercent.toFixed(1)}%`,
-        impact: 'positive',
+        impact: "positive",
       });
     } else if (trends.netWorthTrend.changePercent < -10) {
       observations.push({
-        type: 'decline',
-        metric: 'netWorth',
+        type: "decline",
+        metric: "netWorth",
         description: `Net worth decreased by ${Math.abs(trends.netWorthTrend.changePercent).toFixed(1)}%`,
-        impact: 'negative',
+        impact: "negative",
       });
     }
 
     // Debt observations
     if (
-      trends.debtTrend.direction === 'down' &&
+      trends.debtTrend.direction === "down" &&
       trends.debtTrend.changePercent < -5
     ) {
       observations.push({
-        type: 'improvement',
-        metric: 'debt',
+        type: "improvement",
+        metric: "debt",
         description: `Debt reduced by ${Math.abs(trends.debtTrend.changePercent).toFixed(1)}%`,
-        impact: 'positive',
+        impact: "positive",
       });
     }
 
     // Savings observations
     if (
-      trends.savingsTrend.direction === 'up' &&
+      trends.savingsTrend.direction === "up" &&
       trends.savingsTrend.changePercent > 5
     ) {
       observations.push({
-        type: 'improvement',
-        metric: 'savings',
+        type: "improvement",
+        metric: "savings",
         description: `Savings increased by ${trends.savingsTrend.changePercent.toFixed(1)}%`,
-        impact: 'positive',
+        impact: "positive",
       });
     }
 
     // Spending observations
     if (
-      trends.spendingTrend.direction === 'up' &&
+      trends.spendingTrend.direction === "up" &&
       trends.spendingTrend.changePercent > 15
     ) {
       observations.push({
-        type: 'anomaly',
-        metric: 'spending',
+        type: "anomaly",
+        metric: "spending",
         description: `Spending increased significantly by ${trends.spendingTrend.changePercent.toFixed(1)}%`,
-        impact: 'negative',
+        impact: "negative",
       });
     }
 
@@ -1121,17 +1121,17 @@ export class FinancialAggregationService {
 
   private assessRiskLevel(portfolios: unknown[]): RiskLevel {
     // Simplified risk assessment
-    return portfolios.length > 3 ? 'moderate' : 'conservative';
+    return portfolios.length > 3 ? "moderate" : "conservative";
   }
 
   private calculateDataCompleteness(data: {
     accounts: AggregatedAccounts;
-    budgetData: AggregatedFinancialContext['budgets'] | null;
-    spendingData: AggregatedFinancialContext['spending'] | null;
-    billsData: AggregatedFinancialContext['bills'] | null;
-    savingsData: AggregatedFinancialContext['savings'] | null;
-    debtData: AggregatedFinancialContext['debt'] | null;
-    investmentData: AggregatedFinancialContext['investments'] | null;
+    budgetData: AggregatedFinancialContext["budgets"] | null;
+    spendingData: AggregatedFinancialContext["spending"] | null;
+    billsData: AggregatedFinancialContext["bills"] | null;
+    savingsData: AggregatedFinancialContext["savings"] | null;
+    debtData: AggregatedFinancialContext["debt"] | null;
+    investmentData: AggregatedFinancialContext["investments"] | null;
     creditData: CreditSummary | null;
   }): DataCompleteness {
     const hasAccounts =
@@ -1184,7 +1184,7 @@ export class FinancialAggregationService {
 
   private setCachedContext(
     userId: string,
-    context: AggregatedFinancialContext
+    context: AggregatedFinancialContext,
   ): void {
     // Enforce max cache size
     if (contextCache.size >= MAX_CACHE_SIZE) {
@@ -1230,14 +1230,14 @@ export class FinancialAggregationService {
   private getDefaultUserProfile(userId: string): UserProfile {
     return {
       id: userId,
-      email: '',
-      fullName: '',
-      subscriptionTier: 'free',
+      email: "",
+      fullName: "",
+      subscriptionTier: "free",
       createdAt: new Date(),
       onboardingCompleted: false,
       preferences: {
-        currency: 'USD',
-        timezone: 'America/New_York',
+        currency: "USD",
+        timezone: "America/New_York",
         budgetAlertThreshold: 80,
         goalRemindersEnabled: true,
         insightNotificationsEnabled: true,
@@ -1260,12 +1260,12 @@ export class FinancialAggregationService {
     };
   }
 
-  private getEmptyBudgetData(): AggregatedFinancialContext['budgets'] {
+  private getEmptyBudgetData(): AggregatedFinancialContext["budgets"] {
     const now = new Date();
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     const daysRemaining = Math.max(
       0,
-      Math.ceil((endOfMonth.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      Math.ceil((endOfMonth.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
     );
     const daysElapsed = now.getDate();
     const totalDays = endOfMonth.getDate();
@@ -1281,7 +1281,7 @@ export class FinancialAggregationService {
         topOverspentCategories: [],
         topUnderBudgetCategories: [],
         periodSummary: {
-          period: 'monthly',
+          period: "monthly",
           startDate: new Date(now.getFullYear(), now.getMonth(), 1),
           endDate: endOfMonth,
           daysElapsed,
@@ -1300,7 +1300,7 @@ export class FinancialAggregationService {
     };
   }
 
-  private getEmptySpendingData(): AggregatedFinancialContext['spending'] {
+  private getEmptySpendingData(): AggregatedFinancialContext["spending"] {
     return {
       transactions: {
         recentTransactions: [],
@@ -1318,7 +1318,7 @@ export class FinancialAggregationService {
     };
   }
 
-  private getEmptyBillsData(): AggregatedFinancialContext['bills'] {
+  private getEmptyBillsData(): AggregatedFinancialContext["bills"] {
     return {
       items: [],
       recurring: [],
@@ -1347,7 +1347,7 @@ export class FinancialAggregationService {
     };
   }
 
-  private getEmptySavingsData(): AggregatedFinancialContext['savings'] {
+  private getEmptySavingsData(): AggregatedFinancialContext["savings"] {
     return {
       goals: [],
       rules: [],
@@ -1369,7 +1369,7 @@ export class FinancialAggregationService {
     };
   }
 
-  private getEmptyDebtData(): AggregatedFinancialContext['debt'] {
+  private getEmptyDebtData(): AggregatedFinancialContext["debt"] {
     return {
       items: [],
       overview: {
@@ -1386,7 +1386,7 @@ export class FinancialAggregationService {
     };
   }
 
-  private getEmptyInvestmentData(): AggregatedFinancialContext['investments'] {
+  private getEmptyInvestmentData(): AggregatedFinancialContext["investments"] {
     return {
       portfolio: {
         totalValue: 0,
@@ -1403,7 +1403,7 @@ export class FinancialAggregationService {
       dayChange: 0,
       totalGainLoss: 0,
       diversificationScore: 0,
-      riskLevel: 'conservative',
+      riskLevel: "conservative",
       retirementReadiness: 0,
     };
   }
@@ -1412,7 +1412,7 @@ export class FinancialAggregationService {
     return {
       currentScore: 0,
       scoreChange: 0,
-      scoreChangeDirection: 'stable',
+      scoreChangeDirection: "stable",
       lastUpdated: new Date(),
       scoreHistory: [],
       factors: [],
@@ -1439,25 +1439,25 @@ export class FinancialAggregationService {
   // ==========================================================================
 
   private mapAccountFromDb(row: Record<string, unknown>): AccountSummary {
-    const accountType = (row.account_type as string) || 'checking';
+    const accountType = (row.account_type as string) || "checking";
     const validAccountTypes = [
-      'savings',
-      'checking',
-      'credit',
-      'investment',
-      'loan',
-      'other',
+      "savings",
+      "checking",
+      "credit",
+      "investment",
+      "loan",
+      "other",
     ] as const;
     const mappedType = validAccountTypes.includes(
-      accountType as (typeof validAccountTypes)[number]
+      accountType as (typeof validAccountTypes)[number],
     )
       ? (accountType as (typeof validAccountTypes)[number])
-      : 'other';
+      : "other";
 
     return {
       id: row.id as string,
-      institutionName: (row.institution_name as string) || '',
-      accountName: (row.account_name as string) || '',
+      institutionName: (row.institution_name as string) || "",
+      accountName: (row.account_name as string) || "",
       accountType: mappedType,
       currentBalance: (row.current_balance as number) || 0,
       availableBalance: row.available_balance as number,
@@ -1474,10 +1474,10 @@ export class FinancialAggregationService {
   private mapBudgetToStatus(budget: Budget): BudgetStatus {
     // Map quarterly to monthly for BudgetStatus which doesn't support quarterly
     const mapPeriod = (
-      period: string
-    ): 'weekly' | 'biweekly' | 'monthly' | 'yearly' => {
-      if (period === 'quarterly') return 'monthly';
-      return period as 'weekly' | 'biweekly' | 'monthly' | 'yearly';
+      period: string,
+    ): "weekly" | "biweekly" | "monthly" | "yearly" => {
+      if (period === "quarterly") return "monthly";
+      return period as "weekly" | "biweekly" | "monthly" | "yearly";
     };
 
     return {
@@ -1488,15 +1488,15 @@ export class FinancialAggregationService {
       remainingAmount: budget.remainingAmount,
       percentUsed: budget.percentUsed,
       period: mapPeriod(budget.period),
-      status: budget.status === 'inactive' ? 'on_track' : budget.status,
+      status: budget.status === "inactive" ? "on_track" : budget.status,
       daysRemaining: Math.max(
         0,
         Math.ceil(
-          (budget.periodEnd.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-        )
+          (budget.periodEnd.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+        ),
       ),
       projectedOverage:
-        budget.status === 'over_budget'
+        budget.status === "over_budget"
           ? budget.spentAmount - budget.budgetedAmount
           : 0,
       rolloverEnabled: budget.rolloverEnabled,
@@ -1506,7 +1506,7 @@ export class FinancialAggregationService {
 
   private mapDebtToAnalysis(
     debts: Debt[],
-    overview?: DebtOverview
+    overview?: DebtOverview,
   ): DebtAnalysis {
     // Map Debt to DebtItem
     const debtItems: DebtItem[] = debts.map((d) => ({
@@ -1526,7 +1526,7 @@ export class FinancialAggregationService {
       monthlyPayments > 0 ? Math.ceil(totalDebt / monthlyPayments) : 0;
     const projectedPayoffDate = new Date();
     projectedPayoffDate.setMonth(
-      projectedPayoffDate.getMonth() + monthsToPayoff
+      projectedPayoffDate.getMonth() + monthsToPayoff,
     );
 
     // Calculate average interest rate
@@ -1544,8 +1544,8 @@ export class FinancialAggregationService {
       debts: debtItems,
       payoffStrategies: [
         {
-          name: 'avalanche',
-          description: 'Pay off highest interest rate debts first',
+          name: "avalanche",
+          description: "Pay off highest interest rate debts first",
           monthsToPayoff,
           totalInterest: 0,
           monthlyPayment: monthlyPayments,
@@ -1557,18 +1557,18 @@ export class FinancialAggregationService {
     };
   }
 
-  private mapDebtType(type: string): DebtItem['type'] {
-    const validTypes: DebtItem['type'][] = [
-      'credit_card',
-      'student_loan',
-      'mortgage',
-      'auto_loan',
-      'personal_loan',
-      'other',
+  private mapDebtType(type: string): DebtItem["type"] {
+    const validTypes: DebtItem["type"][] = [
+      "credit_card",
+      "student_loan",
+      "mortgage",
+      "auto_loan",
+      "personal_loan",
+      "other",
     ];
-    return validTypes.includes(type as DebtItem['type'])
-      ? (type as DebtItem['type'])
-      : 'other';
+    return validTypes.includes(type as DebtItem["type"])
+      ? (type as DebtItem["type"])
+      : "other";
   }
 
   // ==========================================================================
@@ -1578,27 +1578,27 @@ export class FinancialAggregationService {
   private async generateInsights(
     _userId: string,
     data: {
-      budgetData: AggregatedFinancialContext['budgets'] | null;
-      spendingData: AggregatedFinancialContext['spending'] | null;
-      debtData: AggregatedFinancialContext['debt'] | null;
-      savingsData: AggregatedFinancialContext['savings'] | null;
-    }
+      budgetData: AggregatedFinancialContext["budgets"] | null;
+      spendingData: AggregatedFinancialContext["spending"] | null;
+      debtData: AggregatedFinancialContext["debt"] | null;
+      savingsData: AggregatedFinancialContext["savings"] | null;
+    },
   ): Promise<AIInsight[]> {
     const insights: AIInsight[] = [];
 
     // Budget insights
     if (data.budgetData) {
       const overBudget = data.budgetData.items.filter(
-        (b) => b.status === 'over_budget'
+        (b) => b.status === "over_budget",
       );
       if (overBudget.length > 0) {
         insights.push({
           id: `insight-budget-${Date.now()}`,
-          type: 'budget_warning' as InsightType,
-          title: 'Budget Alert',
+          type: "budget_warning" as InsightType,
+          title: "Budget Alert",
           message: `${overBudget.length} budget(s) are over limit this period`,
-          severity: 'warning',
-          actionType: 'review_budgets',
+          severity: "warning",
+          actionType: "review_budgets",
           actionData: { overBudgetIds: overBudget.map((b) => b.id) },
           read: false,
           dismissed: false,
@@ -1611,11 +1611,11 @@ export class FinancialAggregationService {
     if (data.spendingData && data.spendingData.anomalies.length > 0) {
       insights.push({
         id: `insight-spending-${Date.now()}`,
-        type: 'spending_alert' as InsightType,
-        title: 'Unusual Spending Detected',
+        type: "spending_alert" as InsightType,
+        title: "Unusual Spending Detected",
         message: `${data.spendingData.anomalies.length} unusual transaction(s) detected`,
-        severity: 'info',
-        actionType: 'review_transactions',
+        severity: "info",
+        actionType: "review_transactions",
         read: false,
         dismissed: false,
         createdAt: new Date(),
@@ -1626,11 +1626,11 @@ export class FinancialAggregationService {
     if (data.savingsData && data.savingsData.summary.savingsRate < 10) {
       insights.push({
         id: `insight-savings-${Date.now()}`,
-        type: 'savings_opportunity' as InsightType,
-        title: 'Low Savings Rate',
-        message: 'Your savings rate is below the recommended 10%',
-        severity: 'warning',
-        actionType: 'setup_savings',
+        type: "savings_opportunity" as InsightType,
+        title: "Low Savings Rate",
+        message: "Your savings rate is below the recommended 10%",
+        severity: "warning",
+        actionType: "setup_savings",
         read: false,
         dismissed: false,
         createdAt: new Date(),
@@ -1641,11 +1641,11 @@ export class FinancialAggregationService {
     if (data.debtData && data.debtData.overview.highestInterestRate > 20) {
       insights.push({
         id: `insight-debt-${Date.now()}`,
-        type: 'debt_advice' as InsightType,
-        title: 'High Interest Debt',
+        type: "debt_advice" as InsightType,
+        title: "High Interest Debt",
         message: `You have debt with ${data.debtData.overview.highestInterestRate.toFixed(1)}% interest rate`,
-        severity: 'critical',
-        actionType: 'debt_consolidation',
+        severity: "critical",
+        actionType: "debt_consolidation",
         read: false,
         dismissed: false,
         createdAt: new Date(),
@@ -1658,11 +1658,11 @@ export class FinancialAggregationService {
   private async generateRecommendations(
     _userId: string,
     data: {
-      budgetData: AggregatedFinancialContext['budgets'] | null;
-      spendingData: AggregatedFinancialContext['spending'] | null;
-      debtData: AggregatedFinancialContext['debt'] | null;
-      savingsData: AggregatedFinancialContext['savings'] | null;
-    }
+      budgetData: AggregatedFinancialContext["budgets"] | null;
+      spendingData: AggregatedFinancialContext["spending"] | null;
+      debtData: AggregatedFinancialContext["debt"] | null;
+      savingsData: AggregatedFinancialContext["savings"] | null;
+    },
   ): Promise<Recommendation[]> {
     const recommendations: Recommendation[] = [];
 
@@ -1670,18 +1670,18 @@ export class FinancialAggregationService {
     if (!data.savingsData || data.savingsData.rules.length === 0) {
       recommendations.push({
         id: `rec-savings-${Date.now()}`,
-        category: 'increase_savings' as RecommendationCategory,
-        title: 'Set Up Automatic Savings',
+        category: "increase_savings" as RecommendationCategory,
+        title: "Set Up Automatic Savings",
         description:
-          'Automate your savings with round-up rules or percentage-based transfers',
-        impact: 'high',
-        effort: 'easy',
+          "Automate your savings with round-up rules or percentage-based transfers",
+        impact: "high",
+        effort: "easy",
         potentialSavings: 150,
         priority: 1,
         actionSteps: [
-          'Go to Savings settings',
-          'Enable round-up savings',
-          'Set a percentage-based transfer rule',
+          "Go to Savings settings",
+          "Enable round-up savings",
+          "Set a percentage-based transfer rule",
         ],
       });
     }
@@ -1690,16 +1690,16 @@ export class FinancialAggregationService {
     if (!data.budgetData || data.budgetData.items.length === 0) {
       recommendations.push({
         id: `rec-budget-${Date.now()}`,
-        category: 'reduce_spending' as RecommendationCategory,
-        title: 'Create Your First Budget',
-        description: 'Set spending limits for your top expense categories',
-        impact: 'high',
-        effort: 'easy',
+        category: "reduce_spending" as RecommendationCategory,
+        title: "Create Your First Budget",
+        description: "Set spending limits for your top expense categories",
+        impact: "high",
+        effort: "easy",
         priority: 2,
         actionSteps: [
-          'Review your spending categories',
-          'Set monthly limits for each category',
-          'Enable budget alerts',
+          "Review your spending categories",
+          "Set monthly limits for each category",
+          "Enable budget alerts",
         ],
       });
     }
@@ -1708,17 +1708,17 @@ export class FinancialAggregationService {
     if (data.debtData && data.debtData.items.length > 1) {
       recommendations.push({
         id: `rec-debt-${Date.now()}`,
-        category: 'pay_off_debt' as RecommendationCategory,
-        title: 'Optimize Debt Payoff Strategy',
+        category: "pay_off_debt" as RecommendationCategory,
+        title: "Optimize Debt Payoff Strategy",
         description:
-          'Use the avalanche or snowball method to pay off debt faster',
-        impact: 'high',
-        effort: 'moderate',
+          "Use the avalanche or snowball method to pay off debt faster",
+        impact: "high",
+        effort: "moderate",
         priority: 3,
         actionSteps: [
-          'Review your debt list',
-          'Choose avalanche (highest interest first) or snowball (smallest balance first)',
-          'Set up automatic extra payments',
+          "Review your debt list",
+          "Choose avalanche (highest interest first) or snowball (smallest balance first)",
+          "Set up automatic extra payments",
         ],
       });
     }

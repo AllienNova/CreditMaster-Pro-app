@@ -5,7 +5,7 @@
  * and platform authenticators (Touch ID, Face ID, Windows Hello).
  */
 
-import { getSupabase } from '@/lib/supabase/client';
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
 
@@ -17,7 +17,7 @@ export interface WebAuthnCredential {
   id: string;
   credentialId: string;
   name: string;
-  type: 'security_key' | 'platform';
+  type: "security_key" | "platform";
   transports?: AuthenticatorTransport[];
   createdAt: Date;
   lastUsedAt?: Date;
@@ -61,7 +61,7 @@ export interface WebAuthnAuthenticationResult {
 // CONSTANTS
 // ============================================================================
 
-const RP_NAME = 'Fynvita';
+const RP_NAME = "Fynvita";
 const TIMEOUT = 60000; // 60 seconds
 
 // ============================================================================
@@ -74,7 +74,7 @@ export class WebAuthnService {
   constructor() {
     // Get RP ID from window location or use default
     this.rpId =
-      typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+      typeof window !== "undefined" ? window.location.hostname : "localhost";
   }
 
   // ==========================================================================
@@ -85,7 +85,7 @@ export class WebAuthnService {
    * Check if WebAuthn is supported in the current browser
    */
   isSupported(): boolean {
-    return typeof window !== 'undefined' && !!window.PublicKeyCredential;
+    return typeof window !== "undefined" && !!window.PublicKeyCredential;
   }
 
   /**
@@ -112,7 +112,7 @@ export class WebAuthnService {
       const pkc = PublicKeyCredential as typeof PublicKeyCredential & {
         isConditionalMediationAvailable?: () => Promise<boolean>;
       };
-      if (typeof pkc.isConditionalMediationAvailable === 'function') {
+      if (typeof pkc.isConditionalMediationAvailable === "function") {
         return await pkc.isConditionalMediationAvailable();
       }
       return false;
@@ -133,14 +133,14 @@ export class WebAuthnService {
     userName: string,
     displayName: string,
     options?: {
-      authenticatorType?: 'platform' | 'cross-platform' | 'any';
+      authenticatorType?: "platform" | "cross-platform" | "any";
       credentialName?: string;
-    }
+    },
   ): Promise<WebAuthnRegistrationResult> {
     if (!this.isSupported()) {
       return {
         success: false,
-        error: 'WebAuthn is not supported in this browser',
+        error: "WebAuthn is not supported in this browser",
       };
     }
 
@@ -149,7 +149,7 @@ export class WebAuthnService {
       const existingCredentials = await this.getCredentials(userId);
       const excludeCredentials: PublicKeyCredentialDescriptor[] =
         existingCredentials.map((cred) => ({
-          type: 'public-key',
+          type: "public-key",
           id: this.base64ToArrayBuffer(cred.credentialId),
           transports: cred.transports,
         }));
@@ -159,13 +159,13 @@ export class WebAuthnService {
 
       // Build authenticator selection criteria
       const authenticatorSelection: AuthenticatorSelectionCriteria = {
-        userVerification: 'preferred',
+        userVerification: "preferred",
       };
 
-      if (options?.authenticatorType === 'platform') {
-        authenticatorSelection.authenticatorAttachment = 'platform';
-      } else if (options?.authenticatorType === 'cross-platform') {
-        authenticatorSelection.authenticatorAttachment = 'cross-platform';
+      if (options?.authenticatorType === "platform") {
+        authenticatorSelection.authenticatorAttachment = "platform";
+      } else if (options?.authenticatorType === "cross-platform") {
+        authenticatorSelection.authenticatorAttachment = "cross-platform";
       }
 
       // Create credential options
@@ -182,12 +182,12 @@ export class WebAuthnService {
             displayName: displayName,
           },
           pubKeyCredParams: [
-            { alg: -7, type: 'public-key' }, // ES256
-            { alg: -257, type: 'public-key' }, // RS256
+            { alg: -7, type: "public-key" }, // ES256
+            { alg: -257, type: "public-key" }, // RS256
           ],
           authenticatorSelection,
           timeout: TIMEOUT,
-          attestation: 'none',
+          attestation: "none",
           excludeCredentials,
         };
 
@@ -197,7 +197,7 @@ export class WebAuthnService {
       })) as PublicKeyCredential;
 
       if (!credential) {
-        return { success: false, error: 'Failed to create credential' };
+        return { success: false, error: "Failed to create credential" };
       }
 
       const response = credential.response as AuthenticatorAttestationResponse;
@@ -206,14 +206,14 @@ export class WebAuthnService {
       const credentialId = this.arrayBufferToBase64(credential.rawId);
       const clientDataJSON = this.arrayBufferToBase64(response.clientDataJSON);
       const attestationObject = this.arrayBufferToBase64(
-        response.attestationObject
+        response.attestationObject,
       );
 
       // Determine credential type
       const credentialType =
-        authenticatorSelection.authenticatorAttachment === 'platform'
-          ? 'platform'
-          : 'security_key';
+        authenticatorSelection.authenticatorAttachment === "platform"
+          ? "platform"
+          : "security_key";
 
       // Get transports if available
       const transports = response.getTransports?.() as
@@ -227,13 +227,13 @@ export class WebAuthnService {
         clientDataJSON,
         name:
           options?.credentialName ||
-          (credentialType === 'platform' ? 'This Device' : 'Security Key'),
+          (credentialType === "platform" ? "This Device" : "Security Key"),
         type: credentialType,
         transports,
       });
 
       if (!storedCredential) {
-        return { success: false, error: 'Failed to store credential' };
+        return { success: false, error: "Failed to store credential" };
       }
 
       return { success: true, credential: storedCredential };
@@ -241,23 +241,23 @@ export class WebAuthnService {
       // WebAuthnService error: Registration error
 
       if (error instanceof DOMException) {
-        if (error.name === 'NotAllowedError') {
+        if (error.name === "NotAllowedError") {
           return {
             success: false,
-            error: 'Registration was cancelled or timed out',
+            error: "Registration was cancelled or timed out",
           };
         }
-        if (error.name === 'InvalidStateError') {
+        if (error.name === "InvalidStateError") {
           return {
             success: false,
-            error: 'This authenticator is already registered',
+            error: "This authenticator is already registered",
           };
         }
       }
 
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Registration failed',
+        error: error instanceof Error ? error.message : "Registration failed",
       };
     }
   }
@@ -273,12 +273,12 @@ export class WebAuthnService {
     userId?: string,
     options?: {
       conditional?: boolean;
-    }
+    },
   ): Promise<WebAuthnAuthenticationResult> {
     if (!this.isSupported()) {
       return {
         success: false,
-        error: 'WebAuthn is not supported in this browser',
+        error: "WebAuthn is not supported in this browser",
       };
     }
 
@@ -289,13 +289,13 @@ export class WebAuthnService {
       if (userId) {
         const credentials = await this.getCredentials(userId);
         allowCredentials = credentials.map((cred) => ({
-          type: 'public-key',
+          type: "public-key",
           id: this.base64ToArrayBuffer(cred.credentialId),
           transports: cred.transports,
         }));
 
         if (allowCredentials.length === 0) {
-          return { success: false, error: 'No registered credentials found' };
+          return { success: false, error: "No registered credentials found" };
         }
       }
 
@@ -310,17 +310,17 @@ export class WebAuthnService {
           allowCredentials:
             allowCredentials.length > 0 ? allowCredentials : undefined,
           timeout: TIMEOUT,
-          userVerification: 'preferred',
+          userVerification: "preferred",
         };
 
       // Get the credential
       const assertion = (await navigator.credentials.get({
         publicKey: publicKeyCredentialRequestOptions,
-        mediation: options?.conditional ? 'conditional' : undefined,
+        mediation: options?.conditional ? "conditional" : undefined,
       })) as PublicKeyCredential;
 
       if (!assertion) {
-        return { success: false, error: 'Authentication failed' };
+        return { success: false, error: "Authentication failed" };
       }
 
       const response = assertion.response as AuthenticatorAssertionResponse;
@@ -331,11 +331,11 @@ export class WebAuthnService {
         credentialId,
         response.authenticatorData,
         response.clientDataJSON,
-        response.signature
+        response.signature,
       );
 
       if (!isValid) {
-        return { success: false, error: 'Invalid authentication' };
+        return { success: false, error: "Invalid authentication" };
       }
 
       // Update last used timestamp
@@ -346,17 +346,17 @@ export class WebAuthnService {
       // WebAuthnService error: Authentication error
 
       if (error instanceof DOMException) {
-        if (error.name === 'NotAllowedError') {
+        if (error.name === "NotAllowedError") {
           return {
             success: false,
-            error: 'Authentication was cancelled or timed out',
+            error: "Authentication was cancelled or timed out",
           };
         }
       }
 
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Authentication failed',
+        error: error instanceof Error ? error.message : "Authentication failed",
       };
     }
   }
@@ -371,10 +371,10 @@ export class WebAuthnService {
   async getCredentials(userId: string): Promise<WebAuthnCredential[]> {
     try {
       const { data, error } = await supabase
-        .from('webauthn_credentials')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+        .from("webauthn_credentials")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
 
       if (error) {
         // WebAuthnService error: Failed to get credentials
@@ -405,13 +405,13 @@ export class WebAuthnService {
       publicKey: string;
       clientDataJSON: string;
       name: string;
-      type: 'security_key' | 'platform';
+      type: "security_key" | "platform";
       transports?: AuthenticatorTransport[];
-    }
+    },
   ): Promise<WebAuthnCredential | null> {
     try {
       const { data: result, error } = await supabase
-        .from('webauthn_credentials')
+        .from("webauthn_credentials")
         .insert({
           user_id: userId,
           credential_id: data.credentialId,
@@ -447,13 +447,13 @@ export class WebAuthnService {
    */
   async renameCredential(
     credentialId: string,
-    newName: string
+    newName: string,
   ): Promise<boolean> {
     try {
       const { error } = await supabase
-        .from('webauthn_credentials')
+        .from("webauthn_credentials")
         .update({ name: newName })
-        .eq('credential_id', credentialId);
+        .eq("credential_id", credentialId);
 
       return !error;
     } catch {
@@ -467,9 +467,9 @@ export class WebAuthnService {
   async deleteCredential(credentialId: string): Promise<boolean> {
     try {
       const { error } = await supabase
-        .from('webauthn_credentials')
+        .from("webauthn_credentials")
         .delete()
-        .eq('credential_id', credentialId);
+        .eq("credential_id", credentialId);
 
       return !error;
     } catch {
@@ -483,9 +483,9 @@ export class WebAuthnService {
   private async updateLastUsed(credentialId: string): Promise<void> {
     try {
       await supabase
-        .from('webauthn_credentials')
+        .from("webauthn_credentials")
         .update({ last_used_at: new Date().toISOString() })
-        .eq('credential_id', credentialId);
+        .eq("credential_id", credentialId);
     } catch {
       // Ignore errors
     }
@@ -499,7 +499,7 @@ export class WebAuthnService {
     credentialId: string,
     authenticatorData: ArrayBuffer,
     clientDataJSON: ArrayBuffer,
-    signature: ArrayBuffer
+    signature: ArrayBuffer,
   ): Promise<boolean> {
     // In production, this verification should happen server-side
     // For now, we just check that we have all required data
@@ -512,19 +512,19 @@ export class WebAuthnService {
 
   private arrayBufferToBase64(buffer: ArrayBuffer): string {
     const bytes = new Uint8Array(buffer);
-    let binary = '';
+    let binary = "";
     for (let i = 0; i < bytes.byteLength; i++) {
       binary += String.fromCharCode(bytes[i]);
     }
     return btoa(binary)
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=/g, '');
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=/g, "");
   }
 
   private base64ToArrayBuffer(base64: string): ArrayBuffer {
-    const normalized = base64.replace(/-/g, '+').replace(/_/g, '/');
-    const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4);
+    const normalized = base64.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
     const binary = atob(padded);
     const bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) {

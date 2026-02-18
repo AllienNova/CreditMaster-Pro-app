@@ -1,37 +1,44 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { Notification, NotificationType } from '@/lib/notifications/notification-service';
-import NotificationItem from './NotificationItem';
-import { useAuth } from '@/hooks/useAuth';
+import { useState, useEffect, useCallback } from "react";
+import {
+  Notification,
+  NotificationType,
+} from "@/lib/notifications/notification-service";
+import NotificationItem from "./NotificationItem";
+import { useAuth } from "@/hooks/useAuth";
 
-type FilterType = 'all' | 'unread' | NotificationType;
+type FilterType = "all" | "unread" | NotificationType;
 
 export default function NotificationCenter() {
   const { user, loading: authLoading } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [filteredNotifications, setFilteredNotifications] = useState<Notification[]>([]);
+  const [filteredNotifications, setFilteredNotifications] = useState<
+    Notification[]
+  >([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<FilterType>('all');
+  const [filter, setFilter] = useState<FilterType>("all");
 
   const fetchNotifications = useCallback(async () => {
     if (!user) return;
 
     try {
       const response = await fetch(`/api/notifications`);
-      
+
       if (!response.ok) {
-        throw new Error('Failed to fetch notifications');
+        throw new Error("Failed to fetch notifications");
       }
-      
+
       const data = await response.json();
       setNotifications(data.notifications || []);
       setUnreadCount(data.unreadCount || 0);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load notifications');
+      setError(
+        err instanceof Error ? err.message : "Failed to load notifications",
+      );
     } finally {
       setLoading(false);
     }
@@ -39,13 +46,13 @@ export default function NotificationCenter() {
 
   const filterNotifications = useCallback(() => {
     let filtered = [...notifications];
-    
-    if (filter === 'unread') {
-      filtered = filtered.filter(n => !n.read);
-    } else if (filter !== 'all') {
-      filtered = filtered.filter(n => n.type === filter);
+
+    if (filter === "unread") {
+      filtered = filtered.filter((n) => !n.read);
+    } else if (filter !== "all") {
+      filtered = filtered.filter((n) => n.type === filter);
     }
-    
+
     setFilteredNotifications(filtered);
   }, [notifications, filter]);
 
@@ -69,24 +76,24 @@ export default function NotificationCenter() {
     if (!user) return;
 
     try {
-      const response = await fetch('/api/notifications', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           notificationId,
-          action: 'mark_read',
+          action: "mark_read",
         }),
       });
-      
+
       if (!response.ok) {
-        throw new Error('Failed to mark as read');
+        throw new Error("Failed to mark as read");
       }
-      
+
       // Update local state
-      setNotifications(prev =>
-        prev.map(n => (n.id === notificationId ? { ...n, read: true } : n))
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n)),
       );
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (_err) {
       // NotificationCenter error: Failed to mark as read
       void _err;
@@ -97,20 +104,20 @@ export default function NotificationCenter() {
     if (!user) return;
 
     try {
-      const response = await fetch('/api/notifications', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: 'mark_all_read',
+          action: "mark_all_read",
         }),
       });
-      
+
       if (!response.ok) {
-        throw new Error('Failed to mark all as read');
+        throw new Error("Failed to mark all as read");
       }
-      
+
       // Update local state
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
       setUnreadCount(0);
     } catch (_err) {
       // NotificationCenter error: Failed to mark all as read
@@ -122,16 +129,19 @@ export default function NotificationCenter() {
     if (!user) return;
 
     try {
-      const response = await fetch(`/api/notifications?notificationId=${notificationId}`, {
-        method: 'DELETE',
-      });
-      
+      const response = await fetch(
+        `/api/notifications?notificationId=${notificationId}`,
+        {
+          method: "DELETE",
+        },
+      );
+
       if (!response.ok) {
-        throw new Error('Failed to delete notification');
+        throw new Error("Failed to delete notification");
       }
-      
+
       // Update local state
-      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+      setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
     } catch (_err) {
       // NotificationCenter error: Failed to delete notification
       void _err;
@@ -139,12 +149,12 @@ export default function NotificationCenter() {
   };
 
   const filterOptions: { value: FilterType; label: string }[] = [
-    { value: 'all', label: 'All Notifications' },
-    { value: 'unread', label: 'Unread' },
-    { value: 'dispute_created', label: 'Disputes' },
-    { value: 'credit_score_changed', label: 'Credit Score' },
-    { value: 'payment_successful', label: 'Payments' },
-    { value: 'document_uploaded', label: 'Documents' },
+    { value: "all", label: "All Notifications" },
+    { value: "unread", label: "Unread" },
+    { value: "dispute_created", label: "Disputes" },
+    { value: "credit_score_changed", label: "Credit Score" },
+    { value: "payment_successful", label: "Payments" },
+    { value: "document_uploaded", label: "Documents" },
   ];
 
   if (loading) {
@@ -170,7 +180,9 @@ export default function NotificationCenter() {
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
         <div className="text-center py-12">
           <div className="text-red-600 text-xl mb-4"></div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Error Loading Notifications</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+            Error Loading Notifications
+          </h3>
           <p className="text-gray-600 dark:text-slate-300 mb-4">{error}</p>
           <button
             type="button"
@@ -202,14 +214,14 @@ export default function NotificationCenter() {
                 </option>
               ))}
             </select>
-            
+
             {unreadCount > 0 && (
               <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
                 {unreadCount} unread
               </span>
             )}
           </div>
-          
+
           {/* Actions */}
           <div className="flex items-center gap-2">
             {unreadCount > 0 && (
@@ -232,19 +244,21 @@ export default function NotificationCenter() {
           </div>
         </div>
       </div>
-      
+
       {/* Notifications List */}
       <div>
         {filteredNotifications.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-gray-400 dark:text-slate-500 text-6xl mb-4"></div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              {filter === 'unread' ? 'No unread notifications' : 'No notifications yet'}
+              {filter === "unread"
+                ? "No unread notifications"
+                : "No notifications yet"}
             </h3>
             <p className="text-gray-600 dark:text-slate-300">
-              {filter === 'unread'
-                ? 'You\'re all caught up!'
-                : 'We\'ll notify you when something important happens'}
+              {filter === "unread"
+                ? "You're all caught up!"
+                : "We'll notify you when something important happens"}
             </p>
           </div>
         ) : (
@@ -260,11 +274,12 @@ export default function NotificationCenter() {
           </div>
         )}
       </div>
-      
+
       {/* Footer */}
       {filteredNotifications.length > 0 && (
         <div className="p-4 bg-gray-50 dark:bg-slate-900 border-t border-gray-200 dark:border-slate-700 text-center text-sm text-gray-600 dark:text-slate-300">
-          Showing {filteredNotifications.length} of {notifications.length} notifications
+          Showing {filteredNotifications.length} of {notifications.length}{" "}
+          notifications
         </div>
       )}
     </div>

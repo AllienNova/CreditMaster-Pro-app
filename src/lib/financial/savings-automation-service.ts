@@ -9,7 +9,7 @@
  * - Goal-based automation
  */
 
-import { getSupabase } from '@/lib/supabase/client';
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
 import {
@@ -30,7 +30,7 @@ import {
   AddContributionInput,
   RoundUpCalculation,
   SavingsRuleConfig,
-} from './types/savings.types';
+} from "./types/savings.types";
 
 /**
  * Savings Automation Service Class
@@ -45,10 +45,10 @@ class SavingsAutomationService {
    */
   async getRules(userId: string): Promise<SavingsRule[]> {
     const { data, error } = await supabase
-      .from('savings_rules')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .from("savings_rules")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
     if (error) {
       // SavingsAutomationService error: Error fetching savings rules
@@ -63,10 +63,10 @@ class SavingsAutomationService {
    */
   async getRule(userId: string, ruleId: string): Promise<SavingsRule | null> {
     const { data, error } = await supabase
-      .from('savings_rules')
-      .select('*')
-      .eq('id', ruleId)
-      .eq('user_id', userId)
+      .from("savings_rules")
+      .select("*")
+      .eq("id", ruleId)
+      .eq("user_id", userId)
       .single();
 
     if (error || !data) {
@@ -81,16 +81,16 @@ class SavingsAutomationService {
    */
   async createRule(
     userId: string,
-    input: CreateSavingsRuleInput
+    input: CreateSavingsRuleInput,
   ): Promise<SavingsRule> {
     const { data, error } = await supabase
-      .from('savings_rules')
+      .from("savings_rules")
       .insert({
         user_id: userId,
         name: input.name,
         type: input.type,
         frequency: input.frequency,
-        status: 'active',
+        status: "active",
         config: input.config,
         goal_id: input.goalId,
         source_account_id: input.sourceAccountId,
@@ -116,7 +116,7 @@ class SavingsAutomationService {
   async updateRule(
     userId: string,
     ruleId: string,
-    input: UpdateSavingsRuleInput
+    input: UpdateSavingsRuleInput,
   ): Promise<SavingsRule> {
     const updateData: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
@@ -138,10 +138,10 @@ class SavingsAutomationService {
       updateData.destination_account_id = input.destinationAccountId;
 
     const { data, error } = await supabase
-      .from('savings_rules')
+      .from("savings_rules")
       .update(updateData)
-      .eq('id', ruleId)
-      .eq('user_id', userId)
+      .eq("id", ruleId)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -157,10 +157,10 @@ class SavingsAutomationService {
    */
   async deleteRule(userId: string, ruleId: string): Promise<boolean> {
     const { error } = await supabase
-      .from('savings_rules')
+      .from("savings_rules")
       .delete()
-      .eq('id', ruleId)
-      .eq('user_id', userId);
+      .eq("id", ruleId)
+      .eq("user_id", userId);
 
     return !error;
   }
@@ -171,11 +171,11 @@ class SavingsAutomationService {
   async toggleRuleStatus(userId: string, ruleId: string): Promise<SavingsRule> {
     const rule = await this.getRule(userId, ruleId);
     if (!rule) {
-      throw new Error('Rule not found');
+      throw new Error("Rule not found");
     }
 
     const newStatus: SavingsRuleStatus =
-      rule.status === 'active' ? 'paused' : 'active';
+      rule.status === "active" ? "paused" : "active";
     return this.updateRule(userId, ruleId, { status: newStatus });
   }
 
@@ -188,10 +188,10 @@ class SavingsAutomationService {
    */
   async getGoals(userId: string): Promise<SavingsGoal[]> {
     const { data, error } = await supabase
-      .from('savings_goals')
-      .select('*')
-      .eq('user_id', userId)
-      .order('priority', { ascending: true });
+      .from("savings_goals")
+      .select("*")
+      .eq("user_id", userId)
+      .order("priority", { ascending: true });
 
     if (error) {
       // SavingsAutomationService error: Error fetching savings goals
@@ -213,10 +213,10 @@ class SavingsAutomationService {
    */
   async getGoal(userId: string, goalId: string): Promise<SavingsGoal | null> {
     const { data, error } = await supabase
-      .from('savings_goals')
-      .select('*')
-      .eq('id', goalId)
-      .eq('user_id', userId)
+      .from("savings_goals")
+      .select("*")
+      .eq("id", goalId)
+      .eq("user_id", userId)
       .single();
 
     if (error || !data) {
@@ -233,15 +233,15 @@ class SavingsAutomationService {
    */
   async createGoal(
     userId: string,
-    input: CreateSavingsGoalInput
+    input: CreateSavingsGoalInput,
   ): Promise<SavingsGoal> {
     const { data, error } = await supabase
-      .from('savings_goals')
+      .from("savings_goals")
       .insert({
         user_id: userId,
         name: input.name,
         category: input.category,
-        status: 'active',
+        status: "active",
         target_amount: input.targetAmount,
         current_amount: 0,
         target_date: input.targetDate?.toISOString(),
@@ -272,7 +272,7 @@ class SavingsAutomationService {
   async updateGoal(
     userId: string,
     goalId: string,
-    input: UpdateSavingsGoalInput
+    input: UpdateSavingsGoalInput,
   ): Promise<SavingsGoal> {
     const updateData: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
@@ -293,10 +293,10 @@ class SavingsAutomationService {
     if (input.notes !== undefined) updateData.notes = input.notes;
 
     const { data, error } = await supabase
-      .from('savings_goals')
+      .from("savings_goals")
       .update(updateData)
-      .eq('id', goalId)
-      .eq('user_id', userId)
+      .eq("id", goalId)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -314,10 +314,10 @@ class SavingsAutomationService {
    */
   async deleteGoal(userId: string, goalId: string): Promise<boolean> {
     const { error } = await supabase
-      .from('savings_goals')
+      .from("savings_goals")
       .delete()
-      .eq('id', goalId)
-      .eq('user_id', userId);
+      .eq("id", goalId)
+      .eq("user_id", userId);
 
     return !error;
   }
@@ -327,15 +327,15 @@ class SavingsAutomationService {
    */
   async addContribution(
     userId: string,
-    input: AddContributionInput
+    input: AddContributionInput,
   ): Promise<SavingsContribution> {
     // Create contribution record
     const { data: contribution, error: contribError } = await supabase
-      .from('savings_contributions')
+      .from("savings_contributions")
       .insert({
         goal_id: input.goalId,
         amount: input.amount,
-        source: input.source || 'manual',
+        source: input.source || "manual",
         note: input.note,
         created_at: new Date().toISOString(),
       })
@@ -351,19 +351,19 @@ class SavingsAutomationService {
     if (goal) {
       const newAmount = goal.currentAmount + input.amount;
       const newStatus: SavingsGoalStatus =
-        newAmount >= goal.targetAmount ? 'completed' : goal.status;
+        newAmount >= goal.targetAmount ? "completed" : goal.status;
 
       await supabase
-        .from('savings_goals')
+        .from("savings_goals")
         .update({
           current_amount: newAmount,
           status: newStatus,
           completed_at:
-            newStatus === 'completed' ? new Date().toISOString() : null,
+            newStatus === "completed" ? new Date().toISOString() : null,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', input.goalId)
-        .eq('user_id', userId);
+        .eq("id", input.goalId)
+        .eq("user_id", userId);
     }
 
     return this.mapContributionFromDb(contribution);
@@ -374,10 +374,10 @@ class SavingsAutomationService {
    */
   async getContributions(goalId: string): Promise<SavingsContribution[]> {
     const { data, error } = await supabase
-      .from('savings_contributions')
-      .select('*')
-      .eq('goal_id', goalId)
-      .order('created_at', { ascending: false });
+      .from("savings_contributions")
+      .select("*")
+      .eq("goal_id", goalId)
+      .order("created_at", { ascending: false });
 
     if (error) {
       return [];
@@ -396,7 +396,7 @@ class SavingsAutomationService {
   calculateRoundUp(
     amount: number,
     roundUpTo: 1 | 5 | 10 = 1,
-    multiplier: number = 1
+    multiplier: number = 1,
   ): RoundUpCalculation {
     const roundedAmount = Math.ceil(amount / roundUpTo) * roundUpTo;
     const roundUpAmount = roundedAmount - amount;
@@ -416,10 +416,10 @@ class SavingsAutomationService {
   async processRoundUp(
     userId: string,
     transactionAmount: number,
-    ruleId: string
+    ruleId: string,
   ): Promise<SavingsTransfer | null> {
     const rule = await this.getRule(userId, ruleId);
-    if (!rule || rule.status !== 'active' || rule.type !== 'round_up') {
+    if (!rule || rule.status !== "active" || rule.type !== "round_up") {
       return null;
     }
 
@@ -427,7 +427,7 @@ class SavingsAutomationService {
     const roundUp = this.calculateRoundUp(
       transactionAmount,
       config.roundUpTo || 1,
-      config.roundUpMultiplier || 1
+      config.roundUpMultiplier || 1,
     );
 
     // Check limits
@@ -443,9 +443,9 @@ class SavingsAutomationService {
       ruleId,
       goalId: rule.goalId,
       amount: roundUp.multipliedAmount,
-      sourceAccountId: rule.sourceAccountId || '',
-      destinationAccountId: rule.destinationAccountId || '',
-      triggerType: 'transaction',
+      sourceAccountId: rule.sourceAccountId || "",
+      destinationAccountId: rule.destinationAccountId || "",
+      triggerType: "transaction",
     });
 
     // Update rule statistics
@@ -465,8 +465,8 @@ class SavingsAutomationService {
     const rules = await this.getRules(userId);
     const goals = await this.getGoals(userId);
 
-    const activeRules = rules.filter((r) => r.status === 'active');
-    const activeGoals = goals.filter((g) => g.status === 'active');
+    const activeRules = rules.filter((r) => r.status === "active");
+    const activeGoals = goals.filter((g) => g.status === "active");
 
     const totalSaved = rules.reduce((sum, r) => sum + r.totalSaved, 0);
 
@@ -476,15 +476,15 @@ class SavingsAutomationService {
     startOfMonth.setHours(0, 0, 0, 0);
 
     const { data: monthTransfers } = await supabase
-      .from('savings_transfers')
-      .select('amount')
-      .eq('user_id', userId)
-      .eq('status', 'completed')
-      .gte('created_at', startOfMonth.toISOString());
+      .from("savings_transfers")
+      .select("amount")
+      .eq("user_id", userId)
+      .eq("status", "completed")
+      .gte("created_at", startOfMonth.toISOString());
 
     const totalSavedThisMonth = (monthTransfers || []).reduce(
       (sum: number, t: { amount: number }) => sum + t.amount,
-      0
+      0,
     );
 
     // Calculate this year's savings
@@ -493,22 +493,22 @@ class SavingsAutomationService {
     startOfYear.setHours(0, 0, 0, 0);
 
     const { data: yearTransfers } = await supabase
-      .from('savings_transfers')
-      .select('amount')
-      .eq('user_id', userId)
-      .eq('status', 'completed')
-      .gte('created_at', startOfYear.toISOString());
+      .from("savings_transfers")
+      .select("amount")
+      .eq("user_id", userId)
+      .eq("status", "completed")
+      .gte("created_at", startOfYear.toISOString());
 
     const totalSavedThisYear = (yearTransfers || []).reduce(
       (sum: number, t: { amount: number }) => sum + t.amount,
-      0
+      0,
     );
 
     // Calculate round-up vs auto-save breakdown
-    const roundUpRules = rules.filter((r) => r.type === 'round_up');
+    const roundUpRules = rules.filter((r) => r.type === "round_up");
     const roundUpSavings = roundUpRules.reduce(
       (sum, r) => sum + r.totalSaved,
-      0
+      0,
     );
     const autoSaveSavings = totalSaved - roundUpSavings;
 
@@ -547,49 +547,49 @@ class SavingsAutomationService {
     // Check if no rules exist
     if (rules.length === 0) {
       insights.push({
-        type: 'opportunity',
-        title: 'Start Saving Automatically',
+        type: "opportunity",
+        title: "Start Saving Automatically",
         description:
-          'Set up your first savings rule to start building wealth automatically.',
+          "Set up your first savings rule to start building wealth automatically.",
         actionable: true,
         action: {
-          label: 'Create Rule',
-          type: 'create_rule',
+          label: "Create Rule",
+          type: "create_rule",
         },
       });
     }
 
     // Check for round-up opportunity
-    const hasRoundUp = rules.some((r) => r.type === 'round_up');
+    const hasRoundUp = rules.some((r) => r.type === "round_up");
     if (!hasRoundUp) {
       insights.push({
-        type: 'tip',
-        title: 'Try Round-Up Savings',
+        type: "tip",
+        title: "Try Round-Up Savings",
         description:
-          'Round up your purchases to the nearest dollar and save the difference. Small amounts add up!',
+          "Round up your purchases to the nearest dollar and save the difference. Small amounts add up!",
         impact: 50, // Estimated monthly impact
         actionable: true,
         action: {
-          label: 'Enable Round-Up',
-          type: 'create_rule',
-          data: { type: 'round_up' },
+          label: "Enable Round-Up",
+          type: "create_rule",
+          data: { type: "round_up" },
         },
       });
     }
 
     // Check goals at risk
     const atRiskGoals = goals.filter(
-      (g) => g.status === 'active' && !g.onTrack
+      (g) => g.status === "active" && !g.onTrack,
     );
     for (const goal of atRiskGoals) {
       insights.push({
-        type: 'warning',
+        type: "warning",
         title: `${goal.name} is Behind Schedule`,
-        description: `You need to increase contributions to reach your goal by ${goal.targetDate?.toLocaleDateString() || 'the target date'}.`,
+        description: `You need to increase contributions to reach your goal by ${goal.targetDate?.toLocaleDateString() || "the target date"}.`,
         actionable: true,
         action: {
-          label: 'View Goal',
-          type: 'view_goal',
+          label: "View Goal",
+          type: "view_goal",
           data: { goalId: goal.id },
         },
       });
@@ -598,8 +598,8 @@ class SavingsAutomationService {
     // Achievement for savings milestones
     if (summary.totalSaved >= 1000 && summary.totalSaved < 1100) {
       insights.push({
-        type: 'achievement',
-        title: '$1,000 Saved!',
+        type: "achievement",
+        title: "$1,000 Saved!",
         description:
           "Congratulations! You've saved over $1,000 with automation.",
         actionable: false,
@@ -619,19 +619,19 @@ class SavingsAutomationService {
 
     // Recommend round-up if not enabled
     const hasRoundUp = rules.some(
-      (r) => r.type === 'round_up' && r.status === 'active'
+      (r) => r.type === "round_up" && r.status === "active",
     );
     if (!hasRoundUp) {
       recommendations.push({
-        id: 'rec-roundup',
-        type: 'new_rule',
-        title: 'Enable Round-Up Savings',
-        description: 'Automatically save spare change from every purchase.',
+        id: "rec-roundup",
+        type: "new_rule",
+        title: "Enable Round-Up Savings",
+        description: "Automatically save spare change from every purchase.",
         potentialSavings: 50,
         confidence: 0.9,
         suggestedRule: {
-          name: 'Round-Up Savings',
-          type: 'round_up',
+          name: "Round-Up Savings",
+          type: "round_up",
           config: { roundUpTo: 1, roundUpMultiplier: 1 },
         },
       });
@@ -639,37 +639,37 @@ class SavingsAutomationService {
 
     // Recommend percentage savings if income detected
     const hasPercentage = rules.some(
-      (r) => r.type === 'percentage' && r.status === 'active'
+      (r) => r.type === "percentage" && r.status === "active",
     );
     if (!hasPercentage) {
       recommendations.push({
-        id: 'rec-percentage',
-        type: 'new_rule',
-        title: 'Save 10% of Income',
-        description: 'Automatically save a percentage of each paycheck.',
+        id: "rec-percentage",
+        type: "new_rule",
+        title: "Save 10% of Income",
+        description: "Automatically save a percentage of each paycheck.",
         potentialSavings: 300,
         confidence: 0.85,
         suggestedRule: {
-          name: '10% Income Savings',
-          type: 'percentage',
+          name: "10% Income Savings",
+          type: "percentage",
           config: { percentageOfIncome: 10 },
         },
       });
     }
 
     // Recommend emergency fund goal if not exists
-    const hasEmergencyFund = goals.some((g) => g.category === 'emergency_fund');
+    const hasEmergencyFund = goals.some((g) => g.category === "emergency_fund");
     if (!hasEmergencyFund) {
       recommendations.push({
-        id: 'rec-emergency',
-        type: 'new_goal',
-        title: 'Start an Emergency Fund',
-        description: 'Build a safety net of 3-6 months of expenses.',
+        id: "rec-emergency",
+        type: "new_goal",
+        title: "Start an Emergency Fund",
+        description: "Build a safety net of 3-6 months of expenses.",
         potentialSavings: 0,
         confidence: 0.95,
         suggestedGoal: {
-          name: 'Emergency Fund',
-          category: 'emergency_fund',
+          name: "Emergency Fund",
+          category: "emergency_fund",
           targetAmount: 10000,
         },
       });
@@ -693,18 +693,18 @@ class SavingsAutomationService {
       amount: number;
       sourceAccountId: string;
       destinationAccountId: string;
-      triggerType: 'transaction' | 'scheduled' | 'manual';
+      triggerType: "transaction" | "scheduled" | "manual";
       triggerTransactionId?: string;
-    }
+    },
   ): Promise<SavingsTransfer> {
     const { data: transfer, error } = await supabase
-      .from('savings_transfers')
+      .from("savings_transfers")
       .insert({
         user_id: userId,
         rule_id: data.ruleId,
         goal_id: data.goalId,
         amount: data.amount,
-        status: 'completed', // In real implementation, this would be 'pending' until confirmed
+        status: "completed", // In real implementation, this would be 'pending' until confirmed
         source_account_id: data.sourceAccountId,
         destination_account_id: data.destinationAccountId,
         trigger_type: data.triggerType,
@@ -724,7 +724,7 @@ class SavingsAutomationService {
       await this.addContribution(userId, {
         goalId: data.goalId,
         amount: data.amount,
-        source: 'auto_rule',
+        source: "auto_rule",
       });
     }
 
@@ -737,21 +737,21 @@ class SavingsAutomationService {
   private async updateRuleStats(
     userId: string,
     ruleId: string,
-    amount: number
+    amount: number,
   ): Promise<void> {
     const rule = await this.getRule(userId, ruleId);
     if (!rule) return;
 
     await supabase
-      .from('savings_rules')
+      .from("savings_rules")
       .update({
         total_saved: rule.totalSaved + amount,
         transfer_count: rule.transferCount + 1,
         last_triggered_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
-      .eq('id', ruleId)
-      .eq('user_id', userId);
+      .eq("id", ruleId)
+      .eq("user_id", userId);
   }
 
   /**
@@ -761,30 +761,30 @@ class SavingsAutomationService {
     let projected = 0;
 
     for (const rule of rules) {
-      if (rule.status !== 'active') continue;
+      if (rule.status !== "active") continue;
 
       switch (rule.type) {
-        case 'round_up':
+        case "round_up":
           // Estimate based on average transactions per month
           projected += 50; // Average round-up savings
           break;
-        case 'percentage':
+        case "percentage":
           // Would need income data
           projected += (rule.config.percentageOfIncome || 10) * 30; // Rough estimate
           break;
-        case 'fixed':
+        case "fixed":
           const amount = rule.config.fixedAmount || 0;
           switch (rule.frequency) {
-            case 'daily':
+            case "daily":
               projected += amount * 30;
               break;
-            case 'weekly':
+            case "weekly":
               projected += amount * 4;
               break;
-            case 'biweekly':
+            case "biweekly":
               projected += amount * 2;
               break;
-            case 'monthly':
+            case "monthly":
               projected += amount;
               break;
           }
@@ -805,7 +805,7 @@ class SavingsAutomationService {
       userId: row.user_id as string,
       name: row.name as string,
       type: row.type as SavingsRuleType,
-      frequency: row.frequency as SavingsRule['frequency'],
+      frequency: row.frequency as SavingsRule["frequency"],
       status: row.status as SavingsRuleStatus,
       config: (row.config as SavingsRuleConfig) || {},
       goalId: row.goal_id as string | undefined,
@@ -826,7 +826,7 @@ class SavingsAutomationService {
     const targetAmount = (row.target_amount as number) || 1;
     const progressPercentage = Math.min(
       100,
-      (currentAmount / targetAmount) * 100
+      (currentAmount / targetAmount) * 100,
     );
 
     // Calculate if on track
@@ -853,7 +853,7 @@ class SavingsAutomationService {
         const remainingAmount = targetAmount - currentAmount;
         const daysToComplete = remainingAmount / dailyRate;
         projectedCompletionDate = new Date(
-          now.getTime() + daysToComplete * 24 * 60 * 60 * 1000
+          now.getTime() + daysToComplete * 24 * 60 * 60 * 1000,
         );
       }
     }
@@ -862,7 +862,7 @@ class SavingsAutomationService {
       id: row.id as string,
       userId: row.user_id as string,
       name: row.name as string,
-      category: row.category as SavingsGoal['category'],
+      category: row.category as SavingsGoal["category"],
       status: row.status as SavingsGoalStatus,
       targetAmount,
       currentAmount,
@@ -887,13 +887,13 @@ class SavingsAutomationService {
   }
 
   private mapContributionFromDb(
-    row: Record<string, unknown>
+    row: Record<string, unknown>,
   ): SavingsContribution {
     return {
       id: row.id as string,
       goalId: row.goal_id as string,
       amount: row.amount as number,
-      source: row.source as SavingsContribution['source'],
+      source: row.source as SavingsContribution["source"],
       ruleId: row.rule_id as string | undefined,
       transactionId: row.transaction_id as string | undefined,
       note: row.note as string | undefined,
@@ -908,10 +908,10 @@ class SavingsAutomationService {
       ruleId: row.rule_id as string,
       goalId: row.goal_id as string | undefined,
       amount: row.amount as number,
-      status: row.status as SavingsTransfer['status'],
+      status: row.status as SavingsTransfer["status"],
       sourceAccountId: row.source_account_id as string,
       destinationAccountId: row.destination_account_id as string,
-      triggerType: row.trigger_type as SavingsTransfer['triggerType'],
+      triggerType: row.trigger_type as SavingsTransfer["triggerType"],
       triggerTransactionId: row.trigger_transaction_id as string | undefined,
       errorMessage: row.error_message as string | undefined,
       executedAt: row.executed_at

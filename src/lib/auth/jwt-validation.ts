@@ -3,7 +3,7 @@
  * Handles JWT token validation from request headers with proper signature verification
  */
 
-import jwt from 'jsonwebtoken';
+import jwt from "jsonwebtoken";
 
 export interface JWTUser {
   id: string;
@@ -36,30 +36,30 @@ export const jwtValidation = {
    */
   async validateFromHeaders(request: Request): Promise<JWTValidationResult> {
     try {
-      const authHeader = request.headers.get('authorization');
-      
-      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      const authHeader = request.headers.get("authorization");
+
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
         return {
           valid: false,
           user: null,
-          error: 'No authorization token provided',
+          error: "No authorization token provided",
         };
       }
-      
+
       const token = authHeader.substring(7);
-      
+
       // In production, this would verify the JWT token signature
       // For now, we decode and validate the token structure
       const user = await this.verifyToken(token);
-      
+
       if (!user) {
         return {
           valid: false,
           user: null,
-          error: 'Invalid or expired token',
+          error: "Invalid or expired token",
         };
       }
-      
+
       return {
         valid: true,
         user,
@@ -68,7 +68,7 @@ export const jwtValidation = {
       return {
         valid: false,
         user: null,
-        error: 'Token validation failed',
+        error: "Token validation failed",
       };
     }
   },
@@ -83,7 +83,8 @@ export const jwtValidation = {
       // This was a critical vulnerability allowing unauthenticated access
 
       // Get JWT secret from environment
-      const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
+      const jwtSecret =
+        process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
 
       if (!jwtSecret) {
         // JWT error: JWT_SECRET or SUPABASE_JWT_SECRET not configured
@@ -104,7 +105,7 @@ export const jwtValidation = {
         id: decoded.userId,
         email: decoded.email,
         name: decoded.name,
-        role: decoded.role || 'user',
+        role: decoded.role || "user",
       };
     } catch (_error) {
       // JWT error: Token verification failed (invalid, expired, or not yet valid)
@@ -114,4 +115,3 @@ export const jwtValidation = {
 };
 
 export default jwtValidation;
-

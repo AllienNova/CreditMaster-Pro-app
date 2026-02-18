@@ -1,52 +1,52 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { ThemeToggle } from '@/components/ui';
-import { useTheme } from '@/contexts/ThemeContext';
-import { Icon } from '@/components/ui/Icon';
+import Link from "next/link";
+import { ThemeToggle } from "@/components/ui";
+import { useTheme } from "@/contexts/ThemeContext";
+import { Icon } from "@/components/ui/Icon";
 
 const settingsSections = [
   {
-    title: 'Profile',
-    description: 'Manage your personal information, display name, and avatar',
-    href: '/settings/profile',
+    title: "Profile",
+    description: "Manage your personal information, display name, and avatar",
+    href: "/settings/profile",
     icon: "user",
-    status: 'Complete your profile',
+    status: "Complete your profile",
   },
   {
-    title: 'Notifications',
-    description: 'Configure email, push, and SMS notification preferences',
-    href: '/settings/notifications',
+    title: "Notifications",
+    description: "Configure email, push, and SMS notification preferences",
+    href: "/settings/notifications",
     icon: "bell",
-    status: '3 alerts enabled',
+    status: "3 alerts enabled",
   },
   {
-    title: 'Privacy',
-    description: 'Control your data sharing and visibility settings',
-    href: '/settings/privacy',
+    title: "Privacy",
+    description: "Control your data sharing and visibility settings",
+    href: "/settings/privacy",
     icon: "shield",
-    status: 'Data protected',
+    status: "Data protected",
   },
   {
-    title: 'Billing',
-    description: 'Manage your subscription, payment methods, and invoices',
-    href: '/settings/billing',
+    title: "Billing",
+    description: "Manage your subscription, payment methods, and invoices",
+    href: "/settings/billing",
     icon: "credit-card",
-    status: 'Premium Plan',
+    status: "Premium Plan",
   },
   {
-    title: 'Connected Accounts',
-    description: 'Link and manage your bank accounts and credit bureaus',
-    href: '/settings/connected-accounts',
+    title: "Connected Accounts",
+    description: "Link and manage your bank accounts and credit bureaus",
+    href: "/settings/connected-accounts",
     icon: "link",
-    status: '2 accounts linked',
+    status: "2 accounts linked",
   },
   {
-    title: 'Security',
-    description: 'Two-factor authentication, sessions, and password settings',
-    href: '/settings/security',
+    title: "Security",
+    description: "Two-factor authentication, sessions, and password settings",
+    href: "/settings/security",
     icon: "lock",
-    status: '2FA enabled',
+    status: "2FA enabled",
   },
 ];
 
@@ -66,15 +66,14 @@ export default function SettingsPage() {
       <div className="mb-8 p-4 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-2xl">
-                          </div>
+            <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-2xl"></div>
             <div>
               <h3 className="font-semibold text-gray-900 dark:text-white">
                 Appearance
               </h3>
               <p className="text-sm text-gray-500 dark:text-slate-400">
-                Current:{' '}
-                {theme === 'system'
+                Current:{" "}
+                {theme === "system"
                   ? `System (${resolvedTheme})`
                   : resolvedTheme}
               </p>

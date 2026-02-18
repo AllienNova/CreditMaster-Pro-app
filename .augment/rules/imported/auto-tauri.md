@@ -33,14 +33,14 @@ async fn command_name(
 ## Frontend Invocation
 
 ```typescript
-import { invoke } from '@tauri-apps/api/core';
+import { invoke } from "@tauri-apps/api/core";
 
 async function callCommand() {
   try {
-    const result = await invoke<ResponseType>('command_name', { param: value });
+    const result = await invoke<ResponseType>("command_name", { param: value });
     return result;
   } catch (error) {
-    console.error('Tauri command failed:', error);
+    console.error("Tauri command failed:", error);
     throw error;
   }
 }

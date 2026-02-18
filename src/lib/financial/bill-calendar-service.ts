@@ -10,7 +10,7 @@
  * - Autopay status management
  */
 
-import { getSupabase } from '@/lib/supabase/client';
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
 
@@ -19,30 +19,30 @@ const supabase = getSupabase();
 // ============================================================================
 
 export type BillFrequency =
-  | 'weekly'
-  | 'biweekly'
-  | 'monthly'
-  | 'quarterly'
-  | 'semi-annually'
-  | 'annually'
-  | 'one-time';
+  | "weekly"
+  | "biweekly"
+  | "monthly"
+  | "quarterly"
+  | "semi-annually"
+  | "annually"
+  | "one-time";
 
 export type BillCategory =
-  | 'housing'
-  | 'utilities'
-  | 'insurance'
-  | 'subscriptions'
-  | 'loans'
-  | 'credit_cards'
-  | 'phone'
-  | 'internet'
-  | 'streaming'
-  | 'memberships'
-  | 'other';
+  | "housing"
+  | "utilities"
+  | "insurance"
+  | "subscriptions"
+  | "loans"
+  | "credit_cards"
+  | "phone"
+  | "internet"
+  | "streaming"
+  | "memberships"
+  | "other";
 
-export type BillStatus = 'pending' | 'paid' | 'overdue' | 'scheduled';
+export type BillStatus = "pending" | "paid" | "overdue" | "scheduled";
 
-export type ReminderType = 'email' | 'push' | 'sms' | 'in_app';
+export type ReminderType = "email" | "push" | "sms" | "in_app";
 
 export interface Bill {
   id: string;
@@ -73,7 +73,7 @@ export interface BillPayment {
   amount: number;
   paidDate: Date;
   dueDate: Date;
-  status: 'paid' | 'partial' | 'late';
+  status: "paid" | "partial" | "late";
   paymentMethod?: string;
   confirmationNumber?: string;
   notes?: string;
@@ -166,7 +166,7 @@ export class BillCalendarService {
    */
   async createBill(input: CreateBillInput): Promise<Bill> {
     const { data, error } = await supabase
-      .from('bills')
+      .from("bills")
       .insert({
         user_id: input.userId,
         name: input.name,
@@ -179,7 +179,7 @@ export class BillCalendarService {
         autopay_enabled: input.autopayEnabled ?? false,
         autopay_account_id: input.autopayAccountId || null,
         reminder_days_before: input.reminderDaysBefore ?? 3,
-        reminder_types: input.reminderTypes ?? ['in_app'],
+        reminder_types: input.reminderTypes ?? ["in_app"],
         notes: input.notes || null,
         website_url: input.websiteUrl || null,
         account_number: input.accountNumber || null,
@@ -200,7 +200,7 @@ export class BillCalendarService {
       input.userId,
       input.nextDueDate,
       input.reminderDaysBefore ?? 3,
-      input.reminderTypes ?? ['in_app']
+      input.reminderTypes ?? ["in_app"],
     );
 
     return this.mapRowToBill(data);
@@ -211,10 +211,10 @@ export class BillCalendarService {
    */
   async getBillById(billId: string, userId: string): Promise<Bill | null> {
     const { data, error } = await supabase
-      .from('bills')
-      .select('*')
-      .eq('id', billId)
-      .eq('user_id', userId)
+      .from("bills")
+      .select("*")
+      .eq("id", billId)
+      .eq("user_id", userId)
       .single();
 
     if (error || !data) {
@@ -229,19 +229,19 @@ export class BillCalendarService {
    */
   async getBillsByUser(
     userId: string,
-    options?: { activeOnly?: boolean; category?: BillCategory }
+    options?: { activeOnly?: boolean; category?: BillCategory },
   ): Promise<Bill[]> {
-    let query = supabase.from('bills').select('*').eq('user_id', userId);
+    let query = supabase.from("bills").select("*").eq("user_id", userId);
 
     if (options?.activeOnly !== false) {
-      query = query.eq('is_active', true);
+      query = query.eq("is_active", true);
     }
 
     if (options?.category) {
-      query = query.eq('category', options.category);
+      query = query.eq("category", options.category);
     }
 
-    const { data, error } = await query.order('next_due_date', {
+    const { data, error } = await query.order("next_due_date", {
       ascending: true,
     });
 
@@ -258,7 +258,7 @@ export class BillCalendarService {
   async updateBill(
     billId: string,
     userId: string,
-    updates: UpdateBillInput
+    updates: UpdateBillInput,
   ): Promise<Bill> {
     const updateData: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
@@ -289,10 +289,10 @@ export class BillCalendarService {
     if (updates.isActive !== undefined) updateData.is_active = updates.isActive;
 
     const { data, error } = await supabase
-      .from('bills')
+      .from("bills")
       .update(updateData)
-      .eq('id', billId)
-      .eq('user_id', userId)
+      .eq("id", billId)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -308,10 +308,10 @@ export class BillCalendarService {
    */
   async deleteBill(billId: string, userId: string): Promise<boolean> {
     const { error } = await supabase
-      .from('bills')
+      .from("bills")
       .delete()
-      .eq('id', billId)
-      .eq('user_id', userId);
+      .eq("id", billId)
+      .eq("user_id", userId);
 
     if (error) {
       throw new Error(`Failed to delete bill: ${error.message}`);
@@ -330,7 +330,7 @@ export class BillCalendarService {
   async getMonthCalendar(
     userId: string,
     year: number,
-    month: number
+    month: number,
   ): Promise<CalendarDay[]> {
     const startDate = new Date(year, month, 1);
     const endDate = new Date(year, month + 1, 0);
@@ -339,7 +339,7 @@ export class BillCalendarService {
     const payments = await this.getPaymentsForPeriod(
       userId,
       startDate,
-      endDate
+      endDate,
     );
 
     const calendar: CalendarDay[] = [];
@@ -354,17 +354,17 @@ export class BillCalendarService {
         if (this.isBillDueOnDate(bill, date)) {
           const isPaid = payments.some(
             (p) =>
-              p.billId === bill.id && this.isSameDay(new Date(p.dueDate), date)
+              p.billId === bill.id && this.isSameDay(new Date(p.dueDate), date),
           );
 
           const daysUntilDue = Math.ceil(
-            (date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+            (date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
           );
           const isPastDue = daysUntilDue < 0 && !isPaid;
 
           dayBills.push({
             ...bill,
-            status: isPaid ? 'paid' : isPastDue ? 'overdue' : 'pending',
+            status: isPaid ? "paid" : isPastDue ? "overdue" : "pending",
             daysUntilDue,
             isPastDue,
           });
@@ -375,7 +375,7 @@ export class BillCalendarService {
         date,
         bills: dayBills,
         totalDue: dayBills
-          .filter((b) => b.status !== 'paid')
+          .filter((b) => b.status !== "paid")
           .reduce((sum, b) => sum + b.amount, 0),
         hasPastDue: dayBills.some((b) => b.isPastDue),
       });
@@ -389,7 +389,7 @@ export class BillCalendarService {
    */
   async getUpcomingBills(
     userId: string,
-    days: number = 30
+    days: number = 30,
   ): Promise<BillWithStatus[]> {
     const bills = await this.getBillsByUser(userId, { activeOnly: true });
     const today = new Date();
@@ -403,11 +403,11 @@ export class BillCalendarService {
       const nextDue = new Date(bill.nextDueDate);
       if (nextDue >= today && nextDue <= endDate) {
         const daysUntilDue = Math.ceil(
-          (nextDue.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+          (nextDue.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
         );
         upcomingBills.push({
           ...bill,
-          status: 'pending',
+          status: "pending",
           daysUntilDue,
           isPastDue: false,
         });
@@ -431,11 +431,11 @@ export class BillCalendarService {
       const nextDue = new Date(bill.nextDueDate);
       if (nextDue < today) {
         const daysUntilDue = Math.ceil(
-          (nextDue.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+          (nextDue.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
         );
         overdueBills.push({
           ...bill,
-          status: 'overdue',
+          status: "overdue",
           daysUntilDue,
           isPastDue: true,
         });
@@ -461,24 +461,24 @@ export class BillCalendarService {
       paymentMethod?: string;
       confirmationNumber?: string;
       notes?: string;
-    }
+    },
   ): Promise<BillPayment> {
     const bill = await this.getBillById(billId, userId);
     if (!bill) {
-      throw new Error('Bill not found');
+      throw new Error("Bill not found");
     }
 
     const isLate = paidDate > bill.nextDueDate;
 
     const { data, error } = await supabase
-      .from('bill_payments')
+      .from("bill_payments")
       .insert({
         bill_id: billId,
         user_id: userId,
         amount,
         paid_date: paidDate.toISOString(),
         due_date: bill.nextDueDate.toISOString(),
-        status: isLate ? 'late' : amount < bill.amount ? 'partial' : 'paid',
+        status: isLate ? "late" : amount < bill.amount ? "partial" : "paid",
         payment_method: options?.paymentMethod || null,
         confirmation_number: options?.confirmationNumber || null,
         notes: options?.notes || null,
@@ -504,14 +504,14 @@ export class BillCalendarService {
   async getPaymentHistory(
     billId: string,
     userId: string,
-    limit: number = 12
+    limit: number = 12,
   ): Promise<BillPayment[]> {
     const { data, error } = await supabase
-      .from('bill_payments')
-      .select('*')
-      .eq('bill_id', billId)
-      .eq('user_id', userId)
-      .order('paid_date', { ascending: false })
+      .from("bill_payments")
+      .select("*")
+      .eq("bill_id", billId)
+      .eq("user_id", userId)
+      .order("paid_date", { ascending: false })
       .limit(limit);
 
     if (error) {
@@ -527,14 +527,14 @@ export class BillCalendarService {
   async getPaymentsForPeriod(
     userId: string,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
   ): Promise<BillPayment[]> {
     const { data, error } = await supabase
-      .from('bill_payments')
-      .select('*')
-      .eq('user_id', userId)
-      .gte('due_date', startDate.toISOString())
-      .lte('due_date', endDate.toISOString());
+      .from("bill_payments")
+      .select("*")
+      .eq("user_id", userId)
+      .gte("due_date", startDate.toISOString())
+      .lte("due_date", endDate.toISOString());
 
     if (error) {
       throw new Error(`Failed to fetch payments: ${error.message}`);
@@ -565,7 +565,7 @@ export class BillCalendarService {
     const payments = await this.getPaymentsForPeriod(
       userId,
       monthStart,
-      monthEnd
+      monthEnd,
     );
 
     const upcomingBills: BillWithStatus[] = [];
@@ -578,13 +578,13 @@ export class BillCalendarService {
     for (const bill of bills) {
       const nextDue = new Date(bill.nextDueDate);
       const daysUntilDue = Math.ceil(
-        (nextDue.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+        (nextDue.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
       );
 
       // Calculate monthly equivalent
       totalMonthlyBills += this.getMonthlyEquivalent(
         bill.amount,
-        bill.frequency
+        bill.frequency,
       );
 
       if (bill.autopayEnabled) autopayCount++;
@@ -596,7 +596,7 @@ export class BillCalendarService {
           totalOverdue += bill.amount;
           overdueBills.push({
             ...bill,
-            status: 'overdue',
+            status: "overdue",
             daysUntilDue,
             isPastDue: true,
           });
@@ -606,7 +606,7 @@ export class BillCalendarService {
         totalUpcomingWeek += bill.amount;
         upcomingBills.push({
           ...bill,
-          status: 'pending',
+          status: "pending",
           daysUntilDue,
           isPastDue: false,
         });
@@ -622,10 +622,10 @@ export class BillCalendarService {
       billsCount: bills.length,
       paidThisMonth: Math.round(paidThisMonth * 100) / 100,
       upcomingBills: upcomingBills.sort(
-        (a, b) => a.daysUntilDue - b.daysUntilDue
+        (a, b) => a.daysUntilDue - b.daysUntilDue,
       ),
       overdueBills: overdueBills.sort(
-        (a, b) => a.daysUntilDue - b.daysUntilDue
+        (a, b) => a.daysUntilDue - b.daysUntilDue,
       ),
       autopayCount,
       manualPayCount: bills.length - autopayCount,
@@ -644,13 +644,13 @@ export class BillCalendarService {
     userId: string,
     dueDate: Date,
     daysBefore: number,
-    reminderTypes: ReminderType[]
+    reminderTypes: ReminderType[],
   ): Promise<void> {
     const reminderDate = new Date(dueDate);
     reminderDate.setDate(reminderDate.getDate() - daysBefore);
 
     for (const type of reminderTypes) {
-      await supabase.from('bill_reminders').insert({
+      await supabase.from("bill_reminders").insert({
         bill_id: billId,
         user_id: userId,
         reminder_date: reminderDate.toISOString(),
@@ -667,13 +667,13 @@ export class BillCalendarService {
   async getPendingReminders(userId?: string): Promise<BillReminder[]> {
     const now = new Date();
     let query = supabase
-      .from('bill_reminders')
-      .select('*')
-      .eq('sent', false)
-      .lte('reminder_date', now.toISOString());
+      .from("bill_reminders")
+      .select("*")
+      .eq("sent", false)
+      .lte("reminder_date", now.toISOString());
 
     if (userId) {
-      query = query.eq('user_id', userId);
+      query = query.eq("user_id", userId);
     }
 
     const { data, error } = await query;
@@ -690,12 +690,12 @@ export class BillCalendarService {
    */
   async markReminderSent(reminderId: string): Promise<void> {
     const { error } = await supabase
-      .from('bill_reminders')
+      .from("bill_reminders")
       .update({
         sent: true,
         sent_at: new Date().toISOString(),
       })
-      .eq('id', reminderId);
+      .eq("id", reminderId);
 
     if (error) {
       throw new Error(`Failed to mark reminder as sent: ${error.message}`);
@@ -711,25 +711,25 @@ export class BillCalendarService {
     const next = new Date(current);
 
     switch (bill.frequency) {
-      case 'weekly':
+      case "weekly":
         next.setDate(next.getDate() + 7);
         break;
-      case 'biweekly':
+      case "biweekly":
         next.setDate(next.getDate() + 14);
         break;
-      case 'monthly':
+      case "monthly":
         next.setMonth(next.getMonth() + 1);
         break;
-      case 'quarterly':
+      case "quarterly":
         next.setMonth(next.getMonth() + 3);
         break;
-      case 'semi-annually':
+      case "semi-annually":
         next.setMonth(next.getMonth() + 6);
         break;
-      case 'annually':
+      case "annually":
         next.setFullYear(next.getFullYear() + 1);
         break;
-      case 'one-time':
+      case "one-time":
         // One-time bills don't recur
         break;
     }
@@ -739,22 +739,22 @@ export class BillCalendarService {
 
   private getMonthlyEquivalent(
     amount: number,
-    frequency: BillFrequency
+    frequency: BillFrequency,
   ): number {
     switch (frequency) {
-      case 'weekly':
+      case "weekly":
         return amount * 4.33;
-      case 'biweekly':
+      case "biweekly":
         return amount * 2.17;
-      case 'monthly':
+      case "monthly":
         return amount;
-      case 'quarterly':
+      case "quarterly":
         return amount / 3;
-      case 'semi-annually':
+      case "semi-annually":
         return amount / 6;
-      case 'annually':
+      case "annually":
         return amount / 12;
-      case 'one-time':
+      case "one-time":
         return 0;
       default:
         return amount;
@@ -806,7 +806,7 @@ export class BillCalendarService {
       amount: row.amount as number,
       paidDate: new Date(row.paid_date as string),
       dueDate: new Date(row.due_date as string),
-      status: row.status as 'paid' | 'partial' | 'late',
+      status: row.status as "paid" | "partial" | "late",
       paymentMethod: row.payment_method as string | undefined,
       confirmationNumber: row.confirmation_number as string | undefined,
       notes: row.notes as string | undefined,

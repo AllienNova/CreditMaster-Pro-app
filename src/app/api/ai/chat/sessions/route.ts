@@ -6,14 +6,14 @@
  * PROTECTED: Requires authentication
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { chatDbService } from '@/lib/ai/chat-db-service';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { chatDbService } from "@/lib/ai/chat-db-service";
 import type {
   CreateSessionRequest,
   ListSessionsRequest,
   SessionType,
-} from '@/lib/ai/types/chat.types';
+} from "@/lib/ai/types/chat.types";
 
 // List sessions
 export async function GET(request: NextRequest) {
@@ -29,9 +29,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
+          error: { code: "UNAUTHORIZED", message: "Authentication required" },
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -40,13 +40,13 @@ export async function GET(request: NextRequest) {
     // Parse query parameters
     const { searchParams } = new URL(request.url);
     const listRequest: ListSessionsRequest = {
-      status: (searchParams.get('status') as any) || undefined,
+      status: (searchParams.get("status") as any) || undefined,
       sessionType:
-        (searchParams.get('sessionType') as SessionType) || undefined,
-      limit: parseInt(searchParams.get('limit') || '20'),
-      offset: parseInt(searchParams.get('offset') || '0'),
-      sortBy: (searchParams.get('sortBy') as any) || 'updatedAt',
-      sortOrder: (searchParams.get('sortOrder') as any) || 'desc',
+        (searchParams.get("sessionType") as SessionType) || undefined,
+      limit: parseInt(searchParams.get("limit") || "20"),
+      offset: parseInt(searchParams.get("offset") || "0"),
+      sortBy: (searchParams.get("sortBy") as any) || "updatedAt",
+      sortOrder: (searchParams.get("sortOrder") as any) || "desc",
     };
 
     // Get sessions
@@ -63,12 +63,12 @@ export async function GET(request: NextRequest) {
       {
         success: false,
         error: {
-          code: 'LIST_SESSIONS_ERROR',
+          code: "LIST_SESSIONS_ERROR",
           message:
-            _error instanceof Error ? _error.message : 'Unknown error occurred',
+            _error instanceof Error ? _error.message : "Unknown error occurred",
         },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -87,9 +87,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
+          error: { code: "UNAUTHORIZED", message: "Authentication required" },
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -101,28 +101,28 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (!body.sessionType) {
       return NextResponse.json(
-        { error: 'sessionType is required' },
-        { status: 400 }
+        { error: "sessionType is required" },
+        { status: 400 },
       );
     }
 
     // Validate session type
     const validTypes: SessionType[] = [
-      'general',
-      'budget',
-      'goals',
-      'debt',
-      'investing',
-      'credit_repair',
-      'tax_planning',
+      "general",
+      "budget",
+      "goals",
+      "debt",
+      "investing",
+      "credit_repair",
+      "tax_planning",
     ];
 
     if (!validTypes.includes(body.sessionType)) {
       return NextResponse.json(
         {
-          error: `Invalid sessionType. Must be one of: ${validTypes.join(', ')}`,
+          error: `Invalid sessionType. Must be one of: ${validTypes.join(", ")}`,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
     // If initial message provided, send it
     let initialResponse = null;
     if (body.initialMessage) {
-      const chatEngine = (await import('@/lib/ai/chat-engine')).getChatEngine();
+      const chatEngine = (await import("@/lib/ai/chat-engine")).getChatEngine();
       try {
         initialResponse = await chatEngine.sendMessage(
           userId,
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
             sessionId: session.id,
             message: body.initialMessage,
           },
-          { includeContext: false }
+          { includeContext: false },
         );
       } catch (_err) {
         // ChatSessionsRoute: Failed to send initial message
@@ -163,12 +163,12 @@ export async function POST(request: NextRequest) {
       {
         success: false,
         error: {
-          code: 'CREATE_SESSION_ERROR',
+          code: "CREATE_SESSION_ERROR",
           message:
-            _error instanceof Error ? _error.message : 'Unknown error occurred',
+            _error instanceof Error ? _error.message : "Unknown error occurred",
         },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -9,30 +9,30 @@
  * - Letter tracking and history
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 export type LetterType =
-  | 'late_payment'
-  | 'collection'
-  | 'charge_off'
-  | 'medical_debt'
-  | 'hardship'
-  | 'long_term_customer'
-  | 'first_time_late'
-  | 'paid_in_full';
+  | "late_payment"
+  | "collection"
+  | "charge_off"
+  | "medical_debt"
+  | "hardship"
+  | "long_term_customer"
+  | "first_time_late"
+  | "paid_in_full";
 
 export type LetterStatus =
-  | 'draft'
-  | 'ready'
-  | 'sent'
-  | 'delivered'
-  | 'response_received'
-  | 'successful'
-  | 'unsuccessful';
+  | "draft"
+  | "ready"
+  | "sent"
+  | "delivered"
+  | "response_received"
+  | "successful"
+  | "unsuccessful";
 
 export interface GoodwillLetter {
   id: string;
@@ -47,7 +47,7 @@ export interface GoodwillLetter {
   sentDate?: Date;
   responseDate?: Date;
   responseNotes?: string;
-  outcome?: 'removed' | 'declined' | 'partial' | 'pending';
+  outcome?: "removed" | "declined" | "partial" | "pending";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -100,13 +100,13 @@ export interface LetterVariables {
 
 const LETTER_TEMPLATES: LetterTemplate[] = [
   {
-    id: 'tpl-late-payment-1',
-    type: 'late_payment',
-    name: 'Late Payment - First Time',
+    id: "tpl-late-payment-1",
+    type: "late_payment",
+    name: "Late Payment - First Time",
     description:
-      'For customers with a single late payment on an otherwise clean history',
+      "For customers with a single late payment on an otherwise clean history",
     subject:
-      'Goodwill Request for Late Payment Removal - Account {{accountNumber}}',
+      "Goodwill Request for Late Payment Removal - Account {{accountNumber}}",
     body: `{{currentDate}}
 
 {{userName}}
@@ -144,34 +144,34 @@ Sincerely,
 Phone: {{userPhone}}
 Email: {{userEmail}}`,
     requiredVariables: [
-      'userName',
-      'userAddress',
-      'userCity',
-      'userState',
-      'userZip',
-      'creditorName',
-      'accountNumber',
-      'latePaymentDate',
-      'reasonForLateness',
+      "userName",
+      "userAddress",
+      "userCity",
+      "userState",
+      "userZip",
+      "creditorName",
+      "accountNumber",
+      "latePaymentDate",
+      "reasonForLateness",
     ],
     optionalVariables: [
-      'creditorAddress',
-      'yearsAsCustomer',
-      'daysLate',
-      'impactStatement',
-      'userPhone',
-      'userEmail',
+      "creditorAddress",
+      "yearsAsCustomer",
+      "daysLate",
+      "impactStatement",
+      "userPhone",
+      "userEmail",
     ],
     successRate: 0.45,
     useCount: 1250,
   },
   {
-    id: 'tpl-hardship-1',
-    type: 'hardship',
-    name: 'Financial Hardship',
-    description: 'For customers who experienced documented financial hardship',
+    id: "tpl-hardship-1",
+    type: "hardship",
+    name: "Financial Hardship",
+    description: "For customers who experienced documented financial hardship",
     subject:
-      'Goodwill Adjustment Request Due to Financial Hardship - Account {{accountNumber}}',
+      "Goodwill Adjustment Request Due to Financial Hardship - Account {{accountNumber}}",
     body: `{{currentDate}}
 
 {{userName}}
@@ -212,27 +212,27 @@ Sincerely,
 Phone: {{userPhone}}
 Email: {{userEmail}}`,
     requiredVariables: [
-      'userName',
-      'userAddress',
-      'userCity',
-      'userState',
-      'userZip',
-      'creditorName',
-      'accountNumber',
-      'hardshipPeriod',
-      'hardshipReason',
-      'hardshipExplanation',
+      "userName",
+      "userAddress",
+      "userCity",
+      "userState",
+      "userZip",
+      "creditorName",
+      "accountNumber",
+      "hardshipPeriod",
+      "hardshipReason",
+      "hardshipExplanation",
     ],
-    optionalVariables: ['creditorAddress', 'userPhone', 'userEmail'],
+    optionalVariables: ["creditorAddress", "userPhone", "userEmail"],
     successRate: 0.38,
     useCount: 890,
   },
   {
-    id: 'tpl-long-term-1',
-    type: 'long_term_customer',
-    name: 'Long-Term Customer Appeal',
-    description: 'Emphasizes loyalty and long customer relationship',
-    subject: 'Loyal Customer Goodwill Request - Account {{accountNumber}}',
+    id: "tpl-long-term-1",
+    type: "long_term_customer",
+    name: "Long-Term Customer Appeal",
+    description: "Emphasizes loyalty and long customer relationship",
+    subject: "Loyal Customer Goodwill Request - Account {{accountNumber}}",
     body: `{{currentDate}}
 
 {{userName}}
@@ -269,34 +269,34 @@ Respectfully,
 Phone: {{userPhone}}
 Email: {{userEmail}}`,
     requiredVariables: [
-      'userName',
-      'userAddress',
-      'userCity',
-      'userState',
-      'userZip',
-      'creditorName',
-      'accountNumber',
-      'yearsAsCustomer',
-      'latePaymentDate',
+      "userName",
+      "userAddress",
+      "userCity",
+      "userState",
+      "userZip",
+      "creditorName",
+      "accountNumber",
+      "yearsAsCustomer",
+      "latePaymentDate",
     ],
     optionalVariables: [
-      'creditorAddress',
-      'totalAccountsWithCreditor',
-      'onTimePaymentPercentage',
-      'totalPaidToCreditor',
-      'userPhone',
-      'userEmail',
+      "creditorAddress",
+      "totalAccountsWithCreditor",
+      "onTimePaymentPercentage",
+      "totalPaidToCreditor",
+      "userPhone",
+      "userEmail",
     ],
     successRate: 0.52,
     useCount: 2100,
   },
   {
-    id: 'tpl-paid-in-full-1',
-    type: 'paid_in_full',
-    name: 'Paid in Full - Removal Request',
-    description: 'For accounts that have been paid in full',
+    id: "tpl-paid-in-full-1",
+    type: "paid_in_full",
+    name: "Paid in Full - Removal Request",
+    description: "For accounts that have been paid in full",
     subject:
-      'Account Paid in Full - Goodwill Removal Request - {{accountNumber}}',
+      "Account Paid in Full - Goodwill Removal Request - {{accountNumber}}",
     body: `{{currentDate}}
 
 {{userName}}
@@ -332,26 +332,26 @@ Sincerely,
 Phone: {{userPhone}}
 Email: {{userEmail}}`,
     requiredVariables: [
-      'userName',
-      'userAddress',
-      'userCity',
-      'userState',
-      'userZip',
-      'creditorName',
-      'accountNumber',
-      'paidInFullDate',
-      'totalAmountPaid',
+      "userName",
+      "userAddress",
+      "userCity",
+      "userState",
+      "userZip",
+      "creditorName",
+      "accountNumber",
+      "paidInFullDate",
+      "totalAmountPaid",
     ],
-    optionalVariables: ['creditorAddress', 'userPhone', 'userEmail'],
+    optionalVariables: ["creditorAddress", "userPhone", "userEmail"],
     successRate: 0.35,
     useCount: 750,
   },
   {
-    id: 'tpl-medical-1',
-    type: 'medical_debt',
-    name: 'Medical Debt Goodwill',
-    description: 'For medical debt situations',
-    subject: 'Medical Debt Goodwill Request - Account {{accountNumber}}',
+    id: "tpl-medical-1",
+    type: "medical_debt",
+    name: "Medical Debt Goodwill",
+    description: "For medical debt situations",
+    subject: "Medical Debt Goodwill Request - Account {{accountNumber}}",
     body: `{{currentDate}}
 
 {{userName}}
@@ -388,24 +388,24 @@ Sincerely,
 Phone: {{userPhone}}
 Email: {{userEmail}}`,
     requiredVariables: [
-      'userName',
-      'userAddress',
-      'userCity',
-      'userState',
-      'userZip',
-      'creditorName',
-      'accountNumber',
-      'medicalEventDate',
-      'medicalProcedure',
+      "userName",
+      "userAddress",
+      "userCity",
+      "userState",
+      "userZip",
+      "creditorName",
+      "accountNumber",
+      "medicalEventDate",
+      "medicalProcedure",
     ],
     optionalVariables: [
-      'creditorAddress',
-      'medicalReason',
-      'originalAmount',
-      'currentStatus',
-      'resolutionDescription',
-      'userPhone',
-      'userEmail',
+      "creditorAddress",
+      "medicalReason",
+      "originalAmount",
+      "currentStatus",
+      "resolutionDescription",
+      "userPhone",
+      "userEmail",
     ],
     successRate: 0.42,
     useCount: 560,
@@ -449,20 +449,20 @@ export class GoodwillLetterService {
     const recommended: LetterTemplate[] = [];
 
     if (situation.isMedicalDebt) {
-      recommended.push(...this.getTemplatesByType('medical_debt'));
+      recommended.push(...this.getTemplatesByType("medical_debt"));
     }
     if (situation.isPaidInFull) {
-      recommended.push(...this.getTemplatesByType('paid_in_full'));
+      recommended.push(...this.getTemplatesByType("paid_in_full"));
     }
     if (situation.hadHardship) {
-      recommended.push(...this.getTemplatesByType('hardship'));
+      recommended.push(...this.getTemplatesByType("hardship"));
     }
     if (situation.hasLongHistory) {
-      recommended.push(...this.getTemplatesByType('long_term_customer'));
+      recommended.push(...this.getTemplatesByType("long_term_customer"));
     }
     if (situation.isFirstTimeLate) {
-      recommended.push(...this.getTemplatesByType('first_time_late'));
-      recommended.push(...this.getTemplatesByType('late_payment'));
+      recommended.push(...this.getTemplatesByType("first_time_late"));
+      recommended.push(...this.getTemplatesByType("late_payment"));
     }
 
     // Sort by success rate
@@ -481,19 +481,19 @@ export class GoodwillLetterService {
 
     // Validate required variables
     const missingVars = template.requiredVariables.filter(
-      (v) => !input.variables[v] && v !== 'currentDate'
+      (v) => !input.variables[v] && v !== "currentDate",
     );
     if (missingVars.length > 0) {
-      throw new Error(`Missing required variables: ${missingVars.join(', ')}`);
+      throw new Error(`Missing required variables: ${missingVars.join(", ")}`);
     }
 
     // Add current date
     const variables = {
       ...input.variables,
-      currentDate: new Date().toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
+      currentDate: new Date().toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
       }),
     };
 
@@ -501,12 +501,12 @@ export class GoodwillLetterService {
     const subject = this.substituteVariables(template.subject, variables);
     const body = this.substituteVariables(template.body, variables);
 
-    const letter: Omit<GoodwillLetter, 'id'> = {
+    const letter: Omit<GoodwillLetter, "id"> = {
       userId: input.userId,
       creditorName: input.creditorName,
       accountNumber: input.accountNumber,
       letterType: input.letterType,
-      status: 'draft',
+      status: "draft",
       subject,
       body,
       variables,
@@ -515,7 +515,7 @@ export class GoodwillLetterService {
     };
 
     const { data, error } = await this.supabase
-      .from('goodwill_letters')
+      .from("goodwill_letters")
       .insert({
         user_id: letter.userId,
         creditor_name: letter.creditorName,
@@ -540,8 +540,8 @@ export class GoodwillLetterService {
     letterId: string,
     userId: string,
     updates: Partial<
-      Pick<GoodwillLetter, 'body' | 'subject' | 'status' | 'variables'>
-    >
+      Pick<GoodwillLetter, "body" | "subject" | "status" | "variables">
+    >,
   ): Promise<GoodwillLetter> {
     const updateData: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
@@ -554,10 +554,10 @@ export class GoodwillLetterService {
       updateData.variables = updates.variables;
 
     const { data, error } = await this.supabase
-      .from('goodwill_letters')
+      .from("goodwill_letters")
       .update(updateData)
-      .eq('id', letterId)
-      .eq('user_id', userId)
+      .eq("id", letterId)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -572,13 +572,13 @@ export class GoodwillLetterService {
 
   async getLetterById(
     letterId: string,
-    userId: string
+    userId: string,
   ): Promise<GoodwillLetter | null> {
     const { data, error } = await this.supabase
-      .from('goodwill_letters')
-      .select('*')
-      .eq('id', letterId)
-      .eq('user_id', userId)
+      .from("goodwill_letters")
+      .select("*")
+      .eq("id", letterId)
+      .eq("user_id", userId)
       .single();
 
     if (error) return null;
@@ -588,16 +588,16 @@ export class GoodwillLetterService {
 
   async getLettersByUser(
     userId: string,
-    options?: { status?: LetterStatus; limit?: number }
+    options?: { status?: LetterStatus; limit?: number },
   ): Promise<GoodwillLetter[]> {
     let query = this.supabase
-      .from('goodwill_letters')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .from("goodwill_letters")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
     if (options?.status) {
-      query = query.eq('status', options.status);
+      query = query.eq("status", options.status);
     }
     if (options?.limit) {
       query = query.limit(options.limit);
@@ -616,14 +616,14 @@ export class GoodwillLetterService {
 
   async markAsSent(letterId: string, userId: string): Promise<GoodwillLetter> {
     const { data, error } = await this.supabase
-      .from('goodwill_letters')
+      .from("goodwill_letters")
       .update({
-        status: 'sent',
+        status: "sent",
         sent_date: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
-      .eq('id', letterId)
-      .eq('user_id', userId)
+      .eq("id", letterId)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -637,26 +637,26 @@ export class GoodwillLetterService {
     letterId: string,
     userId: string,
     response: {
-      outcome: 'removed' | 'declined' | 'partial' | 'pending';
+      outcome: "removed" | "declined" | "partial" | "pending";
       notes?: string;
-    }
+    },
   ): Promise<GoodwillLetter> {
     const { data, error } = await this.supabase
-      .from('goodwill_letters')
+      .from("goodwill_letters")
       .update({
         status:
-          response.outcome === 'removed'
-            ? 'successful'
-            : response.outcome === 'declined'
-              ? 'unsuccessful'
-              : 'response_received',
+          response.outcome === "removed"
+            ? "successful"
+            : response.outcome === "declined"
+              ? "unsuccessful"
+              : "response_received",
         response_date: new Date().toISOString(),
         response_notes: response.notes,
         outcome: response.outcome,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', letterId)
-      .eq('user_id', userId)
+      .eq("id", letterId)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -679,9 +679,9 @@ export class GoodwillLetterService {
     const letters = await this.getLettersByUser(userId);
 
     const sent = letters.filter((l) => l.sentDate).length;
-    const successful = letters.filter((l) => l.outcome === 'removed').length;
+    const successful = letters.filter((l) => l.outcome === "removed").length;
     const pending = letters.filter(
-      (l) => l.status === 'sent' || l.status === 'response_received'
+      (l) => l.status === "sent" || l.status === "response_received",
     ).length;
 
     return {
@@ -703,9 +703,9 @@ export class GoodwillLetterService {
 
   generateHTML(letter: GoodwillLetter): string {
     const bodyHtml = letter.body
-      .split('\n\n')
-      .map((p) => `<p>${p.replace(/\n/g, '<br>')}</p>`)
-      .join('\n');
+      .split("\n\n")
+      .map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`)
+      .join("\n");
 
     return `
 <!DOCTYPE html>
@@ -730,11 +730,11 @@ export class GoodwillLetterService {
 
   private substituteVariables(
     text: string,
-    variables: Record<string, string>
+    variables: Record<string, string>,
   ): string {
     let result = text;
     for (const [key, value] of Object.entries(variables)) {
-      const regex = new RegExp(`{{${key}}}`, 'g');
+      const regex = new RegExp(`{{${key}}}`, "g");
       result = result.replace(regex, value || `[${key}]`);
     }
     return result;
@@ -756,7 +756,7 @@ export class GoodwillLetterService {
         ? new Date(row.response_date as string)
         : undefined,
       responseNotes: row.response_notes as string | undefined,
-      outcome: row.outcome as GoodwillLetter['outcome'],
+      outcome: row.outcome as GoodwillLetter["outcome"],
       createdAt: new Date(row.created_at as string),
       updatedAt: new Date(row.updated_at as string),
     };
@@ -775,7 +775,7 @@ export function getGoodwillLetterService(): GoodwillLetterService {
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     goodwillLetterServiceInstance = new GoodwillLetterService(
       supabaseUrl,
-      supabaseKey
+      supabaseKey,
     );
   }
   return goodwillLetterServiceInstance;

@@ -8,51 +8,51 @@
 // ============================================================================
 
 export type BadgeCategory =
-  | 'savings'
-  | 'debt'
-  | 'budget'
-  | 'credit'
-  | 'investing'
-  | 'trading'
-  | 'tax'
-  | 'streak'
-  | 'community'
-  | 'special';
+  | "savings"
+  | "debt"
+  | "budget"
+  | "credit"
+  | "investing"
+  | "trading"
+  | "tax"
+  | "streak"
+  | "community"
+  | "special";
 
-export type BadgeRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+export type BadgeRarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
 
 export type QuestType =
-  | 'transaction'
-  | 'savings'
-  | 'budget'
-  | 'credit'
-  | 'education'
-  | 'engagement';
+  | "transaction"
+  | "savings"
+  | "budget"
+  | "credit"
+  | "education"
+  | "engagement";
 
 export type ChallengeType =
-  | 'savings'
-  | 'no_spend'
-  | 'debt_payoff'
-  | 'credit_improvement'
-  | 'investment';
+  | "savings"
+  | "no_spend"
+  | "debt_payoff"
+  | "credit_improvement"
+  | "investment";
 
 export type GameEventType =
-  | 'transaction_logged'
-  | 'budget_created'
-  | 'budget_under'
-  | 'savings_contribution'
-  | 'debt_payment'
-  | 'goal_milestone'
-  | 'goal_completed'
-  | 'credit_check'
-  | 'credit_score_change'
-  | 'streak_milestone'
-  | 'badge_earned'
-  | 'quest_completed'
-  | 'challenge_joined'
-  | 'challenge_completed'
-  | 'referral'
-  | 'daily_login';
+  | "transaction_logged"
+  | "budget_created"
+  | "budget_under"
+  | "savings_contribution"
+  | "debt_payment"
+  | "goal_milestone"
+  | "goal_completed"
+  | "credit_check"
+  | "credit_score_change"
+  | "streak_milestone"
+  | "badge_earned"
+  | "quest_completed"
+  | "challenge_joined"
+  | "challenge_completed"
+  | "referral"
+  | "daily_login";
 
 // ============================================================================
 // USER PROGRESS
@@ -98,20 +98,20 @@ export interface LevelPerks {
 }
 
 export const LEVEL_TITLES: Record<number, string> = {
-  1: 'Financial Newbie',
-  2: 'Budget Beginner',
-  3: 'Savings Starter',
-  4: 'Money Manager',
-  5: 'Finance Fighter',
-  6: 'Debt Destroyer',
-  7: 'Credit Climber',
-  8: 'Wealth Builder',
-  9: 'Investment Initiate',
-  10: 'Portfolio Pro',
-  15: 'Wealth Warrior',
-  20: 'Finance Master',
-  25: 'Money Maven',
-  30: 'Financial Legend',
+  1: "Financial Newbie",
+  2: "Budget Beginner",
+  3: "Savings Starter",
+  4: "Money Manager",
+  5: "Finance Fighter",
+  6: "Debt Destroyer",
+  7: "Credit Climber",
+  8: "Wealth Builder",
+  9: "Investment Initiate",
+  10: "Portfolio Pro",
+  15: "Wealth Warrior",
+  20: "Finance Master",
+  25: "Money Maven",
+  30: "Financial Legend",
 };
 
 // ============================================================================
@@ -169,11 +169,11 @@ export interface BadgeProgressWithDefinition extends BadgeProgress {
 }
 
 export const RARITY_COLORS: Record<BadgeRarity, string> = {
-  common: '#9CA3AF',
-  uncommon: '#22C55E',
-  rare: '#3B82F6',
-  epic: '#A855F7',
-  legendary: '#F59E0B',
+  common: "#9CA3AF",
+  uncommon: "#22C55E",
+  rare: "#3B82F6",
+  epic: "#A855F7",
+  legendary: "#F59E0B",
 };
 
 export const RARITY_XP_MULTIPLIER: Record<BadgeRarity, number> = {
@@ -213,67 +213,67 @@ export interface XpAwardResult {
 
 export const XP_REWARDS: Record<string, number> = {
   // Transactions
-  'transaction.logged': 10,
-  'transaction.categorized': 5,
+  "transaction.logged": 10,
+  "transaction.categorized": 5,
 
   // Budget
-  'budget.created': 50,
-  'budget.under_daily': 25,
-  'budget.under_weekly': 100,
-  'budget.under_monthly': 250,
+  "budget.created": 50,
+  "budget.under_daily": 25,
+  "budget.under_weekly": 100,
+  "budget.under_monthly": 250,
 
   // Savings
-  'savings.contribution': 50,
-  'savings.goal_set': 25,
-  'savings.milestone_25': 100,
-  'savings.milestone_50': 200,
-  'savings.milestone_75': 300,
-  'savings.goal_completed': 500,
+  "savings.contribution": 50,
+  "savings.goal_set": 25,
+  "savings.milestone_25": 100,
+  "savings.milestone_50": 200,
+  "savings.milestone_75": 300,
+  "savings.goal_completed": 500,
 
   // Debt
-  'debt.payment': 50,
-  'debt.extra_payment': 100,
-  'debt.account_paid_off': 500,
-  'debt.free': 2000,
+  "debt.payment": 50,
+  "debt.extra_payment": 100,
+  "debt.account_paid_off": 500,
+  "debt.free": 2000,
 
   // Credit
-  'credit.check': 25,
-  'credit.dispute_filed': 50,
-  'credit.dispute_won': 200,
-  'credit.score_increase': 100,
+  "credit.check": 25,
+  "credit.dispute_filed": 50,
+  "credit.dispute_won": 200,
+  "credit.score_increase": 100,
 
   // Tax Optimization
-  'tax.profile_completed': 100,
-  'tax.recommendation_completed': 150,
-  'tax.401k_maxed': 500,
-  'tax.ira_maxed': 300,
-  'tax.hsa_maxed': 300,
-  'tax.employer_match_captured': 200,
-  'tax.tax_loss_harvest': 250,
-  'tax.scenario_created': 50,
-  'tax.savings_1k': 100,
-  'tax.savings_5k': 300,
-  'tax.savings_10k': 500,
+  "tax.profile_completed": 100,
+  "tax.recommendation_completed": 150,
+  "tax.401k_maxed": 500,
+  "tax.ira_maxed": 300,
+  "tax.hsa_maxed": 300,
+  "tax.employer_match_captured": 200,
+  "tax.tax_loss_harvest": 250,
+  "tax.scenario_created": 50,
+  "tax.savings_1k": 100,
+  "tax.savings_5k": 300,
+  "tax.savings_10k": 500,
 
   // Streaks
-  'streak.7_days': 100,
-  'streak.21_days': 250,
-  'streak.30_days': 500,
-  'streak.100_days': 1500,
-  'streak.365_days': 5000,
+  "streak.7_days": 100,
+  "streak.21_days": 250,
+  "streak.30_days": 500,
+  "streak.100_days": 1500,
+  "streak.365_days": 5000,
 
   // Engagement
-  'daily.login': 10,
-  'quest.completed': 50,
-  'challenge.joined': 25,
-  'challenge.completed': 500,
-  'referral.sent': 100,
-  'referral.converted': 500,
+  "daily.login": 10,
+  "quest.completed": 50,
+  "challenge.joined": 25,
+  "challenge.completed": 500,
+  "referral.sent": 100,
+  "referral.converted": 500,
 
   // Education
-  'article.read': 15,
-  'video.watched': 25,
-  'course.completed': 200,
+  "article.read": 15,
+  "video.watched": 25,
+  "course.completed": 200,
 };
 
 // ============================================================================
@@ -374,7 +374,7 @@ export interface LeaderboardEntry {
 
 export interface LeaderboardSnapshot {
   id: string;
-  leaderboardType: 'weekly_xp' | 'monthly_xp' | 'streak' | 'challenge';
+  leaderboardType: "weekly_xp" | "monthly_xp" | "streak" | "challenge";
   periodStart: string;
   periodEnd: string;
   rankings: LeaderboardEntry[];
@@ -473,7 +473,7 @@ export interface QuestsResponse {
 }
 
 export interface LeaderboardResponse {
-  type: 'weekly_xp' | 'monthly_xp' | 'streak' | 'challenge';
+  type: "weekly_xp" | "monthly_xp" | "streak" | "challenge";
   periodStart: string;
   periodEnd: string;
   entries: LeaderboardEntry[];
@@ -487,10 +487,10 @@ export interface LeaderboardResponse {
 
 export interface ProgressRingProps {
   percentage: number;
-  size: 'sm' | 'md' | 'lg';
+  size: "sm" | "md" | "lg";
   label: string;
   streak?: number;
-  color: 'green' | 'blue' | 'purple' | 'gold' | 'red';
+  color: "green" | "blue" | "purple" | "gold" | "red";
   animated?: boolean;
   showPercentage?: boolean;
 }
@@ -514,7 +514,7 @@ export interface XpBarProps {
 export interface StreakDisplayProps {
   streak: number;
   multiplier: number;
-  size: 'sm' | 'md' | 'lg';
+  size: "sm" | "md" | "lg";
 }
 
 export interface QuestCardProps {

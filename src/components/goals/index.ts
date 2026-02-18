@@ -2,7 +2,7 @@
  * Goals Components
  */
 
-export { GoalInvestmentDashboard } from './GoalInvestmentDashboard';
+export { GoalInvestmentDashboard } from "./GoalInvestmentDashboard";
 export type {
   GoalType,
   GoalStatus,
@@ -11,4 +11,4 @@ export type {
   GoalProjectionData,
   AllocationSummary,
   GoalInvestmentDashboardProps,
-} from './GoalInvestmentDashboard';
+} from "./GoalInvestmentDashboard";

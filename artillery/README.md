@@ -20,6 +20,7 @@ This directory contains load testing configurations for CreditMaster Pro.
 ### Reports
 
 All test reports are saved in `artillery/reports/` directory:
+
 - JSON reports: Raw test data
 - HTML reports: Visual reports with charts
 
@@ -28,31 +29,37 @@ All test reports are saved in `artillery/reports/` directory:
 ## 🚀 Quick Start
 
 ### 1. Start the application
+
 ```bash
 npm run dev
 ```
 
 ### 2. Run a quick test
+
 ```bash
 npm run load:quick
 ```
 
 ### 3. Run API tests
+
 ```bash
 npm run load:api
 ```
 
 ### 4. Run full load tests
+
 ```bash
 npm run load:full
 ```
 
 ### 5. Run stress tests (⚠️ pushes system to limits)
+
 ```bash
 npm run load:stress
 ```
 
 ### 6. Run all tests
+
 ```bash
 npm run load:all
 ```
@@ -78,6 +85,7 @@ npm run load:all
 ### What Good Looks Like
 
 ✅ **Healthy System**:
+
 ```
 http.codes.200: 9950
 http.codes.5xx: 0
@@ -90,6 +98,7 @@ http.response_time:
 ```
 
 ⚠️ **Warning Signs**:
+
 ```
 http.codes.200: 9500
 http.codes.5xx: 450
@@ -102,6 +111,7 @@ http.response_time:
 ```
 
 🔥 **Critical Issues**:
+
 ```
 http.codes.200: 5000
 http.codes.5xx: 4500
@@ -123,8 +133,8 @@ Edit the `phases` section in any YAML file:
 
 ```yaml
 phases:
-  - duration: 60        # Test duration in seconds
-    arrivalRate: 10     # Virtual users per second
+  - duration: 60 # Test duration in seconds
+    arrivalRate: 10 # Virtual users per second
     name: "Phase 1"
 ```
 
@@ -135,11 +145,11 @@ Add to the `scenarios` section:
 ```yaml
 scenarios:
   - name: "My New Test"
-    weight: 10          # Percentage of traffic
+    weight: 10 # Percentage of traffic
     flow:
       - get:
           url: "/my-endpoint"
-      - think: 2        # Wait 2 seconds
+      - think: 2 # Wait 2 seconds
 ```
 
 ### Change Target
@@ -158,11 +168,13 @@ config:
 ### Current Thresholds
 
 **API Tests**:
+
 - Max error rate: 2%
 - p95: < 1.5 seconds
 - p99: < 3 seconds
 
 **Load Tests**:
+
 - Max error rate: 1%
 - p95: < 2 seconds
 - p99: < 5 seconds
@@ -174,9 +186,9 @@ Edit the `ensure` section:
 ```yaml
 config:
   ensure:
-    maxErrorRate: 1     # Max 1% error rate
-    p95: 2000          # p95 < 2 seconds
-    p99: 5000          # p99 < 5 seconds
+    maxErrorRate: 1 # Max 1% error rate
+    p95: 2000 # p95 < 2 seconds
+    p99: 5000 # p99 < 5 seconds
 ```
 
 ---
@@ -184,30 +196,36 @@ config:
 ## 🎯 Test Scenarios
 
 ### Public Pages (30%)
+
 - Home page
 - Pricing page
 - About page
 
 ### Authentication (20%)
+
 - Login page
 - Login API
 - Session management
 
 ### Dashboard (25%)
+
 - Dashboard page
 - Notifications API
 - Disputes API
 
 ### AI Features (10%)
+
 - AI chat
 - Credit analysis
 - Dispute generation
 
 ### Documents (10%)
+
 - Document list
 - Document API
 
 ### Credit Reports (5%)
+
 - Credit reports page
 - Credit monitoring API
 
@@ -218,11 +236,13 @@ config:
 ### Start Performance Monitor
 
 In a separate terminal:
+
 ```bash
 npm run monitor
 ```
 
 This will track:
+
 - CPU usage
 - Memory usage
 - Disk I/O
@@ -237,7 +257,8 @@ Results saved to CSV for analysis.
 ### "ETIMEDOUT" Errors
 
 **Cause**: Server not responding  
-**Solution**: 
+**Solution**:
+
 1. Check if dev server is running
 2. Increase timeout in config
 3. Check network connectivity
@@ -246,6 +267,7 @@ Results saved to CSV for analysis.
 
 **Cause**: Server overloaded  
 **Solution**:
+
 1. Reduce load (lower arrivalRate)
 2. Optimize slow endpoints
 3. Scale resources
@@ -254,6 +276,7 @@ Results saved to CSV for analysis.
 
 **Cause**: Server not running  
 **Solution**:
+
 1. Start dev server: `npm run dev`
 2. Verify port 3000 is available
 3. Check firewall settings
@@ -262,6 +285,7 @@ Results saved to CSV for analysis.
 
 **Cause**: Performance bottleneck  
 **Solution**:
+
 1. Check database queries
 2. Add caching
 3. Optimize slow code
@@ -288,4 +312,3 @@ Results saved to CSV for analysis.
 ---
 
 **Happy load testing!** 🚀
-

@@ -3,11 +3,11 @@
  * Phase 6.2: Session list with create/delete functionality
  */
 
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { ChatSession } from '@/lib/ai/types/financial-chat.types';
-import { format } from 'date-fns';
+import React, { useState } from "react";
+import { ChatSession } from "@/lib/ai/types/financial-chat.types";
+import { format } from "date-fns";
 
 interface ChatSidebarProps {
   sessions: ChatSession[];
@@ -25,13 +25,13 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onDeleteSession,
 }) => {
   const [isCreating, setIsCreating] = useState(false);
-  const [newSessionTitle, setNewSessionTitle] = useState('');
+  const [newSessionTitle, setNewSessionTitle] = useState("");
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const handleCreateSession = () => {
     if (isCreating) {
       onNewSession(newSessionTitle.trim() || undefined);
-      setNewSessionTitle('');
+      setNewSessionTitle("");
       setIsCreating(false);
     } else {
       setIsCreating(true);
@@ -40,7 +40,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
   const handleCancelCreate = () => {
     setIsCreating(false);
-    setNewSessionTitle('');
+    setNewSessionTitle("");
   };
 
   const handleDeleteClick = (sessionId: string, e: React.MouseEvent) => {
@@ -55,15 +55,19 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
   };
 
   const formatSessionDate = (date: Date) => {
-    return format(new Date(date), 'MMM d, h:mm a');
+    return format(new Date(date), "MMM d, h:mm a");
   };
 
   return (
     <div className="w-80 bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-gray-200 dark:border-slate-700">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Financial Chat</h2>
-        <p className="text-sm text-gray-500 dark:text-slate-400">AI-powered financial advisor</p>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+          Financial Chat
+        </h2>
+        <p className="text-sm text-gray-500 dark:text-slate-400">
+          AI-powered financial advisor
+        </p>
       </div>
 
       {/* New Session Button */}
@@ -102,8 +106,18 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
             data-testid="new-session-button"
             className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center justify-center space-x-2"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
             </svg>
             <span>New Chat</span>
           </button>
@@ -117,20 +131,25 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
             No chat sessions yet. Create one to get started!
           </div>
         ) : (
-          <div className="divide-y divide-gray-200 dark:divide-slate-700" data-testid="chat-session">
+          <div
+            className="divide-y divide-gray-200 dark:divide-slate-700"
+            data-testid="chat-session"
+          >
             {sessions.map((session) => (
               <div
                 key={session.id}
                 onClick={() => onSessionSelect(session.id)}
                 className={`p-4 cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 ${
-                  currentSessionId === session.id ? 'bg-blue-50 border-l-4 border-blue-600' : ''
+                  currentSessionId === session.id
+                    ? "bg-blue-50 border-l-4 border-blue-600"
+                    : ""
                 }`}
                 data-testid="session-item"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                      {session.title || 'Untitled Chat'}
+                      {session.title || "Untitled Chat"}
                     </h3>
                     {currentSessionId === session.id && (
                       <span
@@ -152,13 +171,17 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                   <button
                     onClick={(e) => handleDeleteClick(session.id, e)}
                     className={`ml-2 p-1 rounded hover:bg-red-100 transition-colors ${
-                      deleteConfirmId === session.id ? 'bg-red-100' : ''
+                      deleteConfirmId === session.id ? "bg-red-100" : ""
                     }`}
-                    title={deleteConfirmId === session.id ? 'Click again to confirm' : 'Delete session'}
+                    title={
+                      deleteConfirmId === session.id
+                        ? "Click again to confirm"
+                        : "Delete session"
+                    }
                     data-testid="delete-session-button"
                   >
                     <svg
-                      className={`w-4 h-4 ${deleteConfirmId === session.id ? 'text-red-600' : 'text-gray-400 dark:text-slate-500'}`}
+                      className={`w-4 h-4 ${deleteConfirmId === session.id ? "text-red-600" : "text-gray-400 dark:text-slate-500"}`}
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"

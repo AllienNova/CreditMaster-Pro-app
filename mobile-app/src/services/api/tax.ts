@@ -3,8 +3,8 @@
  * Handles tax optimization, scenarios, calendar, deductions, and documents
  */
 
-import { api } from './client';
-import type { ApiResponse } from './types';
+import { api } from "./client";
+import type { ApiResponse } from "./types";
 
 // Types
 export interface TaxRecommendation {
@@ -12,9 +12,9 @@ export interface TaxRecommendation {
   title: string;
   summary: string;
   estimatedTaxSavings: number;
-  priority: 'critical' | 'high' | 'medium' | 'low';
+  priority: "critical" | "high" | "medium" | "low";
   deadline?: string;
-  status: 'pending' | 'in_progress' | 'completed';
+  status: "pending" | "in_progress" | "completed";
   category: string;
 }
 
@@ -70,8 +70,8 @@ export interface TaxEvent {
   title: string;
   description: string;
   date: string;
-  type: 'deadline' | 'reminder' | 'recommendation' | 'payment';
-  priority: 'critical' | 'high' | 'medium' | 'low';
+  type: "deadline" | "reminder" | "recommendation" | "payment";
+  priority: "critical" | "high" | "medium" | "low";
   isCompleted: boolean;
   category: string;
 }
@@ -138,7 +138,7 @@ export const taxAnalysisApi = {
     ytdIraContribution?: number;
     ytdHsaContribution?: number;
     hasHdhp?: boolean;
-  }) => api.post<TaxAnalysis>('/tax/analyze', params),
+  }) => api.post<TaxAnalysis>("/tax/analyze", params),
 
   /**
    * Get tax bracket visualization
@@ -147,19 +147,21 @@ export const taxAnalysisApi = {
     taxYear: number;
     filingStatus: string;
     taxableIncome: number;
-  }) => api.post<TaxBracketVisualization>('/tax/brackets', params),
+  }) => api.post<TaxBracketVisualization>("/tax/brackets", params),
 
   /**
    * Get tax optimization recommendations
    */
   getRecommendations: () =>
-    api.get<{ recommendations: TaxRecommendation[] }>('/tax/recommendations'),
+    api.get<{ recommendations: TaxRecommendation[] }>("/tax/recommendations"),
 
   /**
    * Mark recommendation as completed
    */
   completeRecommendation: (recommendationId: string) =>
-    api.post<{ success: boolean }>(`/tax/recommendations/${recommendationId}/complete`),
+    api.post<{ success: boolean }>(
+      `/tax/recommendations/${recommendationId}/complete`,
+    ),
 };
 
 // Tax Scenarios API
@@ -168,25 +170,30 @@ export const taxScenariosApi = {
    * Calculate tax for a scenario
    */
   calculate: (scenario: TaxScenarioInput) =>
-    api.post<TaxScenarioResult>('/tax/scenarios/calculate', scenario),
+    api.post<TaxScenarioResult>("/tax/scenarios/calculate", scenario),
 
   /**
    * Compare multiple scenarios
    */
   compare: (scenarios: TaxScenarioInput[]) =>
-    api.post<{ results: TaxScenarioResult[]; bestScenario: string }>('/tax/scenarios/compare', { scenarios }),
+    api.post<{ results: TaxScenarioResult[]; bestScenario: string }>(
+      "/tax/scenarios/compare",
+      { scenarios },
+    ),
 
   /**
    * Get saved scenarios
    */
   getSaved: () =>
-    api.get<{ scenarios: (TaxScenarioInput & { id: string })[] }>('/tax/scenarios'),
+    api.get<{ scenarios: (TaxScenarioInput & { id: string })[] }>(
+      "/tax/scenarios",
+    ),
 
   /**
    * Save a scenario
    */
   save: (scenario: TaxScenarioInput) =>
-    api.post<{ id: string }>('/tax/scenarios', scenario),
+    api.post<{ id: string }>("/tax/scenarios", scenario),
 
   /**
    * Delete a saved scenario
@@ -202,17 +209,19 @@ export const taxCalendarApi = {
    */
   getEvents: (params?: { year?: number; upcoming?: boolean }) => {
     const queryParams = new URLSearchParams();
-    if (params?.year) queryParams.append('year', params.year.toString());
-    if (params?.upcoming) queryParams.append('upcoming', 'true');
+    if (params?.year) queryParams.append("year", params.year.toString());
+    if (params?.upcoming) queryParams.append("upcoming", "true");
     const query = queryParams.toString();
-    return api.get<{ events: TaxEvent[] }>(`/tax/calendar${query ? `?${query}` : ''}`);
+    return api.get<{ events: TaxEvent[] }>(
+      `/tax/calendar${query ? `?${query}` : ""}`,
+    );
   },
 
   /**
    * Create custom reminder
    */
-  createReminder: (event: Omit<TaxEvent, 'id'>) =>
-    api.post<TaxEvent>('/tax/calendar', event),
+  createReminder: (event: Omit<TaxEvent, "id">) =>
+    api.post<TaxEvent>("/tax/calendar", event),
 
   /**
    * Mark event as completed
@@ -230,7 +239,9 @@ export const taxCalendarApi = {
    * Set up reminder notifications
    */
   setReminder: (eventId: string, reminderDays: number[]) =>
-    api.post<{ success: boolean }>(`/tax/calendar/${eventId}/reminder`, { reminderDays }),
+    api.post<{ success: boolean }>(`/tax/calendar/${eventId}/reminder`, {
+      reminderDays,
+    }),
 };
 
 // Tax Deductions API
@@ -240,7 +251,7 @@ export const taxDeductionsApi = {
    */
   getCategories: (taxYear?: number) =>
     api.get<{ categories: DeductionCategory[] }>(
-      `/tax/deductions/categories${taxYear ? `?year=${taxYear}` : ''}`
+      `/tax/deductions/categories${taxYear ? `?year=${taxYear}` : ""}`,
     ),
 
   /**
@@ -252,17 +263,17 @@ export const taxDeductionsApi = {
       itemizedVsStandard: {
         itemizedTotal: number;
         standardDeduction: number;
-        recommendation: 'itemize' | 'standard';
+        recommendation: "itemize" | "standard";
         savings: number;
       };
       byCategory: { category: string; amount: number; percentage: number }[];
-    }>(`/tax/deductions/summary${taxYear ? `?year=${taxYear}` : ''}`),
+    }>(`/tax/deductions/summary${taxYear ? `?year=${taxYear}` : ""}`),
 
   /**
    * Add a deduction
    */
-  add: (deduction: Omit<TaxDeduction, 'id' | 'isVerified'>) =>
-    api.post<TaxDeduction>('/tax/deductions', deduction),
+  add: (deduction: Omit<TaxDeduction, "id" | "isVerified">) =>
+    api.post<TaxDeduction>("/tax/deductions", deduction),
 
   /**
    * Update a deduction
@@ -281,9 +292,13 @@ export const taxDeductionsApi = {
    */
   getRecommendations: () =>
     api.get<{
-      missedDeductions: { category: string; description: string; potentialSavings: number }[];
+      missedDeductions: {
+        category: string;
+        description: string;
+        potentialSavings: number;
+      }[];
       optimizations: { description: string; action: string; savings: number }[];
-    }>('/tax/deductions/recommendations'),
+    }>("/tax/deductions/recommendations"),
 };
 
 // Tax Documents API
@@ -293,7 +308,7 @@ export const taxDocumentsApi = {
    */
   getAll: (taxYear?: number) =>
     api.get<{ documents: TaxDocument[] }>(
-      `/tax/documents${taxYear ? `?year=${taxYear}` : ''}`
+      `/tax/documents${taxYear ? `?year=${taxYear}` : ""}`,
     ),
 
   /**
@@ -309,15 +324,17 @@ export const taxDocumentsApi = {
     api.post<{
       document: TaxDocument;
       extractedData: Record<string, unknown>;
-    }>('/tax/documents/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+    }>("/tax/documents/upload", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
     } as any),
 
   /**
    * Verify document extraction
    */
   verify: (documentId: string, corrections?: Record<string, unknown>) =>
-    api.post<TaxDocument>(`/tax/documents/${documentId}/verify`, { corrections }),
+    api.post<TaxDocument>(`/tax/documents/${documentId}/verify`, {
+      corrections,
+    }),
 
   /**
    * Delete document
@@ -332,7 +349,7 @@ export const taxDocumentsApi = {
     api.get<{
       required: { type: string; label: string; received: boolean }[];
       optional: { type: string; label: string; received: boolean }[];
-    }>(`/tax/documents/checklist${taxYear ? `?year=${taxYear}` : ''}`),
+    }>(`/tax/documents/checklist${taxYear ? `?year=${taxYear}` : ""}`),
 };
 
 // Tax Tips API
@@ -347,11 +364,11 @@ export const taxTipsApi = {
         title: string;
         description: string;
         potentialSavings: number;
-        difficulty: 'easy' | 'medium' | 'hard';
+        difficulty: "easy" | "medium" | "hard";
         category: string;
         actionSteps: string[];
       }[];
-    }>('/tax/tips'),
+    }>("/tax/tips"),
 
   /**
    * Dismiss a tip
@@ -380,7 +397,7 @@ export const taxComparisonApi = {
         taxChange: number;
         rateChange: number;
       };
-    }>('/tax/compare', { years }),
+    }>("/tax/compare", { years }),
 };
 
 // Default export

@@ -23,7 +23,7 @@ import {
   HealthStatus,
   HealthCheckResult,
   REGION_GROUPS,
-} from './types';
+} from "./types";
 
 // Circuit breaker check interface - avoids circular dependency
 type CircuitBreakerCheck = (provider: string) => boolean;
@@ -98,7 +98,7 @@ export class ConnectorRegistry {
    */
   register<T extends ConnectorConfig>(
     type: ConnectorType,
-    connector: BaseConnector<T>
+    connector: BaseConnector<T>,
   ): void {
     if (!this.connectors.has(type)) {
       this.connectors.set(type, new Map());
@@ -116,7 +116,7 @@ export class ConnectorRegistry {
     // Initialize health status
     this.healthStatus.set(providerName, {
       provider: providerName,
-      status: 'unknown',
+      status: "unknown",
       latencyMs: 0,
       lastCheck: new Date(),
       lastSuccess: null,
@@ -135,7 +135,9 @@ export class ConnectorRegistry {
 
     const connector = typeConnectors.get(providerName);
     if (connector) {
-      connector.disconnect().catch(() => { /* Registry: disconnect error */ });
+      connector.disconnect().catch(() => {
+        /* Registry: disconnect error */
+      });
       typeConnectors.delete(providerName);
       this.healthStatus.delete(providerName);
       return true;
@@ -161,7 +163,7 @@ export class ConnectorRegistry {
    */
   getConnector<T extends BaseConnector = BaseConnector>(
     type: ConnectorType,
-    providerName: string
+    providerName: string,
   ): T | undefined {
     const typeConnectors = this.connectors.get(type);
     if (!typeConnectors) return undefined;
@@ -182,14 +184,14 @@ export class ConnectorRegistry {
     if (region) {
       const expandedRegions = this.expandRegion(region);
       connectors = connectors.filter((c) =>
-        c.getRegions().some((r) => r === '*' || expandedRegions.includes(r))
+        c.getRegions().some((r) => r === "*" || expandedRegions.includes(r)),
       );
     }
 
     // Filter by health (exclude 'down' providers)
     connectors = connectors.filter((c) => {
       const health = this.healthStatus.get(c.name);
-      return !health || health.status !== 'down';
+      return !health || health.status !== "down";
     });
 
     // Enforce circuit breaker - exclude providers with open circuits
@@ -198,10 +200,10 @@ export class ConnectorRegistry {
         const allowed = this.circuitBreakerCheck!(c.name);
         if (!allowed) {
           this.emit({
-            type: 'circuit_open',
+            type: "circuit_open",
             connector: c.name,
             timestamp: new Date(),
-            data: { reason: 'circuit_breaker_open' },
+            data: { reason: "circuit_breaker_open" },
           });
         }
         return allowed;
@@ -243,7 +245,7 @@ export class ConnectorRegistry {
     type: ConnectorType,
     method: string,
     args: unknown[],
-    options: ExecutionOptions = {}
+    options: ExecutionOptions = {},
   ): Promise<ConnectorResult<T>> {
     const {
       preferredProvider,
@@ -259,19 +261,22 @@ export class ConnectorRegistry {
 
     // Prioritize preferred provider if specified
     if (preferredProvider && providers.includes(preferredProvider)) {
-      providers = [preferredProvider, ...providers.filter((p) => p !== preferredProvider)];
+      providers = [
+        preferredProvider,
+        ...providers.filter((p) => p !== preferredProvider),
+      ];
     }
 
     if (providers.length === 0) {
       return {
         success: false,
-        provider: 'none',
+        provider: "none",
         cached: false,
         latencyMs: 0,
         error: {
-          code: 'NO_PROVIDERS',
-          message: `No available providers for type: ${type}${region ? ` in region: ${region}` : ''}`,
-          provider: 'registry',
+          code: "NO_PROVIDERS",
+          message: `No available providers for type: ${type}${region ? ` in region: ${region}` : ""}`,
+          provider: "registry",
           retryable: false,
         },
       };
@@ -303,7 +308,7 @@ export class ConnectorRegistry {
             connector,
             method,
             args,
-            timeout
+            timeout,
           );
 
           const latencyMs = Date.now() - startTime;
@@ -347,7 +352,7 @@ export class ConnectorRegistry {
 
       // Emit fallback event
       this.emit({
-        type: 'fallback_triggered',
+        type: "fallback_triggered",
         connector: providerName,
         timestamp: new Date(),
         data: { nextProvider: providers[providers.indexOf(providerName) + 1] },
@@ -360,9 +365,9 @@ export class ConnectorRegistry {
       cached: false,
       latencyMs: 0,
       error: lastError || {
-        code: 'ALL_PROVIDERS_FAILED',
-        message: 'All providers failed to execute the request',
-        provider: 'registry',
+        code: "ALL_PROVIDERS_FAILED",
+        message: "All providers failed to execute the request",
+        provider: "registry",
         retryable: true,
       },
     };
@@ -375,7 +380,7 @@ export class ConnectorRegistry {
     connector: BaseConnector,
     method: string,
     args: unknown[],
-    timeout: number
+    timeout: number,
   ): Promise<unknown> {
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
@@ -383,9 +388,13 @@ export class ConnectorRegistry {
       }, timeout);
 
       const connectorMethod = (connector as any)[method];
-      if (typeof connectorMethod !== 'function') {
+      if (typeof connectorMethod !== "function") {
         clearTimeout(timer);
-        reject(new Error(`Method ${method} not found on connector ${connector.name}`));
+        reject(
+          new Error(
+            `Method ${method} not found on connector ${connector.name}`,
+          ),
+        );
         return;
       }
 
@@ -415,7 +424,9 @@ export class ConnectorRegistry {
     }
 
     this.healthCheckInterval = setInterval(() => {
-      this.checkAllHealth().catch(() => { /* Registry: health check error */ });
+      this.checkAllHealth().catch(() => {
+        /* Registry: health check error */
+      });
     }, this.config.healthCheckIntervalMs);
 
     // Registry: Started health checks
@@ -453,12 +464,12 @@ export class ConnectorRegistry {
    */
   private async checkHealth(
     name: string,
-    connector: BaseConnector
+    connector: BaseConnector,
   ): Promise<ConnectorHealth> {
     const startTime = Date.now();
     const currentHealth = this.healthStatus.get(name) || {
       provider: name,
-      status: 'unknown' as HealthStatus,
+      status: "unknown" as HealthStatus,
       latencyMs: 0,
       lastCheck: new Date(),
       lastSuccess: null,
@@ -473,8 +484,8 @@ export class ConnectorRegistry {
         this.recordSuccess(name, latencyMs);
       } else {
         this.recordFailure(name, {
-          code: 'HEALTH_CHECK_FAILED',
-          message: result.error?.message || 'Health check failed',
+          code: "HEALTH_CHECK_FAILED",
+          message: result.error?.message || "Health check failed",
           provider: name,
           retryable: true,
         });
@@ -493,7 +504,8 @@ export class ConnectorRegistry {
     const current = this.healthStatus.get(name);
     if (!current) return;
 
-    const wasUnhealthy = current.status === 'down' || current.status === 'degraded';
+    const wasUnhealthy =
+      current.status === "down" || current.status === "degraded";
 
     current.latencyMs = latencyMs;
     current.lastCheck = new Date();
@@ -504,13 +516,13 @@ export class ConnectorRegistry {
     }
 
     // Update status
-    if (current.status !== 'healthy') {
-      current.status = 'healthy';
+    if (current.status !== "healthy") {
+      current.status = "healthy";
       current.errorMessage = undefined;
 
       if (wasUnhealthy) {
         this.emit({
-          type: 'health_recovered',
+          type: "health_recovered",
           connector: name,
           timestamp: new Date(),
           data: { previousStatus: current.status },
@@ -532,18 +544,18 @@ export class ConnectorRegistry {
 
     // Update status based on consecutive failures
     if (current.consecutiveFailures >= this.config.unhealthyThreshold) {
-      if (current.status !== 'down') {
-        current.status = 'down';
+      if (current.status !== "down") {
+        current.status = "down";
         this.emit({
-          type: 'health_degraded',
+          type: "health_degraded",
           connector: name,
           timestamp: new Date(),
           data: { error, consecutiveFailures: current.consecutiveFailures },
         });
       }
     } else if (current.consecutiveFailures >= 1) {
-      if (current.status === 'healthy') {
-        current.status = 'degraded';
+      if (current.status === "healthy") {
+        current.status = "degraded";
       }
     }
   }
@@ -608,7 +620,7 @@ export class ConnectorRegistry {
           initPromises.push(
             connector.initialize().catch(() => {
               // Registry error: Failed to initialize connector
-            })
+            }),
           );
         }
       }
@@ -634,7 +646,7 @@ export class ConnectorRegistry {
         disconnectPromises.push(
           connector.disconnect().catch(() => {
             // Registry error: Failed to disconnect connector
-          })
+          }),
         );
       }
     }
@@ -656,13 +668,13 @@ export class ConnectorRegistry {
   private normalizeError(error: unknown, provider: string): ConnectorError {
     if (error instanceof Error) {
       const isRetryable =
-        error.message.includes('timeout') ||
-        error.message.includes('network') ||
-        error.message.includes('ECONNREFUSED') ||
-        error.message.includes('rate limit');
+        error.message.includes("timeout") ||
+        error.message.includes("network") ||
+        error.message.includes("ECONNREFUSED") ||
+        error.message.includes("rate limit");
 
       return {
-        code: 'CONNECTOR_ERROR',
+        code: "CONNECTOR_ERROR",
         message: error.message,
         provider,
         retryable: isRetryable,
@@ -671,7 +683,7 @@ export class ConnectorRegistry {
     }
 
     return {
-      code: 'UNKNOWN_ERROR',
+      code: "UNKNOWN_ERROR",
       message: String(error),
       provider,
       retryable: true,

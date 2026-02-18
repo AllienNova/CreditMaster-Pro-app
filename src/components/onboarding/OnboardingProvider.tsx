@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   createContext,
@@ -6,7 +6,7 @@ import {
   useState,
   useEffect,
   ReactNode,
-} from 'react';
+} from "react";
 
 interface OnboardingContextType {
   hasCompletedOnboarding: boolean;
@@ -17,10 +17,10 @@ interface OnboardingContextType {
 }
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(
-  undefined
+  undefined,
 );
 
-const ONBOARDING_STORAGE_KEY = 'fynvita_onboarding_completed';
+const ONBOARDING_STORAGE_KEY = "fynvita_onboarding_completed";
 
 export function OnboardingProvider({ children }: { children: ReactNode }) {
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(true); // Default to true to avoid flash
@@ -28,7 +28,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Check if user has completed onboarding
     const completed = localStorage.getItem(ONBOARDING_STORAGE_KEY);
-    setHasCompletedOnboarding(completed === 'true');
+    setHasCompletedOnboarding(completed === "true");
   }, []);
 
   const startOnboarding = () => {
@@ -36,12 +36,12 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   };
 
   const completeOnboarding = () => {
-    localStorage.setItem(ONBOARDING_STORAGE_KEY, 'true');
+    localStorage.setItem(ONBOARDING_STORAGE_KEY, "true");
     setHasCompletedOnboarding(true);
   };
 
   const skipOnboarding = () => {
-    localStorage.setItem(ONBOARDING_STORAGE_KEY, 'true');
+    localStorage.setItem(ONBOARDING_STORAGE_KEY, "true");
     setHasCompletedOnboarding(true);
   };
 
@@ -68,7 +68,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 export function useOnboarding() {
   const context = useContext(OnboardingContext);
   if (context === undefined) {
-    throw new Error('useOnboarding must be used within an OnboardingProvider');
+    throw new Error("useOnboarding must be used within an OnboardingProvider");
   }
   return context;
 }

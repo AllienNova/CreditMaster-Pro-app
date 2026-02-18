@@ -1,6 +1,6 @@
 /**
  * Backup Codes Service
- * 
+ *
  * Provides backup codes for 2FA recovery:
  * - Generate backup codes
  * - Verify backup codes
@@ -8,10 +8,10 @@
  * - Track used codes
  */
 
-import { getSupabase } from '@/lib/supabase/client';
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
-import crypto from 'crypto';
+import crypto from "crypto";
 
 export interface BackupCode {
   id: string;
@@ -26,13 +26,13 @@ class BackupCodesService {
   /**
    * Generate backup codes for a user
    */
-  async generateBackupCodes(userId: string, count: number = 10): Promise<{ success: boolean; codes?: string[]; error?: string }> {
+  async generateBackupCodes(
+    userId: string,
+    count: number = 10,
+  ): Promise<{ success: boolean; codes?: string[]; error?: string }> {
     try {
       // Delete existing backup codes
-      await supabase
-        .from('backup_codes')
-        .delete()
-        .eq('user_id', userId);
+      await supabase.from("backup_codes").delete().eq("user_id", userId);
 
       // Generate new codes
       const codes: string[] = [];
@@ -40,7 +40,7 @@ class BackupCodesService {
 
       for (let i = 0; i < count; i++) {
         // Generate a random 8-character code
-        const code = crypto.randomBytes(4).toString('hex').toUpperCase();
+        const code = crypto.randomBytes(4).toString("hex").toUpperCase();
         codes.push(code);
 
         codeRecords.push({
@@ -52,9 +52,7 @@ class BackupCodesService {
       }
 
       // Save to database
-      const { error } = await supabase
-        .from('backup_codes')
-        .insert(codeRecords);
+      const { error } = await supabase.from("backup_codes").insert(codeRecords);
 
       if (error) {
         return {
@@ -71,7 +69,10 @@ class BackupCodesService {
       // BackupCodesService error: Generate backup codes error
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to generate backup codes',
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to generate backup codes",
       };
     }
   }
@@ -79,34 +80,37 @@ class BackupCodesService {
   /**
    * Verify a backup code
    */
-  async verifyBackupCode(userId: string, code: string): Promise<{ success: boolean; error?: string }> {
+  async verifyBackupCode(
+    userId: string,
+    code: string,
+  ): Promise<{ success: boolean; error?: string }> {
     try {
       const hashedCode = this.hashCode(code);
 
       // Find unused backup code
       const { data, error } = await supabase
-        .from('backup_codes')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('code', hashedCode)
-        .eq('used', false)
+        .from("backup_codes")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("code", hashedCode)
+        .eq("used", false)
         .single();
 
       if (error || !data) {
         return {
           success: false,
-          error: 'Invalid or already used backup code',
+          error: "Invalid or already used backup code",
         };
       }
 
       // Mark code as used
       const { error: updateError } = await supabase
-        .from('backup_codes')
+        .from("backup_codes")
         .update({
           used: true,
           used_at: new Date().toISOString(),
         })
-        .eq('id', data.id);
+        .eq("id", data.id);
 
       if (updateError) {
         return {
@@ -120,7 +124,10 @@ class BackupCodesService {
       // BackupCodesService error: Verify backup code error
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to verify backup code',
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to verify backup code",
       };
     }
   }
@@ -131,10 +138,10 @@ class BackupCodesService {
   async getRemainingCodesCount(userId: string): Promise<number> {
     try {
       const { data, error } = await supabase
-        .from('backup_codes')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('used', false);
+        .from("backup_codes")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("used", false);
 
       if (error) {
         // BackupCodesService error: Get remaining codes count error
@@ -154,10 +161,10 @@ class BackupCodesService {
   async getBackupCodes(userId: string): Promise<BackupCode[]> {
     try {
       const { data, error } = await supabase
-        .from('backup_codes')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+        .from("backup_codes")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
 
       if (error) {
         // BackupCodesService error: Get backup codes error
@@ -167,7 +174,7 @@ class BackupCodesService {
       return data.map((code) => ({
         id: code.id,
         userId: code.user_id,
-        code: '********', // Don't expose actual codes
+        code: "********", // Don't expose actual codes
         used: code.used,
         usedAt: code.used_at ? new Date(code.used_at) : undefined,
         createdAt: new Date(code.created_at),
@@ -182,11 +189,10 @@ class BackupCodesService {
    * Hash a backup code for storage
    */
   private hashCode(code: string): string {
-    return crypto.createHash('sha256').update(code).digest('hex');
+    return crypto.createHash("sha256").update(code).digest("hex");
   }
 }
 
 // Export singleton instance
 export const backupCodesService = new BackupCodesService();
 export default backupCodesService;
-

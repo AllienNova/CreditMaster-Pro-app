@@ -1,9 +1,9 @@
 /**
  * ML Strategy Integration
- * 
+ *
  * Bridges the 28 credit repair strategies with ML prediction models
  * for intelligent, data-driven strategy recommendations.
- * 
+ *
  * Features:
  * - ML-enhanced strategy scoring
  * - Feature extraction from credit items
@@ -13,17 +13,23 @@
  * - ROI calculation
  */
 
-import { Strategy } from '@/types/student-loan';
-import { ADVANCED_STRATEGIES } from './index';
-import { MLPredictionModels } from '../ml-prediction-models';
+import { Strategy } from "@/types/student-loan";
+import { ADVANCED_STRATEGIES } from "./index";
+import { MLPredictionModels } from "../ml-prediction-models";
 
 // Types
 export interface CreditItem {
-  type: 'collection' | 'account' | 'inquiry' | 'public_record' | 'late_payment' | 'charge_off';
+  type:
+    | "collection"
+    | "account"
+    | "inquiry"
+    | "public_record"
+    | "late_payment"
+    | "charge_off";
   description: string;
   amount?: number;
   date: string;
-  bureau: 'experian' | 'equifax' | 'transunion';
+  bureau: "experian" | "equifax" | "transunion";
   status: string;
   accountType?: string;
   creditorName?: string;
@@ -68,17 +74,17 @@ export interface FeatureVector {
   itemAge: number;
   itemAmount: number;
   itemType: string;
-  
+
   // User profile features
   creditScore: number;
   accountAge: number;
   paymentHistory: number;
   utilization: number;
-  
+
   // Strategy features
   strategySuccessRate: number;
   strategyTier: number;
-  
+
   // Contextual features
   previousAttempts: number;
   bureauType: string;
@@ -89,11 +95,11 @@ export interface FeatureVector {
  */
 class MLStrategyIntegration {
   private mlModels: MLPredictionModels;
-  
+
   constructor() {
     this.mlModels = new MLPredictionModels();
   }
-  
+
   /**
    * Main recommendation engine
    * Returns top 5 strategies ranked by ML-enhanced scoring
@@ -101,47 +107,46 @@ class MLStrategyIntegration {
   async recommendStrategies(
     creditItem: CreditItem,
     userProfile: UserProfile,
-    previousAttempts: string[] = []
+    previousAttempts: string[] = [],
   ): Promise<StrategyRecommendation[]> {
     try {
       // 1. Filter applicable strategies
       const applicableStrategies = this.filterApplicableStrategies(
         ADVANCED_STRATEGIES,
-        creditItem
+        creditItem,
       );
-      
+
       // 2. Remove previously attempted strategies
       const availableStrategies = applicableStrategies.filter(
-        s => !previousAttempts.includes(s.id)
+        (s) => !previousAttempts.includes(s.id),
       );
-      
+
       if (availableStrategies.length === 0) {
-        throw new Error('No applicable strategies available');
+        throw new Error("No applicable strategies available");
       }
-      
+
       // 3. Score each strategy using ML + rules
       const recommendations: StrategyRecommendation[] = [];
-      
+
       for (const strategy of availableStrategies) {
         const recommendation = await this.scoreStrategy(
           strategy,
           creditItem,
           userProfile,
-          previousAttempts.length
+          previousAttempts.length,
         );
         recommendations.push(recommendation);
       }
-      
+
       // 4. Sort by score (descending) and return top 5
       recommendations.sort((a, b) => b.score - a.score);
       return recommendations.slice(0, 5);
-      
     } catch (error) {
       // MLStrategyIntegration error: Error recommending strategies
       throw error;
     }
   }
-  
+
   /**
    * Score a single strategy using ML + rule-based approach
    */
@@ -149,16 +154,16 @@ class MLStrategyIntegration {
     strategy: Strategy,
     creditItem: CreditItem,
     userProfile: UserProfile,
-    previousAttemptsCount: number
+    previousAttemptsCount: number,
   ): Promise<StrategyRecommendation> {
     // Extract features
     const features = this.extractFeatures(
       creditItem,
       userProfile,
       strategy,
-      previousAttemptsCount
+      previousAttemptsCount,
     );
-    
+
     // Get ML prediction for dispute success
     const mlPrediction = await this.mlModels.predictCreditRepairSuccess({
       creditScore: userProfile.creditScore,
@@ -171,54 +176,60 @@ class MLStrategyIntegration {
       previousDisputes: previousAttemptsCount,
       bureauType: creditItem.bureau,
     });
-    
+
     // Calculate composite score (0-100)
     const baseScore = strategy.success_rate * 100; // 40-85
     const mlScore = mlPrediction.probability * 100; // 0-100
     const confidenceBonus = mlPrediction.confidence * 10; // 0-10
     const tierBonus = (5 - strategy.tier) * 5; // 0-20 (higher tier = higher bonus)
     const attemptPenalty = previousAttemptsCount * 5; // -5 per previous attempt
-    
-    const compositeScore = Math.max(0, Math.min(100,
-      baseScore * 0.4 +
-      mlScore * 0.3 +
-      confidenceBonus +
-      tierBonus -
-      attemptPenalty
-    ));
 
-    const utilizationAdjustment = (100 - Math.min(features.utilization, 100)) * 0.05;
-    const repetitionPenalty = features.previousAttempts * 2;
-    const finalScore = Math.max(0, Math.min(100, compositeScore + utilizationAdjustment - repetitionPenalty));
-    
-    // Calculate success probability (weighted average)
-    const successProbability = (
-      strategy.success_rate * 0.6 +
-      mlPrediction.probability * 0.4
+    const compositeScore = Math.max(
+      0,
+      Math.min(
+        100,
+        baseScore * 0.4 +
+          mlScore * 0.3 +
+          confidenceBonus +
+          tierBonus -
+          attemptPenalty,
+      ),
     );
-    
+
+    const utilizationAdjustment =
+      (100 - Math.min(features.utilization, 100)) * 0.05;
+    const repetitionPenalty = features.previousAttempts * 2;
+    const finalScore = Math.max(
+      0,
+      Math.min(100, compositeScore + utilizationAdjustment - repetitionPenalty),
+    );
+
+    // Calculate success probability (weighted average)
+    const successProbability =
+      strategy.success_rate * 0.6 + mlPrediction.probability * 0.4;
+
     // Estimate timeline
     const estimatedTimeline = this.estimateTimeline(strategy, creditItem);
-    
+
     // Generate required actions
     const requiredActions = this.generateRequiredActions(strategy, creditItem);
-    
+
     // Generate reasoning
     const reasoning = this.generateReasoning(
       strategy,
       creditItem,
       successProbability,
-      mlPrediction.confidence
+      mlPrediction.confidence,
     );
-    
+
     // Calculate ROI (expected credit score improvement)
     const roi = this.calculateROI(
       strategy,
       creditItem,
       userProfile,
-      successProbability
+      successProbability,
     );
-    
+
     return {
       strategy,
       score: finalScore,
@@ -231,7 +242,7 @@ class MLStrategyIntegration {
       confidence: mlPrediction.confidence,
     };
   }
-  
+
   /**
    * Extract features for ML model
    */
@@ -239,7 +250,7 @@ class MLStrategyIntegration {
     creditItem: CreditItem,
     userProfile: UserProfile,
     strategy: Strategy,
-    previousAttempts: number
+    previousAttempts: number,
   ): FeatureVector {
     return {
       itemAge: this.calculateItemAge(creditItem.date),
@@ -255,15 +266,15 @@ class MLStrategyIntegration {
       bureauType: creditItem.bureau,
     };
   }
-  
+
   /**
    * Filter strategies by applicability to credit item
    */
   private filterApplicableStrategies(
     strategies: Strategy[],
-    creditItem: CreditItem
+    creditItem: CreditItem,
   ): Strategy[] {
-    return strategies.filter(strategy => {
+    return strategies.filter((strategy) => {
       // Check if strategy targets this item type
       const targetsItemType = strategy.target_items.includes(creditItem.type);
 
@@ -271,25 +282,36 @@ class MLStrategyIntegration {
       const isActive = strategy.is_active;
 
       // Check prerequisites based on credit item properties
-      const meetsPrerequisites = this.checkStrategyPrerequisites(strategy, creditItem);
+      const meetsPrerequisites = this.checkStrategyPrerequisites(
+        strategy,
+        creditItem,
+      );
 
       return targetsItemType && isActive && meetsPrerequisites;
     });
   }
-  
+
   /**
    * Check if credit item meets strategy prerequisites
    */
-  private checkStrategyPrerequisites(strategy: Strategy, creditItem: CreditItem): boolean {
+  private checkStrategyPrerequisites(
+    strategy: Strategy,
+    creditItem: CreditItem,
+  ): boolean {
     // prerequisites may be a string[] or an object with specific fields
-    const prereqs = strategy.prerequisites as unknown as StrategyPrerequisites | string[] | undefined;
+    const prereqs = strategy.prerequisites as unknown as
+      | StrategyPrerequisites
+      | string[]
+      | undefined;
     if (!prereqs || Array.isArray(prereqs)) {
       return true; // No structured prerequisites to check
     }
 
     // Check minimum item age requirements
     if (prereqs.minItemAgeMonths) {
-      const itemAge = this.calculateItemAge(creditItem.date_reported || creditItem.created_at || '');
+      const itemAge = this.calculateItemAge(
+        creditItem.date_reported || creditItem.created_at || "",
+      );
       if (itemAge < prereqs.minItemAgeMonths) {
         return false;
       }
@@ -297,7 +319,9 @@ class MLStrategyIntegration {
 
     // Check maximum item age requirements
     if (prereqs.maxItemAgeMonths) {
-      const itemAge = this.calculateItemAge(creditItem.date_reported || creditItem.created_at || '');
+      const itemAge = this.calculateItemAge(
+        creditItem.date_reported || creditItem.created_at || "",
+      );
       if (itemAge > prereqs.maxItemAgeMonths) {
         return false;
       }
@@ -328,54 +352,58 @@ class MLStrategyIntegration {
     const diffMonths = diffMs / (1000 * 60 * 60 * 24 * 30);
     return Math.floor(diffMonths);
   }
-  
+
   /**
    * Estimate timeline for strategy execution
    */
   private estimateTimeline(strategy: Strategy, creditItem: CreditItem): string {
     // Base timeline by tier
-    const baseTimeline = {
-      1: '30-45 days',
-      2: '45-60 days',
-      3: '60-90 days',
-      4: '90-120 days',
-    }[strategy.tier] || '60-90 days';
-    
+    const baseTimeline =
+      {
+        1: "30-45 days",
+        2: "45-60 days",
+        3: "60-90 days",
+        4: "90-120 days",
+      }[strategy.tier] || "60-90 days";
+
     // Adjust for item type
-    if (creditItem.type === 'inquiry') {
-      return '15-30 days'; // Inquiries are faster
+    if (creditItem.type === "inquiry") {
+      return "15-30 days"; // Inquiries are faster
     }
-    
-    if (creditItem.type === 'public_record') {
-      return '90-180 days'; // Public records take longer
+
+    if (creditItem.type === "public_record") {
+      return "90-180 days"; // Public records take longer
     }
-    
+
     return baseTimeline;
   }
-  
+
   /**
    * Generate required actions for strategy
    */
-  private generateRequiredActions(strategy: Strategy, creditItem: CreditItem): string[] {
+  private generateRequiredActions(
+    strategy: Strategy,
+    creditItem: CreditItem,
+  ): string[] {
     const actions: string[] = [];
-    
+
     // Add strategy-specific tactics
     actions.push(...strategy.key_tactics);
-    
+
     // Add item-specific actions
-    if (creditItem.type === 'collection') {
-      actions.push('Request debt validation');
-      actions.push('Verify original creditor');
+    if (creditItem.type === "collection") {
+      actions.push("Request debt validation");
+      actions.push("Verify original creditor");
     }
-    
-    if (creditItem.type === 'inquiry') {
-      actions.push('Identify unauthorized inquiry');
-      actions.push('Submit inquiry dispute letter');
+
+    if (creditItem.type === "inquiry") {
+      actions.push("Identify unauthorized inquiry");
+      actions.push("Submit inquiry dispute letter");
     }
-    
+
     return actions;
   }
-  
+
   /**
    * Generate reasoning for recommendation
    */
@@ -383,17 +411,19 @@ class MLStrategyIntegration {
     strategy: Strategy,
     creditItem: CreditItem,
     successProbability: number,
-    confidence: number
+    confidence: number,
   ): string {
     const successPercent = Math.round(successProbability * 100);
     const confidencePercent = Math.round(confidence * 100);
-    
-    return `This strategy has a ${successPercent}% predicted success rate for ${creditItem.type} items. ` +
-           `ML confidence: ${confidencePercent}%. ` +
-           `Legal basis: ${strategy.legal_basis}. ` +
-           `Recommended for ${strategy.target_items.join(', ')} items.`;
+
+    return (
+      `This strategy has a ${successPercent}% predicted success rate for ${creditItem.type} items. ` +
+      `ML confidence: ${confidencePercent}%. ` +
+      `Legal basis: ${strategy.legal_basis}. ` +
+      `Recommended for ${strategy.target_items.join(", ")} items.`
+    );
   }
-  
+
   /**
    * Calculate ROI (expected credit score improvement)
    */
@@ -401,26 +431,27 @@ class MLStrategyIntegration {
     strategy: Strategy,
     creditItem: CreditItem,
     userProfile: UserProfile,
-    successProbability: number
+    successProbability: number,
   ): number {
     // Base impact by item type
-    const baseImpact = {
-      'collection': 30,
-      'charge_off': 40,
-      'late_payment': 20,
-      'inquiry': 5,
-      'public_record': 50,
-      'account': 25,
-    }[creditItem.type] || 20;
-    
+    const baseImpact =
+      {
+        collection: 30,
+        charge_off: 40,
+        late_payment: 20,
+        inquiry: 5,
+        public_record: 50,
+        account: 25,
+      }[creditItem.type] || 20;
+
     // Adjust for item amount (higher amounts = higher impact)
     const amountMultiplier = creditItem.amount
-      ? Math.min(2, 1 + (creditItem.amount / 10000))
+      ? Math.min(2, 1 + creditItem.amount / 10000)
       : 1;
-    
+
     // Adjust for success probability
     const expectedImpact = baseImpact * amountMultiplier * successProbability;
-    
+
     return Math.round(expectedImpact);
   }
 }

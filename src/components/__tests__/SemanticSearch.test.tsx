@@ -2,11 +2,11 @@
  * SemanticSearch Component Tests
  */
 
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import React from "react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 // Mock the SemanticSearch component
-jest.mock('../semantic-search/SemanticSearch', () => {
+jest.mock("../semantic-search/SemanticSearch", () => {
   const MockSemanticSearch = ({
     onSearch,
     placeholder,
@@ -26,15 +26,15 @@ jest.mock('../semantic-search/SemanticSearch', () => {
       setTimeout(() => {
         const mockResults = [
           {
-            id: '1',
-            title: 'Credit Repair Guide',
-            content: 'How to dispute errors',
+            id: "1",
+            title: "Credit Repair Guide",
+            content: "How to dispute errors",
             score: 0.95,
           },
           {
-            id: '2',
-            title: 'FCRA Rights',
-            content: 'Your rights under FCRA',
+            id: "2",
+            title: "FCRA Rights",
+            content: "Your rights under FCRA",
             score: 0.87,
           },
         ];
@@ -48,7 +48,7 @@ jest.mock('../semantic-search/SemanticSearch', () => {
       <div className={className} data-testid="semantic-search">
         <input
           type="text"
-          placeholder={placeholder || 'Search documents...'}
+          placeholder={placeholder || "Search documents..."}
           data-testid="search-input"
           onChange={(e) => handleSearch(e.target.value)}
         />
@@ -75,85 +75,85 @@ jest.mock('../semantic-search/SemanticSearch', () => {
   return { __esModule: true, default: MockSemanticSearch };
 });
 
-import SemanticSearch from '../semantic-search/SemanticSearch';
+import SemanticSearch from "../semantic-search/SemanticSearch";
 
-describe('SemanticSearch', () => {
-  it('renders semantic search component', () => {
+describe("SemanticSearch", () => {
+  it("renders semantic search component", () => {
     render(<SemanticSearch />);
-    expect(screen.getByTestId('semantic-search')).toBeInTheDocument();
+    expect(screen.getByTestId("semantic-search")).toBeInTheDocument();
   });
 
-  it('renders with default placeholder', () => {
+  it("renders with default placeholder", () => {
     render(<SemanticSearch />);
     expect(
-      screen.getByPlaceholderText('Search documents...')
+      screen.getByPlaceholderText("Search documents..."),
     ).toBeInTheDocument();
   });
 
-  it('renders with custom placeholder', () => {
+  it("renders with custom placeholder", () => {
     render(<SemanticSearch placeholder="Search knowledge base..." />);
     expect(
-      screen.getByPlaceholderText('Search knowledge base...')
+      screen.getByPlaceholderText("Search knowledge base..."),
     ).toBeInTheDocument();
   });
 
-  it('renders index selector', () => {
+  it("renders index selector", () => {
     render(<SemanticSearch />);
-    expect(screen.getByTestId('index-select')).toBeInTheDocument();
+    expect(screen.getByTestId("index-select")).toBeInTheDocument();
   });
 
-  it('shows loading state during search', async () => {
+  it("shows loading state during search", async () => {
     render(<SemanticSearch />);
-    const input = screen.getByTestId('search-input');
-    fireEvent.change(input, { target: { value: 'credit repair' } });
-    expect(screen.getByTestId('loading')).toBeInTheDocument();
+    const input = screen.getByTestId("search-input");
+    fireEvent.change(input, { target: { value: "credit repair" } });
+    expect(screen.getByTestId("loading")).toBeInTheDocument();
   });
 
-  it('displays search results', async () => {
+  it("displays search results", async () => {
     render(<SemanticSearch />);
-    const input = screen.getByTestId('search-input');
-    fireEvent.change(input, { target: { value: 'credit' } });
+    const input = screen.getByTestId("search-input");
+    fireEvent.change(input, { target: { value: "credit" } });
 
     await waitFor(() => {
-      expect(screen.getByText('Credit Repair Guide')).toBeInTheDocument();
+      expect(screen.getByText("Credit Repair Guide")).toBeInTheDocument();
     });
   });
 
-  it('shows similarity scores', async () => {
+  it("shows similarity scores", async () => {
     render(<SemanticSearch />);
-    const input = screen.getByTestId('search-input');
-    fireEvent.change(input, { target: { value: 'credit' } });
+    const input = screen.getByTestId("search-input");
+    fireEvent.change(input, { target: { value: "credit" } });
 
     await waitFor(() => {
-      expect(screen.getByTestId('score-1')).toHaveTextContent('95%');
+      expect(screen.getByTestId("score-1")).toHaveTextContent("95%");
     });
   });
 
-  it('allows clicking on search results', async () => {
+  it("allows clicking on search results", async () => {
     render(<SemanticSearch />);
 
-    const input = screen.getByTestId('search-input');
-    fireEvent.change(input, { target: { value: 'credit' } });
+    const input = screen.getByTestId("search-input");
+    fireEvent.change(input, { target: { value: "credit" } });
 
     await waitFor(() => {
-      expect(screen.getByTestId('result-1')).toBeInTheDocument();
+      expect(screen.getByTestId("result-1")).toBeInTheDocument();
     });
   });
 
-  it('applies custom className', () => {
+  it("applies custom className", () => {
     render(<SemanticSearch className="custom-class" />);
-    expect(screen.getByTestId('semantic-search')).toHaveClass('custom-class');
+    expect(screen.getByTestId("semantic-search")).toHaveClass("custom-class");
   });
 
-  it('calls onSearch with query and results', async () => {
+  it("calls onSearch with query and results", async () => {
     const onSearch = jest.fn();
     render(<SemanticSearch onSearch={onSearch} />);
 
-    const input = screen.getByTestId('search-input');
-    fireEvent.change(input, { target: { value: 'fcra rights' } });
+    const input = screen.getByTestId("search-input");
+    fireEvent.change(input, { target: { value: "fcra rights" } });
 
     await waitFor(() => {
-      expect(onSearch).toHaveBeenCalledWith('fcra rights');
+      expect(onSearch).toHaveBeenCalledWith("fcra rights");
     });
   });
 });

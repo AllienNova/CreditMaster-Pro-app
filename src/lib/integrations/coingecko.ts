@@ -14,7 +14,7 @@
 import {
   CryptoQuote,
   MarketDataAPIError,
-} from '../investments/types/market-data.types';
+} from "../investments/types/market-data.types";
 
 // ============================================================================
 // TYPES
@@ -88,7 +88,7 @@ const RATE_LIMIT = {
 // ============================================================================
 
 export class CoinGeckoClient {
-  private baseUrl = 'https://api.coingecko.com/api/v3';
+  private baseUrl = "https://api.coingecko.com/api/v3";
   private cache: Map<string, CacheEntry<any>> = new Map();
   private requestTimestamps: number[] = [];
 
@@ -105,20 +105,20 @@ export class CoinGeckoClient {
    */
   async getCoinPrice(
     coinIds: string[],
-    vsCurrencies: string[] = ['usd']
+    vsCurrencies: string[] = ["usd"],
   ): Promise<Record<string, CryptoQuote>> {
-    const cacheKey = `price:${coinIds.join(',')}:${vsCurrencies.join(',')}`;
+    const cacheKey = `price:${coinIds.join(",")}:${vsCurrencies.join(",")}`;
     const cached = this.getFromCache<Record<string, CryptoQuote>>(cacheKey);
     if (cached) return cached;
 
-    const endpoint = '/simple/price';
+    const endpoint = "/simple/price";
     const params = {
-      ids: coinIds.join(','),
-      vs_currencies: vsCurrencies.join(','),
-      include_market_cap: 'true',
-      include_24hr_vol: 'true',
-      include_24hr_change: 'true',
-      include_last_updated_at: 'true',
+      ids: coinIds.join(","),
+      vs_currencies: vsCurrencies.join(","),
+      include_market_cap: "true",
+      include_24hr_vol: "true",
+      include_24hr_change: "true",
+      include_last_updated_at: "true",
     };
 
     const data = await this.makeRequest(endpoint, params);
@@ -126,7 +126,11 @@ export class CoinGeckoClient {
     const quotes: Record<string, CryptoQuote> = {};
     for (const [coinId, priceData] of Object.entries(data)) {
       const currency = vsCurrencies[0];
-      quotes[coinId] = this.parseCryptoQuote(coinId, priceData as any, currency);
+      quotes[coinId] = this.parseCryptoQuote(
+        coinId,
+        priceData as any,
+        currency,
+      );
     }
 
     this.setCache(cacheKey, quotes, CACHE_TTL.price);
@@ -139,15 +143,16 @@ export class CoinGeckoClient {
   async getCoinHistory(
     coinId: string,
     days: number,
-    interval?: 'daily'
+    interval?: "daily",
   ): Promise<{ timestamp: Date; price: number }[]> {
-    const cacheKey = `history:${coinId}:${days}:${interval || 'auto'}`;
-    const cached = this.getFromCache<{ timestamp: Date; price: number }[]>(cacheKey);
+    const cacheKey = `history:${coinId}:${days}:${interval || "auto"}`;
+    const cached =
+      this.getFromCache<{ timestamp: Date; price: number }[]>(cacheKey);
     if (cached) return cached;
 
     const endpoint = `/coins/${coinId}/market_chart`;
     const params: Record<string, string> = {
-      vs_currency: 'usd',
+      vs_currency: "usd",
       days: days.toString(),
     };
 
@@ -160,9 +165,9 @@ export class CoinGeckoClient {
     if (!data.prices || data.prices.length === 0) {
       throw new MarketDataAPIError(
         `No historical data found for coin: ${coinId}`,
-        'NO_DATA',
-        'CoinGecko',
-        false
+        "NO_DATA",
+        "CoinGecko",
+        false,
       );
     }
 
@@ -175,16 +180,15 @@ export class CoinGeckoClient {
     return history;
   }
 
-
   /**
    * Get trending cryptocurrencies
    */
   async getTrendingCoins(): Promise<TrendingCoin[]> {
-    const cacheKey = 'trending';
+    const cacheKey = "trending";
     const cached = this.getFromCache<TrendingCoin[]>(cacheKey);
     if (cached) return cached;
 
-    const endpoint = '/search/trending';
+    const endpoint = "/search/trending";
     const data = await this.makeRequest(endpoint);
 
     if (!data.coins || data.coins.length === 0) {
@@ -204,7 +208,7 @@ export class CoinGeckoClient {
     const cached = this.getFromCache<CoinSearchResult[]>(cacheKey);
     if (cached) return cached;
 
-    const endpoint = '/search';
+    const endpoint = "/search";
     const params = { query };
     const data = await this.makeRequest(endpoint, params);
 
@@ -226,12 +230,12 @@ export class CoinGeckoClient {
 
     const endpoint = `/coins/${coinId}`;
     const params = {
-      localization: 'false',
-      tickers: 'false',
-      market_data: 'true',
-      community_data: 'false',
-      developer_data: 'false',
-      sparkline: 'false',
+      localization: "false",
+      tickers: "false",
+      market_data: "true",
+      community_data: "false",
+      developer_data: "false",
+      sparkline: "false",
     };
 
     const data = await this.makeRequest(endpoint, params);
@@ -239,9 +243,9 @@ export class CoinGeckoClient {
     if (!data.market_data) {
       throw new MarketDataAPIError(
         `No market data found for coin: ${coinId}`,
-        'NO_DATA',
-        'CoinGecko',
-        false
+        "NO_DATA",
+        "CoinGecko",
+        false,
       );
     }
 
@@ -253,7 +257,10 @@ export class CoinGeckoClient {
   // PRIVATE METHODS - API COMMUNICATION
   // ============================================================================
 
-  private async makeRequest(endpoint: string, params?: Record<string, string>): Promise<any> {
+  private async makeRequest(
+    endpoint: string,
+    params?: Record<string, string>,
+  ): Promise<any> {
     await this.checkRateLimit();
 
     const url = new URL(`${this.baseUrl}${endpoint}`);
@@ -269,17 +276,17 @@ export class CoinGeckoClient {
       if (!response.ok) {
         if (response.status === 429) {
           throw new MarketDataAPIError(
-            'API rate limit exceeded',
-            'RATE_LIMIT',
-            'CoinGecko',
-            true
+            "API rate limit exceeded",
+            "RATE_LIMIT",
+            "CoinGecko",
+            true,
           );
         }
         throw new MarketDataAPIError(
           `HTTP ${response.status}: ${response.statusText}`,
-          'HTTP_ERROR',
-          'CoinGecko',
-          response.status >= 500
+          "HTTP_ERROR",
+          "CoinGecko",
+          response.status >= 500,
         );
       }
 
@@ -292,9 +299,9 @@ export class CoinGeckoClient {
       }
       throw new MarketDataAPIError(
         `Request failed: ${(error as Error).message}`,
-        'NETWORK_ERROR',
-        'CoinGecko',
-        true
+        "NETWORK_ERROR",
+        "CoinGecko",
+        true,
       );
     }
   }
@@ -308,7 +315,7 @@ export class CoinGeckoClient {
 
     // Remove timestamps outside the current window
     this.requestTimestamps = this.requestTimestamps.filter(
-      (timestamp) => now - timestamp < RATE_LIMIT.windowMs
+      (timestamp) => now - timestamp < RATE_LIMIT.windowMs,
     );
 
     // Check if we've hit the rate limit
@@ -354,7 +361,11 @@ export class CoinGeckoClient {
   // PRIVATE METHODS - DATA PARSING
   // ============================================================================
 
-  private parseCryptoQuote(coinId: string, data: any, currency: string): CryptoQuote {
+  private parseCryptoQuote(
+    coinId: string,
+    data: any,
+    currency: string,
+  ): CryptoQuote {
     return {
       symbol: coinId.toUpperCase(),
       name: coinId,
@@ -374,4 +385,3 @@ export class CoinGeckoClient {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
-

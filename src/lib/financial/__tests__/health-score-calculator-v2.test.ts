@@ -2,18 +2,18 @@
  * Health Score Calculator V2 Tests
  */
 
-import { HealthScoreCalculatorV2 } from '../health-score-calculator-v2';
-import { AggregatedFinancialContext } from '../types/aggregated-context.types';
+import { HealthScoreCalculatorV2 } from "../health-score-calculator-v2";
+import { AggregatedFinancialContext } from "../types/aggregated-context.types";
 
 // Mock Supabase
 const mockFrom = jest.fn();
-jest.mock('@/lib/supabase/client', () => ({
+jest.mock("@/lib/supabase/client", () => ({
   getSupabase: () => ({
-    from: (...args: any[]) => mockFrom(...args)
-  })
+    from: (...args: any[]) => mockFrom(...args),
+  }),
 }));
 
-describe('HealthScoreCalculatorV2', () => {
+describe("HealthScoreCalculatorV2", () => {
   let calculator: HealthScoreCalculatorV2;
   let mockContext: AggregatedFinancialContext;
 
@@ -25,7 +25,7 @@ describe('HealthScoreCalculatorV2', () => {
         string,
         jest.Mock | ((r: (v: unknown) => unknown) => Promise<unknown>)
       > = {};
-      ['select', 'eq', 'gte', 'order', 'insert'].forEach((m) => {
+      ["select", "eq", "gte", "order", "insert"].forEach((m) => {
         chain[m] = jest.fn(() => chain);
       });
       chain.then = (r: (v: unknown) => unknown) =>
@@ -36,8 +36,8 @@ describe('HealthScoreCalculatorV2', () => {
     mockContext = createMockContext();
   });
 
-  describe('calculateScore', () => {
-    it('should return a valid V2 health score', async () => {
+  describe("calculateScore", () => {
+    it("should return a valid V2 health score", async () => {
       const result = await calculator.calculateScore({ context: mockContext });
       expect(result).toBeDefined();
       expect(result.version).toBe(2);
@@ -46,7 +46,7 @@ describe('HealthScoreCalculatorV2', () => {
       expect(result.grade).toMatch(/^[A-F]$/);
     });
 
-    it('should include all 6 component scores in breakdown', async () => {
+    it("should include all 6 component scores in breakdown", async () => {
       const result = await calculator.calculateScore({ context: mockContext });
       expect(result.breakdown.savings).toBeDefined();
       expect(result.breakdown.debt).toBeDefined();
@@ -56,23 +56,23 @@ describe('HealthScoreCalculatorV2', () => {
       expect(result.breakdown.insurance).toBeDefined();
     });
 
-    it('should include sub-scores for each component', async () => {
+    it("should include sub-scores for each component", async () => {
       const result = await calculator.calculateScore({ context: mockContext });
       expect(result.breakdown.savings.subScores).toBeDefined();
       expect(result.breakdown.savings.subScores.length).toBeGreaterThan(0);
     });
 
-    it('should generate recommendations for weak areas', async () => {
+    it("should generate recommendations for weak areas", async () => {
       const result = await calculator.calculateScore({ context: mockContext });
       const hasRecs = Object.values(result.breakdown).some(
-        (c) => c.recommendations?.length > 0
+        (c) => c.recommendations?.length > 0,
       );
       expect(hasRecs).toBe(true);
     });
   });
 
-  describe('investment score calculation', () => {
-    it('should return low score when no investments', async () => {
+  describe("investment score calculation", () => {
+    it("should return low score when no investments", async () => {
       const ctx = {
         ...mockContext,
         investments: { ...mockContext.investments, totalValue: 0 },
@@ -81,7 +81,7 @@ describe('HealthScoreCalculatorV2', () => {
       expect(result.breakdown.investments.score).toBeLessThanOrEqual(30);
     });
 
-    it('should score diversification', async () => {
+    it("should score diversification", async () => {
       const ctx = {
         ...mockContext,
         investments: {
@@ -94,61 +94,61 @@ describe('HealthScoreCalculatorV2', () => {
       expect(result.breakdown.investments.score).toBeGreaterThan(50);
     });
 
-    it('should include retirement readiness in investment score', async () => {
+    it("should include retirement readiness in investment score", async () => {
       const result = await calculator.calculateScore({ context: mockContext });
       const sub = result.breakdown.investments.subScores.find(
-        (s) => s.name === 'Retirement Readiness'
+        (s) => s.name === "Retirement Readiness",
       );
       expect(sub).toBeDefined();
     });
   });
 
-  describe('strengths and weaknesses', () => {
-    it('should identify top strengths', async () => {
+  describe("strengths and weaknesses", () => {
+    it("should identify top strengths", async () => {
       const result = await calculator.calculateScore({ context: mockContext });
       expect(result.topStrengths).toBeDefined();
       expect(Array.isArray(result.topStrengths)).toBe(true);
     });
 
-    it('should identify top weaknesses', async () => {
+    it("should identify top weaknesses", async () => {
       const result = await calculator.calculateScore({ context: mockContext });
       expect(result.topWeaknesses).toBeDefined();
       expect(Array.isArray(result.topWeaknesses)).toBe(true);
     });
 
-    it('should identify quick wins', async () => {
+    it("should identify quick wins", async () => {
       const result = await calculator.calculateScore({ context: mockContext });
       expect(result.quickWins).toBeDefined();
       expect(Array.isArray(result.quickWins)).toBe(true);
     });
   });
 
-  describe('data quality assessment', () => {
-    it('should assess data quality', async () => {
+  describe("data quality assessment", () => {
+    it("should assess data quality", async () => {
       const result = await calculator.calculateScore({ context: mockContext });
       expect(result.dataQuality).toBeDefined();
       expect(result.dataQuality.overallQuality).toMatch(
-        /excellent|good|fair|poor/
+        /excellent|good|fair|poor/,
       );
       expect(result.dataQuality.confidenceLevel).toBeGreaterThanOrEqual(0);
     });
   });
 
-  describe('Public Benchmarking API (Phase 1.3)', () => {
-    describe('getNationalAverage', () => {
-      it('should return national average benchmark data', async () => {
+  describe("Public Benchmarking API (Phase 1.3)", () => {
+    describe("getNationalAverage", () => {
+      it("should return national average benchmark data", async () => {
         const result = await calculator.getNationalAverage();
 
         expect(result).toBeDefined();
         expect(result.percentile).toBe(50);
         expect(result.ageGroupAverage).toBeGreaterThan(0);
         expect(result.incomeGroupAverage).toBeGreaterThan(0);
-        expect(result.comparison).toBe('average');
+        expect(result.comparison).toBe("average");
       });
     });
 
-    describe('getPeerGroupAverage', () => {
-      it('should return peer group benchmark for young low-income user', async () => {
+    describe("getPeerGroupAverage", () => {
+      it("should return peer group benchmark for young low-income user", async () => {
         const result = await calculator.getPeerGroupAverage(22, 30000);
 
         expect(result).toBeDefined();
@@ -156,7 +156,7 @@ describe('HealthScoreCalculatorV2', () => {
         expect(result.incomeGroupAverage).toBeLessThan(65); // Low income scores lower
       });
 
-      it('should return peer group benchmark for middle-aged high-income user', async () => {
+      it("should return peer group benchmark for middle-aged high-income user", async () => {
         const result = await calculator.getPeerGroupAverage(45, 200000);
 
         expect(result).toBeDefined();
@@ -164,34 +164,36 @@ describe('HealthScoreCalculatorV2', () => {
         expect(result.incomeGroupAverage).toBeGreaterThan(70); // High income scores higher
       });
 
-      it('should handle edge case ages', async () => {
+      it("should handle edge case ages", async () => {
         const result1 = await calculator.getPeerGroupAverage(18, 50000);
         const result2 = await calculator.getPeerGroupAverage(70, 50000);
 
         expect(result1).toBeDefined();
         expect(result2).toBeDefined();
-        expect(result2.ageGroupAverage).toBeGreaterThan(result1.ageGroupAverage);
+        expect(result2.ageGroupAverage).toBeGreaterThan(
+          result1.ageGroupAverage,
+        );
       });
     });
 
-    describe('getScorePercentile', () => {
-      it('should return high percentile for excellent scores', async () => {
+    describe("getScorePercentile", () => {
+      it("should return high percentile for excellent scores", async () => {
         const percentile = await calculator.getScorePercentile(95);
         expect(percentile).toBeGreaterThanOrEqual(90);
       });
 
-      it('should return medium percentile for average scores', async () => {
+      it("should return medium percentile for average scores", async () => {
         const percentile = await calculator.getScorePercentile(65);
         expect(percentile).toBeGreaterThanOrEqual(40);
         expect(percentile).toBeLessThanOrEqual(70);
       });
 
-      it('should return low percentile for poor scores', async () => {
+      it("should return low percentile for poor scores", async () => {
         const percentile = await calculator.getScorePercentile(45);
         expect(percentile).toBeLessThanOrEqual(40);
       });
 
-      it('should handle edge case scores', async () => {
+      it("should handle edge case scores", async () => {
         const percentile0 = await calculator.getScorePercentile(0);
         const percentile100 = await calculator.getScorePercentile(100);
 
@@ -201,38 +203,46 @@ describe('HealthScoreCalculatorV2', () => {
       });
     });
 
-    describe('getScoreHistoryWithTrends', () => {
-      it('should return empty history for new users', async () => {
+    describe("getScoreHistoryWithTrends", () => {
+      it("should return empty history for new users", async () => {
         // Mock getScoreHistory to return empty array
-        jest.spyOn(calculator as any, 'getScoreHistory').mockResolvedValue([]);
+        jest.spyOn(calculator as any, "getScoreHistory").mockResolvedValue([]);
 
-        const result = await calculator.getScoreHistoryWithTrends('new-user-123', 6);
+        const result = await calculator.getScoreHistoryWithTrends(
+          "new-user-123",
+          6,
+        );
 
         expect(result).toBeDefined();
         expect(result.scores).toEqual([]);
-        expect(result.trendDirection).toBe('stable');
+        expect(result.trendDirection).toBe("stable");
         expect(result.trendPercent).toBe(0);
         expect(result.averageScore).toBe(0);
       });
 
-      it('should calculate trend statistics correctly', async () => {
+      it("should calculate trend statistics correctly", async () => {
         // Mock some historical data
         const mockHistory = [
-          { date: new Date('2024-10-01'), score: 60, grade: 'D' as const },
-          { date: new Date('2024-11-01'), score: 65, grade: 'D' as const },
-          { date: new Date('2024-12-01'), score: 70, grade: 'C' as const },
+          { date: new Date("2024-10-01"), score: 60, grade: "D" as const },
+          { date: new Date("2024-11-01"), score: 65, grade: "D" as const },
+          { date: new Date("2024-12-01"), score: 70, grade: "C" as const },
         ];
 
         // Mock the getScoreHistory method to return our test data
-        jest.spyOn(calculator as any, 'getScoreHistory').mockResolvedValue(mockHistory);
+        jest
+          .spyOn(calculator as any, "getScoreHistory")
+          .mockResolvedValue(mockHistory);
 
-        const result = await calculator.getScoreHistoryWithTrends('test-user', 3);
+        const result = await calculator.getScoreHistoryWithTrends(
+          "test-user",
+          3,
+        );
 
         expect(result.scores).toHaveLength(3);
         expect(result.averageScore).toBeCloseTo(65, 0);
         expect(result.highestScore).toBe(70);
         expect(result.lowestScore).toBe(60);
-        expect(result.trendDirection).toBe('improving');
+        expect(result.trendDirection).toBe("improving");
       });
     });
   });
@@ -244,15 +254,15 @@ function createMockContext(): AggregatedFinancialContext {
   const now = new Date();
   return {
     user: {
-      id: 'test-user-123',
-      email: 'test@example.com',
-      fullName: 'Test User',
-      subscriptionTier: 'premium',
+      id: "test-user-123",
+      email: "test@example.com",
+      fullName: "Test User",
+      subscriptionTier: "premium",
       createdAt: now,
       onboardingCompleted: true,
       preferences: {
-        currency: 'USD',
-        timezone: 'America/New_York',
+        currency: "USD",
+        timezone: "America/New_York",
         budgetAlertThreshold: 80,
         goalRemindersEnabled: true,
         insightNotificationsEnabled: true,
@@ -261,10 +271,10 @@ function createMockContext(): AggregatedFinancialContext {
     accounts: {
       checking: [
         {
-          id: '1',
-          institutionName: 'Bank',
-          accountName: 'Checking',
-          accountType: 'checking',
+          id: "1",
+          institutionName: "Bank",
+          accountName: "Checking",
+          accountType: "checking",
           currentBalance: 5000,
           isLinked: true,
           lastUpdatedAt: now,
@@ -272,10 +282,10 @@ function createMockContext(): AggregatedFinancialContext {
       ],
       savings: [
         {
-          id: '2',
-          institutionName: 'Bank',
-          accountName: 'Savings',
-          accountType: 'savings',
+          id: "2",
+          institutionName: "Bank",
+          accountName: "Savings",
+          accountType: "savings",
           currentBalance: 10000,
           isLinked: true,
           lastUpdatedAt: now,
@@ -283,10 +293,10 @@ function createMockContext(): AggregatedFinancialContext {
       ],
       credit: [
         {
-          id: '3',
-          institutionName: 'Bank',
-          accountName: 'Credit Card',
-          accountType: 'credit',
+          id: "3",
+          institutionName: "Bank",
+          accountName: "Credit Card",
+          accountType: "credit",
           currentBalance: -2000,
           creditLimit: 10000,
           isLinked: true,
@@ -303,17 +313,17 @@ function createMockContext(): AggregatedFinancialContext {
     budgets: {
       items: [
         {
-          id: '1',
-          userId: 'test-user-123',
-          name: 'Food Budget',
-          category: 'food',
+          id: "1",
+          userId: "test-user-123",
+          name: "Food Budget",
+          category: "food",
           budgetedAmount: 500,
           spentAmount: 450,
           remainingAmount: 50,
-          period: 'monthly',
+          period: "monthly",
           periodStart: now,
           periodEnd: now,
-          status: 'on_track',
+          status: "on_track",
           percentUsed: 90,
           rolloverEnabled: false,
           rolloverAmount: 0,
@@ -332,7 +342,7 @@ function createMockContext(): AggregatedFinancialContext {
         topOverBudgetCategories: [],
         topUnderBudgetCategories: [],
         periodSummary: {
-          period: 'monthly',
+          period: "monthly",
           startDate: now,
           endDate: now,
           daysRemaining: 15,
@@ -351,11 +361,11 @@ function createMockContext(): AggregatedFinancialContext {
         recentTransactions: [],
         byCategory: [
           {
-            category: 'Food',
+            category: "Food",
             amount: 500,
             percentage: 16.7,
             transactionCount: 10,
-            trend: 'stable',
+            trend: "stable",
             changeFromLastPeriod: 0,
           },
         ],
@@ -369,10 +379,10 @@ function createMockContext(): AggregatedFinancialContext {
       yearToDateTotal: 36000,
       topCategories: [
         {
-          category: 'Food',
+          category: "Food",
           amount: 500,
           percentage: 16.7,
-          trend: 'stable',
+          trend: "stable",
           changePercent: 0,
         },
       ],
@@ -381,14 +391,14 @@ function createMockContext(): AggregatedFinancialContext {
     bills: {
       items: [
         {
-          id: '1',
-          userId: 'test-user-123',
-          name: 'Rent',
+          id: "1",
+          userId: "test-user-123",
+          name: "Rent",
           amount: 1500,
           dueDate: now,
-          frequency: 'monthly',
-          category: 'housing',
-          status: 'pending',
+          frequency: "monthly",
+          category: "housing",
+          status: "pending",
           isAutoPay: true,
           reminderDays: 3,
           createdAt: now,
@@ -410,18 +420,18 @@ function createMockContext(): AggregatedFinancialContext {
     savings: {
       goals: [
         {
-          id: '1',
-          userId: 'test-user-123',
-          name: 'Emergency Fund',
+          id: "1",
+          userId: "test-user-123",
+          name: "Emergency Fund",
           targetAmount: 20000,
           currentAmount: 10000,
           targetDate: now,
-          priority: 'high',
-          status: 'in_progress',
+          priority: "high",
+          status: "in_progress",
           autoContribute: true,
           contributionAmount: 500,
-          contributionFrequency: 'monthly',
-          linkedAccountId: '2',
+          contributionFrequency: "monthly",
+          linkedAccountId: "2",
           createdAt: now,
           updatedAt: now,
         },
@@ -442,10 +452,10 @@ function createMockContext(): AggregatedFinancialContext {
     debt: {
       items: [
         {
-          id: '1',
-          userId: 'test-user-123',
-          name: 'Credit Card',
-          type: 'credit_card',
+          id: "1",
+          userId: "test-user-123",
+          name: "Credit Card",
+          type: "credit_card",
           balance: 2000,
           originalBalance: 3000,
           interestRate: 18,
@@ -485,21 +495,21 @@ function createMockContext(): AggregatedFinancialContext {
       dayChange: 100,
       totalGainLoss: 5000,
       diversificationScore: 70,
-      riskLevel: 'moderate',
+      riskLevel: "moderate",
       retirementReadiness: 50,
     },
     credit: {
       currentScore: 720,
       scoreChange: 5,
-      scoreChangeDirection: 'up',
+      scoreChangeDirection: "up",
       lastUpdated: now,
       scoreHistory: [],
       factors: [
         {
-          name: 'Payment History',
-          impact: 'high',
-          status: 'positive',
-          description: 'Good payment history',
+          name: "Payment History",
+          impact: "high",
+          status: "positive",
+          description: "Good payment history",
         },
       ],
       activeDisputes: 0,
@@ -508,13 +518,13 @@ function createMockContext(): AggregatedFinancialContext {
     },
     healthScore: {
       overallScore: 75,
-      grade: 'C',
+      grade: "C",
       breakdown: {
-        savings: { score: 70, weight: 0.25, status: 'fair', factors: [] },
-        debt: { score: 80, weight: 0.25, status: 'good', factors: [] },
-        spending: { score: 75, weight: 0.2, status: 'fair', factors: [] },
-        credit: { score: 80, weight: 0.2, status: 'good', factors: [] },
-        investments: { score: 70, weight: 0.1, status: 'fair', factors: [] },
+        savings: { score: 70, weight: 0.25, status: "fair", factors: [] },
+        debt: { score: 80, weight: 0.25, status: "good", factors: [] },
+        spending: { score: 75, weight: 0.2, status: "fair", factors: [] },
+        credit: { score: 80, weight: 0.2, status: "good", factors: [] },
+        investments: { score: 70, weight: 0.1, status: "fair", factors: [] },
       },
       recommendations: [],
       calculatedAt: now,

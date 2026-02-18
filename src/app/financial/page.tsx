@@ -1,11 +1,11 @@
-import { Suspense } from 'react';
-import { Metadata } from 'next';
-import FinancialDashboard from '@/components/financial/FinancialDashboard';
+import { Suspense } from "react";
+import { Metadata } from "next";
+import FinancialDashboard from "@/components/financial/FinancialDashboard";
 
 export const metadata: Metadata = {
-  title: 'Financial Dashboard | Fynvita',
+  title: "Financial Dashboard | Fynvita",
   description:
-    'Track your finances, manage budgets, and achieve your financial goals',
+    "Track your finances, manage budgets, and achieve your financial goals",
 };
 
 function DashboardLoadingSkeleton() {
@@ -14,7 +14,10 @@ function DashboardLoadingSkeleton() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+          <div
+            key={i}
+            className="bg-white dark:bg-slate-800 rounded-lg shadow p-6"
+          >
             <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/2 mb-4"></div>
             <div className="h-8 bg-gray-200 dark:bg-slate-700 rounded w-3/4 mb-2"></div>
             <div className="h-3 bg-gray-200 dark:bg-slate-700 rounded w-1/3"></div>

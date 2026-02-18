@@ -12,8 +12,8 @@
  * - Automatic expiration and cleanup
  */
 
-import { getSupabase } from '@/lib/supabase/client';
-import { AIMLService } from '@/lib/aiml-service';
+import { getSupabase } from "@/lib/supabase/client";
+import { AIMLService } from "@/lib/aiml-service";
 import {
   FinancialInsight,
   InsightType,
@@ -27,9 +27,9 @@ import {
   SavingsOpportunityInsight,
   BillReminderInsight,
   BudgetAlertInsight,
-} from './types/insight.types';
-import { FinancialContext } from './types/financial-context.types';
-import { financialContextEngine } from './financial-context-engine';
+} from "./types/insight.types";
+import { FinancialContext } from "./types/financial-context.types";
+import { financialContextEngine } from "./financial-context-engine";
 
 // ============================================================================
 // CONSTANTS
@@ -38,7 +38,7 @@ import { financialContextEngine } from './financial-context-engine';
 const DEFAULT_OPTIONS: InsightGenerationOptions = {
   types: undefined, // All types
   categories: undefined, // All categories
-  minPriority: 'low',
+  minPriority: "low",
   limit: 20,
   includeAI: true,
   includeDismissed: false,
@@ -52,7 +52,7 @@ const PRIORITY_ORDER: Record<InsightPriority, number> = {
   info: 1,
 };
 
-const AI_MODEL = 'anthropic/claude-4.5-sonnet';
+const AI_MODEL = "anthropic/claude-4.5-sonnet";
 
 // ============================================================================
 // SMART INSIGHTS ENGINE
@@ -69,7 +69,7 @@ class SmartInsightsEngine {
       try {
         this.aimlService = new AIMLService();
       } catch {
-        console.warn('Failed to initialize AIML service for insights');
+        console.warn("Failed to initialize AIML service for insights");
       }
     }
     return this.aimlService;
@@ -80,7 +80,7 @@ class SmartInsightsEngine {
    */
   async generateInsights(
     userId: string,
-    options: InsightGenerationOptions = {}
+    options: InsightGenerationOptions = {},
   ): Promise<InsightGenerationResult> {
     const startTime = Date.now();
     const mergedOptions = { ...DEFAULT_OPTIONS, ...options };
@@ -116,7 +116,7 @@ class SmartInsightsEngine {
 
     // Sort by priority
     insights.sort(
-      (a, b) => PRIORITY_ORDER[b.priority] - PRIORITY_ORDER[a.priority]
+      (a, b) => PRIORITY_ORDER[b.priority] - PRIORITY_ORDER[a.priority],
     );
 
     // Apply limit
@@ -135,11 +135,11 @@ class SmartInsightsEngine {
       processingTimeMs: Date.now() - startTime,
       aiModelUsed: mergedOptions.includeAI ? AI_MODEL : undefined,
       dataSourcesUsed: [
-        'accounts',
-        'transactions',
-        'budgets',
-        'bills',
-        'goals',
+        "accounts",
+        "transactions",
+        "budgets",
+        "bills",
+        "goals",
       ],
     };
   }
@@ -149,22 +149,22 @@ class SmartInsightsEngine {
    */
   async getStoredInsights(
     userId: string,
-    options: InsightGenerationOptions = {}
+    options: InsightGenerationOptions = {},
   ): Promise<FinancialInsight[]> {
     const mergedOptions = { ...DEFAULT_OPTIONS, ...options };
 
     let query = getSupabase()
-      .from('financial_insights')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .from("financial_insights")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
     if (!mergedOptions.includeDismissed) {
-      query = query.eq('dismissed', false);
+      query = query.eq("dismissed", false);
     }
 
     if (mergedOptions.types && mergedOptions.types.length > 0) {
-      query = query.in('type', mergedOptions.types);
+      query = query.in("type", mergedOptions.types);
     }
 
     if (mergedOptions.limit) {
@@ -174,7 +174,7 @@ class SmartInsightsEngine {
     const { data, error } = await query;
 
     if (error) {
-      console.error('Error fetching stored insights:', error);
+      console.error("Error fetching stored insights:", error);
       return [];
     }
 
@@ -215,11 +215,11 @@ class SmartInsightsEngine {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (getSupabase() as any)
-      .from('financial_insights')
-      .upsert(records, { onConflict: 'id' });
+      .from("financial_insights")
+      .upsert(records, { onConflict: "id" });
 
     if (error) {
-      console.error('Error saving insights:', error);
+      console.error("Error saving insights:", error);
     }
   }
 
@@ -229,10 +229,10 @@ class SmartInsightsEngine {
   async dismissInsight(insightId: string, userId: string): Promise<boolean> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (getSupabase() as any)
-      .from('financial_insights')
+      .from("financial_insights")
       .update({ dismissed: true, dismissed_at: new Date().toISOString() })
-      .eq('id', insightId)
-      .eq('user_id', userId);
+      .eq("id", insightId)
+      .eq("user_id", userId);
 
     return !error;
   }
@@ -243,17 +243,17 @@ class SmartInsightsEngine {
   async recordAction(
     insightId: string,
     userId: string,
-    action: string
+    action: string,
   ): Promise<boolean> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (getSupabase() as any)
-      .from('financial_insights')
+      .from("financial_insights")
       .update({
         action_taken: action,
         action_taken_at: new Date().toISOString(),
       })
-      .eq('id', insightId)
-      .eq('user_id', userId);
+      .eq("id", insightId)
+      .eq("user_id", userId);
 
     return !error;
   }
@@ -267,7 +267,7 @@ class SmartInsightsEngine {
    */
   private async generateSpendingAnomalies(
     userId: string,
-    context: FinancialContext
+    context: FinancialContext,
   ): Promise<SpendingAnomalyInsight[]> {
     const insights: SpendingAnomalyInsight[] = [];
     const transactions = context.transactions?.recentTransactions || [];
@@ -297,32 +297,32 @@ class SmartInsightsEngine {
           insights.push({
             id: `anomaly_${txn.id}`,
             userId,
-            type: 'spending_anomaly',
-            category: 'spending',
-            priority: txn.amount > average * 5 ? 'high' : 'medium',
-            impact: 'warning',
-            title: 'Unusual Transaction Detected',
+            type: "spending_anomaly",
+            category: "spending",
+            priority: txn.amount > average * 5 ? "high" : "medium",
+            impact: "warning",
+            title: "Unusual Transaction Detected",
             description: `A ${txn.category} transaction of $${txn.amount.toFixed(2)} at ${txn.merchantName} is ${Math.round(txn.amount / average)}x your average.`,
             amount: txn.amount,
             comparisonValue: average,
-            anomalyType: 'unusual_large',
+            anomalyType: "unusual_large",
             transactionId: txn.id,
-            merchantName: txn.merchantName || 'Unknown',
+            merchantName: txn.merchantName || "Unknown",
             expectedAmount: average,
             relatedTransactionIds: [txn.id],
             actions: [
               {
-                id: 'review',
-                label: 'Review Transaction',
-                type: 'link',
+                id: "review",
+                label: "Review Transaction",
+                type: "link",
                 href: `/transactions/${txn.id}`,
               },
-              { id: 'dismiss', label: 'Dismiss', type: 'dismiss' },
+              { id: "dismiss", label: "Dismiss", type: "dismiss" },
             ],
             dismissed: false,
             createdAt: new Date(),
             confidence: 85,
-            dataSource: ['transactions'],
+            dataSource: ["transactions"],
           });
         }
       }
@@ -336,7 +336,7 @@ class SmartInsightsEngine {
    */
   private async generateSavingsOpportunities(
     userId: string,
-    context: FinancialContext
+    context: FinancialContext,
   ): Promise<SavingsOpportunityInsight[]> {
     const insights: SavingsOpportunityInsight[] = [];
     const transactions = context.transactions?.recentTransactions || [];
@@ -364,31 +364,31 @@ class SmartInsightsEngine {
         const avgAmount = data.total / data.count;
         if (avgAmount >= 5 && avgAmount <= 50) {
           insights.push({
-            id: `savings_sub_${merchant.replace(/\s+/g, '_').toLowerCase()}`,
+            id: `savings_sub_${merchant.replace(/\s+/g, "_").toLowerCase()}`,
             userId,
-            type: 'savings_opportunity',
-            category: 'savings',
-            priority: 'medium',
-            impact: 'positive',
-            title: 'Potential Subscription Savings',
+            type: "savings_opportunity",
+            category: "savings",
+            priority: "medium",
+            impact: "positive",
+            title: "Potential Subscription Savings",
             description: `You've paid ${merchant} ${data.count} times (~$${avgAmount.toFixed(2)}/payment). Review if this subscription is still needed.`,
             amount: avgAmount,
-            opportunityType: 'subscription_cancel',
+            opportunityType: "subscription_cancel",
             potentialSavings: avgAmount * 12,
-            timeframe: 'yearly',
+            timeframe: "yearly",
             actions: [
               {
-                id: 'review',
-                label: 'Review Subscriptions',
-                type: 'link',
-                href: '/bills',
+                id: "review",
+                label: "Review Subscriptions",
+                type: "link",
+                href: "/bills",
               },
-              { id: 'dismiss', label: 'Keep Subscription', type: 'dismiss' },
+              { id: "dismiss", label: "Keep Subscription", type: "dismiss" },
             ],
             dismissed: false,
             createdAt: new Date(),
             confidence: 70,
-            dataSource: ['transactions'],
+            dataSource: ["transactions"],
           });
         }
       }
@@ -402,38 +402,38 @@ class SmartInsightsEngine {
    */
   private async generateBillReminders(
     userId: string,
-    context: FinancialContext
+    context: FinancialContext,
   ): Promise<BillReminderInsight[]> {
     const insights: BillReminderInsight[] = [];
 
     // Get upcoming bills from database
     const { data: bills } = await getSupabase()
-      .from('recurring_bills')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('status', 'active')
-      .gte('next_due_date', new Date().toISOString())
-      .order('next_due_date', { ascending: true })
+      .from("recurring_bills")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .gte("next_due_date", new Date().toISOString())
+      .order("next_due_date", { ascending: true })
       .limit(10);
 
     const today = new Date();
     for (const bill of bills || []) {
       const dueDate = new Date(bill.next_due_date);
       const daysUntilDue = Math.ceil(
-        (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+        (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
       );
 
       if (daysUntilDue <= 7) {
         insights.push({
           id: `bill_reminder_${bill.id}`,
           userId,
-          type: 'bill_reminder',
-          category: 'bills',
+          type: "bill_reminder",
+          category: "bills",
           priority:
-            daysUntilDue <= 2 ? 'high' : daysUntilDue <= 5 ? 'medium' : 'low',
-          impact: 'warning',
+            daysUntilDue <= 2 ? "high" : daysUntilDue <= 5 ? "medium" : "low",
+          impact: "warning",
           title: `${bill.name} Due Soon`,
-          description: `Your ${bill.name} bill of $${bill.amount.toFixed(2)} is due in ${daysUntilDue} day${daysUntilDue !== 1 ? 's' : ''}.`,
+          description: `Your ${bill.name} bill of $${bill.amount.toFixed(2)} is due in ${daysUntilDue} day${daysUntilDue !== 1 ? "s" : ""}.`,
           amount: bill.amount,
           billId: bill.id,
           billName: bill.name,
@@ -442,17 +442,17 @@ class SmartInsightsEngine {
           relatedBillIds: [bill.id],
           actions: [
             {
-              id: 'pay',
-              label: 'Pay Now',
-              type: 'link',
+              id: "pay",
+              label: "Pay Now",
+              type: "link",
               href: `/bills/${bill.id}/pay`,
             },
-            { id: 'snooze', label: 'Remind Later', type: 'snooze' },
+            { id: "snooze", label: "Remind Later", type: "snooze" },
           ],
           dismissed: false,
           createdAt: new Date(),
           confidence: 95,
-          dataSource: ['bills'],
+          dataSource: ["bills"],
         });
       }
     }
@@ -465,7 +465,7 @@ class SmartInsightsEngine {
    */
   private async generateBudgetAlerts(
     userId: string,
-    context: FinancialContext
+    context: FinancialContext,
   ): Promise<BudgetAlertInsight[]> {
     const insights: BudgetAlertInsight[] = [];
 
@@ -475,15 +475,15 @@ class SmartInsightsEngine {
       if (percentUsed >= 80) {
         const daysRemaining = this.getDaysRemainingInPeriod(budget.period);
         const priority: InsightPriority =
-          percentUsed >= 100 ? 'high' : percentUsed >= 90 ? 'medium' : 'low';
+          percentUsed >= 100 ? "high" : percentUsed >= 90 ? "medium" : "low";
 
         insights.push({
           id: `budget_alert_${budget.category}`,
           userId,
-          type: 'budget_alert',
-          category: 'budget',
+          type: "budget_alert",
+          category: "budget",
           priority,
-          impact: percentUsed >= 100 ? 'negative' : 'warning',
+          impact: percentUsed >= 100 ? "negative" : "warning",
           title:
             percentUsed >= 100
               ? `${budget.category} Budget Exceeded`
@@ -503,22 +503,22 @@ class SmartInsightsEngine {
           daysRemaining,
           actions: [
             {
-              id: 'view',
-              label: 'View Budget',
-              type: 'link',
+              id: "view",
+              label: "View Budget",
+              type: "link",
               href: `/budgets/${budget.category}`,
             },
             {
-              id: 'adjust',
-              label: 'Adjust Budget',
-              type: 'link',
+              id: "adjust",
+              label: "Adjust Budget",
+              type: "link",
               href: `/budgets/${budget.category}/edit`,
             },
           ],
           dismissed: false,
           createdAt: new Date(),
           confidence: 100,
-          dataSource: ['budgets', 'transactions'],
+          dataSource: ["budgets", "transactions"],
         });
       }
     }
@@ -531,7 +531,7 @@ class SmartInsightsEngine {
    */
   private async generateIncomePatterns(
     userId: string,
-    context: FinancialContext
+    context: FinancialContext,
   ): Promise<FinancialInsight[]> {
     const insights: FinancialInsight[] = [];
     const income = context.transactions?.totalIncome || 0;
@@ -543,33 +543,33 @@ class SmartInsightsEngine {
       insights.push({
         id: `income_deficit_${Date.now()}`,
         userId,
-        type: 'income_pattern',
-        category: 'income',
-        priority: deficit > income * 0.2 ? 'high' : 'medium',
-        impact: 'negative',
-        title: 'Spending Exceeds Income',
+        type: "income_pattern",
+        category: "income",
+        priority: deficit > income * 0.2 ? "high" : "medium",
+        impact: "negative",
+        title: "Spending Exceeds Income",
         description: `Your expenses ($${expenses.toFixed(2)}) exceed your income ($${income.toFixed(2)}) by $${deficit.toFixed(2)} this month.`,
         amount: deficit,
         comparisonValue: income,
-        trend: 'down',
+        trend: "down",
         actions: [
           {
-            id: 'review',
-            label: 'Review Spending',
-            type: 'link',
-            href: '/spending',
+            id: "review",
+            label: "Review Spending",
+            type: "link",
+            href: "/spending",
           },
           {
-            id: 'budget',
-            label: 'Create Budget',
-            type: 'link',
-            href: '/budgets/new',
+            id: "budget",
+            label: "Create Budget",
+            type: "link",
+            href: "/budgets/new",
           },
         ],
         dismissed: false,
         createdAt: new Date(),
         confidence: 90,
-        dataSource: ['transactions'],
+        dataSource: ["transactions"],
       });
     }
 
@@ -581,7 +581,7 @@ class SmartInsightsEngine {
    */
   private async generateAccountOptimizations(
     userId: string,
-    context: FinancialContext
+    context: FinancialContext,
   ): Promise<FinancialInsight[]> {
     const insights: FinancialInsight[] = [];
 
@@ -591,32 +591,32 @@ class SmartInsightsEngine {
         insights.push({
           id: `account_low_savings_${account.accountId}`,
           userId,
-          type: 'account_optimization',
-          category: 'accounts',
-          priority: account.currentBalance < 100 ? 'high' : 'medium',
-          impact: 'warning',
-          title: 'Low Savings Balance',
+          type: "account_optimization",
+          category: "accounts",
+          priority: account.currentBalance < 100 ? "high" : "medium",
+          impact: "warning",
+          title: "Low Savings Balance",
           description: `Your ${account.name} account has only $${account.currentBalance.toFixed(2)}. Consider building an emergency fund.`,
           amount: account.currentBalance,
           relatedAccountIds: [account.accountId],
           actions: [
             {
-              id: 'transfer',
-              label: 'Transfer Funds',
-              type: 'link',
-              href: '/transfers',
+              id: "transfer",
+              label: "Transfer Funds",
+              type: "link",
+              href: "/transfers",
             },
             {
-              id: 'goals',
-              label: 'Set Savings Goal',
-              type: 'link',
-              href: '/goals/new',
+              id: "goals",
+              label: "Set Savings Goal",
+              type: "link",
+              href: "/goals/new",
             },
           ],
           dismissed: false,
           createdAt: new Date(),
           confidence: 95,
-          dataSource: ['accounts'],
+          dataSource: ["accounts"],
         });
       }
     }
@@ -633,7 +633,7 @@ class SmartInsightsEngine {
    */
   private filterInsights(
     insights: FinancialInsight[],
-    options: InsightGenerationOptions
+    options: InsightGenerationOptions,
   ): FinancialInsight[] {
     return insights.filter((insight) => {
       if (options.types && !options.types.includes(insight.type)) {
@@ -663,7 +663,7 @@ class SmartInsightsEngine {
    */
   private async enrichWithAI(
     insights: FinancialInsight[],
-    context: FinancialContext
+    context: FinancialContext,
   ): Promise<FinancialInsight[]> {
     const aiService = this.getAIService();
     if (!aiService || insights.length === 0) {
@@ -676,14 +676,14 @@ class SmartInsightsEngine {
 
       const response = await aiService.chat(AI_MODEL, [
         {
-          role: 'system',
+          role: "system",
           content:
-            'You are a helpful financial advisor. Generate brief, actionable recommendations for financial insights. Respond in JSON format.',
+            "You are a helpful financial advisor. Generate brief, actionable recommendations for financial insights. Respond in JSON format.",
         },
-        { role: 'user', content: prompt },
+        { role: "user", content: prompt },
       ]);
 
-      const content = response.choices[0]?.message?.content || '';
+      const content = response.choices[0]?.message?.content || "";
       const recommendations = this.parseAIResponse(content);
 
       for (const insight of insights) {
@@ -693,7 +693,7 @@ class SmartInsightsEngine {
         }
       }
     } catch (error) {
-      console.warn('Failed to generate AI recommendations:', error);
+      console.warn("Failed to generate AI recommendations:", error);
     }
 
     return insights;
@@ -701,16 +701,16 @@ class SmartInsightsEngine {
 
   private buildAIPrompt(
     insights: FinancialInsight[],
-    context: FinancialContext
+    context: FinancialContext,
   ): string {
     const summaries = insights.map(
-      (i) => `- ID: ${i.id}, Type: ${i.type}, Title: ${i.title}`
+      (i) => `- ID: ${i.id}, Type: ${i.type}, Title: ${i.title}`,
     );
-    return `Insights for user with net worth $${context.accounts.netWorth.toFixed(2)}:\n${summaries.join('\n')}`;
+    return `Insights for user with net worth $${context.accounts.netWorth.toFixed(2)}:\n${summaries.join("\n")}`;
   }
 
   private parseAIResponse(
-    content: string
+    content: string,
   ): Array<{ insightId: string; recommendation: string }> {
     try {
       const jsonMatch = content.match(/\[[\s\S]*\]/);
@@ -725,7 +725,7 @@ class SmartInsightsEngine {
     const now = new Date();
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     return Math.ceil(
-      (endOfMonth.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+      (endOfMonth.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
     );
   }
 
@@ -745,7 +745,7 @@ class SmartInsightsEngine {
       amount: row.amount as number | undefined,
       percentage: row.percentage as number | undefined,
       comparisonValue: row.comparison_value as number | undefined,
-      trend: row.trend as 'up' | 'down' | 'stable' | undefined,
+      trend: row.trend as "up" | "down" | "stable" | undefined,
       relatedAccountIds: row.related_account_ids as string[] | undefined,
       relatedTransactionIds: row.related_transaction_ids as
         | string[]

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Goal Investment Dashboard
@@ -10,8 +10,8 @@
  * - Allocation visualization
  */
 
-import React, { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Target,
   TrendingUp,
@@ -27,22 +27,22 @@ import {
   CheckCircle,
   Clock,
   Zap,
-} from 'lucide-react';
+} from "lucide-react";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 export type GoalType =
-  | 'retirement'
-  | 'house'
-  | 'education'
-  | 'emergency'
-  | 'vacation'
-  | 'car'
-  | 'wedding'
-  | 'custom';
-export type GoalStatus = 'on_track' | 'ahead' | 'behind' | 'at_risk';
+  | "retirement"
+  | "house"
+  | "education"
+  | "emergency"
+  | "vacation"
+  | "car"
+  | "wedding"
+  | "custom";
+export type GoalStatus = "on_track" | "ahead" | "behind" | "at_risk";
 
 export interface GoalSummary {
   id: string;
@@ -103,14 +103,14 @@ export interface GoalInvestmentDashboardProps {
 // ============================================================================
 
 const GOAL_TYPE_ICONS: Record<GoalType, string> = {
-  retirement: '',
-  house: '',
-  education: '',
-  emergency: '',
-  vacation: '',
-  car: '',
-  wedding: '',
-  custom: '',
+  retirement: "",
+  house: "",
+  education: "",
+  emergency: "",
+  vacation: "",
+  car: "",
+  wedding: "",
+  custom: "",
 };
 
 const STATUS_CONFIG: Record<
@@ -118,20 +118,20 @@ const STATUS_CONFIG: Record<
   { color: string; bgColor: string; label: string }
 > = {
   on_track: {
-    color: 'text-emerald-400',
-    bgColor: 'bg-emerald-500/20',
-    label: 'On Track',
+    color: "text-emerald-400",
+    bgColor: "bg-emerald-500/20",
+    label: "On Track",
   },
-  ahead: { color: 'text-blue-400', bgColor: 'bg-blue-500/20', label: 'Ahead' },
+  ahead: { color: "text-blue-400", bgColor: "bg-blue-500/20", label: "Ahead" },
   behind: {
-    color: 'text-amber-400',
-    bgColor: 'bg-amber-500/20',
-    label: 'Behind',
+    color: "text-amber-400",
+    bgColor: "bg-amber-500/20",
+    label: "Behind",
   },
   at_risk: {
-    color: 'text-red-400',
-    bgColor: 'bg-red-500/20',
-    label: 'At Risk',
+    color: "text-red-400",
+    bgColor: "bg-red-500/20",
+    label: "At Risk",
   },
 };
 
@@ -151,11 +151,11 @@ export function GoalInvestmentDashboard({
   onEditGoal,
   onViewDetails,
 }: GoalInvestmentDashboardProps) {
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const selectedGoal = useMemo(
     () => goals.find((g) => g.id === selectedGoalId),
-    [goals, selectedGoalId]
+    [goals, selectedGoalId],
   );
 
   const overallProgress = useMemo(() => {
@@ -167,9 +167,9 @@ export function GoalInvestmentDashboard({
 
   const goalsOnTrack = useMemo(
     () =>
-      goals.filter((g) => g.status === 'on_track' || g.status === 'ahead')
+      goals.filter((g) => g.status === "on_track" || g.status === "ahead")
         .length,
-    [goals]
+    [goals],
   );
 
   return (
@@ -213,21 +213,21 @@ export function GoalInvestmentDashboard({
           <div className="flex items-center gap-3">
             <div className="flex items-center bg-gray-800 rounded-lg p-1">
               <button
-                onClick={() => setViewMode('grid')}
+                onClick={() => setViewMode("grid")}
                 className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                  viewMode === 'grid'
-                    ? 'bg-gray-700 text-white'
-                    : 'text-gray-400 dark:text-slate-500 hover:text-white'
+                  viewMode === "grid"
+                    ? "bg-gray-700 text-white"
+                    : "text-gray-400 dark:text-slate-500 hover:text-white"
                 }`}
               >
                 Grid
               </button>
               <button
-                onClick={() => setViewMode('list')}
+                onClick={() => setViewMode("list")}
                 className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                  viewMode === 'list'
-                    ? 'bg-gray-700 text-white'
-                    : 'text-gray-400 dark:text-slate-500 hover:text-white'
+                  viewMode === "list"
+                    ? "bg-gray-700 text-white"
+                    : "text-gray-400 dark:text-slate-500 hover:text-white"
                 }`}
               >
                 List
@@ -258,7 +258,7 @@ export function GoalInvestmentDashboard({
               Create Goal
             </button>
           </div>
-        ) : viewMode === 'grid' ? (
+        ) : viewMode === "grid" ? (
           <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {goals.map((goal) => (
               <GoalCard
@@ -294,7 +294,9 @@ export function GoalInvestmentDashboard({
             <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-800">
                 <h3 className="text-lg font-semibold text-white">Projection</h3>
-                <p className="text-sm text-gray-400 dark:text-slate-500">{selectedGoal.name}</p>
+                <p className="text-sm text-gray-400 dark:text-slate-500">
+                  {selectedGoal.name}
+                </p>
               </div>
               <div className="p-6 space-y-6">
                 {/* Scenario Bars */}
@@ -302,7 +304,9 @@ export function GoalInvestmentDashboard({
                   {projectionData.scenarios.map((scenario, idx) => (
                     <div key={idx}>
                       <div className="flex items-center justify-between text-sm mb-1">
-                        <span className="text-gray-400 dark:text-slate-500">{scenario.label}</span>
+                        <span className="text-gray-400 dark:text-slate-500">
+                          {scenario.label}
+                        </span>
                         <span className="text-white font-medium">
                           ${scenario.amount.toLocaleString()}
                         </span>
@@ -311,10 +315,10 @@ export function GoalInvestmentDashboard({
                         <div
                           className={`h-full rounded-full ${
                             idx === 0
-                              ? 'bg-red-500/60'
+                              ? "bg-red-500/60"
                               : idx === 1
-                                ? 'bg-blue-500'
-                                : 'bg-emerald-500/60'
+                                ? "bg-blue-500"
+                                : "bg-emerald-500/60"
                           }`}
                           style={{
                             width: `${(scenario.amount / projectionData.targetAmount) * 100}%`,
@@ -372,7 +376,9 @@ export function GoalInvestmentDashboard({
             <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-800">
                 <h3 className="text-lg font-semibold text-white">Allocation</h3>
-                <p className="text-sm text-gray-400 dark:text-slate-500">{selectedGoal.name}</p>
+                <p className="text-sm text-gray-400 dark:text-slate-500">
+                  {selectedGoal.name}
+                </p>
               </div>
               <div className="p-6">
                 {/* Pie Chart Placeholder */}
@@ -405,12 +411,12 @@ export function GoalInvestmentDashboard({
                                 d={`M 50 50 L ${x1} ${y1} A 40 40 0 ${largeArc} 1 ${x2} ${y2} Z`}
                                 fill={alloc.color}
                                 className="hover:opacity-80 transition-opacity cursor-pointer"
-                              />
+                              />,
                             );
 
                             return { elements: acc.elements, offset: endAngle };
                           },
-                          { elements: [] as React.ReactNode[], offset: 0 }
+                          { elements: [] as React.ReactNode[], offset: 0 },
                         ).elements
                       }
                     </svg>
@@ -424,7 +430,9 @@ export function GoalInvestmentDashboard({
                           ).toFixed(1)}
                           K
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-slate-400">Total</p>
+                        <p className="text-xs text-gray-500 dark:text-slate-400">
+                          Total
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -481,23 +489,27 @@ function StatCard({
   label: string;
   value: string;
   subValue: string;
-  color: 'blue' | 'emerald' | 'purple' | 'amber';
+  color: "blue" | "emerald" | "purple" | "amber";
 }) {
   const colorClasses = {
-    blue: 'bg-blue-500/10 text-blue-400',
-    emerald: 'bg-emerald-500/10 text-emerald-400',
-    purple: 'bg-blue-500/10 text-blue-400',
-    amber: 'bg-amber-500/10 text-amber-400',
+    blue: "bg-blue-500/10 text-blue-400",
+    emerald: "bg-emerald-500/10 text-emerald-400",
+    purple: "bg-blue-500/10 text-blue-400",
+    amber: "bg-amber-500/10 text-amber-400",
   };
 
   return (
     <div className="bg-gray-900 rounded-xl border border-gray-800 p-4">
       <div className="flex items-center gap-3 mb-3">
         <div className={`p-2 rounded-lg ${colorClasses[color]}`}>{icon}</div>
-        <span className="text-sm text-gray-400 dark:text-slate-500">{label}</span>
+        <span className="text-sm text-gray-400 dark:text-slate-500">
+          {label}
+        </span>
       </div>
       <p className="text-2xl font-bold text-white">{value}</p>
-      <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">{subValue}</p>
+      <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+        {subValue}
+      </p>
     </div>
   );
 }
@@ -521,7 +533,7 @@ function GoalCard({
     <motion.div
       whileHover={{ scale: 1.02 }}
       className={`bg-gray-800/50 rounded-xl border cursor-pointer transition-colors ${
-        isSelected ? 'border-blue-500' : 'border-gray-700 hover:border-gray-600'
+        isSelected ? "border-blue-500" : "border-gray-700 hover:border-gray-600"
       }`}
       onClick={onSelect}
     >
@@ -624,7 +636,7 @@ function GoalListItem({
   return (
     <div
       className={`px-6 py-4 cursor-pointer transition-colors ${
-        isSelected ? 'bg-blue-500/10' : 'hover:bg-gray-800/50'
+        isSelected ? "bg-blue-500/10" : "hover:bg-gray-800/50"
       }`}
       onClick={onSelect}
     >

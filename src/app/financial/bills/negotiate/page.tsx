@@ -1,17 +1,17 @@
-import { Suspense } from 'react';
-import { Metadata } from 'next';
-import BillNegotiationAssistant from '@/components/financial/BillNegotiationAssistant';
-import Link from 'next/link';
+import { Suspense } from "react";
+import { Metadata } from "next";
+import BillNegotiationAssistant from "@/components/financial/BillNegotiationAssistant";
+import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: 'Bill Negotiation Assistant | Fynvita',
+  title: "Bill Negotiation Assistant | Fynvita",
   description:
-    'AI-powered bill negotiation with scripts, talking points, and savings tracking',
+    "AI-powered bill negotiation with scripts, talking points, and savings tracking",
   openGraph: {
-    title: 'Bill Negotiation Assistant | Fynvita',
+    title: "Bill Negotiation Assistant | Fynvita",
     description:
-      'AI-powered bill negotiation with scripts, talking points, and savings tracking',
-    type: 'website',
+      "AI-powered bill negotiation with scripts, talking points, and savings tracking",
+    type: "website",
   },
 };
 

@@ -3,11 +3,13 @@
 ## 🚀 QUICK START (When Resuming)
 
 ### **Current Status**
+
 - MSW v1 migration: ✅ COMPLETE
 - AIInsightsPanel tests: 6/9 passing (67%)
 - Remaining work: Fix 3 tests + update 9 component files
 
 ### **Run Tests**
+
 ```bash
 # Single component
 npm test -- --passWithNoTests --maxWorkers=2 AIInsightsPanel
@@ -24,12 +26,14 @@ npm run test:coverage
 ## 🔧 MSW v1 SYNTAX (Current Standard)
 
 ### **Import Statement**
+
 ```typescript
-import { rest } from 'msw';  // ✅ CORRECT (MSW v1)
+import { rest } from "msw"; // ✅ CORRECT (MSW v1)
 // NOT: import { http, HttpResponse } from 'msw';  // ❌ OLD (MSW v2)
 ```
 
 ### **Handler Pattern**
+
 ```typescript
 // ✅ CORRECT (MSW v1)
 rest.get('http://localhost/api/endpoint', (req, res, ctx) => {
@@ -47,15 +51,13 @@ http.get('http://localhost:3000/api/endpoint', () => {
 ```
 
 ### **Error Handler Pattern**
+
 ```typescript
 // ✅ CORRECT (MSW v1)
 server.use(
-  rest.get('http://localhost/api/endpoint', (req, res, ctx) => {
-    return res(
-      ctx.status(500),
-      ctx.json({ error: 'Internal Server Error' })
-    );
-  })
+  rest.get("http://localhost/api/endpoint", (req, res, ctx) => {
+    return res(ctx.status(500), ctx.json({ error: "Internal Server Error" }));
+  }),
 );
 ```
 
@@ -64,22 +66,27 @@ server.use(
 ## 📝 FIND & REPLACE PATTERNS
 
 ### **Pattern 1: Import Statement**
+
 - **Find**: `import { http, HttpResponse } from 'msw';`
 - **Replace**: `import { rest } from 'msw';`
 
 ### **Pattern 2: Handler Opening**
+
 - **Find**: `http.get(`
 - **Replace**: `rest.get(`
 
 ### **Pattern 3: Handler Function**
+
 - **Find**: `() => {`
 - **Replace**: `(req, res, ctx) => {`
 
 ### **Pattern 4: Response**
+
 - **Find**: `return HttpResponse.json(`
 - **Replace**: `return res(ctx.json(`
 
 ### **Pattern 5: URL**
+
 - **Find**: `http://localhost:3000/`
 - **Replace**: `http://localhost/`
 
@@ -94,10 +101,11 @@ server.use(
 **Lines**: 32-50
 
 **Fix Option A - Add Loading Skeleton**:
+
 ```typescript
 it('should render loading state initially', async () => {
   renderWithProviders(<AIInsightsPanel />);
-  
+
   // Look for loading skeleton/pulse animation
   const loadingElement = screen.getByTestId('loading-skeleton');
   expect(loadingElement).toBeInTheDocument();
@@ -105,12 +113,13 @@ it('should render loading state initially', async () => {
 ```
 
 **Fix Option B - Use act() Wrapper**:
+
 ```typescript
 it('should render loading state initially', async () => {
   await act(async () => {
     renderWithProviders(<AIInsightsPanel />);
   });
-  
+
   // Component should show loading initially
   expect(screen.getByText(/loading/i)).toBeInTheDocument();
 });
@@ -123,21 +132,22 @@ it('should render loading state initially', async () => {
 **Lines**: 103-115
 
 **Fix - Use fireEvent Instead**:
+
 ```typescript
 import { screen, waitFor, fireEvent } from '@testing-library/react';
 
 it('should toggle expand/collapse when button is clicked', async () => {
   renderWithProviders(<AIInsightsPanel />);
-  
+
   await waitFor(() => {
     expect(screen.getByText(/AI-Powered Insights/i)).toBeInTheDocument();
   });
-  
+
   const toggleButton = screen.getByRole('button', { name: /collapse|expand/i });
-  
+
   // Use fireEvent instead of user.click()
   fireEvent.click(toggleButton);
-  
+
   // Verify state changed
   expect(toggleButton).toHaveAttribute('aria-expanded', 'false');
 });
@@ -166,14 +176,17 @@ All in `src/components/*/tests/` directory:
 ## 🎯 SESSION GOALS
 
 ### **Goal 1: Fix AIInsightsPanel (30 min)**
+
 - Fix 3 failing tests
 - Achieve 9/9 passing (100%)
 
 ### **Goal 2: Update Remaining Tests (1-2 hours)**
+
 - Update 9 component test files to MSW v1
 - Run each test file to verify
 
 ### **Goal 3: Full Test Suite (30 min)**
+
 - Run all 130+ tests
 - Generate coverage report
 - Review results
@@ -183,6 +196,7 @@ All in `src/components/*/tests/` directory:
 ## 📊 EXPECTED OUTCOMES
 
 After completing all work:
+
 - ✅ 10/10 component test files using MSW v1
 - ✅ 130+ tests passing
 - ✅ 80%+ code coverage
@@ -203,4 +217,3 @@ After completing all work:
 
 **Last Updated**: 2025-12-29  
 **Next Action**: Fix 3 failing tests in AIInsightsPanel
-

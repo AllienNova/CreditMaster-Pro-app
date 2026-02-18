@@ -2,5 +2,5 @@
  * Position Management Module
  */
 
-export * from './position-types';
-export * from './position-manager';
+export * from "./position-types";
+export * from "./position-manager";

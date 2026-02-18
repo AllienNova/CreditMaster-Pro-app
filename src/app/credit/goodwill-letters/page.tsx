@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   FileText,
   Plus,
@@ -17,23 +17,23 @@ import {
   HelpCircle,
   Star,
   Filter,
-} from 'lucide-react';
-import Link from 'next/link';
+} from "lucide-react";
+import Link from "next/link";
 
 type LetterType =
-  | 'late_payment'
-  | 'hardship'
-  | 'long_term_customer'
-  | 'paid_in_full'
-  | 'medical_debt';
+  | "late_payment"
+  | "hardship"
+  | "long_term_customer"
+  | "paid_in_full"
+  | "medical_debt";
 
 type LetterStatus =
-  | 'draft'
-  | 'ready'
-  | 'sent'
-  | 'response_received'
-  | 'successful'
-  | 'unsuccessful';
+  | "draft"
+  | "ready"
+  | "sent"
+  | "response_received"
+  | "successful"
+  | "unsuccessful";
 
 interface GoodwillLetter {
   id: string;
@@ -43,7 +43,7 @@ interface GoodwillLetter {
   status: LetterStatus;
   subject: string;
   sentDate?: Date;
-  outcome?: 'removed' | 'declined' | 'partial' | 'pending';
+  outcome?: "removed" | "declined" | "partial" | "pending";
   createdAt: Date;
 }
 
@@ -57,100 +57,100 @@ interface LetterTemplate {
 
 const MOCK_LETTERS: GoodwillLetter[] = [
   {
-    id: '1',
-    creditorName: 'Chase Bank',
-    accountNumber: '****4521',
-    letterType: 'late_payment',
-    status: 'successful',
-    subject: 'Goodwill Request for Late Payment Removal',
-    sentDate: new Date('2025-12-15'),
-    outcome: 'removed',
-    createdAt: new Date('2025-12-10'),
+    id: "1",
+    creditorName: "Chase Bank",
+    accountNumber: "****4521",
+    letterType: "late_payment",
+    status: "successful",
+    subject: "Goodwill Request for Late Payment Removal",
+    sentDate: new Date("2025-12-15"),
+    outcome: "removed",
+    createdAt: new Date("2025-12-10"),
   },
   {
-    id: '2',
-    creditorName: 'Capital One',
-    accountNumber: '****8732',
-    letterType: 'long_term_customer',
-    status: 'sent',
-    subject: 'Loyal Customer Goodwill Request',
-    sentDate: new Date('2026-01-05'),
-    outcome: 'pending',
-    createdAt: new Date('2026-01-03'),
+    id: "2",
+    creditorName: "Capital One",
+    accountNumber: "****8732",
+    letterType: "long_term_customer",
+    status: "sent",
+    subject: "Loyal Customer Goodwill Request",
+    sentDate: new Date("2026-01-05"),
+    outcome: "pending",
+    createdAt: new Date("2026-01-03"),
   },
   {
-    id: '3',
-    creditorName: 'Discover',
-    accountNumber: '****2198',
-    letterType: 'hardship',
-    status: 'draft',
-    subject: 'Goodwill Adjustment Request Due to Financial Hardship',
-    createdAt: new Date('2026-01-18'),
+    id: "3",
+    creditorName: "Discover",
+    accountNumber: "****2198",
+    letterType: "hardship",
+    status: "draft",
+    subject: "Goodwill Adjustment Request Due to Financial Hardship",
+    createdAt: new Date("2026-01-18"),
   },
 ];
 
 const LETTER_TEMPLATES: LetterTemplate[] = [
   {
-    id: 'tpl-1',
-    type: 'late_payment',
-    name: 'Late Payment - First Time',
-    description: 'For a single late payment on an otherwise clean history',
+    id: "tpl-1",
+    type: "late_payment",
+    name: "Late Payment - First Time",
+    description: "For a single late payment on an otherwise clean history",
     successRate: 45,
   },
   {
-    id: 'tpl-2',
-    type: 'long_term_customer',
-    name: 'Long-Term Customer Appeal',
-    description: 'Emphasizes loyalty and long customer relationship',
+    id: "tpl-2",
+    type: "long_term_customer",
+    name: "Long-Term Customer Appeal",
+    description: "Emphasizes loyalty and long customer relationship",
     successRate: 52,
   },
   {
-    id: 'tpl-3',
-    type: 'hardship',
-    name: 'Financial Hardship',
-    description: 'For documented financial hardship situations',
+    id: "tpl-3",
+    type: "hardship",
+    name: "Financial Hardship",
+    description: "For documented financial hardship situations",
     successRate: 38,
   },
   {
-    id: 'tpl-4',
-    type: 'paid_in_full',
-    name: 'Paid in Full Request',
-    description: 'For accounts that have been fully paid off',
+    id: "tpl-4",
+    type: "paid_in_full",
+    name: "Paid in Full Request",
+    description: "For accounts that have been fully paid off",
     successRate: 35,
   },
   {
-    id: 'tpl-5',
-    type: 'medical_debt',
-    name: 'Medical Debt Goodwill',
-    description: 'For medical debt situations',
+    id: "tpl-5",
+    type: "medical_debt",
+    name: "Medical Debt Goodwill",
+    description: "For medical debt situations",
     successRate: 42,
   },
 ];
 
 const getStatusColor = (status: LetterStatus) => {
   switch (status) {
-    case 'successful':
-      return 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300';
-    case 'unsuccessful':
-      return 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300';
-    case 'sent':
-    case 'response_received':
-      return 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300';
-    case 'ready':
-      return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300';
+    case "successful":
+      return "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300";
+    case "unsuccessful":
+      return "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300";
+    case "sent":
+    case "response_received":
+      return "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300";
+    case "ready":
+      return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300";
     default:
-      return 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200 dark:bg-slate-700 dark:text-slate-300';
+      return "bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200 dark:bg-slate-700 dark:text-slate-300";
   }
 };
 
 const getStatusIcon = (status: LetterStatus) => {
   switch (status) {
-    case 'successful':
+    case "successful":
       return <CheckCircle className="w-4 h-4" />;
-    case 'unsuccessful':
+    case "unsuccessful":
       return <XCircle className="w-4 h-4" />;
-    case 'sent':
-    case 'response_received':
+    case "sent":
+    case "response_received":
       return <Send className="w-4 h-4" />;
     default:
       return <Clock className="w-4 h-4" />;
@@ -159,11 +159,11 @@ const getStatusIcon = (status: LetterStatus) => {
 
 const getLetterTypeName = (type: LetterType) => {
   const names: Record<LetterType, string> = {
-    late_payment: 'Late Payment',
-    hardship: 'Financial Hardship',
-    long_term_customer: 'Long-Term Customer',
-    paid_in_full: 'Paid in Full',
-    medical_debt: 'Medical Debt',
+    late_payment: "Late Payment",
+    hardship: "Financial Hardship",
+    long_term_customer: "Long-Term Customer",
+    paid_in_full: "Paid in Full",
+    medical_debt: "Medical Debt",
   };
   return names[type];
 };
@@ -173,17 +173,17 @@ export default function GoodwillLettersPage() {
   const [showNewLetterModal, setShowNewLetterModal] = useState(false);
   const [selectedTemplate, setSelectedTemplate] =
     useState<LetterTemplate | null>(null);
-  const [filter, setFilter] = useState<'all' | LetterStatus>('all');
+  const [filter, setFilter] = useState<"all" | LetterStatus>("all");
 
   const filteredLetters = letters.filter(
-    (l) => filter === 'all' || l.status === filter
+    (l) => filter === "all" || l.status === filter,
   );
 
   const stats = {
     total: letters.length,
     sent: letters.filter((l) => l.sentDate).length,
-    successful: letters.filter((l) => l.outcome === 'removed').length,
-    pending: letters.filter((l) => l.status === 'sent').length,
+    successful: letters.filter((l) => l.outcome === "removed").length,
+    pending: letters.filter((l) => l.status === "sent").length,
   };
 
   const successRate =
@@ -276,16 +276,18 @@ export default function GoodwillLettersPage() {
         <div className="flex items-center gap-4 mb-6">
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-gray-500 dark:text-slate-400" />
-            <span className="text-sm text-gray-500 dark:text-slate-400">Filter:</span>
+            <span className="text-sm text-gray-500 dark:text-slate-400">
+              Filter:
+            </span>
           </div>
           <div className="flex flex-wrap gap-2">
             {(
-              ['all', 'draft', 'sent', 'successful', 'unsuccessful'] as const
+              ["all", "draft", "sent", "successful", "unsuccessful"] as const
             ).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${ filter === f ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600 dark:text-slate-400 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600' }`}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${filter === f ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600 dark:text-slate-400 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600"}`}
               >
                 {f.charAt(0).toUpperCase() + f.slice(1)}
               </button>
@@ -328,7 +330,7 @@ export default function GoodwillLettersPage() {
                           className={`px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1 ${getStatusColor(letter.status)}`}
                         >
                           {getStatusIcon(letter.status)}
-                          {letter.status.replace('_', ' ')}
+                          {letter.status.replace("_", " ")}
                         </span>
                       </div>
                       <p className="text-sm text-gray-600 dark:text-slate-400 mb-2">
@@ -369,7 +371,7 @@ export default function GoodwillLettersPage() {
                       >
                         <Download className="w-4 h-4" />
                       </button>
-                      {letter.status === 'draft' && (
+                      {letter.status === "draft" && (
                         <button
                           className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                           aria-label="Delete letter"
@@ -423,8 +425,8 @@ export default function GoodwillLettersPage() {
                     onClick={() => setSelectedTemplate(template)}
                     className={`w-full text-left p-4 rounded-xl border-2 transition-colors ${
                       selectedTemplate?.id === template.id
-                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
-                        : 'border-gray-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700'
+                        ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20"
+                        : "border-gray-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700"
                     }`}
                   >
                     <div className="flex items-start justify-between">
@@ -461,12 +463,12 @@ export default function GoodwillLettersPage() {
                   href={
                     selectedTemplate
                       ? `/credit/goodwill-letters/new?template=${selectedTemplate.type}`
-                      : '#'
+                      : "#"
                   }
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
                     selectedTemplate
-                      ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                      : 'bg-gray-200 dark:bg-slate-700 text-gray-400 dark:text-slate-500 cursor-not-allowed'
+                      ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                      : "bg-gray-200 dark:bg-slate-700 text-gray-400 dark:text-slate-500 cursor-not-allowed"
                   }`}
                   onClick={(e) => !selectedTemplate && e.preventDefault()}
                 >

@@ -3,8 +3,11 @@
  * Easy-to-use hook for managing background services in components
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { backgroundTaskService, BACKGROUND_TASKS } from '../services/background';
+import { useState, useEffect, useCallback } from "react";
+import {
+  backgroundTaskService,
+  BACKGROUND_TASKS,
+} from "../services/background";
 
 interface BackgroundStatus {
   available: boolean;
@@ -17,7 +20,7 @@ interface PriceAlert {
   id: string;
   symbol: string;
   targetPrice: number;
-  condition: 'above' | 'below';
+  condition: "above" | "below";
   active: boolean;
 }
 
@@ -34,7 +37,7 @@ interface UseBackgroundTasksReturn {
 
   // Price alerts
   priceAlerts: PriceAlert[];
-  addPriceAlert: (alert: Omit<PriceAlert, 'id' | 'active'>) => Promise<void>;
+  addPriceAlert: (alert: Omit<PriceAlert, "id" | "active">) => Promise<void>;
   removePriceAlert: (alertId: string) => Promise<void>;
 
   // Debug
@@ -52,7 +55,7 @@ export function useBackgroundTasks(): UseBackgroundTasksReturn {
       const currentStatus = await backgroundTaskService.getStatus();
       setStatus(currentStatus);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to get status');
+      setError(e instanceof Error ? e.message : "Failed to get status");
     }
   }, []);
 
@@ -61,7 +64,7 @@ export function useBackgroundTasks(): UseBackgroundTasksReturn {
       const alerts = await backgroundTaskService.getPriceAlerts();
       setPriceAlerts(alerts);
     } catch (e) {
-      console.error('Failed to get price alerts:', e);
+      console.error("Failed to get price alerts:", e);
     }
   }, []);
 
@@ -73,7 +76,7 @@ export function useBackgroundTasks(): UseBackgroundTasksReturn {
       await refreshStatus();
       await refreshAlerts();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to initialize');
+      setError(e instanceof Error ? e.message : "Failed to initialize");
     } finally {
       setLoading(false);
     }
@@ -86,22 +89,22 @@ export function useBackgroundTasks(): UseBackgroundTasksReturn {
         await backgroundTaskService.setBackgroundEnabled(enabled);
         await refreshStatus();
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Failed to update settings');
+        setError(e instanceof Error ? e.message : "Failed to update settings");
       }
     },
-    [refreshStatus]
+    [refreshStatus],
   );
 
   const addPriceAlert = useCallback(
-    async (alert: Omit<PriceAlert, 'id' | 'active'>) => {
+    async (alert: Omit<PriceAlert, "id" | "active">) => {
       try {
         await backgroundTaskService.addPriceAlert(alert);
         await refreshAlerts();
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Failed to add alert');
+        setError(e instanceof Error ? e.message : "Failed to add alert");
       }
     },
-    [refreshAlerts]
+    [refreshAlerts],
   );
 
   const removePriceAlert = useCallback(
@@ -110,17 +113,17 @@ export function useBackgroundTasks(): UseBackgroundTasksReturn {
         await backgroundTaskService.removePriceAlert(alertId);
         await refreshAlerts();
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Failed to remove alert');
+        setError(e instanceof Error ? e.message : "Failed to remove alert");
       }
     },
-    [refreshAlerts]
+    [refreshAlerts],
   );
 
   const triggerTask = useCallback(async (taskName: string) => {
     try {
       await backgroundTaskService.triggerTask(taskName);
     } catch (e) {
-      console.error('Failed to trigger task:', e);
+      console.error("Failed to trigger task:", e);
     }
   }, []);
 

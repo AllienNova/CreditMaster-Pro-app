@@ -4,28 +4,31 @@
  * POST /api/ai/financial-coach/analyze - Analyze user's financial situation
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { z } from 'zod';
-import { financialCoach } from '@/lib/ai/financial-coach';
-import { FocusArea } from '@/lib/ai/types/financial-coach.types';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { z } from "zod";
+import { financialCoach } from "@/lib/ai/financial-coach";
+import { FocusArea } from "@/lib/ai/types/financial-coach.types";
 
 // ============================================================================
 // VALIDATION SCHEMAS
 // ============================================================================
 
 const AnalyzeRequestSchema = z.object({
-  focusArea: z.enum([
-    'debt_elimination',
-    'emergency_fund',
-    'budgeting',
-    'savings',
-    'investment',
-    'retirement',
-    'income_increase',
-    'expense_reduction',
-    'overall',
-  ]).optional().default('overall'),
+  focusArea: z
+    .enum([
+      "debt_elimination",
+      "emergency_fund",
+      "budgeting",
+      "savings",
+      "investment",
+      "retirement",
+      "income_increase",
+      "expense_reduction",
+      "overall",
+    ])
+    .optional()
+    .default("overall"),
 });
 
 // ============================================================================
@@ -81,11 +84,11 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: {
-            code: 'UNAUTHORIZED',
-            message: 'Authentication required',
+            code: "UNAUTHORIZED",
+            message: "Authentication required",
           },
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -95,11 +98,11 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: {
-            code: 'RATE_LIMIT_EXCEEDED',
-            message: 'Too many requests. Please try again in a minute.',
+            code: "RATE_LIMIT_EXCEEDED",
+            message: "Too many requests. Please try again in a minute.",
           },
         },
-        { status: 429 }
+        { status: 429 },
       );
     }
 
@@ -112,12 +115,12 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: {
-            code: 'INVALID_REQUEST',
-            message: 'Invalid request parameters',
+            code: "INVALID_REQUEST",
+            message: "Invalid request parameters",
             details: validation.error.errors,
           },
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -126,7 +129,7 @@ export async function POST(request: NextRequest) {
     // Analyze financial situation
     const analysis = await financialCoach.analyzeFinancialSituation(
       user.id,
-      focusArea as any
+      focusArea as any,
     );
 
     return NextResponse.json({
@@ -137,19 +140,18 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error analyzing financial situation:', error);
+    console.error("Error analyzing financial situation:", error);
 
     return NextResponse.json(
       {
         success: false,
         error: {
-          code: 'INTERNAL_ERROR',
-          message: 'Failed to analyze financial situation',
-          details: error instanceof Error ? error.message : 'Unknown error',
+          code: "INTERNAL_ERROR",
+          message: "Failed to analyze financial situation",
+          details: error instanceof Error ? error.message : "Unknown error",
         },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-

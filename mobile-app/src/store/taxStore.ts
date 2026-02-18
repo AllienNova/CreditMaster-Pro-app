@@ -3,9 +3,9 @@
  * Manages tax optimization, scenarios, calendar, deductions, and documents state
  */
 
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   taxAnalysisApi,
   taxScenariosApi,
@@ -23,14 +23,14 @@ import {
   type DeductionCategory,
   type TaxDocument,
   type TaxBracketVisualization,
-} from '../services/api/tax';
+} from "../services/api/tax";
 
 interface TaxTip {
   id: string;
   title: string;
   description: string;
   potentialSavings: number;
-  difficulty: 'easy' | 'medium' | 'hard';
+  difficulty: "easy" | "medium" | "hard";
   category: string;
   actionSteps: string[];
 }
@@ -40,7 +40,7 @@ interface DeductionSummary {
   itemizedVsStandard: {
     itemizedTotal: number;
     standardDeduction: number;
-    recommendation: 'itemize' | 'standard';
+    recommendation: "itemize" | "standard";
     savings: number;
   };
   byCategory: { category: string; amount: number; percentage: number }[];
@@ -116,7 +116,9 @@ interface TaxState {
   completeRecommendation: (id: string) => Promise<boolean>;
 
   // Actions - Scenarios
-  calculateScenario: (scenario: TaxScenarioInput) => Promise<TaxScenarioResult | null>;
+  calculateScenario: (
+    scenario: TaxScenarioInput,
+  ) => Promise<TaxScenarioResult | null>;
   compareScenarios: (scenarios: TaxScenarioInput[]) => Promise<void>;
   saveScenario: (scenario: TaxScenarioInput) => Promise<boolean>;
   deleteScenario: (id: string) => Promise<boolean>;
@@ -125,15 +127,20 @@ interface TaxState {
 
   // Actions - Calendar
   fetchEvents: (year?: number, upcomingOnly?: boolean) => Promise<void>;
-  createReminder: (event: Omit<TaxEvent, 'id'>) => Promise<boolean>;
+  createReminder: (event: Omit<TaxEvent, "id">) => Promise<boolean>;
   completeEvent: (id: string) => Promise<boolean>;
   deleteEvent: (id: string) => Promise<boolean>;
 
   // Actions - Deductions
   fetchDeductionCategories: (year?: number) => Promise<void>;
   fetchDeductionSummary: (year?: number) => Promise<void>;
-  addDeduction: (deduction: Omit<TaxDeduction, 'id' | 'isVerified'>) => Promise<boolean>;
-  updateDeduction: (id: string, updates: Partial<TaxDeduction>) => Promise<boolean>;
+  addDeduction: (
+    deduction: Omit<TaxDeduction, "id" | "isVerified">,
+  ) => Promise<boolean>;
+  updateDeduction: (
+    id: string,
+    updates: Partial<TaxDeduction>,
+  ) => Promise<boolean>;
   deleteDeduction: (id: string) => Promise<boolean>;
 
   // Actions - Documents
@@ -193,11 +200,17 @@ export const useTaxStore = create<TaxState>()(
           if (response.success && response.data) {
             set({ analysis: response.data, isLoadingAnalysis: false });
           } else {
-            set({ error: response.error?.message || 'Failed to fetch analysis', isLoadingAnalysis: false });
+            set({
+              error: response.error?.message || "Failed to fetch analysis",
+              isLoadingAnalysis: false,
+            });
           }
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'Failed to fetch analysis',
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to fetch analysis",
             isLoadingAnalysis: false,
           });
         }
@@ -210,7 +223,7 @@ export const useTaxStore = create<TaxState>()(
             set({ brackets: response.data });
           }
         } catch (error) {
-          if (__DEV__) console.error('Failed to fetch brackets:', error);
+          if (__DEV__) console.error("Failed to fetch brackets:", error);
         }
       },
 
@@ -221,7 +234,7 @@ export const useTaxStore = create<TaxState>()(
             set({ recommendations: response.data.recommendations });
           }
         } catch (error) {
-          if (__DEV__) console.error('Failed to fetch recommendations:', error);
+          if (__DEV__) console.error("Failed to fetch recommendations:", error);
         }
       },
 
@@ -231,7 +244,7 @@ export const useTaxStore = create<TaxState>()(
           if (response.success) {
             set((state) => ({
               recommendations: state.recommendations.map((r) =>
-                r.id === id ? { ...r, status: 'completed' as const } : r
+                r.id === id ? { ...r, status: "completed" as const } : r,
               ),
             }));
             return true;
@@ -267,13 +280,19 @@ export const useTaxStore = create<TaxState>()(
         try {
           const response = await taxScenariosApi.compare(scenarios);
           if (response.success && response.data) {
-            set({ scenarioResults: response.data.results, isLoadingScenarios: false });
+            set({
+              scenarioResults: response.data.results,
+              isLoadingScenarios: false,
+            });
           } else {
             set({ error: response.error?.message, isLoadingScenarios: false });
           }
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'Failed to compare scenarios',
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to compare scenarios",
             isLoadingScenarios: false,
           });
         }
@@ -284,7 +303,10 @@ export const useTaxStore = create<TaxState>()(
           const response = await taxScenariosApi.save(scenario);
           if (response.success && response.data) {
             set((state) => ({
-              savedScenarios: [...state.savedScenarios, { ...scenario, id: response.data!.id }],
+              savedScenarios: [
+                ...state.savedScenarios,
+                { ...scenario, id: response.data!.id },
+              ],
             }));
             return true;
           }
@@ -316,7 +338,7 @@ export const useTaxStore = create<TaxState>()(
             set({ savedScenarios: response.data.scenarios });
           }
         } catch (error) {
-          if (__DEV__) console.error('Failed to fetch saved scenarios:', error);
+          if (__DEV__) console.error("Failed to fetch saved scenarios:", error);
         }
       },
 
@@ -326,10 +348,16 @@ export const useTaxStore = create<TaxState>()(
       fetchEvents: async (year, upcomingOnly) => {
         set({ isLoadingCalendar: true, error: null });
         try {
-          const response = await taxCalendarApi.getEvents({ year, upcoming: upcomingOnly });
+          const response = await taxCalendarApi.getEvents({
+            year,
+            upcoming: upcomingOnly,
+          });
           if (response.success && response.data) {
             if (upcomingOnly) {
-              set({ upcomingEvents: response.data.events, isLoadingCalendar: false });
+              set({
+                upcomingEvents: response.data.events,
+                isLoadingCalendar: false,
+              });
             } else {
               set({ events: response.data.events, isLoadingCalendar: false });
             }
@@ -338,7 +366,8 @@ export const useTaxStore = create<TaxState>()(
           }
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'Failed to fetch events',
+            error:
+              error instanceof Error ? error.message : "Failed to fetch events",
             isLoadingCalendar: false,
           });
         }
@@ -363,7 +392,7 @@ export const useTaxStore = create<TaxState>()(
           if (response.success) {
             set((state) => ({
               events: state.events.map((e) =>
-                e.id === id ? { ...e, isCompleted: true } : e
+                e.id === id ? { ...e, isCompleted: true } : e,
               ),
               upcomingEvents: state.upcomingEvents.filter((e) => e.id !== id),
             }));
@@ -397,13 +426,19 @@ export const useTaxStore = create<TaxState>()(
         try {
           const response = await taxDeductionsApi.getCategories(year);
           if (response.success && response.data) {
-            set({ deductionCategories: response.data.categories, isLoadingDeductions: false });
+            set({
+              deductionCategories: response.data.categories,
+              isLoadingDeductions: false,
+            });
           } else {
             set({ error: response.error?.message, isLoadingDeductions: false });
           }
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'Failed to fetch deductions',
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to fetch deductions",
             isLoadingDeductions: false,
           });
         }
@@ -416,7 +451,8 @@ export const useTaxStore = create<TaxState>()(
             set({ deductionSummary: response.data });
           }
         } catch (error) {
-          if (__DEV__) console.error('Failed to fetch deduction summary:', error);
+          if (__DEV__)
+            console.error("Failed to fetch deduction summary:", error);
         }
       },
 
@@ -469,13 +505,19 @@ export const useTaxStore = create<TaxState>()(
         try {
           const response = await taxDocumentsApi.getAll(year);
           if (response.success && response.data) {
-            set({ documents: response.data.documents, isLoadingDocuments: false });
+            set({
+              documents: response.data.documents,
+              isLoadingDocuments: false,
+            });
           } else {
             set({ error: response.error?.message, isLoadingDocuments: false });
           }
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'Failed to fetch documents',
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to fetch documents",
             isLoadingDocuments: false,
           });
         }
@@ -488,7 +530,8 @@ export const useTaxStore = create<TaxState>()(
             set({ missingDocuments: response.data });
           }
         } catch (error) {
-          if (__DEV__) console.error('Failed to fetch missing documents:', error);
+          if (__DEV__)
+            console.error("Failed to fetch missing documents:", error);
         }
       },
 
@@ -515,7 +558,7 @@ export const useTaxStore = create<TaxState>()(
             set({ tips: response.data.tips });
           }
         } catch (error) {
-          if (__DEV__) console.error('Failed to fetch tips:', error);
+          if (__DEV__) console.error("Failed to fetch tips:", error);
         }
       },
 
@@ -540,13 +583,19 @@ export const useTaxStore = create<TaxState>()(
         try {
           const response = await taxComparisonApi.compare(years);
           if (response.success && response.data) {
-            set({ yearComparisons: response.data.comparisons, isLoading: false });
+            set({
+              yearComparisons: response.data.comparisons,
+              isLoading: false,
+            });
           } else {
             set({ error: response.error?.message, isLoading: false });
           }
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'Failed to compare years',
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to compare years",
             isLoading: false,
           });
         }
@@ -558,14 +607,14 @@ export const useTaxStore = create<TaxState>()(
       resetStore: () => set(initialState),
     }),
     {
-      name: 'fynvita-tax-store',
+      name: "fynvita-tax-store",
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         selectedYear: state.selectedYear,
         savedScenarios: state.savedScenarios,
       }),
-    }
-  )
+    },
+  ),
 );
 
 // Selectors
@@ -573,9 +622,9 @@ export const selectAnalysis = (state: TaxState) => state.analysis;
 export const selectBrackets = (state: TaxState) => state.brackets;
 export const selectRecommendations = (state: TaxState) => state.recommendations;
 export const selectPendingRecommendations = (state: TaxState) =>
-  state.recommendations.filter((r) => r.status !== 'completed');
+  state.recommendations.filter((r) => r.status !== "completed");
 export const selectCriticalRecommendations = (state: TaxState) =>
-  state.recommendations.filter((r) => r.priority === 'critical');
+  state.recommendations.filter((r) => r.priority === "critical");
 export const selectTotalPotentialSavings = (state: TaxState) =>
   state.analysis?.totalPotentialSavings ?? 0;
 export const selectEffectiveRate = (state: TaxState) =>
@@ -586,10 +635,12 @@ export const selectMonthlyTakeHome = (state: TaxState) =>
 export const selectEvents = (state: TaxState) => state.events;
 export const selectUpcomingEvents = (state: TaxState) => state.upcomingEvents;
 export const selectCriticalEvents = (state: TaxState) =>
-  state.events.filter((e) => e.priority === 'critical' && !e.isCompleted);
+  state.events.filter((e) => e.priority === "critical" && !e.isCompleted);
 
-export const selectDeductionCategories = (state: TaxState) => state.deductionCategories;
-export const selectDeductionSummary = (state: TaxState) => state.deductionSummary;
+export const selectDeductionCategories = (state: TaxState) =>
+  state.deductionCategories;
+export const selectDeductionSummary = (state: TaxState) =>
+  state.deductionSummary;
 export const selectTotalDeductions = (state: TaxState) =>
   state.deductionSummary?.totalDeductions ?? 0;
 

@@ -1,48 +1,48 @@
 /**
  * Market Data Type Definitions
- * 
+ *
  * Comprehensive TypeScript interfaces and Zod schemas for all market data structures
  * Supports stocks, cryptocurrencies, ETFs, mutual funds, and bonds
  */
 
-import { z } from 'zod';
+import { z } from "zod";
 
 // ============================================================================
 // ENUMS
 // ============================================================================
 
 export enum AssetType {
-  STOCK = 'STOCK',
-  CRYPTO = 'CRYPTO',
-  ETF = 'ETF',
-  MUTUAL_FUND = 'MUTUAL_FUND',
-  BOND = 'BOND',
+  STOCK = "STOCK",
+  CRYPTO = "CRYPTO",
+  ETF = "ETF",
+  MUTUAL_FUND = "MUTUAL_FUND",
+  BOND = "BOND",
 }
 
 export enum TimeInterval {
-  ONE_MIN = '1MIN',
-  FIVE_MIN = '5MIN',
-  FIFTEEN_MIN = '15MIN',
-  THIRTY_MIN = '30MIN',
-  ONE_HOUR = '1HOUR',
-  ONE_DAY = '1DAY',
-  ONE_WEEK = '1WEEK',
-  ONE_MONTH = '1MONTH',
+  ONE_MIN = "1MIN",
+  FIVE_MIN = "5MIN",
+  FIFTEEN_MIN = "15MIN",
+  THIRTY_MIN = "30MIN",
+  ONE_HOUR = "1HOUR",
+  ONE_DAY = "1DAY",
+  ONE_WEEK = "1WEEK",
+  ONE_MONTH = "1MONTH",
 }
 
 export enum MarketStatus {
-  OPEN = 'OPEN',
-  CLOSED = 'CLOSED',
-  PRE_MARKET = 'PRE_MARKET',
-  AFTER_HOURS = 'AFTER_HOURS',
+  OPEN = "OPEN",
+  CLOSED = "CLOSED",
+  PRE_MARKET = "PRE_MARKET",
+  AFTER_HOURS = "AFTER_HOURS",
 }
 
 export enum SentimentScore {
-  VERY_BEARISH = 'VERY_BEARISH',
-  BEARISH = 'BEARISH',
-  NEUTRAL = 'NEUTRAL',
-  BULLISH = 'BULLISH',
-  VERY_BULLISH = 'VERY_BULLISH',
+  VERY_BEARISH = "VERY_BEARISH",
+  BEARISH = "BEARISH",
+  NEUTRAL = "NEUTRAL",
+  BULLISH = "BULLISH",
+  VERY_BULLISH = "VERY_BULLISH",
 }
 
 // ============================================================================
@@ -191,10 +191,10 @@ export class MarketDataAPIError extends Error {
     message: string,
     public code: string,
     public provider: string,
-    public retryable: boolean = true
+    public retryable: boolean = true,
   ) {
     super(message);
-    this.name = 'MarketDataAPIError';
+    this.name = "MarketDataAPIError";
   }
 }
 
@@ -305,4 +305,3 @@ export const CompanyProfileSchema = z.object({
   ipoDate: z.date().optional(),
   fiscalYearEnd: z.string().optional(),
 });
-

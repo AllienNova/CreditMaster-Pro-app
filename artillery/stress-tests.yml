@@ -17,11 +17,11 @@ config:
     - duration: 60
       arrivalRate: 1000
       name: "Phase 5: 1000 req/s (stress)"
-  
+
   # HTTP settings
   http:
     timeout: 30
-  
+
   # Variables
   variables:
     testUserId: "stress-test-user"
@@ -74,4 +74,3 @@ scenarios:
           headers:
             Authorization: "Bearer dev-token"
       - think: 0.1
-

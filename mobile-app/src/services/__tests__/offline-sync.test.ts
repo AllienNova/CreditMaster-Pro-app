@@ -12,8 +12,8 @@
  * - Max queue size enforcement
  */
 
-import { OfflineSyncService } from '../offline-sync';
-import type { SyncQueueItem, SyncResult, ApiRequestFn } from '../offline-sync';
+import { OfflineSyncService } from "../offline-sync";
+import type { SyncQueueItem, SyncResult, ApiRequestFn } from "../offline-sync";
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -24,8 +24,10 @@ import type { SyncQueueItem, SyncResult, ApiRequestFn } from '../offline-sync';
 // ---------------------------------------------------------------------------
 const mockAsyncStorage: Record<string, string> = {};
 
-jest.mock('@react-native-async-storage/async-storage', () => ({
-  getItem: jest.fn((key: string) => Promise.resolve(mockAsyncStorage[key] ?? null)),
+jest.mock("@react-native-async-storage/async-storage", () => ({
+  getItem: jest.fn((key: string) =>
+    Promise.resolve(mockAsyncStorage[key] ?? null),
+  ),
   setItem: jest.fn((key: string, value: string) => {
     mockAsyncStorage[key] = value;
     return Promise.resolve();
@@ -43,7 +45,7 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
 // out-of-scope variable checker. Type annotations avoid the word "state" as a
 // parameter name since babel-jest's checker flags it as an out-of-scope reference.
 // ---------------------------------------------------------------------------
-jest.mock('@react-native-community/netinfo', () => {
+jest.mock("@react-native-community/netinfo", () => {
   // No TypeScript type annotations inside the factory — babel-jest's scope
   // checker misinterprets parameter names in TS types as variable references.
   const mockInternals = {
@@ -60,7 +62,7 @@ jest.mock('@react-native-community/netinfo', () => {
   });
 
   const mockFetch = jest.fn(() =>
-    Promise.resolve({ isConnected: mockInternals.mockConnected, type: 'wifi' }),
+    Promise.resolve({ isConnected: mockInternals.mockConnected, type: "wifi" }),
   );
 
   const mockNetInfoModule = {
@@ -82,14 +84,14 @@ jest.mock('@react-native-community/netinfo', () => {
 // API client mock
 // ---------------------------------------------------------------------------
 const mockApiRequest = jest.fn();
-jest.mock('../../services/api/client', () => ({
+jest.mock("../../services/api/client", () => ({
   apiRequest: (...args: unknown[]) => mockApiRequest(...args),
 }));
 
 // ---------------------------------------------------------------------------
 // Retrieve mock handles from the NetInfo mock module (safe post-hoist)
 // ---------------------------------------------------------------------------
-const NetInfoMock = require('@react-native-community/netinfo');
+const NetInfoMock = require("@react-native-community/netinfo");
 const mockNetInfoState = NetInfoMock.__mockInternals as {
   mockCallback: ((info: { isConnected: boolean; type: string }) => void) | null;
   mockConnected: boolean;
@@ -99,9 +101,11 @@ const mockNetInfoState = NetInfoMock.__mockInternals as {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function createService(overrides: Record<string, unknown> = {}): OfflineSyncService {
+function createService(
+  overrides: Record<string, unknown> = {},
+): OfflineSyncService {
   return new OfflineSyncService({
-    storageKey: 'test_sync_queue',
+    storageKey: "test_sync_queue",
     maxRetries: 3,
     baseRetryDelay: 10, // Very short for tests
     maxRetryDelay: 100,
@@ -113,18 +117,17 @@ function createService(overrides: Record<string, unknown> = {}): OfflineSyncServ
   });
 }
 
-function makeQueueItem(overrides: Partial<SyncQueueItem> = {}): Omit<
-  SyncQueueItem,
-  'id' | 'createdAt' | 'retryCount' | 'lastRetryAt'
-> {
+function makeQueueItem(
+  overrides: Partial<SyncQueueItem> = {},
+): Omit<SyncQueueItem, "id" | "createdAt" | "retryCount" | "lastRetryAt"> {
   return {
-    endpoint: '/disputes',
-    method: 'POST',
-    body: JSON.stringify({ bureau: 'experian' }),
-    entity: 'dispute',
-    operationType: 'create',
-    priority: 'normal',
-    conflictStrategy: 'last_write_wins',
+    endpoint: "/disputes",
+    method: "POST",
+    body: JSON.stringify({ bureau: "experian" }),
+    entity: "dispute",
+    operationType: "create",
+    priority: "normal",
+    conflictStrategy: "last_write_wins",
     ...overrides,
   };
 }
@@ -158,13 +161,15 @@ async function initOnline(svc: OfflineSyncService): Promise<void> {
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('OfflineSyncService', () => {
+describe("OfflineSyncService", () => {
   let service: OfflineSyncService;
 
   beforeEach(() => {
     jest.clearAllMocks();
     // Clear mock storage
-    Object.keys(mockAsyncStorage).forEach((key) => delete mockAsyncStorage[key]);
+    Object.keys(mockAsyncStorage).forEach(
+      (key) => delete mockAsyncStorage[key],
+    );
     mockNetInfoState.mockConnected = true;
     mockNetInfoState.mockCallback = null;
 
@@ -178,12 +183,17 @@ describe('OfflineSyncService', () => {
       },
     );
     NetInfoMock.default.fetch.mockImplementation(() =>
-      Promise.resolve({ isConnected: mockNetInfoState.mockConnected, type: 'wifi' }),
+      Promise.resolve({
+        isConnected: mockNetInfoState.mockConnected,
+        type: "wifi",
+      }),
     );
 
     // Re-establish AsyncStorage mock implementations
-    const AsyncStorage = require('@react-native-async-storage/async-storage');
-    AsyncStorage.getItem.mockImplementation((key: string) => Promise.resolve(mockAsyncStorage[key] ?? null));
+    const AsyncStorage = require("@react-native-async-storage/async-storage");
+    AsyncStorage.getItem.mockImplementation((key: string) =>
+      Promise.resolve(mockAsyncStorage[key] ?? null),
+    );
     AsyncStorage.setItem.mockImplementation((key: string, value: string) => {
       mockAsyncStorage[key] = value;
       return Promise.resolve();
@@ -205,69 +215,75 @@ describe('OfflineSyncService', () => {
   // Initialization & Persistence
   // =========================================================================
 
-  describe('Initialization & Persistence', () => {
-    it('should initialize without errors on empty storage', async () => {
+  describe("Initialization & Persistence", () => {
+    it("should initialize without errors on empty storage", async () => {
       await expect(initOnline(service)).resolves.not.toThrow();
       expect(service.getQueueSize()).toBe(0);
     });
 
-    it('should load persisted queue from AsyncStorage on initialize', async () => {
+    it("should load persisted queue from AsyncStorage on initialize", async () => {
       const existingItems: SyncQueueItem[] = [
         {
-          id: 'item-1',
-          endpoint: '/disputes',
-          method: 'POST',
+          id: "item-1",
+          endpoint: "/disputes",
+          method: "POST",
           body: '{"bureau":"experian"}',
-          entity: 'dispute',
-          operationType: 'create',
+          entity: "dispute",
+          operationType: "create",
           createdAt: new Date().toISOString(),
           retryCount: 0,
           lastRetryAt: null,
-          priority: 'normal',
-          conflictStrategy: 'last_write_wins',
+          priority: "normal",
+          conflictStrategy: "last_write_wins",
         },
         {
-          id: 'item-2',
-          endpoint: '/settings',
-          method: 'PATCH',
+          id: "item-2",
+          endpoint: "/settings",
+          method: "PATCH",
           body: '{"theme":"dark"}',
-          entity: 'settings',
-          operationType: 'update',
+          entity: "settings",
+          operationType: "update",
           createdAt: new Date().toISOString(),
           retryCount: 1,
           lastRetryAt: new Date().toISOString(),
-          priority: 'low',
-          conflictStrategy: 'last_write_wins',
+          priority: "low",
+          conflictStrategy: "last_write_wins",
         },
       ];
 
-      mockAsyncStorage['test_sync_queue'] = JSON.stringify(existingItems);
+      mockAsyncStorage["test_sync_queue"] = JSON.stringify(existingItems);
 
       // Initialize offline to prevent auto-processing of loaded items
       await initOffline(service);
 
       expect(service.getQueueSize()).toBe(2);
       const queue = service.getQueue();
-      expect(queue[0].id).toBe('item-1');
-      expect(queue[1].id).toBe('item-2');
+      expect(queue[0].id).toBe("item-1");
+      expect(queue[1].id).toBe("item-2");
     });
 
-    it('should persist queue to AsyncStorage when items are added', async () => {
+    it("should persist queue to AsyncStorage when items are added", async () => {
       // Prevent auto-processing by setting offline
       await initOffline(service);
 
       await service.addToQueue(makeQueueItem());
 
-      const stored = JSON.parse(mockAsyncStorage['test_sync_queue']);
+      const stored = JSON.parse(mockAsyncStorage["test_sync_queue"]);
       expect(stored).toHaveLength(1);
-      expect(stored[0].endpoint).toBe('/disputes');
+      expect(stored[0].endpoint).toBe("/disputes");
     });
 
-    it('should persist queue across simulated app restart', async () => {
+    it("should persist queue across simulated app restart", async () => {
       await initOffline(service);
 
-      await service.addToQueue(makeQueueItem({ endpoint: '/disputes' }));
-      await service.addToQueue(makeQueueItem({ endpoint: '/settings', entity: 'settings', operationType: 'update' }));
+      await service.addToQueue(makeQueueItem({ endpoint: "/disputes" }));
+      await service.addToQueue(
+        makeQueueItem({
+          endpoint: "/settings",
+          entity: "settings",
+          operationType: "update",
+        }),
+      );
       await service.destroy();
 
       // Create a new service instance (simulates app restart)
@@ -276,20 +292,20 @@ describe('OfflineSyncService', () => {
 
       expect(service2.getQueueSize()).toBe(2);
       const queue = service2.getQueue();
-      expect(queue[0].endpoint).toBe('/disputes');
-      expect(queue[1].endpoint).toBe('/settings');
+      expect(queue[0].endpoint).toBe("/disputes");
+      expect(queue[1].endpoint).toBe("/settings");
 
       await service2.destroy();
     });
 
-    it('should handle corrupted storage gracefully', async () => {
-      mockAsyncStorage['test_sync_queue'] = 'not valid json{{{';
+    it("should handle corrupted storage gracefully", async () => {
+      mockAsyncStorage["test_sync_queue"] = "not valid json{{{";
 
       await expect(initOnline(service)).resolves.not.toThrow();
       expect(service.getQueueSize()).toBe(0);
     });
 
-    it('should be idempotent on multiple initialize calls', async () => {
+    it("should be idempotent on multiple initialize calls", async () => {
       await initOnline(service);
       // Additional calls should be safe
       await service.initialize();
@@ -304,33 +320,33 @@ describe('OfflineSyncService', () => {
   // Queue Operations
   // =========================================================================
 
-  describe('Queue Operations', () => {
+  describe("Queue Operations", () => {
     beforeEach(async () => {
       await initOffline(service);
     });
 
-    it('should add items to the queue and return an ID', async () => {
+    it("should add items to the queue and return an ID", async () => {
       const id = await service.addToQueue(makeQueueItem());
 
       expect(id).toBeTruthy();
-      expect(typeof id).toBe('string');
+      expect(typeof id).toBe("string");
       expect(service.getQueueSize()).toBe(1);
     });
 
-    it('should assign default priority and conflict strategy', async () => {
+    it("should assign default priority and conflict strategy", async () => {
       await service.addToQueue({
-        endpoint: '/test',
-        method: 'POST',
-        entity: 'dispute',
-        operationType: 'create',
+        endpoint: "/test",
+        method: "POST",
+        entity: "dispute",
+        operationType: "create",
       });
 
       const queue = service.getQueue();
-      expect(queue[0].priority).toBe('normal');
-      expect(queue[0].conflictStrategy).toBe('last_write_wins');
+      expect(queue[0].priority).toBe("normal");
+      expect(queue[0].conflictStrategy).toBe("last_write_wins");
     });
 
-    it('should remove items by ID', async () => {
+    it("should remove items by ID", async () => {
       const id = await service.addToQueue(makeQueueItem());
       expect(service.getQueueSize()).toBe(1);
 
@@ -339,21 +355,23 @@ describe('OfflineSyncService', () => {
       expect(service.getQueueSize()).toBe(0);
     });
 
-    it('should return false when removing non-existent item', async () => {
-      const removed = await service.removeFromQueue('non-existent-id');
+    it("should return false when removing non-existent item", async () => {
+      const removed = await service.removeFromQueue("non-existent-id");
       expect(removed).toBe(false);
     });
 
-    it('should clear the entire queue', async () => {
+    it("should clear the entire queue", async () => {
       await service.addToQueue(makeQueueItem());
-      await service.addToQueue(makeQueueItem({ endpoint: '/settings', entity: 'settings' }));
+      await service.addToQueue(
+        makeQueueItem({ endpoint: "/settings", entity: "settings" }),
+      );
       expect(service.getQueueSize()).toBe(2);
 
       await service.clearQueue();
       expect(service.getQueueSize()).toBe(0);
     });
 
-    it('should return a read-only snapshot of the queue', async () => {
+    it("should return a read-only snapshot of the queue", async () => {
       await service.addToQueue(makeQueueItem());
       const queue = service.getQueue();
 
@@ -367,8 +385,8 @@ describe('OfflineSyncService', () => {
   // FIFO Processing Order
   // =========================================================================
 
-  describe('FIFO Processing Order', () => {
-    it('should process items in FIFO order within same priority', async () => {
+  describe("FIFO Processing Order", () => {
+    it("should process items in FIFO order within same priority", async () => {
       await initOffline(service);
 
       const processedOrder: string[] = [];
@@ -377,12 +395,16 @@ describe('OfflineSyncService', () => {
         return { success: true };
       });
 
-      await service.addToQueue(makeQueueItem({ endpoint: '/first' }));
+      await service.addToQueue(makeQueueItem({ endpoint: "/first" }));
       // Small delay to ensure different timestamps
       await new Promise((r) => setTimeout(r, 5));
-      await service.addToQueue(makeQueueItem({ endpoint: '/second', entity: 'settings' }));
+      await service.addToQueue(
+        makeQueueItem({ endpoint: "/second", entity: "settings" }),
+      );
       await new Promise((r) => setTimeout(r, 5));
-      await service.addToQueue(makeQueueItem({ endpoint: '/third', entity: 'budget' }));
+      await service.addToQueue(
+        makeQueueItem({ endpoint: "/third", entity: "budget" }),
+      );
 
       service.setOnlineStatus(true);
       // Wait for auto-process
@@ -390,10 +412,10 @@ describe('OfflineSyncService', () => {
 
       // All three should have been processed
       // Since all have 'normal' priority, they should be in FIFO order
-      expect(processedOrder).toEqual(['/first', '/second', '/third']);
+      expect(processedOrder).toEqual(["/first", "/second", "/third"]);
     });
 
-    it('should process higher priority items before lower priority', async () => {
+    it("should process higher priority items before lower priority", async () => {
       await initOffline(service);
 
       const processedOrder: string[] = [];
@@ -402,18 +424,38 @@ describe('OfflineSyncService', () => {
         return { success: true };
       });
 
-      await service.addToQueue(makeQueueItem({ endpoint: '/low', priority: 'low', entity: 'bill' }));
-      await service.addToQueue(makeQueueItem({ endpoint: '/critical', priority: 'critical', entity: 'dispute' }));
-      await service.addToQueue(makeQueueItem({ endpoint: '/normal', priority: 'normal', entity: 'budget' }));
-      await service.addToQueue(makeQueueItem({ endpoint: '/high', priority: 'high', entity: 'settings' }));
+      await service.addToQueue(
+        makeQueueItem({ endpoint: "/low", priority: "low", entity: "bill" }),
+      );
+      await service.addToQueue(
+        makeQueueItem({
+          endpoint: "/critical",
+          priority: "critical",
+          entity: "dispute",
+        }),
+      );
+      await service.addToQueue(
+        makeQueueItem({
+          endpoint: "/normal",
+          priority: "normal",
+          entity: "budget",
+        }),
+      );
+      await service.addToQueue(
+        makeQueueItem({
+          endpoint: "/high",
+          priority: "high",
+          entity: "settings",
+        }),
+      );
 
       service.setOnlineStatus(true);
       await new Promise((r) => setTimeout(r, 50));
 
-      expect(processedOrder[0]).toBe('/critical');
-      expect(processedOrder[1]).toBe('/high');
-      expect(processedOrder[2]).toBe('/normal');
-      expect(processedOrder[3]).toBe('/low');
+      expect(processedOrder[0]).toBe("/critical");
+      expect(processedOrder[1]).toBe("/high");
+      expect(processedOrder[2]).toBe("/normal");
+      expect(processedOrder[3]).toBe("/low");
     });
   });
 
@@ -421,11 +463,11 @@ describe('OfflineSyncService', () => {
   // Retry Logic with Exponential Backoff
   // =========================================================================
 
-  describe('Retry Logic with Exponential Backoff', () => {
-    it('should retry failed items up to maxRetries', async () => {
+  describe("Retry Logic with Exponential Backoff", () => {
+    it("should retry failed items up to maxRetries", async () => {
       await initOffline(service);
 
-      mockApiRequest.mockRejectedValue(new Error('Server error'));
+      mockApiRequest.mockRejectedValue(new Error("Server error"));
 
       await service.addToQueue(makeQueueItem());
 
@@ -443,12 +485,12 @@ describe('OfflineSyncService', () => {
       expect(result.failed).toBe(1);
     });
 
-    it('should increment retryCount on each failure', async () => {
+    it("should increment retryCount on each failure", async () => {
       await initOffline(service);
 
       // Fail once, then succeed
       mockApiRequest
-        .mockRejectedValueOnce(new Error('Temporary error'))
+        .mockRejectedValueOnce(new Error("Temporary error"))
         .mockResolvedValueOnce({ success: true });
 
       await service.addToQueue(makeQueueItem());
@@ -468,11 +510,11 @@ describe('OfflineSyncService', () => {
       expect(service.getQueueSize()).toBe(0);
     });
 
-    it('should move to dead-letter queue after exceeding maxRetries', async () => {
+    it("should move to dead-letter queue after exceeding maxRetries", async () => {
       const svc = createService({ maxRetries: 2, baseRetryDelay: 1 });
       await initOffline(svc);
 
-      mockApiRequest.mockRejectedValue(new Error('Persistent error'));
+      mockApiRequest.mockRejectedValue(new Error("Persistent error"));
 
       await svc.addToQueue(makeQueueItem());
       svc.setOnlineStatus(true, false);
@@ -488,11 +530,11 @@ describe('OfflineSyncService', () => {
       await svc.destroy();
     });
 
-    it('should allow retrying dead-letter items', async () => {
+    it("should allow retrying dead-letter items", async () => {
       const svc = createService({ maxRetries: 1, baseRetryDelay: 1 });
       await initOffline(svc);
 
-      mockApiRequest.mockRejectedValue(new Error('Error'));
+      mockApiRequest.mockRejectedValue(new Error("Error"));
       await svc.addToQueue(makeQueueItem());
       svc.setOnlineStatus(true, false);
 
@@ -515,14 +557,18 @@ describe('OfflineSyncService', () => {
       await svc.destroy();
     });
 
-    it('should use exponential backoff with capped delay', async () => {
+    it("should use exponential backoff with capped delay", async () => {
       // We test the backoff indirectly by checking that higher retry counts
       // don't cause extremely long delays (capped at maxRetryDelay)
-      const svc = createService({ maxRetries: 5, baseRetryDelay: 10, maxRetryDelay: 100 });
+      const svc = createService({
+        maxRetries: 5,
+        baseRetryDelay: 10,
+        maxRetryDelay: 100,
+      });
       await initOffline(svc);
 
       // All attempts fail
-      mockApiRequest.mockRejectedValue(new Error('Error'));
+      mockApiRequest.mockRejectedValue(new Error("Error"));
 
       await svc.addToQueue(makeQueueItem());
       svc.setOnlineStatus(true, false);
@@ -543,19 +589,19 @@ describe('OfflineSyncService', () => {
   // Conflict Resolution
   // =========================================================================
 
-  describe('Conflict Resolution', () => {
+  describe("Conflict Resolution", () => {
     beforeEach(async () => {
       await initOffline(service);
     });
 
-    it('should replace older queued item with last_write_wins for same entity+entityId', async () => {
+    it("should replace older queued item with last_write_wins for same entity+entityId", async () => {
       await service.addToQueue(
         makeQueueItem({
-          entity: 'settings',
-          entityId: 'user-settings-1',
-          operationType: 'update',
-          body: JSON.stringify({ theme: 'light' }),
-          conflictStrategy: 'last_write_wins',
+          entity: "settings",
+          entityId: "user-settings-1",
+          operationType: "update",
+          body: JSON.stringify({ theme: "light" }),
+          conflictStrategy: "last_write_wins",
         }),
       );
 
@@ -564,34 +610,34 @@ describe('OfflineSyncService', () => {
       // Add a newer update for the same entity
       await service.addToQueue(
         makeQueueItem({
-          entity: 'settings',
-          entityId: 'user-settings-1',
-          operationType: 'update',
-          body: JSON.stringify({ theme: 'dark' }),
-          conflictStrategy: 'last_write_wins',
+          entity: "settings",
+          entityId: "user-settings-1",
+          operationType: "update",
+          body: JSON.stringify({ theme: "dark" }),
+          conflictStrategy: "last_write_wins",
         }),
       );
 
       // Should still be 1 item -- the older one was replaced
       expect(service.getQueueSize()).toBe(1);
       const queue = service.getQueue();
-      expect(JSON.parse(queue[0].body!).theme).toBe('dark');
+      expect(JSON.parse(queue[0].body!).theme).toBe("dark");
     });
 
-    it('should not conflict items with different entityIds', async () => {
+    it("should not conflict items with different entityIds", async () => {
       await service.addToQueue(
         makeQueueItem({
-          entity: 'dispute',
-          entityId: 'dispute-1',
-          operationType: 'update',
+          entity: "dispute",
+          entityId: "dispute-1",
+          operationType: "update",
         }),
       );
 
       await service.addToQueue(
         makeQueueItem({
-          entity: 'dispute',
-          entityId: 'dispute-2',
-          operationType: 'update',
+          entity: "dispute",
+          entityId: "dispute-2",
+          operationType: "update",
         }),
       );
 
@@ -599,29 +645,33 @@ describe('OfflineSyncService', () => {
       expect(service.getQueueSize()).toBe(2);
     });
 
-    it('should not conflict items without entityId', async () => {
-      await service.addToQueue(makeQueueItem({ entity: 'dispute', operationType: 'create' }));
-      await service.addToQueue(makeQueueItem({ entity: 'dispute', operationType: 'create' }));
+    it("should not conflict items without entityId", async () => {
+      await service.addToQueue(
+        makeQueueItem({ entity: "dispute", operationType: "create" }),
+      );
+      await service.addToQueue(
+        makeQueueItem({ entity: "dispute", operationType: "create" }),
+      );
 
       // No entityId means no conflict detection
       expect(service.getQueueSize()).toBe(2);
     });
 
-    it('should keep create when update follows for same entity with last_write_wins', async () => {
+    it("should keep create when update follows for same entity with last_write_wins", async () => {
       await service.addToQueue(
         makeQueueItem({
-          entity: 'budget',
-          entityId: 'budget-1',
-          operationType: 'create',
-          body: JSON.stringify({ category: 'food', limit: 500 }),
+          entity: "budget",
+          entityId: "budget-1",
+          operationType: "create",
+          body: JSON.stringify({ category: "food", limit: 500 }),
         }),
       );
 
       await service.addToQueue(
         makeQueueItem({
-          entity: 'budget',
-          entityId: 'budget-1',
-          operationType: 'update',
+          entity: "budget",
+          entityId: "budget-1",
+          operationType: "update",
           body: JSON.stringify({ limit: 600 }),
         }),
       );
@@ -630,42 +680,50 @@ describe('OfflineSyncService', () => {
       expect(service.getQueueSize()).toBe(2);
     });
 
-    it('should replace all with client_wins strategy', async () => {
+    it("should replace all with client_wins strategy", async () => {
       await service.addToQueue(
         makeQueueItem({
-          entity: 'profile',
-          entityId: 'user-1',
-          operationType: 'update',
-          conflictStrategy: 'last_write_wins',
-          body: JSON.stringify({ firstName: 'John' }),
+          entity: "profile",
+          entityId: "user-1",
+          operationType: "update",
+          conflictStrategy: "last_write_wins",
+          body: JSON.stringify({ firstName: "John" }),
         }),
       );
 
       await service.addToQueue(
         makeQueueItem({
-          entity: 'profile',
-          entityId: 'user-1',
-          operationType: 'update',
-          conflictStrategy: 'client_wins',
-          body: JSON.stringify({ firstName: 'Jane' }),
+          entity: "profile",
+          entityId: "user-1",
+          operationType: "update",
+          conflictStrategy: "client_wins",
+          body: JSON.stringify({ firstName: "Jane" }),
         }),
       );
 
       expect(service.getQueueSize()).toBe(1);
-      expect(JSON.parse(service.getQueue()[0].body!).firstName).toBe('Jane');
+      expect(JSON.parse(service.getQueue()[0].body!).firstName).toBe("Jane");
     });
 
-    it('should find conflicts for a given entity and entityId', async () => {
+    it("should find conflicts for a given entity and entityId", async () => {
       await service.addToQueue(
-        makeQueueItem({ entity: 'dispute', entityId: 'disp-1', operationType: 'update' }),
+        makeQueueItem({
+          entity: "dispute",
+          entityId: "disp-1",
+          operationType: "update",
+        }),
       );
       await service.addToQueue(
-        makeQueueItem({ entity: 'dispute', entityId: 'disp-2', operationType: 'update' }),
+        makeQueueItem({
+          entity: "dispute",
+          entityId: "disp-2",
+          operationType: "update",
+        }),
       );
 
-      const conflicts = service.findConflicts('dispute', 'disp-1');
+      const conflicts = service.findConflicts("dispute", "disp-1");
       expect(conflicts).toHaveLength(1);
-      expect(conflicts[0].entityId).toBe('disp-1');
+      expect(conflicts[0].entityId).toBe("disp-1");
     });
   });
 
@@ -673,8 +731,8 @@ describe('OfflineSyncService', () => {
   // Network Status Transitions
   // =========================================================================
 
-  describe('Network Status Transitions', () => {
-    it('should track online/offline status', async () => {
+  describe("Network Status Transitions", () => {
+    it("should track online/offline status", async () => {
       await initOnline(service);
 
       expect(service.getIsOnline()).toBe(true);
@@ -686,7 +744,7 @@ describe('OfflineSyncService', () => {
       expect(service.getIsOnline()).toBe(true);
     });
 
-    it('should auto-process queue when transitioning from offline to online', async () => {
+    it("should auto-process queue when transitioning from offline to online", async () => {
       await initOffline(service);
 
       await service.addToQueue(makeQueueItem());
@@ -700,7 +758,7 @@ describe('OfflineSyncService', () => {
       expect(mockApiRequest).toHaveBeenCalled();
     });
 
-    it('should not process queue when offline', async () => {
+    it("should not process queue when offline", async () => {
       await initOffline(service);
 
       await service.addToQueue(makeQueueItem());
@@ -711,12 +769,12 @@ describe('OfflineSyncService', () => {
       expect(mockApiRequest).not.toHaveBeenCalled();
     });
 
-    it('should respond to NetInfo network change events', async () => {
+    it("should respond to NetInfo network change events", async () => {
       await initOnline(service);
 
       // Simulate going offline via NetInfo
       if (mockNetInfoState.mockCallback) {
-        mockNetInfoState.mockCallback({ isConnected: false, type: 'none' });
+        mockNetInfoState.mockCallback({ isConnected: false, type: "none" });
       }
       expect(service.getIsOnline()).toBe(false);
 
@@ -726,7 +784,7 @@ describe('OfflineSyncService', () => {
 
       // Simulate going back online
       if (mockNetInfoState.mockCallback) {
-        mockNetInfoState.mockCallback({ isConnected: true, type: 'wifi' });
+        mockNetInfoState.mockCallback({ isConnected: true, type: "wifi" });
       }
 
       // Wait for auto-processing
@@ -736,7 +794,7 @@ describe('OfflineSyncService', () => {
       expect(service.getQueueSize()).toBe(0);
     });
 
-    it('should stop processing mid-queue if network drops', async () => {
+    it("should stop processing mid-queue if network drops", async () => {
       await initOffline(service);
 
       let callCount = 0;
@@ -749,9 +807,15 @@ describe('OfflineSyncService', () => {
         return { success: true };
       });
 
-      await service.addToQueue(makeQueueItem({ endpoint: '/first', entity: 'dispute' }));
-      await service.addToQueue(makeQueueItem({ endpoint: '/second', entity: 'budget' }));
-      await service.addToQueue(makeQueueItem({ endpoint: '/third', entity: 'settings' }));
+      await service.addToQueue(
+        makeQueueItem({ endpoint: "/first", entity: "dispute" }),
+      );
+      await service.addToQueue(
+        makeQueueItem({ endpoint: "/second", entity: "budget" }),
+      );
+      await service.addToQueue(
+        makeQueueItem({ endpoint: "/third", entity: "settings" }),
+      );
 
       service.setOnlineStatus(true, false);
       const result = await service.processQueue();
@@ -766,12 +830,14 @@ describe('OfflineSyncService', () => {
   // Queue Processing
   // =========================================================================
 
-  describe('Queue Processing', () => {
-    it('should process successfully and clear queue', async () => {
+  describe("Queue Processing", () => {
+    it("should process successfully and clear queue", async () => {
       await initOffline(service);
 
-      await service.addToQueue(makeQueueItem({ endpoint: '/disputes' }));
-      await service.addToQueue(makeQueueItem({ endpoint: '/budgets', entity: 'budget' }));
+      await service.addToQueue(makeQueueItem({ endpoint: "/disputes" }));
+      await service.addToQueue(
+        makeQueueItem({ endpoint: "/budgets", entity: "budget" }),
+      );
 
       service.setOnlineStatus(true, false);
       const result = await service.processQueue();
@@ -782,7 +848,7 @@ describe('OfflineSyncService', () => {
       expect(service.getQueueSize()).toBe(0);
     });
 
-    it('should not process concurrently (guard against double-processing)', async () => {
+    it("should not process concurrently (guard against double-processing)", async () => {
       await initOffline(service);
 
       mockApiRequest.mockImplementation(async () => {
@@ -803,7 +869,7 @@ describe('OfflineSyncService', () => {
       expect(totalProcessed).toBe(1);
     });
 
-    it('should call onSyncCompleted callback after processing', async () => {
+    it("should call onSyncCompleted callback after processing", async () => {
       const callback = jest.fn();
       service.onSyncCompleted(callback);
 
@@ -822,12 +888,12 @@ describe('OfflineSyncService', () => {
       );
     });
 
-    it('should handle API returning success: false as a failure', async () => {
+    it("should handle API returning success: false as a failure", async () => {
       await initOffline(service);
 
       mockApiRequest.mockResolvedValue({
         success: false,
-        error: { message: 'Validation error', code: 'VALIDATION_ERROR' },
+        error: { message: "Validation error", code: "VALIDATION_ERROR" },
       });
 
       await service.addToQueue(makeQueueItem());
@@ -840,7 +906,7 @@ describe('OfflineSyncService', () => {
       expect(result.processed).toBe(0);
     });
 
-    it('should retry a single item by ID', async () => {
+    it("should retry a single item by ID", async () => {
       await initOffline(service);
 
       const id = await service.addToQueue(makeQueueItem());
@@ -851,9 +917,9 @@ describe('OfflineSyncService', () => {
       expect(service.getQueueSize()).toBe(0);
     });
 
-    it('should return false when retrying non-existent item', async () => {
+    it("should return false when retrying non-existent item", async () => {
       await initOnline(service);
-      const success = await service.retrySingleItem('non-existent');
+      const success = await service.retrySingleItem("non-existent");
       expect(success).toBe(false);
     });
   });
@@ -862,8 +928,8 @@ describe('OfflineSyncService', () => {
   // Expiration (TTL)
   // =========================================================================
 
-  describe('Expiration', () => {
-    it('should remove expired items during processQueue', async () => {
+  describe("Expiration", () => {
+    it("should remove expired items during processQueue", async () => {
       const svc = createService({ itemTtlMs: 100 }); // 100ms TTL
       await initOffline(svc);
 
@@ -883,7 +949,7 @@ describe('OfflineSyncService', () => {
       await svc.destroy();
     });
 
-    it('should not expire items within TTL', async () => {
+    it("should not expire items within TTL", async () => {
       const svc = createService({ itemTtlMs: 60000 }); // 60s TTL
       await initOffline(svc);
 
@@ -902,26 +968,38 @@ describe('OfflineSyncService', () => {
   // Max Queue Size
   // =========================================================================
 
-  describe('Max Queue Size', () => {
-    it('should evict oldest low-priority items when max size exceeded', async () => {
+  describe("Max Queue Size", () => {
+    it("should evict oldest low-priority items when max size exceeded", async () => {
       const svc = createService({ maxQueueSize: 3 });
       await initOffline(svc);
 
-      await svc.addToQueue(makeQueueItem({ endpoint: '/a', priority: 'low', entity: 'bill' }));
-      await svc.addToQueue(makeQueueItem({ endpoint: '/b', priority: 'critical', entity: 'dispute' }));
-      await svc.addToQueue(makeQueueItem({ endpoint: '/c', priority: 'normal', entity: 'budget' }));
+      await svc.addToQueue(
+        makeQueueItem({ endpoint: "/a", priority: "low", entity: "bill" }),
+      );
+      await svc.addToQueue(
+        makeQueueItem({
+          endpoint: "/b",
+          priority: "critical",
+          entity: "dispute",
+        }),
+      );
+      await svc.addToQueue(
+        makeQueueItem({ endpoint: "/c", priority: "normal", entity: "budget" }),
+      );
       // This fourth item should cause eviction of the oldest low-priority item
-      await svc.addToQueue(makeQueueItem({ endpoint: '/d', priority: 'high', entity: 'settings' }));
+      await svc.addToQueue(
+        makeQueueItem({ endpoint: "/d", priority: "high", entity: "settings" }),
+      );
 
       expect(svc.getQueueSize()).toBe(3);
 
       // The low-priority item '/a' should have been evicted
       const queue = svc.getQueue();
       const endpoints = queue.map((item) => item.endpoint);
-      expect(endpoints).not.toContain('/a');
-      expect(endpoints).toContain('/b');
-      expect(endpoints).toContain('/c');
-      expect(endpoints).toContain('/d');
+      expect(endpoints).not.toContain("/a");
+      expect(endpoints).toContain("/b");
+      expect(endpoints).toContain("/c");
+      expect(endpoints).toContain("/d");
 
       await svc.destroy();
     });
@@ -931,12 +1009,12 @@ describe('OfflineSyncService', () => {
   // Dead Letter Queue
   // =========================================================================
 
-  describe('Dead Letter Queue', () => {
-    it('should persist dead-letter queue to storage', async () => {
+  describe("Dead Letter Queue", () => {
+    it("should persist dead-letter queue to storage", async () => {
       const svc = createService({ maxRetries: 1, baseRetryDelay: 1 });
       await initOffline(svc);
 
-      mockApiRequest.mockRejectedValue(new Error('Permanent failure'));
+      mockApiRequest.mockRejectedValue(new Error("Permanent failure"));
       await svc.addToQueue(makeQueueItem());
       svc.setOnlineStatus(true, false);
 
@@ -945,17 +1023,17 @@ describe('OfflineSyncService', () => {
       expect(svc.getDeadLetterQueue().length).toBe(1);
 
       // Verify persisted
-      const stored = JSON.parse(mockAsyncStorage['fynvita_sync_dead_letter']);
+      const stored = JSON.parse(mockAsyncStorage["fynvita_sync_dead_letter"]);
       expect(stored).toHaveLength(1);
 
       await svc.destroy();
     });
 
-    it('should clear dead-letter queue', async () => {
+    it("should clear dead-letter queue", async () => {
       const svc = createService({ maxRetries: 1, baseRetryDelay: 1 });
       await initOffline(svc);
 
-      mockApiRequest.mockRejectedValue(new Error('Failure'));
+      mockApiRequest.mockRejectedValue(new Error("Failure"));
       await svc.addToQueue(makeQueueItem());
       svc.setOnlineStatus(true, false);
 
@@ -968,25 +1046,25 @@ describe('OfflineSyncService', () => {
       await svc.destroy();
     });
 
-    it('should load dead-letter queue from storage on initialize', async () => {
-      mockAsyncStorage['fynvita_sync_dead_letter'] = JSON.stringify([
+    it("should load dead-letter queue from storage on initialize", async () => {
+      mockAsyncStorage["fynvita_sync_dead_letter"] = JSON.stringify([
         {
-          id: 'dead-1',
-          endpoint: '/failed',
-          method: 'POST',
-          entity: 'dispute',
-          operationType: 'create',
+          id: "dead-1",
+          endpoint: "/failed",
+          method: "POST",
+          entity: "dispute",
+          operationType: "create",
           createdAt: new Date().toISOString(),
           retryCount: 5,
           lastRetryAt: new Date().toISOString(),
-          priority: 'normal',
-          conflictStrategy: 'last_write_wins',
+          priority: "normal",
+          conflictStrategy: "last_write_wins",
         },
       ]);
 
       await initOnline(service);
       expect(service.getDeadLetterQueue().length).toBe(1);
-      expect(service.getDeadLetterQueue()[0].id).toBe('dead-1');
+      expect(service.getDeadLetterQueue()[0].id).toBe("dead-1");
     });
   });
 
@@ -994,30 +1072,30 @@ describe('OfflineSyncService', () => {
   // Integration with API Client
   // =========================================================================
 
-  describe('Integration with API Client', () => {
-    it('should call apiRequest with correct parameters', async () => {
+  describe("Integration with API Client", () => {
+    it("should call apiRequest with correct parameters", async () => {
       await initOffline(service);
 
       await service.addToQueue(
         makeQueueItem({
-          endpoint: '/disputes',
-          method: 'POST',
-          body: JSON.stringify({ bureau: 'equifax', reason: 'Not mine' }),
+          endpoint: "/disputes",
+          method: "POST",
+          body: JSON.stringify({ bureau: "equifax", reason: "Not mine" }),
         }),
       );
 
       service.setOnlineStatus(true, false);
       await service.processQueue();
 
-      expect(mockApiRequest).toHaveBeenCalledWith('/disputes', {
-        method: 'POST',
-        body: JSON.stringify({ bureau: 'equifax', reason: 'Not mine' }),
+      expect(mockApiRequest).toHaveBeenCalledWith("/disputes", {
+        method: "POST",
+        body: JSON.stringify({ bureau: "equifax", reason: "Not mine" }),
         offlineSupport: false,
         retryCount: 0,
       });
     });
 
-    it('should handle multiple entity types in a single queue run', async () => {
+    it("should handle multiple entity types in a single queue run", async () => {
       await initOffline(service);
 
       const processedEndpoints: string[] = [];
@@ -1026,19 +1104,39 @@ describe('OfflineSyncService', () => {
         return { success: true };
       });
 
-      await service.addToQueue(makeQueueItem({ endpoint: '/disputes', entity: 'dispute' }));
-      await service.addToQueue(makeQueueItem({ endpoint: '/documents/upload', entity: 'document', method: 'POST' }));
-      await service.addToQueue(makeQueueItem({ endpoint: '/user/settings', entity: 'settings', method: 'PATCH' }));
-      await service.addToQueue(makeQueueItem({ endpoint: '/financial/budgets', entity: 'budget', method: 'POST' }));
+      await service.addToQueue(
+        makeQueueItem({ endpoint: "/disputes", entity: "dispute" }),
+      );
+      await service.addToQueue(
+        makeQueueItem({
+          endpoint: "/documents/upload",
+          entity: "document",
+          method: "POST",
+        }),
+      );
+      await service.addToQueue(
+        makeQueueItem({
+          endpoint: "/user/settings",
+          entity: "settings",
+          method: "PATCH",
+        }),
+      );
+      await service.addToQueue(
+        makeQueueItem({
+          endpoint: "/financial/budgets",
+          entity: "budget",
+          method: "POST",
+        }),
+      );
 
       service.setOnlineStatus(true, false);
       const result = await service.processQueue();
 
       expect(result.processed).toBe(4);
-      expect(processedEndpoints).toContain('/disputes');
-      expect(processedEndpoints).toContain('/documents/upload');
-      expect(processedEndpoints).toContain('/user/settings');
-      expect(processedEndpoints).toContain('/financial/budgets');
+      expect(processedEndpoints).toContain("/disputes");
+      expect(processedEndpoints).toContain("/documents/upload");
+      expect(processedEndpoints).toContain("/user/settings");
+      expect(processedEndpoints).toContain("/financial/budgets");
     });
   });
 
@@ -1046,8 +1144,8 @@ describe('OfflineSyncService', () => {
   // Edge Cases
   // =========================================================================
 
-  describe('Edge Cases', () => {
-    it('should handle empty queue processQueue gracefully', async () => {
+  describe("Edge Cases", () => {
+    it("should handle empty queue processQueue gracefully", async () => {
       await initOnline(service);
       const result = await service.processQueue();
 
@@ -1056,13 +1154,13 @@ describe('OfflineSyncService', () => {
       expect(result.remaining).toBe(0);
     });
 
-    it('should handle initialize with non-array storage data', async () => {
-      mockAsyncStorage['test_sync_queue'] = JSON.stringify({ not: 'an array' });
+    it("should handle initialize with non-array storage data", async () => {
+      mockAsyncStorage["test_sync_queue"] = JSON.stringify({ not: "an array" });
       await initOnline(service);
       expect(service.getQueueSize()).toBe(0);
     });
 
-    it('should not auto-process when autoProcessOnReconnect is false', async () => {
+    it("should not auto-process when autoProcessOnReconnect is false", async () => {
       const svc = createService({ autoProcessOnReconnect: false });
       await initOffline(svc);
 
@@ -1077,7 +1175,7 @@ describe('OfflineSyncService', () => {
       await svc.destroy();
     });
 
-    it('should handle retrySingleItem when offline', async () => {
+    it("should handle retrySingleItem when offline", async () => {
       await initOffline(service);
 
       const id = await service.addToQueue(makeQueueItem());

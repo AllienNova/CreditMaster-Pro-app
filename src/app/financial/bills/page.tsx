@@ -1,17 +1,17 @@
-import { Suspense } from 'react';
-import { Metadata } from 'next';
-import Link from 'next/link';
-import BillsSubscriptions from '@/components/financial/BillsSubscriptions';
+import { Suspense } from "react";
+import { Metadata } from "next";
+import Link from "next/link";
+import BillsSubscriptions from "@/components/financial/BillsSubscriptions";
 
 export const metadata: Metadata = {
-  title: 'Bills & Subscriptions | Fynvita',
+  title: "Bills & Subscriptions | Fynvita",
   description:
-    'Manage your recurring bills, subscriptions, and detect new bills automatically',
+    "Manage your recurring bills, subscriptions, and detect new bills automatically",
   openGraph: {
-    title: 'Bills & Subscriptions | Fynvita',
+    title: "Bills & Subscriptions | Fynvita",
     description:
-      'Manage your recurring bills, subscriptions, and detect new bills automatically',
-    type: 'website',
+      "Manage your recurring bills, subscriptions, and detect new bills automatically",
+    type: "website",
   },
 };
 

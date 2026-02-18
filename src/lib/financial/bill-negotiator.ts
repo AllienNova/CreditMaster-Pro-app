@@ -8,8 +8,8 @@
  * Phase 2.4: Bill Negotiation Assistant
  */
 
-import { getSupabase } from '@/lib/supabase/client';
-import { getAIMLService, type AIMLService } from '@/lib/aiml-service';
+import { getSupabase } from "@/lib/supabase/client";
+import { getAIMLService, type AIMLService } from "@/lib/aiml-service";
 import type {
   NegotiableBill,
   BillType,
@@ -25,7 +25,7 @@ import type {
   Counterargument,
   FallbackOption,
   NegotiationDifficulty,
-} from './types/bill-negotiation.types';
+} from "./types/bill-negotiation.types";
 
 interface Transaction {
   id: string;
@@ -63,8 +63,14 @@ interface BillNegotiationOutcomeRow {
 export class BillNegotiator {
   private static instance: BillNegotiator;
   private aimlService: AIMLService;
-  private marketDataCache: Map<string, { data: MarketAnalysis; expiresAt: Date }>;
-  private scriptCache: Map<string, { script: NegotiationScript; expiresAt: Date }>;
+  private marketDataCache: Map<
+    string,
+    { data: MarketAnalysis; expiresAt: Date }
+  >;
+  private scriptCache: Map<
+    string,
+    { script: NegotiationScript; expiresAt: Date }
+  >;
 
   private constructor() {
     this.aimlService = getAIMLService();
@@ -82,7 +88,9 @@ export class BillNegotiator {
   /**
    * Identify negotiable bills from user's transaction history
    */
-  public async identifyNegotiableBills(userId: string): Promise<NegotiableBill[]> {
+  public async identifyNegotiableBills(
+    userId: string,
+  ): Promise<NegotiableBill[]> {
     const transactions = await this.fetchRecurringTransactions(userId);
     const negotiableBills: NegotiableBill[] = [];
 
@@ -95,27 +103,29 @@ export class BillNegotiator {
       // Only include negotiable bill types
       if (!this.isNegotiable(billType)) continue;
 
-      const avgAmount = txns.reduce((sum, t) => sum + t.amount, 0) / txns.length;
+      const avgAmount =
+        txns.reduce((sum, t) => sum + t.amount, 0) / txns.length;
       const negotiationPotential = await this.calculateNegotiationPotential(
         billType,
         merchant,
-        avgAmount
+        avgAmount,
       );
 
-      if (negotiationPotential > 30) { // Only include bills with >30% potential
+      if (negotiationPotential > 30) {
+        // Only include bills with >30% potential
         negotiableBills.push({
-          id: `bill-${merchant.toLowerCase().replace(/\s+/g, '-')}-${userId}`,
+          id: `bill-${merchant.toLowerCase().replace(/\s+/g, "-")}-${userId}`,
           userId,
           billType,
           provider: merchant,
           serviceName: this.inferServiceName(billType, merchant),
           currentAmount: avgAmount,
-          billingFrequency: 'monthly',
+          billingFrequency: "monthly",
           isUnderContract: false, // Would need additional data to determine
           negotiationPotential,
           estimatedSavings: avgAmount * (negotiationPotential / 100) * 0.7, // Conservative estimate
           difficulty: this.assessDifficulty(billType, negotiationPotential),
-          status: 'not_started',
+          status: "not_started",
           negotiationCount: 0,
           totalSavingsAchieved: 0,
           detectedAt: new Date(),
@@ -125,7 +135,9 @@ export class BillNegotiator {
     }
 
     // Sort by estimated savings (highest first)
-    return negotiableBills.sort((a, b) => b.estimatedSavings - a.estimatedSavings);
+    return negotiableBills.sort(
+      (a, b) => b.estimatedSavings - a.estimatedSavings,
+    );
   }
 
   /**
@@ -134,10 +146,10 @@ export class BillNegotiator {
   public async analyzeMarketRates(
     billType: BillType,
     provider: string,
-    location?: string
+    location?: string,
   ): Promise<MarketAnalysis> {
     // Check cache first (7-day cache)
-    const cacheKey = `${billType}-${provider}-${location || 'default'}`;
+    const cacheKey = `${billType}-${provider}-${location || "default"}`;
     const cached = this.marketDataCache.get(cacheKey);
 
     if (cached && cached.expiresAt > new Date()) {
@@ -145,19 +157,26 @@ export class BillNegotiator {
     }
 
     // Fetch market data (in production, this would call real APIs)
-    const competitorRates = await this.fetchCompetitorRates(billType, provider, location);
+    const competitorRates = await this.fetchCompetitorRates(
+      billType,
+      provider,
+      location,
+    );
     const averageMarketRate = this.calculateAverageRate(competitorRates);
     const userCurrentRate = await this.getUserCurrentRate(provider, billType);
 
     const savingsPotential = Math.max(0, userCurrentRate - averageMarketRate);
     const savingsPercentage = (savingsPotential / userCurrentRate) * 100;
 
-    const marketPosition = this.determineMarketPosition(userCurrentRate, averageMarketRate);
+    const marketPosition = this.determineMarketPosition(
+      userCurrentRate,
+      averageMarketRate,
+    );
     const leveragePoints = this.identifyLeveragePoints(
       billType,
       provider,
       userCurrentRate,
-      competitorRates
+      competitorRates,
     );
 
     const analysis: MarketAnalysis = {
@@ -172,15 +191,24 @@ export class BillNegotiator {
       marketPosition,
       leveragePoints,
       competitiveAdvantages: this.extractCompetitiveAdvantages(competitorRates),
-      recommendedAction: this.determineRecommendedAction(savingsPercentage, marketPosition),
-      confidenceScore: this.calculateConfidenceScore(competitorRates.length, billType),
-      dataSource: 'market_research',
+      recommendedAction: this.determineRecommendedAction(
+        savingsPercentage,
+        marketPosition,
+      ),
+      confidenceScore: this.calculateConfidenceScore(
+        competitorRates.length,
+        billType,
+      ),
+      dataSource: "market_research",
       lastUpdated: new Date(),
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
     };
 
     // Cache the result
-    this.marketDataCache.set(cacheKey, { data: analysis, expiresAt: analysis.expiresAt });
+    this.marketDataCache.set(cacheKey, {
+      data: analysis,
+      expiresAt: analysis.expiresAt,
+    });
 
     return analysis;
   }
@@ -190,7 +218,7 @@ export class BillNegotiator {
    */
   public async generateNegotiationScript(
     bill: NegotiableBill,
-    userProfile?: UserProfile
+    userProfile?: UserProfile,
   ): Promise<NegotiationScript> {
     // Check cache first (24-hour cache)
     const cacheKey = `script-${bill.id}`;
@@ -201,10 +229,14 @@ export class BillNegotiator {
     }
 
     // Get market analysis for leverage points
-    const marketAnalysis = await this.analyzeMarketRates(bill.billType, bill.provider);
+    const marketAnalysis = await this.analyzeMarketRates(
+      bill.billType,
+      bill.provider,
+    );
 
     // Build user profile
-    const profile = userProfile || await this.buildUserProfile(bill.userId, bill.provider);
+    const profile =
+      userProfile || (await this.buildUserProfile(bill.userId, bill.provider));
 
     // Generate script using AI
     const prompt = this.buildScriptPrompt(bill, marketAnalysis, profile);
@@ -212,14 +244,14 @@ export class BillNegotiator {
     let aiResponse: string;
     try {
       const response = await this.aimlService.chat(
-        'anthropic/claude-4.5-sonnet',
-        [{ role: 'user', content: prompt }],
+        "anthropic/claude-4.5-sonnet",
+        [{ role: "user", content: prompt }],
         {
           max_tokens: 2000,
           temperature: 0.7,
-        }
+        },
       );
-      aiResponse = response.choices[0]?.message?.content || '';
+      aiResponse = response.choices[0]?.message?.content || "";
     } catch (_error) {
       // BillNegotiator error: AI script generation failed, using template
       aiResponse = this.generateTemplateScript(bill, marketAnalysis, profile);
@@ -240,32 +272,36 @@ export class BillNegotiator {
    */
   public async trackNegotiationOutcome(
     billId: string,
-    outcome: NegotiationOutcomeData
+    outcome: NegotiationOutcomeData,
   ): Promise<void> {
     const supabase = getSupabase();
 
     // Store outcome in database
-    const { error } = await (supabase.from('bill_negotiation_outcomes') as any).insert([{
-      bill_id: billId,
-      user_id: outcome.userId,
-      negotiation_date: outcome.negotiationDate,
-      success: outcome.success,
-      savings_achieved: outcome.savingsAchieved,
-      new_monthly_rate: outcome.newMonthlyRate,
-      previous_monthly_rate: outcome.previousMonthlyRate,
-      method: outcome.method,
-      duration: outcome.duration,
-      representative: outcome.representative,
-      notes: outcome.notes,
-      requires_followup: outcome.requiresFollowup,
-      followup_date: outcome.followupDate,
-      followup_reason: outcome.followupReason,
-      recorded_at: outcome.recordedAt,
-    }]);
+    const { error } = await (
+      supabase.from("bill_negotiation_outcomes") as any
+    ).insert([
+      {
+        bill_id: billId,
+        user_id: outcome.userId,
+        negotiation_date: outcome.negotiationDate,
+        success: outcome.success,
+        savings_achieved: outcome.savingsAchieved,
+        new_monthly_rate: outcome.newMonthlyRate,
+        previous_monthly_rate: outcome.previousMonthlyRate,
+        method: outcome.method,
+        duration: outcome.duration,
+        representative: outcome.representative,
+        notes: outcome.notes,
+        requires_followup: outcome.requiresFollowup,
+        followup_date: outcome.followupDate,
+        followup_reason: outcome.followupReason,
+        recorded_at: outcome.recordedAt,
+      },
+    ]);
 
     if (error) {
       // BillNegotiator error: Error tracking negotiation outcome
-      throw new Error('Failed to track negotiation outcome');
+      throw new Error("Failed to track negotiation outcome");
     }
 
     // Clear caches for this bill
@@ -275,14 +311,16 @@ export class BillNegotiator {
   /**
    * Get negotiation history for a user
    */
-  public async getBillNegotiationHistory(userId: string): Promise<NegotiationHistory[]> {
+  public async getBillNegotiationHistory(
+    userId: string,
+  ): Promise<NegotiationHistory[]> {
     const supabase = getSupabase();
 
     const { data: outcomes, error } = await supabase
-      .from('bill_negotiation_outcomes')
-      .select('*')
-      .eq('user_id', userId)
-      .order('negotiation_date', { ascending: false })
+      .from("bill_negotiation_outcomes")
+      .select("*")
+      .eq("user_id", userId)
+      .order("negotiation_date", { ascending: false })
       .returns<BillNegotiationOutcomeRow[]>();
 
     if (error) {
@@ -303,20 +341,23 @@ export class BillNegotiator {
     // Build history objects
     const history: NegotiationHistory[] = [];
     for (const [billId, attempts] of billGroups.entries()) {
-      const totalSavings = attempts.reduce((sum, a) => sum + (a.savings_achieved || 0), 0);
-      const successCount = attempts.filter(a => a.success).length;
+      const totalSavings = attempts.reduce(
+        (sum, a) => sum + (a.savings_achieved || 0),
+        0,
+      );
+      const successCount = attempts.filter((a) => a.success).length;
       const successRate = (successCount / attempts.length) * 100;
 
       history.push({
         billId,
-        provider: attempts[0].provider || 'Unknown',
-        billType: attempts[0].bill_type || 'subscription',
-        attempts: attempts.map(a => ({
+        provider: attempts[0].provider || "Unknown",
+        billType: attempts[0].bill_type || "subscription",
+        attempts: attempts.map((a) => ({
           id: a.id,
           date: new Date(a.negotiation_date),
           method: a.method,
           contactName: a.representative,
-          outcome: a.success ? 'success' : 'rejected',
+          outcome: a.success ? "success" : "rejected",
           offeredAmount: a.new_monthly_rate,
           notes: a.notes,
           followUpDate: a.followup_date ? new Date(a.followup_date) : undefined,
@@ -333,12 +374,14 @@ export class BillNegotiator {
   /**
    * Calculate potential savings from all negotiable bills
    */
-  public async calculatePotentialSavings(userId: string): Promise<SavingsEstimate> {
+  public async calculatePotentialSavings(
+    userId: string,
+  ): Promise<SavingsEstimate> {
     const negotiableBills = await this.identifyNegotiableBills(userId);
 
     const totalPotentialSavings = negotiableBills.reduce(
       (sum, bill) => sum + bill.estimatedSavings,
-      0
+      0,
     );
 
     const monthlyPotentialSavings = totalPotentialSavings;
@@ -350,7 +393,7 @@ export class BillNegotiator {
     // Calculate confidence based on number of bills and data quality
     const confidenceScore = Math.min(
       95,
-      50 + (negotiableBills.length * 5) + (highPotentialBills.length * 5)
+      50 + negotiableBills.length * 5 + highPotentialBills.length * 5,
     );
 
     return {
@@ -365,7 +408,6 @@ export class BillNegotiator {
     };
   }
 
-
   // ============================================================================
   // PRIVATE HELPER METHODS
   // ============================================================================
@@ -373,24 +415,29 @@ export class BillNegotiator {
   /**
    * Fetch recurring transactions for a user
    */
-  private async fetchRecurringTransactions(userId: string): Promise<Transaction[]> {
+  private async fetchRecurringTransactions(
+    userId: string,
+  ): Promise<Transaction[]> {
     const supabase = getSupabase();
 
     const { data, error } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('is_recurring', true)
-      .gte('date', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()) // Last 90 days
-      .order('date', { ascending: false })
-      .returns<Array<Omit<Transaction, 'date'> & { date: string }>>();
+      .from("transactions")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("is_recurring", true)
+      .gte(
+        "date",
+        new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
+      ) // Last 90 days
+      .order("date", { ascending: false })
+      .returns<Array<Omit<Transaction, "date"> & { date: string }>>();
 
     if (error) {
       // BillNegotiator error: Error fetching transactions
       return [];
     }
 
-    return (data || []).map(t => ({
+    return (data || []).map((t) => ({
       ...t,
       date: new Date(t.date),
     }));
@@ -399,7 +446,9 @@ export class BillNegotiator {
   /**
    * Group transactions by merchant
    */
-  private groupByMerchant(transactions: Transaction[]): Map<string, Transaction[]> {
+  private groupByMerchant(
+    transactions: Transaction[],
+  ): Map<string, Transaction[]> {
     const groups = new Map<string, Transaction[]>();
 
     for (const txn of transactions) {
@@ -421,46 +470,61 @@ export class BillNegotiator {
     const categoryLower = category.toLowerCase();
 
     // Telecom providers
-    if (merchantLower.includes('verizon') || merchantLower.includes('at&t') ||
-        merchantLower.includes('t-mobile') || merchantLower.includes('sprint')) {
-      return 'mobile';
+    if (
+      merchantLower.includes("verizon") ||
+      merchantLower.includes("at&t") ||
+      merchantLower.includes("t-mobile") ||
+      merchantLower.includes("sprint")
+    ) {
+      return "mobile";
     }
 
-    if (merchantLower.includes('comcast') || merchantLower.includes('xfinity') ||
-        merchantLower.includes('spectrum') || merchantLower.includes('cox')) {
-      return 'internet';
+    if (
+      merchantLower.includes("comcast") ||
+      merchantLower.includes("xfinity") ||
+      merchantLower.includes("spectrum") ||
+      merchantLower.includes("cox")
+    ) {
+      return "internet";
     }
 
     // Utilities
-    if (categoryLower.includes('utilities') || merchantLower.includes('electric') ||
-        merchantLower.includes('power')) {
-      return 'electricity';
+    if (
+      categoryLower.includes("utilities") ||
+      merchantLower.includes("electric") ||
+      merchantLower.includes("power")
+    ) {
+      return "electricity";
     }
 
-    if (merchantLower.includes('gas')) {
-      return 'gas';
+    if (merchantLower.includes("gas")) {
+      return "gas";
     }
 
-    if (merchantLower.includes('water')) {
-      return 'water';
+    if (merchantLower.includes("water")) {
+      return "water";
     }
 
     // Insurance
-    if (categoryLower.includes('insurance')) {
-      if (merchantLower.includes('auto') || merchantLower.includes('car')) {
-        return 'auto_insurance';
+    if (categoryLower.includes("insurance")) {
+      if (merchantLower.includes("auto") || merchantLower.includes("car")) {
+        return "auto_insurance";
       }
-      return 'home_insurance';
+      return "home_insurance";
     }
 
     // Streaming
-    if (merchantLower.includes('netflix') || merchantLower.includes('hulu') ||
-        merchantLower.includes('disney') || merchantLower.includes('spotify')) {
-      return 'streaming';
+    if (
+      merchantLower.includes("netflix") ||
+      merchantLower.includes("hulu") ||
+      merchantLower.includes("disney") ||
+      merchantLower.includes("spotify")
+    ) {
+      return "streaming";
     }
 
     // Default
-    return 'subscription';
+    return "subscription";
   }
 
   /**
@@ -468,9 +532,14 @@ export class BillNegotiator {
    */
   private isNegotiable(billType: BillType): boolean {
     const negotiableTypes: BillType[] = [
-      'telecom', 'internet', 'cable', 'mobile',
-      'auto_insurance', 'home_insurance',
-      'subscription', 'streaming'
+      "telecom",
+      "internet",
+      "cable",
+      "mobile",
+      "auto_insurance",
+      "home_insurance",
+      "subscription",
+      "streaming",
     ];
     return negotiableTypes.includes(billType);
   }
@@ -481,19 +550,19 @@ export class BillNegotiator {
   private async calculateNegotiationPotential(
     billType: BillType,
     merchant: string,
-    currentAmount: number
+    currentAmount: number,
   ): Promise<number> {
     // Base scores by bill type
     const baseScores: Record<string, number> = {
-      'cable': 85,
-      'internet': 80,
-      'mobile': 75,
-      'telecom': 75,
-      'auto_insurance': 70,
-      'home_insurance': 70,
-      'subscription': 60,
-      'streaming': 50,
-      'utilities': 40,
+      cable: 85,
+      internet: 80,
+      mobile: 75,
+      telecom: 75,
+      auto_insurance: 70,
+      home_insurance: 70,
+      subscription: 60,
+      streaming: 50,
+      utilities: 40,
     };
 
     let score = baseScores[billType] || 50;
@@ -504,7 +573,10 @@ export class BillNegotiator {
 
     // Provider-specific adjustments
     const merchantLower = merchant.toLowerCase();
-    if (merchantLower.includes('comcast') || merchantLower.includes('xfinity')) {
+    if (
+      merchantLower.includes("comcast") ||
+      merchantLower.includes("xfinity")
+    ) {
       score += 10; // Known for negotiating
     }
 
@@ -516,30 +588,32 @@ export class BillNegotiator {
    */
   private inferServiceName(billType: BillType, merchant: string): string {
     const typeNames: Record<string, string> = {
-      'mobile': 'Mobile Phone Service',
-      'internet': 'Internet Service',
-      'cable': 'Cable TV Service',
-      'electricity': 'Electric Service',
-      'gas': 'Gas Service',
-      'water': 'Water Service',
-      'auto_insurance': 'Auto Insurance',
-      'home_insurance': 'Home Insurance',
-      'streaming': 'Streaming Service',
-      'subscription': 'Subscription Service',
+      mobile: "Mobile Phone Service",
+      internet: "Internet Service",
+      cable: "Cable TV Service",
+      electricity: "Electric Service",
+      gas: "Gas Service",
+      water: "Water Service",
+      auto_insurance: "Auto Insurance",
+      home_insurance: "Home Insurance",
+      streaming: "Streaming Service",
+      subscription: "Subscription Service",
     };
 
-    return `${merchant} ${typeNames[billType] || 'Service'}`;
+    return `${merchant} ${typeNames[billType] || "Service"}`;
   }
 
   /**
    * Assess negotiation difficulty
    */
-  private assessDifficulty(billType: BillType, potential: number): NegotiationDifficulty {
-    if (potential >= 70) return 'easy';
-    if (potential >= 50) return 'moderate';
-    return 'difficult';
+  private assessDifficulty(
+    billType: BillType,
+    potential: number,
+  ): NegotiationDifficulty {
+    if (potential >= 70) return "easy";
+    if (potential >= 50) return "moderate";
+    return "difficult";
   }
-
 
   /**
    * Fetch competitor rates (mock data for now)
@@ -547,37 +621,41 @@ export class BillNegotiator {
   private async fetchCompetitorRates(
     billType: BillType,
     provider: string,
-    location?: string
+    location?: string,
   ): Promise<CompetitorRate[]> {
     // In production, this would call real market data APIs
     // For now, return mock data based on bill type
     const mockRates: Record<string, CompetitorRate[]> = {
-      'internet': [
+      internet: [
         {
-          provider: 'Spectrum',
+          provider: "Spectrum",
           rate: 49.99,
-          features: ['300 Mbps', 'No data caps', 'Free modem'],
+          features: ["300 Mbps", "No data caps", "Free modem"],
           promotionalRate: 39.99,
-          promotionalPeriod: '12 months',
+          promotionalPeriod: "12 months",
         },
         {
-          provider: 'Xfinity',
+          provider: "Xfinity",
           rate: 59.99,
-          features: ['200 Mbps', 'Unlimited data', 'Free installation'],
+          features: ["200 Mbps", "Unlimited data", "Free installation"],
           promotionalRate: 44.99,
-          promotionalPeriod: '12 months',
+          promotionalPeriod: "12 months",
         },
       ],
-      'mobile': [
+      mobile: [
         {
-          provider: 'T-Mobile',
-          rate: 70.00,
-          features: ['Unlimited data', '5G included', 'Netflix on Us'],
+          provider: "T-Mobile",
+          rate: 70.0,
+          features: ["Unlimited data", "5G included", "Netflix on Us"],
         },
         {
-          provider: 'Verizon',
-          rate: 80.00,
-          features: ['Unlimited premium data', '5G Ultra Wideband', 'Disney+ included'],
+          provider: "Verizon",
+          rate: 80.0,
+          features: [
+            "Unlimited premium data",
+            "5G Ultra Wideband",
+            "Disney+ included",
+          ],
         },
       ],
     };
@@ -597,16 +675,19 @@ export class BillNegotiator {
   /**
    * Get user's current rate for a provider
    */
-  private async getUserCurrentRate(provider: string, billType: BillType): Promise<number> {
+  private async getUserCurrentRate(
+    provider: string,
+    billType: BillType,
+  ): Promise<number> {
     // In production, fetch from user's bill data
     // For now, return a mock value slightly above market average
     const mockRates: Record<string, number> = {
-      'internet': 79.99,
-      'mobile': 85.00,
-      'cable': 120.00,
-      'streaming': 15.99,
+      internet: 79.99,
+      mobile: 85.0,
+      cable: 120.0,
+      streaming: 15.99,
     };
-    return mockRates[billType] || 50.00;
+    return mockRates[billType] || 50.0;
   }
 
   /**
@@ -614,14 +695,14 @@ export class BillNegotiator {
    */
   private determineMarketPosition(
     userRate: number,
-    avgRate: number
-  ): 'below_average' | 'average' | 'above_average' | 'significantly_above' {
+    avgRate: number,
+  ): "below_average" | "average" | "above_average" | "significantly_above" {
     const diff = ((userRate - avgRate) / avgRate) * 100;
 
-    if (diff < -10) return 'below_average';
-    if (diff <= 10) return 'average';
-    if (diff <= 30) return 'above_average';
-    return 'significantly_above';
+    if (diff < -10) return "below_average";
+    if (diff <= 10) return "average";
+    if (diff <= 30) return "above_average";
+    return "significantly_above";
   }
 
   /**
@@ -631,37 +712,38 @@ export class BillNegotiator {
     billType: BillType,
     provider: string,
     userRate: number,
-    competitorRates: CompetitorRate[]
+    competitorRates: CompetitorRate[],
   ): LeveragePoint[] {
     const points: LeveragePoint[] = [];
 
     // Competitor pricing leverage
-    const lowerRates = competitorRates.filter(r => r.rate < userRate);
+    const lowerRates = competitorRates.filter((r) => r.rate < userRate);
     if (lowerRates.length > 0) {
-      const lowestRate = Math.min(...lowerRates.map(r => r.rate));
+      const lowestRate = Math.min(...lowerRates.map((r) => r.rate));
       points.push({
-        type: 'competitor_pricing',
+        type: "competitor_pricing",
         description: `Competitors offering similar service for $${lowestRate}/month`,
-        strength: 'strong',
+        strength: "strong",
         talkingPoint: `I've seen ${lowerRates[0].provider} offering similar service for $${lowestRate}/month. Can you match that?`,
       });
     }
 
     // Loyalty leverage (assume 2+ years for mock)
     points.push({
-      type: 'loyalty',
-      description: 'Long-term customer with good payment history',
-      strength: 'moderate',
-      talkingPoint: "I've been a loyal customer for over 2 years with perfect payment history. What can you do to reward my loyalty?",
+      type: "loyalty",
+      description: "Long-term customer with good payment history",
+      strength: "moderate",
+      talkingPoint:
+        "I've been a loyal customer for over 2 years with perfect payment history. What can you do to reward my loyalty?",
     });
 
     // Market rate leverage
     const avgRate = this.calculateAverageRate(competitorRates);
     if (userRate > avgRate * 1.1) {
       points.push({
-        type: 'market_rate',
-        description: `Current rate is ${((userRate - avgRate) / avgRate * 100).toFixed(0)}% above market average`,
-        strength: 'strong',
+        type: "market_rate",
+        description: `Current rate is ${(((userRate - avgRate) / avgRate) * 100).toFixed(0)}% above market average`,
+        strength: "strong",
         talkingPoint: `The market average for this service is $${avgRate.toFixed(2)}, but I'm paying $${userRate.toFixed(2)}. Can we adjust to market rates?`,
       });
     }
@@ -677,10 +759,14 @@ export class BillNegotiator {
 
     for (const rate of rates) {
       if (rate.promotionalRate) {
-        advantages.push(`${rate.provider} offers promotional rate of $${rate.promotionalRate}/month`);
+        advantages.push(
+          `${rate.provider} offers promotional rate of $${rate.promotionalRate}/month`,
+        );
       }
       if (rate.features.length > 0) {
-        advantages.push(`${rate.provider} includes: ${rate.features.join(', ')}`);
+        advantages.push(
+          `${rate.provider} includes: ${rate.features.join(", ")}`,
+        );
       }
     }
 
@@ -692,31 +778,39 @@ export class BillNegotiator {
    */
   private determineRecommendedAction(
     savingsPercentage: number,
-    marketPosition: string
-  ): 'negotiate' | 'switch' | 'stay' | 'research_more' {
-    if (savingsPercentage > 20 && marketPosition === 'significantly_above') {
-      return 'switch';
+    marketPosition: string,
+  ): "negotiate" | "switch" | "stay" | "research_more" {
+    if (savingsPercentage > 20 && marketPosition === "significantly_above") {
+      return "switch";
     }
     if (savingsPercentage > 10) {
-      return 'negotiate';
+      return "negotiate";
     }
     if (savingsPercentage < 5) {
-      return 'stay';
+      return "stay";
     }
-    return 'research_more';
+    return "research_more";
   }
 
   /**
    * Calculate confidence score for market analysis
    */
-  private calculateConfidenceScore(competitorCount: number, billType: BillType): number {
+  private calculateConfidenceScore(
+    competitorCount: number,
+    billType: BillType,
+  ): number {
     let score = 50;
 
     // More competitors = higher confidence
     score += competitorCount * 10;
 
     // Well-known bill types = higher confidence
-    const highConfidenceTypes: BillType[] = ['internet', 'mobile', 'cable', 'streaming'];
+    const highConfidenceTypes: BillType[] = [
+      "internet",
+      "mobile",
+      "cable",
+      "streaming",
+    ];
     if (highConfidenceTypes.includes(billType)) {
       score += 20;
     }
@@ -724,16 +818,18 @@ export class BillNegotiator {
     return Math.min(95, score);
   }
 
-
   /**
    * Build user profile for negotiation
    */
-  private async buildUserProfile(userId: string, provider: string): Promise<UserProfile> {
+  private async buildUserProfile(
+    userId: string,
+    provider: string,
+  ): Promise<UserProfile> {
     // In production, fetch real user data
     return {
       userId,
       tenure: 24, // months
-      paymentHistory: 'excellent',
+      paymentHistory: "excellent",
       loyaltyScore: 85,
       previousNegotiations: 0,
       successRate: 0,
@@ -746,7 +842,7 @@ export class BillNegotiator {
   private buildScriptPrompt(
     bill: NegotiableBill,
     marketAnalysis: MarketAnalysis,
-    profile: UserProfile
+    profile: UserProfile,
   ): string {
     return `Generate a personalized bill negotiation script for the following scenario:
 
@@ -768,10 +864,10 @@ Customer Profile:
 - Loyalty Score: ${profile.loyaltyScore}/100
 
 Leverage Points:
-${marketAnalysis.leveragePoints.map(lp => `- ${lp.description} (${lp.strength})`).join('\n')}
+${marketAnalysis.leveragePoints.map((lp) => `- ${lp.description} (${lp.strength})`).join("\n")}
 
 Competitive Advantages:
-${marketAnalysis.competitiveAdvantages.map(ca => `- ${ca}`).join('\n')}
+${marketAnalysis.competitiveAdvantages.map((ca) => `- ${ca}`).join("\n")}
 
 Please provide:
 1. Opening statement (friendly but assertive)
@@ -797,7 +893,7 @@ Format the response as JSON with the following structure:
   private generateTemplateScript(
     bill: NegotiableBill,
     marketAnalysis: MarketAnalysis,
-    profile: UserProfile
+    profile: UserProfile,
   ): string {
     const targetSavings = marketAnalysis.savingsPotential * 0.7; // Conservative target
 
@@ -806,18 +902,18 @@ Format the response as JSON with the following structure:
       mainPoints: [
         {
           point: `I've researched current market rates and found that the average is $${marketAnalysis.averageMarketRate}/month`,
-          supportingData: `Competitors like ${marketAnalysis.competitorRates[0]?.provider || 'others'} are offering similar service for less`,
-          priority: 'high',
+          supportingData: `Competitors like ${marketAnalysis.competitorRates[0]?.provider || "others"} are offering similar service for less`,
+          priority: "high",
         },
         {
           point: `As a loyal customer with ${profile.tenure} months of perfect payment history, I'd like to see what retention offers are available`,
           supportingData: `My loyalty score is ${profile.loyaltyScore}/100`,
-          priority: 'high',
+          priority: "high",
         },
         {
           point: `I'm currently paying ${marketAnalysis.savingsPercentage.toFixed(0)}% above market average`,
           supportingData: `This represents $${marketAnalysis.savingsPotential.toFixed(2)}/month in potential savings`,
-          priority: 'medium',
+          priority: "medium",
         },
       ],
       counterarguments: [
@@ -834,7 +930,8 @@ Format the response as JSON with the following structure:
         {
           option: "Request promotional rate",
           description: `Ask for the new customer promotional rate of $${(marketAnalysis.averageMarketRate * 0.9).toFixed(2)}/month`,
-          estimatedSavings: bill.currentAmount - (marketAnalysis.averageMarketRate * 0.9),
+          estimatedSavings:
+            bill.currentAmount - marketAnalysis.averageMarketRate * 0.9,
         },
         {
           option: "Downgrade to lower tier",
@@ -843,7 +940,7 @@ Format the response as JSON with the following structure:
         },
       ],
       closing: `I really value my relationship with ${bill.provider} and would prefer to stay, but I need to make financially responsible decisions. Can you help me find a solution that works for both of us?`,
-      strategy: 'balanced',
+      strategy: "balanced",
     });
   }
 
@@ -853,7 +950,7 @@ Format the response as JSON with the following structure:
   private parseScriptResponse(
     aiResponse: string,
     bill: NegotiableBill,
-    profile: UserProfile
+    profile: UserProfile,
   ): NegotiationScript {
     try {
       const parsed = JSON.parse(aiResponse);
@@ -869,7 +966,7 @@ Format the response as JSON with the following structure:
           point: p.point,
           supportingData: p.supportingData,
           expectedResponse: p.expectedResponse,
-          priority: p.priority || 'medium',
+          priority: p.priority || "medium",
         })),
         counterarguments: parsed.counterarguments.map((c: any) => ({
           objection: c.objection,
@@ -880,16 +977,16 @@ Format the response as JSON with the following structure:
           option: f.option,
           description: f.description,
           estimatedSavings: f.estimatedSavings || 0,
-          likelihood: f.likelihood || 'medium',
+          likelihood: f.likelihood || "medium",
         })),
         closing: parsed.closing,
-        strategy: parsed.strategy || 'balanced',
+        strategy: parsed.strategy || "balanced",
         targetSavings: bill.estimatedSavings,
         minimumAcceptableSavings: bill.estimatedSavings * 0.5,
         userTenure: profile.tenure,
         paymentHistory: profile.paymentHistory,
         loyaltyScore: profile.loyaltyScore,
-        aiModel: 'anthropic/claude-4.5-sonnet',
+        aiModel: "anthropic/claude-4.5-sonnet",
         confidence: 85,
         generatedAt: new Date(),
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
@@ -897,7 +994,8 @@ Format the response as JSON with the following structure:
     } catch (_error) {
       // BillNegotiator error: Failed to parse AI response, using template
       // Fallback to template
-      const templateResponse = this.generateTemplateScript(bill,
+      const templateResponse = this.generateTemplateScript(
+        bill,
         {
           billType: bill.billType,
           provider: bill.provider,
@@ -906,16 +1004,16 @@ Format the response as JSON with the following structure:
           userCurrentRate: bill.currentAmount,
           savingsPotential: bill.estimatedSavings,
           savingsPercentage: (bill.estimatedSavings / bill.currentAmount) * 100,
-          marketPosition: 'above_average',
+          marketPosition: "above_average",
           leveragePoints: [],
           competitiveAdvantages: [],
-          recommendedAction: 'negotiate',
+          recommendedAction: "negotiate",
           confidenceScore: 70,
-          dataSource: 'template',
+          dataSource: "template",
           lastUpdated: new Date(),
           expiresAt: new Date(),
         },
-        profile
+        profile,
       );
       return this.parseScriptResponse(templateResponse, bill, profile);
     }
@@ -924,7 +1022,3 @@ Format the response as JSON with the following structure:
 
 // Export singleton instance
 export const getBillNegotiator = () => BillNegotiator.getInstance();
-
-
-
-

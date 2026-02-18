@@ -6,10 +6,10 @@
  * error boundary when used outside the provider.
  */
 
-import React from 'react';
-import { render, screen, act } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { OnboardingProvider, useOnboarding } from '../OnboardingProvider';
+import React from "react";
+import { render, screen, act } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { OnboardingProvider, useOnboarding } from "../OnboardingProvider";
 
 // ---------------------------------------------------------------------------
 // localStorage mock
@@ -32,7 +32,7 @@ const localStorageMock = (() => {
   };
 })();
 
-Object.defineProperty(window, 'localStorage', { value: localStorageMock });
+Object.defineProperty(window, "localStorage", { value: localStorageMock });
 
 // ---------------------------------------------------------------------------
 // Test consumer component
@@ -50,7 +50,7 @@ function TestConsumer() {
   return (
     <div>
       <span data-testid="status">
-        {hasCompletedOnboarding ? 'completed' : 'not-completed'}
+        {hasCompletedOnboarding ? "completed" : "not-completed"}
       </span>
       <button onClick={startOnboarding}>Start</button>
       <button onClick={completeOnboarding}>Complete</button>
@@ -75,14 +75,14 @@ beforeEach(() => {
 // useOnboarding outside provider
 // ---------------------------------------------------------------------------
 
-describe('useOnboarding — outside provider', () => {
-  it('throws when used outside OnboardingProvider', () => {
+describe("useOnboarding — outside provider", () => {
+  it("throws when used outside OnboardingProvider", () => {
     // Suppress React error boundary console output
-    const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const spy = jest.spyOn(console, "error").mockImplementation(() => {});
 
     expect(() => {
       render(<TestConsumer />);
-    }).toThrow('useOnboarding must be used within an OnboardingProvider');
+    }).toThrow("useOnboarding must be used within an OnboardingProvider");
 
     spy.mockRestore();
   });
@@ -92,44 +92,46 @@ describe('useOnboarding — outside provider', () => {
 // Initial state loading from localStorage
 // ---------------------------------------------------------------------------
 
-describe('OnboardingProvider — initial state', () => {
-  it('defaults to completed=true initially (avoids flash)', () => {
+describe("OnboardingProvider — initial state", () => {
+  it("defaults to completed=true initially (avoids flash)", () => {
     render(
       <OnboardingProvider>
         <TestConsumer />
-      </OnboardingProvider>
+      </OnboardingProvider>,
     );
     // Before useEffect fires, the default state is true
     // After useEffect fires with no localStorage value, it becomes false
     // waitFor is not needed — act() in render() flushes effects in jsdom
-    const status = screen.getByTestId('status');
+    const status = screen.getByTestId("status");
     // After the effect, localStorage returns null -> completed === false
-    expect(status.textContent).toBe('not-completed');
+    expect(status.textContent).toBe("not-completed");
   });
 
   it('reads "true" from localStorage and stays completed', () => {
-    localStorageMock.getItem.mockReturnValue('true');
+    localStorageMock.getItem.mockReturnValue("true");
 
     render(
       <OnboardingProvider>
         <TestConsumer />
-      </OnboardingProvider>
+      </OnboardingProvider>,
     );
 
-    expect(screen.getByTestId('status').textContent).toBe('completed');
-    expect(localStorageMock.getItem).toHaveBeenCalledWith('fynvita_onboarding_completed');
+    expect(screen.getByTestId("status").textContent).toBe("completed");
+    expect(localStorageMock.getItem).toHaveBeenCalledWith(
+      "fynvita_onboarding_completed",
+    );
   });
 
   it('reads non-"true" value from localStorage and sets not-completed', () => {
-    localStorageMock.getItem.mockReturnValue('false');
+    localStorageMock.getItem.mockReturnValue("false");
 
     render(
       <OnboardingProvider>
         <TestConsumer />
-      </OnboardingProvider>
+      </OnboardingProvider>,
     );
 
-    expect(screen.getByTestId('status').textContent).toBe('not-completed');
+    expect(screen.getByTestId("status").textContent).toBe("not-completed");
   });
 });
 
@@ -137,26 +139,26 @@ describe('OnboardingProvider — initial state', () => {
 // completeOnboarding
 // ---------------------------------------------------------------------------
 
-describe('OnboardingProvider — completeOnboarding', () => {
-  it('sets localStorage and updates state to completed', async () => {
+describe("OnboardingProvider — completeOnboarding", () => {
+  it("sets localStorage and updates state to completed", async () => {
     const user = userEvent.setup();
 
     render(
       <OnboardingProvider>
         <TestConsumer />
-      </OnboardingProvider>
+      </OnboardingProvider>,
     );
 
     // Initially not-completed (no localStorage value)
-    expect(screen.getByTestId('status').textContent).toBe('not-completed');
+    expect(screen.getByTestId("status").textContent).toBe("not-completed");
 
-    await user.click(screen.getByText('Complete'));
+    await user.click(screen.getByText("Complete"));
 
     expect(localStorageMock.setItem).toHaveBeenCalledWith(
-      'fynvita_onboarding_completed',
-      'true'
+      "fynvita_onboarding_completed",
+      "true",
     );
-    expect(screen.getByTestId('status').textContent).toBe('completed');
+    expect(screen.getByTestId("status").textContent).toBe("completed");
   });
 });
 
@@ -164,23 +166,23 @@ describe('OnboardingProvider — completeOnboarding', () => {
 // skipOnboarding
 // ---------------------------------------------------------------------------
 
-describe('OnboardingProvider — skipOnboarding', () => {
-  it('sets localStorage and updates state to completed', async () => {
+describe("OnboardingProvider — skipOnboarding", () => {
+  it("sets localStorage and updates state to completed", async () => {
     const user = userEvent.setup();
 
     render(
       <OnboardingProvider>
         <TestConsumer />
-      </OnboardingProvider>
+      </OnboardingProvider>,
     );
 
-    await user.click(screen.getByText('Skip'));
+    await user.click(screen.getByText("Skip"));
 
     expect(localStorageMock.setItem).toHaveBeenCalledWith(
-      'fynvita_onboarding_completed',
-      'true'
+      "fynvita_onboarding_completed",
+      "true",
     );
-    expect(screen.getByTestId('status').textContent).toBe('completed');
+    expect(screen.getByTestId("status").textContent).toBe("completed");
   });
 });
 
@@ -188,22 +190,22 @@ describe('OnboardingProvider — skipOnboarding', () => {
 // startOnboarding
 // ---------------------------------------------------------------------------
 
-describe('OnboardingProvider — startOnboarding', () => {
-  it('sets state to not-completed (does not touch localStorage)', async () => {
+describe("OnboardingProvider — startOnboarding", () => {
+  it("sets state to not-completed (does not touch localStorage)", async () => {
     const user = userEvent.setup();
-    localStorageMock.getItem.mockReturnValue('true');
+    localStorageMock.getItem.mockReturnValue("true");
 
     render(
       <OnboardingProvider>
         <TestConsumer />
-      </OnboardingProvider>
+      </OnboardingProvider>,
     );
 
-    expect(screen.getByTestId('status').textContent).toBe('completed');
+    expect(screen.getByTestId("status").textContent).toBe("completed");
 
-    await user.click(screen.getByText('Start'));
+    await user.click(screen.getByText("Start"));
 
-    expect(screen.getByTestId('status').textContent).toBe('not-completed');
+    expect(screen.getByTestId("status").textContent).toBe("not-completed");
     // startOnboarding does NOT write to localStorage
     expect(localStorageMock.setItem).not.toHaveBeenCalled();
   });
@@ -213,23 +215,25 @@ describe('OnboardingProvider — startOnboarding', () => {
 // resetOnboarding
 // ---------------------------------------------------------------------------
 
-describe('OnboardingProvider — resetOnboarding', () => {
-  it('removes localStorage key and sets state to not-completed', async () => {
+describe("OnboardingProvider — resetOnboarding", () => {
+  it("removes localStorage key and sets state to not-completed", async () => {
     const user = userEvent.setup();
-    localStorageMock.getItem.mockReturnValue('true');
+    localStorageMock.getItem.mockReturnValue("true");
 
     render(
       <OnboardingProvider>
         <TestConsumer />
-      </OnboardingProvider>
+      </OnboardingProvider>,
     );
 
-    expect(screen.getByTestId('status').textContent).toBe('completed');
+    expect(screen.getByTestId("status").textContent).toBe("completed");
 
-    await user.click(screen.getByText('Reset'));
+    await user.click(screen.getByText("Reset"));
 
-    expect(localStorageMock.removeItem).toHaveBeenCalledWith('fynvita_onboarding_completed');
-    expect(screen.getByTestId('status').textContent).toBe('not-completed');
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith(
+      "fynvita_onboarding_completed",
+    );
+    expect(screen.getByTestId("status").textContent).toBe("not-completed");
   });
 });
 
@@ -237,14 +241,14 @@ describe('OnboardingProvider — resetOnboarding', () => {
 // Children rendering
 // ---------------------------------------------------------------------------
 
-describe('OnboardingProvider — children', () => {
-  it('renders children correctly', () => {
+describe("OnboardingProvider — children", () => {
+  it("renders children correctly", () => {
     render(
       <OnboardingProvider>
         <div data-testid="child">Hello</div>
-      </OnboardingProvider>
+      </OnboardingProvider>,
     );
-    expect(screen.getByTestId('child')).toBeInTheDocument();
-    expect(screen.getByText('Hello')).toBeInTheDocument();
+    expect(screen.getByTestId("child")).toBeInTheDocument();
+    expect(screen.getByText("Hello")).toBeInTheDocument();
   });
 });

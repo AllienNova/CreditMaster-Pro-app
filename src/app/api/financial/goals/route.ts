@@ -5,28 +5,38 @@
  * POST /api/financial/goals - Create a new financial goal
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { rbac } from '@/lib/auth/rbac';
-import { goalTracker } from '@/lib/financial/goal-tracker';
-import { getSupabase } from '@/lib/supabase/client';
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { rbac } from "@/lib/auth/rbac";
+import { goalTracker } from "@/lib/financial/goal-tracker";
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
-import type { GoalType } from '@/lib/financial/types/ai-coach.types';
+import type { GoalType } from "@/lib/financial/types/ai-coach.types";
 
 // Zod validation schemas
 const createGoalSchema = z.object({
-  type: z.string().min(1, 'Goal type is required'),
-  name: z.string().min(1, 'Goal name is required').max(200, 'Goal name too long'),
-  targetAmount: z.number().positive('Target amount must be positive'),
+  type: z.string().min(1, "Goal type is required"),
+  name: z
+    .string()
+    .min(1, "Goal name is required")
+    .max(200, "Goal name too long"),
+  targetAmount: z.number().positive("Target amount must be positive"),
   targetDate: z.string().refine((date) => {
     const targetDate = new Date(date);
     return targetDate > new Date();
-  }, 'Target date must be in the future'),
-  priority: z.enum(['low', 'medium', 'high', 'urgent']).optional().default('medium'),
-  description: z.string().max(1000, 'Description too long').optional(),
-  currentAmount: z.number().min(0, 'Current amount cannot be negative').optional().default(0),
+  }, "Target date must be in the future"),
+  priority: z
+    .enum(["low", "medium", "high", "urgent"])
+    .optional()
+    .default("medium"),
+  description: z.string().max(1000, "Description too long").optional(),
+  currentAmount: z
+    .number()
+    .min(0, "Current amount cannot be negative")
+    .optional()
+    .default(0),
 });
 
 export async function GET(request: NextRequest) {
@@ -38,20 +48,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Unauthorized - Invalid or missing JWT token',
+          error: "Unauthorized - Invalid or missing JWT token",
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     // Check permissions (premium feature)
-    if (!rbac.hasPermission(validation.user, 'financial:create_goals')) {
+    if (!rbac.hasPermission(validation.user, "financial:create_goals")) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Forbidden - Premium feature required',
+          error: "Forbidden - Premium feature required",
         },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -59,26 +69,26 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
 
     // Parse filter parameters
-    const statusFilter = searchParams.get('status');
-    const typeFilter = searchParams.get('type');
-    const priorityFilter = searchParams.get('priority');
+    const statusFilter = searchParams.get("status");
+    const typeFilter = searchParams.get("type");
+    const priorityFilter = searchParams.get("priority");
 
     // Build query
     let query = supabase
-      .from('financial_goals')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .from("financial_goals")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
     // Apply filters
     if (statusFilter) {
-      query = query.eq('status', statusFilter);
+      query = query.eq("status", statusFilter);
     }
     if (typeFilter) {
-      query = query.eq('type', typeFilter);
+      query = query.eq("type", typeFilter);
     }
     if (priorityFilter) {
-      query = query.gte('priority', priorityFilter);
+      query = query.gte("priority", priorityFilter);
     }
 
     const { data: goals, error } = await query;
@@ -91,7 +101,10 @@ export async function GET(request: NextRequest) {
     const enrichedGoals = await Promise.all(
       (goals || []).map(async (goal) => {
         try {
-          const progress = await goalTracker.calculateProgressMetrics(userId, goal.id);
+          const progress = await goalTracker.calculateProgressMetrics(
+            userId,
+            goal.id,
+          );
           return {
             id: goal.id,
             type: goal.type,
@@ -103,13 +116,18 @@ export async function GET(request: NextRequest) {
             status: goal.status,
             priority: goal.priority,
             createdAt: goal.created_at,
-            progress: progress ? {
-              percentage: progress.progressPercentage,
-              velocity: progress.velocity.monthlyVelocity,
-              performanceGrade: progress.performanceScore.grade,
-              onTrack: progress.performanceScore.status === 'on_track' || progress.performanceScore.status === 'ahead',
-              estimatedCompletion: progress.predictions.projectedCompletionDate,
-            } : null,
+            progress: progress
+              ? {
+                  percentage: progress.progressPercentage,
+                  velocity: progress.velocity.monthlyVelocity,
+                  performanceGrade: progress.performanceScore.grade,
+                  onTrack:
+                    progress.performanceScore.status === "on_track" ||
+                    progress.performanceScore.status === "ahead",
+                  estimatedCompletion:
+                    progress.predictions.projectedCompletionDate,
+                }
+              : null,
           };
         } catch (err) {
           // If progress calculation fails, return basic goal info
@@ -126,7 +144,7 @@ export async function GET(request: NextRequest) {
             createdAt: goal.created_at,
           };
         }
-      })
+      }),
     );
 
     return NextResponse.json({
@@ -144,7 +162,10 @@ export async function GET(request: NextRequest) {
   } catch (_error) {
     // FinancialGoalsRoute error: Failed to fetch goals
 
-    const errorMessage = _error instanceof Error ? _error.message : 'Failed to fetch financial goals';
+    const errorMessage =
+      _error instanceof Error
+        ? _error.message
+        : "Failed to fetch financial goals";
 
     return NextResponse.json(
       {
@@ -154,7 +175,7 @@ export async function GET(request: NextRequest) {
           timestamp: new Date().toISOString(),
         },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -168,20 +189,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Unauthorized - Invalid or missing JWT token',
+          error: "Unauthorized - Invalid or missing JWT token",
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     // Check permissions (premium feature)
-    if (!rbac.hasPermission(validation.user, 'financial:create_goals')) {
+    if (!rbac.hasPermission(validation.user, "financial:create_goals")) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Forbidden - Premium feature required',
+          error: "Forbidden - Premium feature required",
         },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -195,13 +216,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Validation failed',
+          error: "Validation failed",
           details: validationResult.error.errors.map((err) => ({
-            field: err.path.join('.'),
+            field: err.path.join("."),
             message: err.message,
           })),
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -217,7 +238,10 @@ export async function POST(request: NextRequest) {
     });
 
     // Calculate initial progress metrics
-    const progress = await goalTracker.calculateProgressMetrics(userId, goal.id);
+    const progress = await goalTracker.calculateProgressMetrics(
+      userId,
+      goal.id,
+    );
 
     return NextResponse.json(
       {
@@ -233,22 +257,30 @@ export async function POST(request: NextRequest) {
           status: goal.status,
           priority: goal.priority,
           createdAt: goal.createdAt,
-          progress: progress ? {
-            percentage: progress.progressPercentage,
-            velocity: progress.velocity.monthlyVelocity,
-            performanceGrade: progress.performanceScore.grade,
-            onTrack: progress.performanceScore.status === 'on_track' || progress.performanceScore.status === 'ahead',
-            estimatedCompletion: progress.predictions.projectedCompletionDate,
-          } : null,
+          progress: progress
+            ? {
+                percentage: progress.progressPercentage,
+                velocity: progress.velocity.monthlyVelocity,
+                performanceGrade: progress.performanceScore.grade,
+                onTrack:
+                  progress.performanceScore.status === "on_track" ||
+                  progress.performanceScore.status === "ahead",
+                estimatedCompletion:
+                  progress.predictions.projectedCompletionDate,
+              }
+            : null,
         },
-        message: 'Financial goal created successfully',
+        message: "Financial goal created successfully",
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (_error) {
     // FinancialGoalsRoute error: Failed to create goal
 
-    const errorMessage = _error instanceof Error ? _error.message : 'Failed to create financial goal';
+    const errorMessage =
+      _error instanceof Error
+        ? _error.message
+        : "Failed to create financial goal";
 
     return NextResponse.json(
       {
@@ -258,8 +290,7 @@ export async function POST(request: NextRequest) {
           timestamp: new Date().toISOString(),
         },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-

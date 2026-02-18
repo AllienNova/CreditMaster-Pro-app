@@ -23,7 +23,7 @@ export {
   type WindfallCaptureConfig,
   type SaveTransfer,
   type RuleSummary,
-} from './auto-save-rules-service';
+} from "./auto-save-rules-service";
 
 // Spending Limit Alerts
 export {
@@ -37,7 +37,7 @@ export {
   type AlertStatus,
   type LimitType,
   type LimitSummary,
-} from './spending-limit-alerts-service';
+} from "./spending-limit-alerts-service";
 
 // Manual Account Entry
 export {
@@ -55,50 +55,50 @@ export {
   type GenericDetails,
   type ValueHistoryEntry,
   type NetWorthSummary,
-} from './manual-account-service';
+} from "./manual-account-service";
 
 // Bill Calendar
-export { BillCalendarService } from './bill-calendar-service';
+export { BillCalendarService } from "./bill-calendar-service";
 
 // Budget Service
-export { BudgetService } from './budget-service';
+export { BudgetService } from "./budget-service";
 
 // Debt Payoff
-export { DebtPayoffService } from './debt-payoff-service';
+export { DebtPayoffService } from "./debt-payoff-service";
 
 // Goal Tracker
-export { GoalTracker } from './goal-tracker';
+export { GoalTracker } from "./goal-tracker";
 
 // Income Tracking
-export { incomeTrackingService } from './income-tracking-service';
+export { incomeTrackingService } from "./income-tracking-service";
 
 // Recommendation Engine
-export { RecommendationEngine } from './recommendation-engine';
+export { RecommendationEngine } from "./recommendation-engine";
 
 // Savings Automation
-export { savingsAutomationService } from './savings-automation-service';
+export { savingsAutomationService } from "./savings-automation-service";
 
 // Spending Analysis
-export { spendingAnalysisService } from './spending-analysis-service';
+export { spendingAnalysisService } from "./spending-analysis-service";
 
 // Subscription Cancellation
-export { subscriptionCancellationService } from './subscription-cancellation-service';
+export { subscriptionCancellationService } from "./subscription-cancellation-service";
 
 // Vitality Score
-export { vitalityScoreService } from './vitality-score-service';
+export { vitalityScoreService } from "./vitality-score-service";
 
 // Health Score Calculator
-export { HealthScoreCalculator } from './health-score-calculator';
-export { HealthScoreCalculatorV2 } from './health-score-calculator-v2';
+export { HealthScoreCalculator } from "./health-score-calculator";
+export { HealthScoreCalculatorV2 } from "./health-score-calculator-v2";
 
 // Financial Aggregation
-export { FinancialAggregationService } from './financial-aggregation-service';
+export { FinancialAggregationService } from "./financial-aggregation-service";
 
 // Smart Budget Engine
-export { SmartBudgetEngine } from './smart-budget-engine';
+export { SmartBudgetEngine } from "./smart-budget-engine";
 
 // Spending Analyzer
-export { SpendingAnalyzer } from './spending-analyzer';
+export { SpendingAnalyzer } from "./spending-analyzer";
 
 // Real Estate Tracking
 export {
@@ -116,7 +116,7 @@ export {
   type PortfolioSummary,
   type PropertyAnalytics,
   type AmortizationEntry,
-} from './real-estate-tracking-service';
+} from "./real-estate-tracking-service";
 
 // Investment Calculators
 export {
@@ -140,7 +140,7 @@ export {
   type LoanAmortizationEntry,
   type LoanAmortizationResult,
   type RiskAdjustedReturnResult,
-} from './investment-calculators';
+} from "./investment-calculators";
 
 // Crypto Wallet Tracking
 export {
@@ -154,4 +154,4 @@ export {
   type NetworkType,
   type ExchangeType,
   type PriceAlert,
-} from './crypto-wallet-service';
+} from "./crypto-wallet-service";

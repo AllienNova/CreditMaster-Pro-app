@@ -3,18 +3,18 @@
  * Reusable component for screens that are planned but not yet implemented
  */
 
-import React from 'react';
+import React from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { lightTheme as theme } from '../constants/theme';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { lightTheme as theme } from "../constants/theme";
 
 interface PlaceholderScreenProps {
   title: string;
@@ -27,14 +27,14 @@ interface PlaceholderScreenProps {
 
 export function PlaceholderScreen({
   title,
-  description = 'This feature is coming soon!',
-  icon = 'construct-outline',
+  description = "This feature is coming soon!",
+  icon = "construct-outline",
   features = [],
   estimatedRelease,
   relatedScreens = [],
 }: PlaceholderScreenProps) {
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={["bottom"]}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}
@@ -126,35 +126,35 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: theme.spacing.xl,
-    alignItems: 'center',
+    alignItems: "center",
   },
   iconContainer: {
     width: 160,
     height: 160,
     borderRadius: 80,
     backgroundColor: `${theme.colors.primary}15`,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: theme.spacing.xl,
   },
   title: {
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: theme.spacing.md,
   },
   description: {
     fontSize: 16,
     color: theme.colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 24,
     marginBottom: theme.spacing.lg,
     maxWidth: 320,
   },
   releaseContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: theme.colors.surface,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     marginLeft: theme.spacing.sm,
   },
   featuresContainer: {
-    width: '100%',
+    width: "100%",
     backgroundColor: theme.colors.surface,
     borderRadius: theme.borderRadius.lg,
     padding: theme.spacing.lg,
@@ -175,13 +175,13 @@ const styles = StyleSheet.create({
   },
   featuresTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: theme.spacing.md,
   },
   featureItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: theme.spacing.sm,
   },
   featureText: {
@@ -191,19 +191,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   relatedContainer: {
-    width: '100%',
+    width: "100%",
     marginBottom: theme.spacing.xl,
   },
   relatedTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: theme.spacing.md,
   },
   relatedItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     backgroundColor: theme.colors.surface,
     padding: theme.spacing.md,
     borderRadius: theme.borderRadius.md,
@@ -212,20 +212,20 @@ const styles = StyleSheet.create({
   relatedText: {
     fontSize: 14,
     color: theme.colors.primary,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: theme.colors.primary,
     paddingHorizontal: theme.spacing.xl,
     paddingVertical: theme.spacing.md,
     borderRadius: theme.borderRadius.md,
   },
   backButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     marginLeft: theme.spacing.sm,
   },
 });

@@ -3,47 +3,55 @@
  * Manages push notifications, in-app notifications, and preferences
  */
 
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { notificationApi } from '../services/api';
-import type { Notification, NotificationPreferences } from '../services/api/types';
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { notificationApi } from "../services/api";
+import type {
+  Notification,
+  NotificationPreferences,
+} from "../services/api/types";
 
 interface NotificationState {
   // Notifications
   notifications: Notification[];
   unreadCount: number;
   totalNotifications: number;
-  
+
   // Preferences
   preferences: NotificationPreferences | null;
-  
+
   // Push token
   pushToken: string | null;
   pushPermissionGranted: boolean;
-  
+
   // Loading states
   isLoading: boolean;
   isLoadingPreferences: boolean;
-  
+
   // Error
   error: string | null;
-  
+
   // Actions - Notifications
-  fetchNotifications: (params?: { page?: number; unreadOnly?: boolean }) => Promise<void>;
+  fetchNotifications: (params?: {
+    page?: number;
+    unreadOnly?: boolean;
+  }) => Promise<void>;
   markAsRead: (notificationId: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
   deleteNotification: (notificationId: string) => Promise<void>;
-  
+
   // Actions - Preferences
   fetchPreferences: () => Promise<void>;
-  updatePreferences: (preferences: Partial<NotificationPreferences>) => Promise<boolean>;
-  
+  updatePreferences: (
+    preferences: Partial<NotificationPreferences>,
+  ) => Promise<boolean>;
+
   // Actions - Push
   setPushToken: (token: string) => void;
-  registerPushToken: (platform: 'ios' | 'android') => Promise<boolean>;
+  registerPushToken: (platform: "ios" | "android") => Promise<boolean>;
   setPushPermissionGranted: (granted: boolean) => void;
-  
+
   // Actions - Utility
   clearError: () => void;
   resetStore: () => void;
@@ -72,19 +80,22 @@ export const useNotificationStore = create<NotificationState>()(
           const response = await notificationApi.getAll(params);
           if (response.success && response.data) {
             const notifications = response.data.items;
-            set({ 
+            set({
               notifications,
-              unreadCount: notifications.filter(n => !n.read).length,
+              unreadCount: notifications.filter((n) => !n.read).length,
               totalNotifications: response.data.total,
-              isLoading: false 
+              isLoading: false,
             });
           } else {
             set({ error: response.error?.message, isLoading: false });
           }
         } catch (error) {
-          set({ 
-            error: error instanceof Error ? error.message : 'Failed to fetch notifications',
-            isLoading: false 
+          set({
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to fetch notifications",
+            isLoading: false,
           });
         }
       },
@@ -94,14 +105,15 @@ export const useNotificationStore = create<NotificationState>()(
           const response = await notificationApi.markAsRead(notificationId);
           if (response.success) {
             set((state) => ({
-              notifications: state.notifications.map(n => 
-                n.id === notificationId ? { ...n, read: true } : n
+              notifications: state.notifications.map((n) =>
+                n.id === notificationId ? { ...n, read: true } : n,
               ),
               unreadCount: Math.max(0, state.unreadCount - 1),
             }));
           }
         } catch (error) {
-          if (__DEV__) console.error('Failed to mark notification as read:', error);
+          if (__DEV__)
+            console.error("Failed to mark notification as read:", error);
         }
       },
 
@@ -110,12 +122,16 @@ export const useNotificationStore = create<NotificationState>()(
           const response = await notificationApi.markAllAsRead();
           if (response.success) {
             set((state) => ({
-              notifications: state.notifications.map(n => ({ ...n, read: true })),
+              notifications: state.notifications.map((n) => ({
+                ...n,
+                read: true,
+              })),
               unreadCount: 0,
             }));
           }
         } catch (error) {
-          if (__DEV__) console.error('Failed to mark all notifications as read:', error);
+          if (__DEV__)
+            console.error("Failed to mark all notifications as read:", error);
         }
       },
 
@@ -124,18 +140,23 @@ export const useNotificationStore = create<NotificationState>()(
           const response = await notificationApi.delete(notificationId);
           if (response.success) {
             set((state) => {
-              const notification = state.notifications.find(n => n.id === notificationId);
+              const notification = state.notifications.find(
+                (n) => n.id === notificationId,
+              );
               return {
-                notifications: state.notifications.filter(n => n.id !== notificationId),
-                unreadCount: notification && !notification.read 
-                  ? Math.max(0, state.unreadCount - 1) 
-                  : state.unreadCount,
+                notifications: state.notifications.filter(
+                  (n) => n.id !== notificationId,
+                ),
+                unreadCount:
+                  notification && !notification.read
+                    ? Math.max(0, state.unreadCount - 1)
+                    : state.unreadCount,
                 totalNotifications: state.totalNotifications - 1,
               };
             });
           }
         } catch (error) {
-          if (__DEV__) console.error('Failed to delete notification:', error);
+          if (__DEV__) console.error("Failed to delete notification:", error);
         }
       },
 
@@ -171,39 +192,46 @@ export const useNotificationStore = create<NotificationState>()(
       registerPushToken: async (platform) => {
         const { pushToken } = get();
         if (!pushToken) return false;
-        
+
         try {
-          const response = await notificationApi.registerPushToken(pushToken, platform);
+          const response = await notificationApi.registerPushToken(
+            pushToken,
+            platform,
+          );
           return response.success;
         } catch {
           return false;
         }
       },
 
-      setPushPermissionGranted: (granted) => set({ pushPermissionGranted: granted }),
+      setPushPermissionGranted: (granted) =>
+        set({ pushPermissionGranted: granted }),
 
       clearError: () => set({ error: null }),
-      
+
       resetStore: () => set(initialState),
     }),
     {
-      name: 'cpfi-notification-store',
+      name: "cpfi-notification-store",
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         preferences: state.preferences,
         pushToken: state.pushToken,
         pushPermissionGranted: state.pushPermissionGranted,
       }),
-    }
-  )
+    },
+  ),
 );
 
 // Selectors
-export const selectNotifications = (state: NotificationState) => state.notifications;
-export const selectUnreadNotifications = (state: NotificationState) => 
-  state.notifications.filter(n => !n.read);
-export const selectUnreadCount = (state: NotificationState) => state.unreadCount;
-export const selectNotificationsByType = (type: Notification['type']) => (state: NotificationState) =>
-  state.notifications.filter(n => n.type === type);
-export const selectPushEnabled = (state: NotificationState) => 
+export const selectNotifications = (state: NotificationState) =>
+  state.notifications;
+export const selectUnreadNotifications = (state: NotificationState) =>
+  state.notifications.filter((n) => !n.read);
+export const selectUnreadCount = (state: NotificationState) =>
+  state.unreadCount;
+export const selectNotificationsByType =
+  (type: Notification["type"]) => (state: NotificationState) =>
+    state.notifications.filter((n) => n.type === type);
+export const selectPushEnabled = (state: NotificationState) =>
   state.pushPermissionGranted && !!state.pushToken;

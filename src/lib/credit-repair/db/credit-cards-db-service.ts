@@ -1,9 +1,9 @@
 /**
  * Credit Cards Database Service
- * 
+ *
  * Provides database operations for credit card management.
  * Includes full CRUD operations, utilization calculations, and TypeScript types.
- * 
+ *
  * Features:
  * - Credit card CRUD operations
  * - Utilization tracking (auto-calculated)
@@ -12,7 +12,7 @@
  * - Full error handling
  */
 
-import { getSupabase } from '@/lib/supabase/client';
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
 
@@ -99,11 +99,11 @@ type CreditCardUpdateRow = Partial<{
  * Create a new credit card
  */
 export async function createCreditCard(
-  input: CreateCreditCardInput
+  input: CreateCreditCardInput,
 ): Promise<CreditCard> {
   try {
     const { data, error } = await supabase
-      .from('credit_cards')
+      .from("credit_cards")
       .insert({
         user_id: input.userId,
         card_name: input.cardName,
@@ -112,7 +112,7 @@ export async function createCreditCard(
         credit_limit: input.creditLimit,
         statement_date: input.statementDate,
         due_date: input.dueDate,
-        last_payment_date: input.lastPaymentDate?.toISOString().split('T')[0],
+        last_payment_date: input.lastPaymentDate?.toISOString().split("T")[0],
         last_payment_amount: input.lastPaymentAmount,
         notes: input.notes,
       })
@@ -124,7 +124,9 @@ export async function createCreditCard(
     return mapCreditCardFromDb(data);
   } catch (error) {
     // CreditCardsDB error: Error creating credit card
-    throw new Error(`Failed to create credit card: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to create credit card: ${(error as Error).message}`,
+    );
   }
 }
 
@@ -133,18 +135,18 @@ export async function createCreditCard(
  */
 export async function getCreditCard(
   cardId: string,
-  userId: string
+  userId: string,
 ): Promise<CreditCard | null> {
   try {
     const { data, error } = await supabase
-      .from('credit_cards')
-      .select('*')
-      .eq('id', cardId)
-      .eq('user_id', userId)
+      .from("credit_cards")
+      .select("*")
+      .eq("id", cardId)
+      .eq("user_id", userId)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
+      if (error.code === "PGRST116") {
         return null;
       }
       throw error;
@@ -167,21 +169,21 @@ export async function getCreditCardsByUser(
     maxUtilization?: number;
     limit?: number;
     offset?: number;
-  }
+  },
 ): Promise<CreditCard[]> {
   try {
     let query = supabase
-      .from('credit_cards')
-      .select('*')
-      .eq('user_id', userId)
-      .order('utilization', { ascending: false });
+      .from("credit_cards")
+      .select("*")
+      .eq("user_id", userId)
+      .order("utilization", { ascending: false });
 
     if (filters?.minUtilization !== undefined) {
-      query = query.gte('utilization', filters.minUtilization);
+      query = query.gte("utilization", filters.minUtilization);
     }
 
     if (filters?.maxUtilization !== undefined) {
-      query = query.lte('utilization', filters.maxUtilization);
+      query = query.lte("utilization", filters.maxUtilization);
     }
 
     if (filters?.offset !== undefined) {
@@ -209,26 +211,34 @@ export async function getCreditCardsByUser(
 export async function updateCreditCard(
   cardId: string,
   userId: string,
-  updates: UpdateCreditCardInput
+  updates: UpdateCreditCardInput,
 ): Promise<CreditCard> {
   try {
     const updateData: CreditCardUpdateRow = {};
 
     if (updates.cardName !== undefined) updateData.card_name = updates.cardName;
-    if (updates.lastFourDigits !== undefined) updateData.last_four_digits = updates.lastFourDigits;
-    if (updates.currentBalance !== undefined) updateData.current_balance = updates.currentBalance;
-    if (updates.creditLimit !== undefined) updateData.credit_limit = updates.creditLimit;
-    if (updates.statementDate !== undefined) updateData.statement_date = updates.statementDate;
+    if (updates.lastFourDigits !== undefined)
+      updateData.last_four_digits = updates.lastFourDigits;
+    if (updates.currentBalance !== undefined)
+      updateData.current_balance = updates.currentBalance;
+    if (updates.creditLimit !== undefined)
+      updateData.credit_limit = updates.creditLimit;
+    if (updates.statementDate !== undefined)
+      updateData.statement_date = updates.statementDate;
     if (updates.dueDate !== undefined) updateData.due_date = updates.dueDate;
-    if (updates.lastPaymentDate !== undefined) updateData.last_payment_date = updates.lastPaymentDate.toISOString().split('T')[0];
-    if (updates.lastPaymentAmount !== undefined) updateData.last_payment_amount = updates.lastPaymentAmount;
+    if (updates.lastPaymentDate !== undefined)
+      updateData.last_payment_date = updates.lastPaymentDate
+        .toISOString()
+        .split("T")[0];
+    if (updates.lastPaymentAmount !== undefined)
+      updateData.last_payment_amount = updates.lastPaymentAmount;
     if (updates.notes !== undefined) updateData.notes = updates.notes;
 
     const { data, error } = await supabase
-      .from('credit_cards')
+      .from("credit_cards")
       .update(updateData)
-      .eq('id', cardId)
-      .eq('user_id', userId)
+      .eq("id", cardId)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -237,7 +247,9 @@ export async function updateCreditCard(
     return mapCreditCardFromDb(data);
   } catch (error) {
     // CreditCardsDB error: Error updating credit card
-    throw new Error(`Failed to update credit card: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to update credit card: ${(error as Error).message}`,
+    );
   }
 }
 
@@ -246,21 +258,23 @@ export async function updateCreditCard(
  */
 export async function deleteCreditCard(
   cardId: string,
-  userId: string
+  userId: string,
 ): Promise<boolean> {
   try {
     const { error } = await supabase
-      .from('credit_cards')
+      .from("credit_cards")
       .delete()
-      .eq('id', cardId)
-      .eq('user_id', userId);
+      .eq("id", cardId)
+      .eq("user_id", userId);
 
     if (error) throw error;
 
     return true;
   } catch (error) {
     // CreditCardsDB error: Error deleting credit card
-    throw new Error(`Failed to delete credit card: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to delete credit card: ${(error as Error).message}`,
+    );
   }
 }
 
@@ -271,13 +285,13 @@ export async function recordPayment(
   cardId: string,
   userId: string,
   paymentAmount: number,
-  paymentDate: Date
+  paymentDate: Date,
 ): Promise<CreditCard> {
   try {
     // Get current card
     const card = await getCreditCard(cardId, userId);
     if (!card) {
-      throw new Error('Credit card not found');
+      throw new Error("Credit card not found");
     }
 
     // Calculate new balance
@@ -298,9 +312,7 @@ export async function recordPayment(
 /**
  * Get credit card statistics
  */
-export async function getCreditCardStats(
-  userId: string
-): Promise<{
+export async function getCreditCardStats(userId: string): Promise<{
   totalCards: number;
   totalBalance: number;
   totalCreditLimit: number;
@@ -314,10 +326,12 @@ export async function getCreditCardStats(
     const totalCards = cards.length;
     const totalBalance = cards.reduce((sum, c) => sum + c.currentBalance, 0);
     const totalCreditLimit = cards.reduce((sum, c) => sum + c.creditLimit, 0);
-    const overallUtilization = totalCreditLimit > 0 ? (totalBalance / totalCreditLimit) * 100 : 0;
-    const averageUtilization = totalCards > 0 
-      ? cards.reduce((sum, c) => sum + c.utilization, 0) / totalCards 
-      : 0;
+    const overallUtilization =
+      totalCreditLimit > 0 ? (totalBalance / totalCreditLimit) * 100 : 0;
+    const averageUtilization =
+      totalCards > 0
+        ? cards.reduce((sum, c) => sum + c.utilization, 0) / totalCards
+        : 0;
     const highUtilizationCards = cards.filter((c) => c.utilization > 30).length;
 
     return {
@@ -330,18 +344,28 @@ export async function getCreditCardStats(
     };
   } catch (error) {
     // CreditCardsDB error: Error getting credit card stats
-    throw new Error(`Failed to get credit card stats: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to get credit card stats: ${(error as Error).message}`,
+    );
   }
 }
 
 /**
  * Calculate total utilization across all cards
  */
-export async function calculateTotalUtilization(userId: string): Promise<number> {
+export async function calculateTotalUtilization(
+  userId: string,
+): Promise<number> {
   try {
     const cards = await getCreditCardsByUser(userId);
-    const totalBalance = cards.reduce((sum, card) => sum + card.currentBalance, 0);
-    const totalCreditLimit = cards.reduce((sum, card) => sum + card.creditLimit, 0);
+    const totalBalance = cards.reduce(
+      (sum, card) => sum + card.currentBalance,
+      0,
+    );
+    const totalCreditLimit = cards.reduce(
+      (sum, card) => sum + card.creditLimit,
+      0,
+    );
 
     if (totalCreditLimit === 0) {
       return 0;
@@ -351,7 +375,9 @@ export async function calculateTotalUtilization(userId: string): Promise<number>
     return Number(utilization.toFixed(2));
   } catch (error) {
     // CreditCardsDB error: Error calculating total utilization
-    throw new Error(`Failed to calculate total utilization: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to calculate total utilization: ${(error as Error).message}`,
+    );
   }
 }
 
@@ -360,7 +386,7 @@ export async function calculateTotalUtilization(userId: string): Promise<number>
  */
 export async function getCardsNeedingPayment(
   userId: string,
-  daysAhead: number = 7
+  daysAhead: number = 7,
 ): Promise<CreditCard[]> {
   try {
     const cards = await getCreditCardsByUser(userId);
@@ -379,7 +405,9 @@ export async function getCardsNeedingPayment(
     });
   } catch (error) {
     // CreditCardsDB error: Error getting cards needing payment
-    throw new Error(`Failed to get cards needing payment: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to get cards needing payment: ${(error as Error).message}`,
+    );
   }
 }
 
@@ -398,7 +426,9 @@ function mapCreditCardFromDb(data: CreditCardRow): CreditCard {
     utilization: data.utilization,
     statementDate: data.statement_date,
     dueDate: data.due_date,
-    lastPaymentDate: data.last_payment_date ? new Date(data.last_payment_date) : undefined,
+    lastPaymentDate: data.last_payment_date
+      ? new Date(data.last_payment_date)
+      : undefined,
     lastPaymentAmount: data.last_payment_amount ?? undefined,
     notes: data.notes ?? undefined,
     createdAt: new Date(data.created_at),

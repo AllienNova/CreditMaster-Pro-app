@@ -5,31 +5,31 @@
 
 // Savings Rule Types
 export type SavingsRuleType =
-  | 'round_up'
-  | 'percentage'
-  | 'fixed'
-  | 'surplus'
-  | 'goal_based';
+  | "round_up"
+  | "percentage"
+  | "fixed"
+  | "surplus"
+  | "goal_based";
 export type SavingsRuleFrequency =
-  | 'per_transaction'
-  | 'daily'
-  | 'weekly'
-  | 'biweekly'
-  | 'monthly';
-export type SavingsRuleStatus = 'active' | 'paused' | 'completed' | 'cancelled';
+  | "per_transaction"
+  | "daily"
+  | "weekly"
+  | "biweekly"
+  | "monthly";
+export type SavingsRuleStatus = "active" | "paused" | "completed" | "cancelled";
 
 // Savings Goal Categories
 export type SavingsGoalCategory =
-  | 'emergency_fund'
-  | 'vacation'
-  | 'major_purchase'
-  | 'education'
-  | 'retirement'
-  | 'home_down_payment'
-  | 'debt_payoff'
-  | 'custom';
+  | "emergency_fund"
+  | "vacation"
+  | "major_purchase"
+  | "education"
+  | "retirement"
+  | "home_down_payment"
+  | "debt_payoff"
+  | "custom";
 
-export type SavingsGoalStatus = 'active' | 'paused' | 'completed' | 'cancelled';
+export type SavingsGoalStatus = "active" | "paused" | "completed" | "cancelled";
 
 // Savings Rule Interface
 export interface SavingsRule {
@@ -139,7 +139,7 @@ export interface SavingsContribution {
   id: string;
   goalId: string;
   amount: number;
-  source: 'manual' | 'auto_rule' | 'round_up' | 'transfer';
+  source: "manual" | "auto_rule" | "round_up" | "transfer";
   ruleId?: string;
   transactionId?: string;
   note?: string;
@@ -153,10 +153,10 @@ export interface SavingsTransfer {
   ruleId: string;
   goalId?: string;
   amount: number;
-  status: 'pending' | 'completed' | 'failed' | 'cancelled';
+  status: "pending" | "completed" | "failed" | "cancelled";
   sourceAccountId: string;
   destinationAccountId: string;
-  triggerType: 'transaction' | 'scheduled' | 'manual';
+  triggerType: "transaction" | "scheduled" | "manual";
   triggerTransactionId?: string;
   errorMessage?: string;
   executedAt?: Date;
@@ -180,14 +180,14 @@ export interface SavingsSummary {
 
 // Savings Insight
 export interface SavingsInsight {
-  type: 'opportunity' | 'achievement' | 'warning' | 'tip';
+  type: "opportunity" | "achievement" | "warning" | "tip";
   title: string;
   description: string;
   impact?: number;
   actionable: boolean;
   action?: {
     label: string;
-    type: 'create_rule' | 'adjust_rule' | 'add_contribution' | 'view_goal';
+    type: "create_rule" | "adjust_rule" | "add_contribution" | "view_goal";
     data?: Record<string, unknown>;
   };
 }
@@ -195,7 +195,7 @@ export interface SavingsInsight {
 // Savings Recommendation
 export interface SavingsRecommendation {
   id: string;
-  type: 'new_rule' | 'increase_savings' | 'new_goal' | 'optimize_rule';
+  type: "new_rule" | "increase_savings" | "new_goal" | "optimize_rule";
   title: string;
   description: string;
   potentialSavings: number;
@@ -252,7 +252,7 @@ export interface UpdateSavingsGoalInput {
 export interface AddContributionInput {
   goalId: string;
   amount: number;
-  source?: 'manual' | 'transfer' | 'auto_rule' | 'round_up';
+  source?: "manual" | "transfer" | "auto_rule" | "round_up";
   note?: string;
 }
 
@@ -266,7 +266,7 @@ export interface RecurringCharge {
   merchantName: string;
   category: string;
   amount: number;
-  frequency: 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'annually';
+  frequency: "weekly" | "biweekly" | "monthly" | "quarterly" | "annually";
   dayOfMonth?: number;
   dayOfWeek?: number;
   confidence: number; // 0-100
@@ -276,9 +276,15 @@ export interface RecurringCharge {
   nextExpectedAt?: Date;
   variance: number; // Amount variance
   isSubscription: boolean;
-  subscriptionType?: 'streaming' | 'software' | 'membership' | 'utility' | 'insurance' | 'other';
+  subscriptionType?:
+    | "streaming"
+    | "software"
+    | "membership"
+    | "utility"
+    | "insurance"
+    | "other";
   cancellable: boolean;
-  importance?: 'essential' | 'useful' | 'optional' | 'unnecessary';
+  importance?: "essential" | "useful" | "optional" | "unnecessary";
   transactions: Array<{
     id: string;
     date: Date;
@@ -293,15 +299,15 @@ export interface SubscriptionRecommendation {
   merchantName: string;
   monthlyAmount: number;
   annualAmount: number;
-  type: 'cancel' | 'downgrade' | 'consolidate' | 'negotiate';
+  type: "cancel" | "downgrade" | "consolidate" | "negotiate";
   reason: string;
   confidence: number; // 0-100
   potentialMonthlySavings: number;
   potentialAnnualSavings: number;
-  importance: 'essential' | 'useful' | 'optional' | 'unnecessary';
+  importance: "essential" | "useful" | "optional" | "unnecessary";
   usageIndicators?: {
     lastUsed?: Date;
-    usageFrequency?: 'daily' | 'weekly' | 'monthly' | 'rarely' | 'never';
+    usageFrequency?: "daily" | "weekly" | "monthly" | "rarely" | "never";
     duplicateOf?: string; // Merchant name of duplicate service
   };
   alternatives?: Array<{
@@ -315,7 +321,12 @@ export interface SubscriptionRecommendation {
 // Savings Opportunity
 export interface SavingsOpportunity {
   id: string;
-  type: 'subscription' | 'spending_reduction' | 'category_optimization' | 'recurring_charge' | 'one_time';
+  type:
+    | "subscription"
+    | "spending_reduction"
+    | "category_optimization"
+    | "recurring_charge"
+    | "one_time";
   category: string;
   title: string;
   description: string;
@@ -324,12 +335,12 @@ export interface SavingsOpportunity {
   potentialMonthlySavings: number;
   potentialAnnualSavings: number;
   confidence: number; // 0-100
-  difficulty: 'easy' | 'medium' | 'hard';
-  impact: 'low' | 'medium' | 'high';
+  difficulty: "easy" | "medium" | "hard";
+  impact: "low" | "medium" | "high";
   actionable: boolean;
   actions: Array<{
     label: string;
-    type: 'cancel' | 'reduce' | 'switch' | 'negotiate' | 'automate';
+    type: "cancel" | "reduce" | "switch" | "negotiate" | "automate";
     data?: Record<string, unknown>;
   }>;
   aiGenerated: boolean;
@@ -338,7 +349,7 @@ export interface SavingsOpportunity {
 // Savings Analysis
 export interface SavingsAnalysis {
   userId: string;
-  period: 'monthly' | 'quarterly' | 'yearly';
+  period: "monthly" | "quarterly" | "yearly";
   periodStart: Date;
   periodEnd: Date;
   summary: {
@@ -363,8 +374,8 @@ export interface SavingsAnalysis {
     percentOfTotal: number;
   }>;
   trends: {
-    spendingTrend: 'increasing' | 'decreasing' | 'stable';
-    savingsTrend: 'improving' | 'declining' | 'stable';
+    spendingTrend: "increasing" | "decreasing" | "stable";
+    savingsTrend: "improving" | "declining" | "stable";
     topSpendingCategories: Array<{
       category: string;
       amount: number;
@@ -378,7 +389,13 @@ export interface SavingsAnalysis {
 // Savings Goal Recommendation (AI-generated)
 export interface SavingsGoalRecommendation {
   id: string;
-  type: 'emergency_fund' | 'vacation' | 'major_purchase' | 'debt_payoff' | 'retirement' | 'custom';
+  type:
+    | "emergency_fund"
+    | "vacation"
+    | "major_purchase"
+    | "debt_payoff"
+    | "retirement"
+    | "custom";
   title: string;
   description: string;
   recommendedAmount: number;
@@ -406,7 +423,7 @@ export interface PotentialSavingsSummary {
     oneTimeOpportunities: number;
   };
   topOpportunities: SavingsOpportunity[];
-  implementationDifficulty: 'easy' | 'medium' | 'hard';
+  implementationDifficulty: "easy" | "medium" | "hard";
   estimatedTimeToImplement: string; // e.g., "2 hours", "1 week"
 }
 

@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
+import { NextRequest, NextResponse } from "next/server";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
 import {
   createRankingService,
   createRotationService,
@@ -8,7 +8,7 @@ import {
   type RotationDecision,
   type UserTier,
   type AssetClass,
-} from '@/lib/trading';
+} from "@/lib/trading";
 
 // Singleton services (in production, use proper DI)
 const rankingService = createRankingService();
@@ -22,26 +22,26 @@ const riskGating = createISERiskGating(rotationService, rankingService);
 export async function GET(request: NextRequest) {
   try {
     const validation = await jwtValidation.validateFromHeaders(request);
-    
+
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    
+
     const { searchParams } = new URL(request.url);
-    const action = searchParams.get('action') || 'status';
-    const assetClass = searchParams.get('assetClass') as AssetClass | null;
-    const limit = parseInt(searchParams.get('limit') || '20', 10);
-    
+    const action = searchParams.get("action") || "status";
+    const assetClass = searchParams.get("assetClass") as AssetClass | null;
+    const limit = parseInt(searchParams.get("limit") || "20", 10);
+
     switch (action) {
-      case 'status':
+      case "status":
         return NextResponse.json({
           activeSymbols: rotationService.getActiveSymbols(),
           lastRun: rankingService.getLastRun(),
           summary: rankingService.getSummary(),
           gatingStats: riskGating.getStats(),
         });
-        
-      case 'rankings':
+
+      case "rankings":
         let rankings = rankingService.getAllRankings();
         if (assetClass) {
           rankings = rankingService.getByAssetClass(assetClass);
@@ -51,36 +51,39 @@ export async function GET(request: NextRequest) {
           total: rankings.length,
           lastRun: rankingService.getLastRun(),
         });
-        
-      case 'active':
+
+      case "active":
         return NextResponse.json({
           activeSymbols: rotationService.getActiveSymbols(),
-          states: rotationService.getActiveSymbols().map(s => ({
+          states: rotationService.getActiveSymbols().map((s) => ({
             symbol: s,
             ...rotationService.getInstrumentState(s),
           })),
         });
-        
-      case 'events':
+
+      case "events":
         return NextResponse.json({
           events: rotationService.getRecentEvents(limit),
         });
-        
-      case 'canTrade':
-        const symbol = searchParams.get('symbol');
+
+      case "canTrade":
+        const symbol = searchParams.get("symbol");
         if (!symbol) {
-          return NextResponse.json({ error: 'Symbol required' }, { status: 400 });
+          return NextResponse.json(
+            { error: "Symbol required" },
+            { status: 400 },
+          );
         }
         return NextResponse.json(riskGating.canOpenNewPosition(symbol));
-        
+
       default:
-        return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
+        return NextResponse.json({ error: "Unknown action" }, { status: 400 });
     }
   } catch (error) {
-    console.error('ISE GET error:', error);
+    console.error("ISE GET error:", error);
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: "Internal server error" },
+      { status: 500 },
     );
   }
 }
@@ -92,46 +95,67 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const validation = await jwtValidation.validateFromHeaders(request);
-    
+
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    
+
     const body = await request.json();
     const { action } = body;
-    
+
     switch (action) {
-      case 'forceAdd': {
+      case "forceAdd": {
         const { symbol, reason } = body;
         if (!symbol) {
-          return NextResponse.json({ error: 'Symbol required' }, { status: 400 });
+          return NextResponse.json(
+            { error: "Symbol required" },
+            { status: 400 },
+          );
         }
-        const success = rotationService.forceAdd(symbol, reason || 'Manual addition via API');
-        return NextResponse.json({ success, activeSymbols: rotationService.getActiveSymbols() });
-      }
-      
-      case 'forceRemove': {
-        const { symbol, reason } = body;
-        if (!symbol) {
-          return NextResponse.json({ error: 'Symbol required' }, { status: 400 });
-        }
-        const success = rotationService.forceRemove(symbol, reason || 'Manual removal via API');
-        return NextResponse.json({ success, activeSymbols: rotationService.getActiveSymbols() });
-      }
-      
-      case 'setOverride': {
-        const { symbol, enabled } = body;
-        if (!symbol) {
-          return NextResponse.json({ error: 'Symbol required' }, { status: 400 });
-        }
-        riskGating.setManualOverride(symbol, enabled);
-        return NextResponse.json({ 
-          success: true, 
-          overrides: riskGating.getManualOverrides() 
+        const success = rotationService.forceAdd(
+          symbol,
+          reason || "Manual addition via API",
+        );
+        return NextResponse.json({
+          success,
+          activeSymbols: rotationService.getActiveSymbols(),
         });
       }
-      
-      case 'updateConfig': {
+
+      case "forceRemove": {
+        const { symbol, reason } = body;
+        if (!symbol) {
+          return NextResponse.json(
+            { error: "Symbol required" },
+            { status: 400 },
+          );
+        }
+        const success = rotationService.forceRemove(
+          symbol,
+          reason || "Manual removal via API",
+        );
+        return NextResponse.json({
+          success,
+          activeSymbols: rotationService.getActiveSymbols(),
+        });
+      }
+
+      case "setOverride": {
+        const { symbol, enabled } = body;
+        if (!symbol) {
+          return NextResponse.json(
+            { error: "Symbol required" },
+            { status: 400 },
+          );
+        }
+        riskGating.setManualOverride(symbol, enabled);
+        return NextResponse.json({
+          success: true,
+          overrides: riskGating.getManualOverrides(),
+        });
+      }
+
+      case "updateConfig": {
         const { maxActiveSize, rotationConfig, gatingConfig } = body;
         if (maxActiveSize) {
           rotationService.setMaxActiveSize(maxActiveSize);
@@ -144,21 +168,21 @@ export async function POST(request: NextRequest) {
         }
         return NextResponse.json({ success: true });
       }
-      
-      case 'reset': {
+
+      case "reset": {
         rotationService.reset();
         riskGating.clearManualOverrides();
         return NextResponse.json({ success: true });
       }
-      
+
       default:
-        return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
+        return NextResponse.json({ error: "Unknown action" }, { status: 400 });
     }
   } catch (error) {
-    console.error('ISE POST error:', error);
+    console.error("ISE POST error:", error);
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: "Internal server error" },
+      { status: 500 },
     );
   }
 }

@@ -1,42 +1,57 @@
-'use client';
+"use client";
 
 /**
  * Loading Components
- * 
+ *
  * Provides various loading state indicators including spinners,
  * skeletons, and full-page loaders.
  */
 
-import { ReactNode } from 'react';
+import { ReactNode } from "react";
 
 interface SpinnerProps {
-  size?: 'sm' | 'md' | 'lg' | 'xl';
-  color?: 'blue' | 'white' | 'gray';
+  size?: "sm" | "md" | "lg" | "xl";
+  color?: "blue" | "white" | "gray";
   className?: string;
 }
 
 const sizeClasses = {
-  sm: 'w-4 h-4',
-  md: 'w-6 h-6',
-  lg: 'w-8 h-8',
-  xl: 'w-12 h-12',
+  sm: "w-4 h-4",
+  md: "w-6 h-6",
+  lg: "w-8 h-8",
+  xl: "w-12 h-12",
 };
 
 const colorClasses = {
-  blue: 'text-blue-600',
-  white: 'text-white',
-  gray: 'text-gray-400 dark:text-slate-500',
+  blue: "text-blue-600",
+  white: "text-white",
+  gray: "text-gray-400 dark:text-slate-500",
 };
 
-export function Spinner({ size = 'md', color = 'blue', className = '' }: SpinnerProps) {
+export function Spinner({
+  size = "md",
+  color = "blue",
+  className = "",
+}: SpinnerProps) {
   return (
     <svg
       className={`animate-spin ${sizeClasses[size]} ${colorClasses[color]} ${className}`}
       fill="none"
       viewBox="0 0 24 24"
     >
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="4"
+      />
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+      />
     </svg>
   );
 }
@@ -46,10 +61,10 @@ interface SkeletonProps {
   animate?: boolean;
 }
 
-export function Skeleton({ className = '', animate = true }: SkeletonProps) {
+export function Skeleton({ className = "", animate = true }: SkeletonProps) {
   return (
     <div
-      className={`bg-gray-200 dark:bg-slate-700 rounded ${animate ? 'animate-pulse' : ''} ${className}`}
+      className={`bg-gray-200 dark:bg-slate-700 rounded ${animate ? "animate-pulse" : ""} ${className}`}
     />
   );
 }
@@ -60,7 +75,7 @@ export function SkeletonText({ lines = 3 }: { lines?: number }) {
       {Array.from({ length: lines }).map((_, i) => (
         <Skeleton
           key={i}
-          className={`h-4 ${i === lines - 1 ? 'w-3/4' : 'w-full'}`}
+          className={`h-4 ${i === lines - 1 ? "w-3/4" : "w-full"}`}
         />
       ))}
     </div>
@@ -91,7 +106,9 @@ interface LoadingOverlayProps {
   children?: ReactNode;
 }
 
-export function LoadingOverlay({ message = 'Loading...' }: LoadingOverlayProps) {
+export function LoadingOverlay({
+  message = "Loading...",
+}: LoadingOverlayProps) {
   return (
     <div
       className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
@@ -101,13 +118,15 @@ export function LoadingOverlay({ message = 'Loading...' }: LoadingOverlayProps) 
     >
       <div className="bg-white dark:bg-slate-800 rounded-xl p-8 shadow-xl flex flex-col items-center space-y-4">
         <Spinner size="xl" />
-        <p className="text-gray-600 dark:text-slate-300 font-medium">{message}</p>
+        <p className="text-gray-600 dark:text-slate-300 font-medium">
+          {message}
+        </p>
       </div>
     </div>
   );
 }
 
-export function LoadingPage({ message = 'Loading...' }: { message?: string }) {
+export function LoadingPage({ message = "Loading..." }: { message?: string }) {
   return (
     <div
       className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900"
@@ -117,7 +136,9 @@ export function LoadingPage({ message = 'Loading...' }: { message?: string }) {
     >
       <div className="text-center space-y-4">
         <Spinner size="xl" />
-        <p className="text-gray-600 dark:text-slate-300 font-medium">{message}</p>
+        <p className="text-gray-600 dark:text-slate-300 font-medium">
+          {message}
+        </p>
       </div>
     </div>
   );
@@ -129,16 +150,16 @@ interface LoadingButtonProps {
   className?: string;
   disabled?: boolean;
   onClick?: () => void;
-  type?: 'button' | 'submit';
+  type?: "button" | "submit";
 }
 
 export function LoadingButton({
   loading,
   children,
-  className = '',
+  className = "",
   disabled,
   onClick,
-  type = 'button',
+  type = "button",
 }: LoadingButtonProps) {
   return (
     <button
@@ -157,12 +178,18 @@ export function LoadingButton({
           <Spinner size="sm" color="white" />
         </span>
       )}
-      <span className={loading ? 'opacity-0' : 'opacity-100'}>{children}</span>
+      <span className={loading ? "opacity-0" : "opacity-100"}>{children}</span>
     </button>
   );
 }
 
-export function ProgressBar({ progress, className = '' }: { progress: number; className?: string }) {
+export function ProgressBar({
+  progress,
+  className = "",
+}: {
+  progress: number;
+  className?: string;
+}) {
   return (
     <div
       className={`w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden ${className}`}
@@ -189,4 +216,3 @@ export default {
   LoadingButton,
   ProgressBar,
 };
-

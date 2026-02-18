@@ -9,11 +9,11 @@
  * - Credit report upload and analysis
  */
 
-import { NextRequest } from 'next/server';
+import { NextRequest } from "next/server";
 
 // Mock dependencies BEFORE importing modules that use them
-jest.mock('@/lib/auth/jwt-validation');
-jest.mock('@/lib/credit-repair/db', () => ({
+jest.mock("@/lib/auth/jwt-validation");
+jest.mock("@/lib/credit-repair/db", () => ({
   db: {
     disputes: {
       getDisputesByUser: jest.fn(),
@@ -52,7 +52,7 @@ jest.mock('@/lib/credit-repair/db', () => ({
     },
   },
 }));
-jest.mock('@/lib/credit-repair', () => ({
+jest.mock("@/lib/credit-repair", () => ({
   creditRepairService: {
     analyzeOpportunities: jest.fn(),
     calculateImpact: jest.fn(),
@@ -68,33 +68,33 @@ jest.mock('@/lib/credit-repair', () => ({
     calculateSettlement: jest.fn(),
   },
 }));
-jest.mock('@/lib/security/audit-logging');
+jest.mock("@/lib/security/audit-logging");
 
 // Import after mocks are set up
-import { GET as getDisputes, POST as createDispute } from '../disputes/route';
+import { GET as getDisputes, POST as createDispute } from "../disputes/route";
 import {
   GET as getDispute,
   PUT as updateDispute,
   DELETE as deleteDispute,
-} from '../disputes/[id]/route';
-import { GET as getCards, POST as createCard } from '../cards/route';
-import { PUT as updateCard, DELETE as deleteCard } from '../cards/[id]/route';
-import { POST as createGoodwill } from '../goodwill/route';
-import { PUT as updateGoodwill } from '../goodwill/[id]/route';
-import { POST as createNegotiation } from '../negotiate/route';
-import { PUT as updateNegotiation } from '../negotiate/[id]/route';
-import { POST as uploadReport } from '../reports/route';
-import { GET as getQuickWins } from '../quick-wins/route';
-import { POST as calculateImpact } from '../impact/route';
+} from "../disputes/[id]/route";
+import { GET as getCards, POST as createCard } from "../cards/route";
+import { PUT as updateCard, DELETE as deleteCard } from "../cards/[id]/route";
+import { POST as createGoodwill } from "../goodwill/route";
+import { PUT as updateGoodwill } from "../goodwill/[id]/route";
+import { POST as createNegotiation } from "../negotiate/route";
+import { PUT as updateNegotiation } from "../negotiate/[id]/route";
+import { POST as uploadReport } from "../reports/route";
+import { GET as getQuickWins } from "../quick-wins/route";
+import { POST as calculateImpact } from "../impact/route";
 
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { db } from '@/lib/credit-repair/db';
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { db } from "@/lib/credit-repair/db";
 import {
   creditRepairService,
   disputeService,
   negotiationService,
-} from '@/lib/credit-repair';
-import { auditLogger } from '@/lib/security/audit-logging';
+} from "@/lib/credit-repair";
+import { auditLogger } from "@/lib/security/audit-logging";
 
 interface MockRequestOptions {
   method?: string;
@@ -107,7 +107,7 @@ function createMockRequest(urlString: string, options?: MockRequestOptions) {
   const parsedUrl = new URL(urlString);
   const request = {
     url: urlString,
-    method: options?.method || 'GET',
+    method: options?.method || "GET",
     json: jest.fn().mockResolvedValue(options?.body || {}),
     headers: new Headers(),
     nextUrl: parsedUrl,
@@ -115,11 +115,11 @@ function createMockRequest(urlString: string, options?: MockRequestOptions) {
   return request;
 }
 
-describe('Credit Repair API - Integration Tests', () => {
+describe("Credit Repair API - Integration Tests", () => {
   const mockUser = {
-    id: 'user-123',
-    email: 'test@example.com',
-    name: 'Test User',
+    id: "user-123",
+    email: "test@example.com",
+    name: "Test User",
   };
 
   beforeEach(() => {
@@ -133,18 +133,18 @@ describe('Credit Repair API - Integration Tests', () => {
 
     // Mock AI services
     (disputeService.generateDisputeLetter as jest.Mock).mockResolvedValue({
-      letter: 'AI-generated dispute letter',
-      strategy: 'basic_dispute',
+      letter: "AI-generated dispute letter",
+      strategy: "basic_dispute",
     });
     (negotiationService.generateGoodwillLetter as jest.Mock).mockResolvedValue({
-      letter: 'AI-generated goodwill letter',
+      letter: "AI-generated goodwill letter",
     });
     (
       negotiationService.generateNegotiationScript as jest.Mock
     ).mockResolvedValue({
-      phoneScript: 'Phone script',
-      emailScript: 'Email script',
-      letterScript: 'Letter script',
+      phoneScript: "Phone script",
+      emailScript: "Email script",
+      letterScript: "Letter script",
     });
     (negotiationService.calculateSettlement as jest.Mock).mockReturnValue({
       targetAmount: 2500,
@@ -153,24 +153,24 @@ describe('Credit Repair API - Integration Tests', () => {
     });
     (creditRepairService.getQuickWins as jest.Mock).mockResolvedValue({
       opportunities: [
-        { type: 'pay_down_utilization', priority: 'high', estimatedImpact: 50 },
-        { type: 'dispute_inaccuracy', priority: 'high', estimatedImpact: 80 },
+        { type: "pay_down_utilization", priority: "high", estimatedImpact: 50 },
+        { type: "dispute_inaccuracy", priority: "high", estimatedImpact: 80 },
       ],
     });
   });
 
-  describe('Complete Dispute Lifecycle', () => {
-    it('should handle complete dispute flow: create → fetch → update → delete', async () => {
-      const disputeId = 'dispute-123';
+  describe("Complete Dispute Lifecycle", () => {
+    it("should handle complete dispute flow: create → fetch → update → delete", async () => {
+      const disputeId = "dispute-123";
       const newDispute = {
-        bureau: 'experian',
-        itemType: 'late_payment',
-        itemDescription: 'Late payment on credit card',
-        creditorName: 'Chase Bank',
-        accountNumber: '****1234',
+        bureau: "experian",
+        itemType: "late_payment",
+        itemDescription: "Late payment on credit card",
+        creditorName: "Chase Bank",
+        accountNumber: "****1234",
         balance: 5000,
-        inaccuracyType: 'not_mine',
-        strategy: 'basic_dispute',
+        inaccuracyType: "not_mine",
+        strategy: "basic_dispute",
         generateLetter: true,
       };
 
@@ -178,8 +178,8 @@ describe('Credit Repair API - Integration Tests', () => {
         id: disputeId,
         userId: mockUser.id,
         ...newDispute,
-        status: 'draft',
-        letterContent: 'AI-generated dispute letter',
+        status: "draft",
+        letterContent: "AI-generated dispute letter",
         createdAt: new Date(),
         updatedAt: new Date(),
         version: 1,
@@ -187,15 +187,15 @@ describe('Credit Repair API - Integration Tests', () => {
 
       // Step 1: Create dispute
       (db.disputes.createDispute as jest.Mock).mockResolvedValue(
-        createdDispute
+        createdDispute,
       );
 
       const createRequest = createMockRequest(
-        'http://localhost:3000/api/credit-repair/disputes',
+        "http://localhost:3000/api/credit-repair/disputes",
         {
-          method: 'POST',
+          method: "POST",
           body: newDispute,
-        }
+        },
       );
       const createResponse = await createDispute(createRequest);
       const createData = await createResponse.json();
@@ -203,7 +203,7 @@ describe('Credit Repair API - Integration Tests', () => {
       expect(createResponse.status).toBe(201);
       expect(createData.success).toBe(true);
       expect(createData.data.id).toBe(disputeId);
-      expect(createData.data.status).toBe('draft');
+      expect(createData.data.status).toBe("draft");
 
       // Step 2: Fetch all disputes
       (db.disputes.getDisputesByUser as jest.Mock).mockResolvedValue({
@@ -217,7 +217,7 @@ describe('Credit Repair API - Integration Tests', () => {
       });
 
       const fetchRequest = createMockRequest(
-        'http://localhost:3000/api/credit-repair/disputes'
+        "http://localhost:3000/api/credit-repair/disputes",
       );
       const fetchResponse = await getDisputes(fetchRequest);
       const fetchData = await fetchResponse.json();
@@ -231,7 +231,7 @@ describe('Credit Repair API - Integration Tests', () => {
       (db.disputes.getDispute as jest.Mock).mockResolvedValue(createdDispute);
 
       const getRequest = createMockRequest(
-        `http://localhost:3000/api/credit-repair/disputes/${disputeId}`
+        `http://localhost:3000/api/credit-repair/disputes/${disputeId}`,
       );
       const getResponse = await getDispute(getRequest, {
         params: Promise.resolve({ id: disputeId }),
@@ -243,18 +243,18 @@ describe('Credit Repair API - Integration Tests', () => {
       expect(getData.data.id).toBe(disputeId);
 
       // Step 4: Update dispute status
-      const updatedDispute = { ...createdDispute, status: 'sent', version: 2 };
+      const updatedDispute = { ...createdDispute, status: "sent", version: 2 };
       (db.disputes.getDispute as jest.Mock).mockResolvedValue(createdDispute);
       (db.disputes.updateDispute as jest.Mock).mockResolvedValue(
-        updatedDispute
+        updatedDispute,
       );
 
       const updateRequest = createMockRequest(
         `http://localhost:3000/api/credit-repair/disputes/${disputeId}`,
         {
-          method: 'PUT',
-          body: { status: 'sent', version: 1 },
-        }
+          method: "PUT",
+          body: { status: "sent", version: 1 },
+        },
       );
       const updateResponse = await updateDispute(updateRequest, {
         params: Promise.resolve({ id: disputeId }),
@@ -263,7 +263,7 @@ describe('Credit Repair API - Integration Tests', () => {
 
       expect(updateResponse.status).toBe(200);
       expect(updateData.success).toBe(true);
-      expect(updateData.data.status).toBe('sent');
+      expect(updateData.data.status).toBe("sent");
       expect(updateData.data.version).toBe(2);
 
       // Step 5: Delete dispute
@@ -273,8 +273,8 @@ describe('Credit Repair API - Integration Tests', () => {
       const deleteRequest = createMockRequest(
         `http://localhost:3000/api/credit-repair/disputes/${disputeId}`,
         {
-          method: 'DELETE',
-        }
+          method: "DELETE",
+        },
       );
       const deleteResponse = await deleteDispute(deleteRequest, {
         params: Promise.resolve({ id: disputeId }),
@@ -292,13 +292,13 @@ describe('Credit Repair API - Integration Tests', () => {
       expect(db.disputes.deleteDispute).toHaveBeenCalledTimes(1);
     });
 
-    it('should handle optimistic locking conflict during update', async () => {
-      const disputeId = 'dispute-123';
+    it("should handle optimistic locking conflict during update", async () => {
+      const disputeId = "dispute-123";
       const dispute = {
         id: disputeId,
         userId: mockUser.id,
-        bureau: 'experian',
-        status: 'draft',
+        bureau: "experian",
+        status: "draft",
         version: 2, // Current version is 2
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -307,17 +307,17 @@ describe('Credit Repair API - Integration Tests', () => {
       (db.disputes.getDispute as jest.Mock).mockResolvedValue(dispute);
       (db.disputes.updateDispute as jest.Mock).mockRejectedValue(
         new Error(
-          'Dispute has been modified by another process. Please refresh and try again.'
-        )
+          "Dispute has been modified by another process. Please refresh and try again.",
+        ),
       );
 
       // Try to update with old version (1)
       const updateRequest = createMockRequest(
         `http://localhost:3000/api/credit-repair/disputes/${disputeId}`,
         {
-          method: 'PUT',
-          body: { status: 'sent', version: 1 }, // Old version
-        }
+          method: "PUT",
+          body: { status: "sent", version: 1 }, // Old version
+        },
       );
       const updateResponse = await updateDispute(updateRequest, {
         params: Promise.resolve({ id: disputeId }),
@@ -326,17 +326,17 @@ describe('Credit Repair API - Integration Tests', () => {
 
       expect(updateResponse.status).toBe(409);
       expect(updateData.error).toBe(
-        'Dispute has been modified by another process. Please refresh and try again.'
+        "Dispute has been modified by another process. Please refresh and try again.",
       );
     });
   });
 
-  describe('Credit Card Management Flow', () => {
-    it('should handle complete card flow: create → update balance → recalculate utilization → delete', async () => {
-      const cardId = 'card-123';
+  describe("Credit Card Management Flow", () => {
+    it("should handle complete card flow: create → update balance → recalculate utilization → delete", async () => {
+      const cardId = "card-123";
       const newCard = {
-        cardName: 'Chase Sapphire',
-        lastFourDigits: '1234',
+        cardName: "Chase Sapphire",
+        lastFourDigits: "1234",
         creditLimit: 10000,
         currentBalance: 3000,
         statementClosingDay: 15,
@@ -355,15 +355,15 @@ describe('Credit Repair API - Integration Tests', () => {
 
       // Step 1: Create card
       (db.creditCards.createCreditCard as jest.Mock).mockResolvedValue(
-        createdCard
+        createdCard,
       );
 
       const createRequest = createMockRequest(
-        'http://localhost:3000/api/credit-repair/cards',
+        "http://localhost:3000/api/credit-repair/cards",
         {
-          method: 'POST',
+          method: "POST",
           body: newCard,
-        }
+        },
       );
       const createResponse = await createCard(createRequest);
       const createData = await createResponse.json();
@@ -381,18 +381,18 @@ describe('Credit Repair API - Integration Tests', () => {
       };
 
       (db.creditCards.getCreditCard as jest.Mock).mockResolvedValue(
-        createdCard
+        createdCard,
       );
       (db.creditCards.updateCreditCard as jest.Mock).mockResolvedValue(
-        updatedCard
+        updatedCard,
       );
 
       const updateRequest = createMockRequest(
         `http://localhost:3000/api/credit-repair/cards/${cardId}`,
         {
-          method: 'PUT',
+          method: "PUT",
           body: { currentBalance: 1000, version: 1 },
-        }
+        },
       );
       const updateResponse = await updateCard(updateRequest, {
         params: Promise.resolve({ id: cardId }),
@@ -409,11 +409,11 @@ describe('Credit Repair API - Integration Tests', () => {
         updatedCard,
       ]);
       (db.creditCards.calculateTotalUtilization as jest.Mock).mockResolvedValue(
-        10
+        10,
       );
 
       const fetchRequest = createMockRequest(
-        'http://localhost:3000/api/credit-repair/cards'
+        "http://localhost:3000/api/credit-repair/cards",
       );
       const fetchResponse = await getCards(fetchRequest);
       const fetchData = await fetchResponse.json();
@@ -426,15 +426,15 @@ describe('Credit Repair API - Integration Tests', () => {
 
       // Step 4: Delete card
       (db.creditCards.getCreditCard as jest.Mock).mockResolvedValue(
-        updatedCard
+        updatedCard,
       );
       (db.creditCards.deleteCreditCard as jest.Mock).mockResolvedValue(true);
 
       const deleteRequest = createMockRequest(
         `http://localhost:3000/api/credit-repair/cards/${cardId}`,
         {
-          method: 'DELETE',
-        }
+          method: "DELETE",
+        },
       );
       const deleteResponse = await deleteCard(deleteRequest, {
         params: Promise.resolve({ id: cardId }),
@@ -446,15 +446,15 @@ describe('Credit Repair API - Integration Tests', () => {
     });
   });
 
-  describe('Goodwill Letter Flow', () => {
-    it('should handle complete goodwill flow: create with AI → track status → mark sent', async () => {
-      const goodwillId = 'goodwill-123';
+  describe("Goodwill Letter Flow", () => {
+    it("should handle complete goodwill flow: create with AI → track status → mark sent", async () => {
+      const goodwillId = "goodwill-123";
       const newGoodwill = {
-        accountId: 'account-123',
-        creditorName: 'Chase Bank',
-        latePaymentDate: '2024-01-15',
-        reason: 'Late payment due to medical emergency',
-        accountNumber: '****1234',
+        accountId: "account-123",
+        creditorName: "Chase Bank",
+        latePaymentDate: "2024-01-15",
+        reason: "Late payment due to medical emergency",
+        accountNumber: "****1234",
         balance: 5000,
         generateLetter: true,
       };
@@ -463,8 +463,8 @@ describe('Credit Repair API - Integration Tests', () => {
         id: goodwillId,
         userId: mockUser.id,
         ...newGoodwill,
-        status: 'draft',
-        letterContent: 'AI-generated goodwill letter',
+        status: "draft",
+        letterContent: "AI-generated goodwill letter",
         createdAt: new Date(),
         updatedAt: new Date(),
         version: 1,
@@ -472,15 +472,15 @@ describe('Credit Repair API - Integration Tests', () => {
 
       // Step 1: Create goodwill letter with AI generation
       (db.goodwill.createGoodwillLetter as jest.Mock).mockResolvedValue(
-        createdGoodwill
+        createdGoodwill,
       );
 
       const createRequest = createMockRequest(
-        'http://localhost:3000/api/credit-repair/goodwill',
+        "http://localhost:3000/api/credit-repair/goodwill",
         {
-          method: 'POST',
+          method: "POST",
           body: newGoodwill,
-        }
+        },
       );
       const createResponse = await createGoodwill(createRequest);
       const createData = await createResponse.json();
@@ -488,24 +488,24 @@ describe('Credit Repair API - Integration Tests', () => {
       expect(createResponse.status).toBe(201);
       expect(createData.success).toBe(true);
       expect(createData.data.letterContent).toBe(
-        'AI-generated goodwill letter'
+        "AI-generated goodwill letter",
       );
 
       // Step 2: Update status to sent
-      const sentGoodwill = { ...createdGoodwill, status: 'sent', version: 2 };
+      const sentGoodwill = { ...createdGoodwill, status: "sent", version: 2 };
       (db.goodwill.getGoodwillLetter as jest.Mock).mockResolvedValue(
-        createdGoodwill
+        createdGoodwill,
       );
       (db.goodwill.updateGoodwillLetter as jest.Mock).mockResolvedValue(
-        sentGoodwill
+        sentGoodwill,
       );
 
       const updateRequest = createMockRequest(
         `http://localhost:3000/api/credit-repair/goodwill/${goodwillId}`,
         {
-          method: 'PUT',
-          body: { status: 'sent', version: 1 },
-        }
+          method: "PUT",
+          body: { status: "sent", version: 1 },
+        },
       );
       const updateResponse = await updateGoodwill(updateRequest, {
         params: Promise.resolve({ id: goodwillId }),
@@ -514,18 +514,18 @@ describe('Credit Repair API - Integration Tests', () => {
 
       expect(updateResponse.status).toBe(200);
       expect(updateData.success).toBe(true);
-      expect(updateData.data.status).toBe('sent');
+      expect(updateData.data.status).toBe("sent");
     });
   });
 
-  describe('Pay-for-Delete Negotiation Flow', () => {
-    it('should handle complete negotiation flow: create → generate scripts → track offers → accept', async () => {
-      const negotiationId = 'negotiation-123';
+  describe("Pay-for-Delete Negotiation Flow", () => {
+    it("should handle complete negotiation flow: create → generate scripts → track offers → accept", async () => {
+      const negotiationId = "negotiation-123";
       const newNegotiation = {
-        collectionId: 'collection-123',
-        collectionAgency: 'Collections Agency',
-        originalCreditor: 'Original Bank',
-        accountNumber: '****5678',
+        collectionId: "collection-123",
+        collectionAgency: "Collections Agency",
+        originalCreditor: "Original Bank",
+        accountNumber: "****5678",
         originalBalance: 5000,
         currentBalance: 5000,
         targetSettlement: 2500,
@@ -536,8 +536,8 @@ describe('Credit Repair API - Integration Tests', () => {
         id: negotiationId,
         userId: mockUser.id,
         ...newNegotiation,
-        status: 'draft',
-        negotiationScript: 'AI-generated negotiation script',
+        status: "draft",
+        negotiationScript: "AI-generated negotiation script",
         settlementAmount: 2500, // Auto-calculated (50%)
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -546,15 +546,15 @@ describe('Credit Repair API - Integration Tests', () => {
 
       // Step 1: Create negotiation with AI scripts
       (db.negotiations.createNegotiation as jest.Mock).mockResolvedValue(
-        createdNegotiation
+        createdNegotiation,
       );
 
       const createRequest = createMockRequest(
-        'http://localhost:3000/api/credit-repair/negotiate',
+        "http://localhost:3000/api/credit-repair/negotiate",
         {
-          method: 'POST',
+          method: "POST",
           body: newNegotiation,
-        }
+        },
       );
       const createResponse = await createNegotiation(createRequest);
       const createData = await createResponse.json();
@@ -567,23 +567,23 @@ describe('Credit Repair API - Integration Tests', () => {
       // Step 2: Update with counter offer
       const updatedNegotiation = {
         ...createdNegotiation,
-        status: 'negotiating',
+        status: "negotiating",
         settlementAmount: 3000,
         version: 2,
       };
       (db.negotiations.getNegotiation as jest.Mock).mockResolvedValue(
-        createdNegotiation
+        createdNegotiation,
       );
       (db.negotiations.updateNegotiation as jest.Mock).mockResolvedValue(
-        updatedNegotiation
+        updatedNegotiation,
       );
 
       const updateRequest = createMockRequest(
         `http://localhost:3000/api/credit-repair/negotiate/${negotiationId}`,
         {
-          method: 'PUT',
-          body: { status: 'negotiating', settlementAmount: 3000, version: 1 },
-        }
+          method: "PUT",
+          body: { status: "negotiating", settlementAmount: 3000, version: 1 },
+        },
       );
       const updateResponse = await updateNegotiation(updateRequest, {
         params: Promise.resolve({ id: negotiationId }),
@@ -592,28 +592,28 @@ describe('Credit Repair API - Integration Tests', () => {
 
       expect(updateResponse.status).toBe(200);
       expect(updateData.success).toBe(true);
-      expect(updateData.data.status).toBe('negotiating');
+      expect(updateData.data.status).toBe("negotiating");
       expect(updateData.data.settlementAmount).toBe(3000);
 
       // Step 3: Mark as accepted
       const acceptedNegotiation = {
         ...updatedNegotiation,
-        status: 'accepted',
+        status: "accepted",
         version: 3,
       };
       (db.negotiations.getNegotiation as jest.Mock).mockResolvedValue(
-        updatedNegotiation
+        updatedNegotiation,
       );
       (db.negotiations.updateNegotiation as jest.Mock).mockResolvedValue(
-        acceptedNegotiation
+        acceptedNegotiation,
       );
 
       const acceptRequest = createMockRequest(
         `http://localhost:3000/api/credit-repair/negotiate/${negotiationId}`,
         {
-          method: 'PUT',
-          body: { status: 'accepted', version: 2 },
-        }
+          method: "PUT",
+          body: { status: "accepted", version: 2 },
+        },
       );
       const acceptResponse = await updateNegotiation(acceptRequest, {
         params: Promise.resolve({ id: negotiationId }),
@@ -622,17 +622,17 @@ describe('Credit Repair API - Integration Tests', () => {
 
       expect(acceptResponse.status).toBe(200);
       expect(acceptData.success).toBe(true);
-      expect(acceptData.data.status).toBe('accepted');
+      expect(acceptData.data.status).toBe("accepted");
     });
   });
 
-  describe('Credit Report Upload and Analysis Flow', () => {
-    it('should handle report upload → analysis → quick wins identification', async () => {
-      const reportId = 'report-123';
+  describe("Credit Report Upload and Analysis Flow", () => {
+    it("should handle report upload → analysis → quick wins identification", async () => {
+      const reportId = "report-123";
       const newReport = {
-        bureau: 'experian',
+        bureau: "experian",
         score: 650,
-        reportDate: '2025-01-15',
+        reportDate: "2025-01-15",
         reportData: { accounts: [], inquiries: [] },
       };
 
@@ -646,15 +646,15 @@ describe('Credit Repair API - Integration Tests', () => {
 
       // Step 1: Upload credit report
       (db.creditReports.createCreditReport as jest.Mock).mockResolvedValue(
-        createdReport
+        createdReport,
       );
 
       const uploadRequest = createMockRequest(
-        'http://localhost:3000/api/credit-repair/reports',
+        "http://localhost:3000/api/credit-repair/reports",
         {
-          method: 'POST',
+          method: "POST",
           body: newReport,
-        }
+        },
       );
       const uploadResponse = await uploadReport(uploadRequest);
       const uploadData = await uploadResponse.json();
@@ -666,36 +666,36 @@ describe('Credit Repair API - Integration Tests', () => {
       // Step 2: Get quick wins based on report
       const quickWinsList = [
         {
-          id: 'pay_down_utilization',
-          title: 'Pay Down Credit Card',
-          description: 'Reduce utilization',
+          id: "pay_down_utilization",
+          title: "Pay Down Credit Card",
+          description: "Reduce utilization",
           impact: 50,
-          timeline: '30 days',
+          timeline: "30 days",
           successRate: 95,
           steps: [],
           cost: 0,
         },
         {
-          id: 'dispute_errors',
-          title: 'Dispute Errors',
-          description: 'Fix inaccuracies',
+          id: "dispute_errors",
+          title: "Dispute Errors",
+          description: "Fix inaccuracies",
           impact: 80,
-          timeline: '45 days',
+          timeline: "45 days",
           successRate: 85,
           steps: [],
           cost: 0,
         },
       ];
       (creditRepairService.getQuickWins as jest.Mock).mockResolvedValue(
-        quickWinsList
+        quickWinsList,
       );
       (db.creditRepair.getActions as jest.Mock).mockResolvedValue([]);
       (db.creditRepair.createAction as jest.Mock).mockResolvedValue({
-        id: 'action-1',
+        id: "action-1",
       });
 
       const quickWinsRequest = createMockRequest(
-        'http://localhost:3000/api/credit-repair/quick-wins'
+        "http://localhost:3000/api/credit-repair/quick-wins",
       );
       const quickWinsResponse = await getQuickWins(quickWinsRequest);
       const quickWinsData = await quickWinsResponse.json();
@@ -708,11 +708,11 @@ describe('Credit Repair API - Integration Tests', () => {
       (creditRepairService.calculateImpact as jest.Mock).mockResolvedValue(50);
 
       const impactRequest = createMockRequest(
-        'http://localhost:3000/api/credit-repair/impact',
+        "http://localhost:3000/api/credit-repair/impact",
         {
-          method: 'POST',
-          body: { action: 'pay_down_utilization', data: {} },
-        }
+          method: "POST",
+          body: { action: "pay_down_utilization", data: {} },
+        },
       );
       const impactResponse = await calculateImpact(impactRequest);
       const impactData = await impactResponse.json();
@@ -723,12 +723,12 @@ describe('Credit Repair API - Integration Tests', () => {
     });
   });
 
-  describe('Concurrent Operations', () => {
-    it('should handle multiple simultaneous requests without conflicts', async () => {
+  describe("Concurrent Operations", () => {
+    it("should handle multiple simultaneous requests without conflicts", async () => {
       const card1 = {
-        id: 'card-1',
+        id: "card-1",
         userId: mockUser.id,
-        cardName: 'Card 1',
+        cardName: "Card 1",
         creditLimit: 5000,
         currentBalance: 1000,
         utilization: 20,
@@ -737,9 +737,9 @@ describe('Credit Repair API - Integration Tests', () => {
         updatedAt: new Date(),
       };
       const card2 = {
-        id: 'card-2',
+        id: "card-2",
         userId: mockUser.id,
-        cardName: 'Card 2',
+        cardName: "Card 2",
         creditLimit: 10000,
         currentBalance: 3000,
         utilization: 30,
@@ -748,9 +748,9 @@ describe('Credit Repair API - Integration Tests', () => {
         updatedAt: new Date(),
       };
       const card3 = {
-        id: 'card-3',
+        id: "card-3",
         userId: mockUser.id,
-        cardName: 'Card 3',
+        cardName: "Card 3",
         creditLimit: 15000,
         currentBalance: 5000,
         utilization: 33,
@@ -766,22 +766,22 @@ describe('Credit Repair API - Integration Tests', () => {
 
       // Create 3 cards simultaneously
       const requests = [
-        createMockRequest('http://localhost:3000/api/credit-repair/cards', {
-          method: 'POST',
-          body: { cardName: 'Card 1', creditLimit: 5000, currentBalance: 1000 },
+        createMockRequest("http://localhost:3000/api/credit-repair/cards", {
+          method: "POST",
+          body: { cardName: "Card 1", creditLimit: 5000, currentBalance: 1000 },
         }),
-        createMockRequest('http://localhost:3000/api/credit-repair/cards', {
-          method: 'POST',
+        createMockRequest("http://localhost:3000/api/credit-repair/cards", {
+          method: "POST",
           body: {
-            cardName: 'Card 2',
+            cardName: "Card 2",
             creditLimit: 10000,
             currentBalance: 3000,
           },
         }),
-        createMockRequest('http://localhost:3000/api/credit-repair/cards', {
-          method: 'POST',
+        createMockRequest("http://localhost:3000/api/credit-repair/cards", {
+          method: "POST",
           body: {
-            cardName: 'Card 3',
+            cardName: "Card 3",
             creditLimit: 15000,
             currentBalance: 5000,
           },
@@ -789,7 +789,7 @@ describe('Credit Repair API - Integration Tests', () => {
       ];
 
       const responses = await Promise.all(
-        requests.map((req) => createCard(req))
+        requests.map((req) => createCard(req)),
       );
       const data = await Promise.all(responses.map((res) => res.json()));
 
@@ -799,13 +799,13 @@ describe('Credit Repair API - Integration Tests', () => {
       expect(db.creditCards.createCreditCard).toHaveBeenCalledTimes(3);
     });
 
-    it('should handle concurrent updates with optimistic locking', async () => {
-      const disputeId = 'dispute-123';
+    it("should handle concurrent updates with optimistic locking", async () => {
+      const disputeId = "dispute-123";
       const dispute = {
         id: disputeId,
         userId: mockUser.id,
-        bureau: 'experian',
-        status: 'draft',
+        bureau: "experian",
+        status: "draft",
         version: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -817,22 +817,22 @@ describe('Credit Repair API - Integration Tests', () => {
       const request1 = createMockRequest(
         `http://localhost:3000/api/credit-repair/disputes/${disputeId}`,
         {
-          method: 'PUT',
-          body: { status: 'sent', version: 1 },
-        }
+          method: "PUT",
+          body: { status: "sent", version: 1 },
+        },
       );
       const request2 = createMockRequest(
         `http://localhost:3000/api/credit-repair/disputes/${disputeId}`,
         {
-          method: 'PUT',
-          body: { status: 'under_review', version: 1 },
-        }
+          method: "PUT",
+          body: { status: "under_review", version: 1 },
+        },
       );
 
       // First update succeeds
       (db.disputes.updateDispute as jest.Mock).mockResolvedValueOnce({
         ...dispute,
-        status: 'sent',
+        status: "sent",
         version: 2,
       });
 
@@ -847,8 +847,8 @@ describe('Credit Repair API - Integration Tests', () => {
       // Second update should fail due to version mismatch
       (db.disputes.updateDispute as jest.Mock).mockRejectedValueOnce(
         new Error(
-          'Dispute has been modified by another process. Please refresh and try again.'
-        )
+          "Dispute has been modified by another process. Please refresh and try again.",
+        ),
       );
       const response2 = await updateDispute(request2, {
         params: Promise.resolve({ id: disputeId }),
@@ -856,7 +856,7 @@ describe('Credit Repair API - Integration Tests', () => {
       const data2 = await response2.json();
 
       expect(response2.status).toBe(409);
-      expect(data2.error).toContain('modified by another process');
+      expect(data2.error).toContain("modified by another process");
     });
   });
 });

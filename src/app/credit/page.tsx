@@ -1,10 +1,10 @@
-import Link from 'next/link';
-import type { Metadata } from 'next';
+import Link from "next/link";
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: 'Credit Intelligence | Fynvita',
+  title: "Credit Intelligence | Fynvita",
   description:
-    'AI-powered credit monitoring, dispute automation, and score optimization.',
+    "AI-powered credit monitoring, dispute automation, and score optimization.",
 };
 
 export default function CreditPage() {
@@ -263,13 +263,17 @@ export default function CreditPage() {
               <div className="text-5xl font-semibold text-gray-900 dark:text-white mb-2">
                 30-90
               </div>
-              <p className="text-gray-600 dark:text-slate-300">Days to Results</p>
+              <p className="text-gray-600 dark:text-slate-300">
+                Days to Results
+              </p>
             </div>
             <div>
               <div className="text-5xl font-semibold text-gray-900 dark:text-white mb-2">
                 100+
               </div>
-              <p className="text-gray-600 dark:text-slate-300">Point Increase</p>
+              <p className="text-gray-600 dark:text-slate-300">
+                Point Increase
+              </p>
             </div>
           </div>
         </div>

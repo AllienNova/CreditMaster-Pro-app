@@ -1,9 +1,8 @@
-'use client';
+"use client";
 
-
-import { Icon } from '@/components/ui/Icon';
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { Icon } from "@/components/ui/Icon";
+import { useState } from "react";
+import { motion } from "framer-motion";
 import {
   Map,
   Trophy,
@@ -15,15 +14,15 @@ import {
   Target,
   TrendingUp,
   Calendar,
-} from 'lucide-react';
+} from "lucide-react";
 
 type JourneyPhase =
-  | 'foundation'
-  | 'stability'
-  | 'growth'
-  | 'wealth_building'
-  | 'financial_freedom';
-type WaypointStatus = 'locked' | 'current' | 'completed';
+  | "foundation"
+  | "stability"
+  | "growth"
+  | "wealth_building"
+  | "financial_freedom";
+type WaypointStatus = "locked" | "current" | "completed";
 
 interface Waypoint {
   id: string;
@@ -54,8 +53,8 @@ interface Journey {
 }
 
 const MOCK_JOURNEY: Journey = {
-  journeyName: 'Debt-Free Journey',
-  currentPhase: 'stability',
+  journeyName: "Debt-Free Journey",
+  currentPhase: "stability",
   overallProgress: 35,
   totalWaypoints: 8,
   completedWaypoints: 3,
@@ -63,124 +62,124 @@ const MOCK_JOURNEY: Journey = {
   totalXpEarned: 1550,
   waypoints: [
     {
-      id: '1',
+      id: "1",
       order: 0,
-      status: 'completed',
-      title: 'Starter Emergency Fund',
-      description: 'Save your first $1,000 for emergencies',
+      status: "completed",
+      title: "Starter Emergency Fund",
+      description: "Save your first $1,000 for emergencies",
       icon: "wallet",
-      phase: 'foundation',
+      phase: "foundation",
       xpReward: 500,
       progressPercent: 100,
       requirements: [
-        { description: 'Save $1,000', currentValue: 1000, targetValue: 1000 },
+        { description: "Save $1,000", currentValue: 1000, targetValue: 1000 },
       ],
     },
     {
-      id: '2',
+      id: "2",
       order: 1,
-      status: 'completed',
-      title: 'Budget Master',
-      description: 'Stick to your budget for 30 days',
+      status: "completed",
+      title: "Budget Master",
+      description: "Stick to your budget for 30 days",
       icon: "calculator",
-      phase: 'foundation',
+      phase: "foundation",
       xpReward: 300,
       progressPercent: 100,
       requirements: [
         {
-          description: '30-day budget streak',
+          description: "30-day budget streak",
           currentValue: 30,
           targetValue: 30,
         },
       ],
     },
     {
-      id: '3',
+      id: "3",
       order: 2,
-      status: 'completed',
-      title: 'First Debt Paid',
-      description: 'Pay off your first debt completely',
+      status: "completed",
+      title: "First Debt Paid",
+      description: "Pay off your first debt completely",
       icon: "scale",
-      phase: 'stability',
+      phase: "stability",
       xpReward: 750,
       progressPercent: 100,
       requirements: [
-        { description: 'Pay off 1 debt', currentValue: 1, targetValue: 1 },
+        { description: "Pay off 1 debt", currentValue: 1, targetValue: 1 },
       ],
     },
     {
-      id: '4',
+      id: "4",
       order: 3,
-      status: 'current',
-      title: 'Halfway There',
-      description: 'Pay off 50% of your total debt',
+      status: "current",
+      title: "Halfway There",
+      description: "Pay off 50% of your total debt",
       icon: "scale",
-      phase: 'stability',
+      phase: "stability",
       xpReward: 1000,
       progressPercent: 68,
       requirements: [
-        { description: '50% debt paid', currentValue: 34, targetValue: 50 },
+        { description: "50% debt paid", currentValue: 34, targetValue: 50 },
       ],
     },
     {
-      id: '5',
+      id: "5",
       order: 4,
-      status: 'locked',
-      title: 'Debt Free!',
-      description: 'Eliminate all consumer debt',
+      status: "locked",
+      title: "Debt Free!",
+      description: "Eliminate all consumer debt",
       icon: "scale",
-      phase: 'stability',
+      phase: "stability",
       xpReward: 2000,
       progressPercent: 0,
       requirements: [
-        { description: '100% debt paid', currentValue: 0, targetValue: 100 },
+        { description: "100% debt paid", currentValue: 0, targetValue: 100 },
       ],
     },
     {
-      id: '6',
+      id: "6",
       order: 5,
-      status: 'locked',
-      title: '3-Month Fund',
-      description: 'Save 3 months of expenses',
+      status: "locked",
+      title: "3-Month Fund",
+      description: "Save 3 months of expenses",
       icon: "wallet",
-      phase: 'growth',
+      phase: "growth",
       xpReward: 1500,
       progressPercent: 0,
       requirements: [
         {
-          description: '3 months expenses',
+          description: "3 months expenses",
           currentValue: 0,
           targetValue: 10000,
         },
       ],
     },
     {
-      id: '7',
+      id: "7",
       order: 6,
-      status: 'locked',
-      title: 'First Investment',
-      description: 'Start investing for retirement',
+      status: "locked",
+      title: "First Investment",
+      description: "Start investing for retirement",
       icon: "trending-up",
-      phase: 'wealth_building',
+      phase: "wealth_building",
       xpReward: 1000,
       progressPercent: 0,
       requirements: [
-        { description: 'Invest $1,000', currentValue: 0, targetValue: 1000 },
+        { description: "Invest $1,000", currentValue: 0, targetValue: 1000 },
       ],
     },
     {
-      id: '8',
+      id: "8",
       order: 7,
-      status: 'locked',
-      title: 'Financial Freedom',
-      description: 'Achieve financial independence',
+      status: "locked",
+      title: "Financial Freedom",
+      description: "Achieve financial independence",
       icon: "sparkles",
-      phase: 'financial_freedom',
+      phase: "financial_freedom",
       xpReward: 5000,
       progressPercent: 0,
       requirements: [
         {
-          description: 'Net worth goal achieved',
+          description: "Net worth goal achieved",
           currentValue: 0,
           targetValue: 1,
         },
@@ -190,28 +189,28 @@ const MOCK_JOURNEY: Journey = {
 };
 
 const PHASE_COLORS: Record<JourneyPhase, string> = {
-  foundation: 'from-blue-500 to-blue-600',
-  stability: 'from-green-500 to-emerald-600',
-  growth: 'from-blue-500 to-blue-600',
-  wealth_building: 'from-amber-500 to-orange-600',
-  financial_freedom: 'from-yellow-400 to-yellow-500',
+  foundation: "from-blue-500 to-blue-600",
+  stability: "from-green-500 to-emerald-600",
+  growth: "from-blue-500 to-blue-600",
+  wealth_building: "from-amber-500 to-orange-600",
+  financial_freedom: "from-yellow-400 to-yellow-500",
 };
 
 const PHASE_LABELS: Record<JourneyPhase, string> = {
-  foundation: 'Foundation',
-  stability: 'Stability',
-  growth: 'Growth',
-  wealth_building: 'Wealth Building',
-  financial_freedom: 'Financial Freedom',
+  foundation: "Foundation",
+  stability: "Stability",
+  growth: "Growth",
+  wealth_building: "Wealth Building",
+  financial_freedom: "Financial Freedom",
 };
 
 export default function JourneyPage() {
   const [journey] = useState<Journey>(MOCK_JOURNEY);
   const [selectedWaypoint, setSelectedWaypoint] = useState<Waypoint | null>(
-    null
+    null,
   );
 
-  const currentWaypoint = journey.waypoints.find((w) => w.status === 'current');
+  const currentWaypoint = journey.waypoints.find((w) => w.status === "current");
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8">
@@ -277,7 +276,10 @@ export default function JourneyPage() {
               <div className="bg-white dark:bg-slate-800/20 rounded-xl p-4 min-w-[280px]">
                 <p className="text-white/80 text-sm mb-2">Current Goal</p>
                 <div className="flex items-center gap-3">
-                  <Icon name={currentWaypoint.icon} className="text-3xl inline-block" />
+                  <Icon
+                    name={currentWaypoint.icon}
+                    className="text-3xl inline-block"
+                  />
                   <div>
                     <p className="font-semibold">{currentWaypoint.title}</p>
                     <p className="text-sm text-white/70">
@@ -310,9 +312,9 @@ export default function JourneyPage() {
             {/* Waypoints */}
             <div className="space-y-6">
               {journey.waypoints.map((waypoint, index) => {
-                const isCompleted = waypoint.status === 'completed';
-                const isCurrent = waypoint.status === 'current';
-                const isLocked = waypoint.status === 'locked';
+                const isCompleted = waypoint.status === "completed";
+                const isCurrent = waypoint.status === "current";
+                const isLocked = waypoint.status === "locked";
 
                 return (
                   <motion.div
@@ -320,17 +322,17 @@ export default function JourneyPage() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className={`relative flex items-start gap-4 p-4 rounded-xl cursor-pointer transition-all ${ isCurrent ? 'bg-blue-50 border-2 border-blue-300' : isCompleted ? 'bg-green-50 border border-green-200' : 'bg-gray-50 dark:bg-slate-700/30 border border-gray-200 dark:border-slate-700 opacity-60' }`}
+                    className={`relative flex items-start gap-4 p-4 rounded-xl cursor-pointer transition-all ${isCurrent ? "bg-blue-50 border-2 border-blue-300" : isCompleted ? "bg-green-50 border border-green-200" : "bg-gray-50 dark:bg-slate-700/30 border border-gray-200 dark:border-slate-700 opacity-60"}`}
                     onClick={() => setSelectedWaypoint(waypoint)}
                   >
                     {/* Status Icon */}
                     <div
                       className={`relative z-10 flex items-center justify-center w-12 h-12 rounded-full ${
                         isCompleted
-                          ? 'bg-green-500 text-white'
+                          ? "bg-green-500 text-white"
                           : isCurrent
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-gray-300 dark:bg-slate-600 text-gray-500 dark:text-slate-400'
+                            ? "bg-blue-500 text-white"
+                            : "bg-gray-300 dark:bg-slate-600 text-gray-500 dark:text-slate-400"
                       }`}
                     >
                       {isCompleted ? (
@@ -346,18 +348,18 @@ export default function JourneyPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <h3
-                          className={`font-semibold ${ isLocked ? 'text-gray-400' : 'text-gray-900 dark:text-white' }`}
+                          className={`font-semibold ${isLocked ? "text-gray-400" : "text-gray-900 dark:text-white"}`}
                         >
                           {waypoint.title}
                         </h3>
                         <span
-                          className={`px-2 py-0.5 rounded text-xs font-medium ${ isCompleted ? 'bg-green-100 text-green-700' : isCurrent ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-slate-400' }`}
+                          className={`px-2 py-0.5 rounded text-xs font-medium ${isCompleted ? "bg-green-100 text-green-700" : isCurrent ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-slate-400"}`}
                         >
                           {PHASE_LABELS[waypoint.phase]}
                         </span>
                       </div>
                       <p
-                        className={`text-sm ${isLocked ? 'text-gray-400' : 'text-gray-600 dark:text-slate-400'}`}
+                        className={`text-sm ${isLocked ? "text-gray-400" : "text-gray-600 dark:text-slate-400"}`}
                       >
                         {waypoint.description}
                       </p>
@@ -375,7 +377,7 @@ export default function JourneyPage() {
                           <div className="h-1.5 bg-gray-200 dark:bg-slate-600 rounded-full overflow-hidden">
                             <div
                               className={`h-full rounded-full transition-all ${
-                                isCompleted ? 'bg-green-500' : 'bg-blue-500'
+                                isCompleted ? "bg-green-500" : "bg-blue-500"
                               }`}
                               style={{ width: `${waypoint.progressPercent}%` }}
                             />
@@ -410,7 +412,9 @@ export default function JourneyPage() {
             <p className="text-2xl font-bold text-gray-900 dark:text-white">
               {journey.completedWaypoints}
             </p>
-            <p className="text-sm text-gray-500 dark:text-slate-400">Completed</p>
+            <p className="text-sm text-gray-500 dark:text-slate-400">
+              Completed
+            </p>
           </div>
 
           <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm">
@@ -449,7 +453,9 @@ export default function JourneyPage() {
             <p className="text-2xl font-bold text-gray-900 dark:text-white">
               {journey.overallProgress.toFixed(0)}%
             </p>
-            <p className="text-sm text-gray-500 dark:text-slate-400">Complete</p>
+            <p className="text-sm text-gray-500 dark:text-slate-400">
+              Complete
+            </p>
           </div>
         </div>
       </div>

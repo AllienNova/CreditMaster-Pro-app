@@ -5,11 +5,11 @@
  * Analyzes portfolio asset allocation and provides rebalancing recommendations
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
-import { getAssetAllocationService } from '@/lib/investments/services/AssetAllocationService';
-import { RiskTolerance } from '@/lib/investments/types/asset-allocation.types';
-import { Portfolio } from '@/lib/investments/types/investment.types';
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { getAssetAllocationService } from "@/lib/investments/services/AssetAllocationService";
+import { RiskTolerance } from "@/lib/investments/types/asset-allocation.types";
+import { Portfolio } from "@/lib/investments/types/investment.types";
 
 // Request validation schema
 const AllocationAnalysisRequestSchema = z.object({
@@ -32,11 +32,11 @@ const AllocationAnalysisRequestSchema = z.object({
     updatedAt: z.string().or(z.date()),
   }),
   riskTolerance: z.enum([
-    'very_conservative',
-    'conservative',
-    'moderate',
-    'aggressive',
-    'very_aggressive',
+    "very_conservative",
+    "conservative",
+    "moderate",
+    "aggressive",
+    "very_aggressive",
   ]),
   constraints: z
     .object({
@@ -63,10 +63,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Invalid request data',
+          error: "Invalid request data",
           details: validationResult.error.errors,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     const analysis = await allocationService.analyzeAllocation(
       portfolioData,
       riskTolerance as RiskTolerance,
-      constraints
+      constraints,
     );
 
     return NextResponse.json({
@@ -103,14 +103,17 @@ export async function POST(request: NextRequest) {
       data: analysis,
     });
   } catch (error) {
-    console.error('Asset allocation analysis error:', error);
+    console.error("Asset allocation analysis error:", error);
 
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to analyze asset allocation',
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to analyze asset allocation",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -119,13 +122,15 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const riskTolerance = searchParams.get('riskTolerance');
+    const riskTolerance = searchParams.get("riskTolerance");
 
     const allocationService = getAssetAllocationService();
 
     if (riskTolerance) {
       // Get specific model
-      const model = allocationService.getAllocationModel(riskTolerance as RiskTolerance);
+      const model = allocationService.getAllocationModel(
+        riskTolerance as RiskTolerance,
+      );
       return NextResponse.json({
         success: true,
         data: model,
@@ -146,15 +151,17 @@ export async function GET(request: NextRequest) {
       data: models,
     });
   } catch (error) {
-    console.error('Get allocation models error:', error);
+    console.error("Get allocation models error:", error);
 
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to get allocation models',
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to get allocation models",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-

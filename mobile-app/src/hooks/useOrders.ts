@@ -4,24 +4,24 @@
  * React hook for mobile app to manage orders.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type OrderSide = 'buy' | 'sell';
-export type OrderType = 'market' | 'limit' | 'stop' | 'stop_limit';
+export type OrderSide = "buy" | "sell";
+export type OrderType = "market" | "limit" | "stop" | "stop_limit";
 export type OrderStatus =
-  | 'pending'
-  | 'submitted'
-  | 'accepted'
-  | 'partial'
-  | 'filled'
-  | 'cancelled'
-  | 'rejected'
-  | 'expired'
-  | 'error';
+  | "pending"
+  | "submitted"
+  | "accepted"
+  | "partial"
+  | "filled"
+  | "cancelled"
+  | "rejected"
+  | "expired"
+  | "error";
 
 export interface Order {
   id: string;
@@ -49,7 +49,7 @@ export interface OrderRequest {
   stopPrice?: number;
   stopLossPrice?: number;
   takeProfitPrice?: number;
-  timeInForce?: 'day' | 'gtc';
+  timeInForce?: "day" | "gtc";
 }
 
 export interface OrdersState {
@@ -85,10 +85,10 @@ export function useOrders(config: UseOrdersConfig = {}) {
   // Fetch orders
   const fetchOrders = useCallback(async () => {
     try {
-      const response = await fetch('/api/trading/orders');
+      const response = await fetch("/api/trading/orders");
 
       if (!response.ok) {
-        throw new Error('Failed to fetch orders');
+        throw new Error("Failed to fetch orders");
       }
 
       const data = await response.json();
@@ -108,7 +108,7 @@ export function useOrders(config: UseOrdersConfig = {}) {
       setState((prev) => ({
         ...prev,
         isLoading: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
       }));
     }
   }, []);
@@ -116,16 +116,16 @@ export function useOrders(config: UseOrdersConfig = {}) {
   // Create order
   const createOrder = useCallback(
     async (
-      request: OrderRequest
+      request: OrderRequest,
     ): Promise<{ success: boolean; order?: Order; error?: string }> => {
       try {
-        const response = await fetch('/api/trading/orders', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const response = await fetch("/api/trading/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            action: 'create',
+            action: "create",
             ...request,
-            timeInForce: request.timeInForce || 'day',
+            timeInForce: request.timeInForce || "day",
           }),
         });
 
@@ -144,23 +144,23 @@ export function useOrders(config: UseOrdersConfig = {}) {
         return {
           success: false,
           error:
-            data.validation?.errors?.[0]?.message || 'Failed to create order',
+            data.validation?.errors?.[0]?.message || "Failed to create order",
         };
       } catch (error) {
         return {
           success: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: error instanceof Error ? error.message : "Unknown error",
         };
       }
     },
-    []
+    [],
   );
 
   // Cancel order
   const cancelOrder = useCallback(async (orderId: string): Promise<boolean> => {
     try {
       const response = await fetch(`/api/trading/orders?id=${orderId}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       const data = await response.json();
@@ -171,7 +171,7 @@ export function useOrders(config: UseOrdersConfig = {}) {
           ...prev,
           openOrders: prev.openOrders.filter((o) => o.id !== orderId),
           orders: prev.orders.map((o) =>
-            o.id === orderId ? { ...o, status: 'cancelled' as OrderStatus } : o
+            o.id === orderId ? { ...o, status: "cancelled" as OrderStatus } : o,
           ),
         }));
         return true;
@@ -186,8 +186,8 @@ export function useOrders(config: UseOrdersConfig = {}) {
   // Cancel all orders
   const cancelAllOrders = useCallback(async (): Promise<number> => {
     try {
-      const response = await fetch('/api/trading/orders?all=true', {
-        method: 'DELETE',
+      const response = await fetch("/api/trading/orders?all=true", {
+        method: "DELETE",
       });
 
       const data = await response.json();
@@ -200,8 +200,8 @@ export function useOrders(config: UseOrdersConfig = {}) {
           openOrders: [],
           orders: prev.orders.map((o) =>
             openOrderIds.has(o.id)
-              ? { ...o, status: 'cancelled' as OrderStatus }
-              : o
+              ? { ...o, status: "cancelled" as OrderStatus }
+              : o,
           ),
         }));
         return cancelledCount;
@@ -218,7 +218,7 @@ export function useOrders(config: UseOrdersConfig = {}) {
     (orderId: string): Order | undefined => {
       return state.orders.find((o) => o.id === orderId);
     },
-    [state.orders]
+    [state.orders],
   );
 
   // Initial fetch and polling

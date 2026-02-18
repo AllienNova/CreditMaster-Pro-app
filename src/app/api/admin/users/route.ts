@@ -1,12 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { z } from 'zod';
-import { requireRole, createAuthResponse } from '@/lib/security/auth-middleware';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+import { z } from "zod";
+import {
+  requireRole,
+  createAuthResponse,
+} from "@/lib/security/auth-middleware";
 
 function getSupabaseClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 }
 
@@ -14,24 +17,42 @@ function getSupabaseClient() {
 const AdminUserListSchema = z.object({
   page: z.coerce.number().int().min(1).max(10000).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
-  search: z.string().max(200).regex(/^[a-zA-Z0-9@._\s-]*$/, 'Invalid search characters').default(''),
-  status: z.string().max(50).regex(/^[a-zA-Z_]*$/, 'Invalid status value').default(''),
-  plan: z.string().max(50).regex(/^[a-zA-Z_]*$/, 'Invalid plan value').default(''),
+  search: z
+    .string()
+    .max(200)
+    .regex(/^[a-zA-Z0-9@._\s-]*$/, "Invalid search characters")
+    .default(""),
+  status: z
+    .string()
+    .max(50)
+    .regex(/^[a-zA-Z_]*$/, "Invalid status value")
+    .default(""),
+  plan: z
+    .string()
+    .max(50)
+    .regex(/^[a-zA-Z_]*$/, "Invalid plan value")
+    .default(""),
 });
 
 // Strict schema for PATCH — only allow safe profile fields, never role/permissions
 const AdminUserUpdateSchema = z.object({
-  userId: z.string().uuid('Invalid user ID format'),
-  updates: z.object({
-    full_name: z.string().min(1).max(200).optional(),
-    avatar_url: z.string().url().max(2000).optional(),
-    phone: z.string().max(20).regex(/^[+\d\s()-]*$/, 'Invalid phone format').optional(),
-    status: z.enum(['active', 'suspended', 'pending']).optional(),
-  }).strict(),
+  userId: z.string().uuid("Invalid user ID format"),
+  updates: z
+    .object({
+      full_name: z.string().min(1).max(200).optional(),
+      avatar_url: z.string().url().max(2000).optional(),
+      phone: z
+        .string()
+        .max(20)
+        .regex(/^[+\d\s()-]*$/, "Invalid phone format")
+        .optional(),
+      status: z.enum(["active", "suspended", "pending"]).optional(),
+    })
+    .strict(),
 });
 
 export async function GET(request: NextRequest) {
-  const authResult = await requireRole(request, 'admin');
+  const authResult = await requireRole(request, "admin");
   if (!authResult.authenticated || !authResult.user) {
     return createAuthResponse(authResult);
   }
@@ -40,30 +61,36 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const params = AdminUserListSchema.parse({
-      page: searchParams.get('page') ?? undefined,
-      limit: searchParams.get('limit') ?? undefined,
-      search: searchParams.get('search') ?? undefined,
-      status: searchParams.get('status') ?? undefined,
-      plan: searchParams.get('plan') ?? undefined,
+      page: searchParams.get("page") ?? undefined,
+      limit: searchParams.get("limit") ?? undefined,
+      search: searchParams.get("search") ?? undefined,
+      status: searchParams.get("status") ?? undefined,
+      plan: searchParams.get("plan") ?? undefined,
     });
 
     const offset = (params.page - 1) * params.limit;
 
     let query = supabase
-      .from('profiles')
-      .select('*, subscriptions(plan, status)', { count: 'exact' });
+      .from("profiles")
+      .select("*, subscriptions(plan, status)", { count: "exact" });
 
     if (params.search) {
-      query = query.or(`full_name.ilike.%${params.search}%,email.ilike.%${params.search}%`);
+      query = query.or(
+        `full_name.ilike.%${params.search}%,email.ilike.%${params.search}%`,
+      );
     }
 
     if (params.status) {
-      query = query.eq('status', params.status);
+      query = query.eq("status", params.status);
     }
 
-    const { data: users, count, error } = await query
+    const {
+      data: users,
+      count,
+      error,
+    } = await query
       .range(offset, offset + params.limit - 1)
-      .order('created_at', { ascending: false });
+      .order("created_at", { ascending: false });
 
     if (error) throw error;
 
@@ -72,18 +99,24 @@ export async function GET(request: NextRequest) {
       total: count || 0,
       page: params.page,
       limit: params.limit,
-      totalPages: Math.ceil((count || 0) / params.limit)
+      totalPages: Math.ceil((count || 0) / params.limit),
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid query parameters', details: error.errors }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid query parameters", details: error.errors },
+        { status: 400 },
+      );
     }
-    return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch users" },
+      { status: 500 },
+    );
   }
 }
 
 export async function PATCH(request: NextRequest) {
-  const authResult = await requireRole(request, 'admin');
+  const authResult = await requireRole(request, "admin");
   if (!authResult.authenticated || !authResult.user) {
     return createAuthResponse(authResult);
   }
@@ -95,9 +128,9 @@ export async function PATCH(request: NextRequest) {
 
     // Only pass validated/whitelisted fields to the DB
     const { data, error } = await supabase
-      .from('profiles')
+      .from("profiles")
       .update(updates)
-      .eq('id', userId)
+      .eq("id", userId)
       .select()
       .single();
 
@@ -106,9 +139,14 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ user: data });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid request body', details: error.errors }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid request body", details: error.errors },
+        { status: 400 },
+      );
     }
-    return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to update user" },
+      { status: 500 },
+    );
   }
 }
-

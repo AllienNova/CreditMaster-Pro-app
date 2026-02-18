@@ -9,20 +9,20 @@
 // =============================================================================
 
 export type OfferCategory =
-  | 'credit_card'
-  | 'personal_loan'
-  | 'mortgage'
-  | 'student_loan'
-  | 'auto_loan'
-  | 'insurance'
-  | 'investment'
-  | 'savings'
-  | 'checking'
-  | 'debt_consolidation';
+  | "credit_card"
+  | "personal_loan"
+  | "mortgage"
+  | "student_loan"
+  | "auto_loan"
+  | "insurance"
+  | "investment"
+  | "savings"
+  | "checking"
+  | "debt_consolidation";
 
-export type OfferStatus = 'active' | 'paused' | 'expired' | 'archived';
+export type OfferStatus = "active" | "paused" | "expired" | "archived";
 
-export type EligibilityResult = 'eligible' | 'ineligible' | 'needs_review';
+export type EligibilityResult = "eligible" | "ineligible" | "needs_review";
 
 export interface Offer {
   id: string;
@@ -51,7 +51,7 @@ export interface Offer {
 
   // Tracking
   affiliateOfferId?: string;
-  commissionType: 'cpa' | 'cpl' | 'revenue_share';
+  commissionType: "cpa" | "cpl" | "revenue_share";
   commissionValue: number;
 
   // Display
@@ -77,7 +77,7 @@ export interface Offer {
 }
 
 export interface AprInfo {
-  type: 'fixed' | 'variable';
+  type: "fixed" | "variable";
   min: number;
   max?: number;
   introRate?: number;
@@ -96,7 +96,7 @@ export interface FeeInfo {
 }
 
 export interface RewardInfo {
-  type: 'cashback' | 'points' | 'miles' | 'none';
+  type: "cashback" | "points" | "miles" | "none";
   earnRate: number; // Percentage or points per dollar
   signupBonus?: number;
   signupBonusSpend?: number;
@@ -125,14 +125,14 @@ export interface LoanAmountInfo {
 // =============================================================================
 
 export type DisclosureType =
-  | 'advertiser_disclosure'
-  | 'affiliate_disclosure'
-  | 'rate_disclosure'
-  | 'terms_conditions'
-  | 'privacy_policy'
-  | 'fcra_disclosure'
-  | 'ecoa_disclosure'
-  | 'tila_disclosure';
+  | "advertiser_disclosure"
+  | "affiliate_disclosure"
+  | "rate_disclosure"
+  | "terms_conditions"
+  | "privacy_policy"
+  | "fcra_disclosure"
+  | "ecoa_disclosure"
+  | "tila_disclosure";
 
 export interface Disclosure {
   id: string;
@@ -157,7 +157,7 @@ export interface OfferDisclosure {
   shortText: string;
   fullText: string;
   mustDisplay: boolean;
-  displayLocation: 'top' | 'bottom' | 'inline' | 'modal';
+  displayLocation: "top" | "bottom" | "inline" | "modal";
 }
 
 // =============================================================================
@@ -171,7 +171,7 @@ export interface UserProfile {
   residency?: string;
   existingProducts?: string[];
   preferences?: {
-    rewardsType?: 'cashback' | 'points' | 'miles';
+    rewardsType?: "cashback" | "points" | "miles";
     noAnnualFee?: boolean;
     lowApr?: boolean;
     signupBonus?: boolean;
@@ -204,7 +204,7 @@ export interface MatchRequest {
 export interface ComparisonField {
   key: string;
   label: string;
-  type: 'number' | 'percentage' | 'currency' | 'text' | 'boolean';
+  type: "number" | "percentage" | "currency" | "text" | "boolean";
   higherIsBetter?: boolean;
 }
 
@@ -265,7 +265,7 @@ export interface CreateOfferInput {
   residencyRequirements?: string[];
   ageRequirement?: { min: number; max?: number };
   affiliateOfferId?: string;
-  commissionType: 'cpa' | 'cpl' | 'revenue_share';
+  commissionType: "cpa" | "cpl" | "revenue_share";
   commissionValue: number;
   rank?: number;
   featured?: boolean;
@@ -297,7 +297,7 @@ export interface UpdateOfferInput {
   residencyRequirements?: string[];
   ageRequirement?: { min: number; max?: number };
   affiliateOfferId?: string;
-  commissionType?: 'cpa' | 'cpl' | 'revenue_share';
+  commissionType?: "cpa" | "cpl" | "revenue_share";
   commissionValue?: number;
   rank?: number;
   featured?: boolean;

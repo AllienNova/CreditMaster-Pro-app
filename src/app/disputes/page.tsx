@@ -1,10 +1,10 @@
-import { Suspense } from 'react';
-import DisputeList from '@/components/disputes/DisputeList';
-import DisputeStats from '@/components/disputes/DisputeStats';
+import { Suspense } from "react";
+import DisputeList from "@/components/disputes/DisputeList";
+import DisputeStats from "@/components/disputes/DisputeStats";
 
 export const metadata = {
-  title: 'Disputes | Fynvita',
-  description: 'Manage your credit report disputes',
+  title: "Disputes | Fynvita",
+  description: "Manage your credit report disputes",
 };
 
 export default function DisputesPage() {
@@ -13,7 +13,9 @@ export default function DisputesPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Credit Disputes</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Credit Disputes
+          </h1>
           <p className="mt-2 text-gray-600 dark:text-slate-300">
             Track and manage your credit report disputes across all three
             bureaus
@@ -39,7 +41,10 @@ function StatsLoadingSkeleton() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
       {[1, 2, 3, 4].map((i) => (
-        <div key={i} className="bg-white dark:bg-slate-800 rounded-lg shadow p-6 animate-pulse">
+        <div
+          key={i}
+          className="bg-white dark:bg-slate-800 rounded-lg shadow p-6 animate-pulse"
+        >
           <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/2 mb-4"></div>
           <div className="h-8 bg-gray-200 dark:bg-slate-700 rounded w-3/4"></div>
         </div>

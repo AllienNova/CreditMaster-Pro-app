@@ -4,13 +4,13 @@
  * POST /api/investments/portfolio-analysis - Get comprehensive portfolio analysis
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { z } from 'zod';
-import { getInvestmentAnalysisEngine } from '@/lib/investments/services/InvestmentAnalysisEngine';
-import { getMarketDataService } from '@/lib/investments/services/MarketDataService';
-import { getAnalysisCacheService } from '@/lib/investments/services/AnalysisCacheService';
-import type { PortfolioHolding } from '@/lib/investments/services/PortfolioAnalysisService';
+import { NextRequest, NextResponse } from "next/server";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { z } from "zod";
+import { getInvestmentAnalysisEngine } from "@/lib/investments/services/InvestmentAnalysisEngine";
+import { getMarketDataService } from "@/lib/investments/services/MarketDataService";
+import { getAnalysisCacheService } from "@/lib/investments/services/AnalysisCacheService";
+import type { PortfolioHolding } from "@/lib/investments/services/PortfolioAnalysisService";
 
 // ============================================================================
 // VALIDATION SCHEMAS
@@ -21,19 +21,31 @@ const HoldingSchema = z.object({
   shares: z.number().positive(),
   averageCost: z.number().positive(),
   currentPrice: z.number().positive().optional(),
-  assetClass: z.enum(['stock', 'etf', 'bond', 'crypto', 'commodity', 'cash']).optional().default('stock'),
+  assetClass: z
+    .enum(["stock", "etf", "bond", "crypto", "commodity", "cash"])
+    .optional()
+    .default("stock"),
   sector: z.string().optional(),
 });
 
 const PortfolioAnalysisRequestSchema = z.object({
-  portfolioId: z.string().optional().default('default'),
-  holdings: z.array(HoldingSchema).min(1, 'At least one holding required'),
-  timeframe: z.enum(['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w', '1M']).optional().default('1d'),
-  userProfile: z.object({
-    riskTolerance: z.enum(['conservative', 'moderate', 'aggressive']).optional(),
-    investmentHorizon: z.enum(['short_term', 'medium_term', 'long_term']).optional(),
-    preferredAssetClasses: z.array(z.string()).optional(),
-  }).optional(),
+  portfolioId: z.string().optional().default("default"),
+  holdings: z.array(HoldingSchema).min(1, "At least one holding required"),
+  timeframe: z
+    .enum(["1m", "5m", "15m", "30m", "1h", "4h", "1d", "1w", "1M"])
+    .optional()
+    .default("1d"),
+  userProfile: z
+    .object({
+      riskTolerance: z
+        .enum(["conservative", "moderate", "aggressive"])
+        .optional(),
+      investmentHorizon: z
+        .enum(["short_term", "medium_term", "long_term"])
+        .optional(),
+      preferredAssetClasses: z.array(z.string()).optional(),
+    })
+    .optional(),
 });
 
 type PortfolioAnalysisRequest = z.infer<typeof PortfolioAnalysisRequestSchema>;
@@ -50,8 +62,8 @@ export async function POST(request: NextRequest) {
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
       );
     }
 
@@ -63,19 +75,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Invalid request',
+          error: "Invalid request",
           details: validationResult.error.errors,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    const { portfolioId, holdings, timeframe, userProfile } = validationResult.data;
+    const { portfolioId, holdings, timeframe, userProfile } =
+      validationResult.data;
 
     // Check cache first
     const cacheService = getAnalysisCacheService();
     const cacheKey = { portfolioId, holdings, timeframe, userProfile };
-    const cachedAnalysis = cacheService.get('portfolio-analysis', cacheKey);
+    const cachedAnalysis = cacheService.get("portfolio-analysis", cacheKey);
 
     if (cachedAnalysis) {
       return NextResponse.json({
@@ -95,7 +108,13 @@ export async function POST(request: NextRequest) {
     // Fetch current prices and historical data for all holdings
     const historicalDataMap = new Map<
       string,
-      { close: number; high: number; low: number; volume: number; timestamp: Date }[]
+      {
+        close: number;
+        high: number;
+        low: number;
+        volume: number;
+        timestamp: Date;
+      }[]
     >();
 
     const updatedHoldings: PortfolioHolding[] = [];
@@ -113,12 +132,12 @@ export async function POST(request: NextRequest) {
         const historicalData = await marketDataService.getHistoricalData(
           holding.symbol,
           timeframe,
-          50 // 50 periods for portfolio analysis
+          50, // 50 periods for portfolio analysis
         );
 
         if (historicalData && historicalData.length > 0) {
           // Convert CandleData to expected format
-          const convertedData = historicalData.map(candle => ({
+          const convertedData = historicalData.map((candle) => ({
             close: candle.close,
             high: candle.high,
             low: candle.low,
@@ -154,12 +173,15 @@ export async function POST(request: NextRequest) {
     const analysisEngine = getInvestmentAnalysisEngine();
 
     // Convert userProfile to expected format (if provided)
-    const convertedUserProfile = userProfile ? {
-      riskTolerance: userProfile.riskTolerance || 'moderate' as const,
-      investmentHorizon: userProfile.investmentHorizon || 'medium_term' as const,
-      portfolioSize: 100000, // Default value
-      goals: [{ type: 'growth' as const }],
-    } : undefined;
+    const convertedUserProfile = userProfile
+      ? {
+          riskTolerance: userProfile.riskTolerance || ("moderate" as const),
+          investmentHorizon:
+            userProfile.investmentHorizon || ("medium_term" as const),
+          portfolioSize: 100000, // Default value
+          goals: [{ type: "growth" as const }],
+        }
+      : undefined;
 
     // Perform comprehensive portfolio analysis
     const analysis = await analysisEngine.analyzePortfolio(
@@ -169,7 +191,7 @@ export async function POST(request: NextRequest) {
       {
         timeframe,
         userProfile: convertedUserProfile,
-      }
+      },
     );
 
     const processingTime = Date.now() - startTime;
@@ -190,7 +212,12 @@ export async function POST(request: NextRequest) {
     };
 
     // Cache the result (3 minutes TTL for portfolio analysis)
-    cacheService.set('portfolio-analysis', cacheKey, responseData, 3 * 60 * 1000);
+    cacheService.set(
+      "portfolio-analysis",
+      cacheKey,
+      responseData,
+      3 * 60 * 1000,
+    );
 
     return NextResponse.json({
       success: true,
@@ -203,13 +230,13 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Portfolio analysis error:', error);
+    console.error("Portfolio analysis error:", error);
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Internal server error',
+        error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -220,56 +247,58 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   return NextResponse.json({
-    endpoint: '/api/investments/portfolio-analysis',
-    method: 'POST',
-    description: 'Get comprehensive portfolio analysis with individual holding analysis',
+    endpoint: "/api/investments/portfolio-analysis",
+    method: "POST",
+    description:
+      "Get comprehensive portfolio analysis with individual holding analysis",
     features: [
-      'Portfolio metrics (total value, returns, diversification)',
-      'Individual holding comprehensive analysis',
-      'Portfolio health score',
-      'Risk assessment',
-      'Position adjustment recommendations',
-      'Rebalancing suggestions',
+      "Portfolio metrics (total value, returns, diversification)",
+      "Individual holding comprehensive analysis",
+      "Portfolio health score",
+      "Risk assessment",
+      "Position adjustment recommendations",
+      "Rebalancing suggestions",
     ],
     requestBody: {
-      portfolioId: 'string (optional) - Portfolio identifier',
+      portfolioId: "string (optional) - Portfolio identifier",
       holdings: [
         {
-          symbol: 'string (required) - Stock symbol',
-          shares: 'number (required) - Number of shares',
-          averageCost: 'number (required) - Average cost per share',
-          currentPrice: 'number (optional) - Current price (auto-fetched if not provided)',
-          assetClass: 'stock | etf | bond | crypto | commodity | cash',
-          sector: 'string (optional) - Sector classification',
+          symbol: "string (required) - Stock symbol",
+          shares: "number (required) - Number of shares",
+          averageCost: "number (required) - Average cost per share",
+          currentPrice:
+            "number (optional) - Current price (auto-fetched if not provided)",
+          assetClass: "stock | etf | bond | crypto | commodity | cash",
+          sector: "string (optional) - Sector classification",
         },
       ],
-      timeframe: 'string (optional) - 1m, 5m, 15m, 30m, 1h, 4h, 1d, 1w, 1M (default: 1d)',
+      timeframe:
+        "string (optional) - 1m, 5m, 15m, 30m, 1h, 4h, 1d, 1w, 1M (default: 1d)",
       userProfile: {
-        riskTolerance: 'conservative | moderate | aggressive',
-        investmentHorizon: 'short_term | medium_term | long_term',
-        preferredAssetClasses: 'string[]',
+        riskTolerance: "conservative | moderate | aggressive",
+        investmentHorizon: "short_term | medium_term | long_term",
+        preferredAssetClasses: "string[]",
       },
     },
     example: {
-      portfolioId: 'my-portfolio',
+      portfolioId: "my-portfolio",
       holdings: [
         {
-          symbol: 'AAPL',
+          symbol: "AAPL",
           shares: 10,
           averageCost: 150.0,
-          assetClass: 'stock',
-          sector: 'Technology',
+          assetClass: "stock",
+          sector: "Technology",
         },
         {
-          symbol: 'MSFT',
+          symbol: "MSFT",
           shares: 5,
           averageCost: 250.0,
-          assetClass: 'stock',
-          sector: 'Technology',
+          assetClass: "stock",
+          sector: "Technology",
         },
       ],
-      timeframe: '1d',
+      timeframe: "1d",
     },
   });
 }
-

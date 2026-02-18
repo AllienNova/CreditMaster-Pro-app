@@ -1,6 +1,6 @@
 /**
  * Credit Repair Dashboard Component
- * 
+ *
  * Main hub showing:
  * - Credit Repair Score (0-100)
  * - Quick Wins (30-day actions)
@@ -10,21 +10,25 @@
  * - Progress tracking
  */
 
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import type { CreditRepairScore, QuickWin } from '@/lib/credit-repair';
+import { useState, useEffect } from "react";
+import type { CreditRepairScore, QuickWin } from "@/lib/credit-repair";
 
 interface CreditRepairDashboardProps {
   userId?: string;
 }
 
-export default function CreditRepairDashboard({ userId }: CreditRepairDashboardProps) {
+export default function CreditRepairDashboard({
+  userId,
+}: CreditRepairDashboardProps) {
   const [score, setScore] = useState<CreditRepairScore | null>(null);
   const [quickWins, setQuickWins] = useState<QuickWin[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'quick' | 'medium' | 'long'>('quick');
+  const [activeTab, setActiveTab] = useState<"quick" | "medium" | "long">(
+    "quick",
+  );
 
   useEffect(() => {
     fetchData();
@@ -36,18 +40,18 @@ export default function CreditRepairDashboard({ userId }: CreditRepairDashboardP
 
     try {
       // Fetch credit repair score
-      const scoreResponse = await fetch('/api/credit-repair/score');
-      if (!scoreResponse.ok) throw new Error('Failed to fetch score');
+      const scoreResponse = await fetch("/api/credit-repair/score");
+      if (!scoreResponse.ok) throw new Error("Failed to fetch score");
       const scoreData = await scoreResponse.json();
       setScore(scoreData.data);
 
       // Fetch quick wins
-      const quickWinsResponse = await fetch('/api/credit-repair/quick-wins');
-      if (!quickWinsResponse.ok) throw new Error('Failed to fetch quick wins');
+      const quickWinsResponse = await fetch("/api/credit-repair/quick-wins");
+      if (!quickWinsResponse.ok) throw new Error("Failed to fetch quick wins");
       const quickWinsData = await quickWinsResponse.json();
       setQuickWins(quickWinsData.data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setLoading(false);
     }
@@ -58,7 +62,9 @@ export default function CreditRepairDashboard({ userId }: CreditRepairDashboardP
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-slate-300">Analyzing your credit repair opportunities...</p>
+          <p className="mt-4 text-gray-600 dark:text-slate-300">
+            Analyzing your credit repair opportunities...
+          </p>
         </div>
       </div>
     );
@@ -97,7 +103,8 @@ export default function CreditRepairDashboard({ userId }: CreditRepairDashboardP
       <div className="bg-gradient-to-r from-blue-600 to-blue-600 rounded-lg p-8 text-white">
         <h1 className="text-3xl font-bold mb-2">Credit Repair Accelerator</h1>
         <p className="text-blue-100">
-          Real strategies that actually work - 3-5x faster than traditional methods
+          Real strategies that actually work - 3-5x faster than traditional
+          methods
         </p>
       </div>
 
@@ -109,13 +116,23 @@ export default function CreditRepairDashboard({ userId }: CreditRepairDashboardP
             <div className="relative pt-1">
               <div className="flex mb-2 items-center justify-between">
                 <div>
-                  <span className="text-5xl font-bold text-blue-600">{score.score}</span>
-                  <span className="text-2xl text-gray-500 dark:text-slate-400">/100</span>
+                  <span className="text-5xl font-bold text-blue-600">
+                    {score.score}
+                  </span>
+                  <span className="text-2xl text-gray-500 dark:text-slate-400">
+                    /100
+                  </span>
                 </div>
                 <div className="text-right">
-                  <div className="text-sm text-gray-600 dark:text-slate-300">Estimated Impact</div>
-                  <div className="text-3xl font-bold text-green-600">+{score.estimatedImpact}</div>
-                  <div className="text-sm text-gray-500 dark:text-slate-400">points possible</div>
+                  <div className="text-sm text-gray-600 dark:text-slate-300">
+                    Estimated Impact
+                  </div>
+                  <div className="text-3xl font-bold text-green-600">
+                    +{score.estimatedImpact}
+                  </div>
+                  <div className="text-sm text-gray-500 dark:text-slate-400">
+                    points possible
+                  </div>
                 </div>
               </div>
               <div className="overflow-hidden h-4 mb-4 text-xs flex rounded bg-gray-200 dark:bg-slate-700">
@@ -126,7 +143,8 @@ export default function CreditRepairDashboard({ userId }: CreditRepairDashboardP
               </div>
             </div>
             <p className="text-gray-600 dark:text-slate-300">
-              Timeline to reach your goal: <span className="font-semibold">{score.timeline}</span>
+              Timeline to reach your goal:{" "}
+              <span className="font-semibold">{score.timeline}</span>
             </p>
           </div>
         </div>
@@ -134,12 +152,19 @@ export default function CreditRepairDashboard({ userId }: CreditRepairDashboardP
         {/* Score Factors */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {score.factors.map((factor) => (
-            <div key={factor.category} className="bg-gray-50 dark:bg-slate-900 rounded-lg p-4">
+            <div
+              key={factor.category}
+              className="bg-gray-50 dark:bg-slate-900 rounded-lg p-4"
+            >
               <div className="text-sm text-gray-600 dark:text-slate-300 capitalize mb-1">
-                {factor.category.replace('_', ' ')}
+                {factor.category.replace("_", " ")}
               </div>
-              <div className="text-2xl font-bold text-gray-800 dark:text-slate-100">{factor.currentScore}</div>
-              <div className="text-sm text-green-600">+{factor.impact} points possible</div>
+              <div className="text-2xl font-bold text-gray-800 dark:text-slate-100">
+                {factor.currentScore}
+              </div>
+              <div className="text-sm text-green-600">
+                +{factor.impact} points possible
+              </div>
               <div className="mt-2 h-2 bg-gray-200 dark:bg-slate-700 rounded">
                 <div
                   style={{ width: `${factor.currentScore}%` }}
@@ -156,8 +181,8 @@ export default function CreditRepairDashboard({ userId }: CreditRepairDashboardP
         <div className="border-b border-gray-200 dark:border-slate-700">
           <nav className="flex -mb-px">
             <button
-              onClick={() => setActiveTab('quick')}
-              className={`px-6 py-4 text-sm font-medium border-b-2 ${ activeTab === 'quick' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-slate-200 dark:text-slate-200 hover:border-gray-300 dark:border-slate-600' }`}
+              onClick={() => setActiveTab("quick")}
+              className={`px-6 py-4 text-sm font-medium border-b-2 ${activeTab === "quick" ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-slate-200 dark:text-slate-200 hover:border-gray-300 dark:border-slate-600"}`}
             >
               Quick Wins (30 days)
               <span className="ml-2 px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
@@ -165,60 +190,92 @@ export default function CreditRepairDashboard({ userId }: CreditRepairDashboardP
               </span>
             </button>
             <button
-              onClick={() => setActiveTab('medium')}
-              className={`px-6 py-4 text-sm font-medium border-b-2 ${ activeTab === 'medium' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-slate-200 dark:text-slate-200 hover:border-gray-300 dark:border-slate-600' }`}
+              onClick={() => setActiveTab("medium")}
+              className={`px-6 py-4 text-sm font-medium border-b-2 ${activeTab === "medium" ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-slate-200 dark:text-slate-200 hover:border-gray-300 dark:border-slate-600"}`}
             >
               Medium-Term (60-90 days)
               <span className="ml-2 px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">
-                {score.opportunities.filter(o => o.timeline.includes('60') || o.timeline.includes('90')).length}
+                {
+                  score.opportunities.filter(
+                    (o) =>
+                      o.timeline.includes("60") || o.timeline.includes("90"),
+                  ).length
+                }
               </span>
             </button>
             <button
-              onClick={() => setActiveTab('long')}
-              className={`px-6 py-4 text-sm font-medium border-b-2 ${ activeTab === 'long' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-slate-200 dark:text-slate-200 hover:border-gray-300 dark:border-slate-600' }`}
+              onClick={() => setActiveTab("long")}
+              className={`px-6 py-4 text-sm font-medium border-b-2 ${activeTab === "long" ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-slate-200 dark:text-slate-200 hover:border-gray-300 dark:border-slate-600"}`}
             >
               Long-Term (6+ months)
               <span className="ml-2 px-2 py-1 text-xs bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100 rounded-full">
-                {score.opportunities.filter(o => o.timeline.includes('month')).length}
+                {
+                  score.opportunities.filter((o) =>
+                    o.timeline.includes("month"),
+                  ).length
+                }
               </span>
             </button>
           </nav>
         </div>
 
         {/* Quick Wins Tab */}
-        {activeTab === 'quick' && (
+        {activeTab === "quick" && (
           <div className="p-6 space-y-4">
             <div className="mb-4">
-              <h3 className="text-xl font-bold text-gray-800 dark:text-slate-100">Quick Wins - Start Here!</h3>
-              <p className="text-gray-600 dark:text-slate-300">These actions can improve your score in 30 days or less</p>
+              <h3 className="text-xl font-bold text-gray-800 dark:text-slate-100">
+                Quick Wins - Start Here!
+              </h3>
+              <p className="text-gray-600 dark:text-slate-300">
+                These actions can improve your score in 30 days or less
+              </p>
             </div>
             {quickWins.map((win) => (
-              <div key={win.id} className="border border-gray-200 dark:border-slate-700 rounded-lg p-4 hover:shadow-md transition-shadow">
+              <div
+                key={win.id}
+                className="border border-gray-200 dark:border-slate-700 rounded-lg p-4 hover:shadow-md transition-shadow"
+              >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h4 className="text-lg font-semibold text-gray-800 dark:text-slate-100">{win.title}</h4>
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        win.difficulty === 'easy' ? 'bg-green-100 text-green-800' :
-                        win.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
+                      <h4 className="text-lg font-semibold text-gray-800 dark:text-slate-100">
+                        {win.title}
+                      </h4>
+                      <span
+                        className={`px-2 py-1 text-xs rounded-full ${
+                          win.difficulty === "easy"
+                            ? "bg-green-100 text-green-800"
+                            : win.difficulty === "medium"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-red-100 text-red-800"
+                        }`}
+                      >
                         {win.difficulty}
                       </span>
                     </div>
-                    <p className="text-gray-600 dark:text-slate-300 mb-3">{win.description}</p>
+                    <p className="text-gray-600 dark:text-slate-300 mb-3">
+                      {win.description}
+                    </p>
                     <div className="flex items-center gap-4 text-sm">
                       <div className="flex items-center gap-1">
-                        <span className="text-green-600 font-semibold">+{win.impact} points</span>
+                        <span className="text-green-600 font-semibold">
+                          +{win.impact} points
+                        </span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <span className="text-gray-500 dark:text-slate-400">⏱️ {win.timeline}</span>
+                        <span className="text-gray-500 dark:text-slate-400">
+                          ⏱️ {win.timeline}
+                        </span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <span className="text-gray-500 dark:text-slate-400">${win.cost}</span>
+                        <span className="text-gray-500 dark:text-slate-400">
+                          ${win.cost}
+                        </span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <span className="text-blue-600">{win.successRate}% success rate</span>
+                        <span className="text-blue-600">
+                          {win.successRate}% success rate
+                        </span>
                       </div>
                     </div>
                     <div className="mt-3">
@@ -244,22 +301,41 @@ export default function CreditRepairDashboard({ userId }: CreditRepairDashboardP
         )}
 
         {/* Medium-Term Tab */}
-        {activeTab === 'medium' && (
+        {activeTab === "medium" && (
           <div className="p-6 space-y-4">
             <div className="mb-4">
-              <h3 className="text-xl font-bold text-gray-800 dark:text-slate-100">Medium-Term Strategy</h3>
-              <p className="text-gray-600 dark:text-slate-300">Actions that take 60-90 days but have high impact</p>
+              <h3 className="text-xl font-bold text-gray-800 dark:text-slate-100">
+                Medium-Term Strategy
+              </h3>
+              <p className="text-gray-600 dark:text-slate-300">
+                Actions that take 60-90 days but have high impact
+              </p>
             </div>
             {score.opportunities
-              .filter(o => o.timeline.includes('60') || o.timeline.includes('90'))
+              .filter(
+                (o) => o.timeline.includes("60") || o.timeline.includes("90"),
+              )
               .map((opp) => (
-                <div key={opp.id} className="border border-gray-200 dark:border-slate-700 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-gray-800 dark:text-slate-100 mb-2">{opp.title}</h4>
-                  <p className="text-gray-600 dark:text-slate-300 mb-3">{opp.description}</p>
+                <div
+                  key={opp.id}
+                  className="border border-gray-200 dark:border-slate-700 rounded-lg p-4"
+                >
+                  <h4 className="text-lg font-semibold text-gray-800 dark:text-slate-100 mb-2">
+                    {opp.title}
+                  </h4>
+                  <p className="text-gray-600 dark:text-slate-300 mb-3">
+                    {opp.description}
+                  </p>
                   <div className="flex items-center gap-4 text-sm">
-                    <span className="text-green-600 font-semibold">+{opp.impact} points</span>
-                    <span className="text-gray-500 dark:text-slate-400">⏱️ {opp.timeline}</span>
-                    <span className="text-blue-600">{opp.successRate}% success</span>
+                    <span className="text-green-600 font-semibold">
+                      +{opp.impact} points
+                    </span>
+                    <span className="text-gray-500 dark:text-slate-400">
+                      ⏱️ {opp.timeline}
+                    </span>
+                    <span className="text-blue-600">
+                      {opp.successRate}% success
+                    </span>
                   </div>
                 </div>
               ))}
@@ -267,22 +343,39 @@ export default function CreditRepairDashboard({ userId }: CreditRepairDashboardP
         )}
 
         {/* Long-Term Tab */}
-        {activeTab === 'long' && (
+        {activeTab === "long" && (
           <div className="p-6 space-y-4">
             <div className="mb-4">
-              <h3 className="text-xl font-bold text-gray-800 dark:text-slate-100">Long-Term Building</h3>
-              <p className="text-gray-600 dark:text-slate-300">Use these only after cleaning up your report</p>
+              <h3 className="text-xl font-bold text-gray-800 dark:text-slate-100">
+                Long-Term Building
+              </h3>
+              <p className="text-gray-600 dark:text-slate-300">
+                Use these only after cleaning up your report
+              </p>
             </div>
             {score.opportunities
-              .filter(o => o.timeline.includes('month'))
+              .filter((o) => o.timeline.includes("month"))
               .map((opp) => (
-                <div key={opp.id} className="border border-gray-200 dark:border-slate-700 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-gray-800 dark:text-slate-100 mb-2">{opp.title}</h4>
-                  <p className="text-gray-600 dark:text-slate-300 mb-3">{opp.description}</p>
+                <div
+                  key={opp.id}
+                  className="border border-gray-200 dark:border-slate-700 rounded-lg p-4"
+                >
+                  <h4 className="text-lg font-semibold text-gray-800 dark:text-slate-100 mb-2">
+                    {opp.title}
+                  </h4>
+                  <p className="text-gray-600 dark:text-slate-300 mb-3">
+                    {opp.description}
+                  </p>
                   <div className="flex items-center gap-4 text-sm">
-                    <span className="text-green-600 font-semibold">+{opp.impact} points</span>
-                    <span className="text-gray-500 dark:text-slate-400">⏱️ {opp.timeline}</span>
-                    <span className="text-gray-500 dark:text-slate-400">${opp.cost}</span>
+                    <span className="text-green-600 font-semibold">
+                      +{opp.impact} points
+                    </span>
+                    <span className="text-gray-500 dark:text-slate-400">
+                      ⏱️ {opp.timeline}
+                    </span>
+                    <span className="text-gray-500 dark:text-slate-400">
+                      ${opp.cost}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -292,4 +385,3 @@ export default function CreditRepairDashboard({ userId }: CreditRepairDashboardP
     </div>
   );
 }
-

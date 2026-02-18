@@ -9,22 +9,22 @@
  * - Glide path adjustments
  */
 
-import { GoalType, RiskTolerance } from './GoalInvestmentService';
+import { GoalType, RiskTolerance } from "./GoalInvestmentService";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 export type AssetClass =
-  | 'us_stocks'
-  | 'intl_stocks'
-  | 'emerging_markets'
-  | 'bonds'
-  | 'tips'
-  | 'real_estate'
-  | 'commodities'
-  | 'cash'
-  | 'alternatives';
+  | "us_stocks"
+  | "intl_stocks"
+  | "emerging_markets"
+  | "bonds"
+  | "tips"
+  | "real_estate"
+  | "commodities"
+  | "cash"
+  | "alternatives";
 
 export interface AssetAllocation {
   assetClass: AssetClass;
@@ -48,10 +48,10 @@ export interface AllocationRecommendation {
 
 export interface UserRiskProfile {
   riskTolerance: RiskTolerance;
-  investmentExperience: 'beginner' | 'intermediate' | 'advanced';
-  incomeStability: 'stable' | 'variable' | 'uncertain';
+  investmentExperience: "beginner" | "intermediate" | "advanced";
+  incomeStability: "stable" | "variable" | "uncertain";
   emergencyFundMonths: number;
-  debtLevel: 'none' | 'low' | 'moderate' | 'high';
+  debtLevel: "none" | "low" | "moderate" | "high";
   age?: number;
 }
 
@@ -65,10 +65,10 @@ export interface GoalContext {
 }
 
 export interface MarketConditions {
-  equityValuation: 'undervalued' | 'fair' | 'overvalued';
-  interestRateEnvironment: 'rising' | 'stable' | 'falling';
-  inflationOutlook: 'low' | 'moderate' | 'high';
-  economicCycle: 'expansion' | 'peak' | 'contraction' | 'trough';
+  equityValuation: "undervalued" | "fair" | "overvalued";
+  interestRateEnvironment: "rising" | "stable" | "falling";
+  inflationOutlook: "low" | "moderate" | "high";
+  economicCycle: "expansion" | "peak" | "contraction" | "trough";
 }
 
 export interface GlidePath {
@@ -91,7 +91,7 @@ const ASSET_CLASS_INFO: Record<
   }
 > = {
   us_stocks: {
-    name: 'US Stocks',
+    name: "US Stocks",
     expectedReturn: 0.1,
     volatility: 0.16,
     correlation: {
@@ -106,13 +106,13 @@ const ASSET_CLASS_INFO: Record<
       alternatives: 0.5,
     },
     defaultEtf: {
-      ticker: 'VTI',
-      name: 'Vanguard Total Stock Market ETF',
+      ticker: "VTI",
+      name: "Vanguard Total Stock Market ETF",
       expenseRatio: 0.0003,
     },
   },
   intl_stocks: {
-    name: 'International Stocks',
+    name: "International Stocks",
     expectedReturn: 0.08,
     volatility: 0.18,
     correlation: {
@@ -127,13 +127,13 @@ const ASSET_CLASS_INFO: Record<
       alternatives: 0.55,
     },
     defaultEtf: {
-      ticker: 'VXUS',
-      name: 'Vanguard Total International Stock ETF',
+      ticker: "VXUS",
+      name: "Vanguard Total International Stock ETF",
       expenseRatio: 0.0007,
     },
   },
   emerging_markets: {
-    name: 'Emerging Markets',
+    name: "Emerging Markets",
     expectedReturn: 0.11,
     volatility: 0.24,
     correlation: {
@@ -148,13 +148,13 @@ const ASSET_CLASS_INFO: Record<
       alternatives: 0.6,
     },
     defaultEtf: {
-      ticker: 'VWO',
-      name: 'Vanguard FTSE Emerging Markets ETF',
+      ticker: "VWO",
+      name: "Vanguard FTSE Emerging Markets ETF",
       expenseRatio: 0.0008,
     },
   },
   bonds: {
-    name: 'US Bonds',
+    name: "US Bonds",
     expectedReturn: 0.04,
     volatility: 0.05,
     correlation: {
@@ -169,13 +169,13 @@ const ASSET_CLASS_INFO: Record<
       alternatives: 0.2,
     },
     defaultEtf: {
-      ticker: 'BND',
-      name: 'Vanguard Total Bond Market ETF',
+      ticker: "BND",
+      name: "Vanguard Total Bond Market ETF",
       expenseRatio: 0.0003,
     },
   },
   tips: {
-    name: 'Inflation-Protected Bonds',
+    name: "Inflation-Protected Bonds",
     expectedReturn: 0.035,
     volatility: 0.06,
     correlation: {
@@ -190,13 +190,13 @@ const ASSET_CLASS_INFO: Record<
       alternatives: 0.15,
     },
     defaultEtf: {
-      ticker: 'VTIP',
-      name: 'Vanguard Short-Term Inflation-Protected Securities ETF',
+      ticker: "VTIP",
+      name: "Vanguard Short-Term Inflation-Protected Securities ETF",
       expenseRatio: 0.0004,
     },
   },
   real_estate: {
-    name: 'Real Estate (REITs)',
+    name: "Real Estate (REITs)",
     expectedReturn: 0.08,
     volatility: 0.18,
     correlation: {
@@ -211,13 +211,13 @@ const ASSET_CLASS_INFO: Record<
       alternatives: 0.45,
     },
     defaultEtf: {
-      ticker: 'VNQ',
-      name: 'Vanguard Real Estate ETF',
+      ticker: "VNQ",
+      name: "Vanguard Real Estate ETF",
       expenseRatio: 0.0012,
     },
   },
   commodities: {
-    name: 'Commodities',
+    name: "Commodities",
     expectedReturn: 0.05,
     volatility: 0.2,
     correlation: {
@@ -232,13 +232,13 @@ const ASSET_CLASS_INFO: Record<
       alternatives: 0.4,
     },
     defaultEtf: {
-      ticker: 'GSG',
-      name: 'iShares S&P GSCI Commodity-Indexed Trust',
+      ticker: "GSG",
+      name: "iShares S&P GSCI Commodity-Indexed Trust",
       expenseRatio: 0.0075,
     },
   },
   cash: {
-    name: 'Cash & Money Market',
+    name: "Cash & Money Market",
     expectedReturn: 0.025,
     volatility: 0.01,
     correlation: {
@@ -253,13 +253,13 @@ const ASSET_CLASS_INFO: Record<
       alternatives: 0.05,
     },
     defaultEtf: {
-      ticker: 'SGOV',
-      name: 'iShares 0-3 Month Treasury Bond ETF',
+      ticker: "SGOV",
+      name: "iShares 0-3 Month Treasury Bond ETF",
       expenseRatio: 0.0005,
     },
   },
   alternatives: {
-    name: 'Alternatives',
+    name: "Alternatives",
     expectedReturn: 0.07,
     volatility: 0.12,
     correlation: {
@@ -274,8 +274,8 @@ const ASSET_CLASS_INFO: Record<
       alternatives: 1,
     },
     defaultEtf: {
-      ticker: 'QAI',
-      name: 'IQ Hedge Multi-Strategy Tracker ETF',
+      ticker: "QAI",
+      name: "IQ Hedge Multi-Strategy Tracker ETF",
       expenseRatio: 0.0079,
     },
   },
@@ -296,7 +296,7 @@ export class SmartAllocationService {
   generateRecommendation(
     goal: GoalContext,
     userProfile: UserRiskProfile,
-    marketConditions?: MarketConditions
+    marketConditions?: MarketConditions,
   ): AllocationRecommendation {
     const yearsToGoal = this.calculateYearsToGoal(goal.targetDate);
 
@@ -304,7 +304,7 @@ export class SmartAllocationService {
     const effectiveRisk = this.determineEffectiveRisk(
       userProfile,
       yearsToGoal,
-      goal
+      goal,
     );
 
     // Get base allocation for risk level
@@ -317,7 +317,7 @@ export class SmartAllocationService {
     if (marketConditions) {
       allocations = this.adjustForMarketConditions(
         allocations,
-        marketConditions
+        marketConditions,
       );
     }
 
@@ -332,7 +332,7 @@ export class SmartAllocationService {
       goal,
       userProfile,
       yearsToGoal,
-      effectiveRisk
+      effectiveRisk,
     );
 
     // Generate warnings if any
@@ -340,7 +340,7 @@ export class SmartAllocationService {
       goal,
       userProfile,
       allocations,
-      yearsToGoal
+      yearsToGoal,
     );
 
     return {
@@ -359,7 +359,7 @@ export class SmartAllocationService {
    */
   generateGlidePath(
     goal: GoalContext,
-    userProfile: UserRiskProfile
+    userProfile: UserRiskProfile,
   ): GlidePath[] {
     const totalYears = this.calculateYearsToGoal(goal.targetDate);
     const glidePath: GlidePath[] = [];
@@ -373,7 +373,7 @@ export class SmartAllocationService {
 
       const recommendation = this.generateRecommendation(
         simulatedGoal,
-        userProfile
+        userProfile,
       );
 
       glidePath.push({
@@ -392,7 +392,7 @@ export class SmartAllocationService {
   private determineEffectiveRisk(
     profile: UserRiskProfile,
     yearsToGoal: number,
-    goal: GoalContext
+    goal: GoalContext,
   ): RiskTolerance {
     let riskScore = this.riskToleranceToScore(profile.riskTolerance);
 
@@ -406,17 +406,17 @@ export class SmartAllocationService {
     }
 
     // Adjust for experience
-    if (profile.investmentExperience === 'beginner') {
+    if (profile.investmentExperience === "beginner") {
       riskScore = Math.max(1, riskScore - 1);
     }
 
     // Adjust for income stability
-    if (profile.incomeStability === 'uncertain') {
+    if (profile.incomeStability === "uncertain") {
       riskScore = Math.max(1, riskScore - 1);
     }
 
     // Adjust for debt level
-    if (profile.debtLevel === 'high') {
+    if (profile.debtLevel === "high") {
       riskScore = Math.max(1, riskScore - 1);
     }
 
@@ -444,19 +444,19 @@ export class SmartAllocationService {
 
   private riskToleranceToScore(risk: RiskTolerance): number {
     switch (risk) {
-      case 'conservative':
+      case "conservative":
         return 2;
-      case 'moderate':
+      case "moderate":
         return 3;
-      case 'aggressive':
+      case "aggressive":
         return 4;
     }
   }
 
   private scoreToRiskTolerance(score: number): RiskTolerance {
-    if (score <= 2) return 'conservative';
-    if (score <= 3) return 'moderate';
-    return 'aggressive';
+    if (score <= 2) return "conservative";
+    if (score <= 3) return "moderate";
+    return "aggressive";
   }
 
   // ==========================================================================
@@ -465,137 +465,137 @@ export class SmartAllocationService {
 
   private getBaseAllocation(
     risk: RiskTolerance,
-    yearsToGoal: number
+    yearsToGoal: number,
   ): AssetAllocation[] {
     const allocations: AssetAllocation[] = [];
 
-    if (risk === 'conservative') {
+    if (risk === "conservative") {
       allocations.push(
         {
-          assetClass: 'bonds',
+          assetClass: "bonds",
           targetPercent: 50,
           minPercent: 40,
           maxPercent: 60,
-          ...this.getEtfInfo('bonds'),
+          ...this.getEtfInfo("bonds"),
         },
         {
-          assetClass: 'us_stocks',
+          assetClass: "us_stocks",
           targetPercent: 25,
           minPercent: 15,
           maxPercent: 35,
-          ...this.getEtfInfo('us_stocks'),
+          ...this.getEtfInfo("us_stocks"),
         },
         {
-          assetClass: 'tips',
+          assetClass: "tips",
           targetPercent: 10,
           minPercent: 5,
           maxPercent: 15,
-          ...this.getEtfInfo('tips'),
+          ...this.getEtfInfo("tips"),
         },
         {
-          assetClass: 'cash',
+          assetClass: "cash",
           targetPercent: 10,
           minPercent: 5,
           maxPercent: 20,
-          ...this.getEtfInfo('cash'),
+          ...this.getEtfInfo("cash"),
         },
         {
-          assetClass: 'intl_stocks',
+          assetClass: "intl_stocks",
           targetPercent: 5,
           minPercent: 0,
           maxPercent: 10,
-          ...this.getEtfInfo('intl_stocks'),
-        }
+          ...this.getEtfInfo("intl_stocks"),
+        },
       );
-    } else if (risk === 'moderate') {
+    } else if (risk === "moderate") {
       allocations.push(
         {
-          assetClass: 'us_stocks',
+          assetClass: "us_stocks",
           targetPercent: 40,
           minPercent: 30,
           maxPercent: 50,
-          ...this.getEtfInfo('us_stocks'),
+          ...this.getEtfInfo("us_stocks"),
         },
         {
-          assetClass: 'bonds',
+          assetClass: "bonds",
           targetPercent: 25,
           minPercent: 20,
           maxPercent: 35,
-          ...this.getEtfInfo('bonds'),
+          ...this.getEtfInfo("bonds"),
         },
         {
-          assetClass: 'intl_stocks',
+          assetClass: "intl_stocks",
           targetPercent: 15,
           minPercent: 10,
           maxPercent: 20,
-          ...this.getEtfInfo('intl_stocks'),
+          ...this.getEtfInfo("intl_stocks"),
         },
         {
-          assetClass: 'real_estate',
+          assetClass: "real_estate",
           targetPercent: 10,
           minPercent: 5,
           maxPercent: 15,
-          ...this.getEtfInfo('real_estate'),
+          ...this.getEtfInfo("real_estate"),
         },
         {
-          assetClass: 'emerging_markets',
+          assetClass: "emerging_markets",
           targetPercent: 5,
           minPercent: 0,
           maxPercent: 10,
-          ...this.getEtfInfo('emerging_markets'),
+          ...this.getEtfInfo("emerging_markets"),
         },
         {
-          assetClass: 'cash',
+          assetClass: "cash",
           targetPercent: 5,
           minPercent: 2,
           maxPercent: 10,
-          ...this.getEtfInfo('cash'),
-        }
+          ...this.getEtfInfo("cash"),
+        },
       );
     } else {
       allocations.push(
         {
-          assetClass: 'us_stocks',
+          assetClass: "us_stocks",
           targetPercent: 50,
           minPercent: 40,
           maxPercent: 60,
-          ...this.getEtfInfo('us_stocks'),
+          ...this.getEtfInfo("us_stocks"),
         },
         {
-          assetClass: 'intl_stocks',
+          assetClass: "intl_stocks",
           targetPercent: 20,
           minPercent: 15,
           maxPercent: 25,
-          ...this.getEtfInfo('intl_stocks'),
+          ...this.getEtfInfo("intl_stocks"),
         },
         {
-          assetClass: 'emerging_markets',
+          assetClass: "emerging_markets",
           targetPercent: 10,
           minPercent: 5,
           maxPercent: 15,
-          ...this.getEtfInfo('emerging_markets'),
+          ...this.getEtfInfo("emerging_markets"),
         },
         {
-          assetClass: 'real_estate',
+          assetClass: "real_estate",
           targetPercent: 10,
           minPercent: 5,
           maxPercent: 15,
-          ...this.getEtfInfo('real_estate'),
+          ...this.getEtfInfo("real_estate"),
         },
         {
-          assetClass: 'alternatives',
+          assetClass: "alternatives",
           targetPercent: 5,
           minPercent: 0,
           maxPercent: 10,
-          ...this.getEtfInfo('alternatives'),
+          ...this.getEtfInfo("alternatives"),
         },
         {
-          assetClass: 'bonds',
+          assetClass: "bonds",
           targetPercent: 5,
           minPercent: 0,
           maxPercent: 15,
-          ...this.getEtfInfo('bonds'),
-        }
+          ...this.getEtfInfo("bonds"),
+        },
       );
     }
 
@@ -604,35 +604,35 @@ export class SmartAllocationService {
 
   private adjustForGoalType(
     allocations: AssetAllocation[],
-    goalType: GoalType
+    goalType: GoalType,
   ): AssetAllocation[] {
     const adjusted = [...allocations];
 
     switch (goalType) {
-      case 'retirement':
+      case "retirement":
         // Add more stocks for long-term growth
-        this.adjustAssetPercent(adjusted, 'us_stocks', 5);
-        this.adjustAssetPercent(adjusted, 'bonds', -5);
+        this.adjustAssetPercent(adjusted, "us_stocks", 5);
+        this.adjustAssetPercent(adjusted, "bonds", -5);
         break;
 
-      case 'house':
+      case "house":
         // More conservative, protect downpayment
-        this.adjustAssetPercent(adjusted, 'bonds', 10);
-        this.adjustAssetPercent(adjusted, 'us_stocks', -10);
+        this.adjustAssetPercent(adjusted, "bonds", 10);
+        this.adjustAssetPercent(adjusted, "us_stocks", -10);
         break;
 
-      case 'emergency':
+      case "emergency":
         // Very conservative, high liquidity
-        this.adjustAssetPercent(adjusted, 'cash', 15);
-        this.adjustAssetPercent(adjusted, 'bonds', 10);
-        this.adjustAssetPercent(adjusted, 'us_stocks', -20);
-        this.adjustAssetPercent(adjusted, 'intl_stocks', -5);
+        this.adjustAssetPercent(adjusted, "cash", 15);
+        this.adjustAssetPercent(adjusted, "bonds", 10);
+        this.adjustAssetPercent(adjusted, "us_stocks", -20);
+        this.adjustAssetPercent(adjusted, "intl_stocks", -5);
         break;
 
-      case 'education':
+      case "education":
         // Consider tax-advantaged accounts
-        this.adjustAssetPercent(adjusted, 'bonds', 5);
-        this.adjustAssetPercent(adjusted, 'us_stocks', -5);
+        this.adjustAssetPercent(adjusted, "bonds", 5);
+        this.adjustAssetPercent(adjusted, "us_stocks", -5);
         break;
     }
 
@@ -641,33 +641,33 @@ export class SmartAllocationService {
 
   private adjustForMarketConditions(
     allocations: AssetAllocation[],
-    conditions: MarketConditions
+    conditions: MarketConditions,
   ): AssetAllocation[] {
     const adjusted = [...allocations];
 
     // Adjust for equity valuation
-    if (conditions.equityValuation === 'overvalued') {
-      this.adjustAssetPercent(adjusted, 'us_stocks', -5);
-      this.adjustAssetPercent(adjusted, 'bonds', 3);
-      this.adjustAssetPercent(adjusted, 'cash', 2);
-    } else if (conditions.equityValuation === 'undervalued') {
-      this.adjustAssetPercent(adjusted, 'us_stocks', 5);
-      this.adjustAssetPercent(adjusted, 'cash', -5);
+    if (conditions.equityValuation === "overvalued") {
+      this.adjustAssetPercent(adjusted, "us_stocks", -5);
+      this.adjustAssetPercent(adjusted, "bonds", 3);
+      this.adjustAssetPercent(adjusted, "cash", 2);
+    } else if (conditions.equityValuation === "undervalued") {
+      this.adjustAssetPercent(adjusted, "us_stocks", 5);
+      this.adjustAssetPercent(adjusted, "cash", -5);
     }
 
     // Adjust for interest rates
-    if (conditions.interestRateEnvironment === 'rising') {
-      this.adjustAssetPercent(adjusted, 'bonds', -5);
-      this.adjustAssetPercent(adjusted, 'tips', 3);
-      this.adjustAssetPercent(adjusted, 'cash', 2);
+    if (conditions.interestRateEnvironment === "rising") {
+      this.adjustAssetPercent(adjusted, "bonds", -5);
+      this.adjustAssetPercent(adjusted, "tips", 3);
+      this.adjustAssetPercent(adjusted, "cash", 2);
     }
 
     // Adjust for inflation
-    if (conditions.inflationOutlook === 'high') {
-      this.adjustAssetPercent(adjusted, 'tips', 5);
-      this.adjustAssetPercent(adjusted, 'real_estate', 3);
-      this.adjustAssetPercent(adjusted, 'commodities', 2);
-      this.adjustAssetPercent(adjusted, 'bonds', -10);
+    if (conditions.inflationOutlook === "high") {
+      this.adjustAssetPercent(adjusted, "tips", 5);
+      this.adjustAssetPercent(adjusted, "real_estate", 3);
+      this.adjustAssetPercent(adjusted, "commodities", 2);
+      this.adjustAssetPercent(adjusted, "bonds", -10);
     }
 
     return adjusted;
@@ -676,19 +676,19 @@ export class SmartAllocationService {
   private adjustAssetPercent(
     allocations: AssetAllocation[],
     assetClass: AssetClass,
-    delta: number
+    delta: number,
   ): void {
     const asset = allocations.find((a) => a.assetClass === assetClass);
     if (asset) {
       asset.targetPercent = Math.max(
         asset.minPercent,
-        Math.min(asset.maxPercent, asset.targetPercent + delta)
+        Math.min(asset.maxPercent, asset.targetPercent + delta),
       );
     }
   }
 
   private normalizeAllocations(
-    allocations: AssetAllocation[]
+    allocations: AssetAllocation[],
   ): AssetAllocation[] {
     const total = allocations.reduce((sum, a) => sum + a.targetPercent, 0);
 
@@ -716,7 +716,7 @@ export class SmartAllocationService {
     // Expected return
     const expectedReturn = weights.reduce(
       (sum, w, i) => sum + w * assets[i].expectedReturn,
-      0
+      0,
     );
 
     // Portfolio variance (simplified)
@@ -747,7 +747,7 @@ export class SmartAllocationService {
 
   private calculateRiskScore(risk: RiskTolerance, yearsToGoal: number): number {
     const baseScore =
-      risk === 'conservative' ? 30 : risk === 'moderate' ? 55 : 80;
+      risk === "conservative" ? 30 : risk === "moderate" ? 55 : 80;
 
     // Adjust for timeline
     if (yearsToGoal <= 2) {
@@ -767,35 +767,35 @@ export class SmartAllocationService {
     goal: GoalContext,
     profile: UserRiskProfile,
     yearsToGoal: number,
-    effectiveRisk: RiskTolerance
+    effectiveRisk: RiskTolerance,
   ): string[] {
     const rationale: string[] = [];
 
     rationale.push(
-      `Based on your ${profile.riskTolerance} risk tolerance and ${yearsToGoal.toFixed(1)} years until your goal.`
+      `Based on your ${profile.riskTolerance} risk tolerance and ${yearsToGoal.toFixed(1)} years until your goal.`,
     );
 
     if (yearsToGoal <= 3) {
       rationale.push(
-        'Short timeline prioritizes capital preservation over growth.'
+        "Short timeline prioritizes capital preservation over growth.",
       );
     } else if (yearsToGoal >= 10) {
       rationale.push(
-        'Long timeline allows for higher equity exposure to capture growth.'
+        "Long timeline allows for higher equity exposure to capture growth.",
       );
     }
 
-    if (goal.goalType === 'retirement') {
+    if (goal.goalType === "retirement") {
       rationale.push(
-        'Retirement goals benefit from long-term equity growth with gradual de-risking.'
+        "Retirement goals benefit from long-term equity growth with gradual de-risking.",
       );
-    } else if (goal.goalType === 'emergency') {
-      rationale.push('Emergency funds prioritize liquidity and stability.');
+    } else if (goal.goalType === "emergency") {
+      rationale.push("Emergency funds prioritize liquidity and stability.");
     }
 
-    if (profile.incomeStability === 'uncertain') {
+    if (profile.incomeStability === "uncertain") {
       rationale.push(
-        'Income uncertainty suggests maintaining higher cash reserves.'
+        "Income uncertainty suggests maintaining higher cash reserves.",
       );
     }
 
@@ -806,37 +806,37 @@ export class SmartAllocationService {
     goal: GoalContext,
     profile: UserRiskProfile,
     allocations: AssetAllocation[],
-    yearsToGoal: number
+    yearsToGoal: number,
   ): string[] {
     const warnings: string[] = [];
 
     if (profile.emergencyFundMonths < 3) {
       warnings.push(
-        'Consider building an emergency fund before aggressive investing.'
+        "Consider building an emergency fund before aggressive investing.",
       );
     }
 
-    if (profile.debtLevel === 'high') {
+    if (profile.debtLevel === "high") {
       warnings.push(
-        'High debt levels may impact your ability to maintain contributions.'
+        "High debt levels may impact your ability to maintain contributions.",
       );
     }
 
     const stockPercent = allocations
       .filter((a) =>
-        ['us_stocks', 'intl_stocks', 'emerging_markets'].includes(a.assetClass)
+        ["us_stocks", "intl_stocks", "emerging_markets"].includes(a.assetClass),
       )
       .reduce((sum, a) => sum + a.targetPercent, 0);
 
     if (stockPercent > 70 && yearsToGoal < 5) {
       warnings.push(
-        'High equity exposure with short timeline carries significant risk.'
+        "High equity exposure with short timeline carries significant risk.",
       );
     }
 
     if (goal.currentAmount / goal.targetAmount < 0.1 && yearsToGoal < 3) {
       warnings.push(
-        'You may need to increase contributions to reach your goal on time.'
+        "You may need to increase contributions to reach your goal on time.",
       );
     }
 
@@ -864,7 +864,7 @@ export class SmartAllocationService {
     const now = new Date();
     return Math.max(
       0,
-      (targetDate.getTime() - now.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
+      (targetDate.getTime() - now.getTime()) / (365.25 * 24 * 60 * 60 * 1000),
     );
   }
 

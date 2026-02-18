@@ -3,9 +3,9 @@
  * Animated loading placeholders
  */
 
-import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated, ViewStyle } from 'react-native';
-import { lightTheme as theme } from '../constants/theme';
+import React, { useEffect, useRef } from "react";
+import { View, StyleSheet, Animated, ViewStyle } from "react-native";
+import { lightTheme as theme } from "../constants/theme";
 
 interface SkeletonProps {
   width?: number | string;
@@ -15,7 +15,7 @@ interface SkeletonProps {
 }
 
 export function Skeleton({
-  width = '100%',
+  width = "100%",
   height = 20,
   borderRadius = 4,
   style,
@@ -35,7 +35,7 @@ export function Skeleton({
           duration: 800,
           useNativeDriver: true,
         }),
-      ])
+      ]),
     );
     animation.start();
     return () => animation.stop();
@@ -46,10 +46,10 @@ export function Skeleton({
       style={[
         styles.skeleton,
         {
-          width: typeof width === 'string' ? width as `${number}%` : width,
+          width: typeof width === "string" ? (width as `${number}%`) : width,
           height,
           borderRadius,
-          opacity
+          opacity,
         },
         style,
       ]}
@@ -58,13 +58,19 @@ export function Skeleton({
 }
 
 // Pre-built skeleton components
-export function SkeletonText({ lines = 3, lastLineWidth = '60%' }: { lines?: number; lastLineWidth?: string }) {
+export function SkeletonText({
+  lines = 3,
+  lastLineWidth = "60%",
+}: {
+  lines?: number;
+  lastLineWidth?: string;
+}) {
   return (
     <View>
       {Array.from({ length: lines }).map((_, index) => (
         <Skeleton
           key={index}
-          width={index === lines - 1 ? lastLineWidth : '100%'}
+          width={index === lines - 1 ? lastLineWidth : "100%"}
           height={14}
           style={{ marginBottom: index < lines - 1 ? 8 : 0 }}
         />
@@ -128,21 +134,21 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   cardHeader: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: theme.spacing.md,
   },
   cardHeaderText: {
     flex: 1,
     marginLeft: theme.spacing.md,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   gaugeContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   listItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: theme.spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,

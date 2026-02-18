@@ -2,16 +2,16 @@
  * Tests for OfflineIndicator Component
  */
 
-import { render, screen, waitFor } from '@testing-library/react';
-import { OfflineIndicator } from '../OfflineIndicator';
-import { useOnline } from '@/hooks/useOnline';
+import { render, screen, waitFor } from "@testing-library/react";
+import { OfflineIndicator } from "../OfflineIndicator";
+import { useOnline } from "@/hooks/useOnline";
 
 // Mock useOnline hook
-jest.mock('@/hooks/useOnline');
+jest.mock("@/hooks/useOnline");
 
 const mockUseOnline = useOnline as jest.MockedFunction<typeof useOnline>;
 
-describe('OfflineIndicator', () => {
+describe("OfflineIndicator", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers();
@@ -22,7 +22,7 @@ describe('OfflineIndicator', () => {
     jest.useRealTimers();
   });
 
-  it('should not render when online and never was offline', () => {
+  it("should not render when online and never was offline", () => {
     mockUseOnline.mockReturnValue({
       isOnline: true,
       wasOffline: false,
@@ -36,7 +36,7 @@ describe('OfflineIndicator', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('should render offline banner when offline', () => {
+  it("should render offline banner when offline", () => {
     const cachedAt = new Date(Date.now() - 5 * 60 * 1000); // 5 minutes ago
 
     mockUseOnline.mockReturnValue({
@@ -54,7 +54,7 @@ describe('OfflineIndicator', () => {
     expect(screen.getByText(/5m ago/i)).toBeInTheDocument();
   });
 
-  it('should render reconnected banner when coming back online', () => {
+  it("should render reconnected banner when coming back online", () => {
     const lastOnlineAt = new Date();
 
     mockUseOnline.mockReturnValue({
@@ -71,7 +71,7 @@ describe('OfflineIndicator', () => {
     expect(screen.getByText(/Data synced/i)).toBeInTheDocument();
   });
 
-  it('should auto-dismiss reconnected message after 5 seconds', async () => {
+  it("should auto-dismiss reconnected message after 5 seconds", async () => {
     mockUseOnline.mockReturnValue({
       isOnline: true,
       wasOffline: true,
@@ -92,7 +92,7 @@ describe('OfflineIndicator', () => {
     });
   });
 
-  it('should render badge variant', () => {
+  it("should render badge variant", () => {
     mockUseOnline.mockReturnValue({
       isOnline: false,
       wasOffline: true,
@@ -103,11 +103,11 @@ describe('OfflineIndicator', () => {
 
     const { container } = render(<OfflineIndicator variant="badge" />);
 
-    expect(container.querySelector('.inline-flex')).toBeInTheDocument();
+    expect(container.querySelector(".inline-flex")).toBeInTheDocument();
     expect(screen.getByText(/Offline/i)).toBeInTheDocument();
   });
 
-  it('should render badge variant when online', () => {
+  it("should render badge variant when online", () => {
     mockUseOnline.mockReturnValue({
       isOnline: true,
       wasOffline: true,
@@ -121,7 +121,7 @@ describe('OfflineIndicator', () => {
     expect(screen.getByText(/Connected/i)).toBeInTheDocument();
   });
 
-  it('should not show cached timestamp when showCachedTimestamp is false', () => {
+  it("should not show cached timestamp when showCachedTimestamp is false", () => {
     const cachedAt = new Date(Date.now() - 5 * 60 * 1000);
 
     mockUseOnline.mockReturnValue({
@@ -132,13 +132,15 @@ describe('OfflineIndicator', () => {
       checkConnection: jest.fn(),
     });
 
-    render(<OfflineIndicator showCachedTimestamp={false} cachedAt={cachedAt} />);
+    render(
+      <OfflineIndicator showCachedTimestamp={false} cachedAt={cachedAt} />,
+    );
 
     expect(screen.getByText(/You're offline/i)).toBeInTheDocument();
     expect(screen.queryByText(/5m ago/i)).not.toBeInTheDocument();
   });
 
-  it('should render at bottom position', () => {
+  it("should render at bottom position", () => {
     mockUseOnline.mockReturnValue({
       isOnline: false,
       wasOffline: true,
@@ -149,10 +151,10 @@ describe('OfflineIndicator', () => {
 
     const { container } = render(<OfflineIndicator position="bottom" />);
 
-    expect(container.querySelector('.bottom-0')).toBeInTheDocument();
+    expect(container.querySelector(".bottom-0")).toBeInTheDocument();
   });
 
-  it('should have proper ARIA attributes', () => {
+  it("should have proper ARIA attributes", () => {
     mockUseOnline.mockReturnValue({
       isOnline: false,
       wasOffline: true,
@@ -163,11 +165,11 @@ describe('OfflineIndicator', () => {
 
     render(<OfflineIndicator />);
 
-    const statusElement = screen.getByRole('status');
-    expect(statusElement).toHaveAttribute('aria-live', 'polite');
+    const statusElement = screen.getByRole("status");
+    expect(statusElement).toHaveAttribute("aria-live", "polite");
   });
 
-  it('should format timestamps correctly', () => {
+  it("should format timestamps correctly", () => {
     mockUseOnline.mockReturnValue({
       isOnline: false,
       wasOffline: true,
@@ -182,4 +184,3 @@ describe('OfflineIndicator', () => {
     expect(screen.getByText(/just now/i)).toBeInTheDocument();
   });
 });
-

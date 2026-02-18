@@ -1,21 +1,27 @@
-'use client';
+"use client";
 
 /**
  * Goal Form Component
- * 
+ *
  * Create/edit goal form with validation and milestone setup.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 interface FinancialGoal {
   id?: string;
-  type: 'emergency_fund' | 'debt_payoff' | 'savings' | 'investment' | 'retirement' | 'custom';
+  type:
+    | "emergency_fund"
+    | "debt_payoff"
+    | "savings"
+    | "investment"
+    | "retirement"
+    | "custom";
   name: string;
   targetAmount: number;
   currentAmount: number;
   targetDate: string;
-  status: 'active' | 'completed' | 'paused';
+  status: "active" | "completed" | "paused";
   autoSaveEnabled?: boolean;
   autoSaveAmount?: number;
 }
@@ -28,12 +34,12 @@ interface GoalFormProps {
 
 export default function GoalForm({ goal, onSave, onCancel }: GoalFormProps) {
   const [formData, setFormData] = useState<Partial<FinancialGoal>>({
-    type: 'savings',
-    name: '',
+    type: "savings",
+    name: "",
     targetAmount: 0,
     currentAmount: 0,
-    targetDate: '',
-    status: 'active',
+    targetDate: "",
+    status: "active",
     autoSaveEnabled: false,
     autoSaveAmount: 0,
     ...goal,
@@ -42,43 +48,62 @@ export default function GoalForm({ goal, onSave, onCancel }: GoalFormProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const goalTypes = [
-    { value: 'emergency_fund', label: 'Emergency Fund', description: 'Build a safety net for unexpected expenses' },
-    { value: 'debt_payoff', label: 'Debt Payoff', description: 'Pay off credit cards or loans' },
-    { value: 'savings', label: 'Savings', description: 'General savings goal' },
-    { value: 'investment', label: 'Investment', description: 'Grow wealth through investments' },
-    { value: 'retirement', label: 'Retirement', description: 'Save for retirement' },
-    { value: 'custom', label: 'Custom', description: 'Create your own goal' },
+    {
+      value: "emergency_fund",
+      label: "Emergency Fund",
+      description: "Build a safety net for unexpected expenses",
+    },
+    {
+      value: "debt_payoff",
+      label: "Debt Payoff",
+      description: "Pay off credit cards or loans",
+    },
+    { value: "savings", label: "Savings", description: "General savings goal" },
+    {
+      value: "investment",
+      label: "Investment",
+      description: "Grow wealth through investments",
+    },
+    {
+      value: "retirement",
+      label: "Retirement",
+      description: "Save for retirement",
+    },
+    { value: "custom", label: "Custom", description: "Create your own goal" },
   ];
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.name || formData.name.trim().length === 0) {
-      newErrors.name = 'Goal name is required';
+      newErrors.name = "Goal name is required";
     }
 
     if (!formData.targetAmount || formData.targetAmount <= 0) {
-      newErrors.targetAmount = 'Target amount must be greater than 0';
+      newErrors.targetAmount = "Target amount must be greater than 0";
     }
 
     if (formData.currentAmount && formData.currentAmount < 0) {
-      newErrors.currentAmount = 'Current amount cannot be negative';
+      newErrors.currentAmount = "Current amount cannot be negative";
     }
 
     if (!formData.targetDate) {
-      newErrors.targetDate = 'Target date is required';
+      newErrors.targetDate = "Target date is required";
     } else {
       const targetDate = new Date(formData.targetDate);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      
+
       if (targetDate < today) {
-        newErrors.targetDate = 'Target date must be in the future';
+        newErrors.targetDate = "Target date must be in the future";
       }
     }
 
-    if (formData.autoSaveEnabled && (!formData.autoSaveAmount || formData.autoSaveAmount <= 0)) {
-      newErrors.autoSaveAmount = 'Auto-save amount must be greater than 0';
+    if (
+      formData.autoSaveEnabled &&
+      (!formData.autoSaveAmount || formData.autoSaveAmount <= 0)
+    ) {
+      newErrors.autoSaveAmount = "Auto-save amount must be greater than 0";
     }
 
     setErrors(newErrors);
@@ -87,7 +112,7 @@ export default function GoalForm({ goal, onSave, onCancel }: GoalFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validate()) return;
 
     setSaving(true);
@@ -98,11 +123,14 @@ export default function GoalForm({ goal, onSave, onCancel }: GoalFormProps) {
     }
   };
 
-  const handleChange = (field: keyof FinancialGoal, value: FinancialGoal[keyof FinancialGoal]) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleChange = (
+    field: keyof FinancialGoal,
+    value: FinancialGoal[keyof FinancialGoal],
+  ) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear error for this field
     if (errors[field]) {
-      setErrors(prev => {
+      setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[field];
         return newErrors;
@@ -122,11 +150,15 @@ export default function GoalForm({ goal, onSave, onCancel }: GoalFormProps) {
             <button
               key={type.value}
               type="button"
-              onClick={() => handleChange('type', type.value)}
-              className={`p-4 text-left rounded-lg border-2 transition-all ${ formData.type === type.value ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300 dark:border-slate-600' }`}
+              onClick={() => handleChange("type", type.value)}
+              className={`p-4 text-left rounded-lg border-2 transition-all ${formData.type === type.value ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300 dark:border-slate-600"}`}
             >
-              <div className="font-medium text-gray-900 dark:text-white mb-1">{type.label}</div>
-              <div className="text-xs text-gray-600 dark:text-slate-300">{type.description}</div>
+              <div className="font-medium text-gray-900 dark:text-white mb-1">
+                {type.label}
+              </div>
+              <div className="text-xs text-gray-600 dark:text-slate-300">
+                {type.description}
+              </div>
             </button>
           ))}
         </div>
@@ -134,103 +166,145 @@ export default function GoalForm({ goal, onSave, onCancel }: GoalFormProps) {
 
       {/* Goal Name */}
       <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
+        <label
+          htmlFor="name"
+          className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2"
+        >
           Goal Name *
         </label>
         <input
           id="name"
           type="text"
           value={formData.name}
-          onChange={(e) => handleChange('name', e.target.value)}
+          onChange={(e) => handleChange("name", e.target.value)}
           className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-            errors.name ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'
+            errors.name
+              ? "border-red-500"
+              : "border-gray-300 dark:border-slate-600"
           }`}
           placeholder="e.g., Emergency Fund, Vacation, New Car"
         />
-        {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+        {errors.name && (
+          <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+        )}
       </div>
 
       {/* Amount Fields */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label htmlFor="targetAmount" className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
+          <label
+            htmlFor="targetAmount"
+            className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2"
+          >
             Target Amount *
           </label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400">$</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400">
+              $
+            </span>
             <input
               id="targetAmount"
               type="number"
-              value={formData.targetAmount || ''}
-              onChange={(e) => handleChange('targetAmount', parseFloat(e.target.value) || 0)}
+              value={formData.targetAmount || ""}
+              onChange={(e) =>
+                handleChange("targetAmount", parseFloat(e.target.value) || 0)
+              }
               className={`w-full pl-8 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.targetAmount ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'
+                errors.targetAmount
+                  ? "border-red-500"
+                  : "border-gray-300 dark:border-slate-600"
               }`}
               placeholder="10000"
               min="0"
               step="100"
             />
           </div>
-          {errors.targetAmount && <p className="mt-1 text-sm text-red-600">{errors.targetAmount}</p>}
+          {errors.targetAmount && (
+            <p className="mt-1 text-sm text-red-600">{errors.targetAmount}</p>
+          )}
         </div>
 
         <div>
-          <label htmlFor="currentAmount" className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
+          <label
+            htmlFor="currentAmount"
+            className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2"
+          >
             Current Amount
           </label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400">$</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400">
+              $
+            </span>
             <input
               id="currentAmount"
               type="number"
-              value={formData.currentAmount || ''}
-              onChange={(e) => handleChange('currentAmount', parseFloat(e.target.value) || 0)}
+              value={formData.currentAmount || ""}
+              onChange={(e) =>
+                handleChange("currentAmount", parseFloat(e.target.value) || 0)
+              }
               className={`w-full pl-8 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.currentAmount ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'
+                errors.currentAmount
+                  ? "border-red-500"
+                  : "border-gray-300 dark:border-slate-600"
               }`}
               placeholder="0"
               min="0"
               step="100"
             />
           </div>
-          {errors.currentAmount && <p className="mt-1 text-sm text-red-600">{errors.currentAmount}</p>}
+          {errors.currentAmount && (
+            <p className="mt-1 text-sm text-red-600">{errors.currentAmount}</p>
+          )}
         </div>
       </div>
 
       {/* Target Date */}
       <div>
-        <label htmlFor="targetDate" className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
+        <label
+          htmlFor="targetDate"
+          className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2"
+        >
           Target Date *
         </label>
         <input
           id="targetDate"
           type="date"
           value={formData.targetDate}
-          onChange={(e) => handleChange('targetDate', e.target.value)}
+          onChange={(e) => handleChange("targetDate", e.target.value)}
           className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-            errors.targetDate ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'
+            errors.targetDate
+              ? "border-red-500"
+              : "border-gray-300 dark:border-slate-600"
           }`}
         />
-        {errors.targetDate && <p className="mt-1 text-sm text-red-600">{errors.targetDate}</p>}
+        {errors.targetDate && (
+          <p className="mt-1 text-sm text-red-600">{errors.targetDate}</p>
+        )}
       </div>
 
       {/* Auto-Save Settings */}
       <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-50 rounded-lg border border-blue-100">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <div className="font-medium text-gray-900 dark:text-white">Enable Auto-Save</div>
-            <div className="text-sm text-gray-600 dark:text-slate-300">Automatically save towards this goal each month</div>
+            <div className="font-medium text-gray-900 dark:text-white">
+              Enable Auto-Save
+            </div>
+            <div className="text-sm text-gray-600 dark:text-slate-300">
+              Automatically save towards this goal each month
+            </div>
           </div>
           <button
             type="button"
-            onClick={() => handleChange('autoSaveEnabled', !formData.autoSaveEnabled)}
+            onClick={() =>
+              handleChange("autoSaveEnabled", !formData.autoSaveEnabled)
+            }
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              formData.autoSaveEnabled ? 'bg-blue-600' : 'bg-gray-300'
+              formData.autoSaveEnabled ? "bg-blue-600" : "bg-gray-300"
             }`}
           >
             <span
               className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-slate-800 transition-transform ${
-                formData.autoSaveEnabled ? 'translate-x-6' : 'translate-x-1'
+                formData.autoSaveEnabled ? "translate-x-6" : "translate-x-1"
               }`}
             />
           </button>
@@ -238,25 +312,41 @@ export default function GoalForm({ goal, onSave, onCancel }: GoalFormProps) {
 
         {formData.autoSaveEnabled && (
           <div>
-            <label htmlFor="autoSaveAmount" className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
+            <label
+              htmlFor="autoSaveAmount"
+              className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2"
+            >
               Monthly Auto-Save Amount *
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400">$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400">
+                $
+              </span>
               <input
                 id="autoSaveAmount"
                 type="number"
-                value={formData.autoSaveAmount || ''}
-                onChange={(e) => handleChange('autoSaveAmount', parseFloat(e.target.value) || 0)}
+                value={formData.autoSaveAmount || ""}
+                onChange={(e) =>
+                  handleChange(
+                    "autoSaveAmount",
+                    parseFloat(e.target.value) || 0,
+                  )
+                }
                 className={`w-full pl-8 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.autoSaveAmount ? 'border-red-500' : 'border-gray-300 dark:border-slate-600'
+                  errors.autoSaveAmount
+                    ? "border-red-500"
+                    : "border-gray-300 dark:border-slate-600"
                 }`}
                 placeholder="100"
                 min="0"
                 step="10"
               />
             </div>
-            {errors.autoSaveAmount && <p className="mt-1 text-sm text-red-600">{errors.autoSaveAmount}</p>}
+            {errors.autoSaveAmount && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.autoSaveAmount}
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -275,10 +365,9 @@ export default function GoalForm({ goal, onSave, onCancel }: GoalFormProps) {
           disabled={saving}
           className="px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-600 text-white rounded-lg hover:from-blue-700 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {saving ? 'Saving...' : goal ? 'Update Goal' : 'Create Goal'}
+          {saving ? "Saving..." : goal ? "Update Goal" : "Create Goal"}
         </button>
       </div>
     </form>
   );
 }
-

@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
+import { useEffect } from "react";
 
 export default function FinancialError({
   error,
@@ -10,7 +10,7 @@ export default function FinancialError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('Financial error:', error);
+    console.error("Financial error:", error);
   }, [error]);
 
   return (
@@ -40,7 +40,7 @@ export default function FinancialError({
           </p>
           <div className="flex justify-center gap-4">
             <button
-              onClick={() => (window.location.href = '/dashboard')}
+              onClick={() => (window.location.href = "/dashboard")}
               className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600"
             >
               Go to Dashboard

@@ -1,16 +1,16 @@
-import { Suspense } from 'react';
-import { Metadata } from 'next';
-import SpendingAnalysis from '@/components/financial/SpendingAnalysis';
+import { Suspense } from "react";
+import { Metadata } from "next";
+import SpendingAnalysis from "@/components/financial/SpendingAnalysis";
 
 export const metadata: Metadata = {
-  title: 'Spending Analysis | Fynvita',
+  title: "Spending Analysis | Fynvita",
   description:
-    'Analyze your spending patterns, track cash flow, and get personalized insights',
+    "Analyze your spending patterns, track cash flow, and get personalized insights",
   openGraph: {
-    title: 'Spending Analysis | Fynvita',
+    title: "Spending Analysis | Fynvita",
     description:
-      'Analyze your spending patterns, track cash flow, and get personalized insights',
-    type: 'website',
+      "Analyze your spending patterns, track cash flow, and get personalized insights",
+    type: "website",
   },
 };
 

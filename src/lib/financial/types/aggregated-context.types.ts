@@ -10,10 +10,10 @@ import {
   BudgetSummary,
   BudgetAlert,
   BudgetTrend,
-} from './budget.types';
-import { Bill, BillSummary } from './bill.types';
-import { SavingsGoal, SavingsRule, SavingsSummary } from './savings.types';
-import { Debt, DebtOverview, PayoffPlan } from './debt-payoff.types';
+} from "./budget.types";
+import { Bill, BillSummary } from "./bill.types";
+import { SavingsGoal, SavingsRule, SavingsSummary } from "./savings.types";
+import { Debt, DebtOverview, PayoffPlan } from "./debt-payoff.types";
 import {
   UserProfile,
   AggregatedAccounts,
@@ -25,7 +25,7 @@ import {
   AIInsight,
   Recommendation,
   RecurringBill,
-} from './financial-context.types';
+} from "./financial-context.types";
 
 // ============================================================================
 // AGGREGATED FINANCIAL CONTEXT
@@ -210,22 +210,22 @@ export interface CategorySpending {
   category: string;
   amount: number;
   percentage: number;
-  trend: 'up' | 'down' | 'stable';
+  trend: "up" | "down" | "stable";
   changePercent: number;
 }
 
 export interface SpendingAnomaly {
   id: string;
   type:
-    | 'unusual_amount'
-    | 'unusual_frequency'
-    | 'new_merchant'
-    | 'category_spike';
+    | "unusual_amount"
+    | "unusual_frequency"
+    | "new_merchant"
+    | "category_spike";
   description: string;
   amount: number;
   category?: string;
   merchant?: string;
-  severity: 'low' | 'medium' | 'high';
+  severity: "low" | "medium" | "high";
   date: Date;
 }
 
@@ -256,10 +256,10 @@ export interface NetWorthHistoryPoint {
 }
 
 export type RiskLevel =
-  | 'conservative'
-  | 'moderate'
-  | 'aggressive'
-  | 'very_aggressive';
+  | "conservative"
+  | "moderate"
+  | "aggressive"
+  | "very_aggressive";
 
 export interface DataCompleteness {
   accounts: boolean;
@@ -273,7 +273,7 @@ export interface DataCompleteness {
   overallScore: number; // 0-100
 }
 
-export type TrendPeriod = '7d' | '30d' | '90d' | '180d' | '1y' | '2y' | 'all';
+export type TrendPeriod = "7d" | "30d" | "90d" | "180d" | "1y" | "2y" | "all";
 
 export interface TrendData {
   values: TrendDataPoint[];
@@ -281,7 +281,7 @@ export interface TrendData {
   endValue: number;
   change: number;
   changePercent: number;
-  direction: 'up' | 'down' | 'stable';
+  direction: "up" | "down" | "stable";
   average: number;
   min: number;
   max: number;
@@ -295,14 +295,14 @@ export interface TrendDataPoint {
 export interface HealthScoreHistoryPoint {
   date: Date;
   score: number;
-  grade: 'A' | 'B' | 'C' | 'D' | 'F';
+  grade: "A" | "B" | "C" | "D" | "F";
 }
 
 export interface TrendObservation {
-  type: 'improvement' | 'decline' | 'milestone' | 'anomaly' | 'opportunity';
+  type: "improvement" | "decline" | "milestone" | "anomaly" | "opportunity";
   metric: string;
   description: string;
-  impact: 'positive' | 'negative' | 'neutral';
+  impact: "positive" | "negative" | "neutral";
   date?: Date;
 }
 
@@ -336,14 +336,14 @@ export interface TrendOptions {
 }
 
 export type TrendMetric =
-  | 'netWorth'
-  | 'income'
-  | 'spending'
-  | 'cashFlow'
-  | 'savings'
-  | 'debt'
-  | 'investments'
-  | 'healthScore';
+  | "netWorth"
+  | "income"
+  | "spending"
+  | "cashFlow"
+  | "savings"
+  | "debt"
+  | "investments"
+  | "healthScore";
 
 // ============================================================================
 // CACHE TYPES

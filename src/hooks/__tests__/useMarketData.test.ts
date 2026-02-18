@@ -2,17 +2,17 @@
  * useMarketData Hook Tests
  */
 
-import { renderHook, waitFor, act } from '@testing-library/react';
-import { useMarketData } from '../useMarketData';
-import type { StockQuote } from '@/lib/investments/types/market-data.types';
-import { MarketStatus } from '@/lib/investments/types/market-data.types';
+import { renderHook, waitFor, act } from "@testing-library/react";
+import { useMarketData } from "../useMarketData";
+import type { StockQuote } from "@/lib/investments/types/market-data.types";
+import { MarketStatus } from "@/lib/investments/types/market-data.types";
 
 // Mock useAuth hook
-jest.mock('../useAuth', () => ({
+jest.mock("../useAuth", () => ({
   useAuth: jest.fn(),
 }));
 
-import { useAuth } from '../useAuth';
+import { useAuth } from "../useAuth";
 const mockUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
 
 // Mock fetch
@@ -21,17 +21,17 @@ const mockFetch = global.fetch as jest.Mock;
 // Helper to create proper Response objects with clone() method
 const createMockResponse = (
   data: any,
-  options: { ok?: boolean; status?: number } = {}
+  options: { ok?: boolean; status?: number } = {},
 ) => {
   const responseBody = JSON.stringify(data);
   return new Response(responseBody, {
     status: options.status || (options.ok !== false ? 200 : 500),
-    headers: { 'Content-Type': 'application/json' },
+    headers: { "Content-Type": "application/json" },
   });
 };
 
 const mockQuote: StockQuote = {
-  symbol: 'AAPL',
+  symbol: "AAPL",
   price: 160.5,
   change: 2.5,
   changePercent: 1.58,
@@ -67,11 +67,11 @@ const mockHistoricalData = [
   },
 ];
 
-describe('useMarketData', () => {
+describe("useMarketData", () => {
   beforeEach(() => {
     mockFetch.mockClear();
     mockUseAuth.mockReturnValue({
-      user: { id: 'test-user-id', email: 'test@example.com' } as any,
+      user: { id: "test-user-id", email: "test@example.com" } as any,
       loading: false,
       error: null,
       signIn: jest.fn(),
@@ -79,12 +79,12 @@ describe('useMarketData', () => {
       signOut: jest.fn(),
     });
     mockFetch.mockResolvedValue(
-      createMockResponse({ success: true, data: mockQuote })
+      createMockResponse({ success: true, data: mockQuote }),
     );
   });
 
-  it('should fetch quote data on mount', async () => {
-    const { result } = renderHook(() => useMarketData({ symbol: 'AAPL' }));
+  it("should fetch quote data on mount", async () => {
+    const { result } = renderHook(() => useMarketData({ symbol: "AAPL" }));
 
     expect(result.current.loading).toBe(true);
 
@@ -99,13 +99,13 @@ describe('useMarketData', () => {
     expect(mockFetch).toHaveBeenCalled();
     const fetchCall = mockFetch.mock.calls[0];
     const requestUrl =
-      typeof fetchCall[0] === 'string' ? fetchCall[0] : fetchCall[0].url;
-    expect(requestUrl).toBe('/api/investments/quote/AAPL');
+      typeof fetchCall[0] === "string" ? fetchCall[0] : fetchCall[0].url;
+    expect(requestUrl).toBe("/api/investments/quote/AAPL");
   });
 
-  it('should not fetch when disabled', async () => {
+  it("should not fetch when disabled", async () => {
     const { result } = renderHook(() =>
-      useMarketData({ symbol: 'AAPL', enabled: false })
+      useMarketData({ symbol: "AAPL", enabled: false }),
     );
 
     // Wait a bit to ensure no fetch is triggered
@@ -116,57 +116,57 @@ describe('useMarketData', () => {
     // Note: loading may still be true since the hook doesn't call fetch when disabled
   });
 
-  it('should fetch historical data', async () => {
+  it("should fetch historical data", async () => {
     mockFetch
       .mockResolvedValueOnce(
-        createMockResponse({ success: true, data: mockQuote })
+        createMockResponse({ success: true, data: mockQuote }),
       )
       .mockResolvedValueOnce(
-        createMockResponse({ success: true, data: mockHistoricalData })
+        createMockResponse({ success: true, data: mockHistoricalData }),
       );
 
-    const { result } = renderHook(() => useMarketData({ symbol: 'AAPL' }));
+    const { result } = renderHook(() => useMarketData({ symbol: "AAPL" }));
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
 
     await act(async () => {
-      await result.current.fetchHistorical('1D', 30);
+      await result.current.fetchHistorical("1D", 30);
     });
 
     expect(result.current.historicalData).toEqual(mockHistoricalData);
     // Check the second call (first is quote, second is historical)
     const historicalCall = mockFetch.mock.calls[1];
     const requestUrl =
-      typeof historicalCall[0] === 'string'
+      typeof historicalCall[0] === "string"
         ? historicalCall[0]
         : historicalCall[0].url;
     expect(requestUrl).toBe(
-      '/api/investments/historical/AAPL?interval=1D&limit=30'
+      "/api/investments/historical/AAPL?interval=1D&limit=30",
     );
   });
 
-  it('should handle fetch errors', async () => {
+  it("should handle fetch errors", async () => {
     mockFetch.mockResolvedValueOnce(
       createMockResponse(
-        { error: 'Failed to fetch quote' },
-        { ok: false, status: 500 }
-      )
+        { error: "Failed to fetch quote" },
+        { ok: false, status: 500 },
+      ),
     );
 
-    const { result } = renderHook(() => useMarketData({ symbol: 'AAPL' }));
+    const { result } = renderHook(() => useMarketData({ symbol: "AAPL" }));
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(result.current.error).toBe('Failed to fetch quote');
+    expect(result.current.error).toBe("Failed to fetch quote");
     expect(result.current.quote).toBeNull();
   });
 
-  it('should refresh quote data', async () => {
-    const { result } = renderHook(() => useMarketData({ symbol: 'AAPL' }));
+  it("should refresh quote data", async () => {
+    const { result } = renderHook(() => useMarketData({ symbol: "AAPL" }));
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -181,22 +181,22 @@ describe('useMarketData', () => {
     expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 
-  it('should handle network errors', async () => {
-    mockFetch.mockRejectedValueOnce(new Error('Network error'));
+  it("should handle network errors", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
-    const { result } = renderHook(() => useMarketData({ symbol: 'AAPL' }));
+    const { result } = renderHook(() => useMarketData({ symbol: "AAPL" }));
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(result.current.error).toBe('Network error');
+    expect(result.current.error).toBe("Network error");
   });
 
-  it('should cancel pending requests on unmount', async () => {
-    const abortSpy = jest.spyOn(AbortController.prototype, 'abort');
+  it("should cancel pending requests on unmount", async () => {
+    const abortSpy = jest.spyOn(AbortController.prototype, "abort");
 
-    const { unmount } = renderHook(() => useMarketData({ symbol: 'AAPL' }));
+    const { unmount } = renderHook(() => useMarketData({ symbol: "AAPL" }));
 
     unmount();
 

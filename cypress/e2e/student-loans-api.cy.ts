@@ -5,53 +5,53 @@
  * federal programs.
  */
 
-describe('Student Loans API', () => {
-  it('GET /api/student-loans → requires userId param (400)', () => {
+describe("Student Loans API", () => {
+  it("GET /api/student-loans → requires userId param (400)", () => {
     cy.request({
-      url: '/api/student-loans',
+      url: "/api/student-loans",
       failOnStatusCode: false,
     }).then((resp) => {
       expect(resp.status).to.eq(400);
-      expect(resp.body).to.have.property('error');
+      expect(resp.body).to.have.property("error");
     });
   });
 
-  it('GET /api/student-loans with userId → returns 200', () => {
+  it("GET /api/student-loans with userId → returns 200", () => {
     cy.request({
-      url: '/api/student-loans?userId=nonexistent-user',
+      url: "/api/student-loans?userId=nonexistent-user",
       failOnStatusCode: false,
     }).then((resp) => {
       // Endpoint accepts any userId and returns data (possibly empty)
       expect(resp.status).to.eq(200);
-      expect(resp.body).to.be.an('object');
+      expect(resp.body).to.be.an("object");
     });
   });
 });
 
-describe('Student Loan Strategy API', () => {
-  it('POST /api/student-loans/strategy → requires authentication or valid data', () => {
+describe("Student Loan Strategy API", () => {
+  it("POST /api/student-loans/strategy → requires authentication or valid data", () => {
     cy.request({
-      method: 'POST',
-      url: '/api/student-loans/strategy',
+      method: "POST",
+      url: "/api/student-loans/strategy",
       body: {
         loans: [
-          { type: 'federal', balance: 30000, rate: 5.5, servicer: 'FedLoan' },
+          { type: "federal", balance: 30000, rate: 5.5, servicer: "FedLoan" },
         ],
         income: 60000,
-        filingStatus: 'single',
+        filingStatus: "single",
       },
       failOnStatusCode: false,
     }).then((resp) => {
       // May return 200 (public), 401 (auth required), or 400 (validation)
       expect(resp.status).to.be.oneOf([200, 400, 401, 500]);
-      expect(resp.body).to.be.an('object');
+      expect(resp.body).to.be.an("object");
     });
   });
 
-  it('POST /api/student-loans/strategy with empty loans → returns error', () => {
+  it("POST /api/student-loans/strategy with empty loans → returns error", () => {
     cy.request({
-      method: 'POST',
-      url: '/api/student-loans/strategy',
+      method: "POST",
+      url: "/api/student-loans/strategy",
       body: { loans: [] },
       failOnStatusCode: false,
     }).then((resp) => {
@@ -60,15 +60,15 @@ describe('Student Loan Strategy API', () => {
   });
 });
 
-describe('Federal Programs API', () => {
-  it('GET /api/federal-programs → requires params or returns data', () => {
+describe("Federal Programs API", () => {
+  it("GET /api/federal-programs → requires params or returns data", () => {
     cy.request({
-      url: '/api/federal-programs',
+      url: "/api/federal-programs",
       failOnStatusCode: false,
     }).then((resp) => {
       // May return 400 (needs params), 200, 401, or 404
       expect(resp.status).to.be.oneOf([200, 400, 401, 404]);
-      expect(resp.body).to.be.an('object');
+      expect(resp.body).to.be.an("object");
     });
   });
 });

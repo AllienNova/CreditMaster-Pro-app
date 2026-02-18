@@ -12,37 +12,41 @@
  * - Priority levels for critical operations
  */
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import NetInfo, { NetInfoState } from "@react-native-community/netinfo";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 /** Priority determines processing order when multiple items are queued. */
-export type SyncPriority = 'critical' | 'high' | 'normal' | 'low';
+export type SyncPriority = "critical" | "high" | "normal" | "low";
 
 /** The kind of mutation that was queued offline. */
-export type SyncOperationType = 'create' | 'update' | 'delete' | 'upload';
+export type SyncOperationType = "create" | "update" | "delete" | "upload";
 
 /** Entity domains that the sync queue supports. */
 export type SyncEntity =
-  | 'dispute'
-  | 'credit_score'
-  | 'document'
-  | 'budget'
-  | 'goal'
-  | 'transaction'
-  | 'settings'
-  | 'notification'
-  | 'profile'
-  | 'investment'
-  | 'student_loan'
-  | 'debt'
-  | 'bill';
+  | "dispute"
+  | "credit_score"
+  | "document"
+  | "budget"
+  | "goal"
+  | "transaction"
+  | "settings"
+  | "notification"
+  | "profile"
+  | "investment"
+  | "student_loan"
+  | "debt"
+  | "bill";
 
 /** Conflict resolution strategies. */
-export type ConflictStrategy = 'last_write_wins' | 'client_wins' | 'server_wins' | 'manual';
+export type ConflictStrategy =
+  | "last_write_wins"
+  | "client_wins"
+  | "server_wins"
+  | "manual";
 
 /** A single item in the sync queue. */
 export interface SyncQueueItem {
@@ -51,7 +55,7 @@ export interface SyncQueueItem {
   /** The API endpoint to call. */
   endpoint: string;
   /** HTTP method. */
-  method: 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  method: "POST" | "PUT" | "PATCH" | "DELETE";
   /** Serialized request body. */
   body?: string;
   /** Entity type for conflict detection. */
@@ -118,7 +122,7 @@ export interface OfflineSyncConfig {
 // ---------------------------------------------------------------------------
 
 const DEFAULT_CONFIG: OfflineSyncConfig = {
-  storageKey: 'fynvita_sync_queue',
+  storageKey: "fynvita_sync_queue",
   maxRetries: 5,
   baseRetryDelay: 1000,
   maxRetryDelay: 60000,
@@ -134,7 +138,7 @@ const PRIORITY_ORDER: Record<SyncPriority, number> = {
   low: 3,
 };
 
-const DEAD_LETTER_KEY = 'fynvita_sync_dead_letter';
+const DEAD_LETTER_KEY = "fynvita_sync_dead_letter";
 
 // ---------------------------------------------------------------------------
 // OfflineSyncService
@@ -189,7 +193,10 @@ class OfflineSyncService {
    * If the device is online and not currently processing, attempts immediate sync.
    */
   async addToQueue(
-    item: Omit<SyncQueueItem, 'id' | 'createdAt' | 'retryCount' | 'lastRetryAt'> & {
+    item: Omit<
+      SyncQueueItem,
+      "id" | "createdAt" | "retryCount" | "lastRetryAt"
+    > & {
       priority?: SyncPriority;
       conflictStrategy?: ConflictStrategy;
     },
@@ -206,8 +213,8 @@ class OfflineSyncService {
       createdAt: new Date().toISOString(),
       retryCount: 0,
       lastRetryAt: null,
-      priority: item.priority ?? 'normal',
-      conflictStrategy: item.conflictStrategy ?? 'last_write_wins',
+      priority: item.priority ?? "normal",
+      conflictStrategy: item.conflictStrategy ?? "last_write_wins",
       metadata: item.metadata,
     };
 
@@ -306,10 +313,22 @@ class OfflineSyncService {
    */
   async processQueue(): Promise<SyncResult> {
     if (this.isProcessing) {
-      return { processed: 0, failed: 0, remaining: this.syncQueue.length, conflicts: 0, expired: 0 };
+      return {
+        processed: 0,
+        failed: 0,
+        remaining: this.syncQueue.length,
+        conflicts: 0,
+        expired: 0,
+      };
     }
     if (!this.isOnline) {
-      return { processed: 0, failed: 0, remaining: this.syncQueue.length, conflicts: 0, expired: 0 };
+      return {
+        processed: 0,
+        failed: 0,
+        remaining: this.syncQueue.length,
+        conflicts: 0,
+        expired: 0,
+      };
     }
 
     this.isProcessing = true;
@@ -323,9 +342,12 @@ class OfflineSyncService {
 
       // Sort: by priority (lower number = higher priority), then by createdAt (FIFO)
       const sortedQueue = [...this.syncQueue].sort((a, b) => {
-        const priorityDiff = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
+        const priorityDiff =
+          PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
         if (priorityDiff !== 0) return priorityDiff;
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        return (
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
       });
 
       const remaining: SyncQueueItem[] = [];
@@ -412,21 +434,24 @@ class OfflineSyncService {
   private resolveConflicts(newItem: SyncQueueItem): void {
     if (!newItem.entityId) return;
 
-    if (newItem.conflictStrategy === 'last_write_wins') {
+    if (newItem.conflictStrategy === "last_write_wins") {
       // Remove older entries for the same entity+entityId
       this.syncQueue = this.syncQueue.filter((existing) => {
         if (existing.entity !== newItem.entity) return true;
         if (existing.entityId !== newItem.entityId) return true;
         // Keep if the existing one is a different operation type that shouldn't conflict
         // e.g., don't remove a 'create' when an 'update' comes in for the same entity
-        if (existing.operationType === 'create' && newItem.operationType === 'update') {
+        if (
+          existing.operationType === "create" &&
+          newItem.operationType === "update"
+        ) {
           // Merge: the create already has the base data, update body supersedes
           return true;
         }
         // Same entity, same ID, same or superseding operation: remove older
         return false;
       });
-    } else if (newItem.conflictStrategy === 'client_wins') {
+    } else if (newItem.conflictStrategy === "client_wins") {
       // Client always wins: remove any server-side pending for same entity
       this.syncQueue = this.syncQueue.filter((existing) => {
         if (existing.entity !== newItem.entity) return true;
@@ -441,7 +466,10 @@ class OfflineSyncService {
    * Public method to check for conflicts in the queue.
    * Returns items that conflict with the given entity + entityId.
    */
-  findConflicts(entity: SyncEntity, entityId: string): ReadonlyArray<SyncQueueItem> {
+  findConflicts(
+    entity: SyncEntity,
+    entityId: string,
+  ): ReadonlyArray<SyncQueueItem> {
     return this.syncQueue.filter(
       (item) => item.entity === entity && item.entityId === entityId,
     );
@@ -456,17 +484,19 @@ class OfflineSyncService {
    */
   startNetworkListener(): void {
     this.stopNetworkListener();
-    this.networkUnsubscribe = NetInfo.addEventListener((state: NetInfoState) => {
-      const wasOffline = !this.isOnline;
-      this.isOnline = state.isConnected ?? false;
+    this.networkUnsubscribe = NetInfo.addEventListener(
+      (state: NetInfoState) => {
+        const wasOffline = !this.isOnline;
+        this.isOnline = state.isConnected ?? false;
 
-      // Auto-process queue when coming back online
-      if (wasOffline && this.isOnline && this.config.autoProcessOnReconnect) {
-        this.processQueue().catch(() => {
-          // Silently handle -- will be retried on next connectivity change
-        });
-      }
-    });
+        // Auto-process queue when coming back online
+        if (wasOffline && this.isOnline && this.config.autoProcessOnReconnect) {
+          this.processQueue().catch(() => {
+            // Silently handle -- will be retried on next connectivity change
+          });
+        }
+      },
+    );
 
     // Set initial state
     NetInfo.fetch().then((state: NetInfoState) => {
@@ -498,7 +528,12 @@ class OfflineSyncService {
     const wasOffline = !this.isOnline;
     this.isOnline = online;
 
-    if (autoProcess && wasOffline && online && this.config.autoProcessOnReconnect) {
+    if (
+      autoProcess &&
+      wasOffline &&
+      online &&
+      this.config.autoProcessOnReconnect
+    ) {
       this.processQueue().catch(() => {});
     }
   }
@@ -535,7 +570,7 @@ class OfflineSyncService {
     if (this.config.apiRequestFn) {
       requestFn = this.config.apiRequestFn;
     } else {
-      const { apiRequest } = await import('./api/client');
+      const { apiRequest } = await import("./api/client");
       requestFn = apiRequest as ApiRequestFn;
     }
     const result = await requestFn(item.endpoint, {
@@ -546,7 +581,7 @@ class OfflineSyncService {
     });
 
     if (!result.success) {
-      const errorMsg = result.error?.message ?? 'Unknown error';
+      const errorMsg = result.error?.message ?? "Unknown error";
       throw new Error(`Sync request failed: ${errorMsg}`);
     }
   }
@@ -555,7 +590,8 @@ class OfflineSyncService {
    * Calculate exponential backoff with jitter.
    */
   private calculateBackoff(attempt: number): number {
-    const exponentialDelay = this.config.baseRetryDelay * Math.pow(2, attempt - 1);
+    const exponentialDelay =
+      this.config.baseRetryDelay * Math.pow(2, attempt - 1);
     const cappedDelay = Math.min(exponentialDelay, this.config.maxRetryDelay);
     // Add jitter: +/- 25%
     const jitter = cappedDelay * 0.25 * (Math.random() * 2 - 1);
@@ -583,7 +619,8 @@ class OfflineSyncService {
 
     // Sort by priority descending (low priority = higher number) then oldest first
     const sorted = [...this.syncQueue].sort((a, b) => {
-      const priorityDiff = PRIORITY_ORDER[b.priority] - PRIORITY_ORDER[a.priority];
+      const priorityDiff =
+        PRIORITY_ORDER[b.priority] - PRIORITY_ORDER[a.priority];
       if (priorityDiff !== 0) return priorityDiff;
       return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
     });
@@ -607,7 +644,7 @@ class OfflineSyncService {
       );
     } catch (error) {
       if (__DEV__) {
-        console.warn('Failed to persist sync queue:', error);
+        console.warn("Failed to persist sync queue:", error);
       }
     }
   }
@@ -626,7 +663,7 @@ class OfflineSyncService {
       }
     } catch (error) {
       if (__DEV__) {
-        console.warn('Failed to load sync queue from storage:', error);
+        console.warn("Failed to load sync queue from storage:", error);
       }
       this.syncQueue = [];
     }
@@ -643,7 +680,7 @@ class OfflineSyncService {
       );
     } catch (error) {
       if (__DEV__) {
-        console.warn('Failed to persist dead-letter queue:', error);
+        console.warn("Failed to persist dead-letter queue:", error);
       }
     }
   }
@@ -662,7 +699,7 @@ class OfflineSyncService {
       }
     } catch (error) {
       if (__DEV__) {
-        console.warn('Failed to load dead-letter queue from storage:', error);
+        console.warn("Failed to load dead-letter queue from storage:", error);
       }
       this.deadLetterQueue = [];
     }

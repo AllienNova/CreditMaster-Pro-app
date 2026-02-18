@@ -28,8 +28,8 @@ import type {
   InstitutionalHolder,
   SentimentScore,
   SentimentLabel,
-} from '../types/sentiment-analysis.types';
-import type { SignalStrength } from '../types/investment.types';
+} from "../types/sentiment-analysis.types";
+import type { SignalStrength } from "../types/investment.types";
 
 // ============================================================================
 // SENTIMENT ANALYSIS SERVICE
@@ -48,7 +48,7 @@ export class SentimentAnalysisService {
       includeInsiders?: boolean;
       includeInstitutional?: boolean;
       includeMarket?: boolean;
-    }
+    },
   ): Promise<SentimentAnalysis> {
     const {
       includeNews = true,
@@ -94,7 +94,7 @@ export class SentimentAnalysisService {
       socialSentiment,
       analystConsensus,
       insiderActivity,
-      institutionalOwnership
+      institutionalOwnership,
     );
 
     // Determine overall signal
@@ -104,22 +104,22 @@ export class SentimentAnalysisService {
     const summary = this.generateSummary(
       symbol,
       compositeSentiment,
-      overallSignal
+      overallSignal,
     );
     const keyInsights = this.generateKeyInsights(
       newsSentiment,
       socialSentiment,
-      analystConsensus
+      analystConsensus,
     );
     const risks = this.identifyRisks(
       newsSentiment,
       insiderActivity,
-      institutionalOwnership
+      institutionalOwnership,
     );
     const opportunities = this.identifyOpportunities(
       newsSentiment,
       analystConsensus,
-      insiderActivity
+      insiderActivity,
     );
 
     return {
@@ -152,34 +152,34 @@ export class SentimentAnalysisService {
     // For now, return mock data structure
     const recentNews: NewsArticle[] = [
       {
-        id: '1',
+        id: "1",
         title: `${symbol} Announces Strong Q4 Earnings Beat`,
         summary:
-          'Company exceeds analyst expectations with robust revenue growth.',
-        source: 'Financial Times',
-        url: 'https://example.com/article1',
+          "Company exceeds analyst expectations with robust revenue growth.",
+        source: "Financial Times",
+        url: "https://example.com/article1",
         publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
         symbols: [symbol],
         sentiment: 0.5,
-        sentimentLabel: 'positive',
+        sentimentLabel: "positive",
         relevanceScore: 0.95,
-        topics: ['earnings', 'revenue'],
-        impactLevel: 'high',
+        topics: ["earnings", "revenue"],
+        impactLevel: "high",
       },
       {
-        id: '2',
+        id: "2",
         title: `${symbol} Faces Regulatory Scrutiny in EU`,
         summary:
-          'European regulators launch investigation into business practices.',
-        source: 'Reuters',
-        url: 'https://example.com/article2',
+          "European regulators launch investigation into business practices.",
+        source: "Reuters",
+        url: "https://example.com/article2",
         publishedAt: new Date(Date.now() - 5 * 60 * 60 * 1000),
         symbols: [symbol],
         sentiment: -0.5,
-        sentimentLabel: 'negative',
+        sentimentLabel: "negative",
         relevanceScore: 0.88,
-        topics: ['regulation', 'legal'],
-        impactLevel: 'medium',
+        topics: ["regulation", "legal"],
+        impactLevel: "medium",
       },
     ];
 
@@ -199,12 +199,12 @@ export class SentimentAnalysisService {
       .filter((n) => n.sentiment < 0)
       .slice(0, 3);
 
-    const sentimentTrend: 'improving' | 'stable' | 'declining' =
+    const sentimentTrend: "improving" | "stable" | "declining" =
       averageSentiment > 0.3
-        ? 'improving'
+        ? "improving"
         : averageSentiment < -0.3
-          ? 'declining'
-          : 'stable';
+          ? "declining"
+          : "stable";
 
     const signal = this.sentimentToSignal(averageSentiment);
 
@@ -233,31 +233,31 @@ export class SentimentAnalysisService {
   async getSocialSentiment(symbol: string): Promise<SocialSentiment> {
     const influencerMentions: SocialMention[] = [
       {
-        id: '1',
-        platform: 'twitter',
+        id: "1",
+        platform: "twitter",
         content: `Bullish on ${symbol}. Strong fundamentals and great management.`,
-        author: '@financeguru',
+        author: "@financeguru",
         authorFollowers: 250_000,
         publishedAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
         symbols: [symbol],
         sentiment: 0.5,
         engagement: 1_500,
         reach: 50_000,
-        url: 'https://twitter.com/financeguru/status/123',
+        url: "https://twitter.com/financeguru/status/123",
       },
     ];
 
     const viralPosts = influencerMentions;
 
     const platformBreakdown = [
-      { platform: 'twitter', mentions: 1_200, sentiment: 0.4 },
-      { platform: 'reddit', mentions: 850, sentiment: 0.3 },
-      { platform: 'stocktwits', mentions: 650, sentiment: 0.5 },
+      { platform: "twitter", mentions: 1_200, sentiment: 0.4 },
+      { platform: "reddit", mentions: 850, sentiment: 0.3 },
+      { platform: "stocktwits", mentions: 650, sentiment: 0.5 },
     ];
 
     const mentionCount24h = platformBreakdown.reduce(
       (sum, p) => sum + p.mentions,
-      0
+      0,
     );
     const mentionCount7d = mentionCount24h * 7;
     const mentionChange = 15.3;
@@ -267,8 +267,8 @@ export class SentimentAnalysisService {
       mentionCount24h;
     const sentimentLabel = this.getSentimentLabel(averageSentiment);
 
-    const trendingTopics = ['earnings', 'innovation', 'AI', 'growth'];
-    const sentimentTrend: 'improving' | 'stable' | 'declining' = 'improving';
+    const trendingTopics = ["earnings", "innovation", "AI", "growth"];
+    const sentimentTrend: "improving" | "stable" | "declining" = "improving";
     const signal = this.sentimentToSignal(averageSentiment);
 
     return {
@@ -294,22 +294,22 @@ export class SentimentAnalysisService {
   async getAnalystConsensus(symbol: string): Promise<AnalystConsensus> {
     const recentChanges: AnalystRecommendation[] = [
       {
-        id: '1',
+        id: "1",
         symbol,
-        firm: 'Goldman Sachs',
-        analyst: 'John Smith',
-        rating: 'buy',
-        previousRating: 'hold',
+        firm: "Goldman Sachs",
+        analyst: "John Smith",
+        rating: "buy",
+        previousRating: "hold",
         priceTarget: 175.0,
         previousPriceTarget: 160.0,
         date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-        summary: 'Upgraded due to strong earnings and positive outlook.',
+        summary: "Upgraded due to strong earnings and positive outlook.",
       },
       {
-        id: '2',
+        id: "2",
         symbol,
-        firm: 'Morgan Stanley',
-        rating: 'hold',
+        firm: "Morgan Stanley",
+        rating: "hold",
         priceTarget: 155.0,
         date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
       },
@@ -327,16 +327,16 @@ export class SentimentAnalysisService {
       (strongBuy * 5 + buy * 4 + hold * 3 + sell * 2 + strongSell * 1) /
       totalAnalysts;
     let consensusRating:
-      | 'strong_buy'
-      | 'buy'
-      | 'hold'
-      | 'sell'
-      | 'strong_sell' = 'hold';
-    if (ratingScore >= 4.5) consensusRating = 'strong_buy';
-    else if (ratingScore >= 3.5) consensusRating = 'buy';
-    else if (ratingScore >= 2.5) consensusRating = 'hold';
-    else if (ratingScore >= 1.5) consensusRating = 'sell';
-    else consensusRating = 'strong_sell';
+      | "strong_buy"
+      | "buy"
+      | "hold"
+      | "sell"
+      | "strong_sell" = "hold";
+    if (ratingScore >= 4.5) consensusRating = "strong_buy";
+    else if (ratingScore >= 3.5) consensusRating = "buy";
+    else if (ratingScore >= 2.5) consensusRating = "hold";
+    else if (ratingScore >= 1.5) consensusRating = "sell";
+    else consensusRating = "strong_sell";
 
     const averagePriceTarget = 165.0;
     const highPriceTarget = 185.0;
@@ -345,7 +345,7 @@ export class SentimentAnalysisService {
     const currentPrice = 152.0;
     const upside = ((averagePriceTarget - currentPrice) / currentPrice) * 100;
 
-    const ratingTrend: 'upgrading' | 'stable' | 'downgrading' = 'upgrading';
+    const ratingTrend: "upgrading" | "stable" | "downgrading" = "upgrading";
     const signal = this.analystRatingToSignal(consensusRating);
 
     return {
@@ -376,13 +376,13 @@ export class SentimentAnalysisService {
   async getInsiderActivity(symbol: string): Promise<InsiderActivity> {
     const transactions90Days: InsiderTransaction[] = [
       {
-        id: '1',
+        id: "1",
         symbol,
         filingDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
         transactionDate: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000),
-        insiderName: 'John Doe',
-        insiderTitle: 'CEO',
-        transactionType: 'buy',
+        insiderName: "John Doe",
+        insiderTitle: "CEO",
+        transactionType: "buy",
         shares: 50_000,
         pricePerShare: 148.5,
         totalValue: 7_425_000,
@@ -390,13 +390,13 @@ export class SentimentAnalysisService {
         ownershipChange: 11.1,
       },
       {
-        id: '2',
+        id: "2",
         symbol,
         filingDate: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
         transactionDate: new Date(Date.now() - 22 * 24 * 60 * 60 * 1000),
-        insiderName: 'Jane Smith',
-        insiderTitle: 'CFO',
-        transactionType: 'sell',
+        insiderName: "Jane Smith",
+        insiderTitle: "CFO",
+        transactionType: "sell",
         shares: 10_000,
         pricePerShare: 152.0,
         totalValue: 1_520_000,
@@ -406,50 +406,50 @@ export class SentimentAnalysisService {
     ];
 
     const totalBuys = transactions90Days.filter(
-      (t) => t.transactionType === 'buy'
+      (t) => t.transactionType === "buy",
     ).length;
     const totalSells = transactions90Days.filter(
-      (t) => t.transactionType === 'sell'
+      (t) => t.transactionType === "sell",
     ).length;
 
     const netBuyValue = transactions90Days
-      .filter((t) => t.transactionType === 'buy')
+      .filter((t) => t.transactionType === "buy")
       .reduce((sum, t) => sum + t.totalValue, 0);
 
     const netSellValue = transactions90Days
-      .filter((t) => t.transactionType === 'sell')
+      .filter((t) => t.transactionType === "sell")
       .reduce((sum, t) => sum + t.totalValue, 0);
 
     const buyersCount = new Set(
       transactions90Days
-        .filter((t) => t.transactionType === 'buy')
-        .map((t) => t.insiderName)
+        .filter((t) => t.transactionType === "buy")
+        .map((t) => t.insiderName),
     ).size;
     const sellersCount = new Set(
       transactions90Days
-        .filter((t) => t.transactionType === 'sell')
-        .map((t) => t.insiderName)
+        .filter((t) => t.transactionType === "sell")
+        .map((t) => t.insiderName),
     ).size;
 
-    const insiderSentiment: 'bullish' | 'neutral' | 'bearish' =
+    const insiderSentiment: "bullish" | "neutral" | "bearish" =
       netBuyValue > netSellValue * 2
-        ? 'bullish'
+        ? "bullish"
         : netSellValue > netBuyValue * 2
-          ? 'bearish'
-          : 'neutral';
+          ? "bearish"
+          : "neutral";
 
     const significantTransactions = transactions90Days.filter(
-      (t) => t.totalValue > 5_000_000
+      (t) => t.totalValue > 5_000_000,
     );
     const clusterBuying = totalBuys >= 3 && buyersCount >= 2;
     const clusterSelling = totalSells >= 3 && sellersCount >= 2;
 
     const signal =
-      insiderSentiment === 'bullish'
-        ? 'buy'
-        : insiderSentiment === 'bearish'
-          ? 'sell'
-          : 'neutral';
+      insiderSentiment === "bullish"
+        ? "buy"
+        : insiderSentiment === "bearish"
+          ? "sell"
+          : "neutral";
 
     return {
       symbol,
@@ -473,11 +473,11 @@ export class SentimentAnalysisService {
    * Get institutional ownership data
    */
   async getInstitutionalOwnership(
-    symbol: string
+    symbol: string,
   ): Promise<InstitutionalOwnership> {
     const topHolders: InstitutionalHolder[] = [
       {
-        name: 'Vanguard Group',
+        name: "Vanguard Group",
         shares: 85_000_000,
         value: 12_920_000_000,
         percentOwnership: 8.5,
@@ -486,7 +486,7 @@ export class SentimentAnalysisService {
         reportDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
       },
       {
-        name: 'BlackRock',
+        name: "BlackRock",
         shares: 72_000_000,
         value: 10_944_000_000,
         percentOwnership: 7.2,
@@ -503,33 +503,33 @@ export class SentimentAnalysisService {
 
     const totalInstitutionalShares = topHolders.reduce(
       (sum, h) => sum + h.shares,
-      0
+      0,
     );
     const totalInstitutionalValue = topHolders.reduce(
       (sum, h) => sum + h.value,
-      0
+      0,
     );
     const institutionalOwnershipPercent = topHolders.reduce(
       (sum, h) => sum + h.percentOwnership,
-      0
+      0,
     );
     const institutionsCount = topHolders.length;
 
     const quarterlyChange = 2.5; // Percentage increase in institutional ownership
 
-    const ownershipTrend: 'increasing' | 'stable' | 'decreasing' =
+    const ownershipTrend: "increasing" | "stable" | "decreasing" =
       quarterlyChange > 2
-        ? 'increasing'
+        ? "increasing"
         : quarterlyChange < -2
-          ? 'decreasing'
-          : 'stable';
+          ? "decreasing"
+          : "stable";
 
     const signal =
-      ownershipTrend === 'increasing'
-        ? 'buy'
-        : ownershipTrend === 'decreasing'
-          ? 'sell'
-          : 'neutral';
+      ownershipTrend === "increasing"
+        ? "buy"
+        : ownershipTrend === "decreasing"
+          ? "sell"
+          : "neutral";
 
     return {
       symbol,
@@ -558,38 +558,38 @@ export class SentimentAnalysisService {
   }> {
     const fearGreed: FearGreedIndex = {
       value: 62,
-      label: 'greed',
+      label: "greed",
       previousClose: 58,
       oneWeekAgo: 55,
       oneMonthAgo: 48,
       oneYearAgo: 52,
       components: [
         {
-          name: 'Stock Price Momentum',
+          name: "Stock Price Momentum",
           value: 65,
           weight: 0.2,
-          signal: 'greed',
+          signal: "greed",
         },
         {
-          name: 'Stock Price Strength',
+          name: "Stock Price Strength",
           value: 70,
           weight: 0.2,
-          signal: 'greed',
+          signal: "greed",
         },
         {
-          name: 'Stock Price Breadth',
+          name: "Stock Price Breadth",
           value: 55,
           weight: 0.2,
-          signal: 'neutral',
+          signal: "neutral",
         },
-        { name: 'Put/Call Options', value: 60, weight: 0.15, signal: 'greed' },
+        { name: "Put/Call Options", value: 60, weight: 0.15, signal: "greed" },
         {
-          name: 'Market Volatility',
+          name: "Market Volatility",
           value: 58,
           weight: 0.15,
-          signal: 'neutral',
+          signal: "neutral",
         },
-        { name: 'Safe Haven Demand', value: 62, weight: 0.1, signal: 'greed' },
+        { name: "Safe Haven Demand", value: 62, weight: 0.1, signal: "greed" },
       ],
       updatedAt: new Date(),
     };
@@ -602,8 +602,8 @@ export class SentimentAnalysisService {
       low: 15.8,
       avg30Day: 17.8,
       percentile: 35,
-      level: 'normal',
-      signal: 'buy',
+      level: "normal",
+      signal: "buy",
     };
 
     const breadth: MarketBreadth = {
@@ -619,7 +619,7 @@ export class SentimentAnalysisService {
       percentAbove200MA: 72.3,
       mcclellanOscillator: 85.2,
       mcclellanSummation: 1_250,
-      breadthSignal: 'bullish',
+      breadthSignal: "bullish",
     };
 
     return { fearGreed, vix, breadth };
@@ -637,27 +637,27 @@ export class SentimentAnalysisService {
     social: SocialSentiment,
     analysts: AnalystConsensus,
     insiders: InsiderActivity,
-    institutional: InstitutionalOwnership
+    institutional: InstitutionalOwnership,
   ): {
     score: number;
     label: SentimentLabel;
     components: Array<{ source: string; score: number; weight: number }>;
   } {
     const components = [
-      { source: 'News', score: news.averageSentiment, weight: 0.25 },
-      { source: 'Social Media', score: social.averageSentiment, weight: 0.15 },
+      { source: "News", score: news.averageSentiment, weight: 0.25 },
+      { source: "Social Media", score: social.averageSentiment, weight: 0.15 },
       {
-        source: 'Analysts',
+        source: "Analysts",
         score: this.analystRatingToScore(analysts.consensusRating),
         weight: 0.3,
       },
       {
-        source: 'Insiders',
+        source: "Insiders",
         score: this.insiderSentimentToScore(insiders.insiderSentiment),
         weight: 0.2,
       },
       {
-        source: 'Institutional',
+        source: "Institutional",
         score: this.ownershipTrendToScore(institutional.ownershipTrend),
         weight: 0.1,
       },
@@ -673,22 +673,22 @@ export class SentimentAnalysisService {
    * Convert sentiment score to label
    */
   private getSentimentLabel(score: number): SentimentLabel {
-    if (score >= 0.5) return 'very_positive';
-    if (score >= 0.2) return 'positive';
-    if (score <= -0.5) return 'very_negative';
-    if (score <= -0.2) return 'negative';
-    return 'neutral';
+    if (score >= 0.5) return "very_positive";
+    if (score >= 0.2) return "positive";
+    if (score <= -0.5) return "very_negative";
+    if (score <= -0.2) return "negative";
+    return "neutral";
   }
 
   /**
    * Convert sentiment to signal
    */
   private sentimentToSignal(sentiment: number): SignalStrength {
-    if (sentiment >= 0.5) return 'strong_buy';
-    if (sentiment >= 0.2) return 'buy';
-    if (sentiment <= -0.5) return 'strong_sell';
-    if (sentiment <= -0.2) return 'sell';
-    return 'neutral';
+    if (sentiment >= 0.5) return "strong_buy";
+    if (sentiment >= 0.2) return "buy";
+    if (sentiment <= -0.5) return "strong_sell";
+    if (sentiment <= -0.2) return "sell";
+    return "neutral";
   }
 
   /**
@@ -696,14 +696,14 @@ export class SentimentAnalysisService {
    */
   private analystRatingToSignal(rating: string): SignalStrength {
     const map: Record<string, SignalStrength> = {
-      strong_buy: 'strong_buy',
-      buy: 'buy',
-      hold: 'neutral',
-      neutral: 'neutral',
-      sell: 'sell',
-      strong_sell: 'strong_sell',
+      strong_buy: "strong_buy",
+      buy: "buy",
+      hold: "neutral",
+      neutral: "neutral",
+      sell: "sell",
+      strong_sell: "strong_sell",
     };
-    return map[rating] || 'neutral';
+    return map[rating] || "neutral";
   }
 
   /**
@@ -757,10 +757,10 @@ export class SentimentAnalysisService {
   private generateSummary(
     symbol: string,
     composite: { score: number; label: SentimentLabel },
-    signal: SignalStrength
+    signal: SignalStrength,
   ): string {
-    const sentimentText = composite.label.replace('_', ' ').toUpperCase();
-    const signalText = signal.replace('_', ' ').toUpperCase();
+    const sentimentText = composite.label.replace("_", " ").toUpperCase();
+    const signalText = signal.replace("_", " ").toUpperCase();
 
     return (
       `Overall sentiment for ${symbol} is ${sentimentText} (score: ${composite.score.toFixed(2)}), ` +
@@ -775,31 +775,31 @@ export class SentimentAnalysisService {
   private generateKeyInsights(
     news: NewsSentiment,
     social: SocialSentiment,
-    analysts: AnalystConsensus
+    analysts: AnalystConsensus,
   ): string[] {
     const insights: string[] = [];
 
-    if (news.sentimentTrend === 'improving') {
+    if (news.sentimentTrend === "improving") {
       insights.push(
-        `News sentiment is improving with ${news.positiveCount} positive articles recently`
+        `News sentiment is improving with ${news.positiveCount} positive articles recently`,
       );
     }
 
     if (social.mentionChange > 20) {
       insights.push(
-        `Social media mentions increased ${social.mentionChange.toFixed(1)}% in 24h`
+        `Social media mentions increased ${social.mentionChange.toFixed(1)}% in 24h`,
       );
     }
 
-    if (analysts.ratingTrend === 'upgrading') {
+    if (analysts.ratingTrend === "upgrading") {
       insights.push(
-        `Analyst consensus is upgrading with ${analysts.strongBuy + analysts.buy} buy ratings out of ${analysts.totalAnalysts} analysts`
+        `Analyst consensus is upgrading with ${analysts.strongBuy + analysts.buy} buy ratings out of ${analysts.totalAnalysts} analysts`,
       );
     }
 
     if (analysts.upside > 10) {
       insights.push(
-        `Analysts project ${analysts.upside.toFixed(1)}% upside to average price target of $${analysts.averagePriceTarget.toFixed(2)}`
+        `Analysts project ${analysts.upside.toFixed(1)}% upside to average price target of $${analysts.averagePriceTarget.toFixed(2)}`,
       );
     }
 
@@ -812,25 +812,25 @@ export class SentimentAnalysisService {
   private identifyRisks(
     news: NewsSentiment,
     insiders: InsiderActivity,
-    institutional: InstitutionalOwnership
+    institutional: InstitutionalOwnership,
   ): string[] {
     const risks: string[] = [];
 
-    if (news.sentimentTrend === 'declining') {
+    if (news.sentimentTrend === "declining") {
       risks.push(
-        'News sentiment is declining, indicating potential negative catalysts'
+        "News sentiment is declining, indicating potential negative catalysts",
       );
     }
 
     if (insiders.clusterSelling) {
       risks.push(
-        'Cluster selling by insiders may signal concerns about near-term prospects'
+        "Cluster selling by insiders may signal concerns about near-term prospects",
       );
     }
 
-    if (institutional.ownershipTrend === 'decreasing') {
+    if (institutional.ownershipTrend === "decreasing") {
       risks.push(
-        'Institutional ownership is declining, suggesting reduced confidence from large investors'
+        "Institutional ownership is declining, suggesting reduced confidence from large investors",
       );
     }
 
@@ -843,25 +843,25 @@ export class SentimentAnalysisService {
   private identifyOpportunities(
     news: NewsSentiment,
     analysts: AnalystConsensus,
-    insiders: InsiderActivity
+    insiders: InsiderActivity,
   ): string[] {
     const opportunities: string[] = [];
 
-    if (news.sentimentTrend === 'improving') {
+    if (news.sentimentTrend === "improving") {
       opportunities.push(
-        'Improving news sentiment could drive positive price momentum'
+        "Improving news sentiment could drive positive price momentum",
       );
     }
 
     if (analysts.upside > 15) {
       opportunities.push(
-        'Significant analyst upside suggests undervalued entry point'
+        "Significant analyst upside suggests undervalued entry point",
       );
     }
 
     if (insiders.clusterBuying) {
       opportunities.push(
-        'Cluster buying by insiders indicates strong internal confidence'
+        "Cluster buying by insiders indicates strong internal confidence",
       );
     }
 
@@ -878,7 +878,7 @@ export class SentimentAnalysisService {
       analyzedAt: new Date(),
       articleCount: 0,
       averageSentiment: 0,
-      sentimentLabel: 'neutral',
+      sentimentLabel: "neutral",
       sentimentChange24h: 0,
       sentimentChange7d: 0,
       positiveCount: 0,
@@ -887,8 +887,8 @@ export class SentimentAnalysisService {
       topPositiveNews: [],
       topNegativeNews: [],
       recentNews: [],
-      sentimentTrend: 'stable',
-      signal: 'neutral',
+      sentimentTrend: "stable",
+      signal: "neutral",
     };
   }
 
@@ -900,13 +900,13 @@ export class SentimentAnalysisService {
       mentionCount7d: 0,
       mentionChange: 0,
       averageSentiment: 0,
-      sentimentLabel: 'neutral',
+      sentimentLabel: "neutral",
       platformBreakdown: [],
       influencerMentions: [],
       viralPosts: [],
       trendingTopics: [],
-      sentimentTrend: 'stable',
-      signal: 'neutral',
+      sentimentTrend: "stable",
+      signal: "neutral",
     };
   }
 
@@ -920,7 +920,7 @@ export class SentimentAnalysisService {
       hold: 0,
       sell: 0,
       strongSell: 0,
-      consensusRating: 'hold',
+      consensusRating: "hold",
       averagePriceTarget: 0,
       highPriceTarget: 0,
       lowPriceTarget: 0,
@@ -928,8 +928,8 @@ export class SentimentAnalysisService {
       currentPrice: 0,
       upside: 0,
       recentChanges: [],
-      ratingTrend: 'stable',
-      signal: 'neutral',
+      ratingTrend: "stable",
+      signal: "neutral",
     };
   }
 
@@ -944,16 +944,16 @@ export class SentimentAnalysisService {
       netSellValue: 0,
       buyersCount: 0,
       sellersCount: 0,
-      insiderSentiment: 'neutral',
+      insiderSentiment: "neutral",
       significantTransactions: [],
       clusterBuying: false,
       clusterSelling: false,
-      signal: 'neutral',
+      signal: "neutral",
     };
   }
 
   private getDefaultInstitutionalOwnership(
-    symbol: string
+    symbol: string,
   ): InstitutionalOwnership {
     return {
       symbol,
@@ -967,8 +967,8 @@ export class SentimentAnalysisService {
       increasedPositions: [],
       decreasedPositions: [],
       soldOut: [],
-      ownershipTrend: 'stable',
-      signal: 'neutral',
+      ownershipTrend: "stable",
+      signal: "neutral",
     };
   }
 
@@ -980,7 +980,7 @@ export class SentimentAnalysisService {
     return {
       fearGreed: {
         value: 50,
-        label: 'neutral',
+        label: "neutral",
         previousClose: 50,
         oneWeekAgo: 50,
         oneMonthAgo: 50,
@@ -996,8 +996,8 @@ export class SentimentAnalysisService {
         low: 20,
         avg30Day: 20,
         percentile: 50,
-        level: 'normal',
-        signal: 'neutral',
+        level: "normal",
+        signal: "neutral",
       },
       breadth: {
         advancers: 0,
@@ -1012,7 +1012,7 @@ export class SentimentAnalysisService {
         percentAbove200MA: 50,
         mcclellanOscillator: 0,
         mcclellanSummation: 0,
-        breadthSignal: 'neutral',
+        breadthSignal: "neutral",
       },
     };
   }

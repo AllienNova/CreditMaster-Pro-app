@@ -4,18 +4,23 @@
  * POST /api/ai/financial-coach/plan - Generate personalized action plan
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { z } from 'zod';
-import { financialCoach } from '@/lib/ai/financial-coach';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { z } from "zod";
+import { financialCoach } from "@/lib/ai/financial-coach";
 
 // ============================================================================
 // VALIDATION SCHEMAS
 // ============================================================================
 
 const PlanRequestSchema = z.object({
-  goals: z.array(z.string()).min(1, 'At least one goal is required').max(5, 'Maximum 5 goals allowed'),
-  timeframe: z.enum(['short_term', 'medium_term', 'long_term']).default('medium_term'),
+  goals: z
+    .array(z.string())
+    .min(1, "At least one goal is required")
+    .max(5, "Maximum 5 goals allowed"),
+  timeframe: z
+    .enum(["short_term", "medium_term", "long_term"])
+    .default("medium_term"),
 });
 
 // ============================================================================
@@ -70,11 +75,11 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: {
-            code: 'UNAUTHORIZED',
-            message: 'Authentication required',
+            code: "UNAUTHORIZED",
+            message: "Authentication required",
           },
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -84,11 +89,11 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: {
-            code: 'RATE_LIMIT_EXCEEDED',
-            message: 'Too many requests. Please try again in a minute.',
+            code: "RATE_LIMIT_EXCEEDED",
+            message: "Too many requests. Please try again in a minute.",
           },
         },
-        { status: 429 }
+        { status: 429 },
       );
     }
 
@@ -101,12 +106,12 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: {
-            code: 'INVALID_REQUEST',
-            message: 'Invalid request parameters',
+            code: "INVALID_REQUEST",
+            message: "Invalid request parameters",
             details: validation.error.errors,
           },
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -114,16 +119,16 @@ export async function POST(request: NextRequest) {
 
     // Map timeframe to readable string
     const timeframeMap = {
-      short_term: '0-1 year',
-      medium_term: '1-5 years',
-      long_term: '5+ years',
+      short_term: "0-1 year",
+      medium_term: "1-5 years",
+      long_term: "5+ years",
     };
 
     // Generate action plan
     const plan = await financialCoach.generateActionPlan(
       user.id,
       goals,
-      timeframeMap[timeframe]
+      timeframeMap[timeframe],
     );
 
     return NextResponse.json({
@@ -134,19 +139,18 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error generating action plan:', error);
+    console.error("Error generating action plan:", error);
 
     return NextResponse.json(
       {
         success: false,
         error: {
-          code: 'INTERNAL_ERROR',
-          message: 'Failed to generate action plan',
-          details: error instanceof Error ? error.message : 'Unknown error',
+          code: "INTERNAL_ERROR",
+          message: "Failed to generate action plan",
+          details: error instanceof Error ? error.message : "Unknown error",
         },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-

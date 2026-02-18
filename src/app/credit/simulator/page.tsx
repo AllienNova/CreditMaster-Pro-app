@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   CreditCard,
   TrendingUp,
@@ -14,7 +14,7 @@ import {
   Sparkles,
   Calculator,
   RefreshCw,
-} from 'lucide-react';
+} from "lucide-react";
 
 interface SimulationAction {
   id: string;
@@ -22,7 +22,7 @@ interface SimulationAction {
   label: string;
   description: string;
   icon: React.ReactNode;
-  inputType: 'currency' | 'number' | 'percentage' | 'boolean';
+  inputType: "currency" | "number" | "percentage" | "boolean";
   placeholder?: string;
   min?: number;
   max?: number;
@@ -37,70 +37,70 @@ interface SimulationResult {
   factors: {
     name: string;
     impact: number;
-    direction: 'positive' | 'negative' | 'neutral';
+    direction: "positive" | "negative" | "neutral";
   }[];
   recommendations: string[];
 }
 
 const SIMULATION_ACTIONS: SimulationAction[] = [
   {
-    id: 'pay_down_debt',
-    type: 'pay_down_debt',
-    label: 'Pay Down Credit Card Debt',
-    description: 'Reduce your credit card balance',
+    id: "pay_down_debt",
+    type: "pay_down_debt",
+    label: "Pay Down Credit Card Debt",
+    description: "Reduce your credit card balance",
     icon: <CreditCard className="w-5 h-5" />,
-    inputType: 'currency',
-    placeholder: 'Amount to pay',
+    inputType: "currency",
+    placeholder: "Amount to pay",
     min: 0,
   },
   {
-    id: 'increase_credit_limit',
-    type: 'increase_credit_limit',
-    label: 'Increase Credit Limit',
-    description: 'Request a higher credit limit',
+    id: "increase_credit_limit",
+    type: "increase_credit_limit",
+    label: "Increase Credit Limit",
+    description: "Request a higher credit limit",
     icon: <TrendingUp className="w-5 h-5" />,
-    inputType: 'currency',
-    placeholder: 'New limit amount',
+    inputType: "currency",
+    placeholder: "New limit amount",
     min: 0,
   },
   {
-    id: 'open_new_account',
-    type: 'open_new_account',
-    label: 'Open New Credit Account',
-    description: 'Apply for a new credit card',
+    id: "open_new_account",
+    type: "open_new_account",
+    label: "Open New Credit Account",
+    description: "Apply for a new credit card",
     icon: <CreditCard className="w-5 h-5" />,
-    inputType: 'boolean',
+    inputType: "boolean",
   },
   {
-    id: 'remove_late_payment',
-    type: 'remove_late_payment',
-    label: 'Remove Late Payment',
-    description: 'Dispute a late payment from your report',
+    id: "remove_late_payment",
+    type: "remove_late_payment",
+    label: "Remove Late Payment",
+    description: "Dispute a late payment from your report",
     icon: <Clock className="w-5 h-5" />,
-    inputType: 'number',
-    placeholder: 'Number of late payments',
+    inputType: "number",
+    placeholder: "Number of late payments",
     min: 1,
     max: 10,
   },
   {
-    id: 'become_authorized_user',
-    type: 'become_authorized_user',
-    label: 'Become Authorized User',
+    id: "become_authorized_user",
+    type: "become_authorized_user",
+    label: "Become Authorized User",
     description: "Get added to someone else's card",
     icon: <CheckCircle className="w-5 h-5" />,
-    inputType: 'number',
-    placeholder: 'Account age (years)',
+    inputType: "number",
+    placeholder: "Account age (years)",
     min: 1,
     max: 30,
   },
   {
-    id: 'reduce_utilization',
-    type: 'reduce_utilization',
-    label: 'Reduce Credit Utilization',
-    description: 'Lower your credit usage percentage',
+    id: "reduce_utilization",
+    type: "reduce_utilization",
+    label: "Reduce Credit Utilization",
+    description: "Lower your credit usage percentage",
     icon: <TrendingDown className="w-5 h-5" />,
-    inputType: 'percentage',
-    placeholder: 'Target utilization %',
+    inputType: "percentage",
+    placeholder: "Target utilization %",
     min: 0,
     max: 100,
   },
@@ -132,75 +132,75 @@ export default function CreditScoreSimulatorPage() {
 
     // Calculate simulated result
     let scoreChange = 0;
-    const factors: SimulationResult['factors'] = [];
+    const factors: SimulationResult["factors"] = [];
 
     selectedActions.forEach((value, actionId) => {
       const action = SIMULATION_ACTIONS.find((a) => a.id === actionId);
       if (!action) return;
 
       switch (actionId) {
-        case 'pay_down_debt':
+        case "pay_down_debt":
           const debtImpact = Math.min(
             Math.floor((value as number) / 500) * 5,
-            40
+            40,
           );
           scoreChange += debtImpact;
           factors.push({
-            name: 'Debt Reduction',
+            name: "Debt Reduction",
             impact: debtImpact,
-            direction: 'positive',
+            direction: "positive",
           });
           break;
-        case 'increase_credit_limit':
+        case "increase_credit_limit":
           const limitImpact = Math.min(
             Math.floor((value as number) / 1000) * 3,
-            20
+            20,
           );
           scoreChange += limitImpact;
           factors.push({
-            name: 'Lower Utilization',
+            name: "Lower Utilization",
             impact: limitImpact,
-            direction: 'positive',
+            direction: "positive",
           });
           break;
-        case 'open_new_account':
+        case "open_new_account":
           scoreChange -= 10; // Hard inquiry
           factors.push({
-            name: 'New Account (Hard Inquiry)',
+            name: "New Account (Hard Inquiry)",
             impact: -10,
-            direction: 'negative',
+            direction: "negative",
           });
           break;
-        case 'remove_late_payment':
+        case "remove_late_payment":
           const lateImpact = (value as number) * 15;
           scoreChange += lateImpact;
           factors.push({
-            name: 'Late Payment Removal',
+            name: "Late Payment Removal",
             impact: lateImpact,
-            direction: 'positive',
+            direction: "positive",
           });
           break;
-        case 'become_authorized_user':
+        case "become_authorized_user":
           const auImpact = Math.min((value as number) * 5, 25);
           scoreChange += auImpact;
           factors.push({
-            name: 'Authorized User',
+            name: "Authorized User",
             impact: auImpact,
-            direction: 'positive',
+            direction: "positive",
           });
           break;
-        case 'reduce_utilization':
+        case "reduce_utilization":
           const currentUtil = 35;
           const targetUtil = value as number;
           const utilImpact = Math.max(
             0,
-            Math.floor((currentUtil - targetUtil) * 0.8)
+            Math.floor((currentUtil - targetUtil) * 0.8),
           );
           scoreChange += utilImpact;
           factors.push({
-            name: 'Utilization Reduction',
+            name: "Utilization Reduction",
             impact: utilImpact,
-            direction: 'positive',
+            direction: "positive",
           });
           break;
       }
@@ -208,7 +208,7 @@ export default function CreditScoreSimulatorPage() {
 
     const projectedScore = Math.min(
       850,
-      Math.max(300, currentScore + scoreChange)
+      Math.max(300, currentScore + scoreChange),
     );
 
     setResult({
@@ -218,17 +218,17 @@ export default function CreditScoreSimulatorPage() {
       confidence: 85 + Math.floor(Math.random() * 10),
       timeToAchieve:
         scoreChange > 30
-          ? '3-6 months'
+          ? "3-6 months"
           : scoreChange > 15
-            ? '1-3 months'
-            : '30-60 days',
+            ? "1-3 months"
+            : "30-60 days",
       factors,
       recommendations: [
         scoreChange > 0
-          ? 'These actions could significantly improve your score!'
-          : 'Consider alternative strategies.',
-        'Focus on reducing credit utilization below 30%.',
-        'Keep older accounts open to maintain credit history length.',
+          ? "These actions could significantly improve your score!"
+          : "Consider alternative strategies.",
+        "Focus on reducing credit utilization below 30%.",
+        "Keep older accounts open to maintain credit history length.",
       ],
     });
 
@@ -241,19 +241,19 @@ export default function CreditScoreSimulatorPage() {
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 800) return 'text-emerald-500';
-    if (score >= 740) return 'text-green-500';
-    if (score >= 670) return 'text-lime-500';
-    if (score >= 580) return 'text-yellow-500';
-    return 'text-red-500';
+    if (score >= 800) return "text-emerald-500";
+    if (score >= 740) return "text-green-500";
+    if (score >= 670) return "text-lime-500";
+    if (score >= 580) return "text-yellow-500";
+    return "text-red-500";
   };
 
   const getScoreRating = (score: number) => {
-    if (score >= 800) return 'Excellent';
-    if (score >= 740) return 'Very Good';
-    if (score >= 670) return 'Good';
-    if (score >= 580) return 'Fair';
-    return 'Poor';
+    if (score >= 800) return "Excellent";
+    if (score >= 740) return "Very Good";
+    if (score >= 670) return "Good";
+    if (score >= 580) return "Fair";
+    return "Poor";
   };
 
   return (
@@ -331,8 +331,8 @@ export default function CreditScoreSimulatorPage() {
                     <div
                       className={`flex items-center justify-center gap-1 mt-2 ${
                         result.scoreChange >= 0
-                          ? 'text-green-500'
-                          : 'text-red-500'
+                          ? "text-green-500"
+                          : "text-red-500"
                       }`}
                     >
                       {result.scoreChange >= 0 ? (
@@ -341,7 +341,7 @@ export default function CreditScoreSimulatorPage() {
                         <TrendingDown className="w-4 h-4" />
                       )}
                       <span className="font-semibold">
-                        {result.scoreChange >= 0 ? '+' : ''}
+                        {result.scoreChange >= 0 ? "+" : ""}
                         {result.scoreChange} points
                       </span>
                     </div>
@@ -370,11 +370,11 @@ export default function CreditScoreSimulatorPage() {
                   return (
                     <div
                       key={action.id}
-                      className={`p-4 rounded-lg border-2 transition-all ${ isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 hover:border-gray-300 dark:border-slate-600' }`}
+                      className={`p-4 rounded-lg border-2 transition-all ${isSelected ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20" : "border-gray-200 hover:border-gray-300 dark:border-slate-600"}`}
                     >
                       <div className="flex items-start gap-3">
                         <div
-                          className={`p-2 rounded-lg ${ isSelected ? 'bg-blue-100' : 'bg-gray-100 dark:bg-slate-700' }`}
+                          className={`p-2 rounded-lg ${isSelected ? "bg-blue-100" : "bg-gray-100 dark:bg-slate-700"}`}
                         >
                           {action.icon}
                         </div>
@@ -387,7 +387,7 @@ export default function CreditScoreSimulatorPage() {
                           </p>
 
                           <div className="mt-3">
-                            {action.inputType === 'boolean' ? (
+                            {action.inputType === "boolean" ? (
                               <label className="flex items-center gap-2 cursor-pointer">
                                 <input
                                   type="checkbox"
@@ -395,7 +395,7 @@ export default function CreditScoreSimulatorPage() {
                                   onChange={(e) =>
                                     handleActionToggle(
                                       action.id,
-                                      e.target.checked
+                                      e.target.checked,
                                     )
                                   }
                                   className="w-4 h-4 rounded border-gray-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500"
@@ -406,25 +406,29 @@ export default function CreditScoreSimulatorPage() {
                               </label>
                             ) : (
                               <div className="flex items-center gap-2">
-                                {action.inputType === 'currency' && (
-                                  <span className="text-gray-500 dark:text-slate-400">$</span>
+                                {action.inputType === "currency" && (
+                                  <span className="text-gray-500 dark:text-slate-400">
+                                    $
+                                  </span>
                                 )}
                                 <input
                                   type="number"
                                   placeholder={action.placeholder}
                                   min={action.min}
                                   max={action.max}
-                                  value={(value as number) || ''}
+                                  value={(value as number) || ""}
                                   onChange={(e) =>
                                     handleActionToggle(
                                       action.id,
-                                      parseFloat(e.target.value) || 0
+                                      parseFloat(e.target.value) || 0,
                                     )
                                   }
                                   className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 />
-                                {action.inputType === 'percentage' && (
-                                  <span className="text-gray-500 dark:text-slate-400">%</span>
+                                {action.inputType === "percentage" && (
+                                  <span className="text-gray-500 dark:text-slate-400">
+                                    %
+                                  </span>
                                 )}
                               </div>
                             )}
@@ -492,14 +496,14 @@ export default function CreditScoreSimulatorPage() {
                           </span>
                           <span
                             className={`font-semibold ${
-                              factor.direction === 'positive'
-                                ? 'text-green-500'
-                                : factor.direction === 'negative'
-                                  ? 'text-red-500'
-                                  : 'text-gray-500 dark:text-slate-400'
+                              factor.direction === "positive"
+                                ? "text-green-500"
+                                : factor.direction === "negative"
+                                  ? "text-red-500"
+                                  : "text-gray-500 dark:text-slate-400"
                             }`}
                           >
-                            {factor.impact >= 0 ? '+' : ''}
+                            {factor.impact >= 0 ? "+" : ""}
                             {factor.impact} pts
                           </span>
                         </div>

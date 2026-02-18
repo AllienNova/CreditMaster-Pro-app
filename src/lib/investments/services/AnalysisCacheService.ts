@@ -56,7 +56,7 @@ export class AnalysisCacheService {
     const sortedParams = Object.keys(params)
       .sort()
       .map((key) => `${key}:${JSON.stringify(params[key])}`)
-      .join('|');
+      .join("|");
     return `${type}:${sortedParams}`;
   }
 
@@ -90,7 +90,12 @@ export class AnalysisCacheService {
   /**
    * Set cached data
    */
-  set<T>(type: string, params: Record<string, any>, data: T, ttl?: number): void {
+  set<T>(
+    type: string,
+    params: Record<string, any>,
+    data: T,
+    ttl?: number,
+  ): void {
     const key = this.generateKey(type, params);
     const now = Date.now();
     const expiresAt = now + (ttl || this.defaultTTL);
@@ -211,7 +216,9 @@ let analysisCacheServiceInstance: AnalysisCacheService | null = null;
 /**
  * Get singleton instance of AnalysisCacheService
  */
-export function getAnalysisCacheService(options?: CacheOptions): AnalysisCacheService {
+export function getAnalysisCacheService(
+  options?: CacheOptions,
+): AnalysisCacheService {
   if (!analysisCacheServiceInstance) {
     analysisCacheServiceInstance = new AnalysisCacheService(options);
   }
@@ -224,4 +231,3 @@ export function getAnalysisCacheService(options?: CacheOptions): AnalysisCacheSe
 export function resetAnalysisCacheService(): void {
   analysisCacheServiceInstance = null;
 }
-

@@ -14,11 +14,11 @@
  * - Audit logging
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { negotiationService } from '@/lib/credit-repair';
-import { db } from '@/lib/credit-repair/db';
-import { auditLogger } from '@/lib/security/audit-logging';
+import { NextRequest, NextResponse } from "next/server";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { negotiationService } from "@/lib/credit-repair";
+import { db } from "@/lib/credit-repair/db";
+import { auditLogger } from "@/lib/security/audit-logging";
 
 /**
  * GET /api/credit-repair/goodwill
@@ -29,34 +29,34 @@ export async function GET(request: NextRequest) {
     // 1. Authenticate
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = validation.user;
 
     // 2. Parse query parameters
     const { searchParams } = new URL(request.url);
-    const statusParam = searchParams.get('status');
+    const statusParam = searchParams.get("status");
     const validStatuses = [
-      'draft',
-      'sent',
-      'response_received',
-      'approved',
-      'denied',
+      "draft",
+      "sent",
+      "response_received",
+      "approved",
+      "denied",
     ] as const;
     let status: (typeof validStatuses)[number] | undefined;
     if (statusParam) {
-      const normalized = statusParam === 'rejected' ? 'denied' : statusParam;
+      const normalized = statusParam === "rejected" ? "denied" : statusParam;
       if (!(validStatuses as readonly string[]).includes(normalized)) {
         return NextResponse.json(
-          { error: 'Invalid status', validStatuses },
-          { status: 400 }
+          { error: "Invalid status", validStatuses },
+          { status: 400 },
         );
       }
       status = normalized as (typeof validStatuses)[number];
     }
-    const limit = Number.parseInt(searchParams.get('limit') || '50');
-    const offset = Number.parseInt(searchParams.get('offset') || '0');
+    const limit = Number.parseInt(searchParams.get("limit") || "50");
+    const offset = Number.parseInt(searchParams.get("offset") || "0");
 
     // 3. Get goodwill letters from database
     const { letters, total } = await db.goodwill.getGoodwillLettersByUser(
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
         status,
         limit,
         offset,
-      }
+      },
     );
 
     // 4. Get statistics
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
     // 5. Audit log
     await auditLogger.logAIInteraction({
       userId: user.id,
-      action: 'get_goodwill_letters',
+      action: "get_goodwill_letters",
       input: { status, limit, offset },
       output: { count: letters.length },
       success: true,
@@ -99,17 +99,17 @@ export async function GET(request: NextRequest) {
     // Audit log error
     try {
       await auditLogger.logSecurityEvent({
-        type: 'api_error',
+        type: "api_error",
         message: `Failed to get goodwill letters: ${(error as Error).message}`,
-        severity: 'medium',
+        severity: "medium",
       });
     } catch {
       // GoodwillAPI error: Failed to log audit event
     }
 
     return NextResponse.json(
-      { error: 'Failed to get goodwill letters' },
-      { status: 500 }
+      { error: "Failed to get goodwill letters" },
+      { status: 500 },
     );
   }
 }
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
     // 1. Authenticate
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = validation.user;
@@ -144,10 +144,10 @@ export async function POST(request: NextRequest) {
     if (!accountId || !creditorName || !latePaymentDate || !reason) {
       return NextResponse.json(
         {
-          error: 'Missing required fields',
-          required: ['accountId', 'creditorName', 'latePaymentDate', 'reason'],
+          error: "Missing required fields",
+          required: ["accountId", "creditorName", "latePaymentDate", "reason"],
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -159,15 +159,15 @@ export async function POST(request: NextRequest) {
         creditorName,
         new Date(latePaymentDate),
         reason,
-        { name: user.name || 'User', email: user.email }
+        { name: user.name || "User", email: user.email },
       );
       letterContent = letterResult.letter;
     }
 
     if (!letterContent) {
       return NextResponse.json(
-        { error: 'Letter content is required when generateLetter is false' },
-        { status: 400 }
+        { error: "Letter content is required when generateLetter is false" },
+        { status: 400 },
       );
     }
 
@@ -179,13 +179,13 @@ export async function POST(request: NextRequest) {
       latePaymentDate: new Date(latePaymentDate),
       reason,
       letterContent,
-      status: 'draft',
+      status: "draft",
     });
 
     // 5. Audit log
     await auditLogger.logAIInteraction({
       userId: user.id,
-      action: 'create_goodwill_letter',
+      action: "create_goodwill_letter",
       input: { accountId, creditorName },
       output: { letterId: letter.id },
       success: true,
@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
         success: true,
         data: letter,
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     // GoodwillAPI error: Error creating goodwill letter
@@ -205,17 +205,17 @@ export async function POST(request: NextRequest) {
     // Audit log error
     try {
       await auditLogger.logSecurityEvent({
-        type: 'api_error',
+        type: "api_error",
         message: `Failed to create goodwill letter: ${(error as Error).message}`,
-        severity: 'high',
+        severity: "high",
       });
     } catch {
       // GoodwillAPI error: Failed to log audit event
     }
 
     return NextResponse.json(
-      { error: 'Failed to create goodwill letter' },
-      { status: 500 }
+      { error: "Failed to create goodwill letter" },
+      { status: 500 },
     );
   }
 }

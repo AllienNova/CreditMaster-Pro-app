@@ -3,7 +3,7 @@
  * AI-powered budget creation and optimization with Phase 2.1 integration
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -15,14 +15,14 @@ import {
   TextInput,
   Modal,
   Dimensions,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { lightTheme as theme } from '../../src/constants/theme';
-import { Card } from '../../src/components/Card';
-import { BarChart } from 'react-native-chart-kit';
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { lightTheme as theme } from "../../src/constants/theme";
+import { Card } from "../../src/components/Card";
+import { BarChart } from "react-native-chart-kit";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 interface BudgetCategory {
   category: string;
@@ -41,19 +41,19 @@ interface BudgetAnalysis {
   categories: BudgetCategory[];
   alerts: Array<{
     category: string;
-    severity: 'high' | 'medium' | 'low';
+    severity: "high" | "medium" | "low";
     message: string;
   }>;
 }
 
 interface Recommendation {
   id: string;
-  type: 'increase' | 'decrease' | 'reallocate';
+  type: "increase" | "decrease" | "reallocate";
   category: string;
   currentAmount: number;
   suggestedAmount: number;
   reason: string;
-  impact: 'high' | 'medium' | 'low';
+  impact: "high" | "medium" | "low";
   confidence: number;
 }
 
@@ -67,9 +67,9 @@ interface BudgetOverviewProps {
 
 const BudgetOverview: React.FC<BudgetOverviewProps> = ({ analysis }) => {
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
@@ -85,30 +85,47 @@ const BudgetOverview: React.FC<BudgetOverviewProps> = ({ analysis }) => {
   return (
     <Card style={styles.overviewCard}>
       <Text style={styles.cardTitle}>Monthly Budget Overview</Text>
-      
+
       <View style={styles.metricsGrid}>
         <View style={styles.metricBox}>
           <Ionicons name="wallet" size={24} color={theme.colors.primary} />
           <Text style={styles.metricLabel}>Budgeted</Text>
-          <Text style={styles.metricValue}>{formatCurrency(analysis.totalBudgeted)}</Text>
+          <Text style={styles.metricValue}>
+            {formatCurrency(analysis.totalBudgeted)}
+          </Text>
         </View>
-        
+
         <View style={styles.metricBox}>
-          <Ionicons name="trending-down" size={24} color={theme.colors.warning} />
+          <Ionicons
+            name="trending-down"
+            size={24}
+            color={theme.colors.warning}
+          />
           <Text style={styles.metricLabel}>Spent</Text>
-          <Text style={[styles.metricValue, { color: getProgressColor(analysis.percentUsed) }]}>
+          <Text
+            style={[
+              styles.metricValue,
+              { color: getProgressColor(analysis.percentUsed) },
+            ]}
+          >
             {formatCurrency(analysis.totalSpent)}
           </Text>
         </View>
-        
+
         <View style={styles.metricBox}>
           <Ionicons name="cash" size={24} color={theme.colors.success} />
           <Text style={styles.metricLabel}>Remaining</Text>
-          <Text style={styles.metricValue}>{formatCurrency(analysis.totalRemaining)}</Text>
+          <Text style={styles.metricValue}>
+            {formatCurrency(analysis.totalRemaining)}
+          </Text>
         </View>
-        
+
         <View style={styles.metricBox}>
-          <Ionicons name="calendar" size={24} color={theme.colors.textSecondary} />
+          <Ionicons
+            name="calendar"
+            size={24}
+            color={theme.colors.textSecondary}
+          />
           <Text style={styles.metricLabel}>Days Left</Text>
           <Text style={styles.metricValue}>{analysis.daysRemaining}</Text>
         </View>
@@ -146,4 +163,3 @@ const BudgetOverview: React.FC<BudgetOverviewProps> = ({ analysis }) => {
 };
 
 // Component will be continued in next edit
-

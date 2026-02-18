@@ -4,24 +4,24 @@
  * Provides secure access to sensitive financial data
  */
 
-import * as LocalAuthentication from 'expo-local-authentication';
-import * as SecureStore from 'expo-secure-store';
-import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as LocalAuthentication from "expo-local-authentication";
+import * as SecureStore from "expo-secure-store";
+import { Platform } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Storage keys
-const BIOMETRIC_ENABLED_KEY = '@fynvita_biometric_enabled';
-const BIOMETRIC_TYPE_KEY = '@fynvita_biometric_type';
-const SECURE_TOKEN_KEY = 'fynvita_secure_token';
+const BIOMETRIC_ENABLED_KEY = "@fynvita_biometric_enabled";
+const BIOMETRIC_TYPE_KEY = "@fynvita_biometric_type";
+const SECURE_TOKEN_KEY = "fynvita_secure_token";
 
 // Biometric types
 export enum BiometricType {
-  None = 'none',
-  TouchID = 'touchId',
-  FaceID = 'faceId',
-  Fingerprint = 'fingerprint',
-  Iris = 'iris',
-  FacialRecognition = 'facialRecognition',
+  None = "none",
+  TouchID = "touchId",
+  FaceID = "faceId",
+  Fingerprint = "fingerprint",
+  Iris = "iris",
+  FacialRecognition = "facialRecognition",
 }
 
 // Authentication result
@@ -36,7 +36,7 @@ export interface BiometricCapabilities {
   isAvailable: boolean;
   isEnrolled: boolean;
   biometricType: BiometricType;
-  securityLevel: 'none' | 'weak' | 'strong';
+  securityLevel: "none" | "weak" | "strong";
 }
 
 /**
@@ -59,16 +59,33 @@ class BiometricService {
       // Check if device supports biometrics
       const isAvailable = await LocalAuthentication.hasHardwareAsync();
       const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-      const supportedTypes = await LocalAuthentication.supportedAuthenticationTypesAsync();
+      const supportedTypes =
+        await LocalAuthentication.supportedAuthenticationTypesAsync();
       const securityLevel = await this.getSecurityLevel();
 
       // Determine biometric type
       let biometricType = BiometricType.None;
-      if (supportedTypes.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
-        biometricType = Platform.OS === 'ios' ? BiometricType.FaceID : BiometricType.FacialRecognition;
-      } else if (supportedTypes.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) {
-        biometricType = Platform.OS === 'ios' ? BiometricType.TouchID : BiometricType.Fingerprint;
-      } else if (supportedTypes.includes(LocalAuthentication.AuthenticationType.IRIS)) {
+      if (
+        supportedTypes.includes(
+          LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION,
+        )
+      ) {
+        biometricType =
+          Platform.OS === "ios"
+            ? BiometricType.FaceID
+            : BiometricType.FacialRecognition;
+      } else if (
+        supportedTypes.includes(
+          LocalAuthentication.AuthenticationType.FINGERPRINT,
+        )
+      ) {
+        biometricType =
+          Platform.OS === "ios"
+            ? BiometricType.TouchID
+            : BiometricType.Fingerprint;
+      } else if (
+        supportedTypes.includes(LocalAuthentication.AuthenticationType.IRIS)
+      ) {
         biometricType = BiometricType.Iris;
       }
 
@@ -82,12 +99,13 @@ class BiometricService {
       this.isInitialized = true;
       return this.capabilities;
     } catch (error) {
-      if (__DEV__) console.error('Failed to initialize biometric service:', error);
+      if (__DEV__)
+        console.error("Failed to initialize biometric service:", error);
       this.capabilities = {
         isAvailable: false,
         isEnrolled: false,
         biometricType: BiometricType.None,
-        securityLevel: 'none',
+        securityLevel: "none",
       };
       return this.capabilities;
     }
@@ -96,15 +114,15 @@ class BiometricService {
   /**
    * Get security level based on authentication types
    */
-  private async getSecurityLevel(): Promise<'none' | 'weak' | 'strong'> {
+  private async getSecurityLevel(): Promise<"none" | "weak" | "strong"> {
     const level = await LocalAuthentication.getEnrolledLevelAsync();
     switch (level) {
       case LocalAuthentication.SecurityLevel.BIOMETRIC_STRONG:
-        return 'strong';
+        return "strong";
       case LocalAuthentication.SecurityLevel.BIOMETRIC_WEAK:
-        return 'weak';
+        return "weak";
       default:
-        return 'none';
+        return "none";
     }
   }
 
@@ -124,7 +142,7 @@ class BiometricService {
   async isBiometricEnabled(): Promise<boolean> {
     try {
       const enabled = await AsyncStorage.getItem(BIOMETRIC_ENABLED_KEY);
-      return enabled === 'true';
+      return enabled === "true";
     } catch {
       return false;
     }
@@ -137,7 +155,9 @@ class BiometricService {
     try {
       if (enabled) {
         // Verify biometrics work before enabling
-        const result = await this.authenticate('Enable biometric authentication');
+        const result = await this.authenticate(
+          "Enable biometric authentication",
+        );
         if (!result.success) {
           return false;
         }
@@ -146,12 +166,15 @@ class BiometricService {
       await AsyncStorage.setItem(BIOMETRIC_ENABLED_KEY, String(enabled));
 
       if (this.capabilities) {
-        await AsyncStorage.setItem(BIOMETRIC_TYPE_KEY, this.capabilities.biometricType);
+        await AsyncStorage.setItem(
+          BIOMETRIC_TYPE_KEY,
+          this.capabilities.biometricType,
+        );
       }
 
       return true;
     } catch (error) {
-      if (__DEV__) console.error('Failed to set biometric enabled:', error);
+      if (__DEV__) console.error("Failed to set biometric enabled:", error);
       return false;
     }
   }
@@ -166,24 +189,25 @@ class BiometricService {
       if (!capabilities.isAvailable) {
         return {
           success: false,
-          error: 'Biometric authentication is not available on this device',
-          errorCode: 'NOT_AVAILABLE',
+          error: "Biometric authentication is not available on this device",
+          errorCode: "NOT_AVAILABLE",
         };
       }
 
       if (!capabilities.isEnrolled) {
         return {
           success: false,
-          error: 'No biometrics enrolled. Please set up biometrics in your device settings.',
-          errorCode: 'NOT_ENROLLED',
+          error:
+            "No biometrics enrolled. Please set up biometrics in your device settings.",
+          errorCode: "NOT_ENROLLED",
         };
       }
 
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: promptMessage || 'Authenticate to access Fynvita',
-        cancelLabel: 'Cancel',
+        promptMessage: promptMessage || "Authenticate to access Fynvita",
+        cancelLabel: "Cancel",
         disableDeviceFallback: false,
-        fallbackLabel: 'Use passcode',
+        fallbackLabel: "Use passcode",
       });
 
       if (result.success) {
@@ -198,8 +222,8 @@ class BiometricService {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Authentication failed',
-        errorCode: 'UNKNOWN',
+        error: error instanceof Error ? error.message : "Authentication failed",
+        errorCode: "UNKNOWN",
       };
     }
   }
@@ -207,7 +231,9 @@ class BiometricService {
   /**
    * Authenticate with fallback to passcode/password
    */
-  async authenticateWithFallback(promptMessage?: string): Promise<AuthenticationResult> {
+  async authenticateWithFallback(
+    promptMessage?: string,
+  ): Promise<AuthenticationResult> {
     const capabilities = await this.getCapabilities();
 
     if (!capabilities.isAvailable || !capabilities.isEnrolled) {
@@ -221,11 +247,13 @@ class BiometricService {
   /**
    * Authenticate using device credentials (passcode/password)
    */
-  private async authenticateWithDeviceCredentials(promptMessage?: string): Promise<AuthenticationResult> {
+  private async authenticateWithDeviceCredentials(
+    promptMessage?: string,
+  ): Promise<AuthenticationResult> {
     try {
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: promptMessage || 'Enter your device passcode',
-        cancelLabel: 'Cancel',
+        promptMessage: promptMessage || "Enter your device passcode",
+        cancelLabel: "Cancel",
         disableDeviceFallback: false,
       });
 
@@ -241,8 +269,8 @@ class BiometricService {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Authentication failed',
-        errorCode: 'UNKNOWN',
+        error: error instanceof Error ? error.message : "Authentication failed",
+        errorCode: "UNKNOWN",
       };
     }
   }
@@ -252,20 +280,20 @@ class BiometricService {
    */
   private getErrorMessage(errorCode?: string): string {
     switch (errorCode) {
-      case 'user_cancel':
-        return 'Authentication was cancelled';
-      case 'system_cancel':
-        return 'Authentication was cancelled by the system';
-      case 'not_available':
-        return 'Biometric authentication is not available';
-      case 'not_enrolled':
-        return 'No biometrics enrolled on this device';
-      case 'lockout':
-        return 'Too many failed attempts. Please try again later.';
-      case 'lockout_permanent':
-        return 'Biometrics are locked. Please use your device passcode.';
+      case "user_cancel":
+        return "Authentication was cancelled";
+      case "system_cancel":
+        return "Authentication was cancelled by the system";
+      case "not_available":
+        return "Biometric authentication is not available";
+      case "not_enrolled":
+        return "No biometrics enrolled on this device";
+      case "lockout":
+        return "Too many failed attempts. Please try again later.";
+      case "lockout_permanent":
+        return "Biometrics are locked. Please use your device passcode.";
       default:
-        return 'Authentication failed. Please try again.';
+        return "Authentication failed. Please try again.";
     }
   }
 
@@ -274,22 +302,22 @@ class BiometricService {
    */
   getBiometricTypeName(): string {
     if (!this.capabilities) {
-      return 'Biometrics';
+      return "Biometrics";
     }
 
     switch (this.capabilities.biometricType) {
       case BiometricType.FaceID:
-        return 'Face ID';
+        return "Face ID";
       case BiometricType.TouchID:
-        return 'Touch ID';
+        return "Touch ID";
       case BiometricType.Fingerprint:
-        return 'Fingerprint';
+        return "Fingerprint";
       case BiometricType.FacialRecognition:
-        return 'Face Recognition';
+        return "Face Recognition";
       case BiometricType.Iris:
-        return 'Iris Scan';
+        return "Iris Scan";
       default:
-        return 'Biometrics';
+        return "Biometrics";
     }
   }
 
@@ -303,7 +331,7 @@ class BiometricService {
       });
       return true;
     } catch (error) {
-      if (__DEV__) console.error('Failed to store secure data:', error);
+      if (__DEV__) console.error("Failed to store secure data:", error);
       return false;
     }
   }
@@ -311,10 +339,13 @@ class BiometricService {
   /**
    * Retrieve sensitive data (requires biometric authentication)
    */
-  async getSecureData(key: string, requireAuth: boolean = true): Promise<string | null> {
+  async getSecureData(
+    key: string,
+    requireAuth: boolean = true,
+  ): Promise<string | null> {
     try {
       if (requireAuth) {
-        const authResult = await this.authenticate('Access secure data');
+        const authResult = await this.authenticate("Access secure data");
         if (!authResult.success) {
           return null;
         }
@@ -322,7 +353,7 @@ class BiometricService {
 
       return await SecureStore.getItemAsync(key);
     } catch (error) {
-      if (__DEV__) console.error('Failed to get secure data:', error);
+      if (__DEV__) console.error("Failed to get secure data:", error);
       return null;
     }
   }
@@ -335,7 +366,7 @@ class BiometricService {
       await SecureStore.deleteItemAsync(key);
       return true;
     } catch (error) {
-      if (__DEV__) console.error('Failed to delete secure data:', error);
+      if (__DEV__) console.error("Failed to delete secure data:", error);
       return false;
     }
   }

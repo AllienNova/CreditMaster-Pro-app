@@ -5,9 +5,9 @@
  * and stores the credential in the database.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { createClient } from "@supabase/supabase-js";
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,19 +17,16 @@ export async function POST(request: NextRequest) {
 
     if (!supabaseUrl || !supabaseKey) {
       return NextResponse.json(
-        { error: 'Server configuration error' },
-        { status: 500 }
+        { error: "Server configuration error" },
+        { status: 500 },
       );
     }
 
     // Get access token from cookies
-    const accessToken = cookieStore.get('sb-access-token')?.value;
+    const accessToken = cookieStore.get("sb-access-token")?.value;
 
     if (!accessToken) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey, {
@@ -41,38 +38,43 @@ export async function POST(request: NextRequest) {
     });
 
     // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser(accessToken);
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser(accessToken);
 
     if (userError || !user) {
-      return NextResponse.json(
-        { error: 'Invalid session' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Invalid session" }, { status: 401 });
     }
 
     // Parse the credential response
     const body = await request.json();
     const { credential, credentialName } = body;
 
-    if (!credential || !credential.id || !credential.rawId || !credential.response) {
+    if (
+      !credential ||
+      !credential.id ||
+      !credential.rawId ||
+      !credential.response
+    ) {
       return NextResponse.json(
-        { error: 'Invalid credential data' },
-        { status: 400 }
+        { error: "Invalid credential data" },
+        { status: 400 },
       );
     }
 
     // Retrieve and verify the challenge
     const { data: challengeData, error: challengeError } = await supabase
-      .from('webauthn_challenges')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('type', 'registration')
+      .from("webauthn_challenges")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("type", "registration")
       .single();
 
     if (challengeError || !challengeData) {
       return NextResponse.json(
-        { error: 'No registration challenge found. Please try again.' },
-        { status: 400 }
+        { error: "No registration challenge found. Please try again." },
+        { status: 400 },
       );
     }
 
@@ -80,53 +82,57 @@ export async function POST(request: NextRequest) {
     if (new Date(challengeData.expires_at) < new Date()) {
       // Clean up expired challenge
       await supabase
-        .from('webauthn_challenges')
+        .from("webauthn_challenges")
         .delete()
-        .eq('user_id', user.id)
-        .eq('type', 'registration');
+        .eq("user_id", user.id)
+        .eq("type", "registration");
 
       return NextResponse.json(
-        { error: 'Registration challenge expired. Please try again.' },
-        { status: 400 }
+        { error: "Registration challenge expired. Please try again." },
+        { status: 400 },
       );
     }
 
     // Verify the client data
-    const clientDataJSON = Buffer.from(credential.response.clientDataJSON, 'base64url').toString('utf8');
+    const clientDataJSON = Buffer.from(
+      credential.response.clientDataJSON,
+      "base64url",
+    ).toString("utf8");
     const clientData = JSON.parse(clientDataJSON);
 
     // Verify the challenge matches
     if (clientData.challenge !== challengeData.challenge) {
       return NextResponse.json(
-        { error: 'Challenge mismatch' },
-        { status: 400 }
+        { error: "Challenge mismatch" },
+        { status: 400 },
       );
     }
 
     // Verify the type
-    if (clientData.type !== 'webauthn.create') {
+    if (clientData.type !== "webauthn.create") {
       return NextResponse.json(
-        { error: 'Invalid credential type' },
-        { status: 400 }
+        { error: "Invalid credential type" },
+        { status: 400 },
       );
     }
 
     // Extract transports if available
-    const transports = credential.response.transports || ['internal', 'hybrid'];
+    const transports = credential.response.transports || ["internal", "hybrid"];
 
     // Determine credential type based on authenticator attachment
-    const credentialType = credential.authenticatorAttachment === 'platform'
-      ? 'platform'
-      : 'security_key';
+    const credentialType =
+      credential.authenticatorAttachment === "platform"
+        ? "platform"
+        : "security_key";
 
     // Store the credential
     const { data: storedCredential, error: storeError } = await supabase
-      .from('webauthn_credentials')
+      .from("webauthn_credentials")
       .insert({
         user_id: user.id,
         credential_id: credential.id,
         public_key: credential.response.attestationObject,
-        name: credentialName || challengeData.credential_name || 'My Passkey',
+        name: credentialName || challengeData.credential_name || "My Passkey",
         type: credentialType,
         transports,
         created_at: new Date().toISOString(),
@@ -135,19 +141,19 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (storeError) {
-      console.error('Failed to store credential:', storeError);
+      console.error("Failed to store credential:", storeError);
       return NextResponse.json(
-        { error: 'Failed to store credential' },
-        { status: 500 }
+        { error: "Failed to store credential" },
+        { status: 500 },
       );
     }
 
     // Clean up the challenge
     await supabase
-      .from('webauthn_challenges')
+      .from("webauthn_challenges")
       .delete()
-      .eq('user_id', user.id)
-      .eq('type', 'registration');
+      .eq("user_id", user.id)
+      .eq("type", "registration");
 
     return NextResponse.json({
       success: true,
@@ -160,10 +166,10 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('WebAuthn registration verify error:', error);
+    console.error("WebAuthn registration verify error:", error);
     return NextResponse.json(
-      { error: 'Failed to verify registration' },
-      { status: 500 }
+      { error: "Failed to verify registration" },
+      { status: 500 },
     );
   }
 }

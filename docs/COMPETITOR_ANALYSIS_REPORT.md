@@ -12,13 +12,13 @@ This report analyzes Range.com and 12+ leading financial platforms to identify m
 
 ### Key Insights
 
-| Opportunity Area | Market Gap | Fynvita Advantage |
-|------------------|-----------|-------------------|
-| **Unified Platform** | Competitors are siloed (credit OR investing OR budgeting) | All-in-one financial wellness |
-| **Pricing** | Range charges $2,400-$9,000/year; robo-advisors charge AUM fees | Tiered pricing accessible to all income levels |
-| **Credit Focus** | Wealth platforms ignore credit health entirely | Credit repair + building integrated |
-| **AI Automation** | Most use basic algorithms | Advanced AI coaching across all modules |
-| **Trading** | Separate apps required (Robinhood, etc.) | Integrated trading with PCTT signals |
+| Opportunity Area     | Market Gap                                                      | Fynvita Advantage                              |
+| -------------------- | --------------------------------------------------------------- | ---------------------------------------------- |
+| **Unified Platform** | Competitors are siloed (credit OR investing OR budgeting)       | All-in-one financial wellness                  |
+| **Pricing**          | Range charges $2,400-$9,000/year; robo-advisors charge AUM fees | Tiered pricing accessible to all income levels |
+| **Credit Focus**     | Wealth platforms ignore credit health entirely                  | Credit repair + building integrated            |
+| **AI Automation**    | Most use basic algorithms                                       | Advanced AI coaching across all modules        |
+| **Trading**          | Separate apps required (Robinhood, etc.)                        | Integrated trading with PCTT signals           |
 
 ---
 
@@ -26,13 +26,13 @@ This report analyzes Range.com and 12+ leading financial platforms to identify m
 
 ### Company Overview
 
-| Attribute | Details |
-|-----------|---------|
-| **Founded** | ~2020 |
-| **Target Market** | High-income households ($200K+) |
-| **Positioning** | "All-in-one wealth management" |
-| **Registration** | SEC Registered Investment Advisor (RIA) |
-| **Locations** | McLean, VA; New York, NY |
+| Attribute         | Details                                 |
+| ----------------- | --------------------------------------- |
+| **Founded**       | ~2020                                   |
+| **Target Market** | High-income households ($200K+)         |
+| **Positioning**   | "All-in-one wealth management"          |
+| **Registration**  | SEC Registered Investment Advisor (RIA) |
+| **Locations**     | McLean, VA; New York, NY                |
 
 ### Core Features
 
@@ -82,11 +82,11 @@ This report analyzes Range.com and 12+ leading financial platforms to identify m
 
 ### Pricing Structure
 
-| Tier | Quarterly | Annual (10% off) | Key Features |
-|------|-----------|------------------|--------------|
-| **Premium** | $600 | $2,655 | Unlimited advisor access, 0% AUM, 3.20% APY, budgeting tools |
-| **Platinum** | $1,200 | $5,355 | + Tax filing, direct indexing, equity comp, real estate (3 properties) |
-| **Titanium** | $2,475 | $8,955 | + Complex K-1s, 4+ ISO grants, multi-state real estate, international |
+| Tier         | Quarterly | Annual (10% off) | Key Features                                                           |
+| ------------ | --------- | ---------------- | ---------------------------------------------------------------------- |
+| **Premium**  | $600      | $2,655           | Unlimited advisor access, 0% AUM, 3.20% APY, budgeting tools           |
+| **Platinum** | $1,200    | $5,355           | + Tax filing, direct indexing, equity comp, real estate (3 properties) |
+| **Titanium** | $2,475    | $8,955           | + Complex K-1s, 4+ ISO grants, multi-state real estate, international  |
 
 ### Strengths
 
@@ -122,14 +122,15 @@ This report analyzes Range.com and 12+ leading financial platforms to identify m
 
 #### Betterment
 
-| Attribute | Details |
-|-----------|---------|
-| **AUM** | $65B+ |
-| **Clients** | 1M+ |
-| **Pricing** | 0.25% AUM (Digital), 0.40% AUM (Premium) |
-| **Min Investment** | $0 (Digital), $100K (Premium) |
+| Attribute          | Details                                  |
+| ------------------ | ---------------------------------------- |
+| **AUM**            | $65B+                                    |
+| **Clients**        | 1M+                                      |
+| **Pricing**        | 0.25% AUM (Digital), 0.40% AUM (Premium) |
+| **Min Investment** | $0 (Digital), $100K (Premium)            |
 
 **Features:**
+
 - Automated portfolio management
 - Tax-loss harvesting (70% of customers cover fees through tax savings)
 - High-yield cash account (3.25% APY, up to $4M FDIC)
@@ -144,14 +145,15 @@ This report analyzes Range.com and 12+ leading financial platforms to identify m
 
 #### Wealthfront
 
-| Attribute | Details |
-|-----------|---------|
-| **AUM** | $90B+ |
-| **Clients** | 1.3M+ |
-| **Pricing** | 0.25% AUM |
+| Attribute    | Details                   |
+| ------------ | ------------------------- |
+| **AUM**      | $90B+                     |
+| **Clients**  | 1.3M+                     |
+| **Pricing**  | 0.25% AUM                 |
 | **Cash APY** | 3.25% (up to 3.90% promo) |
 
 **Features:**
+
 - Automated investing with global diversification
 - Stock investing account (commission-free)
 - Direct indexing (S&P 500, Nasdaq-100)
@@ -166,14 +168,15 @@ This report analyzes Range.com and 12+ leading financial platforms to identify m
 
 #### Ellevest
 
-| Attribute | Details |
-|-----------|---------|
-| **Focus** | Women-centric wealth management |
-| **Pricing** | 0.35%-1.25% AUM (tiered by balance) |
-| **Minimum** | $500K (Personal), $1M (Private) |
-| **Flat Fee** | $3,600/year (planning only) |
+| Attribute    | Details                             |
+| ------------ | ----------------------------------- |
+| **Focus**    | Women-centric wealth management     |
+| **Pricing**  | 0.35%-1.25% AUM (tiered by balance) |
+| **Minimum**  | $500K (Personal), $1M (Private)     |
+| **Flat Fee** | $3,600/year (planning only)         |
 
 **Features:**
+
 - Women-first investment philosophy
 - Accounts for pay gap and longer lifespans
 - Values-aligned/impact investing
@@ -189,13 +192,14 @@ This report analyzes Range.com and 12+ leading financial platforms to identify m
 
 #### Savvy Wealth
 
-| Attribute | Details |
-|-----------|---------|
-| **AUM** | $4B+ |
-| **Advisors** | 100+ |
+| Attribute     | Details        |
+| ------------- | -------------- |
+| **AUM**       | $4B+           |
+| **Advisors**  | 100+           |
 | **Custodian** | Charles Schwab |
 
 **Features:**
+
 - Tech-driven platform connecting clients with human advisors
 - Real-time net worth tracking
 - Investment management with personalized strategies
@@ -213,13 +217,14 @@ This report analyzes Range.com and 12+ leading financial platforms to identify m
 
 #### Dovly AI
 
-| Attribute | Details |
-|-----------|---------|
-| **Focus** | AI-powered credit repair |
-| **Pricing** | Free + Premium tiers |
+| Attribute   | Details                         |
+| ----------- | ------------------------------- |
+| **Focus**   | AI-powered credit repair        |
+| **Pricing** | Free + Premium tiers            |
 | **Results** | 93-point average score increase |
 
 **Features:**
+
 - AI-automated disputes with TransUnion
 - Real-time credit monitoring
 - Credit building tools ($2,000 tradeline)
@@ -234,13 +239,14 @@ This report analyzes Range.com and 12+ leading financial platforms to identify m
 
 #### Credit Karma
 
-| Attribute | Details |
-|-----------|---------|
-| **Users** | 100M+ |
-| **Pricing** | Free |
+| Attribute   | Details             |
+| ----------- | ------------------- |
+| **Users**   | 100M+               |
+| **Pricing** | Free                |
 | **Bureaus** | TransUnion, Equifax |
 
 **Features:**
+
 - Free credit scores and reports
 - Basic credit monitoring
 - Credit score simulator
@@ -254,12 +260,13 @@ This report analyzes Range.com and 12+ leading financial platforms to identify m
 
 #### Experian
 
-| Attribute | Details |
-|-----------|---------|
-| **Focus** | Credit bureau direct access |
-| **Pricing** | Free + Premium ($24.99/mo) |
+| Attribute   | Details                     |
+| ----------- | --------------------------- |
+| **Focus**   | Credit bureau direct access |
+| **Pricing** | Free + Premium ($24.99/mo)  |
 
 **Features:**
+
 - Direct Experian score access
 - Experian Boost (add utility/telecom payments)
 - Credit monitoring
@@ -276,13 +283,14 @@ This report analyzes Range.com and 12+ leading financial platforms to identify m
 
 #### YNAB (You Need A Budget)
 
-| Attribute | Details |
-|-----------|---------|
+| Attribute   | Details              |
+| ----------- | -------------------- |
 | **Pricing** | $109/year ($9.08/mo) |
-| **Method** | Zero-based budgeting |
-| **Trial** | 34 days free |
+| **Method**  | Zero-based budgeting |
+| **Trial**   | 34 days free         |
 
 **Features:**
+
 - "Give every dollar a job" methodology
 - Bank account sync
 - Goal tracking
@@ -291,6 +299,7 @@ This report analyzes Range.com and 12+ leading financial platforms to identify m
 - Educational resources
 
 **Results:**
+
 - 92% feel less money stress
 - Average $600 saved first month
 - Average $6,000 saved first year
@@ -310,13 +319,14 @@ This report analyzes Range.com and 12+ leading financial platforms to identify m
 
 #### Robinhood
 
-| Attribute | Details |
-|-----------|---------|
-| **Users** | 23M+ |
-| **Pricing** | Free (Gold: $5/mo) |
-| **Assets** | Stocks, ETFs, Options, Crypto |
+| Attribute   | Details                       |
+| ----------- | ----------------------------- |
+| **Users**   | 23M+                          |
+| **Pricing** | Free (Gold: $5/mo)            |
+| **Assets**  | Stocks, ETFs, Options, Crypto |
 
 **Features:**
+
 - Commission-free trading
 - Fractional shares
 - Robinhood Gold (4% APY, margin, Cortex AI)
@@ -325,6 +335,7 @@ This report analyzes Range.com and 12+ leading financial platforms to identify m
 - Instant deposits
 
 **2025 Announcements (HOOD Summit):**
+
 - Robinhood Cortex (AI investing assistant)
 - Enhanced prediction markets
 - New trading tools for active traders
@@ -336,21 +347,21 @@ This report analyzes Range.com and 12+ leading financial platforms to identify m
 
 ### 2.5 Comprehensive Comparison Matrix
 
-| Feature | Range | Betterment | Wealthfront | Dovly | YNAB | Robinhood | **Fynvita** |
-|---------|-------|------------|-------------|-------|------|-----------|-------------|
-| **Investment Management** | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ |
-| **Tax Planning** | ✅ | ⚠️ | ⚠️ | ❌ | ❌ | ❌ | ⚠️ |
-| **Retirement Planning** | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ |
-| **Budgeting** | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ |
-| **Debt Payoff** | ⚠️ | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ |
-| **Credit Monitoring** | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ |
-| **Credit Repair** | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ |
-| **Credit Building** | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ |
-| **Real-Time Trading** | ❌ | ⚠️ | ⚠️ | ❌ | ❌ | ✅ | ✅ |
-| **AI Coaching** | ✅ | ⚠️ | ⚠️ | ✅ | ❌ | ✅ | ✅ |
-| **Human Advisors** | ✅ | ⚠️ | ❌ | ❌ | ❌ | ❌ | ⚠️ |
-| **Mobile App** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Free Tier** | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ | ✅ |
+| Feature                   | Range | Betterment | Wealthfront | Dovly | YNAB | Robinhood | **Fynvita** |
+| ------------------------- | ----- | ---------- | ----------- | ----- | ---- | --------- | ----------- |
+| **Investment Management** | ✅    | ✅         | ✅          | ❌    | ❌   | ✅        | ✅          |
+| **Tax Planning**          | ✅    | ⚠️         | ⚠️          | ❌    | ❌   | ❌        | ⚠️          |
+| **Retirement Planning**   | ✅    | ✅         | ✅          | ❌    | ❌   | ✅        | ✅          |
+| **Budgeting**             | ✅    | ❌         | ❌          | ❌    | ✅   | ❌        | ✅          |
+| **Debt Payoff**           | ⚠️    | ❌         | ❌          | ❌    | ✅   | ❌        | ✅          |
+| **Credit Monitoring**     | ❌    | ❌         | ❌          | ✅    | ❌   | ❌        | ✅          |
+| **Credit Repair**         | ❌    | ❌         | ❌          | ✅    | ❌   | ❌        | ✅          |
+| **Credit Building**       | ❌    | ❌         | ❌          | ✅    | ❌   | ❌        | ✅          |
+| **Real-Time Trading**     | ❌    | ⚠️         | ⚠️          | ❌    | ❌   | ✅        | ✅          |
+| **AI Coaching**           | ✅    | ⚠️         | ⚠️          | ✅    | ❌   | ✅        | ✅          |
+| **Human Advisors**        | ✅    | ⚠️         | ❌          | ❌    | ❌   | ❌        | ⚠️          |
+| **Mobile App**            | ✅    | ✅         | ✅          | ✅    | ✅   | ✅        | ✅          |
+| **Free Tier**             | ❌    | ❌         | ❌          | ✅    | ❌   | ✅        | ✅          |
 
 **Legend:** ✅ Full support | ⚠️ Partial/Limited | ❌ Not available
 
@@ -432,24 +443,24 @@ Plaid, TrueLayer, and MX power most aggregation. Consumers expect all accounts i
 
 ### 5.1 Must-Have Features (Priority 1)
 
-| Feature | Rationale | Competitor Gap |
-|---------|-----------|----------------|
-| **AI Credit Dispute Automation** | Dovly's key differentiator; automate letter generation | Only Dovly does this well |
-| **3-Bureau Credit Monitoring** | Most free tools only cover 1-2 bureaus | Credit Karma missing Experian |
-| **Zero-Based Budgeting** | YNAB methodology proven; Mint users orphaned | No free alternative post-Mint |
-| **Debt Snowball/Avalanche** | High user demand; emotional win tracking | Range has basic; YNAB manual |
-| **Real-Time Trading** | Robinhood standard; integrate with Alpaca | Range has no trading |
-| **Goal-Based Investing** | Betterment pioneered; users love visual progress | Standard expectation now |
+| Feature                          | Rationale                                              | Competitor Gap                |
+| -------------------------------- | ------------------------------------------------------ | ----------------------------- |
+| **AI Credit Dispute Automation** | Dovly's key differentiator; automate letter generation | Only Dovly does this well     |
+| **3-Bureau Credit Monitoring**   | Most free tools only cover 1-2 bureaus                 | Credit Karma missing Experian |
+| **Zero-Based Budgeting**         | YNAB methodology proven; Mint users orphaned           | No free alternative post-Mint |
+| **Debt Snowball/Avalanche**      | High user demand; emotional win tracking               | Range has basic; YNAB manual  |
+| **Real-Time Trading**            | Robinhood standard; integrate with Alpaca              | Range has no trading          |
+| **Goal-Based Investing**         | Betterment pioneered; users love visual progress       | Standard expectation now      |
 
 ### 5.2 Differentiating Features (Priority 2)
 
-| Feature | Rationale | Competitive Advantage |
-|---------|-----------|----------------------|
-| **Credit Building Tools** | Report rent/utilities, secured card recommendations | Only Dovly + Experian Boost |
-| **AI Financial Coach** | 24/7 personalized guidance across all modules | Range has humans; others have chatbots |
-| **PCTT Trading Signals** | Proprietary algorithm for trade opportunities | Unique to Fynvita |
-| **Vitality Score** | Unified financial health metric | No competitor has this |
-| **Family Accounts** | YNAB allows 5 users; Range includes partner | Growing demand |
+| Feature                   | Rationale                                           | Competitive Advantage                  |
+| ------------------------- | --------------------------------------------------- | -------------------------------------- |
+| **Credit Building Tools** | Report rent/utilities, secured card recommendations | Only Dovly + Experian Boost            |
+| **AI Financial Coach**    | 24/7 personalized guidance across all modules       | Range has humans; others have chatbots |
+| **PCTT Trading Signals**  | Proprietary algorithm for trade opportunities       | Unique to Fynvita                      |
+| **Vitality Score**        | Unified financial health metric                     | No competitor has this                 |
+| **Family Accounts**       | YNAB allows 5 users; Range includes partner         | Growing demand                         |
 
 ### 5.3 UX/UI Improvements
 
@@ -478,15 +489,16 @@ Plaid, TrueLayer, and MX power most aggregation. Consumers expect all accounts i
 
 ### 5.4 Pricing Strategy Recommendations
 
-| Tier | Price | Target Audience | Key Features |
-|------|-------|-----------------|--------------|
-| **Free** | $0 | Credit repair seekers, budget explorers | Basic credit monitoring, simple budgeting, limited AI |
-| **Essential** | $9.99/mo | Budget-conscious users | Full budgeting, debt tools, 3-bureau monitoring |
-| **Pro** | $24.99/mo | Active investors | + Investment tracking, trading signals, AI coaching |
-| **Premium** | $49.99/mo | Wealth builders | + Real-time trading, advanced analytics, priority support |
-| **Family** | $79.99/mo | Households | + Up to 5 members, shared goals, family dashboard |
+| Tier          | Price     | Target Audience                         | Key Features                                              |
+| ------------- | --------- | --------------------------------------- | --------------------------------------------------------- |
+| **Free**      | $0        | Credit repair seekers, budget explorers | Basic credit monitoring, simple budgeting, limited AI     |
+| **Essential** | $9.99/mo  | Budget-conscious users                  | Full budgeting, debt tools, 3-bureau monitoring           |
+| **Pro**       | $24.99/mo | Active investors                        | + Investment tracking, trading signals, AI coaching       |
+| **Premium**   | $49.99/mo | Wealth builders                         | + Real-time trading, advanced analytics, priority support |
+| **Family**    | $79.99/mo | Households                              | + Up to 5 members, shared goals, family dashboard         |
 
 **Rationale:**
+
 - Free tier drives acquisition (Dovly model)
 - Essential undercuts YNAB ($9.08/mo)
 - Pro matches Robinhood Gold value
@@ -495,34 +507,34 @@ Plaid, TrueLayer, and MX power most aggregation. Consumers expect all accounts i
 
 ### 5.5 Security & Compliance
 
-| Requirement | Implementation |
-|-------------|----------------|
-| **PCI DSS** | Required for any payment processing |
-| **SOC 2 Type II** | Trust signal for enterprise/wealth clients |
-| **256-bit Encryption** | Standard for all data at rest and in transit |
-| **MFA/Biometrics** | Required for account access |
-| **RIA Registration** | Required if providing personalized investment advice |
-| **FINRA Membership** | Required if executing trades |
-| **State Money Transmitter** | Required for money movement features |
-| **GDPR/CCPA** | Privacy compliance for user data |
+| Requirement                 | Implementation                                       |
+| --------------------------- | ---------------------------------------------------- |
+| **PCI DSS**                 | Required for any payment processing                  |
+| **SOC 2 Type II**           | Trust signal for enterprise/wealth clients           |
+| **256-bit Encryption**      | Standard for all data at rest and in transit         |
+| **MFA/Biometrics**          | Required for account access                          |
+| **RIA Registration**        | Required if providing personalized investment advice |
+| **FINRA Membership**        | Required if executing trades                         |
+| **State Money Transmitter** | Required for money movement features                 |
+| **GDPR/CCPA**               | Privacy compliance for user data                     |
 
 ---
 
 ## 6. Appendix: Competitor Pricing Summary
 
-| Competitor | Free Tier | Entry Paid | Premium | Notes |
-|------------|-----------|------------|---------|-------|
-| Range | ❌ | $2,400/yr | $8,955/yr | Flat-fee, no AUM |
-| Betterment | ❌ | 0.25% AUM | 0.40% AUM | $100K min for Premium |
-| Wealthfront | ❌ | 0.25% AUM | - | Same rate all balances |
-| Ellevest | ❌ | $3,600/yr | 0.35-1.25% AUM | $500K minimum |
-| Savvy | ❌ | Varies | Varies | Advisor-dependent |
-| Dovly | ✅ | ~$10/mo | ~$25/mo | Credit focus only |
-| Credit Karma | ✅ | - | - | Ad-supported |
-| Experian | ✅ | $24.99/mo | - | Single bureau free |
-| YNAB | ❌ | $109/yr | - | 34-day trial |
-| Robinhood | ✅ | $5/mo Gold | - | Trading focus |
+| Competitor   | Free Tier | Entry Paid | Premium        | Notes                  |
+| ------------ | --------- | ---------- | -------------- | ---------------------- |
+| Range        | ❌        | $2,400/yr  | $8,955/yr      | Flat-fee, no AUM       |
+| Betterment   | ❌        | 0.25% AUM  | 0.40% AUM      | $100K min for Premium  |
+| Wealthfront  | ❌        | 0.25% AUM  | -              | Same rate all balances |
+| Ellevest     | ❌        | $3,600/yr  | 0.35-1.25% AUM | $500K minimum          |
+| Savvy        | ❌        | Varies     | Varies         | Advisor-dependent      |
+| Dovly        | ✅        | ~$10/mo    | ~$25/mo        | Credit focus only      |
+| Credit Karma | ✅        | -          | -              | Ad-supported           |
+| Experian     | ✅        | $24.99/mo  | -              | Single bureau free     |
+| YNAB         | ❌        | $109/yr    | -              | 34-day trial           |
+| Robinhood    | ✅        | $5/mo Gold | -              | Trading focus          |
 
 ---
 
-*Report prepared for Fynvita strategic planning. Data sourced from public websites, January 2026.*
+_Report prepared for Fynvita strategic planning. Data sourced from public websites, January 2026._

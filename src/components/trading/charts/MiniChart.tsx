@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
 /**
  * Mini Chart Component
- * 
+ *
  * Compact sparkline-style chart for dashboard widgets and watchlists.
  * Uses TradingView lightweight-charts for consistent rendering.
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from "react";
 import {
   createChart,
   IChartApi,
@@ -16,7 +16,7 @@ import {
   Time,
   AreaSeries,
   LineSeries,
-} from 'lightweight-charts';
+} from "lightweight-charts";
 
 // ============================================================================
 // TYPES
@@ -26,7 +26,7 @@ export interface MiniChartProps {
   data: { timestamp: number; value: number }[];
   width?: number;
   height?: number;
-  type?: 'line' | 'area';
+  type?: "line" | "area";
   color?: string;
   showChange?: boolean;
   className?: string;
@@ -40,20 +40,22 @@ export function MiniChart({
   data,
   width = 120,
   height = 40,
-  type = 'area',
+  type = "area",
   color,
   showChange = false,
-  className = '',
+  className = "",
 }: MiniChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
 
   // Calculate color based on price change
-  const isPositive = data.length >= 2 && data[data.length - 1].value >= data[0].value;
-  const chartColor = color || (isPositive ? '#26a69a' : '#ef5350');
-  const changePercent = data.length >= 2
-    ? ((data[data.length - 1].value - data[0].value) / data[0].value) * 100
-    : 0;
+  const isPositive =
+    data.length >= 2 && data[data.length - 1].value >= data[0].value;
+  const chartColor = color || (isPositive ? "#26a69a" : "#ef5350");
+  const changePercent =
+    data.length >= 2
+      ? ((data[data.length - 1].value - data[0].value) / data[0].value) * 100
+      : 0;
 
   useEffect(() => {
     if (!containerRef.current || !data.length) return;
@@ -62,8 +64,8 @@ export function MiniChart({
       width,
       height,
       layout: {
-        background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: 'transparent',
+        background: { type: ColorType.Solid, color: "transparent" },
+        textColor: "transparent",
       },
       grid: {
         vertLines: { visible: false },
@@ -83,12 +85,12 @@ export function MiniChart({
     chartRef.current = chart;
 
     // Format data
-    const formattedData = data.map(d => ({
+    const formattedData = data.map((d) => ({
       time: (d.timestamp / 1000) as Time,
       value: d.value,
     }));
 
-    if (type === 'area') {
+    if (type === "area") {
       const series = chart.addSeries(AreaSeries, {
         topColor: `${chartColor}40`,
         bottomColor: `${chartColor}00`,
@@ -120,8 +122,11 @@ export function MiniChart({
     <div className={`mini-chart inline-flex items-center gap-2 ${className}`}>
       <div ref={containerRef} style={{ width, height }} />
       {showChange && (
-        <span className={`text-xs font-medium ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
-          {isPositive ? '+' : ''}{changePercent.toFixed(1)}%
+        <span
+          className={`text-xs font-medium ${isPositive ? "text-green-500" : "text-red-500"}`}
+        >
+          {isPositive ? "+" : ""}
+          {changePercent.toFixed(1)}%
         </span>
       )}
     </div>

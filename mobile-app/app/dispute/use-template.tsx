@@ -3,7 +3,7 @@
  * Complete implementation for generating dispute letters from templates
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -18,101 +18,145 @@ import {
   Share,
   Animated,
   Modal,
-} from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { lightTheme } from '../../src/constants/theme';
-import { disputeLetterApi, disputeResourcesApi, disputeApi } from '../../src/services/api/disputes';
-import { useDisputeStore } from '../../src/store/disputeStore';
-import type { DisputeTemplate } from '../../src/services/api/types';
+} from "react-native";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { lightTheme } from "../../src/constants/theme";
+import {
+  disputeLetterApi,
+  disputeResourcesApi,
+  disputeApi,
+} from "../../src/services/api/disputes";
+import { useDisputeStore } from "../../src/store/disputeStore";
+import type { DisputeTemplate } from "../../src/services/api/types";
 
 // Placeholder labels for form fields
 const PLACEHOLDER_LABELS: Record<string, string> = {
-  YOUR_NAME: 'Your Full Name',
-  YOUR_ADDRESS: 'Your Full Address',
-  YOUR_CITY: 'City',
-  YOUR_STATE: 'State',
-  YOUR_ZIP: 'ZIP Code',
-  YOUR_SSN_LAST_4: 'Last 4 of SSN',
-  YOUR_DOB: 'Date of Birth',
-  YOUR_PHONE: 'Phone Number',
-  YOUR_EMAIL: 'Email Address',
-  CREDITOR_NAME: 'Creditor/Company Name',
-  ACCOUNT_NUMBER: 'Account Number (last 4)',
-  INQUIRY_DATE: 'Date of Inquiry',
-  ORIGINAL_DATE: 'Original Account Date',
-  PAYMENT_DATE: 'Payment Date',
-  AMOUNT_PAID: 'Amount Paid',
-  COLLECTION_AGENCY: 'Collection Agency Name',
-  MEDICAL_PROVIDER: 'Medical Provider Name',
-  LOAN_SERVICER: 'Loan Servicer Name',
-  REHABILITATION_DATE: 'Rehabilitation Completion Date',
-  CASE_NUMBER: 'Bankruptcy Case Number',
-  DISCHARGE_DATE: 'Discharge Date',
-  WRONG_ACCOUNT: 'Incorrect Account Name',
-  INCORRECT_MONTH: 'Month Incorrectly Reported',
-  AMOUNT: 'Amount',
-  ACCOUNT_NAME: 'Account Name',
-  DISPUTE_REASON: 'Reason for Dispute',
-  ADDITIONAL_DETAILS: 'Additional Details',
+  YOUR_NAME: "Your Full Name",
+  YOUR_ADDRESS: "Your Full Address",
+  YOUR_CITY: "City",
+  YOUR_STATE: "State",
+  YOUR_ZIP: "ZIP Code",
+  YOUR_SSN_LAST_4: "Last 4 of SSN",
+  YOUR_DOB: "Date of Birth",
+  YOUR_PHONE: "Phone Number",
+  YOUR_EMAIL: "Email Address",
+  CREDITOR_NAME: "Creditor/Company Name",
+  ACCOUNT_NUMBER: "Account Number (last 4)",
+  INQUIRY_DATE: "Date of Inquiry",
+  ORIGINAL_DATE: "Original Account Date",
+  PAYMENT_DATE: "Payment Date",
+  AMOUNT_PAID: "Amount Paid",
+  COLLECTION_AGENCY: "Collection Agency Name",
+  MEDICAL_PROVIDER: "Medical Provider Name",
+  LOAN_SERVICER: "Loan Servicer Name",
+  REHABILITATION_DATE: "Rehabilitation Completion Date",
+  CASE_NUMBER: "Bankruptcy Case Number",
+  DISCHARGE_DATE: "Discharge Date",
+  WRONG_ACCOUNT: "Incorrect Account Name",
+  INCORRECT_MONTH: "Month Incorrectly Reported",
+  AMOUNT: "Amount",
+  ACCOUNT_NAME: "Account Name",
+  DISPUTE_REASON: "Reason for Dispute",
+  ADDITIONAL_DETAILS: "Additional Details",
 };
 
 // Placeholder input types for keyboard
-const PLACEHOLDER_INPUT_TYPES: Record<string, 'default' | 'numeric' | 'email-address' | 'phone-pad'> = {
-  YOUR_SSN_LAST_4: 'numeric',
-  YOUR_PHONE: 'phone-pad',
-  YOUR_EMAIL: 'email-address',
-  ACCOUNT_NUMBER: 'numeric',
-  AMOUNT_PAID: 'numeric',
-  AMOUNT: 'numeric',
-  YOUR_ZIP: 'numeric',
+const PLACEHOLDER_INPUT_TYPES: Record<
+  string,
+  "default" | "numeric" | "email-address" | "phone-pad"
+> = {
+  YOUR_SSN_LAST_4: "numeric",
+  YOUR_PHONE: "phone-pad",
+  YOUR_EMAIL: "email-address",
+  ACCOUNT_NUMBER: "numeric",
+  AMOUNT_PAID: "numeric",
+  AMOUNT: "numeric",
+  YOUR_ZIP: "numeric",
 };
 
 // Bureau options
 const BUREAUS = [
-  { id: 'experian', name: 'Experian', color: '#003D6A', icon: 'shield-checkmark' },
-  { id: 'equifax', name: 'Equifax', color: '#B00000', icon: 'shield' },
-  { id: 'transunion', name: 'TransUnion', color: '#00A8E1', icon: 'shield-half' },
+  {
+    id: "experian",
+    name: "Experian",
+    color: "#003D6A",
+    icon: "shield-checkmark",
+  },
+  { id: "equifax", name: "Equifax", color: "#B00000", icon: "shield" },
+  {
+    id: "transunion",
+    name: "TransUnion",
+    color: "#00A8E1",
+    icon: "shield-half",
+  },
 ] as const;
 
-type Bureau = 'experian' | 'equifax' | 'transunion';
-type ScreenState = 'form' | 'preview' | 'success';
+type Bureau = "experian" | "equifax" | "transunion";
+type ScreenState = "form" | "preview" | "success";
 
 // Local fallback template data
 const LOCAL_TEMPLATES: Record<string, DisputeTemplate> = {
   unauthorized_hard_inquiry: {
-    id: 'unauthorized_hard_inquiry',
-    name: 'Unauthorized Hard Inquiry',
-    category: 'inquiries',
-    scenario: 'A hard inquiry appears on your credit report that you did not authorize',
+    id: "unauthorized_hard_inquiry",
+    name: "Unauthorized Hard Inquiry",
+    category: "inquiries",
+    scenario:
+      "A hard inquiry appears on your credit report that you did not authorize",
     successRate: 62,
-    tone: 'assertive',
-    letterText: '',
-    requiredDocuments: ['Credit report showing the inquiry', 'Identity verification'],
-    placeholders: ['YOUR_NAME', 'YOUR_ADDRESS', 'CREDITOR_NAME', 'INQUIRY_DATE'],
+    tone: "assertive",
+    letterText: "",
+    requiredDocuments: [
+      "Credit report showing the inquiry",
+      "Identity verification",
+    ],
+    placeholders: [
+      "YOUR_NAME",
+      "YOUR_ADDRESS",
+      "CREDITOR_NAME",
+      "INQUIRY_DATE",
+    ],
   },
   obsolete_debt: {
-    id: 'obsolete_debt',
-    name: 'Obsolete Debt Removal',
-    category: 'collections',
-    scenario: 'A debt older than 7 years still appears on your credit report',
+    id: "obsolete_debt",
+    name: "Obsolete Debt Removal",
+    category: "collections",
+    scenario: "A debt older than 7 years still appears on your credit report",
     successRate: 78,
-    tone: 'legal',
-    letterText: '',
-    requiredDocuments: ['Credit report showing the account', 'Proof of account age'],
-    placeholders: ['YOUR_NAME', 'YOUR_ADDRESS', 'ACCOUNT_NAME', 'ORIGINAL_DATE'],
+    tone: "legal",
+    letterText: "",
+    requiredDocuments: [
+      "Credit report showing the account",
+      "Proof of account age",
+    ],
+    placeholders: [
+      "YOUR_NAME",
+      "YOUR_ADDRESS",
+      "ACCOUNT_NAME",
+      "ORIGINAL_DATE",
+    ],
   },
   paid_collection_reporting: {
-    id: 'paid_collection_reporting',
-    name: 'Paid Collection Still Reporting',
-    category: 'collections',
-    scenario: 'A collection account shows as unpaid after you\'ve paid it',
+    id: "paid_collection_reporting",
+    name: "Paid Collection Still Reporting",
+    category: "collections",
+    scenario: "A collection account shows as unpaid after you've paid it",
     successRate: 74,
-    tone: 'assertive',
-    letterText: '',
-    requiredDocuments: ['Payment confirmation', 'Credit report', 'Settlement letter'],
-    placeholders: ['YOUR_NAME', 'YOUR_ADDRESS', 'COLLECTION_AGENCY', 'PAYMENT_DATE', 'AMOUNT_PAID'],
+    tone: "assertive",
+    letterText: "",
+    requiredDocuments: [
+      "Payment confirmation",
+      "Credit report",
+      "Settlement letter",
+    ],
+    placeholders: [
+      "YOUR_NAME",
+      "YOUR_ADDRESS",
+      "COLLECTION_AGENCY",
+      "PAYMENT_DATE",
+      "AMOUNT_PAID",
+    ],
   },
 };
 
@@ -120,23 +164,35 @@ export default function UseTemplateScreen() {
   const router = useRouter();
   const scrollViewRef = useRef<ScrollView>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const { templateId, templateName } = useLocalSearchParams<{ templateId: string; templateName: string }>();
+  const { templateId, templateName } = useLocalSearchParams<{
+    templateId: string;
+    templateName: string;
+  }>();
 
   // State
   const [template, setTemplate] = useState<DisputeTemplate | null>(null);
-  const [placeholderValues, setPlaceholderValues] = useState<Record<string, string>>({});
+  const [placeholderValues, setPlaceholderValues] = useState<
+    Record<string, string>
+  >({});
   const [selectedBureau, setSelectedBureau] = useState<Bureau | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [generatedLetter, setGeneratedLetter] = useState<string | null>(null);
-  const [screenState, setScreenState] = useState<ScreenState>('form');
+  const [screenState, setScreenState] = useState<ScreenState>("form");
   const [createdDisputeId, setCreatedDisputeId] = useState<string | null>(null);
   const [showBureauModal, setShowBureauModal] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string>
+  >({});
 
   // Store actions
-  const { createDispute, isCreating, error: storeError, clearError } = useDisputeStore();
+  const {
+    createDispute,
+    isCreating,
+    error: storeError,
+    clearError,
+  } = useDisputeStore();
 
   // Fetch template on mount
   useEffect(() => {
@@ -159,14 +215,14 @@ export default function UseTemplateScreen() {
   const fetchTemplate = async () => {
     setLoading(true);
     try {
-      const response = await disputeResourcesApi.getTemplate(templateId || '');
+      const response = await disputeResourcesApi.getTemplate(templateId || "");
       if (response.success && response.data) {
         const templateData = response.data;
         setTemplate(templateData);
         initializePlaceholders(templateData.placeholders);
       } else {
         // Use local fallback
-        const localTemplate = LOCAL_TEMPLATES[templateId || ''];
+        const localTemplate = LOCAL_TEMPLATES[templateId || ""];
         if (localTemplate) {
           setTemplate(localTemplate);
           initializePlaceholders(localTemplate.placeholders);
@@ -174,7 +230,7 @@ export default function UseTemplateScreen() {
       }
     } catch (err) {
       // Use local fallback on error
-      const localTemplate = LOCAL_TEMPLATES[templateId || ''];
+      const localTemplate = LOCAL_TEMPLATES[templateId || ""];
       if (localTemplate) {
         setTemplate(localTemplate);
         initializePlaceholders(localTemplate.placeholders);
@@ -186,7 +242,7 @@ export default function UseTemplateScreen() {
   const initializePlaceholders = (placeholders: string[]) => {
     const initial: Record<string, string> = {};
     placeholders.forEach((p) => {
-      initial[p] = '';
+      initial[p] = "";
     });
     setPlaceholderValues(initial);
   };
@@ -196,35 +252,50 @@ export default function UseTemplateScreen() {
 
     // Check bureau selection
     if (!selectedBureau) {
-      Alert.alert('Bureau Required', 'Please select a credit bureau to send this dispute to.');
+      Alert.alert(
+        "Bureau Required",
+        "Please select a credit bureau to send this dispute to.",
+      );
       return false;
     }
 
     // Check all placeholders
     Object.entries(placeholderValues).forEach(([key, value]) => {
       if (!value.trim()) {
-        errors[key] = 'This field is required';
+        errors[key] = "This field is required";
       }
     });
 
     // Specific validations
-    if (placeholderValues.YOUR_SSN_LAST_4 && !/^\d{4}$/.test(placeholderValues.YOUR_SSN_LAST_4)) {
-      errors.YOUR_SSN_LAST_4 = 'Please enter exactly 4 digits';
+    if (
+      placeholderValues.YOUR_SSN_LAST_4 &&
+      !/^\d{4}$/.test(placeholderValues.YOUR_SSN_LAST_4)
+    ) {
+      errors.YOUR_SSN_LAST_4 = "Please enter exactly 4 digits";
     }
 
-    if (placeholderValues.YOUR_EMAIL && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(placeholderValues.YOUR_EMAIL)) {
-      errors.YOUR_EMAIL = 'Please enter a valid email address';
+    if (
+      placeholderValues.YOUR_EMAIL &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(placeholderValues.YOUR_EMAIL)
+    ) {
+      errors.YOUR_EMAIL = "Please enter a valid email address";
     }
 
-    if (placeholderValues.YOUR_ZIP && !/^\d{5}(-\d{4})?$/.test(placeholderValues.YOUR_ZIP)) {
-      errors.YOUR_ZIP = 'Please enter a valid ZIP code';
+    if (
+      placeholderValues.YOUR_ZIP &&
+      !/^\d{5}(-\d{4})?$/.test(placeholderValues.YOUR_ZIP)
+    ) {
+      errors.YOUR_ZIP = "Please enter a valid ZIP code";
     }
 
     setValidationErrors(errors);
 
     if (Object.keys(errors).length > 0) {
       const firstError = Object.values(errors)[0];
-      Alert.alert('Missing Information', firstError || 'Please fill in all required fields');
+      Alert.alert(
+        "Missing Information",
+        firstError || "Please fill in all required fields",
+      );
       return false;
     }
 
@@ -237,43 +308,45 @@ export default function UseTemplateScreen() {
     setGenerating(true);
     try {
       const response = await disputeLetterApi.generateFromTemplate(
-        templateId || '',
-        { ...placeholderValues, bureau: selectedBureau || '' }
+        templateId || "",
+        { ...placeholderValues, bureau: selectedBureau || "" },
       );
 
       if (response.success && response.data?.letter) {
         setGeneratedLetter(response.data.letter);
-        setScreenState('preview');
+        setScreenState("preview");
       } else {
         // Generate a local letter if API fails
         const localLetter = generateLocalLetter();
         setGeneratedLetter(localLetter);
-        setScreenState('preview');
+        setScreenState("preview");
       }
     } catch (err) {
       // Generate a local letter on error
       const localLetter = generateLocalLetter();
       setGeneratedLetter(localLetter);
-      setScreenState('preview');
+      setScreenState("preview");
     }
     setGenerating(false);
   };
 
   const generateLocalLetter = (): string => {
-    const today = new Date().toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+    const today = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
 
     const bureauAddresses: Record<Bureau, string> = {
-      experian: 'Experian\nP.O. Box 4500\nAllen, TX 75013',
-      equifax: 'Equifax Information Services LLC\nP.O. Box 740256\nAtlanta, GA 30374',
-      transunion: 'TransUnion Consumer Solutions\nP.O. Box 2000\nChester, PA 19016',
+      experian: "Experian\nP.O. Box 4500\nAllen, TX 75013",
+      equifax:
+        "Equifax Information Services LLC\nP.O. Box 740256\nAtlanta, GA 30374",
+      transunion:
+        "TransUnion Consumer Solutions\nP.O. Box 2000\nChester, PA 19016",
     };
 
-    return `${placeholderValues.YOUR_NAME || '[Your Name]'}
-${placeholderValues.YOUR_ADDRESS || '[Your Address]'}
+    return `${placeholderValues.YOUR_NAME || "[Your Name]"}
+${placeholderValues.YOUR_ADDRESS || "[Your Address]"}
 
 ${today}
 
@@ -285,15 +358,15 @@ To Whom It May Concern:
 
 I am writing to dispute the following information in my credit file. The item(s) I am disputing are inaccurate and incomplete.
 
-${template?.scenario || 'The following item is being reported inaccurately on my credit report.'}
+${template?.scenario || "The following item is being reported inaccurately on my credit report."}
 
 Account/Item Details:
-- ${template?.category === 'inquiries' ? 'Creditor' : 'Account'}: ${placeholderValues.CREDITOR_NAME || placeholderValues.ACCOUNT_NAME || placeholderValues.COLLECTION_AGENCY || '[Company Name]'}
-${placeholderValues.ACCOUNT_NUMBER ? `- Account Number (last 4): ${placeholderValues.ACCOUNT_NUMBER}` : ''}
-${placeholderValues.INQUIRY_DATE ? `- Inquiry Date: ${placeholderValues.INQUIRY_DATE}` : ''}
-${placeholderValues.ORIGINAL_DATE ? `- Original Date: ${placeholderValues.ORIGINAL_DATE}` : ''}
-${placeholderValues.PAYMENT_DATE ? `- Payment Date: ${placeholderValues.PAYMENT_DATE}` : ''}
-${placeholderValues.AMOUNT_PAID ? `- Amount Paid: $${placeholderValues.AMOUNT_PAID}` : ''}
+- ${template?.category === "inquiries" ? "Creditor" : "Account"}: ${placeholderValues.CREDITOR_NAME || placeholderValues.ACCOUNT_NAME || placeholderValues.COLLECTION_AGENCY || "[Company Name]"}
+${placeholderValues.ACCOUNT_NUMBER ? `- Account Number (last 4): ${placeholderValues.ACCOUNT_NUMBER}` : ""}
+${placeholderValues.INQUIRY_DATE ? `- Inquiry Date: ${placeholderValues.INQUIRY_DATE}` : ""}
+${placeholderValues.ORIGINAL_DATE ? `- Original Date: ${placeholderValues.ORIGINAL_DATE}` : ""}
+${placeholderValues.PAYMENT_DATE ? `- Payment Date: ${placeholderValues.PAYMENT_DATE}` : ""}
+${placeholderValues.AMOUNT_PAID ? `- Amount Paid: $${placeholderValues.AMOUNT_PAID}` : ""}
 
 Under the Fair Credit Reporting Act (FCRA), you are required to investigate this dispute within 30 days and provide me with the results of your investigation. If you cannot verify this information, you must delete it from my credit report.
 
@@ -301,12 +374,12 @@ Please send me written confirmation of the results of your investigation.
 
 Sincerely,
 
-${placeholderValues.YOUR_NAME || '[Your Name]'}
-${placeholderValues.YOUR_SSN_LAST_4 ? `SSN (last 4): XXX-XX-${placeholderValues.YOUR_SSN_LAST_4}` : ''}
+${placeholderValues.YOUR_NAME || "[Your Name]"}
+${placeholderValues.YOUR_SSN_LAST_4 ? `SSN (last 4): XXX-XX-${placeholderValues.YOUR_SSN_LAST_4}` : ""}
 
 Enclosures:
 - Copy of government-issued ID
-${template?.requiredDocuments?.map(doc => `- ${doc}`).join('\n') || '- Supporting documentation'}
+${template?.requiredDocuments?.map((doc) => `- ${doc}`).join("\n") || "- Supporting documentation"}
 `;
   };
 
@@ -318,24 +391,28 @@ ${template?.requiredDocuments?.map(doc => `- ${doc}`).join('\n') || '- Supportin
       // Create the dispute using the store
       const newDispute = await createDispute({
         bureau: selectedBureau,
-        itemType: template.category || 'other',
-        creditorName: placeholderValues.CREDITOR_NAME || placeholderValues.ACCOUNT_NAME || placeholderValues.COLLECTION_AGENCY || 'Unknown',
+        itemType: template.category || "other",
+        creditorName:
+          placeholderValues.CREDITOR_NAME ||
+          placeholderValues.ACCOUNT_NAME ||
+          placeholderValues.COLLECTION_AGENCY ||
+          "Unknown",
         accountNumber: placeholderValues.ACCOUNT_NUMBER,
-        disputeReason: template.scenario || 'Item disputed based on template',
+        disputeReason: template.scenario || "Item disputed based on template",
         letterContent: generatedLetter,
-        status: 'draft',
+        status: "draft",
       });
 
       if (newDispute) {
         setCreatedDisputeId(newDispute.id);
-        setScreenState('success');
+        setScreenState("success");
       } else {
         // Still show success locally even if API fails
-        setScreenState('success');
+        setScreenState("success");
       }
     } catch (err) {
       // Still show success locally even if API fails
-      setScreenState('success');
+      setScreenState("success");
     }
     setSaving(false);
   };
@@ -343,7 +420,7 @@ ${template?.requiredDocuments?.map(doc => `- ${doc}`).join('\n') || '- Supportin
   const handleSendDispute = async () => {
     if (!createdDisputeId) {
       // No dispute created yet, just navigate
-      router.replace('/(tabs)/disputes' as never);
+      router.replace("/(tabs)/disputes" as never);
       return;
     }
 
@@ -351,12 +428,17 @@ ${template?.requiredDocuments?.map(doc => `- ${doc}`).join('\n') || '- Supportin
     try {
       await disputeApi.send(createdDisputeId);
       Alert.alert(
-        'Dispute Sent!',
-        `Your dispute has been submitted to ${BUREAUS.find(b => b.id === selectedBureau)?.name}. Track its progress in your disputes list.`,
-        [{ text: 'View Disputes', onPress: () => router.replace('/(tabs)/disputes' as never) }]
+        "Dispute Sent!",
+        `Your dispute has been submitted to ${BUREAUS.find((b) => b.id === selectedBureau)?.name}. Track its progress in your disputes list.`,
+        [
+          {
+            text: "View Disputes",
+            onPress: () => router.replace("/(tabs)/disputes" as never),
+          },
+        ],
       );
     } catch (err) {
-      router.replace('/(tabs)/disputes' as never);
+      router.replace("/(tabs)/disputes" as never);
     }
     setSaving(false);
   };
@@ -367,16 +449,16 @@ ${template?.requiredDocuments?.map(doc => `- ${doc}`).join('\n') || '- Supportin
     try {
       await Share.share({
         message: generatedLetter,
-        title: `Dispute Letter - ${template?.name || 'Credit Dispute'}`,
+        title: `Dispute Letter - ${template?.name || "Credit Dispute"}`,
       });
     } catch (err) {
-      if (__DEV__) console.error('Share error:', err);
+      if (__DEV__) console.error("Share error:", err);
     }
   };
 
   const handleCopyLetter = () => {
     // In a real app, you'd use Clipboard.setStringAsync
-    Alert.alert('Copied!', 'The letter has been copied to your clipboard.');
+    Alert.alert("Copied!", "The letter has been copied to your clipboard.");
   };
 
   // Bureau selection modal
@@ -395,7 +477,9 @@ ${template?.requiredDocuments?.map(doc => `- ${doc}`).join('\n') || '- Supportin
         <View style={styles.modalContent}>
           <View style={styles.modalHandle} />
           <Text style={styles.modalTitle}>Select Credit Bureau</Text>
-          <Text style={styles.modalSubtitle}>Choose where to send your dispute</Text>
+          <Text style={styles.modalSubtitle}>
+            Choose where to send your dispute
+          </Text>
 
           {BUREAUS.map((bureau) => (
             <TouchableOpacity
@@ -409,19 +493,33 @@ ${template?.requiredDocuments?.map(doc => `- ${doc}`).join('\n') || '- Supportin
                 setShowBureauModal(false);
               }}
             >
-              <View style={[styles.bureauIcon, { backgroundColor: bureau.color + '20' }]}>
-                <Ionicons name={bureau.icon as keyof typeof Ionicons.glyphMap} size={24} color={bureau.color} />
+              <View
+                style={[
+                  styles.bureauIcon,
+                  { backgroundColor: bureau.color + "20" },
+                ]}
+              >
+                <Ionicons
+                  name={bureau.icon as keyof typeof Ionicons.glyphMap}
+                  size={24}
+                  color={bureau.color}
+                />
               </View>
               <View style={styles.bureauInfo}>
                 <Text style={styles.bureauName}>{bureau.name}</Text>
                 <Text style={styles.bureauDescription}>
-                  {bureau.id === 'experian' && 'Largest credit bureau in the US'}
-                  {bureau.id === 'equifax' && 'Second largest credit bureau'}
-                  {bureau.id === 'transunion' && 'Third major credit bureau'}
+                  {bureau.id === "experian" &&
+                    "Largest credit bureau in the US"}
+                  {bureau.id === "equifax" && "Second largest credit bureau"}
+                  {bureau.id === "transunion" && "Third major credit bureau"}
                 </Text>
               </View>
               {selectedBureau === bureau.id && (
-                <Ionicons name="checkmark-circle" size={24} color={lightTheme.colors.primary} />
+                <Ionicons
+                  name="checkmark-circle"
+                  size={24}
+                  color={lightTheme.colors.primary}
+                />
               )}
             </TouchableOpacity>
           ))}
@@ -440,7 +538,7 @@ ${template?.requiredDocuments?.map(doc => `- ${doc}`).join('\n') || '- Supportin
   // Loading state
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, styles.centered]} edges={['top']}>
+      <SafeAreaView style={[styles.container, styles.centered]} edges={["top"]}>
         <ActivityIndicator size="large" color={lightTheme.colors.primary} />
         <Text style={styles.loadingText}>Loading template...</Text>
       </SafeAreaView>
@@ -448,38 +546,57 @@ ${template?.requiredDocuments?.map(doc => `- ${doc}`).join('\n') || '- Supportin
   }
 
   // Success state
-  if (screenState === 'success') {
+  if (screenState === "success") {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={["top"]}>
         <Animated.View style={[styles.successContainer, { opacity: fadeAnim }]}>
           <View style={styles.successIconContainer}>
-            <Ionicons name="checkmark-circle" size={80} color={lightTheme.colors.success} />
+            <Ionicons
+              name="checkmark-circle"
+              size={80}
+              color={lightTheme.colors.success}
+            />
           </View>
           <Text style={styles.successTitle}>Dispute Created!</Text>
           <Text style={styles.successMessage}>
-            Your dispute letter has been saved and is ready to send to{' '}
-            {BUREAUS.find(b => b.id === selectedBureau)?.name || 'the bureau'}.
+            Your dispute letter has been saved and is ready to send to{" "}
+            {BUREAUS.find((b) => b.id === selectedBureau)?.name || "the bureau"}
+            .
           </Text>
 
           <View style={styles.successStats}>
             <View style={styles.successStat}>
-              <Ionicons name="document-text" size={24} color={lightTheme.colors.primary} />
+              <Ionicons
+                name="document-text"
+                size={24}
+                color={lightTheme.colors.primary}
+              />
               <Text style={styles.successStatLabel}>Template Used</Text>
               <Text style={styles.successStatValue}>{template?.name}</Text>
             </View>
             <View style={styles.successStat}>
-              <Ionicons name="trending-up" size={24} color={lightTheme.colors.success} />
+              <Ionicons
+                name="trending-up"
+                size={24}
+                color={lightTheme.colors.success}
+              />
               <Text style={styles.successStatLabel}>Success Rate</Text>
-              <Text style={styles.successStatValue}>{template?.successRate}%</Text>
+              <Text style={styles.successStatValue}>
+                {template?.successRate}%
+              </Text>
             </View>
           </View>
 
           <View style={styles.successActions}>
             <TouchableOpacity
               style={styles.secondaryButton}
-              onPress={() => router.push('/dispute/templates' as never)}
+              onPress={() => router.push("/dispute/templates" as never)}
             >
-              <Ionicons name="add" size={20} color={lightTheme.colors.primary} />
+              <Ionicons
+                name="add"
+                size={20}
+                color={lightTheme.colors.primary}
+              />
               <Text style={styles.secondaryButtonText}>Create Another</Text>
             </TouchableOpacity>
 
@@ -501,10 +618,14 @@ ${template?.requiredDocuments?.map(doc => `- ${doc}`).join('\n') || '- Supportin
 
           <TouchableOpacity
             style={styles.viewDisputesLink}
-            onPress={() => router.replace('/(tabs)/disputes' as never)}
+            onPress={() => router.replace("/(tabs)/disputes" as never)}
           >
             <Text style={styles.viewDisputesText}>View All Disputes</Text>
-            <Ionicons name="arrow-forward" size={16} color={lightTheme.colors.primary} />
+            <Ionicons
+              name="arrow-forward"
+              size={16}
+              color={lightTheme.colors.primary}
+            />
           </TouchableOpacity>
         </Animated.View>
       </SafeAreaView>
@@ -512,46 +633,75 @@ ${template?.requiredDocuments?.map(doc => `- ${doc}`).join('\n') || '- Supportin
   }
 
   // Preview state
-  if (screenState === 'preview' && generatedLetter) {
+  if (screenState === "preview" && generatedLetter) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={["top"]}>
         <KeyboardAvoidingView
           style={styles.flex}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
           {/* Header */}
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => setScreenState('form')}>
-              <Ionicons name="arrow-back" size={24} color={lightTheme.colors.text} />
+            <TouchableOpacity onPress={() => setScreenState("form")}>
+              <Ionicons
+                name="arrow-back"
+                size={24}
+                color={lightTheme.colors.text}
+              />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Review Letter</Text>
             <TouchableOpacity onPress={handleShareLetter}>
-              <Ionicons name="share-outline" size={24} color={lightTheme.colors.primary} />
+              <Ionicons
+                name="share-outline"
+                size={24}
+                color={lightTheme.colors.primary}
+              />
             </TouchableOpacity>
           </View>
 
           {/* Bureau Info */}
           <View style={styles.previewBureauInfo}>
-            <View style={[
-              styles.previewBureauBadge,
-              { backgroundColor: (BUREAUS.find(b => b.id === selectedBureau)?.color || lightTheme.colors.primary) + '20' }
-            ]}>
+            <View
+              style={[
+                styles.previewBureauBadge,
+                {
+                  backgroundColor:
+                    (BUREAUS.find((b) => b.id === selectedBureau)?.color ||
+                      lightTheme.colors.primary) + "20",
+                },
+              ]}
+            >
               <Ionicons
-                name={(BUREAUS.find(b => b.id === selectedBureau)?.icon || 'shield') as keyof typeof Ionicons.glyphMap}
+                name={
+                  (BUREAUS.find((b) => b.id === selectedBureau)?.icon ||
+                    "shield") as keyof typeof Ionicons.glyphMap
+                }
                 size={16}
-                color={BUREAUS.find(b => b.id === selectedBureau)?.color || lightTheme.colors.primary}
+                color={
+                  BUREAUS.find((b) => b.id === selectedBureau)?.color ||
+                  lightTheme.colors.primary
+                }
               />
-              <Text style={[
-                styles.previewBureauText,
-                { color: BUREAUS.find(b => b.id === selectedBureau)?.color || lightTheme.colors.primary }
-              ]}>
-                Sending to {BUREAUS.find(b => b.id === selectedBureau)?.name}
+              <Text
+                style={[
+                  styles.previewBureauText,
+                  {
+                    color:
+                      BUREAUS.find((b) => b.id === selectedBureau)?.color ||
+                      lightTheme.colors.primary,
+                  },
+                ]}
+              >
+                Sending to {BUREAUS.find((b) => b.id === selectedBureau)?.name}
               </Text>
             </View>
           </View>
 
           {/* Letter Content */}
-          <ScrollView style={styles.letterContainer} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={styles.letterContainer}
+            showsVerticalScrollIndicator={false}
+          >
             <View style={styles.letterPaper}>
               <Text style={styles.letterText}>{generatedLetter}</Text>
             </View>
@@ -560,16 +710,37 @@ ${template?.requiredDocuments?.map(doc => `- ${doc}`).join('\n') || '- Supportin
 
           {/* Actions */}
           <View style={styles.previewActions}>
-            <TouchableOpacity style={styles.previewActionButton} onPress={handleCopyLetter}>
-              <Ionicons name="copy-outline" size={20} color={lightTheme.colors.textSecondary} />
+            <TouchableOpacity
+              style={styles.previewActionButton}
+              onPress={handleCopyLetter}
+            >
+              <Ionicons
+                name="copy-outline"
+                size={20}
+                color={lightTheme.colors.textSecondary}
+              />
               <Text style={styles.previewActionText}>Copy</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.previewActionButton} onPress={handleShareLetter}>
-              <Ionicons name="share-outline" size={20} color={lightTheme.colors.textSecondary} />
+            <TouchableOpacity
+              style={styles.previewActionButton}
+              onPress={handleShareLetter}
+            >
+              <Ionicons
+                name="share-outline"
+                size={20}
+                color={lightTheme.colors.textSecondary}
+              />
               <Text style={styles.previewActionText}>Share</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.previewActionButton} onPress={() => setScreenState('form')}>
-              <Ionicons name="create-outline" size={20} color={lightTheme.colors.textSecondary} />
+            <TouchableOpacity
+              style={styles.previewActionButton}
+              onPress={() => setScreenState("form")}
+            >
+              <Ionicons
+                name="create-outline"
+                size={20}
+                color={lightTheme.colors.textSecondary}
+              />
               <Text style={styles.previewActionText}>Edit</Text>
             </TouchableOpacity>
           </View>
@@ -598,18 +769,22 @@ ${template?.requiredDocuments?.map(doc => `- ${doc}`).join('\n') || '- Supportin
 
   // Form state (default)
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color={lightTheme.colors.text} />
+            <Ionicons
+              name="arrow-back"
+              size={24}
+              color={lightTheme.colors.text}
+            />
           </TouchableOpacity>
           <Text style={styles.headerTitle} numberOfLines={1}>
-            {templateName || template?.name || 'Use Template'}
+            {templateName || template?.name || "Use Template"}
           </Text>
           <View style={{ width: 24 }} />
         </View>
@@ -626,13 +801,22 @@ ${template?.requiredDocuments?.map(doc => `- ${doc}`).join('\n') || '- Supportin
               <View style={styles.templateInfoHeader}>
                 <View style={styles.successBadge}>
                   <Ionicons name="trending-up" size={14} color="#16A34A" />
-                  <Text style={styles.successText}>{template.successRate}% success rate</Text>
+                  <Text style={styles.successText}>
+                    {template.successRate}% success rate
+                  </Text>
                 </View>
-                <View style={[
-                  styles.toneBadge,
-                  { backgroundColor: getToneColor(template.tone) + '20' }
-                ]}>
-                  <Text style={[styles.toneText, { color: getToneColor(template.tone) }]}>
+                <View
+                  style={[
+                    styles.toneBadge,
+                    { backgroundColor: getToneColor(template.tone) + "20" },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.toneText,
+                      { color: getToneColor(template.tone) },
+                    ]}
+                  >
                     {template.tone}
                   </Text>
                 </View>
@@ -644,9 +828,16 @@ ${template?.requiredDocuments?.map(doc => `- ${doc}`).join('\n') || '- Supportin
           {/* Bureau Selection */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
-              <Ionicons name="business" size={16} color={lightTheme.colors.text} /> Credit Bureau
+              <Ionicons
+                name="business"
+                size={16}
+                color={lightTheme.colors.text}
+              />{" "}
+              Credit Bureau
             </Text>
-            <Text style={styles.sectionSubtitle}>Select the bureau to send this dispute to</Text>
+            <Text style={styles.sectionSubtitle}>
+              Select the bureau to send this dispute to
+            </Text>
 
             <TouchableOpacity
               style={[
@@ -658,56 +849,93 @@ ${template?.requiredDocuments?.map(doc => `- ${doc}`).join('\n') || '- Supportin
             >
               {selectedBureau ? (
                 <View style={styles.selectedBureauDisplay}>
-                  <View style={[
-                    styles.bureauIcon,
-                    { backgroundColor: (BUREAUS.find(b => b.id === selectedBureau)?.color || lightTheme.colors.primary) + '20' }
-                  ]}>
+                  <View
+                    style={[
+                      styles.bureauIcon,
+                      {
+                        backgroundColor:
+                          (BUREAUS.find((b) => b.id === selectedBureau)
+                            ?.color || lightTheme.colors.primary) + "20",
+                      },
+                    ]}
+                  >
                     <Ionicons
-                      name={(BUREAUS.find(b => b.id === selectedBureau)?.icon || 'shield') as keyof typeof Ionicons.glyphMap}
+                      name={
+                        (BUREAUS.find((b) => b.id === selectedBureau)?.icon ||
+                          "shield") as keyof typeof Ionicons.glyphMap
+                      }
                       size={20}
-                      color={BUREAUS.find(b => b.id === selectedBureau)?.color}
+                      color={
+                        BUREAUS.find((b) => b.id === selectedBureau)?.color
+                      }
                     />
                   </View>
                   <Text style={styles.selectedBureauName}>
-                    {BUREAUS.find(b => b.id === selectedBureau)?.name}
+                    {BUREAUS.find((b) => b.id === selectedBureau)?.name}
                   </Text>
                 </View>
               ) : (
-                <Text style={styles.bureauPlaceholder}>Select a credit bureau...</Text>
+                <Text style={styles.bureauPlaceholder}>
+                  Select a credit bureau...
+                </Text>
               )}
-              <Ionicons name="chevron-down" size={20} color={lightTheme.colors.textSecondary} />
+              <Ionicons
+                name="chevron-down"
+                size={20}
+                color={lightTheme.colors.textSecondary}
+              />
             </TouchableOpacity>
           </View>
 
           {/* Required Documents */}
-          {template?.requiredDocuments && template.requiredDocuments.length > 0 && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>
-                <Ionicons name="document-attach" size={16} color={lightTheme.colors.text} /> Required Documents
-              </Text>
-              <Text style={styles.sectionSubtitle}>Gather these before submitting</Text>
-              {template.requiredDocuments.map((doc, i) => (
-                <View key={i} style={styles.docItem}>
-                  <View style={styles.docCheckbox}>
-                    <Ionicons name="square-outline" size={18} color={lightTheme.colors.textSecondary} />
+          {template?.requiredDocuments &&
+            template.requiredDocuments.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>
+                  <Ionicons
+                    name="document-attach"
+                    size={16}
+                    color={lightTheme.colors.text}
+                  />{" "}
+                  Required Documents
+                </Text>
+                <Text style={styles.sectionSubtitle}>
+                  Gather these before submitting
+                </Text>
+                {template.requiredDocuments.map((doc, i) => (
+                  <View key={i} style={styles.docItem}>
+                    <View style={styles.docCheckbox}>
+                      <Ionicons
+                        name="square-outline"
+                        size={18}
+                        color={lightTheme.colors.textSecondary}
+                      />
+                    </View>
+                    <Text style={styles.docText}>{doc}</Text>
                   </View>
-                  <Text style={styles.docText}>{doc}</Text>
-                </View>
-              ))}
-            </View>
-          )}
+                ))}
+              </View>
+            )}
 
           {/* Placeholder Fields */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
-              <Ionicons name="create" size={16} color={lightTheme.colors.text} /> Your Information
+              <Ionicons
+                name="create"
+                size={16}
+                color={lightTheme.colors.text}
+              />{" "}
+              Your Information
             </Text>
-            <Text style={styles.sectionSubtitle}>Fill in the details for your dispute letter</Text>
+            <Text style={styles.sectionSubtitle}>
+              Fill in the details for your dispute letter
+            </Text>
 
             {template?.placeholders.map((placeholder) => (
               <View key={placeholder} style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>
-                  {PLACEHOLDER_LABELS[placeholder] || placeholder.replace(/_/g, ' ')}
+                  {PLACEHOLDER_LABELS[placeholder] ||
+                    placeholder.replace(/_/g, " ")}
                   <Text style={styles.requiredStar}> *</Text>
                 </Text>
                 <TextInput
@@ -716,11 +944,14 @@ ${template?.requiredDocuments?.map(doc => `- ${doc}`).join('\n') || '- Supportin
                     validationErrors[placeholder] && styles.inputError,
                   ]}
                   placeholder={`Enter ${PLACEHOLDER_LABELS[placeholder]?.toLowerCase() || placeholder.toLowerCase()}`}
-                  value={placeholderValues[placeholder] || ''}
+                  value={placeholderValues[placeholder] || ""}
                   onChangeText={(text) => {
-                    setPlaceholderValues(prev => ({ ...prev, [placeholder]: text }));
+                    setPlaceholderValues((prev) => ({
+                      ...prev,
+                      [placeholder]: text,
+                    }));
                     if (validationErrors[placeholder]) {
-                      setValidationErrors(prev => {
+                      setValidationErrors((prev) => {
                         const newErrors = { ...prev };
                         delete newErrors[placeholder];
                         return newErrors;
@@ -728,14 +959,28 @@ ${template?.requiredDocuments?.map(doc => `- ${doc}`).join('\n') || '- Supportin
                     }
                   }}
                   placeholderTextColor={lightTheme.colors.textSecondary}
-                  keyboardType={PLACEHOLDER_INPUT_TYPES[placeholder] || 'default'}
-                  autoCapitalize={placeholder.includes('EMAIL') ? 'none' : 'words'}
+                  keyboardType={
+                    PLACEHOLDER_INPUT_TYPES[placeholder] || "default"
+                  }
+                  autoCapitalize={
+                    placeholder.includes("EMAIL") ? "none" : "words"
+                  }
                   autoCorrect={false}
-                  multiline={placeholder.includes('ADDRESS') || placeholder.includes('DETAILS')}
-                  numberOfLines={placeholder.includes('ADDRESS') || placeholder.includes('DETAILS') ? 3 : 1}
+                  multiline={
+                    placeholder.includes("ADDRESS") ||
+                    placeholder.includes("DETAILS")
+                  }
+                  numberOfLines={
+                    placeholder.includes("ADDRESS") ||
+                    placeholder.includes("DETAILS")
+                      ? 3
+                      : 1
+                  }
                 />
                 {validationErrors[placeholder] && (
-                  <Text style={styles.errorText}>{validationErrors[placeholder]}</Text>
+                  <Text style={styles.errorText}>
+                    {validationErrors[placeholder]}
+                  </Text>
                 )}
               </View>
             ))}
@@ -745,11 +990,20 @@ ${template?.requiredDocuments?.map(doc => `- ${doc}`).join('\n') || '- Supportin
           {template?.bestPractices && template.bestPractices.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>
-                <Ionicons name="bulb" size={16} color={lightTheme.colors.text} /> Best Practices
+                <Ionicons
+                  name="bulb"
+                  size={16}
+                  color={lightTheme.colors.text}
+                />{" "}
+                Best Practices
               </Text>
               {template.bestPractices.map((tip, i) => (
                 <View key={i} style={styles.tipItem}>
-                  <Ionicons name="checkmark-circle" size={16} color={lightTheme.colors.success} />
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={16}
+                    color={lightTheme.colors.success}
+                  />
                   <Text style={styles.tipText}>{tip}</Text>
                 </View>
               ))}
@@ -772,7 +1026,7 @@ ${template?.requiredDocuments?.map(doc => `- ${doc}`).join('\n') || '- Supportin
               <Ionicons name="document-text" size={20} color="#FFFFFF" />
             )}
             <Text style={styles.generateButtonText}>
-              {generating ? 'Generating Letter...' : 'Generate Dispute Letter'}
+              {generating ? "Generating Letter..." : "Generate Dispute Letter"}
             </Text>
           </TouchableOpacity>
         </View>
@@ -786,11 +1040,16 @@ ${template?.requiredDocuments?.map(doc => `- ${doc}`).join('\n') || '- Supportin
 // Helper functions
 const getToneColor = (tone: string): string => {
   switch (tone) {
-    case 'legal': return '#7C3AED';
-    case 'assertive': return '#DC2626';
-    case 'formal': return '#2563EB';
-    case 'humble': return '#059669';
-    default: return '#6B7280';
+    case "legal":
+      return "#7C3AED";
+    case "assertive":
+      return "#DC2626";
+    case "formal":
+      return "#2563EB";
+    case "humble":
+      return "#059669";
+    default:
+      return "#6B7280";
   }
 };
 
@@ -803,8 +1062,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   centered: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     marginTop: 12,
@@ -812,9 +1071,9 @@ const styles = StyleSheet.create({
     color: lightTheme.colors.textSecondary,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: 16,
     backgroundColor: lightTheme.colors.surface,
     borderBottomWidth: 1,
@@ -822,11 +1081,11 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: lightTheme.colors.text,
     flex: 1,
     marginHorizontal: 16,
-    textAlign: 'center',
+    textAlign: "center",
   },
   content: {
     flex: 1,
@@ -839,24 +1098,24 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   templateInfoHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     marginBottom: 10,
   },
   successBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
-    backgroundColor: '#16A34A20',
+    backgroundColor: "#16A34A20",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
   },
   successText: {
-    color: '#16A34A',
+    color: "#16A34A",
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   toneBadge: {
     paddingHorizontal: 10,
@@ -865,8 +1124,8 @@ const styles = StyleSheet.create({
   },
   toneText: {
     fontSize: 12,
-    fontWeight: '500',
-    textTransform: 'capitalize',
+    fontWeight: "500",
+    textTransform: "capitalize",
   },
   scenario: {
     fontSize: 14,
@@ -881,7 +1140,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: lightTheme.colors.text,
     marginBottom: 4,
   },
@@ -891,9 +1150,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   bureauSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     backgroundColor: lightTheme.colors.background,
     borderRadius: 10,
     padding: 14,
@@ -904,20 +1163,20 @@ const styles = StyleSheet.create({
     borderColor: lightTheme.colors.primary,
   },
   selectedBureauDisplay: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 10,
   },
   bureauIcon: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   selectedBureauName: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
     color: lightTheme.colors.text,
   },
   bureauPlaceholder: {
@@ -925,8 +1184,8 @@ const styles = StyleSheet.create({
     color: lightTheme.colors.textSecondary,
   },
   docItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 10,
     marginBottom: 10,
     paddingVertical: 4,
@@ -934,8 +1193,8 @@ const styles = StyleSheet.create({
   docCheckbox: {
     width: 24,
     height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   docText: {
     flex: 1,
@@ -947,12 +1206,12 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     color: lightTheme.colors.text,
     marginBottom: 6,
   },
   requiredStar: {
-    color: '#DC2626',
+    color: "#DC2626",
   },
   input: {
     backgroundColor: lightTheme.colors.background,
@@ -964,16 +1223,16 @@ const styles = StyleSheet.create({
     color: lightTheme.colors.text,
   },
   inputError: {
-    borderColor: '#DC2626',
+    borderColor: "#DC2626",
   },
   errorText: {
     fontSize: 12,
-    color: '#DC2626',
+    color: "#DC2626",
     marginTop: 4,
   },
   tipItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     gap: 8,
     marginBottom: 10,
   },
@@ -990,18 +1249,18 @@ const styles = StyleSheet.create({
     borderTopColor: lightTheme.colors.border,
   },
   generateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: lightTheme.colors.primary,
     padding: 16,
     borderRadius: 12,
     gap: 8,
   },
   generateButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -1014,9 +1273,9 @@ const styles = StyleSheet.create({
     backgroundColor: lightTheme.colors.surface,
   },
   previewBureauBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -1024,17 +1283,17 @@ const styles = StyleSheet.create({
   },
   previewBureauText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   letterContainer: {
     flex: 1,
     padding: 16,
   },
   letterPaper: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 8,
     padding: 20,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -1044,11 +1303,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: lightTheme.colors.text,
     lineHeight: 22,
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
   },
   previewActions: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     gap: 24,
     paddingVertical: 12,
     backgroundColor: lightTheme.colors.surface,
@@ -1056,7 +1315,7 @@ const styles = StyleSheet.create({
     borderTopColor: lightTheme.colors.border,
   },
   previewActionButton: {
-    alignItems: 'center',
+    alignItems: "center",
     gap: 4,
   },
   previewActionText: {
@@ -1067,8 +1326,8 @@ const styles = StyleSheet.create({
   // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
   },
   modalContent: {
     backgroundColor: lightTheme.colors.surface,
@@ -1082,12 +1341,12 @@ const styles = StyleSheet.create({
     height: 4,
     backgroundColor: lightTheme.colors.border,
     borderRadius: 2,
-    alignSelf: 'center',
+    alignSelf: "center",
     marginBottom: 20,
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     color: lightTheme.colors.text,
     marginBottom: 4,
   },
@@ -1097,18 +1356,18 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   bureauOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 16,
     backgroundColor: lightTheme.colors.background,
     borderRadius: 12,
     marginBottom: 12,
     borderWidth: 2,
-    borderColor: 'transparent',
+    borderColor: "transparent",
   },
   bureauOptionSelected: {
     borderColor: lightTheme.colors.primary,
-    backgroundColor: lightTheme.colors.primary + '08',
+    backgroundColor: lightTheme.colors.primary + "08",
   },
   bureauInfo: {
     flex: 1,
@@ -1116,7 +1375,7 @@ const styles = StyleSheet.create({
   },
   bureauName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: lightTheme.colors.text,
     marginBottom: 2,
   },
@@ -1125,42 +1384,42 @@ const styles = StyleSheet.create({
     color: lightTheme.colors.textSecondary,
   },
   modalCloseButton: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 14,
     marginTop: 8,
   },
   modalCloseText: {
     fontSize: 16,
     color: lightTheme.colors.textSecondary,
-    fontWeight: '500',
+    fontWeight: "500",
   },
 
   // Success styles
   successContainer: {
     flex: 1,
     padding: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   successIconContainer: {
     marginBottom: 24,
   },
   successTitle: {
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: "700",
     color: lightTheme.colors.text,
     marginBottom: 12,
   },
   successMessage: {
     fontSize: 16,
     color: lightTheme.colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 24,
     marginBottom: 32,
     paddingHorizontal: 20,
   },
   successStats: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 16,
     marginBottom: 32,
   },
@@ -1169,7 +1428,7 @@ const styles = StyleSheet.create({
     backgroundColor: lightTheme.colors.surface,
     borderRadius: 16,
     padding: 16,
-    alignItems: 'center',
+    alignItems: "center",
   },
   successStatLabel: {
     fontSize: 12,
@@ -1179,20 +1438,20 @@ const styles = StyleSheet.create({
   },
   successStatValue: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: lightTheme.colors.text,
-    textAlign: 'center',
+    textAlign: "center",
   },
   successActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
-    width: '100%',
+    width: "100%",
     marginBottom: 24,
   },
   secondaryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     padding: 14,
     borderRadius: 12,
     borderWidth: 1,
@@ -1203,12 +1462,12 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: lightTheme.colors.primary,
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   primaryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: lightTheme.colors.primary,
     padding: 14,
     borderRadius: 12,
@@ -1216,19 +1475,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   primaryButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   viewDisputesLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
   },
   viewDisputesText: {
     fontSize: 15,
     color: lightTheme.colors.primary,
-    fontWeight: '500',
+    fontWeight: "500",
   },
 });
-

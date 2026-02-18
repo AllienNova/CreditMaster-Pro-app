@@ -3,24 +3,24 @@
  */
 
 // Define __DEV__ global (normally set by React Native bundler)
-if (typeof globalThis.__DEV__ === 'undefined') {
+if (typeof globalThis.__DEV__ === "undefined") {
   globalThis.__DEV__ = true;
 }
 
 // Mock AsyncStorage
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock')
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
 );
 
 // Mock expo-secure-store
-jest.mock('expo-secure-store', () => ({
+jest.mock("expo-secure-store", () => ({
   getItemAsync: jest.fn(),
   setItemAsync: jest.fn(),
   deleteItemAsync: jest.fn(),
 }));
 
 // Mock expo-router
-jest.mock('expo-router', () => ({
+jest.mock("expo-router", () => ({
   router: {
     push: jest.fn(),
     replace: jest.fn(),
@@ -35,25 +35,25 @@ jest.mock('expo-router', () => ({
   }),
   useLocalSearchParams: () => ({}),
   useSegments: () => [],
-  Link: 'Link',
+  Link: "Link",
   Stack: {
-    Screen: 'Screen',
+    Screen: "Screen",
   },
   Tabs: {
-    Screen: 'Screen',
+    Screen: "Screen",
   },
 }));
 
 // Mock @expo/vector-icons
-jest.mock('@expo/vector-icons', () => ({
-  Ionicons: 'Ionicons',
-  MaterialIcons: 'MaterialIcons',
-  FontAwesome: 'FontAwesome',
+jest.mock("@expo/vector-icons", () => ({
+  Ionicons: "Ionicons",
+  MaterialIcons: "MaterialIcons",
+  FontAwesome: "FontAwesome",
 }));
 
 // Mock react-native-svg — return functional components so JSX rendering works
-jest.mock('react-native-svg', () => {
-  const React = require('react');
+jest.mock("react-native-svg", () => {
+  const React = require("react");
   const makeMock = (name) => {
     const Comp = (props) => React.createElement(name, props, props.children);
     Comp.displayName = name;
@@ -61,46 +61,52 @@ jest.mock('react-native-svg', () => {
   };
   return {
     __esModule: true,
-    default: makeMock('Svg'),
-    Svg: makeMock('Svg'),
-    Circle: makeMock('Circle'),
-    G: makeMock('G'),
-    Path: makeMock('Path'),
-    Rect: makeMock('Rect'),
-    Line: makeMock('Line'),
-    Text: makeMock('SvgText'),
-    Defs: makeMock('Defs'),
-    LinearGradient: makeMock('LinearGradient'),
-    Stop: makeMock('Stop'),
-    ClipPath: makeMock('ClipPath'),
+    default: makeMock("Svg"),
+    Svg: makeMock("Svg"),
+    Circle: makeMock("Circle"),
+    G: makeMock("G"),
+    Path: makeMock("Path"),
+    Rect: makeMock("Rect"),
+    Line: makeMock("Line"),
+    Text: makeMock("SvgText"),
+    Defs: makeMock("Defs"),
+    LinearGradient: makeMock("LinearGradient"),
+    Stop: makeMock("Stop"),
+    ClipPath: makeMock("ClipPath"),
   };
 });
 
 // Mock react-native-safe-area-context
-jest.mock('react-native-safe-area-context', () => ({
-  SafeAreaView: 'SafeAreaView',
+jest.mock("react-native-safe-area-context", () => ({
+  SafeAreaView: "SafeAreaView",
   SafeAreaProvider: ({ children }) => children,
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 
 // Mock react-native-reanimated
-jest.mock('react-native-reanimated', () => {
-  const Reanimated = require('react-native-reanimated/mock');
+jest.mock("react-native-reanimated", () => {
+  const Reanimated = require("react-native-reanimated/mock");
   Reanimated.default.call = () => {};
   return Reanimated;
 });
 
 // Mock expo-notifications (comprehensive — covers pushNotificationService)
-jest.mock('expo-notifications', () => ({
-  getPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted' })),
-  requestPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted' })),
-  getExpoPushTokenAsync: jest.fn(() => Promise.resolve({ data: 'test-token' })),
+jest.mock("expo-notifications", () => ({
+  getPermissionsAsync: jest.fn(() => Promise.resolve({ status: "granted" })),
+  requestPermissionsAsync: jest.fn(() =>
+    Promise.resolve({ status: "granted" }),
+  ),
+  getExpoPushTokenAsync: jest.fn(() => Promise.resolve({ data: "test-token" })),
   setNotificationHandler: jest.fn(),
   addNotificationReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
-  addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
-  scheduleNotificationAsync: jest.fn(() => Promise.resolve('notif-id-123')),
+  addNotificationResponseReceivedListener: jest.fn(() => ({
+    remove: jest.fn(),
+  })),
+  scheduleNotificationAsync: jest.fn(() => Promise.resolve("notif-id-123")),
   cancelScheduledNotificationAsync: jest.fn(() => Promise.resolve(undefined)),
-  cancelAllScheduledNotificationsAsync: jest.fn(() => Promise.resolve(undefined)),
+  cancelAllScheduledNotificationsAsync: jest.fn(() =>
+    Promise.resolve(undefined),
+  ),
   getBadgeCountAsync: jest.fn(() => Promise.resolve(0)),
   setBadgeCountAsync: jest.fn(() => Promise.resolve(undefined)),
   setNotificationChannelAsync: jest.fn(() => Promise.resolve(undefined)),
@@ -109,12 +115,12 @@ jest.mock('expo-notifications', () => ({
 }));
 
 // Mock expo-device — use a mutable object so tests can override isDevice
-jest.mock('expo-device', () => {
+jest.mock("expo-device", () => {
   const device = {
     isDevice: true,
-    brand: 'Test',
-    modelName: 'Test Device',
-    deviceName: 'Test Device',
+    brand: "Test",
+    modelName: "Test Device",
+    deviceName: "Test Device",
   };
   return {
     __esModule: true,
@@ -122,43 +128,51 @@ jest.mock('expo-device', () => {
     // Re-export as a module namespace: `import * as Device` reads these properties.
     // Because resetMocks only resets jest.fn() calls (not plain values),
     // tests can set `Device.isDevice = false` via require('expo-device').
-    get isDevice() { return device.isDevice; },
-    set isDevice(v) { device.isDevice = v; },
+    get isDevice() {
+      return device.isDevice;
+    },
+    set isDevice(v) {
+      device.isDevice = v;
+    },
   };
 });
 
 // Mock @react-native-community/netinfo
-jest.mock('@react-native-community/netinfo', () => ({
+jest.mock("@react-native-community/netinfo", () => ({
   __esModule: true,
   default: {
     addEventListener: jest.fn(() => jest.fn()),
-    fetch: jest.fn(() => Promise.resolve({ isConnected: true, type: 'wifi' })),
+    fetch: jest.fn(() => Promise.resolve({ isConnected: true, type: "wifi" })),
     configure: jest.fn(),
   },
   NetInfoStateType: {
-    unknown: 'unknown',
-    none: 'none',
-    cellular: 'cellular',
-    wifi: 'wifi',
-    bluetooth: 'bluetooth',
-    ethernet: 'ethernet',
-    wimax: 'wimax',
-    vpn: 'vpn',
-    other: 'other',
+    unknown: "unknown",
+    none: "none",
+    cellular: "cellular",
+    wifi: "wifi",
+    bluetooth: "bluetooth",
+    ethernet: "ethernet",
+    wimax: "wimax",
+    vpn: "vpn",
+    other: "other",
   },
 }));
 
 // Mock Supabase
-jest.mock('./src/services/supabase', () => ({
+jest.mock("./src/services/supabase", () => ({
   supabase: {
     auth: {
       getSession: jest.fn().mockResolvedValue({
-        data: { session: { access_token: 'test-token', user: { id: 'test-user-id' } } },
+        data: {
+          session: { access_token: "test-token", user: { id: "test-user-id" } },
+        },
       }),
       signInWithPassword: jest.fn(),
       signUp: jest.fn(),
       signOut: jest.fn(),
-      onAuthStateChange: jest.fn(() => ({ data: { subscription: { unsubscribe: jest.fn() } } })),
+      onAuthStateChange: jest.fn(() => ({
+        data: { subscription: { unsubscribe: jest.fn() } },
+      })),
     },
     from: jest.fn(() => ({
       select: jest.fn().mockReturnThis(),
@@ -177,17 +191,19 @@ global.fetch = jest.fn(() =>
     ok: true,
     status: 200,
     json: () => Promise.resolve({}),
-    text: () => Promise.resolve(''),
+    text: () => Promise.resolve(""),
     headers: new Headers(),
-  })
+  }),
 );
 
 // Silence console warnings in tests
 const originalWarn = console.warn;
 console.warn = (...args) => {
-  if (args[0]?.includes?.('Animated') || args[0]?.includes?.('useNativeDriver')) {
+  if (
+    args[0]?.includes?.("Animated") ||
+    args[0]?.includes?.("useNativeDriver")
+  ) {
     return;
   }
   originalWarn.apply(console, args);
 };
-

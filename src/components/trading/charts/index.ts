@@ -1,10 +1,10 @@
 /**
  * Trading Charts Module
- * 
+ *
  * Professional trading chart components using TradingView lightweight-charts
  */
 
-export { TradingChart } from './TradingChart';
+export { TradingChart } from "./TradingChart";
 export type {
   TradingChartProps,
   ChartTheme,
@@ -14,8 +14,8 @@ export type {
   SupportResistance,
   IndicatorSettings,
   CrosshairInfo,
-} from './TradingChart';
+} from "./TradingChart";
 
-export { TradingChartContainer } from './TradingChartContainer';
+export { TradingChartContainer } from "./TradingChartContainer";
 
-export { MiniChart } from './MiniChart';
+export { MiniChart } from "./MiniChart";

@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { CircularProgress, InfoTooltip } from '@/components/ui';
+import { useState } from "react";
+import { CircularProgress, InfoTooltip } from "@/components/ui";
 
 interface SimulationScenario {
   id: string;
@@ -13,46 +13,46 @@ interface SimulationScenario {
 
 const scenarios: SimulationScenario[] = [
   {
-    id: 'pay-off-card',
-    name: 'Pay Off Credit Card',
-    description: 'Pay off a credit card with $5,000 balance',
+    id: "pay-off-card",
+    name: "Pay Off Credit Card",
+    description: "Pay off a credit card with $5,000 balance",
     impact: 25,
-    timeframe: 'Immediate',
+    timeframe: "Immediate",
   },
   {
-    id: 'remove-collection',
-    name: 'Remove Collection Account',
-    description: 'Successfully dispute and remove a collection',
+    id: "remove-collection",
+    name: "Remove Collection Account",
+    description: "Successfully dispute and remove a collection",
     impact: 35,
-    timeframe: '30-60 days',
+    timeframe: "30-60 days",
   },
   {
-    id: 'reduce-utilization',
-    name: 'Reduce Credit Utilization',
-    description: 'Lower utilization from 80% to 30%',
+    id: "reduce-utilization",
+    name: "Reduce Credit Utilization",
+    description: "Lower utilization from 80% to 30%",
     impact: 40,
-    timeframe: 'Immediate',
+    timeframe: "Immediate",
   },
   {
-    id: 'add-tradeline',
-    name: 'Add Authorized User Tradeline',
-    description: 'Become authorized user on aged account',
+    id: "add-tradeline",
+    name: "Add Authorized User Tradeline",
+    description: "Become authorized user on aged account",
     impact: 20,
-    timeframe: '30 days',
+    timeframe: "30 days",
   },
   {
-    id: 'remove-late-payment',
-    name: 'Remove Late Payment',
-    description: 'Successfully remove a 30-day late payment',
+    id: "remove-late-payment",
+    name: "Remove Late Payment",
+    description: "Successfully remove a 30-day late payment",
     impact: 15,
-    timeframe: '30-60 days',
+    timeframe: "30-60 days",
   },
   {
-    id: 'pay-down-debt',
-    name: 'Pay Down 50% of Debt',
-    description: 'Reduce total debt by half',
+    id: "pay-down-debt",
+    name: "Pay Down 50% of Debt",
+    description: "Reduce total debt by half",
     impact: 30,
-    timeframe: 'Immediate',
+    timeframe: "Immediate",
   },
 ];
 
@@ -76,28 +76,30 @@ export default function CreditScoreSimulator() {
     setSelectedScenarios((prev) =>
       prev.includes(scenarioId)
         ? prev.filter((id) => id !== scenarioId)
-        : [...prev, scenarioId]
+        : [...prev, scenarioId],
     );
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 740) return 'text-green-600';
-    if (score >= 670) return 'text-blue-600';
-    if (score >= 580) return 'text-yellow-600';
-    return 'text-red-600';
+    if (score >= 740) return "text-green-600";
+    if (score >= 670) return "text-blue-600";
+    if (score >= 580) return "text-yellow-600";
+    return "text-red-600";
   };
 
   const getScoreLabel = (score: number) => {
-    if (score >= 740) return 'Excellent';
-    if (score >= 670) return 'Good';
-    if (score >= 580) return 'Fair';
-    return 'Poor';
+    if (score >= 740) return "Excellent";
+    if (score >= 670) return "Good";
+    if (score >= 580) return "Fair";
+    return "Poor";
   };
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Credit Score Simulator</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+          Credit Score Simulator
+        </h2>
         <InfoTooltip content="See how different actions could impact your credit score" />
       </div>
 
@@ -120,25 +122,40 @@ export default function CreditScoreSimulator() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
         {/* Current Score */}
         <div className="flex flex-col items-center">
-          <h3 className="text-lg font-semibold text-gray-700 dark:text-slate-200 mb-4">Current Score</h3>
+          <h3 className="text-lg font-semibold text-gray-700 dark:text-slate-200 mb-4">
+            Current Score
+          </h3>
           <CircularProgress progress={(currentScore / 850) * 100} size={150} />
           <div className="mt-4 text-center">
-            <div className={`text-4xl font-bold ${getScoreColor(currentScore)}`}>
+            <div
+              className={`text-4xl font-bold ${getScoreColor(currentScore)}`}
+            >
               {currentScore}
             </div>
-            <div className="text-sm text-gray-500 dark:text-slate-400 mt-1">{getScoreLabel(currentScore)}</div>
+            <div className="text-sm text-gray-500 dark:text-slate-400 mt-1">
+              {getScoreLabel(currentScore)}
+            </div>
           </div>
         </div>
 
         {/* Projected Score */}
         <div className="flex flex-col items-center">
-          <h3 className="text-lg font-semibold text-gray-700 dark:text-slate-200 mb-4">Projected Score</h3>
-          <CircularProgress progress={(projectedScore / 850) * 100} size={150} />
+          <h3 className="text-lg font-semibold text-gray-700 dark:text-slate-200 mb-4">
+            Projected Score
+          </h3>
+          <CircularProgress
+            progress={(projectedScore / 850) * 100}
+            size={150}
+          />
           <div className="mt-4 text-center">
-            <div className={`text-4xl font-bold ${getScoreColor(projectedScore)}`}>
+            <div
+              className={`text-4xl font-bold ${getScoreColor(projectedScore)}`}
+            >
               {projectedScore}
             </div>
-            <div className="text-sm text-gray-500 dark:text-slate-400 mt-1">{getScoreLabel(projectedScore)}</div>
+            <div className="text-sm text-gray-500 dark:text-slate-400 mt-1">
+              {getScoreLabel(projectedScore)}
+            </div>
             {scoreChange > 0 && (
               <div className="text-green-600 font-semibold mt-2">
                 +{scoreChange} points
@@ -161,7 +178,7 @@ export default function CreditScoreSimulator() {
                 key={scenario.id}
                 type="button"
                 onClick={() => toggleScenario(scenario.id)}
-                className={`w-full text-left p-4 rounded-lg border-2 transition-all ${ isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300 dark:border-slate-600' }`}
+                className={`w-full text-left p-4 rounded-lg border-2 transition-all ${isSelected ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300 dark:border-slate-600"}`}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -169,8 +186,8 @@ export default function CreditScoreSimulator() {
                       <div
                         className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
                           isSelected
-                            ? 'bg-blue-500 border-blue-500'
-                            : 'border-gray-300 dark:border-slate-600'
+                            ? "bg-blue-500 border-blue-500"
+                            : "border-gray-300 dark:border-slate-600"
                         }`}
                       >
                         {isSelected && (
@@ -187,7 +204,9 @@ export default function CreditScoreSimulator() {
                           </svg>
                         )}
                       </div>
-                      <h4 className="font-semibold text-gray-900 dark:text-white">{scenario.name}</h4>
+                      <h4 className="font-semibold text-gray-900 dark:text-white">
+                        {scenario.name}
+                      </h4>
                     </div>
                     <p className="text-sm text-gray-600 dark:text-slate-300 mt-1 ml-7">
                       {scenario.description}
@@ -213,9 +232,10 @@ export default function CreditScoreSimulator() {
         <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <h4 className="font-semibold text-blue-900 mb-2">Your Action Plan</h4>
           <p className="text-sm text-blue-800 mb-3">
-            By completing these {selectedScenarios.length} action{selectedScenarios.length > 1 ? 's' : ''}, you could increase your score by{' '}
-            <span className="font-bold">{scoreChange} points</span> to reach{' '}
-            <span className="font-bold">{projectedScore}</span>.
+            By completing these {selectedScenarios.length} action
+            {selectedScenarios.length > 1 ? "s" : ""}, you could increase your
+            score by <span className="font-bold">{scoreChange} points</span> to
+            reach <span className="font-bold">{projectedScore}</span>.
           </p>
           <button
             type="button"
@@ -228,4 +248,3 @@ export default function CreditScoreSimulator() {
     </div>
   );
 }
-

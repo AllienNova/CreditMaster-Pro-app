@@ -10,21 +10,48 @@ const metrics = [
 const planBreakdown = [
   { plan: "Basic ($29)", users: 4521, revenue: "$131,109", percentage: 35 },
   { plan: "Premium ($79)", users: 3012, revenue: "$237,948", percentage: 49 },
-  { plan: "Enterprise ($199)", users: 701, revenue: "$139,499", percentage: 16 },
+  {
+    plan: "Enterprise ($199)",
+    users: 701,
+    revenue: "$139,499",
+    percentage: 16,
+  },
 ];
 
 const recentSubscriptions = [
-  { user: "john@example.com", plan: "Premium", action: "upgraded", date: "2 hours ago" },
-  { user: "jane@example.com", plan: "Basic", action: "new", date: "5 hours ago" },
-  { user: "bob@example.com", plan: "Enterprise", action: "renewed", date: "1 day ago" },
-  { user: "alice@example.com", plan: "Premium", action: "cancelled", date: "2 days ago" },
+  {
+    user: "john@example.com",
+    plan: "Premium",
+    action: "upgraded",
+    date: "2 hours ago",
+  },
+  {
+    user: "jane@example.com",
+    plan: "Basic",
+    action: "new",
+    date: "5 hours ago",
+  },
+  {
+    user: "bob@example.com",
+    plan: "Enterprise",
+    action: "renewed",
+    date: "1 day ago",
+  },
+  {
+    user: "alice@example.com",
+    plan: "Premium",
+    action: "cancelled",
+    date: "2 days ago",
+  },
 ];
 
 export default function AdminSubscriptionsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Subscription Management</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          Subscription Management
+        </h1>
         <button className="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition">
           Export Report
         </button>
@@ -33,10 +60,19 @@ export default function AdminSubscriptionsPage() {
       {/* Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {metrics.map((metric) => (
-          <div key={metric.label} className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-700">
-            <p className="text-sm text-gray-500 dark:text-slate-400">{metric.label}</p>
-            <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{metric.value}</p>
-            <p className={`text-sm mt-2 ${metric.change.startsWith("+") ? "text-emerald-500" : metric.change.startsWith("-") && metric.label === "Churn Rate" ? "text-emerald-500" : "text-red-500"}`}>
+          <div
+            key={metric.label}
+            className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-700"
+          >
+            <p className="text-sm text-gray-500 dark:text-slate-400">
+              {metric.label}
+            </p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
+              {metric.value}
+            </p>
+            <p
+              className={`text-sm mt-2 ${metric.change.startsWith("+") ? "text-emerald-500" : metric.change.startsWith("-") && metric.label === "Churn Rate" ? "text-emerald-500" : "text-red-500"}`}
+            >
               {metric.change} from last month
             </p>
           </div>
@@ -47,14 +83,20 @@ export default function AdminSubscriptionsPage() {
         {/* Plan Breakdown */}
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700">
           <div className="p-6 border-b border-gray-200 dark:border-slate-700">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Plan Breakdown</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Plan Breakdown
+            </h2>
           </div>
           <div className="p-6">
             {planBreakdown.map((plan) => (
               <div key={plan.plan} className="mb-6 last:mb-0">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium text-gray-900 dark:text-white">{plan.plan}</span>
-                  <span className="text-sm text-gray-500 dark:text-slate-400">{plan.users.toLocaleString()} users</span>
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    {plan.plan}
+                  </span>
+                  <span className="text-sm text-gray-500 dark:text-slate-400">
+                    {plan.users.toLocaleString()} users
+                  </span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-3">
                   <div
@@ -62,7 +104,9 @@ export default function AdminSubscriptionsPage() {
                     style={{ width: `${plan.percentage}%` }}
                   />
                 </div>
-                <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">{plan.revenue}/month ({plan.percentage}%)</p>
+                <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
+                  {plan.revenue}/month ({plan.percentage}%)
+                </p>
               </div>
             ))}
           </div>
@@ -71,21 +115,32 @@ export default function AdminSubscriptionsPage() {
         {/* Recent Activity */}
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700">
           <div className="p-6 border-b border-gray-200 dark:border-slate-700">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Subscription Activity</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Recent Subscription Activity
+            </h2>
           </div>
           <div className="divide-y divide-gray-100 dark:divide-slate-700">
             {recentSubscriptions.map((sub, i) => (
               <div key={i} className="p-4 flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-gray-900 dark:text-white">{sub.user}</p>
-                  <p className="text-sm text-gray-500 dark:text-slate-400">{sub.plan} • {sub.date}</p>
+                  <p className="font-medium text-gray-900 dark:text-white">
+                    {sub.user}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-slate-400">
+                    {sub.plan} • {sub.date}
+                  </p>
                 </div>
-                <span className={`px-2 py-1 text-xs rounded-full ${
-                  sub.action === "new" ? "bg-emerald-100 text-emerald-700" :
-                  sub.action === "upgraded" ? "bg-blue-100 text-blue-700" :
-                  sub.action === "renewed" ? "bg-blue-100 text-blue-700" :
-                  "bg-red-100 text-red-700"
-                }`}>
+                <span
+                  className={`px-2 py-1 text-xs rounded-full ${
+                    sub.action === "new"
+                      ? "bg-emerald-100 text-emerald-700"
+                      : sub.action === "upgraded"
+                        ? "bg-blue-100 text-blue-700"
+                        : sub.action === "renewed"
+                          ? "bg-blue-100 text-blue-700"
+                          : "bg-red-100 text-red-700"
+                  }`}
+                >
                   {sub.action}
                 </span>
               </div>
@@ -96,23 +151,36 @@ export default function AdminSubscriptionsPage() {
 
       {/* Churn Analysis */}
       <div className="mt-8 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Churn Analysis</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          Churn Analysis
+        </h2>
         <div className="grid md:grid-cols-3 gap-6">
           <div className="text-center p-4 bg-gray-50 dark:bg-slate-900 rounded-lg">
-            <p className="text-3xl font-bold text-gray-900 dark:text-white">156</p>
-            <p className="text-sm text-gray-500 dark:text-slate-400">Cancellations this month</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">
+              156
+            </p>
+            <p className="text-sm text-gray-500 dark:text-slate-400">
+              Cancellations this month
+            </p>
           </div>
           <div className="text-center p-4 bg-gray-50 dark:bg-slate-900 rounded-lg">
-            <p className="text-3xl font-bold text-gray-900 dark:text-white">$12,324</p>
-            <p className="text-sm text-gray-500 dark:text-slate-400">Lost MRR</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">
+              $12,324
+            </p>
+            <p className="text-sm text-gray-500 dark:text-slate-400">
+              Lost MRR
+            </p>
           </div>
           <div className="text-center p-4 bg-gray-50 dark:bg-slate-900 rounded-lg">
-            <p className="text-3xl font-bold text-gray-900 dark:text-white">45%</p>
-            <p className="text-sm text-gray-500 dark:text-slate-400">Reason: Price</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">
+              45%
+            </p>
+            <p className="text-sm text-gray-500 dark:text-slate-400">
+              Reason: Price
+            </p>
           </div>
         </div>
       </div>
     </div>
   );
 }
-

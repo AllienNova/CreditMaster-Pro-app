@@ -22,16 +22,19 @@ This runbook provides operational procedures and troubleshooting steps for the C
 ### Issue: Portfolio Not Loading
 
 **Symptoms:**
+
 - Users see loading spinner indefinitely
 - Error message: "Failed to load portfolio"
 
 **Diagnosis:**
+
 1. Check Vercel deployment status
 2. Check database connectivity
 3. Check Redis cache status
 4. Review error logs in Sentry
 
 **Resolution:**
+
 ```bash
 # Check health endpoint
 curl https://app.creditmaster-pro.com/api/health
@@ -47,6 +50,7 @@ vercel logs --follow
 ```
 
 **Prevention:**
+
 - Enable health check monitoring
 - Set up database connection pooling
 - Configure Redis failover
@@ -56,15 +60,18 @@ vercel logs --follow
 ### Issue: Stock Analysis Timeout
 
 **Symptoms:**
+
 - Analysis requests timeout after 30 seconds
 - Error: "Analysis request timed out"
 
 **Diagnosis:**
+
 1. Check AIML API status
 2. Check rate limits
 3. Review API response times
 
 **Resolution:**
+
 ```bash
 # Check AIML API status
 curl https://api.aimlapi.com/v1/health
@@ -80,6 +87,7 @@ const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s
 ```
 
 **Prevention:**
+
 - Implement request queuing
 - Add caching for frequently analyzed stocks
 - Use faster AI model for initial analysis
@@ -89,28 +97,32 @@ const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s
 ### Issue: Real-Time Prices Not Updating
 
 **Symptoms:**
+
 - Prices are stale
 - WebSocket connection failing
 
 **Diagnosis:**
+
 1. Check WebSocket connection status
 2. Check market data API status
 3. Review browser console errors
 
 **Resolution:**
+
 ```javascript
 // Client-side debugging
-const ws = new WebSocket('wss://app.creditmaster-pro.com/api/investments/ws');
+const ws = new WebSocket("wss://app.creditmaster-pro.com/api/investments/ws");
 
-ws.onopen = () => console.log('WebSocket connected');
-ws.onerror = (error) => console.error('WebSocket error:', error);
-ws.onclose = () => console.log('WebSocket closed');
+ws.onopen = () => console.log("WebSocket connected");
+ws.onerror = (error) => console.error("WebSocket error:", error);
+ws.onclose = () => console.log("WebSocket closed");
 
 // Server-side: Check WebSocket handler
 // app/api/investments/ws/route.ts
 ```
 
 **Prevention:**
+
 - Implement automatic reconnection
 - Add fallback to polling
 - Monitor WebSocket connection health
@@ -125,7 +137,7 @@ ws.onclose = () => console.log('WebSocket closed');
 // lib/logger.ts
 export const logger = {
   debug: (message: string, data?: any) => {
-    if (process.env.DEBUG_MODE === 'true') {
+    if (process.env.DEBUG_MODE === "true") {
       console.log(`[DEBUG] ${message}`, data);
     }
   },
@@ -174,6 +186,7 @@ SELECT count(*) FROM pg_stat_activity;
 ### Slow API Response Times
 
 **Diagnosis:**
+
 ```bash
 # Check API response times
 curl -w "@curl-format.txt" -o /dev/null -s \
@@ -187,6 +200,7 @@ time_total:  %{time_total}\n
 ```
 
 **Resolution:**
+
 1. Add database indexes
 2. Optimize queries
 3. Increase cache TTL
@@ -204,6 +218,7 @@ CREATE INDEX idx_transactions_holding_id ON cpfi_transactions(holding_id);
 ### High Memory Usage
 
 **Diagnosis:**
+
 ```bash
 # Check Vercel function memory
 vercel logs --follow | grep "Memory"
@@ -213,6 +228,7 @@ redis-cli -u $UPSTASH_REDIS_REST_URL info memory
 ```
 
 **Resolution:**
+
 1. Reduce cache size
 2. Implement pagination
 3. Optimize data structures
@@ -221,9 +237,9 @@ redis-cli -u $UPSTASH_REDIS_REST_URL info memory
 ```typescript
 // Clear old cache entries
 async function clearOldCache() {
-  const keys = await redis.keys('portfolio:*');
+  const keys = await redis.keys("portfolio:*");
   const now = Date.now();
-  
+
   for (const key of keys) {
     const ttl = await redis.ttl(key);
     if (ttl < 0) {
@@ -240,9 +256,10 @@ async function clearOldCache() {
 ### Incorrect Portfolio Values
 
 **Diagnosis:**
+
 ```sql
 -- Check portfolio calculations
-SELECT 
+SELECT
   p.id,
   p.user_id,
   SUM(h.quantity * h.current_price) as calculated_value,
@@ -254,14 +271,16 @@ HAVING SUM(h.quantity * h.current_price) != p.total_value;
 ```
 
 **Resolution:**
+
 ```typescript
 // Recalculate portfolio values
 async function recalculatePortfolio(portfolioId: string) {
   const holdings = await getHoldings(portfolioId);
-  const totalValue = holdings.reduce((sum, h) => 
-    sum + (h.quantity * h.currentPrice), 0
+  const totalValue = holdings.reduce(
+    (sum, h) => sum + h.quantity * h.currentPrice,
+    0,
   );
-  
+
   await updatePortfolio(portfolioId, { totalValue });
 }
 ```
@@ -271,6 +290,7 @@ async function recalculatePortfolio(portfolioId: string) {
 ### Missing Market Data
 
 **Diagnosis:**
+
 ```bash
 # Check market data API status
 curl https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=AAPL&apikey=$API_KEY
@@ -281,6 +301,7 @@ curl -I https://api.polygon.io/v2/aggs/ticker/AAPL/prev \
 ```
 
 **Resolution:**
+
 1. Switch to backup provider
 2. Use cached data
 3. Implement retry logic
@@ -291,7 +312,7 @@ async function getQuote(symbol: string) {
   try {
     return await alphaVantage.getQuote(symbol);
   } catch (error) {
-    logger.warn('Alpha Vantage failed, trying Polygon');
+    logger.warn("Alpha Vantage failed, trying Polygon");
     return await polygon.getQuote(symbol);
   }
 }
@@ -304,13 +325,15 @@ async function getQuote(symbol: string) {
 ### Rate Limit Exceeded
 
 **Symptoms:**
+
 - 429 Too Many Requests errors
 - Users unable to make requests
 
 **Resolution:**
+
 ```typescript
 // Implement request queuing
-import PQueue from 'p-queue';
+import PQueue from "p-queue";
 
 const queue = new PQueue({
   concurrency: 5,
@@ -328,21 +351,23 @@ async function queuedRequest(fn: () => Promise<any>) {
 ### External API Failures
 
 **Symptoms:**
+
 - Market data not updating
 - AI analysis failing
 
 **Resolution:**
+
 ```typescript
 // Implement circuit breaker
 class CircuitBreaker {
   private failures = 0;
   private threshold = 5;
   private timeout = 60000;
-  private state = 'CLOSED';
+  private state = "CLOSED";
 
   async execute(fn: () => Promise<any>) {
-    if (this.state === 'OPEN') {
-      throw new Error('Circuit breaker is OPEN');
+    if (this.state === "OPEN") {
+      throw new Error("Circuit breaker is OPEN");
     }
 
     try {
@@ -357,15 +382,15 @@ class CircuitBreaker {
 
   private onSuccess() {
     this.failures = 0;
-    this.state = 'CLOSED';
+    this.state = "CLOSED";
   }
 
   private onFailure() {
     this.failures++;
     if (this.failures >= this.threshold) {
-      this.state = 'OPEN';
+      this.state = "OPEN";
       setTimeout(() => {
-        this.state = 'HALF_OPEN';
+        this.state = "HALF_OPEN";
         this.failures = 0;
       }, this.timeout);
     }
@@ -399,11 +424,13 @@ class CircuitBreaker {
 ### Data Corruption
 
 1. **Stop all writes:**
+
    ```sql
    REVOKE INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public FROM app_user;
    ```
 
 2. **Assess damage:**
+
    ```sql
    SELECT * FROM cpfi_portfolios WHERE updated_at > '2024-01-15 12:00:00';
    ```
@@ -424,4 +451,3 @@ class CircuitBreaker {
 ---
 
 **Last Updated**: January 2024
-

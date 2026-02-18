@@ -9,10 +9,10 @@
  * - Real-time data subscription support
  */
 
-import { AlphaVantageClient } from '../integrations/alpha-vantage';
-import { PolygonClient } from '../integrations/polygon';
-import { CoinGeckoClient } from '../integrations/coingecko';
-import { RedisCacheService } from '../cache/redis-cache-service';
+import { AlphaVantageClient } from "../integrations/alpha-vantage";
+import { PolygonClient } from "../integrations/polygon";
+import { CoinGeckoClient } from "../integrations/coingecko";
+import { RedisCacheService } from "../cache/redis-cache-service";
 import {
   StockQuote,
   StockHistory,
@@ -23,7 +23,7 @@ import {
   AssetType,
   TimeInterval,
   MarketDataAPIError,
-} from './types/market-data.types';
+} from "./types/market-data.types";
 
 // ============================================================================
 // TYPES
@@ -32,7 +32,7 @@ import {
 export interface MarketDataConfig {
   alphaVantageKey?: string;
   polygonKey?: string;
-  polygonTier?: 'free' | 'starter' | 'developer' | 'advanced';
+  polygonTier?: "free" | "starter" | "developer" | "advanced";
   enableRedis?: boolean;
   cachePrefix?: string;
 }
@@ -94,22 +94,22 @@ export class UnifiedMarketDataService {
     this.coinGecko = new CoinGeckoClient();
     this.cache = new RedisCacheService({
       ttl: CACHE_TTL.quote,
-      prefix: config?.cachePrefix || 'market:',
+      prefix: config?.cachePrefix || "market:",
     });
 
     // Initialize provider health
-    this.providerHealth.set('AlphaVantage', {
-      provider: 'AlphaVantage',
+    this.providerHealth.set("AlphaVantage", {
+      provider: "AlphaVantage",
       healthy: true,
       lastCheck: new Date(),
     });
-    this.providerHealth.set('Polygon', {
-      provider: 'Polygon',
+    this.providerHealth.set("Polygon", {
+      provider: "Polygon",
       healthy: true,
       lastCheck: new Date(),
     });
-    this.providerHealth.set('CoinGecko', {
-      provider: 'CoinGecko',
+    this.providerHealth.set("CoinGecko", {
+      provider: "CoinGecko",
       healthy: true,
       lastCheck: new Date(),
     });
@@ -125,7 +125,10 @@ export class UnifiedMarketDataService {
   /**
    * Get real-time quote for any asset type
    */
-  async getQuote(symbol: string, assetType: AssetType): Promise<StockQuote | CryptoQuote> {
+  async getQuote(
+    symbol: string,
+    assetType: AssetType,
+  ): Promise<StockQuote | CryptoQuote> {
     const cacheKey = `quote:${assetType}:${symbol}`;
 
     // Try cache first
@@ -148,36 +151,36 @@ export class UnifiedMarketDataService {
     const errors: Error[] = [];
 
     // Try Polygon first (if healthy)
-    if (this.isProviderHealthy('Polygon')) {
+    if (this.isProviderHealthy("Polygon")) {
       try {
         const quote = await this.polygon.getQuote(symbol);
         await this.cache.set(cacheKey, quote, CACHE_TTL.quote);
-        this.markProviderHealthy('Polygon');
+        this.markProviderHealthy("Polygon");
         return quote;
       } catch (error) {
         errors.push(error as Error);
-        this.markProviderUnhealthy('Polygon', (error as Error).message);
+        this.markProviderUnhealthy("Polygon", (error as Error).message);
       }
     }
 
     // Fallback to Alpha Vantage
-    if (this.isProviderHealthy('AlphaVantage')) {
+    if (this.isProviderHealthy("AlphaVantage")) {
       try {
         const quote = await this.alphaVantage.getQuote(symbol);
         await this.cache.set(cacheKey, quote, CACHE_TTL.quote);
-        this.markProviderHealthy('AlphaVantage');
+        this.markProviderHealthy("AlphaVantage");
         return quote;
       } catch (error) {
         errors.push(error as Error);
-        this.markProviderUnhealthy('AlphaVantage', (error as Error).message);
+        this.markProviderUnhealthy("AlphaVantage", (error as Error).message);
       }
     }
 
     throw new MarketDataAPIError(
-      `All providers failed for ${symbol}: ${errors.map(e => e.message).join(', ')}`,
-      'ALL_PROVIDERS_FAILED',
-      'UnifiedService',
-      false
+      `All providers failed for ${symbol}: ${errors.map((e) => e.message).join(", ")}`,
+      "ALL_PROVIDERS_FAILED",
+      "UnifiedService",
+      false,
     );
   }
 
@@ -189,23 +192,23 @@ export class UnifiedMarketDataService {
 
     try {
       const coinId = symbol.toLowerCase();
-      const quotes = await this.coinGecko.getCoinPrice([coinId], ['usd']);
+      const quotes = await this.coinGecko.getCoinPrice([coinId], ["usd"]);
       const quote = quotes[coinId];
 
       if (!quote) {
         throw new MarketDataAPIError(
           `No data found for cryptocurrency: ${symbol}`,
-          'NO_DATA',
-          'CoinGecko',
-          false
+          "NO_DATA",
+          "CoinGecko",
+          false,
         );
       }
 
       await this.cache.set(cacheKey, quote, CACHE_TTL.crypto);
-      this.markProviderHealthy('CoinGecko');
+      this.markProviderHealthy("CoinGecko");
       return quote;
     } catch (error) {
-      this.markProviderUnhealthy('CoinGecko', (error as Error).message);
+      this.markProviderUnhealthy("CoinGecko", (error as Error).message);
       throw error;
     }
   }
@@ -221,9 +224,9 @@ export class UnifiedMarketDataService {
     symbol: string,
     assetType: AssetType,
     interval: TimeInterval,
-    days?: number
+    days?: number,
   ): Promise<StockHistory> {
-    const cacheKey = `history:${assetType}:${symbol}:${interval}:${days || 'default'}`;
+    const cacheKey = `history:${assetType}:${symbol}:${interval}:${days || "default"}`;
 
     // Try cache first
     const cached = await this.cache.get<StockHistory>(cacheKey);
@@ -243,56 +246,64 @@ export class UnifiedMarketDataService {
   private async getStockHistory(
     symbol: string,
     interval: TimeInterval,
-    days?: number
+    days?: number,
   ): Promise<StockHistory> {
     const cacheKey = `history:stock:${symbol}:${interval}`;
     const errors: Error[] = [];
 
     // Try Polygon first
-    if (this.isProviderHealthy('Polygon')) {
+    if (this.isProviderHealthy("Polygon")) {
       try {
-        const to = new Date().toISOString().split('T')[0];
+        const to = new Date().toISOString().split("T")[0];
         const from = new Date(Date.now() - (days || 30) * 24 * 60 * 60 * 1000)
           .toISOString()
-          .split('T')[0];
+          .split("T")[0];
 
         const timespan = this.convertIntervalToTimespan(interval);
-        const history = await this.polygon.getAggregates(symbol, timespan, from, to);
+        const history = await this.polygon.getAggregates(
+          symbol,
+          timespan,
+          from,
+          to,
+        );
 
         await this.cache.set(cacheKey, history, CACHE_TTL.history);
-        this.markProviderHealthy('Polygon');
+        this.markProviderHealthy("Polygon");
         return history;
       } catch (error) {
         errors.push(error as Error);
-        this.markProviderUnhealthy('Polygon', (error as Error).message);
+        this.markProviderUnhealthy("Polygon", (error as Error).message);
       }
     }
 
     // Fallback to Alpha Vantage
-    if (this.isProviderHealthy('AlphaVantage')) {
+    if (this.isProviderHealthy("AlphaVantage")) {
       try {
         const history = await this.alphaVantage.getHistory(symbol, interval);
         await this.cache.set(cacheKey, history, CACHE_TTL.history);
-        this.markProviderHealthy('AlphaVantage');
+        this.markProviderHealthy("AlphaVantage");
         return history;
       } catch (error) {
         errors.push(error as Error);
-        this.markProviderUnhealthy('AlphaVantage', (error as Error).message);
+        this.markProviderUnhealthy("AlphaVantage", (error as Error).message);
       }
     }
 
     throw new MarketDataAPIError(
-      `All providers failed for ${symbol} history: ${errors.map(e => e.message).join(', ')}`,
-      'ALL_PROVIDERS_FAILED',
-      'UnifiedService',
-      false
+      `All providers failed for ${symbol} history: ${errors.map((e) => e.message).join(", ")}`,
+      "ALL_PROVIDERS_FAILED",
+      "UnifiedService",
+      false,
     );
   }
 
   /**
    * Get cryptocurrency historical data
    */
-  private async getCryptoHistory(symbol: string, days: number): Promise<StockHistory> {
+  private async getCryptoHistory(
+    symbol: string,
+    days: number,
+  ): Promise<StockHistory> {
     const cacheKey = `history:crypto:${symbol}:${days}`;
 
     try {
@@ -302,7 +313,7 @@ export class UnifiedMarketDataService {
       const stockHistory: StockHistory = {
         symbol,
         interval: TimeInterval.ONE_DAY,
-        data: history.map(item => ({
+        data: history.map((item) => ({
           timestamp: item.timestamp,
           open: item.price,
           high: item.price,
@@ -311,14 +322,17 @@ export class UnifiedMarketDataService {
           volume: 0,
         })),
         startDate: history.length > 0 ? history[0].timestamp : new Date(),
-        endDate: history.length > 0 ? history[history.length - 1].timestamp : new Date(),
+        endDate:
+          history.length > 0
+            ? history[history.length - 1].timestamp
+            : new Date(),
       };
 
       await this.cache.set(cacheKey, stockHistory, CACHE_TTL.history);
-      this.markProviderHealthy('CoinGecko');
+      this.markProviderHealthy("CoinGecko");
       return stockHistory;
     } catch (error) {
-      this.markProviderUnhealthy('CoinGecko', (error as Error).message);
+      this.markProviderUnhealthy("CoinGecko", (error as Error).message);
       throw error;
     }
   }
@@ -331,21 +345,21 @@ export class UnifiedMarketDataService {
    * Get market news
    */
   async getNews(symbol?: string, limit: number = 10): Promise<MarketNews[]> {
-    const cacheKey = `news:${symbol || 'general'}:${limit}`;
+    const cacheKey = `news:${symbol || "general"}:${limit}`;
 
     // Try cache first
     const cached = await this.cache.get<MarketNews[]>(cacheKey);
     if (cached) return cached;
 
     // Try Polygon (best news source)
-    if (this.isProviderHealthy('Polygon')) {
+    if (this.isProviderHealthy("Polygon")) {
       try {
         const news = await this.polygon.getNews(symbol, limit);
         await this.cache.set(cacheKey, news, CACHE_TTL.news);
-        this.markProviderHealthy('Polygon');
+        this.markProviderHealthy("Polygon");
         return news;
       } catch (error) {
-        this.markProviderUnhealthy('Polygon', (error as Error).message);
+        this.markProviderUnhealthy("Polygon", (error as Error).message);
       }
     }
 
@@ -364,23 +378,23 @@ export class UnifiedMarketDataService {
     if (cached) return cached;
 
     // Alpha Vantage has the best company data
-    if (this.isProviderHealthy('AlphaVantage')) {
+    if (this.isProviderHealthy("AlphaVantage")) {
       try {
         const profile = await this.alphaVantage.getCompanyOverview(symbol);
         await this.cache.set(cacheKey, profile, CACHE_TTL.company);
-        this.markProviderHealthy('AlphaVantage');
+        this.markProviderHealthy("AlphaVantage");
         return profile;
       } catch (error) {
-        this.markProviderUnhealthy('AlphaVantage', (error as Error).message);
+        this.markProviderUnhealthy("AlphaVantage", (error as Error).message);
         throw error;
       }
     }
 
     throw new MarketDataAPIError(
       `Alpha Vantage unavailable for company profile: ${symbol}`,
-      'PROVIDER_UNAVAILABLE',
-      'UnifiedService',
-      true
+      "PROVIDER_UNAVAILABLE",
+      "UnifiedService",
+      true,
     );
   }
 
@@ -395,26 +409,25 @@ export class UnifiedMarketDataService {
     if (cached) return cached;
 
     // Alpha Vantage has earnings data
-    if (this.isProviderHealthy('AlphaVantage')) {
+    if (this.isProviderHealthy("AlphaVantage")) {
       try {
         const earnings = await this.alphaVantage.getEarnings(symbol);
         await this.cache.set(cacheKey, earnings, CACHE_TTL.earnings);
-        this.markProviderHealthy('AlphaVantage');
+        this.markProviderHealthy("AlphaVantage");
         return earnings;
       } catch (error) {
-        this.markProviderUnhealthy('AlphaVantage', (error as Error).message);
+        this.markProviderUnhealthy("AlphaVantage", (error as Error).message);
         throw error;
       }
     }
 
     throw new MarketDataAPIError(
       `Alpha Vantage unavailable for earnings: ${symbol}`,
-      'PROVIDER_UNAVAILABLE',
-      'UnifiedService',
-      true
+      "PROVIDER_UNAVAILABLE",
+      "UnifiedService",
+      true,
     );
   }
-
 
   // ============================================================================
   // PUBLIC METHODS - SEARCH
@@ -424,7 +437,7 @@ export class UnifiedMarketDataService {
    * Search for symbols across all asset types
    */
   async search(query: string, assetType?: AssetType): Promise<SearchResult[]> {
-    const cacheKey = `search:${query}:${assetType || 'all'}`;
+    const cacheKey = `search:${query}:${assetType || "all"}`;
 
     // Try cache first
     const cached = await this.cache.get<SearchResult[]>(cacheKey);
@@ -433,18 +446,22 @@ export class UnifiedMarketDataService {
     const results: SearchResult[] = [];
 
     // Search stocks
-    if (!assetType || assetType === AssetType.STOCK || assetType === AssetType.ETF) {
+    if (
+      !assetType ||
+      assetType === AssetType.STOCK ||
+      assetType === AssetType.ETF
+    ) {
       try {
-        if (this.isProviderHealthy('AlphaVantage')) {
+        if (this.isProviderHealthy("AlphaVantage")) {
           const alphaResults = await this.alphaVantage.searchSymbol(query);
           results.push(
-            ...alphaResults.map(r => ({
+            ...alphaResults.map((r) => ({
               symbol: r.symbol,
               name: r.name,
               type: r.type,
               exchange: r.region,
-              assetType: r.type === 'ETF' ? AssetType.ETF : AssetType.STOCK,
-            }))
+              assetType: r.type === "ETF" ? AssetType.ETF : AssetType.STOCK,
+            })),
           );
         }
       } catch (_error) {
@@ -456,15 +473,15 @@ export class UnifiedMarketDataService {
     // Search crypto
     if (!assetType || assetType === AssetType.CRYPTO) {
       try {
-        if (this.isProviderHealthy('CoinGecko')) {
+        if (this.isProviderHealthy("CoinGecko")) {
           const cryptoResults = await this.coinGecko.searchCoins(query);
           results.push(
-            ...cryptoResults.map(r => ({
+            ...cryptoResults.map((r) => ({
               symbol: r.symbol.toUpperCase(),
               name: r.name,
-              type: 'Cryptocurrency',
+              type: "Cryptocurrency",
               assetType: AssetType.CRYPTO,
-            }))
+            })),
           );
         }
       } catch (_error) {
@@ -484,8 +501,11 @@ export class UnifiedMarketDataService {
   /**
    * Subscribe to real-time quote updates (Polygon WebSocket)
    */
-  subscribeToRealTime(symbols: string[], callback: RealtimeCallback): () => void {
-    if (!this.isProviderHealthy('Polygon')) {
+  subscribeToRealTime(
+    symbols: string[],
+    callback: RealtimeCallback,
+  ): () => void {
+    if (!this.isProviderHealthy("Polygon")) {
       // MarketDataService warning: Polygon unavailable for real-time data
       return () => {};
     }
@@ -550,9 +570,12 @@ export class UnifiedMarketDataService {
 
   private startHealthChecks(): void {
     // Run health checks every 5 minutes
-    this.healthCheckInterval = setInterval(() => {
-      this.runHealthChecks();
-    }, 5 * 60 * 1000);
+    this.healthCheckInterval = setInterval(
+      () => {
+        this.runHealthChecks();
+      },
+      5 * 60 * 1000,
+    );
 
     // Run initial health check after 10 seconds
     setTimeout(() => this.runHealthChecks(), 10000);
@@ -560,24 +583,24 @@ export class UnifiedMarketDataService {
 
   private async runHealthChecks(): Promise<void> {
     // Check Alpha Vantage
-    await this.checkProviderHealth('AlphaVantage', async () => {
-      await this.alphaVantage.searchSymbol('AAPL');
+    await this.checkProviderHealth("AlphaVantage", async () => {
+      await this.alphaVantage.searchSymbol("AAPL");
     });
 
     // Check Polygon
-    await this.checkProviderHealth('Polygon', async () => {
-      await this.polygon.getTickers('AAPL');
+    await this.checkProviderHealth("Polygon", async () => {
+      await this.polygon.getTickers("AAPL");
     });
 
     // Check CoinGecko
-    await this.checkProviderHealth('CoinGecko', async () => {
-      await this.coinGecko.searchCoins('bitcoin');
+    await this.checkProviderHealth("CoinGecko", async () => {
+      await this.coinGecko.searchCoins("bitcoin");
     });
   }
 
   private async checkProviderHealth(
     provider: string,
-    healthCheckFn: () => Promise<void>
+    healthCheckFn: () => Promise<void>,
   ): Promise<void> {
     const startTime = Date.now();
 
@@ -630,24 +653,24 @@ export class UnifiedMarketDataService {
   // ============================================================================
 
   private convertIntervalToTimespan(
-    interval: TimeInterval
-  ): 'minute' | 'hour' | 'day' | 'week' | 'month' {
+    interval: TimeInterval,
+  ): "minute" | "hour" | "day" | "week" | "month" {
     switch (interval) {
       case TimeInterval.ONE_MIN:
       case TimeInterval.FIVE_MIN:
       case TimeInterval.FIFTEEN_MIN:
       case TimeInterval.THIRTY_MIN:
-        return 'minute';
+        return "minute";
       case TimeInterval.ONE_HOUR:
-        return 'hour';
+        return "hour";
       case TimeInterval.ONE_DAY:
-        return 'day';
+        return "day";
       case TimeInterval.ONE_WEEK:
-        return 'week';
+        return "week";
       case TimeInterval.ONE_MONTH:
-        return 'month';
+        return "month";
       default:
-        return 'day';
+        return "day";
     }
   }
 }
@@ -659,7 +682,7 @@ export class UnifiedMarketDataService {
 export const marketDataService = new UnifiedMarketDataService({
   alphaVantageKey: process.env.ALPHA_VANTAGE_API_KEY,
   polygonKey: process.env.POLYGON_API_KEY,
-  polygonTier: (process.env.POLYGON_TIER as any) || 'free',
-  enableRedis: process.env.NODE_ENV === 'production',
-  cachePrefix: 'market:',
+  polygonTier: (process.env.POLYGON_TIER as any) || "free",
+  enableRedis: process.env.NODE_ENV === "production",
+  cachePrefix: "market:",
 });

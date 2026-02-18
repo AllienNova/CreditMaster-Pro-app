@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
 /**
  * Stacked Bar Chart Component
- * 
+ *
  * Displays data as stacked bars for comparing compositions across categories.
  * Used for budget vs actual, income vs expenses by category, etc.
  */
@@ -16,9 +16,14 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-} from 'recharts';
-import { ChartTooltip } from './ChartHelpers';
-import { CHART_COLOR_ARRAY, formatCurrency, formatNumber, generateChartDescription } from './chartUtils';
+} from "recharts";
+import { ChartTooltip } from "./ChartHelpers";
+import {
+  CHART_COLOR_ARRAY,
+  formatCurrency,
+  formatNumber,
+  generateChartDescription,
+} from "./chartUtils";
 
 export interface StackedBarChartDataPoint {
   label: string;
@@ -57,11 +62,11 @@ export default function StackedBarChartComponent({
   showLegend = true,
   showTooltip = true,
   currency = false,
-  xAxisKey = 'label',
+  xAxisKey = "label",
   barSize = 40,
   horizontal = false,
   animationDuration = 1000,
-  className = '',
+  className = "",
   ariaLabel,
 }: StackedBarChartProps) {
   const formatAxis = (value: number): string => {
@@ -70,21 +75,41 @@ export default function StackedBarChartComponent({
   };
 
   // Generate accessible description
-  const accessibleDescription = ariaLabel || generateChartDescription(
-    'Stacked bar chart',
-    data.length,
-    undefined,
-    currency
-  );
+  const accessibleDescription =
+    ariaLabel ||
+    generateChartDescription(
+      "Stacked bar chart",
+      data.length,
+      undefined,
+      currency,
+    );
 
-  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) => {
+  const CustomTooltip = ({
+    active,
+    payload,
+    label,
+  }: {
+    active?: boolean;
+    payload?: Array<{ name: string; value: number; color: string }>;
+    label?: string;
+  }) => {
     if (!active || !payload || payload.length === 0) return null;
 
     // Calculate total
     const total = payload.reduce((sum, entry) => sum + entry.value, 0);
-    const payloadWithTotal = [...payload, { name: 'Total', value: total, color: '#374151' }];
+    const payloadWithTotal = [
+      ...payload,
+      { name: "Total", value: total, color: "#374151" },
+    ];
 
-    return <ChartTooltip active={active} payload={payloadWithTotal} label={label} currency={currency} />;
+    return (
+      <ChartTooltip
+        active={active}
+        payload={payloadWithTotal}
+        label={label}
+        currency={currency}
+      />
+    );
   };
 
   return (
@@ -97,7 +122,7 @@ export default function StackedBarChartComponent({
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={data}
-          layout={horizontal ? 'vertical' : 'horizontal'}
+          layout={horizontal ? "vertical" : "horizontal"}
           margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
           aria-hidden="true"
         >
@@ -112,18 +137,18 @@ export default function StackedBarChartComponent({
             <>
               <XAxis
                 type="number"
-                tick={{ fontSize: 11, fill: 'currentColor' }}
-                tickLine={{ stroke: 'currentColor', opacity: 0.3 }}
-                axisLine={{ stroke: 'currentColor', opacity: 0.3 }}
+                tick={{ fontSize: 11, fill: "currentColor" }}
+                tickLine={{ stroke: "currentColor", opacity: 0.3 }}
+                axisLine={{ stroke: "currentColor", opacity: 0.3 }}
                 className="text-gray-500 dark:text-slate-400"
                 tickFormatter={formatAxis}
               />
               <YAxis
                 type="category"
                 dataKey={xAxisKey}
-                tick={{ fontSize: 11, fill: 'currentColor' }}
-                tickLine={{ stroke: 'currentColor', opacity: 0.3 }}
-                axisLine={{ stroke: 'currentColor', opacity: 0.3 }}
+                tick={{ fontSize: 11, fill: "currentColor" }}
+                tickLine={{ stroke: "currentColor", opacity: 0.3 }}
+                axisLine={{ stroke: "currentColor", opacity: 0.3 }}
                 className="text-gray-500 dark:text-slate-400"
                 width={100}
               />
@@ -132,15 +157,15 @@ export default function StackedBarChartComponent({
             <>
               <XAxis
                 dataKey={xAxisKey}
-                tick={{ fontSize: 11, fill: 'currentColor' }}
-                tickLine={{ stroke: 'currentColor', opacity: 0.3 }}
-                axisLine={{ stroke: 'currentColor', opacity: 0.3 }}
+                tick={{ fontSize: 11, fill: "currentColor" }}
+                tickLine={{ stroke: "currentColor", opacity: 0.3 }}
+                axisLine={{ stroke: "currentColor", opacity: 0.3 }}
                 className="text-gray-500 dark:text-slate-400"
               />
               <YAxis
-                tick={{ fontSize: 11, fill: 'currentColor' }}
-                tickLine={{ stroke: 'currentColor', opacity: 0.3 }}
-                axisLine={{ stroke: 'currentColor', opacity: 0.3 }}
+                tick={{ fontSize: 11, fill: "currentColor" }}
+                tickLine={{ stroke: "currentColor", opacity: 0.3 }}
+                axisLine={{ stroke: "currentColor", opacity: 0.3 }}
                 className="text-gray-500 dark:text-slate-400"
                 tickFormatter={formatAxis}
               />
@@ -153,8 +178,11 @@ export default function StackedBarChartComponent({
               key={stack.dataKey}
               dataKey={stack.dataKey}
               name={stack.name}
-              stackId={stack.stackId || 'stack'}
-              fill={stack.color || CHART_COLOR_ARRAY[index % CHART_COLOR_ARRAY.length]}
+              stackId={stack.stackId || "stack"}
+              fill={
+                stack.color ||
+                CHART_COLOR_ARRAY[index % CHART_COLOR_ARRAY.length]
+              }
               barSize={barSize}
               radius={index === stacks.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
               animationDuration={animationDuration}
@@ -165,4 +193,3 @@ export default function StackedBarChartComponent({
     </div>
   );
 }
-

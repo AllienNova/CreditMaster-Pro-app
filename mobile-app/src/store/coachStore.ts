@@ -1,11 +1,11 @@
 /**
  * AI Financial Coach Store
- * 
+ *
  * Zustand store for managing AI Financial Coach state in the mobile app.
  */
 
-import { create } from 'zustand';
-import * as coachApi from '../services/coachApi';
+import { create } from "zustand";
+import * as coachApi from "../services/coachApi";
 import {
   Recommendation,
   FinancialGoalPlan,
@@ -13,7 +13,7 @@ import {
   BudgetOptimizationResult,
   DebtStrategyAnalysis,
   CoachDashboard,
-} from '../types/coach.types';
+} from "../types/coach.types";
 
 interface CoachState {
   // Dashboard
@@ -45,13 +45,20 @@ interface CoachState {
 
   // Actions
   fetchDashboard: () => Promise<void>;
-  fetchRecommendations: (params?: coachApi.GetRecommendationsParams) => Promise<void>;
+  fetchRecommendations: (
+    params?: coachApi.GetRecommendationsParams,
+  ) => Promise<void>;
   fetchGoals: () => Promise<void>;
   createGoal: (params: coachApi.CreateGoalParams) => Promise<FinancialGoalPlan>;
   updateGoalProgress: (goalId: string, amount: number) => Promise<void>;
-  simulateGoal: (goalId: string, scenarios: coachApi.SimulateGoalParams['scenarios']) => Promise<void>;
+  simulateGoal: (
+    goalId: string,
+    scenarios: coachApi.SimulateGoalParams["scenarios"],
+  ) => Promise<void>;
   selectGoal: (goal: FinancialGoalPlan | null) => void;
-  fetchBudgetOptimization: (params?: coachApi.OptimizeBudgetParams) => Promise<void>;
+  fetchBudgetOptimization: (
+    params?: coachApi.OptimizeBudgetParams,
+  ) => Promise<void>;
   fetchDebtStrategy: (params?: coachApi.AnalyzeDebtParams) => Promise<void>;
   clearErrors: () => void;
   resetStore: () => void;
@@ -87,7 +94,10 @@ export const useCoachStore = create<CoachState>((set, get) => ({
       const dashboard = await coachApi.getCoachDashboard();
       set({ dashboard, dashboardLoading: false });
     } catch (error) {
-      set({ dashboardError: 'Failed to load dashboard', dashboardLoading: false });
+      set({
+        dashboardError: "Failed to load dashboard",
+        dashboardLoading: false,
+      });
     }
   },
 
@@ -95,9 +105,15 @@ export const useCoachStore = create<CoachState>((set, get) => ({
     set({ recommendationsLoading: true, recommendationsError: null });
     try {
       const response = await coachApi.getRecommendations(params);
-      set({ recommendations: response.recommendations, recommendationsLoading: false });
+      set({
+        recommendations: response.recommendations,
+        recommendationsLoading: false,
+      });
     } catch (error) {
-      set({ recommendationsError: 'Failed to load recommendations', recommendationsLoading: false });
+      set({
+        recommendationsError: "Failed to load recommendations",
+        recommendationsLoading: false,
+      });
     }
   },
 
@@ -107,7 +123,7 @@ export const useCoachStore = create<CoachState>((set, get) => ({
       const response = await coachApi.getGoals();
       set({ goals: response.goals, goalsLoading: false });
     } catch (error) {
-      set({ goalsError: 'Failed to load goals', goalsLoading: false });
+      set({ goalsError: "Failed to load goals", goalsLoading: false });
     }
   },
 
@@ -121,7 +137,7 @@ export const useCoachStore = create<CoachState>((set, get) => ({
       }));
       return goal;
     } catch (error) {
-      set({ goalsError: 'Failed to create goal', goalsLoading: false });
+      set({ goalsError: "Failed to create goal", goalsLoading: false });
       throw error;
     }
   },
@@ -131,10 +147,11 @@ export const useCoachStore = create<CoachState>((set, get) => ({
       const updatedGoal = await coachApi.updateGoalProgress(goalId, amount);
       set((state) => ({
         goals: state.goals.map((g) => (g.id === goalId ? updatedGoal : g)),
-        selectedGoal: state.selectedGoal?.id === goalId ? updatedGoal : state.selectedGoal,
+        selectedGoal:
+          state.selectedGoal?.id === goalId ? updatedGoal : state.selectedGoal,
       }));
     } catch (error) {
-      set({ goalsError: 'Failed to update goal progress' });
+      set({ goalsError: "Failed to update goal progress" });
     }
   },
 
@@ -143,7 +160,7 @@ export const useCoachStore = create<CoachState>((set, get) => ({
       const simulation = await coachApi.simulateGoal(goalId, { scenarios });
       set({ goalSimulation: simulation });
     } catch (error) {
-      set({ goalsError: 'Failed to simulate goal' });
+      set({ goalsError: "Failed to simulate goal" });
     }
   },
 
@@ -157,7 +174,10 @@ export const useCoachStore = create<CoachState>((set, get) => ({
       const result = await coachApi.getBudgetOptimization(params);
       set({ budgetOptimization: result, budgetLoading: false });
     } catch (error) {
-      set({ budgetError: 'Failed to load budget optimization', budgetLoading: false });
+      set({
+        budgetError: "Failed to load budget optimization",
+        budgetLoading: false,
+      });
     }
   },
 
@@ -167,7 +187,7 @@ export const useCoachStore = create<CoachState>((set, get) => ({
       const result = await coachApi.getDebtStrategy(params);
       set({ debtStrategy: result, debtLoading: false });
     } catch (error) {
-      set({ debtError: 'Failed to load debt strategy', debtLoading: false });
+      set({ debtError: "Failed to load debt strategy", debtLoading: false });
     }
   },
 
@@ -185,4 +205,3 @@ export const useCoachStore = create<CoachState>((set, get) => ({
 }));
 
 export default useCoachStore;
-

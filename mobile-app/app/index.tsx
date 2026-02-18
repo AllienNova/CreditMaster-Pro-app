@@ -1,5 +1,5 @@
-import { Redirect } from 'expo-router';
-import { useAuthStore } from '../src/store/authStore';
+import { Redirect } from "expo-router";
+import { useAuthStore } from "../src/store/authStore";
 
 /**
  * Root index - handles initial auth routing

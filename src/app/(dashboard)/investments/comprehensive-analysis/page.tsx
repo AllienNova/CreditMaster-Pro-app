@@ -4,13 +4,13 @@
  * Showcases the unified InvestmentAnalysisEngine that integrates all 6 analysis services
  */
 
-import React from 'react';
-import { ComprehensiveAnalysisPanel } from '@/components/investments/analysis/ComprehensiveAnalysisPanel';
+import React from "react";
+import { ComprehensiveAnalysisPanel } from "@/components/investments/analysis/ComprehensiveAnalysisPanel";
 
 export const metadata = {
-  title: 'Comprehensive Analysis | Fynvita',
+  title: "Comprehensive Analysis | Fynvita",
   description:
-    'Unified investment analysis combining technical, fundamental, sentiment, pattern recognition, AI recommendations, and portfolio analysis',
+    "Unified investment analysis combining technical, fundamental, sentiment, pattern recognition, AI recommendations, and portfolio analysis",
 };
 
 export default function ComprehensiveAnalysisPage() {

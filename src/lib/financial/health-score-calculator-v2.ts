@@ -17,13 +17,13 @@
  * - 0-59: Critical (F)
  */
 
-import { getSupabase } from '@/lib/supabase/client';
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
 import {
   AggregatedFinancialContext,
   RiskLevel,
-} from './types/aggregated-context.types';
+} from "./types/aggregated-context.types";
 import {
   FinancialHealthScoreV2,
   HealthScoreBreakdownV2,
@@ -43,7 +43,7 @@ import {
   CalculationDetails,
   AgeGroup,
   IncomeGroup,
-} from './types/health-score-v2.types';
+} from "./types/health-score-v2.types";
 
 // ============================================================================
 // DEFAULT CONFIGURATION
@@ -83,12 +83,12 @@ const AGE_GROUP_BENCHMARKS: Record<
   AgeGroup,
   { avgScore: number; avgNetWorth: number; avgSavingsRate: number }
 > = {
-  '18-24': { avgScore: 55, avgNetWorth: 10000, avgSavingsRate: 8 },
-  '25-34': { avgScore: 62, avgNetWorth: 50000, avgSavingsRate: 12 },
-  '35-44': { avgScore: 68, avgNetWorth: 150000, avgSavingsRate: 15 },
-  '45-54': { avgScore: 72, avgNetWorth: 300000, avgSavingsRate: 18 },
-  '55-64': { avgScore: 75, avgNetWorth: 500000, avgSavingsRate: 20 },
-  '65+': { avgScore: 78, avgNetWorth: 600000, avgSavingsRate: 15 },
+  "18-24": { avgScore: 55, avgNetWorth: 10000, avgSavingsRate: 8 },
+  "25-34": { avgScore: 62, avgNetWorth: 50000, avgSavingsRate: 12 },
+  "35-44": { avgScore: 68, avgNetWorth: 150000, avgSavingsRate: 15 },
+  "45-54": { avgScore: 72, avgNetWorth: 300000, avgSavingsRate: 18 },
+  "55-64": { avgScore: 75, avgNetWorth: 500000, avgSavingsRate: 20 },
+  "65+": { avgScore: 78, avgNetWorth: 600000, avgSavingsRate: 15 },
 };
 
 /**
@@ -99,9 +99,9 @@ const INCOME_GROUP_BENCHMARKS: Record<
   { avgScore: number; avgSavingsRate: number }
 > = {
   low: { avgScore: 50, avgSavingsRate: 5 },
-  'lower-middle': { avgScore: 58, avgSavingsRate: 8 },
+  "lower-middle": { avgScore: 58, avgSavingsRate: 8 },
   middle: { avgScore: 65, avgSavingsRate: 12 },
-  'upper-middle': { avgScore: 72, avgSavingsRate: 18 },
+  "upper-middle": { avgScore: 72, avgSavingsRate: 18 },
   high: { avgScore: 80, avgSavingsRate: 25 },
 };
 
@@ -115,7 +115,7 @@ export class HealthScoreCalculatorV2 {
 
   constructor(
     weights: ScoreWeightsV2 = DEFAULT_WEIGHTS,
-    thresholds: ScoreThresholdsV2 = DEFAULT_THRESHOLDS
+    thresholds: ScoreThresholdsV2 = DEFAULT_THRESHOLDS,
   ) {
     this.weights = weights;
     this.thresholds = thresholds;
@@ -125,7 +125,7 @@ export class HealthScoreCalculatorV2 {
    * Calculate comprehensive financial health score V2
    */
   async calculateScore(
-    input: HealthScoreInputV2
+    input: HealthScoreInputV2,
   ): Promise<FinancialHealthScoreV2> {
     const startTime = Date.now();
     const { context, options = {} } = input;
@@ -152,7 +152,7 @@ export class HealthScoreCalculatorV2 {
         breakdown.spending.score * weights.spending +
         breakdown.credit.score * weights.credit +
         breakdown.investments.score * weights.investments +
-        breakdown.insurance.score * weights.insurance
+        breakdown.insurance.score * weights.insurance,
     );
 
     // Get historical data for trends
@@ -163,7 +163,7 @@ export class HealthScoreCalculatorV2 {
     // Calculate trends
     const { trendDirection, trendPercent } = this.calculateTrend(
       overallScore,
-      scoreHistory
+      scoreHistory,
     );
 
     // Calculate projections
@@ -182,7 +182,7 @@ export class HealthScoreCalculatorV2 {
     const benchmarks = this.calculateBenchmarks(
       overallScore,
       ageGroup,
-      incomeGroup
+      incomeGroup,
     );
 
     // Assess data quality
@@ -228,7 +228,7 @@ export class HealthScoreCalculatorV2 {
       // Metadata
       dataQuality,
       calculationDetails: {
-        algorithm: 'v2',
+        algorithm: "v2",
         weightsUsed: weights,
         thresholdsUsed: this.thresholds,
         dataSourcesUsed: this.getDataSourcesUsed(context),
@@ -245,7 +245,7 @@ export class HealthScoreCalculatorV2 {
    * Calculate savings score (0-100)
    */
   private calculateSavingsScore(
-    context: AggregatedFinancialContext
+    context: AggregatedFinancialContext,
   ): ComponentScoreV2 {
     const subScores: SubScore[] = [];
     const recommendations: ComponentRecommendation[] = [];
@@ -260,13 +260,13 @@ export class HealthScoreCalculatorV2 {
 
     if (emergencyFundScore.score < emergencyFundScore.maxScore * 0.7) {
       recommendations.push({
-        action: 'Build your emergency fund to cover 3-6 months of expenses',
-        impact: 'Provides financial security and reduces stress',
-        priority: 'high',
+        action: "Build your emergency fund to cover 3-6 months of expenses",
+        impact: "Provides financial security and reduces stress",
+        priority: "high",
         estimatedImprovement: Math.round(
-          (emergencyFundScore.maxScore - emergencyFundScore.score) * 0.5
+          (emergencyFundScore.maxScore - emergencyFundScore.score) * 0.5,
         ),
-        timeframe: '6-12 months',
+        timeframe: "6-12 months",
       });
     }
 
@@ -278,13 +278,13 @@ export class HealthScoreCalculatorV2 {
 
     if (savingsRateScore.score < savingsRateScore.maxScore * 0.7) {
       recommendations.push({
-        action: 'Increase your savings rate by automating transfers',
-        impact: 'Accelerates wealth building and goal achievement',
-        priority: 'medium',
+        action: "Increase your savings rate by automating transfers",
+        impact: "Accelerates wealth building and goal achievement",
+        priority: "medium",
         estimatedImprovement: Math.round(
-          (savingsRateScore.maxScore - savingsRateScore.score) * 0.4
+          (savingsRateScore.maxScore - savingsRateScore.score) * 0.4,
         ),
-        timeframe: '1-3 months',
+        timeframe: "1-3 months",
       });
     }
 
@@ -296,13 +296,13 @@ export class HealthScoreCalculatorV2 {
 
     if (goalsScore.score < goalsScore.maxScore * 0.5) {
       recommendations.push({
-        action: 'Set specific savings goals with target dates',
-        impact: 'Increases motivation and tracking ability',
-        priority: 'low',
+        action: "Set specific savings goals with target dates",
+        impact: "Increases motivation and tracking ability",
+        priority: "low",
         estimatedImprovement: Math.round(
-          (goalsScore.maxScore - goalsScore.score) * 0.3
+          (goalsScore.maxScore - goalsScore.score) * 0.3,
         ),
-        timeframe: '1 week',
+        timeframe: "1 week",
       });
     }
 
@@ -316,14 +316,14 @@ export class HealthScoreCalculatorV2 {
       factors: subScores.map((s) => s.description),
       subScores,
       recommendations,
-      trend: 'stable',
+      trend: "stable",
       trendPercent: 0,
       benchmarkComparison: this.getDefaultBenchmark(normalizedScore),
     };
   }
 
   private calculateEmergencyFundSubScore(
-    context: AggregatedFinancialContext
+    context: AggregatedFinancialContext,
   ): SubScore {
     const maxScore = 35;
     const savingsBalance = context.savings.totalSaved;
@@ -348,16 +348,16 @@ export class HealthScoreCalculatorV2 {
     }
 
     return {
-      name: 'Emergency Fund',
+      name: "Emergency Fund",
       score,
       maxScore,
       description,
-      impact: 'high',
+      impact: "high",
     };
   }
 
   private calculateSavingsRateSubScore(
-    context: AggregatedFinancialContext
+    context: AggregatedFinancialContext,
   ): SubScore {
     const maxScore = 35;
     const income = context.spending.transactions.totalIncome || 1;
@@ -385,27 +385,27 @@ export class HealthScoreCalculatorV2 {
     }
 
     return {
-      name: 'Savings Rate',
+      name: "Savings Rate",
       score,
       maxScore,
       description,
-      impact: 'high',
+      impact: "high",
     };
   }
 
   private calculateGoalsSubScore(
-    context: AggregatedFinancialContext
+    context: AggregatedFinancialContext,
   ): SubScore {
     const maxScore = 30;
-    const activeGoals = context.goals.filter((g) => g.status === 'active');
+    const activeGoals = context.goals.filter((g) => g.status === "active");
 
     if (activeGoals.length === 0) {
       return {
-        name: 'Savings Goals',
+        name: "Savings Goals",
         score: Math.round(maxScore * 0.3),
         maxScore,
-        description: 'No active savings goals set',
-        impact: 'medium',
+        description: "No active savings goals set",
+        impact: "medium",
       };
     }
 
@@ -429,11 +429,11 @@ export class HealthScoreCalculatorV2 {
     }
 
     return {
-      name: 'Savings Goals',
+      name: "Savings Goals",
       score,
       maxScore,
       description: `${activeGoals.length} active goal(s), ${avgProgress.toFixed(0)}% avg progress`,
-      impact: 'medium',
+      impact: "medium",
     };
   }
 
@@ -445,7 +445,7 @@ export class HealthScoreCalculatorV2 {
    * Calculate debt score (0-100)
    */
   private calculateDebtScore(
-    context: AggregatedFinancialContext
+    context: AggregatedFinancialContext,
   ): ComponentScoreV2 {
     const subScores: SubScore[] = [];
     const recommendations: ComponentRecommendation[] = [];
@@ -459,19 +459,19 @@ export class HealthScoreCalculatorV2 {
       return {
         score: 100,
         weight: this.weights.debt,
-        status: 'excellent',
-        factors: ['Debt-free!'],
+        status: "excellent",
+        factors: ["Debt-free!"],
         subScores: [
           {
-            name: 'Total Debt',
+            name: "Total Debt",
             score: 40,
             maxScore: 40,
-            description: 'No debt - excellent!',
-            impact: 'high',
+            description: "No debt - excellent!",
+            impact: "high",
           },
         ],
         recommendations: [],
-        trend: 'stable',
+        trend: "stable",
         trendPercent: 0,
         benchmarkComparison: this.getDefaultBenchmark(100),
       };
@@ -483,11 +483,11 @@ export class HealthScoreCalculatorV2 {
 
     if (debtToIncomeRatio > this.thresholds.debtToIncome.good) {
       recommendations.push({
-        action: 'Focus on paying down high-interest debt first',
-        impact: 'Reduces monthly obligations and interest costs',
-        priority: 'high',
+        action: "Focus on paying down high-interest debt first",
+        impact: "Reduces monthly obligations and interest costs",
+        priority: "high",
         estimatedImprovement: 15,
-        timeframe: '6-12 months',
+        timeframe: "6-12 months",
       });
     }
 
@@ -497,11 +497,11 @@ export class HealthScoreCalculatorV2 {
 
     if (highInterestScore.score < highInterestScore.maxScore * 0.7) {
       recommendations.push({
-        action: 'Consider debt consolidation or balance transfer',
-        impact: 'Lower interest rates save money over time',
-        priority: 'medium',
+        action: "Consider debt consolidation or balance transfer",
+        impact: "Lower interest rates save money over time",
+        priority: "medium",
         estimatedImprovement: 10,
-        timeframe: '1-3 months',
+        timeframe: "1-3 months",
       });
     }
 
@@ -521,7 +521,7 @@ export class HealthScoreCalculatorV2 {
       factors: subScores.map((s) => s.description),
       subScores,
       recommendations,
-      trend: 'stable',
+      trend: "stable",
       trendPercent: 0,
       benchmarkComparison: this.getDefaultBenchmark(normalizedScore),
     };
@@ -547,23 +547,23 @@ export class HealthScoreCalculatorV2 {
     }
 
     return {
-      name: 'Debt-to-Income Ratio',
+      name: "Debt-to-Income Ratio",
       score,
       maxScore,
       description,
-      impact: 'high',
+      impact: "high",
     };
   }
 
   private calculateHighInterestDebtSubScore(
-    context: AggregatedFinancialContext
+    context: AggregatedFinancialContext,
   ): SubScore {
     const maxScore = 30;
     const debts = context.debt.items;
     const highInterestDebts = debts.filter((d) => d.interestRate > 15);
     const highInterestTotal = highInterestDebts.reduce(
       (sum, d) => sum + d.balance,
-      0
+      0,
     );
     const totalDebt = context.debt.totalDebt || 1;
     const highInterestRatio = (highInterestTotal / totalDebt) * 100;
@@ -573,7 +573,7 @@ export class HealthScoreCalculatorV2 {
 
     if (highInterestDebts.length === 0) {
       score = maxScore;
-      description = 'No high-interest debt (>15% APR)';
+      description = "No high-interest debt (>15% APR)";
     } else if (highInterestRatio < 25) {
       score = Math.round(maxScore * 0.7);
       description = `${highInterestDebts.length} high-interest debt(s), ${highInterestRatio.toFixed(0)}% of total`;
@@ -586,27 +586,27 @@ export class HealthScoreCalculatorV2 {
     }
 
     return {
-      name: 'High-Interest Debt',
+      name: "High-Interest Debt",
       score,
       maxScore,
       description,
-      impact: 'high',
+      impact: "high",
     };
   }
 
   private calculateDebtPayoffSubScore(
-    context: AggregatedFinancialContext
+    context: AggregatedFinancialContext,
   ): SubScore {
     const maxScore = 30;
     const payoffPlan = context.debt.payoffPlan;
 
     if (!payoffPlan) {
       return {
-        name: 'Debt Payoff Plan',
+        name: "Debt Payoff Plan",
         score: Math.round(maxScore * 0.3),
         maxScore,
-        description: 'No debt payoff plan set',
-        impact: 'medium',
+        description: "No debt payoff plan set",
+        impact: "medium",
       };
     }
 
@@ -630,11 +630,11 @@ export class HealthScoreCalculatorV2 {
     }
 
     return {
-      name: 'Debt Payoff Plan',
+      name: "Debt Payoff Plan",
       score,
       maxScore,
       description,
-      impact: 'medium',
+      impact: "medium",
     };
   }
 
@@ -646,7 +646,7 @@ export class HealthScoreCalculatorV2 {
    * Calculate spending score (0-100)
    */
   private calculateSpendingScore(
-    context: AggregatedFinancialContext
+    context: AggregatedFinancialContext,
   ): ComponentScoreV2 {
     const subScores: SubScore[] = [];
     const recommendations: ComponentRecommendation[] = [];
@@ -657,11 +657,11 @@ export class HealthScoreCalculatorV2 {
 
     if (budgetScore.score < budgetScore.maxScore * 0.7) {
       recommendations.push({
-        action: 'Review and adjust budgets to be more realistic',
-        impact: 'Better budget adherence improves financial control',
-        priority: 'medium',
+        action: "Review and adjust budgets to be more realistic",
+        impact: "Better budget adherence improves financial control",
+        priority: "medium",
         estimatedImprovement: 8,
-        timeframe: '1 month',
+        timeframe: "1 month",
       });
     }
 
@@ -671,11 +671,11 @@ export class HealthScoreCalculatorV2 {
 
     if (spendingRatioScore.score < spendingRatioScore.maxScore * 0.6) {
       recommendations.push({
-        action: 'Identify and reduce discretionary spending',
-        impact: 'Living below your means accelerates wealth building',
-        priority: 'high',
+        action: "Identify and reduce discretionary spending",
+        impact: "Living below your means accelerates wealth building",
+        priority: "high",
         estimatedImprovement: 12,
-        timeframe: '1-3 months',
+        timeframe: "1-3 months",
       });
     }
 
@@ -695,25 +695,25 @@ export class HealthScoreCalculatorV2 {
       factors: subScores.map((s) => s.description),
       subScores,
       recommendations,
-      trend: 'stable',
+      trend: "stable",
       trendPercent: 0,
       benchmarkComparison: this.getDefaultBenchmark(normalizedScore),
     };
   }
 
   private calculateBudgetAdherenceSubScore(
-    context: AggregatedFinancialContext
+    context: AggregatedFinancialContext,
   ): SubScore {
     const maxScore = 40;
     const budgets = context.budgets.items.filter((b) => b.budgetedAmount > 0);
 
     if (budgets.length === 0) {
       return {
-        name: 'Budget Adherence',
+        name: "Budget Adherence",
         score: Math.round(maxScore * 0.3),
         maxScore,
-        description: 'No budgets set up',
-        impact: 'high',
+        description: "No budgets set up",
+        impact: "high",
       };
     }
 
@@ -723,7 +723,10 @@ export class HealthScoreCalculatorV2 {
         const spent = b.spentAmount || 0;
         const adherence = Math.min(
           100,
-          Math.max(0, (1 - (spent - b.budgetedAmount) / b.budgetedAmount) * 100)
+          Math.max(
+            0,
+            (1 - (spent - b.budgetedAmount) / b.budgetedAmount) * 100,
+          ),
         );
         return sum + adherence;
       }, 0) / budgets.length;
@@ -746,16 +749,16 @@ export class HealthScoreCalculatorV2 {
     }
 
     return {
-      name: 'Budget Adherence',
+      name: "Budget Adherence",
       score,
       maxScore,
       description,
-      impact: 'high',
+      impact: "high",
     };
   }
 
   private calculateSpendingRatioSubScore(
-    context: AggregatedFinancialContext
+    context: AggregatedFinancialContext,
   ): SubScore {
     const maxScore = 35;
     const income = context.spending.transactions.totalIncome || 1;
@@ -780,21 +783,21 @@ export class HealthScoreCalculatorV2 {
     }
 
     return {
-      name: 'Spending Ratio',
+      name: "Spending Ratio",
       score,
       maxScore,
       description,
-      impact: 'high',
+      impact: "high",
     };
   }
 
   private calculateSpendingConsistencySubScore(
-    context: AggregatedFinancialContext
+    context: AggregatedFinancialContext,
   ): SubScore {
     const maxScore = 25;
     const anomalies = context.spending.anomalies;
     const highSeverityAnomalies = anomalies.filter(
-      (a) => a.severity === 'high'
+      (a) => a.severity === "high",
     ).length;
 
     let score: number;
@@ -802,7 +805,7 @@ export class HealthScoreCalculatorV2 {
 
     if (highSeverityAnomalies === 0 && anomalies.length <= 2) {
       score = maxScore;
-      description = 'Consistent spending patterns';
+      description = "Consistent spending patterns";
     } else if (highSeverityAnomalies === 0) {
       score = Math.round(maxScore * 0.7);
       description = `${anomalies.length} minor spending anomalies detected`;
@@ -815,11 +818,11 @@ export class HealthScoreCalculatorV2 {
     }
 
     return {
-      name: 'Spending Consistency',
+      name: "Spending Consistency",
       score,
       maxScore,
       description,
-      impact: 'medium',
+      impact: "medium",
     };
   }
 
@@ -831,7 +834,7 @@ export class HealthScoreCalculatorV2 {
    * Calculate credit score component (0-100)
    */
   private calculateCreditScore(
-    context: AggregatedFinancialContext
+    context: AggregatedFinancialContext,
   ): ComponentScoreV2 {
     const subScores: SubScore[] = [];
     const recommendations: ComponentRecommendation[] = [];
@@ -839,17 +842,17 @@ export class HealthScoreCalculatorV2 {
 
     // Sub-score 1: Credit Score (max 50 points)
     const creditScoreSubScore = this.calculateCreditScoreSubScore(
-      creditProfile.currentScore
+      creditProfile.currentScore,
     );
     subScores.push(creditScoreSubScore);
 
     if (creditProfile.currentScore < 670) {
       recommendations.push({
-        action: 'Focus on paying bills on time and reducing credit utilization',
-        impact: 'Payment history is the biggest factor in credit scores',
-        priority: 'high',
+        action: "Focus on paying bills on time and reducing credit utilization",
+        impact: "Payment history is the biggest factor in credit scores",
+        priority: "high",
         estimatedImprovement: 15,
-        timeframe: '3-6 months',
+        timeframe: "3-6 months",
       });
     }
 
@@ -859,11 +862,11 @@ export class HealthScoreCalculatorV2 {
 
     if (utilizationScore.score < utilizationScore.maxScore * 0.7) {
       recommendations.push({
-        action: 'Pay down credit card balances to below 30% utilization',
-        impact: 'Lower utilization can quickly improve credit score',
-        priority: 'medium',
+        action: "Pay down credit card balances to below 30% utilization",
+        impact: "Lower utilization can quickly improve credit score",
+        priority: "medium",
         estimatedImprovement: 10,
-        timeframe: '1-2 months',
+        timeframe: "1-2 months",
       });
     }
 
@@ -884,7 +887,7 @@ export class HealthScoreCalculatorV2 {
       factors: subScores.map((s) => s.description),
       subScores,
       recommendations,
-      trend: 'stable',
+      trend: "stable",
       trendPercent: 0,
       benchmarkComparison: this.getDefaultBenchmark(normalizedScore),
     };
@@ -912,30 +915,30 @@ export class HealthScoreCalculatorV2 {
       description = `Poor credit score (${creditScore})`;
     } else {
       score = Math.round(maxScore * 0.4);
-      description = 'Credit score not available';
+      description = "Credit score not available";
     }
 
     return {
-      name: 'Credit Score',
+      name: "Credit Score",
       score,
       maxScore,
       description,
-      impact: 'high',
+      impact: "high",
     };
   }
 
   private calculateUtilizationSubScore(
-    context: AggregatedFinancialContext
+    context: AggregatedFinancialContext,
   ): SubScore {
     const maxScore = 30;
     const creditAccounts = context.accounts.credit;
     const totalLimit = creditAccounts.reduce(
       (sum, a) => sum + (a.creditLimit || 0),
-      0
+      0,
     );
     const totalUsed = creditAccounts.reduce(
       (sum, a) => sum + Math.abs(a.currentBalance),
-      0
+      0,
     );
     const utilization = totalLimit > 0 ? (totalUsed / totalLimit) * 100 : 0;
 
@@ -957,16 +960,16 @@ export class HealthScoreCalculatorV2 {
     }
 
     return {
-      name: 'Credit Utilization',
+      name: "Credit Utilization",
       score,
       maxScore,
       description,
-      impact: 'high',
+      impact: "high",
     };
   }
 
   private calculateCreditHealthSubScore(
-    creditProfile: AggregatedFinancialContext['credit']
+    creditProfile: AggregatedFinancialContext["credit"],
   ): SubScore {
     const maxScore = 20;
     let score = maxScore;
@@ -974,7 +977,7 @@ export class HealthScoreCalculatorV2 {
 
     // Count negative factors from credit factors array
     const negativeFactors = creditProfile.factors.filter(
-      (f) => f.status === 'negative'
+      (f) => f.status === "negative",
     );
     if (negativeFactors.length > 0) {
       score -= Math.min(10, negativeFactors.length * 2);
@@ -996,14 +999,14 @@ export class HealthScoreCalculatorV2 {
     }
 
     const description =
-      factors.length > 0 ? factors.join(', ') : 'Good credit health';
+      factors.length > 0 ? factors.join(", ") : "Good credit health";
 
     return {
-      name: 'Credit Health',
+      name: "Credit Health",
       score: Math.max(0, score),
       maxScore,
       description,
-      impact: 'medium',
+      impact: "medium",
     };
   }
 
@@ -1017,7 +1020,7 @@ export class HealthScoreCalculatorV2 {
    * performance, and retirement readiness
    */
   private calculateInvestmentsScore(
-    context: AggregatedFinancialContext
+    context: AggregatedFinancialContext,
   ): ComponentScoreV2 {
     const subScores: SubScore[] = [];
     const recommendations: ComponentRecommendation[] = [];
@@ -1028,27 +1031,27 @@ export class HealthScoreCalculatorV2 {
       return {
         score: 30,
         weight: this.weights.investments,
-        status: 'poor',
-        factors: ['No investments detected'],
+        status: "poor",
+        factors: ["No investments detected"],
         subScores: [
           {
-            name: 'Investment Portfolio',
+            name: "Investment Portfolio",
             score: 0,
             maxScore: 100,
-            description: 'No investment portfolio',
-            impact: 'high',
+            description: "No investment portfolio",
+            impact: "high",
           },
         ],
         recommendations: [
           {
-            action: 'Start investing with a diversified index fund',
-            impact: 'Building wealth through compound growth',
-            priority: 'high',
+            action: "Start investing with a diversified index fund",
+            impact: "Building wealth through compound growth",
+            priority: "high",
             estimatedImprovement: 20,
-            timeframe: '1 month to start',
+            timeframe: "1 month to start",
           },
         ],
-        trend: 'stable',
+        trend: "stable",
         trendPercent: 0,
         benchmarkComparison: this.getDefaultBenchmark(30),
       };
@@ -1066,11 +1069,11 @@ export class HealthScoreCalculatorV2 {
 
     if (diversificationScore.score < diversificationScore.maxScore * 0.6) {
       recommendations.push({
-        action: 'Diversify your portfolio across asset classes',
-        impact: 'Reduces risk and improves long-term returns',
-        priority: 'medium',
+        action: "Diversify your portfolio across asset classes",
+        impact: "Reduces risk and improves long-term returns",
+        priority: "medium",
         estimatedImprovement: 10,
-        timeframe: '1-3 months',
+        timeframe: "1-3 months",
       });
     }
 
@@ -1081,11 +1084,11 @@ export class HealthScoreCalculatorV2 {
 
     if (retirementScore.score < retirementScore.maxScore * 0.5) {
       recommendations.push({
-        action: 'Increase retirement contributions to at least 15% of income',
-        impact: 'Ensures financial security in retirement',
-        priority: 'high',
+        action: "Increase retirement contributions to at least 15% of income",
+        impact: "Ensures financial security in retirement",
+        priority: "high",
         estimatedImprovement: 15,
-        timeframe: 'Ongoing',
+        timeframe: "Ongoing",
       });
     }
 
@@ -1101,14 +1104,14 @@ export class HealthScoreCalculatorV2 {
       factors: subScores.map((s) => s.description),
       subScores,
       recommendations,
-      trend: 'stable',
+      trend: "stable",
       trendPercent: 0,
       benchmarkComparison: this.getDefaultBenchmark(normalizedScore),
     };
   }
 
   private calculatePortfolioPerformanceSubScore(
-    investments: AggregatedFinancialContext['investments']
+    investments: AggregatedFinancialContext["investments"],
   ): SubScore {
     const maxScore = 35;
     const returnPercent =
@@ -1139,16 +1142,16 @@ export class HealthScoreCalculatorV2 {
     }
 
     return {
-      name: 'Portfolio Performance',
+      name: "Portfolio Performance",
       score,
       maxScore,
       description,
-      impact: 'high',
+      impact: "high",
     };
   }
 
   private calculateDiversificationSubScore(
-    investments: AggregatedFinancialContext['investments']
+    investments: AggregatedFinancialContext["investments"],
   ): SubScore {
     const maxScore = 35;
     const diversificationScore = investments.diversificationScore;
@@ -1177,16 +1180,16 @@ export class HealthScoreCalculatorV2 {
     }
 
     return {
-      name: 'Diversification',
+      name: "Diversification",
       score,
       maxScore,
       description,
-      impact: 'high',
+      impact: "high",
     };
   }
 
   private calculateRetirementReadinessSubScore(
-    investments: AggregatedFinancialContext['investments']
+    investments: AggregatedFinancialContext["investments"],
   ): SubScore {
     const maxScore = 30;
     const readiness = investments.retirementReadiness;
@@ -1209,11 +1212,11 @@ export class HealthScoreCalculatorV2 {
     }
 
     return {
-      name: 'Retirement Readiness',
+      name: "Retirement Readiness",
       score,
       maxScore,
       description,
-      impact: 'high',
+      impact: "high",
     };
   }
 
@@ -1226,33 +1229,33 @@ export class HealthScoreCalculatorV2 {
    * Note: Simplified version - would need actual insurance data integration
    */
   private calculateInsuranceScore(
-    _context: AggregatedFinancialContext
+    _context: AggregatedFinancialContext,
   ): ComponentScoreV2 {
     // Placeholder - would need actual insurance data
     return {
       score: 70,
       weight: this.weights.insurance,
-      status: 'fair',
-      factors: ['Insurance coverage not yet tracked'],
+      status: "fair",
+      factors: ["Insurance coverage not yet tracked"],
       subScores: [
         {
-          name: 'Insurance Coverage',
+          name: "Insurance Coverage",
           score: 70,
           maxScore: 100,
-          description: 'Insurance data not available',
-          impact: 'medium',
+          description: "Insurance data not available",
+          impact: "medium",
         },
       ],
       recommendations: [
         {
-          action: 'Review and update insurance coverage',
-          impact: 'Protects against financial catastrophe',
-          priority: 'low',
+          action: "Review and update insurance coverage",
+          impact: "Protects against financial catastrophe",
+          priority: "low",
           estimatedImprovement: 5,
-          timeframe: '1 month',
+          timeframe: "1 month",
         },
       ],
-      trend: 'stable',
+      trend: "stable",
       trendPercent: 0,
       benchmarkComparison: this.getDefaultBenchmark(70),
     };
@@ -1265,23 +1268,23 @@ export class HealthScoreCalculatorV2 {
   /**
    * Get letter grade from score
    */
-  public getGrade(score: number): 'A' | 'B' | 'C' | 'D' | 'F' {
-    if (score >= 90) return 'A';
-    if (score >= 80) return 'B';
-    if (score >= 70) return 'C';
-    if (score >= 60) return 'D';
-    return 'F';
+  public getGrade(score: number): "A" | "B" | "C" | "D" | "F" {
+    if (score >= 90) return "A";
+    if (score >= 80) return "B";
+    if (score >= 70) return "C";
+    if (score >= 60) return "D";
+    return "F";
   }
 
   /**
    * Get status from score
    */
-  private getStatus(score: number): ComponentScoreV2['status'] {
-    if (score >= 90) return 'excellent';
-    if (score >= 75) return 'good';
-    if (score >= 60) return 'fair';
-    if (score >= 40) return 'poor';
-    return 'critical';
+  private getStatus(score: number): ComponentScoreV2["status"] {
+    if (score >= 90) return "excellent";
+    if (score >= 75) return "good";
+    if (score >= 60) return "fair";
+    if (score >= 40) return "poor";
+    return "critical";
   }
 
   /**
@@ -1292,7 +1295,7 @@ export class HealthScoreCalculatorV2 {
       percentile: Math.min(99, Math.max(1, score)),
       ageGroupAverage: 65,
       incomeGroupAverage: 65,
-      comparison: score > 65 ? 'above' : score < 65 ? 'below' : 'average',
+      comparison: score > 65 ? "above" : score < 65 ? "below" : "average",
     };
   }
 
@@ -1301,13 +1304,13 @@ export class HealthScoreCalculatorV2 {
    */
   private calculateTrend(
     currentScore: number,
-    history: ScoreHistoryPoint[]
+    history: ScoreHistoryPoint[],
   ): {
-    trendDirection: 'improving' | 'declining' | 'stable';
+    trendDirection: "improving" | "declining" | "stable";
     trendPercent: number;
   } {
     if (history.length < 2) {
-      return { trendDirection: 'stable', trendPercent: 0 };
+      return { trendDirection: "stable", trendPercent: 0 };
     }
 
     const recentScores = history.slice(-5);
@@ -1316,13 +1319,13 @@ export class HealthScoreCalculatorV2 {
     const diff = currentScore - avgRecent;
     const trendPercent = (diff / avgRecent) * 100;
 
-    let trendDirection: 'improving' | 'declining' | 'stable';
+    let trendDirection: "improving" | "declining" | "stable";
     if (trendPercent > 2) {
-      trendDirection = 'improving';
+      trendDirection = "improving";
     } else if (trendPercent < -2) {
-      trendDirection = 'declining';
+      trendDirection = "declining";
     } else {
-      trendDirection = 'stable';
+      trendDirection = "stable";
     }
 
     return { trendDirection, trendPercent };
@@ -1334,17 +1337,17 @@ export class HealthScoreCalculatorV2 {
   private calculateProjections(
     currentScore: number,
     trendPercent: number,
-    _breakdown: HealthScoreBreakdownV2
+    _breakdown: HealthScoreBreakdownV2,
   ): { projected30: number; projected90: number } {
     // Simple linear projection based on trend
     const monthlyChange = trendPercent / 3; // Assume trend is over 3 months
     const projected30 = Math.min(
       100,
-      Math.max(0, Math.round(currentScore + monthlyChange))
+      Math.max(0, Math.round(currentScore + monthlyChange)),
     );
     const projected90 = Math.min(
       100,
-      Math.max(0, Math.round(currentScore + monthlyChange * 3))
+      Math.max(0, Math.round(currentScore + monthlyChange * 3)),
     );
 
     return { projected30, projected90 };
@@ -1354,7 +1357,7 @@ export class HealthScoreCalculatorV2 {
    * Identify top strengths from breakdown
    */
   private identifyStrengths(
-    breakdown: HealthScoreBreakdownV2
+    breakdown: HealthScoreBreakdownV2,
   ): ScoreStrength[] {
     const components = Object.entries(breakdown) as [
       keyof HealthScoreBreakdownV2,
@@ -1377,7 +1380,7 @@ export class HealthScoreCalculatorV2 {
    * Identify top weaknesses from breakdown
    */
   private identifyWeaknesses(
-    breakdown: HealthScoreBreakdownV2
+    breakdown: HealthScoreBreakdownV2,
   ): ScoreWeakness[] {
     const components = Object.entries(breakdown) as [
       keyof HealthScoreBreakdownV2,
@@ -1403,7 +1406,7 @@ export class HealthScoreCalculatorV2 {
    */
   private identifyQuickWins(
     breakdown: HealthScoreBreakdownV2,
-    _context: AggregatedFinancialContext
+    _context: AggregatedFinancialContext,
   ): QuickWin[] {
     const quickWins: QuickWin[] = [];
 
@@ -1422,13 +1425,18 @@ export class HealthScoreCalculatorV2 {
             action: rec.action,
             component,
             estimatedImprovement: rec.estimatedImprovement,
-            impact: rec.priority === 'high' ? 'high' : rec.priority === 'medium' ? 'medium' : 'low',
+            impact:
+              rec.priority === "high"
+                ? "high"
+                : rec.priority === "medium"
+                  ? "medium"
+                  : "low",
             effort:
-              rec.priority === 'low'
-                ? 'low'
-                : rec.priority === 'medium'
-                  ? 'medium'
-                  : 'high',
+              rec.priority === "low"
+                ? "low"
+                : rec.priority === "medium"
+                  ? "medium"
+                  : "high",
             timeframe: rec.timeframe,
             category: component,
           });
@@ -1454,7 +1462,7 @@ export class HealthScoreCalculatorV2 {
   private calculateBenchmarks(
     score: number,
     ageGroup: AgeGroup,
-    incomeGroup: IncomeGroup
+    incomeGroup: IncomeGroup,
   ): {
     percentile: number;
     ageGroupPercentile: number;
@@ -1467,11 +1475,11 @@ export class HealthScoreCalculatorV2 {
     const percentile = Math.min(99, Math.max(1, Math.round(score)));
     const ageGroupPercentile = Math.min(
       99,
-      Math.max(1, Math.round(50 + (score - ageBenchmark.avgScore) * 2))
+      Math.max(1, Math.round(50 + (score - ageBenchmark.avgScore) * 2)),
     );
     const incomeGroupPercentile = Math.min(
       99,
-      Math.max(1, Math.round(50 + (score - incomeBenchmark.avgScore) * 2))
+      Math.max(1, Math.round(50 + (score - incomeBenchmark.avgScore) * 2)),
     );
 
     return { percentile, ageGroupPercentile, incomeGroupPercentile };
@@ -1482,7 +1490,7 @@ export class HealthScoreCalculatorV2 {
    */
   private inferAgeGroup(_context: AggregatedFinancialContext): AgeGroup {
     // Would use user profile data in production
-    return '35-44';
+    return "35-44";
   }
 
   /**
@@ -1492,71 +1500,71 @@ export class HealthScoreCalculatorV2 {
     const monthlyIncome = context.spending.transactions.totalIncome;
     const annualIncome = monthlyIncome * 12;
 
-    if (annualIncome < 30000) return 'low';
-    if (annualIncome < 50000) return 'lower-middle';
-    if (annualIncome < 100000) return 'middle';
-    if (annualIncome < 200000) return 'upper-middle';
-    return 'high';
+    if (annualIncome < 30000) return "low";
+    if (annualIncome < 50000) return "lower-middle";
+    if (annualIncome < 100000) return "middle";
+    if (annualIncome < 200000) return "upper-middle";
+    return "high";
   }
 
   /**
    * Get age group from age number
    */
   private getAgeGroupFromAge(age: number): AgeGroup {
-    if (age < 25) return '18-24';
-    if (age < 35) return '25-34';
-    if (age < 45) return '35-44';
-    if (age < 55) return '45-54';
-    if (age < 65) return '55-64';
-    return '65+';
+    if (age < 25) return "18-24";
+    if (age < 35) return "25-34";
+    if (age < 45) return "35-44";
+    if (age < 55) return "45-54";
+    if (age < 65) return "55-64";
+    return "65+";
   }
 
   /**
    * Get income group from annual income
    */
   private getIncomeGroupFromIncome(income: number): IncomeGroup {
-    if (income < 35000) return 'low';
-    if (income < 75000) return 'lower-middle';
-    if (income < 150000) return 'middle';
-    if (income < 200000) return 'upper-middle';
-    return 'high';
+    if (income < 35000) return "low";
+    if (income < 75000) return "lower-middle";
+    if (income < 150000) return "middle";
+    if (income < 200000) return "upper-middle";
+    return "high";
   }
 
   /**
    * Assess data quality
    */
   private assessDataQuality(
-    context: AggregatedFinancialContext
+    context: AggregatedFinancialContext,
   ): DataQualityAssessment {
     const missingData: string[] = [];
     const staleData: string[] = [];
 
     // Check for missing data
-    if (!context.dataCompleteness.accounts) missingData.push('accounts');
-    if (!context.dataCompleteness.budgets) missingData.push('budgets');
+    if (!context.dataCompleteness.accounts) missingData.push("accounts");
+    if (!context.dataCompleteness.budgets) missingData.push("budgets");
     if (!context.dataCompleteness.transactions)
-      missingData.push('transactions');
-    if (!context.dataCompleteness.investments) missingData.push('investments');
-    if (!context.dataCompleteness.credit) missingData.push('credit');
+      missingData.push("transactions");
+    if (!context.dataCompleteness.investments) missingData.push("investments");
+    if (!context.dataCompleteness.credit) missingData.push("credit");
 
     // Check for stale data (simplified - would check actual timestamps)
     const daysSinceUpdate = Math.floor(
-      (Date.now() - context.lastUpdated.getTime()) / (1000 * 60 * 60 * 24)
+      (Date.now() - context.lastUpdated.getTime()) / (1000 * 60 * 60 * 24),
     );
     if (daysSinceUpdate > 7) {
-      staleData.push('Financial data may be outdated');
+      staleData.push("Financial data may be outdated");
     }
 
     const confidenceLevel = Math.max(
       0,
-      100 - missingData.length * 15 - staleData.length * 10
+      100 - missingData.length * 15 - staleData.length * 10,
     );
 
-    let overallQuality: DataQualityAssessment['overallQuality'];
-    if (confidenceLevel >= 90) overallQuality = 'excellent';
-    else if (confidenceLevel >= 70) overallQuality = 'good';
-    else if (confidenceLevel >= 50) overallQuality = 'fair';
-    else overallQuality = 'poor';
+    let overallQuality: DataQualityAssessment["overallQuality"];
+    if (confidenceLevel >= 90) overallQuality = "excellent";
+    else if (confidenceLevel >= 70) overallQuality = "good";
+    else if (confidenceLevel >= 50) overallQuality = "fair";
+    else overallQuality = "poor";
 
     return { overallQuality, missingData, staleData, confidenceLevel };
   }
@@ -1567,14 +1575,14 @@ export class HealthScoreCalculatorV2 {
   private getDataSourcesUsed(context: AggregatedFinancialContext): string[] {
     const sources: string[] = [];
 
-    if (context.dataCompleteness.accounts) sources.push('bank_accounts');
-    if (context.dataCompleteness.budgets) sources.push('budgets');
-    if (context.dataCompleteness.transactions) sources.push('transactions');
-    if (context.dataCompleteness.bills) sources.push('bills');
-    if (context.dataCompleteness.savings) sources.push('savings');
-    if (context.dataCompleteness.debt) sources.push('debt');
-    if (context.dataCompleteness.investments) sources.push('investments');
-    if (context.dataCompleteness.credit) sources.push('credit_profile');
+    if (context.dataCompleteness.accounts) sources.push("bank_accounts");
+    if (context.dataCompleteness.budgets) sources.push("budgets");
+    if (context.dataCompleteness.transactions) sources.push("transactions");
+    if (context.dataCompleteness.bills) sources.push("bills");
+    if (context.dataCompleteness.savings) sources.push("savings");
+    if (context.dataCompleteness.debt) sources.push("debt");
+    if (context.dataCompleteness.investments) sources.push("investments");
+    if (context.dataCompleteness.credit) sources.push("credit_profile");
 
     return sources;
   }
@@ -1584,17 +1592,17 @@ export class HealthScoreCalculatorV2 {
    */
   async getScoreHistory(
     userId: string,
-    days = 90
+    days = 90,
   ): Promise<ScoreHistoryPoint[]> {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
     const { data } = await supabase
-      .from('financial_health_scores')
-      .select('overall_score, calculated_at')
-      .eq('user_id', userId)
-      .gte('calculated_at', startDate.toISOString())
-      .order('calculated_at', { ascending: true });
+      .from("financial_health_scores")
+      .select("overall_score, calculated_at")
+      .eq("user_id", userId)
+      .gte("calculated_at", startDate.toISOString())
+      .order("calculated_at", { ascending: true });
 
     return (data || []).map((d) => ({
       date: new Date(d.calculated_at),
@@ -1608,9 +1616,9 @@ export class HealthScoreCalculatorV2 {
    */
   async saveScore(
     userId: string,
-    score: FinancialHealthScoreV2
+    score: FinancialHealthScoreV2,
   ): Promise<void> {
-    await supabase.from('financial_health_scores').insert({
+    await supabase.from("financial_health_scores").insert({
       user_id: userId,
       overall_score: score.overallScore,
       savings_score: score.breakdown.savings.score,
@@ -1645,7 +1653,7 @@ export class HealthScoreCalculatorV2 {
       percentile: 50, // National average is 50th percentile
       ageGroupAverage: nationalAvgScore,
       incomeGroupAverage: nationalAvgScore,
-      comparison: 'average',
+      comparison: "average",
     };
   }
 
@@ -1658,7 +1666,7 @@ export class HealthScoreCalculatorV2 {
    */
   async getPeerGroupAverage(
     age: number,
-    income: number
+    income: number,
   ): Promise<BenchmarkComparison> {
     const ageGroup = this.getAgeGroupFromAge(age);
     const incomeGroup = this.getIncomeGroupFromIncome(income);
@@ -1673,7 +1681,7 @@ export class HealthScoreCalculatorV2 {
       percentile: 50, // Would calculate based on actual distribution
       ageGroupAverage: ageBenchmark.avgScore,
       incomeGroupAverage: incomeBenchmark.avgScore,
-      comparison: 'average',
+      comparison: "average",
     };
   }
 
@@ -1704,10 +1712,10 @@ export class HealthScoreCalculatorV2 {
    */
   async getScoreHistoryWithTrends(
     userId: string,
-    months = 6
+    months = 6,
   ): Promise<{
     scores: ScoreHistoryPoint[];
-    trendDirection: 'improving' | 'declining' | 'stable';
+    trendDirection: "improving" | "declining" | "stable";
     trendPercent: number;
     averageScore: number;
     highestScore: number;
@@ -1719,7 +1727,7 @@ export class HealthScoreCalculatorV2 {
     if (scores.length === 0) {
       return {
         scores: [],
-        trendDirection: 'stable',
+        trendDirection: "stable",
         trendPercent: 0,
         averageScore: 0,
         highestScore: 0,
@@ -1731,13 +1739,13 @@ export class HealthScoreCalculatorV2 {
     const latestScore = scores[scores.length - 1]?.score || 0;
     const { trendDirection, trendPercent } = this.calculateTrend(
       latestScore,
-      scores
+      scores,
     );
 
     // Calculate statistics
     const scoreValues = scores.map((s) => s.score);
     const averageScore = Math.round(
-      scoreValues.reduce((a, b) => a + b, 0) / scoreValues.length
+      scoreValues.reduce((a, b) => a + b, 0) / scoreValues.length,
     );
     const highestScore = Math.max(...scoreValues);
     const lowestScore = Math.min(...scoreValues);

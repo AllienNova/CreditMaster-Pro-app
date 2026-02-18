@@ -1,6 +1,6 @@
 /**
  * Output Validation Service
- * 
+ *
  * Validates AI-generated outputs to ensure:
  * - No harmful or inappropriate content
  * - No PII leakage
@@ -9,14 +9,14 @@
  * - Professional and appropriate tone
  */
 
-import { redactPII, hasPII } from './input-validation';
+import { redactPII, hasPII } from "./input-validation";
 
 export interface OutputValidationResult {
   isValid: boolean;
   sanitized: string;
   issues: string[];
   warnings: string[];
-  risk: 'low' | 'medium' | 'high' | 'critical';
+  risk: "low" | "medium" | "high" | "critical";
   confidence: number; // 0-1
 }
 
@@ -46,16 +46,16 @@ const DEFAULT_OPTIONS: OutputValidationOptions = {
 const HARMFUL_PATTERNS = [
   // Violence
   /\b(kill|murder|assault|attack|harm|hurt|injure|weapon|gun|knife|bomb)\b/gi,
-  
+
   // Hate speech
   /\b(hate|racist|sexist|homophobic|xenophobic|bigot|discrimination)\b/gi,
-  
+
   // Self-harm
   /\b(suicide|self-harm|cut|overdose|end\s+it\s+all)\b/gi,
-  
+
   // Illegal activities
   /\b(illegal|fraud|scam|steal|theft|hack|crack|pirate)\b/gi,
-  
+
   // Explicit content
   /\b(porn|xxx|explicit|nsfw|sexual)\b/gi,
 ];
@@ -97,44 +97,46 @@ const BIAS_PATTERNS = [
  */
 export function validateOutput(
   output: string,
-  options: OutputValidationOptions = {}
+  options: OutputValidationOptions = {},
 ): OutputValidationResult {
   const opts = { ...DEFAULT_OPTIONS, ...options };
   const issues: string[] = [];
   const warnings: string[] = [];
   let sanitized = output;
-  let risk: 'low' | 'medium' | 'high' | 'critical' = 'low';
+  let risk: "low" | "medium" | "high" | "critical" = "low";
   let confidence = 1.0;
 
   // Check if output is empty
   if (!output || output.trim().length === 0) {
-    issues.push('Output is empty');
+    issues.push("Output is empty");
     return {
       isValid: false,
-      sanitized: '',
+      sanitized: "",
       issues,
       warnings,
-      risk: 'low',
+      risk: "low",
       confidence: 0,
     };
   }
 
   // Check for harmful content
   if (opts.checkHarmfulContent) {
-    const harmfulMatches = HARMFUL_PATTERNS.filter(pattern => pattern.test(output));
+    const harmfulMatches = HARMFUL_PATTERNS.filter((pattern) =>
+      pattern.test(output),
+    );
     if (harmfulMatches.length > 0) {
-      issues.push('Output contains potentially harmful content');
-      risk = 'critical';
+      issues.push("Output contains potentially harmful content");
+      risk = "critical";
       confidence -= 0.5;
     }
   }
 
   // Check for PII leakage
   if (opts.checkPII && hasPII(output)) {
-    warnings.push('Output may contain PII');
-    if (risk === 'low') risk = 'medium';
+    warnings.push("Output may contain PII");
+    if (risk === "low") risk = "medium";
     confidence -= 0.2;
-    
+
     // Redact PII if requested
     if (opts.redactPII) {
       sanitized = redactPII(sanitized);
@@ -143,32 +145,33 @@ export function validateOutput(
 
   // Check for hallucination indicators
   if (opts.checkFactualAccuracy) {
-    const hallucinationMatches = HALLUCINATION_INDICATORS.filter(pattern => 
-      pattern.test(output)
+    const hallucinationMatches = HALLUCINATION_INDICATORS.filter((pattern) =>
+      pattern.test(output),
     );
     if (hallucinationMatches.length > 0) {
-      warnings.push('Output contains uncertainty indicators');
+      warnings.push("Output contains uncertainty indicators");
       confidence -= 0.3;
     }
   }
 
   // Check for bias
   if (opts.checkBias) {
-    const biasMatches = BIAS_PATTERNS.filter(pattern => pattern.test(output));
-    if (biasMatches.length > 2) { // Allow some bias indicators
-      warnings.push('Output may contain biased language');
+    const biasMatches = BIAS_PATTERNS.filter((pattern) => pattern.test(output));
+    if (biasMatches.length > 2) {
+      // Allow some bias indicators
+      warnings.push("Output may contain biased language");
       confidence -= 0.1;
     }
   }
 
   // Check for professionalism
   if (opts.checkProfessionalism) {
-    const unprofessionalMatches = UNPROFESSIONAL_PATTERNS.filter(pattern => 
-      pattern.test(output)
+    const unprofessionalMatches = UNPROFESSIONAL_PATTERNS.filter((pattern) =>
+      pattern.test(output),
     );
     if (unprofessionalMatches.length > 0) {
-      warnings.push('Output contains unprofessional language');
-      if (risk === 'low') risk = 'medium';
+      warnings.push("Output contains unprofessional language");
+      if (risk === "low") risk = "medium";
       confidence -= 0.2;
     }
   }
@@ -177,9 +180,9 @@ export function validateOutput(
   confidence = Math.max(0, Math.min(1, confidence));
 
   // In strict mode, reject any output with critical issues
-  const isValid = opts.strictMode 
-    ? issues.length === 0 && risk !== 'critical'
-    : risk !== 'critical';
+  const isValid = opts.strictMode
+    ? issues.length === 0 && risk !== "critical"
+    : risk !== "critical";
 
   return {
     isValid,
@@ -240,21 +243,21 @@ export function validateChatOutput(output: string): OutputValidationResult {
  * Check if output contains harmful content
  */
 export function hasHarmfulContent(output: string): boolean {
-  return HARMFUL_PATTERNS.some(pattern => pattern.test(output));
+  return HARMFUL_PATTERNS.some((pattern) => pattern.test(output));
 }
 
 /**
  * Check if output contains hallucination indicators
  */
 export function hasHallucinationIndicators(output: string): boolean {
-  return HALLUCINATION_INDICATORS.some(pattern => pattern.test(output));
+  return HALLUCINATION_INDICATORS.some((pattern) => pattern.test(output));
 }
 
 /**
  * Check if output is professional
  */
 export function isProfessional(output: string): boolean {
-  return !UNPROFESSIONAL_PATTERNS.some(pattern => pattern.test(output));
+  return !UNPROFESSIONAL_PATTERNS.some((pattern) => pattern.test(output));
 }
 
 /**
@@ -262,12 +265,12 @@ export function isProfessional(output: string): boolean {
  */
 export function getConfidenceScore(output: string): number {
   let confidence = 1.0;
-  
+
   if (hasHarmfulContent(output)) confidence -= 0.5;
   if (hasPII(output)) confidence -= 0.2;
   if (hasHallucinationIndicators(output)) confidence -= 0.3;
   if (!isProfessional(output)) confidence -= 0.2;
-  
+
   return Math.max(0, Math.min(1, confidence));
 }
 
@@ -276,22 +279,22 @@ export function getConfidenceScore(output: string): number {
  */
 export function sanitizeOutput(output: string, redactPIIFlag = true): string {
   let sanitized = output;
-  
+
   // Remove harmful content (replace with [CONTENT REMOVED])
   for (const pattern of HARMFUL_PATTERNS) {
-    sanitized = sanitized.replace(pattern, '[CONTENT REMOVED]');
+    sanitized = sanitized.replace(pattern, "[CONTENT REMOVED]");
   }
-  
+
   // Redact PII if requested
   if (redactPIIFlag) {
     sanitized = redactPII(sanitized);
   }
-  
+
   // Remove unprofessional language
   for (const pattern of UNPROFESSIONAL_PATTERNS) {
-    sanitized = sanitized.replace(pattern, '***');
+    sanitized = sanitized.replace(pattern, "***");
   }
-  
+
   return sanitized;
 }
 
@@ -311,22 +314,22 @@ export async function moderateContent(content: string): Promise<{
       categories: [] as string[],
       scores: {} as Record<string, number>,
     };
-    
+
     if (hasHarmfulContent(content)) {
-      result.categories.push('harmful');
-      result.scores['harmful'] = 0.8;
+      result.categories.push("harmful");
+      result.scores["harmful"] = 0.8;
     }
-    
+
     if (hasPII(content)) {
-      result.categories.push('pii');
-      result.scores['pii'] = 0.6;
+      result.categories.push("pii");
+      result.scores["pii"] = 0.6;
     }
-    
+
     if (!isProfessional(content)) {
-      result.categories.push('unprofessional');
-      result.scores['unprofessional'] = 0.5;
+      result.categories.push("unprofessional");
+      result.scores["unprofessional"] = 0.5;
     }
-    
+
     return result;
   } catch {
     // Content moderation failed - return safe defaults
@@ -337,4 +340,3 @@ export async function moderateContent(content: string): Promise<{
     };
   }
 }
-

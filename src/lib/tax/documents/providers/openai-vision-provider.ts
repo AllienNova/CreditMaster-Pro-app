@@ -5,13 +5,13 @@
  * Best for understanding document context and complex layouts.
  */
 
-import 'openai/shims/node';
-import OpenAI from 'openai';
+import "openai/shims/node";
+import OpenAI from "openai";
 import {
   BaseOCRProvider,
   DocumentInput,
   ClassificationResult,
-} from './base-provider';
+} from "./base-provider";
 import type {
   TaxDocumentType,
   ProviderExtractionResult,
@@ -21,7 +21,7 @@ import type {
   W2_EXTRACTION_PROMPT,
   FORM_1099_DIV_EXTRACTION_PROMPT,
   CHARITABLE_RECEIPT_EXTRACTION_PROMPT,
-} from '../types';
+} from "../types";
 
 const EXTRACTION_PROMPTS: Record<TaxDocumentType, string> = {
   w2: `Extract all fields from this W-2 tax form. Be precise with numbers.
@@ -44,7 +44,7 @@ Return JSON: {
   "stateCode": "XX",
   "taxYear": number
 }`,
-  '1099_div': `Extract 1099-DIV fields. Return JSON: {
+  "1099_div": `Extract 1099-DIV fields. Return JSON: {
   "payerName": "string",
   "ordinaryDividends": number,
   "qualifiedDividends": number,
@@ -53,14 +53,14 @@ Return JSON: {
   "foreignTaxPaid": number,
   "taxYear": number
 }`,
-  '1099_int': `Extract 1099-INT fields. Return JSON: {
+  "1099_int": `Extract 1099-INT fields. Return JSON: {
   "payerName": "string",
   "interestIncome": number,
   "federalIncomeTaxWithheld": number,
   "taxExemptInterest": number,
   "taxYear": number
 }`,
-  '1099_b': `Extract 1099-B fields. Return JSON: {
+  "1099_b": `Extract 1099-B fields. Return JSON: {
   "payerName": "string",
   "totalProceeds": number,
   "totalCostBasis": number,
@@ -68,7 +68,7 @@ Return JSON: {
   "federalIncomeTaxWithheld": number,
   "taxYear": number
 }`,
-  '1099_misc': `Extract 1099-MISC fields. Return JSON: {
+  "1099_misc": `Extract 1099-MISC fields. Return JSON: {
   "payerName": "string",
   "rents": number,
   "royalties": number,
@@ -76,13 +76,13 @@ Return JSON: {
   "federalIncomeTaxWithheld": number,
   "taxYear": number
 }`,
-  '1099_nec': `Extract 1099-NEC fields. Return JSON: {
+  "1099_nec": `Extract 1099-NEC fields. Return JSON: {
   "payerName": "string",
   "nonemployeeCompensation": number,
   "federalIncomeTaxWithheld": number,
   "taxYear": number
 }`,
-  '1099_r': `Extract 1099-R fields. Return JSON: {
+  "1099_r": `Extract 1099-R fields. Return JSON: {
   "payerName": "string",
   "grossDistribution": number,
   "taxableAmount": number,
@@ -90,14 +90,14 @@ Return JSON: {
   "distributionCodes": ["string"],
   "taxYear": number
 }`,
-  '1099_g': `Extract 1099-G fields. Return JSON: {
+  "1099_g": `Extract 1099-G fields. Return JSON: {
   "payerName": "string",
   "unemploymentCompensation": number,
   "stateTaxRefund": number,
   "federalIncomeTaxWithheld": number,
   "taxYear": number
 }`,
-  '1099_ssa': `Extract SSA-1099 fields. Return JSON: {
+  "1099_ssa": `Extract SSA-1099 fields. Return JSON: {
   "totalBenefitsPaid": number,
   "benefitsRepaid": number,
   "netBenefits": number,
@@ -113,7 +113,7 @@ Return JSON: {
   "capitalGains": number,
   "taxYear": number
 }`,
-  '1098': `Extract 1098 fields. Return JSON: {
+  "1098": `Extract 1098 fields. Return JSON: {
   "lenderName": "string",
   "mortgageInterestReceived": number,
   "outstandingMortgagePrincipal": number,
@@ -122,18 +122,18 @@ Return JSON: {
   "propertyAddress": "string",
   "taxYear": number
 }`,
-  '1098_e': `Extract 1098-E fields. Return JSON: {
+  "1098_e": `Extract 1098-E fields. Return JSON: {
   "lenderName": "string",
   "studentLoanInterestReceived": number,
   "taxYear": number
 }`,
-  '1098_t': `Extract 1098-T fields. Return JSON: {
+  "1098_t": `Extract 1098-T fields. Return JSON: {
   "institutionName": "string",
   "paymentsReceived": number,
   "scholarshipsGrants": number,
   "taxYear": number
 }`,
-  '5498': `Extract 5498 fields. Return JSON: {
+  "5498": `Extract 5498 fields. Return JSON: {
   "issuerName": "string",
   "iraContributions": number,
   "rolloverContributions": number,
@@ -182,14 +182,14 @@ export class OpenAIVisionProvider extends BaseOCRProvider {
   private client: OpenAI | null = null;
 
   constructor(config: OCRProviderConfig) {
-    super({ ...config, provider: 'openai_vision' });
+    super({ ...config, provider: "openai_vision" });
   }
 
   private getClient(): OpenAI {
     if (!this.client) {
       const apiKey = this.config.apiKey || process.env.OPENAI_API_KEY;
       if (!apiKey) {
-        throw new Error('OpenAI API key not configured');
+        throw new Error("OpenAI API key not configured");
       }
       this.client = new OpenAI({ apiKey });
     }
@@ -209,19 +209,19 @@ export class OpenAIVisionProvider extends BaseOCRProvider {
     const client = this.getClient();
 
     const response = await client.chat.completions.create({
-      model: 'gpt-4o',
+      model: "gpt-4o",
       max_tokens: 500,
       messages: [
         {
-          role: 'system',
+          role: "system",
           content:
-            'You are a tax document classification expert. Analyze the document image and identify its type.',
+            "You are a tax document classification expert. Analyze the document image and identify its type.",
         },
         {
-          role: 'user',
+          role: "user",
           content: [
             {
-              type: 'text',
+              type: "text",
               text: `Classify this tax document. Respond in JSON:
 {
   "documentType": "w2"|"1099_div"|"1099_int"|"1099_b"|"1099_misc"|"1099_nec"|"1099_r"|"1098"|"1098_e"|"charitable_receipt"|"unknown",
@@ -231,10 +231,10 @@ export class OpenAIVisionProvider extends BaseOCRProvider {
 }`,
             },
             {
-              type: 'image_url',
+              type: "image_url",
               image_url: {
                 url: `data:${input.mimeType};base64,${input.base64Image}`,
-                detail: 'high',
+                detail: "high",
               },
             },
           ],
@@ -242,11 +242,11 @@ export class OpenAIVisionProvider extends BaseOCRProvider {
       ],
     });
 
-    const content = response.choices[0]?.message?.content || '';
+    const content = response.choices[0]?.message?.content || "";
     const parsed = this.parseJsonFromResponse(content);
 
     return {
-      documentType: (parsed.documentType as TaxDocumentType) || 'unknown',
+      documentType: (parsed.documentType as TaxDocumentType) || "unknown",
       confidence: (parsed.confidence as number) || 0.5,
       taxYear: parsed.taxYear as number | undefined,
       reasoning: parsed.reasoning as string | undefined,
@@ -255,7 +255,7 @@ export class OpenAIVisionProvider extends BaseOCRProvider {
 
   async extractFields(
     input: DocumentInput,
-    documentType: TaxDocumentType
+    documentType: TaxDocumentType,
   ): Promise<ProviderExtractionResult> {
     const startTime = Date.now();
     const client = this.getClient();
@@ -265,11 +265,11 @@ export class OpenAIVisionProvider extends BaseOCRProvider {
         EXTRACTION_PROMPTS[documentType] || EXTRACTION_PROMPTS.unknown;
 
       const response = await client.chat.completions.create({
-        model: 'gpt-4o',
+        model: "gpt-4o",
         max_tokens: 2000,
         messages: [
           {
-            role: 'system',
+            role: "system",
             content: `You are a tax document OCR expert. Extract all visible fields accurately. 
 For numbers, remove commas and convert to numeric values.
 For dates, use YYYY-MM-DD format.
@@ -277,17 +277,17 @@ If a field is not visible or unclear, use null.
 Always return valid JSON.`,
           },
           {
-            role: 'user',
+            role: "user",
             content: [
               {
-                type: 'text',
+                type: "text",
                 text: extractionPrompt,
               },
               {
-                type: 'image_url',
+                type: "image_url",
                 image_url: {
                   url: `data:${input.mimeType};base64,${input.base64Image}`,
-                  detail: 'high',
+                  detail: "high",
                 },
               },
             ],
@@ -295,7 +295,7 @@ Always return valid JSON.`,
         ],
       });
 
-      const content = response.choices[0]?.message?.content || '';
+      const content = response.choices[0]?.message?.content || "";
       const fields = this.parseJsonFromResponse(content);
 
       // Calculate field confidences
@@ -304,8 +304,8 @@ Always return valid JSON.`,
           fieldName,
           value,
           confidence: this.calculateFieldConfidence(fieldName, value),
-          source: 'openai_vision' as const,
-        })
+          source: "openai_vision" as const,
+        }),
       );
 
       // Calculate overall confidence
@@ -317,7 +317,7 @@ Always return valid JSON.`,
           : 0;
 
       return {
-        provider: 'openai_vision',
+        provider: "openai_vision",
         success: true,
         documentType,
         documentTypeConfidence: overallConfidence,
@@ -325,20 +325,20 @@ Always return valid JSON.`,
         fieldConfidences,
         processingTimeMs: Date.now() - startTime,
         metadata: {
-          model: 'gpt-4o',
+          model: "gpt-4o",
           tokensUsed: response.usage?.total_tokens,
         },
       };
     } catch (error) {
       return {
-        provider: 'openai_vision',
+        provider: "openai_vision",
         success: false,
         documentType,
         documentTypeConfidence: 0,
         fields: {},
         fieldConfidences: [],
         processingTimeMs: Date.now() - startTime,
-        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        errorMessage: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }

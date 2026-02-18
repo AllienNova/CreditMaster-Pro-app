@@ -9,30 +9,30 @@
  * - Compliance disclaimers
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 // Types
-export type ExpertStatus = 'pending' | 'verified' | 'suspended' | 'rejected';
+export type ExpertStatus = "pending" | "verified" | "suspended" | "rejected";
 export type SessionType =
-  | 'one_on_one'
-  | 'group_webinar'
-  | 'qa_session'
-  | 'review';
+  | "one_on_one"
+  | "group_webinar"
+  | "qa_session"
+  | "review";
 export type SessionStatus =
-  | 'scheduled'
-  | 'in_progress'
-  | 'completed'
-  | 'cancelled'
-  | 'no_show';
+  | "scheduled"
+  | "in_progress"
+  | "completed"
+  | "cancelled"
+  | "no_show";
 export type Certification =
-  | 'CFP'
-  | 'CFA'
-  | 'CPA'
-  | 'ChFC'
-  | 'CLU'
-  | 'AFC'
-  | 'FFC'
-  | 'other';
+  | "CFP"
+  | "CFA"
+  | "CPA"
+  | "ChFC"
+  | "CLU"
+  | "AFC"
+  | "FFC"
+  | "other";
 
 export interface Expert {
   id: string;
@@ -124,7 +124,7 @@ export interface Session {
 
   // Meeting
   meetingUrl?: string;
-  meetingProvider?: 'zoom' | 'google_meet' | 'teams' | 'custom';
+  meetingProvider?: "zoom" | "google_meet" | "teams" | "custom";
 
   // Pricing
   price: number;
@@ -188,7 +188,7 @@ export interface ExpertApplication {
   certificationDocsUrls: string[];
 
   // Status
-  status: 'pending' | 'under_review' | 'approved' | 'rejected';
+  status: "pending" | "under_review" | "approved" | "rejected";
   reviewNotes?: string;
   reviewedBy?: string;
   reviewedAt?: Date;
@@ -198,22 +198,22 @@ export interface ExpertApplication {
 
 // Specialty categories
 export const SPECIALTIES: Specialty[] = [
-  { id: 'retirement', name: 'Retirement Planning', category: 'Planning' },
-  { id: 'investment', name: 'Investment Strategy', category: 'Investing' },
-  { id: 'tax', name: 'Tax Optimization', category: 'Tax' },
-  { id: 'estate', name: 'Estate Planning', category: 'Planning' },
-  { id: 'debt', name: 'Debt Management', category: 'Debt' },
-  { id: 'budgeting', name: 'Budgeting & Cash Flow', category: 'Budgeting' },
-  { id: 'credit', name: 'Credit Building', category: 'Credit' },
-  { id: 'insurance', name: 'Insurance Planning', category: 'Insurance' },
-  { id: 'college', name: 'College Savings', category: 'Education' },
-  { id: 'business', name: 'Small Business Finance', category: 'Business' },
+  { id: "retirement", name: "Retirement Planning", category: "Planning" },
+  { id: "investment", name: "Investment Strategy", category: "Investing" },
+  { id: "tax", name: "Tax Optimization", category: "Tax" },
+  { id: "estate", name: "Estate Planning", category: "Planning" },
+  { id: "debt", name: "Debt Management", category: "Debt" },
+  { id: "budgeting", name: "Budgeting & Cash Flow", category: "Budgeting" },
+  { id: "credit", name: "Credit Building", category: "Credit" },
+  { id: "insurance", name: "Insurance Planning", category: "Insurance" },
+  { id: "college", name: "College Savings", category: "Education" },
+  { id: "business", name: "Small Business Finance", category: "Business" },
   {
-    id: 'divorce',
-    name: 'Divorce Financial Planning',
-    category: 'Life Events',
+    id: "divorce",
+    name: "Divorce Financial Planning",
+    category: "Life Events",
   },
-  { id: 'inheritance', name: 'Inheritance Planning', category: 'Life Events' },
+  { id: "inheritance", name: "Inheritance Planning", category: "Life Events" },
 ];
 
 export const CERTIFICATIONS_INFO: Record<
@@ -221,44 +221,44 @@ export const CERTIFICATIONS_INFO: Record<
   { name: string; body: string; description: string }
 > = {
   CFP: {
-    name: 'Certified Financial Planner',
-    body: 'CFP Board',
-    description: 'Comprehensive financial planning',
+    name: "Certified Financial Planner",
+    body: "CFP Board",
+    description: "Comprehensive financial planning",
   },
   CFA: {
-    name: 'Chartered Financial Analyst',
-    body: 'CFA Institute',
-    description: 'Investment analysis and portfolio management',
+    name: "Chartered Financial Analyst",
+    body: "CFA Institute",
+    description: "Investment analysis and portfolio management",
   },
   CPA: {
-    name: 'Certified Public Accountant',
-    body: 'State Board',
-    description: 'Accounting and tax expertise',
+    name: "Certified Public Accountant",
+    body: "State Board",
+    description: "Accounting and tax expertise",
   },
   ChFC: {
-    name: 'Chartered Financial Consultant',
-    body: 'American College',
-    description: 'Advanced financial planning',
+    name: "Chartered Financial Consultant",
+    body: "American College",
+    description: "Advanced financial planning",
   },
   CLU: {
-    name: 'Chartered Life Underwriter',
-    body: 'American College',
-    description: 'Life insurance planning',
+    name: "Chartered Life Underwriter",
+    body: "American College",
+    description: "Life insurance planning",
   },
   AFC: {
-    name: 'Accredited Financial Counselor',
-    body: 'AFCPE',
-    description: 'Personal financial counseling',
+    name: "Accredited Financial Counselor",
+    body: "AFCPE",
+    description: "Personal financial counseling",
   },
   FFC: {
-    name: 'Fee-only Financial Consultant',
-    body: 'NAPFA',
-    description: 'Fee-only advisory',
+    name: "Fee-only Financial Consultant",
+    body: "NAPFA",
+    description: "Fee-only advisory",
   },
   other: {
-    name: 'Other Certification',
-    body: 'Various',
-    description: 'Other financial credentials',
+    name: "Other Certification",
+    body: "Various",
+    description: "Other financial credentials",
   },
 };
 
@@ -271,16 +271,16 @@ export class ExpertSessionsService {
 
   // Expert Applications
   async submitApplication(
-    app: Omit<ExpertApplication, 'id' | 'status' | 'createdAt'>
+    app: Omit<ExpertApplication, "id" | "status" | "createdAt">,
   ): Promise<ExpertApplication> {
     const newApp = {
       id: crypto.randomUUID(),
       ...app,
-      status: 'pending',
+      status: "pending",
       created_at: new Date().toISOString(),
     };
     const { data, error } = await this.supabase
-      .from('expert_applications')
+      .from("expert_applications")
       .insert(this.appToDb(newApp))
       .select()
       .single();
@@ -290,59 +290,59 @@ export class ExpertSessionsService {
 
   async getApplication(appId: string): Promise<ExpertApplication | null> {
     const { data } = await this.supabase
-      .from('expert_applications')
-      .select('*')
-      .eq('id', appId)
+      .from("expert_applications")
+      .select("*")
+      .eq("id", appId)
       .single();
     return data ? this.appFromDb(data) : null;
   }
 
   async approveApplication(appId: string, reviewerId: string): Promise<Expert> {
     const app = await this.getApplication(appId);
-    if (!app) throw new Error('Application not found');
+    if (!app) throw new Error("Application not found");
 
     await this.supabase
-      .from('expert_applications')
+      .from("expert_applications")
       .update({
-        status: 'approved',
+        status: "approved",
         reviewed_by: reviewerId,
         reviewed_at: new Date().toISOString(),
       })
-      .eq('id', appId);
+      .eq("id", appId);
 
     // Create expert profile
     return this.createExpert(app);
   }
 
   private async createExpert(app: ExpertApplication): Promise<Expert> {
-    const expert: Omit<Expert, 'id' | 'createdAt' | 'updatedAt'> = {
+    const expert: Omit<Expert, "id" | "createdAt" | "updatedAt"> = {
       userId: app.userId,
       firstName: app.firstName,
       lastName: app.lastName,
       email: app.email,
       phone: app.phone,
       bio: app.bio,
-      headline: `${app.certifications[0]?.type || 'Financial'} Professional`,
+      headline: `${app.certifications[0]?.type || "Financial"} Professional`,
       certifications: app.certifications,
       yearsExperience: app.yearsExperience,
       firmName: app.firmName,
       specialties: [],
-      timezone: 'America/New_York',
+      timezone: "America/New_York",
       availableSlots: [],
       hourlyRate: 150,
-      currency: 'USD',
+      currency: "USD",
       offersFreeConsult: true,
       freeConsultMinutes: 15,
       totalSessions: 0,
       averageRating: 0,
       reviewCount: 0,
       responseRate: 100,
-      status: 'verified',
+      status: "verified",
       verifiedAt: new Date(),
     };
 
     const { data, error } = await this.supabase
-      .from('experts')
+      .from("experts")
       .insert(this.expertToDb(expert))
       .select()
       .single();
@@ -353,9 +353,9 @@ export class ExpertSessionsService {
   // Expert Profiles
   async getExpert(expertId: string): Promise<Expert | null> {
     const { data } = await this.supabase
-      .from('experts')
-      .select('*')
-      .eq('id', expertId)
+      .from("experts")
+      .select("*")
+      .eq("id", expertId)
       .single();
     return data ? this.expertFromDb(data) : null;
   }
@@ -366,14 +366,14 @@ export class ExpertSessionsService {
     maxRate?: number;
   }): Promise<Expert[]> {
     let query = this.supabase
-      .from('experts')
-      .select('*')
-      .eq('status', 'verified');
+      .from("experts")
+      .select("*")
+      .eq("status", "verified");
     if (filters?.minRating)
-      query = query.gte('average_rating', filters.minRating);
-    if (filters?.maxRate) query = query.lte('hourly_rate', filters.maxRate);
+      query = query.gte("average_rating", filters.minRating);
+    if (filters?.maxRate) query = query.lte("hourly_rate", filters.maxRate);
 
-    const { data, error } = await query.order('average_rating', {
+    const { data, error } = await query.order("average_rating", {
       ascending: false,
     });
     if (error) throw error;
@@ -382,12 +382,12 @@ export class ExpertSessionsService {
 
   async updateExpertProfile(
     expertId: string,
-    updates: Partial<Expert>
+    updates: Partial<Expert>,
   ): Promise<Expert> {
     const { data, error } = await this.supabase
-      .from('experts')
+      .from("experts")
       .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq('id', expertId)
+      .eq("id", expertId)
       .select()
       .single();
     if (error) throw error;
@@ -396,31 +396,31 @@ export class ExpertSessionsService {
 
   async setAvailability(
     expertId: string,
-    slots: AvailabilitySlot[]
+    slots: AvailabilitySlot[],
   ): Promise<void> {
     await this.supabase
-      .from('experts')
+      .from("experts")
       .update({ available_slots: slots })
-      .eq('id', expertId);
+      .eq("id", expertId);
   }
 
   // Sessions
   async bookSession(
     session: Omit<
       Session,
-      'id' | 'status' | 'hasReview' | 'createdAt' | 'updatedAt'
-    >
+      "id" | "status" | "hasReview" | "createdAt" | "updatedAt"
+    >,
   ): Promise<Session> {
     const newSession = {
       id: crypto.randomUUID(),
       ...session,
-      status: 'scheduled',
+      status: "scheduled",
       has_review: false,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
     const { data, error } = await this.supabase
-      .from('expert_sessions')
+      .from("expert_sessions")
       .insert(this.sessionToDb(newSession))
       .select()
       .single();
@@ -430,59 +430,59 @@ export class ExpertSessionsService {
 
   async getSession(sessionId: string): Promise<Session | null> {
     const { data } = await this.supabase
-      .from('expert_sessions')
-      .select('*')
-      .eq('id', sessionId)
+      .from("expert_sessions")
+      .select("*")
+      .eq("id", sessionId)
       .single();
     return data ? this.sessionFromDb(data) : null;
   }
 
   async getExpertSessions(
     expertId: string,
-    status?: SessionStatus
+    status?: SessionStatus,
   ): Promise<Session[]> {
     let query = this.supabase
-      .from('expert_sessions')
-      .select('*')
-      .eq('expert_id', expertId);
-    if (status) query = query.eq('status', status);
-    const { data } = await query.order('scheduled_at', { ascending: true });
+      .from("expert_sessions")
+      .select("*")
+      .eq("expert_id", expertId);
+    if (status) query = query.eq("status", status);
+    const { data } = await query.order("scheduled_at", { ascending: true });
     return (data || []).map(this.sessionFromDb);
   }
 
   async getClientSessions(clientId: string): Promise<Session[]> {
     const { data } = await this.supabase
-      .from('expert_sessions')
-      .select('*')
-      .eq('client_id', clientId)
-      .order('scheduled_at', { ascending: false });
+      .from("expert_sessions")
+      .select("*")
+      .eq("client_id", clientId)
+      .order("scheduled_at", { ascending: false });
     return (data || []).map(this.sessionFromDb);
   }
 
   async updateSessionStatus(
     sessionId: string,
-    status: SessionStatus
+    status: SessionStatus,
   ): Promise<void> {
     await this.supabase
-      .from('expert_sessions')
+      .from("expert_sessions")
       .update({ status, updated_at: new Date().toISOString() })
-      .eq('id', sessionId);
+      .eq("id", sessionId);
   }
 
   async completeSession(
     sessionId: string,
     expertNotes?: string,
-    followUpActions?: string[]
+    followUpActions?: string[],
   ): Promise<void> {
     await this.supabase
-      .from('expert_sessions')
+      .from("expert_sessions")
       .update({
-        status: 'completed',
+        status: "completed",
         expert_notes: expertNotes,
         follow_up_actions: followUpActions,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', sessionId);
+      .eq("id", sessionId);
 
     // Increment expert session count
     const session = await this.getSession(sessionId);
@@ -490,16 +490,16 @@ export class ExpertSessionsService {
       const expert = await this.getExpert(session.expertId);
       if (expert) {
         await this.supabase
-          .from('experts')
+          .from("experts")
           .update({ total_sessions: expert.totalSessions + 1 })
-          .eq('id', expert.id);
+          .eq("id", expert.id);
       }
     }
   }
 
   // Reviews
   async submitReview(
-    review: Omit<SessionReview, 'id' | 'createdAt'>
+    review: Omit<SessionReview, "id" | "createdAt">,
   ): Promise<SessionReview> {
     const newReview = {
       id: crypto.randomUUID(),
@@ -507,7 +507,7 @@ export class ExpertSessionsService {
       created_at: new Date().toISOString(),
     };
     const { data, error } = await this.supabase
-      .from('expert_reviews')
+      .from("expert_reviews")
       .insert(this.reviewToDb(newReview))
       .select()
       .single();
@@ -515,9 +515,9 @@ export class ExpertSessionsService {
 
     // Update session
     await this.supabase
-      .from('expert_sessions')
+      .from("expert_sessions")
       .update({ has_review: true })
-      .eq('id', review.sessionId);
+      .eq("id", review.sessionId);
 
     // Update expert average rating
     await this.updateExpertRating(review.expertId);
@@ -527,11 +527,11 @@ export class ExpertSessionsService {
 
   async getExpertReviews(expertId: string): Promise<SessionReview[]> {
     const { data } = await this.supabase
-      .from('expert_reviews')
-      .select('*')
-      .eq('expert_id', expertId)
-      .eq('is_public', true)
-      .order('created_at', { ascending: false });
+      .from("expert_reviews")
+      .select("*")
+      .eq("expert_id", expertId)
+      .eq("is_public", true)
+      .order("created_at", { ascending: false });
     return (data || []).map(this.reviewFromDb);
   }
 
@@ -542,9 +542,9 @@ export class ExpertSessionsService {
     const avgRating =
       reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
     await this.supabase
-      .from('experts')
+      .from("experts")
       .update({ average_rating: avgRating, review_count: reviews.length })
-      .eq('id', expertId);
+      .eq("id", expertId);
   }
 
   // Helpers
@@ -588,7 +588,7 @@ export class ExpertSessionsService {
       bio: d.bio as string,
       resumeUrl: d.resume_url as string,
       certificationDocsUrls: d.certification_docs_urls as string[],
-      status: d.status as ExpertApplication['status'],
+      status: d.status as ExpertApplication["status"],
       reviewNotes: d.review_notes as string,
       reviewedBy: d.reviewed_by as string,
       reviewedAt: d.reviewed_at ? new Date(d.reviewed_at as string) : undefined,
@@ -597,7 +597,7 @@ export class ExpertSessionsService {
   }
 
   private expertToDb(
-    e: Omit<Expert, 'id' | 'createdAt' | 'updatedAt'>
+    e: Omit<Expert, "id" | "createdAt" | "updatedAt">,
   ): Record<string, unknown> {
     return {
       id: crypto.randomUUID(),
@@ -705,7 +705,7 @@ export class ExpertSessionsService {
       durationMinutes: d.duration_minutes as number,
       timezone: d.timezone as string,
       meetingUrl: d.meeting_url as string,
-      meetingProvider: d.meeting_provider as Session['meetingProvider'],
+      meetingProvider: d.meeting_provider as Session["meetingProvider"],
       price: d.price as number,
       currency: d.currency as string,
       isPaid: d.is_paid as boolean,
@@ -761,7 +761,7 @@ export function getExpertSessionsService(): ExpertSessionsService {
   if (!instance) {
     instance = new ExpertSessionsService(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
     );
   }
   return instance;

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Tax Documents Management Page
@@ -7,9 +7,9 @@
  * Documents are processed using multi-provider OCR for accurate extraction.
  */
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { TaxDocumentUpload } from '@/components/tax';
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { TaxDocumentUpload } from "@/components/tax";
 
 interface TaxDocument {
   id: string;
@@ -22,31 +22,31 @@ interface TaxDocument {
 }
 
 const DOCUMENT_TYPE_ICONS: Record<string, string> = {
-  w2: '',
-  '1099_div': '',
-  '1099_int': '',
-  '1099_b': '',
-  '1099_nec': '',
-  '1099_misc': '',
-  '1099_r': '',
-  '1098': '',
-  '1098_e': '',
-  charitable_receipt: '',
-  unknown: '',
+  w2: "",
+  "1099_div": "",
+  "1099_int": "",
+  "1099_b": "",
+  "1099_nec": "",
+  "1099_misc": "",
+  "1099_r": "",
+  "1098": "",
+  "1098_e": "",
+  charitable_receipt: "",
+  unknown: "",
 };
 
 const DOCUMENT_TYPE_LABELS: Record<string, string> = {
-  w2: 'W-2',
-  '1099_div': '1099-DIV',
-  '1099_int': '1099-INT',
-  '1099_b': '1099-B',
-  '1099_nec': '1099-NEC',
-  '1099_misc': '1099-MISC',
-  '1099_r': '1099-R',
-  '1098': '1098',
-  '1098_e': '1098-E',
-  charitable_receipt: 'Donation Receipt',
-  unknown: 'Unknown',
+  w2: "W-2",
+  "1099_div": "1099-DIV",
+  "1099_int": "1099-INT",
+  "1099_b": "1099-B",
+  "1099_nec": "1099-NEC",
+  "1099_misc": "1099-MISC",
+  "1099_r": "1099-R",
+  "1098": "1098",
+  "1098_e": "1098-E",
+  charitable_receipt: "Donation Receipt",
+  unknown: "Unknown",
 };
 
 export default function TaxDocumentsPage() {
@@ -68,35 +68,35 @@ export default function TaxDocumentsPage() {
 
       setDocuments([
         {
-          id: '1',
-          documentType: 'w2',
-          documentName: 'W-2_Employer_2024.pdf',
+          id: "1",
+          documentType: "w2",
+          documentName: "W-2_Employer_2024.pdf",
           taxYear: 2024,
           extractionConfidence: 0.95,
           isVerified: true,
-          createdAt: '2024-01-15T10:30:00Z',
+          createdAt: "2024-01-15T10:30:00Z",
         },
         {
-          id: '2',
-          documentType: '1099_div',
-          documentName: 'Fidelity_1099-DIV_2024.pdf',
+          id: "2",
+          documentType: "1099_div",
+          documentName: "Fidelity_1099-DIV_2024.pdf",
           taxYear: 2024,
           extractionConfidence: 0.92,
           isVerified: true,
-          createdAt: '2024-02-01T14:20:00Z',
+          createdAt: "2024-02-01T14:20:00Z",
         },
         {
-          id: '3',
-          documentType: '1098',
-          documentName: 'Mortgage_Interest_2024.pdf',
+          id: "3",
+          documentType: "1098",
+          documentName: "Mortgage_Interest_2024.pdf",
           taxYear: 2024,
           extractionConfidence: 0.88,
           isVerified: false,
-          createdAt: '2024-02-10T09:15:00Z',
+          createdAt: "2024-02-10T09:15:00Z",
         },
       ]);
     } catch (error) {
-      console.error('Failed to fetch documents:', error);
+      console.error("Failed to fetch documents:", error);
     } finally {
       setIsLoading(false);
     }
@@ -150,8 +150,18 @@ export default function TaxDocumentsPage() {
                   aria-label="Close upload modal"
                   title="Close"
                 >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
               </div>
@@ -168,7 +178,9 @@ export default function TaxDocumentsPage() {
         {/* Year Filter */}
         <div className="mb-6">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500 dark:text-slate-400">Tax Year:</span>
+            <span className="text-sm text-gray-500 dark:text-slate-400">
+              Tax Year:
+            </span>
             <div className="flex gap-2">
               {years.map((year) => (
                 <button
@@ -176,8 +188,8 @@ export default function TaxDocumentsPage() {
                   onClick={() => setSelectedYear(year)}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     selectedYear === year
-                      ? 'bg-amber-500 text-white'
-                      : 'bg-white text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 border border-gray-200 dark:border-slate-700'
+                      ? "bg-amber-500 text-white"
+                      : "bg-white text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 border border-gray-200 dark:border-slate-700"
                   }`}
                 >
                   {year}
@@ -232,7 +244,7 @@ export default function TaxDocumentsPage() {
               >
                 <div className="flex items-start gap-3">
                   <div className="w-12 h-12 bg-amber-50 rounded-lg flex items-center justify-center text-2xl">
-                    {DOCUMENT_TYPE_ICONS[doc.documentType] || ''}
+                    {DOCUMENT_TYPE_ICONS[doc.documentType] || ""}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -297,7 +309,9 @@ export default function TaxDocumentsPage() {
                     />
                   </svg>
                 </div>
-                <span className="text-sm text-gray-500 dark:text-slate-400">Add Document</span>
+                <span className="text-sm text-gray-500 dark:text-slate-400">
+                  Add Document
+                </span>
               </div>
             </button>
           </div>
@@ -307,29 +321,37 @@ export default function TaxDocumentsPage() {
         {documents.length > 0 && (
           <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-100 dark:border-slate-700">
-              <p className="text-sm text-gray-500 dark:text-slate-400">Total Documents</p>
+              <p className="text-sm text-gray-500 dark:text-slate-400">
+                Total Documents
+              </p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {documents.length}
               </p>
             </div>
             <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-100 dark:border-slate-700">
-              <p className="text-sm text-gray-500 dark:text-slate-400">Verified</p>
+              <p className="text-sm text-gray-500 dark:text-slate-400">
+                Verified
+              </p>
               <p className="text-2xl font-bold text-green-600">
                 {documents.filter((d) => d.isVerified).length}
               </p>
             </div>
             <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-100 dark:border-slate-700">
-              <p className="text-sm text-gray-500 dark:text-slate-400">Needs Review</p>
+              <p className="text-sm text-gray-500 dark:text-slate-400">
+                Needs Review
+              </p>
               <p className="text-2xl font-bold text-amber-600">
                 {documents.filter((d) => !d.isVerified).length}
               </p>
             </div>
             <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-100 dark:border-slate-700">
-              <p className="text-sm text-gray-500 dark:text-slate-400">Avg Confidence</p>
+              <p className="text-sm text-gray-500 dark:text-slate-400">
+                Avg Confidence
+              </p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {documents.length > 0
                   ? `${((documents.reduce((sum, d) => sum + d.extractionConfidence, 0) / documents.length) * 100).toFixed(0)}%`
-                  : '—'}
+                  : "—"}
               </p>
             </div>
           </div>

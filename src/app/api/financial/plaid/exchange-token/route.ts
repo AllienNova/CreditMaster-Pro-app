@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { plaidService } from '@/lib/financial/plaid-service';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { rbac } from '@/lib/auth/rbac';
+import { NextRequest, NextResponse } from "next/server";
+import { plaidService } from "@/lib/financial/plaid-service";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { rbac } from "@/lib/auth/rbac";
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,12 +9,12 @@ export async function POST(request: NextRequest) {
     const validation = await jwtValidation.validateFromHeaders(request);
 
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check permissions
-    if (!rbac.hasPermission(validation.user, 'financial:link_accounts')) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!rbac.hasPermission(validation.user, "financial:link_accounts")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Extract userId from validated token
@@ -25,8 +25,8 @@ export async function POST(request: NextRequest) {
 
     if (!publicToken) {
       return NextResponse.json(
-        { error: 'Public token is required' },
-        { status: 400 }
+        { error: "Public token is required" },
+        { status: 400 },
       );
     }
 
@@ -43,11 +43,10 @@ export async function POST(request: NextRequest) {
       data: { itemId, accounts },
     });
   } catch (error) {
-    console.error('Error exchanging public token:', error);
+    console.error("Error exchanging public token:", error);
     return NextResponse.json(
-      { error: 'Failed to exchange public token' },
-      { status: 500 }
+      { error: "Failed to exchange public token" },
+      { status: 500 },
     );
   }
 }
-

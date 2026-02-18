@@ -1,20 +1,20 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import type {
   Holding,
   HoldingCreateInput,
   AssetType,
-} from '@/lib/investments/types/portfolio.types';
+} from "@/lib/investments/types/portfolio.types";
 
 type SortField =
-  | 'symbol'
-  | 'totalValue'
-  | 'gainLoss'
-  | 'gainLossPercent'
-  | 'shares';
-type SortDir = 'asc' | 'desc';
+  | "symbol"
+  | "totalValue"
+  | "gainLoss"
+  | "gainLossPercent"
+  | "shares";
+type SortDir = "asc" | "desc";
 
 // ============================================================================
 // SUB-COMPONENTS (defined before main component for ESLint compatibility)
@@ -33,7 +33,7 @@ function SummaryCard({
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-4">
       <p className="text-sm text-gray-500 dark:text-slate-400">{title}</p>
       <p
-        className={`text-xl font-bold mt-1 ${ isPositive !== undefined ? (isPositive ? 'text-green-600' : 'text-red-600') : 'text-gray-900 dark:text-white' }`}
+        className={`text-xl font-bold mt-1 ${isPositive !== undefined ? (isPositive ? "text-green-600" : "text-red-600") : "text-gray-900 dark:text-white"}`}
       >
         {value}
       </p>
@@ -61,14 +61,17 @@ function HoldingsTable({
   SortIcon,
 }: HoldingsTableProps) {
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden" data-testid="holdings-list">
+    <div
+      className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden"
+      data-testid="holdings-list"
+    >
       <div className="overflow-x-auto">
         <table className="w-full" aria-label="Holdings table">
           <thead className="bg-gray-50 dark:bg-slate-700">
             <tr>
               <th
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider cursor-pointer"
-                onClick={() => onSort('symbol')}
+                onClick={() => onSort("symbol")}
               >
                 Symbol <SortIcon field="symbol" />
               </th>
@@ -77,7 +80,7 @@ function HoldingsTable({
               </th>
               <th
                 className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider cursor-pointer"
-                onClick={() => onSort('shares')}
+                onClick={() => onSort("shares")}
               >
                 Shares <SortIcon field="shares" />
               </th>
@@ -89,13 +92,13 @@ function HoldingsTable({
               </th>
               <th
                 className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider cursor-pointer"
-                onClick={() => onSort('totalValue')}
+                onClick={() => onSort("totalValue")}
               >
                 Value <SortIcon field="totalValue" />
               </th>
               <th
                 className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider cursor-pointer"
-                onClick={() => onSort('gainLoss')}
+                onClick={() => onSort("gainLoss")}
               >
                 Gain/Loss <SortIcon field="gainLoss" />
               </th>
@@ -132,13 +135,13 @@ function HoldingsTable({
                   <div
                     className={
                       h.gainLoss >= 0
-                        ? 'text-green-600 dark:text-green-400'
-                        : 'text-red-600 dark:text-red-400'
+                        ? "text-green-600 dark:text-green-400"
+                        : "text-red-600 dark:text-red-400"
                     }
                   >
                     <div>{formatCurrency(h.gainLoss)}</div>
                     <div className="text-sm">
-                      {h.gainLoss >= 0 ? '+' : ''}
+                      {h.gainLoss >= 0 ? "+" : ""}
                       {h.gainLossPercent.toFixed(2)}%
                     </div>
                   </div>
@@ -180,11 +183,11 @@ interface AddHoldingModalProps {
 
 function AddHoldingModal({ onClose, onSubmit }: AddHoldingModalProps) {
   const [formData, setFormData] = useState<HoldingCreateInput>({
-    symbol: '',
-    name: '',
+    symbol: "",
+    name: "",
     shares: 0,
     averageCostBasis: 0,
-    assetType: 'stock',
+    assetType: "stock",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -194,7 +197,7 @@ function AddHoldingModal({ onClose, onSubmit }: AddHoldingModalProps) {
       formData.shares <= 0 ||
       formData.averageCostBasis <= 0
     ) {
-      alert('Please fill in all required fields');
+      alert("Please fill in all required fields");
       return;
     }
     onSubmit({ ...formData, symbol: formData.symbol.toUpperCase() });
@@ -216,8 +219,7 @@ function AddHoldingModal({ onClose, onSubmit }: AddHoldingModalProps) {
             type="button"
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 dark:text-slate-300 dark:hover:text-gray-300"
-          >
-                      </button>
+          ></button>
         </div>
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           <div>
@@ -269,23 +271,23 @@ function AddHoldingModal({ onClose, onSubmit }: AddHoldingModalProps) {
               >
                 Shares *
               </label>
-            <input
-              id="add-shares"
-              name="shares"
-              type="number"
-              step="0.0001"
-              min="0"
-              value={formData.shares || ''}
-              onChange={(e) =>
+              <input
+                id="add-shares"
+                name="shares"
+                type="number"
+                step="0.0001"
+                min="0"
+                value={formData.shares || ""}
+                onChange={(e) =>
                   setFormData({
                     ...formData,
                     shares: parseFloat(e.target.value) || 0,
                   })
                 }
-              data-testid="holding-shares-input"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
-              required
-            />
+                data-testid="holding-shares-input"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
+                required
+              />
             </div>
             <div>
               <label
@@ -294,23 +296,23 @@ function AddHoldingModal({ onClose, onSubmit }: AddHoldingModalProps) {
               >
                 Avg Cost *
               </label>
-            <input
-              id="add-cost"
-              name="averageCostBasis"
-              type="number"
-              step="0.01"
-              min="0"
-              value={formData.averageCostBasis || ''}
-              onChange={(e) =>
+              <input
+                id="add-cost"
+                name="averageCostBasis"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.averageCostBasis || ""}
+                onChange={(e) =>
                   setFormData({
                     ...formData,
                     averageCostBasis: parseFloat(e.target.value) || 0,
                   })
                 }
-              data-testid="holding-cost-input"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
-              required
-            />
+                data-testid="holding-cost-input"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
+                required
+              />
             </div>
           </div>
           <div>
@@ -380,20 +382,20 @@ function EditHoldingModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (shares <= 0 || avgCost <= 0) {
-      alert('Shares and cost must be greater than 0');
+      alert("Shares and cost must be greater than 0");
       return;
     }
     try {
       setSaving(true);
       const response = await fetch(`/api/investments/holdings/${holding.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ shares, averageCostBasis: avgCost }),
       });
-      if (!response.ok) throw new Error('Failed to update');
+      if (!response.ok) throw new Error("Failed to update");
       onSuccess();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to update');
+      alert(err instanceof Error ? err.message : "Failed to update");
     } finally {
       setSaving(false);
     }
@@ -415,8 +417,7 @@ function EditHoldingModal({
             type="button"
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 dark:text-slate-300 dark:hover:text-gray-300"
-          >
-                      </button>
+          ></button>
         </div>
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           <div>
@@ -472,7 +473,7 @@ function EditHoldingModal({
               disabled={saving}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
-              {saving ? 'Saving...' : 'Save Changes'}
+              {saving ? "Saving..." : "Save Changes"}
             </button>
           </div>
         </form>
@@ -508,21 +509,21 @@ export default function HoldingsManagement() {
   const [error, setError] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingHolding, setEditingHolding] = useState<Holding | null>(null);
-  const [sortField, setSortField] = useState<SortField>('totalValue');
-  const [sortDir, setSortDir] = useState<SortDir>('desc');
-  const [filterType, setFilterType] = useState<AssetType | 'all'>('all');
+  const [sortField, setSortField] = useState<SortField>("totalValue");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [filterType, setFilterType] = useState<AssetType | "all">("all");
 
   const fetchHoldings = useCallback(async () => {
     if (!user) return;
     try {
       setLoading(true);
       const params = new URLSearchParams();
-      params.set('sortBy', sortField);
-      params.set('sortDir', sortDir);
-      if (filterType !== 'all') params.set('assetType', filterType);
+      params.set("sortBy", sortField);
+      params.set("sortDir", sortDir);
+      if (filterType !== "all") params.set("assetType", filterType);
 
       const response = await fetch(`/api/investments/holdings?${params}`);
-      if (!response.ok) throw new Error('Failed to fetch holdings');
+      if (!response.ok) throw new Error("Failed to fetch holdings");
       const result = await response.json();
       if (result.success) {
         setHoldings(result.data);
@@ -531,7 +532,7 @@ export default function HoldingsManagement() {
         throw new Error(result.error);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load holdings');
+      setError(err instanceof Error ? err.message : "Failed to load holdings");
     } finally {
       setLoading(false);
     }
@@ -545,54 +546,54 @@ export default function HoldingsManagement() {
 
   const handleAddHolding = async (data: HoldingCreateInput) => {
     try {
-      const response = await fetch('/api/investments/holdings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/investments/holdings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
       if (!response.ok) {
         const err = await response.json();
-        throw new Error(err.error || 'Failed to add holding');
+        throw new Error(err.error || "Failed to add holding");
       }
       setShowAddModal(false);
       void fetchHoldings();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to add holding');
+      alert(err instanceof Error ? err.message : "Failed to add holding");
     }
   };
 
   const handleDeleteHolding = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this holding?')) return;
+    if (!confirm("Are you sure you want to delete this holding?")) return;
     try {
       const response = await fetch(`/api/investments/holdings/${id}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
-      if (!response.ok) throw new Error('Failed to delete holding');
+      if (!response.ok) throw new Error("Failed to delete holding");
       void fetchHoldings();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete');
+      alert(err instanceof Error ? err.message : "Failed to delete");
     }
   };
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
-      setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
     } else {
       setSortField(field);
-      setSortDir('desc');
+      setSortDir("desc");
     }
   };
 
   const handleExportCSV = () => {
     const headers = [
-      'Symbol',
-      'Name',
-      'Shares',
-      'Avg Cost',
-      'Current Price',
-      'Total Value',
-      'Gain/Loss',
-      'Gain/Loss %',
+      "Symbol",
+      "Name",
+      "Shares",
+      "Avg Cost",
+      "Current Price",
+      "Total Value",
+      "Gain/Loss",
+      "Gain/Loss %",
     ];
     const rows = holdings.map((h) => [
       h.symbol,
@@ -604,20 +605,20 @@ export default function HoldingsManagement() {
       h.gainLoss.toFixed(2),
       h.gainLossPercent.toFixed(2),
     ]);
-    const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `holdings-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `holdings-${new Date().toISOString().split("T")[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
   const formatCurrency = (n: number) =>
-    new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(n);
 
   if (loading) return <HoldingsSkeleton />;
@@ -647,7 +648,7 @@ export default function HoldingsManagement() {
 
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field) return <span className="text-gray-300">↕</span>;
-    return <span>{sortDir === 'asc' ? '↑' : '↓'}</span>;
+    return <span>{sortDir === "asc" ? "↑" : "↓"}</span>;
   };
 
   return (
@@ -697,7 +698,7 @@ export default function HoldingsManagement() {
             id="filter-type"
             name="filter"
             value={filterType}
-            onChange={(e) => setFilterType(e.target.value as AssetType | 'all')}
+            onChange={(e) => setFilterType(e.target.value as AssetType | "all")}
             data-testid="filter-type-select"
             className="px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg text-sm"
           >

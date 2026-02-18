@@ -1,10 +1,19 @@
 "use client";
 
-import React from 'react';
-import { StudentLoanOnboarding, LoanAnalysisResult } from '@/components/student-loan-agent/StudentLoanOnboarding';
-import { StrategyDashboard, Strategy } from '@/components/student-loan-agent/StrategyDashboard';
-import { FederalRegulationEngine } from '@/lib/student-loan-agent/FederalRegulationEngine';
-import { StrategyEngine, LoanStrategy } from '@/lib/student-loan-agent/StrategyEngine';
+import React from "react";
+import {
+  StudentLoanOnboarding,
+  LoanAnalysisResult,
+} from "@/components/student-loan-agent/StudentLoanOnboarding";
+import {
+  StrategyDashboard,
+  Strategy,
+} from "@/components/student-loan-agent/StrategyDashboard";
+import { FederalRegulationEngine } from "@/lib/student-loan-agent/FederalRegulationEngine";
+import {
+  StrategyEngine,
+  LoanStrategy,
+} from "@/lib/student-loan-agent/StrategyEngine";
 
 const StudentLoanAgentPage = () => {
   const [onboardingComplete, setOnboardingComplete] = React.useState(false);
@@ -15,14 +24,16 @@ const StudentLoanAgentPage = () => {
     const strategyEngine = new StrategyEngine(regulationEngine);
     const generatedStrategies = strategyEngine.generateStrategies(analysis);
     // Map LoanStrategy to Strategy type expected by StrategyDashboard
-    const mappedStrategies: Strategy[] = generatedStrategies.map((s: LoanStrategy) => ({
-      name: s.name,
-      description: s.description,
-      regulation: {
-        name: s.regulation?.name || 'Unknown',
-        link: '#', // Default link since regulation doesn't have link property
-      },
-    }));
+    const mappedStrategies: Strategy[] = generatedStrategies.map(
+      (s: LoanStrategy) => ({
+        name: s.name,
+        description: s.description,
+        regulation: {
+          name: s.regulation?.name || "Unknown",
+          link: "#", // Default link since regulation doesn't have link property
+        },
+      }),
+    );
     setStrategies(mappedStrategies);
     setOnboardingComplete(true);
   };
@@ -41,21 +52,48 @@ const StudentLoanAgentPage = () => {
                 <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 via-blue-600 to-blue-600 bg-clip-text text-transparent">
                   Agentic Credit Repair
                 </h1>
-                <p className="text-sm text-gray-500 dark:text-slate-400">AI-Agent Powered Platform</p>
+                <p className="text-sm text-gray-500 dark:text-slate-400">
+                  AI-Agent Powered Platform
+                </p>
               </div>
             </div>
-            
+
             {/* Navigation */}
             <nav className="hidden md:flex items-center space-x-6">
-              <a href="/dashboard" className="text-sm font-medium text-gray-700 dark:text-slate-200 hover:text-blue-600 transition-colors">Dashboard</a>
-              <a href="/credit-builder" className="text-sm font-medium text-gray-700 dark:text-slate-200 hover:text-blue-600 transition-colors">Credit Builder</a>
-              <a href="/marketplace" className="text-sm font-medium text-gray-700 dark:text-slate-200 hover:text-blue-600 transition-colors">Marketplace</a>
-              <a href="/student-loan-agent" className="text-sm font-medium text-blue-600 border-b-2 border-blue-600 pb-1">Student Loans</a>
-              <a href="/pricing" className="text-sm font-medium text-gray-700 dark:text-slate-200 hover:text-blue-600 transition-colors">Pricing</a>
+              <a
+                href="/dashboard"
+                className="text-sm font-medium text-gray-700 dark:text-slate-200 hover:text-blue-600 transition-colors"
+              >
+                Dashboard
+              </a>
+              <a
+                href="/credit-builder"
+                className="text-sm font-medium text-gray-700 dark:text-slate-200 hover:text-blue-600 transition-colors"
+              >
+                Credit Builder
+              </a>
+              <a
+                href="/marketplace"
+                className="text-sm font-medium text-gray-700 dark:text-slate-200 hover:text-blue-600 transition-colors"
+              >
+                Marketplace
+              </a>
+              <a
+                href="/student-loan-agent"
+                className="text-sm font-medium text-blue-600 border-b-2 border-blue-600 pb-1"
+              >
+                Student Loans
+              </a>
+              <a
+                href="/pricing"
+                className="text-sm font-medium text-gray-700 dark:text-slate-200 hover:text-blue-600 transition-colors"
+              >
+                Pricing
+              </a>
             </nav>
 
             <div className="flex items-center space-x-4">
-              <a 
+              <a
                 href="/dashboard"
                 className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-md text-sm font-medium text-gray-700 dark:text-slate-200 bg-white hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900 transition-colors"
               >
@@ -77,7 +115,8 @@ const StudentLoanAgentPage = () => {
             </h1>
           </div>
           <p className="text-lg text-gray-600 dark:text-slate-300 max-w-3xl mx-auto">
-            Specialized AI-powered assistance for student loan credit repair with federal system integration
+            Specialized AI-powered assistance for student loan credit repair
+            with federal system integration
           </p>
         </div>
 
@@ -85,7 +124,9 @@ const StudentLoanAgentPage = () => {
         <div className="bg-white dark:bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-xl overflow-hidden">
           {!onboardingComplete ? (
             <div className="p-6 sm:p-8">
-              <StudentLoanOnboarding onOnboardingComplete={handleOnboardingComplete} />
+              <StudentLoanOnboarding
+                onOnboardingComplete={handleOnboardingComplete}
+              />
             </div>
           ) : (
             <div className="p-6 sm:p-8">
@@ -101,29 +142,34 @@ const StudentLoanAgentPage = () => {
               <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-white text-xl"></span>
               </div>
-              <h3 className="text-lg font-semibold mb-2">Federal Integration</h3>
+              <h3 className="text-lg font-semibold mb-2">
+                Federal Integration
+              </h3>
               <p className="text-gray-600 dark:text-slate-300 text-sm">
-                Direct integration with NSLDS and FSA systems for comprehensive loan analysis
+                Direct integration with NSLDS and FSA systems for comprehensive
+                loan analysis
               </p>
             </div>
-            
+
             <div className="bg-white dark:bg-slate-800/80 backdrop-blur-sm rounded-xl p-6 text-center shadow-lg">
               <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-white text-xl"></span>
               </div>
               <h3 className="text-lg font-semibold mb-2">Regulation Engine</h3>
               <p className="text-gray-600 dark:text-slate-300 text-sm">
-                Advanced knowledge of FCRA, HEA, and CFPB regulations for maximum compliance
+                Advanced knowledge of FCRA, HEA, and CFPB regulations for
+                maximum compliance
               </p>
             </div>
-            
+
             <div className="bg-white dark:bg-slate-800/80 backdrop-blur-sm rounded-xl p-6 text-center shadow-lg">
               <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-white text-xl"></span>
               </div>
               <h3 className="text-lg font-semibold mb-2">Smart Strategies</h3>
               <p className="text-gray-600 dark:text-slate-300 text-sm">
-                AI-generated personalized strategies based on your specific loan portfolio
+                AI-generated personalized strategies based on your specific loan
+                portfolio
               </p>
             </div>
           </div>

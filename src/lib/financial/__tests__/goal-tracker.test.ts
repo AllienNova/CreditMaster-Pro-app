@@ -1,6 +1,6 @@
 /**
  * Goal Tracker Service Tests
- * 
+ *
  * Comprehensive test suite for the Goal Tracker service including:
  * - Goal creation and management
  * - Progress calculation and metrics
@@ -11,17 +11,17 @@
  * - Comparative analytics
  */
 
-import { GoalTracker, goalTracker } from '../goal-tracker';
-import { goalPlanner } from '../goal-planner';
-import { financialContextEngine } from '../financial-context-engine';
-import { FinancialGoalPlan, GoalType } from '../types/ai-coach.types';
+import { GoalTracker, goalTracker } from "../goal-tracker";
+import { goalPlanner } from "../goal-planner";
+import { financialContextEngine } from "../financial-context-engine";
+import { FinancialGoalPlan, GoalType } from "../types/ai-coach.types";
 
 // Mock dependencies
-jest.mock('../goal-planner');
-jest.mock('../financial-context-engine');
+jest.mock("../goal-planner");
+jest.mock("../financial-context-engine");
 
 // Mock Supabase — define inside factory to avoid TDZ with jest.mock hoisting
-jest.mock('@/lib/supabase/client', () => {
+jest.mock("@/lib/supabase/client", () => {
   const mockDelete = jest.fn().mockReturnValue({
     eq: jest.fn().mockReturnValue({
       eq: jest.fn().mockResolvedValue({ error: null }),
@@ -36,36 +36,36 @@ jest.mock('@/lib/supabase/client', () => {
   return { getSupabase: () => _client };
 });
 
-describe('GoalTracker', () => {
-  const mockUserId = 'user-123';
-  const mockGoalId = 'goal-456';
+describe("GoalTracker", () => {
+  const mockUserId = "user-123";
+  const mockGoalId = "goal-456";
 
   const mockGoal: FinancialGoalPlan = {
     id: mockGoalId,
     userId: mockUserId,
-    type: 'emergency_fund' as GoalType,
-    name: 'Emergency Fund',
-    description: 'Build 6-month emergency fund',
+    type: "emergency_fund" as GoalType,
+    name: "Emergency Fund",
+    description: "Build 6-month emergency fund",
     targetAmount: 10000,
     currentAmount: 3000,
     startingAmount: 0,
-    targetDate: new Date('2025-12-31'),
-    startDate: new Date('2025-01-01'),
-    projectedCompletionDate: new Date('2025-12-31'),
+    targetDate: new Date("2025-12-31"),
+    startDate: new Date("2025-01-01"),
+    projectedCompletionDate: new Date("2025-12-31"),
     progress: 30,
-    status: 'on_track',
+    status: "on_track",
     milestones: [
       {
-        id: 'milestone_1',
-        name: '25% Complete',
+        id: "milestone_1",
+        name: "25% Complete",
         targetAmount: 2500,
         targetPercentage: 25,
         isAchieved: true,
-        celebrationMessage: 'Great start!',
+        celebrationMessage: "Great start!",
       },
       {
-        id: 'milestone_2',
-        name: '50% Complete',
+        id: "milestone_2",
+        name: "50% Complete",
         targetAmount: 5000,
         targetPercentage: 50,
         isAchieved: false,
@@ -73,14 +73,14 @@ describe('GoalTracker', () => {
     ],
     monthlyContribution: 700,
     suggestedContribution: 700,
-    contributionFrequency: 'monthly',
+    contributionFrequency: "monthly",
     autoSaveEnabled: true,
     aiRecommendations: [],
     adjustmentSuggestions: [],
     riskFactors: [],
     priority: 5,
-    createdAt: new Date('2025-01-01'),
-    updatedAt: new Date('2025-06-01'),
+    createdAt: new Date("2025-01-01"),
+    updatedAt: new Date("2025-06-01"),
   };
 
   const mockFinancialContext = {
@@ -105,29 +105,29 @@ describe('GoalTracker', () => {
     jest.clearAllMocks();
     (goalPlanner.getUserGoals as jest.Mock).mockResolvedValue([mockGoal]);
     (financialContextEngine.getFinancialContext as jest.Mock).mockResolvedValue(
-      mockFinancialContext
+      mockFinancialContext,
     );
   });
 
-  describe('exports', () => {
-    it('should export GoalTracker class', () => {
+  describe("exports", () => {
+    it("should export GoalTracker class", () => {
       expect(GoalTracker).toBeDefined();
-      expect(typeof GoalTracker).toBe('function');
+      expect(typeof GoalTracker).toBe("function");
     });
 
-    it('should export goalTracker singleton', () => {
+    it("should export goalTracker singleton", () => {
       expect(goalTracker).toBeDefined();
       expect(goalTracker).toBeInstanceOf(GoalTracker);
     });
   });
 
-  describe('createGoal', () => {
-    it('should create a new goal using goal planner', async () => {
+  describe("createGoal", () => {
+    it("should create a new goal using goal planner", async () => {
       const goalData = {
-        type: 'savings' as GoalType,
-        name: 'Vacation Fund',
+        type: "savings" as GoalType,
+        name: "Vacation Fund",
         targetAmount: 5000,
-        targetDate: new Date('2026-06-01'),
+        targetDate: new Date("2026-06-01"),
       };
 
       (goalPlanner.createGoalPlan as jest.Mock).mockResolvedValue({
@@ -141,30 +141,30 @@ describe('GoalTracker', () => {
         userId: mockUserId,
         ...goalData,
       });
-      expect(result.name).toBe('Vacation Fund');
+      expect(result.name).toBe("Vacation Fund");
     });
   });
 
-  describe('getActiveGoals', () => {
-    it('should return only active goals', async () => {
+  describe("getActiveGoals", () => {
+    it("should return only active goals", async () => {
       const goals = [
-        { ...mockGoal, status: 'on_track' },
-        { ...mockGoal, id: 'goal-2', status: 'completed' },
-        { ...mockGoal, id: 'goal-3', status: 'paused' },
-        { ...mockGoal, id: 'goal-4', status: 'behind' },
+        { ...mockGoal, status: "on_track" },
+        { ...mockGoal, id: "goal-2", status: "completed" },
+        { ...mockGoal, id: "goal-3", status: "paused" },
+        { ...mockGoal, id: "goal-4", status: "behind" },
       ];
       (goalPlanner.getUserGoals as jest.Mock).mockResolvedValue(goals);
 
       const result = await goalTracker.getActiveGoals(mockUserId);
 
       expect(result).toHaveLength(2);
-      expect(result[0].status).toBe('on_track');
-      expect(result[1].status).toBe('behind');
+      expect(result[0].status).toBe("on_track");
+      expect(result[1].status).toBe("behind");
     });
 
-    it('should return empty array if no active goals', async () => {
+    it("should return empty array if no active goals", async () => {
       (goalPlanner.getUserGoals as jest.Mock).mockResolvedValue([
-        { ...mockGoal, status: 'completed' },
+        { ...mockGoal, status: "completed" },
       ]);
 
       const result = await goalTracker.getActiveGoals(mockUserId);
@@ -173,24 +173,30 @@ describe('GoalTracker', () => {
     });
   });
 
-  describe('updateGoalProgress', () => {
-    it('should update goal progress', async () => {
+  describe("updateGoalProgress", () => {
+    it("should update goal progress", async () => {
       const updatedGoal = { ...mockGoal, currentAmount: 5000, progress: 50 };
-      (goalPlanner.updateGoalProgress as jest.Mock).mockResolvedValue(updatedGoal);
+      (goalPlanner.updateGoalProgress as jest.Mock).mockResolvedValue(
+        updatedGoal,
+      );
 
-      const result = await goalTracker.updateGoalProgress(mockUserId, mockGoalId, 5000);
+      const result = await goalTracker.updateGoalProgress(
+        mockUserId,
+        mockGoalId,
+        5000,
+      );
 
       expect(goalPlanner.updateGoalProgress).toHaveBeenCalledWith(
         mockUserId,
         mockGoalId,
-        5000
+        5000,
       );
       expect(result?.currentAmount).toBe(5000);
     });
   });
 
-  describe('deleteGoal', () => {
-    it.skip('should delete a goal successfully', async () => {
+  describe("deleteGoal", () => {
+    it.skip("should delete a goal successfully", async () => {
       // Skipping due to Supabase mock complexity in test environment
       // This is a simple pass-through to Supabase delete operation
       const result = await goalTracker.deleteGoal(mockUserId, mockGoalId);
@@ -199,9 +205,12 @@ describe('GoalTracker', () => {
     });
   });
 
-  describe('calculateProgressMetrics', () => {
-    it('should calculate comprehensive progress metrics', async () => {
-      const result = await goalTracker.calculateProgressMetrics(mockUserId, mockGoalId);
+  describe("calculateProgressMetrics", () => {
+    it("should calculate comprehensive progress metrics", async () => {
+      const result = await goalTracker.calculateProgressMetrics(
+        mockUserId,
+        mockGoalId,
+      );
 
       expect(result).toBeDefined();
       expect(result?.goalId).toBe(mockGoalId);
@@ -211,168 +220,222 @@ describe('GoalTracker', () => {
       expect(result?.progressPercentage).toBe(30);
     });
 
-    it('should include velocity metrics', async () => {
-      const result = await goalTracker.calculateProgressMetrics(mockUserId, mockGoalId);
+    it("should include velocity metrics", async () => {
+      const result = await goalTracker.calculateProgressMetrics(
+        mockUserId,
+        mockGoalId,
+      );
 
       expect(result?.velocity).toBeDefined();
       expect(result?.velocity.monthlyVelocity).toBeGreaterThan(0);
       expect(result?.velocity.requiredVelocity).toBeGreaterThan(0);
       expect(result?.velocity.velocityRatio).toBeGreaterThan(0);
-      expect(['accelerating', 'steady', 'decelerating']).toContain(
-        result?.velocity.trend
+      expect(["accelerating", "steady", "decelerating"]).toContain(
+        result?.velocity.trend,
       );
     });
 
-    it('should include performance score', async () => {
-      const result = await goalTracker.calculateProgressMetrics(mockUserId, mockGoalId);
+    it("should include performance score", async () => {
+      const result = await goalTracker.calculateProgressMetrics(
+        mockUserId,
+        mockGoalId,
+      );
 
       expect(result?.performanceScore).toBeDefined();
       expect(result?.performanceScore.overall).toBeGreaterThanOrEqual(0);
       expect(result?.performanceScore.overall).toBeLessThanOrEqual(100);
-      expect(['A', 'B', 'C', 'D', 'F']).toContain(result?.performanceScore.grade);
-      expect(['ahead', 'on_track', 'behind', 'at_risk']).toContain(
-        result?.performanceScore.status
+      expect(["A", "B", "C", "D", "F"]).toContain(
+        result?.performanceScore.grade,
+      );
+      expect(["ahead", "on_track", "behind", "at_risk"]).toContain(
+        result?.performanceScore.status,
       );
     });
 
-    it('should include predictions', async () => {
-      const result = await goalTracker.calculateProgressMetrics(mockUserId, mockGoalId);
+    it("should include predictions", async () => {
+      const result = await goalTracker.calculateProgressMetrics(
+        mockUserId,
+        mockGoalId,
+      );
 
       expect(result?.predictions).toBeDefined();
       expect(result?.predictions.projectedCompletionDate).toBeInstanceOf(Date);
       expect(result?.predictions.confidenceLevel).toBeGreaterThanOrEqual(0);
-      expect(result?.predictions.probabilityOfSuccess).toBeGreaterThanOrEqual(0);
+      expect(result?.predictions.probabilityOfSuccess).toBeGreaterThanOrEqual(
+        0,
+      );
     });
 
-    it('should include risk assessments', async () => {
-      const result = await goalTracker.calculateProgressMetrics(mockUserId, mockGoalId);
+    it("should include risk assessments", async () => {
+      const result = await goalTracker.calculateProgressMetrics(
+        mockUserId,
+        mockGoalId,
+      );
 
       expect(result?.risks).toBeDefined();
       expect(Array.isArray(result?.risks)).toBe(true);
     });
 
-    it('should return null for non-existent goal', async () => {
+    it("should return null for non-existent goal", async () => {
       (goalPlanner.getUserGoals as jest.Mock).mockResolvedValue([]);
 
-      const result = await goalTracker.calculateProgressMetrics(mockUserId, 'invalid-id');
+      const result = await goalTracker.calculateProgressMetrics(
+        mockUserId,
+        "invalid-id",
+      );
 
       expect(result).toBeNull();
     });
   });
 
-  describe('calculateVelocity', () => {
-    it('should calculate velocity with insufficient history', async () => {
-      const result = await goalTracker.calculateVelocity(mockUserId, mockGoalId, mockGoal);
+  describe("calculateVelocity", () => {
+    it("should calculate velocity with insufficient history", async () => {
+      const result = await goalTracker.calculateVelocity(
+        mockUserId,
+        mockGoalId,
+        mockGoal,
+      );
 
       // Velocity is calculated from history, not just monthly contribution
       expect(result.monthlyVelocity).toBeGreaterThan(0);
-      expect(result.trend).toBe('steady');
+      expect(result.trend).toBe("steady");
     });
 
-    it('should calculate required velocity correctly', async () => {
-      const result = await goalTracker.calculateVelocity(mockUserId, mockGoalId, mockGoal);
+    it("should calculate required velocity correctly", async () => {
+      const result = await goalTracker.calculateVelocity(
+        mockUserId,
+        mockGoalId,
+        mockGoal,
+      );
 
       expect(result.requiredVelocity).toBeGreaterThan(0);
       expect(result.velocityRatio).toBeGreaterThan(0);
     });
   });
 
-  describe('getGoalRecommendations', () => {
-    it('should generate recommendations for behind schedule goals', async () => {
-      const behindGoal = { ...mockGoal, status: 'behind' as const, progress: 15 };
+  describe("getGoalRecommendations", () => {
+    it("should generate recommendations for behind schedule goals", async () => {
+      const behindGoal = {
+        ...mockGoal,
+        status: "behind" as const,
+        progress: 15,
+      };
       (goalPlanner.getUserGoals as jest.Mock).mockResolvedValue([behindGoal]);
 
-      const result = await goalTracker.getGoalRecommendations(mockUserId, mockGoalId);
+      const result = await goalTracker.getGoalRecommendations(
+        mockUserId,
+        mockGoalId,
+      );
 
       expect(result.length).toBeGreaterThan(0);
-      const increaseRec = result.find((r) => r.type === 'increase_contribution');
+      const increaseRec = result.find(
+        (r) => r.type === "increase_contribution",
+      );
       expect(increaseRec).toBeDefined();
       // Priority can be 'high' or 'urgent' depending on how far behind
-      expect(['high', 'urgent']).toContain(increaseRec?.priority);
+      expect(["high", "urgent"]).toContain(increaseRec?.priority);
     });
 
-    it('should generate celebration for ahead schedule goals', async () => {
+    it("should generate celebration for ahead schedule goals", async () => {
       const aheadGoal = {
         ...mockGoal,
-        status: 'ahead' as const,
+        status: "ahead" as const,
         progress: 60,
         currentAmount: 6000, // 60% of 10000
       };
       (goalPlanner.getUserGoals as jest.Mock).mockResolvedValue([aheadGoal]);
 
-      const result = await goalTracker.getGoalRecommendations(mockUserId, mockGoalId);
+      const result = await goalTracker.getGoalRecommendations(
+        mockUserId,
+        mockGoalId,
+      );
 
       // Should have at least one recommendation
       expect(result.length).toBeGreaterThan(0);
       // May include celebrate or optimize recommendations
       const hasPositiveRec = result.some(
-        (r) => r.type === 'celebrate' || r.type === 'optimize_strategy'
+        (r) => r.type === "celebrate" || r.type === "optimize_strategy",
       );
       expect(hasPositiveRec).toBe(true);
     });
 
-    it('should return empty array for non-existent goal', async () => {
+    it("should return empty array for non-existent goal", async () => {
       (goalPlanner.getUserGoals as jest.Mock).mockResolvedValue([]);
 
-      const result = await goalTracker.getGoalRecommendations(mockUserId, 'invalid-id');
+      const result = await goalTracker.getGoalRecommendations(
+        mockUserId,
+        "invalid-id",
+      );
 
       expect(result).toEqual([]);
     });
   });
 
-  describe('getProgressHistory', () => {
-    it('should return progress history', async () => {
-      const result = await goalTracker.getProgressHistory(mockUserId, mockGoalId);
+  describe("getProgressHistory", () => {
+    it("should return progress history", async () => {
+      const result = await goalTracker.getProgressHistory(
+        mockUserId,
+        mockGoalId,
+      );
 
       expect(Array.isArray(result)).toBe(true);
       expect(result.length).toBeGreaterThan(0);
       if (result.length > 0) {
-        expect(result[0]).toHaveProperty('date');
-        expect(result[0]).toHaveProperty('amount');
-        expect(result[0]).toHaveProperty('contribution');
-        expect(result[0]).toHaveProperty('progressPercentage');
+        expect(result[0]).toHaveProperty("date");
+        expect(result[0]).toHaveProperty("amount");
+        expect(result[0]).toHaveProperty("contribution");
+        expect(result[0]).toHaveProperty("progressPercentage");
       }
     });
 
-    it('should return empty array for non-existent goal', async () => {
+    it("should return empty array for non-existent goal", async () => {
       (goalPlanner.getUserGoals as jest.Mock).mockResolvedValue([]);
 
-      const result = await goalTracker.getProgressHistory(mockUserId, 'invalid-id');
+      const result = await goalTracker.getProgressHistory(
+        mockUserId,
+        "invalid-id",
+      );
 
       expect(result).toEqual([]);
     });
   });
 
-  describe('getGoalComparison', () => {
-    it('should return peer comparison data', async () => {
-      const result = await goalTracker.getGoalComparison(mockUserId, mockGoalId);
+  describe("getGoalComparison", () => {
+    it("should return peer comparison data", async () => {
+      const result = await goalTracker.getGoalComparison(
+        mockUserId,
+        mockGoalId,
+      );
 
       expect(result).toBeDefined();
-      expect(result?.goalType).toBe('emergency_fund');
+      expect(result?.goalType).toBe("emergency_fund");
       expect(result?.userProgress).toBe(30);
       expect(result?.peerAverageProgress).toBeGreaterThan(0);
       expect(result?.percentile).toBeGreaterThan(0);
-      expect(['above_average', 'average', 'below_average']).toContain(
-        result?.comparison
+      expect(["above_average", "average", "below_average"]).toContain(
+        result?.comparison,
       );
       expect(Array.isArray(result?.insights)).toBe(true);
     });
 
-    it('should return null for non-existent goal', async () => {
+    it("should return null for non-existent goal", async () => {
       (goalPlanner.getUserGoals as jest.Mock).mockResolvedValue([]);
 
-      const result = await goalTracker.getGoalComparison(mockUserId, 'invalid-id');
+      const result = await goalTracker.getGoalComparison(
+        mockUserId,
+        "invalid-id",
+      );
 
       expect(result).toBeNull();
     });
   });
 
-  describe('getProgressMetrics', () => {
-    it('should calculate overall progress metrics', async () => {
+  describe("getProgressMetrics", () => {
+    it("should calculate overall progress metrics", async () => {
       const goals = [
-        { ...mockGoal, status: 'on_track' },
-        { ...mockGoal, id: 'goal-2', status: 'completed' },
-        { ...mockGoal, id: 'goal-3', status: 'ahead' },
+        { ...mockGoal, status: "on_track" },
+        { ...mockGoal, id: "goal-2", status: "completed" },
+        { ...mockGoal, id: "goal-3", status: "ahead" },
       ];
       (goalPlanner.getUserGoals as jest.Mock).mockResolvedValue(goals);
 
@@ -385,7 +448,7 @@ describe('GoalTracker', () => {
       expect(result.totalTarget).toBeGreaterThan(0);
     });
 
-    it('should handle empty goals list', async () => {
+    it("should handle empty goals list", async () => {
       (goalPlanner.getUserGoals as jest.Mock).mockResolvedValue([]);
 
       const result = await goalTracker.getProgressMetrics(mockUserId);
@@ -396,8 +459,8 @@ describe('GoalTracker', () => {
     });
   });
 
-  describe('performance requirements', () => {
-    it('should complete progress calculation in <100ms', async () => {
+  describe("performance requirements", () => {
+    it("should complete progress calculation in <100ms", async () => {
       const startTime = Date.now();
       await goalTracker.calculateProgressMetrics(mockUserId, mockGoalId);
       const endTime = Date.now();
@@ -406,31 +469,40 @@ describe('GoalTracker', () => {
     });
   });
 
-  describe('edge cases', () => {
-    it('should handle goal with zero target amount', async () => {
+  describe("edge cases", () => {
+    it("should handle goal with zero target amount", async () => {
       const zeroGoal = { ...mockGoal, targetAmount: 0 };
       (goalPlanner.getUserGoals as jest.Mock).mockResolvedValue([zeroGoal]);
 
-      const result = await goalTracker.calculateProgressMetrics(mockUserId, mockGoalId);
+      const result = await goalTracker.calculateProgressMetrics(
+        mockUserId,
+        mockGoalId,
+      );
 
       expect(result).toBeDefined();
     });
 
-    it('should handle goal with past target date', async () => {
-      const pastGoal = { ...mockGoal, targetDate: new Date('2020-01-01') };
+    it("should handle goal with past target date", async () => {
+      const pastGoal = { ...mockGoal, targetDate: new Date("2020-01-01") };
       (goalPlanner.getUserGoals as jest.Mock).mockResolvedValue([pastGoal]);
 
-      const result = await goalTracker.calculateProgressMetrics(mockUserId, mockGoalId);
+      const result = await goalTracker.calculateProgressMetrics(
+        mockUserId,
+        mockGoalId,
+      );
 
       expect(result).toBeDefined();
       expect(result?.daysRemaining).toBe(0);
     });
 
-    it('should handle goal with future start date', async () => {
-      const futureGoal = { ...mockGoal, startDate: new Date('2030-01-01') };
+    it("should handle goal with future start date", async () => {
+      const futureGoal = { ...mockGoal, startDate: new Date("2030-01-01") };
       (goalPlanner.getUserGoals as jest.Mock).mockResolvedValue([futureGoal]);
 
-      const result = await goalTracker.calculateProgressMetrics(mockUserId, mockGoalId);
+      const result = await goalTracker.calculateProgressMetrics(
+        mockUserId,
+        mockGoalId,
+      );
 
       expect(result).toBeDefined();
     });

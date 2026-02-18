@@ -6,9 +6,9 @@
  * POST /api/ai/financial-coach/goals/[goalId]/simulate - Simulate goal scenarios
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { goalPlanner } from '@/lib/financial/goal-planner';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { goalPlanner } from "@/lib/financial/goal-planner";
 
 interface RouteParams {
   params: Promise<{ goalId: string }>;
@@ -28,20 +28,20 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const user = await getUser();
 
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const goals = await goalPlanner.getUserGoals(user.id);
     const goal = goals.find((g) => g.id === goalId);
 
     if (!goal) {
-      return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
+      return NextResponse.json({ error: "Goal not found" }, { status: 404 });
     }
 
     // Get adjustment suggestions
     const adjustments = await goalPlanner.getAdjustmentSuggestions(
       user.id,
-      goalId
+      goalId,
     );
 
     return NextResponse.json({ goal, adjustments });
@@ -49,8 +49,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // GoalDetailRoute error: Failed to fetch goal
     void _error;
     return NextResponse.json(
-      { error: 'Failed to fetch goal' },
-      { status: 500 }
+      { error: "Failed to fetch goal" },
+      { status: 500 },
     );
   }
 }
@@ -61,7 +61,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const user = await getUser();
 
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
@@ -69,19 +69,19 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     if (currentAmount === undefined) {
       return NextResponse.json(
-        { error: 'Missing required field: currentAmount' },
-        { status: 400 }
+        { error: "Missing required field: currentAmount" },
+        { status: 400 },
       );
     }
 
     const updatedGoal = await goalPlanner.updateGoalProgress(
       user.id,
       goalId,
-      parseFloat(currentAmount)
+      parseFloat(currentAmount),
     );
 
     if (!updatedGoal) {
-      return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
+      return NextResponse.json({ error: "Goal not found" }, { status: 404 });
     }
 
     return NextResponse.json(updatedGoal);
@@ -89,8 +89,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     // GoalDetailRoute error: Failed to update goal
     void _error;
     return NextResponse.json(
-      { error: 'Failed to update goal' },
-      { status: 500 }
+      { error: "Failed to update goal" },
+      { status: 500 },
     );
   }
 }

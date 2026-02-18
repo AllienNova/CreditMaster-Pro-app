@@ -2,16 +2,16 @@
  * ModelMonitoring Component Tests
  */
 
-import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import React from "react";
+import { render, screen, fireEvent } from "@testing-library/react";
 
 // Mock the ModelMonitoring component
-jest.mock('../admin/ModelMonitoring', () => {
+jest.mock("../admin/ModelMonitoring", () => {
   const MockModelMonitoring = ({ className }: { className?: string }) => {
-    const [timeRange, setTimeRange] = React.useState<'day' | 'week' | 'month'>(
-      'week'
+    const [timeRange, setTimeRange] = React.useState<"day" | "week" | "month">(
+      "week",
     );
-    const [sortBy, setSortBy] = React.useState('requests');
+    const [sortBy, setSortBy] = React.useState("requests");
 
     const metrics = {
       totalRequests: 125432,
@@ -21,16 +21,16 @@ jest.mock('../admin/ModelMonitoring', () => {
     };
     const models = [
       {
-        id: 'gpt-4o',
-        provider: 'OpenAI',
+        id: "gpt-4o",
+        provider: "OpenAI",
         requests: 45000,
         cost: 892.5,
         latency: 320,
         errorRate: 0.015,
       },
       {
-        id: 'claude-3-opus',
-        provider: 'Anthropic',
+        id: "claude-3-opus",
+        provider: "Anthropic",
         requests: 28000,
         cost: 445.2,
         latency: 280,
@@ -38,22 +38,22 @@ jest.mock('../admin/ModelMonitoring', () => {
       },
     ];
     const costBreakdown = [
-      { category: 'Chat', cost: 892.5, percentage: 48 },
-      { category: 'Completion', cost: 445.2, percentage: 24 },
-      { category: 'Embedding', cost: 298.45, percentage: 16 },
+      { category: "Chat", cost: 892.5, percentage: 48 },
+      { category: "Completion", cost: 445.2, percentage: 24 },
+      { category: "Embedding", cost: 298.45, percentage: 16 },
     ];
 
     return (
       <div className={className} data-testid="model-monitoring">
         <h2>AI Model Monitoring</h2>
         <div data-testid="time-range-selector">
-          {(['day', 'week', 'month'] as const).map((range) => (
+          {(["day", "week", "month"] as const).map((range) => (
             <button
               type="button"
               key={range}
               data-testid={`range-${range}`}
               onClick={() => setTimeRange(range)}
-              className={timeRange === range ? 'active' : ''}
+              className={timeRange === range ? "active" : ""}
             >
               {range.charAt(0).toUpperCase() + range.slice(1)}
             </button>
@@ -109,70 +109,70 @@ jest.mock('../admin/ModelMonitoring', () => {
   return { __esModule: true, default: MockModelMonitoring };
 });
 
-import ModelMonitoring from '../admin/ModelMonitoring';
+import ModelMonitoring from "../admin/ModelMonitoring";
 
-describe('ModelMonitoring', () => {
-  it('renders model monitoring component', () => {
+describe("ModelMonitoring", () => {
+  it("renders model monitoring component", () => {
     render(<ModelMonitoring />);
-    expect(screen.getByTestId('model-monitoring')).toBeInTheDocument();
+    expect(screen.getByTestId("model-monitoring")).toBeInTheDocument();
   });
 
-  it('renders time range selector', () => {
+  it("renders time range selector", () => {
     render(<ModelMonitoring />);
-    expect(screen.getByTestId('time-range-selector')).toBeInTheDocument();
-    expect(screen.getByTestId('range-day')).toBeInTheDocument();
-    expect(screen.getByTestId('range-week')).toBeInTheDocument();
-    expect(screen.getByTestId('range-month')).toBeInTheDocument();
+    expect(screen.getByTestId("time-range-selector")).toBeInTheDocument();
+    expect(screen.getByTestId("range-day")).toBeInTheDocument();
+    expect(screen.getByTestId("range-week")).toBeInTheDocument();
+    expect(screen.getByTestId("range-month")).toBeInTheDocument();
   });
 
-  it('changes time range when button clicked', () => {
+  it("changes time range when button clicked", () => {
     render(<ModelMonitoring />);
-    const dayButton = screen.getByTestId('range-day');
+    const dayButton = screen.getByTestId("range-day");
     fireEvent.click(dayButton);
-    expect(dayButton).toHaveClass('active');
+    expect(dayButton).toHaveClass("active");
   });
 
-  it('displays summary metrics', () => {
+  it("displays summary metrics", () => {
     render(<ModelMonitoring />);
-    expect(screen.getByTestId('total-requests')).toHaveTextContent('125,432');
-    expect(screen.getByTestId('total-cost')).toHaveTextContent('$1847.32');
-    expect(screen.getByTestId('avg-latency')).toHaveTextContent('245ms');
-    expect(screen.getByTestId('error-rate')).toHaveTextContent('2.00%');
+    expect(screen.getByTestId("total-requests")).toHaveTextContent("125,432");
+    expect(screen.getByTestId("total-cost")).toHaveTextContent("$1847.32");
+    expect(screen.getByTestId("avg-latency")).toHaveTextContent("245ms");
+    expect(screen.getByTestId("error-rate")).toHaveTextContent("2.00%");
   });
 
-  it('renders usage chart', () => {
+  it("renders usage chart", () => {
     render(<ModelMonitoring />);
-    expect(screen.getByTestId('usage-chart')).toBeInTheDocument();
+    expect(screen.getByTestId("usage-chart")).toBeInTheDocument();
   });
 
-  it('renders model table with sort selector', () => {
+  it("renders model table with sort selector", () => {
     render(<ModelMonitoring />);
-    expect(screen.getByTestId('model-table')).toBeInTheDocument();
-    expect(screen.getByTestId('sort-select')).toBeInTheDocument();
+    expect(screen.getByTestId("model-table")).toBeInTheDocument();
+    expect(screen.getByTestId("sort-select")).toBeInTheDocument();
   });
 
-  it('displays model rows', () => {
+  it("displays model rows", () => {
     render(<ModelMonitoring />);
-    expect(screen.getByTestId('model-row-gpt-4o')).toBeInTheDocument();
-    expect(screen.getByTestId('model-row-claude-3-opus')).toBeInTheDocument();
+    expect(screen.getByTestId("model-row-gpt-4o")).toBeInTheDocument();
+    expect(screen.getByTestId("model-row-claude-3-opus")).toBeInTheDocument();
   });
 
-  it('renders cost breakdown', () => {
+  it("renders cost breakdown", () => {
     render(<ModelMonitoring />);
-    expect(screen.getByTestId('cost-breakdown')).toBeInTheDocument();
-    expect(screen.getByTestId('cost-chat')).toBeInTheDocument();
-    expect(screen.getByTestId('cost-completion')).toBeInTheDocument();
+    expect(screen.getByTestId("cost-breakdown")).toBeInTheDocument();
+    expect(screen.getByTestId("cost-chat")).toBeInTheDocument();
+    expect(screen.getByTestId("cost-completion")).toBeInTheDocument();
   });
 
-  it('applies custom className', () => {
+  it("applies custom className", () => {
     render(<ModelMonitoring className="custom-class" />);
-    expect(screen.getByTestId('model-monitoring')).toHaveClass('custom-class');
+    expect(screen.getByTestId("model-monitoring")).toHaveClass("custom-class");
   });
 
-  it('changes sort order', () => {
+  it("changes sort order", () => {
     render(<ModelMonitoring />);
-    const sortSelect = screen.getByTestId('sort-select');
-    fireEvent.change(sortSelect, { target: { value: 'cost' } });
-    expect(sortSelect).toHaveValue('cost');
+    const sortSelect = screen.getByTestId("sort-select");
+    fireEvent.change(sortSelect, { target: { value: "cost" } });
+    expect(sortSelect).toHaveValue("cost");
   });
 });

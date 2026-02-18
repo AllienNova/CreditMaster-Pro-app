@@ -60,6 +60,7 @@ AND table_type = 'BASE TABLE';
 ```
 
 You should see:
+
 - profiles
 - disputes
 - documents
@@ -75,26 +76,31 @@ You should see:
 ## Table Structure
 
 ### profiles
+
 - User profile extending auth.users
 - Auto-created on signup via trigger
 - Stores subscription info
 
 ### disputes
+
 - Credit dispute tracking
 - Links to profiles (user_id)
 - Status workflow: draft → sent → under_review → resolved
 
 ### documents
+
 - File metadata (actual files in S3)
 - Links to profiles (user_id)
 - Stores S3 keys and URLs
 
 ### notifications
+
 - In-app notifications
 - Email notification tracking
 - Read/unread status
 
 ### subscriptions
+
 - Stripe subscription sync
 - Links to profiles (user_id)
 - Stores subscription status
@@ -102,6 +108,7 @@ You should see:
 ## Row Level Security (RLS)
 
 All tables have RLS enabled. Users can only:
+
 - View their own data
 - Create their own records
 - Update their own records
@@ -143,9 +150,11 @@ SELECT * FROM disputes WHERE user_id = 'your-user-id-here';
 ## Common Issues
 
 ### Issue: Tables not visible
+
 **Solution**: Make sure you ran the migration as a postgres admin, not as authenticated user
 
 ### Issue: RLS blocking inserts
+
 **Solution**: Ensure you're authenticated (check auth.uid() returns your user ID)
 
 ```sql
@@ -154,6 +163,7 @@ SELECT auth.uid();
 ```
 
 ### Issue: Profile not auto-created
+
 **Solution**: Check if trigger exists:
 
 ```sql
@@ -162,10 +172,10 @@ SELECT * FROM pg_trigger WHERE tgname = 'on_auth_user_created';
 
 ## Migration History
 
-| Version | Date | Description |
-|---------|------|-------------|
-| 001 | 2025-11-29 | Initial schema - all core tables |
-| 002 | 2025-12-04 | Production enhancements - audit logs, sessions, tracking |
+| Version | Date       | Description                                              |
+| ------- | ---------- | -------------------------------------------------------- |
+| 001     | 2025-11-29 | Initial schema - all core tables                         |
+| 002     | 2025-12-04 | Production enhancements - audit logs, sessions, tracking |
 
 ## Production Setup
 
@@ -198,6 +208,7 @@ In Supabase Dashboard > Authentication > Settings:
 ### Step 4: Configure Storage Buckets
 
 Create in Dashboard > Storage:
+
 - `documents` (private) - Credit reports, ID docs
 - `avatars` (public) - Profile pictures
 
@@ -209,14 +220,14 @@ Create in Dashboard > Storage:
 
 ## Production Tables (Migration 002)
 
-| Table | Description |
-|-------|-------------|
-| `sessions` | Active user sessions |
-| `audit_logs` | Security audit trail |
-| `uploads` | Temporary file tracking |
-| `credit_scores` | Score history |
-| `dispute_template_usage` | Template effectiveness |
-| `strategy_usage` | Strategy effectiveness |
+| Table                    | Description             |
+| ------------------------ | ----------------------- |
+| `sessions`               | Active user sessions    |
+| `audit_logs`             | Security audit trail    |
+| `uploads`                | Temporary file tracking |
+| `credit_scores`          | Score history           |
+| `dispute_template_usage` | Template effectiveness  |
+| `strategy_usage`         | Strategy effectiveness  |
 
 ## Useful CLI Commands
 

@@ -9,27 +9,27 @@
  * - Store outcomes
  */
 
-import { getSupabase } from '../supabase/client';
-import type { Database } from '../supabase/types';
+import { getSupabase } from "../supabase/client";
+import type { Database } from "../supabase/types";
 
 // Type helpers for Supabase operations
-type DisputeRow = Database['public']['Tables']['disputes']['Row'];
-type DisputeInsert = Database['public']['Tables']['disputes']['Insert'];
-type DisputeUpdate = Database['public']['Tables']['disputes']['Update'];
+type DisputeRow = Database["public"]["Tables"]["disputes"]["Row"];
+type DisputeInsert = Database["public"]["Tables"]["disputes"]["Insert"];
+type DisputeUpdate = Database["public"]["Tables"]["disputes"]["Update"];
 
 // Helper to get typed table reference
-const disputes = () => getSupabase().from('disputes');
+const disputes = () => getSupabase().from("disputes");
 
 export type DisputeStatus =
-  | 'draft'
-  | 'sent'
-  | 'under_review'
-  | 'resolved'
-  | 'rejected';
+  | "draft"
+  | "sent"
+  | "under_review"
+  | "resolved"
+  | "rejected";
 
-export type DisputeOutcome = 'removed' | 'updated' | 'verified';
+export type DisputeOutcome = "removed" | "updated" | "verified";
 
-export type Bureau = 'experian' | 'equifax' | 'transunion';
+export type Bureau = "experian" | "equifax" | "transunion";
 
 export interface Dispute {
   id: string;
@@ -67,7 +67,7 @@ class DisputeServiceDB {
     itemType: string,
     itemDescription: string,
     reason: string,
-    letterContent: string
+    letterContent: string,
   ): Promise<Dispute> {
     const insertData: DisputeInsert = {
       user_id: userId,
@@ -76,7 +76,7 @@ class DisputeServiceDB {
       item_description: itemDescription,
       reason,
       letter_content: letterContent,
-      status: 'draft',
+      status: "draft",
     };
 
     const { data, error } = await disputes()
@@ -97,12 +97,12 @@ class DisputeServiceDB {
    */
   async getDispute(disputeId: string): Promise<Dispute | null> {
     const { data, error } = await disputes()
-      .select('*')
-      .eq('id', disputeId)
+      .select("*")
+      .eq("id", disputeId)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
+      if (error.code === "PGRST116") {
         // Not found
         return null;
       }
@@ -118,15 +118,15 @@ class DisputeServiceDB {
    */
   async getUserDisputes(
     userId: string,
-    status?: DisputeStatus
+    status?: DisputeStatus,
   ): Promise<Dispute[]> {
     let query = disputes()
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
     if (status) {
-      query = query.eq('status', status);
+      query = query.eq("status", status);
     }
 
     const { data, error } = await query;
@@ -146,7 +146,7 @@ class DisputeServiceDB {
     const now = new Date().toISOString();
 
     const updateData: DisputeUpdate = {
-      status: 'sent',
+      status: "sent",
       sent_at: now,
     };
 
@@ -154,7 +154,7 @@ class DisputeServiceDB {
     const { data, error } = await query
       // @ts-ignore - Supabase types issue with update operations
       .update(updateData)
-      .eq('id', disputeId)
+      .eq("id", disputeId)
       .select()
       .single();
 
@@ -171,11 +171,11 @@ class DisputeServiceDB {
    */
   async updateDisputeStatus(
     disputeId: string,
-    status: DisputeStatus
+    status: DisputeStatus,
   ): Promise<Dispute> {
     const updates: DisputeUpdate = { status };
 
-    if (status === 'resolved') {
+    if (status === "resolved") {
       updates.resolved_at = new Date().toISOString();
     }
 
@@ -183,7 +183,7 @@ class DisputeServiceDB {
     const { data, error } = await query2
       // @ts-ignore - Supabase types issue with update operations
       .update(updates)
-      .eq('id', disputeId)
+      .eq("id", disputeId)
       .select()
       .single();
 
@@ -200,10 +200,10 @@ class DisputeServiceDB {
    */
   async resolveDispute(
     disputeId: string,
-    outcome: DisputeOutcome
+    outcome: DisputeOutcome,
   ): Promise<Dispute> {
     const updateData: DisputeUpdate = {
-      status: 'resolved',
+      status: "resolved",
       outcome,
       resolved_at: new Date().toISOString(),
     };
@@ -212,7 +212,7 @@ class DisputeServiceDB {
     const { data, error } = await query3
       // @ts-ignore - Supabase types issue with update operations
       .update(updateData)
-      .eq('id', disputeId)
+      .eq("id", disputeId)
       .select()
       .single();
 
@@ -229,9 +229,9 @@ class DisputeServiceDB {
    */
   async getUserDisputeStats(userId: string): Promise<DisputeStats> {
     const disputes = await this.getUserDisputes(userId);
-    const resolved = disputes.filter((d) => d.status === 'resolved');
+    const resolved = disputes.filter((d) => d.status === "resolved");
     const successful = resolved.filter(
-      (d) => d.outcome === 'removed' || d.outcome === 'updated'
+      (d) => d.outcome === "removed" || d.outcome === "updated",
     );
 
     // Calculate average resolution time
@@ -251,7 +251,7 @@ class DisputeServiceDB {
     return {
       total: disputes.length,
       active: disputes.filter(
-        (d) => d.status === 'sent' || d.status === 'under_review'
+        (d) => d.status === "sent" || d.status === "under_review",
       ).length,
       resolved: resolved.length,
       successRate:
@@ -265,13 +265,13 @@ class DisputeServiceDB {
    */
   async getDisputesByBureau(
     userId: string,
-    bureau: Bureau
+    bureau: Bureau,
   ): Promise<Dispute[]> {
     const { data, error } = await disputes()
-      .select('*')
-      .eq('user_id', userId)
-      .eq('bureau', bureau)
-      .order('created_at', { ascending: false });
+      .select("*")
+      .eq("user_id", userId)
+      .eq("bureau", bureau)
+      .order("created_at", { ascending: false });
 
     if (error) {
       // DisputeServiceDB error: Failed to fetch disputes by bureau
@@ -285,7 +285,7 @@ class DisputeServiceDB {
    * Delete dispute
    */
   async deleteDispute(disputeId: string): Promise<boolean> {
-    const { error } = await disputes().delete().eq('id', disputeId);
+    const { error } = await disputes().delete().eq("id", disputeId);
 
     if (error) {
       // DisputeServiceDB error: Failed to delete dispute
@@ -299,7 +299,7 @@ class DisputeServiceDB {
    * Map database row to Dispute interface
    */
   private mapToDispute(
-    row: Database['public']['Tables']['disputes']['Row']
+    row: Database["public"]["Tables"]["disputes"]["Row"],
   ): Dispute {
     return {
       id: row.id,

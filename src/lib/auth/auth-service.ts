@@ -9,18 +9,23 @@
  * - Token validation
  */
 
-import { getSupabase } from '@/lib/supabase/client';
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
-import { validateSignUpData, validateSignInData, validateResetEmail, sanitizeInput } from './validation';
+import {
+  validateSignUpData,
+  validateSignInData,
+  validateResetEmail,
+  sanitizeInput,
+} from "./validation";
 
 export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'user' | 'premium' | 'admin' | 'super_admin';
+  role: "user" | "premium" | "admin" | "super_admin";
   subscriptionId?: string;
-  subscriptionStatus?: 'active' | 'canceled' | 'past_due' | 'trialing';
+  subscriptionStatus?: "active" | "canceled" | "past_due" | "trialing";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -97,20 +102,18 @@ class AuthService {
       if (!authData.user) {
         return {
           success: false,
-          error: 'Failed to create user',
+          error: "Failed to create user",
         };
       }
 
       // Create user profile in database (using canonical 'profiles' table)
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: authData.user.id,
-          full_name: sanitizedName,
-          subscription_tier: 'free',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
+      const { error: profileError } = await supabase.from("profiles").insert({
+        id: authData.user.id,
+        full_name: sanitizedName,
+        subscription_tier: "free",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
 
       if (profileError) {
         // Profile creation failed - error captured in profileError variable
@@ -120,7 +123,7 @@ class AuthService {
         id: authData.user.id,
         email: sanitizedEmail,
         name: sanitizedName,
-        role: 'user',
+        role: "user",
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -134,7 +137,7 @@ class AuthService {
       // Sign up error - returning error response
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to sign up',
+        error: error instanceof Error ? error.message : "Failed to sign up",
       };
     }
   }
@@ -160,10 +163,11 @@ class AuthService {
       // Sanitize email
       const sanitizedEmail = sanitizeInput(data.email).toLowerCase();
 
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: sanitizedEmail,
-        password: data.password,
-      });
+      const { data: authData, error: authError } =
+        await supabase.auth.signInWithPassword({
+          email: sanitizedEmail,
+          password: data.password,
+        });
 
       if (authError) {
         return {
@@ -175,15 +179,15 @@ class AuthService {
       if (!authData.user) {
         return {
           success: false,
-          error: 'Invalid credentials',
+          error: "Invalid credentials",
         };
       }
 
       // Get user profile from database (using canonical 'profiles' table)
       const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', authData.user.id)
+        .from("profiles")
+        .select("*")
+        .eq("id", authData.user.id)
         .single();
 
       if (profileError) {
@@ -193,13 +197,20 @@ class AuthService {
       const user: User = {
         id: authData.user.id,
         email: authData.user.email || sanitizedEmail,
-        name: profileData?.full_name || authData.user.user_metadata?.name || 'User',
-        role: (profileData?.subscription_tier === 'premium' || profileData?.subscription_tier === 'enterprise')
-          ? 'premium' : 'user',
+        name:
+          profileData?.full_name || authData.user.user_metadata?.name || "User",
+        role:
+          profileData?.subscription_tier === "premium" ||
+          profileData?.subscription_tier === "enterprise"
+            ? "premium"
+            : "user",
         subscriptionId: profileData?.stripe_customer_id,
-        subscriptionStatus: profileData?.subscription_status as User['subscriptionStatus'],
+        subscriptionStatus:
+          profileData?.subscription_status as User["subscriptionStatus"],
         createdAt: new Date(authData.user.created_at),
-        updatedAt: new Date(profileData?.updated_at || authData.user.updated_at),
+        updatedAt: new Date(
+          profileData?.updated_at || authData.user.updated_at,
+        ),
       };
 
       return {
@@ -211,7 +222,7 @@ class AuthService {
       // Sign in error - returning error response
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to sign in',
+        error: error instanceof Error ? error.message : "Failed to sign in",
       };
     }
   }
@@ -235,7 +246,7 @@ class AuthService {
       // Sign out error - returning error response
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to sign out',
+        error: error instanceof Error ? error.message : "Failed to sign out",
       };
     }
   }
@@ -245,7 +256,10 @@ class AuthService {
    */
   async getCurrentUser(): Promise<User | null> {
     try {
-      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      const {
+        data: { user: authUser },
+        error: authError,
+      } = await supabase.auth.getUser();
 
       if (authError || !authUser) {
         return null;
@@ -253,9 +267,9 @@ class AuthService {
 
       // Get user profile from database (using canonical 'profiles' table)
       const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', authUser.id)
+        .from("profiles")
+        .select("*")
+        .eq("id", authUser.id)
         .single();
 
       if (profileError) {
@@ -264,12 +278,16 @@ class AuthService {
 
       const user: User = {
         id: authUser.id,
-        email: authUser.email || '',
-        name: profileData?.full_name || authUser.user_metadata?.name || 'User',
-        role: (profileData?.subscription_tier === 'premium' || profileData?.subscription_tier === 'enterprise')
-          ? 'premium' : 'user',
+        email: authUser.email || "",
+        name: profileData?.full_name || authUser.user_metadata?.name || "User",
+        role:
+          profileData?.subscription_tier === "premium" ||
+          profileData?.subscription_tier === "enterprise"
+            ? "premium"
+            : "user",
         subscriptionId: profileData?.stripe_customer_id,
-        subscriptionStatus: profileData?.subscription_status as User['subscriptionStatus'],
+        subscriptionStatus:
+          profileData?.subscription_status as User["subscriptionStatus"],
         createdAt: new Date(authUser.created_at),
         updatedAt: new Date(profileData?.updated_at || authUser.updated_at),
       };
@@ -284,7 +302,9 @@ class AuthService {
   /**
    * Request password reset
    */
-  async requestPasswordReset(data: ResetPasswordData): Promise<{ success: boolean; error?: string }> {
+  async requestPasswordReset(
+    data: ResetPasswordData,
+  ): Promise<{ success: boolean; error?: string }> {
     try {
       // Validate email
       const validation = validateResetEmail(data.email);
@@ -300,12 +320,18 @@ class AuthService {
       const sanitizedEmail = sanitizeInput(data.email).toLowerCase();
 
       // Get the app URL from environment variable or use default for development
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL ||
-                     (typeof globalThis.window !== 'undefined' ? globalThis.window.location.origin : 'http://localhost:3000');
+      const appUrl =
+        process.env.NEXT_PUBLIC_APP_URL ||
+        (typeof globalThis.window !== "undefined"
+          ? globalThis.window.location.origin
+          : "http://localhost:3000");
 
-      const { error } = await supabase.auth.resetPasswordForEmail(sanitizedEmail, {
-        redirectTo: `${appUrl}/auth/reset-password`,
-      });
+      const { error } = await supabase.auth.resetPasswordForEmail(
+        sanitizedEmail,
+        {
+          redirectTo: `${appUrl}/auth/reset-password`,
+        },
+      );
 
       if (error) {
         return {
@@ -319,7 +345,10 @@ class AuthService {
       // Password reset request error - returning error response
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to request password reset',
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to request password reset",
       };
     }
   }
@@ -327,7 +356,9 @@ class AuthService {
   /**
    * Update password with reset token
    */
-  async updatePassword(data: UpdatePasswordData): Promise<{ success: boolean; error?: string }> {
+  async updatePassword(
+    data: UpdatePasswordData,
+  ): Promise<{ success: boolean; error?: string }> {
     try {
       const { error } = await supabase.auth.updateUser({
         password: data.newPassword,
@@ -345,7 +376,8 @@ class AuthService {
       // Update password error - returning error response
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to update password',
+        error:
+          error instanceof Error ? error.message : "Failed to update password",
       };
     }
   }
@@ -355,7 +387,10 @@ class AuthService {
    */
   async getSession() {
     try {
-      const { data: { session }, error } = await supabase.auth.getSession();
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
 
       if (error) {
         // Get session error - returning null
@@ -374,7 +409,10 @@ class AuthService {
    */
   async refreshSession() {
     try {
-      const { data: { session }, error } = await supabase.auth.refreshSession();
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.refreshSession();
 
       if (error) {
         // Refresh session error - returning null
@@ -391,10 +429,15 @@ class AuthService {
   /**
    * Sign in with OAuth provider (Google, GitHub, Microsoft, Apple, LinkedIn)
    */
-  async signInWithOAuth(provider: 'google' | 'github' | 'azure' | 'apple' | 'linkedin_oidc'): Promise<{ success: boolean; error?: string }> {
+  async signInWithOAuth(
+    provider: "google" | "github" | "azure" | "apple" | "linkedin_oidc",
+  ): Promise<{ success: boolean; error?: string }> {
     try {
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL ||
-                     (typeof globalThis.window !== 'undefined' ? globalThis.window.location.origin : 'http://localhost:3000');
+      const appUrl =
+        process.env.NEXT_PUBLIC_APP_URL ||
+        (typeof globalThis.window !== "undefined"
+          ? globalThis.window.location.origin
+          : "http://localhost:3000");
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
@@ -415,7 +458,10 @@ class AuthService {
       // OAuth sign in error - returning error response
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to sign in with OAuth',
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to sign in with OAuth",
       };
     }
   }
@@ -423,12 +469,14 @@ class AuthService {
   /**
    * Resend email verification
    */
-  async resendVerificationEmail(email: string): Promise<{ success: boolean; error?: string }> {
+  async resendVerificationEmail(
+    email: string,
+  ): Promise<{ success: boolean; error?: string }> {
     try {
       const sanitizedEmail = sanitizeInput(email).toLowerCase();
 
       const { error } = await supabase.auth.resend({
-        type: 'signup',
+        type: "signup",
         email: sanitizedEmail,
       });
 
@@ -444,7 +492,10 @@ class AuthService {
       // Resend verification email error - returning error response
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to resend verification email',
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to resend verification email",
       };
     }
   }
@@ -452,10 +503,15 @@ class AuthService {
   /**
    * Enable Two-Factor Authentication (2FA)
    */
-  async enableTwoFactor(): Promise<{ success: boolean; qrCode?: string; secret?: string; error?: string }> {
+  async enableTwoFactor(): Promise<{
+    success: boolean;
+    qrCode?: string;
+    secret?: string;
+    error?: string;
+  }> {
     try {
       const { data, error } = await supabase.auth.mfa.enroll({
-        factorType: 'totp',
+        factorType: "totp",
       });
 
       if (error) {
@@ -474,7 +530,7 @@ class AuthService {
       // Enable 2FA error - returning error response
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to enable 2FA',
+        error: error instanceof Error ? error.message : "Failed to enable 2FA",
       };
     }
   }
@@ -482,7 +538,10 @@ class AuthService {
   /**
    * Verify Two-Factor Authentication code
    */
-  async verifyTwoFactor(factorId: string, code: string): Promise<{ success: boolean; error?: string }> {
+  async verifyTwoFactor(
+    factorId: string,
+    code: string,
+  ): Promise<{ success: boolean; error?: string }> {
     try {
       const { error } = await supabase.auth.mfa.challengeAndVerify({
         factorId,
@@ -501,7 +560,8 @@ class AuthService {
       // Verify 2FA error - returning error response
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to verify 2FA code',
+        error:
+          error instanceof Error ? error.message : "Failed to verify 2FA code",
       };
     }
   }
@@ -509,7 +569,9 @@ class AuthService {
   /**
    * Disable Two-Factor Authentication
    */
-  async disableTwoFactor(factorId: string): Promise<{ success: boolean; error?: string }> {
+  async disableTwoFactor(
+    factorId: string,
+  ): Promise<{ success: boolean; error?: string }> {
     try {
       const { error } = await supabase.auth.mfa.unenroll({
         factorId,
@@ -527,7 +589,7 @@ class AuthService {
       // Disable 2FA error - returning error response
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to disable 2FA',
+        error: error instanceof Error ? error.message : "Failed to disable 2FA",
       };
     }
   }

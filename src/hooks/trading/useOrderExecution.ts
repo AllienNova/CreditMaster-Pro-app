@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * useOrderExecution Hook
@@ -7,7 +7,7 @@
  * Integrates with OrderExecutionEngine and OrderStatusTracker.
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   createOrderExecutionEngine,
   createOrderStatusTracker,
@@ -18,8 +18,8 @@ import {
   TrackedOrder,
   OrderStatusChange,
   ExecutionEvent,
-} from '@/lib/trading/realtime';
-import { OrderRequest, Order } from '@/lib/trading/orders/order-types';
+} from "@/lib/trading/realtime";
+import { OrderRequest, Order } from "@/lib/trading/orders/order-types";
 
 // ============================================================================
 // TYPES
@@ -51,12 +51,12 @@ export interface UseOrderExecutionReturn {
     request: OrderRequest,
     userId: string,
     accountId: string,
-    skipConfirmation?: boolean
+    skipConfirmation?: boolean,
   ) => Promise<ExecutionResult>;
   confirmExecution: (
     executionId: string,
     userId: string,
-    accountId: string
+    accountId: string,
   ) => Promise<ExecutionResult>;
   cancelExecution: (executionId: string) => boolean;
   cancelOrder: (orderId: string) => Promise<boolean>;
@@ -82,7 +82,7 @@ export interface UseOrderExecutionReturn {
 // ============================================================================
 
 export function useOrderExecution(
-  options: UseOrderExecutionOptions = {}
+  options: UseOrderExecutionOptions = {},
 ): UseOrderExecutionReturn {
   const {
     apiKey,
@@ -103,7 +103,7 @@ export function useOrderExecution(
 
   // Data state
   const [livePrices, setLivePrices] = useState<Map<string, LivePriceInfo>>(
-    new Map()
+    new Map(),
   );
   const [trackedOrders, setTrackedOrders] = useState<TrackedOrder[]>([]);
   const [lastEvent, setLastEvent] = useState<ExecutionEvent | null>(null);
@@ -114,9 +114,9 @@ export function useOrderExecution(
   useEffect(() => {
     if (!engineRef.current) {
       engineRef.current = createOrderExecutionEngine({
-        mode: paperTrading ? 'paper' : 'live',
-        apiKey: apiKey || '',
-        apiSecret: apiSecret || '',
+        mode: paperTrading ? "paper" : "live",
+        apiKey: apiKey || "",
+        apiSecret: apiSecret || "",
       });
     }
 
@@ -159,11 +159,11 @@ export function useOrderExecution(
     const connectionSubscription = engine.connectionState$.subscribe(
       (state) => {
         setIsConnected(
-          state.data === 'connected' &&
-            state.trading === 'connected' &&
-            state.broker
+          state.data === "connected" &&
+            state.trading === "connected" &&
+            state.broker,
         );
-      }
+      },
     );
     subscriptions.push(() => connectionSubscription.unsubscribe());
 
@@ -225,14 +225,14 @@ export function useOrderExecution(
         setIsConnected(true);
       } catch (error) {
         setConnectionError(
-          error instanceof Error ? error.message : 'Connection failed'
+          error instanceof Error ? error.message : "Connection failed",
         );
         setIsConnected(false);
       } finally {
         setIsConnecting(false);
       }
     },
-    [enableNotifications]
+    [enableNotifications],
   );
 
   // Disconnect
@@ -254,7 +254,7 @@ export function useOrderExecution(
     (symbol: string): LivePriceInfo | undefined => {
       return livePrices.get(symbol);
     },
-    [livePrices]
+    [livePrices],
   );
 
   // Watch symbol for price updates
@@ -282,7 +282,7 @@ export function useOrderExecution(
       if (!engineRef.current) return null;
       return engineRef.current.getQuote(symbol);
     },
-    []
+    [],
   );
 
   // Execute order
@@ -291,17 +291,17 @@ export function useOrderExecution(
       request: OrderRequest,
       userId: string,
       accountId: string,
-      skipConfirmation = false
+      skipConfirmation = false,
     ): Promise<ExecutionResult> => {
       if (!engineRef.current) {
-        return { success: false, error: 'Engine not initialized' };
+        return { success: false, error: "Engine not initialized" };
       }
 
       const result = await engineRef.current.executeOrder(
         request,
         userId,
         accountId,
-        skipConfirmation
+        skipConfirmation,
       );
 
       // Track the order if successful
@@ -311,7 +311,7 @@ export function useOrderExecution(
 
       return result;
     },
-    []
+    [],
   );
 
   // Confirm pending execution
@@ -319,16 +319,16 @@ export function useOrderExecution(
     async (
       executionId: string,
       userId: string,
-      accountId: string
+      accountId: string,
     ): Promise<ExecutionResult> => {
       if (!engineRef.current) {
-        return { success: false, error: 'Engine not initialized' };
+        return { success: false, error: "Engine not initialized" };
       }
 
       const result = await engineRef.current.confirmExecution(
         executionId,
         userId,
-        accountId
+        accountId,
       );
 
       // Track the order if successful
@@ -338,7 +338,7 @@ export function useOrderExecution(
 
       return result;
     },
-    []
+    [],
   );
 
   // Cancel pending execution
@@ -358,7 +358,7 @@ export function useOrderExecution(
     (orderId: string): TrackedOrder | undefined => {
       return trackerRef.current?.getTrackedOrder(orderId);
     },
-    []
+    [],
   );
 
   return {

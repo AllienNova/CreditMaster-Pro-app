@@ -3,8 +3,8 @@
  * Main dashboard for credit monitoring features
  */
 
-import React from 'react';
-import { PlaceholderScreen } from '../../src/components';
+import React from "react";
+import { PlaceholderScreen } from "../../src/components";
 
 export default function CreditMonitoringScreen() {
   return (
@@ -14,18 +14,18 @@ export default function CreditMonitoringScreen() {
       icon="shield-checkmark-outline"
       estimatedRelease="Phase 1 - Week 2"
       features={[
-        'Real-time credit monitoring across all 3 bureaus',
-        'Instant alerts for new accounts, inquiries, and changes',
-        'Dark web monitoring for exposed credentials',
-        'Identity theft protection and insurance',
-        'Customizable alert preferences',
-        'Bureau connection management',
+        "Real-time credit monitoring across all 3 bureaus",
+        "Instant alerts for new accounts, inquiries, and changes",
+        "Dark web monitoring for exposed credentials",
+        "Identity theft protection and insurance",
+        "Customizable alert preferences",
+        "Bureau connection management",
       ]}
       relatedScreens={[
-        { title: 'View Alerts', route: '/monitoring/alerts' },
-        { title: 'Monitoring Settings', route: '/monitoring/settings' },
-        { title: 'Credit Score Dashboard', route: '/(tabs)/credit' },
-        { title: 'Identity Protection', route: '/identity' },
+        { title: "View Alerts", route: "/monitoring/alerts" },
+        { title: "Monitoring Settings", route: "/monitoring/settings" },
+        { title: "Credit Score Dashboard", route: "/(tabs)/credit" },
+        { title: "Identity Protection", route: "/identity" },
       ]}
     />
   );

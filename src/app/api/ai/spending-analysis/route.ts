@@ -4,9 +4,9 @@
  * POST /api/ai/spending-analysis - Analyze a specific transaction for risk
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { getSpendingAnalyzer } from '@/lib/ai-personalization';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { getSpendingAnalyzer } from "@/lib/ai-personalization";
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,11 +18,11 @@ export async function GET(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
-    const days = parseInt(searchParams.get('days') ?? '30', 10);
+    const days = parseInt(searchParams.get("days") ?? "30", 10);
 
     const analyzer = getSpendingAnalyzer();
     const analysis = await analyzer.analyzeSpendingPatterns(user.id, days);
@@ -32,8 +32,8 @@ export async function GET(request: NextRequest) {
     // SpendingAnalysisRoute error: Analysis failed
     void _error;
     return NextResponse.json(
-      { error: 'Failed to analyze spending' },
-      { status: 500 }
+      { error: "Failed to analyze spending" },
+      { status: 500 },
     );
   }
 }
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
@@ -61,8 +61,8 @@ export async function POST(request: NextRequest) {
       !transaction.category
     ) {
       return NextResponse.json(
-        { error: 'Transaction details required' },
-        { status: 400 }
+        { error: "Transaction details required" },
+        { status: 400 },
       );
     }
 
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Create alert if risk is elevated
-    if (riskAnalysis.recommendedIntervention !== 'none') {
+    if (riskAnalysis.recommendedIntervention !== "none") {
       const alert = await analyzer.createSpendingAlert(user.id, riskAnalysis);
       return NextResponse.json({
         ...riskAnalysis,
@@ -86,8 +86,8 @@ export async function POST(request: NextRequest) {
     // SpendingAnalysisRoute error: Transaction risk analysis failed
     void _error;
     return NextResponse.json(
-      { error: 'Failed to analyze transaction' },
-      { status: 500 }
+      { error: "Failed to analyze transaction" },
+      { status: 500 },
     );
   }
 }

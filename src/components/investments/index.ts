@@ -5,10 +5,10 @@
  */
 
 // Dashboard
-export { InvestmentDashboard } from './dashboard/InvestmentDashboard';
+export { InvestmentDashboard } from "./dashboard/InvestmentDashboard";
 
 // Charts
-export { AdvancedChartContainer } from './charts/AdvancedChartContainer';
+export { AdvancedChartContainer } from "./charts/AdvancedChartContainer";
 export {
   calculateSMA,
   calculateEMA,
@@ -18,10 +18,10 @@ export {
   calculateATR,
   calculateStochastic,
   calculateVWAP,
-} from './charts/TechnicalIndicators';
+} from "./charts/TechnicalIndicators";
 
 // Alerts
-export { AlertsPanel } from './alerts/AlertsPanel';
+export { AlertsPanel } from "./alerts/AlertsPanel";
 
 // Patterns
-export { PatternOverlay } from './patterns/PatternOverlay';
+export { PatternOverlay } from "./patterns/PatternOverlay";

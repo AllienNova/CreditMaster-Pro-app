@@ -24,7 +24,7 @@ describe("/api/student-loans", () => {
       await GET(req as NextRequest);
 
       expect(
-        FederalIntegrationService.prototype.retrieveNSLDSData
+        FederalIntegrationService.prototype.retrieveNSLDSData,
       ).toHaveBeenCalledWith(userId);
     });
 

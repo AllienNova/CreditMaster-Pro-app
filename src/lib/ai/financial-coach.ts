@@ -5,16 +5,16 @@
  * Helps users achieve financial freedom through proven Baby Steps framework.
  */
 
-import { AIMLService } from '@/lib/aiml-service';
-import { financialContextEngine } from '@/lib/financial/financial-context-engine';
-import { FinancialContext } from '@/lib/financial/types/financial-context.types';
+import { AIMLService } from "@/lib/aiml-service";
+import { financialContextEngine } from "@/lib/financial/financial-context-engine";
+import { FinancialContext } from "@/lib/financial/types/financial-context.types";
 import {
   FINANCIAL_COACH_SYSTEM_PROMPT,
   ANALYSIS_SYSTEM_PROMPT,
   ACTION_PLAN_PROMPT,
   ADVICE_PROMPT,
   RECOMMENDATION_PROMPT,
-} from './prompts/financial-coach-prompts';
+} from "./prompts/financial-coach-prompts";
 
 // ============================================================================
 // TYPES
@@ -23,13 +23,13 @@ import {
 export type BabyStep = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
 export type FocusArea =
-  | 'debt_payoff'
-  | 'emergency_fund'
-  | 'budgeting'
-  | 'income_increase'
-  | 'expense_reduction'
-  | 'investing'
-  | 'overall';
+  | "debt_payoff"
+  | "emergency_fund"
+  | "budgeting"
+  | "income_increase"
+  | "expense_reduction"
+  | "investing"
+  | "overall";
 
 export interface FinancialAnalysis {
   userId: string;
@@ -56,16 +56,16 @@ export interface BabyStepProgress {
 
 export interface FinancialHealthAssessment {
   score: number; // 0-100
-  cashFlowStatus: 'positive' | 'neutral' | 'negative';
-  debtStatus: 'debt_free' | 'manageable' | 'concerning' | 'crisis';
-  savingsStatus: 'excellent' | 'good' | 'fair' | 'poor' | 'none';
-  budgetStatus: 'disciplined' | 'tracking' | 'loose' | 'none';
+  cashFlowStatus: "positive" | "neutral" | "negative";
+  debtStatus: "debt_free" | "manageable" | "concerning" | "crisis";
+  savingsStatus: "excellent" | "good" | "fair" | "poor" | "none";
+  budgetStatus: "disciplined" | "tracking" | "loose" | "none";
   summary: string;
 }
 
 export interface CriticalIssue {
   id: string;
-  severity: 'critical' | 'high' | 'medium';
+  severity: "critical" | "high" | "medium";
   title: string;
   description: string;
   impact: string;
@@ -78,7 +78,7 @@ export interface Opportunity {
   title: string;
   description: string;
   potentialBenefit: string;
-  difficulty: 'easy' | 'moderate' | 'hard';
+  difficulty: "easy" | "moderate" | "hard";
   estimatedImpact: number; // dollars per month
   actionSteps: string[];
 }
@@ -119,12 +119,12 @@ export interface PersonalizedAdvice {
 
 export interface ProactiveRecommendation {
   id: string;
-  priority: 'high' | 'medium' | 'low';
+  priority: "high" | "medium" | "low";
   category: FocusArea;
   title: string;
   description: string;
   benefit: string;
-  difficulty: 'easy' | 'moderate' | 'hard';
+  difficulty: "easy" | "moderate" | "hard";
   timeline: string;
   actionSteps: string[];
   estimatedImpact: number;
@@ -134,7 +134,7 @@ export interface ProactiveRecommendation {
 // FINANCIAL COACH CLASS
 // ============================================================================
 
-const AI_MODEL = 'anthropic/claude-4.5-sonnet';
+const AI_MODEL = "anthropic/claude-4.5-sonnet";
 
 // Function to get AIMLService instance (allows for mocking in tests)
 let aiServiceInstance: AIMLService | null = null;
@@ -159,7 +159,7 @@ export class FinancialCoach {
    */
   async analyzeFinancialSituation(
     userId: string,
-    focusArea: FocusArea = 'overall'
+    focusArea: FocusArea = "overall",
   ): Promise<FinancialAnalysis> {
     // Get comprehensive financial context
     const context = await financialContextEngine.getFinancialContext(userId);
@@ -181,7 +181,7 @@ export class FinancialCoach {
     const aiAnalysis = await this.generateAIAnalysis(
       context,
       currentBabyStep,
-      focusArea
+      focusArea,
     );
 
     return {
@@ -204,7 +204,7 @@ export class FinancialCoach {
   async generateActionPlan(
     userId: string,
     goals: string[],
-    timeframe: string
+    timeframe: string,
   ): Promise<ActionPlan> {
     const context = await financialContextEngine.getFinancialContext(userId);
     const currentBabyStep = this.determineCurrentBabyStep(context);
@@ -215,19 +215,22 @@ export class FinancialCoach {
     const response = await this.aiService.chat(
       AI_MODEL,
       [
-        { role: 'system', content: ACTION_PLAN_PROMPT },
-        { role: 'user', content: prompt },
+        { role: "system", content: ACTION_PLAN_PROMPT },
+        { role: "user", content: prompt },
       ],
-      { temperature: 0.3, max_tokens: 2000 }
+      { temperature: 0.3, max_tokens: 2000 },
     );
 
-    const aiPlan = this.parseActionPlanResponse(response.choices[0]?.message?.content || '');
+    const aiPlan = this.parseActionPlanResponse(
+      response.choices[0]?.message?.content || "",
+    );
 
     return {
       userId,
       title: `Financial Freedom Action Plan - ${timeframe}`,
       startingBabyStep: currentBabyStep,
-      targetBabyStep: aiPlan.targetBabyStep || (currentBabyStep + 1) as BabyStep,
+      targetBabyStep:
+        aiPlan.targetBabyStep || ((currentBabyStep + 1) as BabyStep),
       estimatedTimeframe: timeframe,
       milestones: aiPlan.milestones,
       weeklyActions: aiPlan.weeklyActions,
@@ -242,7 +245,7 @@ export class FinancialCoach {
    */
   async getPersonalizedAdvice(
     userId: string,
-    question: string
+    question: string,
   ): Promise<PersonalizedAdvice> {
     const context = await financialContextEngine.getFinancialContext(userId);
     const currentBabyStep = this.determineCurrentBabyStep(context);
@@ -253,13 +256,15 @@ export class FinancialCoach {
       const response = await this.aiService.chat(
         AI_MODEL,
         [
-          { role: 'system', content: FINANCIAL_COACH_SYSTEM_PROMPT },
-          { role: 'user', content: prompt },
+          { role: "system", content: FINANCIAL_COACH_SYSTEM_PROMPT },
+          { role: "user", content: prompt },
         ],
-        { temperature: 0.4, max_tokens: 1500 }
+        { temperature: 0.4, max_tokens: 1500 },
       );
 
-      const aiAdvice = this.parseAdviceResponse(response.choices[0]?.message?.content || '');
+      const aiAdvice = this.parseAdviceResponse(
+        response.choices[0]?.message?.content || "",
+      );
 
       return {
         question,
@@ -275,16 +280,20 @@ export class FinancialCoach {
       // Return fallback advice
       return {
         question,
-        answer: 'I recommend starting with the Baby Steps. First, save $1,000 for emergencies, then focus on paying off debt using the debt snowball method.',
+        answer:
+          "I recommend starting with the Baby Steps. First, save $1,000 for emergencies, then focus on paying off debt using the debt snowball method.",
         relevantBabyStep: currentBabyStep,
         actionSteps: [
-          'Create a written budget',
-          'Track all expenses for one month',
-          'Identify areas to cut spending',
-          'Start your emergency fund',
+          "Create a written budget",
+          "Track all expenses for one month",
+          "Identify areas to cut spending",
+          "Start your emergency fund",
         ],
-        resources: ['Dave Ramsey Baby Steps Guide', 'EveryDollar Budgeting App'],
-        encouragement: 'You can do this! Small steps lead to big changes.',
+        resources: [
+          "Dave Ramsey Baby Steps Guide",
+          "EveryDollar Budgeting App",
+        ],
+        encouragement: "You can do this! Small steps lead to big changes.",
         generatedAt: new Date(),
       };
     }
@@ -294,32 +303,34 @@ export class FinancialCoach {
    * Get proactive recommendations
    */
   async getProactiveRecommendations(
-    userId: string
+    userId: string,
   ): Promise<ProactiveRecommendation[]> {
     const context = await financialContextEngine.getFinancialContext(userId);
-    const opportunities = this.findOpportunities(context, 'overall');
+    const opportunities = this.findOpportunities(context, "overall");
 
     const prompt = this.buildRecommendationPrompt(context, opportunities);
 
     const response = await this.aiService.chat(
       AI_MODEL,
       [
-        { role: 'system', content: RECOMMENDATION_PROMPT },
-        { role: 'user', content: prompt },
+        { role: "system", content: RECOMMENDATION_PROMPT },
+        { role: "user", content: prompt },
       ],
-      { temperature: 0.3, max_tokens: 1500 }
+      { temperature: 0.3, max_tokens: 1500 },
     );
 
-    const aiRecs = this.parseRecommendationsResponse(response.choices[0]?.message?.content || '');
+    const aiRecs = this.parseRecommendationsResponse(
+      response.choices[0]?.message?.content || "",
+    );
 
     return aiRecs.map((rec, index) => ({
       id: `rec_${Date.now()}_${index}`,
-      priority: rec.priority || 'medium',
-      category: rec.category || 'overall',
+      priority: rec.priority || "medium",
+      category: rec.category || "overall",
       title: rec.title,
       description: rec.description,
       benefit: rec.benefit,
-      difficulty: rec.difficulty || 'moderate',
+      difficulty: rec.difficulty || "moderate",
       timeline: rec.timeline,
       actionSteps: rec.actionSteps,
       estimatedImpact: rec.estimatedImpact || 0,
@@ -349,7 +360,9 @@ export class FinancialCoach {
     return 4;
   }
 
-  private calculateBabyStepProgress(context: FinancialContext): BabyStepProgress {
+  private calculateBabyStepProgress(
+    context: FinancialContext,
+  ): BabyStepProgress {
     const savings = context.accounts.totalSavings;
     const debt = context.debts.totalDebt;
     const monthlyExpenses = Math.abs(context.transactions.totalExpenses);
@@ -391,7 +404,9 @@ export class FinancialCoach {
     };
   }
 
-  private assessFinancialHealth(context: FinancialContext): FinancialHealthAssessment {
+  private assessFinancialHealth(
+    context: FinancialContext,
+  ): FinancialHealthAssessment {
     const income = context.transactions.totalIncome;
     const expenses = Math.abs(context.transactions.totalExpenses);
     const cashFlow = income - expenses;
@@ -401,46 +416,47 @@ export class FinancialCoach {
     let score = 50; // Start at neutral
 
     // Cash flow assessment
-    const cashFlowStatus = cashFlow > 0 ? 'positive' : cashFlow === 0 ? 'neutral' : 'negative';
+    const cashFlowStatus =
+      cashFlow > 0 ? "positive" : cashFlow === 0 ? "neutral" : "negative";
     if (cashFlow > income * 0.2) score += 20;
     else if (cashFlow > 0) score += 10;
     else if (cashFlow < 0) score -= 30;
 
     // Debt assessment
-    let debtStatus: 'debt_free' | 'manageable' | 'concerning' | 'crisis';
+    let debtStatus: "debt_free" | "manageable" | "concerning" | "crisis";
     if (debt === 0) {
-      debtStatus = 'debt_free';
+      debtStatus = "debt_free";
       score += 20;
     } else if (debt < income * 0.5) {
-      debtStatus = 'manageable';
+      debtStatus = "manageable";
       score += 5;
     } else if (debt < income * 2) {
-      debtStatus = 'concerning';
+      debtStatus = "concerning";
       score -= 10;
     } else {
-      debtStatus = 'crisis';
+      debtStatus = "crisis";
       score -= 25;
     }
 
     // Savings assessment
-    let savingsStatus: 'excellent' | 'good' | 'fair' | 'poor' | 'none';
+    let savingsStatus: "excellent" | "good" | "fair" | "poor" | "none";
     if (savings >= expenses * 6) {
-      savingsStatus = 'excellent';
+      savingsStatus = "excellent";
       score += 20;
     } else if (savings >= expenses * 3) {
-      savingsStatus = 'good';
+      savingsStatus = "good";
       score += 10;
     } else if (savings >= 1000) {
-      savingsStatus = 'fair';
+      savingsStatus = "fair";
       score += 5;
     } else if (savings > 0) {
-      savingsStatus = 'poor';
+      savingsStatus = "poor";
     } else {
-      savingsStatus = 'none';
+      savingsStatus = "none";
       score -= 10;
     }
 
-    const budgetStatus = context.budgets.length > 0 ? 'tracking' : 'none';
+    const budgetStatus = context.budgets.length > 0 ? "tracking" : "none";
 
     score = Math.max(0, Math.min(100, score));
 
@@ -450,7 +466,12 @@ export class FinancialCoach {
       debtStatus,
       savingsStatus,
       budgetStatus,
-      summary: this.generateHealthSummary(score, cashFlowStatus, debtStatus, savingsStatus),
+      summary: this.generateHealthSummary(
+        score,
+        cashFlowStatus,
+        debtStatus,
+        savingsStatus,
+      ),
     };
   }
 
@@ -458,13 +479,17 @@ export class FinancialCoach {
     score: number,
     cashFlow: string,
     debt: string,
-    savings: string
+    savings: string,
   ): string {
-    if (score >= 80) return 'Excellent financial health! You\'re on the path to financial freedom.';
-    if (score >= 60) return 'Good financial foundation with room for improvement.';
-    if (score >= 40) return 'Fair financial health. Focus on building momentum.';
-    if (score >= 20) return 'Concerning financial situation. Immediate action needed.';
-    return 'Financial crisis. Let\'s create an emergency action plan.';
+    if (score >= 80)
+      return "Excellent financial health! You're on the path to financial freedom.";
+    if (score >= 60)
+      return "Good financial foundation with room for improvement.";
+    if (score >= 40)
+      return "Fair financial health. Focus on building momentum.";
+    if (score >= 20)
+      return "Concerning financial situation. Immediate action needed.";
+    return "Financial crisis. Let's create an emergency action plan.";
   }
 
   private identifyCriticalIssues(context: FinancialContext): CriticalIssue[] {
@@ -477,78 +502,93 @@ export class FinancialCoach {
     // Negative cash flow
     if (cashFlow < 0) {
       issues.push({
-        id: 'negative_cashflow',
-        severity: 'critical',
-        title: 'Spending More Than You Earn',
+        id: "negative_cashflow",
+        severity: "critical",
+        title: "Spending More Than You Earn",
         description: `You're spending $${Math.abs(cashFlow).toFixed(2)} more than you earn each month.`,
-        impact: 'This will lead to increasing debt and financial crisis.',
-        immediateAction: 'Create a zero-based budget and cut expenses immediately.',
+        impact: "This will lead to increasing debt and financial crisis.",
+        immediateAction:
+          "Create a zero-based budget and cut expenses immediately.",
       });
     }
 
     // No emergency fund
     if (savings < 1000) {
       issues.push({
-        id: 'no_emergency_fund',
-        severity: 'high',
-        title: 'No Emergency Fund',
-        description: 'You have less than $1,000 in savings.',
-        impact: 'Any unexpected expense will force you into debt.',
-        immediateAction: 'Save $1,000 as fast as possible (Baby Step 1).',
+        id: "no_emergency_fund",
+        severity: "high",
+        title: "No Emergency Fund",
+        description: "You have less than $1,000 in savings.",
+        impact: "Any unexpected expense will force you into debt.",
+        immediateAction: "Save $1,000 as fast as possible (Baby Step 1).",
       });
     }
 
     // High-interest debt
-    const highInterestDebt = context.debts.debts.filter(d => d.interestRate > 15);
+    const highInterestDebt = context.debts.debts.filter(
+      (d) => d.interestRate > 15,
+    );
     if (highInterestDebt.length > 0) {
-      const totalHighInterest = highInterestDebt.reduce((sum, d) => sum + d.balance, 0);
+      const totalHighInterest = highInterestDebt.reduce(
+        (sum, d) => sum + d.balance,
+        0,
+      );
       issues.push({
-        id: 'high_interest_debt',
-        severity: 'high',
-        title: 'High-Interest Debt',
+        id: "high_interest_debt",
+        severity: "high",
+        title: "High-Interest Debt",
         description: `You have $${totalHighInterest.toFixed(2)} in debt with interest rates above 15%.`,
-        impact: 'You\'re losing money to interest every month.',
-        immediateAction: 'Stop using credit cards and start debt snowball method.',
+        impact: "You're losing money to interest every month.",
+        immediateAction:
+          "Stop using credit cards and start debt snowball method.",
       });
     }
 
     return issues;
   }
 
-  private findOpportunities(context: FinancialContext, focusArea: FocusArea): Opportunity[] {
+  private findOpportunities(
+    context: FinancialContext,
+    focusArea: FocusArea,
+  ): Opportunity[] {
     const opportunities: Opportunity[] = [];
     const income = context.transactions.totalIncome;
 
     // Debt payoff opportunities (if user has debt)
-    if (context.debts.totalDebt > 0 && (focusArea === 'debt_payoff' || focusArea === 'overall')) {
+    if (
+      context.debts.totalDebt > 0 &&
+      (focusArea === "debt_payoff" || focusArea === "overall")
+    ) {
       const monthlyPayment = context.debts.monthlyPayments;
       const extraPayment = context.transactions.netCashFlow * 0.5; // Use 50% of cash flow for extra debt payment
 
       // Find smallest debt for debt snowball method
-      const sortedDebts = [...context.debts.debts].sort((a, b) => a.balance - b.balance);
+      const sortedDebts = [...context.debts.debts].sort(
+        (a, b) => a.balance - b.balance,
+      );
       const smallestDebt = sortedDebts[0];
 
       const title = smallestDebt
         ? `Pay Off ${smallestDebt.name} First (Debt Snowball)`
-        : 'Accelerate Debt Payoff with Debt Snowball';
+        : "Accelerate Debt Payoff with Debt Snowball";
 
       const description = smallestDebt
         ? `Start with your smallest debt: ${smallestDebt.name} ($${smallestDebt.balance.toFixed(2)}). This is the debt snowball method.`
         : `You have $${context.debts.totalDebt.toFixed(2)} in debt. Use the debt snowball method to pay it off faster.`;
 
       opportunities.push({
-        id: 'debt_snowball',
-        type: 'debt_payoff',
+        id: "debt_snowball",
+        type: "debt_payoff",
         title,
         description,
         potentialBenefit: `Pay off debt ${Math.round((extraPayment / monthlyPayment) * 12)} months faster by adding $${extraPayment.toFixed(2)}/month to payments.`,
-        difficulty: 'moderate',
+        difficulty: "moderate",
         estimatedImpact: extraPayment,
         actionSteps: [
-          'List all debts from smallest to largest balance',
-          'Make minimum payments on all debts',
-          `Put all extra money toward ${smallestDebt?.name || 'the smallest debt'}`,
-          'Once smallest is paid, roll that payment to the next smallest',
+          "List all debts from smallest to largest balance",
+          "Make minimum payments on all debts",
+          `Put all extra money toward ${smallestDebt?.name || "the smallest debt"}`,
+          "Once smallest is paid, roll that payment to the next smallest",
         ],
       });
     }
@@ -557,20 +597,20 @@ export class FinancialCoach {
     for (const category of context.transactions.byCategory) {
       const expenseAmount = Math.abs(category.amount); // Use absolute value for expenses
       const percentOfIncome = expenseAmount / income;
-      if (category.category === 'dining' && percentOfIncome > 0.10) {
+      if (category.category === "dining" && percentOfIncome > 0.1) {
         opportunities.push({
           id: `reduce_${category.category}`,
-          type: 'expense_reduction',
-          title: 'Reduce Dining Out',
+          type: "expense_reduction",
+          title: "Reduce Dining Out",
           description: `You're spending ${(percentOfIncome * 100).toFixed(0)}% of income on dining out.`,
           potentialBenefit: `Save $${(expenseAmount * 0.5).toFixed(2)}/month by cooking at home.`,
-          difficulty: 'moderate',
+          difficulty: "moderate",
           estimatedImpact: expenseAmount * 0.5,
           actionSteps: [
-            'Meal plan for the week',
-            'Grocery shop with a list',
-            'Limit dining out to once per week',
-            'Pack lunches for work',
+            "Meal plan for the week",
+            "Grocery shop with a list",
+            "Limit dining out to once per week",
+            "Pack lunches for work",
           ],
         });
       }
@@ -582,8 +622,12 @@ export class FinancialCoach {
   private async generateAIAnalysis(
     context: FinancialContext,
     currentBabyStep: BabyStep,
-    focusArea: FocusArea
-  ): Promise<{ behavioralInsights: string[]; nextSteps: string[]; encouragement: string }> {
+    focusArea: FocusArea,
+  ): Promise<{
+    behavioralInsights: string[];
+    nextSteps: string[];
+    encouragement: string;
+  }> {
     const prompt = `Analyze this financial situation:
 
 Income: $${context.transactions.totalIncome}/month
@@ -604,42 +648,55 @@ Respond in JSON format with keys: behavioralInsights (array), nextSteps (array),
       const response = await this.aiService.chat(
         AI_MODEL,
         [
-          { role: 'system', content: ANALYSIS_SYSTEM_PROMPT },
-          { role: 'user', content: prompt },
+          { role: "system", content: ANALYSIS_SYSTEM_PROMPT },
+          { role: "user", content: prompt },
         ],
-        { temperature: 0.3, max_tokens: 1000 }
+        { temperature: 0.3, max_tokens: 1000 },
       );
 
-      const content = response.choices[0]?.message?.content || '{}';
-      const parsed = JSON.parse(content.match(/\{[\s\S]*\}/)?.[0] || '{}');
+      const content = response.choices[0]?.message?.content || "{}";
+      const parsed = JSON.parse(content.match(/\{[\s\S]*\}/)?.[0] || "{}");
 
       return {
         behavioralInsights: parsed.behavioralInsights || [],
         nextSteps: parsed.nextSteps || [],
-        encouragement: parsed.encouragement || 'You can do this! Every step forward is progress.',
+        encouragement:
+          parsed.encouragement ||
+          "You can do this! Every step forward is progress.",
       };
     } catch (error) {
       // FinancialCoach error: AI analysis failed
       return {
-        behavioralInsights: ['Track every dollar', 'Build your emergency fund', 'Focus on one step at a time'],
-        nextSteps: ['Create a budget', 'Save $1,000', 'List all debts'],
-        encouragement: 'You can do this! Every step forward is progress.',
+        behavioralInsights: [
+          "Track every dollar",
+          "Build your emergency fund",
+          "Focus on one step at a time",
+        ],
+        nextSteps: ["Create a budget", "Save $1,000", "List all debts"],
+        encouragement: "You can do this! Every step forward is progress.",
       };
     }
   }
 
-  private buildActionPlanPrompt(context: FinancialContext, goals: string[], timeframe: string): string {
+  private buildActionPlanPrompt(
+    context: FinancialContext,
+    goals: string[],
+    timeframe: string,
+  ): string {
     return `Create a ${timeframe} action plan for someone with:
 - Income: $${context.transactions.totalIncome}/month
 - Expenses: $${Math.abs(context.transactions.totalExpenses)}/month
 - Savings: $${context.accounts.totalSavings}
 - Debt: $${context.debts.totalDebt}
-- Goals: ${goals.join(', ')}
+- Goals: ${goals.join(", ")}
 
 Use Dave Ramsey's Baby Steps framework. Provide specific milestones, weekly actions, and celebration points.`;
   }
 
-  private buildAdvicePrompt(context: FinancialContext, question: string): string {
+  private buildAdvicePrompt(
+    context: FinancialContext,
+    question: string,
+  ): string {
     return `User's financial situation:
 - Monthly Income: $${context.transactions.totalIncome}
 - Monthly Expenses: $${Math.abs(context.transactions.totalExpenses)}
@@ -651,7 +708,10 @@ Question: ${question}
 Provide personalized advice based on their actual numbers.`;
   }
 
-  private buildRecommendationPrompt(context: FinancialContext, opportunities: Opportunity[]): string {
+  private buildRecommendationPrompt(
+    context: FinancialContext,
+    opportunities: Opportunity[],
+  ): string {
     return `Based on this financial profile:
 - Income: $${context.transactions.totalIncome}/month
 - Expenses: $${Math.abs(context.transactions.totalExpenses)}/month
@@ -659,7 +719,7 @@ Provide personalized advice based on their actual numbers.`;
 - Debt: $${context.debts.totalDebt}
 
 Identified opportunities:
-${opportunities.map(o => `- ${o.title}: ${o.potentialBenefit}`).join('\n')}
+${opportunities.map((o) => `- ${o.title}: ${o.potentialBenefit}`).join("\n")}
 
 Generate 3-5 prioritized recommendations with specific action steps.`;
   }
@@ -677,9 +737,17 @@ Generate 3-5 prioritized recommendations with specific action steps.`;
     return {
       targetBabyStep: 2,
       milestones: [],
-      weeklyActions: ['Track all spending', 'Review budget', 'Find extra income'],
-      monthlyReviews: ['Review progress', 'Adjust budget', 'Celebrate wins'],
-      celebrationPoints: ['First $100 saved', 'First debt paid off', 'Emergency fund complete'],
+      weeklyActions: [
+        "Track all spending",
+        "Review budget",
+        "Find extra income",
+      ],
+      monthlyReviews: ["Review progress", "Adjust budget", "Celebrate wins"],
+      celebrationPoints: [
+        "First $100 saved",
+        "First debt paid off",
+        "Emergency fund complete",
+      ],
     };
   }
 
@@ -696,9 +764,9 @@ Generate 3-5 prioritized recommendations with specific action steps.`;
     return {
       answer: content,
       relevantBabyStep: 1,
-      actionSteps: ['Take action on this advice'],
+      actionSteps: ["Take action on this advice"],
       resources: [],
-      encouragement: 'You\'re making great progress!',
+      encouragement: "You're making great progress!",
     };
   }
 
@@ -721,5 +789,3 @@ Generate 3-5 prioritized recommendations with specific action steps.`;
 // ============================================================================
 
 export const financialCoach = new FinancialCoach();
-
-

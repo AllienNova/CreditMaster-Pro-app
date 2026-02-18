@@ -3,13 +3,20 @@
  * Displays credit monitoring alerts and notifications
  */
 
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { lightTheme as theme } from '../constants/theme';
+import React from "react";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { lightTheme as theme } from "../constants/theme";
 
-type AlertType = 'score_change' | 'new_account' | 'inquiry' | 'derogatory' | 'identity' | 'payment' | 'info';
-type AlertSeverity = 'critical' | 'warning' | 'info' | 'success';
+type AlertType =
+  | "score_change"
+  | "new_account"
+  | "inquiry"
+  | "derogatory"
+  | "identity"
+  | "payment"
+  | "info";
+type AlertSeverity = "critical" | "warning" | "info" | "success";
 
 interface AlertCardProps {
   id: string;
@@ -24,20 +31,23 @@ interface AlertCardProps {
 }
 
 const typeIcons: Record<AlertType, string> = {
-  score_change: 'trending-up',
-  new_account: 'card-outline',
-  inquiry: 'search-outline',
-  derogatory: 'warning-outline',
-  identity: 'shield-outline',
-  payment: 'cash-outline',
-  info: 'information-circle-outline',
+  score_change: "trending-up",
+  new_account: "card-outline",
+  inquiry: "search-outline",
+  derogatory: "warning-outline",
+  identity: "shield-outline",
+  payment: "cash-outline",
+  info: "information-circle-outline",
 };
 
-const severityConfig: Record<AlertSeverity, { color: string; bgColor: string }> = {
-  critical: { color: '#DC2626', bgColor: '#FEE2E2' },
-  warning: { color: '#F59E0B', bgColor: '#FEF3C7' },
-  info: { color: '#3B82F6', bgColor: '#DBEAFE' },
-  success: { color: '#10B981', bgColor: '#D1FAE5' },
+const severityConfig: Record<
+  AlertSeverity,
+  { color: string; bgColor: string }
+> = {
+  critical: { color: "#DC2626", bgColor: "#FEE2E2" },
+  warning: { color: "#F59E0B", bgColor: "#FEF3C7" },
+  info: { color: "#3B82F6", bgColor: "#DBEAFE" },
+  success: { color: "#10B981", bgColor: "#D1FAE5" },
 };
 
 export function AlertCard({
@@ -51,7 +61,7 @@ export function AlertCard({
   onDismiss,
 }: AlertCardProps) {
   const config = severityConfig[severity];
-  const icon = typeIcons[type] || 'information-circle-outline';
+  const icon = typeIcons[type] || "information-circle-outline";
 
   const formatTimestamp = (ts: string) => {
     const date = new Date(ts);
@@ -64,22 +74,29 @@ export function AlertCard({
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
   return (
-    <TouchableOpacity 
-      style={[styles.container, !read && styles.unread]} 
+    <TouchableOpacity
+      style={[styles.container, !read && styles.unread]}
       onPress={onPress}
       activeOpacity={0.7}
     >
       <View style={[styles.iconContainer, { backgroundColor: config.bgColor }]}>
-        <Ionicons name={icon as keyof typeof Ionicons.glyphMap} size={24} color={config.color} />
+        <Ionicons
+          name={icon as keyof typeof Ionicons.glyphMap}
+          size={24}
+          color={config.color}
+        />
       </View>
 
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={[styles.title, !read && styles.unreadTitle]} numberOfLines={1}>
+          <Text
+            style={[styles.title, !read && styles.unreadTitle]}
+            numberOfLines={1}
+          >
             {title}
           </Text>
           <Text style={styles.timestamp}>{formatTimestamp(timestamp)}</Text>
@@ -90,8 +107,8 @@ export function AlertCard({
       </View>
 
       {onDismiss && (
-        <TouchableOpacity 
-          style={styles.dismissButton} 
+        <TouchableOpacity
+          style={styles.dismissButton}
           onPress={onDismiss}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
@@ -99,14 +116,16 @@ export function AlertCard({
         </TouchableOpacity>
       )}
 
-      {!read && <View style={[styles.unreadDot, { backgroundColor: config.color }]} />}
+      {!read && (
+        <View style={[styles.unreadDot, { backgroundColor: config.color }]} />
+      )}
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
+    flexDirection: "row",
     backgroundColor: theme.colors.surface,
     borderRadius: theme.borderRadius.lg,
     padding: theme.spacing.md,
@@ -116,34 +135,34 @@ const styles = StyleSheet.create({
   },
   unread: {
     backgroundColor: theme.colors.background,
-    borderColor: theme.colors.primary + '30',
+    borderColor: theme.colors.primary + "30",
   },
   iconContainer: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: theme.spacing.md,
   },
   content: {
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 4,
   },
   title: {
     fontSize: 15,
-    fontWeight: '500',
+    fontWeight: "500",
     color: theme.colors.text,
     flex: 1,
     marginRight: theme.spacing.sm,
   },
   unreadTitle: {
-    fontWeight: '600',
+    fontWeight: "600",
   },
   timestamp: {
     fontSize: 12,
@@ -159,7 +178,7 @@ const styles = StyleSheet.create({
     marginLeft: theme.spacing.sm,
   },
   unreadDot: {
-    position: 'absolute',
+    position: "absolute",
     top: theme.spacing.md,
     left: theme.spacing.sm,
     width: 8,

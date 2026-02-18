@@ -10,12 +10,12 @@
  * - Strategy comparison with savings and timeline analysis
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { z } from 'zod';
-import { debtStrategyOptimizer } from '@/lib/financial/debt-strategy-optimizer';
-import { financialContextEngine } from '@/lib/financial/financial-context-engine';
-import { DebtComparison } from '@/lib/financial/types/debt-strategy.types';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { z } from "zod";
+import { debtStrategyOptimizer } from "@/lib/financial/debt-strategy-optimizer";
+import { financialContextEngine } from "@/lib/financial/financial-context-engine";
+import { DebtComparison } from "@/lib/financial/types/debt-strategy.types";
 
 // ============================================================================
 // VALIDATION SCHEMAS
@@ -23,16 +23,31 @@ import { DebtComparison } from '@/lib/financial/types/debt-strategy.types';
 
 const DebtItemSchema = z.object({
   id: z.string(),
-  name: z.string().min(1, 'Debt name is required'),
-  balance: z.number().positive('Balance must be positive'),
-  interestRate: z.number().min(0, 'Interest rate cannot be negative').max(100, 'Interest rate cannot exceed 100%'),
-  minimumPayment: z.number().positive('Minimum payment must be positive'),
-  type: z.enum(['credit_card', 'student_loan', 'mortgage', 'auto_loan', 'personal_loan', 'other']).optional(),
+  name: z.string().min(1, "Debt name is required"),
+  balance: z.number().positive("Balance must be positive"),
+  interestRate: z
+    .number()
+    .min(0, "Interest rate cannot be negative")
+    .max(100, "Interest rate cannot exceed 100%"),
+  minimumPayment: z.number().positive("Minimum payment must be positive"),
+  type: z
+    .enum([
+      "credit_card",
+      "student_loan",
+      "mortgage",
+      "auto_loan",
+      "personal_loan",
+      "other",
+    ])
+    .optional(),
 });
 
 const DebtStrategyRequestSchema = z.object({
-  debts: z.array(DebtItemSchema).min(1, 'At least one debt is required'),
-  extraPayment: z.number().min(0, 'Extra payment cannot be negative').default(0),
+  debts: z.array(DebtItemSchema).min(1, "At least one debt is required"),
+  extraPayment: z
+    .number()
+    .min(0, "Extra payment cannot be negative")
+    .default(0),
   includeAIOptimization: z.boolean().optional().default(true),
 });
 
@@ -98,7 +113,11 @@ function getCachedResponse(cacheKey: string): DebtComparison | null {
   return cached.data;
 }
 
-function setCachedResponse(cacheKey: string, data: DebtComparison, ttlMs: number = 300000): void {
+function setCachedResponse(
+  cacheKey: string,
+  data: DebtComparison,
+  ttlMs: number = 300000,
+): void {
   responseCache.set(cacheKey, {
     data,
     expiresAt: Date.now() + ttlMs,
@@ -111,11 +130,15 @@ interface DebtInput {
   interestRate: number;
 }
 
-function generateCacheKey(userId: string, debts: DebtInput[], extraPayment: number): string {
+function generateCacheKey(
+  userId: string,
+  debts: DebtInput[],
+  extraPayment: number,
+): string {
   const debtHash = debts
     .map((d) => `${d.id}:${d.balance}:${d.interestRate}`)
     .sort()
-    .join('|');
+    .join("|");
   return `debt-strategy:${userId}:${debtHash}:${extraPayment}`;
 }
 
@@ -135,11 +158,11 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: {
-            code: 'UNAUTHORIZED',
-            message: 'Authentication required',
+            code: "UNAUTHORIZED",
+            message: "Authentication required",
           },
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -149,12 +172,12 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: {
-            code: 'RATE_LIMIT_EXCEEDED',
-            message: 'Too many requests. Please try again in a minute.',
+            code: "RATE_LIMIT_EXCEEDED",
+            message: "Too many requests. Please try again in a minute.",
             retryAfter: 60,
           },
         },
-        { status: 429 }
+        { status: 429 },
       );
     }
 
@@ -167,12 +190,12 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: {
-            code: 'INVALID_REQUEST',
-            message: 'Invalid request parameters',
+            code: "INVALID_REQUEST",
+            message: "Invalid request parameters",
             details: validation.error.errors,
           },
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -196,9 +219,9 @@ export async function POST(request: NextRequest) {
         },
         {
           headers: {
-            'Cache-Control': 'private, max-age=300, stale-while-revalidate=60',
+            "Cache-Control": "private, max-age=300, stale-while-revalidate=60",
           },
-        }
+        },
       );
     }
 
@@ -206,7 +229,9 @@ export async function POST(request: NextRequest) {
     let financialContext;
     if (includeAIOptimization) {
       try {
-        financialContext = await financialContextEngine.getFinancialContext(user.id);
+        financialContext = await financialContextEngine.getFinancialContext(
+          user.id,
+        );
       } catch (_ctxError) {
         // DebtStrategyRoute: Proceeding without AI optimization
         void _ctxError;
@@ -214,8 +239,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate strategies
-    const snowball = debtStrategyOptimizer.calculateSnowball(debts as any, extraPayment);
-    const avalanche = debtStrategyOptimizer.calculateAvalanche(debts as any, extraPayment);
+    const snowball = debtStrategyOptimizer.calculateSnowball(
+      debts as any,
+      extraPayment,
+    );
+    const avalanche = debtStrategyOptimizer.calculateAvalanche(
+      debts as any,
+      extraPayment,
+    );
 
     let comparison;
     if (includeAIOptimization && financialContext) {
@@ -223,7 +254,7 @@ export async function POST(request: NextRequest) {
       comparison = await debtStrategyOptimizer.compareStrategies(
         debts as any,
         extraPayment,
-        financialContext
+        financialContext,
       );
     } else {
       // Basic comparison without AI
@@ -231,15 +262,22 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         generatedAt: new Date(),
         strategies: [snowball, avalanche],
-        recommendation: avalanche.totalInterestPaid < snowball.totalInterestPaid ? 'avalanche' : 'snowball',
-        reasonForRecommendation: avalanche.totalInterestPaid < snowball.totalInterestPaid
-          ? 'Avalanche method saves more on interest'
-          : 'Snowball method provides faster psychological wins',
+        recommendation:
+          avalanche.totalInterestPaid < snowball.totalInterestPaid
+            ? "avalanche"
+            : "snowball",
+        reasonForRecommendation:
+          avalanche.totalInterestPaid < snowball.totalInterestPaid
+            ? "Avalanche method saves more on interest"
+            : "Snowball method provides faster psychological wins",
         potentialSavings: {
-          snowballVsAvalanche: snowball.totalInterestPaid - avalanche.totalInterestPaid,
+          snowballVsAvalanche:
+            snowball.totalInterestPaid - avalanche.totalInterestPaid,
           aiOptimizedVsSnowball: 0,
           aiOptimizedVsAvalanche: 0,
-          bestVsWorst: Math.abs(snowball.totalInterestPaid - avalanche.totalInterestPaid),
+          bestVsWorst: Math.abs(
+            snowball.totalInterestPaid - avalanche.totalInterestPaid,
+          ),
         },
         timelineDifferences: {
           snowballVsAvalanche: snowball.totalMonths - avalanche.totalMonths,
@@ -275,9 +313,9 @@ export async function POST(request: NextRequest) {
       },
       {
         headers: {
-          'Cache-Control': 'private, max-age=300, stale-while-revalidate=60',
+          "Cache-Control": "private, max-age=300, stale-while-revalidate=60",
         },
-      }
+      },
     );
   } catch (_error) {
     // DebtStrategyRoute error: Calculation failed
@@ -288,17 +326,16 @@ export async function POST(request: NextRequest) {
       {
         success: false,
         error: {
-          code: 'INTERNAL_ERROR',
-          message: 'Failed to calculate debt strategy',
-          details: _error instanceof Error ? _error.message : 'Unknown error',
+          code: "INTERNAL_ERROR",
+          message: "Failed to calculate debt strategy",
+          details: _error instanceof Error ? _error.message : "Unknown error",
         },
         _meta: {
           responseTime,
           timestamp: new Date().toISOString(),
         },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-

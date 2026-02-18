@@ -1,13 +1,13 @@
 /**
  * Comprehensive Dispute Letter Templates
- * 
+ *
  * 10 FCRA-compliant templates for specific dispute scenarios
  * Each template includes legal citations, success rates, and best practices
- * 
+ *
  * @version 2.0.0
  */
 
-export const TEMPLATE_VERSION = '2.0.0';
+export const TEMPLATE_VERSION = "2.0.0";
 
 // ============================================================================
 // TYPES
@@ -19,7 +19,7 @@ export interface DisputeTemplate {
   scenario: string;
   description: string;
   successRate: number; // 0-100
-  tone: 'formal' | 'humble' | 'assertive' | 'legal';
+  tone: "formal" | "humble" | "assertive" | "legal";
   fcraSection: string[];
   additionalLaws?: string[];
   requiredDocuments: string[];
@@ -43,40 +43,44 @@ export interface TemplateCategory {
 
 export const TEMPLATE_CATEGORIES: TemplateCategory[] = [
   {
-    id: 'inquiries',
-    name: 'Hard Inquiry Disputes',
-    description: 'Templates for unauthorized or erroneous hard inquiries',
-    templates: ['unauthorized_hard_inquiry'],
+    id: "inquiries",
+    name: "Hard Inquiry Disputes",
+    description: "Templates for unauthorized or erroneous hard inquiries",
+    templates: ["unauthorized_hard_inquiry"],
   },
   {
-    id: 'time_barred',
-    name: 'Time-Barred & Obsolete Debts',
-    description: 'Templates for debts exceeding FCRA reporting limits',
-    templates: ['obsolete_debt', 'bankruptcy_discharge'],
+    id: "time_barred",
+    name: "Time-Barred & Obsolete Debts",
+    description: "Templates for debts exceeding FCRA reporting limits",
+    templates: ["obsolete_debt", "bankruptcy_discharge"],
   },
   {
-    id: 'identity',
-    name: 'Identity & Mixed Files',
-    description: 'Templates for mixed credit files and identity issues',
-    templates: ['mixed_credit_file'],
+    id: "identity",
+    name: "Identity & Mixed Files",
+    description: "Templates for mixed credit files and identity issues",
+    templates: ["mixed_credit_file"],
   },
   {
-    id: 'account_status',
-    name: 'Account Status Errors',
-    description: 'Templates for incorrect account status reporting',
-    templates: ['incorrect_account_status', 'paid_collection_reporting', 'chargeoff_after_settlement'],
+    id: "account_status",
+    name: "Account Status Errors",
+    description: "Templates for incorrect account status reporting",
+    templates: [
+      "incorrect_account_status",
+      "paid_collection_reporting",
+      "chargeoff_after_settlement",
+    ],
   },
   {
-    id: 'payment_history',
-    name: 'Payment History Errors',
-    description: 'Templates for inaccurate payment history',
-    templates: ['inaccurate_payment_history'],
+    id: "payment_history",
+    name: "Payment History Errors",
+    description: "Templates for inaccurate payment history",
+    templates: ["inaccurate_payment_history"],
   },
   {
-    id: 'special_protections',
-    name: 'Special Consumer Protections',
-    description: 'Templates leveraging new consumer protection rules',
-    templates: ['medical_debt_under_500', 'student_loan_rehabilitation'],
+    id: "special_protections",
+    name: "Special Consumer Protections",
+    description: "Templates leveraging new consumer protection rules",
+    templates: ["medical_debt_under_500", "student_loan_rehabilitation"],
   },
 ];
 
@@ -85,40 +89,51 @@ export const TEMPLATE_CATEGORIES: TemplateCategory[] = [
 // ============================================================================
 
 export const UNAUTHORIZED_HARD_INQUIRY: DisputeTemplate = {
-  id: 'unauthorized_hard_inquiry',
-  name: 'Unauthorized Hard Inquiry Dispute',
-  scenario: 'A hard inquiry appears on your credit report without your permission or knowledge',
-  description: 'Disputes hard inquiries made without proper authorization. Under FCRA ?604, creditors must have permissible purpose and consumer consent for hard pulls.',
+  id: "unauthorized_hard_inquiry",
+  name: "Unauthorized Hard Inquiry Dispute",
+  scenario:
+    "A hard inquiry appears on your credit report without your permission or knowledge",
+  description:
+    "Disputes hard inquiries made without proper authorization. Under FCRA ?604, creditors must have permissible purpose and consumer consent for hard pulls.",
   successRate: 62,
-  tone: 'assertive',
-  fcraSection: ['?604(a)', '?604(f)', '?611(a)', '?616', '?617'],
-  additionalLaws: ['FCRA Permissible Purpose Requirements', 'State Consumer Protection Laws'],
+  tone: "assertive",
+  fcraSection: ["?604(a)", "?604(f)", "?611(a)", "?616", "?617"],
+  additionalLaws: [
+    "FCRA Permissible Purpose Requirements",
+    "State Consumer Protection Laws",
+  ],
   requiredDocuments: [
-    'Copy of credit report showing the inquiry',
-    'Written statement denying authorization',
-    'Any documentation showing you did not apply with this creditor',
+    "Copy of credit report showing the inquiry",
+    "Written statement denying authorization",
+    "Any documentation showing you did not apply with this creditor",
   ],
   bestPractices: [
-    'Dispute within 30 days of discovery',
-    'Send via certified mail with return receipt',
-    'Keep copies of all correspondence',
-    'File with all bureaus showing the inquiry',
-    'Consider filing CFPB complaint if bureau fails to investigate',
+    "Dispute within 30 days of discovery",
+    "Send via certified mail with return receipt",
+    "Keep copies of all correspondence",
+    "File with all bureaus showing the inquiry",
+    "Consider filing CFPB complaint if bureau fails to investigate",
   ],
   whenToUse: [
-    'You never applied for credit with this company',
-    'Inquiry appears from a company you have no relationship with',
-    'Identity theft led to unauthorized applications',
-    'Creditor pulled report without permissible purpose',
+    "You never applied for credit with this company",
+    "Inquiry appears from a company you have no relationship with",
+    "Identity theft led to unauthorized applications",
+    "Creditor pulled report without permissible purpose",
   ],
   whenNotToUse: [
-    'You authorized the inquiry but forgot',
-    'Inquiry is from a company you applied with (even if denied)',
-    'It is a soft inquiry (does not affect score)',
+    "You authorized the inquiry but forgot",
+    "Inquiry is from a company you applied with (even if denied)",
+    "It is a soft inquiry (does not affect score)",
   ],
   placeholders: [
-    '[YOUR_NAME]', '[YOUR_ADDRESS]', '[CITY_STATE_ZIP]', '[DATE]',
-    '[BUREAU_NAME]', '[BUREAU_ADDRESS]', '[INQUIRY_DATE]', '[CREDITOR_NAME]',
+    "[YOUR_NAME]",
+    "[YOUR_ADDRESS]",
+    "[CITY_STATE_ZIP]",
+    "[DATE]",
+    "[BUREAU_NAME]",
+    "[BUREAU_ADDRESS]",
+    "[INQUIRY_DATE]",
+    "[CREDITOR_NAME]",
   ],
   template: `[YOUR_NAME]
 [YOUR_ADDRESS]
@@ -172,42 +187,52 @@ Enclosures:
 // ============================================================================
 
 export const OBSOLETE_DEBT: DisputeTemplate = {
-  id: 'obsolete_debt',
-  name: 'Obsolete Debt - Time-Barred Removal',
-  scenario: 'A negative account older than 7 years (or 7.5 years from DOFD) is still reporting',
-  description: 'Under FCRA ?605(a)(4), most negative information must be removed after 7 years from the date of first delinquency (DOFD). This template demands removal of time-barred items.',
+  id: "obsolete_debt",
+  name: "Obsolete Debt - Time-Barred Removal",
+  scenario:
+    "A negative account older than 7 years (or 7.5 years from DOFD) is still reporting",
+  description:
+    "Under FCRA ?605(a)(4), most negative information must be removed after 7 years from the date of first delinquency (DOFD). This template demands removal of time-barred items.",
   successRate: 78,
-  tone: 'legal',
-  fcraSection: ['?605(a)(4)', '?605(c)', '?611(a)', '?623(a)(5)'],
-  additionalLaws: ['State statute of limitations on debt collection'],
+  tone: "legal",
+  fcraSection: ["?605(a)(4)", "?605(c)", "?611(a)", "?623(a)(5)"],
+  additionalLaws: ["State statute of limitations on debt collection"],
   requiredDocuments: [
-    'Copy of credit report showing the obsolete account',
-    'Timeline calculation showing DOFD was more than 7 years ago',
-    'Any correspondence showing original delinquency date',
+    "Copy of credit report showing the obsolete account",
+    "Timeline calculation showing DOFD was more than 7 years ago",
+    "Any correspondence showing original delinquency date",
   ],
   bestPractices: [
-    'Calculate DOFD accurately - it is the date of first missed payment that led to the charge-off',
-    'Note that the 7-year period runs from DOFD, not date sold to collections',
-    'Some debts (judgments, bankruptcies, student loans) have different reporting periods',
-    'Consider state law statute of limitations as additional leverage',
-    'Keep evidence of your DOFD calculation',
+    "Calculate DOFD accurately - it is the date of first missed payment that led to the charge-off",
+    "Note that the 7-year period runs from DOFD, not date sold to collections",
+    "Some debts (judgments, bankruptcies, student loans) have different reporting periods",
+    "Consider state law statute of limitations as additional leverage",
+    "Keep evidence of your DOFD calculation",
   ],
   whenToUse: [
-    'Account is older than 7 years from the date of first delinquency',
-    'Collection agency re-aged debt by reporting new dates',
-    'Original creditor sold debt but new collector reports as new account',
-    'Account is within months of aging off and you want expedited removal',
+    "Account is older than 7 years from the date of first delinquency",
+    "Collection agency re-aged debt by reporting new dates",
+    "Original creditor sold debt but new collector reports as new account",
+    "Account is within months of aging off and you want expedited removal",
   ],
   whenNotToUse: [
-    'Account is legitimate and within reporting period',
-    'Debt is a judgment (10 years in most states)',
-    'Debt is federal student loan (different rules apply)',
-    'Bankruptcy (7-10 years depending on chapter)',
+    "Account is legitimate and within reporting period",
+    "Debt is a judgment (10 years in most states)",
+    "Debt is federal student loan (different rules apply)",
+    "Bankruptcy (7-10 years depending on chapter)",
   ],
   placeholders: [
-    '[YOUR_NAME]', '[YOUR_ADDRESS]', '[CITY_STATE_ZIP]', '[DATE]',
-    '[BUREAU_NAME]', '[BUREAU_ADDRESS]', '[CREDITOR_NAME]', '[ACCOUNT_NUMBER]',
-    '[DOFD_DATE]', '[CURRENT_AGE_YEARS]', '[ORIGINAL_CREDITOR]',
+    "[YOUR_NAME]",
+    "[YOUR_ADDRESS]",
+    "[CITY_STATE_ZIP]",
+    "[DATE]",
+    "[BUREAU_NAME]",
+    "[BUREAU_ADDRESS]",
+    "[CREDITOR_NAME]",
+    "[ACCOUNT_NUMBER]",
+    "[DOFD_DATE]",
+    "[CURRENT_AGE_YEARS]",
+    "[ORIGINAL_CREDITOR]",
   ],
   template: `[YOUR_NAME]
 [YOUR_ADDRESS]
@@ -274,44 +299,55 @@ Enclosures:
 // ============================================================================
 
 export const MIXED_CREDIT_FILE: DisputeTemplate = {
-  id: 'mixed_credit_file',
-  name: 'Mixed Credit File Dispute',
-  scenario: 'Information from another person with a similar name or SSN is appearing on your credit report',
-  description: 'Addresses mixed file situations where credit bureau algorithms incorrectly merge information from two or more consumers. Common with similar names, family members, or Jr/Sr designations.',
+  id: "mixed_credit_file",
+  name: "Mixed Credit File Dispute",
+  scenario:
+    "Information from another person with a similar name or SSN is appearing on your credit report",
+  description:
+    "Addresses mixed file situations where credit bureau algorithms incorrectly merge information from two or more consumers. Common with similar names, family members, or Jr/Sr designations.",
   successRate: 71,
-  tone: 'assertive',
-  fcraSection: ['?607(b)', '?611(a)', '?616', '?617'],
-  additionalLaws: ['Reasonable Procedures Requirement', 'Maximum Possible Accuracy Standard'],
+  tone: "assertive",
+  fcraSection: ["?607(b)", "?611(a)", "?616", "?617"],
+  additionalLaws: [
+    "Reasonable Procedures Requirement",
+    "Maximum Possible Accuracy Standard",
+  ],
   requiredDocuments: [
-    'Copy of credit report showing mixed information',
-    'Government-issued ID proving your identity',
-    'Proof of address (utility bill, bank statement)',
-    'Social Security card or W-2 showing correct SSN',
-    'List of accounts that are NOT yours',
+    "Copy of credit report showing mixed information",
+    "Government-issued ID proving your identity",
+    "Proof of address (utility bill, bank statement)",
+    "Social Security card or W-2 showing correct SSN",
+    "List of accounts that are NOT yours",
   ],
   bestPractices: [
-    'Clearly identify which accounts belong to you and which do not',
-    'Provide extensive identity documentation',
-    'Request permanent separation of the files',
-    'Ask for fraud alert or security freeze to prevent re-merging',
-    'Consider sending to all three bureaus even if only one is affected',
+    "Clearly identify which accounts belong to you and which do not",
+    "Provide extensive identity documentation",
+    "Request permanent separation of the files",
+    "Ask for fraud alert or security freeze to prevent re-merging",
+    "Consider sending to all three bureaus even if only one is affected",
   ],
   whenToUse: [
-    'Accounts appear that you never opened',
-    'Address history shows places you never lived',
-    'Employment history shows employers you never worked for',
-    'You have a common name and see similar names in your file',
-    'Family member with similar name has accounts on your report',
+    "Accounts appear that you never opened",
+    "Address history shows places you never lived",
+    "Employment history shows employers you never worked for",
+    "You have a common name and see similar names in your file",
+    "Family member with similar name has accounts on your report",
   ],
   whenNotToUse: [
-    'Accounts are yours but you forgot about them',
-    'This is a case of identity theft (use identity theft template instead)',
-    'The information is accurate but unfavorable',
+    "Accounts are yours but you forgot about them",
+    "This is a case of identity theft (use identity theft template instead)",
+    "The information is accurate but unfavorable",
   ],
   placeholders: [
-    '[YOUR_NAME]', '[YOUR_ADDRESS]', '[CITY_STATE_ZIP]', '[DATE]',
-    '[BUREAU_NAME]', '[BUREAU_ADDRESS]', '[MIXED_ACCOUNTS_LIST]',
-    '[YOUR_DOB]', '[YOUR_SSN_LAST_4]',
+    "[YOUR_NAME]",
+    "[YOUR_ADDRESS]",
+    "[CITY_STATE_ZIP]",
+    "[DATE]",
+    "[BUREAU_NAME]",
+    "[BUREAU_ADDRESS]",
+    "[MIXED_ACCOUNTS_LIST]",
+    "[YOUR_DOB]",
+    "[YOUR_SSN_LAST_4]",
   ],
   template: `[YOUR_NAME]
 [YOUR_ADDRESS]
@@ -374,42 +410,55 @@ Enclosures:
 // ============================================================================
 
 export const INCORRECT_ACCOUNT_STATUS: DisputeTemplate = {
-  id: 'incorrect_account_status',
-  name: 'Incorrect Account Status Dispute',
-  scenario: 'Account is showing as open when it should be closed, or closed when it should be open',
-  description: 'Disputes incorrect account status reporting such as open/closed status, account type misclassification, or incorrect current status.',
+  id: "incorrect_account_status",
+  name: "Incorrect Account Status Dispute",
+  scenario:
+    "Account is showing as open when it should be closed, or closed when it should be open",
+  description:
+    "Disputes incorrect account status reporting such as open/closed status, account type misclassification, or incorrect current status.",
   successRate: 68,
-  tone: 'formal',
-  fcraSection: ['?611(a)', '?623(a)(1)', '?623(b)'],
-  additionalLaws: ['Metro 2 Reporting Standards', 'Furnisher Accuracy Requirements'],
+  tone: "formal",
+  fcraSection: ["?611(a)", "?623(a)(1)", "?623(b)"],
+  additionalLaws: [
+    "Metro 2 Reporting Standards",
+    "Furnisher Accuracy Requirements",
+  ],
   requiredDocuments: [
-    'Copy of credit report showing incorrect status',
-    'Letter from creditor showing correct status',
-    'Final statement showing account closure (if applicable)',
-    'Account agreement or recent statements',
+    "Copy of credit report showing incorrect status",
+    "Letter from creditor showing correct status",
+    "Final statement showing account closure (if applicable)",
+    "Account agreement or recent statements",
   ],
   bestPractices: [
-    'Get written confirmation from creditor of correct status',
-    'Dispute with both the bureau AND the furnisher directly',
-    'Be specific about what the correct status should be',
-    'Include account closure date if disputing open status',
-    'Note how this error affects your credit utilization or score',
+    "Get written confirmation from creditor of correct status",
+    "Dispute with both the bureau AND the furnisher directly",
+    "Be specific about what the correct status should be",
+    "Include account closure date if disputing open status",
+    "Note how this error affects your credit utilization or score",
   ],
   whenToUse: [
-    'Account shows open but you closed it',
-    'Account shows closed but it is still active',
-    'Account type is wrong (revolving vs installment)',
-    'Account shows current status incorrectly (current vs delinquent)',
+    "Account shows open but you closed it",
+    "Account shows closed but it is still active",
+    "Account type is wrong (revolving vs installment)",
+    "Account shows current status incorrectly (current vs delinquent)",
   ],
   whenNotToUse: [
-    'The status is technically accurate per creditor records',
-    'You want account closed but it is legitimately open',
-    'Dispute is about balance rather than status',
+    "The status is technically accurate per creditor records",
+    "You want account closed but it is legitimately open",
+    "Dispute is about balance rather than status",
   ],
   placeholders: [
-    '[YOUR_NAME]', '[YOUR_ADDRESS]', '[CITY_STATE_ZIP]', '[DATE]',
-    '[BUREAU_NAME]', '[BUREAU_ADDRESS]', '[CREDITOR_NAME]', '[ACCOUNT_NUMBER]',
-    '[INCORRECT_STATUS]', '[CORRECT_STATUS]', '[STATUS_CHANGE_DATE]',
+    "[YOUR_NAME]",
+    "[YOUR_ADDRESS]",
+    "[CITY_STATE_ZIP]",
+    "[DATE]",
+    "[BUREAU_NAME]",
+    "[BUREAU_ADDRESS]",
+    "[CREDITOR_NAME]",
+    "[ACCOUNT_NUMBER]",
+    "[INCORRECT_STATUS]",
+    "[CORRECT_STATUS]",
+    "[STATUS_CHANGE_DATE]",
   ],
   template: `[YOUR_NAME]
 [YOUR_ADDRESS]
@@ -469,40 +518,50 @@ Enclosures:
 // ============================================================================
 
 export const PAID_COLLECTION_REPORTING: DisputeTemplate = {
-  id: 'paid_collection_reporting',
-  name: 'Paid Collection Still Reporting as Unpaid',
-  scenario: 'A collection account continues to show as unpaid or outstanding after you have paid it in full',
-  description: 'Disputes collection accounts that have been paid but are not updated to reflect paid status.',
+  id: "paid_collection_reporting",
+  name: "Paid Collection Still Reporting as Unpaid",
+  scenario:
+    "A collection account continues to show as unpaid or outstanding after you have paid it in full",
+  description:
+    "Disputes collection accounts that have been paid but are not updated to reflect paid status.",
   successRate: 74,
-  tone: 'assertive',
-  fcraSection: ['?611(a)', '?623(a)(1)', '?623(a)(2)', '?623(b)'],
-  additionalLaws: ['FDCPA ?807 (False representations)'],
+  tone: "assertive",
+  fcraSection: ["?611(a)", "?623(a)(1)", "?623(a)(2)", "?623(b)"],
+  additionalLaws: ["FDCPA ?807 (False representations)"],
   requiredDocuments: [
-    'Copy of credit report showing collection as unpaid',
-    'Proof of payment (canceled check, bank statement, payment confirmation)',
-    'Settlement agreement or payment arrangement (if applicable)',
-    'Paid in Full letter from collection agency (if you have it)',
+    "Copy of credit report showing collection as unpaid",
+    "Proof of payment (canceled check, bank statement, payment confirmation)",
+    "Settlement agreement or payment arrangement (if applicable)",
+    "Paid in Full letter from collection agency (if you have it)",
   ],
   bestPractices: [
     'Always get "Paid in Full" confirmation letter when paying collections',
-    'Keep payment proof indefinitely',
-    'Dispute with both bureau and collection agency',
-    'If settlement, have agreement in writing BEFORE paying',
+    "Keep payment proof indefinitely",
+    "Dispute with both bureau and collection agency",
+    "If settlement, have agreement in writing BEFORE paying",
   ],
   whenToUse: [
-    'Collection shows balance when you paid in full',
+    "Collection shows balance when you paid in full",
     'Paid collection still shows as "Open" or "Active"',
-    'Settlement was reached but account not updated',
+    "Settlement was reached but account not updated",
   ],
   whenNotToUse: [
-    'Payment plan is in progress (not yet paid in full)',
-    'Payment was very recent (allow 30-45 days for reporting)',
-    'You dispute owing the debt at all',
+    "Payment plan is in progress (not yet paid in full)",
+    "Payment was very recent (allow 30-45 days for reporting)",
+    "You dispute owing the debt at all",
   ],
   placeholders: [
-    '[YOUR_NAME]', '[YOUR_ADDRESS]', '[CITY_STATE_ZIP]', '[DATE]',
-    '[BUREAU_NAME]', '[BUREAU_ADDRESS]', '[COLLECTION_AGENCY]', '[ACCOUNT_NUMBER]',
-    '[ORIGINAL_CREDITOR]', '[PAYMENT_DATE]', '[PAYMENT_AMOUNT]',
+    "[YOUR_NAME]",
+    "[YOUR_ADDRESS]",
+    "[CITY_STATE_ZIP]",
+    "[DATE]",
+    "[BUREAU_NAME]",
+    "[BUREAU_ADDRESS]",
+    "[COLLECTION_AGENCY]",
+    "[ACCOUNT_NUMBER]",
+    "[ORIGINAL_CREDITOR]",
+    "[PAYMENT_DATE]",
+    "[PAYMENT_AMOUNT]",
   ],
   template: `[YOUR_NAME]
 [YOUR_ADDRESS]
@@ -557,26 +616,37 @@ Enclosures:
 // ============================================================================
 
 export const CHARGEOFF_AFTER_SETTLEMENT: DisputeTemplate = {
-  id: 'chargeoff_after_settlement',
-  name: 'Charge-Off Reporting After Settlement Agreement',
-  scenario: 'Account still shows as charge-off despite settlement being fulfilled',
-  description: 'Disputes accounts continuing to report charge-off status after settlement.',
+  id: "chargeoff_after_settlement",
+  name: "Charge-Off Reporting After Settlement Agreement",
+  scenario:
+    "Account still shows as charge-off despite settlement being fulfilled",
+  description:
+    "Disputes accounts continuing to report charge-off status after settlement.",
   successRate: 65,
-  tone: 'legal',
-  fcraSection: ['§611(a)', '§623(a)(1)', '§623(b)'],
-  additionalLaws: ['Contract Law - Settlement Agreement'],
+  tone: "legal",
+  fcraSection: ["§611(a)", "§623(a)(1)", "§623(b)"],
+  additionalLaws: ["Contract Law - Settlement Agreement"],
   requiredDocuments: [
-    'Settlement agreement', 'Proof of payment', 'Credit report',
+    "Settlement agreement",
+    "Proof of payment",
+    "Credit report",
   ],
   bestPractices: [
-    'Always get deletion terms IN WRITING before settling',
-    'Keep all settlement documentation permanently',
+    "Always get deletion terms IN WRITING before settling",
+    "Keep all settlement documentation permanently",
   ],
-  whenToUse: ['Settlement agreement included reporting terms', 'Settlement completed'],
-  whenNotToUse: ['Settlement did not include reporting terms'],
+  whenToUse: [
+    "Settlement agreement included reporting terms",
+    "Settlement completed",
+  ],
+  whenNotToUse: ["Settlement did not include reporting terms"],
   placeholders: [
-    '[YOUR_NAME]', '[CREDITOR_NAME]', '[ACCOUNT_NUMBER]',
-    '[SETTLEMENT_DATE]', '[SETTLEMENT_AMOUNT]', '[AGREED_REPORTING_STATUS]',
+    "[YOUR_NAME]",
+    "[CREDITOR_NAME]",
+    "[ACCOUNT_NUMBER]",
+    "[SETTLEMENT_DATE]",
+    "[SETTLEMENT_AMOUNT]",
+    "[AGREED_REPORTING_STATUS]",
   ],
   template: `[YOUR_NAME]
 [YOUR_ADDRESS]
@@ -609,33 +679,40 @@ Enclosures: Settlement agreement, Proof of payment, Credit report`,
 // ============================================================================
 
 export const INACCURATE_PAYMENT_HISTORY: DisputeTemplate = {
-  id: 'inaccurate_payment_history',
-  name: 'Inaccurate Payment History Dispute',
-  scenario: 'Multiple late payments incorrectly reported on an account',
-  description: 'Disputes accounts showing incorrect late payment history when payments were made on time.',
+  id: "inaccurate_payment_history",
+  name: "Inaccurate Payment History Dispute",
+  scenario: "Multiple late payments incorrectly reported on an account",
+  description:
+    "Disputes accounts showing incorrect late payment history when payments were made on time.",
   successRate: 58,
-  tone: 'assertive',
-  fcraSection: ['§611(a)', '§623(a)(1)', '§607(b)'],
-  additionalLaws: ['Metro 2 Reporting Format Requirements'],
+  tone: "assertive",
+  fcraSection: ["§611(a)", "§623(a)(1)", "§607(b)"],
+  additionalLaws: ["Metro 2 Reporting Format Requirements"],
   requiredDocuments: [
-    'Bank statements showing payment dates',
-    'Credit report showing late payments',
-    'Payment confirmation receipts',
+    "Bank statements showing payment dates",
+    "Credit report showing late payments",
+    "Payment confirmation receipts",
   ],
   bestPractices: [
-    'Document exact payment dates and due dates',
-    'Calculate grace period if applicable',
-    'Get payment history from creditor',
+    "Document exact payment dates and due dates",
+    "Calculate grace period if applicable",
+    "Get payment history from creditor",
   ],
   whenToUse: [
-    'Late payments shown when paid on time',
-    'Incorrect number of late payments reported',
-    'Wrong delinquency dates',
+    "Late payments shown when paid on time",
+    "Incorrect number of late payments reported",
+    "Wrong delinquency dates",
   ],
-  whenNotToUse: ['Payments were actually late', 'Disputing one-time late payment'],
+  whenNotToUse: [
+    "Payments were actually late",
+    "Disputing one-time late payment",
+  ],
   placeholders: [
-    '[YOUR_NAME]', '[CREDITOR_NAME]', '[ACCOUNT_NUMBER]',
-    '[INCORRECT_LATE_PAYMENTS]', '[CORRECT_PAYMENT_HISTORY]',
+    "[YOUR_NAME]",
+    "[CREDITOR_NAME]",
+    "[ACCOUNT_NUMBER]",
+    "[INCORRECT_LATE_PAYMENTS]",
+    "[CORRECT_PAYMENT_HISTORY]",
   ],
   template: `[YOUR_NAME]
 [YOUR_ADDRESS]
@@ -683,37 +760,44 @@ Enclosures:
 // ============================================================================
 
 export const MEDICAL_DEBT_UNDER_500: DisputeTemplate = {
-  id: 'medical_debt_under_500',
-  name: 'Medical Debt Under $500 - New FCRA Protection',
-  scenario: 'Medical collection debt under $500 appearing on credit report',
-  description: 'Leverages new FCRA protections effective 2023 that remove medical debts under $500 from credit reports.',
+  id: "medical_debt_under_500",
+  name: "Medical Debt Under $500 - New FCRA Protection",
+  scenario: "Medical collection debt under $500 appearing on credit report",
+  description:
+    "Leverages new FCRA protections effective 2023 that remove medical debts under $500 from credit reports.",
   successRate: 85,
-  tone: 'legal',
-  fcraSection: ['§605(a)(6)', '§611(a)'],
-  additionalLaws: ['CFPB Medical Debt Rule 2023', 'National Credit Reporting Association Guidelines'],
+  tone: "legal",
+  fcraSection: ["§605(a)(6)", "§611(a)"],
+  additionalLaws: [
+    "CFPB Medical Debt Rule 2023",
+    "National Credit Reporting Association Guidelines",
+  ],
   requiredDocuments: [
-    'Credit report showing medical collection',
-    'Documentation showing debt is medical in nature',
-    'Proof that balance is/was under $500',
+    "Credit report showing medical collection",
+    "Documentation showing debt is medical in nature",
+    "Proof that balance is/was under $500",
   ],
   bestPractices: [
-    'Cite CFPB rule specifically',
-    'Note the debt type is medical',
-    'Include original balance documentation',
+    "Cite CFPB rule specifically",
+    "Note the debt type is medical",
+    "Include original balance documentation",
   ],
   whenToUse: [
-    'Medical collection under $500',
-    'Medical collection reported after March 2023',
-    'Paid medical debt still showing',
+    "Medical collection under $500",
+    "Medical collection reported after March 2023",
+    "Paid medical debt still showing",
   ],
   whenNotToUse: [
-    'Medical debt over $500',
-    'Non-medical debt',
-    'Medical debt reported before rule effective date',
+    "Medical debt over $500",
+    "Non-medical debt",
+    "Medical debt reported before rule effective date",
   ],
   placeholders: [
-    '[YOUR_NAME]', '[COLLECTION_AGENCY]', '[ACCOUNT_NUMBER]',
-    '[MEDICAL_PROVIDER]', '[DEBT_AMOUNT]',
+    "[YOUR_NAME]",
+    "[COLLECTION_AGENCY]",
+    "[ACCOUNT_NUMBER]",
+    "[MEDICAL_PROVIDER]",
+    "[DEBT_AMOUNT]",
   ],
   template: `[YOUR_NAME]
 [YOUR_ADDRESS]
@@ -769,37 +853,45 @@ Enclosures:
 // ============================================================================
 
 export const STUDENT_LOAN_REHABILITATION: DisputeTemplate = {
-  id: 'student_loan_rehabilitation',
-  name: 'Student Loan Rehabilitation - Default Removal',
-  scenario: 'Completed loan rehabilitation but default status still showing',
-  description: 'After completing student loan rehabilitation, default status should be removed per federal regulations.',
+  id: "student_loan_rehabilitation",
+  name: "Student Loan Rehabilitation - Default Removal",
+  scenario: "Completed loan rehabilitation but default status still showing",
+  description:
+    "After completing student loan rehabilitation, default status should be removed per federal regulations.",
   successRate: 82,
-  tone: 'formal',
-  fcraSection: ['§611(a)', '§623(a)(1)'],
-  additionalLaws: ['Higher Education Act §428F(b)', '34 CFR 682.405', 'Department of Education Guidelines'],
+  tone: "formal",
+  fcraSection: ["§611(a)", "§623(a)(1)"],
+  additionalLaws: [
+    "Higher Education Act §428F(b)",
+    "34 CFR 682.405",
+    "Department of Education Guidelines",
+  ],
   requiredDocuments: [
-    'Rehabilitation completion letter',
-    'New loan servicer documentation',
-    'Credit report showing default status',
+    "Rehabilitation completion letter",
+    "New loan servicer documentation",
+    "Credit report showing default status",
   ],
   bestPractices: [
-    'Wait 30-45 days after rehabilitation completion',
-    'Get official completion letter from servicer',
-    'Dispute with all three bureaus',
+    "Wait 30-45 days after rehabilitation completion",
+    "Get official completion letter from servicer",
+    "Dispute with all three bureaus",
   ],
   whenToUse: [
-    'Completed 9 rehabilitation payments',
-    'Received rehabilitation completion letter',
-    'Default status still showing after 45 days',
+    "Completed 9 rehabilitation payments",
+    "Received rehabilitation completion letter",
+    "Default status still showing after 45 days",
   ],
   whenNotToUse: [
-    'Rehabilitation still in progress',
-    'Consolidated instead of rehabilitated',
-    'Private student loans (different rules)',
+    "Rehabilitation still in progress",
+    "Consolidated instead of rehabilitated",
+    "Private student loans (different rules)",
   ],
   placeholders: [
-    '[YOUR_NAME]', '[OLD_SERVICER]', '[NEW_SERVICER]', '[ACCOUNT_NUMBER]',
-    '[REHABILITATION_COMPLETION_DATE]',
+    "[YOUR_NAME]",
+    "[OLD_SERVICER]",
+    "[NEW_SERVICER]",
+    "[ACCOUNT_NUMBER]",
+    "[REHABILITATION_COMPLETION_DATE]",
   ],
   template: `[YOUR_NAME]
 [YOUR_ADDRESS]
@@ -854,38 +946,44 @@ Enclosures:
 // ============================================================================
 
 export const BANKRUPTCY_DISCHARGE: DisputeTemplate = {
-  id: 'bankruptcy_discharge',
-  name: 'Bankruptcy Discharge - Account Not Updated',
-  scenario: 'Accounts included in bankruptcy still showing balances or active status',
-  description: 'Disputes accounts that were discharged in bankruptcy but not properly updated.',
+  id: "bankruptcy_discharge",
+  name: "Bankruptcy Discharge - Account Not Updated",
+  scenario:
+    "Accounts included in bankruptcy still showing balances or active status",
+  description:
+    "Disputes accounts that were discharged in bankruptcy but not properly updated.",
   successRate: 76,
-  tone: 'legal',
-  fcraSection: ['§611(a)', '§623(a)(1)', '§605(a)(1)'],
-  additionalLaws: ['11 U.S.C. §524 (Discharge injunction)', 'Bankruptcy Code'],
+  tone: "legal",
+  fcraSection: ["§611(a)", "§623(a)(1)", "§605(a)(1)"],
+  additionalLaws: ["11 U.S.C. §524 (Discharge injunction)", "Bankruptcy Code"],
   requiredDocuments: [
-    'Bankruptcy discharge order',
-    'Schedule of creditors from bankruptcy',
-    'Credit report showing incorrect account status',
+    "Bankruptcy discharge order",
+    "Schedule of creditors from bankruptcy",
+    "Credit report showing incorrect account status",
   ],
   bestPractices: [
-    'Include copy of discharge order with every dispute',
-    'Reference specific account on Schedule F/D',
-    'Note that collecting on discharged debt violates discharge injunction',
+    "Include copy of discharge order with every dispute",
+    "Reference specific account on Schedule F/D",
+    "Note that collecting on discharged debt violates discharge injunction",
   ],
   whenToUse: [
-    'Discharged accounts showing balance',
-    'Discharged accounts showing as active/open',
-    'Creditor still reporting despite discharge',
+    "Discharged accounts showing balance",
+    "Discharged accounts showing as active/open",
+    "Creditor still reporting despite discharge",
     'Account not marked "Included in Bankruptcy"',
   ],
   whenNotToUse: [
-    'Bankruptcy case still pending',
-    'Debt was not included in bankruptcy',
-    'Debt type not dischargeable (student loans, some taxes)',
+    "Bankruptcy case still pending",
+    "Debt was not included in bankruptcy",
+    "Debt type not dischargeable (student loans, some taxes)",
   ],
   placeholders: [
-    '[YOUR_NAME]', '[CREDITOR_NAME]', '[ACCOUNT_NUMBER]',
-    '[BANKRUPTCY_CASE_NUMBER]', '[DISCHARGE_DATE]', '[BANKRUPTCY_COURT]',
+    "[YOUR_NAME]",
+    "[CREDITOR_NAME]",
+    "[ACCOUNT_NUMBER]",
+    "[BANKRUPTCY_CASE_NUMBER]",
+    "[DISCHARGE_DATE]",
+    "[BANKRUPTCY_COURT]",
   ],
   template: `[YOUR_NAME]
 [YOUR_ADDRESS]
@@ -961,21 +1059,23 @@ export const ALL_DISPUTE_TEMPLATES: DisputeTemplate[] = [
 
 // Helper function to get template by ID
 export function getTemplateById(id: string): DisputeTemplate | undefined {
-  return ALL_DISPUTE_TEMPLATES.find(t => t.id === id);
+  return ALL_DISPUTE_TEMPLATES.find((t) => t.id === id);
 }
 
 // Helper function to get templates by category
 export function getTemplatesByCategory(categoryId: string): DisputeTemplate[] {
-  const category = TEMPLATE_CATEGORIES.find(c => c.id === categoryId);
+  const category = TEMPLATE_CATEGORIES.find((c) => c.id === categoryId);
   if (!category) return [];
   return category.templates
-    .map(id => getTemplateById(id))
+    .map((id) => getTemplateById(id))
     .filter((t): t is DisputeTemplate => t !== undefined);
 }
 
 // Helper function to get templates by success rate
-export function getTemplatesBySuccessRate(minRate: number = 60): DisputeTemplate[] {
-  return ALL_DISPUTE_TEMPLATES
-    .filter(t => t.successRate >= minRate)
-    .sort((a, b) => b.successRate - a.successRate);
+export function getTemplatesBySuccessRate(
+  minRate: number = 60,
+): DisputeTemplate[] {
+  return ALL_DISPUTE_TEMPLATES.filter((t) => t.successRate >= minRate).sort(
+    (a, b) => b.successRate - a.successRate,
+  );
 }

@@ -15,9 +15,9 @@ import {
   CryptoCategory,
   OnChainDataSource,
   DeFiProtocolType,
-} from './types/crypto-analysis.types';
-import { CoinGeckoClient } from '../integrations/coingecko';
-import { redisCache } from '../cache/redis-cache-service';
+} from "./types/crypto-analysis.types";
+import { CoinGeckoClient } from "../integrations/coingecko";
+import { redisCache } from "../cache/redis-cache-service";
 
 // ============================================================================
 // CONFIGURATION
@@ -52,13 +52,14 @@ export class CryptoAnalyst {
 
     try {
       // Fetch all component analyses in parallel
-      const [priceData, tokenomics, sentiment, onChainMetrics, defiMetrics] = await Promise.all([
-        this.getPriceData(coinId),
-        this.getTokenomics(coinId),
-        this.getCryptoSentiment(coinId),
-        this.getOnChainMetrics(coinId).catch(() => undefined),
-        this.getDeFiMetrics(coinId).catch(() => undefined),
-      ]);
+      const [priceData, tokenomics, sentiment, onChainMetrics, defiMetrics] =
+        await Promise.all([
+          this.getPriceData(coinId),
+          this.getTokenomics(coinId),
+          this.getCryptoSentiment(coinId),
+          this.getOnChainMetrics(coinId).catch(() => undefined),
+          this.getDeFiMetrics(coinId).catch(() => undefined),
+        ]);
 
       // Determine crypto category
       const category = this.determineCryptoCategory(coinId, priceData);
@@ -73,7 +74,11 @@ export class CryptoAnalyst {
       });
 
       // Determine risk level
-      const riskLevel = this.calculateRiskLevel(overallScore, tokenomics, sentiment);
+      const riskLevel = this.calculateRiskLevel(
+        overallScore,
+        tokenomics,
+        sentiment,
+      );
 
       // Determine investment grade
       const investmentGrade = this.calculateInvestmentGrade(overallScore);
@@ -121,7 +126,10 @@ export class CryptoAnalyst {
         recommendations,
         warnings,
         metadata: {
-          dataQuality: this.calculateDataQuality({ onChainMetrics, defiMetrics }),
+          dataQuality: this.calculateDataQuality({
+            onChainMetrics,
+            defiMetrics,
+          }),
           lastUpdated: new Date(),
           sources: this.getDataSources({ onChainMetrics, defiMetrics }),
         },
@@ -131,7 +139,9 @@ export class CryptoAnalyst {
       return analysis;
     } catch (error) {
       // CryptoAnalyst error: Error analyzing crypto
-      throw new Error(`Failed to analyze cryptocurrency: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to analyze cryptocurrency: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
@@ -145,9 +155,6 @@ export class CryptoAnalyst {
 
     // Determine data source based on coin
     const dataSource = this.getOnChainDataSource(coinId);
-
-
-
 
     // Fetch on-chain data from appropriate source
     const onChainData = await this.fetchOnChainData(coinId, dataSource);
@@ -231,7 +238,11 @@ export class CryptoAnalyst {
     ]);
 
     // Calculate overall sentiment
-    const sentimentScore = this.calculateSentimentScore(socialData, newsData, fearGreedData);
+    const sentimentScore = this.calculateSentimentScore(
+      socialData,
+      newsData,
+      fearGreedData,
+    );
     const overallSentiment = this.classifySentiment(sentimentScore);
 
     const sentiment: CryptoSentiment = {
@@ -246,7 +257,9 @@ export class CryptoAnalyst {
         engagementScore: this.calculateEngagementScore(socialData),
         communityGrowth7d: socialData.communityGrowth7d || 0,
         communityGrowth30d: socialData.communityGrowth30d || 0,
-        developerActivity: this.classifyDeveloperActivity(socialData.githubCommits30d || 0),
+        developerActivity: this.classifyDeveloperActivity(
+          socialData.githubCommits30d || 0,
+        ),
       },
     };
 
@@ -273,8 +286,8 @@ export class CryptoAnalyst {
       const data = await response.json();
 
       return {
-        symbol: data.symbol?.toUpperCase() || '',
-        name: data.name || '',
+        symbol: data.symbol?.toUpperCase() || "",
+        name: data.name || "",
         currentPrice: data.market_data?.current_price?.usd || 0,
         marketCap: data.market_data?.market_cap?.usd || 0,
         volume24h: data.market_data?.total_volume?.usd || 0,
@@ -283,8 +296,12 @@ export class CryptoAnalyst {
         priceChange30d: data.market_data?.price_change_percentage_30d || 0,
         allTimeHigh: data.market_data?.ath?.usd || 0,
         allTimeLow: data.market_data?.atl?.usd || 0,
-        athDate: data.market_data?.ath_date?.usd ? new Date(data.market_data.ath_date.usd) : undefined,
-        atlDate: data.market_data?.atl_date?.usd ? new Date(data.market_data.atl_date.usd) : undefined,
+        athDate: data.market_data?.ath_date?.usd
+          ? new Date(data.market_data.ath_date.usd)
+          : undefined,
+        atlDate: data.market_data?.atl_date?.usd
+          ? new Date(data.market_data.atl_date.usd)
+          : undefined,
       };
     } catch (error) {
       // CryptoAnalyst error: Error fetching price data
@@ -292,11 +309,13 @@ export class CryptoAnalyst {
     }
   }
 
-
   /**
    * Fetch on-chain data from blockchain explorers
    */
-  private async fetchOnChainData(coinId: string, dataSource: OnChainDataSource) {
+  private async fetchOnChainData(
+    coinId: string,
+    dataSource: OnChainDataSource,
+  ) {
     // Mock implementation - in production, integrate with Etherscan, BSCScan, etc.
     // For now, return realistic mock data
     return {
@@ -314,18 +333,24 @@ export class CryptoAnalyst {
         transactionFees24h: Math.random() * 1000000 + 10000,
         averageFee: Math.random() * 10 + 0.1,
       },
-      networkSecurity: dataSource === OnChainDataSource.BITCOIN ? {
-        hashRate: Math.random() * 500 + 100, // EH/s
-        difficulty: Math.random() * 50 + 10,
-        blockTime: 600, // 10 minutes for Bitcoin
-        blockHeight: Math.floor(Math.random() * 100000) + 800000,
-      } : undefined,
-      validatorMetrics: dataSource === OnChainDataSource.ETHEREUM ? {
-        totalValidators: Math.floor(Math.random() * 100000) + 500000,
-        activeValidators: Math.floor(Math.random() * 90000) + 450000,
-        stakingRatio: Math.random() * 30 + 10, // 10-40%
-        averageStakingReward: Math.random() * 5 + 3, // 3-8% APY
-      } : undefined,
+      networkSecurity:
+        dataSource === OnChainDataSource.BITCOIN
+          ? {
+              hashRate: Math.random() * 500 + 100, // EH/s
+              difficulty: Math.random() * 50 + 10,
+              blockTime: 600, // 10 minutes for Bitcoin
+              blockHeight: Math.floor(Math.random() * 100000) + 800000,
+            }
+          : undefined,
+      validatorMetrics:
+        dataSource === OnChainDataSource.ETHEREUM
+          ? {
+              totalValidators: Math.floor(Math.random() * 100000) + 500000,
+              activeValidators: Math.floor(Math.random() * 90000) + 450000,
+              stakingRatio: Math.random() * 30 + 10, // 10-40%
+              averageStakingReward: Math.random() * 5 + 3, // 3-8% APY
+            }
+          : undefined,
     };
   }
 
@@ -339,7 +364,7 @@ export class CryptoAnalyst {
       const response = await fetch(endpoint);
 
       if (!response.ok) {
-        throw new Error('Protocol not found in DefiLlama');
+        throw new Error("Protocol not found in DefiLlama");
       }
 
       const data = await response.json();
@@ -356,8 +381,13 @@ export class CryptoAnalyst {
         liquidityMetrics: {
           totalLiquidity: data.tvl || 0,
           liquidityPools: data.chains?.length || 0,
-          topPoolTVL: data.chainTvls ? Math.max(...Object.values(data.chainTvls as Record<string, number>)) : 0,
-          averagePoolSize: data.tvl && data.chains ? data.tvl / data.chains.length : 0,
+          topPoolTVL: data.chainTvls
+            ? Math.max(
+                ...Object.values(data.chainTvls as Record<string, number>),
+              )
+            : 0,
+          averagePoolSize:
+            data.tvl && data.chains ? data.tvl / data.chains.length : 0,
         },
         yieldFarming: undefined, // Would need additional API calls
         protocolRevenue: undefined, // Would need additional API calls
@@ -406,7 +436,8 @@ export class CryptoAnalyst {
           totalSupply,
           circulatingSupply,
           maxSupply,
-          supplyRatio: maxSupply > 0 ? (circulatingSupply / maxSupply) * 100 : 0,
+          supplyRatio:
+            maxSupply > 0 ? (circulatingSupply / maxSupply) * 100 : 0,
           inflationRate: 0, // Would need historical data to calculate
           burnRate: 0, // Would need burn event data
         },
@@ -419,9 +450,9 @@ export class CryptoAnalyst {
         },
         vestingSchedule: undefined, // Would need project-specific data
         tokenUtility: {
-          hasGovernance: data.categories?.includes('governance') || false,
-          hasStaking: data.categories?.includes('staking') || false,
-          hasYieldFarming: data.categories?.includes('yield-farming') || false,
+          hasGovernance: data.categories?.includes("governance") || false,
+          hasStaking: data.categories?.includes("staking") || false,
+          hasYieldFarming: data.categories?.includes("yield-farming") || false,
           hasBuyback: false, // Would need project-specific data
           utilityScore: Math.random() * 40 + 40, // Mock: 40-80
         },
@@ -447,7 +478,6 @@ export class CryptoAnalyst {
       const data = await response.json();
       const communityData = data.community_data || {};
       const developerData = data.developer_data || {};
-
 
       return {
         twitterFollowers: communityData.twitter_followers,
@@ -493,23 +523,28 @@ export class CryptoAnalyst {
    */
   private async fetchFearGreedIndex() {
     try {
-      const endpoint = 'https://api.alternative.me/fng/';
+      const endpoint = "https://api.alternative.me/fng/";
       const response = await fetch(endpoint);
 
       if (!response.ok) {
-        throw new Error('Fear & Greed API error');
+        throw new Error("Fear & Greed API error");
       }
 
       const data = await response.json();
       const fngData = data.data[0];
       const value = parseInt(fngData.value);
 
-      let classification: 'extreme_fear' | 'fear' | 'neutral' | 'greed' | 'extreme_greed';
-      if (value < 25) classification = 'extreme_fear';
-      else if (value < 45) classification = 'fear';
-      else if (value < 55) classification = 'neutral';
-      else if (value < 75) classification = 'greed';
-      else classification = 'extreme_greed';
+      let classification:
+        | "extreme_fear"
+        | "fear"
+        | "neutral"
+        | "greed"
+        | "extreme_greed";
+      if (value < 25) classification = "extreme_fear";
+      else if (value < 45) classification = "fear";
+      else if (value < 55) classification = "neutral";
+      else if (value < 75) classification = "greed";
+      else classification = "extreme_greed";
 
       return {
         value,
@@ -521,11 +556,16 @@ export class CryptoAnalyst {
       const value = Math.floor(Math.random() * 100);
       return {
         value,
-        classification: value < 25 ? 'extreme_fear' as const :
-                       value < 45 ? 'fear' as const :
-                       value < 55 ? 'neutral' as const :
-                       value < 75 ? 'greed' as const :
-                       'extreme_greed' as const,
+        classification:
+          value < 25
+            ? ("extreme_fear" as const)
+            : value < 45
+              ? ("fear" as const)
+              : value < 55
+                ? ("neutral" as const)
+                : value < 75
+                  ? ("greed" as const)
+                  : ("extreme_greed" as const),
         change24h: 0,
       };
     }
@@ -583,10 +623,12 @@ export class CryptoAnalyst {
     let score = 50; // Base score
 
     // Positive price changes increase score
-    if (priceData.priceChange24h > 0) score += Math.min(priceData.priceChange24h, 20);
+    if (priceData.priceChange24h > 0)
+      score += Math.min(priceData.priceChange24h, 20);
     else score += Math.max(priceData.priceChange24h, -20);
 
-    if (priceData.priceChange7d > 0) score += Math.min(priceData.priceChange7d / 2, 15);
+    if (priceData.priceChange7d > 0)
+      score += Math.min(priceData.priceChange7d / 2, 15);
     else score += Math.max(priceData.priceChange7d / 2, -15);
 
     return Math.max(0, Math.min(100, score));
@@ -630,49 +672,51 @@ export class CryptoAnalyst {
     return Math.max(0, Math.min(100, score));
   }
 
-
   /**
    * Calculate risk level based on score and metrics
    */
   private calculateRiskLevel(
     score: number,
     tokenomics: TokenomicsAnalysis,
-    sentiment: CryptoSentiment
-  ): 'very_low' | 'low' | 'moderate' | 'high' | 'very_high' {
+    sentiment: CryptoSentiment,
+  ): "very_low" | "low" | "moderate" | "high" | "very_high" {
     // Base risk on score
     let riskScore = 100 - score;
 
     // Adjust for concentration risk
     if (tokenomics.distribution.top10HoldersPercentage > 60) riskScore += 20;
-    else if (tokenomics.distribution.top10HoldersPercentage > 40) riskScore += 10;
+    else if (tokenomics.distribution.top10HoldersPercentage > 40)
+      riskScore += 10;
 
     // Adjust for sentiment
-    if (sentiment.overallSentiment === 'very_bearish') riskScore += 15;
-    else if (sentiment.overallSentiment === 'bearish') riskScore += 10;
-    else if (sentiment.overallSentiment === 'very_bullish') riskScore -= 10;
+    if (sentiment.overallSentiment === "very_bearish") riskScore += 15;
+    else if (sentiment.overallSentiment === "bearish") riskScore += 10;
+    else if (sentiment.overallSentiment === "very_bullish") riskScore -= 10;
 
-    if (riskScore < 20) return 'very_low';
-    if (riskScore < 40) return 'low';
-    if (riskScore < 60) return 'moderate';
-    if (riskScore < 80) return 'high';
-    return 'very_high';
+    if (riskScore < 20) return "very_low";
+    if (riskScore < 40) return "low";
+    if (riskScore < 60) return "moderate";
+    if (riskScore < 80) return "high";
+    return "very_high";
   }
 
   /**
    * Calculate investment grade
    */
-  private calculateInvestmentGrade(score: number): 'A+' | 'A' | 'A-' | 'B+' | 'B' | 'B-' | 'C+' | 'C' | 'C-' | 'D' | 'F' {
-    if (score >= 95) return 'A+';
-    if (score >= 90) return 'A';
-    if (score >= 85) return 'A-';
-    if (score >= 80) return 'B+';
-    if (score >= 75) return 'B';
-    if (score >= 70) return 'B-';
-    if (score >= 65) return 'C+';
-    if (score >= 60) return 'C';
-    if (score >= 55) return 'C-';
-    if (score >= 50) return 'D';
-    return 'F';
+  private calculateInvestmentGrade(
+    score: number,
+  ): "A+" | "A" | "A-" | "B+" | "B" | "B-" | "C+" | "C" | "C-" | "D" | "F" {
+    if (score >= 95) return "A+";
+    if (score >= 90) return "A";
+    if (score >= 85) return "A-";
+    if (score >= 80) return "B+";
+    if (score >= 75) return "B";
+    if (score >= 70) return "B-";
+    if (score >= 65) return "C+";
+    if (score >= 60) return "C";
+    if (score >= 55) return "C-";
+    if (score >= 50) return "D";
+    return "F";
   }
 
   /**
@@ -681,7 +725,7 @@ export class CryptoAnalyst {
   private calculateSentimentScore(
     socialData: any,
     newsData: any,
-    fearGreedData: any
+    fearGreedData: any,
   ): number {
     let score = 0;
 
@@ -692,7 +736,8 @@ export class CryptoAnalyst {
     score += newsData.sentimentRatio * 100 * 0.3;
 
     // Social growth (30%)
-    const socialGrowth = (socialData.communityGrowth7d + socialData.communityGrowth30d) / 2;
+    const socialGrowth =
+      (socialData.communityGrowth7d + socialData.communityGrowth30d) / 2;
     const socialScore = Math.max(0, Math.min(100, 50 + socialGrowth * 2));
     score += socialScore * 0.3;
 
@@ -702,12 +747,14 @@ export class CryptoAnalyst {
   /**
    * Classify overall sentiment
    */
-  private classifySentiment(score: number): 'very_bearish' | 'bearish' | 'neutral' | 'bullish' | 'very_bullish' {
-    if (score < 25) return 'very_bearish';
-    if (score < 45) return 'bearish';
-    if (score < 55) return 'neutral';
-    if (score < 75) return 'bullish';
-    return 'very_bullish';
+  private classifySentiment(
+    score: number,
+  ): "very_bearish" | "bearish" | "neutral" | "bullish" | "very_bullish" {
+    if (score < 25) return "very_bearish";
+    if (score < 45) return "bearish";
+    if (score < 55) return "neutral";
+    if (score < 75) return "bullish";
+    return "very_bullish";
   }
 
   /**
@@ -736,29 +783,59 @@ export class CryptoAnalyst {
   /**
    * Classify developer activity
    */
-  private classifyDeveloperActivity(commits: number): 'very_low' | 'low' | 'moderate' | 'high' | 'very_high' {
-    if (commits < 10) return 'very_low';
-    if (commits < 50) return 'low';
-    if (commits < 100) return 'moderate';
-    if (commits < 200) return 'high';
-    return 'very_high';
+  private classifyDeveloperActivity(
+    commits: number,
+  ): "very_low" | "low" | "moderate" | "high" | "very_high" {
+    if (commits < 10) return "very_low";
+    if (commits < 50) return "low";
+    if (commits < 100) return "moderate";
+    if (commits < 200) return "high";
+    return "very_high";
   }
 
   /**
    * Determine crypto category
    */
-  private determineCryptoCategory(coinId: string, priceData: any): CryptoCategory {
+  private determineCryptoCategory(
+    coinId: string,
+    priceData: any,
+  ): CryptoCategory {
     const name = priceData.name.toLowerCase();
     const symbol = priceData.symbol.toLowerCase();
 
-    if (name.includes('ethereum') || symbol === 'eth') return CryptoCategory.LAYER1;
-    if (name.includes('bitcoin') || symbol === 'btc') return CryptoCategory.LAYER1;
-    if (name.includes('polygon') || name.includes('arbitrum') || name.includes('optimism')) return CryptoCategory.LAYER2;
-    if (name.includes('uniswap') || name.includes('aave') || name.includes('compound')) return CryptoCategory.DEFI;
-    if (name.includes('usdt') || name.includes('usdc') || name.includes('dai')) return CryptoCategory.STABLECOIN;
-    if (name.includes('doge') || name.includes('shib') || name.includes('pepe')) return CryptoCategory.MEME;
-    if (name.includes('bnb') || name.includes('binance') || name.includes('ftx') || name.includes('okb')) return CryptoCategory.EXCHANGE;
-    if (name.includes('axie') || name.includes('sandbox') || name.includes('decentraland')) return CryptoCategory.GAMING;
+    if (name.includes("ethereum") || symbol === "eth")
+      return CryptoCategory.LAYER1;
+    if (name.includes("bitcoin") || symbol === "btc")
+      return CryptoCategory.LAYER1;
+    if (
+      name.includes("polygon") ||
+      name.includes("arbitrum") ||
+      name.includes("optimism")
+    )
+      return CryptoCategory.LAYER2;
+    if (
+      name.includes("uniswap") ||
+      name.includes("aave") ||
+      name.includes("compound")
+    )
+      return CryptoCategory.DEFI;
+    if (name.includes("usdt") || name.includes("usdc") || name.includes("dai"))
+      return CryptoCategory.STABLECOIN;
+    if (name.includes("doge") || name.includes("shib") || name.includes("pepe"))
+      return CryptoCategory.MEME;
+    if (
+      name.includes("bnb") ||
+      name.includes("binance") ||
+      name.includes("ftx") ||
+      name.includes("okb")
+    )
+      return CryptoCategory.EXCHANGE;
+    if (
+      name.includes("axie") ||
+      name.includes("sandbox") ||
+      name.includes("decentraland")
+    )
+      return CryptoCategory.GAMING;
 
     return CryptoCategory.LAYER1; // Default
   }
@@ -767,11 +844,16 @@ export class CryptoAnalyst {
    * Get on-chain data source
    */
   private getOnChainDataSource(coinId: string): OnChainDataSource {
-    if (coinId.includes('bitcoin') || coinId === 'btc') return OnChainDataSource.BITCOIN;
-    if (coinId.includes('ethereum') || coinId === 'eth') return OnChainDataSource.ETHEREUM;
-    if (coinId.includes('polygon') || coinId === 'matic') return OnChainDataSource.POLYGON;
-    if (coinId.includes('binance') || coinId === 'bnb') return OnChainDataSource.BSC;
-    if (coinId.includes('avalanche') || coinId === 'avax') return OnChainDataSource.AVALANCHE;
+    if (coinId.includes("bitcoin") || coinId === "btc")
+      return OnChainDataSource.BITCOIN;
+    if (coinId.includes("ethereum") || coinId === "eth")
+      return OnChainDataSource.ETHEREUM;
+    if (coinId.includes("polygon") || coinId === "matic")
+      return OnChainDataSource.POLYGON;
+    if (coinId.includes("binance") || coinId === "bnb")
+      return OnChainDataSource.BSC;
+    if (coinId.includes("avalanche") || coinId === "avax")
+      return OnChainDataSource.AVALANCHE;
     return OnChainDataSource.ETHEREUM; // Default
   }
 
@@ -781,11 +863,11 @@ export class CryptoAnalyst {
   private mapProtocolType(category?: string): DeFiProtocolType {
     if (!category) return DeFiProtocolType.DEX;
     const cat = category.toLowerCase();
-    if (cat.includes('dex')) return DeFiProtocolType.DEX;
-    if (cat.includes('lending')) return DeFiProtocolType.LENDING;
-    if (cat.includes('yield')) return DeFiProtocolType.YIELD_FARMING;
-    if (cat.includes('derivatives')) return DeFiProtocolType.DERIVATIVES;
-    if (cat.includes('insurance')) return DeFiProtocolType.INSURANCE;
+    if (cat.includes("dex")) return DeFiProtocolType.DEX;
+    if (cat.includes("lending")) return DeFiProtocolType.LENDING;
+    if (cat.includes("yield")) return DeFiProtocolType.YIELD_FARMING;
+    if (cat.includes("derivatives")) return DeFiProtocolType.DERIVATIVES;
+    if (cat.includes("insurance")) return DeFiProtocolType.INSURANCE;
     return DeFiProtocolType.DEX;
   }
 
@@ -803,31 +885,46 @@ export class CryptoAnalyst {
 
     // Category-specific recommendations
     if (data.category === CryptoCategory.LAYER1) {
-      recommendations.push('Consider as a long-term hold for portfolio diversification');
+      recommendations.push(
+        "Consider as a long-term hold for portfolio diversification",
+      );
     } else if (data.category === CryptoCategory.DEFI) {
-      recommendations.push('Monitor TVL and protocol revenue for sustainability');
+      recommendations.push(
+        "Monitor TVL and protocol revenue for sustainability",
+      );
     } else if (data.category === CryptoCategory.MEME) {
-      recommendations.push('High volatility - only allocate small portion of portfolio');
+      recommendations.push(
+        "High volatility - only allocate small portion of portfolio",
+      );
     }
 
     // Tokenomics recommendations
     if (data.tokenomics.supplyMechanics.supplyRatio > 90) {
-      recommendations.push('High circulating supply ratio - limited inflation risk');
+      recommendations.push(
+        "High circulating supply ratio - limited inflation risk",
+      );
     }
     if (data.tokenomics.tokenUtility.hasStaking) {
-      recommendations.push('Staking available - consider for passive income');
+      recommendations.push("Staking available - consider for passive income");
     }
 
     // Sentiment recommendations
-    if (data.sentiment.overallSentiment === 'very_bullish') {
-      recommendations.push('Strong bullish sentiment - watch for potential overvaluation');
-    } else if (data.sentiment.overallSentiment === 'very_bearish') {
-      recommendations.push('Bearish sentiment - potential buying opportunity if fundamentals are strong');
+    if (data.sentiment.overallSentiment === "very_bullish") {
+      recommendations.push(
+        "Strong bullish sentiment - watch for potential overvaluation",
+      );
+    } else if (data.sentiment.overallSentiment === "very_bearish") {
+      recommendations.push(
+        "Bearish sentiment - potential buying opportunity if fundamentals are strong",
+      );
     }
 
     // On-chain recommendations
-    if (data.onChainMetrics && data.onChainMetrics.networkActivity.addressGrowthRate > 5) {
-      recommendations.push('Strong network growth - positive adoption signal');
+    if (
+      data.onChainMetrics &&
+      data.onChainMetrics.networkActivity.addressGrowthRate > 5
+    ) {
+      recommendations.push("Strong network growth - positive adoption signal");
     }
 
     return recommendations;
@@ -845,19 +942,23 @@ export class CryptoAnalyst {
 
     // Concentration warnings
     if (data.tokenomics.distribution.top10HoldersPercentage > 60) {
-      warnings.push('High concentration risk - top 10 holders control majority of supply');
+      warnings.push(
+        "High concentration risk - top 10 holders control majority of supply",
+      );
     }
 
     // Sentiment warnings
-    if (data.sentiment.fearGreedIndex.classification === 'extreme_greed') {
-      warnings.push('Extreme greed in market - potential correction ahead');
-    } else if (data.sentiment.fearGreedIndex.classification === 'extreme_fear') {
-      warnings.push('Extreme fear in market - high volatility expected');
+    if (data.sentiment.fearGreedIndex.classification === "extreme_greed") {
+      warnings.push("Extreme greed in market - potential correction ahead");
+    } else if (
+      data.sentiment.fearGreedIndex.classification === "extreme_fear"
+    ) {
+      warnings.push("Extreme fear in market - high volatility expected");
     }
 
     // Price warnings
     if (data.priceData.priceChange24h < -20) {
-      warnings.push('Significant price drop in last 24h - exercise caution');
+      warnings.push("Significant price drop in last 24h - exercise caution");
     }
 
     return warnings;
@@ -885,13 +986,13 @@ export class CryptoAnalyst {
     onChainMetrics?: OnChainMetrics;
     defiMetrics?: DeFiMetrics;
   }): string[] {
-    const sources = ['CoinGecko', 'Alternative.me (Fear & Greed)'];
+    const sources = ["CoinGecko", "Alternative.me (Fear & Greed)"];
 
     if (data.onChainMetrics) {
       sources.push(`${data.onChainMetrics.dataSource} Explorer`);
     }
     if (data.defiMetrics) {
-      sources.push('DefiLlama');
+      sources.push("DefiLlama");
     }
 
     return sources;
@@ -900,4 +1001,3 @@ export class CryptoAnalyst {
 
 // Export singleton instance
 export const cryptoAnalyst = new CryptoAnalyst();
-

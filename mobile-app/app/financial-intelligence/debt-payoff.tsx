@@ -3,15 +3,23 @@
  * Strategic debt elimination with Avalanche, Snowball, and Hybrid methods
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { lightTheme as theme } from '../../src/constants/theme';
-import { Card } from '../../src/components/Card';
-import { ProgressBar } from '../../src/components/ProgressBar';
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  RefreshControl,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { lightTheme as theme } from "../../src/constants/theme";
+import { Card } from "../../src/components/Card";
+import { ProgressBar } from "../../src/components/ProgressBar";
 
-type Strategy = 'avalanche' | 'snowball' | 'hybrid' | 'ai_optimized';
+type Strategy = "avalanche" | "snowball" | "hybrid" | "ai_optimized";
 
 interface Debt {
   id: string;
@@ -33,10 +41,10 @@ interface StrategyComparison {
 export default function DebtPayoffScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [strategy, setStrategy] = useState<Strategy>('avalanche');
+  const [strategy, setStrategy] = useState<Strategy>("avalanche");
   const [debts, setDebts] = useState<Debt[]>([]);
   const [totalDebt, setTotalDebt] = useState(0);
-  const [payoffDate, setPayoffDate] = useState('');
+  const [payoffDate, setPayoffDate] = useState("");
   const [strategies, setStrategies] = useState<StrategyComparison[]>([]);
   const [extraPayment, setExtraPayment] = useState(0);
   const [hasAIOptimized, setHasAIOptimized] = useState(false);
@@ -46,32 +54,37 @@ export default function DebtPayoffScreen() {
       setLoading(true);
 
       // First, get the list of debts
-      const debtsResponse = await fetch('/api/financial/debt');
-      if (!debtsResponse.ok) throw new Error('Failed to fetch debts');
+      const debtsResponse = await fetch("/api/financial/debt");
+      if (!debtsResponse.ok) throw new Error("Failed to fetch debts");
       const debtsResult = await debtsResponse.json();
       const debtsList = debtsResult.data?.debts || debtsResult.debts || [];
 
       setDebts(debtsList);
-      setTotalDebt(debtsResult.data?.overview?.totalDebt || debtsResult.totalDebt || 0);
+      setTotalDebt(
+        debtsResult.data?.overview?.totalDebt || debtsResult.totalDebt || 0,
+      );
 
       // If user has debts, use the new debt strategy optimizer API
       if (debtsList.length > 0) {
-        const strategyResponse = await fetch('/api/ai/financial-coach/debt-strategy', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            debts: debtsList.map((d: Debt) => ({
-              id: d.id,
-              name: d.name,
-              balance: d.balance,
-              interestRate: d.interestRate,
-              minimumPayment: d.minimumPayment,
-              type: d.type || 'credit_card',
-            })),
-            extraPayment: extraPayment,
-            includeAIOptimization: true,
-          }),
-        });
+        const strategyResponse = await fetch(
+          "/api/ai/financial-coach/debt-strategy",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              debts: debtsList.map((d: Debt) => ({
+                id: d.id,
+                name: d.name,
+                balance: d.balance,
+                interestRate: d.interestRate,
+                minimumPayment: d.minimumPayment,
+                type: d.type || "credit_card",
+              })),
+              extraPayment: extraPayment,
+              includeAIOptimization: true,
+            }),
+          },
+        );
 
         if (strategyResponse.ok) {
           const strategyResult = await strategyResponse.json();
@@ -79,21 +92,32 @@ export default function DebtPayoffScreen() {
 
           if (data.strategies) {
             setStrategies(data.strategies);
-            setHasAIOptimized(data.strategies.some((s: StrategyComparison) => s.method === 'ai_optimized'));
+            setHasAIOptimized(
+              data.strategies.some(
+                (s: StrategyComparison) => s.method === "ai_optimized",
+              ),
+            );
 
             // Set payoff date for selected strategy
-            const selectedStrategy = data.strategies.find((s: StrategyComparison) => s.method === strategy);
+            const selectedStrategy = data.strategies.find(
+              (s: StrategyComparison) => s.method === strategy,
+            );
             if (selectedStrategy) {
               const months = selectedStrategy.payoffMonths;
               const date = new Date();
               date.setMonth(date.getMonth() + months);
-              setPayoffDate(date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }));
+              setPayoffDate(
+                date.toLocaleDateString("en-US", {
+                  month: "short",
+                  year: "numeric",
+                }),
+              );
             }
           }
         }
       }
     } catch (error) {
-      if (__DEV__) console.error('Error fetching debt data:', error);
+      if (__DEV__) console.error("Error fetching debt data:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -125,54 +149,103 @@ export default function DebtPayoffScreen() {
       <ScrollView
         style={styles.scrollView}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[theme.colors.primary]}
+          />
         }
       >
         {/* Strategy Selector */}
         <View style={styles.strategyContainer}>
           <Text style={styles.sectionTitle}>Payoff Strategy</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.strategyScroll}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.strategyScroll}
+          >
             <View style={styles.strategyButtons}>
               <TouchableOpacity
-                style={[styles.strategyButton, strategy === 'avalanche' && styles.strategyButtonActive]}
-                onPress={() => setStrategy('avalanche')}
+                style={[
+                  styles.strategyButton,
+                  strategy === "avalanche" && styles.strategyButtonActive,
+                ]}
+                onPress={() => setStrategy("avalanche")}
               >
                 <Text style={styles.strategyIcon}>🏔️</Text>
-                <Text style={[styles.strategyButtonText, strategy === 'avalanche' && styles.strategyButtonTextActive]}>
+                <Text
+                  style={[
+                    styles.strategyButtonText,
+                    strategy === "avalanche" && styles.strategyButtonTextActive,
+                  ]}
+                >
                   Avalanche
                 </Text>
-                <Text style={styles.strategyDescription}>Highest interest first</Text>
+                <Text style={styles.strategyDescription}>
+                  Highest interest first
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.strategyButton, strategy === 'snowball' && styles.strategyButtonActive]}
-                onPress={() => setStrategy('snowball')}
+                style={[
+                  styles.strategyButton,
+                  strategy === "snowball" && styles.strategyButtonActive,
+                ]}
+                onPress={() => setStrategy("snowball")}
               >
                 <Text style={styles.strategyIcon}>⛄</Text>
-                <Text style={[styles.strategyButtonText, strategy === 'snowball' && styles.strategyButtonTextActive]}>
+                <Text
+                  style={[
+                    styles.strategyButtonText,
+                    strategy === "snowball" && styles.strategyButtonTextActive,
+                  ]}
+                >
                   Snowball
                 </Text>
-                <Text style={styles.strategyDescription}>Smallest balance first</Text>
+                <Text style={styles.strategyDescription}>
+                  Smallest balance first
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.strategyButton, strategy === 'hybrid' && styles.strategyButtonActive]}
-                onPress={() => setStrategy('hybrid')}
+                style={[
+                  styles.strategyButton,
+                  strategy === "hybrid" && styles.strategyButtonActive,
+                ]}
+                onPress={() => setStrategy("hybrid")}
               >
                 <Text style={styles.strategyIcon}>⚖️</Text>
-                <Text style={[styles.strategyButtonText, strategy === 'hybrid' && styles.strategyButtonTextActive]}>
+                <Text
+                  style={[
+                    styles.strategyButtonText,
+                    strategy === "hybrid" && styles.strategyButtonTextActive,
+                  ]}
+                >
                   Hybrid
                 </Text>
-                <Text style={styles.strategyDescription}>Balanced approach</Text>
+                <Text style={styles.strategyDescription}>
+                  Balanced approach
+                </Text>
               </TouchableOpacity>
               {hasAIOptimized && (
                 <TouchableOpacity
-                  style={[styles.strategyButton, strategy === 'ai_optimized' && styles.strategyButtonActive]}
-                  onPress={() => setStrategy('ai_optimized')}
+                  style={[
+                    styles.strategyButton,
+                    strategy === "ai_optimized" && styles.strategyButtonActive,
+                  ]}
+                  onPress={() => setStrategy("ai_optimized")}
                 >
                   <Text style={styles.strategyIcon}>🤖</Text>
-                  <Text style={[styles.strategyButtonText, strategy === 'ai_optimized' && styles.strategyButtonTextActive]}>
+                  <Text
+                    style={[
+                      styles.strategyButtonText,
+                      strategy === "ai_optimized" &&
+                        styles.strategyButtonTextActive,
+                    ]}
+                  >
                     AI-Optimized
                   </Text>
-                  <Text style={styles.strategyDescription}>AI-powered strategy</Text>
+                  <Text style={styles.strategyDescription}>
+                    AI-powered strategy
+                  </Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -183,7 +256,9 @@ export default function DebtPayoffScreen() {
         <Card style={styles.card}>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Total Debt</Text>
-            <Text style={styles.summaryValue}>${totalDebt.toLocaleString()}</Text>
+            <Text style={styles.summaryValue}>
+              ${totalDebt.toLocaleString()}
+            </Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Debt-Free Date</Text>
@@ -193,7 +268,10 @@ export default function DebtPayoffScreen() {
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Total Interest</Text>
               <Text style={styles.summaryValue}>
-                ${strategies.find(s => s.method === strategy)?.totalInterest.toLocaleString() || '0'}
+                $
+                {strategies
+                  .find((s) => s.method === strategy)
+                  ?.totalInterest.toLocaleString() || "0"}
               </Text>
             </View>
           )}
@@ -207,21 +285,31 @@ export default function DebtPayoffScreen() {
               {strategies.map((strat) => (
                 <Card key={strat.method} style={styles.comparisonCard}>
                   <Text style={styles.comparisonMethod}>
-                    {strat.method === 'ai_optimized' ? '🤖 AI-Optimized' :
-                     strat.method === 'avalanche' ? '🏔️ Avalanche' :
-                     strat.method === 'snowball' ? '⛄ Snowball' : '⚖️ Hybrid'}
+                    {strat.method === "ai_optimized"
+                      ? "🤖 AI-Optimized"
+                      : strat.method === "avalanche"
+                        ? "🏔️ Avalanche"
+                        : strat.method === "snowball"
+                          ? "⛄ Snowball"
+                          : "⚖️ Hybrid"}
                   </Text>
                   <View style={styles.comparisonRow}>
                     <Text style={styles.comparisonLabel}>Payoff Time</Text>
-                    <Text style={styles.comparisonValue}>{strat.payoffMonths} months</Text>
+                    <Text style={styles.comparisonValue}>
+                      {strat.payoffMonths} months
+                    </Text>
                   </View>
                   <View style={styles.comparisonRow}>
                     <Text style={styles.comparisonLabel}>Total Interest</Text>
-                    <Text style={styles.comparisonValue}>${strat.totalInterest.toLocaleString()}</Text>
+                    <Text style={styles.comparisonValue}>
+                      ${strat.totalInterest.toLocaleString()}
+                    </Text>
                   </View>
                   <View style={styles.comparisonRow}>
                     <Text style={styles.comparisonLabel}>Monthly Payment</Text>
-                    <Text style={styles.comparisonValue}>${strat.monthlyPayment.toLocaleString()}</Text>
+                    <Text style={styles.comparisonValue}>
+                      ${strat.monthlyPayment.toLocaleString()}
+                    </Text>
                   </View>
                 </Card>
               ))}
@@ -240,21 +328,29 @@ export default function DebtPayoffScreen() {
                 </View>
                 <View style={styles.debtInfo}>
                   <Text style={styles.debtName}>{debt.name}</Text>
-                  <Text style={styles.debtBalance}>${debt.balance.toLocaleString()}</Text>
+                  <Text style={styles.debtBalance}>
+                    ${debt.balance.toLocaleString()}
+                  </Text>
                 </View>
               </View>
               <View style={styles.debtDetails}>
                 <View style={styles.debtDetailRow}>
                   <Text style={styles.debtDetailLabel}>Interest Rate</Text>
-                  <Text style={styles.debtDetailValue}>{debt.interestRate}%</Text>
+                  <Text style={styles.debtDetailValue}>
+                    {debt.interestRate}%
+                  </Text>
                 </View>
                 <View style={styles.debtDetailRow}>
                   <Text style={styles.debtDetailLabel}>Min Payment</Text>
-                  <Text style={styles.debtDetailValue}>${debt.minimumPayment}</Text>
+                  <Text style={styles.debtDetailValue}>
+                    ${debt.minimumPayment}
+                  </Text>
                 </View>
                 <View style={styles.debtDetailRow}>
                   <Text style={styles.debtDetailLabel}>Payoff Time</Text>
-                  <Text style={styles.debtDetailValue}>{debt.payoffMonths} months</Text>
+                  <Text style={styles.debtDetailValue}>
+                    {debt.payoffMonths} months
+                  </Text>
                 </View>
               </View>
             </Card>
@@ -272,8 +368,8 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     marginTop: theme.spacing.md,
@@ -290,7 +386,7 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.sm,
   },
   strategyButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: theme.spacing.sm,
     paddingRight: theme.spacing.md,
   },
@@ -299,10 +395,10 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.md,
     paddingHorizontal: theme.spacing.sm,
     borderRadius: theme.borderRadius.lg,
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
     borderWidth: 2,
-    borderColor: 'transparent',
+    borderColor: "transparent",
   },
   strategyButtonActive: {
     backgroundColor: `${theme.colors.primary}15`,
@@ -314,7 +410,7 @@ const styles = StyleSheet.create({
   },
   strategyButtonText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: 2,
   },
@@ -324,7 +420,7 @@ const styles = StyleSheet.create({
   strategyDescription: {
     fontSize: 10,
     color: theme.colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
   },
   card: {
     margin: theme.spacing.md,
@@ -334,13 +430,13 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: theme.colors.text,
     marginBottom: theme.spacing.md,
   },
   summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: theme.spacing.sm,
   },
   summaryLabel: {
@@ -349,14 +445,14 @@ const styles = StyleSheet.create({
   },
   summaryValue: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   debtCard: {
     marginBottom: theme.spacing.md,
   },
   debtHeader: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: theme.spacing.md,
   },
   debtRank: {
@@ -364,37 +460,37 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     backgroundColor: theme.colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: theme.spacing.md,
   },
   debtRankText: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontWeight: "bold",
+    color: "#FFFFFF",
   },
   debtInfo: {
     flex: 1,
   },
   debtName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: 4,
   },
   debtBalance: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#EF4444',
+    fontWeight: "bold",
+    color: "#EF4444",
   },
   debtDetails: {
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: "#E5E7EB",
     paddingTop: theme.spacing.md,
   },
   debtDetailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: theme.spacing.xs,
   },
   debtDetailLabel: {
@@ -403,7 +499,7 @@ const styles = StyleSheet.create({
   },
   debtDetailValue: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   section: {
@@ -416,7 +512,7 @@ const styles = StyleSheet.create({
   },
   comparisonMethod: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: theme.colors.text,
     marginBottom: theme.spacing.sm,
   },
@@ -430,8 +526,7 @@ const styles = StyleSheet.create({
   },
   comparisonValue: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
 });
-

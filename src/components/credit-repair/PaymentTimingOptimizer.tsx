@@ -1,6 +1,6 @@
 /**
  * Payment Timing Optimizer Component
- * 
+ *
  * Optimize when you pay to maximize credit score:
  * - Pay BEFORE statement date (not due date)
  * - 100% success rate
@@ -8,9 +8,9 @@
  * - Simple calendar-based strategy
  */
 
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 
 interface Card {
   id: string;
@@ -24,8 +24,8 @@ interface Card {
 export default function PaymentTimingOptimizer() {
   const [cards, setCards] = useState<Card[]>([
     {
-      id: '1',
-      name: 'Card 1',
+      id: "1",
+      name: "Card 1",
       balance: 1000,
       limit: 5000,
       statementDate: 15,
@@ -47,12 +47,20 @@ export default function PaymentTimingOptimizer() {
     ]);
   };
 
-  const updateCard = <K extends keyof Card>(id: string, field: K, value: Card[K]) => {
-    setCards(cards.map(card => (card.id === id ? { ...card, [field]: value } : card)));
+  const updateCard = <K extends keyof Card>(
+    id: string,
+    field: K,
+    value: Card[K],
+  ) => {
+    setCards(
+      cards.map((card) =>
+        card.id === id ? { ...card, [field]: value } : card,
+      ),
+    );
   };
 
   const removeCard = (id: string) => {
-    setCards(cards.filter(card => card.id !== id));
+    setCards(cards.filter((card) => card.id !== id));
   };
 
   const getOptimalPaymentDate = (statementDate: number) => {
@@ -73,7 +81,7 @@ export default function PaymentTimingOptimizer() {
     if (statementDate >= today) {
       return statementDate - today;
     } else {
-      return (30 - today) + statementDate;
+      return 30 - today + statementDate;
     }
   };
 
@@ -89,23 +97,30 @@ export default function PaymentTimingOptimizer() {
 
       {/* Key Concept */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
-        <h3 className="font-semibold text-blue-800 mb-3 text-lg">The Secret: Statement Date vs Due Date</h3>
+        <h3 className="font-semibold text-blue-800 mb-3 text-lg">
+          The Secret: Statement Date vs Due Date
+        </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-white dark:bg-slate-800 rounded-lg p-4">
-            <div className="text-red-600 font-bold mb-2">WRONG: Pay on Due Date</div>
+            <div className="text-red-600 font-bold mb-2">
+              WRONG: Pay on Due Date
+            </div>
             <p className="text-sm text-gray-700 dark:text-slate-200">
-              Most people pay on the due date. But your balance is already reported to credit bureaus 
-              on the <strong>statement date</strong> (usually 20-25 days before due date).
+              Most people pay on the due date. But your balance is already
+              reported to credit bureaus on the <strong>statement date</strong>{" "}
+              (usually 20-25 days before due date).
             </p>
             <div className="mt-3 p-2 bg-red-50 rounded text-sm text-red-700">
               Result: High utilization reported = Lower score
             </div>
           </div>
           <div className="bg-white dark:bg-slate-800 rounded-lg p-4">
-            <div className="text-green-600 font-bold mb-2">RIGHT: Pay Before Statement Date</div>
+            <div className="text-green-600 font-bold mb-2">
+              RIGHT: Pay Before Statement Date
+            </div>
             <p className="text-sm text-gray-700 dark:text-slate-200">
-              Pay 3-5 days <strong>before</strong> your statement closing date. This ensures a low 
-              balance is reported to credit bureaus.
+              Pay 3-5 days <strong>before</strong> your statement closing date.
+              This ensures a low balance is reported to credit bureaus.
             </p>
             <div className="mt-3 p-2 bg-green-50 rounded text-sm text-green-700">
               Result: Low utilization reported = Higher score (+10-20 pts)
@@ -134,54 +149,93 @@ export default function PaymentTimingOptimizer() {
             const isUrgent = daysUntil <= 5;
 
             return (
-              <div key={card.id} className={`border-2 rounded-lg p-4 ${isUrgent ? 'border-orange-400 bg-orange-50' : 'border-gray-200 dark:border-slate-700'}`}>
+              <div
+                key={card.id}
+                className={`border-2 rounded-lg p-4 ${isUrgent ? "border-orange-400 bg-orange-50" : "border-gray-200 dark:border-slate-700"}`}
+              >
                 <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
                   <div>
-                    <label className="block text-xs text-gray-600 dark:text-slate-300 mb-1">Card Name</label>
+                    <label className="block text-xs text-gray-600 dark:text-slate-300 mb-1">
+                      Card Name
+                    </label>
                     <input
                       type="text"
                       value={card.name}
-                      onChange={(e) => updateCard(card.id, 'name', e.target.value)}
+                      onChange={(e) =>
+                        updateCard(card.id, "name", e.target.value)
+                      }
                       className="w-full px-2 py-1 border border-gray-300 dark:border-slate-600 rounded text-sm"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-600 dark:text-slate-300 mb-1">Balance</label>
+                    <label className="block text-xs text-gray-600 dark:text-slate-300 mb-1">
+                      Balance
+                    </label>
                     <input
                       type="number"
                       value={card.balance}
-                      onChange={(e) => updateCard(card.id, 'balance', parseFloat(e.target.value) || 0)}
+                      onChange={(e) =>
+                        updateCard(
+                          card.id,
+                          "balance",
+                          parseFloat(e.target.value) || 0,
+                        )
+                      }
                       className="w-full px-2 py-1 border border-gray-300 dark:border-slate-600 rounded text-sm"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-600 dark:text-slate-300 mb-1">Limit</label>
+                    <label className="block text-xs text-gray-600 dark:text-slate-300 mb-1">
+                      Limit
+                    </label>
                     <input
                       type="number"
                       value={card.limit}
-                      onChange={(e) => updateCard(card.id, 'limit', parseFloat(e.target.value) || 0)}
+                      onChange={(e) =>
+                        updateCard(
+                          card.id,
+                          "limit",
+                          parseFloat(e.target.value) || 0,
+                        )
+                      }
                       className="w-full px-2 py-1 border border-gray-300 dark:border-slate-600 rounded text-sm"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-600 dark:text-slate-300 mb-1">Statement Date</label>
+                    <label className="block text-xs text-gray-600 dark:text-slate-300 mb-1">
+                      Statement Date
+                    </label>
                     <input
                       type="number"
                       min="1"
                       max="31"
                       value={card.statementDate}
-                      onChange={(e) => updateCard(card.id, 'statementDate', parseInt(e.target.value) || 1)}
+                      onChange={(e) =>
+                        updateCard(
+                          card.id,
+                          "statementDate",
+                          parseInt(e.target.value) || 1,
+                        )
+                      }
                       className="w-full px-2 py-1 border border-gray-300 dark:border-slate-600 rounded text-sm"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-600 dark:text-slate-300 mb-1">Due Date</label>
+                    <label className="block text-xs text-gray-600 dark:text-slate-300 mb-1">
+                      Due Date
+                    </label>
                     <input
                       type="number"
                       min="1"
                       max="31"
                       value={card.dueDate}
-                      onChange={(e) => updateCard(card.id, 'dueDate', parseInt(e.target.value) || 1)}
+                      onChange={(e) =>
+                        updateCard(
+                          card.id,
+                          "dueDate",
+                          parseInt(e.target.value) || 1,
+                        )
+                      }
                       className="w-full px-2 py-1 border border-gray-300 dark:border-slate-600 rounded text-sm"
                     />
                   </div>
@@ -196,16 +250,24 @@ export default function PaymentTimingOptimizer() {
                 </div>
 
                 {/* Payment Recommendation */}
-                <div className={`p-4 rounded-lg ${isUrgent ? 'bg-orange-100 border border-orange-300' : 'bg-teal-50 border border-teal-200'}`}>
+                <div
+                  className={`p-4 rounded-lg ${isUrgent ? "bg-orange-100 border border-orange-300" : "bg-teal-50 border border-teal-200"}`}
+                >
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <div className="text-xs text-gray-600 dark:text-slate-300 mb-1">Current Utilization</div>
-                      <div className={`text-2xl font-bold ${utilization > 30 ? 'text-red-600' : utilization > 10 ? 'text-yellow-600' : 'text-green-600'}`}>
+                      <div className="text-xs text-gray-600 dark:text-slate-300 mb-1">
+                        Current Utilization
+                      </div>
+                      <div
+                        className={`text-2xl font-bold ${utilization > 30 ? "text-red-600" : utilization > 10 ? "text-yellow-600" : "text-green-600"}`}
+                      >
                         {utilization}%
                       </div>
                     </div>
                     <div>
-                      <div className="text-xs text-gray-600 dark:text-slate-300 mb-1">Optimal Payment Date</div>
+                      <div className="text-xs text-gray-600 dark:text-slate-300 mb-1">
+                        Optimal Payment Date
+                      </div>
                       <div className="text-2xl font-bold text-teal-600">
                         Day {optimalDate}
                       </div>
@@ -214,8 +276,12 @@ export default function PaymentTimingOptimizer() {
                       </div>
                     </div>
                     <div>
-                      <div className="text-xs text-gray-600 dark:text-slate-300 mb-1">Days Until Statement</div>
-                      <div className={`text-2xl font-bold ${isUrgent ? 'text-orange-600' : 'text-gray-700 dark:text-slate-200'}`}>
+                      <div className="text-xs text-gray-600 dark:text-slate-300 mb-1">
+                        Days Until Statement
+                      </div>
+                      <div
+                        className={`text-2xl font-bold ${isUrgent ? "text-orange-600" : "text-gray-700 dark:text-slate-200"}`}
+                      >
                         {daysUntil} days
                       </div>
                       {isUrgent && (
@@ -232,11 +298,28 @@ export default function PaymentTimingOptimizer() {
                     </div>
                     <p className="text-sm text-teal-700">
                       {utilization > 30 ? (
-                        <>Pay <strong>${Math.ceil(card.balance - (card.limit * 0.1))}</strong> by <strong>Day {optimalDate}</strong> to get under 10% utilization</>
+                        <>
+                          Pay{" "}
+                          <strong>
+                            ${Math.ceil(card.balance - card.limit * 0.1)}
+                          </strong>{" "}
+                          by <strong>Day {optimalDate}</strong> to get under 10%
+                          utilization
+                        </>
                       ) : utilization > 10 ? (
-                        <>Pay <strong>${Math.ceil(card.balance - (card.limit * 0.1))}</strong> by <strong>Day {optimalDate}</strong> to reach optimal 10% utilization</>
+                        <>
+                          Pay{" "}
+                          <strong>
+                            ${Math.ceil(card.balance - card.limit * 0.1)}
+                          </strong>{" "}
+                          by <strong>Day {optimalDate}</strong> to reach optimal
+                          10% utilization
+                        </>
                       ) : (
-                        <>Great! Keep utilization under 10% and pay by <strong>Day {optimalDate}</strong></>
+                        <>
+                          Great! Keep utilization under 10% and pay by{" "}
+                          <strong>Day {optimalDate}</strong>
+                        </>
                       )}
                     </p>
                   </div>
@@ -254,15 +337,23 @@ export default function PaymentTimingOptimizer() {
           {cards.map((card) => {
             const optimalDate = getOptimalPaymentDate(card.statementDate);
             return (
-              <div key={card.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-900 rounded-lg">
+              <div
+                key={card.id}
+                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-900 rounded-lg"
+              >
                 <div>
-                  <div className="font-semibold text-gray-800 dark:text-slate-100">{card.name}</div>
+                  <div className="font-semibold text-gray-800 dark:text-slate-100">
+                    {card.name}
+                  </div>
                   <div className="text-sm text-gray-600 dark:text-slate-300">
-                    Statement: Day {card.statementDate} | Due: Day {card.dueDate}
+                    Statement: Day {card.statementDate} | Due: Day{" "}
+                    {card.dueDate}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-lg font-bold text-teal-600">Pay by Day {optimalDate}</div>
+                  <div className="text-lg font-bold text-teal-600">
+                    Pay by Day {optimalDate}
+                  </div>
                   <div className="text-sm text-gray-600 dark:text-slate-300">
                     ({getDaysUntilStatement(card.statementDate)} days from now)
                   </div>
@@ -278,8 +369,13 @@ export default function PaymentTimingOptimizer() {
         <h3 className="font-semibold text-blue-800 mb-2">Pro Tips:</h3>
         <ul className="list-disc list-inside space-y-1 text-sm text-blue-700">
           <li>Set up calendar reminders 5 days before each statement date</li>
-          <li>Use autopay but schedule it for BEFORE statement date, not due date</li>
-          <li>Even paying $1 before statement date can help if you can't pay full balance</li>
+          <li>
+            Use autopay but schedule it for BEFORE statement date, not due date
+          </li>
+          <li>
+            Even paying $1 before statement date can help if you can't pay full
+            balance
+          </li>
           <li>This strategy works immediately - see results in 30 days</li>
           <li>Combine with utilization optimization for maximum impact</li>
         </ul>

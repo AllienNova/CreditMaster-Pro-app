@@ -9,15 +9,15 @@
 // ============================================================================
 
 export type SessionType =
-  | 'general'           // General financial questions
-  | 'budget'            // Budget-focused conversation
-  | 'goals'             // Goal planning conversation
-  | 'debt'              // Debt management conversation
-  | 'investing'         // Investment advice
-  | 'credit_repair'     // Credit repair guidance
-  | 'tax_planning';     // Tax optimization
+  | "general" // General financial questions
+  | "budget" // Budget-focused conversation
+  | "goals" // Goal planning conversation
+  | "debt" // Debt management conversation
+  | "investing" // Investment advice
+  | "credit_repair" // Credit repair guidance
+  | "tax_planning"; // Tax optimization
 
-export type SessionStatus = 'active' | 'archived' | 'deleted';
+export type SessionStatus = "active" | "archived" | "deleted";
 
 export interface ChatSession {
   id: string;
@@ -56,7 +56,7 @@ export interface FinancialSnapshot {
 // MESSAGE TYPES
 // ============================================================================
 
-export type MessageRole = 'user' | 'assistant' | 'system' | 'tool';
+export type MessageRole = "user" | "assistant" | "system" | "tool";
 
 export interface ChatMessage {
   id: string;
@@ -82,25 +82,25 @@ export interface ChatMessage {
 // ============================================================================
 
 export type IntentType =
-  | 'create_goal'          // User wants to create a financial goal
-  | 'create_budget'        // User wants to create a budget
-  | 'analyze_spending'     // User wants spending analysis
-  | 'get_recommendations'  // User wants financial advice
-  | 'debt_strategy'        // User wants debt help
-  | 'account_summary'      // User wants financial overview
-  | 'investment_advice'    // User wants investment guidance
-  | 'credit_score'         // User wants credit score info
-  | 'general_question'     // General financial education
-  | 'greeting'             // Conversation starters
-  | 'execute_action'       // Confirm and execute action
-  | 'cancel_action'        // Cancel pending action
-  | 'clarification'        // User providing clarification
-  | 'feedback';            // User providing feedback
+  | "create_goal" // User wants to create a financial goal
+  | "create_budget" // User wants to create a budget
+  | "analyze_spending" // User wants spending analysis
+  | "get_recommendations" // User wants financial advice
+  | "debt_strategy" // User wants debt help
+  | "account_summary" // User wants financial overview
+  | "investment_advice" // User wants investment guidance
+  | "credit_score" // User wants credit score info
+  | "general_question" // General financial education
+  | "greeting" // Conversation starters
+  | "execute_action" // Confirm and execute action
+  | "cancel_action" // Cancel pending action
+  | "clarification" // User providing clarification
+  | "feedback"; // User providing feedback
 
 export interface Intent {
   type: IntentType;
-  confidence: number;       // 0-1
-  reason: string;          // Why this intent was chosen
+  confidence: number; // 0-1
+  reason: string; // Why this intent was chosen
   requiresConfirmation: boolean;
   metadata: Record<string, unknown>;
 }
@@ -130,7 +130,7 @@ export interface MoneyAmount {
 export interface DateEntity {
   value: Date;
   originalText: string;
-  precision: 'day' | 'week' | 'month' | 'quarter' | 'year';
+  precision: "day" | "week" | "month" | "quarter" | "year";
   confidence: number;
 }
 
@@ -195,8 +195,8 @@ export interface ListSessionsRequest {
   sessionType?: SessionType;
   limit?: number;
   offset?: number;
-  sortBy?: 'createdAt' | 'updatedAt' | 'lastMessageAt';
-  sortOrder?: 'asc' | 'desc';
+  sortBy?: "createdAt" | "updatedAt" | "lastMessageAt";
+  sortOrder?: "asc" | "desc";
 }
 
 export interface UpdateSessionRequest {
@@ -223,14 +223,14 @@ export interface KnowledgeDocument {
 }
 
 export type KnowledgeCategory =
-  | 'credit_repair'
-  | 'budgeting'
-  | 'investing'
-  | 'debt_management'
-  | 'tax_planning'
-  | 'financial_literacy'
-  | 'regulations'
-  | 'best_practices';
+  | "credit_repair"
+  | "budgeting"
+  | "investing"
+  | "debt_management"
+  | "tax_planning"
+  | "financial_literacy"
+  | "regulations"
+  | "best_practices";
 
 export interface KnowledgeSearchResult {
   document: KnowledgeDocument;
@@ -287,7 +287,7 @@ export interface BuildPromptOptions {
 
 export interface BuiltPrompt {
   messages: Array<{
-    role: 'system' | 'user' | 'assistant';
+    role: "system" | "user" | "assistant";
     content: string;
   }>;
   tokenEstimate: number;
@@ -319,7 +319,7 @@ export interface ChatAnalytics {
 }
 
 export interface ChatMetrics {
-  period: 'day' | 'week' | 'month';
+  period: "day" | "week" | "month";
   totalSessions: number;
   activeSessions: number;
   totalMessages: number;
@@ -337,7 +337,7 @@ export interface ChatMetrics {
 
 export interface VoiceInputRequest {
   audioFile: Blob | Buffer;
-  format: 'mp3' | 'wav' | 'ogg' | 'webm';
+  format: "mp3" | "wav" | "ogg" | "webm";
   language?: string;
   sessionId?: string;
 }
@@ -352,9 +352,9 @@ export interface VoiceInputResult {
 
 export interface TextToSpeechRequest {
   text: string;
-  voice?: 'male' | 'female' | 'neutral';
+  voice?: "male" | "female" | "neutral";
   speed?: number;
-  format?: 'mp3' | 'wav';
+  format?: "mp3" | "wav";
 }
 
 export interface TextToSpeechResult {
@@ -369,7 +369,7 @@ export interface TextToSpeechResult {
 
 export interface ExportChatRequest {
   sessionId: string;
-  format: 'pdf' | 'markdown' | 'json';
+  format: "pdf" | "markdown" | "json";
   includeActions: boolean;
   includeContext: boolean;
 }
@@ -389,23 +389,23 @@ export class ChatError extends Error {
   constructor(
     message: string,
     public code: ChatErrorCode,
-    public details?: Record<string, unknown>
+    public details?: Record<string, unknown>,
   ) {
     super(message);
-    this.name = 'ChatError';
+    this.name = "ChatError";
   }
 }
 
 export type ChatErrorCode =
-  | 'SESSION_NOT_FOUND'
-  | 'MESSAGE_TOO_LONG'
-  | 'RATE_LIMIT_EXCEEDED'
-  | 'INVALID_INTENT'
-  | 'ACTION_FAILED'
-  | 'CONTEXT_UNAVAILABLE'
-  | 'AI_SERVICE_ERROR'
-  | 'INSUFFICIENT_PERMISSIONS'
-  | 'INVALID_PARAMETERS';
+  | "SESSION_NOT_FOUND"
+  | "MESSAGE_TOO_LONG"
+  | "RATE_LIMIT_EXCEEDED"
+  | "INVALID_INTENT"
+  | "ACTION_FAILED"
+  | "CONTEXT_UNAVAILABLE"
+  | "AI_SERVICE_ERROR"
+  | "INSUFFICIENT_PERMISSIONS"
+  | "INVALID_PARAMETERS";
 
 // ============================================================================
 // UTILITY TYPES

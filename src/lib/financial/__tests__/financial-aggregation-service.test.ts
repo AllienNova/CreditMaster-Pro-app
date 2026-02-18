@@ -5,7 +5,7 @@
 // Mock Supabase with inline factory
 const mockFrom = jest.fn();
 
-jest.mock('@/lib/supabase/client', () => {
+jest.mock("@/lib/supabase/client", () => {
   return {
     getSupabase: () => ({
       from: mockFrom,
@@ -24,21 +24,21 @@ beforeEach(() => {
       jest.Mock | ((resolve: (v: unknown) => unknown) => Promise<unknown>)
     > = {};
     const methods = [
-      'select',
-      'eq',
-      'neq',
-      'gt',
-      'gte',
-      'lt',
-      'lte',
-      'order',
-      'limit',
-      'range',
-      'in',
-      'is',
-      'insert',
-      'update',
-      'delete',
+      "select",
+      "eq",
+      "neq",
+      "gt",
+      "gte",
+      "lt",
+      "lte",
+      "order",
+      "limit",
+      "range",
+      "in",
+      "is",
+      "insert",
+      "update",
+      "delete",
     ];
     methods.forEach((m) => {
       chain[m] = jest.fn(() => chain);
@@ -51,7 +51,7 @@ beforeEach(() => {
   mockFrom.mockImplementation(() => createMockChain());
 });
 
-jest.mock('../budget-service', () => ({
+jest.mock("../budget-service", () => ({
   budgetService: {
     getBudgetsByUser: jest.fn(() => Promise.resolve([])),
     getBudgetSummary: jest.fn(() =>
@@ -73,14 +73,14 @@ jest.mock('../budget-service', () => ({
           dailyAverage: 0,
           projectedOverUnder: 0,
         },
-      })
+      }),
     ),
     getAlerts: jest.fn(() => Promise.resolve([])),
     getBudgetTrends: jest.fn(() => Promise.resolve([])),
   },
 }));
 
-jest.mock('../spending-analysis-service', () => ({
+jest.mock("../spending-analysis-service", () => ({
   spendingAnalysisService: {
     analyzeSpending: jest.fn(() =>
       Promise.resolve({
@@ -91,13 +91,13 @@ jest.mock('../spending-analysis-service', () => ({
         trends: [],
         anomalies: [],
         insights: [],
-      })
+      }),
     ),
     detectAnomalies: jest.fn(() => Promise.resolve([])),
   },
 }));
 
-jest.mock('../bill-detection-service', () => ({
+jest.mock("../bill-detection-service", () => ({
   billDetectionService: {
     getBillsByUser: jest.fn(() => Promise.resolve([])),
     getBillSummary: jest.fn(() =>
@@ -110,12 +110,12 @@ jest.mock('../bill-detection-service', () => ({
         overdueBillsTotal: 0,
         paidThisMonth: 0,
         billsByCategory: [],
-      })
+      }),
     ),
   },
 }));
 
-jest.mock('../savings-automation-service', () => ({
+jest.mock("../savings-automation-service", () => ({
   savingsAutomationService: {
     getGoals: jest.fn(() => Promise.resolve([])),
     getRules: jest.fn(() => Promise.resolve([])),
@@ -130,25 +130,25 @@ jest.mock('../savings-automation-service', () => ({
         projectedMonthlySavings: 0,
         savingsRate: 10,
         goalProgress: [],
-      })
+      }),
     ),
   },
 }));
 
 // Import after mocks are set up
-import { FinancialAggregationService } from '../financial-aggregation-service';
+import { FinancialAggregationService } from "../financial-aggregation-service";
 
-describe('FinancialAggregationService', () => {
+describe("FinancialAggregationService", () => {
   let service: FinancialAggregationService;
-  const testUserId = 'test-user-123';
+  const testUserId = "test-user-123";
 
   beforeEach(() => {
     service = new FinancialAggregationService();
     service.clearAllCaches();
   });
 
-  describe('getAggregatedContext', () => {
-    it('should return aggregated financial context', async () => {
+  describe("getAggregatedContext", () => {
+    it("should return aggregated financial context", async () => {
       const context = await service.getAggregatedContext(testUserId);
 
       expect(context).toBeDefined();
@@ -166,17 +166,17 @@ describe('FinancialAggregationService', () => {
       expect(context.dataCompleteness).toBeDefined();
     });
 
-    it('should use cached data on subsequent calls', async () => {
+    it("should use cached data on subsequent calls", async () => {
       const context1 = await service.getAggregatedContext(testUserId);
       const context2 = await service.getAggregatedContext(testUserId);
 
       // Same cached timestamp
       expect(context1.lastUpdated.getTime()).toBe(
-        context2.lastUpdated.getTime()
+        context2.lastUpdated.getTime(),
       );
     });
 
-    it('should bypass cache when forceRefresh is true', async () => {
+    it("should bypass cache when forceRefresh is true", async () => {
       const context1 = await service.getAggregatedContext(testUserId);
 
       // Small delay to ensure different timestamp
@@ -188,52 +188,52 @@ describe('FinancialAggregationService', () => {
 
       // Different timestamps due to refresh
       expect(context2.lastUpdated.getTime()).toBeGreaterThanOrEqual(
-        context1.lastUpdated.getTime()
+        context1.lastUpdated.getTime(),
       );
     });
 
-    it('should calculate data completeness correctly', async () => {
+    it("should calculate data completeness correctly", async () => {
       const context = await service.getAggregatedContext(testUserId);
 
-      expect(context.dataCompleteness).toHaveProperty('accounts');
-      expect(context.dataCompleteness).toHaveProperty('budgets');
-      expect(context.dataCompleteness).toHaveProperty('transactions');
-      expect(context.dataCompleteness).toHaveProperty('overallScore');
-      expect(typeof context.dataCompleteness.overallScore).toBe('number');
+      expect(context.dataCompleteness).toHaveProperty("accounts");
+      expect(context.dataCompleteness).toHaveProperty("budgets");
+      expect(context.dataCompleteness).toHaveProperty("transactions");
+      expect(context.dataCompleteness).toHaveProperty("overallScore");
+      expect(typeof context.dataCompleteness.overallScore).toBe("number");
     });
   });
 
-  describe('getFinancialSnapshot', () => {
-    it('should return a point-in-time snapshot', async () => {
+  describe("getFinancialSnapshot", () => {
+    it("should return a point-in-time snapshot", async () => {
       const snapshot = await service.getFinancialSnapshot(testUserId);
 
       expect(snapshot).toBeDefined();
       expect(snapshot.date).toBeInstanceOf(Date);
-      expect(typeof snapshot.netWorth).toBe('number');
-      expect(typeof snapshot.totalAssets).toBe('number');
-      expect(typeof snapshot.totalLiabilities).toBe('number');
-      expect(typeof snapshot.monthlyIncome).toBe('number');
-      expect(typeof snapshot.monthlyExpenses).toBe('number');
-      expect(typeof snapshot.healthScore).toBe('number');
+      expect(typeof snapshot.netWorth).toBe("number");
+      expect(typeof snapshot.totalAssets).toBe("number");
+      expect(typeof snapshot.totalLiabilities).toBe("number");
+      expect(typeof snapshot.monthlyIncome).toBe("number");
+      expect(typeof snapshot.monthlyExpenses).toBe("number");
+      expect(typeof snapshot.healthScore).toBe("number");
     });
 
-    it('should calculate cash flow correctly', async () => {
+    it("should calculate cash flow correctly", async () => {
       const snapshot = await service.getFinancialSnapshot(testUserId);
 
       expect(snapshot.monthlyCashFlow).toBe(
-        snapshot.monthlyIncome - snapshot.monthlyExpenses
+        snapshot.monthlyIncome - snapshot.monthlyExpenses,
       );
     });
   });
 
-  describe('getFinancialTrends', () => {
-    it('should return trend data for specified period', async () => {
+  describe("getFinancialTrends", () => {
+    it("should return trend data for specified period", async () => {
       const trends = await service.getFinancialTrends(testUserId, {
-        period: '30d',
+        period: "30d",
       });
 
       expect(trends).toBeDefined();
-      expect(trends.period).toBe('30d');
+      expect(trends.period).toBe("30d");
       expect(trends.startDate).toBeInstanceOf(Date);
       expect(trends.endDate).toBeInstanceOf(Date);
       expect(trends.netWorthTrend).toBeDefined();
@@ -243,28 +243,28 @@ describe('FinancialAggregationService', () => {
       expect(trends.debtTrend).toBeDefined();
     });
 
-    it('should calculate trend direction correctly', async () => {
+    it("should calculate trend direction correctly", async () => {
       const trends = await service.getFinancialTrends(testUserId, {
-        period: '30d',
+        period: "30d",
       });
 
       // With empty data, direction should be stable
-      expect(['up', 'down', 'stable']).toContain(
-        trends.netWorthTrend.direction
+      expect(["up", "down", "stable"]).toContain(
+        trends.netWorthTrend.direction,
       );
     });
 
-    it('should generate observations', async () => {
+    it("should generate observations", async () => {
       const trends = await service.getFinancialTrends(testUserId, {
-        period: '30d',
+        period: "30d",
       });
 
       expect(Array.isArray(trends.observations)).toBe(true);
     });
   });
 
-  describe('cache management', () => {
-    it('should clear cache for specific user', async () => {
+  describe("cache management", () => {
+    it("should clear cache for specific user", async () => {
       await service.getAggregatedContext(testUserId);
       service.clearCache(testUserId);
 
@@ -273,51 +273,51 @@ describe('FinancialAggregationService', () => {
       expect(context).toBeDefined();
     });
 
-    it('should clear all caches', async () => {
+    it("should clear all caches", async () => {
       await service.getAggregatedContext(testUserId);
-      await service.getAggregatedContext('another-user');
+      await service.getAggregatedContext("another-user");
 
       service.clearAllCaches();
 
       // Both should fetch fresh data
       const context1 = await service.getAggregatedContext(testUserId);
-      const context2 = await service.getAggregatedContext('another-user');
+      const context2 = await service.getAggregatedContext("another-user");
 
       expect(context1).toBeDefined();
       expect(context2).toBeDefined();
     });
   });
 
-  describe('data completeness', () => {
-    it('should return completeness score between 0 and 100', async () => {
+  describe("data completeness", () => {
+    it("should return completeness score between 0 and 100", async () => {
       const context = await service.getAggregatedContext(testUserId);
 
       expect(context.dataCompleteness.overallScore).toBeGreaterThanOrEqual(0);
       expect(context.dataCompleteness.overallScore).toBeLessThanOrEqual(100);
     });
 
-    it('should track individual data source completeness', async () => {
+    it("should track individual data source completeness", async () => {
       const context = await service.getAggregatedContext(testUserId);
 
-      expect(typeof context.dataCompleteness.accounts).toBe('boolean');
-      expect(typeof context.dataCompleteness.budgets).toBe('boolean');
-      expect(typeof context.dataCompleteness.transactions).toBe('boolean');
-      expect(typeof context.dataCompleteness.bills).toBe('boolean');
-      expect(typeof context.dataCompleteness.savings).toBe('boolean');
-      expect(typeof context.dataCompleteness.debt).toBe('boolean');
-      expect(typeof context.dataCompleteness.investments).toBe('boolean');
-      expect(typeof context.dataCompleteness.credit).toBe('boolean');
+      expect(typeof context.dataCompleteness.accounts).toBe("boolean");
+      expect(typeof context.dataCompleteness.budgets).toBe("boolean");
+      expect(typeof context.dataCompleteness.transactions).toBe("boolean");
+      expect(typeof context.dataCompleteness.bills).toBe("boolean");
+      expect(typeof context.dataCompleteness.savings).toBe("boolean");
+      expect(typeof context.dataCompleteness.debt).toBe("boolean");
+      expect(typeof context.dataCompleteness.investments).toBe("boolean");
+      expect(typeof context.dataCompleteness.credit).toBe("boolean");
     });
   });
 
-  describe('insights and recommendations', () => {
-    it('should generate insights array', async () => {
+  describe("insights and recommendations", () => {
+    it("should generate insights array", async () => {
       const context = await service.getAggregatedContext(testUserId);
 
       expect(Array.isArray(context.insights)).toBe(true);
     });
 
-    it('should generate recommendations array', async () => {
+    it("should generate recommendations array", async () => {
       const context = await service.getAggregatedContext(testUserId);
 
       expect(Array.isArray(context.recommendations)).toBe(true);

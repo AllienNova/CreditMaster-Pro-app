@@ -1,6 +1,6 @@
 /**
  * Investment Intelligence - Core Type Definitions
- * 
+ *
  * Comprehensive types for multi-asset investment analysis system
  */
 
@@ -8,11 +8,37 @@
 // ASSET TYPES
 // ============================================================================
 
-export type AssetClass = 'stock' | 'etf' | 'futures' | 'crypto' | 'options' | 'bonds' | 'commodities' | 'forex';
-export type Timeframe = '1m' | '5m' | '15m' | '30m' | '1h' | '4h' | '1d' | '1w' | '1M';
-export type TrendDirection = 'bullish' | 'bearish' | 'neutral' | 'consolidating';
-export type SignalStrength = 'strong_buy' | 'buy' | 'neutral' | 'sell' | 'strong_sell';
-export type RiskLevel = 'very_low' | 'low' | 'moderate' | 'high' | 'very_high';
+export type AssetClass =
+  | "stock"
+  | "etf"
+  | "futures"
+  | "crypto"
+  | "options"
+  | "bonds"
+  | "commodities"
+  | "forex";
+export type Timeframe =
+  | "1m"
+  | "5m"
+  | "15m"
+  | "30m"
+  | "1h"
+  | "4h"
+  | "1d"
+  | "1w"
+  | "1M";
+export type TrendDirection =
+  | "bullish"
+  | "bearish"
+  | "neutral"
+  | "consolidating";
+export type SignalStrength =
+  | "strong_buy"
+  | "buy"
+  | "neutral"
+  | "sell"
+  | "strong_sell";
+export type RiskLevel = "very_low" | "low" | "moderate" | "high" | "very_high";
 
 export interface Asset {
   id: string;
@@ -76,7 +102,15 @@ export interface Watchlist {
 // SCREENING & FILTERING
 // ============================================================================
 
-export type ScreenerOperator = 'gt' | 'gte' | 'lt' | 'lte' | 'eq' | 'neq' | 'between' | 'in';
+export type ScreenerOperator =
+  | "gt"
+  | "gte"
+  | "lt"
+  | "lte"
+  | "eq"
+  | "neq"
+  | "between"
+  | "in";
 
 export interface ScreenerFilter {
   field: string;
@@ -202,7 +236,7 @@ export interface VaRMetrics {
   weekly99: number;
   monthly95: number;
   monthly99: number;
-  method: 'historical' | 'parametric' | 'monte_carlo';
+  method: "historical" | "parametric" | "monte_carlo";
 }
 
 export interface CorrelationMatrix {
@@ -217,7 +251,11 @@ export interface StressTestResult {
   description: string;
   portfolioImpact: number;
   portfolioImpactPercent: number;
-  holdingImpacts: Array<{ symbol: string; impact: number; impactPercent: number }>;
+  holdingImpacts: Array<{
+    symbol: string;
+    impact: number;
+    impactPercent: number;
+  }>;
   probability?: number;
   historicalOccurrence?: string;
 }
@@ -244,4 +282,3 @@ export interface DiversificationAnalysis {
   recommendations: string[];
   concentrationRisks: Array<{ type: string; exposure: number; risk: string }>;
 }
-

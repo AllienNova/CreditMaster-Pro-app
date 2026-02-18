@@ -3,25 +3,25 @@
  * Displays AI nudges as dismissible notifications
  */
 
-import React from 'react';
+import React from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Animated,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { lightTheme as theme } from '../../constants/theme';
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { lightTheme as theme } from "../../constants/theme";
 
 type NudgeType =
-  | 'motivational'
-  | 'progress'
-  | 'warning'
-  | 'celebration'
-  | 'reminder'
-  | 'insight'
-  | 'coaching';
+  | "motivational"
+  | "progress"
+  | "warning"
+  | "celebration"
+  | "reminder"
+  | "insight"
+  | "coaching";
 
 interface Nudge {
   id: string;
@@ -44,13 +44,13 @@ const typeConfig: Record<
   NudgeType,
   { icon: string; color: string; bgColor: string }
 > = {
-  motivational: { icon: '💪', color: '#3B82F6', bgColor: '#EFF6FF' },
-  progress: { icon: '📊', color: '#22C55E', bgColor: '#F0FDF4' },
-  warning: { icon: '⚠️', color: '#F59E0B', bgColor: '#FFFBEB' },
-  celebration: { icon: '🎉', color: '#A855F7', bgColor: '#FAF5FF' },
-  reminder: { icon: '🔔', color: '#F97316', bgColor: '#FFF7ED' },
-  insight: { icon: '💡', color: '#06B6D4', bgColor: '#ECFEFF' },
-  coaching: { icon: '📚', color: '#6366F1', bgColor: '#EEF2FF' },
+  motivational: { icon: "💪", color: "#3B82F6", bgColor: "#EFF6FF" },
+  progress: { icon: "📊", color: "#22C55E", bgColor: "#F0FDF4" },
+  warning: { icon: "⚠️", color: "#F59E0B", bgColor: "#FFFBEB" },
+  celebration: { icon: "🎉", color: "#A855F7", bgColor: "#FAF5FF" },
+  reminder: { icon: "🔔", color: "#F97316", bgColor: "#FFF7ED" },
+  insight: { icon: "💡", color: "#06B6D4", bgColor: "#ECFEFF" },
+  coaching: { icon: "📚", color: "#6366F1", bgColor: "#EEF2FF" },
 };
 
 export function NudgeToast({
@@ -150,16 +150,16 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     borderRadius: 12,
     borderLeftWidth: 4,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
   },
   content: {
-    flexDirection: 'row',
+    flexDirection: "row",
     padding: 16,
-    alignItems: 'flex-start',
+    alignItems: "flex-start",
   },
   icon: {
     fontSize: 28,
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: 4,
   },
@@ -180,8 +180,8 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   actions: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: 12,
     gap: 8,
   },
@@ -192,8 +192,8 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#fff',
+    fontWeight: "600",
+    color: "#fff",
   },
   secondaryButton: {
     paddingHorizontal: 14,
@@ -202,8 +202,8 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#fff',
+    fontWeight: "600",
+    color: "#fff",
   },
   textButton: {
     paddingHorizontal: 10,
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
   },
   dismissButton: {
     padding: 4,
-    marginLeft: 'auto',
+    marginLeft: "auto",
   },
 });
 

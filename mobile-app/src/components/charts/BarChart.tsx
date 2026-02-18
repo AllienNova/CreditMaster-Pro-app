@@ -3,10 +3,10 @@
  * Reusable bar chart for budgets, spending categories, etc.
  */
 
-import React from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import Svg, { Rect, G, Text as SvgText, Line } from 'react-native-svg';
-import { lightTheme as theme } from '../../constants/theme';
+import React from "react";
+import { View, Text, StyleSheet, Dimensions } from "react-native";
+import Svg, { Rect, G, Text as SvgText, Line } from "react-native-svg";
+import { lightTheme as theme } from "../../constants/theme";
 
 interface BarData {
   value: number;
@@ -26,7 +26,7 @@ interface BarChartProps {
   formatValue?: (value: number) => string;
 }
 
-const { width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get("window");
 
 export function BarChart({
   data,
@@ -41,16 +41,16 @@ export function BarChart({
 }: BarChartProps) {
   if (data.length === 0) return null;
 
-  const padding = horizontal 
+  const padding = horizontal
     ? { top: 10, right: 60, bottom: 10, left: 80 }
     : { top: 20, right: 20, bottom: 50, left: 40 };
-  
+
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
-  
-  const max = maxValue ?? Math.max(...data.map(d => d.value)) * 1.1;
+
+  const max = maxValue ?? Math.max(...data.map((d) => d.value)) * 1.1;
   const barGap = horizontal ? 8 : 12;
-  const barSize = horizontal 
+  const barSize = horizontal
     ? (chartHeight - barGap * (data.length - 1)) / data.length
     : (chartWidth - barGap * (data.length - 1)) / data.length;
 
@@ -92,7 +92,9 @@ export function BarChart({
                     fill={theme.colors.text}
                     textAnchor="end"
                   >
-                    {item.label.length > 10 ? item.label.slice(0, 10) + '...' : item.label}
+                    {item.label.length > 10
+                      ? item.label.slice(0, 10) + "..."
+                      : item.label}
                   </SvgText>
                 )}
                 {/* Value */}
@@ -185,7 +187,7 @@ export function BarChart({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
   },
 });
 

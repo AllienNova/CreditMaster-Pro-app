@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * usePortfolio Hook
@@ -11,12 +11,12 @@
  * - Error handling and retry logic
  */
 
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { useAuth } from './useAuth';
-import type { Portfolio } from '@/lib/investments/types/portfolio.types';
+import { useEffect, useState, useCallback, useRef } from "react";
+import { useAuth } from "./useAuth";
+import type { Portfolio } from "@/lib/investments/types/portfolio.types";
 
 export interface UsePortfolioOptions {
-  period?: '1D' | '1W' | '1M' | '3M' | '6M' | '1Y' | 'ALL';
+  period?: "1D" | "1W" | "1M" | "3M" | "6M" | "1Y" | "ALL";
   refreshInterval?: number; // milliseconds, 0 to disable
   enabled?: boolean;
 }
@@ -29,9 +29,11 @@ export interface UsePortfolioReturn {
   isRefreshing: boolean;
 }
 
-export function usePortfolio(options: UsePortfolioOptions = {}): UsePortfolioReturn {
+export function usePortfolio(
+  options: UsePortfolioOptions = {},
+): UsePortfolioReturn {
   const {
-    period = '1M',
+    period = "1M",
     refreshInterval = 30000, // 30 seconds default
     enabled = true,
   } = options;
@@ -67,16 +69,19 @@ export function usePortfolio(options: UsePortfolioOptions = {}): UsePortfolioRet
 
         setError(null);
 
-        const response = await fetch(`/api/investments/portfolio?period=${period}`, {
-          signal: abortControllerRef.current.signal,
-          headers: {
-            'Content-Type': 'application/json',
+        const response = await fetch(
+          `/api/investments/portfolio?period=${period}`,
+          {
+            signal: abortControllerRef.current.signal,
+            headers: {
+              "Content-Type": "application/json",
+            },
           },
-        });
+        );
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to fetch portfolio');
+          throw new Error(errorData.error || "Failed to fetch portfolio");
         }
 
         const result = await response.json();
@@ -85,15 +90,16 @@ export function usePortfolio(options: UsePortfolioOptions = {}): UsePortfolioRet
           setPortfolio(result.data);
           setError(null);
         } else {
-          throw new Error(result.error || 'Invalid portfolio data');
+          throw new Error(result.error || "Invalid portfolio data");
         }
       } catch (err) {
         // Ignore abort errors
-        if (err instanceof Error && err.name === 'AbortError') {
+        if (err instanceof Error && err.name === "AbortError") {
           return;
         }
 
-        const errorMessage = err instanceof Error ? err.message : 'Failed to load portfolio';
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to load portfolio";
         setError(errorMessage);
         // Portfolio fetch error - state updated
       } finally {
@@ -101,7 +107,7 @@ export function usePortfolio(options: UsePortfolioOptions = {}): UsePortfolioRet
         setIsRefreshing(false);
       }
     },
-    [user, enabled, period]
+    [user, enabled, period],
   );
 
   const refresh = useCallback(async () => {
@@ -152,4 +158,3 @@ export function usePortfolio(options: UsePortfolioOptions = {}): UsePortfolioRet
     isRefreshing,
   };
 }
-

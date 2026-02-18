@@ -1,10 +1,10 @@
-import { Suspense } from 'react';
-import { Metadata } from 'next';
-import LoginForm from '@/components/auth/LoginForm';
+import { Suspense } from "react";
+import { Metadata } from "next";
+import LoginForm from "@/components/auth/LoginForm";
 
 export const metadata: Metadata = {
-  title: 'Login | Fynvita',
-  description: 'Sign in to your Fynvita account - Your Financial Vitality',
+  title: "Login | Fynvita",
+  description: "Sign in to your Fynvita account - Your Financial Vitality",
 };
 
 function LoginLoadingSkeleton() {
@@ -31,4 +31,3 @@ export default function LoginPage() {
     </div>
   );
 }
-

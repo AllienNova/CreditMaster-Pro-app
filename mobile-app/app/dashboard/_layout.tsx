@@ -3,8 +3,8 @@
  * All dashboard sub-pages with stack navigation
  */
 
-import { Stack } from 'expo-router';
-import { lightTheme as theme } from '../../src/constants/theme';
+import { Stack } from "expo-router";
+import { lightTheme as theme } from "../../src/constants/theme";
 
 export default function DashboardLayout() {
   return (
@@ -12,7 +12,7 @@ export default function DashboardLayout() {
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: theme.colors.background },
-        animation: 'slide_from_right',
+        animation: "slide_from_right",
       }}
     >
       <Stack.Screen name="index" />
@@ -30,4 +30,3 @@ export default function DashboardLayout() {
     </Stack>
   );
 }
-

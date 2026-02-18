@@ -9,15 +9,15 @@
  * - TrueLayer (EU, UK, IE)
  */
 
-import { getConnectorRegistry, ConnectorRegistry } from '../registry';
+import { getConnectorRegistry, ConnectorRegistry } from "../registry";
 import {
   UnifiedAccount,
   UnifiedTransaction,
   ConnectorResult,
   REGIONS,
   REGION_GROUPS,
-} from '../types';
-import { TrueLayerConnector } from './truelayer-connector';
+} from "../types";
+import { TrueLayerConnector } from "./truelayer-connector";
 
 // =============================================================================
 // Types
@@ -58,7 +58,7 @@ interface ConnectionStatus {
  */
 export type TokenPersistCallback = (
   connection: ProviderConnection,
-  updatedFields: Partial<ProviderConnection>
+  updatedFields: Partial<ProviderConnection>,
 ) => Promise<void>;
 
 // Provider tokens stored in database
@@ -100,25 +100,25 @@ export class BankingAggregator {
    */
   getProviderForRegion(region: string): string {
     // EU/UK countries - prefer TrueLayer
-    const trueLayerRegions = ['GB', 'IE', ...REGION_GROUPS.EU];
+    const trueLayerRegions = ["GB", "IE", ...REGION_GROUPS.EU];
     if (trueLayerRegions.includes(region)) {
-      const available = this.registry.getAvailableProviders('banking', region);
-      if (available.includes('truelayer')) {
-        return 'truelayer';
+      const available = this.registry.getAvailableProviders("banking", region);
+      if (available.includes("truelayer")) {
+        return "truelayer";
       }
     }
 
     // US/CA - prefer Plaid
-    if (['US', 'CA'].includes(region)) {
-      const available = this.registry.getAvailableProviders('banking', region);
-      if (available.includes('plaid')) {
-        return 'plaid';
+    if (["US", "CA"].includes(region)) {
+      const available = this.registry.getAvailableProviders("banking", region);
+      if (available.includes("plaid")) {
+        return "plaid";
       }
     }
 
     // Fallback to any available provider
-    const available = this.registry.getAvailableProviders('banking', region);
-    return available[0] || 'plaid';
+    const available = this.registry.getAvailableProviders("banking", region);
+    return available[0] || "plaid";
   }
 
   /**
@@ -127,12 +127,12 @@ export class BankingAggregator {
   getSupportedRegions(): string[] {
     const regions = new Set<string>();
 
-    const providers = this.registry.getConnectors('banking');
+    const providers = this.registry.getConnectors("banking");
     for (const provider of providers) {
       for (const region of provider.getRegions()) {
-        if (region === '*') {
+        if (region === "*") {
           // Global provider
-          return ['*'];
+          return ["*"];
         }
         regions.add(region);
       }
@@ -151,42 +151,46 @@ export class BankingAggregator {
   async createLinkSession(
     userId: string,
     region: string,
-    redirectUri?: string
+    redirectUri?: string,
   ): Promise<LinkSession> {
     const provider = this.getProviderForRegion(region);
 
-    if (provider === 'truelayer') {
-      const connector = this.registry.getConnector<TrueLayerConnector>('banking', 'truelayer');
+    if (provider === "truelayer") {
+      const connector = this.registry.getConnector<TrueLayerConnector>(
+        "banking",
+        "truelayer",
+      );
       if (!connector) {
-        throw new Error('TrueLayer connector not registered');
+        throw new Error("TrueLayer connector not registered");
       }
 
       const authLink = connector.createAuthLink(userId, redirectUri);
 
       return {
-        provider: 'truelayer',
+        provider: "truelayer",
         linkUrl: authLink.authUri,
         state: authLink.state,
         expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes
       };
     }
 
-    if (provider === 'plaid') {
+    if (provider === "plaid") {
       // Plaid uses a different flow with Link tokens
       // This would call the existing Plaid service
-      const result = await this.registry.executeWithFallback<{ link_token: string }>(
-        'banking',
-        'createLinkToken',
-        [userId],
-        { preferredProvider: 'plaid' }
-      );
+      const result = await this.registry.executeWithFallback<{
+        link_token: string;
+      }>("banking", "createLinkToken", [userId], {
+        preferredProvider: "plaid",
+      });
 
       if (!result.success || !result.data) {
-        throw new Error(result.error?.message || 'Failed to create Plaid link token');
+        throw new Error(
+          result.error?.message || "Failed to create Plaid link token",
+        );
       }
 
       return {
-        provider: 'plaid',
+        provider: "plaid",
         linkToken: result.data.link_token,
         expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes
       };
@@ -201,17 +205,20 @@ export class BankingAggregator {
   async handleTrueLayerCallback(
     code: string,
     state: string,
-    redirectUri?: string
+    redirectUri?: string,
   ): Promise<ProviderConnection> {
-    const connector = this.registry.getConnector<TrueLayerConnector>('banking', 'truelayer');
+    const connector = this.registry.getConnector<TrueLayerConnector>(
+      "banking",
+      "truelayer",
+    );
     if (!connector) {
-      throw new Error('TrueLayer connector not registered');
+      throw new Error("TrueLayer connector not registered");
     }
 
     const tokenResponse = await connector.exchangeCode(code, redirectUri);
 
     return {
-      provider: 'truelayer',
+      provider: "truelayer",
       accessToken: tokenResponse.access_token,
       refreshToken: tokenResponse.refresh_token,
       expiresAt: new Date(Date.now() + tokenResponse.expires_in * 1000),
@@ -223,24 +230,23 @@ export class BankingAggregator {
    */
   async handlePlaidCallback(
     publicToken: string,
-    metadata: Record<string, unknown>
+    metadata: Record<string, unknown>,
   ): Promise<ProviderConnection> {
     const result = await this.registry.executeWithFallback<{
       access_token: string;
       item_id: string;
-    }>(
-      'banking',
-      'exchangePublicToken',
-      [publicToken],
-      { preferredProvider: 'plaid' }
-    );
+    }>("banking", "exchangePublicToken", [publicToken], {
+      preferredProvider: "plaid",
+    });
 
     if (!result.success || !result.data) {
-      throw new Error(result.error?.message || 'Failed to exchange Plaid public token');
+      throw new Error(
+        result.error?.message || "Failed to exchange Plaid public token",
+      );
     }
 
     return {
-      provider: 'plaid',
+      provider: "plaid",
       accessToken: result.data.access_token,
       itemId: result.data.item_id,
       metadata,
@@ -255,7 +261,7 @@ export class BankingAggregator {
    * Get all accounts for a user across all connected providers
    */
   async getAccounts(
-    connections: ProviderConnection[]
+    connections: ProviderConnection[],
   ): Promise<ConnectorResult<UnifiedAccount[]>> {
     const allAccounts: UnifiedAccount[] = [];
     const errors: string[] = [];
@@ -266,7 +272,7 @@ export class BankingAggregator {
         allAccounts.push(...accounts);
       } catch (error) {
         errors.push(
-          `${connection.provider}: ${error instanceof Error ? error.message : String(error)}`
+          `${connection.provider}: ${error instanceof Error ? error.message : String(error)}`,
         );
       }
     }
@@ -274,15 +280,15 @@ export class BankingAggregator {
     return {
       success: errors.length === 0,
       data: allAccounts,
-      provider: 'aggregator',
+      provider: "aggregator",
       cached: false,
       latencyMs: 0,
       error:
         errors.length > 0
           ? {
-              code: 'PARTIAL_FAILURE',
-              message: errors.join('; '),
-              provider: 'aggregator',
+              code: "PARTIAL_FAILURE",
+              message: errors.join("; "),
+              provider: "aggregator",
               retryable: true,
             }
           : undefined,
@@ -293,12 +299,15 @@ export class BankingAggregator {
    * Get accounts for a specific provider connection
    */
   private async getAccountsForProvider(
-    connection: ProviderConnection
+    connection: ProviderConnection,
   ): Promise<UnifiedAccount[]> {
-    if (connection.provider === 'truelayer') {
-      const connector = this.registry.getConnector<TrueLayerConnector>('banking', 'truelayer');
+    if (connection.provider === "truelayer") {
+      const connector = this.registry.getConnector<TrueLayerConnector>(
+        "banking",
+        "truelayer",
+      );
       if (!connector) {
-        throw new Error('TrueLayer connector not registered');
+        throw new Error("TrueLayer connector not registered");
       }
 
       // Refresh token if needed
@@ -307,16 +316,18 @@ export class BankingAggregator {
       return connector.getAllAccounts(accessToken);
     }
 
-    if (connection.provider === 'plaid') {
+    if (connection.provider === "plaid") {
       const result = await this.registry.executeWithFallback<UnifiedAccount[]>(
-        'banking',
-        'getAccounts',
+        "banking",
+        "getAccounts",
         [connection.accessToken],
-        { preferredProvider: 'plaid' }
+        { preferredProvider: "plaid" },
       );
 
       if (!result.success || !result.data) {
-        throw new Error(result.error?.message || 'Failed to get Plaid accounts');
+        throw new Error(
+          result.error?.message || "Failed to get Plaid accounts",
+        );
       }
 
       return result.data;
@@ -330,7 +341,7 @@ export class BankingAggregator {
    */
   async getAccount(
     connection: ProviderConnection,
-    accountId: string
+    accountId: string,
   ): Promise<UnifiedAccount | null> {
     const accounts = await this.getAccountsForProvider(connection);
     return accounts.find((a) => a.id === accountId) || null;
@@ -345,7 +356,7 @@ export class BankingAggregator {
    */
   async getTransactions(
     connections: ProviderConnection[],
-    dateRange?: DateRange
+    dateRange?: DateRange,
   ): Promise<ConnectorResult<UnifiedTransaction[]>> {
     const allTransactions: UnifiedTransaction[] = [];
     const errors: string[] = [];
@@ -359,13 +370,13 @@ export class BankingAggregator {
           const transactions = await this.getTransactionsForAccount(
             connection,
             account.id,
-            dateRange
+            dateRange,
           );
           allTransactions.push(...transactions);
         }
       } catch (error) {
         errors.push(
-          `${connection.provider}: ${error instanceof Error ? error.message : String(error)}`
+          `${connection.provider}: ${error instanceof Error ? error.message : String(error)}`,
         );
       }
     }
@@ -376,15 +387,15 @@ export class BankingAggregator {
     return {
       success: errors.length === 0,
       data: allTransactions,
-      provider: 'aggregator',
+      provider: "aggregator",
       cached: false,
       latencyMs: 0,
       error:
         errors.length > 0
           ? {
-              code: 'PARTIAL_FAILURE',
-              message: errors.join('; '),
-              provider: 'aggregator',
+              code: "PARTIAL_FAILURE",
+              message: errors.join("; "),
+              provider: "aggregator",
               retryable: true,
             }
           : undefined,
@@ -397,15 +408,19 @@ export class BankingAggregator {
   async getTransactionsForAccount(
     connection: ProviderConnection,
     accountId: string,
-    dateRange?: DateRange
+    dateRange?: DateRange,
   ): Promise<UnifiedTransaction[]> {
-    const from = dateRange?.from || new Date(Date.now() - 90 * 24 * 60 * 60 * 1000); // Default 90 days
+    const from =
+      dateRange?.from || new Date(Date.now() - 90 * 24 * 60 * 60 * 1000); // Default 90 days
     const to = dateRange?.to || new Date();
 
-    if (connection.provider === 'truelayer') {
-      const connector = this.registry.getConnector<TrueLayerConnector>('banking', 'truelayer');
+    if (connection.provider === "truelayer") {
+      const connector = this.registry.getConnector<TrueLayerConnector>(
+        "banking",
+        "truelayer",
+      );
       if (!connector) {
-        throw new Error('TrueLayer connector not registered');
+        throw new Error("TrueLayer connector not registered");
       }
 
       const accessToken = await this.ensureValidToken(connection);
@@ -413,16 +428,20 @@ export class BankingAggregator {
       return connector.getUnifiedTransactions(accessToken, accountId, from, to);
     }
 
-    if (connection.provider === 'plaid') {
-      const result = await this.registry.executeWithFallback<UnifiedTransaction[]>(
-        'banking',
-        'getTransactions',
+    if (connection.provider === "plaid") {
+      const result = await this.registry.executeWithFallback<
+        UnifiedTransaction[]
+      >(
+        "banking",
+        "getTransactions",
         [connection.accessToken, accountId, { start_date: from, end_date: to }],
-        { preferredProvider: 'plaid' }
+        { preferredProvider: "plaid" },
       );
 
       if (!result.success || !result.data) {
-        throw new Error(result.error?.message || 'Failed to get Plaid transactions');
+        throw new Error(
+          result.error?.message || "Failed to get Plaid transactions",
+        );
       }
 
       return result.data;
@@ -452,7 +471,9 @@ export class BankingAggregator {
   /**
    * Sync a specific connection
    */
-  private async syncConnection(connection: ProviderConnection): Promise<SyncResult> {
+  private async syncConnection(
+    connection: ProviderConnection,
+  ): Promise<SyncResult> {
     const errors: string[] = [];
     let accountsUpdated = 0;
     let transactionsAdded = 0;
@@ -465,11 +486,14 @@ export class BankingAggregator {
       // Get transactions for each account
       for (const account of accounts) {
         try {
-          const transactions = await this.getTransactionsForAccount(connection, account.id);
+          const transactions = await this.getTransactionsForAccount(
+            connection,
+            account.id,
+          );
           transactionsAdded += transactions.length;
         } catch (error) {
           errors.push(
-            `Account ${account.id}: ${error instanceof Error ? error.message : String(error)}`
+            `Account ${account.id}: ${error instanceof Error ? error.message : String(error)}`,
           );
         }
       }
@@ -493,7 +517,9 @@ export class BankingAggregator {
   /**
    * Get connection status
    */
-  async getConnectionStatus(connection: ProviderConnection): Promise<ConnectionStatus> {
+  async getConnectionStatus(
+    connection: ProviderConnection,
+  ): Promise<ConnectionStatus> {
     try {
       // Try to fetch accounts to verify connection
       await this.getAccountsForProvider(connection);
@@ -506,9 +532,9 @@ export class BankingAggregator {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       const requiresReauth =
-        message.includes('expired') ||
-        message.includes('TOKEN_EXPIRED') ||
-        message.includes('unauthorized');
+        message.includes("expired") ||
+        message.includes("TOKEN_EXPIRED") ||
+        message.includes("unauthorized");
 
       return {
         provider: connection.provider,
@@ -523,14 +549,21 @@ export class BankingAggregator {
   /**
    * Refresh a connection token
    */
-  async refreshConnection(connection: ProviderConnection): Promise<ProviderConnection> {
-    if (connection.provider === 'truelayer' && connection.refreshToken) {
-      const connector = this.registry.getConnector<TrueLayerConnector>('banking', 'truelayer');
+  async refreshConnection(
+    connection: ProviderConnection,
+  ): Promise<ProviderConnection> {
+    if (connection.provider === "truelayer" && connection.refreshToken) {
+      const connector = this.registry.getConnector<TrueLayerConnector>(
+        "banking",
+        "truelayer",
+      );
       if (!connector) {
-        throw new Error('TrueLayer connector not registered');
+        throw new Error("TrueLayer connector not registered");
       }
 
-      const tokenResponse = await connector.refreshToken(connection.refreshToken);
+      const tokenResponse = await connector.refreshToken(
+        connection.refreshToken,
+      );
 
       return {
         ...connection,
@@ -549,7 +582,9 @@ export class BankingAggregator {
    * Ensure the access token is valid, refreshing if needed
    * Persists refreshed tokens via the onTokenRefresh callback
    */
-  private async ensureValidToken(connection: ProviderConnection): Promise<string> {
+  private async ensureValidToken(
+    connection: ProviderConnection,
+  ): Promise<string> {
     // Check if token is expired or will expire within 5 minutes
     const expiryBuffer = 5 * 60 * 1000; // 5 minutes
     const needsRefresh =
@@ -582,7 +617,7 @@ export class BankingAggregator {
 
         return refreshed.accessToken;
       }
-      throw new Error('Token expired and no refresh token available');
+      throw new Error("Token expired and no refresh token available");
     }
 
     return connection.accessToken;
@@ -592,12 +627,12 @@ export class BankingAggregator {
    * Disconnect a provider connection
    */
   async disconnectProvider(connection: ProviderConnection): Promise<void> {
-    if (connection.provider === 'plaid' && connection.itemId) {
+    if (connection.provider === "plaid" && connection.itemId) {
       await this.registry.executeWithFallback(
-        'banking',
-        'removeItem',
+        "banking",
+        "removeItem",
         [connection.accessToken],
-        { preferredProvider: 'plaid' }
+        { preferredProvider: "plaid" },
       );
     }
 

@@ -8,7 +8,7 @@
  * - Tax bracket visualization
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -19,19 +19,19 @@ import {
   RefreshControl,
   Alert,
   Dimensions,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useTaxStore } from '../../src/store/taxStore';
+} from "react-native";
+import { useRouter } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
+import { useTaxStore } from "../../src/store/taxStore";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 // Priority colors
 const priorityColors = {
-  critical: { bg: '#FEE2E2', text: '#991B1B', border: '#FECACA' },
-  high: { bg: '#FFEDD5', text: '#9A3412', border: '#FED7AA' },
-  medium: { bg: '#DBEAFE', text: '#1E40AF', border: '#BFDBFE' },
-  low: { bg: '#F3F4F6', text: '#374151', border: '#E5E7EB' },
+  critical: { bg: "#FEE2E2", text: "#991B1B", border: "#FECACA" },
+  high: { bg: "#FFEDD5", text: "#9A3412", border: "#FED7AA" },
+  medium: { bg: "#DBEAFE", text: "#1E40AF", border: "#BFDBFE" },
+  low: { bg: "#F3F4F6", text: "#374151", border: "#E5E7EB" },
 };
 
 export default function TaxOptimizationScreen() {
@@ -59,8 +59,8 @@ export default function TaxOptimizationScreen() {
       fetchAnalysis({
         taxYear: new Date().getFullYear(),
         grossIncome: 300000,
-        filingStatus: 'single',
-        stateOfResidence: 'CA',
+        filingStatus: "single",
+        stateOfResidence: "CA",
         ytd401kContribution: 10000,
         ytdIraContribution: 0,
         ytdHsaContribution: 1000,
@@ -78,9 +78,9 @@ export default function TaxOptimizationScreen() {
   }, []);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
@@ -90,17 +90,17 @@ export default function TaxOptimizationScreen() {
     return `${(rate * 100).toFixed(1)}%`;
   };
 
-  const handleRecommendationPress = (rec: typeof recommendations[0]) => {
+  const handleRecommendationPress = (rec: (typeof recommendations)[0]) => {
     Alert.alert(
       rec.title,
-      `${rec.summary}\n\nEstimated Savings: ${formatCurrency(rec.estimatedTaxSavings)}${rec.deadline ? `\n\nDeadline: ${new Date(rec.deadline).toLocaleDateString()}` : ''}`,
+      `${rec.summary}\n\nEstimated Savings: ${formatCurrency(rec.estimatedTaxSavings)}${rec.deadline ? `\n\nDeadline: ${new Date(rec.deadline).toLocaleDateString()}` : ""}`,
       [
-        { text: 'Dismiss', style: 'cancel' },
+        { text: "Dismiss", style: "cancel" },
         {
-          text: 'Mark Complete',
+          text: "Mark Complete",
           onPress: () => completeRecommendation(rec.id),
         },
-      ]
+      ],
     );
   };
 
@@ -137,7 +137,7 @@ export default function TaxOptimizationScreen() {
     >
       {/* Header */}
       <LinearGradient
-        colors={['#F59E0B', '#EA580C']}
+        colors={["#F59E0B", "#EA580C"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.header}
@@ -218,12 +218,12 @@ export default function TaxOptimizationScreen() {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Tax-Saving Opportunities</Text>
           <Text style={styles.sectionCount}>
-            {recommendations.filter((r) => r.status !== 'completed').length}
+            {recommendations.filter((r) => r.status !== "completed").length}
           </Text>
         </View>
 
         {recommendations
-          .filter((r) => r.status !== 'completed')
+          .filter((r) => r.status !== "completed")
           .slice(0, 3)
           .map((rec) => (
             <TouchableOpacity
@@ -270,7 +270,7 @@ export default function TaxOptimizationScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Upcoming Deadlines</Text>
-            <TouchableOpacity onPress={() => router.push('/tax/calendar')}>
+            <TouchableOpacity onPress={() => router.push("/tax/calendar")}>
               <Text style={styles.seeAllText}>See All</Text>
             </TouchableOpacity>
           </View>
@@ -282,11 +282,11 @@ export default function TaxOptimizationScreen() {
                   styles.eventDot,
                   {
                     backgroundColor:
-                      event.priority === 'critical'
-                        ? '#DC2626'
-                        : event.priority === 'high'
-                          ? '#EA580C'
-                          : '#3B82F6',
+                      event.priority === "critical"
+                        ? "#DC2626"
+                        : event.priority === "high"
+                          ? "#EA580C"
+                          : "#3B82F6",
                   },
                 ]}
               />
@@ -308,7 +308,7 @@ export default function TaxOptimizationScreen() {
         <View style={styles.actionsGrid}>
           <TouchableOpacity
             style={styles.actionCard}
-            onPress={() => router.push('/tax/scenarios')}
+            onPress={() => router.push("/tax/scenarios")}
           >
             <Text style={styles.actionIcon}>🔮</Text>
             <Text style={styles.actionText}>Scenarios</Text>
@@ -317,7 +317,7 @@ export default function TaxOptimizationScreen() {
 
           <TouchableOpacity
             style={styles.actionCard}
-            onPress={() => router.push('/tax/calendar')}
+            onPress={() => router.push("/tax/calendar")}
           >
             <Text style={styles.actionIcon}>📅</Text>
             <Text style={styles.actionText}>Calendar</Text>
@@ -326,7 +326,7 @@ export default function TaxOptimizationScreen() {
 
           <TouchableOpacity
             style={styles.actionCard}
-            onPress={() => router.push('/tax/optimizer')}
+            onPress={() => router.push("/tax/optimizer")}
           >
             <Text style={styles.actionIcon}>💡</Text>
             <Text style={styles.actionText}>Optimizer</Text>
@@ -335,7 +335,7 @@ export default function TaxOptimizationScreen() {
 
           <TouchableOpacity
             style={styles.actionCard}
-            onPress={() => router.push('/tax/deductions')}
+            onPress={() => router.push("/tax/deductions")}
           >
             <Text style={styles.actionIcon}>📝</Text>
             <Text style={styles.actionText}>Deductions</Text>
@@ -345,7 +345,7 @@ export default function TaxOptimizationScreen() {
 
         <TouchableOpacity
           style={styles.documentsButton}
-          onPress={() => router.push('/tax/documents')}
+          onPress={() => router.push("/tax/documents")}
         >
           <Text style={styles.documentsIcon}>📄</Text>
           <View style={styles.documentsContent}>
@@ -379,10 +379,10 @@ export default function TaxOptimizationScreen() {
             </View>
             <Text style={styles.scoreStatus}>
               {analysis.assetLocationScore >= 80
-                ? 'Excellent - Your assets are well-positioned'
+                ? "Excellent - Your assets are well-positioned"
                 : analysis.assetLocationScore >= 60
-                  ? 'Good - Some optimization possible'
-                  : 'Needs Improvement - Significant savings available'}
+                  ? "Good - Some optimization possible"
+                  : "Needs Improvement - Significant savings available"}
             </Text>
           </View>
         </View>
@@ -401,41 +401,41 @@ export default function TaxOptimizationScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF7ED',
+    backgroundColor: "#FFF7ED",
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFF7ED',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#FFF7ED",
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#78716C',
+    color: "#78716C",
   },
   errorContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFF7ED',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#FFF7ED",
     padding: 24,
   },
   errorText: {
     fontSize: 16,
-    color: '#DC2626',
-    textAlign: 'center',
+    color: "#DC2626",
+    textAlign: "center",
     marginBottom: 16,
   },
   retryButton: {
-    backgroundColor: '#F59E0B',
+    backgroundColor: "#F59E0B",
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
   },
   retryButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
+    color: "#FFFFFF",
+    fontWeight: "600",
   },
   header: {
     paddingTop: 60,
@@ -444,40 +444,40 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontWeight: "bold",
+    color: "#FFFFFF",
   },
   headerSubtitle: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: "rgba(255, 255, 255, 0.8)",
     marginTop: 4,
   },
   savingsCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
     borderRadius: 16,
     padding: 20,
     marginTop: 20,
   },
   savingsLabel: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.9)',
-    fontWeight: '500',
+    color: "rgba(255, 255, 255, 0.9)",
+    fontWeight: "500",
   },
   savingsAmount: {
     fontSize: 36,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontWeight: "bold",
+    color: "#FFFFFF",
     marginTop: 4,
   },
   savingsNote: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: "rgba(255, 255, 255, 0.7)",
     marginTop: 4,
   },
   disclaimer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FEF3C7',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FEF3C7",
     padding: 12,
     marginHorizontal: 16,
     marginTop: -12,
@@ -490,19 +490,19 @@ const styles = StyleSheet.create({
   disclaimerText: {
     flex: 1,
     fontSize: 12,
-    color: '#92400E',
+    color: "#92400E",
   },
   statsGrid: {
-    flexDirection: 'row',
+    flexDirection: "row",
     padding: 16,
     gap: 12,
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 16,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
@@ -510,47 +510,47 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 12,
-    color: '#78716C',
-    fontWeight: '500',
+    color: "#78716C",
+    fontWeight: "500",
   },
   statValue: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1C1917',
+    fontWeight: "bold",
+    color: "#1C1917",
     marginTop: 4,
   },
   section: {
     padding: 16,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 12,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#1C1917',
+    fontWeight: "600",
+    color: "#1C1917",
   },
   sectionCount: {
     fontSize: 14,
-    color: '#78716C',
-    backgroundColor: '#F3F4F6',
+    color: "#78716C",
+    backgroundColor: "#F3F4F6",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
   },
   seeAllText: {
     fontSize: 14,
-    color: '#F59E0B',
-    fontWeight: '500',
+    color: "#F59E0B",
+    fontWeight: "500",
   },
   breakdownCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 16,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
@@ -558,19 +558,19 @@ const styles = StyleSheet.create({
   },
   breakdownTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1C1917',
+    fontWeight: "600",
+    color: "#1C1917",
     marginBottom: 12,
   },
   breakdownRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: "#F3F4F6",
   },
   breakdownRowHighlight: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: "#FEF3C7",
     marginHorizontal: -16,
     paddingHorizontal: 16,
     borderBottomWidth: 0,
@@ -578,33 +578,33 @@ const styles = StyleSheet.create({
   },
   breakdownLabel: {
     fontSize: 14,
-    color: '#78716C',
+    color: "#78716C",
   },
   breakdownValue: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#1C1917',
+    fontWeight: "600",
+    color: "#1C1917",
   },
   breakdownTax: {
-    color: '#DC2626',
+    color: "#DC2626",
   },
   breakdownTakeHome: {
-    color: '#16A34A',
+    color: "#16A34A",
   },
   recommendationCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
   },
   recommendationHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 8,
   },
   priorityBadge: {
@@ -614,33 +614,33 @@ const styles = StyleSheet.create({
   },
   priorityText: {
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   savingsBadge: {
-    marginLeft: 'auto',
+    marginLeft: "auto",
     fontSize: 14,
-    fontWeight: '600',
-    color: '#16A34A',
+    fontWeight: "600",
+    color: "#16A34A",
   },
   recommendationTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1C1917',
+    fontWeight: "600",
+    color: "#1C1917",
     marginBottom: 4,
   },
   recommendationSummary: {
     fontSize: 14,
-    color: '#78716C',
+    color: "#78716C",
   },
   deadline: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: "#9CA3AF",
     marginTop: 8,
   },
   eventCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 16,
     marginBottom: 8,
@@ -656,27 +656,27 @@ const styles = StyleSheet.create({
   },
   eventTitle: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#1C1917',
+    fontWeight: "500",
+    color: "#1C1917",
   },
   eventDate: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: "#9CA3AF",
     marginTop: 2,
   },
   actionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 12,
     marginBottom: 12,
   },
   actionCard: {
     width: (width - 44) / 2,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
@@ -688,21 +688,21 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#1C1917',
+    fontWeight: "600",
+    color: "#1C1917",
   },
   actionSubtext: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: "#9CA3AF",
     marginTop: 2,
   },
   documentsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 16,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
@@ -717,71 +717,71 @@ const styles = StyleSheet.create({
   },
   documentsTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1C1917',
+    fontWeight: "600",
+    color: "#1C1917",
   },
   documentsSubtitle: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: "#9CA3AF",
     marginTop: 2,
   },
   documentsArrow: {
     fontSize: 18,
-    color: '#9CA3AF',
+    color: "#9CA3AF",
   },
   scoreCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 16,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
   },
   scoreHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 12,
   },
   scoreTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1C1917',
+    fontWeight: "600",
+    color: "#1C1917",
   },
   scoreValue: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1C1917',
+    fontWeight: "bold",
+    color: "#1C1917",
   },
   scoreMax: {
     fontSize: 14,
-    color: '#9CA3AF',
-    fontWeight: 'normal',
+    color: "#9CA3AF",
+    fontWeight: "normal",
   },
   scoreBar: {
     height: 8,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: "#E5E7EB",
     borderRadius: 4,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginBottom: 12,
   },
   scoreProgress: {
-    height: '100%',
-    backgroundColor: '#F59E0B',
+    height: "100%",
+    backgroundColor: "#F59E0B",
     borderRadius: 4,
   },
   scoreStatus: {
     fontSize: 13,
-    color: '#78716C',
+    color: "#78716C",
   },
   footerDisclaimer: {
     padding: 16,
     paddingBottom: 40,
     fontSize: 12,
-    color: '#9CA3AF',
-    textAlign: 'center',
+    color: "#9CA3AF",
+    textAlign: "center",
     lineHeight: 18,
   },
 });

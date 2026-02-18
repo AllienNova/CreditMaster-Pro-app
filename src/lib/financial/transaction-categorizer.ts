@@ -5,19 +5,19 @@
  * recurring transaction detection, and category spending analysis.
  */
 
-import { getSupabase } from '@/lib/supabase/client';
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
-import { PlaidTransaction } from './plaid-service';
-import { AIMLService } from '@/lib/aiml-service';
-import { ModelRouter, TaskType } from '@/lib/model-router';
+import { PlaidTransaction } from "./plaid-service";
+import { AIMLService } from "@/lib/aiml-service";
+import { ModelRouter, TaskType } from "@/lib/model-router";
 import {
   CategorizedTransaction as SmartCategorizedTransaction,
   CategoryCorrection,
   CategorySuggestion,
   BudgetCategoryValue,
   BUDGET_CATEGORIES,
-} from './types/budget.types';
+} from "./types/budget.types";
 
 // ============================================================================
 // TYPES
@@ -33,7 +33,7 @@ export interface CategorizedTransaction extends PlaidTransaction {
 }
 
 export interface RecurringPattern {
-  frequency: 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'annually';
+  frequency: "weekly" | "biweekly" | "monthly" | "quarterly" | "annually";
   nextExpectedDate: Date;
   averageAmount: number;
   variance: number;
@@ -47,7 +47,7 @@ export interface CategorySpending {
   transactionCount: number;
   percentage: number;
   averageTransaction: number;
-  trend: 'up' | 'down' | 'stable';
+  trend: "up" | "down" | "stable";
   changeFromPrevious: number;
   topMerchants: MerchantSpending[];
 }
@@ -72,57 +72,67 @@ export interface RecurringTransaction {
 // CATEGORY MAPPING
 // ============================================================================
 
-const CATEGORY_ENHANCEMENTS: Record<string, { category: string; subcategory?: string }> = {
+const CATEGORY_ENHANCEMENTS: Record<
+  string,
+  { category: string; subcategory?: string }
+> = {
   // Food & Dining
-  'restaurants': { category: 'Food & Dining', subcategory: 'Restaurants' },
-  'fast food': { category: 'Food & Dining', subcategory: 'Fast Food' },
-  'coffee shops': { category: 'Food & Dining', subcategory: 'Coffee Shops' },
-  'groceries': { category: 'Food & Dining', subcategory: 'Groceries' },
-  
+  restaurants: { category: "Food & Dining", subcategory: "Restaurants" },
+  "fast food": { category: "Food & Dining", subcategory: "Fast Food" },
+  "coffee shops": { category: "Food & Dining", subcategory: "Coffee Shops" },
+  groceries: { category: "Food & Dining", subcategory: "Groceries" },
+
   // Transportation
-  'gas stations': { category: 'Transportation', subcategory: 'Gas' },
-  'parking': { category: 'Transportation', subcategory: 'Parking' },
-  'public transportation': { category: 'Transportation', subcategory: 'Public Transit' },
-  'ride share': { category: 'Transportation', subcategory: 'Ride Share' },
-  
+  "gas stations": { category: "Transportation", subcategory: "Gas" },
+  parking: { category: "Transportation", subcategory: "Parking" },
+  "public transportation": {
+    category: "Transportation",
+    subcategory: "Public Transit",
+  },
+  "ride share": { category: "Transportation", subcategory: "Ride Share" },
+
   // Shopping
-  'general merchandise': { category: 'Shopping', subcategory: 'General' },
-  'clothing': { category: 'Shopping', subcategory: 'Clothing' },
-  'electronics': { category: 'Shopping', subcategory: 'Electronics' },
-  'online shopping': { category: 'Shopping', subcategory: 'Online' },
-  
+  "general merchandise": { category: "Shopping", subcategory: "General" },
+  clothing: { category: "Shopping", subcategory: "Clothing" },
+  electronics: { category: "Shopping", subcategory: "Electronics" },
+  "online shopping": { category: "Shopping", subcategory: "Online" },
+
   // Bills & Utilities
-  'utilities': { category: 'Bills & Utilities', subcategory: 'Utilities' },
-  'internet': { category: 'Bills & Utilities', subcategory: 'Internet' },
-  'phone': { category: 'Bills & Utilities', subcategory: 'Phone' },
-  'cable': { category: 'Bills & Utilities', subcategory: 'Cable/Streaming' },
-  
+  utilities: { category: "Bills & Utilities", subcategory: "Utilities" },
+  internet: { category: "Bills & Utilities", subcategory: "Internet" },
+  phone: { category: "Bills & Utilities", subcategory: "Phone" },
+  cable: { category: "Bills & Utilities", subcategory: "Cable/Streaming" },
+
   // Entertainment
-  'entertainment': { category: 'Entertainment', subcategory: 'General' },
-  'movies': { category: 'Entertainment', subcategory: 'Movies' },
-  'music': { category: 'Entertainment', subcategory: 'Music' },
-  'streaming': { category: 'Entertainment', subcategory: 'Streaming Services' },
-  
+  entertainment: { category: "Entertainment", subcategory: "General" },
+  movies: { category: "Entertainment", subcategory: "Movies" },
+  music: { category: "Entertainment", subcategory: "Music" },
+  streaming: { category: "Entertainment", subcategory: "Streaming Services" },
+
   // Healthcare
-  'healthcare': { category: 'Healthcare', subcategory: 'General' },
-  'pharmacy': { category: 'Healthcare', subcategory: 'Pharmacy' },
-  'doctor': { category: 'Healthcare', subcategory: 'Doctor' },
-  
+  healthcare: { category: "Healthcare", subcategory: "General" },
+  pharmacy: { category: "Healthcare", subcategory: "Pharmacy" },
+  doctor: { category: "Healthcare", subcategory: "Doctor" },
+
   // Income
-  'payroll': { category: 'Income', subcategory: 'Salary' },
-  'deposit': { category: 'Income', subcategory: 'Deposit' },
-  'transfer': { category: 'Transfer', subcategory: 'Transfer' },
+  payroll: { category: "Income", subcategory: "Salary" },
+  deposit: { category: "Income", subcategory: "Deposit" },
+  transfer: { category: "Transfer", subcategory: "Transfer" },
 };
 
 // ============================================================================
 // AI CONFIGURATION
 // ============================================================================
 
-const AI_MODEL = process.env.AIML_DEFAULT_CHAT_MODEL || 'anthropic/claude-4.5-sonnet';
+const AI_MODEL =
+  process.env.AIML_DEFAULT_CHAT_MODEL || "anthropic/claude-4.5-sonnet";
 const AI_CATEGORIZATION_THRESHOLD = 80; // Use AI if confidence < 80%
 
 // Merchant category database (in-memory cache)
-const merchantCategoryCache = new Map<string, { category: BudgetCategoryValue; confidence: number }>();
+const merchantCategoryCache = new Map<
+  string,
+  { category: BudgetCategoryValue; confidence: number }
+>();
 
 // User correction history (for ML training)
 const userCorrections = new Map<string, CategoryCorrection[]>();
@@ -133,58 +143,58 @@ const userCorrections = new Map<string, CategoryCorrection[]>();
 
 const MERCHANT_PATTERNS: Record<string, BudgetCategoryValue> = {
   // Housing
-  'rent': 'housing',
-  'mortgage': 'housing',
-  'property': 'housing',
-  'apartment': 'housing',
+  rent: "housing",
+  mortgage: "housing",
+  property: "housing",
+  apartment: "housing",
 
   // Utilities
-  'electric': 'utilities',
-  'gas company': 'utilities',
-  'water': 'utilities',
-  'power': 'utilities',
+  electric: "utilities",
+  "gas company": "utilities",
+  water: "utilities",
+  power: "utilities",
 
   // Groceries
-  'walmart': 'groceries',
-  'target': 'groceries',
-  'kroger': 'groceries',
-  'safeway': 'groceries',
-  'whole foods': 'groceries',
-  'trader joe': 'groceries',
+  walmart: "groceries",
+  target: "groceries",
+  kroger: "groceries",
+  safeway: "groceries",
+  "whole foods": "groceries",
+  "trader joe": "groceries",
 
   // Transportation
-  'shell': 'transportation',
-  'chevron': 'transportation',
-  'exxon': 'transportation',
-  'bp': 'transportation',
-  'uber': 'transportation',
-  'lyft': 'transportation',
+  shell: "transportation",
+  chevron: "transportation",
+  exxon: "transportation",
+  bp: "transportation",
+  uber: "transportation",
+  lyft: "transportation",
 
   // Dining
-  'mcdonald': 'dining_out',
-  'starbucks': 'dining_out',
-  'chipotle': 'dining_out',
-  'subway': 'dining_out',
-  'restaurant': 'dining_out',
+  mcdonald: "dining_out",
+  starbucks: "dining_out",
+  chipotle: "dining_out",
+  subway: "dining_out",
+  restaurant: "dining_out",
 
   // Entertainment
-  'netflix': 'entertainment',
-  'spotify': 'entertainment',
-  'hulu': 'entertainment',
-  'disney': 'entertainment',
-  'movie': 'entertainment',
+  netflix: "entertainment",
+  spotify: "entertainment",
+  hulu: "entertainment",
+  disney: "entertainment",
+  movie: "entertainment",
 
   // Shopping
-  'amazon': 'shopping',
-  'ebay': 'shopping',
-  'best buy': 'shopping',
+  amazon: "shopping",
+  ebay: "shopping",
+  "best buy": "shopping",
 
   // Healthcare
-  'cvs': 'healthcare',
-  'walgreens': 'healthcare',
-  'pharmacy': 'healthcare',
-  'hospital': 'healthcare',
-  'doctor': 'healthcare',
+  cvs: "healthcare",
+  walgreens: "healthcare",
+  pharmacy: "healthcare",
+  hospital: "healthcare",
+  doctor: "healthcare",
 };
 
 // ============================================================================
@@ -211,11 +221,12 @@ export class TransactionCategorizer {
    * Categorize a single transaction with enhanced categorization
    */
   async categorizeTransaction(
-    transaction: PlaidTransaction
+    transaction: PlaidTransaction,
   ): Promise<CategorizedTransaction> {
-    const plaidCategory = transaction.category[0]?.toLowerCase() || 'uncategorized';
+    const plaidCategory =
+      transaction.category[0]?.toLowerCase() || "uncategorized";
     const enhancement = CATEGORY_ENHANCEMENTS[plaidCategory] || {
-      category: transaction.category[0] || 'Uncategorized',
+      category: transaction.category[0] || "Uncategorized",
       subcategory: transaction.category[1],
     };
 
@@ -240,7 +251,7 @@ export class TransactionCategorizer {
    */
   async getCategorySpending(
     userId: string,
-    period: 'week' | 'month' | 'quarter' | 'year' = 'month'
+    period: "week" | "month" | "quarter" | "year" = "month",
   ): Promise<CategorySpending[]> {
     const days = this.getPeriodDays(period);
     const startDate = new Date();
@@ -248,26 +259,29 @@ export class TransactionCategorizer {
 
     // Fetch transactions from database
     const { data: transactions } = await supabase
-      .from('plaid_transactions')
-      .select('*')
-      .eq('user_id', userId)
-      .gte('date', startDate.toISOString())
-      .gt('amount', 0); // Only expenses
+      .from("plaid_transactions")
+      .select("*")
+      .eq("user_id", userId)
+      .gte("date", startDate.toISOString())
+      .gt("amount", 0); // Only expenses
 
     if (!transactions || transactions.length === 0) {
       return [];
     }
 
     // Group by category
-    const categoryMap = new Map<string, {
-      amount: number;
-      count: number;
-      merchants: Map<string, { amount: number; count: number }>;
-    }>();
+    const categoryMap = new Map<
+      string,
+      {
+        amount: number;
+        count: number;
+        merchants: Map<string, { amount: number; count: number }>;
+      }
+    >();
 
     for (const txn of transactions) {
-      const category = txn.category?.[0] || 'Uncategorized';
-      const merchant = txn.merchant_name || 'Unknown';
+      const category = txn.category?.[0] || "Uncategorized";
+      const merchant = txn.merchant_name || "Unknown";
 
       const existing = categoryMap.get(category) || {
         amount: 0,
@@ -275,7 +289,10 @@ export class TransactionCategorizer {
         merchants: new Map(),
       };
 
-      const merchantData = existing.merchants.get(merchant) || { amount: 0, count: 0 };
+      const merchantData = existing.merchants.get(merchant) || {
+        amount: 0,
+        count: 0,
+      };
       merchantData.amount += txn.amount;
       merchantData.count += 1;
       existing.merchants.set(merchant, merchantData);
@@ -287,7 +304,7 @@ export class TransactionCategorizer {
 
     const totalSpending = Array.from(categoryMap.values()).reduce(
       (sum, cat) => sum + cat.amount,
-      0
+      0,
     );
 
     // Convert to CategorySpending array
@@ -309,7 +326,7 @@ export class TransactionCategorizer {
           transactionCount: data.count,
           percentage: (data.amount / totalSpending) * 100,
           averageTransaction: data.amount / data.count,
-          trend: 'stable' as const,
+          trend: "stable" as const,
           changeFromPrevious: 0, // Would need historical comparison
           topMerchants,
         };
@@ -321,18 +338,18 @@ export class TransactionCategorizer {
    * Detect recurring transactions
    */
   async detectRecurringTransactions(
-    userId: string
+    userId: string,
   ): Promise<RecurringTransaction[]> {
     // Fetch last 90 days of transactions
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - 90);
 
     const { data: transactions } = await supabase
-      .from('plaid_transactions')
-      .select('*')
-      .eq('user_id', userId)
-      .gte('date', startDate.toISOString())
-      .order('date', { ascending: false });
+      .from("plaid_transactions")
+      .select("*")
+      .eq("user_id", userId)
+      .gte("date", startDate.toISOString())
+      .order("date", { ascending: false });
 
     if (!transactions || transactions.length === 0) {
       return [];
@@ -355,7 +372,7 @@ export class TransactionCategorizer {
 
       // Calculate average interval between transactions
       const sortedTxns = txns.sort(
-        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
       );
 
       const intervals: number[] = [];
@@ -363,12 +380,13 @@ export class TransactionCategorizer {
         const days = Math.floor(
           (new Date(sortedTxns[i].date).getTime() -
             new Date(sortedTxns[i - 1].date).getTime()) /
-            (1000 * 60 * 60 * 24)
+            (1000 * 60 * 60 * 24),
         );
         intervals.push(days);
       }
 
-      const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+      const avgInterval =
+        intervals.reduce((a, b) => a + b, 0) / intervals.length;
       const variance = this.calculateVariance(intervals);
 
       // Determine if it's recurring (low variance)
@@ -384,7 +402,7 @@ export class TransactionCategorizer {
 
         recurring.push({
           merchantName: merchant,
-          category: lastTxn.category?.[0] || 'Uncategorized',
+          category: lastTxn.category?.[0] || "Uncategorized",
           pattern: {
             frequency,
             nextExpectedDate: nextDate,
@@ -394,7 +412,11 @@ export class TransactionCategorizer {
           },
           lastAmount: lastTxn.amount,
           lastDate: new Date(lastTxn.date),
-          confidence: this.calculateConfidence(variance, amountVariance, txns.length),
+          confidence: this.calculateConfidence(
+            variance,
+            amountVariance,
+            txns.length,
+          ),
         });
       }
     }
@@ -421,7 +443,7 @@ export class TransactionCategorizer {
       merchantName: string;
       description?: string;
       date: Date;
-    }>
+    }>,
   ): Promise<SmartCategorizedTransaction[]> {
     const categorized: SmartCategorizedTransaction[] = [];
     const ambiguousTransactions: typeof transactions = [];
@@ -431,7 +453,10 @@ export class TransactionCategorizer {
       const merchantLower = transaction.merchantName.toLowerCase();
 
       // 1. Check user correction history
-      const userCategory = this.getUserCorrectedCategory(transaction.userId, merchantLower);
+      const userCategory = this.getUserCorrectedCategory(
+        transaction.userId,
+        merchantLower,
+      );
       if (userCategory) {
         categorized.push({
           ...transaction,
@@ -445,7 +470,10 @@ export class TransactionCategorizer {
 
       // 2. Check merchant cache
       const cachedCategory = merchantCategoryCache.get(merchantLower);
-      if (cachedCategory && cachedCategory.confidence >= AI_CATEGORIZATION_THRESHOLD) {
+      if (
+        cachedCategory &&
+        cachedCategory.confidence >= AI_CATEGORIZATION_THRESHOLD
+      ) {
         categorized.push({
           ...transaction,
           category: cachedCategory.category,
@@ -466,13 +494,16 @@ export class TransactionCategorizer {
         });
 
         // Cache the result
-        merchantCategoryCache.set(merchantLower, { category: patternCategory, confidence: 90 });
+        merchantCategoryCache.set(merchantLower, {
+          category: patternCategory,
+          confidence: 90,
+        });
         continue;
       }
 
       // 4. Use description-based categorization
       const descriptionCategory = this.categorizeByDescription(
-        transaction.description || transaction.merchantName
+        transaction.description || transaction.merchantName,
       );
       if (descriptionCategory.confidence >= AI_CATEGORIZATION_THRESHOLD) {
         categorized.push({
@@ -491,7 +522,9 @@ export class TransactionCategorizer {
     // Second pass: Use AI for ambiguous transactions
     if (ambiguousTransactions.length > 0 && this.aiService) {
       try {
-        const aiCategorized = await this.categorizeWithAI(ambiguousTransactions);
+        const aiCategorized = await this.categorizeWithAI(
+          ambiguousTransactions,
+        );
         categorized.push(...aiCategorized);
       } catch (error) {
         // Transaction categorizer warning: AI categorization failed, using fallback
@@ -500,7 +533,7 @@ export class TransactionCategorizer {
         for (const transaction of ambiguousTransactions) {
           categorized.push({
             ...transaction,
-            category: 'other',
+            category: "other",
             categoryConfidence: 50,
             aiCategorized: false,
           });
@@ -511,7 +544,7 @@ export class TransactionCategorizer {
       for (const transaction of ambiguousTransactions) {
         categorized.push({
           ...transaction,
-          category: 'other',
+          category: "other",
           categoryConfidence: 50,
           aiCategorized: false,
         });
@@ -526,7 +559,9 @@ export class TransactionCategorizer {
    *
    * @param corrections - Array of user category corrections
    */
-  async trainOnUserCorrections(corrections: CategoryCorrection[]): Promise<void> {
+  async trainOnUserCorrections(
+    corrections: CategoryCorrection[],
+  ): Promise<void> {
     for (const correction of corrections) {
       const merchantLower = correction.merchantName.toLowerCase();
 
@@ -549,7 +584,7 @@ export class TransactionCategorizer {
 
       // Optionally: Store in database for persistence
       try {
-        await supabase.from('merchant_categories').upsert({
+        await supabase.from("merchant_categories").upsert({
           merchant_name: merchantLower,
           category: correction.correctedCategory,
           confidence: newConfidence,
@@ -594,15 +629,15 @@ export class TransactionCategorizer {
     // 3. Check database
     try {
       const { data } = await supabase
-        .from('merchant_categories')
-        .select('*')
-        .eq('merchant_name', merchantLower)
-        .order('confidence', { ascending: false })
+        .from("merchant_categories")
+        .select("*")
+        .eq("merchant_name", merchantLower)
+        .order("confidence", { ascending: false })
         .limit(3);
 
       if (data && data.length > 0) {
         const primary = data[0];
-        const alternatives = data.slice(1).map(d => ({
+        const alternatives = data.slice(1).map((d) => ({
           category: d.category as BudgetCategoryValue,
           confidence: d.confidence,
         }));
@@ -610,7 +645,8 @@ export class TransactionCategorizer {
         return {
           category: primary.category as BudgetCategoryValue,
           confidence: primary.confidence,
-          alternativeCategories: alternatives.length > 0 ? alternatives : undefined,
+          alternativeCategories:
+            alternatives.length > 0 ? alternatives : undefined,
         };
       }
     } catch (error) {
@@ -629,9 +665,9 @@ export class TransactionCategorizer {
 
     // 5. Fallback
     return {
-      category: 'other',
+      category: "other",
       confidence: 50,
-      reason: 'No matching pattern found',
+      reason: "No matching pattern found",
     };
   }
 
@@ -644,11 +680,11 @@ export class TransactionCategorizer {
    */
   private getUserCorrectedCategory(
     userId: string,
-    merchantName: string
+    merchantName: string,
   ): { category: BudgetCategoryValue; confidence: number } | null {
     const corrections = userCorrections.get(userId) || [];
     const merchantCorrections = corrections.filter(
-      c => c.merchantName.toLowerCase() === merchantName
+      (c) => c.merchantName.toLowerCase() === merchantName,
     );
 
     if (merchantCorrections.length === 0) return null;
@@ -664,7 +700,9 @@ export class TransactionCategorizer {
   /**
    * Match merchant name against patterns
    */
-  private matchMerchantPattern(merchantName: string): BudgetCategoryValue | null {
+  private matchMerchantPattern(
+    merchantName: string,
+  ): BudgetCategoryValue | null {
     for (const [pattern, category] of Object.entries(MERCHANT_PATTERNS)) {
       if (merchantName.includes(pattern)) {
         return category;
@@ -681,40 +719,40 @@ export class TransactionCategorizer {
 
     // Groceries
     if (descLower.match(/grocery|food|market|supermarket/)) {
-      return { category: 'groceries', confidence: 85 };
+      return { category: "groceries", confidence: 85 };
     }
 
     // Dining
     if (descLower.match(/restaurant|cafe|coffee|dining|food delivery/)) {
-      return { category: 'dining_out', confidence: 85 };
+      return { category: "dining_out", confidence: 85 };
     }
 
     // Transportation
     if (descLower.match(/gas|fuel|parking|toll|transit|uber|lyft/)) {
-      return { category: 'transportation', confidence: 85 };
+      return { category: "transportation", confidence: 85 };
     }
 
     // Utilities
     if (descLower.match(/electric|water|gas company|utility|internet|phone/)) {
-      return { category: 'utilities', confidence: 85 };
+      return { category: "utilities", confidence: 85 };
     }
 
     // Entertainment
     if (descLower.match(/movie|theater|concert|streaming|netflix|spotify/)) {
-      return { category: 'entertainment', confidence: 85 };
+      return { category: "entertainment", confidence: 85 };
     }
 
     // Healthcare
     if (descLower.match(/pharmacy|doctor|hospital|medical|health/)) {
-      return { category: 'healthcare', confidence: 85 };
+      return { category: "healthcare", confidence: 85 };
     }
 
     // Shopping
     if (descLower.match(/amazon|ebay|shopping|retail|store/)) {
-      return { category: 'shopping', confidence: 80 };
+      return { category: "shopping", confidence: 80 };
     }
 
-    return { category: 'other', confidence: 50 };
+    return { category: "other", confidence: 50 };
   }
 
   /**
@@ -729,18 +767,21 @@ export class TransactionCategorizer {
       merchantName: string;
       description?: string;
       date: Date;
-    }>
+    }>,
   ): Promise<SmartCategorizedTransaction[]> {
     if (!this.aiService) {
-      throw new Error('AI service not available');
+      throw new Error("AI service not available");
     }
 
     // Build prompt for batch categorization
     const transactionList = transactions
-      .map((t, i) => `${i + 1}. ${t.merchantName} - $${t.amount} - ${t.description || 'N/A'}`)
-      .join('\n');
+      .map(
+        (t, i) =>
+          `${i + 1}. ${t.merchantName} - $${t.amount} - ${t.description || "N/A"}`,
+      )
+      .join("\n");
 
-    const categories = Object.values(BUDGET_CATEGORIES).join(', ');
+    const categories = Object.values(BUDGET_CATEGORIES).join(", ");
 
     const prompt = `
 Categorize these transactions into one of the following categories: ${categories}
@@ -762,24 +803,29 @@ Respond in JSON format:
 `.trim();
 
     try {
-      const response = await this.aiService.chat(AI_MODEL, [
+      const response = await this.aiService.chat(
+        AI_MODEL,
+        [
+          {
+            role: "system",
+            content:
+              "You are a financial transaction categorization expert. Categorize transactions accurately based on merchant names and descriptions.",
+          },
+          { role: "user", content: prompt },
+        ],
         {
-          role: 'system',
-          content: 'You are a financial transaction categorization expert. Categorize transactions accurately based on merchant names and descriptions.',
+          temperature: 0.2,
+          max_tokens: 2000,
         },
-        { role: 'user', content: prompt },
-      ], {
-        temperature: 0.2,
-        max_tokens: 2000,
-      });
+      );
 
-      const content = response.choices[0]?.message?.content || '{}';
+      const content = response.choices[0]?.message?.content || "{}";
       const parsed = this.parseAICategorization(content);
 
       // Map AI results back to transactions
       const categorized: SmartCategorizedTransaction[] = [];
       for (let i = 0; i < transactions.length; i++) {
-        const aiResult = parsed.categorizations.find(c => c.index === i + 1);
+        const aiResult = parsed.categorizations.find((c) => c.index === i + 1);
         const transaction = transactions[i];
 
         if (aiResult) {
@@ -799,7 +845,7 @@ Respond in JSON format:
           // Fallback if AI didn't categorize this transaction
           categorized.push({
             ...transaction,
-            category: 'other',
+            category: "other",
             categoryConfidence: 50,
             aiCategorized: false,
           });
@@ -816,12 +862,14 @@ Respond in JSON format:
   /**
    * Get AI category suggestion for a single merchant
    */
-  private async getAICategorySuggestion(merchant: string): Promise<CategorySuggestion> {
+  private async getAICategorySuggestion(
+    merchant: string,
+  ): Promise<CategorySuggestion> {
     if (!this.aiService) {
-      throw new Error('AI service not available');
+      throw new Error("AI service not available");
     }
 
-    const categories = Object.values(BUDGET_CATEGORIES).join(', ');
+    const categories = Object.values(BUDGET_CATEGORIES).join(", ");
 
     const prompt = `
 Categorize this merchant: "${merchant}"
@@ -840,25 +888,30 @@ Respond in JSON format:
 `.trim();
 
     try {
-      const response = await this.aiService.chat(AI_MODEL, [
+      const response = await this.aiService.chat(
+        AI_MODEL,
+        [
+          {
+            role: "system",
+            content:
+              "You are a financial categorization expert. Provide accurate category suggestions.",
+          },
+          { role: "user", content: prompt },
+        ],
         {
-          role: 'system',
-          content: 'You are a financial categorization expert. Provide accurate category suggestions.',
+          temperature: 0.2,
+          max_tokens: 500,
         },
-        { role: 'user', content: prompt },
-      ], {
-        temperature: 0.2,
-        max_tokens: 500,
-      });
+      );
 
-      const content = response.choices[0]?.message?.content || '{}';
+      const content = response.choices[0]?.message?.content || "{}";
       const parsed = this.parseAICategorySuggestion(content);
 
       return {
         category: parsed.category as BudgetCategoryValue,
         confidence: parsed.confidence,
         reason: parsed.reason,
-        alternativeCategories: parsed.alternatives?.map(alt => ({
+        alternativeCategories: parsed.alternatives?.map((alt) => ({
           category: alt.category as BudgetCategoryValue,
           confidence: alt.confidence,
         })),
@@ -873,11 +926,18 @@ Respond in JSON format:
    * Parse AI categorization response
    */
   private parseAICategorization(content: string): {
-    categorizations: Array<{ index: number; category: string; confidence: number; reason?: string }>;
+    categorizations: Array<{
+      index: number;
+      category: string;
+      confidence: number;
+      reason?: string;
+    }>;
   } {
     try {
-      const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || content.match(/\{[\s\S]*\}/);
-      const jsonStr = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : content;
+      const jsonMatch =
+        content.match(/```json\n([\s\S]*?)\n```/) ||
+        content.match(/\{[\s\S]*\}/);
+      const jsonStr = jsonMatch ? jsonMatch[1] || jsonMatch[0] : content;
       const parsed = JSON.parse(jsonStr);
 
       return {
@@ -899,32 +959,37 @@ Respond in JSON format:
     alternatives?: Array<{ category: string; confidence: number }>;
   } {
     try {
-      const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || content.match(/\{[\s\S]*\}/);
-      const jsonStr = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : content;
+      const jsonMatch =
+        content.match(/```json\n([\s\S]*?)\n```/) ||
+        content.match(/\{[\s\S]*\}/);
+      const jsonStr = jsonMatch ? jsonMatch[1] || jsonMatch[0] : content;
       const parsed = JSON.parse(jsonStr);
 
       return {
-        category: parsed.category || 'other',
+        category: parsed.category || "other",
         confidence: parsed.confidence || 50,
         reason: parsed.reason,
         alternatives: parsed.alternatives,
       };
     } catch (error) {
       // Transaction categorizer warning: Failed to parse AI category suggestion
-      return { category: 'other', confidence: 50 };
+      return { category: "other", confidence: 50 };
     }
   }
 
   private async isRecurringTransaction(
-    transaction: PlaidTransaction
+    transaction: PlaidTransaction,
   ): Promise<boolean> {
     // Check if merchant has recurring pattern
     const { data } = await supabase
-      .from('plaid_transactions')
-      .select('*')
-      .eq('user_id', transaction.userId)
-      .eq('merchant_name', transaction.merchantName)
-      .gte('date', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString());
+      .from("plaid_transactions")
+      .select("*")
+      .eq("user_id", transaction.userId)
+      .eq("merchant_name", transaction.merchantName)
+      .gte(
+        "date",
+        new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
+      );
 
     return (data?.length || 0) >= 2;
   }
@@ -932,19 +997,23 @@ Respond in JSON format:
   private generateTags(transaction: PlaidTransaction): string[] {
     const tags: string[] = [];
 
-    if (transaction.pending) tags.push('pending');
-    if (transaction.amount > 100) tags.push('large-purchase');
-    if (transaction.amount < 5) tags.push('small-purchase');
+    if (transaction.pending) tags.push("pending");
+    if (transaction.amount > 100) tags.push("large-purchase");
+    if (transaction.amount < 5) tags.push("small-purchase");
 
     return tags;
   }
 
-  private getPeriodDays(period: 'week' | 'month' | 'quarter' | 'year'): number {
+  private getPeriodDays(period: "week" | "month" | "quarter" | "year"): number {
     switch (period) {
-      case 'week': return 7;
-      case 'month': return 30;
-      case 'quarter': return 90;
-      case 'year': return 365;
+      case "week":
+        return 7;
+      case "month":
+        return 30;
+      case "quarter":
+        return 90;
+      case "year":
+        return 365;
     }
   }
 
@@ -955,18 +1024,18 @@ Respond in JSON format:
     return Math.sqrt(squaredDiffs.reduce((a, b) => a + b, 0) / numbers.length);
   }
 
-  private determineFrequency(avgDays: number): RecurringPattern['frequency'] {
-    if (avgDays <= 8) return 'weekly';
-    if (avgDays <= 16) return 'biweekly';
-    if (avgDays <= 35) return 'monthly';
-    if (avgDays <= 100) return 'quarterly';
-    return 'annually';
+  private determineFrequency(avgDays: number): RecurringPattern["frequency"] {
+    if (avgDays <= 8) return "weekly";
+    if (avgDays <= 16) return "biweekly";
+    if (avgDays <= 35) return "monthly";
+    if (avgDays <= 100) return "quarterly";
+    return "annually";
   }
 
   private calculateConfidence(
     intervalVariance: number,
     amountVariance: number,
-    occurrences: number
+    occurrences: number,
   ): number {
     let confidence = 100;
 
@@ -984,4 +1053,3 @@ Respond in JSON format:
 // Export singleton instance
 export const transactionCategorizer = new TransactionCategorizer();
 export default transactionCategorizer;
-

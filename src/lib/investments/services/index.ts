@@ -9,7 +9,7 @@ export {
   MarketDataService,
   type MarketDataProvider,
   type RealtimeUpdate,
-} from './MarketDataService';
+} from "./MarketDataService";
 
 // Technical Analysis / Pattern Recognition
 export {
@@ -22,7 +22,7 @@ export {
   type PatternScanResult,
   type PatternPoint,
   type TrendLine,
-} from './PatternRecognitionService';
+} from "./PatternRecognitionService";
 
 // AI Recommendations
 export {
@@ -36,7 +36,7 @@ export {
   type PricePrediction,
   type PortfolioRebalanceRecommendation,
   type RecommendationReason,
-} from './AIRecommendationEngine';
+} from "./AIRecommendationEngine";
 
 // Portfolio Analysis
 export {
@@ -52,7 +52,7 @@ export {
   type RebalanceRecommendation,
   type RebalanceTrade,
   type TaxImplication,
-} from './PortfolioAnalysisService';
+} from "./PortfolioAnalysisService";
 
 // Price Alerts
 export {
@@ -65,19 +65,19 @@ export {
   type AlertCondition,
   type AlertNotification,
   type AlertStats,
-} from './PriceAlertService';
+} from "./PriceAlertService";
 
 // Fundamental Analysis
 export {
   FundamentalAnalysisService,
   getFundamentalAnalysisService,
-} from './FundamentalAnalysisService';
+} from "./FundamentalAnalysisService";
 
 // Sentiment Analysis
 export {
   SentimentAnalysisService,
   getSentimentAnalysisService,
-} from './SentimentAnalysisService';
+} from "./SentimentAnalysisService";
 
 // Portfolio Rebalancing
 export {
@@ -90,7 +90,7 @@ export {
   type RebalanceAlert,
   type RebalanceHistory,
   type RebalanceStrategy,
-} from './PortfolioRebalanceService';
+} from "./PortfolioRebalanceService";
 
 // Auto-Rebalance Scheduler
 export {
@@ -106,4 +106,4 @@ export {
   type TriggerType,
   type RebalanceEvent,
   type SchedulerStatus,
-} from './AutoRebalanceScheduler';
+} from "./AutoRebalanceScheduler";

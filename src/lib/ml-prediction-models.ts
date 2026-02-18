@@ -1,10 +1,10 @@
 // Machine Learning Prediction Models - Simplified version for credit repair predictions
-import type { 
-  StudentLoan, 
+import type {
+  StudentLoan,
   MLPrediction,
   PredictionFeatures,
   PredictionResult,
-} from '../types/student-loan';
+} from "../types/student-loan";
 
 interface BorrowerProfile {
   credit_score?: number;
@@ -39,15 +39,20 @@ export class MLPredictionModels {
     loan: StudentLoan,
     servicerProfile: ServicerProfile,
     borrowerProfile: BorrowerProfile,
-    errorDetails: ErrorDetail[]
+    errorDetails: ErrorDetail[],
   ): Promise<MLPrediction> {
-    const features = this.extractFeatures(loan, servicerProfile, borrowerProfile, errorDetails);
+    const features = this.extractFeatures(
+      loan,
+      servicerProfile,
+      borrowerProfile,
+      errorDetails,
+    );
     const probability = this.calculateDisputeProbability(features);
     const confidence = this.calculateConfidence(features);
 
     return {
       prediction_id: this.generatePredictionId(),
-      prediction_type: 'dispute_success',
+      prediction_type: "dispute_success",
       loan_id: loan.loan_id || loan.id,
       input_features: features,
       success_probability: probability,
@@ -56,12 +61,12 @@ export class MLPredictionModels {
       expected_outcomes: {
         credit_improvement: this.estimateImprovement(features),
         credit_report_corrections: Math.round(probability * 3),
-        payment_history_improvements: Math.round(probability * 2)
+        payment_history_improvements: Math.round(probability * 2),
       },
       risk_factors: this.identifyRisks(features),
-      model_explanations: { method: 'weighted_scoring' },
+      model_explanations: { method: "weighted_scoring" },
       prediction_date: new Date(),
-      model_versions: { dispute_model: '1.0.0' },
+      model_versions: { dispute_model: "1.0.0" },
     };
   }
 
@@ -80,25 +85,38 @@ export class MLPredictionModels {
     bureauType: string;
   }): Promise<{ probability: number; confidence: number }> {
     const scoreFactor = (input.creditScore - 300) / 550;
-    const ageFactor = Math.max(0, 1 - (input.itemAge / 84));
+    const ageFactor = Math.max(0, 1 - input.itemAge / 84);
     const paymentFactor = input.paymentHistory / 100;
-    const utilizationFactor = 1 - (input.utilization / 100);
-    const disputesPenalty = Math.max(0, 1 - (input.previousDisputes * 0.1));
+    const utilizationFactor = 1 - input.utilization / 100;
+    const disputesPenalty = Math.max(0, 1 - input.previousDisputes * 0.1);
 
     const itemDifficulty: Record<string, number> = {
-      'inquiry': 0.9, 'late_payment': 0.8, 'account': 0.7,
-      'collection': 0.6, 'charge_off': 0.5, 'public_record': 0.4,
+      inquiry: 0.9,
+      late_payment: 0.8,
+      account: 0.7,
+      collection: 0.6,
+      charge_off: 0.5,
+      public_record: 0.4,
     };
     const difficultyFactor = itemDifficulty[input.itemType] || 0.6;
 
-    const probability = Math.min(0.95, Math.max(0.05,
-      scoreFactor * 0.25 + ageFactor * 0.20 + paymentFactor * 0.20 +
-      utilizationFactor * 0.15 + disputesPenalty * 0.10 + difficultyFactor * 0.10
-    ));
+    const probability = Math.min(
+      0.95,
+      Math.max(
+        0.05,
+        scoreFactor * 0.25 +
+          ageFactor * 0.2 +
+          paymentFactor * 0.2 +
+          utilizationFactor * 0.15 +
+          disputesPenalty * 0.1 +
+          difficultyFactor * 0.1,
+      ),
+    );
 
-    const confidence = Math.min(0.95, Math.max(0.60,
-      0.7 + (scoreFactor * 0.15) + (paymentFactor * 0.15)
-    ));
+    const confidence = Math.min(
+      0.95,
+      Math.max(0.6, 0.7 + scoreFactor * 0.15 + paymentFactor * 0.15),
+    );
 
     return { probability, confidence };
   }
@@ -109,27 +127,32 @@ export class MLPredictionModels {
   async predictCreditScoreImprovement(
     loan: StudentLoan,
     currentCreditScore: number,
-    proposedStrategies: string[]
+    proposedStrategies: string[],
   ): Promise<MLPrediction> {
-    const features = this.extractFeatures(loan, {}, { credit_score: currentCreditScore }, []);
+    const features = this.extractFeatures(
+      loan,
+      {},
+      { credit_score: currentCreditScore },
+      [],
+    );
     const improvement = this.calculateImprovement(features, proposedStrategies);
 
     return {
       prediction_id: this.generatePredictionId(),
-      prediction_type: 'credit_improvement',
+      prediction_type: "credit_improvement",
       loan_id: loan.loan_id || loan.id,
       input_features: features,
       success_probability: 0.75,
-      confidence_score: 0.80,
+      confidence_score: 0.8,
       predicted_timeline: 90,
       expected_outcomes: {
         credit_score_improvement: improvement,
-        timeline_breakdown: {}  // Empty object as expected by test
+        timeline_breakdown: {}, // Empty object as expected by test
       },
       risk_factors: [],
-      model_explanations: { method: 'regression' },
+      model_explanations: { method: "regression" },
       prediction_date: new Date(),
-      model_versions: { credit_model: '1.0.0' },
+      model_versions: { credit_model: "1.0.0" },
     };
   }
 
@@ -139,38 +162,39 @@ export class MLPredictionModels {
   async predictFederalProgramSuccess(
     loan: StudentLoan,
     programType: string,
-    borrowerProfile: BorrowerProfile
+    borrowerProfile: BorrowerProfile,
   ): Promise<MLPrediction> {
     const features: PredictionFeatures & { program_type_encoded?: number } = {
       ...this.extractFeatures(loan, {}, borrowerProfile, []),
-      program_type_encoded: this.encodeProgramType(programType)
+      program_type_encoded: this.encodeProgramType(programType),
     };
     // IDR and fresh_start have higher success rates
-    const probability = (programType === 'fresh_start' || programType === 'idr') ? 0.85 : 0.70;
+    const probability =
+      programType === "fresh_start" || programType === "idr" ? 0.85 : 0.7;
 
     return {
       prediction_id: this.generatePredictionId(),
-      prediction_type: 'federal_program_success',
+      prediction_type: "federal_program_success",
       loan_id: loan.loan_id || loan.id,
       input_features: features,
       success_probability: probability,
-      confidence_score: 0.80,
+      confidence_score: 0.8,
       predicted_timeline: 120,
       expected_outcomes: { program_approval: probability > 0.7 },
       risk_factors: [],
       model_explanations: { program: programType },
       prediction_date: new Date(),
-      model_versions: { federal_model: '1.0.0' },
+      model_versions: { federal_model: "1.0.0" },
     };
   }
 
   private encodeProgramType(programType: string): number {
     const encoding: Record<string, number> = {
-      'fresh_start': 1,
-      'idr': 2,
-      'pslf': 3,
-      'rehabilitation': 4,
-      'consolidation': 5
+      fresh_start: 1,
+      idr: 2,
+      pslf: 3,
+      rehabilitation: 4,
+      consolidation: 5,
     };
     return encoding[programType] || 0;
   }
@@ -179,7 +203,7 @@ export class MLPredictionModels {
     loan: StudentLoan,
     servicerProfile: ServicerProfile,
     borrowerProfile: BorrowerProfile,
-    errorDetails: ErrorDetail[]
+    errorDetails: ErrorDetail[],
   ): PredictionFeatures {
     return {
       loan_balance: loan.current_balance || loan.balance,
@@ -213,15 +237,18 @@ export class MLPredictionModels {
   private identifyRisks(features: PredictionFeatures): string[] {
     const risks: string[] = [];
     if ((features.servicer_vulnerability_score || 0.5) < 0.4) {
-      risks.push('Low servicer vulnerability');
+      risks.push("Low servicer vulnerability");
     }
     if ((features.cooperation_score || 0.5) < 0.6) {
-      risks.push('Cooperation score below optimal');
+      risks.push("Cooperation score below optimal");
     }
     return risks;
   }
 
-  private calculateImprovement(features: PredictionFeatures, strategies: string[]): number {
+  private calculateImprovement(
+    features: PredictionFeatures,
+    strategies: string[],
+  ): number {
     const base = (features.error_count || 1) * 10;
     const strategyBonus = strategies.length * 5;
     return Math.min(150, base + strategyBonus);
@@ -235,4 +262,3 @@ export class MLPredictionModels {
 // Export singleton instance
 export const mlPredictionModels = new MLPredictionModels();
 export default mlPredictionModels;
-

@@ -1,19 +1,19 @@
 /**
  * Custom Test Utilities
- * 
+ *
  * Provides custom render functions and utilities for testing React components
  */
 
-import React, { ReactElement } from 'react';
-import { render, RenderOptions, RenderResult } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import React, { ReactElement } from "react";
+import { render, RenderOptions, RenderResult } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 /**
  * Custom render function that wraps components with necessary providers
  */
 export function renderWithProviders(
   ui: ReactElement,
-  options?: Omit<RenderOptions, 'wrapper'>
+  options?: Omit<RenderOptions, "wrapper">,
 ): RenderResult {
   function Wrapper({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
@@ -34,17 +34,22 @@ export function setupUser() {
  * Wait for loading to complete
  */
 export async function waitForLoadingToFinish() {
-  const { waitFor } = await import('@testing-library/react');
-  await waitFor(() => {
-    expect(document.querySelector('[data-testid="loading"]')).not.toBeInTheDocument();
-  }, { timeout: 3000 });
+  const { waitFor } = await import("@testing-library/react");
+  await waitFor(
+    () => {
+      expect(
+        document.querySelector('[data-testid="loading"]'),
+      ).not.toBeInTheDocument();
+    },
+    { timeout: 3000 },
+  );
 }
 
 /**
  * Mock window.matchMedia for responsive design tests
  */
 export function mockMatchMedia(matches: boolean = false) {
-  Object.defineProperty(window, 'matchMedia', {
+  Object.defineProperty(window, "matchMedia", {
     writable: true,
     value: jest.fn().mockImplementation((query: string) => ({
       matches,
@@ -82,11 +87,11 @@ export const mockAIData = {
     overallScore: 78,
     insights: [
       {
-        category: 'spending',
-        title: 'Test Insight',
-        description: 'Test description',
-        severity: 'medium' as const,
-        impact: 'Test impact',
+        category: "spending",
+        title: "Test Insight",
+        description: "Test description",
+        severity: "medium" as const,
+        impact: "Test impact",
         actionable: true,
         confidence: 85,
       },
@@ -101,11 +106,11 @@ export const mockAIData = {
     optimizationScore: 85,
     goals: [
       {
-        id: '1',
-        name: 'Emergency Fund',
+        id: "1",
+        name: "Emergency Fund",
         targetAmount: 10000,
         currentAmount: 5000,
-        targetDate: '2025-12-31',
+        targetDate: "2025-12-31",
         onTrack: true,
         confidence: 92,
       },
@@ -115,8 +120,8 @@ export const mockAIData = {
     spendingScore: 72,
     patterns: [
       {
-        category: 'Dining',
-        trend: 'increasing' as const,
+        category: "Dining",
+        trend: "increasing" as const,
         change: 25,
         confidence: 85,
       },
@@ -130,7 +135,7 @@ export const mockAIData = {
     creditHealthScore: 78,
     scorePredictions: [
       {
-        timeframe: '30 days',
+        timeframe: "30 days",
         predictedScore: 665,
         confidence: 85,
       },
@@ -153,14 +158,13 @@ export const mockAIData = {
     successMetrics: {
       overallSuccessProbability: 82,
       estimatedScoreIncrease: 100,
-      estimatedTimeframe: '90-120 days',
-      confidenceLevel: 'high' as const,
+      estimatedTimeframe: "90-120 days",
+      confidenceLevel: "high" as const,
       riskFactors: [],
     },
   },
 };
 
 // Re-export everything from React Testing Library
-export * from '@testing-library/react';
+export * from "@testing-library/react";
 export { userEvent };
-

@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
 /**
  * XP Bar Component
  * Shows user level, XP progress, and level title
  */
 
-import React from 'react';
-import { cn } from '@/lib/utils';
+import React from "react";
+import { cn } from "@/lib/utils";
 
 interface XpBarProps {
   currentXp: number;
@@ -31,7 +31,7 @@ export function XpBar({
   const progress = totalForLevel > 0 ? (currentXp / totalForLevel) * 100 : 0;
 
   return (
-    <div className={cn('w-full', className)}>
+    <div className={cn("w-full", className)}>
       {/* Header with level and title */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
@@ -61,8 +61,8 @@ export function XpBar({
       <div className="relative h-3 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
         <div
           className={cn(
-            'h-full bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 rounded-full',
-            animated && 'transition-all duration-1000 ease-out'
+            "h-full bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 rounded-full",
+            animated && "transition-all duration-1000 ease-out",
           )}
           style={{ width: `${Math.min(progress, 100)}%` }}
         />

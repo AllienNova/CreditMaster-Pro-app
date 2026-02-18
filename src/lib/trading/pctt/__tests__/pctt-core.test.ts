@@ -1,30 +1,43 @@
 /**
  * PCTT Core Engine Tests
- * 
+ *
  * Tests for pivot extraction, boundary estimation, regime detection,
  * and the state machine.
  */
 
-import { 
-  PCTTEngine, 
-  createPCTTEngine, 
-  OHLCV, 
+import {
+  PCTTEngine,
+  createPCTTEngine,
+  OHLCV,
   PCTTConfig,
   DEFAULT_PCTT_CONFIG,
   StructureObject,
   PCTTSignal,
-} from '../pctt-core';
+} from "../pctt-core";
 
 // ============================================================================
 // TEST DATA GENERATORS
 // ============================================================================
 
+// Deterministic PRNG (mulberry32) to eliminate flaky tests
+function seededRandom(seed: number): () => number {
+  let s = seed;
+  return () => {
+    s |= 0;
+    s = (s + 0x6d2b79f5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 function generateOHLCV(
   basePrice: number,
   bars: number,
   volatility: number = 0.02,
-  trend: 'up' | 'down' | 'range' = 'range'
+  trend: "up" | "down" | "range" = "range",
 ): OHLCV[] {
+  const rand = seededRandom(42);
   const data: OHLCV[] = [];
   let price = basePrice;
   const startTime = Date.now() - bars * 60000;
@@ -32,18 +45,18 @@ function generateOHLCV(
   for (let i = 0; i < bars; i++) {
     // Trend component
     let trendMove = 0;
-    if (trend === 'up') trendMove = volatility * 0.3;
-    if (trend === 'down') trendMove = -volatility * 0.3;
+    if (trend === "up") trendMove = volatility * 0.3;
+    if (trend === "down") trendMove = -volatility * 0.3;
 
-    // Random component
-    const randomMove = (Math.random() - 0.5) * volatility * price;
+    // Deterministic component
+    const randomMove = (rand() - 0.5) * volatility * price;
     price = price + trendMove * price + randomMove;
 
     const range = price * volatility;
-    const open = price + (Math.random() - 0.5) * range * 0.5;
-    const close = price + (Math.random() - 0.5) * range * 0.5;
-    const high = Math.max(open, close) + Math.random() * range * 0.3;
-    const low = Math.min(open, close) - Math.random() * range * 0.3;
+    const open = price + (rand() - 0.5) * range * 0.5;
+    const close = price + (rand() - 0.5) * range * 0.5;
+    const high = Math.max(open, close) + rand() * range * 0.3;
+    const low = Math.min(open, close) - rand() * range * 0.3;
 
     data.push({
       time: startTime + i * 60000,
@@ -51,7 +64,7 @@ function generateOHLCV(
       high,
       low,
       close,
-      volume: Math.floor(100000 + Math.random() * 50000),
+      volume: Math.floor(100000 + rand() * 50000),
     });
   }
 
@@ -60,7 +73,12 @@ function generateOHLCV(
 
 function generatePivotPattern(
   basePrice: number,
-  pattern: 'higher_lows' | 'lower_highs' | 'channel' | 'breakout_up' | 'breakout_down'
+  pattern:
+    | "higher_lows"
+    | "lower_highs"
+    | "channel"
+    | "breakout_up"
+    | "breakout_down",
 ): OHLCV[] {
   const data: OHLCV[] = [];
   const startTime = Date.now() - 100 * 60000;
@@ -68,32 +86,32 @@ function generatePivotPattern(
 
   for (let i = 0; i < 100; i++) {
     let bias = 0;
-    
+
     switch (pattern) {
-      case 'higher_lows':
+      case "higher_lows":
         // Create higher lows pattern
         if (i % 10 === 5) bias = -0.02; // Down swing
-        if (i % 10 === 0) bias = 0.02;  // Up swing, higher low
+        if (i % 10 === 0) bias = 0.02; // Up swing, higher low
         break;
-      case 'lower_highs':
+      case "lower_highs":
         if (i % 10 === 5) bias = 0.02;
         if (i % 10 === 0) bias = -0.02;
         break;
-      case 'channel':
+      case "channel":
         bias = Math.sin(i / 5) * 0.01;
         break;
-      case 'breakout_up':
+      case "breakout_up":
         if (i < 80) bias = Math.sin(i / 5) * 0.005;
         else bias = 0.03; // Strong breakout
         break;
-      case 'breakout_down':
+      case "breakout_down":
         if (i < 80) bias = Math.sin(i / 5) * 0.005;
         else bias = -0.03;
         break;
     }
 
     price = price * (1 + bias + (Math.random() - 0.5) * 0.01);
-    
+
     const range = price * 0.01;
     const open = price;
     const close = price * (1 + (Math.random() - 0.5) * 0.005);
@@ -117,7 +135,7 @@ function generatePivotPattern(
 // PIVOT EXTRACTION TESTS
 // ============================================================================
 
-describe('PCTTEngine - Pivot Extraction', () => {
+describe("PCTTEngine - Pivot Extraction", () => {
   let engine: PCTTEngine;
 
   beforeEach(() => {
@@ -128,9 +146,9 @@ describe('PCTTEngine - Pivot Extraction', () => {
     engine.reset();
   });
 
-  test('should not extract pivots with insufficient data', () => {
+  test("should not extract pivots with insufficient data", () => {
     const data = generateOHLCV(100, 5);
-    
+
     for (const bar of data) {
       engine.update(bar);
     }
@@ -140,9 +158,9 @@ describe('PCTTEngine - Pivot Extraction', () => {
     expect(pivots.lows.length).toBe(0);
   });
 
-  test('should extract pivots after sufficient confirmation bars', () => {
+  test("should extract pivots after sufficient confirmation bars", () => {
     const data = generateOHLCV(100, 50);
-    
+
     for (const bar of data) {
       engine.update(bar);
     }
@@ -152,15 +170,16 @@ describe('PCTTEngine - Pivot Extraction', () => {
     expect(pivots.highs.length + pivots.lows.length).toBeGreaterThan(0);
   });
 
-  test('pivots should be non-repainting (confirmed only)', () => {
+  test("pivots should be non-repainting (confirmed only)", () => {
     const data = generateOHLCV(100, 30);
-    
+
     // Process first 20 bars
     for (let i = 0; i < 20; i++) {
       engine.update(data[i]);
     }
     const pivotsBefore = engine.getPivots();
-    const pivotCountBefore = pivotsBefore.highs.length + pivotsBefore.lows.length;
+    const pivotCountBefore =
+      pivotsBefore.highs.length + pivotsBefore.lows.length;
 
     // Process remaining bars
     for (let i = 20; i < 30; i++) {
@@ -169,18 +188,20 @@ describe('PCTTEngine - Pivot Extraction', () => {
     const pivotsAfter = engine.getPivots();
 
     // Earlier pivots should still exist (non-repainting)
-    expect(pivotsAfter.highs.length + pivotsAfter.lows.length).toBeGreaterThanOrEqual(pivotCountBefore);
+    expect(
+      pivotsAfter.highs.length + pivotsAfter.lows.length,
+    ).toBeGreaterThanOrEqual(pivotCountBefore);
   });
 
-  test('pivots should have confirmation bar set correctly', () => {
+  test("pivots should have confirmation bar set correctly", () => {
     const data = generateOHLCV(100, 50);
-    
+
     for (const bar of data) {
       engine.update(bar);
     }
 
     const pivots = engine.getPivots();
-    
+
     for (const pivot of [...pivots.highs, ...pivots.lows]) {
       expect(pivot.confirmed).toBe(true);
       expect(pivot.confirmationBar).toBeGreaterThan(pivot.index);
@@ -192,7 +213,7 @@ describe('PCTTEngine - Pivot Extraction', () => {
 // BOUNDARY ESTIMATION TESTS
 // ============================================================================
 
-describe('PCTTEngine - Boundary Estimation', () => {
+describe("PCTTEngine - Boundary Estimation", () => {
   let engine: PCTTEngine;
 
   beforeEach(() => {
@@ -203,9 +224,9 @@ describe('PCTTEngine - Boundary Estimation', () => {
     engine.reset();
   });
 
-  test('should return null boundaries with insufficient pivots', () => {
+  test("should return null boundaries with insufficient pivots", () => {
     const data = generateOHLCV(100, 10);
-    
+
     let result;
     for (const bar of data) {
       result = engine.update(bar);
@@ -215,7 +236,7 @@ describe('PCTTEngine - Boundary Estimation', () => {
     expect(result?.structure.resistance).toBeNull();
   });
 
-  test('should estimate boundaries with sufficient data', () => {
+  test("should estimate boundaries with sufficient data", () => {
     // Use deterministic oscillating data to guarantee pivot detection
     const data: OHLCV[] = [];
     const startTime = Date.now() - 200 * 60000;
@@ -248,9 +269,9 @@ describe('PCTTEngine - Boundary Estimation', () => {
     expect(hasSupport || hasResistance).toBe(true);
   });
 
-  test('Q-score should be between 0 and 1', () => {
+  test("Q-score should be between 0 and 1", () => {
     const data = generateOHLCV(100, 100);
-    
+
     let result;
     for (const bar of data) {
       result = engine.update(bar);
@@ -266,9 +287,9 @@ describe('PCTTEngine - Boundary Estimation', () => {
     }
   });
 
-  test('touch count should be positive for valid boundaries', () => {
-    const data = generateOHLCV(100, 150, 0.01, 'range');
-    
+  test("touch count should be positive for valid boundaries", () => {
+    const data = generateOHLCV(100, 150, 0.01, "range");
+
     let result;
     for (const bar of data) {
       result = engine.update(bar);
@@ -287,7 +308,7 @@ describe('PCTTEngine - Boundary Estimation', () => {
 // REGIME DETECTION TESTS
 // ============================================================================
 
-describe('PCTTEngine - Regime Detection', () => {
+describe("PCTTEngine - Regime Detection", () => {
   let engine: PCTTEngine;
 
   beforeEach(() => {
@@ -298,19 +319,35 @@ describe('PCTTEngine - Regime Detection', () => {
     engine.reset();
   });
 
-  test('should detect uptrend regime', () => {
-    const data = generateOHLCV(100, 50, 0.01, 'up');
-    
+  test("should detect uptrend regime", () => {
+    // Use deterministic rising data to guarantee regime detection
+    const data: OHLCV[] = [];
+    const startTime = Date.now() - 80 * 60000;
+
+    for (let i = 0; i < 80; i++) {
+      // Clear uptrend: +0.5% per bar with minimal noise
+      const price = 100 * Math.pow(1.005, i);
+      const noise = 0.1;
+      data.push({
+        time: startTime + i * 60000,
+        open: price - noise,
+        high: price + noise * 2,
+        low: price - noise * 2,
+        close: price + noise,
+        volume: 100000,
+      });
+    }
+
     let result;
     for (const bar of data) {
       result = engine.update(bar);
     }
 
-    expect(result?.structure.regime).toBe('trend_up');
+    expect(result?.structure.regime).toBe("trend_up");
     expect(result?.structure.efficiencyRatio).toBeGreaterThan(0.3);
   });
 
-  test('should detect downtrend regime', () => {
+  test("should detect downtrend regime", () => {
     // Use deterministic declining data to guarantee regime detection
     const data: OHLCV[] = [];
     const startTime = Date.now() - 80 * 60000;
@@ -335,10 +372,10 @@ describe('PCTTEngine - Regime Detection', () => {
       result = engine.update(bar);
     }
 
-    expect(result?.structure.regime).toBe('trend_down');
+    expect(result?.structure.regime).toBe("trend_down");
   });
 
-  test('should detect range regime with high crossing count', () => {
+  test("should detect range regime with high crossing count", () => {
     // Deterministic choppy range data — fast oscillation, no trend drift
     const data: OHLCV[] = [];
     const startTime = Date.now();
@@ -363,13 +400,13 @@ describe('PCTTEngine - Regime Detection', () => {
     }
 
     // Should be range or transition due to high crossings
-    expect(['range', 'transition']).toContain(result?.structure.regime);
+    expect(["range", "transition"]).toContain(result?.structure.regime);
     expect(result?.structure.crossingCount).toBeGreaterThan(0);
   });
 
-  test('efficiency ratio should be between 0 and 1', () => {
+  test("efficiency ratio should be between 0 and 1", () => {
     const data = generateOHLCV(100, 50);
-    
+
     let result;
     for (const bar of data) {
       result = engine.update(bar);
@@ -384,7 +421,7 @@ describe('PCTTEngine - Regime Detection', () => {
 // STATE MACHINE TESTS
 // ============================================================================
 
-describe('PCTTEngine - State Machine', () => {
+describe("PCTTEngine - State Machine", () => {
   let engine: PCTTEngine;
 
   beforeEach(() => {
@@ -400,7 +437,7 @@ describe('PCTTEngine - State Machine', () => {
     engine.reset();
   });
 
-  test('should start in idle state', () => {
+  test("should start in idle state", () => {
     const result = engine.update({
       time: Date.now(),
       open: 100,
@@ -410,16 +447,16 @@ describe('PCTTEngine - State Machine', () => {
       volume: 100000,
     });
 
-    expect(result.structure.event).toBe('idle');
+    expect(result.structure.event).toBe("idle");
   });
 
-  test('should generate signal on valid breakout + retest pattern', () => {
-    const data = generatePivotPattern(100, 'breakout_up');
-    
+  test("should generate signal on valid breakout + retest pattern", () => {
+    const data = generatePivotPattern(100, "breakout_up");
+
     let signal: PCTTSignal | null = null;
     for (const bar of data) {
       const result = engine.update(bar);
-      if (result.signal && result.signal.type !== 'none') {
+      if (result.signal && result.signal.type !== "none") {
         signal = result.signal;
       }
     }
@@ -427,7 +464,7 @@ describe('PCTTEngine - State Machine', () => {
     // May or may not generate signal depending on data
     // Just verify no errors and signal format if present
     if (signal) {
-      expect(['long', 'short']).toContain(signal.type);
+      expect(["long", "short"]).toContain(signal.type);
       expect(signal.entryPrice).toBeGreaterThan(0);
       expect(signal.stopPrice).toBeGreaterThan(0);
       expect(signal.targetPrices.length).toBeGreaterThan(0);
@@ -436,13 +473,13 @@ describe('PCTTEngine - State Machine', () => {
     }
   });
 
-  test('signal should have valid risk/reward structure', () => {
-    const data = generatePivotPattern(100, 'breakout_up');
-    
+  test("signal should have valid risk/reward structure", () => {
+    const data = generatePivotPattern(100, "breakout_up");
+
     let signal: PCTTSignal | null = null;
     for (const bar of data) {
       const result = engine.update(bar);
-      if (result.signal && result.signal.type === 'long') {
+      if (result.signal && result.signal.type === "long") {
         signal = result.signal;
         break;
       }
@@ -463,7 +500,7 @@ describe('PCTTEngine - State Machine', () => {
 // ATR CALCULATION TESTS
 // ============================================================================
 
-describe('PCTTEngine - ATR Calculation', () => {
+describe("PCTTEngine - ATR Calculation", () => {
   let engine: PCTTEngine;
 
   beforeEach(() => {
@@ -474,9 +511,9 @@ describe('PCTTEngine - ATR Calculation', () => {
     engine.reset();
   });
 
-  test('ATR should be 0 with insufficient data', () => {
+  test("ATR should be 0 with insufficient data", () => {
     const data = generateOHLCV(100, 5);
-    
+
     let result;
     for (const bar of data) {
       result = engine.update(bar);
@@ -485,9 +522,9 @@ describe('PCTTEngine - ATR Calculation', () => {
     expect(result?.structure.atr).toBe(0);
   });
 
-  test('ATR should be positive with sufficient data', () => {
+  test("ATR should be positive with sufficient data", () => {
     const data = generateOHLCV(100, 30);
-    
+
     let result;
     for (const bar of data) {
       result = engine.update(bar);
@@ -496,7 +533,7 @@ describe('PCTTEngine - ATR Calculation', () => {
     expect(result?.structure.atr).toBeGreaterThan(0);
   });
 
-  test('ATR should scale with price volatility', () => {
+  test("ATR should scale with price volatility", () => {
     const lowVolData = generateOHLCV(100, 30, 0.005);
     const highVolData = generateOHLCV(100, 30, 0.05);
 
@@ -504,14 +541,16 @@ describe('PCTTEngine - ATR Calculation', () => {
     const engine2 = createPCTTEngine();
 
     let lowVolResult, highVolResult;
-    
+
     for (let i = 0; i < 30; i++) {
       lowVolResult = engine1.update(lowVolData[i]);
       highVolResult = engine2.update(highVolData[i]);
     }
 
     // High volatility should have higher ATR
-    expect(highVolResult!.structure.atr).toBeGreaterThan(lowVolResult!.structure.atr);
+    expect(highVolResult!.structure.atr).toBeGreaterThan(
+      lowVolResult!.structure.atr,
+    );
   });
 });
 
@@ -519,23 +558,25 @@ describe('PCTTEngine - ATR Calculation', () => {
 // ENGINE RESET TESTS
 // ============================================================================
 
-describe('PCTTEngine - Reset', () => {
-  test('reset should clear all state', () => {
+describe("PCTTEngine - Reset", () => {
+  test("reset should clear all state", () => {
     const engine = createPCTTEngine();
     const data = generateOHLCV(100, 50);
-    
+
     // Process some data
     for (const bar of data) {
       engine.update(bar);
     }
-    
+
     // Verify we have state
     const pivotsBefore = engine.getPivots();
-    expect(pivotsBefore.highs.length + pivotsBefore.lows.length).toBeGreaterThan(0);
-    
+    expect(
+      pivotsBefore.highs.length + pivotsBefore.lows.length,
+    ).toBeGreaterThan(0);
+
     // Reset
     engine.reset();
-    
+
     // Verify state is cleared
     const pivotsAfter = engine.getPivots();
     expect(pivotsAfter.highs.length).toBe(0);
@@ -548,28 +589,28 @@ describe('PCTTEngine - Reset', () => {
 // CONFIGURATION TESTS
 // ============================================================================
 
-describe('PCTTEngine - Configuration', () => {
-  test('should use default config when none provided', () => {
+describe("PCTTEngine - Configuration", () => {
+  test("should use default config when none provided", () => {
     const engine = createPCTTEngine();
     // Just verify it creates without error
     expect(engine).toBeDefined();
   });
 
-  test('should merge partial config with defaults', () => {
+  test("should merge partial config with defaults", () => {
     const engine = createPCTTEngine({ pivotDepth: 10 });
-    
+
     // Process data and verify it works
     const data = generateOHLCV(100, 50);
     for (const bar of data) {
       engine.update(bar);
     }
-    
+
     // Verify custom pivot depth is used (fewer pivots with larger depth)
     const pivots = engine.getPivots();
     expect(pivots).toBeDefined();
   });
 
-  test('DEFAULT_PCTT_CONFIG should have required fields', () => {
+  test("DEFAULT_PCTT_CONFIG should have required fields", () => {
     expect(DEFAULT_PCTT_CONFIG.pivotDepth).toBeDefined();
     expect(DEFAULT_PCTT_CONFIG.atrPeriod).toBeDefined();
     expect(DEFAULT_PCTT_CONFIG.minQScore).toBeDefined();

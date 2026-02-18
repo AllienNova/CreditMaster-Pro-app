@@ -2,11 +2,11 @@
  * Fynvita Auth Store Unit Tests
  */
 
-import { act } from '@testing-library/react-native';
-import { useAuthStore } from '../authStore';
+import { act } from "@testing-library/react-native";
+import { useAuthStore } from "../authStore";
 
 // Mock Supabase services
-jest.mock('../../services/supabase', () => ({
+jest.mock("../../services/supabase", () => ({
   supabase: {
     from: jest.fn(() => ({
       select: jest.fn().mockReturnThis(),
@@ -21,9 +21,15 @@ jest.mock('../../services/supabase', () => ({
   getCurrentUser: jest.fn(),
 }));
 
-const { signIn, signUp, signOut, getCurrentUser, supabase } = require('../../services/supabase');
+const {
+  signIn,
+  signUp,
+  signOut,
+  getCurrentUser,
+  supabase,
+} = require("../../services/supabase");
 
-describe('Auth Store', () => {
+describe("Auth Store", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     // Reset store state
@@ -35,8 +41,8 @@ describe('Auth Store', () => {
     });
   });
 
-  describe('Initial State', () => {
-    it('should have correct initial state', () => {
+  describe("Initial State", () => {
+    it("should have correct initial state", () => {
       const state = useAuthStore.getState();
       expect(state.user).toBeNull();
       expect(state.isAuthenticated).toBe(false);
@@ -44,13 +50,13 @@ describe('Auth Store', () => {
     });
   });
 
-  describe('initialize', () => {
-    it('should initialize with existing user', async () => {
+  describe("initialize", () => {
+    it("should initialize with existing user", async () => {
       const mockUser = {
-        id: 'user-123',
-        email: 'test@example.com',
-        user_metadata: { name: 'Test User' },
-        created_at: '2024-01-01',
+        id: "user-123",
+        email: "test@example.com",
+        user_metadata: { name: "Test User" },
+        created_at: "2024-01-01",
       };
 
       getCurrentUser.mockResolvedValueOnce({ user: mockUser, error: null });
@@ -59,10 +65,10 @@ describe('Auth Store', () => {
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({
           data: {
-            id: 'user-123',
-            email: 'test@example.com',
-            name: 'Test User',
-            subscription_tier: 'premium',
+            id: "user-123",
+            email: "test@example.com",
+            name: "Test User",
+            subscription_tier: "premium",
           },
         }),
       });
@@ -73,11 +79,11 @@ describe('Auth Store', () => {
 
       const state = useAuthStore.getState();
       expect(state.isAuthenticated).toBe(true);
-      expect(state.user?.email).toBe('test@example.com');
+      expect(state.user?.email).toBe("test@example.com");
       expect(state.isLoading).toBe(false);
     });
 
-    it('should handle no user', async () => {
+    it("should handle no user", async () => {
       getCurrentUser.mockResolvedValueOnce({ user: null, error: null });
 
       await act(async () => {
@@ -89,26 +95,29 @@ describe('Auth Store', () => {
       expect(state.user).toBeNull();
     });
 
-    it('should handle initialization error', async () => {
-      getCurrentUser.mockResolvedValueOnce({ user: null, error: new Error('Auth error') });
+    it("should handle initialization error", async () => {
+      getCurrentUser.mockResolvedValueOnce({
+        user: null,
+        error: new Error("Auth error"),
+      });
 
       await act(async () => {
         await useAuthStore.getState().initialize();
       });
 
       const state = useAuthStore.getState();
-      expect(state.error).toBe('Auth error');
+      expect(state.error).toBe("Auth error");
       expect(state.isAuthenticated).toBe(false);
     });
   });
 
-  describe('login', () => {
-    it('should login successfully', async () => {
+  describe("login", () => {
+    it("should login successfully", async () => {
       const mockUser = {
-        id: 'user-123',
-        email: 'test@example.com',
-        user_metadata: { name: 'Test User' },
-        created_at: '2024-01-01',
+        id: "user-123",
+        email: "test@example.com",
+        user_metadata: { name: "Test User" },
+        created_at: "2024-01-01",
       };
 
       signIn.mockResolvedValueOnce({ data: { user: mockUser }, error: null });
@@ -120,32 +129,39 @@ describe('Auth Store', () => {
 
       let result;
       await act(async () => {
-        result = await useAuthStore.getState().login('test@example.com', 'password123');
+        result = await useAuthStore
+          .getState()
+          .login("test@example.com", "password123");
       });
 
       expect(result).toBe(true);
       expect(useAuthStore.getState().isAuthenticated).toBe(true);
     });
 
-    it('should handle login error', async () => {
-      signIn.mockResolvedValueOnce({ data: {}, error: new Error('Invalid credentials') });
+    it("should handle login error", async () => {
+      signIn.mockResolvedValueOnce({
+        data: {},
+        error: new Error("Invalid credentials"),
+      });
 
       let result;
       await act(async () => {
-        result = await useAuthStore.getState().login('test@example.com', 'wrong');
+        result = await useAuthStore
+          .getState()
+          .login("test@example.com", "wrong");
       });
 
       expect(result).toBe(false);
-      expect(useAuthStore.getState().error).toBe('Invalid credentials');
+      expect(useAuthStore.getState().error).toBe("Invalid credentials");
     });
   });
 
-  describe('register', () => {
-    it('should register successfully', async () => {
+  describe("register", () => {
+    it("should register successfully", async () => {
       const mockUser = {
-        id: 'new-user-123',
-        email: 'new@example.com',
-        created_at: '2024-01-01',
+        id: "new-user-123",
+        email: "new@example.com",
+        created_at: "2024-01-01",
       };
 
       signUp.mockResolvedValueOnce({ data: { user: mockUser }, error: null });
@@ -155,23 +171,25 @@ describe('Auth Store', () => {
 
       let result;
       await act(async () => {
-        result = await useAuthStore.getState().register('new@example.com', 'password123', 'New User');
+        result = await useAuthStore
+          .getState()
+          .register("new@example.com", "password123", "New User");
       });
 
       expect(result).toBe(true);
       expect(useAuthStore.getState().isAuthenticated).toBe(true);
-      expect(useAuthStore.getState().user?.name).toBe('New User');
+      expect(useAuthStore.getState().user?.name).toBe("New User");
     });
   });
 
-  describe('logout', () => {
-    it('should logout successfully', async () => {
+  describe("logout", () => {
+    it("should logout successfully", async () => {
       useAuthStore.setState({
         user: {
-          id: '1',
-          email: 'test@example.com',
-          name: 'Test User',
-          subscription_tier: 'free' as const,
+          id: "1",
+          email: "test@example.com",
+          name: "Test User",
+          subscription_tier: "free" as const,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         },
@@ -190,12 +208,11 @@ describe('Auth Store', () => {
     });
   });
 
-  describe('clearError', () => {
-    it('should clear error', () => {
-      useAuthStore.setState({ error: 'Some error' });
+  describe("clearError", () => {
+    it("should clear error", () => {
+      useAuthStore.setState({ error: "Some error" });
       useAuthStore.getState().clearError();
       expect(useAuthStore.getState().error).toBeNull();
     });
   });
 });
-

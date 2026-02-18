@@ -13,8 +13,8 @@
  * - Batch export support
  */
 
-import type { ComprehensiveAnalysis } from '@/lib/investments/services/InvestmentAnalysisEngine';
-import type { PortfolioMetrics } from '@/lib/investments/services/PortfolioAnalysisService';
+import type { ComprehensiveAnalysis } from "@/lib/investments/services/InvestmentAnalysisEngine";
+import type { PortfolioMetrics } from "@/lib/investments/services/PortfolioAnalysisService";
 
 // Type alias for backwards compatibility
 type InvestmentAnalysis = ComprehensiveAnalysis;
@@ -36,10 +36,10 @@ export interface PortfolioAnalysis {
 }
 
 export interface ExportOptions {
-  format: 'csv' | 'pdf' | 'json';
+  format: "csv" | "pdf" | "json";
   includeCharts?: boolean;
   includeRawData?: boolean;
-  template?: 'standard' | 'detailed' | 'summary';
+  template?: "standard" | "detailed" | "summary";
 }
 
 export interface ExportResult {
@@ -58,14 +58,14 @@ export class AnalysisExportService {
    */
   async exportInvestmentAnalysis(
     analysis: InvestmentAnalysis,
-    options: ExportOptions
+    options: ExportOptions,
   ): Promise<ExportResult> {
     switch (options.format) {
-      case 'csv':
+      case "csv":
         return this.exportToCSV(analysis);
-      case 'json':
+      case "json":
         return this.exportToJSON(analysis);
-      case 'pdf':
+      case "pdf":
         return this.exportToPDF(analysis, options);
       default:
         throw new Error(`Unsupported export format: ${options.format}`);
@@ -77,14 +77,14 @@ export class AnalysisExportService {
    */
   async exportPortfolioAnalysis(
     analysis: PortfolioAnalysis,
-    options: ExportOptions
+    options: ExportOptions,
   ): Promise<ExportResult> {
     switch (options.format) {
-      case 'csv':
+      case "csv":
         return this.exportPortfolioToCSV(analysis);
-      case 'json':
+      case "json":
         return this.exportToJSON(analysis);
-      case 'pdf':
+      case "pdf":
         return this.exportPortfolioToPDF(analysis, options);
       default:
         throw new Error(`Unsupported export format: ${options.format}`);
@@ -98,54 +98,68 @@ export class AnalysisExportService {
     const rows: string[][] = [];
 
     // Header
-    rows.push(['Investment Analysis Report']);
-    rows.push(['Symbol', analysis.symbol]);
-    rows.push(['Analyzed At', analysis.analyzedAt.toISOString()]);
-    rows.push(['Current Price', analysis.currentPrice.toString()]);
+    rows.push(["Investment Analysis Report"]);
+    rows.push(["Symbol", analysis.symbol]);
+    rows.push(["Analyzed At", analysis.analyzedAt.toISOString()]);
+    rows.push(["Current Price", analysis.currentPrice.toString()]);
     rows.push([]);
 
     // Overall Signal
-    rows.push(['Overall Signal', analysis.overallSignal.toUpperCase()]);
-    rows.push(['Confidence', (analysis.overallConfidence * 100).toFixed(2) + '%']);
-    rows.push(['Risk Level', analysis.riskLevel]);
+    rows.push(["Overall Signal", analysis.overallSignal.toUpperCase()]);
+    rows.push([
+      "Confidence",
+      (analysis.overallConfidence * 100).toFixed(2) + "%",
+    ]);
+    rows.push(["Risk Level", analysis.riskLevel]);
     rows.push([]);
 
     // Composite Scores
-    rows.push(['Composite Scores']);
-    rows.push(['Technical Score', analysis.compositeScore.technical.toString()]);
-    rows.push(['Fundamental Score', analysis.compositeScore.fundamental.toString()]);
-    rows.push(['Sentiment Score', analysis.compositeScore.sentiment.toString()]);
-    rows.push(['Pattern Score', analysis.compositeScore.pattern.toString()]);
-    rows.push(['Overall Score', analysis.compositeScore.overall.toString()]);
+    rows.push(["Composite Scores"]);
+    rows.push([
+      "Technical Score",
+      analysis.compositeScore.technical.toString(),
+    ]);
+    rows.push([
+      "Fundamental Score",
+      analysis.compositeScore.fundamental.toString(),
+    ]);
+    rows.push([
+      "Sentiment Score",
+      analysis.compositeScore.sentiment.toString(),
+    ]);
+    rows.push(["Pattern Score", analysis.compositeScore.pattern.toString()]);
+    rows.push(["Overall Score", analysis.compositeScore.overall.toString()]);
     rows.push([]);
 
     // Insights
-    rows.push(['Key Insights']);
+    rows.push(["Key Insights"]);
     analysis.keyInsights.forEach((insight, index) => {
       rows.push([`${index + 1}`, insight]);
     });
     rows.push([]);
 
     // Risks
-    rows.push(['Risk Factors']);
+    rows.push(["Risk Factors"]);
     analysis.risks.forEach((risk, index) => {
       rows.push([`${index + 1}`, risk]);
     });
     rows.push([]);
 
     // Opportunities
-    rows.push(['Opportunities']);
+    rows.push(["Opportunities"]);
     analysis.opportunities.forEach((opportunity, index) => {
       rows.push([`${index + 1}`, opportunity]);
     });
 
-    const csvContent = rows.map((row) => row.map((cell) => `"${cell}"`).join(',')).join('\n');
+    const csvContent = rows
+      .map((row) => row.map((cell) => `"${cell}"`).join(","))
+      .join("\n");
     const filename = `investment-analysis-${analysis.symbol}-${Date.now()}.csv`;
 
     return {
       data: csvContent,
       filename,
-      mimeType: 'text/csv',
+      mimeType: "text/csv",
       size: csvContent.length,
     };
   }
@@ -157,34 +171,45 @@ export class AnalysisExportService {
     const rows: string[][] = [];
 
     // Header
-    rows.push(['Portfolio Analysis Report']);
-    rows.push(['Portfolio ID', analysis.portfolioId]);
-    rows.push(['Analyzed At', analysis.analyzedAt.toISOString()]);
+    rows.push(["Portfolio Analysis Report"]);
+    rows.push(["Portfolio ID", analysis.portfolioId]);
+    rows.push(["Analyzed At", analysis.analyzedAt.toISOString()]);
     rows.push([]);
 
     // Portfolio Summary
-    rows.push(['Portfolio Summary']);
-    rows.push(['Total Value', `$${analysis.totalValue.toFixed(2)}`]);
-    rows.push(['Total Cost', `$${analysis.totalCost.toFixed(2)}`]);
-    rows.push(['Total Gain/Loss', `$${analysis.totalGainLoss.toFixed(2)}`]);
-    rows.push(['Total Gain/Loss %', `${analysis.totalGainLossPercent.toFixed(2)}%`]);
-    rows.push(['Portfolio Health', analysis.portfolioHealth.toString()]);
-    rows.push(['Portfolio Risk', analysis.portfolioRisk]);
-    rows.push(['Diversification Score', analysis.diversificationScore.toString()]);
+    rows.push(["Portfolio Summary"]);
+    rows.push(["Total Value", `$${analysis.totalValue.toFixed(2)}`]);
+    rows.push(["Total Cost", `$${analysis.totalCost.toFixed(2)}`]);
+    rows.push(["Total Gain/Loss", `$${analysis.totalGainLoss.toFixed(2)}`]);
+    rows.push([
+      "Total Gain/Loss %",
+      `${analysis.totalGainLossPercent.toFixed(2)}%`,
+    ]);
+    rows.push(["Portfolio Health", analysis.portfolioHealth.toString()]);
+    rows.push(["Portfolio Risk", analysis.portfolioRisk]);
+    rows.push([
+      "Diversification Score",
+      analysis.diversificationScore.toString(),
+    ]);
     rows.push([]);
 
     // Overall Signal
-    rows.push(['Overall Signal', analysis.overallSignal.toUpperCase()]);
-    rows.push(['Confidence', (analysis.overallConfidence * 100).toFixed(2) + '%']);
+    rows.push(["Overall Signal", analysis.overallSignal.toUpperCase()]);
+    rows.push([
+      "Confidence",
+      (analysis.overallConfidence * 100).toFixed(2) + "%",
+    ]);
     rows.push([]);
 
-    const csvContent = rows.map((row) => row.map((cell) => `"${cell}"`).join(',')).join('\n');
+    const csvContent = rows
+      .map((row) => row.map((cell) => `"${cell}"`).join(","))
+      .join("\n");
     const filename = `portfolio-analysis-${analysis.portfolioId}-${Date.now()}.csv`;
 
     return {
       data: csvContent,
       filename,
-      mimeType: 'text/csv',
+      mimeType: "text/csv",
       size: csvContent.length,
     };
   }
@@ -192,18 +217,20 @@ export class AnalysisExportService {
   /**
    * Export to JSON
    */
-  private exportToJSON(analysis: InvestmentAnalysis | PortfolioAnalysis): ExportResult {
+  private exportToJSON(
+    analysis: InvestmentAnalysis | PortfolioAnalysis,
+  ): ExportResult {
     const jsonContent = JSON.stringify(analysis, null, 2);
-    const isPortfolio = 'portfolioId' in analysis;
+    const isPortfolio = "portfolioId" in analysis;
     const identifier = isPortfolio
       ? (analysis as PortfolioAnalysis).portfolioId
       : (analysis as InvestmentAnalysis).symbol;
-    const filename = `${isPortfolio ? 'portfolio' : 'investment'}-analysis-${identifier}-${Date.now()}.json`;
+    const filename = `${isPortfolio ? "portfolio" : "investment"}-analysis-${identifier}-${Date.now()}.json`;
 
     return {
       data: jsonContent,
       filename,
-      mimeType: 'application/json',
+      mimeType: "application/json",
       size: jsonContent.length,
     };
   }
@@ -213,7 +240,7 @@ export class AnalysisExportService {
    */
   private async exportToPDF(
     analysis: InvestmentAnalysis,
-    options: ExportOptions
+    options: ExportOptions,
   ): Promise<ExportResult> {
     // For now, return a simple HTML-based PDF representation
     // In production, you would use a library like jsPDF or pdfmake
@@ -223,7 +250,7 @@ export class AnalysisExportService {
     return {
       data: htmlContent,
       filename,
-      mimeType: 'text/html',
+      mimeType: "text/html",
       size: htmlContent.length,
     };
   }
@@ -233,7 +260,7 @@ export class AnalysisExportService {
    */
   private async exportPortfolioToPDF(
     analysis: PortfolioAnalysis,
-    options: ExportOptions
+    options: ExportOptions,
   ): Promise<ExportResult> {
     const htmlContent = this.generatePortfolioHTML(analysis, options);
     const filename = `portfolio-analysis-${analysis.portfolioId}-${Date.now()}.html`;
@@ -241,7 +268,7 @@ export class AnalysisExportService {
     return {
       data: htmlContent,
       filename,
-      mimeType: 'text/html',
+      mimeType: "text/html",
       size: htmlContent.length,
     };
   }
@@ -249,8 +276,11 @@ export class AnalysisExportService {
   /**
    * Generate HTML for investment analysis
    */
-  private generateInvestmentHTML(analysis: InvestmentAnalysis, options: ExportOptions): string {
-    const template = options.template || 'standard';
+  private generateInvestmentHTML(
+    analysis: InvestmentAnalysis,
+    options: ExportOptions,
+  ): string {
+    const template = options.template || "standard";
 
     return `
 <!DOCTYPE html>
@@ -324,21 +354,21 @@ export class AnalysisExportService {
   <div class="section">
     <h2>Key Insights</h2>
     <ul>
-      ${analysis.keyInsights.map((insight) => `<li>${insight}</li>`).join('')}
+      ${analysis.keyInsights.map((insight) => `<li>${insight}</li>`).join("")}
     </ul>
   </div>
 
   <div class="section">
     <h2>Risk Factors</h2>
     <ul>
-      ${analysis.risks.map((risk) => `<li>${risk}</li>`).join('')}
+      ${analysis.risks.map((risk) => `<li>${risk}</li>`).join("")}
     </ul>
   </div>
 
   <div class="section">
     <h2>Opportunities</h2>
     <ul>
-      ${analysis.opportunities.map((opportunity) => `<li>${opportunity}</li>`).join('')}
+      ${analysis.opportunities.map((opportunity) => `<li>${opportunity}</li>`).join("")}
     </ul>
   </div>
 
@@ -354,7 +384,10 @@ export class AnalysisExportService {
   /**
    * Generate HTML for portfolio analysis
    */
-  private generatePortfolioHTML(analysis: PortfolioAnalysis, options: ExportOptions): string {
+  private generatePortfolioHTML(
+    analysis: PortfolioAnalysis,
+    options: ExportOptions,
+  ): string {
     return `
 <!DOCTYPE html>
 <html>

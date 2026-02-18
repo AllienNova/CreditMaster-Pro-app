@@ -39,44 +39,44 @@ Fynvita is an ambitious AI-powered financial platform (Next.js 15 + React 19 + S
 
 ### Documentation Claims vs Reality
 
-| Metric | CLAUDE.md Claims | README Claims | Actual (Verified) | Status |
-|--------|-----------------|---------------|-------------------|--------|
-| API Routes | 21 | 279 | 248 route files | ⚠️ Contradictory |
-| Components | 10+ | 272 | 245+ files in components/ | ⚠️ Contradictory |
-| Test Coverage | 81.42% | ~1.86% | Unknown (not runnable) | ❌ Contradictory |
-| Lines of Code | 15,000+ | — | ~78,135 | ⚠️ 5x undercount |
-| TypeScript Errors | 0 | 0 | 0 (confirmed) | ✅ Accurate |
-| Files | 60+ | — | 1,295 TS/TSX files | ⚠️ 20x undercount |
-| Tests | 83 passing | — | 149 test files | ⚠️ Unclear |
-| Build | Successful | Working | Not verified this session | — |
+| Metric            | CLAUDE.md Claims | README Claims | Actual (Verified)         | Status            |
+| ----------------- | ---------------- | ------------- | ------------------------- | ----------------- |
+| API Routes        | 21               | 279           | 248 route files           | ⚠️ Contradictory  |
+| Components        | 10+              | 272           | 245+ files in components/ | ⚠️ Contradictory  |
+| Test Coverage     | 81.42%           | ~1.86%        | Unknown (not runnable)    | ❌ Contradictory  |
+| Lines of Code     | 15,000+          | —             | ~78,135                   | ⚠️ 5x undercount  |
+| TypeScript Errors | 0                | 0             | 0 (confirmed)             | ✅ Accurate       |
+| Files             | 60+              | —             | 1,295 TS/TSX files        | ⚠️ 20x undercount |
+| Tests             | 83 passing       | —             | 149 test files            | ⚠️ Unclear        |
+| Build             | Successful       | Working       | Not verified this session | —                 |
 
 ### todo.md Planned Features vs Reality
 
-| Planned Feature/Task | Plan Reference | Status |
-|---------------------|---------------|--------|
-| Input validation & sanitization | todo.md Phase 1 | ✅ Implemented (src/lib/security/input-validation.ts) |
-| Output validation | todo.md Phase 1 | ✅ Implemented (src/lib/security/output-validation.ts) |
-| Auth middleware to AI routes | todo.md Phase 1 | ⚠️ Partial (only 122/248 routes) |
-| API key rotation | todo.md Phase 1 | ❌ Not implemented |
-| Validation middleware | todo.md Phase 1 | ❌ Not a universal middleware |
-| Prompt testing suite | todo.md Phase 2 | ❌ Missing |
-| A/B testing framework | todo.md Phase 2 | ❌ Missing |
-| Credit Bureau Integration (Experian/Equifax/TransUnion) | todo.md Phase 4 | ⚠️ Stubs only (mock generators) |
-| Dispute tracking system | todo.md Phase 4 | ⚠️ Partial (PATCH/DELETE unauth'd) |
-| Document management | todo.md Phase 4 | ✅ Implemented (S3 integration) |
-| Notification service | todo.md Phase 4 | ✅ Implemented (email + in-app) |
-| Payment gateway (Stripe) | todo.md Phase 4 | ✅ Implemented |
-| Admin console | todo.md Phase 4 | ⚠️ Partial (routes exist, UI unclear) |
-| Score simulator | todo.md Phase 5 | ✅ Implemented |
-| Goal tracker | todo.md Phase 5 | ✅ Implemented |
-| Progress visualization | todo.md Phase 5 | ❌ Missing |
-| Gamification | todo.md Phase 5 | ⚠️ Partial (services exist, likely stubs) |
-| Educational content | todo.md Phase 5 | ⚠️ Partial (onboarding content exists) |
-| Multi-tenant admin | todo.md Phase 6 | ❌ Missing |
-| White-label capabilities | todo.md Phase 6 | ❌ Missing |
-| CRM system | todo.md Phase 6 | ❌ Missing |
-| E-signature integration | todo.md Phase 6 | ❌ Missing |
-| Performance monitoring (APM) | todo.md Quality | ⚠️ Partial (K6 local only) |
+| Planned Feature/Task                                    | Plan Reference  | Status                                                 |
+| ------------------------------------------------------- | --------------- | ------------------------------------------------------ |
+| Input validation & sanitization                         | todo.md Phase 1 | ✅ Implemented (src/lib/security/input-validation.ts)  |
+| Output validation                                       | todo.md Phase 1 | ✅ Implemented (src/lib/security/output-validation.ts) |
+| Auth middleware to AI routes                            | todo.md Phase 1 | ⚠️ Partial (only 122/248 routes)                       |
+| API key rotation                                        | todo.md Phase 1 | ❌ Not implemented                                     |
+| Validation middleware                                   | todo.md Phase 1 | ❌ Not a universal middleware                          |
+| Prompt testing suite                                    | todo.md Phase 2 | ❌ Missing                                             |
+| A/B testing framework                                   | todo.md Phase 2 | ❌ Missing                                             |
+| Credit Bureau Integration (Experian/Equifax/TransUnion) | todo.md Phase 4 | ⚠️ Stubs only (mock generators)                        |
+| Dispute tracking system                                 | todo.md Phase 4 | ⚠️ Partial (PATCH/DELETE unauth'd)                     |
+| Document management                                     | todo.md Phase 4 | ✅ Implemented (S3 integration)                        |
+| Notification service                                    | todo.md Phase 4 | ✅ Implemented (email + in-app)                        |
+| Payment gateway (Stripe)                                | todo.md Phase 4 | ✅ Implemented                                         |
+| Admin console                                           | todo.md Phase 4 | ⚠️ Partial (routes exist, UI unclear)                  |
+| Score simulator                                         | todo.md Phase 5 | ✅ Implemented                                         |
+| Goal tracker                                            | todo.md Phase 5 | ✅ Implemented                                         |
+| Progress visualization                                  | todo.md Phase 5 | ❌ Missing                                             |
+| Gamification                                            | todo.md Phase 5 | ⚠️ Partial (services exist, likely stubs)              |
+| Educational content                                     | todo.md Phase 5 | ⚠️ Partial (onboarding content exists)                 |
+| Multi-tenant admin                                      | todo.md Phase 6 | ❌ Missing                                             |
+| White-label capabilities                                | todo.md Phase 6 | ❌ Missing                                             |
+| CRM system                                              | todo.md Phase 6 | ❌ Missing                                             |
+| E-signature integration                                 | todo.md Phase 6 | ❌ Missing                                             |
+| Performance monitoring (APM)                            | todo.md Quality | ⚠️ Partial (K6 local only)                             |
 
 ---
 
@@ -89,6 +89,7 @@ Fynvita is an ambitious AI-powered financial platform (Next.js 15 + React 19 + S
 **Evidence**: Grep for auth patterns across all route.ts files
 
 Unauthenticated routes include:
+
 - `src/app/api/credit-bureau/report/route.ts` — Credit report data
 - `src/app/api/credit-bureau/dispute/route.ts` — Dispute creation
 - `src/app/api/credit-monitoring/scores/route.ts` — Credit scores
@@ -136,6 +137,7 @@ src/lib/__tests__/debug.log
 **Evidence**: README.md line 11 says `~1.86%` while CLAUDE.md says `81.42%`
 
 The README itself admits:
+
 > Tests: Multiple failures (coverage infrastructure issues)
 > Coverage: ~1.86% (needs improvement)
 
@@ -150,6 +152,7 @@ Yet the same README also says `Coverage: 81.42%` in the testing section. The CLA
 **Evidence**: `wc -l` on all .ts/.tsx files
 
 Top offenders (non-test files):
+
 - `src/lib/investments/ai-stock-analyst.ts` — **2,335 lines**
 - `src/app/page.tsx` — **2,279 lines**
 - `src/lib/financial/health-score-calculator-v2.ts` — **1,756 lines**
@@ -194,6 +197,7 @@ While console.error is acceptable for error logging, 216 instances suggests the 
 **Evidence**: `src/lib/` contains 400+ files across 30+ subdirectories
 
 The lib/ directory has grown organically without consistent organization:
+
 - Multiple competing implementations: `dispute-service.ts` vs `dispute-service-db.ts`
 - Duplicate functionality: `rate-limiting.ts` vs `rate-limiter.ts` vs `redis-rate-limiting.ts`
 - Abandoned modules: `my-gemini-app/` directory at root
@@ -214,6 +218,7 @@ Excessive client-side rendering defeats the purpose of Next.js Server Components
 **Evidence**: Multiple status documents with different dates and conflicting claims
 
 Files with contradictory information:
+
 - `CLAUDE.md` — Last updated Nov 29, 2025
 - `README.md` — Last updated Jan 7, 2026
 - `CPFI_IMPLEMENTATION_STATUS_2025-12-29.md`
@@ -227,88 +232,88 @@ Files with contradictory information:
 
 ### Security [15/100]
 
-| Issue | Severity | File(s) | Action |
-|-------|----------|---------|--------|
-| 126 unauth'd API routes | CRITICAL | src/app/api/**/* | Add auth middleware to all routes |
-| Cron endpoints unprotected | CRITICAL | src/app/api/cron/* | Add secret-based auth |
-| No pre-commit secret scanning | HIGH | .git/hooks/ | Install git-secrets or detect-secrets |
-| CORS configured but wildcard risk | MEDIUM | next.config.js | Verify origin whitelist |
-| No CSRF protection on mutations | MEDIUM | src/app/api/**/* | Add CSRF tokens |
-| Rate limiting exists but inconsistent | MEDIUM | src/lib/security/ | Standardize across all routes |
+| Issue                                 | Severity | File(s)             | Action                                |
+| ------------------------------------- | -------- | ------------------- | ------------------------------------- |
+| 126 unauth'd API routes               | CRITICAL | src/app/api/\*_/_   | Add auth middleware to all routes     |
+| Cron endpoints unprotected            | CRITICAL | src/app/api/cron/\* | Add secret-based auth                 |
+| No pre-commit secret scanning         | HIGH     | .git/hooks/         | Install git-secrets or detect-secrets |
+| CORS configured but wildcard risk     | MEDIUM   | next.config.js      | Verify origin whitelist               |
+| No CSRF protection on mutations       | MEDIUM   | src/app/api/\*_/_   | Add CSRF tokens                       |
+| Rate limiting exists but inconsistent | MEDIUM   | src/lib/security/   | Standardize across all routes         |
 
 ### Code Quality [25/100]
 
-| Issue | Severity | Evidence | Action |
-|-------|----------|----------|--------|
-| 24 files over 1,000 lines | CRITICAL | Multiple lib/ files | Break into focused modules |
-| 165 `any` types | HIGH | Across src/ | Replace with proper types |
-| 14 debug.log in source | HIGH | src/**/debug.log | Delete and add to .gitignore |
-| Duplicate services | MEDIUM | 3 rate limiters, 2 dispute services | Consolidate |
-| smart-insights-engine.ts at root | LOW | Project root | Move to src/lib/ |
+| Issue                            | Severity | Evidence                            | Action                       |
+| -------------------------------- | -------- | ----------------------------------- | ---------------------------- |
+| 24 files over 1,000 lines        | CRITICAL | Multiple lib/ files                 | Break into focused modules   |
+| 165 `any` types                  | HIGH     | Across src/                         | Replace with proper types    |
+| 14 debug.log in source           | HIGH     | src/\*\*/debug.log                  | Delete and add to .gitignore |
+| Duplicate services               | MEDIUM   | 3 rate limiters, 2 dispute services | Consolidate                  |
+| smart-insights-engine.ts at root | LOW      | Project root                        | Move to src/lib/             |
 
 ### API Design [30/100]
 
-| Issue | Severity | Evidence | Action |
-|-------|----------|----------|--------|
-| 51% routes lack auth | CRITICAL | 126/248 routes | Add auth layer |
-| No API versioning | HIGH | All routes at /api/* | Add /api/v1/* prefix |
-| Inconsistent error responses | MEDIUM | Various API routes | Standardize error format |
-| No OpenAPI spec (auto-generated) | MEDIUM | — | Generate from routes |
-| Missing pagination on list endpoints | MEDIUM | Various GET routes | Add cursor pagination |
+| Issue                                | Severity | Evidence              | Action                   |
+| ------------------------------------ | -------- | --------------------- | ------------------------ |
+| 51% routes lack auth                 | CRITICAL | 126/248 routes        | Add auth layer           |
+| No API versioning                    | HIGH     | All routes at /api/\* | Add /api/v1/\* prefix    |
+| Inconsistent error responses         | MEDIUM   | Various API routes    | Standardize error format |
+| No OpenAPI spec (auto-generated)     | MEDIUM   | —                     | Generate from routes     |
+| Missing pagination on list endpoints | MEDIUM   | Various GET routes    | Add cursor pagination    |
 
 ### UI/UX Design [50/100]
 
-| Issue | Severity | Evidence | Action |
-|-------|----------|----------|--------|
-| 2,279-line landing page | HIGH | src/app/page.tsx | Extract into components |
-| 191 'use client' overuse | MEDIUM | Components across src/ | Convert to RSC where possible |
-| Dark mode implemented | ✅ | tailwind.config.ts, globals.css | — |
-| Accessibility basics present | ✅ | prefers-reduced-motion, focus-visible | — |
-| Loading skeletons exist | ✅ | src/components/ui/Skeleton.tsx | — |
-| Empty states exist | ✅ | src/components/ui/EmptyState.tsx | — |
-| i18n infrastructure exists | ✅ | src/lib/i18n/ (5 files) | — |
+| Issue                        | Severity | Evidence                              | Action                        |
+| ---------------------------- | -------- | ------------------------------------- | ----------------------------- |
+| 2,279-line landing page      | HIGH     | src/app/page.tsx                      | Extract into components       |
+| 191 'use client' overuse     | MEDIUM   | Components across src/                | Convert to RSC where possible |
+| Dark mode implemented        | ✅       | tailwind.config.ts, globals.css       | —                             |
+| Accessibility basics present | ✅       | prefers-reduced-motion, focus-visible | —                             |
+| Loading skeletons exist      | ✅       | src/components/ui/Skeleton.tsx        | —                             |
+| Empty states exist           | ✅       | src/components/ui/EmptyState.tsx      | —                             |
+| i18n infrastructure exists   | ✅       | src/lib/i18n/ (5 files)               | —                             |
 
 ### Integration & Data Flow [35/100]
 
-| Issue | Severity | Evidence | Action |
-|-------|----------|----------|--------|
-| Credit bureau = mock only | HIGH | src/lib/credit-bureau/mock-* | Implement real API integration |
-| 32 Supabase migrations | ✅ | supabase/migrations/ | — |
-| RLS enforcement | ✅ | Supabase policies | — |
-| Plaid integration exists | ✅ | src/lib/financial/plaid-service.ts | — |
-| Stripe webhooks configured | ✅ | src/app/api/payment/webhook/ | — |
+| Issue                      | Severity | Evidence                           | Action                         |
+| -------------------------- | -------- | ---------------------------------- | ------------------------------ |
+| Credit bureau = mock only  | HIGH     | src/lib/credit-bureau/mock-\*      | Implement real API integration |
+| 32 Supabase migrations     | ✅       | supabase/migrations/               | —                              |
+| RLS enforcement            | ✅       | Supabase policies                  | —                              |
+| Plaid integration exists   | ✅       | src/lib/financial/plaid-service.ts | —                              |
+| Stripe webhooks configured | ✅       | src/app/api/payment/webhook/       | —                              |
 
 ### Performance [40/100]
 
-| Issue | Severity | Evidence | Action |
-|-------|----------|----------|--------|
-| 2,279-line page.tsx | HIGH | src/app/page.tsx | Code-split and lazy load |
-| 191 client components | MEDIUM | 'use client' directives | Reduce client JS bundle |
-| K6 load testing exists | ✅ | performance/ | — |
-| Image optimization configured | ✅ | next.config.js (AVIF/WebP) | — |
-| Bundle analysis script | ✅ | scripts/analyze-bundle.js | — |
+| Issue                         | Severity | Evidence                   | Action                   |
+| ----------------------------- | -------- | -------------------------- | ------------------------ |
+| 2,279-line page.tsx           | HIGH     | src/app/page.tsx           | Code-split and lazy load |
+| 191 client components         | MEDIUM   | 'use client' directives    | Reduce client JS bundle  |
+| K6 load testing exists        | ✅       | performance/               | —                        |
+| Image optimization configured | ✅       | next.config.js (AVIF/WebP) | —                        |
+| Bundle analysis script        | ✅       | scripts/analyze-bundle.js  | —                        |
 
 ### Testing [15/100]
 
-| Issue | Severity | Evidence | Action |
-|-------|----------|----------|--------|
-| Contradictory coverage claims | CRITICAL | README: 1.86% vs CLAUDE: 81.42% | Run actual coverage report |
-| 149 test files may not pass | HIGH | Test infrastructure issues noted | Fix and run full suite |
-| E2E dual framework | MEDIUM | Both Cypress and Playwright | Consolidate on Playwright |
-| 80% threshold configured | ✅ | jest.config.js | — |
-| Mocking infrastructure | ✅ | src/__tests__/mocks/ | — |
+| Issue                         | Severity | Evidence                         | Action                     |
+| ----------------------------- | -------- | -------------------------------- | -------------------------- |
+| Contradictory coverage claims | CRITICAL | README: 1.86% vs CLAUDE: 81.42%  | Run actual coverage report |
+| 149 test files may not pass   | HIGH     | Test infrastructure issues noted | Fix and run full suite     |
+| E2E dual framework            | MEDIUM   | Both Cypress and Playwright      | Consolidate on Playwright  |
+| 80% threshold configured      | ✅       | jest.config.js                   | —                          |
+| Mocking infrastructure        | ✅       | src/**tests**/mocks/             | —                          |
 
 ### DevOps & Infrastructure [60/100]
 
-| Issue | Severity | Evidence | Action |
-|-------|----------|----------|--------|
-| GitHub Actions configured | ✅ | .github/workflows/ | — |
-| Docker multi-stage build | ✅ | Dockerfile | — |
-| Vercel deployment | ✅ | vercel.json | — |
-| Security headers | ✅ | next.config.js (HSTS, CSP, etc.) | — |
-| No Lighthouse CI | MEDIUM | — | Add to CI pipeline |
-| No pre-commit hooks | MEDIUM | — | Add husky + lint-staged |
-| No secret scanning | HIGH | — | Add detect-secrets |
+| Issue                     | Severity | Evidence                         | Action                  |
+| ------------------------- | -------- | -------------------------------- | ----------------------- |
+| GitHub Actions configured | ✅       | .github/workflows/               | —                       |
+| Docker multi-stage build  | ✅       | Dockerfile                       | —                       |
+| Vercel deployment         | ✅       | vercel.json                      | —                       |
+| Security headers          | ✅       | next.config.js (HSTS, CSP, etc.) | —                       |
+| No Lighthouse CI          | MEDIUM   | —                                | Add to CI pipeline      |
+| No pre-commit hooks       | MEDIUM   | —                                | Add husky + lint-staged |
+| No secret scanning        | HIGH     | —                                | Add detect-secrets      |
 
 ---
 
@@ -328,23 +333,23 @@ Files with contradictory information:
 
 ### Root Cause Analysis
 
-| Gap Category | Root Cause | Fix Type |
-|-------------|-----------|----------|
-| Unauth'd routes | Rapid feature generation without security middleware | Process (middleware pattern) |
-| God objects | Features implemented in single files without decomposition | Refactoring |
-| Test coverage lies | Coverage infrastructure broke, numbers weren't re-verified | Tooling fix |
-| Debug logs in source | Missing .gitignore entries for debug.log | Quick fix |
-| Doc contradictions | Multiple AI sessions each wrote their own status docs | Doc consolidation |
+| Gap Category         | Root Cause                                                 | Fix Type                     |
+| -------------------- | ---------------------------------------------------------- | ---------------------------- |
+| Unauth'd routes      | Rapid feature generation without security middleware       | Process (middleware pattern) |
+| God objects          | Features implemented in single files without decomposition | Refactoring                  |
+| Test coverage lies   | Coverage infrastructure broke, numbers weren't re-verified | Tooling fix                  |
+| Debug logs in source | Missing .gitignore entries for debug.log                   | Quick fix                    |
+| Doc contradictions   | Multiple AI sessions each wrote their own status docs      | Doc consolidation            |
 
 ### Risk Assessment
 
-| # | Risk | Probability | Impact | Priority |
-|---|------|-------------|--------|----------|
-| 1 | Data breach via unauth'd API routes | HIGH | CRITICAL | P0 |
-| 2 | Test suite doesn't actually run/pass | HIGH | HIGH | P0 |
-| 3 | Secret accidentally committed to git | MEDIUM | CRITICAL | P1 |
-| 4 | Performance degradation from god objects | HIGH | MEDIUM | P1 |
-| 5 | Maintenance impossible due to code sprawl | HIGH | HIGH | P2 |
+| #   | Risk                                      | Probability | Impact   | Priority |
+| --- | ----------------------------------------- | ----------- | -------- | -------- |
+| 1   | Data breach via unauth'd API routes       | HIGH        | CRITICAL | P0       |
+| 2   | Test suite doesn't actually run/pass      | HIGH        | HIGH     | P0       |
+| 3   | Secret accidentally committed to git      | MEDIUM      | CRITICAL | P1       |
+| 4   | Performance degradation from god objects  | HIGH        | MEDIUM   | P1       |
+| 5   | Maintenance impossible due to code sprawl | HIGH        | HIGH     | P2       |
 
 ---
 
@@ -352,9 +357,10 @@ Files with contradictory information:
 
 ### Wave 1: STABILIZE [12 tasks]
 
-*Fix blockers and critical security vulnerabilities*
+_Fix blockers and critical security vulnerabilities_
 
 #### Task 1: Add authentication to all 126 unauth'd API routes
+
 - **Priority**: P0 (Blocker)
 - **Category**: Security
 - **Evidence**: 126/248 routes missing auth
@@ -363,6 +369,7 @@ Files with contradictory information:
 - **Acceptance Criteria**: 0 unauth'd routes (except webhooks and health checks)
 
 #### Task 2: Delete 14 debug.log files and add to .gitignore
+
 - **Priority**: P0 (Blocker)
 - **Category**: Security / Quality
 - **Evidence**: `find src -name "debug.log"` = 14 files
@@ -371,14 +378,16 @@ Files with contradictory information:
 - **Acceptance Criteria**: Zero debug.log files in source tree
 
 #### Task 3: Add cron endpoint authentication
+
 - **Priority**: P0 (Blocker)
 - **Category**: Security
-- **Evidence**: src/app/api/cron/* endpoints have no auth
+- **Evidence**: src/app/api/cron/\* endpoints have no auth
 - **Action**: Add CRON_SECRET environment variable verification
 - **Skill Hook**: `/secure`
 - **Acceptance Criteria**: Cron endpoints reject requests without valid secret
 
 #### Task 4: Install pre-commit secret scanning hook
+
 - **Priority**: P1 (Critical)
 - **Category**: Security
 - **Evidence**: No hooks preventing secret commits
@@ -387,6 +396,7 @@ Files with contradictory information:
 - **Acceptance Criteria**: Commits with API keys are blocked
 
 #### Task 5: Fix test infrastructure and measure real coverage
+
 - **Priority**: P1 (Critical)
 - **Category**: Testing
 - **Evidence**: README admits "coverage infrastructure issues" and "~1.86%"
@@ -395,6 +405,7 @@ Files with contradictory information:
 - **Acceptance Criteria**: All tests pass, real coverage number documented
 
 #### Task 6: Consolidate contradictory documentation
+
 - **Priority**: P1 (Critical)
 - **Category**: Documentation
 - **Evidence**: 7+ status documents with conflicting claims
@@ -403,6 +414,7 @@ Files with contradictory information:
 - **Acceptance Criteria**: Single source of truth with verified metrics
 
 #### Task 7: Replace 165 `any` types with proper types
+
 - **Priority**: P1 (Critical)
 - **Category**: Code Quality
 - **Evidence**: `grep -r ": any" src` = 165 instances
@@ -411,6 +423,7 @@ Files with contradictory information:
 - **Acceptance Criteria**: Zero `: any` in non-test files
 
 #### Task 8: Add CSRF protection to mutation endpoints
+
 - **Priority**: P1 (Critical)
 - **Category**: Security
 - **Evidence**: src/lib/security/csrf.ts exists but not enforced
@@ -419,6 +432,7 @@ Files with contradictory information:
 - **Acceptance Criteria**: CSRF token required on all mutations
 
 #### Task 9: Standardize rate limiting across all routes
+
 - **Priority**: P1 (Critical)
 - **Category**: Security
 - **Evidence**: 3 competing rate limiter implementations
@@ -427,6 +441,7 @@ Files with contradictory information:
 - **Acceptance Criteria**: Single rate limiter, applied to all public endpoints
 
 #### Task 10: Move smart-insights-engine.ts from root to src/lib/
+
 - **Priority**: P2
 - **Category**: Code Quality
 - **Evidence**: File at project root outside src/
@@ -435,6 +450,7 @@ Files with contradictory information:
 - **Acceptance Criteria**: No .ts files at project root
 
 #### Task 11: Remove stale root-level files
+
 - **Priority**: P2
 - **Category**: Code Quality
 - **Evidence**: test-output.txt (31KB), test-results.txt (442KB), lint.log (156KB), etc.
@@ -443,6 +459,7 @@ Files with contradictory information:
 - **Acceptance Criteria**: No stale log/output files at root
 
 #### Task 12: Clean up my-gemini-app/ directory
+
 - **Priority**: P2
 - **Category**: Code Quality
 - **Evidence**: Abandoned app at project root
@@ -454,9 +471,10 @@ Files with contradictory information:
 
 ### Wave 2: COMPLETE [8 tasks]
 
-*Implement missing features and fix partial implementations*
+_Implement missing features and fix partial implementations_
 
 #### Task 13: Implement real credit bureau API integration
+
 - **Priority**: P1 (Critical)
 - **Category**: Integration
 - **Evidence**: src/lib/credit-bureau/mock-credit-report-generator.ts
@@ -465,6 +483,7 @@ Files with contradictory information:
 - **Acceptance Criteria**: Real credit data flows through the system
 
 #### Task 14: Fix disputes route PATCH/DELETE auth
+
 - **Priority**: P1 (Critical)
 - **Category**: Security
 - **Evidence**: src/app/api/disputes/route.ts PATCH/DELETE lack auth
@@ -473,6 +492,7 @@ Files with contradictory information:
 - **Acceptance Criteria**: All dispute endpoints require auth
 
 #### Task 15: Consolidate duplicate services
+
 - **Priority**: P2 (Significant)
 - **Category**: Architecture
 - **Evidence**: 3 rate limiters, 2 dispute services, 2 notification services
@@ -481,14 +501,16 @@ Files with contradictory information:
 - **Acceptance Criteria**: No duplicate service implementations
 
 #### Task 16: Add API versioning
+
 - **Priority**: P2 (Significant)
 - **Category**: API Design
-- **Evidence**: All routes at /api/* with no version prefix
-- **Action**: Add /api/v1/* routing via Next.js rewrites
+- **Evidence**: All routes at /api/\* with no version prefix
+- **Action**: Add /api/v1/\* routing via Next.js rewrites
 - **Skill Hook**: `/api-gen`
 - **Acceptance Criteria**: All routes versioned
 
 #### Task 17: Add cursor-based pagination to list endpoints
+
 - **Priority**: P2 (Significant)
 - **Category**: API Design
 - **Evidence**: List endpoints return unbounded results
@@ -497,6 +519,7 @@ Files with contradictory information:
 - **Acceptance Criteria**: All list endpoints support pagination
 
 #### Task 18: Implement prompt testing suite
+
 - **Priority**: P2 (Significant)
 - **Category**: AI / Testing
 - **Evidence**: todo.md Phase 2 lists this as missing
@@ -505,6 +528,7 @@ Files with contradictory information:
 - **Acceptance Criteria**: Prompt regression tests exist and pass
 
 #### Task 19: Implement progress visualization
+
 - **Priority**: P3 (Improvement)
 - **Category**: UI/UX
 - **Evidence**: todo.md Phase 5 lists this as missing
@@ -513,6 +537,7 @@ Files with contradictory information:
 - **Acceptance Criteria**: Users can visualize their progress
 
 #### Task 20: Implement goal analytics
+
 - **Priority**: P3 (Improvement)
 - **Category**: Feature
 - **Evidence**: todo.md Phase 5 lists this as incomplete
@@ -524,9 +549,10 @@ Files with contradictory information:
 
 ### Wave 3: HARDEN [8 tasks]
 
-*Testing, error handling, and integration quality*
+_Testing, error handling, and integration quality_
 
 #### Task 21: Achieve 60%+ real test coverage
+
 - **Priority**: P1 (Critical)
 - **Category**: Testing
 - **Evidence**: Current coverage likely ~1.86%
@@ -535,6 +561,7 @@ Files with contradictory information:
 - **Acceptance Criteria**: `npm test -- --coverage` reports 60%+
 
 #### Task 22: Add E2E tests for critical user journeys
+
 - **Priority**: P1 (Critical)
 - **Category**: Testing
 - **Evidence**: E2E framework exists but tests may not pass
@@ -543,14 +570,16 @@ Files with contradictory information:
 - **Acceptance Criteria**: 5+ critical path E2E tests passing
 
 #### Task 23: Replace console.error with structured logger
+
 - **Priority**: P2 (Significant)
 - **Category**: Code Quality
 - **Evidence**: 216 console.error in production code
 - **Action**: Replace with logger.error from src/lib/monitoring/logger.ts
 - **Skill Hook**: `/refactor`
-- **Acceptance Criteria**: Zero console.* in non-test production code
+- **Acceptance Criteria**: Zero console.\* in non-test production code
 
 #### Task 24: Add error boundaries to all pages
+
 - **Priority**: P2 (Significant)
 - **Category**: UI/UX
 - **Evidence**: Unknown error boundary coverage
@@ -559,6 +588,7 @@ Files with contradictory information:
 - **Acceptance Criteria**: Every route segment has error.tsx
 
 #### Task 25: Validate environment variables at startup
+
 - **Priority**: P2 (Significant)
 - **Category**: DevOps
 - **Evidence**: scripts/check-env.js exists but not integrated into startup
@@ -567,6 +597,7 @@ Files with contradictory information:
 - **Acceptance Criteria**: App fails fast with clear error if env vars missing
 
 #### Task 26: Add integration tests for all API endpoints
+
 - **Priority**: P2 (Significant)
 - **Category**: Testing
 - **Evidence**: Most API routes lack tests
@@ -575,6 +606,7 @@ Files with contradictory information:
 - **Acceptance Criteria**: 50+ API route tests passing
 
 #### Task 27: Fix Webhook idempotency
+
 - **Priority**: P2 (Significant)
 - **Category**: Integration
 - **Evidence**: Stripe webhook handler needs idempotency check
@@ -583,6 +615,7 @@ Files with contradictory information:
 - **Acceptance Criteria**: Duplicate webhook deliveries are safely handled
 
 #### Task 28: Add circuit breaker for external services
+
 - **Priority**: P3 (Improvement)
 - **Category**: Integration
 - **Evidence**: No circuit breaker for AIML API, Stripe, S3 calls
@@ -594,9 +627,10 @@ Files with contradictory information:
 
 ### Wave 4: POLISH [7 tasks]
 
-*UI/UX, performance, and API design refinement*
+_UI/UX, performance, and API design refinement_
 
 #### Task 29: Break down 24 god objects (1000+ lines)
+
 - **Priority**: P1 (Critical)
 - **Category**: Code Quality
 - **Evidence**: 24 files over 1,000 lines
@@ -605,6 +639,7 @@ Files with contradictory information:
 - **Acceptance Criteria**: Zero files over 1,000 lines
 
 #### Task 30: Decompose 2,279-line landing page
+
 - **Priority**: P1 (Critical)
 - **Category**: UI/UX / Performance
 - **Evidence**: src/app/page.tsx = 2,279 lines
@@ -613,6 +648,7 @@ Files with contradictory information:
 - **Acceptance Criteria**: page.tsx under 100 lines, components lazy-loaded
 
 #### Task 31: Reduce 'use client' directives
+
 - **Priority**: P2 (Significant)
 - **Category**: Performance
 - **Evidence**: 191 'use client' directives
@@ -621,6 +657,7 @@ Files with contradictory information:
 - **Acceptance Criteria**: 'use client' count reduced by 50%+
 
 #### Task 32: Add Lighthouse CI to pipeline
+
 - **Priority**: P2 (Significant)
 - **Category**: Performance / DevOps
 - **Evidence**: No automated web vitals tracking
@@ -629,6 +666,7 @@ Files with contradictory information:
 - **Acceptance Criteria**: Lighthouse scores tracked on every PR
 
 #### Task 33: Implement OpenAPI spec generation
+
 - **Priority**: P2 (Significant)
 - **Category**: API Design
 - **Evidence**: No auto-generated API docs
@@ -637,6 +675,7 @@ Files with contradictory information:
 - **Acceptance Criteria**: OpenAPI spec served at /api/docs
 
 #### Task 34: Optimize bundle size
+
 - **Priority**: P2 (Significant)
 - **Category**: Performance
 - **Evidence**: 1,295 files, heavy client bundle likely
@@ -645,6 +684,7 @@ Files with contradictory information:
 - **Acceptance Criteria**: First Load JS under 100KB for main routes
 
 #### Task 35: Complete i18n implementation
+
 - **Priority**: P3 (Improvement)
 - **Category**: UI/UX
 - **Evidence**: i18n infrastructure exists but hardcoded strings remain
@@ -656,9 +696,10 @@ Files with contradictory information:
 
 ### Wave 5: SHIP [5 tasks]
 
-*DevOps, documentation, and production readiness*
+_DevOps, documentation, and production readiness_
 
 #### Task 36: Add pre-commit hooks (husky + lint-staged)
+
 - **Priority**: P1 (Critical)
 - **Category**: DevOps
 - **Evidence**: No pre-commit hooks
@@ -667,6 +708,7 @@ Files with contradictory information:
 - **Acceptance Criteria**: Pre-commit hook prevents bad commits
 
 #### Task 37: Write production deployment runbook
+
 - **Priority**: P2 (Significant)
 - **Category**: Documentation
 - **Evidence**: No deployment runbook
@@ -675,6 +717,7 @@ Files with contradictory information:
 - **Acceptance Criteria**: Any engineer can deploy following the runbook
 
 #### Task 38: Add production monitoring (Sentry APM)
+
 - **Priority**: P2 (Significant)
 - **Category**: DevOps
 - **Evidence**: Sentry configured in .env.production.example but not integrated
@@ -683,6 +726,7 @@ Files with contradictory information:
 - **Acceptance Criteria**: Errors auto-reported with context to Sentry
 
 #### Task 39: Run full deploy-check
+
 - **Priority**: P1 (Critical)
 - **Category**: DevOps
 - **Evidence**: LAUNCH_CHECKLIST.md exists but likely outdated
@@ -691,6 +735,7 @@ Files with contradictory information:
 - **Acceptance Criteria**: All checklist items green
 
 #### Task 40: Run dependency audit and fix vulnerabilities
+
 - **Priority**: P1 (Critical)
 - **Category**: Security / DevOps
 - **Evidence**: `npm audit` not recently run
@@ -719,14 +764,14 @@ Files with contradictory information:
 
 ## Risk Register
 
-| # | Risk | Probability | Impact | Mitigation |
-|---|------|-------------|--------|------------|
-| 1 | **Data breach via unauth'd endpoints** | HIGH | CRITICAL | Wave 1: Auth middleware on all 126 routes |
-| 2 | **Test suite broken, shipping untested code** | HIGH | HIGH | Wave 1: Fix test infra, establish baseline |
-| 3 | **Secret leak via git commit** | MEDIUM | CRITICAL | Wave 1: Pre-commit hooks + secret scanning |
-| 4 | **Codebase unmaintainable** | HIGH | HIGH | Wave 4: Break god objects, reduce sprawl |
-| 5 | **Performance degradation at scale** | MEDIUM | MEDIUM | Wave 4: RSC optimization, bundle reduction |
+| #   | Risk                                          | Probability | Impact   | Mitigation                                 |
+| --- | --------------------------------------------- | ----------- | -------- | ------------------------------------------ |
+| 1   | **Data breach via unauth'd endpoints**        | HIGH        | CRITICAL | Wave 1: Auth middleware on all 126 routes  |
+| 2   | **Test suite broken, shipping untested code** | HIGH        | HIGH     | Wave 1: Fix test infra, establish baseline |
+| 3   | **Secret leak via git commit**                | MEDIUM      | CRITICAL | Wave 1: Pre-commit hooks + secret scanning |
+| 4   | **Codebase unmaintainable**                   | HIGH        | HIGH     | Wave 4: Break god objects, reduce sprawl   |
+| 5   | **Performance degradation at scale**          | MEDIUM      | MEDIUM   | Wave 4: RSC optimization, bundle reduction |
 
 ---
 
-*Report generated by RALP Loop Engine. Fynvita requires significant stabilization before production deployment. Estimated effort: 3-4 weeks for Wave 1-2 (critical), 2-3 weeks for Wave 3-5 (hardening and polish).*
+_Report generated by RALP Loop Engine. Fynvita requires significant stabilization before production deployment. Estimated effort: 3-4 weeks for Wave 1-2 (critical), 2-3 weeks for Wave 3-5 (hardening and polish)._

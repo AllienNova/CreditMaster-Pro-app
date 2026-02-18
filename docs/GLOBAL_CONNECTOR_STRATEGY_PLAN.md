@@ -3,11 +3,13 @@
 ## Executive Summary
 
 This plan implements a **global connector strategy** for Fynvita with three rails:
+
 1. **Data Rail (Read)**: Account aggregation, investments, insurance, credit insights
 2. **Commercial Rail (Monetization)**: Affiliate/lead-gen, offer routing, disclosures, tracking
 3. **Payments Rail (Future)**: Bank payments, card payments, payouts
 
 **Current State Analysis** (from codebase exploration):
+
 - **Plaid**: Fully implemented with 11 core methods
 - **Market Data**: Polygon.io + Alpha Vantage + CoinGecko with fallback architecture
 - **AI Stock Analyst**: 2,336 lines with technical/fundamental/sentiment analysis
@@ -253,7 +255,7 @@ export interface ConnectorConfig {
 
 export interface ConnectorHealth {
   provider: string;
-  status: 'healthy' | 'degraded' | 'down';
+  status: "healthy" | "degraded" | "down";
   latency: number;
   lastCheck: Date;
   errorMessage?: string;
@@ -288,7 +290,7 @@ export class ConnectorRegistry {
     type: string,
     method: string,
     args: any[],
-    options?: ExecutionOptions
+    options?: ExecutionOptions,
   ): Promise<ConnectorResult<T>>;
 
   async healthCheckAll(): Promise<Map<string, ConnectorHealth>>;
@@ -298,6 +300,7 @@ export class ConnectorRegistry {
 ```
 
 **Tasks**:
+
 - [ ] Create `src/lib/connectors/types.ts` with base interfaces
 - [ ] Create `src/lib/connectors/registry.ts` with fallback orchestration
 - [ ] Create `src/lib/connectors/health-monitor.ts` for background health checks
@@ -312,6 +315,7 @@ export class ConnectorRegistry {
 **Goal**: Add EU/UK bank connectivity alongside Plaid
 
 **API Endpoints Needed**:
+
 - `/auth` - OAuth2 flow initiation
 - `/data/v1/accounts` - Account listing
 - `/data/v1/accounts/{id}/balance` - Balance retrieval
@@ -324,7 +328,7 @@ export class ConnectorRegistry {
 ```typescript
 // src/lib/connectors/banking/truelayer-connector.ts
 export class TrueLayerConnector extends BaseConnector<TrueLayerConfig> {
-  name = 'truelayer';
+  name = "truelayer";
 
   async createAuthLink(userId: string, redirectUri: string): Promise<AuthLink>;
   async exchangeCode(code: string): Promise<AccessToken>;
@@ -335,7 +339,7 @@ export class TrueLayerConnector extends BaseConnector<TrueLayerConfig> {
     accessToken: string,
     accountId: string,
     from: Date,
-    to: Date
+    to: Date,
   ): Promise<Transaction[]>;
   async getCards(accessToken: string): Promise<CreditCard[]>;
 }
@@ -349,17 +353,14 @@ export class BankingAggregator {
 
   async getProviderForRegion(region: string): string;
 
-  async linkAccount(
-    userId: string,
-    provider?: string
-  ): Promise<LinkSession>;
+  async linkAccount(userId: string, provider?: string): Promise<LinkSession>;
 
   async getAccounts(userId: string): Promise<UnifiedAccount[]>;
 
   async getTransactions(
     userId: string,
     accountId: string,
-    dateRange: DateRange
+    dateRange: DateRange,
   ): Promise<UnifiedTransaction[]>;
 
   async syncAllAccounts(userId: string): Promise<SyncResult>;
@@ -367,6 +368,7 @@ export class BankingAggregator {
 ```
 
 **Environment Variables**:
+
 ```env
 TRUELAYER_CLIENT_ID=
 TRUELAYER_CLIENT_SECRET=
@@ -375,6 +377,7 @@ TRUELAYER_ENVIRONMENT=sandbox # or 'live'
 ```
 
 **Tasks**:
+
 - [ ] Create TrueLayer connector with OAuth2 flow
 - [ ] Implement account/transaction fetching
 - [ ] Create unified banking aggregator
@@ -390,6 +393,7 @@ TRUELAYER_ENVIRONMENT=sandbox # or 'live'
 **Goal**: Add Finnhub as fallback + unique data source
 
 **Unique Finnhub Data**:
+
 - Insider transactions
 - Recommendation trends
 - Earnings surprises
@@ -402,11 +406,16 @@ TRUELAYER_ENVIRONMENT=sandbox # or 'live'
 ```typescript
 // src/lib/connectors/market-data/finnhub-connector.ts
 export class FinnhubConnector extends BaseConnector<FinnhubConfig> {
-  name = 'finnhub';
+  name = "finnhub";
 
   // Core market data
   async getQuote(symbol: string): Promise<Quote>;
-  async getCandles(symbol: string, resolution: string, from: number, to: number): Promise<Candle[]>;
+  async getCandles(
+    symbol: string,
+    resolution: string,
+    from: number,
+    to: number,
+  ): Promise<Candle[]>;
 
   // Unique to Finnhub
   async getInsiderTransactions(symbol: string): Promise<InsiderTransaction[]>;
@@ -414,10 +423,17 @@ export class FinnhubConnector extends BaseConnector<FinnhubConfig> {
   async getEarningsSurprises(symbol: string): Promise<EarningsSurprise[]>;
   async getSECFilings(symbol: string): Promise<SECFiling[]>;
   async getEconomicCalendar(): Promise<EconomicEvent[]>;
-  async getPatternRecognition(symbol: string, resolution: string): Promise<Pattern[]>;
+  async getPatternRecognition(
+    symbol: string,
+    resolution: string,
+  ): Promise<Pattern[]>;
 
   // News & Sentiment
-  async getCompanyNews(symbol: string, from: Date, to: Date): Promise<NewsArticle[]>;
+  async getCompanyNews(
+    symbol: string,
+    from: Date,
+    to: Date,
+  ): Promise<NewsArticle[]>;
   async getMarketNews(category: string): Promise<NewsArticle[]>;
   async getSentiment(symbol: string): Promise<SentimentData>;
 }
@@ -453,6 +469,7 @@ export class AIStockAnalyst {
 ```
 
 **Tasks**:
+
 - [ ] Create Finnhub connector with all endpoints
 - [ ] Add to market-data-service.ts fallback chain
 - [ ] Integrate insider/earnings data into AI analyst
@@ -478,7 +495,10 @@ export class AffiliateService {
   async listPartners(filters: PartnerFilters): Promise<Partner[]>;
 
   // Referral codes
-  async generateReferralCode(userId: string, partnerId?: string): Promise<ReferralCode>;
+  async generateReferralCode(
+    userId: string,
+    partnerId?: string,
+  ): Promise<ReferralCode>;
   async validateReferralCode(code: string): Promise<ReferralValidation>;
   async applyReferralCode(userId: string, code: string): Promise<void>;
 
@@ -496,13 +516,25 @@ export class TrackingService {
 
   // Conversion tracking
   async trackConversion(data: ConversionData): Promise<Conversion>;
-  async confirmConversion(conversionId: string, partnerRef: string): Promise<void>;
+  async confirmConversion(
+    conversionId: string,
+    partnerRef: string,
+  ): Promise<void>;
   async rejectConversion(conversionId: string, reason: string): Promise<void>;
 
   // Reporting
-  async getClickStats(partnerId: string, dateRange: DateRange): Promise<ClickStats>;
-  async getConversionStats(partnerId: string, dateRange: DateRange): Promise<ConversionStats>;
-  async calculateCommissions(partnerId: string, period: DateRange): Promise<CommissionReport>;
+  async getClickStats(
+    partnerId: string,
+    dateRange: DateRange,
+  ): Promise<ClickStats>;
+  async getConversionStats(
+    partnerId: string,
+    dateRange: DateRange,
+  ): Promise<ConversionStats>;
+  async calculateCommissions(
+    partnerId: string,
+    period: DateRange,
+  ): Promise<CommissionReport>;
 }
 ```
 
@@ -520,7 +552,11 @@ export class OfferService {
   async searchOffers(query: OfferSearchQuery): Promise<Offer[]>;
 
   // Tracking
-  async recordView(userId: string, offerId: string, context: string): Promise<void>;
+  async recordView(
+    userId: string,
+    offerId: string,
+    context: string,
+  ): Promise<void>;
   async recordClick(userId: string, offerId: string): Promise<string>; // Returns tracking URL
 }
 ```
@@ -529,15 +565,21 @@ export class OfferService {
 // src/lib/commerce/offers/disclosure-service.ts
 export class DisclosureService {
   // Disclosure text generation
-  getAffiliateDisclosure(context: 'inline' | 'footer' | 'modal'): string;
+  getAffiliateDisclosure(context: "inline" | "footer" | "modal"): string;
   getFinancialAdviceDisclaimer(): string;
   getEligibilityDisclaimer(): string;
 
   // Compliance checking
-  validateOfferDisplay(offer: Offer, displayContext: DisplayContext): ComplianceResult;
+  validateOfferDisplay(
+    offer: Offer,
+    displayContext: DisplayContext,
+  ): ComplianceResult;
 
   // Audit logging
-  async logDisclosureView(userId: string, disclosureType: string): Promise<void>;
+  async logDisclosureView(
+    userId: string,
+    disclosureType: string,
+  ): Promise<void>;
 }
 ```
 
@@ -562,6 +604,7 @@ export class DisclosureService {
 ```
 
 **Tasks**:
+
 - [ ] Create database migrations for affiliate tables
 - [ ] Implement AffiliateService with partner CRUD
 - [ ] Implement TrackingService with click/conversion tracking
@@ -585,7 +628,7 @@ export class DisclosureService {
 ```typescript
 // src/lib/connectors/insurance/canopy-connector.ts
 export class CanopyConnector extends BaseConnector<CanopyConfig> {
-  name = 'canopy';
+  name = "canopy";
 
   // OAuth flow
   async createPullSession(userId: string): Promise<PullSession>;
@@ -593,7 +636,10 @@ export class CanopyConnector extends BaseConnector<CanopyConfig> {
 
   // Policy data
   async getPolicies(accessToken: string): Promise<Policy[]>;
-  async getPolicy(accessToken: string, policyId: string): Promise<PolicyDetails>;
+  async getPolicy(
+    accessToken: string,
+    policyId: string,
+  ): Promise<PolicyDetails>;
   async getCoverageAnalysis(accessToken: string): Promise<CoverageAnalysis>;
 }
 ```
@@ -609,6 +655,7 @@ export class InsuranceMatcher {
 ```
 
 **Tasks**:
+
 - [ ] Create Canopy connector with OAuth flow
 - [ ] Implement policy import and normalization
 - [ ] Build coverage gap analyzer
@@ -655,12 +702,14 @@ export class OfferEngine {
   }
 
   private scoreOffers(offers: Offer[], profile: UserProfile): ScoredOffer[] {
-    return offers.map(offer => ({
-      offer,
-      score: this.calculateScore(offer, profile),
-      matchReasons: this.getMatchReasons(offer, profile),
-      savingsEstimate: this.estimateSavings(offer, profile),
-    })).sort((a, b) => b.score - a.score);
+    return offers
+      .map((offer) => ({
+        offer,
+        score: this.calculateScore(offer, profile),
+        matchReasons: this.getMatchReasons(offer, profile),
+        savingsEstimate: this.estimateSavings(offer, profile),
+      }))
+      .sort((a, b) => b.score - a.score);
   }
 }
 ```
@@ -670,16 +719,16 @@ export class OfferEngine {
 export class EligibilityRules {
   // Rule definitions
   private rules: Map<string, EligibilityRule> = new Map([
-    ['credit_score_min', this.checkCreditScoreMin],
-    ['income_min', this.checkIncomeMin],
-    ['debt_to_income_max', this.checkDTI],
-    ['region', this.checkRegion],
-    ['existing_customer', this.checkExistingCustomer],
+    ["credit_score_min", this.checkCreditScoreMin],
+    ["income_min", this.checkIncomeMin],
+    ["debt_to_income_max", this.checkDTI],
+    ["region", this.checkRegion],
+    ["existing_customer", this.checkExistingCustomer],
   ]);
 
   async evaluate(
     offer: Offer,
-    profile: UserProfile
+    profile: UserProfile,
   ): Promise<EligibilityResult> {
     const results: RuleResult[] = [];
 
@@ -690,15 +739,18 @@ export class EligibilityRules {
     }
 
     return {
-      eligible: results.every(r => r.passed),
+      eligible: results.every((r) => r.passed),
       results,
-      missingData: results.filter(r => r.status === 'unknown').map(r => r.dataNeeded),
+      missingData: results
+        .filter((r) => r.status === "unknown")
+        .map((r) => r.dataNeeded),
     };
   }
 }
 ```
 
 **Tasks**:
+
 - [ ] Create OfferEngine with scoring algorithm
 - [ ] Implement EligibilityRules with soft checks
 - [ ] Build user profile aggregation from all data sources
@@ -734,7 +786,7 @@ export class CreditCardMatcher {
     const transactions = await this.getTransactions(userId, 90); // 90 days
 
     return {
-      totalSpend: sum(transactions.map(t => t.amount)),
+      totalSpend: sum(transactions.map((t) => t.amount)),
       categoryBreakdown: this.categorize(transactions),
       topMerchants: this.getTopMerchants(transactions),
       travelSpend: this.calculateTravelSpend(transactions),
@@ -746,9 +798,9 @@ export class CreditCardMatcher {
 
   private calculateRewards(
     matches: CardMatch[],
-    spending: SpendingAnalysis
+    spending: SpendingAnalysis,
   ): CardRecommendation[] {
-    return matches.map(match => {
+    return matches.map((match) => {
       const annualRewards = this.simulateAnnualRewards(match.card, spending);
       const netValue = annualRewards - (match.card.annual_fee || 0);
 
@@ -766,6 +818,7 @@ export class CreditCardMatcher {
 ```
 
 **Tasks**:
+
 - [ ] Build spending analyzer from transaction data
 - [ ] Create card type matching logic
 - [ ] Implement rewards calculator
@@ -792,7 +845,10 @@ export class TrueLayerPayments {
 
   // Mandate management (for recurring)
   async createMandate(userId: string, bankId: string): Promise<Mandate>;
-  async executeMandatedPayment(mandateId: string, amount: number): Promise<Payment>;
+  async executeMandatedPayment(
+    mandateId: string,
+    amount: number,
+  ): Promise<Payment>;
   async cancelMandate(mandateId: string): Promise<void>;
 
   // Webhooks
@@ -801,6 +857,7 @@ export class TrueLayerPayments {
 ```
 
 **Tasks**:
+
 - [ ] Implement TrueLayer payment initiation
 - [ ] Add payment status tracking
 - [ ] Create mandate management for recurring
@@ -823,11 +880,11 @@ export class PaymentRouter {
     const rail = this.selectRail(request);
 
     switch (rail) {
-      case 'stripe_card':
+      case "stripe_card":
         return this.stripePayments.createCardPayment(request);
-      case 'stripe_ach':
+      case "stripe_ach":
         return this.stripePayments.createACHPayment(request);
-      case 'truelayer':
+      case "truelayer":
         return this.trueLayerPayments.createPayment(request);
       default:
         throw new Error(`Unsupported payment rail: ${rail}`);
@@ -838,20 +895,21 @@ export class PaymentRouter {
     // US: Stripe (card or ACH)
     // EU/UK: TrueLayer (pay-by-bank) or Stripe (card)
 
-    if (request.preferredMethod === 'bank' && request.region === 'EU') {
-      return 'truelayer';
+    if (request.preferredMethod === "bank" && request.region === "EU") {
+      return "truelayer";
     }
 
-    if (request.preferredMethod === 'bank' && request.region === 'US') {
-      return 'stripe_ach';
+    if (request.preferredMethod === "bank" && request.region === "US") {
+      return "stripe_ach";
     }
 
-    return 'stripe_card';
+    return "stripe_card";
   }
 }
 ```
 
 **Tasks**:
+
 - [ ] Create PaymentRouter with rail selection
 - [ ] Implement unified PaymentSession interface
 - [ ] Add region-based routing logic
@@ -875,7 +933,7 @@ export class PayoutService {
     return {
       period,
       partners: commissions,
-      totalAmount: sum(commissions.map(c => c.amount)),
+      totalAmount: sum(commissions.map((c) => c.amount)),
     };
   }
 
@@ -885,7 +943,7 @@ export class PayoutService {
     // Use Stripe Connect for payouts
     const transfer = await this.stripe.transfers.create({
       amount: Math.round(amount * 100),
-      currency: 'usd',
+      currency: "usd",
       destination: partner.stripeAccountId,
     });
 
@@ -897,6 +955,7 @@ export class PayoutService {
 ```
 
 **Tasks**:
+
 - [ ] Implement commission aggregation
 - [ ] Add Stripe Connect for partner payouts
 - [ ] Create payout approval workflow
@@ -943,18 +1002,21 @@ TRUELAYER_PAYMENTS_CLIENT_SECRET=
 ## Success Metrics
 
 ### Phase 1 (MVP)
+
 - [ ] 95%+ uptime across all connectors
 - [ ] <2s average API response time
 - [ ] EU/UK bank coverage via TrueLayer
 - [ ] Affiliate tracking operational
 
 ### Phase 2 (Monetization)
+
 - [ ] 10+ affiliate partners integrated
 - [ ] Insurance gap analysis live
 - [ ] Credit card recommendations live
 - [ ] Conversion tracking accurate to 99%+
 
 ### Phase 3 (Payments)
+
 - [ ] Pay-by-bank available in EU/UK
 - [ ] ACH payments available in US
 - [ ] Automated affiliate payouts
@@ -964,14 +1026,14 @@ TRUELAYER_PAYMENTS_CLIENT_SECRET=
 
 ## Risk Mitigation
 
-| Risk | Mitigation |
-|------|------------|
-| Provider downtime | Multi-provider fallback architecture |
-| Rate limiting | Request queuing + caching |
-| Data inconsistency | Unified data normalization layer |
-| Compliance gaps | Disclosure service + consent management |
+| Risk                       | Mitigation                                  |
+| -------------------------- | ------------------------------------------- |
+| Provider downtime          | Multi-provider fallback architecture        |
+| Rate limiting              | Request queuing + caching                   |
+| Data inconsistency         | Unified data normalization layer            |
+| Compliance gaps            | Disclosure service + consent management     |
 | Partner integration delays | Start with major partners, expand gradually |
-| Payment failures | Retry logic + alternative rails |
+| Payment failures           | Retry logic + alternative rails             |
 
 ---
 
@@ -986,6 +1048,7 @@ TRUELAYER_PAYMENTS_CLIENT_SECRET=
 ## Next Steps
 
 Once you provide answers to the 3 questions above, I can:
+
 1. Prioritize specific integrations
 2. Begin Phase 1 implementation
 3. Create detailed API specifications

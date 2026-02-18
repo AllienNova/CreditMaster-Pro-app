@@ -8,79 +8,79 @@
 // ============================================================================
 
 export type FinancialPersonality =
-  | 'saver'
-  | 'spender'
-  | 'investor'
-  | 'balanced'
-  | 'cautious'
-  | 'aggressive';
+  | "saver"
+  | "spender"
+  | "investor"
+  | "balanced"
+  | "cautious"
+  | "aggressive";
 
 export type CommunicationTone =
-  | 'supportive'
-  | 'direct'
-  | 'motivational'
-  | 'analytical';
+  | "supportive"
+  | "direct"
+  | "motivational"
+  | "analytical";
 
 export type NudgeType =
-  | 'motivational'
-  | 'progress'
-  | 'warning'
-  | 'celebration'
-  | 'reminder'
-  | 'insight'
-  | 'coaching';
+  | "motivational"
+  | "progress"
+  | "warning"
+  | "celebration"
+  | "reminder"
+  | "insight"
+  | "coaching";
 
-export type NudgeChannel = 'in_app' | 'push' | 'email' | 'sms';
+export type NudgeChannel = "in_app" | "push" | "email" | "sms";
 
-export type NudgeAction = 'accepted' | 'dismissed' | 'snoozed' | 'ignored';
+export type NudgeAction = "accepted" | "dismissed" | "snoozed" | "ignored";
 
 export type SpendingPatternType =
-  | 'time_of_day'
-  | 'day_of_week'
-  | 'category'
-  | 'merchant'
-  | 'emotional'
-  | 'seasonal';
+  | "time_of_day"
+  | "day_of_week"
+  | "category"
+  | "merchant"
+  | "emotional"
+  | "seasonal";
 
 export type CoachingSessionType =
-  | 'onboarding'
-  | 'weekly_review'
-  | 'goal_check'
-  | 'crisis'
-  | 'celebration'
-  | 'education';
+  | "onboarding"
+  | "weekly_review"
+  | "goal_check"
+  | "crisis"
+  | "celebration"
+  | "education";
 
 export type GoalType =
-  | 'savings'
-  | 'debt_payoff'
-  | 'emergency_fund'
-  | 'investment'
-  | 'credit_score'
-  | 'custom';
+  | "savings"
+  | "debt_payoff"
+  | "emergency_fund"
+  | "investment"
+  | "credit_score"
+  | "custom";
 
-export type GoalStatus = 'active' | 'completed' | 'paused' | 'abandoned';
+export type GoalStatus = "active" | "completed" | "paused" | "abandoned";
 
 export type InterventionType =
-  | 'none'
-  | 'soft_nudge'
-  | 'reflection_prompt'
-  | 'strong_intervention';
+  | "none"
+  | "soft_nudge"
+  | "reflection_prompt"
+  | "strong_intervention";
 
 export type SpendingAlertResponse =
-  | 'planned'
-  | 'will_wait'
-  | 'dismissed'
-  | 'no_response';
+  | "planned"
+  | "will_wait"
+  | "dismissed"
+  | "no_response";
 
 export type BehavioralBias =
-  | 'loss_aversion'
-  | 'anchoring'
-  | 'mental_accounting'
-  | 'overconfidence'
-  | 'herding'
-  | 'present_bias'
-  | 'confirmation_bias'
-  | 'sunk_cost_fallacy';
+  | "loss_aversion"
+  | "anchoring"
+  | "mental_accounting"
+  | "overconfidence"
+  | "herding"
+  | "present_bias"
+  | "confirmation_bias"
+  | "sunk_cost_fallacy";
 
 // ============================================================================
 // USER FINANCIAL PROFILE
@@ -147,7 +147,7 @@ export interface SpendingPattern {
 
 export interface SpendingPatternMetadata {
   percentOfTotal?: number;
-  trend?: 'increasing' | 'decreasing' | 'stable';
+  trend?: "increasing" | "decreasing" | "stable";
   anomalyScore?: number;
   relatedCategories?: string[];
 }
@@ -173,7 +173,7 @@ export interface SpendingAnalysis {
 
 export interface RiskArea {
   category: string;
-  riskLevel: 'low' | 'medium' | 'high';
+  riskLevel: "low" | "medium" | "high";
   averageOverspend: number;
   frequency: number;
   suggestion: string;
@@ -271,7 +271,7 @@ export interface CoachingContent {
 }
 
 export interface CoachingInsight {
-  type: 'observation' | 'suggestion' | 'warning' | 'celebration';
+  type: "observation" | "suggestion" | "warning" | "celebration";
   title: string;
   description: string;
   data?: Record<string, unknown>;
@@ -281,7 +281,7 @@ export interface ActionItem {
   id: string;
   title: string;
   description: string;
-  priority: 'high' | 'medium' | 'low';
+  priority: "high" | "medium" | "low";
   dueDate?: string;
   completed: boolean;
   /** Estimated impact of completing this action (e.g., "Save $50/month", "+10 credit points") */
@@ -289,7 +289,7 @@ export interface ActionItem {
 }
 
 export interface UserCoachingResponse {
-  feedback: 'helpful' | 'not_helpful' | 'neutral';
+  feedback: "helpful" | "not_helpful" | "neutral";
   completedActions: string[];
   notes?: string;
 }
@@ -324,10 +324,10 @@ export interface GoalMilestone {
 export interface AIRecommendation {
   id: string;
   type:
-    | 'savings_increase'
-    | 'timeline_adjustment'
-    | 'strategy_change'
-    | 'celebration';
+    | "savings_increase"
+    | "timeline_adjustment"
+    | "strategy_change"
+    | "celebration";
   title: string;
   description: string;
   impact: string;
@@ -414,7 +414,7 @@ export interface BehavioralAssessment {
 
 export interface RiskToleranceResult {
   score: number; // 1-10
-  category: 'conservative' | 'moderate' | 'aggressive';
+  category: "conservative" | "moderate" | "aggressive";
   factors: {
     timeHorizon: number;
     lossComfort: number;
@@ -459,7 +459,7 @@ export interface InsightsResponse {
 }
 
 export interface SpendingAnalysisResponse {
-  patterns: SpendingAnalysis['patterns'];
+  patterns: SpendingAnalysis["patterns"];
   triggers: SpendingTrigger[];
   recommendations: string[];
   monthlyTrend: {
@@ -478,7 +478,7 @@ export interface NudgePreferencesResponse {
     email: boolean;
     sms: boolean;
   };
-  frequency: 'low' | 'medium' | 'high';
+  frequency: "low" | "medium" | "high";
 }
 
 // ============================================================================
@@ -540,7 +540,7 @@ export interface BehaviorPredictorOutput {
     category: string;
     expectedAmount: number;
     probability: number;
-    riskLevel: 'low' | 'medium' | 'high';
+    riskLevel: "low" | "medium" | "high";
   }[];
   suggestions: string[];
 }
@@ -580,7 +580,7 @@ export interface SpendingAlertModalProps {
 
 export interface PersonalityBadgeProps {
   personality: FinancialPersonality;
-  size: 'sm' | 'md' | 'lg';
+  size: "sm" | "md" | "lg";
 }
 
 export interface BiasIndicatorProps {

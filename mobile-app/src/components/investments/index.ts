@@ -2,9 +2,9 @@
  * Investment Components Module (Mobile)
  */
 
-export { PortfolioAnalyticsScreen } from './PortfolioAnalyticsScreen';
+export { PortfolioAnalyticsScreen } from "./PortfolioAnalyticsScreen";
 export type {
   PortfolioAnalyticsScreenProps,
   PortfolioHolding,
   PortfolioMetrics,
-} from './PortfolioAnalyticsScreen';
+} from "./PortfolioAnalyticsScreen";

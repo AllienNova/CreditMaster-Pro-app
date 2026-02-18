@@ -10,13 +10,13 @@
 // ============================================================================
 
 export type BudgetPeriod =
-  | 'weekly'
-  | 'biweekly'
-  | 'monthly'
-  | 'quarterly'
-  | 'yearly';
+  | "weekly"
+  | "biweekly"
+  | "monthly"
+  | "quarterly"
+  | "yearly";
 
-export type BudgetStatus = 'on_track' | 'warning' | 'over_budget' | 'inactive';
+export type BudgetStatus = "on_track" | "warning" | "over_budget" | "inactive";
 
 // ============================================================================
 // BUDGET CATEGORIES
@@ -24,59 +24,59 @@ export type BudgetStatus = 'on_track' | 'warning' | 'over_budget' | 'inactive';
 
 export const BUDGET_CATEGORIES = {
   // Essential
-  HOUSING: 'housing',
-  UTILITIES: 'utilities',
-  GROCERIES: 'groceries',
-  TRANSPORTATION: 'transportation',
-  INSURANCE: 'insurance',
-  HEALTHCARE: 'healthcare',
-  DEBT_PAYMENTS: 'debt_payments',
+  HOUSING: "housing",
+  UTILITIES: "utilities",
+  GROCERIES: "groceries",
+  TRANSPORTATION: "transportation",
+  INSURANCE: "insurance",
+  HEALTHCARE: "healthcare",
+  DEBT_PAYMENTS: "debt_payments",
   // Lifestyle
-  DINING_OUT: 'dining_out',
-  ENTERTAINMENT: 'entertainment',
-  SHOPPING: 'shopping',
-  PERSONAL_CARE: 'personal_care',
-  FITNESS: 'fitness',
-  SUBSCRIPTIONS: 'subscriptions',
+  DINING_OUT: "dining_out",
+  ENTERTAINMENT: "entertainment",
+  SHOPPING: "shopping",
+  PERSONAL_CARE: "personal_care",
+  FITNESS: "fitness",
+  SUBSCRIPTIONS: "subscriptions",
   // Savings & Goals
-  SAVINGS: 'savings',
-  INVESTMENTS: 'investments',
-  EMERGENCY_FUND: 'emergency_fund',
+  SAVINGS: "savings",
+  INVESTMENTS: "investments",
+  EMERGENCY_FUND: "emergency_fund",
   // Other
-  EDUCATION: 'education',
-  TRAVEL: 'travel',
-  GIFTS: 'gifts',
-  PETS: 'pets',
-  CHILDCARE: 'childcare',
-  OTHER: 'other',
+  EDUCATION: "education",
+  TRAVEL: "travel",
+  GIFTS: "gifts",
+  PETS: "pets",
+  CHILDCARE: "childcare",
+  OTHER: "other",
 } as const;
 
 export type BudgetCategoryKey = keyof typeof BUDGET_CATEGORIES;
 export type BudgetCategoryValue = (typeof BUDGET_CATEGORIES)[BudgetCategoryKey];
 
 export const CATEGORY_DISPLAY_NAMES: Record<BudgetCategoryValue, string> = {
-  housing: 'Housing',
-  utilities: 'Utilities',
-  groceries: 'Groceries',
-  transportation: 'Transportation',
-  insurance: 'Insurance',
-  healthcare: 'Healthcare',
-  debt_payments: 'Debt Payments',
-  dining_out: 'Dining Out',
-  entertainment: 'Entertainment',
-  shopping: 'Shopping',
-  personal_care: 'Personal Care',
-  fitness: 'Fitness',
-  subscriptions: 'Subscriptions',
-  savings: 'Savings',
-  investments: 'Investments',
-  emergency_fund: 'Emergency Fund',
-  education: 'Education',
-  travel: 'Travel',
-  gifts: 'Gifts',
-  pets: 'Pets',
-  childcare: 'Childcare',
-  other: 'Other',
+  housing: "Housing",
+  utilities: "Utilities",
+  groceries: "Groceries",
+  transportation: "Transportation",
+  insurance: "Insurance",
+  healthcare: "Healthcare",
+  debt_payments: "Debt Payments",
+  dining_out: "Dining Out",
+  entertainment: "Entertainment",
+  shopping: "Shopping",
+  personal_care: "Personal Care",
+  fitness: "Fitness",
+  subscriptions: "Subscriptions",
+  savings: "Savings",
+  investments: "Investments",
+  emergency_fund: "Emergency Fund",
+  education: "Education",
+  travel: "Travel",
+  gifts: "Gifts",
+  pets: "Pets",
+  childcare: "Childcare",
+  other: "Other",
 };
 
 export interface BudgetCategory {
@@ -138,23 +138,23 @@ export interface UpdateBudgetInput {
 // ============================================================================
 
 export type BudgetRuleType =
-  | 'percentage_of_income'
-  | 'fixed_amount'
-  | 'category_limit'
-  | 'merchant_limit'
-  | 'time_based'
-  | 'auto_adjust' // NEW: AI-powered automatic adjustments
-  | 'rollover' // NEW: Rollover unused budget
-  | 'transfer'; // NEW: Transfer between categories
+  | "percentage_of_income"
+  | "fixed_amount"
+  | "category_limit"
+  | "merchant_limit"
+  | "time_based"
+  | "auto_adjust" // NEW: AI-powered automatic adjustments
+  | "rollover" // NEW: Rollover unused budget
+  | "transfer"; // NEW: Transfer between categories
 
 export type BudgetRuleAction =
-  | 'alert'
-  | 'block'
-  | 'suggest'
-  | 'auto_save'
-  | 'auto_adjust' // NEW: Automatically adjust budget
-  | 'transfer' // NEW: Transfer funds
-  | 'notify'; // NEW: Send notification
+  | "alert"
+  | "block"
+  | "suggest"
+  | "auto_save"
+  | "auto_adjust" // NEW: Automatically adjust budget
+  | "transfer" // NEW: Transfer funds
+  | "notify"; // NEW: Send notification
 
 export interface BudgetRule {
   id: string;
@@ -193,18 +193,18 @@ export interface TimeRestriction {
 // ============================================================================
 
 export type BudgetAlertType =
-  | 'threshold_warning'
-  | 'over_budget'
-  | 'unusual_spending'
-  | 'goal_at_risk'
-  | 'savings_opportunity'
-  | 'period_summary'
-  | 'overspend' // NEW: Category overspending
-  | 'underspend' // NEW: Category underspending
-  | 'category_limit' // NEW: Category limit reached
-  | 'total_limit'; // NEW: Total budget limit reached
+  | "threshold_warning"
+  | "over_budget"
+  | "unusual_spending"
+  | "goal_at_risk"
+  | "savings_opportunity"
+  | "period_summary"
+  | "overspend" // NEW: Category overspending
+  | "underspend" // NEW: Category underspending
+  | "category_limit" // NEW: Category limit reached
+  | "total_limit"; // NEW: Total budget limit reached
 
-export type BudgetAlertSeverity = 'info' | 'warning' | 'critical';
+export type BudgetAlertSeverity = "info" | "warning" | "critical";
 
 export interface BudgetAlert {
   id: string;
@@ -302,11 +302,11 @@ export interface BudgetRecommendation {
         monthlySavings?: number;
         debtReduction?: number;
         goalProgress?: number;
-        riskLevel?: 'low' | 'medium' | 'high';
+        riskLevel?: "low" | "medium" | "high";
       }
-    | 'high'
-    | 'medium'
-    | 'low'; // Support both formats for backward compatibility
+    | "high"
+    | "medium"
+    | "low"; // Support both formats for backward compatibility
   potentialSavings?: number;
   actionSteps?: string[];
   createdAt?: Date;
@@ -315,13 +315,13 @@ export interface BudgetRecommendation {
 }
 
 export type BudgetRecommendationType =
-  | 'increase_budget'
-  | 'decrease_budget'
-  | 'create_budget'
-  | 'consolidate_subscriptions'
-  | 'reduce_dining'
-  | 'optimize_utilities'
-  | 'renegotiate_bills';
+  | "increase_budget"
+  | "decrease_budget"
+  | "create_budget"
+  | "consolidate_subscriptions"
+  | "reduce_dining"
+  | "optimize_utilities"
+  | "renegotiate_bills";
 
 // ============================================================================
 // BUDGET HISTORY & TRENDS
@@ -341,7 +341,7 @@ export interface BudgetTrend {
   history: BudgetHistoryEntry[];
   averageSpent: number;
   averageBudgeted: number;
-  trend: 'increasing' | 'decreasing' | 'stable';
+  trend: "increasing" | "decreasing" | "stable";
   trendPercentage: number;
 }
 
@@ -404,29 +404,29 @@ export interface BudgetAlertRow {
  * Used to classify budget categories for intelligent allocation
  */
 export type CategoryType =
-  | 'ESSENTIAL' // Must-have expenses (housing, utilities, groceries)
-  | 'DISCRETIONARY' // Optional expenses (entertainment, dining out)
-  | 'SAVINGS' // Savings and emergency fund
-  | 'DEBT' // Debt payments
-  | 'INVESTMENT'; // Investment contributions
+  | "ESSENTIAL" // Must-have expenses (housing, utilities, groceries)
+  | "DISCRETIONARY" // Optional expenses (entertainment, dining out)
+  | "SAVINGS" // Savings and emergency fund
+  | "DEBT" // Debt payments
+  | "INVESTMENT"; // Investment contributions
 
 /**
  * Alert Type for Smart Budget
  */
 export type AlertType =
-  | 'OVERSPEND' // Category overspending
-  | 'UNDERSPEND' // Category underspending
-  | 'CATEGORY_LIMIT' // Category limit reached
-  | 'TOTAL_LIMIT'; // Total budget limit reached
+  | "OVERSPEND" // Category overspending
+  | "UNDERSPEND" // Category underspending
+  | "CATEGORY_LIMIT" // Category limit reached
+  | "TOTAL_LIMIT"; // Total budget limit reached
 
 /**
  * Rule Type for Smart Budget Automation
  */
 export type RuleType =
-  | 'AUTO_ADJUST' // Automatically adjust budget based on spending patterns
-  | 'ROLLOVER' // Roll over unused budget to next period
-  | 'TRANSFER' // Transfer funds between categories
-  | 'ALERT'; // Send alerts when conditions are met
+  | "AUTO_ADJUST" // Automatically adjust budget based on spending patterns
+  | "ROLLOVER" // Roll over unused budget to next period
+  | "TRANSFER" // Transfer funds between categories
+  | "ALERT"; // Send alerts when conditions are met
 
 /**
  * Smart Budget - AI-generated budget with recommendations
@@ -449,7 +449,7 @@ export interface SmartBudget {
     dependents?: number;
     location?: string;
     preferences?: BudgetPreferences;
-    budgetType?: 'standard' | 'zero-based' | '50-30-20';
+    budgetType?: "standard" | "zero-based" | "50-30-20";
     priorities?: {
       essentials?: number;
       debtPayoff?: number;
@@ -475,7 +475,7 @@ export interface SmartBudgetCategory {
   alerts: BudgetAlert[];
   rules: BudgetRule[];
   trend?: {
-    direction: 'up' | 'down' | 'stable';
+    direction: "up" | "down" | "stable";
     percentChange: number;
     comparedToPreviousPeriod: boolean;
   };
@@ -492,8 +492,8 @@ export interface SmartBudgetCategory {
 export interface BudgetPreferences {
   monthlyIncome: number;
   savingsGoalPercentage?: number; // Default: 20%
-  debtPaymentPriority?: 'aggressive' | 'moderate' | 'minimum'; // Default: moderate
-  lifestylePreference?: 'frugal' | 'balanced' | 'comfortable'; // Default: balanced
+  debtPaymentPriority?: "aggressive" | "moderate" | "minimum"; // Default: moderate
+  lifestylePreference?: "frugal" | "balanced" | "comfortable"; // Default: balanced
   essentialCategories?: BudgetCategoryValue[]; // Categories user considers essential
   excludeCategories?: BudgetCategoryValue[]; // Categories to exclude
   customRules?: {
@@ -522,7 +522,7 @@ export interface BudgetAnalysis {
   };
   categoryAnalysis: CategoryAnalysis[];
   trends: {
-    spendingTrend: 'increasing' | 'decreasing' | 'stable';
+    spendingTrend: "increasing" | "decreasing" | "stable";
     topOverspentCategories: CategoryAnalysis[];
     topUnderspentCategories: CategoryAnalysis[];
     anomalies: SpendingAnomaly[];
@@ -541,7 +541,7 @@ export interface CategoryAnalysis {
   percentUsed: number;
   variance: number;
   variancePercent: number;
-  status: 'under_budget' | 'on_track' | 'near_limit' | 'over_budget';
+  status: "under_budget" | "on_track" | "near_limit" | "over_budget";
   transactionCount: number;
   averageTransactionAmount: number;
 }
@@ -551,11 +551,11 @@ export interface CategoryAnalysis {
  */
 export interface SpendingAnomaly {
   category: BudgetCategoryValue;
-  type: 'unusual_spike' | 'unusual_drop' | 'new_merchant' | 'large_transaction';
+  type: "unusual_spike" | "unusual_drop" | "new_merchant" | "large_transaction";
   description: string;
   amount: number;
   date: Date;
-  severity: 'low' | 'medium' | 'high';
+  severity: "low" | "medium" | "high";
   suggestion?: string;
 }
 
@@ -588,8 +588,8 @@ export interface CategoryPrediction {
   currentSpent: number;
   projectedSpent: number;
   projectedRemaining: number;
-  likelihood: 'very_likely' | 'likely' | 'possible' | 'unlikely';
-  basedOn: 'historical_average' | 'current_trajectory' | 'seasonal_pattern';
+  likelihood: "very_likely" | "likely" | "possible" | "unlikely";
+  basedOn: "historical_average" | "current_trajectory" | "seasonal_pattern";
 }
 
 /**
@@ -597,8 +597,8 @@ export interface CategoryPrediction {
  */
 export interface PredictionWarning {
   category: BudgetCategoryValue;
-  type: 'overspend_risk' | 'underspend_opportunity' | 'unusual_pattern';
-  severity: 'low' | 'medium' | 'high';
+  type: "overspend_risk" | "underspend_opportunity" | "unusual_pattern";
+  severity: "low" | "medium" | "high";
   message: string;
   suggestedAction: string;
   potentialImpact: number; // Dollar amount

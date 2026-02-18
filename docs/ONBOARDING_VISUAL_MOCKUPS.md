@@ -5,6 +5,7 @@ This document provides visual descriptions of the enhanced onboarding screens.
 ## Screen 1: Welcome Page
 
 ### BEFORE (Current)
+
 ```
 ┌─────────────────────────────────────────┐
 │  CreditMaster Pro                    [×]│
@@ -32,6 +33,7 @@ This document provides visual descriptions of the enhanced onboarding screens.
 ```
 
 ### AFTER (Enhanced)
+
 ```
 ┌─────────────────────────────────────────┐
 │  CreditMaster Pro              [Skip] │
@@ -70,6 +72,7 @@ This document provides visual descriptions of the enhanced onboarding screens.
 ```
 
 **Key Changes:**
+
 - Added progress indicator (Step 1 of 5)
 - Personalized greeting with user's name
 - Social proof (50,000+ users, 67 points)
@@ -82,6 +85,7 @@ This document provides visual descriptions of the enhanced onboarding screens.
 ## Screen 2: Profile Setup
 
 ### BEFORE (Current)
+
 ```
 ┌─────────────────────────────────────────┐
 │  Profile Setup                          │
@@ -103,6 +107,7 @@ This document provides visual descriptions of the enhanced onboarding screens.
 ```
 
 ### AFTER (Enhanced) - Step 2a: Basic Info
+
 ```
 ┌─────────────────────────────────────────┐
 │  CreditMaster Pro              [Skip] │
@@ -136,6 +141,7 @@ This document provides visual descriptions of the enhanced onboarding screens.
 ```
 
 ### AFTER (Enhanced) - Step 2b: Additional Info
+
 ```
 ┌─────────────────────────────────────────┐
 │  CreditMaster Pro              [Skip] │
@@ -174,6 +180,7 @@ This document provides visual descriptions of the enhanced onboarding screens.
 ```
 
 **Key Changes:**
+
 - Split into 2 sub-steps (basic vs additional)
 - Inline validation with checkmarks
 - Auto-formatting (phone number)
@@ -188,6 +195,7 @@ This document provides visual descriptions of the enhanced onboarding screens.
 ## Screen 3: Goals Selection
 
 ### BEFORE (Current)
+
 ```
 ┌─────────────────────────────────────────┐
 │  Set Your Goals                         │
@@ -222,6 +230,7 @@ This document provides visual descriptions of the enhanced onboarding screens.
 ```
 
 ### AFTER (Enhanced)
+
 ```
 ┌─────────────────────────────────────────┐
 │  CreditMaster Pro              [Skip] │
@@ -279,6 +288,7 @@ This document provides visual descriptions of the enhanced onboarding screens.
 ```
 
 **Key Changes:**
+
 - Visual goal cards with icons
 - Multi-select with checkmarks
 - AI-powered recommendations
@@ -293,6 +303,7 @@ This document provides visual descriptions of the enhanced onboarding screens.
 ## Screen 4: Connect Accounts
 
 ### BEFORE (Current)
+
 ```
 ┌─────────────────────────────────────────┐
 │  Connect Your Accounts                  │
@@ -314,6 +325,7 @@ This document provides visual descriptions of the enhanced onboarding screens.
 ```
 
 ### AFTER (Enhanced)
+
 ```
 ┌─────────────────────────────────────────┐
 │  CreditMaster Pro              [Skip] │
@@ -376,6 +388,7 @@ This document provides visual descriptions of the enhanced onboarding screens.
 ```
 
 **Key Changes:**
+
 - "Why connect?" explanation
 - Connection status indicators
 - Success animations
@@ -391,6 +404,7 @@ This document provides visual descriptions of the enhanced onboarding screens.
 ## Screen 5: Completion
 
 ### BEFORE (Current)
+
 ```
 ┌─────────────────────────────────────────┐
 │  Analyzing Your Credit...               │
@@ -422,6 +436,7 @@ This document provides visual descriptions of the enhanced onboarding screens.
 ```
 
 ### AFTER (Enhanced)
+
 ```
 ┌─────────────────────────────────────────┐
 │  CreditMaster Pro                       │
@@ -488,6 +503,7 @@ This document provides visual descriptions of the enhanced onboarding screens.
 ```
 
 **Key Changes:**
+
 - Personalized congratulations with name and goal
 - Real data (if available) or clear expectations
 - Personalized action plan with 3 priority items
@@ -729,6 +745,7 @@ Keyboard Shortcuts:
 ## Responsive Breakpoints
 
 ### Mobile (< 640px)
+
 - Single column layout
 - Full-width buttons
 - Larger touch targets (44px min)
@@ -736,12 +753,14 @@ Keyboard Shortcuts:
 - Simplified navigation
 
 ### Tablet (640px - 1024px)
+
 - Two-column forms
 - Side-by-side goal cards
 - Floating progress indicator
 - Larger tooltips
 
 ### Desktop (> 1024px)
+
 - Three-column layout
 - Sidebar with tips
 - Inline help panels
@@ -753,6 +772,7 @@ Keyboard Shortcuts:
 ## Animation Specifications
 
 ### Page Transitions
+
 ```css
 .page-enter {
   opacity: 0;
@@ -778,6 +798,7 @@ Keyboard Shortcuts:
 ```
 
 ### Success Checkmark
+
 ```css
 @keyframes checkmark {
   0% {
@@ -800,6 +821,7 @@ Keyboard Shortcuts:
 ```
 
 ### Progress Bar Fill
+
 ```css
 .progress-fill {
   transition: width 500ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -807,12 +829,13 @@ Keyboard Shortcuts:
 ```
 
 ### Celebration Confetti
+
 ```javascript
 // Use canvas-confetti library
 confetti({
   particleCount: 100,
   spread: 70,
-  origin: { y: 0.6 }
+  origin: { y: 0.6 },
 });
 ```
 
@@ -822,4 +845,3 @@ confetti({
 **Created:** 2026-01-07
 **Purpose:** Visual reference for onboarding redesign
 **Status:** Ready for design review
-

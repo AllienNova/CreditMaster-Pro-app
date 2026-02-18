@@ -5,8 +5,8 @@
  * Combines WebSocket streaming, broker API, and order management.
  */
 
-import { Subject, Observable, BehaviorSubject, Subscription } from 'rxjs';
-import { filter, takeUntil, debounceTime } from 'rxjs/operators';
+import { Subject, Observable, BehaviorSubject, Subscription } from "rxjs";
+import { filter, takeUntil, debounceTime } from "rxjs/operators";
 import {
   RealtimeTradingService,
   createRealtimeTradingService,
@@ -14,8 +14,8 @@ import {
   OrderUpdate as RealtimeOrderUpdate,
   TradeUpdate,
   ConnectionState,
-} from './realtime-trading-service';
-import { AlpacaBroker, createAlpacaBroker } from '../brokers/alpaca-broker';
+} from "./realtime-trading-service";
+import { AlpacaBroker, createAlpacaBroker } from "../brokers/alpaca-broker";
 import {
   OrderManager,
   createOrderManager,
@@ -23,25 +23,25 @@ import {
   BrokerOrderParams,
   BrokerOrderResponse,
   BrokerOrder,
-} from '../orders/order-manager';
+} from "../orders/order-manager";
 import {
   Order,
   OrderRequest,
   OrderStatus,
   OrderValidationResult,
-} from '../orders/order-types';
+} from "../orders/order-types";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type ExecutionMode = 'live' | 'paper' | 'simulation';
+export type ExecutionMode = "live" | "paper" | "simulation";
 
 export interface ExecutionConfig {
   mode: ExecutionMode;
   apiKey: string;
   apiSecret: string;
-  dataFeed: 'iex' | 'sip';
+  dataFeed: "iex" | "sip";
   autoReconnect: boolean;
   priceValidation: boolean;
   maxPriceDeviation: number;
@@ -64,11 +64,11 @@ export interface PendingExecution {
   request: OrderRequest;
   quote?: RealtimeQuote;
   status:
-    | 'pending_confirmation'
-    | 'pending_execution'
-    | 'executing'
-    | 'completed'
-    | 'failed';
+    | "pending_confirmation"
+    | "pending_execution"
+    | "executing"
+    | "completed"
+    | "failed";
   createdAt: Date;
   confirmedAt?: Date;
   executedAt?: Date;
@@ -77,13 +77,13 @@ export interface PendingExecution {
 
 export interface ExecutionEvent {
   type:
-    | 'quote_update'
-    | 'order_created'
-    | 'order_submitted'
-    | 'order_filled'
-    | 'order_cancelled'
-    | 'order_error'
-    | 'execution_confirmed';
+    | "quote_update"
+    | "order_created"
+    | "order_submitted"
+    | "order_filled"
+    | "order_cancelled"
+    | "order_error"
+    | "execution_confirmed";
   executionId?: string;
   orderId?: string;
   symbol?: string;
@@ -102,10 +102,10 @@ export interface LivePriceInfo {
 }
 
 export const DEFAULT_EXECUTION_CONFIG: ExecutionConfig = {
-  mode: 'paper',
-  apiKey: '',
-  apiSecret: '',
-  dataFeed: 'iex',
+  mode: "paper",
+  apiKey: "",
+  apiSecret: "",
+  dataFeed: "iex",
   autoReconnect: true,
   priceValidation: true,
   maxPriceDeviation: 0.02, // 2% max deviation from quoted price
@@ -138,7 +138,7 @@ export class OrderExecutionEngine {
     data: ConnectionState;
     trading: ConnectionState;
     broker: boolean;
-  }>({ data: 'disconnected', trading: 'disconnected', broker: false });
+  }>({ data: "disconnected", trading: "disconnected", broker: false });
 
   // Subscriptions
   private subscriptions: Subscription[] = [];
@@ -149,7 +149,7 @@ export class OrderExecutionEngine {
 
     // Initialize components
     this.realtimeService = createRealtimeTradingService({
-      paperTrading: this.config.mode === 'paper',
+      paperTrading: this.config.mode === "paper",
       dataFeed: this.config.dataFeed,
     });
     this.broker = createAlpacaBroker();
@@ -173,7 +173,7 @@ export class OrderExecutionEngine {
     }
 
     if (!this.config.apiKey || !this.config.apiSecret) {
-      throw new Error('API credentials required for initialization');
+      throw new Error("API credentials required for initialization");
     }
 
     try {
@@ -181,7 +181,7 @@ export class OrderExecutionEngine {
       await this.broker.connect({
         apiKey: this.config.apiKey,
         apiSecret: this.config.apiSecret,
-        paperTrading: this.config.mode === 'paper',
+        paperTrading: this.config.mode === "paper",
       });
 
       // Connect to real-time streams
@@ -274,10 +274,10 @@ export class OrderExecutionEngine {
     request: OrderRequest,
     userId: string,
     accountId: string,
-    skipConfirmation = false
+    skipConfirmation = false,
   ): Promise<ExecutionResult> {
     if (!this.isInitialized) {
-      return { success: false, error: 'Engine not initialized' };
+      return { success: false, error: "Engine not initialized" };
     }
 
     const executionId = this.generateExecutionId();
@@ -286,7 +286,7 @@ export class OrderExecutionEngine {
     const pending: PendingExecution = {
       id: executionId,
       request,
-      status: 'pending_confirmation',
+      status: "pending_confirmation",
       createdAt: new Date(),
     };
 
@@ -309,7 +309,7 @@ export class OrderExecutionEngine {
     if (this.config.priceValidation && livePrice) {
       const validationResult = this.validatePrice(request, livePrice);
       if (!validationResult.valid) {
-        pending.status = 'failed';
+        pending.status = "failed";
         pending.result = {
           success: false,
           error: validationResult.reason,
@@ -322,7 +322,7 @@ export class OrderExecutionEngine {
     // If confirmation required and not skipped
     if (this.config.orderConfirmation && !skipConfirmation) {
       this.emitEvent({
-        type: 'execution_confirmed',
+        type: "execution_confirmed",
         executionId,
         symbol: request.symbol,
         data: { request, quote: pending.quote },
@@ -345,14 +345,14 @@ export class OrderExecutionEngine {
   async confirmExecution(
     executionId: string,
     userId: string,
-    accountId: string
+    accountId: string,
   ): Promise<ExecutionResult> {
     const pending = this.pendingExecutions.get(executionId);
     if (!pending) {
-      return { success: false, error: 'Execution not found' };
+      return { success: false, error: "Execution not found" };
     }
 
-    if (pending.status !== 'pending_confirmation') {
+    if (pending.status !== "pending_confirmation") {
       return { success: false, error: `Invalid status: ${pending.status}` };
     }
 
@@ -365,12 +365,12 @@ export class OrderExecutionEngine {
    */
   cancelPendingExecution(executionId: string): boolean {
     const pending = this.pendingExecutions.get(executionId);
-    if (!pending || pending.status !== 'pending_confirmation') {
+    if (!pending || pending.status !== "pending_confirmation") {
       return false;
     }
 
-    pending.status = 'failed';
-    pending.result = { success: false, error: 'Cancelled by user' };
+    pending.status = "failed";
+    pending.result = { success: false, error: "Cancelled by user" };
     this.pendingExecutions.delete(executionId);
     return true;
   }
@@ -381,54 +381,54 @@ export class OrderExecutionEngine {
   private async submitExecution(
     executionId: string,
     userId: string,
-    accountId: string
+    accountId: string,
   ): Promise<ExecutionResult> {
     const pending = this.pendingExecutions.get(executionId);
     if (!pending) {
-      return { success: false, error: 'Execution not found' };
+      return { success: false, error: "Execution not found" };
     }
 
-    pending.status = 'pending_execution';
+    pending.status = "pending_execution";
 
     try {
       // Create order in order manager
       const { order, validation } = await this.orderManager.createOrder(
         pending.request,
         userId,
-        accountId
+        accountId,
       );
 
       if (!order) {
-        pending.status = 'failed';
+        pending.status = "failed";
         pending.result = {
           success: false,
           validation,
-          error: 'Order validation failed',
+          error: "Order validation failed",
           executionId,
         };
         return pending.result;
       }
 
-      pending.status = 'executing';
+      pending.status = "executing";
 
       // Submit to broker
       const brokerClient = this.createBrokerClient();
       const submittedOrder = await this.orderManager.submitOrder(
         order.id,
-        brokerClient
+        brokerClient,
       );
 
-      if (!submittedOrder || submittedOrder.status === 'error') {
-        pending.status = 'failed';
+      if (!submittedOrder || submittedOrder.status === "error") {
+        pending.status = "failed";
         pending.result = {
           success: false,
           order: submittedOrder || order,
-          error: submittedOrder?.errorMessage || 'Submission failed',
+          error: submittedOrder?.errorMessage || "Submission failed",
           executionId,
         };
 
         this.emitEvent({
-          type: 'order_error',
+          type: "order_error",
           executionId,
           orderId: order.id,
           symbol: order.symbol,
@@ -443,7 +443,7 @@ export class OrderExecutionEngine {
       let slippage: number | undefined;
       if (pending.quote) {
         const referencePrice =
-          pending.request.side === 'buy'
+          pending.request.side === "buy"
             ? pending.quote.ask
             : pending.quote.bid;
         if (submittedOrder.limitPrice) {
@@ -452,7 +452,7 @@ export class OrderExecutionEngine {
         }
       }
 
-      pending.status = 'completed';
+      pending.status = "completed";
       pending.executedAt = new Date();
       pending.result = {
         success: true,
@@ -464,7 +464,7 @@ export class OrderExecutionEngine {
       };
 
       this.emitEvent({
-        type: 'order_submitted',
+        type: "order_submitted",
         executionId,
         orderId: submittedOrder.id,
         symbol: submittedOrder.symbol,
@@ -474,15 +474,15 @@ export class OrderExecutionEngine {
 
       return pending.result;
     } catch (error) {
-      pending.status = 'failed';
+      pending.status = "failed";
       pending.result = {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
         executionId,
       };
 
       this.emitEvent({
-        type: 'order_error',
+        type: "order_error",
         executionId,
         symbol: pending.request.symbol,
         data: { error: pending.result.error },
@@ -504,7 +504,7 @@ export class OrderExecutionEngine {
 
     if (success) {
       this.emitEvent({
-        type: 'order_cancelled',
+        type: "order_cancelled",
         orderId,
         timestamp: new Date(),
       });
@@ -616,7 +616,7 @@ export class OrderExecutionEngine {
     this.livePriceSubject.next(priceInfo);
 
     this.emitEvent({
-      type: 'quote_update',
+      type: "quote_update",
       symbol: quote.symbol,
       data: priceInfo,
       timestamp: quote.timestamp,
@@ -629,16 +629,16 @@ export class OrderExecutionEngine {
   private handleOrderUpdate(update: RealtimeOrderUpdate): void {
     // Map realtime status to order manager status
     const statusMap: Record<string, OrderStatus> = {
-      new: 'submitted',
-      accepted: 'accepted',
-      partially_filled: 'partial',
-      filled: 'filled',
-      canceled: 'cancelled',
-      expired: 'expired',
-      rejected: 'rejected',
+      new: "submitted",
+      accepted: "accepted",
+      partially_filled: "partial",
+      filled: "filled",
+      canceled: "cancelled",
+      expired: "expired",
+      rejected: "rejected",
     };
 
-    const mappedStatus = statusMap[update.status] || 'error';
+    const mappedStatus = statusMap[update.status] || "error";
 
     // Update in order manager
     this.orderManager.handleOrderUpdate({
@@ -650,9 +650,9 @@ export class OrderExecutionEngine {
     });
 
     // Emit appropriate event
-    if (mappedStatus === 'filled') {
+    if (mappedStatus === "filled") {
       this.emitEvent({
-        type: 'order_filled',
+        type: "order_filled",
         orderId: update.orderId,
         symbol: update.symbol,
         data: {
@@ -681,19 +681,19 @@ export class OrderExecutionEngine {
    */
   private validatePrice(
     request: OrderRequest,
-    price: LivePriceInfo
+    price: LivePriceInfo,
   ): { valid: boolean; reason?: string } {
     // For market orders, just check if market is tradeable
-    if (request.type === 'market') {
+    if (request.type === "market") {
       if (price.spread === 0) {
-        return { valid: false, reason: 'Market appears closed (no spread)' };
+        return { valid: false, reason: "Market appears closed (no spread)" };
       }
       return { valid: true };
     }
 
     // For limit orders, check price deviation
     if (request.limitPrice) {
-      const referencePrice = request.side === 'buy' ? price.ask : price.bid;
+      const referencePrice = request.side === "buy" ? price.ask : price.bid;
       const deviation =
         Math.abs(request.limitPrice - referencePrice) / referencePrice;
 
@@ -718,31 +718,31 @@ export class OrderExecutionEngine {
   private createBrokerClient(): BrokerClient {
     return {
       submitOrder: async (
-        params: BrokerOrderParams
+        params: BrokerOrderParams,
       ): Promise<BrokerOrderResponse> => {
         const result = await this.broker.placeOrder({
           symbol: params.symbol,
-          side: params.side as 'buy' | 'sell',
+          side: params.side as "buy" | "sell",
           quantity: params.qty,
           type: params.type as
-            | 'market'
-            | 'limit'
-            | 'stop'
-            | 'stop_limit'
-            | 'trailing_stop',
-          timeInForce: params.time_in_force as 'day' | 'gtc' | 'ioc' | 'fok',
+            | "market"
+            | "limit"
+            | "stop"
+            | "stop_limit"
+            | "trailing_stop",
+          timeInForce: params.time_in_force as "day" | "gtc" | "ioc" | "fok",
           limitPrice: params.limit_price,
           stopPrice: params.stop_price,
           clientOrderId: params.client_order_id,
         });
 
         if (!result.success || !result.order) {
-          throw new Error(result.error || 'Order submission failed');
+          throw new Error(result.error || "Order submission failed");
         }
 
         return {
           id: result.order.id,
-          client_order_id: result.order.clientOrderId || '',
+          client_order_id: result.order.clientOrderId || "",
           status: result.order.status,
         };
       },
@@ -750,7 +750,7 @@ export class OrderExecutionEngine {
       cancelOrder: async (orderId: string): Promise<void> => {
         const result = await this.broker.cancelOrder(orderId);
         if (!result.success) {
-          throw new Error(result.error || 'Cancel failed');
+          throw new Error(result.error || "Cancel failed");
         }
       },
 
@@ -759,17 +759,17 @@ export class OrderExecutionEngine {
       }): Promise<BrokerOrder[]> => {
         // Map status string to broker filter
         const statusFilter =
-          params.status === 'open'
-            ? (['new', 'accepted', 'pending_new', 'partially_filled'] as const)
+          params.status === "open"
+            ? (["new", "accepted", "pending_new", "partially_filled"] as const)
             : undefined;
         const orders = await this.broker.getOrders({
           status:
-            statusFilter as unknown as import('../brokers/broker-interface').OrderStatus[],
+            statusFilter as unknown as import("../brokers/broker-interface").OrderStatus[],
         });
 
         return orders.map((o) => ({
           id: o.id,
-          client_order_id: o.clientOrderId || '',
+          client_order_id: o.clientOrderId || "",
           status: o.status,
           filled_qty: o.filledQuantity,
           filled_avg_price: o.filledAvgPrice,
@@ -779,12 +779,12 @@ export class OrderExecutionEngine {
       getOrder: async (orderId: string): Promise<BrokerOrder> => {
         const order = await this.broker.getOrder(orderId);
         if (!order) {
-          throw new Error('Order not found');
+          throw new Error("Order not found");
         }
 
         return {
           id: order.id,
-          client_order_id: order.clientOrderId ?? '',
+          client_order_id: order.clientOrderId ?? "",
           status: order.status,
           filled_qty: order.filledQuantity,
           filled_avg_price: order.filledAvgPrice,
@@ -844,7 +844,7 @@ export class OrderExecutionEngine {
    */
   getPriceUpdates(symbol: string): Observable<LivePriceInfo> {
     return this.livePriceSubject.pipe(
-      filter((price) => price.symbol === symbol)
+      filter((price) => price.symbol === symbol),
     );
   }
 
@@ -853,7 +853,7 @@ export class OrderExecutionEngine {
    */
   getOrderEvents(orderId: string): Observable<ExecutionEvent> {
     return this.executionEventSubject.pipe(
-      filter((event) => event.orderId === orderId)
+      filter((event) => event.orderId === orderId),
     );
   }
 
@@ -900,8 +900,8 @@ export class OrderExecutionEngine {
 
     const status = this.realtimeService.getStatus();
     return (
-      status.dataConnection === 'connected' &&
-      status.tradingConnection === 'connected' &&
+      status.dataConnection === "connected" &&
+      status.tradingConnection === "connected" &&
       this.broker.getConnectionStatus().connected
     );
   }
@@ -914,7 +914,7 @@ export class OrderExecutionEngine {
 let executionEngineInstance: OrderExecutionEngine | null = null;
 
 export function getOrderExecutionEngine(
-  config?: Partial<ExecutionConfig>
+  config?: Partial<ExecutionConfig>,
 ): OrderExecutionEngine {
   if (!executionEngineInstance) {
     executionEngineInstance = new OrderExecutionEngine(config);
@@ -923,7 +923,7 @@ export function getOrderExecutionEngine(
 }
 
 export function createOrderExecutionEngine(
-  config?: Partial<ExecutionConfig>
+  config?: Partial<ExecutionConfig>,
 ): OrderExecutionEngine {
   return new OrderExecutionEngine(config);
 }

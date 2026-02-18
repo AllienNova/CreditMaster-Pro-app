@@ -7,7 +7,7 @@
  * Provides a configured Supabase client for database and authentication operations.
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 // Supabase configuration - NO MORE PLACEHOLDERS
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -16,12 +16,14 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 // Validate environment variables at runtime
 if (!supabaseUrl || !supabaseAnonKey) {
   const missing = [];
-  if (!supabaseUrl) missing.push('NEXT_PUBLIC_SUPABASE_URL');
-  if (!supabaseAnonKey) missing.push('NEXT_PUBLIC_SUPABASE_ANON_KEY');
+  if (!supabaseUrl) missing.push("NEXT_PUBLIC_SUPABASE_URL");
+  if (!supabaseAnonKey) missing.push("NEXT_PUBLIC_SUPABASE_ANON_KEY");
   // Missing required Supabase environment variables
   // In development, throw to catch early. In production, log but don't crash on import.
-  if (process.env.NODE_ENV === 'development') {
-    throw new Error(`Missing required Supabase environment variables: ${missing.join(', ')}`);
+  if (process.env.NODE_ENV === "development") {
+    throw new Error(
+      `Missing required Supabase environment variables: ${missing.join(", ")}`,
+    );
   }
 }
 
@@ -31,7 +33,7 @@ let _supabase: SupabaseClient | null = null;
 function getSupabaseClient(): SupabaseClient {
   if (!_supabase) {
     if (!supabaseUrl || !supabaseAnonKey) {
-      throw new Error('Supabase environment variables are not configured');
+      throw new Error("Supabase environment variables are not configured");
     }
     _supabase = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
@@ -51,4 +53,3 @@ export const supabase = new Proxy({} as SupabaseClient, {
 });
 
 export default supabase;
-

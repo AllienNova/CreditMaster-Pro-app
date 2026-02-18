@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Portfolio Performance Page
@@ -7,14 +7,23 @@
  * Displays time-weighted returns, drawdown analysis, and period comparisons.
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import type { PerformancePoint } from '@/lib/investments/types/investment.types';
+import { useState, useEffect, useCallback } from "react";
+import type { PerformancePoint } from "@/lib/investments/types/investment.types";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-type TimePeriod = '1W' | '1M' | '3M' | '6M' | 'YTD' | '1Y' | '3Y' | '5Y' | 'ALL';
+type TimePeriod =
+  | "1W"
+  | "1M"
+  | "3M"
+  | "6M"
+  | "YTD"
+  | "1Y"
+  | "3Y"
+  | "5Y"
+  | "ALL";
 
 interface PerformanceData {
   points: PerformancePoint[];
@@ -44,15 +53,15 @@ interface PeriodReturn {
 // ============================================================================
 
 function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
     minimumFractionDigits: 2,
   }).format(value);
 }
 
 function formatPercent(value: number): string {
-  const sign = value >= 0 ? '+' : '';
+  const sign = value >= 0 ? "+" : "";
   return `${sign}${value.toFixed(2)}%`;
 }
 
@@ -68,15 +77,15 @@ function formatLargeNumber(value: number): string {
 
 function generateMockPerformanceData(period: TimePeriod): PerformanceData {
   const periodDays: Record<TimePeriod, number> = {
-    '1W': 7,
-    '1M': 30,
-    '3M': 90,
-    '6M': 180,
-    'YTD': 45,
-    '1Y': 365,
-    '3Y': 1095,
-    '5Y': 1825,
-    'ALL': 2555,
+    "1W": 7,
+    "1M": 30,
+    "3M": 90,
+    "6M": 180,
+    YTD: 45,
+    "1Y": 365,
+    "3Y": 1095,
+    "5Y": 1825,
+    ALL: 2555,
   };
 
   const days = periodDays[period];
@@ -85,9 +94,9 @@ function generateMockPerformanceData(period: TimePeriod): PerformanceData {
   const points: PerformancePoint[] = [];
   let maxValue = startValue;
   let maxDrawdown = 0;
-  let maxDrawdownDate = '';
-  let bestDay = { date: '', return: -Infinity };
-  let worstDay = { date: '', return: Infinity };
+  let maxDrawdownDate = "";
+  let bestDay = { date: "", return: -Infinity };
+  let worstDay = { date: "", return: Infinity };
   let positiveDays = 0;
 
   for (let i = 0; i < days; i++) {
@@ -104,15 +113,21 @@ function generateMockPerformanceData(period: TimePeriod): PerformanceData {
     const drawdown = ((currentValue - maxValue) / maxValue) * 100;
     if (drawdown < maxDrawdown) {
       maxDrawdown = drawdown;
-      maxDrawdownDate = date.toISOString().split('T')[0];
+      maxDrawdownDate = date.toISOString().split("T")[0];
     }
 
     // Track best/worst days
     if (dailyReturn > bestDay.return) {
-      bestDay = { date: date.toISOString().split('T')[0], return: dailyReturn * 100 };
+      bestDay = {
+        date: date.toISOString().split("T")[0],
+        return: dailyReturn * 100,
+      };
     }
     if (dailyReturn < worstDay.return) {
-      worstDay = { date: date.toISOString().split('T')[0], return: dailyReturn * 100 };
+      worstDay = {
+        date: date.toISOString().split("T")[0],
+        return: dailyReturn * 100,
+      };
     }
 
     if (dailyReturn > 0) positiveDays++;
@@ -125,7 +140,8 @@ function generateMockPerformanceData(period: TimePeriod): PerformanceData {
       value: currentValue,
       dayReturn: dailyReturn * 100,
       cumulativeReturn: cumulativeReturn,
-      benchmark: startValue * (1 + (i / days) * 0.12 + (Math.random() - 0.5) * 0.02),
+      benchmark:
+        startValue * (1 + (i / days) * 0.12 + (Math.random() - 0.5) * 0.02),
     });
   }
 
@@ -136,7 +152,8 @@ function generateMockPerformanceData(period: TimePeriod): PerformanceData {
 
   // Approximate daily return std dev for Sharpe
   const dailyReturns = points.map((p) => p.dayReturn);
-  const avgDailyReturn = dailyReturns.reduce((a, b) => a + b, 0) / dailyReturns.length;
+  const avgDailyReturn =
+    dailyReturns.reduce((a, b) => a + b, 0) / dailyReturns.length;
   const variance =
     dailyReturns.reduce((sum, r) => sum + Math.pow(r - avgDailyReturn, 2), 0) /
     dailyReturns.length;
@@ -163,14 +180,54 @@ function generateMockPerformanceData(period: TimePeriod): PerformanceData {
 
 function generatePeriodReturns(): PeriodReturn[] {
   return [
-    { period: '1 Week', portfolioReturn: 1.24, benchmarkReturn: 0.87, alpha: 0.37 },
-    { period: '1 Month', portfolioReturn: 3.56, benchmarkReturn: 2.14, alpha: 1.42 },
-    { period: '3 Months', portfolioReturn: 8.12, benchmarkReturn: 6.45, alpha: 1.67 },
-    { period: '6 Months', portfolioReturn: 14.28, benchmarkReturn: 11.32, alpha: 2.96 },
-    { period: 'YTD', portfolioReturn: 6.78, benchmarkReturn: 5.23, alpha: 1.55 },
-    { period: '1 Year', portfolioReturn: 18.45, benchmarkReturn: 14.67, alpha: 3.78 },
-    { period: '3 Years', portfolioReturn: 42.12, benchmarkReturn: 35.89, alpha: 6.23 },
-    { period: '5 Years', portfolioReturn: 78.34, benchmarkReturn: 62.15, alpha: 16.19 },
+    {
+      period: "1 Week",
+      portfolioReturn: 1.24,
+      benchmarkReturn: 0.87,
+      alpha: 0.37,
+    },
+    {
+      period: "1 Month",
+      portfolioReturn: 3.56,
+      benchmarkReturn: 2.14,
+      alpha: 1.42,
+    },
+    {
+      period: "3 Months",
+      portfolioReturn: 8.12,
+      benchmarkReturn: 6.45,
+      alpha: 1.67,
+    },
+    {
+      period: "6 Months",
+      portfolioReturn: 14.28,
+      benchmarkReturn: 11.32,
+      alpha: 2.96,
+    },
+    {
+      period: "YTD",
+      portfolioReturn: 6.78,
+      benchmarkReturn: 5.23,
+      alpha: 1.55,
+    },
+    {
+      period: "1 Year",
+      portfolioReturn: 18.45,
+      benchmarkReturn: 14.67,
+      alpha: 3.78,
+    },
+    {
+      period: "3 Years",
+      portfolioReturn: 42.12,
+      benchmarkReturn: 35.89,
+      alpha: 6.23,
+    },
+    {
+      period: "5 Years",
+      portfolioReturn: 78.34,
+      benchmarkReturn: 62.15,
+      alpha: 16.19,
+    },
   ];
 }
 
@@ -179,15 +236,15 @@ function generatePeriodReturns(): PeriodReturn[] {
 // ============================================================================
 
 const TIME_PERIODS: Array<{ id: TimePeriod; label: string }> = [
-  { id: '1W', label: '1W' },
-  { id: '1M', label: '1M' },
-  { id: '3M', label: '3M' },
-  { id: '6M', label: '6M' },
-  { id: 'YTD', label: 'YTD' },
-  { id: '1Y', label: '1Y' },
-  { id: '3Y', label: '3Y' },
-  { id: '5Y', label: '5Y' },
-  { id: 'ALL', label: 'All' },
+  { id: "1W", label: "1W" },
+  { id: "1M", label: "1M" },
+  { id: "3M", label: "3M" },
+  { id: "6M", label: "6M" },
+  { id: "YTD", label: "YTD" },
+  { id: "1Y", label: "1Y" },
+  { id: "3Y", label: "3Y" },
+  { id: "5Y", label: "5Y" },
+  { id: "ALL", label: "All" },
 ];
 
 // ============================================================================
@@ -195,8 +252,9 @@ const TIME_PERIODS: Array<{ id: TimePeriod; label: string }> = [
 // ============================================================================
 
 export default function PerformancePage() {
-  const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('1Y');
-  const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null);
+  const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>("1Y");
+  const [performanceData, setPerformanceData] =
+    useState<PerformanceData | null>(null);
   const [periodReturns, setPeriodReturns] = useState<PeriodReturn[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -208,7 +266,7 @@ export default function PerformancePage() {
 
     try {
       const response = await fetch(
-        `/api/investments/portfolio/performance?period=${period}`
+        `/api/investments/portfolio/performance?period=${period}`,
       );
 
       if (response.ok) {
@@ -328,8 +386,8 @@ export default function PerformancePage() {
                 onClick={() => handlePeriodChange(period.id)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   selectedPeriod === period.id
-                    ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-sm'
-                    : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
+                    ? "bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-sm"
+                    : "text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200"
                 }`}
               >
                 {period.label}
@@ -368,27 +426,27 @@ export default function PerformancePage() {
 function SummaryCards({ data }: { data: PerformanceData }) {
   const stats = [
     {
-      label: 'Total Return',
+      label: "Total Return",
       value: formatLargeNumber(data.totalReturn),
       subValue: formatPercent(data.totalReturnPercent),
       isPositive: data.totalReturn >= 0,
     },
     {
-      label: 'Annualized Return',
+      label: "Annualized Return",
       value: formatPercent(data.annualizedReturn),
       subValue: null,
       isPositive: data.annualizedReturn >= 0,
     },
     {
-      label: 'Alpha vs Benchmark',
+      label: "Alpha vs Benchmark",
       value: formatPercent(data.alpha),
       subValue: `Benchmark: ${formatPercent(data.benchmarkReturn)}`,
       isPositive: data.alpha >= 0,
     },
     {
-      label: 'Current Value',
+      label: "Current Value",
       value: formatLargeNumber(
-        data.points.length > 0 ? data.points[data.points.length - 1].value : 0
+        data.points.length > 0 ? data.points[data.points.length - 1].value : 0,
       ),
       subValue: null,
       isPositive: true,
@@ -407,7 +465,7 @@ function SummaryCards({ data }: { data: PerformanceData }) {
           </p>
           <p
             className={`text-2xl font-bold ${
-              stat.isPositive ? 'text-green-600' : 'text-red-600'
+              stat.isPositive ? "text-green-600" : "text-red-600"
             }`}
           >
             {stat.value}
@@ -453,18 +511,24 @@ function PerformanceChart({
     ...data.points.map((p) => ((p.value - startValue) / startValue) * 100),
     ...(showBenchmark && data.points[0].benchmark
       ? data.points.map(
-          (p) => (((p.benchmark || startBenchmark) - startBenchmark) / startBenchmark) * 100
+          (p) =>
+            (((p.benchmark || startBenchmark) - startBenchmark) /
+              startBenchmark) *
+            100,
         )
-      : [0])
+      : [0]),
   );
   const minReturn = Math.min(
     ...data.points.map((p) => ((p.value - startValue) / startValue) * 100),
     ...(showBenchmark && data.points[0].benchmark
       ? data.points.map(
-          (p) => (((p.benchmark || startBenchmark) - startBenchmark) / startBenchmark) * 100
+          (p) =>
+            (((p.benchmark || startBenchmark) - startBenchmark) /
+              startBenchmark) *
+            100,
         )
       : [0]),
-    0
+    0,
   );
 
   const range = maxReturn - minReturn || 1;
@@ -485,22 +549,25 @@ function PerformanceChart({
       const x = (idx / (sampledPoints.length - 1)) * chartWidth;
       const returnPct = ((point.value - startValue) / startValue) * 100;
       const y = getY(returnPct);
-      return `${idx === 0 ? 'M' : 'L'} ${x} ${y}`;
+      return `${idx === 0 ? "M" : "L"} ${x} ${y}`;
     })
-    .join(' ');
+    .join(" ");
 
   // Build SVG path for benchmark
-  const benchmarkPath = showBenchmark && sampledPoints[0].benchmark
-    ? sampledPoints
-        .map((point, idx) => {
-          const x = (idx / (sampledPoints.length - 1)) * chartWidth;
-          const returnPct =
-            (((point.benchmark || startBenchmark) - startBenchmark) / startBenchmark) * 100;
-          const y = getY(returnPct);
-          return `${idx === 0 ? 'M' : 'L'} ${x} ${y}`;
-        })
-        .join(' ')
-    : '';
+  const benchmarkPath =
+    showBenchmark && sampledPoints[0].benchmark
+      ? sampledPoints
+          .map((point, idx) => {
+            const x = (idx / (sampledPoints.length - 1)) * chartWidth;
+            const returnPct =
+              (((point.benchmark || startBenchmark) - startBenchmark) /
+                startBenchmark) *
+              100;
+            const y = getY(returnPct);
+            return `${idx === 0 ? "M" : "L"} ${x} ${y}`;
+          })
+          .join(" ")
+      : "";
 
   // Zero line Y position
   const zeroY = getY(0);
@@ -534,7 +601,10 @@ function PerformanceChart({
           </span>
           {showBenchmark && (
             <span className="flex items-center gap-2">
-              <span className="w-3 h-0.5 bg-blue-400 inline-block" style={{ borderTop: '2px dashed' }} />
+              <span
+                className="w-3 h-0.5 bg-blue-400 inline-block"
+                style={{ borderTop: "2px dashed" }}
+              />
               <span className="text-gray-500 dark:text-slate-400">S&P 500</span>
             </span>
           )}
@@ -630,10 +700,11 @@ function PerformanceChart({
         <div className="flex justify-between mt-2 text-xs text-gray-400 dark:text-slate-500">
           {dateLabels.map((point, idx) => (
             <span key={idx}>
-              {new Date(point.date).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: period === '1W' || period === '1M' ? undefined : '2-digit',
+              {new Date(point.date).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year:
+                  period === "1W" || period === "1M" ? undefined : "2-digit",
               })}
             </span>
           ))}
@@ -664,19 +735,21 @@ function DrawdownAnalysis({ data }: { data: PerformanceData }) {
             {data.maxDrawdown.toFixed(2)}%
           </p>
           <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
-            Date: {data.maxDrawdownDate || 'N/A'}
+            Date: {data.maxDrawdownDate || "N/A"}
           </p>
         </div>
 
         {/* Best & Worst Days */}
         <div className="grid grid-cols-2 gap-4">
           <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-            <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">Best Day</p>
+            <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">
+              Best Day
+            </p>
             <p className="text-xl font-bold text-green-600">
               {formatPercent(data.bestDay.return)}
             </p>
             <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
-              {data.bestDay.date || 'N/A'}
+              {data.bestDay.date || "N/A"}
             </p>
           </div>
           <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
@@ -687,7 +760,7 @@ function DrawdownAnalysis({ data }: { data: PerformanceData }) {
               {formatPercent(data.worstDay.return)}
             </p>
             <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
-              {data.worstDay.date || 'N/A'}
+              {data.worstDay.date || "N/A"}
             </p>
           </div>
         </div>
@@ -721,39 +794,39 @@ function DrawdownAnalysis({ data }: { data: PerformanceData }) {
 function RiskMetricsCard({ data }: { data: PerformanceData }) {
   const metrics = [
     {
-      label: 'Sharpe Ratio',
+      label: "Sharpe Ratio",
       value: data.sharpeRatio.toFixed(2),
-      description: 'Risk-adjusted return measure',
+      description: "Risk-adjusted return measure",
       good: data.sharpeRatio >= 1,
     },
     {
-      label: 'Annualized Volatility',
+      label: "Annualized Volatility",
       value: `${data.volatility.toFixed(2)}%`,
-      description: 'Standard deviation of returns',
+      description: "Standard deviation of returns",
       good: data.volatility < 20,
     },
     {
-      label: 'Max Drawdown',
+      label: "Max Drawdown",
       value: `${data.maxDrawdown.toFixed(2)}%`,
-      description: 'Largest peak-to-trough decline',
+      description: "Largest peak-to-trough decline",
       good: Math.abs(data.maxDrawdown) < 15,
     },
     {
-      label: 'Alpha',
+      label: "Alpha",
       value: formatPercent(data.alpha),
-      description: 'Excess return over benchmark',
+      description: "Excess return over benchmark",
       good: data.alpha > 0,
     },
     {
-      label: 'Win Rate',
+      label: "Win Rate",
       value: `${data.winRate.toFixed(1)}%`,
-      description: 'Percentage of positive days',
+      description: "Percentage of positive days",
       good: data.winRate > 50,
     },
     {
-      label: 'Annualized Return',
+      label: "Annualized Return",
       value: formatPercent(data.annualizedReturn),
-      description: 'Yearly return rate',
+      description: "Yearly return rate",
       good: data.annualizedReturn > 0,
     },
   ];
@@ -780,14 +853,14 @@ function RiskMetricsCard({ data }: { data: PerformanceData }) {
             <div className="flex items-center gap-2">
               <span
                 className={`text-lg font-bold ${
-                  metric.good ? 'text-green-600' : 'text-red-600'
+                  metric.good ? "text-green-600" : "text-red-600"
                 }`}
               >
                 {metric.value}
               </span>
               <span
                 className={`w-2 h-2 rounded-full ${
-                  metric.good ? 'bg-green-500' : 'bg-red-500'
+                  metric.good ? "bg-green-500" : "bg-red-500"
                 }`}
               />
             </div>
@@ -839,21 +912,21 @@ function PeriodReturnsTable({ returns }: { returns: PeriodReturn[] }) {
                 </td>
                 <td
                   className={`py-3 px-4 text-right font-semibold ${
-                    row.portfolioReturn >= 0 ? 'text-green-600' : 'text-red-600'
+                    row.portfolioReturn >= 0 ? "text-green-600" : "text-red-600"
                   }`}
                 >
                   {formatPercent(row.portfolioReturn)}
                 </td>
                 <td
                   className={`py-3 px-4 text-right ${
-                    row.benchmarkReturn >= 0 ? 'text-green-600' : 'text-red-600'
+                    row.benchmarkReturn >= 0 ? "text-green-600" : "text-red-600"
                   }`}
                 >
                   {formatPercent(row.benchmarkReturn)}
                 </td>
                 <td
                   className={`py-3 px-4 text-right font-semibold ${
-                    row.alpha >= 0 ? 'text-green-600' : 'text-red-600'
+                    row.alpha >= 0 ? "text-green-600" : "text-red-600"
                   }`}
                 >
                   {formatPercent(row.alpha)}
@@ -879,7 +952,8 @@ function DailyReturnsDistribution({ points }: { points: PerformancePoint[] }) {
   const returns = points.map((p) => p.dayReturn);
   const minReturn = Math.floor(Math.min(...returns));
   const maxReturn = Math.ceil(Math.max(...returns));
-  const buckets: Array<{ range: string; count: number; isPositive: boolean }> = [];
+  const buckets: Array<{ range: string; count: number; isPositive: boolean }> =
+    [];
 
   for (let i = minReturn; i < maxReturn; i += bucketSize) {
     const count = returns.filter((r) => r >= i && r < i + bucketSize).length;
@@ -907,12 +981,12 @@ function DailyReturnsDistribution({ points }: { points: PerformancePoint[] }) {
             <div
               className={`w-full rounded-t ${
                 bucket.isPositive
-                  ? 'bg-emerald-500 dark:bg-emerald-600'
-                  : 'bg-red-500 dark:bg-red-600'
+                  ? "bg-emerald-500 dark:bg-emerald-600"
+                  : "bg-red-500 dark:bg-red-600"
               }`}
               style={{
                 height: `${(bucket.count / maxCount) * 100}%`,
-                minHeight: bucket.count > 0 ? '2px' : '0px',
+                minHeight: bucket.count > 0 ? "2px" : "0px",
               }}
             />
           </div>

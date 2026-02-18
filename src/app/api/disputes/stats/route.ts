@@ -3,17 +3,17 @@
  * GET /api/disputes/stats - Get user's dispute statistics
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { disputeService } from '@/lib/disputes/dispute-service';
+import { NextRequest, NextResponse } from "next/server";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { disputeService } from "@/lib/disputes/dispute-service";
 
 export async function GET(request: NextRequest) {
   try {
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user?.id) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
       );
     }
 
@@ -31,10 +31,10 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Get dispute stats error:', error);
+    console.error("Get dispute stats error:", error);
     return NextResponse.json(
-      { success: false, error: 'Failed to get dispute statistics' },
-      { status: 500 }
+      { success: false, error: "Failed to get dispute statistics" },
+      { status: 500 },
     );
   }
 }

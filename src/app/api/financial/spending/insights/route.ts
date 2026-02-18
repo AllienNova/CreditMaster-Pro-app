@@ -7,23 +7,26 @@
  * Phase 2.3: Spending Intelligence
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getSpendingAnalyzer } from '@/lib/financial/spending-analyzer';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { rbac } from '@/lib/auth/rbac';
+import { NextRequest, NextResponse } from "next/server";
+import { getSpendingAnalyzer } from "@/lib/financial/spending-analyzer";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { rbac } from "@/lib/auth/rbac";
 import {
   applyFinancialAPIMiddleware,
   finalizeResponse,
-} from '@/lib/api/financial-api-middleware';
-import { z } from 'zod';
+} from "@/lib/api/financial-api-middleware";
+import { z } from "zod";
 
 // ============================================================================
 // VALIDATION SCHEMA
 // ============================================================================
 
 const InsightsQuerySchema = z.object({
-  type: z.enum(['patterns', 'trends', 'anomalies', 'all']).optional().default('all'),
-  priority: z.enum(['high', 'medium', 'low', 'all']).optional().default('all'),
+  type: z
+    .enum(["patterns", "trends", "anomalies", "all"])
+    .optional()
+    .default("all"),
+  priority: z.enum(["high", "medium", "low", "all"]).optional().default("all"),
 });
 
 // ============================================================================
@@ -95,8 +98,8 @@ export async function GET(request: NextRequest) {
     // Validate query parameters
     const { searchParams } = new URL(request.url);
     const queryParams = {
-      type: searchParams.get('type') || 'all',
-      priority: searchParams.get('priority') || 'all',
+      type: searchParams.get("type") || "all",
+      priority: searchParams.get("priority") || "all",
     };
 
     const validatedParams = InsightsQuerySchema.parse(queryParams);
@@ -107,14 +110,14 @@ export async function GET(request: NextRequest) {
     // Generate insights
     const result = await analyzer.generateInsights(
       userId!,
-      validatedParams.type as 'patterns' | 'trends' | 'anomalies' | 'all'
+      validatedParams.type as "patterns" | "trends" | "anomalies" | "all",
     );
 
     // Filter by priority if specified
     let filteredInsights = result.insights;
-    if (validatedParams.priority !== 'all') {
+    if (validatedParams.priority !== "all") {
       filteredInsights = result.insights.filter(
-        insight => insight.priority === validatedParams.priority
+        (insight) => insight.priority === validatedParams.priority,
       );
     }
 
@@ -136,10 +139,10 @@ export async function GET(request: NextRequest) {
         },
       }),
       middlewareStartTime,
-      userId
+      userId,
     );
   } catch (error) {
-    console.error('Error generating spending insights:', error);
+    console.error("Error generating spending insights:", error);
 
     return finalizeResponse(
       request,
@@ -147,16 +150,15 @@ export async function GET(request: NextRequest) {
         {
           success: false,
           error: {
-            code: 'INTERNAL_ERROR',
-            message: 'Failed to generate spending insights',
-            details: error instanceof Error ? error.message : 'Unknown error',
+            code: "INTERNAL_ERROR",
+            message: "Failed to generate spending insights",
+            details: error instanceof Error ? error.message : "Unknown error",
           },
         },
-        { status: 500 }
+        { status: 500 },
       ),
       middlewareStartTime,
-      userId
+      userId,
     );
   }
 }
-

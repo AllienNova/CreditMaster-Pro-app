@@ -9,10 +9,10 @@
  * - AI-powered recommendations
  */
 
-import { getSupabase } from '@/lib/supabase/client';
-import { AIMLService } from '@/lib/aiml-service';
-import { financialContextEngine } from './financial-context-engine';
-import { FinancialContext } from './types/financial-context.types';
+import { getSupabase } from "@/lib/supabase/client";
+import { AIMLService } from "@/lib/aiml-service";
+import { financialContextEngine } from "./financial-context-engine";
+import { FinancialContext } from "./types/financial-context.types";
 import {
   GoalType,
   GoalStatus,
@@ -23,33 +23,33 @@ import {
   GoalScenario,
   CreateGoalPlanRequest,
   SimulateGoalRequest,
-} from './types/ai-coach.types';
+} from "./types/ai-coach.types";
 
 // ============================================================================
 // CONSTANTS
 // ============================================================================
 
-const AI_MODEL = 'anthropic/claude-4.5-sonnet';
+const AI_MODEL = "anthropic/claude-4.5-sonnet";
 
 const DEFAULT_MILESTONES = [
   {
     percentage: 25,
-    name: '25% Complete',
-    celebrationMessage: 'Great start! Keep going!',
+    name: "25% Complete",
+    celebrationMessage: "Great start! Keep going!",
   },
   {
     percentage: 50,
-    name: 'Halfway There!',
+    name: "Halfway There!",
     celebrationMessage: "Amazing! You're halfway to your goal!",
   },
   {
     percentage: 75,
-    name: '75% Complete',
-    celebrationMessage: 'Almost there! The finish line is in sight!',
+    name: "75% Complete",
+    celebrationMessage: "Almost there! The finish line is in sight!",
   },
   {
     percentage: 100,
-    name: 'Goal Achieved!',
+    name: "Goal Achieved!",
     celebrationMessage: "Congratulations! You've reached your goal! ",
   },
 ];
@@ -92,7 +92,7 @@ class GoalPlanner {
    * Create a new financial goal plan
    */
   async createGoalPlan(
-    request: CreateGoalPlanRequest
+    request: CreateGoalPlanRequest,
   ): Promise<FinancialGoalPlan> {
     const {
       userId,
@@ -123,7 +123,7 @@ class GoalPlanner {
       type,
       targetAmount,
       monthsToGoal,
-      context
+      context,
     );
 
     const goalPlan: FinancialGoalPlan = {
@@ -143,7 +143,7 @@ class GoalPlanner {
       milestones,
       monthlyContribution: request.monthlyContribution || suggestedContribution,
       suggestedContribution,
-      contributionFrequency: 'monthly',
+      contributionFrequency: "monthly",
       linkedAccountId: request.linkedAccountId,
       autoSaveEnabled: request.autoSaveEnabled || false,
       aiRecommendations,
@@ -151,7 +151,7 @@ class GoalPlanner {
       riskFactors: this.identifyRiskFactors(
         context,
         targetAmount,
-        monthsToGoal
+        monthsToGoal,
       ),
       priority,
       createdAt: new Date(),
@@ -170,10 +170,10 @@ class GoalPlanner {
   async getUserGoals(userId: string): Promise<FinancialGoalPlan[]> {
     const supabase = getSupabase();
     const { data, error } = await supabase
-      .from('financial_goals')
-      .select('*')
-      .eq('user_id', userId)
-      .order('priority', { ascending: false });
+      .from("financial_goals")
+      .select("*")
+      .eq("user_id", userId)
+      .order("priority", { ascending: false });
 
     if (error) {
       // GoalPlanner error: Error fetching goals
@@ -189,16 +189,16 @@ class GoalPlanner {
   async updateGoalProgress(
     userId: string,
     goalId: string,
-    newAmount: number
+    newAmount: number,
   ): Promise<FinancialGoalPlan | null> {
     const supabase = getSupabase();
 
     // Fetch current goal
     const { data: goal, error: fetchError } = await supabase
-      .from('financial_goals')
-      .select('*')
-      .eq('id', goalId)
-      .eq('user_id', userId)
+      .from("financial_goals")
+      .select("*")
+      .eq("id", goalId)
+      .eq("user_id", userId)
       .single();
 
     if (fetchError || !goal) return null;
@@ -208,7 +208,7 @@ class GoalPlanner {
     const status = this.calculateGoalStatus(
       newAmount,
       mappedGoal.targetAmount,
-      mappedGoal.targetDate
+      mappedGoal.targetDate,
     );
 
     // Update milestones
@@ -224,15 +224,15 @@ class GoalPlanner {
     // Update in database - using type assertion due to missing table types
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: updateError } = await (supabase as any)
-      .from('financial_goals')
+      .from("financial_goals")
       .update({
         current_amount: newAmount,
         status,
         milestones: updatedMilestones,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', goalId)
-      .eq('user_id', userId);
+      .eq("id", goalId)
+      .eq("user_id", userId);
 
     if (updateError) return null;
 
@@ -255,13 +255,13 @@ class GoalPlanner {
     // Get the goal
     const supabase = getSupabase();
     const { data: goalData } = await supabase
-      .from('financial_goals')
-      .select('*')
-      .eq('id', goalId)
+      .from("financial_goals")
+      .select("*")
+      .eq("id", goalId)
       .single();
 
     if (!goalData) {
-      throw new Error('Goal not found');
+      throw new Error("Goal not found");
     }
 
     const goal = this.mapDatabaseRowToGoal(goalData);
@@ -271,7 +271,7 @@ class GoalPlanner {
       const monthsToComplete = remainingAmount / param.monthlyContribution;
       const completionDate = new Date();
       completionDate.setMonth(
-        completionDate.getMonth() + Math.ceil(monthsToComplete)
+        completionDate.getMonth() + Math.ceil(monthsToComplete),
       );
 
       return {
@@ -282,12 +282,12 @@ class GoalPlanner {
         totalContributions: remainingAmount,
         probabilityOfSuccess: this.calculateSuccessProbability(
           param.monthlyContribution,
-          goal.suggestedContribution
+          goal.suggestedContribution,
         ),
         assumptions: [
-          'Consistent monthly contributions',
-          'No withdrawals from goal',
-          'No change in financial situation',
+          "Consistent monthly contributions",
+          "No withdrawals from goal",
+          "No change in financial situation",
         ],
       };
     });
@@ -297,7 +297,7 @@ class GoalPlanner {
       Math.abs(current.monthlyContribution - goal.suggestedContribution) <
       Math.abs(best.monthlyContribution - goal.suggestedContribution)
         ? current
-        : best
+        : best,
     );
 
     return {
@@ -312,7 +312,7 @@ class GoalPlanner {
    */
   async getAdjustmentSuggestions(
     userId: string,
-    goalId: string
+    goalId: string,
   ): Promise<GoalAdjustment[]> {
     const goals = await this.getUserGoals(userId);
     const goal = goals.find((g) => g.id === goalId);
@@ -326,11 +326,11 @@ class GoalPlanner {
 
     // Behind schedule - suggest increasing contribution
     if (
-      goal.status === 'behind' &&
+      goal.status === "behind" &&
       requiredMonthly > goal.monthlyContribution * 1.2
     ) {
       adjustments.push({
-        type: 'increase_contribution',
+        type: "increase_contribution",
         reason: "You're behind schedule on this goal",
         suggestedValue: requiredMonthly,
         impact: `Increasing to $${requiredMonthly.toFixed(0)}/month will get you back on track`,
@@ -339,7 +339,7 @@ class GoalPlanner {
 
     // Very behind - suggest extending timeline
     if (
-      goal.status === 'behind' &&
+      goal.status === "behind" &&
       requiredMonthly > goal.monthlyContribution * 2
     ) {
       const newMonths =
@@ -348,8 +348,8 @@ class GoalPlanner {
       newDate.setMonth(newDate.getMonth() + Math.ceil(newMonths));
 
       adjustments.push({
-        type: 'extend_timeline',
-        reason: 'Current pace requires a longer timeline',
+        type: "extend_timeline",
+        reason: "Current pace requires a longer timeline",
         suggestedValue: newMonths,
         impact: `Extend target date to ${newDate.toLocaleDateString()} with current contribution`,
       });
@@ -368,25 +368,25 @@ class GoalPlanner {
     return Math.max(
       1,
       (target.getFullYear() - now.getFullYear()) * 12 +
-        (target.getMonth() - now.getMonth())
+        (target.getMonth() - now.getMonth()),
     );
   }
 
   private calculateGoalStatus(
     currentAmount: number,
     targetAmount: number,
-    targetDate: Date
+    targetDate: Date,
   ): GoalStatus {
-    if (currentAmount >= targetAmount) return 'completed';
+    if (currentAmount >= targetAmount) return "completed";
 
     const progress = currentAmount / targetAmount;
     const timeElapsed = this.calculateTimeElapsedPercentage(targetDate);
 
-    if (progress >= 1) return 'completed';
-    if (currentAmount === 0) return 'not_started';
-    if (progress >= timeElapsed + 0.1) return 'ahead';
-    if (progress >= timeElapsed - 0.1) return 'on_track';
-    return 'behind';
+    if (progress >= 1) return "completed";
+    if (currentAmount === 0) return "not_started";
+    if (progress >= timeElapsed + 0.1) return "ahead";
+    if (progress >= timeElapsed - 0.1) return "on_track";
+    return "behind";
   }
 
   private calculateTimeElapsedPercentage(targetDate: Date): number {
@@ -414,7 +414,7 @@ class GoalPlanner {
 
   private calculateSuccessProbability(
     contribution: number,
-    suggested: number
+    suggested: number,
   ): number {
     const ratio = contribution / suggested;
     if (ratio >= 1.2) return 95;
@@ -427,23 +427,23 @@ class GoalPlanner {
   private identifyRiskFactors(
     context: FinancialContext,
     targetAmount: number,
-    months: number
+    months: number,
   ): string[] {
     const risks: string[] = [];
     const requiredMonthly = targetAmount / months;
 
     if (requiredMonthly > context.transactions.netCashFlow) {
-      risks.push('Monthly contribution exceeds current savings capacity');
+      risks.push("Monthly contribution exceeds current savings capacity");
     }
     if (context.debts.debtToIncomeRatio > 40) {
-      risks.push('High debt-to-income ratio may impact ability to save');
+      risks.push("High debt-to-income ratio may impact ability to save");
     }
     if (
       context.accounts.totalSavings <
       context.transactions.totalExpenses * 3
     ) {
       risks.push(
-        'Limited emergency fund - unexpected expenses may derail goal'
+        "Limited emergency fund - unexpected expenses may derail goal",
       );
     }
 
@@ -454,7 +454,7 @@ class GoalPlanner {
     goalType: GoalType,
     targetAmount: number,
     months: number,
-    context: FinancialContext
+    context: FinancialContext,
   ): Promise<string[]> {
     const aiService = this.getAIService();
     if (!aiService) {
@@ -468,16 +468,16 @@ class GoalPlanner {
         AI_MODEL,
         [
           {
-            role: 'system',
+            role: "system",
             content:
-              'You are a financial advisor. Provide brief, actionable tips. Respond with a JSON array of 3 strings.',
+              "You are a financial advisor. Provide brief, actionable tips. Respond with a JSON array of 3 strings.",
           },
-          { role: 'user', content: prompt },
+          { role: "user", content: prompt },
         ],
-        { temperature: 0.3, max_tokens: 500 }
+        { temperature: 0.3, max_tokens: 500 },
       );
 
-      const content = response.choices[0]?.message?.content || '';
+      const content = response.choices[0]?.message?.content || "";
       const match = content.match(/\[[\s\S]*\]/);
       if (match) {
         return JSON.parse(match[0]);
@@ -493,54 +493,54 @@ class GoalPlanner {
   private getDefaultRecommendations(goalType: GoalType): string[] {
     const defaults: Record<GoalType, string[]> = {
       emergency_fund: [
-        'Start with saving $1,000',
-        'Automate transfers on payday',
-        'Keep in high-yield savings',
+        "Start with saving $1,000",
+        "Automate transfers on payday",
+        "Keep in high-yield savings",
       ],
       debt_payoff: [
-        'Pay more than minimum',
-        'Use avalanche or snowball method',
-        'Cut unnecessary expenses',
+        "Pay more than minimum",
+        "Use avalanche or snowball method",
+        "Cut unnecessary expenses",
       ],
       savings: [
-        'Set up automatic transfers',
-        'Track spending weekly',
-        'Find one expense to cut',
+        "Set up automatic transfers",
+        "Track spending weekly",
+        "Find one expense to cut",
       ],
       investment: [
-        'Start with index funds',
-        'Maximize employer 401k match',
-        'Reinvest dividends',
+        "Start with index funds",
+        "Maximize employer 401k match",
+        "Reinvest dividends",
       ],
       major_purchase: [
-        'Research best prices',
-        'Wait for sales',
-        'Consider used options',
+        "Research best prices",
+        "Wait for sales",
+        "Consider used options",
       ],
       retirement: [
-        'Max out employer match',
-        'Increase contribution annually',
-        'Diversify investments',
+        "Max out employer match",
+        "Increase contribution annually",
+        "Diversify investments",
       ],
       education: [
-        'Research scholarships',
-        'Consider 529 plan',
-        'Compare schools by value',
+        "Research scholarships",
+        "Consider 529 plan",
+        "Compare schools by value",
       ],
       vacation: [
-        'Set a realistic budget',
-        'Book in advance',
-        'Use travel rewards',
+        "Set a realistic budget",
+        "Book in advance",
+        "Use travel rewards",
       ],
       home_down_payment: [
-        'Save 20% to avoid PMI',
-        'Research first-time buyer programs',
-        'Improve credit score',
+        "Save 20% to avoid PMI",
+        "Research first-time buyer programs",
+        "Improve credit score",
       ],
       custom: [
-        'Be specific about your goal',
-        'Break it into milestones',
-        'Track progress weekly',
+        "Be specific about your goal",
+        "Break it into milestones",
+        "Track progress weekly",
       ],
     };
     return defaults[goalType] || defaults.custom;
@@ -549,7 +549,7 @@ class GoalPlanner {
   private async saveGoalToDatabase(goal: FinancialGoalPlan): Promise<void> {
     const supabase = getSupabase();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any).from('financial_goals').insert({
+    await (supabase as any).from("financial_goals").insert({
       id: goal.id,
       user_id: goal.userId,
       type: goal.type,
@@ -570,7 +570,7 @@ class GoalPlanner {
   }
 
   private mapDatabaseRowToGoal(
-    row: Record<string, unknown>
+    row: Record<string, unknown>,
   ): FinancialGoalPlan {
     return {
       id: row.id as string,
@@ -589,7 +589,7 @@ class GoalPlanner {
       milestones: (row.milestones as GoalMilestone[]) || [],
       monthlyContribution: Number(row.monthly_contribution),
       suggestedContribution: Number(row.monthly_contribution),
-      contributionFrequency: 'monthly',
+      contributionFrequency: "monthly",
       linkedAccountId: row.linked_account_id as string,
       autoSaveEnabled: row.auto_save_enabled as boolean,
       aiRecommendations: [],

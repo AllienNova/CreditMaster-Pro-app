@@ -1,4 +1,4 @@
-import type { JsonValue } from './student-loan';
+import type { JsonValue } from "./student-loan";
 
 export interface StrategyDetailSummary {
   strategy_name?: string;

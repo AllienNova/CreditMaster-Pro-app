@@ -1,10 +1,10 @@
-import Link from 'next/link';
-import type { Metadata } from 'next';
+import Link from "next/link";
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: 'Financial Hub | Fynvita',
+  title: "Financial Hub | Fynvita",
   description:
-    'Complete financial management with budgeting, expense tracking, and goal planning.',
+    "Complete financial management with budgeting, expense tracking, and goal planning.",
 };
 
 export default function FinancialHubPage() {
@@ -388,8 +388,12 @@ export default function FinancialHubPage() {
                     <span className="text-xl"></span>
                   </div>
                   <div className="flex-1">
-                    <p className="font-medium text-gray-900 dark:text-white">Chase Checking</p>
-                    <p className="text-sm text-gray-600 dark:text-slate-300">$8,234.56</p>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      Chase Checking
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-slate-300">
+                      $8,234.56
+                    </p>
                   </div>
                 </div>
                 <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm flex items-center space-x-4">
@@ -397,8 +401,12 @@ export default function FinancialHubPage() {
                     <span className="text-xl"></span>
                   </div>
                   <div className="flex-1">
-                    <p className="font-medium text-gray-900 dark:text-white">Amex Platinum</p>
-                    <p className="text-sm text-gray-600 dark:text-slate-300">-$2,150.00</p>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      Amex Platinum
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-slate-300">
+                      -$2,150.00
+                    </p>
                   </div>
                 </div>
                 <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm flex items-center space-x-4">
@@ -406,8 +414,12 @@ export default function FinancialHubPage() {
                     <span className="text-xl"></span>
                   </div>
                   <div className="flex-1">
-                    <p className="font-medium text-gray-900 dark:text-white">Fidelity 401(k)</p>
-                    <p className="text-sm text-gray-600 dark:text-slate-300">$45,678.90</p>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      Fidelity 401(k)
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-slate-300">
+                      $45,678.90
+                    </p>
                   </div>
                 </div>
               </div>

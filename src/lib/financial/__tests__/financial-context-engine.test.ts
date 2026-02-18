@@ -9,91 +9,91 @@
 import {
   FinancialContextEngine,
   financialContextEngine,
-} from '../financial-context-engine';
+} from "../financial-context-engine";
 import {
   DEFAULT_CONTEXT_OPTIONS,
   FinancialContextOptions,
-} from '../types/financial-context.types';
+} from "../types/financial-context.types";
 
-describe('FinancialContextEngine', () => {
-  describe('exports', () => {
-    it('should export FinancialContextEngine class', () => {
+describe("FinancialContextEngine", () => {
+  describe("exports", () => {
+    it("should export FinancialContextEngine class", () => {
       expect(FinancialContextEngine).toBeDefined();
-      expect(typeof FinancialContextEngine).toBe('function');
+      expect(typeof FinancialContextEngine).toBe("function");
     });
 
-    it('should export financialContextEngine singleton', () => {
+    it("should export financialContextEngine singleton", () => {
       expect(financialContextEngine).toBeDefined();
       expect(financialContextEngine).toBeInstanceOf(FinancialContextEngine);
     });
   });
 
-  describe('class methods', () => {
-    it('should have getFinancialContext method', () => {
+  describe("class methods", () => {
+    it("should have getFinancialContext method", () => {
       expect(typeof financialContextEngine.getFinancialContext).toBe(
-        'function'
+        "function",
       );
     });
 
-    it('should have getEnhancedFinancialContext method', () => {
+    it("should have getEnhancedFinancialContext method", () => {
       expect(typeof financialContextEngine.getEnhancedFinancialContext).toBe(
-        'function'
+        "function",
       );
     });
 
-    it('should have getFinancialSummary method', () => {
+    it("should have getFinancialSummary method", () => {
       expect(typeof financialContextEngine.getFinancialSummary).toBe(
-        'function'
+        "function",
       );
     });
 
-    it('should have getRecurringBills method', () => {
-      expect(typeof financialContextEngine.getRecurringBills).toBe('function');
+    it("should have getRecurringBills method", () => {
+      expect(typeof financialContextEngine.getRecurringBills).toBe("function");
     });
 
-    it('should have clearCache method', () => {
-      expect(typeof financialContextEngine.clearCache).toBe('function');
+    it("should have clearCache method", () => {
+      expect(typeof financialContextEngine.clearCache).toBe("function");
     });
 
-    it('should have clearAllCaches method', () => {
-      expect(typeof financialContextEngine.clearAllCaches).toBe('function');
+    it("should have clearAllCaches method", () => {
+      expect(typeof financialContextEngine.clearAllCaches).toBe("function");
     });
 
-    it('should have getCacheStats method', () => {
-      expect(typeof financialContextEngine.getCacheStats).toBe('function');
+    it("should have getCacheStats method", () => {
+      expect(typeof financialContextEngine.getCacheStats).toBe("function");
     });
   });
 
-  describe('clearCache', () => {
-    it('should not throw when clearing cache for non-existent user', () => {
+  describe("clearCache", () => {
+    it("should not throw when clearing cache for non-existent user", () => {
       expect(() => {
-        financialContextEngine.clearCache('non-existent-user');
+        financialContextEngine.clearCache("non-existent-user");
       }).not.toThrow();
     });
   });
 
-  describe('clearAllCaches', () => {
-    it('should not throw when clearing all caches', () => {
+  describe("clearAllCaches", () => {
+    it("should not throw when clearing all caches", () => {
       expect(() => {
         financialContextEngine.clearAllCaches();
       }).not.toThrow();
     });
   });
 
-  describe('getCacheStats', () => {
+  describe("getCacheStats", () => {
     beforeEach(() => {
       financialContextEngine.clearAllCaches();
     });
 
-    it('should return cache statistics', () => {
+    it("should return cache statistics", () => {
       const stats = financialContextEngine.getCacheStats();
-      expect(stats).toHaveProperty('size');
-      expect(stats).toHaveProperty('entries');
-      expect(typeof stats.size).toBe('number');
+      expect(stats).toHaveProperty("size");
+      expect(stats).toHaveProperty("entries");
+      expect(typeof stats.size).toBe("number");
       expect(Array.isArray(stats.entries)).toBe(true);
     });
 
-    it('should return empty cache after clearAllCaches', () => {
+    it("should return empty cache after clearAllCaches", () => {
       financialContextEngine.clearAllCaches();
       const stats = financialContextEngine.getCacheStats();
       expect(stats.size).toBe(0);
@@ -101,8 +101,8 @@ describe('FinancialContextEngine', () => {
     });
   });
 
-  describe('DEFAULT_CONTEXT_OPTIONS', () => {
-    it('should have all required default options', () => {
+  describe("DEFAULT_CONTEXT_OPTIONS", () => {
+    it("should have all required default options", () => {
       expect(DEFAULT_CONTEXT_OPTIONS).toBeDefined();
       expect(DEFAULT_CONTEXT_OPTIONS.includeTransactions).toBe(true);
       expect(DEFAULT_CONTEXT_OPTIONS.includeInvestments).toBe(true);
@@ -115,8 +115,8 @@ describe('FinancialContextEngine', () => {
     });
   });
 
-  describe('FinancialContextOptions type', () => {
-    it('should allow partial options', () => {
+  describe("FinancialContextOptions type", () => {
+    it("should allow partial options", () => {
       const partialOptions: FinancialContextOptions = {
         forceRefresh: true,
       };
@@ -124,7 +124,7 @@ describe('FinancialContextEngine', () => {
       expect(partialOptions.includeTransactions).toBeUndefined();
     });
 
-    it('should allow all options', () => {
+    it("should allow all options", () => {
       const fullOptions: FinancialContextOptions = {
         includeTransactions: false,
         includeInvestments: false,

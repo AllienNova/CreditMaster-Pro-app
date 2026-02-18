@@ -3,21 +3,34 @@
  * Handles all trading-related API calls using the core API client
  */
 
-import api from './client';
-import type { ApiResponse, RequestConfig } from './types';
+import api from "./client";
+import type { ApiResponse, RequestConfig } from "./types";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type OrderSide = 'buy' | 'sell';
-export type OrderType = 'market' | 'limit' | 'stop' | 'stop_limit' | 'trailing_stop';
-export type OrderStatus = 'new' | 'pending' | 'accepted' | 'filled' | 'partially_filled' | 'canceled' | 'rejected' | 'expired';
-export type TimeInForce = 'day' | 'gtc' | 'opg' | 'cls' | 'ioc' | 'fok';
-export type PositionSide = 'long' | 'short';
-export type SignalSource = 'pctt' | 'rule' | 'ml' | 'llm' | 'fused';
-export type SignalStatus = 'active' | 'triggered' | 'expired' | 'cancelled';
-export type RiskLevel = 'low' | 'medium' | 'high' | 'critical';
+export type OrderSide = "buy" | "sell";
+export type OrderType =
+  | "market"
+  | "limit"
+  | "stop"
+  | "stop_limit"
+  | "trailing_stop";
+export type OrderStatus =
+  | "new"
+  | "pending"
+  | "accepted"
+  | "filled"
+  | "partially_filled"
+  | "canceled"
+  | "rejected"
+  | "expired";
+export type TimeInForce = "day" | "gtc" | "opg" | "cls" | "ioc" | "fok";
+export type PositionSide = "long" | "short";
+export type SignalSource = "pctt" | "rule" | "ml" | "llm" | "fused";
+export type SignalStatus = "active" | "triggered" | "expired" | "cancelled";
+export type RiskLevel = "low" | "medium" | "high" | "critical";
 
 export interface Order {
   id: string;
@@ -66,7 +79,7 @@ export interface TradingSignal {
   symbol: string;
   timestamp: string;
   source: SignalSource;
-  type: 'entry' | 'exit';
+  type: "entry" | "exit";
   side: PositionSide;
   strength: number;
   confidence: number;
@@ -161,7 +174,7 @@ export interface TradeHistoryItem {
   quantity: number;
   profitLoss?: number;
   profitLossPercent?: number;
-  outcome?: 'win' | 'loss' | 'breakeven';
+  outcome?: "win" | "loss" | "breakeven";
   strategy?: string;
   notes?: string;
   holdingPeriodDays?: number;
@@ -248,7 +261,7 @@ export interface OrderRequest {
   trailAmount?: number;
   timeInForce?: TimeInForce;
   extendedHours?: boolean;
-  orderClass?: 'simple' | 'bracket' | 'oco' | 'oto';
+  orderClass?: "simple" | "bracket" | "oco" | "oto";
   takeProfitPrice?: number;
   stopLossPrice?: number;
   stopLossLimitPrice?: number;
@@ -317,16 +330,19 @@ export const tradingApi = {
       limit?: number;
       offset?: number;
     },
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<ApiResponse<OrdersResponse>> => {
     const queryParams = new URLSearchParams();
-    if (params?.status) queryParams.append('status', params.status.join(','));
-    if (params?.side) queryParams.append('side', params.side);
-    if (params?.symbol) queryParams.append('symbol', params.symbol);
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
-    if (params?.offset) queryParams.append('offset', params.offset.toString());
+    if (params?.status) queryParams.append("status", params.status.join(","));
+    if (params?.side) queryParams.append("side", params.side);
+    if (params?.symbol) queryParams.append("symbol", params.symbol);
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
+    if (params?.offset) queryParams.append("offset", params.offset.toString());
     const query = queryParams.toString();
-    return api.get<OrdersResponse>(`/trading/orders${query ? `?${query}` : ''}`, config);
+    return api.get<OrdersResponse>(
+      `/trading/orders${query ? `?${query}` : ""}`,
+      config,
+    );
   },
 
   /**
@@ -334,7 +350,7 @@ export const tradingApi = {
    */
   getOrder: (
     orderId: string,
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<ApiResponse<{ order: Order }>> =>
     api.get<{ order: Order }>(`/trading/orders?id=${orderId}`, config),
 
@@ -342,19 +358,19 @@ export const tradingApi = {
    * Get order blotter
    */
   getBlotter: (config?: RequestConfig): Promise<ApiResponse<OrderBlotter>> =>
-    api.get<OrderBlotter>('/trading/orders?action=blotter', config),
+    api.get<OrderBlotter>("/trading/orders?action=blotter", config),
 
   /**
    * Create a new order
    */
   createOrder: (
     order: OrderRequest,
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<ApiResponse<CreateOrderResponse>> =>
     api.post<CreateOrderResponse>(
-      '/trading/orders',
-      { action: 'create', ...order },
-      config
+      "/trading/orders",
+      { action: "create", ...order },
+      config,
     ),
 
   /**
@@ -362,12 +378,12 @@ export const tradingApi = {
    */
   validateOrder: (
     order: OrderRequest,
-    config?: RequestConfig
-  ): Promise<ApiResponse<{ validation: CreateOrderResponse['validation'] }>> =>
-    api.post<{ validation: CreateOrderResponse['validation'] }>(
-      '/trading/orders',
-      { action: 'validate', ...order },
-      config
+    config?: RequestConfig,
+  ): Promise<ApiResponse<{ validation: CreateOrderResponse["validation"] }>> =>
+    api.post<{ validation: CreateOrderResponse["validation"] }>(
+      "/trading/orders",
+      { action: "validate", ...order },
+      config,
     ),
 
   /**
@@ -375,22 +391,22 @@ export const tradingApi = {
    */
   cancelOrder: (
     orderId: string,
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<ApiResponse<{ success: boolean; message: string }>> =>
     api.delete<{ success: boolean; message: string }>(
       `/trading/orders?id=${orderId}`,
-      config
+      config,
     ),
 
   /**
    * Cancel all open orders
    */
   cancelAllOrders: (
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<ApiResponse<{ success: boolean; orderCount: number }>> =>
     api.delete<{ success: boolean; orderCount: number }>(
-      '/trading/orders?all=true',
-      config
+      "/trading/orders?all=true",
+      config,
     ),
 
   // =========================================================================
@@ -407,15 +423,18 @@ export const tradingApi = {
       symbol?: string;
       limit?: number;
     },
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<ApiResponse<PositionsResponse>> => {
     const queryParams = new URLSearchParams();
-    if (params?.status) queryParams.append('status', params.status.join(','));
-    if (params?.side) queryParams.append('side', params.side);
-    if (params?.symbol) queryParams.append('symbol', params.symbol);
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.status) queryParams.append("status", params.status.join(","));
+    if (params?.side) queryParams.append("side", params.side);
+    if (params?.symbol) queryParams.append("symbol", params.symbol);
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
     const query = queryParams.toString();
-    return api.get<PositionsResponse>(`/trading/positions${query ? `?${query}` : ''}`, config);
+    return api.get<PositionsResponse>(
+      `/trading/positions${query ? `?${query}` : ""}`,
+      config,
+    );
   },
 
   /**
@@ -423,20 +442,22 @@ export const tradingApi = {
    */
   getPositionBySymbol: (
     symbol: string,
-    config?: RequestConfig
-  ): Promise<ApiResponse<{ position: Position | null; hasPosition: boolean }>> =>
+    config?: RequestConfig,
+  ): Promise<
+    ApiResponse<{ position: Position | null; hasPosition: boolean }>
+  > =>
     api.get<{ position: Position | null; hasPosition: boolean }>(
       `/trading/positions?symbol=${symbol}`,
-      config
+      config,
     ),
 
   /**
    * Get position summary
    */
   getPositionSummary: (
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<ApiResponse<PositionSummary>> =>
-    api.get<PositionSummary>('/trading/positions?action=summary', config),
+    api.get<PositionSummary>("/trading/positions?action=summary", config),
 
   /**
    * Close a position
@@ -446,24 +467,24 @@ export const tradingApi = {
     closePrice?: number,
     closeQuantity?: number,
     reason?: string,
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<ApiResponse<{ position: Position; realizedPL: number }>> =>
     api.post<{ position: Position; realizedPL: number }>(
-      '/trading/positions',
-      { action: 'close', positionId, closePrice, closeQuantity, reason },
-      config
+      "/trading/positions",
+      { action: "close", positionId, closePrice, closeQuantity, reason },
+      config,
     ),
 
   /**
    * Close all positions
    */
   closeAllPositions: (
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<ApiResponse<{ closedCount: number; totalRealizedPL: number }>> =>
     api.post<{ closedCount: number; totalRealizedPL: number }>(
-      '/trading/positions',
-      { action: 'closeAll' },
-      config
+      "/trading/positions",
+      { action: "closeAll" },
+      config,
     ),
 
   /**
@@ -471,12 +492,12 @@ export const tradingApi = {
    */
   updatePrices: (
     prices: Record<string, number>,
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<ApiResponse<{ summary: PositionSummary }>> =>
     api.post<{ summary: PositionSummary }>(
-      '/trading/positions',
-      { action: 'updatePrices', prices },
-      config
+      "/trading/positions",
+      { action: "updatePrices", prices },
+      config,
     ),
 
   // =========================================================================
@@ -493,24 +514,28 @@ export const tradingApi = {
       minConfidence?: number;
       limit?: number;
     },
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<ApiResponse<SignalsResponse>> => {
     const queryParams = new URLSearchParams();
-    queryParams.append('action', 'active');
-    if (params?.symbol) queryParams.append('symbol', params.symbol);
-    if (params?.source) queryParams.append('source', params.source);
-    if (params?.minConfidence) queryParams.append('minConfidence', params.minConfidence.toString());
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
-    return api.get<SignalsResponse>(`/trading/signals?${queryParams.toString()}`, config);
+    queryParams.append("action", "active");
+    if (params?.symbol) queryParams.append("symbol", params.symbol);
+    if (params?.source) queryParams.append("source", params.source);
+    if (params?.minConfidence)
+      queryParams.append("minConfidence", params.minConfidence.toString());
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
+    return api.get<SignalsResponse>(
+      `/trading/signals?${queryParams.toString()}`,
+      config,
+    );
   },
 
   /**
    * Get signal summary
    */
   getSignalSummary: (
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<ApiResponse<SignalSummaryResponse>> =>
-    api.get<SignalSummaryResponse>('/trading/signals?action=summary', config),
+    api.get<SignalSummaryResponse>("/trading/signals?action=summary", config),
 
   /**
    * Analyze symbol for signals
@@ -518,38 +543,53 @@ export const tradingApi = {
   analyzeSymbol: (
     symbol: string,
     timeframe?: string,
-    includeEngines?: { pctt?: boolean; rule?: boolean; ml?: boolean; llm?: boolean },
-    config?: RequestConfig
-  ): Promise<ApiResponse<{
-    symbol: string;
-    timeframe: string;
-    timestamp: string;
-    engines: Record<string, unknown>;
-    fusedSignal: { side: PositionSide; confidence: number; consensus: number };
-  }>> =>
+    includeEngines?: {
+      pctt?: boolean;
+      rule?: boolean;
+      ml?: boolean;
+      llm?: boolean;
+    },
+    config?: RequestConfig,
+  ): Promise<
+    ApiResponse<{
+      symbol: string;
+      timeframe: string;
+      timestamp: string;
+      engines: Record<string, unknown>;
+      fusedSignal: {
+        side: PositionSide;
+        confidence: number;
+        consensus: number;
+      };
+    }>
+  > =>
     api.post<{
       symbol: string;
       timeframe: string;
       timestamp: string;
       engines: Record<string, unknown>;
-      fusedSignal: { side: PositionSide; confidence: number; consensus: number };
+      fusedSignal: {
+        side: PositionSide;
+        confidence: number;
+        consensus: number;
+      };
     }>(
-      '/trading/signals',
-      { action: 'analyze', symbol, timeframe, includeEngines },
-      config
+      "/trading/signals",
+      { action: "analyze", symbol, timeframe, includeEngines },
+      config,
     ),
 
   /**
    * Create a manual signal
    */
   createSignal: (
-    signal: Omit<TradingSignal, 'id' | 'timestamp' | 'status'>,
-    config?: RequestConfig
+    signal: Omit<TradingSignal, "id" | "timestamp" | "status">,
+    config?: RequestConfig,
   ): Promise<ApiResponse<{ signal: TradingSignal }>> =>
     api.post<{ signal: TradingSignal }>(
-      '/trading/signals',
-      { action: 'create', ...signal },
-      config
+      "/trading/signals",
+      { action: "create", ...signal },
+      config,
     ),
 
   /**
@@ -557,12 +597,12 @@ export const tradingApi = {
    */
   cancelSignal: (
     signalId: string,
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<ApiResponse<{ signal: TradingSignal }>> =>
     api.post<{ signal: TradingSignal }>(
-      '/trading/signals',
-      { action: 'cancel', signalId },
-      config
+      "/trading/signals",
+      { action: "cancel", signalId },
+      config,
     ),
 
   // =========================================================================
@@ -572,10 +612,8 @@ export const tradingApi = {
   /**
    * Get risk metrics
    */
-  getRiskMetrics: (
-    config?: RequestConfig
-  ): Promise<ApiResponse<RiskMetrics>> =>
-    api.get<RiskMetrics>('/trading/risk?action=metrics', {
+  getRiskMetrics: (config?: RequestConfig): Promise<ApiResponse<RiskMetrics>> =>
+    api.get<RiskMetrics>("/trading/risk?action=metrics", {
       enableCache: true,
       cacheTime: 5000,
       ...config,
@@ -585,21 +623,21 @@ export const tradingApi = {
    * Get risk settings
    */
   getRiskSettings: (
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<ApiResponse<RiskSettings>> =>
-    api.get<RiskSettings>('/trading/risk?action=settings', config),
+    api.get<RiskSettings>("/trading/risk?action=settings", config),
 
   /**
    * Update risk settings
    */
   updateRiskSettings: (
     settings: Partial<RiskSettings>,
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<ApiResponse<RiskSettings>> =>
     api.post<RiskSettings>(
-      '/trading/risk',
-      { action: 'updateSettings', settings },
-      config
+      "/trading/risk",
+      { action: "updateSettings", settings },
+      config,
     ),
 
   /**
@@ -607,24 +645,24 @@ export const tradingApi = {
    */
   activateKillSwitch: (
     reason: string,
-    config?: RequestConfig
-  ): Promise<ApiResponse<RiskMetrics['killSwitch']>> =>
-    api.post<RiskMetrics['killSwitch']>(
-      '/trading/risk',
-      { action: 'activateKillSwitch', reason },
-      config
+    config?: RequestConfig,
+  ): Promise<ApiResponse<RiskMetrics["killSwitch"]>> =>
+    api.post<RiskMetrics["killSwitch"]>(
+      "/trading/risk",
+      { action: "activateKillSwitch", reason },
+      config,
     ),
 
   /**
    * Deactivate kill switch
    */
   deactivateKillSwitch: (
-    config?: RequestConfig
-  ): Promise<ApiResponse<RiskMetrics['killSwitch']>> =>
-    api.post<RiskMetrics['killSwitch']>(
-      '/trading/risk',
-      { action: 'deactivateKillSwitch' },
-      config
+    config?: RequestConfig,
+  ): Promise<ApiResponse<RiskMetrics["killSwitch"]>> =>
+    api.post<RiskMetrics["killSwitch"]>(
+      "/trading/risk",
+      { action: "deactivateKillSwitch" },
+      config,
     ),
 
   /**
@@ -632,12 +670,12 @@ export const tradingApi = {
    */
   updateEquity: (
     equity: number,
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<ApiResponse<{ equity: number; peakEquity: number }>> =>
     api.post<{ equity: number; peakEquity: number }>(
-      '/trading/risk',
-      { action: 'updateEquity', equity },
-      config
+      "/trading/risk",
+      { action: "updateEquity", equity },
+      config,
     ),
 
   // =========================================================================
@@ -652,24 +690,26 @@ export const tradingApi = {
       startDate?: string;
       endDate?: string;
       symbol?: string;
-      outcome?: 'win' | 'loss' | 'breakeven';
+      outcome?: "win" | "loss" | "breakeven";
       limit?: number;
       offset?: number;
     },
-    config?: RequestConfig
-  ): Promise<ApiResponse<{ trades: TradeHistoryItem[]; stats: TradeStats }>> => {
+    config?: RequestConfig,
+  ): Promise<
+    ApiResponse<{ trades: TradeHistoryItem[]; stats: TradeStats }>
+  > => {
     const queryParams = new URLSearchParams();
-    if (params?.startDate) queryParams.append('startDate', params.startDate);
-    if (params?.endDate) queryParams.append('endDate', params.endDate);
-    if (params?.symbol) queryParams.append('symbol', params.symbol);
-    if (params?.outcome) queryParams.append('outcome', params.outcome);
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
-    if (params?.offset) queryParams.append('offset', params.offset.toString());
+    if (params?.startDate) queryParams.append("startDate", params.startDate);
+    if (params?.endDate) queryParams.append("endDate", params.endDate);
+    if (params?.symbol) queryParams.append("symbol", params.symbol);
+    if (params?.outcome) queryParams.append("outcome", params.outcome);
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
+    if (params?.offset) queryParams.append("offset", params.offset.toString());
     const query = queryParams.toString();
     // Note: This would need a backend route - using mock for now
     return api.get<{ trades: TradeHistoryItem[]; stats: TradeStats }>(
-      `/trading/journal${query ? `?${query}` : ''}`,
-      config
+      `/trading/journal${query ? `?${query}` : ""}`,
+      config,
     );
   },
 
@@ -677,12 +717,12 @@ export const tradingApi = {
    * Get trading statistics
    */
   getTradingStats: (
-    period?: 'day' | 'week' | 'month' | 'year' | 'all',
-    config?: RequestConfig
+    period?: "day" | "week" | "month" | "year" | "all",
+    config?: RequestConfig,
   ): Promise<ApiResponse<TradeStats>> =>
     api.get<TradeStats>(
-      `/trading/journal/stats${period ? `?period=${period}` : ''}`,
-      config
+      `/trading/journal/stats${period ? `?period=${period}` : ""}`,
+      config,
     ),
 
   // =========================================================================
@@ -693,21 +733,21 @@ export const tradingApi = {
    * Get paper trading account
    */
   getPaperAccount: (
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<ApiResponse<PaperAccount>> =>
-    api.get<PaperAccount>('/trading/paper/account', config),
+    api.get<PaperAccount>("/trading/paper/account", config),
 
   /**
    * Reset paper trading account
    */
   resetPaperAccount: (
     initialBalance?: number,
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<ApiResponse<PaperAccount>> =>
     api.post<PaperAccount>(
-      '/trading/paper/reset',
+      "/trading/paper/reset",
       { initialBalance: initialBalance ?? 100000 },
-      config
+      config,
     ),
 
   /**
@@ -715,12 +755,12 @@ export const tradingApi = {
    */
   closePaperPosition: (
     positionId: string,
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<ApiResponse<{ success: boolean; realizedPL: number }>> =>
     api.post<{ success: boolean; realizedPL: number }>(
-      '/trading/paper/positions/close',
+      "/trading/paper/positions/close",
       { positionId },
-      config
+      config,
     ),
 
   /**
@@ -728,11 +768,11 @@ export const tradingApi = {
    */
   cancelPaperOrder: (
     orderId: string,
-    config?: RequestConfig
+    config?: RequestConfig,
   ): Promise<ApiResponse<{ success: boolean }>> =>
     api.delete<{ success: boolean }>(
       `/trading/paper/orders?id=${orderId}`,
-      config
+      config,
     ),
 };
 

@@ -3,16 +3,25 @@
  * Role-based message rendering with animations and long-press actions
  */
 
-import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, TouchableOpacity, Alert, Share, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import * as Clipboard from 'expo-clipboard';
-import * as Haptics from 'expo-haptics';
-import { lightTheme as theme } from '../../constants/theme';
+import React, { useEffect, useRef } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Animated,
+  TouchableOpacity,
+  Alert,
+  Share,
+  Platform,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import * as Clipboard from "expo-clipboard";
+import * as Haptics from "expo-haptics";
+import { lightTheme as theme } from "../../constants/theme";
 
 interface ChatBubbleProps {
   id: string;
-  role: 'user' | 'assistant' | 'system';
+  role: "user" | "assistant" | "system";
   content: string;
   timestamp: Date;
   metadata?: {
@@ -51,52 +60,52 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
 
   const handleLongPress = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    
-    Alert.alert(
-      'Message Options',
-      'What would you like to do?',
-      [
-        {
-          text: 'Copy',
-          onPress: async () => {
-            await Clipboard.setStringAsync(content);
-            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          },
+
+    Alert.alert("Message Options", "What would you like to do?", [
+      {
+        text: "Copy",
+        onPress: async () => {
+          await Clipboard.setStringAsync(content);
+          await Haptics.notificationAsync(
+            Haptics.NotificationFeedbackType.Success,
+          );
         },
-        {
-          text: 'Share',
-          onPress: async () => {
-            try {
-              const shareResult = await Share.share({
-                message: content,
-                title: 'Shared from Fynvita',
-              });
-              if (shareResult.action === Share.sharedAction) {
-                await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              }
-            } catch (error) {
-              console.error('Share failed:', error);
-              Alert.alert('Error', 'Failed to share content');
+      },
+      {
+        text: "Share",
+        onPress: async () => {
+          try {
+            const shareResult = await Share.share({
+              message: content,
+              title: "Shared from Fynvita",
+            });
+            if (shareResult.action === Share.sharedAction) {
+              await Haptics.notificationAsync(
+                Haptics.NotificationFeedbackType.Success,
+              );
             }
-          },
+          } catch (error) {
+            console.error("Share failed:", error);
+            Alert.alert("Error", "Failed to share content");
+          }
         },
-        { text: 'Cancel', style: 'cancel' },
-      ]
-    );
+      },
+      { text: "Cancel", style: "cancel" },
+    ]);
   };
 
-  const isUser = role === 'user';
-  const isSystem = role === 'system';
+  const isUser = role === "user";
+  const isSystem = role === "system";
 
   const formatTime = (date: Date) => {
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const minutes = Math.floor(diff / 60000);
-    
-    if (minutes < 1) return 'Just now';
+
+    if (minutes < 1) return "Just now";
     if (minutes < 60) return `${minutes}m ago`;
-    
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
   return (
@@ -118,15 +127,29 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
         delayLongPress={500}
         style={[
           styles.bubble,
-          isUser ? styles.userBubble : isSystem ? styles.systemBubble : styles.assistantBubble,
+          isUser
+            ? styles.userBubble
+            : isSystem
+              ? styles.systemBubble
+              : styles.assistantBubble,
         ]}
         activeOpacity={0.8}
       >
-        <Text style={[styles.content, isUser ? styles.userContent : styles.assistantContent]}>
+        <Text
+          style={[
+            styles.content,
+            isUser ? styles.userContent : styles.assistantContent,
+          ]}
+        >
           {content}
         </Text>
-        
-        <Text style={[styles.timestamp, isUser ? styles.userTimestamp : styles.assistantTimestamp]}>
+
+        <Text
+          style={[
+            styles.timestamp,
+            isUser ? styles.userTimestamp : styles.assistantTimestamp,
+          ]}
+        >
           {formatTime(timestamp)}
         </Text>
 
@@ -143,7 +166,11 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
                   onActionPress?.(action.action);
                 }}
               >
-                <Ionicons name="arrow-forward-circle" size={16} color={theme.colors.primary} />
+                <Ionicons
+                  name="arrow-forward-circle"
+                  size={16}
+                  color={theme.colors.primary}
+                />
                 <Text style={styles.actionText}>{action.label}</Text>
               </TouchableOpacity>
             ))}
@@ -151,17 +178,22 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
         )}
 
         {/* Educational Content */}
-        {metadata?.educationalContent && metadata.educationalContent.length > 0 && (
-          <View style={styles.educationalContainer}>
-            <Text style={styles.educationalTitle}>Learn More:</Text>
-            {metadata.educationalContent.map((content, index) => (
-              <View key={index} style={styles.educationalCard}>
-                <Text style={styles.educationalCardTitle}>{content.title}</Text>
-                <Text style={styles.educationalCardSummary}>{content.summary}</Text>
-              </View>
-            ))}
-          </View>
-        )}
+        {metadata?.educationalContent &&
+          metadata.educationalContent.length > 0 && (
+            <View style={styles.educationalContainer}>
+              <Text style={styles.educationalTitle}>Learn More:</Text>
+              {metadata.educationalContent.map((content, index) => (
+                <View key={index} style={styles.educationalCard}>
+                  <Text style={styles.educationalCardTitle}>
+                    {content.title}
+                  </Text>
+                  <Text style={styles.educationalCardSummary}>
+                    {content.summary}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
       </TouchableOpacity>
 
       {isUser && (
@@ -175,33 +207,33 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: theme.spacing.md,
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
     paddingHorizontal: theme.spacing.sm,
   },
   userContainer: {
-    justifyContent: 'flex-end',
+    justifyContent: "flex-end",
   },
   assistantContainer: {
-    justifyContent: 'flex-start',
+    justifyContent: "flex-start",
   },
   avatar: {
     width: 30,
     height: 30,
     borderRadius: 15,
     backgroundColor: theme.colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: theme.spacing.xs,
   },
   userAvatar: {
-    backgroundColor: '#6B7280',
+    backgroundColor: "#6B7280",
     marginRight: 0,
     marginLeft: theme.spacing.xs,
   },
   bubble: {
-    maxWidth: '75%',
+    maxWidth: "75%",
     padding: theme.spacing.md,
     borderRadius: theme.borderRadius.md,
   },
@@ -210,11 +242,11 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 4,
   },
   assistantBubble: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: "#F3F4F6",
     borderBottomLeftRadius: 4,
   },
   systemBubble: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: "#FEF3C7",
     borderRadius: theme.borderRadius.md,
   },
   content: {
@@ -222,7 +254,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   userContent: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
   assistantContent: {
     color: theme.colors.text,
@@ -232,8 +264,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   userTimestamp: {
-    color: '#E0E7FF',
-    textAlign: 'right',
+    color: "#E0E7FF",
+    textAlign: "right",
   },
   assistantTimestamp: {
     color: theme.colors.textSecondary,
@@ -242,18 +274,18 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.sm,
     paddingTop: theme.spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.1)',
+    borderTopColor: "rgba(0,0,0,0.1)",
   },
   actionsTitle: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.textSecondary,
     marginBottom: theme.spacing.xs,
   },
   actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
     paddingVertical: theme.spacing.xs,
     paddingHorizontal: theme.spacing.sm,
     borderRadius: theme.borderRadius.sm,
@@ -264,30 +296,30 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 12,
     color: theme.colors.primary,
-    fontWeight: '500',
+    fontWeight: "500",
     marginLeft: theme.spacing.xs,
   },
   educationalContainer: {
     marginTop: theme.spacing.sm,
     paddingTop: theme.spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.1)',
+    borderTopColor: "rgba(0,0,0,0.1)",
   },
   educationalTitle: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.textSecondary,
     marginBottom: theme.spacing.xs,
   },
   educationalCard: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: "#F9FAFB",
     padding: theme.spacing.sm,
     borderRadius: theme.borderRadius.sm,
     marginTop: theme.spacing.xs,
   },
   educationalCardTitle: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: 2,
   },
@@ -296,5 +328,3 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
   },
 });
-
-

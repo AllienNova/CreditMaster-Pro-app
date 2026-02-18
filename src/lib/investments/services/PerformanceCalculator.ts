@@ -5,8 +5,8 @@
  * Sharpe ratio, drawdowns, and benchmarking against market indices.
  */
 
-import { PortfolioService } from './PortfolioService';
-import { PortfolioPerformance } from '../types/portfolio-db.types';
+import { PortfolioService } from "./PortfolioService";
+import { PortfolioPerformance } from "../types/portfolio-db.types";
 
 /**
  * Benchmark comparison result
@@ -48,7 +48,7 @@ export class PerformanceCalculator {
   async calculateTotalReturn(
     portfolioId: string,
     startDate?: Date,
-    endDate?: Date
+    endDate?: Date,
   ): Promise<{ absolute: number; percentage: number }> {
     const portfolio = await this.portfolioService.getPortfolio(portfolioId);
     if (!portfolio) {
@@ -61,10 +61,16 @@ export class PerformanceCalculator {
     }
 
     // Calculate current value
-    const currentValue = holdings.reduce((sum, h) => sum + (h.current_value || 0), 0);
+    const currentValue = holdings.reduce(
+      (sum, h) => sum + (h.current_value || 0),
+      0,
+    );
 
     // Calculate total cost basis
-    const totalCost = holdings.reduce((sum, h) => sum + (h.quantity * h.average_cost), 0);
+    const totalCost = holdings.reduce(
+      (sum, h) => sum + h.quantity * h.average_cost,
+      0,
+    );
 
     if (totalCost === 0) {
       return { absolute: 0, percentage: 0 };
@@ -84,10 +90,10 @@ export class PerformanceCalculator {
    */
   async calculateAnnualizedReturn(
     portfolioId: string,
-    years: number
+    years: number,
   ): Promise<number> {
     if (years <= 0) {
-      throw new Error('Years must be greater than 0');
+      throw new Error("Years must be greater than 0");
     }
 
     const portfolio = await this.portfolioService.getPortfolio(portfolioId);
@@ -100,8 +106,14 @@ export class PerformanceCalculator {
       return 0;
     }
 
-    const currentValue = holdings.reduce((sum, h) => sum + (h.current_value || 0), 0);
-    const totalCost = holdings.reduce((sum, h) => sum + (h.quantity * h.average_cost), 0);
+    const currentValue = holdings.reduce(
+      (sum, h) => sum + (h.current_value || 0),
+      0,
+    );
+    const totalCost = holdings.reduce(
+      (sum, h) => sum + h.quantity * h.average_cost,
+      0,
+    );
 
     if (totalCost === 0) {
       return 0;
@@ -120,10 +132,10 @@ export class PerformanceCalculator {
    */
   async calculateVolatility(
     portfolioId: string,
-    period: number = 30
+    period: number = 30,
   ): Promise<number> {
     if (period <= 1) {
-      throw new Error('Period must be greater than 1');
+      throw new Error("Period must be greater than 1");
     }
 
     // For now, return a placeholder since we need historical price data
@@ -135,12 +147,10 @@ export class PerformanceCalculator {
 
     // Placeholder: Use day_change_percent as a proxy for volatility
     // In production, calculate from historical daily returns
-    const estimatedVolatility = Math.abs(portfolio.day_change_percent || 0) * Math.sqrt(period);
+    const estimatedVolatility =
+      Math.abs(portfolio.day_change_percent || 0) * Math.sqrt(period);
     return estimatedVolatility;
   }
-
-
-
 
   /**
    * Calculate Sharpe Ratio (risk-adjusted return)
@@ -150,7 +160,7 @@ export class PerformanceCalculator {
    */
   async calculateSharpeRatio(
     portfolioId: string,
-    riskFreeRate: number = 0.04
+    riskFreeRate: number = 0.04,
   ): Promise<number> {
     const portfolio = await this.portfolioService.getPortfolio(portfolioId);
     if (!portfolio) {
@@ -158,7 +168,10 @@ export class PerformanceCalculator {
     }
 
     // Calculate annualized return (assuming 1 year for simplicity)
-    const annualizedReturn = await this.calculateAnnualizedReturn(portfolioId, 1);
+    const annualizedReturn = await this.calculateAnnualizedReturn(
+      portfolioId,
+      1,
+    );
 
     // Calculate volatility (annualized)
     const volatility = await this.calculateVolatility(portfolioId, 252); // 252 trading days
@@ -168,7 +181,8 @@ export class PerformanceCalculator {
     }
 
     // Sharpe Ratio = (Portfolio Return - Risk Free Rate) / Volatility
-    const sharpeRatio = (annualizedReturn / 100 - riskFreeRate) / (volatility / 100);
+    const sharpeRatio =
+      (annualizedReturn / 100 - riskFreeRate) / (volatility / 100);
     return sharpeRatio;
   }
 
@@ -178,8 +192,13 @@ export class PerformanceCalculator {
    * @returns Max drawdown percentage and dates
    */
   async calculateMaxDrawdown(
-    portfolioId: string
-  ): Promise<{ maxDrawdown: number; maxDrawdownPercent: number; startDate: Date; endDate: Date }> {
+    portfolioId: string,
+  ): Promise<{
+    maxDrawdown: number;
+    maxDrawdownPercent: number;
+    startDate: Date;
+    endDate: Date;
+  }> {
     const portfolio = await this.portfolioService.getPortfolio(portfolioId);
     if (!portfolio) {
       throw new Error(`Portfolio ${portfolioId} not found`);
@@ -204,7 +223,10 @@ export class PerformanceCalculator {
     }, holdings[0]);
 
     const maxDrawdownPercent = Math.min(worstHolding.gain_loss_percent || 0, 0);
-    const currentValue = holdings.reduce((sum, h) => sum + (h.current_value || 0), 0);
+    const currentValue = holdings.reduce(
+      (sum, h) => sum + (h.current_value || 0),
+      0,
+    );
     const maxDrawdown = (currentValue * maxDrawdownPercent) / 100;
 
     return {
@@ -221,7 +243,7 @@ export class PerformanceCalculator {
    * @returns Win rate percentage and extreme day returns
    */
   async calculateWinRate(
-    portfolioId: string
+    portfolioId: string,
   ): Promise<{ winRate: number; bestDay: number; worstDay: number }> {
     const portfolio = await this.portfolioService.getPortfolio(portfolioId);
     if (!portfolio) {
@@ -249,7 +271,7 @@ export class PerformanceCalculator {
   async benchmarkAgainstSP500(
     portfolioId: string,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
   ): Promise<BenchmarkComparison> {
     const portfolio = await this.portfolioService.getPortfolio(portfolioId);
     if (!portfolio) {

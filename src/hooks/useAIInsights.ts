@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
 /**
  * useAIInsights Hook
  * React hook for AI-powered insights and nudges
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from "react";
 import type {
   InsightsResponse,
   NudgeHistory,
   SpendingAnalysis,
   NudgeAction,
-} from '@/lib/ai-personalization';
+} from "@/lib/ai-personalization";
 
 interface UseAIInsightsReturn {
   insights: InsightsResponse | null;
@@ -22,7 +22,7 @@ interface UseAIInsightsReturn {
   respondToNudge: (
     nudgeId: string,
     action: NudgeAction,
-    feedback?: string
+    feedback?: string,
   ) => Promise<boolean>;
   refreshInsights: () => Promise<void>;
   analyzeTransaction: (transaction: {
@@ -47,9 +47,9 @@ export function useAIInsights(): UseAIInsightsReturn {
       setError(null);
 
       const [insightsRes, nudgesRes, analysisRes] = await Promise.all([
-        fetch('/api/ai/insights'),
-        fetch('/api/ai/nudges'),
-        fetch('/api/ai/spending-analysis'),
+        fetch("/api/ai/insights"),
+        fetch("/api/ai/nudges"),
+        fetch("/api/ai/spending-analysis"),
       ]);
 
       if (insightsRes.ok) {
@@ -67,7 +67,7 @@ export function useAIInsights(): UseAIInsightsReturn {
         setSpendingAnalysis(data);
       }
     } catch (err) {
-      setError('Failed to fetch AI insights');
+      setError("Failed to fetch AI insights");
       // Error captured in state
     } finally {
       setLoading(false);
@@ -82,12 +82,12 @@ export function useAIInsights(): UseAIInsightsReturn {
     async (
       nudgeId: string,
       action: NudgeAction,
-      feedback?: string
+      feedback?: string,
     ): Promise<boolean> => {
       try {
-        const res = await fetch('/api/ai/nudges', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const res = await fetch("/api/ai/nudges", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ nudgeId, action, feedback }),
         });
 
@@ -102,7 +102,7 @@ export function useAIInsights(): UseAIInsightsReturn {
         return false;
       }
     },
-    []
+    [],
   );
 
   const analyzeTransaction = useCallback(
@@ -113,9 +113,9 @@ export function useAIInsights(): UseAIInsightsReturn {
       timestamp?: string;
     }): Promise<{ riskScore: number; alertId?: string } | null> => {
       try {
-        const res = await fetch('/api/ai/spending-analysis', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const res = await fetch("/api/ai/spending-analysis", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ transaction }),
         });
 
@@ -132,7 +132,7 @@ export function useAIInsights(): UseAIInsightsReturn {
         return null;
       }
     },
-    []
+    [],
   );
 
   return {

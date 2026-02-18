@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { Document, DocumentType } from '@/lib/documents/document-service';
-import { useAuth } from '@/hooks/useAuth';
-import DocumentShareModal from './DocumentShareModal';
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { Document, DocumentType } from "@/lib/documents/document-service";
+import { useAuth } from "@/hooks/useAuth";
+import DocumentShareModal from "./DocumentShareModal";
 
 interface DocumentViewerProps {
   documentId: string;
@@ -17,7 +17,7 @@ export default function DocumentViewer({ documentId }: DocumentViewerProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showMetadataModal, setShowMetadataModal] = useState(false);
-  const [newTags, setNewTags] = useState('');
+  const [newTags, setNewTags] = useState("");
   const [shareModalOpen, setShareModalOpen] = useState(false);
 
   const fetchDocument = useCallback(async () => {
@@ -28,15 +28,15 @@ export default function DocumentViewer({ documentId }: DocumentViewerProps) {
 
     try {
       const response = await fetch(`/api/documents?documentId=${documentId}`);
-      
+
       if (!response.ok) {
-        throw new Error('Document not found');
+        throw new Error("Document not found");
       }
-      
+
       const data = await response.json();
       setDocument(data.document);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load document');
+      setError(err instanceof Error ? err.message : "Failed to load document");
     } finally {
       setLoading(false);
     }
@@ -50,14 +50,14 @@ export default function DocumentViewer({ documentId }: DocumentViewerProps) {
 
   const handleDownload = () => {
     if (document) {
-      window.open(document.url, '_blank');
+      window.open(document.url, "_blank");
     }
   };
 
   const handlePrint = () => {
     if (document) {
-      const printWindow = window.open(document.url, '_blank');
-      printWindow?.addEventListener('load', () => {
+      const printWindow = window.open(document.url, "_blank");
+      printWindow?.addEventListener("load", () => {
         printWindow.print();
       });
     }
@@ -70,106 +70,109 @@ export default function DocumentViewer({ documentId }: DocumentViewerProps) {
   };
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this document?')) {
+    if (!confirm("Are you sure you want to delete this document?")) {
       return;
     }
-    
+
     try {
       const response = await fetch(`/api/documents?documentId=${documentId}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
-      
+
       if (!response.ok) {
-        throw new Error('Failed to delete document');
+        throw new Error("Failed to delete document");
       }
-      
-      router.push('/documents');
+
+      router.push("/documents");
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete document');
+      alert(err instanceof Error ? err.message : "Failed to delete document");
     }
   };
 
   const handleAddTags = async () => {
     if (!newTags.trim() || !document) return;
-    
+
     try {
-      const tags = newTags.split(',').map(tag => tag.trim()).filter(tag => tag);
-      
-      const response = await fetch('/api/documents', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+      const tags = newTags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter((tag) => tag);
+
+      const response = await fetch("/api/documents", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           documentId,
-          action: 'add_tags',
+          action: "add_tags",
           tags,
         }),
       });
-      
+
       if (!response.ok) {
-        throw new Error('Failed to add tags');
+        throw new Error("Failed to add tags");
       }
-      
+
       const data = await response.json();
       setDocument(data.document);
-      setNewTags('');
+      setNewTags("");
       setShowMetadataModal(false);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to add tags');
+      alert(err instanceof Error ? err.message : "Failed to add tags");
     }
   };
 
   const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
   };
 
   const formatDate = (date: Date): string => {
-    return new Date(date).toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+    return new Date(date).toLocaleString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const formatTypeName = (type: DocumentType): string => {
     return type
-      .split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
   };
 
   const getDocumentIcon = (type: DocumentType): string => {
     switch (type) {
-      case 'credit_report':
-        return '';
-      case 'dispute_letter':
-        return '';
-      case 'evidence':
-        return '';
-      case 'identity_document':
-        return '';
-      case 'proof_of_address':
-        return '';
-      case 'income_verification':
-        return '';
-      case 'other':
-        return '';
+      case "credit_report":
+        return "";
+      case "dispute_letter":
+        return "";
+      case "evidence":
+        return "";
+      case "identity_document":
+        return "";
+      case "proof_of_address":
+        return "";
+      case "income_verification":
+        return "";
+      case "other":
+        return "";
       default:
-        return '';
+        return "";
     }
   };
 
   const isPDF = (mimeType: string): boolean => {
-    return mimeType === 'application/pdf';
+    return mimeType === "application/pdf";
   };
 
   const isImage = (mimeType: string): boolean => {
-    return mimeType.startsWith('image/');
+    return mimeType.startsWith("image/");
   };
 
   if (loading) {
@@ -188,11 +191,15 @@ export default function DocumentViewer({ documentId }: DocumentViewerProps) {
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
         <div className="text-center py-12">
           <div className="text-red-600 text-xl mb-4"></div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Error Loading Document</h3>
-          <p className="text-gray-600 dark:text-slate-300 mb-4">{error || 'Document not found'}</p>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+            Error Loading Document
+          </h3>
+          <p className="text-gray-600 dark:text-slate-300 mb-4">
+            {error || "Document not found"}
+          </p>
           <button
             type="button"
-            onClick={() => router.push('/documents')}
+            onClick={() => router.push("/documents")}
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             Back to Documents
@@ -209,13 +216,15 @@ export default function DocumentViewer({ documentId }: DocumentViewerProps) {
         <div className="flex items-center gap-4">
           <button
             type="button"
-            onClick={() => router.push('/documents')}
+            onClick={() => router.push("/documents")}
             className="text-gray-600 hover:text-gray-900 dark:text-white dark:hover:text-white"
           >
             ← Back to documents
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{document.originalName}</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {document.originalName}
+            </h1>
             <p className="text-sm text-gray-600 dark:text-slate-300 mt-1">
               {formatTypeName(document.type)} · {formatFileSize(document.size)}
             </p>
@@ -266,7 +275,9 @@ export default function DocumentViewer({ documentId }: DocumentViewerProps) {
         <div className="lg:col-span-2">
           <div className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden">
             <div className="p-4 bg-gray-50 dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Preview</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Preview
+              </h2>
             </div>
             <div className="p-6">
               {isPDF(document.mimeType) ? (
@@ -283,8 +294,12 @@ export default function DocumentViewer({ documentId }: DocumentViewerProps) {
                 />
               ) : (
                 <div className="text-center py-12">
-                  <div className="text-6xl mb-4">{getDocumentIcon(document.type)}</div>
-                  <p className="text-gray-600 dark:text-slate-300 mb-4">Preview not available for this file type</p>
+                  <div className="text-6xl mb-4">
+                    {getDocumentIcon(document.type)}
+                  </div>
+                  <p className="text-gray-600 dark:text-slate-300 mb-4">
+                    Preview not available for this file type
+                  </p>
                   <button
                     type="button"
                     onClick={handleDownload}
@@ -297,39 +312,63 @@ export default function DocumentViewer({ documentId }: DocumentViewerProps) {
             </div>
           </div>
         </div>
-        
+
         {/* Metadata */}
         <div className="space-y-6">
           {/* Document Info */}
           <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Document Information</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Document Information
+            </h2>
             <dl className="space-y-3">
               <div>
-                <dt className="text-sm font-medium text-gray-600 dark:text-slate-300">Type</dt>
-                <dd className="text-sm text-gray-900 dark:text-white mt-1">{formatTypeName(document.type)}</dd>
+                <dt className="text-sm font-medium text-gray-600 dark:text-slate-300">
+                  Type
+                </dt>
+                <dd className="text-sm text-gray-900 dark:text-white mt-1">
+                  {formatTypeName(document.type)}
+                </dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-gray-600 dark:text-slate-300">File Name</dt>
-                <dd className="text-sm text-gray-900 dark:text-white mt-1 break-all">{document.originalName}</dd>
+                <dt className="text-sm font-medium text-gray-600 dark:text-slate-300">
+                  File Name
+                </dt>
+                <dd className="text-sm text-gray-900 dark:text-white mt-1 break-all">
+                  {document.originalName}
+                </dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-gray-600 dark:text-slate-300">Size</dt>
-                <dd className="text-sm text-gray-900 dark:text-white mt-1">{formatFileSize(document.size)}</dd>
+                <dt className="text-sm font-medium text-gray-600 dark:text-slate-300">
+                  Size
+                </dt>
+                <dd className="text-sm text-gray-900 dark:text-white mt-1">
+                  {formatFileSize(document.size)}
+                </dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-gray-600 dark:text-slate-300">Format</dt>
-                <dd className="text-sm text-gray-900 dark:text-white mt-1">{document.mimeType}</dd>
+                <dt className="text-sm font-medium text-gray-600 dark:text-slate-300">
+                  Format
+                </dt>
+                <dd className="text-sm text-gray-900 dark:text-white mt-1">
+                  {document.mimeType}
+                </dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-gray-600 dark:text-slate-300">Uploaded</dt>
-                <dd className="text-sm text-gray-900 dark:text-white mt-1">{formatDate(document.uploadedAt)}</dd>
+                <dt className="text-sm font-medium text-gray-600 dark:text-slate-300">
+                  Uploaded
+                </dt>
+                <dd className="text-sm text-gray-900 dark:text-white mt-1">
+                  {formatDate(document.uploadedAt)}
+                </dd>
               </div>
             </dl>
           </div>
-          
+
           {/* Tags */}
           <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Tags</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Tags
+            </h2>
             {document.tags && document.tags.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {document.tags.map((tag, index) => (
@@ -342,7 +381,9 @@ export default function DocumentViewer({ documentId }: DocumentViewerProps) {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-600 dark:text-slate-300">No tags yet</p>
+              <p className="text-sm text-gray-600 dark:text-slate-300">
+                No tags yet
+              </p>
             )}
           </div>
         </div>
@@ -359,7 +400,9 @@ export default function DocumentViewer({ documentId }: DocumentViewerProps) {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full">
             <div className="px-6 py-4 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Add Tags</h2>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Add Tags
+              </h2>
               <button
                 type="button"
                 onClick={() => setShowMetadataModal(false)}

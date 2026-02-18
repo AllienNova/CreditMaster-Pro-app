@@ -1,98 +1,98 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 
 const auditLogs = [
   {
     id: 1,
-    action: 'user.login',
-    user: 'admin@fynvitapro.com',
-    ip: '192.168.1.1',
-    details: 'Successful login',
-    timestamp: '2024-12-03 10:45:23',
-    risk: 'low',
+    action: "user.login",
+    user: "admin@fynvitapro.com",
+    ip: "192.168.1.1",
+    details: "Successful login",
+    timestamp: "2024-12-03 10:45:23",
+    risk: "low",
   },
   {
     id: 2,
-    action: 'user.login_failed',
-    user: 'john@example.com',
-    ip: '45.33.32.156',
-    details: 'Invalid password (3rd attempt)',
-    timestamp: '2024-12-03 10:42:15',
-    risk: 'medium',
+    action: "user.login_failed",
+    user: "john@example.com",
+    ip: "45.33.32.156",
+    details: "Invalid password (3rd attempt)",
+    timestamp: "2024-12-03 10:42:15",
+    risk: "medium",
   },
   {
     id: 3,
-    action: 'data.export',
-    user: 'admin@fynvitapro.com',
-    ip: '192.168.1.1',
-    details: 'Exported user list (CSV)',
-    timestamp: '2024-12-03 10:38:42',
-    risk: 'medium',
+    action: "data.export",
+    user: "admin@fynvitapro.com",
+    ip: "192.168.1.1",
+    details: "Exported user list (CSV)",
+    timestamp: "2024-12-03 10:38:42",
+    risk: "medium",
   },
   {
     id: 4,
-    action: 'user.role_change',
-    user: 'admin@fynvitapro.com',
-    ip: '192.168.1.1',
-    details: 'Changed role for bob@example.com to admin',
-    timestamp: '2024-12-03 10:30:00',
-    risk: 'high',
+    action: "user.role_change",
+    user: "admin@fynvitapro.com",
+    ip: "192.168.1.1",
+    details: "Changed role for bob@example.com to admin",
+    timestamp: "2024-12-03 10:30:00",
+    risk: "high",
   },
   {
     id: 5,
-    action: 'settings.update',
-    user: 'admin@fynvitapro.com',
-    ip: '192.168.1.1',
-    details: 'Updated rate limit settings',
-    timestamp: '2024-12-03 10:25:18',
-    risk: 'medium',
+    action: "settings.update",
+    user: "admin@fynvitapro.com",
+    ip: "192.168.1.1",
+    details: "Updated rate limit settings",
+    timestamp: "2024-12-03 10:25:18",
+    risk: "medium",
   },
   {
     id: 6,
-    action: 'user.delete',
-    user: 'admin@fynvitapro.com',
-    ip: '192.168.1.1',
-    details: 'Deleted user: test@example.com',
-    timestamp: '2024-12-03 10:20:33',
-    risk: 'high',
+    action: "user.delete",
+    user: "admin@fynvitapro.com",
+    ip: "192.168.1.1",
+    details: "Deleted user: test@example.com",
+    timestamp: "2024-12-03 10:20:33",
+    risk: "high",
   },
   {
     id: 7,
-    action: 'api.key_created',
-    user: 'admin@fynvitapro.com',
-    ip: '192.168.1.1',
-    details: 'Created new API key for integration',
-    timestamp: '2024-12-03 10:15:00',
-    risk: 'high',
+    action: "api.key_created",
+    user: "admin@fynvitapro.com",
+    ip: "192.168.1.1",
+    details: "Created new API key for integration",
+    timestamp: "2024-12-03 10:15:00",
+    risk: "high",
   },
   {
     id: 8,
-    action: 'user.password_reset',
-    user: 'jane@example.com',
-    ip: '72.14.192.1',
-    details: 'Password reset requested',
-    timestamp: '2024-12-03 10:10:45',
-    risk: 'low',
+    action: "user.password_reset",
+    user: "jane@example.com",
+    ip: "72.14.192.1",
+    details: "Password reset requested",
+    timestamp: "2024-12-03 10:10:45",
+    risk: "low",
   },
 ];
 
 export default function AdminAuditPage() {
-  const [actionFilter, setActionFilter] = useState('all');
-  const [riskFilter, setRiskFilter] = useState('all');
+  const [actionFilter, setActionFilter] = useState("all");
+  const [riskFilter, setRiskFilter] = useState("all");
 
   const filteredLogs = auditLogs.filter((log) => {
     const matchesAction =
-      actionFilter === 'all' || log.action.startsWith(actionFilter);
-    const matchesRisk = riskFilter === 'all' || log.risk === riskFilter;
+      actionFilter === "all" || log.action.startsWith(actionFilter);
+    const matchesRisk = riskFilter === "all" || log.risk === riskFilter;
     return matchesAction && matchesRisk;
   });
 
   const getRiskBadge = (risk: string) => {
     const styles: Record<string, string> = {
-      low: 'bg-emerald-100 text-emerald-700',
-      medium: 'bg-yellow-100 text-yellow-700',
-      high: 'bg-red-100 text-red-700',
+      low: "bg-emerald-100 text-emerald-700",
+      medium: "bg-yellow-100 text-yellow-700",
+      high: "bg-red-100 text-red-700",
     };
     return (
       <span className={`px-2 py-1 text-xs rounded-full ${styles[risk]}`}>
@@ -102,18 +102,20 @@ export default function AdminAuditPage() {
   };
 
   const getActionIcon = (action: string) => {
-    if (action.startsWith('user.login')) return '';
-    if (action.startsWith('user.')) return '';
-    if (action.startsWith('data.')) return '';
-    if (action.startsWith('settings.')) return '';
-    if (action.startsWith('api.')) return '';
-    return '';
+    if (action.startsWith("user.login")) return "";
+    if (action.startsWith("user.")) return "";
+    if (action.startsWith("data.")) return "";
+    if (action.startsWith("settings.")) return "";
+    if (action.startsWith("api.")) return "";
+    return "";
   };
 
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Audit Trail</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          Audit Trail
+        </h1>
         <button className="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition">
           Export Audit Log
         </button>
@@ -122,23 +124,33 @@ export default function AdminAuditPage() {
       {/* Summary Cards */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-slate-700">
-          <p className="text-sm text-gray-500 dark:text-slate-400">Total Events (24h)</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">{auditLogs.length}</p>
-        </div>
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-slate-700">
-          <p className="text-sm text-gray-500 dark:text-slate-400">Login Attempts</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400">
+            Total Events (24h)
+          </p>
           <p className="text-2xl font-bold text-gray-900 dark:text-white">
-            {auditLogs.filter((l) => l.action.includes('login')).length}
+            {auditLogs.length}
           </p>
         </div>
         <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-slate-700">
-          <p className="text-sm text-gray-500 dark:text-slate-400">High Risk Events</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400">
+            Login Attempts
+          </p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">
+            {auditLogs.filter((l) => l.action.includes("login")).length}
+          </p>
+        </div>
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-slate-700">
+          <p className="text-sm text-gray-500 dark:text-slate-400">
+            High Risk Events
+          </p>
           <p className="text-2xl font-bold text-red-600">
-            {auditLogs.filter((l) => l.risk === 'high').length}
+            {auditLogs.filter((l) => l.risk === "high").length}
           </p>
         </div>
         <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-slate-700">
-          <p className="text-sm text-gray-500 dark:text-slate-400">Unique Users</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400">
+            Unique Users
+          </p>
           <p className="text-2xl font-bold text-gray-900 dark:text-white">
             {new Set(auditLogs.map((l) => l.user)).size}
           </p>
@@ -207,7 +219,10 @@ export default function AdminAuditPage() {
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
             {filteredLogs.map((log) => (
-              <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900">
+              <tr
+                key={log.id}
+                className="hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900"
+              >
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2">
                     <span>{getActionIcon(log.action)}</span>
@@ -216,7 +231,9 @@ export default function AdminAuditPage() {
                     </span>
                   </div>
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-500 dark:text-slate-400">{log.user}</td>
+                <td className="px-6 py-4 text-sm text-gray-500 dark:text-slate-400">
+                  {log.user}
+                </td>
                 <td className="px-6 py-4 text-sm text-gray-500 dark:text-slate-400 font-mono">
                   {log.ip}
                 </td>

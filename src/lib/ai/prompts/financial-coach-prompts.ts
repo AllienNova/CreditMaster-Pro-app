@@ -1,6 +1,6 @@
 /**
  * Financial Coach AI Prompts
- * 
+ *
  * Based on Dave Ramsey's EveryDollar philosophy:
  * - Debt-free living
  * - Emergency fund priority (Baby Steps)
@@ -183,4 +183,3 @@ Create a savings plan with:
 3. Ways to accelerate (cut expenses, increase income)
 4. Where to keep the money (high-yield savings)
 5. Motivation and milestones`;
-

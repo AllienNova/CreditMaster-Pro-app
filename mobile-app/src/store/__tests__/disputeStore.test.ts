@@ -2,11 +2,16 @@
  * Fynvita Dispute Store Unit Tests
  */
 
-import { act } from '@testing-library/react-native';
-import { useDisputeStore, selectDisputesByStatus, selectActiveDisputes, selectDisputeStats } from '../disputeStore';
+import { act } from "@testing-library/react-native";
+import {
+  useDisputeStore,
+  selectDisputesByStatus,
+  selectActiveDisputes,
+  selectDisputeStats,
+} from "../disputeStore";
 
 // Mock API services
-jest.mock('../../services/api', () => ({
+jest.mock("../../services/api", () => ({
   disputeApi: {
     getAll: jest.fn(),
     getById: jest.fn(),
@@ -27,31 +32,35 @@ jest.mock('../../services/api', () => ({
   },
 }));
 
-const { disputeApi, disputeLetterApi, disputeResourcesApi } = require('../../services/api');
+const {
+  disputeApi,
+  disputeLetterApi,
+  disputeResourcesApi,
+} = require("../../services/api");
 
-import type { Dispute } from '../../services/api/types';
+import type { Dispute } from "../../services/api/types";
 
 // Helper to create mock Dispute objects with required fields
 const createMockDispute = (overrides: Partial<Dispute> = {}): Dispute => ({
-  id: overrides.id || '1',
-  userId: overrides.userId || 'user-1',
-  bureau: overrides.bureau || 'experian',
-  status: overrides.status || 'pending',
-  itemType: overrides.itemType || 'late_payment',
-  creditorName: overrides.creditorName || 'Test Creditor',
-  disputeReason: overrides.disputeReason || 'Incorrect information',
+  id: overrides.id || "1",
+  userId: overrides.userId || "user-1",
+  bureau: overrides.bureau || "experian",
+  status: overrides.status || "pending",
+  itemType: overrides.itemType || "late_payment",
+  creditorName: overrides.creditorName || "Test Creditor",
+  disputeReason: overrides.disputeReason || "Incorrect information",
   createdAt: overrides.createdAt || new Date().toISOString(),
   updatedAt: overrides.updatedAt || new Date().toISOString(),
 });
 
-describe('Dispute Store', () => {
+describe("Dispute Store", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     useDisputeStore.getState().resetStore();
   });
 
-  describe('Initial State', () => {
-    it('should have correct initial state', () => {
+  describe("Initial State", () => {
+    it("should have correct initial state", () => {
       const state = useDisputeStore.getState();
       expect(state.disputes).toEqual([]);
       expect(state.currentDispute).toBeNull();
@@ -62,11 +71,11 @@ describe('Dispute Store', () => {
     });
   });
 
-  describe('fetchDisputes', () => {
-    it('should fetch disputes successfully', async () => {
+  describe("fetchDisputes", () => {
+    it("should fetch disputes successfully", async () => {
       const mockDisputes = [
-        createMockDispute({ id: '1', status: 'pending', bureau: 'experian' }),
-        createMockDispute({ id: '2', status: 'resolved', bureau: 'equifax' }),
+        createMockDispute({ id: "1", status: "pending", bureau: "experian" }),
+        createMockDispute({ id: "2", status: "resolved", bureau: "equifax" }),
       ];
 
       disputeApi.getAll.mockResolvedValueOnce({
@@ -84,23 +93,27 @@ describe('Dispute Store', () => {
       expect(state.isLoading).toBe(false);
     });
 
-    it('should handle fetch error', async () => {
+    it("should handle fetch error", async () => {
       disputeApi.getAll.mockResolvedValueOnce({
         success: false,
-        error: { message: 'Failed to fetch' },
+        error: { message: "Failed to fetch" },
       });
 
       await act(async () => {
         await useDisputeStore.getState().fetchDisputes();
       });
 
-      expect(useDisputeStore.getState().error).toBe('Failed to fetch');
+      expect(useDisputeStore.getState().error).toBe("Failed to fetch");
     });
   });
 
-  describe('createDispute', () => {
-    it('should create dispute successfully', async () => {
-      const newDispute = createMockDispute({ id: '1', status: 'pending', bureau: 'experian' });
+  describe("createDispute", () => {
+    it("should create dispute successfully", async () => {
+      const newDispute = createMockDispute({
+        id: "1",
+        status: "pending",
+        bureau: "experian",
+      });
 
       disputeApi.create.mockResolvedValueOnce({
         success: true,
@@ -110,11 +123,11 @@ describe('Dispute Store', () => {
       let result;
       await act(async () => {
         result = await useDisputeStore.getState().createDispute({
-          bureau: 'experian',
-          status: 'pending',
-          itemType: 'late_payment',
-          creditorName: 'Test Creditor',
-          disputeReason: 'Incorrect information',
+          bureau: "experian",
+          status: "pending",
+          itemType: "late_payment",
+          creditorName: "Test Creditor",
+          disputeReason: "Incorrect information",
         });
       });
 
@@ -122,53 +135,64 @@ describe('Dispute Store', () => {
       expect(useDisputeStore.getState().disputes).toContainEqual(newDispute);
     });
 
-    it('should return null on create failure', async () => {
+    it("should return null on create failure", async () => {
       disputeApi.create.mockResolvedValueOnce({
         success: false,
-        error: { message: 'Create failed' },
+        error: { message: "Create failed" },
       });
 
       let result;
       await act(async () => {
         result = await useDisputeStore.getState().createDispute({
-          bureau: 'experian',
-          status: 'pending',
-          itemType: 'late_payment',
-          creditorName: 'Test Creditor',
-          disputeReason: 'Incorrect information',
+          bureau: "experian",
+          status: "pending",
+          itemType: "late_payment",
+          creditorName: "Test Creditor",
+          disputeReason: "Incorrect information",
         });
       });
 
       expect(result).toBeNull();
-      expect(useDisputeStore.getState().error).toBe('Create failed');
+      expect(useDisputeStore.getState().error).toBe("Create failed");
     });
   });
 
-  describe('updateDispute', () => {
-    it('should update dispute successfully', async () => {
+  describe("updateDispute", () => {
+    it("should update dispute successfully", async () => {
       useDisputeStore.setState({
-        disputes: [createMockDispute({ id: '1', status: 'pending', bureau: 'experian' })],
+        disputes: [
+          createMockDispute({ id: "1", status: "pending", bureau: "experian" }),
+        ],
       });
 
       disputeApi.update.mockResolvedValueOnce({
         success: true,
-        data: createMockDispute({ id: '1', status: 'in_progress', bureau: 'experian' }),
+        data: createMockDispute({
+          id: "1",
+          status: "in_progress",
+          bureau: "experian",
+        }),
       });
 
       let result;
       await act(async () => {
-        result = await useDisputeStore.getState().updateDispute('1', { status: 'in_progress' });
+        result = await useDisputeStore
+          .getState()
+          .updateDispute("1", { status: "in_progress" });
       });
 
       expect(result).toBe(true);
-      expect(useDisputeStore.getState().disputes[0].status).toBe('in_progress');
+      expect(useDisputeStore.getState().disputes[0].status).toBe("in_progress");
     });
   });
 
-  describe('deleteDispute', () => {
-    it('should delete dispute successfully', async () => {
+  describe("deleteDispute", () => {
+    it("should delete dispute successfully", async () => {
       useDisputeStore.setState({
-        disputes: [createMockDispute({ id: '1' }), createMockDispute({ id: '2' })],
+        disputes: [
+          createMockDispute({ id: "1" }),
+          createMockDispute({ id: "2" }),
+        ],
         totalDisputes: 2,
       });
 
@@ -176,7 +200,7 @@ describe('Dispute Store', () => {
 
       let result;
       await act(async () => {
-        result = await useDisputeStore.getState().deleteDispute('1');
+        result = await useDisputeStore.getState().deleteDispute("1");
       });
 
       expect(result).toBe(true);
@@ -185,58 +209,60 @@ describe('Dispute Store', () => {
     });
   });
 
-  describe('sendDispute', () => {
-    it('should send dispute successfully', async () => {
+  describe("sendDispute", () => {
+    it("should send dispute successfully", async () => {
       useDisputeStore.setState({
-        disputes: [createMockDispute({ id: '1', status: 'pending' })],
+        disputes: [createMockDispute({ id: "1", status: "pending" })],
       });
 
       disputeApi.send.mockResolvedValueOnce({
         success: true,
-        data: createMockDispute({ id: '1', status: 'sent' }),
+        data: createMockDispute({ id: "1", status: "sent" }),
       });
 
       let result;
       await act(async () => {
-        result = await useDisputeStore.getState().sendDispute('1');
+        result = await useDisputeStore.getState().sendDispute("1");
       });
 
       expect(result).toBe(true);
-      expect(useDisputeStore.getState().disputes[0].status).toBe('sent');
+      expect(useDisputeStore.getState().disputes[0].status).toBe("sent");
     });
   });
 
-  describe('AI Letter Generation', () => {
-    it('should generate AI letter successfully', async () => {
+  describe("AI Letter Generation", () => {
+    it("should generate AI letter successfully", async () => {
       // When no currentDispute is set, the store calls generateFromTemplate
       disputeLetterApi.generateFromTemplate.mockResolvedValueOnce({
         success: true,
-        data: { letter: 'Generated dispute letter content...' },
+        data: { letter: "Generated dispute letter content..." },
       });
 
       let result;
       await act(async () => {
         result = await useDisputeStore.getState().generateAILetter({
-          disputeType: 'late_payment',
-          bureau: 'experian',
-          accountInfo: { accountNumber: '1234' },
+          disputeType: "late_payment",
+          bureau: "experian",
+          accountInfo: { accountNumber: "1234" },
         });
       });
 
-      expect(result).toBe('Generated dispute letter content...');
-      expect(useDisputeStore.getState().generatedLetter).toBe('Generated dispute letter content...');
+      expect(result).toBe("Generated dispute letter content...");
+      expect(useDisputeStore.getState().generatedLetter).toBe(
+        "Generated dispute letter content...",
+      );
     });
 
-    it('should clear generated letter', () => {
-      useDisputeStore.setState({ generatedLetter: 'Test letter' });
+    it("should clear generated letter", () => {
+      useDisputeStore.setState({ generatedLetter: "Test letter" });
       useDisputeStore.getState().clearGeneratedLetter();
       expect(useDisputeStore.getState().generatedLetter).toBeNull();
     });
   });
 
-  describe('Resources', () => {
-    it('should fetch templates', async () => {
-      const mockTemplates = [{ id: '1', name: 'Late Payment Template' }];
+  describe("Resources", () => {
+    it("should fetch templates", async () => {
+      const mockTemplates = [{ id: "1", name: "Late Payment Template" }];
       disputeResourcesApi.getTemplates.mockResolvedValueOnce({
         success: true,
         data: { templates: mockTemplates },
@@ -249,8 +275,8 @@ describe('Dispute Store', () => {
       expect(useDisputeStore.getState().templates).toEqual(mockTemplates);
     });
 
-    it('should fetch strategies', async () => {
-      const mockStrategies = [{ id: '1', name: 'Aggressive Strategy' }];
+    it("should fetch strategies", async () => {
+      const mockStrategies = [{ id: "1", name: "Aggressive Strategy" }];
       disputeResourcesApi.getStrategies.mockResolvedValueOnce({
         success: true,
         data: { strategies: mockStrategies },
@@ -264,62 +290,68 @@ describe('Dispute Store', () => {
     });
   });
 
-  describe('Filters', () => {
-    it('should set status filter and refetch', async () => {
-      disputeApi.getAll.mockResolvedValue({ success: true, data: { items: [], total: 0 } });
-
-      await act(async () => {
-        useDisputeStore.getState().setStatusFilter('pending');
+  describe("Filters", () => {
+    it("should set status filter and refetch", async () => {
+      disputeApi.getAll.mockResolvedValue({
+        success: true,
+        data: { items: [], total: 0 },
       });
 
-      expect(useDisputeStore.getState().statusFilter).toBe('pending');
+      await act(async () => {
+        useDisputeStore.getState().setStatusFilter("pending");
+      });
+
+      expect(useDisputeStore.getState().statusFilter).toBe("pending");
       expect(disputeApi.getAll).toHaveBeenCalled();
     });
 
-    it('should set bureau filter and refetch', async () => {
-      disputeApi.getAll.mockResolvedValue({ success: true, data: { items: [], total: 0 } });
-
-      await act(async () => {
-        useDisputeStore.getState().setBureauFilter('experian');
+    it("should set bureau filter and refetch", async () => {
+      disputeApi.getAll.mockResolvedValue({
+        success: true,
+        data: { items: [], total: 0 },
       });
 
-      expect(useDisputeStore.getState().bureauFilter).toBe('experian');
+      await act(async () => {
+        useDisputeStore.getState().setBureauFilter("experian");
+      });
+
+      expect(useDisputeStore.getState().bureauFilter).toBe("experian");
     });
   });
 
-  describe('Selectors', () => {
-    it('selectDisputesByStatus should filter by status', () => {
+  describe("Selectors", () => {
+    it("selectDisputesByStatus should filter by status", () => {
       const state = {
         disputes: [
-          { id: '1', status: 'pending' },
-          { id: '2', status: 'resolved' },
-          { id: '3', status: 'pending' },
+          { id: "1", status: "pending" },
+          { id: "2", status: "resolved" },
+          { id: "3", status: "pending" },
         ],
       };
-      expect(selectDisputesByStatus('pending')(state as any)).toHaveLength(2);
+      expect(selectDisputesByStatus("pending")(state as any)).toHaveLength(2);
     });
 
-    it('selectActiveDisputes should return active disputes', () => {
+    it("selectActiveDisputes should return active disputes", () => {
       const state = {
         disputes: [
-          { id: '1', status: 'pending' },
-          { id: '2', status: 'in_progress' },
-          { id: '3', status: 'resolved' },
-          { id: '4', status: 'under_review' },
+          { id: "1", status: "pending" },
+          { id: "2", status: "in_progress" },
+          { id: "3", status: "resolved" },
+          { id: "4", status: "under_review" },
         ],
       };
       expect(selectActiveDisputes(state as any)).toHaveLength(3);
     });
 
-    it('selectDisputeStats should calculate stats', () => {
+    it("selectDisputeStats should calculate stats", () => {
       const state = {
         totalDisputes: 5,
         disputes: [
-          { status: 'pending' },
-          { status: 'pending' },
-          { status: 'in_progress' },
-          { status: 'resolved' },
-          { status: 'rejected' },
+          { status: "pending" },
+          { status: "pending" },
+          { status: "in_progress" },
+          { status: "resolved" },
+          { status: "rejected" },
         ],
       };
       const stats = selectDisputeStats(state as any);
@@ -331,4 +363,3 @@ describe('Dispute Store', () => {
     });
   });
 });
-

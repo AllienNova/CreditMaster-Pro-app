@@ -1,20 +1,20 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import Link from 'next/link';
+import { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import Link from "next/link";
 
 // Types
 interface Debt {
   id: string;
   name: string;
   type:
-    | 'credit_card'
-    | 'personal_loan'
-    | 'auto_loan'
-    | 'student_loan'
-    | 'medical'
-    | 'other';
+    | "credit_card"
+    | "personal_loan"
+    | "auto_loan"
+    | "student_loan"
+    | "medical"
+    | "other";
   balance: number;
   interestRate: number;
   minimumPayment: number;
@@ -41,13 +41,13 @@ interface StrategyResult {
 interface ConsolidationOption {
   id: string;
   name: string;
-  type: 'personal_loan' | 'balance_transfer' | 'heloc' | 'debt_management';
+  type: "personal_loan" | "balance_transfer" | "heloc" | "debt_management";
   interestRate: number;
   fee: number;
   term: number; // months
   monthlyPayment: number;
   totalCost: number;
-  creditImpact: 'positive' | 'neutral' | 'negative';
+  creditImpact: "positive" | "neutral" | "negative";
   requirements: string[];
   pros: string[];
   cons: string[];
@@ -59,8 +59,8 @@ export default function DebtStrategyAnalyzer() {
   const [debts, setDebts] = useState<Debt[]>([]);
   const [monthlyBudget, setMonthlyBudget] = useState(500);
   const [selectedStrategy, setSelectedStrategy] = useState<
-    'snowball' | 'avalanche' | 'hybrid' | 'consolidation'
-  >('avalanche');
+    "snowball" | "avalanche" | "hybrid" | "consolidation"
+  >("avalanche");
   const [results, setResults] = useState<StrategyResult[]>([]);
   const [consolidationOptions, setConsolidationOptions] = useState<
     ConsolidationOption[]
@@ -70,8 +70,8 @@ export default function DebtStrategyAnalyzer() {
 
   // New debt form
   const [newDebt, setNewDebt] = useState<Partial<Debt>>({
-    name: '',
-    type: 'credit_card',
+    name: "",
+    type: "credit_card",
     balance: 0,
     interestRate: 0,
     minimumPayment: 0,
@@ -90,37 +90,37 @@ export default function DebtStrategyAnalyzer() {
 
   const fetchDebts = async () => {
     try {
-      const response = await fetch('/api/credit-builder/debts');
+      const response = await fetch("/api/credit-builder/debts");
       if (response.ok) {
         const data = await response.json();
         setDebts(data.debts || []);
       }
     } catch (err) {
-      console.error('Failed to fetch debts:', err);
+      console.error("Failed to fetch debts:", err);
       // Use mock data for demo
       setDebts([
         {
-          id: '1',
-          name: 'Chase Credit Card',
-          type: 'credit_card',
+          id: "1",
+          name: "Chase Credit Card",
+          type: "credit_card",
           balance: 5000,
           interestRate: 19.99,
           minimumPayment: 125,
           priority: 1,
         },
         {
-          id: '2',
-          name: 'Discover Card',
-          type: 'credit_card',
+          id: "2",
+          name: "Discover Card",
+          type: "credit_card",
           balance: 3000,
           interestRate: 24.99,
           minimumPayment: 90,
           priority: 2,
         },
         {
-          id: '3',
-          name: 'Personal Loan',
-          type: 'personal_loan',
+          id: "3",
+          name: "Personal Loan",
+          type: "personal_loan",
           balance: 8000,
           interestRate: 12.5,
           minimumPayment: 250,
@@ -133,110 +133,110 @@ export default function DebtStrategyAnalyzer() {
   const fetchConsolidationOptions = () => {
     const options: ConsolidationOption[] = [
       {
-        id: 'personal_loan',
-        name: 'Personal Consolidation Loan',
-        type: 'personal_loan',
+        id: "personal_loan",
+        name: "Personal Consolidation Loan",
+        type: "personal_loan",
         interestRate: 10.5,
         fee: 200,
         term: 48,
         monthlyPayment: 0,
         totalCost: 0,
-        creditImpact: 'neutral',
-        requirements: ['Credit score 640+', 'Stable income', 'DTI under 43%'],
+        creditImpact: "neutral",
+        requirements: ["Credit score 640+", "Stable income", "DTI under 43%"],
         pros: [
-          'Fixed monthly payment',
-          'Lower interest rate than credit cards',
-          'Single payment to manage',
-          'No collateral required',
+          "Fixed monthly payment",
+          "Lower interest rate than credit cards",
+          "Single payment to manage",
+          "No collateral required",
         ],
         cons: [
-          'May require good credit',
-          'Origination fees (1-8%)',
+          "May require good credit",
+          "Origination fees (1-8%)",
           "Doesn't address spending habits",
-          'Hard inquiry on credit',
+          "Hard inquiry on credit",
         ],
       },
       {
-        id: 'balance_transfer',
-        name: '0% Balance Transfer Card',
-        type: 'balance_transfer',
+        id: "balance_transfer",
+        name: "0% Balance Transfer Card",
+        type: "balance_transfer",
         interestRate: 0,
         fee: 300, // 3% transfer fee
         term: 18,
         monthlyPayment: 0,
         totalCost: 0,
-        creditImpact: 'positive',
+        creditImpact: "positive",
         requirements: [
-          'Good to excellent credit (700+)',
-          'Low utilization on current cards',
+          "Good to excellent credit (700+)",
+          "Low utilization on current cards",
         ],
         pros: [
-          '0% APR for 12-21 months',
-          'Can save significant interest',
-          'Simplifies payments',
-          'May increase available credit',
+          "0% APR for 12-21 months",
+          "Can save significant interest",
+          "Simplifies payments",
+          "May increase available credit",
         ],
         cons: [
-          'Transfer fee (3-5%)',
-          'Requires excellent credit',
-          'High rate after promo period',
-          'Must pay off before promo ends',
+          "Transfer fee (3-5%)",
+          "Requires excellent credit",
+          "High rate after promo period",
+          "Must pay off before promo ends",
         ],
       },
       {
-        id: 'heloc',
-        name: 'Home Equity Line of Credit',
-        type: 'heloc',
+        id: "heloc",
+        name: "Home Equity Line of Credit",
+        type: "heloc",
         interestRate: 7.5,
         fee: 500,
         term: 120,
         monthlyPayment: 0,
         totalCost: 0,
-        creditImpact: 'neutral',
+        creditImpact: "neutral",
         requirements: [
-          'Home ownership',
-          '20%+ equity',
-          'Good credit',
-          'Stable income',
+          "Home ownership",
+          "20%+ equity",
+          "Good credit",
+          "Stable income",
         ],
         pros: [
-          'Lowest interest rates',
-          'Tax deductible (sometimes)',
-          'Flexible borrowing',
-          'Large credit lines available',
+          "Lowest interest rates",
+          "Tax deductible (sometimes)",
+          "Flexible borrowing",
+          "Large credit lines available",
         ],
         cons: [
-          'Home is collateral - risk of foreclosure',
-          'Closing costs ($500-$2000)',
-          'Variable interest rate',
-          'Long approval process',
+          "Home is collateral - risk of foreclosure",
+          "Closing costs ($500-$2000)",
+          "Variable interest rate",
+          "Long approval process",
         ],
       },
       {
-        id: 'dmp',
-        name: 'Debt Management Plan (Credit Counseling)',
-        type: 'debt_management',
+        id: "dmp",
+        name: "Debt Management Plan (Credit Counseling)",
+        type: "debt_management",
         interestRate: 8,
         fee: 50,
         term: 48,
         monthlyPayment: 0,
         totalCost: 0,
-        creditImpact: 'negative',
+        creditImpact: "negative",
         requirements: [
-          'Unsecured debt only',
-          'Ability to make monthly payments',
+          "Unsecured debt only",
+          "Ability to make monthly payments",
         ],
         pros: [
-          'Reduced interest rates (6-10%)',
-          'Single monthly payment',
-          'Stops late fees and penalties',
-          'Professional guidance',
+          "Reduced interest rates (6-10%)",
+          "Single monthly payment",
+          "Stops late fees and penalties",
+          "Professional guidance",
         ],
         cons: [
-          'Must close credit card accounts',
-          'Shows on credit report',
-          'Monthly fees ($25-75)',
-          '3-5 year commitment',
+          "Must close credit card accounts",
+          "Shows on credit report",
+          "Monthly fees ($25-75)",
+          "3-5 year commitment",
         ],
       },
     ];
@@ -248,7 +248,7 @@ export default function DebtStrategyAnalyzer() {
     const totalDebt = debts.reduce((sum, debt) => sum + debt.balance, 0);
     const totalMinimum = debts.reduce(
       (sum, debt) => sum + debt.minimumPayment,
-      0
+      0,
     );
     const extraPayment = Math.max(0, monthlyBudget - totalMinimum);
 
@@ -256,14 +256,14 @@ export default function DebtStrategyAnalyzer() {
     const avalanche = calculatePayoffStrategy(
       [...debts].sort((a, b) => b.interestRate - a.interestRate),
       monthlyBudget,
-      'Avalanche Method'
+      "Avalanche Method",
     );
 
     // Snowball Method (smallest balance first)
     const snowball = calculatePayoffStrategy(
       [...debts].sort((a, b) => a.balance - b.balance),
       monthlyBudget,
-      'Snowball Method'
+      "Snowball Method",
     );
 
     // Hybrid Method (balance sweet spot)
@@ -274,7 +274,7 @@ export default function DebtStrategyAnalyzer() {
         return scoreB - scoreA;
       }),
       monthlyBudget,
-      'Hybrid Method'
+      "Hybrid Method",
     );
 
     setResults([avalanche, snowball, hybrid]);
@@ -283,13 +283,13 @@ export default function DebtStrategyAnalyzer() {
   const calculatePayoffStrategy = (
     sortedDebts: Debt[],
     budget: number,
-    strategyName: string
+    strategyName: string,
   ): StrategyResult => {
     const remainingDebts = sortedDebts.map((d) => ({ ...d }));
     let month = 0;
     let totalInterest = 0;
     let totalPrincipal = 0;
-    const schedule: StrategyResult['payoffSchedule'] = [];
+    const schedule: StrategyResult["payoffSchedule"] = [];
 
     while (remainingDebts.some((d) => d.balance > 0) && month < 600) {
       month++;
@@ -303,7 +303,7 @@ export default function DebtStrategyAnalyzer() {
           const interest = (debt.balance * (debt.interestRate / 100)) / 12;
           const principal = Math.min(
             debt.minimumPayment - interest,
-            debt.balance
+            debt.balance,
           );
 
           debt.balance -= principal;
@@ -319,7 +319,7 @@ export default function DebtStrategyAnalyzer() {
         if (priorityDebt) {
           const extraPrincipal = Math.min(
             budgetRemaining,
-            priorityDebt.balance
+            priorityDebt.balance,
           );
           priorityDebt.balance -= extraPrincipal;
           monthPrincipal += extraPrincipal;
@@ -331,7 +331,7 @@ export default function DebtStrategyAnalyzer() {
 
       const totalRemaining = remainingDebts.reduce(
         (sum, d) => sum + d.balance,
-        0
+        0,
       );
 
       if (month % 6 === 0 || totalRemaining === 0) {
@@ -351,48 +351,48 @@ export default function DebtStrategyAnalyzer() {
     let cons: string[] = [];
     let bestFor: string[] = [];
 
-    if (strategyName === 'Avalanche Method') {
+    if (strategyName === "Avalanche Method") {
       pros = [
-        'Saves the most money in interest',
-        'Mathematically optimal',
-        'Fastest overall payoff',
-        'Best for high-interest debt',
+        "Saves the most money in interest",
+        "Mathematically optimal",
+        "Fastest overall payoff",
+        "Best for high-interest debt",
       ];
       cons = [
-        'Slower initial wins',
-        'Requires discipline',
-        'Less psychological motivation',
+        "Slower initial wins",
+        "Requires discipline",
+        "Less psychological motivation",
       ];
       bestFor = [
-        'High-interest credit card debt',
-        'Those focused on minimizing costs',
-        'Mathematically-minded individuals',
+        "High-interest credit card debt",
+        "Those focused on minimizing costs",
+        "Mathematically-minded individuals",
       ];
-    } else if (strategyName === 'Snowball Method') {
+    } else if (strategyName === "Snowball Method") {
       pros = [
-        'Quick early wins for motivation',
-        'Psychologically rewarding',
-        'Simplifies accounts faster',
-        'Great for staying motivated',
+        "Quick early wins for motivation",
+        "Psychologically rewarding",
+        "Simplifies accounts faster",
+        "Great for staying motivated",
       ];
       cons = [
-        'Costs more in interest',
-        'Not mathematically optimal',
-        'Takes longer overall',
+        "Costs more in interest",
+        "Not mathematically optimal",
+        "Takes longer overall",
       ];
       bestFor = [
-        'Those needing motivation',
-        'Multiple small debts',
-        'Psychological quick wins important',
+        "Those needing motivation",
+        "Multiple small debts",
+        "Psychological quick wins important",
       ];
     } else {
       pros = [
-        'Balance of savings and motivation',
-        'Targets medium-sized high-interest debts',
-        'Good compromise approach',
+        "Balance of savings and motivation",
+        "Targets medium-sized high-interest debts",
+        "Good compromise approach",
       ];
-      cons = ['Not optimal for any single metric', 'More complex to calculate'];
-      bestFor = ['Mixed debt portfolio', 'Want balance of both methods'];
+      cons = ["Not optimal for any single metric", "More complex to calculate"];
+      bestFor = ["Mixed debt portfolio", "Want balance of both methods"];
     }
 
     return {
@@ -414,7 +414,7 @@ export default function DebtStrategyAnalyzer() {
     const debt: Debt = {
       id: Date.now().toString(),
       name: newDebt.name,
-      type: newDebt.type || 'credit_card',
+      type: newDebt.type || "credit_card",
       balance: newDebt.balance,
       interestRate: newDebt.interestRate,
       minimumPayment:
@@ -424,8 +424,8 @@ export default function DebtStrategyAnalyzer() {
 
     setDebts([...debts, debt]);
     setNewDebt({
-      name: '',
-      type: 'credit_card',
+      name: "",
+      type: "credit_card",
       balance: 0,
       interestRate: 0,
       minimumPayment: 0,
@@ -470,7 +470,7 @@ export default function DebtStrategyAnalyzer() {
             ← Back to Credit Builder
           </Link>
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-            Debt Strategy Analyzer 
+            Debt Strategy Analyzer
           </h1>
           <p className="text-lg text-gray-600 dark:text-slate-300 max-w-3xl mx-auto">
             Compare settlement, consolidation, snowball, and avalanche methods.
@@ -510,7 +510,9 @@ export default function DebtStrategyAnalyzer() {
             {/* Debt List */}
             <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Your Debts</h2>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                  Your Debts
+                </h2>
                 <button
                   onClick={() => setShowAddDebt(!showAddDebt)}
                   className="px-4 py-2 bg-orange-600 text-white font-semibold rounded-lg hover:bg-orange-700 transition-colors"
@@ -548,7 +550,7 @@ export default function DebtStrategyAnalyzer() {
                     <input
                       type="number"
                       placeholder="Balance ($)"
-                      value={newDebt.balance || ''}
+                      value={newDebt.balance || ""}
                       onChange={(e) =>
                         setNewDebt({
                           ...newDebt,
@@ -561,7 +563,7 @@ export default function DebtStrategyAnalyzer() {
                       type="number"
                       step="0.01"
                       placeholder="Interest Rate (%)"
-                      value={newDebt.interestRate || ''}
+                      value={newDebt.interestRate || ""}
                       onChange={(e) =>
                         setNewDebt({
                           ...newDebt,
@@ -573,7 +575,7 @@ export default function DebtStrategyAnalyzer() {
                     <input
                       type="number"
                       placeholder="Minimum Payment ($)"
-                      value={newDebt.minimumPayment || ''}
+                      value={newDebt.minimumPayment || ""}
                       onChange={(e) =>
                         setNewDebt({
                           ...newDebt,
@@ -604,7 +606,7 @@ export default function DebtStrategyAnalyzer() {
                           {debt.name}
                         </p>
                         <p className="text-sm text-gray-600 dark:text-slate-300">
-                          {debt.type.replace('_', ' ')}
+                          {debt.type.replace("_", " ")}
                         </p>
                       </div>
                       <button
@@ -616,7 +618,9 @@ export default function DebtStrategyAnalyzer() {
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div>
-                        <p className="text-gray-600 dark:text-slate-300">Balance</p>
+                        <p className="text-gray-600 dark:text-slate-300">
+                          Balance
+                        </p>
                         <p className="font-semibold">
                           ${debt.balance.toLocaleString()}
                         </p>
@@ -626,7 +630,9 @@ export default function DebtStrategyAnalyzer() {
                         <p className="font-semibold">{debt.interestRate}%</p>
                       </div>
                       <div className="col-span-2">
-                        <p className="text-gray-600 dark:text-slate-300">Minimum Payment</p>
+                        <p className="text-gray-600 dark:text-slate-300">
+                          Minimum Payment
+                        </p>
                         <p className="font-semibold">
                           ${debt.minimumPayment.toLocaleString()}/mo
                         </p>
@@ -653,7 +659,9 @@ export default function DebtStrategyAnalyzer() {
                   How much can you pay toward debt each month?
                 </label>
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl font-bold text-gray-900 dark:text-white">$</span>
+                  <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                    $
+                  </span>
                   <input
                     type="number"
                     value={monthlyBudget}
@@ -708,22 +716,28 @@ export default function DebtStrategyAnalyzer() {
 
                         <div className="space-y-2 text-sm">
                           <div>
-                            <p className="text-gray-600 dark:text-slate-300">Time to payoff</p>
+                            <p className="text-gray-600 dark:text-slate-300">
+                              Time to payoff
+                            </p>
                             <p className="text-xl font-bold text-orange-600">
-                              {Math.floor(result.timeToPayoff / 12)}y{' '}
+                              {Math.floor(result.timeToPayoff / 12)}y{" "}
                               {result.timeToPayoff % 12}m
                             </p>
                           </div>
 
                           <div>
-                            <p className="text-gray-600 dark:text-slate-300">Total interest</p>
+                            <p className="text-gray-600 dark:text-slate-300">
+                              Total interest
+                            </p>
                             <p className="font-semibold">
                               ${result.totalInterestPaid.toLocaleString()}
                             </p>
                           </div>
 
                           <div>
-                            <p className="text-gray-600 dark:text-slate-300">Total paid</p>
+                            <p className="text-gray-600 dark:text-slate-300">
+                              Total paid
+                            </p>
                             <p className="font-semibold">
                               ${result.totalPaid.toLocaleString()}
                             </p>
@@ -738,7 +752,7 @@ export default function DebtStrategyAnalyzer() {
                     const best = results.reduce((prev, current) =>
                       current.totalInterestPaid < prev.totalInterestPaid
                         ? current
-                        : prev
+                        : prev,
                     );
                     return (
                       <div className="p-4 bg-green-50 border-2 border-green-300 rounded-lg">
@@ -750,9 +764,9 @@ export default function DebtStrategyAnalyzer() {
                           {(
                             results.reduce(
                               (max, r) => Math.max(max, r.totalInterestPaid),
-                              0
+                              0,
                             ) - best.totalInterestPaid
-                          ).toLocaleString()}{' '}
+                          ).toLocaleString()}{" "}
                           in interest compared to other strategies
                         </p>
                       </div>
@@ -777,7 +791,10 @@ export default function DebtStrategyAnalyzer() {
                         </h4>
                         <ul className="space-y-1">
                           {result.pros.map((pro, idx) => (
-                            <li key={idx} className="text-sm text-gray-700 dark:text-slate-200">
+                            <li
+                              key={idx}
+                              className="text-sm text-gray-700 dark:text-slate-200"
+                            >
                               • {pro}
                             </li>
                           ))}
@@ -790,7 +807,10 @@ export default function DebtStrategyAnalyzer() {
                         </h4>
                         <ul className="space-y-1">
                           {result.cons.map((con, idx) => (
-                            <li key={idx} className="text-sm text-gray-700 dark:text-slate-200">
+                            <li
+                              key={idx}
+                              className="text-sm text-gray-700 dark:text-slate-200"
+                            >
                               • {con}
                             </li>
                           ))}
@@ -836,11 +856,11 @@ export default function DebtStrategyAnalyzer() {
                             </h3>
                             <span
                               className={`px-2 py-1 rounded text-xs font-semibold ${
-                                option.creditImpact === 'positive'
-                                  ? 'bg-green-100 text-green-800'
-                                  : option.creditImpact === 'neutral'
-                                    ? 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100'
-                                    : 'bg-red-100 text-red-800'
+                                option.creditImpact === "positive"
+                                  ? "bg-green-100 text-green-800"
+                                  : option.creditImpact === "neutral"
+                                    ? "bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100"
+                                    : "bg-red-100 text-red-800"
                               }`}
                             >
                               {option.creditImpact} impact
@@ -849,25 +869,33 @@ export default function DebtStrategyAnalyzer() {
 
                           <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
                             <div>
-                              <p className="text-gray-600 dark:text-slate-300">APR</p>
+                              <p className="text-gray-600 dark:text-slate-300">
+                                APR
+                              </p>
                               <p className="font-semibold">
                                 {option.interestRate}%
                               </p>
                             </div>
                             <div>
-                              <p className="text-gray-600 dark:text-slate-300">Term</p>
+                              <p className="text-gray-600 dark:text-slate-300">
+                                Term
+                              </p>
                               <p className="font-semibold">
                                 {option.term} months
                               </p>
                             </div>
                             <div>
-                              <p className="text-gray-600 dark:text-slate-300">Monthly</p>
+                              <p className="text-gray-600 dark:text-slate-300">
+                                Monthly
+                              </p>
                               <p className="font-semibold">
                                 ${monthlyPayment.toFixed(0)}
                               </p>
                             </div>
                             <div>
-                              <p className="text-gray-600 dark:text-slate-300">Total Interest</p>
+                              <p className="text-gray-600 dark:text-slate-300">
+                                Total Interest
+                              </p>
                               <p className="font-semibold">
                                 ${totalInterest.toFixed(0)}
                               </p>

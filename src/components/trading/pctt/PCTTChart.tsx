@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
 /**
  * PCTT Chart Component
- * 
+ *
  * Visualizes PCTT structure analysis on price charts:
  * - Support/Resistance trendlines with Q-scores
  * - Pivot points (highs/lows)
@@ -12,7 +12,13 @@
  * - Entry signals with R-targets
  */
 
-import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useMemo,
+  useCallback,
+} from "react";
 import {
   createChart,
   IChartApi,
@@ -23,7 +29,7 @@ import {
   CrosshairMode,
   CandlestickSeries,
   LineSeries,
-} from 'lightweight-charts';
+} from "lightweight-charts";
 import {
   PCTTEngine,
   createPCTTEngine,
@@ -32,7 +38,7 @@ import {
   Pivot,
   PCTTConfig,
   OHLCV,
-} from '@/lib/trading/pctt';
+} from "@/lib/trading/pctt";
 
 // ============================================================================
 // TYPES
@@ -47,7 +53,7 @@ export interface PCTTChartProps {
   showPivots?: boolean;
   showRegime?: boolean;
   showQScores?: boolean;
-  theme?: 'dark' | 'light';
+  theme?: "dark" | "light";
   className?: string;
 }
 
@@ -63,38 +69,38 @@ interface ChartState {
 
 const COLORS = {
   dark: {
-    background: '#1a1a2e',
-    text: '#d1d5db',
-    grid: '#2d2d44',
-    support: '#26a69a',
-    resistance: '#ef5350',
-    pivotHigh: '#ff9800',
-    pivotLow: '#2196f3',
-    frozenAction: '#ffd700',
-    frozenSafety: '#9c27b0',
-    qScoreHigh: '#4caf50',
-    qScoreMed: '#ff9800',
-    qScoreLow: '#f44336',
-    trendUp: '#26a69a20',
-    trendDown: '#ef535020',
-    range: '#9e9e9e20',
+    background: "#1a1a2e",
+    text: "#d1d5db",
+    grid: "#2d2d44",
+    support: "#26a69a",
+    resistance: "#ef5350",
+    pivotHigh: "#ff9800",
+    pivotLow: "#2196f3",
+    frozenAction: "#ffd700",
+    frozenSafety: "#9c27b0",
+    qScoreHigh: "#4caf50",
+    qScoreMed: "#ff9800",
+    qScoreLow: "#f44336",
+    trendUp: "#26a69a20",
+    trendDown: "#ef535020",
+    range: "#9e9e9e20",
   },
   light: {
-    background: '#ffffff',
-    text: '#1f2937',
-    grid: '#e5e7eb',
-    support: '#16a34a',
-    resistance: '#dc2626',
-    pivotHigh: '#ea580c',
-    pivotLow: '#2563eb',
-    frozenAction: '#ca8a04',
-    frozenSafety: '#7c3aed',
-    qScoreHigh: '#22c55e',
-    qScoreMed: '#f59e0b',
-    qScoreLow: '#ef4444',
-    trendUp: '#16a34a20',
-    trendDown: '#dc262620',
-    range: '#6b728020',
+    background: "#ffffff",
+    text: "#1f2937",
+    grid: "#e5e7eb",
+    support: "#16a34a",
+    resistance: "#dc2626",
+    pivotHigh: "#ea580c",
+    pivotLow: "#2563eb",
+    frozenAction: "#ca8a04",
+    frozenSafety: "#7c3aed",
+    qScoreHigh: "#22c55e",
+    qScoreMed: "#f59e0b",
+    qScoreLow: "#ef4444",
+    trendUp: "#16a34a20",
+    trendDown: "#dc262620",
+    range: "#6b728020",
   },
 };
 
@@ -111,16 +117,26 @@ export function PCTTChart({
   showPivots = true,
   showRegime = true,
   showQScores = true,
-  theme = 'dark',
-  className = '',
+  theme = "dark",
+  className = "",
 }: PCTTChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
-  const candleSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null) as React.MutableRefObject<any>;
-  const supportLineRef = useRef<ISeriesApi<'Line'> | null>(null) as React.MutableRefObject<any>;
-  const resistanceLineRef = useRef<ISeriesApi<'Line'> | null>(null) as React.MutableRefObject<any>;
-  const frozenActionRef = useRef<ISeriesApi<'Line'> | null>(null) as React.MutableRefObject<any>;
-  const frozenSafetyRef = useRef<ISeriesApi<'Line'> | null>(null) as React.MutableRefObject<any>;
+  const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(
+    null,
+  ) as React.MutableRefObject<any>;
+  const supportLineRef = useRef<ISeriesApi<"Line"> | null>(
+    null,
+  ) as React.MutableRefObject<any>;
+  const resistanceLineRef = useRef<ISeriesApi<"Line"> | null>(
+    null,
+  ) as React.MutableRefObject<any>;
+  const frozenActionRef = useRef<ISeriesApi<"Line"> | null>(
+    null,
+  ) as React.MutableRefObject<any>;
+  const frozenSafetyRef = useRef<ISeriesApi<"Line"> | null>(
+    null,
+  ) as React.MutableRefObject<any>;
 
   const [chartState, setChartState] = useState<ChartState>({
     structure: null,
@@ -145,7 +161,7 @@ export function PCTTChart({
     for (let i = 0; i < data.length; i++) {
       const bar = data[i];
       const result = engine.update(bar);
-      
+
       latestStructure = result.structure;
       if (result.signal) {
         latestSignal = result.signal;
@@ -153,11 +169,15 @@ export function PCTTChart({
 
       // Build line data
       if (result.structure.support) {
-        const price = result.structure.support.slope * i + result.structure.support.intercept;
+        const price =
+          result.structure.support.slope * i +
+          result.structure.support.intercept;
         supportData.push({ time: bar.time as Time, value: price });
       }
       if (result.structure.resistance) {
-        const price = result.structure.resistance.slope * i + result.structure.resistance.intercept;
+        const price =
+          result.structure.resistance.slope * i +
+          result.structure.resistance.intercept;
         resistanceData.push({ time: bar.time as Time, value: price });
       }
     }
@@ -202,12 +222,12 @@ export function PCTTChart({
 
     // Create candlestick series (using any to handle v4+ API differences)
     const candleSeries = (chart as any).addCandlestickSeries({
-      upColor: '#26a69a',
-      downColor: '#ef5350',
-      borderUpColor: '#26a69a',
-      borderDownColor: '#ef5350',
-      wickUpColor: '#26a69a',
-      wickDownColor: '#ef5350',
+      upColor: "#26a69a",
+      downColor: "#ef5350",
+      borderUpColor: "#26a69a",
+      borderDownColor: "#ef5350",
+      wickUpColor: "#26a69a",
+      wickDownColor: "#ef5350",
     });
     candleSeriesRef.current = candleSeries;
 
@@ -261,7 +281,7 @@ export function PCTTChart({
     if (!candleSeriesRef.current) return;
 
     // Set candle data
-    const candleData: CandlestickData[] = data.map(bar => ({
+    const candleData: CandlestickData[] = data.map((bar) => ({
       time: bar.time as Time,
       open: bar.open,
       high: bar.high,
@@ -283,21 +303,21 @@ export function PCTTChart({
     // Add pivot markers
     if (showPivots && candleSeriesRef.current) {
       const markers = [
-        ...processedData.pivots.highs.map(p => ({
+        ...processedData.pivots.highs.map((p) => ({
           time: data[p.index]?.time as Time,
-          position: 'aboveBar' as const,
+          position: "aboveBar" as const,
           color: colors.pivotHigh,
-          shape: 'arrowDown' as const,
-          text: 'PH',
+          shape: "arrowDown" as const,
+          text: "PH",
         })),
-        ...processedData.pivots.lows.map(p => ({
+        ...processedData.pivots.lows.map((p) => ({
           time: data[p.index]?.time as Time,
-          position: 'belowBar' as const,
+          position: "belowBar" as const,
           color: colors.pivotLow,
-          shape: 'arrowUp' as const,
-          text: 'PL',
+          shape: "arrowUp" as const,
+          text: "PL",
         })),
-      ].filter(m => m.time);
+      ].filter((m) => m.time);
 
       candleSeriesRef.current.setMarkers(markers);
     }
@@ -319,21 +339,31 @@ export function PCTTChart({
   }, [data, processedData, showPivots, colors, onSignal]);
 
   // Get Q-score color
-  const getQScoreColor = useCallback((q: number) => {
-    if (q >= 0.7) return colors.qScoreHigh;
-    if (q >= 0.55) return colors.qScoreMed;
-    return colors.qScoreLow;
-  }, [colors]);
+  const getQScoreColor = useCallback(
+    (q: number) => {
+      if (q >= 0.7) return colors.qScoreHigh;
+      if (q >= 0.55) return colors.qScoreMed;
+      return colors.qScoreLow;
+    },
+    [colors],
+  );
 
   // Get regime background
-  const getRegimeBackground = useCallback((regime: string) => {
-    switch (regime) {
-      case 'trend_up': return colors.trendUp;
-      case 'trend_down': return colors.trendDown;
-      case 'range': return colors.range;
-      default: return 'transparent';
-    }
-  }, [colors]);
+  const getRegimeBackground = useCallback(
+    (regime: string) => {
+      switch (regime) {
+        case "trend_up":
+          return colors.trendUp;
+        case "trend_down":
+          return colors.trendDown;
+        case "range":
+          return colors.range;
+        default:
+          return "transparent";
+      }
+    },
+    [colors],
+  );
 
   return (
     <div className={`pctt-chart ${className}`}>
@@ -341,11 +371,13 @@ export function PCTTChart({
       <div className="flex items-center justify-between px-4 py-2 border-b border-gray-700">
         {/* Regime Badge */}
         {showRegime && chartState.structure && (
-          <div 
+          <div
             className="px-3 py-1 rounded text-xs font-semibold uppercase"
-            style={{ backgroundColor: getRegimeBackground(chartState.structure.regime) }}
+            style={{
+              backgroundColor: getRegimeBackground(chartState.structure.regime),
+            }}
           >
-            {chartState.structure.regime.replace('_', ' ')}
+            {chartState.structure.regime.replace("_", " ")}
           </div>
         )}
 
@@ -355,9 +387,11 @@ export function PCTTChart({
             {chartState.structure.support && (
               <div className="flex items-center gap-1">
                 <span style={{ color: colors.support }}>Support Q:</span>
-                <span 
+                <span
                   className="font-bold"
-                  style={{ color: getQScoreColor(chartState.structure.support.qScore) }}
+                  style={{
+                    color: getQScoreColor(chartState.structure.support.qScore),
+                  }}
                 >
                   {(chartState.structure.support.qScore * 100).toFixed(0)}%
                 </span>
@@ -366,9 +400,13 @@ export function PCTTChart({
             {chartState.structure.resistance && (
               <div className="flex items-center gap-1">
                 <span style={{ color: colors.resistance }}>Resistance Q:</span>
-                <span 
+                <span
                   className="font-bold"
-                  style={{ color: getQScoreColor(chartState.structure.resistance.qScore) }}
+                  style={{
+                    color: getQScoreColor(
+                      chartState.structure.resistance.qScore,
+                    ),
+                  }}
                 >
                   {(chartState.structure.resistance.qScore * 100).toFixed(0)}%
                 </span>
@@ -381,13 +419,18 @@ export function PCTTChart({
         {chartState.structure && (
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-400">State:</span>
-            <span className={`text-xs font-semibold uppercase ${
-              chartState.structure.event.includes('entry') ? 'text-green-400' :
-              chartState.structure.event.includes('break') ? 'text-yellow-400' :
-              chartState.structure.event === 'failure' ? 'text-red-400' :
-              'text-gray-400'
-            }`}>
-              {chartState.structure.event.replace('_', ' ')}
+            <span
+              className={`text-xs font-semibold uppercase ${
+                chartState.structure.event.includes("entry")
+                  ? "text-green-400"
+                  : chartState.structure.event.includes("break")
+                    ? "text-yellow-400"
+                    : chartState.structure.event === "failure"
+                      ? "text-red-400"
+                      : "text-gray-400"
+              }`}
+            >
+              {chartState.structure.event.replace("_", " ")}
             </span>
           </div>
         )}
@@ -405,15 +448,22 @@ export function PCTTChart({
 
       {/* Signal Panel */}
       {chartState.signal && (
-        <div className={`p-4 border-t ${
-          chartState.signal.type === 'long' ? 'bg-green-900/20 border-green-600' : 
-          'bg-red-900/20 border-red-600'
-        }`}>
+        <div
+          className={`p-4 border-t ${
+            chartState.signal.type === "long"
+              ? "bg-green-900/20 border-green-600"
+              : "bg-red-900/20 border-red-600"
+          }`}
+        >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <span className={`text-lg font-bold ${
-                chartState.signal.type === 'long' ? 'text-green-400' : 'text-red-400'
-              }`}>
+              <span
+                className={`text-lg font-bold ${
+                  chartState.signal.type === "long"
+                    ? "text-green-400"
+                    : "text-red-400"
+                }`}
+              >
                 {chartState.signal.type.toUpperCase()} SIGNAL
               </span>
               <span className="text-sm text-gray-400">
@@ -449,31 +499,49 @@ export function PCTTChart({
       {/* Legend */}
       <div className="flex items-center gap-4 px-4 py-2 text-xs text-gray-400 border-t border-gray-700">
         <div className="flex items-center gap-1">
-          <div className="w-3 h-0.5" style={{ backgroundColor: colors.support }} />
+          <div
+            className="w-3 h-0.5"
+            style={{ backgroundColor: colors.support }}
+          />
           <span>Support</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-0.5" style={{ backgroundColor: colors.resistance }} />
+          <div
+            className="w-3 h-0.5"
+            style={{ backgroundColor: colors.resistance }}
+          />
           <span>Resistance</span>
         </div>
         {showPivots && (
           <>
             <div className="flex items-center gap-1">
-              <div className="w-2 h-2" style={{ backgroundColor: colors.pivotHigh }} />
+              <div
+                className="w-2 h-2"
+                style={{ backgroundColor: colors.pivotHigh }}
+              />
               <span>Pivot High</span>
             </div>
             <div className="flex items-center gap-1">
-              <div className="w-2 h-2" style={{ backgroundColor: colors.pivotLow }} />
+              <div
+                className="w-2 h-2"
+                style={{ backgroundColor: colors.pivotLow }}
+              />
               <span>Pivot Low</span>
             </div>
           </>
         )}
         <div className="flex items-center gap-1">
-          <div className="w-3 h-0.5 border-t-2 border-dashed" style={{ borderColor: colors.frozenAction }} />
+          <div
+            className="w-3 h-0.5 border-t-2 border-dashed"
+            style={{ borderColor: colors.frozenAction }}
+          />
           <span>Frozen Action</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-0.5 border-t-2 border-dashed" style={{ borderColor: colors.frozenSafety }} />
+          <div
+            className="w-3 h-0.5 border-t-2 border-dashed"
+            style={{ borderColor: colors.frozenSafety }}
+          />
           <span>Frozen Safety</span>
         </div>
       </div>

@@ -5,34 +5,34 @@
  * tagging, splitting, and other operations.
  */
 
-import { supabaseAdmin } from '@/lib/supabase/server';
+import { supabaseAdmin } from "@/lib/supabase/server";
 
 // ============================================================================
 // Types
 // ============================================================================
 
 export type ConditionType =
-  | 'merchant_contains'
-  | 'merchant_equals'
-  | 'merchant_starts_with'
-  | 'amount_equals'
-  | 'amount_greater_than'
-  | 'amount_less_than'
-  | 'amount_between'
-  | 'category_equals'
-  | 'date_range'
-  | 'account_equals'
-  | 'description_contains';
+  | "merchant_contains"
+  | "merchant_equals"
+  | "merchant_starts_with"
+  | "amount_equals"
+  | "amount_greater_than"
+  | "amount_less_than"
+  | "amount_between"
+  | "category_equals"
+  | "date_range"
+  | "account_equals"
+  | "description_contains";
 
 export type ActionType =
-  | 'set_category'
-  | 'add_tag'
-  | 'remove_tag'
-  | 'mark_tax_deductible'
-  | 'split'
-  | 'ignore'
-  | 'rename_merchant'
-  | 'set_note';
+  | "set_category"
+  | "add_tag"
+  | "remove_tag"
+  | "mark_tax_deductible"
+  | "split"
+  | "ignore"
+  | "rename_merchant"
+  | "set_note";
 
 export interface RuleCondition {
   type: ConditionType;
@@ -58,7 +58,7 @@ export interface TransactionRule {
   name: string;
   description?: string;
   conditions: RuleCondition[];
-  conditionLogic: 'AND' | 'OR';
+  conditionLogic: "AND" | "OR";
   actions: RuleAction[];
   isActive: boolean;
   priority: number;
@@ -72,7 +72,7 @@ export interface CreateRuleInput {
   name: string;
   description?: string;
   conditions: RuleCondition[];
-  conditionLogic: 'AND' | 'OR';
+  conditionLogic: "AND" | "OR";
   actions: RuleAction[];
   isActive?: boolean;
   priority?: number;
@@ -82,7 +82,7 @@ export interface UpdateRuleInput {
   name?: string;
   description?: string;
   conditions?: RuleCondition[];
-  conditionLogic?: 'AND' | 'OR';
+  conditionLogic?: "AND" | "OR";
   actions?: RuleAction[];
   isActive?: boolean;
   priority?: number;
@@ -113,7 +113,7 @@ export interface SuggestedRule {
   name: string;
   description: string;
   conditions: RuleCondition[];
-  conditionLogic: 'AND' | 'OR';
+  conditionLogic: "AND" | "OR";
   actions: RuleAction[];
   confidence: number;
   matchingTransactions: number;
@@ -133,14 +133,14 @@ class TransactionRulesService {
     const supabase = supabaseAdmin as any;
 
     const { data, error } = await supabase
-      .from('transaction_rules')
-      .select('*')
-      .eq('user_id', userId)
-      .order('priority', { ascending: true });
+      .from("transaction_rules")
+      .select("*")
+      .eq("user_id", userId)
+      .order("priority", { ascending: true });
 
     if (error) {
       // TransactionRulesService error: Error fetching rules
-      throw new Error('Failed to fetch transaction rules');
+      throw new Error("Failed to fetch transaction rules");
     }
 
     return (data || []).map(this.mapDbToRule);
@@ -149,20 +149,23 @@ class TransactionRulesService {
   /**
    * Get a single rule
    */
-  async getRule(userId: string, ruleId: string): Promise<TransactionRule | null> {
+  async getRule(
+    userId: string,
+    ruleId: string,
+  ): Promise<TransactionRule | null> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = supabaseAdmin as any;
 
     const { data, error } = await supabase
-      .from('transaction_rules')
-      .select('*')
-      .eq('id', ruleId)
-      .eq('user_id', userId)
+      .from("transaction_rules")
+      .select("*")
+      .eq("id", ruleId)
+      .eq("user_id", userId)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') return null;
-      throw new Error('Failed to fetch rule');
+      if (error.code === "PGRST116") return null;
+      throw new Error("Failed to fetch rule");
     }
 
     return this.mapDbToRule(data);
@@ -171,7 +174,10 @@ class TransactionRulesService {
   /**
    * Create a new rule
    */
-  async createRule(userId: string, input: CreateRuleInput): Promise<TransactionRule> {
+  async createRule(
+    userId: string,
+    input: CreateRuleInput,
+  ): Promise<TransactionRule> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = supabaseAdmin as any;
 
@@ -183,10 +189,10 @@ class TransactionRulesService {
     let priority = input.priority;
     if (priority === undefined) {
       const { data: maxPriority } = await supabase
-        .from('transaction_rules')
-        .select('priority')
-        .eq('user_id', userId)
-        .order('priority', { ascending: false })
+        .from("transaction_rules")
+        .select("priority")
+        .eq("user_id", userId)
+        .order("priority", { ascending: false })
         .limit(1)
         .single();
 
@@ -194,7 +200,7 @@ class TransactionRulesService {
     }
 
     const { data, error } = await supabase
-      .from('transaction_rules')
+      .from("transaction_rules")
       .insert({
         user_id: userId,
         name: input.name,
@@ -211,7 +217,7 @@ class TransactionRulesService {
 
     if (error) {
       // TransactionRulesService error: Error creating rule
-      throw new Error('Failed to create rule');
+      throw new Error("Failed to create rule");
     }
 
     return this.mapDbToRule(data);
@@ -223,7 +229,7 @@ class TransactionRulesService {
   async updateRule(
     userId: string,
     ruleId: string,
-    input: UpdateRuleInput
+    input: UpdateRuleInput,
   ): Promise<TransactionRule> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = supabaseAdmin as any;
@@ -240,24 +246,27 @@ class TransactionRulesService {
     };
 
     if (input.name !== undefined) updateData.name = input.name;
-    if (input.description !== undefined) updateData.description = input.description;
-    if (input.conditions !== undefined) updateData.conditions = input.conditions;
-    if (input.conditionLogic !== undefined) updateData.condition_logic = input.conditionLogic;
+    if (input.description !== undefined)
+      updateData.description = input.description;
+    if (input.conditions !== undefined)
+      updateData.conditions = input.conditions;
+    if (input.conditionLogic !== undefined)
+      updateData.condition_logic = input.conditionLogic;
     if (input.actions !== undefined) updateData.actions = input.actions;
     if (input.isActive !== undefined) updateData.is_active = input.isActive;
     if (input.priority !== undefined) updateData.priority = input.priority;
 
     const { data, error } = await supabase
-      .from('transaction_rules')
+      .from("transaction_rules")
       .update(updateData)
-      .eq('id', ruleId)
-      .eq('user_id', userId)
+      .eq("id", ruleId)
+      .eq("user_id", userId)
       .select()
       .single();
 
     if (error) {
       // TransactionRulesService error: Error updating rule
-      throw new Error('Failed to update rule');
+      throw new Error("Failed to update rule");
     }
 
     return this.mapDbToRule(data);
@@ -271,14 +280,14 @@ class TransactionRulesService {
     const supabase = supabaseAdmin as any;
 
     const { error } = await supabase
-      .from('transaction_rules')
+      .from("transaction_rules")
       .delete()
-      .eq('id', ruleId)
-      .eq('user_id', userId);
+      .eq("id", ruleId)
+      .eq("user_id", userId);
 
     if (error) {
       // TransactionRulesService error: Error deleting rule
-      throw new Error('Failed to delete rule');
+      throw new Error("Failed to delete rule");
     }
   }
 
@@ -287,17 +296,26 @@ class TransactionRulesService {
    */
   async applyRules(
     userId: string,
-    transaction: Transaction
+    transaction: Transaction,
   ): Promise<{ transaction: Transaction; appliedRules: string[] }> {
     const rules = await this.getRules(userId);
-    const activeRules = rules.filter(r => r.isActive);
+    const activeRules = rules.filter((r) => r.isActive);
 
     let modifiedTransaction = { ...transaction };
     const appliedRules: string[] = [];
 
     for (const rule of activeRules) {
-      if (this.matchesConditions(modifiedTransaction, rule.conditions, rule.conditionLogic)) {
-        modifiedTransaction = this.applyActions(modifiedTransaction, rule.actions);
+      if (
+        this.matchesConditions(
+          modifiedTransaction,
+          rule.conditions,
+          rule.conditionLogic,
+        )
+      ) {
+        modifiedTransaction = this.applyActions(
+          modifiedTransaction,
+          rule.actions,
+        );
         appliedRules.push(rule.id);
 
         // Update match count
@@ -313,10 +331,10 @@ class TransactionRulesService {
    */
   async testRule(
     rule: CreateRuleInput,
-    transactions: Transaction[]
+    transactions: Transaction[],
   ): Promise<{ matches: Transaction[]; matchCount: number }> {
-    const matches = transactions.filter(txn =>
-      this.matchesConditions(txn, rule.conditions, rule.conditionLogic)
+    const matches = transactions.filter((txn) =>
+      this.matchesConditions(txn, rule.conditions, rule.conditionLogic),
     );
 
     return {
@@ -344,7 +362,7 @@ class TransactionRulesService {
     for (const [merchant, txns] of merchantGroups) {
       if (txns.length < 3) continue;
 
-      const categories = new Set(txns.map(t => t.category).filter(Boolean));
+      const categories = new Set(txns.map((t) => t.category).filter(Boolean));
 
       // If same merchant has multiple categories, suggest a rule
       if (categories.size > 1) {
@@ -352,12 +370,16 @@ class TransactionRulesService {
         const categoryCounts = new Map<string, number>();
         for (const txn of txns) {
           if (txn.category) {
-            categoryCounts.set(txn.category, (categoryCounts.get(txn.category) || 0) + 1);
+            categoryCounts.set(
+              txn.category,
+              (categoryCounts.get(txn.category) || 0) + 1,
+            );
           }
         }
 
-        const [mostCommonCategory, count] = [...categoryCounts.entries()]
-          .sort(([, a], [, b]) => b - a)[0] || ['Uncategorized', 0];
+        const [mostCommonCategory, count] = [...categoryCounts.entries()].sort(
+          ([, a], [, b]) => b - a,
+        )[0] || ["Uncategorized", 0];
 
         const confidence = count / txns.length;
 
@@ -367,20 +389,22 @@ class TransactionRulesService {
             description: `Always categorize transactions from ${txns[0].merchantName} as ${mostCommonCategory}`,
             conditions: [
               {
-                type: 'merchant_contains',
+                type: "merchant_contains",
                 value: merchant,
               },
             ],
-            conditionLogic: 'AND',
+            conditionLogic: "AND",
             actions: [
               {
-                type: 'set_category',
+                type: "set_category",
                 value: mostCommonCategory,
               },
             ],
             confidence,
             matchingTransactions: txns.length,
-            estimatedAffected: txns.filter(t => t.category !== mostCommonCategory).length,
+            estimatedAffected: txns.filter(
+              (t) => t.category !== mostCommonCategory,
+            ).length,
           });
         }
       }
@@ -400,24 +424,24 @@ class TransactionRulesService {
       if (txns.length < 2) continue;
 
       // Check if same merchant
-      const merchants = new Set(txns.map(t => t.merchantName.toLowerCase()));
+      const merchants = new Set(txns.map((t) => t.merchantName.toLowerCase()));
       if (merchants.size === 1) {
         const merchant = txns[0].merchantName;
 
         // Check if uncategorized
-        const uncategorized = txns.filter(t => !t.category || t.category === 'Uncategorized');
+        const uncategorized = txns.filter(
+          (t) => !t.category || t.category === "Uncategorized",
+        );
         if (uncategorized.length > 0) {
           suggestions.push({
             name: `Recurring ${merchant} payment`,
             description: `Tag $${amount} payments from ${merchant} as recurring`,
             conditions: [
-              { type: 'merchant_contains', value: merchant.toLowerCase() },
-              { type: 'amount_equals', value: amount },
+              { type: "merchant_contains", value: merchant.toLowerCase() },
+              { type: "amount_equals", value: amount },
             ],
-            conditionLogic: 'AND',
-            actions: [
-              { type: 'add_tag', value: 'recurring' },
-            ],
+            conditionLogic: "AND",
+            actions: [{ type: "add_tag", value: "recurring" }],
             confidence: 0.9,
             matchingTransactions: txns.length,
             estimatedAffected: uncategorized.length,
@@ -439,10 +463,10 @@ class TransactionRulesService {
     // Update priorities in order
     for (let i = 0; i < ruleIds.length; i++) {
       await supabase
-        .from('transaction_rules')
+        .from("transaction_rules")
         .update({ priority: i, updated_at: new Date().toISOString() })
-        .eq('id', ruleIds[i])
-        .eq('user_id', userId);
+        .eq("id", ruleIds[i])
+        .eq("user_id", userId);
     }
   }
 
@@ -452,59 +476,68 @@ class TransactionRulesService {
   private matchesConditions(
     transaction: Transaction,
     conditions: RuleCondition[],
-    logic: 'AND' | 'OR'
+    logic: "AND" | "OR",
   ): boolean {
     if (conditions.length === 0) return false;
 
-    const results = conditions.map(condition => this.matchesCondition(transaction, condition));
+    const results = conditions.map((condition) =>
+      this.matchesCondition(transaction, condition),
+    );
 
-    return logic === 'AND'
-      ? results.every(r => r)
-      : results.some(r => r);
+    return logic === "AND" ? results.every((r) => r) : results.some((r) => r);
   }
 
   /**
    * Check if transaction matches a single condition
    */
-  private matchesCondition(transaction: Transaction, condition: RuleCondition): boolean {
+  private matchesCondition(
+    transaction: Transaction,
+    condition: RuleCondition,
+  ): boolean {
     const merchantLower = transaction.merchantName.toLowerCase();
-    const value = typeof condition.value === 'string'
-      ? condition.value.toLowerCase()
-      : condition.value;
+    const value =
+      typeof condition.value === "string"
+        ? condition.value.toLowerCase()
+        : condition.value;
 
     switch (condition.type) {
-      case 'merchant_contains':
+      case "merchant_contains":
         return merchantLower.includes(value as string);
 
-      case 'merchant_equals':
+      case "merchant_equals":
         return merchantLower === value;
 
-      case 'merchant_starts_with':
+      case "merchant_starts_with":
         return merchantLower.startsWith(value as string);
 
-      case 'amount_equals':
+      case "amount_equals":
         return Math.abs(transaction.amount - (value as number)) < 0.01;
 
-      case 'amount_greater_than':
+      case "amount_greater_than":
         return transaction.amount > (value as number);
 
-      case 'amount_less_than':
+      case "amount_less_than":
         return transaction.amount < (value as number);
 
-      case 'amount_between':
-        return transaction.amount >= (value as number) &&
-               transaction.amount <= (condition.secondaryValue as number);
+      case "amount_between":
+        return (
+          transaction.amount >= (value as number) &&
+          transaction.amount <= (condition.secondaryValue as number)
+        );
 
-      case 'category_equals':
+      case "category_equals":
         return transaction.category?.toLowerCase() === value;
 
-      case 'account_equals':
+      case "account_equals":
         return transaction.accountId === value;
 
-      case 'description_contains':
-        return transaction.description?.toLowerCase().includes(value as string) ?? false;
+      case "description_contains":
+        return (
+          transaction.description?.toLowerCase().includes(value as string) ??
+          false
+        );
 
-      case 'date_range':
+      case "date_range":
         // Implement date range logic if needed
         return true;
 
@@ -516,40 +549,45 @@ class TransactionRulesService {
   /**
    * Apply actions to a transaction
    */
-  private applyActions(transaction: Transaction, actions: RuleAction[]): Transaction {
+  private applyActions(
+    transaction: Transaction,
+    actions: RuleAction[],
+  ): Transaction {
     const modified = { ...transaction };
 
     for (const action of actions) {
       switch (action.type) {
-        case 'set_category':
+        case "set_category":
           modified.category = action.value as string;
           break;
 
-        case 'add_tag':
+        case "add_tag":
           modified.tags = [...(modified.tags || []), action.value as string];
           break;
 
-        case 'remove_tag':
-          modified.tags = (modified.tags || []).filter(t => t !== action.value);
+        case "remove_tag":
+          modified.tags = (modified.tags || []).filter(
+            (t) => t !== action.value,
+          );
           break;
 
-        case 'mark_tax_deductible':
+        case "mark_tax_deductible":
           modified.isTaxDeductible = action.value as boolean;
           break;
 
-        case 'rename_merchant':
+        case "rename_merchant":
           modified.merchantName = action.value as string;
           break;
 
-        case 'set_note':
+        case "set_note":
           modified.note = action.value as string;
           break;
 
-        case 'ignore':
+        case "ignore":
           // Transaction would be flagged to be ignored
           break;
 
-        case 'split':
+        case "split":
           // Split logic would be handled separately
           break;
       }
@@ -561,11 +599,14 @@ class TransactionRulesService {
   /**
    * Increment match count for a rule
    */
-  private async incrementMatchCount(userId: string, ruleId: string): Promise<void> {
+  private async incrementMatchCount(
+    userId: string,
+    ruleId: string,
+  ): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = supabaseAdmin as any;
 
-    await supabase.rpc('increment_rule_match_count', {
+    await supabase.rpc("increment_rule_match_count", {
       p_rule_id: ruleId,
       p_user_id: userId,
     });
@@ -576,16 +617,19 @@ class TransactionRulesService {
    */
   private validateConditions(conditions: RuleCondition[]): void {
     if (!conditions || conditions.length === 0) {
-      throw new Error('At least one condition is required');
+      throw new Error("At least one condition is required");
     }
 
     for (const condition of conditions) {
       if (!condition.type || condition.value === undefined) {
-        throw new Error('Each condition must have a type and value');
+        throw new Error("Each condition must have a type and value");
       }
 
-      if (condition.type === 'amount_between' && condition.secondaryValue === undefined) {
-        throw new Error('amount_between condition requires secondaryValue');
+      if (
+        condition.type === "amount_between" &&
+        condition.secondaryValue === undefined
+      ) {
+        throw new Error("amount_between condition requires secondaryValue");
       }
     }
   }
@@ -595,12 +639,12 @@ class TransactionRulesService {
    */
   private validateActions(actions: RuleAction[]): void {
     if (!actions || actions.length === 0) {
-      throw new Error('At least one action is required');
+      throw new Error("At least one action is required");
     }
 
     for (const action of actions) {
       if (!action.type || action.value === undefined) {
-        throw new Error('Each action must have a type and value');
+        throw new Error("Each action must have a type and value");
       }
     }
   }
@@ -615,12 +659,14 @@ class TransactionRulesService {
       name: row.name as string,
       description: row.description as string | undefined,
       conditions: row.conditions as RuleCondition[],
-      conditionLogic: row.condition_logic as 'AND' | 'OR',
+      conditionLogic: row.condition_logic as "AND" | "OR",
       actions: row.actions as RuleAction[],
       isActive: row.is_active as boolean,
       priority: row.priority as number,
       matchCount: row.match_count as number,
-      lastMatchedAt: row.last_matched_at ? new Date(row.last_matched_at as string) : undefined,
+      lastMatchedAt: row.last_matched_at
+        ? new Date(row.last_matched_at as string)
+        : undefined,
       createdAt: new Date(row.created_at as string),
       updatedAt: new Date(row.updated_at as string),
     };

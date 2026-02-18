@@ -31,7 +31,7 @@ export interface PaginatedResponse<T> {
 export interface CreditScore {
   id: string;
   userId: string;
-  bureau: 'experian' | 'equifax' | 'transunion';
+  bureau: "experian" | "equifax" | "transunion";
   score: number;
   previousScore?: number;
   change?: number;
@@ -44,18 +44,18 @@ export interface CreditFactor {
   id: string; // Factor identifier (payment_history, credit_utilization, etc.)
   name: string; // Display name
   impact:
-    | 'high_positive'
-    | 'positive'
-    | 'neutral'
-    | 'negative'
-    | 'high_negative';
+    | "high_positive"
+    | "positive"
+    | "neutral"
+    | "negative"
+    | "high_negative";
   category:
-    | 'payment_history'
-    | 'credit_utilization'
-    | 'credit_age'
-    | 'credit_mix'
-    | 'new_credit';
-  status?: 'excellent' | 'good' | 'fair' | 'poor' | 'very_poor'; // Overall status
+    | "payment_history"
+    | "credit_utilization"
+    | "credit_age"
+    | "credit_mix"
+    | "new_credit";
+  status?: "excellent" | "good" | "fair" | "poor" | "very_poor"; // Overall status
   value?: string; // Current value (e.g., "18% utilization", "100% on-time")
   description: string;
   recommendation?: string;
@@ -68,19 +68,19 @@ export interface CreditScoreHistory {
   averageScore: number;
   highestScore: number;
   lowestScore: number;
-  trend: 'improving' | 'declining' | 'stable';
+  trend: "improving" | "declining" | "stable";
   periodStart: string;
   periodEnd: string;
 }
 
 // Credit Monitoring Types
 export type AlertType =
-  | 'new_account'
-  | 'score_change'
-  | 'inquiry'
-  | 'address_change'
-  | 'fraud_alert'
-  | 'derogatory';
+  | "new_account"
+  | "score_change"
+  | "inquiry"
+  | "address_change"
+  | "fraud_alert"
+  | "derogatory";
 
 export interface CreditMonitoringAlert {
   id: string;
@@ -88,7 +88,7 @@ export interface CreditMonitoringAlert {
   bureau: string;
   alertType: AlertType;
   type: AlertType; // Alias for alertType for backward compatibility
-  severity: 'low' | 'medium' | 'high' | 'critical';
+  severity: "low" | "medium" | "high" | "critical";
   title: string;
   description: string;
   message?: string; // Alias for description
@@ -120,20 +120,20 @@ export interface MonitoringStatus {
 
 // Dispute Types
 export type DisputeStatus =
-  | 'draft'
-  | 'pending'
-  | 'in_progress'
-  | 'ready'
-  | 'sent'
-  | 'under_review'
-  | 'resolved'
-  | 'rejected'
-  | 'deleted';
+  | "draft"
+  | "pending"
+  | "in_progress"
+  | "ready"
+  | "sent"
+  | "under_review"
+  | "resolved"
+  | "rejected"
+  | "deleted";
 
 export interface Dispute {
   id: string;
   userId: string;
-  bureau: 'experian' | 'equifax' | 'transunion';
+  bureau: "experian" | "equifax" | "transunion";
   status: DisputeStatus;
   itemType: string;
   creditorName: string;
@@ -145,7 +145,7 @@ export interface Dispute {
   updatedAt: string;
   sentAt?: string;
   resolvedAt?: string;
-  outcome?: 'removed' | 'updated' | 'verified' | 'pending';
+  outcome?: "removed" | "updated" | "verified" | "pending";
   responseDetails?: string;
   followUpDate?: string;
 }
@@ -156,7 +156,7 @@ export interface DisputeTemplate {
   category: string;
   scenario: string;
   successRate: number;
-  tone: 'formal' | 'humble' | 'assertive' | 'legal';
+  tone: "formal" | "humble" | "assertive" | "legal";
   letterText: string;
   requiredDocuments: string[];
   placeholders: string[];
@@ -167,8 +167,8 @@ export interface DisputeStrategy {
   name: string;
   description: string;
   successRate: number;
-  difficulty: 'beginner' | 'intermediate' | 'advanced' | 'expert';
-  riskLevel: 'low' | 'medium' | 'high';
+  difficulty: "beginner" | "intermediate" | "advanced" | "expert";
+  riskLevel: "low" | "medium" | "high";
   timeline: string;
   steps: { step: number; title: string; description: string }[];
 }
@@ -190,7 +190,12 @@ export interface StrategyRecommendation {
 }
 
 // Financial Types
-export type AccountType = 'checking' | 'savings' | 'credit' | 'investment' | 'loan';
+export type AccountType =
+  | "checking"
+  | "savings"
+  | "credit"
+  | "investment"
+  | "loan";
 
 export interface BankAccount {
   id: string;
@@ -214,7 +219,7 @@ export interface Transaction {
   merchantName: string;
   date: string;
   pending: boolean;
-  type: 'income' | 'expense' | 'transfer';
+  type: "income" | "expense" | "transfer";
 }
 
 export interface Budget {
@@ -224,19 +229,19 @@ export interface Budget {
   limit: number;
   spent: number;
   remaining: number;
-  period: 'weekly' | 'monthly' | 'yearly';
+  period: "weekly" | "monthly" | "yearly";
 }
 
 export type GoalType =
-  | 'emergency_fund'
-  | 'debt_payoff'
-  | 'savings'
-  | 'investment'
-  | 'retirement'
-  | 'education'
-  | 'home'
-  | 'vacation'
-  | 'other';
+  | "emergency_fund"
+  | "debt_payoff"
+  | "savings"
+  | "investment"
+  | "retirement"
+  | "education"
+  | "home"
+  | "vacation"
+  | "other";
 
 export interface FinancialGoal {
   id: string;
@@ -248,7 +253,7 @@ export interface FinancialGoal {
   deadline?: string;
   targetDate?: string; // Alias for deadline
   monthlyContribution?: number;
-  status: 'active' | 'completed' | 'paused';
+  status: "active" | "completed" | "paused";
 }
 
 // User Types
@@ -261,8 +266,8 @@ export interface UserProfile {
   phone?: string;
   dateOfBirth?: string;
   address?: Address;
-  subscriptionTier: 'free' | 'basic' | 'premium' | 'enterprise';
-  subscriptionStatus: 'active' | 'canceled' | 'past_due' | 'trialing';
+  subscriptionTier: "free" | "basic" | "premium" | "enterprise";
+  subscriptionStatus: "active" | "canceled" | "past_due" | "trialing";
   createdAt: string;
   updatedAt: string;
   onboardingCompleted: boolean;
@@ -282,12 +287,12 @@ export interface Notification {
   id: string;
   userId: string;
   type:
-    | 'dispute_update'
-    | 'score_change'
-    | 'alert'
-    | 'recommendation'
-    | 'payment'
-    | 'system';
+    | "dispute_update"
+    | "score_change"
+    | "alert"
+    | "recommendation"
+    | "payment"
+    | "system";
   title: string;
   body: string;
   data?: Record<string, unknown>;
@@ -314,8 +319,8 @@ export interface NotificationPreferences {
 export interface Subscription {
   id: string;
   userId: string;
-  plan: 'free' | 'basic' | 'premium' | 'enterprise';
-  status: 'active' | 'canceled' | 'past_due' | 'trialing';
+  plan: "free" | "basic" | "premium" | "enterprise";
+  status: "active" | "canceled" | "past_due" | "trialing";
   currentPeriodStart: string;
   currentPeriodEnd: string;
   cancelAtPeriodEnd: boolean;
@@ -326,7 +331,7 @@ export interface SubscriptionPlan {
   id: string;
   name: string;
   price: number;
-  interval: 'month' | 'year';
+  interval: "month" | "year";
   features: string[];
   highlighted?: boolean;
 }
@@ -335,10 +340,10 @@ export interface SubscriptionPlan {
 export interface Recommendation {
   id: string;
   userId: string;
-  type: 'credit_card' | 'loan' | 'action' | 'insight';
+  type: "credit_card" | "loan" | "action" | "insight";
   title: string;
   description: string;
-  priority: 'high' | 'medium' | 'low';
+  priority: "high" | "medium" | "low";
   potentialImpact?: number;
   actionUrl?: string;
   expiresAt?: string;
@@ -356,8 +361,8 @@ export interface IdentityProtectionStatus {
 
 export interface IdentityAlert {
   id: string;
-  type: 'breach' | 'dark_web' | 'fraud_attempt';
-  severity: 'low' | 'medium' | 'high' | 'critical';
+  type: "breach" | "dark_web" | "fraud_attempt";
+  severity: "low" | "medium" | "high" | "critical";
   title: string;
   description: string;
   exposedData?: string[];
@@ -371,11 +376,11 @@ export interface Document {
   id: string;
   userId: string;
   name: string;
-  type: 'credit_report' | 'dispute_response' | 'identity' | 'income' | 'other';
+  type: "credit_report" | "dispute_response" | "identity" | "income" | "other";
   fileUrl: string;
   fileSize: number;
   mimeType: string;
-  status: 'processing' | 'analyzed' | 'error';
+  status: "processing" | "analyzed" | "error";
   uploadedAt: string;
   analysisResult?: DocumentAnalysis;
 }
@@ -413,4 +418,4 @@ export type {
   StockAnalysisApiResponse,
   CreateHoldingInput,
   UpdateHoldingInput,
-} from './investments';
+} from "./investments";

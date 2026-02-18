@@ -3,12 +3,12 @@
  * Handles GET and POST requests for credit reports
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { db } from '@/lib/credit-repair/db';
-import { auditLogger } from '@/lib/security/audit-logging';
+import { NextRequest, NextResponse } from "next/server";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { db } from "@/lib/credit-repair/db";
+import { auditLogger } from "@/lib/security/audit-logging";
 
-const VALID_BUREAUS = ['experian', 'equifax', 'transunion'];
+const VALID_BUREAUS = ["experian", "equifax", "transunion"];
 
 /**
  * GET /api/credit-repair/reports
@@ -19,22 +19,22 @@ export async function GET(request: NextRequest) {
     // Validate authentication
     const authResult = await jwtValidation.validateFromHeaders(request);
     if (!authResult.valid || !authResult.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = authResult.user;
     const { searchParams } = request.nextUrl;
-    const bureau = searchParams.get('bureau');
-    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
-    const offset = parseInt(searchParams.get('offset') || '0');
+    const bureau = searchParams.get("bureau");
+    const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 100);
+    const offset = parseInt(searchParams.get("offset") || "0");
 
     // Get reports based on filters
     let reports;
     if (bureau && VALID_BUREAUS.includes(bureau)) {
       reports = await db.creditReports.getCreditReportsByBureau(
         user.id,
-        bureau as 'experian' | 'equifax' | 'transunion',
-        limit
+        bureau as "experian" | "equifax" | "transunion",
+        limit,
       );
     } else {
       reports = await db.creditReports.getCreditReportsByUser(user.id, {
@@ -43,26 +43,26 @@ export async function GET(request: NextRequest) {
     }
 
     // Get latest report for summary (check all bureaus and get the most recent)
-    const bureaus: ('experian' | 'equifax' | 'transunion')[] = [
-      'experian',
-      'equifax',
-      'transunion',
+    const bureaus: ("experian" | "equifax" | "transunion")[] = [
+      "experian",
+      "equifax",
+      "transunion",
     ];
     const latestReports = await Promise.all(
-      bureaus.map((b) => db.creditReports.getLatestCreditReport(user.id, b))
+      bureaus.map((b) => db.creditReports.getLatestCreditReport(user.id, b)),
     );
     const latestReport =
       latestReports
         .filter((r): r is NonNullable<typeof r> => r !== null)
         .sort(
           (a, b) =>
-            new Date(b.reportDate).getTime() - new Date(a.reportDate).getTime()
+            new Date(b.reportDate).getTime() - new Date(a.reportDate).getTime(),
         )[0] || null;
 
     // Log access
     auditLogger.logAIInteraction({
       userId: authResult.user.id,
-      action: 'credit_reports_viewed',
+      action: "credit_reports_viewed",
       input: { bureau },
       output: { count: reports.length },
       success: true,
@@ -83,8 +83,8 @@ export async function GET(request: NextRequest) {
   } catch (_error) {
     // Error silently caught
     return NextResponse.json(
-      { error: 'Failed to get credit reports' },
-      { status: 500 }
+      { error: "Failed to get credit reports" },
+      { status: 500 },
     );
   }
 }
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
     // Validate authentication
     const authResult = await jwtValidation.validateFromHeaders(request);
     if (!authResult.valid || !authResult.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
@@ -107,21 +107,21 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (!bureau || !reportDate || score === undefined) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
+        { error: "Missing required fields" },
+        { status: 400 },
       );
     }
 
     // Validate bureau
     if (!VALID_BUREAUS.includes(bureau)) {
-      return NextResponse.json({ error: 'Invalid bureau' }, { status: 400 });
+      return NextResponse.json({ error: "Invalid bureau" }, { status: 400 });
     }
 
     // Validate score range (300-850)
     if (score < 300 || score > 850) {
       return NextResponse.json(
-        { error: 'Invalid score. Must be between 300 and 850' },
-        { status: 400 }
+        { error: "Invalid score. Must be between 300 and 850" },
+        { status: 400 },
       );
     }
 
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
     // Log upload
     auditLogger.logAIInteraction({
       userId: authResult.user.id,
-      action: 'credit_report_uploaded',
+      action: "credit_report_uploaded",
       input: { bureau, score },
       output: { reportId: report.id },
       success: true,
@@ -148,13 +148,13 @@ export async function POST(request: NextRequest) {
         success: true,
         data: report,
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (_error) {
     // Error silently caught
     return NextResponse.json(
-      { error: 'Failed to upload credit report' },
-      { status: 500 }
+      { error: "Failed to upload credit report" },
+      { status: 500 },
     );
   }
 }

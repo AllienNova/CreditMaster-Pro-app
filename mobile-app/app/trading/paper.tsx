@@ -3,7 +3,7 @@
  * Practice trading with virtual money
  */
 
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -13,28 +13,28 @@ import {
   RefreshControl,
   ActivityIndicator,
   Alert,
-} from 'react-native';
-import { Stack, router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { lightTheme as theme } from '../../src/constants/theme';
-import { useTradingStore } from '../../src/store/tradingStore';
-import { OrderEntrySheet } from '../../src/components/trading/OrderEntrySheet';
-import type { PaperPosition, PaperOrder } from '../../src/services/api/trading';
+} from "react-native";
+import { Stack, router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { lightTheme as theme } from "../../src/constants/theme";
+import { useTradingStore } from "../../src/store/tradingStore";
+import { OrderEntrySheet } from "../../src/components/trading/OrderEntrySheet";
+import type { PaperPosition, PaperOrder } from "../../src/services/api/trading";
 
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
 
 const formatCurrency = (amount: number, showSign = false): string => {
-  const sign = showSign && amount >= 0 ? '+' : '';
-  return `${sign}$${Math.abs(amount).toLocaleString('en-US', {
+  const sign = showSign && amount >= 0 ? "+" : "";
+  return `${sign}$${Math.abs(amount).toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
 };
 
 const formatPercent = (value: number): string => {
-  const sign = value >= 0 ? '+' : '';
+  const sign = value >= 0 ? "+" : "";
   return `${sign}${(value * 100).toFixed(2)}%`;
 };
 
@@ -63,7 +63,11 @@ function AccountCard({
     <View style={styles.accountCard}>
       <View style={styles.accountHeader}>
         <View style={styles.accountBadge}>
-          <Ionicons name="school-outline" size={16} color={theme.colors.primary} />
+          <Ionicons
+            name="school-outline"
+            size={16}
+            color={theme.colors.primary}
+          />
           <Text style={styles.accountBadgeText}>Paper Trading</Text>
         </View>
         <TouchableOpacity style={styles.resetButton} onPress={onReset}>
@@ -76,7 +80,12 @@ function AccountCard({
         <Text style={styles.accountEquityLabel}>Account Equity</Text>
         <Text style={styles.accountEquityValue}>{formatCurrency(equity)}</Text>
         <View style={styles.accountPL}>
-          <Text style={[styles.accountPLValue, { color: isProfit ? '#10B981' : '#EF4444' }]}>
+          <Text
+            style={[
+              styles.accountPLValue,
+              { color: isProfit ? "#10B981" : "#EF4444" },
+            ]}
+          >
             {formatCurrency(totalPL, true)} ({formatPercent(totalPLPercent)})
           </Text>
         </View>
@@ -90,7 +99,9 @@ function AccountCard({
         <View style={styles.accountStatDivider} />
         <View style={styles.accountStatItem}>
           <Text style={styles.accountStatLabel}>Buying Power</Text>
-          <Text style={styles.accountStatValue}>{formatCurrency(buyingPower)}</Text>
+          <Text style={styles.accountStatValue}>
+            {formatCurrency(buyingPower)}
+          </Text>
         </View>
       </View>
     </View>
@@ -108,16 +119,16 @@ function PaperPositionCard({
 
   const handleClose = () => {
     Alert.alert(
-      'Close Position',
+      "Close Position",
       `Close ${position.quantity} shares of ${position.symbol} at market price?`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Close Position',
-          style: 'destructive',
+          text: "Close Position",
+          style: "destructive",
           onPress: () => onClose(position.id),
         },
-      ]
+      ],
     );
   };
 
@@ -129,13 +140,16 @@ function PaperPositionCard({
           <View
             style={[
               styles.sideBadge,
-              { backgroundColor: position.side === 'long' ? '#10B98120' : '#EF444420' },
+              {
+                backgroundColor:
+                  position.side === "long" ? "#10B98120" : "#EF444420",
+              },
             ]}
           >
             <Text
               style={[
                 styles.sideBadgeText,
-                { color: position.side === 'long' ? '#10B981' : '#EF4444' },
+                { color: position.side === "long" ? "#10B981" : "#EF4444" },
               ]}
             >
               {position.side.toUpperCase()}
@@ -143,10 +157,20 @@ function PaperPositionCard({
           </View>
         </View>
         <View style={styles.positionPL}>
-          <Text style={[styles.positionPLValue, { color: isProfit ? '#10B981' : '#EF4444' }]}>
+          <Text
+            style={[
+              styles.positionPLValue,
+              { color: isProfit ? "#10B981" : "#EF4444" },
+            ]}
+          >
             {formatCurrency(position.unrealizedPL, true)}
           </Text>
-          <Text style={[styles.positionPLPercent, { color: isProfit ? '#10B981' : '#EF4444' }]}>
+          <Text
+            style={[
+              styles.positionPLPercent,
+              { color: isProfit ? "#10B981" : "#EF4444" },
+            ]}
+          >
             {formatPercent(position.unrealizedPLPercent)}
           </Text>
         </View>
@@ -159,19 +183,28 @@ function PaperPositionCard({
         </View>
         <View style={styles.positionDetailItem}>
           <Text style={styles.positionDetailLabel}>Entry</Text>
-          <Text style={styles.positionDetailValue}>${position.avgEntryPrice.toFixed(2)}</Text>
+          <Text style={styles.positionDetailValue}>
+            ${position.avgEntryPrice.toFixed(2)}
+          </Text>
         </View>
         <View style={styles.positionDetailItem}>
           <Text style={styles.positionDetailLabel}>Current</Text>
-          <Text style={styles.positionDetailValue}>${position.currentPrice.toFixed(2)}</Text>
+          <Text style={styles.positionDetailValue}>
+            ${position.currentPrice.toFixed(2)}
+          </Text>
         </View>
         <View style={styles.positionDetailItem}>
           <Text style={styles.positionDetailLabel}>Value</Text>
-          <Text style={styles.positionDetailValue}>{formatCurrency(position.marketValue)}</Text>
+          <Text style={styles.positionDetailValue}>
+            {formatCurrency(position.marketValue)}
+          </Text>
         </View>
       </View>
 
-      <TouchableOpacity style={styles.closePositionButton} onPress={handleClose}>
+      <TouchableOpacity
+        style={styles.closePositionButton}
+        onPress={handleClose}
+      >
         <Ionicons name="close-circle-outline" size={18} color="#EF4444" />
         <Text style={styles.closePositionButtonText}>Close Position</Text>
       </TouchableOpacity>
@@ -186,13 +219,21 @@ function PaperOrderCard({
   order: PaperOrder;
   onCancel: (orderId: string) => void;
 }) {
-  const isPending = ['pending', 'new'].includes(order.status);
+  const isPending = ["pending", "new"].includes(order.status);
 
   const handleCancel = () => {
-    Alert.alert('Cancel Order', `Cancel this ${order.side} order for ${order.symbol}?`, [
-      { text: 'No', style: 'cancel' },
-      { text: 'Yes, Cancel', style: 'destructive', onPress: () => onCancel(order.id) },
-    ]);
+    Alert.alert(
+      "Cancel Order",
+      `Cancel this ${order.side} order for ${order.symbol}?`,
+      [
+        { text: "No", style: "cancel" },
+        {
+          text: "Yes, Cancel",
+          style: "destructive",
+          onPress: () => onCancel(order.id),
+        },
+      ],
+    );
   };
 
   return (
@@ -203,13 +244,16 @@ function PaperOrderCard({
           <View
             style={[
               styles.orderSideBadge,
-              { backgroundColor: order.side === 'buy' ? '#10B98120' : '#EF444420' },
+              {
+                backgroundColor:
+                  order.side === "buy" ? "#10B98120" : "#EF444420",
+              },
             ]}
           >
             <Text
               style={[
                 styles.orderSideBadgeText,
-                { color: order.side === 'buy' ? '#10B981' : '#EF4444' },
+                { color: order.side === "buy" ? "#10B981" : "#EF4444" },
               ]}
             >
               {order.side.toUpperCase()}
@@ -221,11 +265,11 @@ function PaperOrderCard({
             styles.orderStatusBadge,
             {
               backgroundColor:
-                order.status === 'filled'
-                  ? '#10B98120'
+                order.status === "filled"
+                  ? "#10B98120"
                   : isPending
-                  ? '#F59E0B20'
-                  : '#EF444420',
+                    ? "#F59E0B20"
+                    : "#EF444420",
             },
           ]}
         >
@@ -234,7 +278,11 @@ function PaperOrderCard({
               styles.orderStatusText,
               {
                 color:
-                  order.status === 'filled' ? '#10B981' : isPending ? '#F59E0B' : '#EF4444',
+                  order.status === "filled"
+                    ? "#10B981"
+                    : isPending
+                      ? "#F59E0B"
+                      : "#EF4444",
               },
             ]}
           >
@@ -246,12 +294,17 @@ function PaperOrderCard({
       <View style={styles.orderDetails}>
         <Text style={styles.orderDetailText}>
           {order.type.toUpperCase()} · {order.quantity} shares
-          {order.limitPrice ? ` @ $${order.limitPrice.toFixed(2)}` : ' @ Market'}
+          {order.limitPrice
+            ? ` @ $${order.limitPrice.toFixed(2)}`
+            : " @ Market"}
         </Text>
       </View>
 
       {isPending && (
-        <TouchableOpacity style={styles.cancelOrderButton} onPress={handleCancel}>
+        <TouchableOpacity
+          style={styles.cancelOrderButton}
+          onPress={handleCancel}
+        >
           <Ionicons name="close-circle-outline" size={16} color="#EF4444" />
           <Text style={styles.cancelOrderButtonText}>Cancel</Text>
         </TouchableOpacity>
@@ -266,7 +319,9 @@ function PaperOrderCard({
 
 export default function PaperTradingScreen() {
   const [showOrderEntry, setShowOrderEntry] = useState(false);
-  const [activeTab, setActiveTab] = useState<'positions' | 'orders'>('positions');
+  const [activeTab, setActiveTab] = useState<"positions" | "orders">(
+    "positions",
+  );
 
   const {
     paperAccount,
@@ -288,16 +343,16 @@ export default function PaperTradingScreen() {
 
   const handleReset = () => {
     Alert.alert(
-      'Reset Paper Account',
-      'This will reset your paper trading account to $100,000 and close all positions. Continue?',
+      "Reset Paper Account",
+      "This will reset your paper trading account to $100,000 and close all positions. Continue?",
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Reset Account',
-          style: 'destructive',
+          text: "Reset Account",
+          style: "destructive",
           onPress: resetPaperAccount,
         },
-      ]
+      ],
     );
   };
 
@@ -314,13 +369,17 @@ export default function PaperTradingScreen() {
     <View style={styles.container}>
       <Stack.Screen
         options={{
-          title: 'Paper Trading',
+          title: "Paper Trading",
           headerRight: () => (
             <TouchableOpacity
               style={styles.headerButton}
               onPress={() => setShowOrderEntry(true)}
             >
-              <Ionicons name="add-circle-outline" size={24} color={theme.colors.primary} />
+              <Ionicons
+                name="add-circle-outline"
+                size={24}
+                color={theme.colors.primary}
+              />
             </TouchableOpacity>
           ),
         }}
@@ -346,7 +405,11 @@ export default function PaperTradingScreen() {
 
         {/* Info Banner */}
         <View style={styles.infoBanner}>
-          <Ionicons name="information-circle-outline" size={20} color="#3B82F6" />
+          <Ionicons
+            name="information-circle-outline"
+            size={20}
+            color="#3B82F6"
+          />
           <Text style={styles.infoBannerText}>
             Practice trading with virtual money. No real funds at risk.
           </Text>
@@ -355,20 +418,28 @@ export default function PaperTradingScreen() {
         {/* Tab Navigation */}
         <View style={styles.tabContainer}>
           <TouchableOpacity
-            style={[styles.tab, activeTab === 'positions' && styles.tabActive]}
-            onPress={() => setActiveTab('positions')}
+            style={[styles.tab, activeTab === "positions" && styles.tabActive]}
+            onPress={() => setActiveTab("positions")}
           >
             <Text
-              style={[styles.tabText, activeTab === 'positions' && styles.tabTextActive]}
+              style={[
+                styles.tabText,
+                activeTab === "positions" && styles.tabTextActive,
+              ]}
             >
               Positions ({positions.length})
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.tab, activeTab === 'orders' && styles.tabActive]}
-            onPress={() => setActiveTab('orders')}
+            style={[styles.tab, activeTab === "orders" && styles.tabActive]}
+            onPress={() => setActiveTab("orders")}
           >
-            <Text style={[styles.tabText, activeTab === 'orders' && styles.tabTextActive]}>
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === "orders" && styles.tabTextActive,
+              ]}
+            >
               Orders ({orders.length})
             </Text>
           </TouchableOpacity>
@@ -380,7 +451,7 @@ export default function PaperTradingScreen() {
             <ActivityIndicator size="large" color={theme.colors.primary} />
             <Text style={styles.loadingText}>Loading paper account...</Text>
           </View>
-        ) : activeTab === 'positions' ? (
+        ) : activeTab === "positions" ? (
           positions.length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons
@@ -431,7 +502,11 @@ export default function PaperTradingScreen() {
         ) : (
           <View style={styles.listContainer}>
             {orders.map((order) => (
-              <PaperOrderCard key={order.id} order={order} onCancel={cancelPaperOrder} />
+              <PaperOrderCard
+                key={order.id}
+                order={order}
+                onCancel={cancelPaperOrder}
+              />
             ))}
           </View>
         )}
@@ -488,14 +563,14 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.primary,
   },
   accountHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 16,
   },
   accountBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: `${theme.colors.primary}15`,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -504,25 +579,25 @@ const styles = StyleSheet.create({
   },
   accountBadgeText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.primary,
   },
   resetButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#FEF3C7',
+    backgroundColor: "#FEF3C7",
     borderRadius: 16,
     gap: 4,
   },
   resetButtonText: {
     fontSize: 13,
-    fontWeight: '500',
-    color: '#F59E0B',
+    fontWeight: "500",
+    color: "#F59E0B",
   },
   accountEquity: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 20,
   },
   accountEquityLabel: {
@@ -532,7 +607,7 @@ const styles = StyleSheet.create({
   },
   accountEquityValue: {
     fontSize: 36,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
   },
   accountPL: {
@@ -540,18 +615,18 @@ const styles = StyleSheet.create({
   },
   accountPLValue: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   accountStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
   },
   accountStatItem: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
   },
   accountStatLabel: {
     fontSize: 12,
@@ -560,7 +635,7 @@ const styles = StyleSheet.create({
   },
   accountStatValue: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   accountStatDivider: {
@@ -569,9 +644,9 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.border,
   },
   infoBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#EFF6FF',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#EFF6FF",
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
@@ -580,10 +655,10 @@ const styles = StyleSheet.create({
   infoBannerText: {
     flex: 1,
     fontSize: 13,
-    color: '#3B82F6',
+    color: "#3B82F6",
   },
   tabContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     backgroundColor: theme.colors.surface,
     borderRadius: 12,
     padding: 4,
@@ -592,7 +667,7 @@ const styles = StyleSheet.create({
   tab: {
     flex: 1,
     paddingVertical: 10,
-    alignItems: 'center',
+    alignItems: "center",
     borderRadius: 8,
   },
   tabActive: {
@@ -600,16 +675,16 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     color: theme.colors.textSecondary,
   },
   tabTextActive: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
   centerContent: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingTop: 60,
   },
   loadingText: {
@@ -619,21 +694,21 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingTop: 40,
     paddingHorizontal: 32,
   },
   emptyStateTitle: {
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginTop: 16,
   },
   emptyStateText: {
     fontSize: 14,
     color: theme.colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 8,
   },
   emptyStateButton: {
@@ -645,8 +720,8 @@ const styles = StyleSheet.create({
   },
   emptyStateButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
   listContainer: {
     gap: 12,
@@ -657,19 +732,19 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   positionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     marginBottom: 12,
   },
   positionSymbolContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   positionSymbol: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
   },
   sideBadge: {
@@ -679,29 +754,29 @@ const styles = StyleSheet.create({
   },
   sideBadgeText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   positionPL: {
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   positionPLValue: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   positionPLPercent: {
     fontSize: 13,
     marginTop: 2,
   },
   positionDetails: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     backgroundColor: theme.colors.background,
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
   },
   positionDetailItem: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   positionDetailLabel: {
     fontSize: 11,
@@ -710,22 +785,22 @@ const styles = StyleSheet.create({
   },
   positionDetailValue: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   closePositionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 6,
     paddingVertical: 10,
-    backgroundColor: '#FEE2E2',
+    backgroundColor: "#FEE2E2",
     borderRadius: 8,
   },
   closePositionButtonText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#EF4444',
+    fontWeight: "500",
+    color: "#EF4444",
   },
   orderCard: {
     backgroundColor: theme.colors.surface,
@@ -733,19 +808,19 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   orderHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 8,
   },
   orderSymbolContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   orderSymbol: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   orderSideBadge: {
@@ -755,7 +830,7 @@ const styles = StyleSheet.create({
   },
   orderSideBadgeText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   orderStatusBadge: {
     paddingHorizontal: 10,
@@ -764,7 +839,7 @@ const styles = StyleSheet.create({
   },
   orderStatusText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   orderDetails: {
     marginBottom: 8,
@@ -774,30 +849,30 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   cancelOrderButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 4,
     paddingVertical: 8,
-    backgroundColor: '#FEE2E2',
+    backgroundColor: "#FEE2E2",
     borderRadius: 6,
   },
   cancelOrderButtonText: {
     fontSize: 13,
-    fontWeight: '500',
-    color: '#EF4444',
+    fontWeight: "500",
+    color: "#EF4444",
   },
   fab: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 24,
     right: 24,
     width: 56,
     height: 56,
     borderRadius: 28,
     backgroundColor: theme.colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

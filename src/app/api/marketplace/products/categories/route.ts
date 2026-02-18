@@ -4,8 +4,8 @@
  * GET /api/marketplace/products/categories - Get all product categories
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { marketplaceService } from '@/lib/marketplace';
+import { NextRequest, NextResponse } from "next/server";
+import { marketplaceService } from "@/lib/marketplace";
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,14 +19,14 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching categories:', error);
+    console.error("Error fetching categories:", error);
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to fetch categories',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to fetch categories",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

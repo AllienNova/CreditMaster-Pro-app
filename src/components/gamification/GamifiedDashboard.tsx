@@ -1,22 +1,22 @@
-'use client';
+"use client";
 
 /**
  * Gamified Dashboard Component
  * Main dashboard showing XP, level, badges, quests, and streaks
  */
 
-import React, { useEffect, useState } from 'react';
-import { cn } from '@/lib/utils';
-import { ProgressRing } from './ProgressRing';
-import { BadgeCard } from './BadgeCard';
-import { XpBar } from './XpBar';
-import { StreakDisplay } from './StreakDisplay';
-import { QuestCard } from './QuestCard';
+import React, { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
+import { ProgressRing } from "./ProgressRing";
+import { BadgeCard } from "./BadgeCard";
+import { XpBar } from "./XpBar";
+import { StreakDisplay } from "./StreakDisplay";
+import { QuestCard } from "./QuestCard";
 import type {
   GamificationProgressResponse,
   BadgeDefinition,
   DailyQuest,
-} from '@/lib/gamification';
+} from "@/lib/gamification";
 
 interface GamifiedDashboardProps {
   className?: string;
@@ -24,7 +24,7 @@ interface GamifiedDashboardProps {
 
 export function GamifiedDashboard({ className }: GamifiedDashboardProps) {
   const [progress, setProgress] = useState<GamificationProgressResponse | null>(
-    null
+    null,
   );
   const [badges, setBadges] = useState<{
     earned: BadgeDefinition[];
@@ -47,9 +47,9 @@ export function GamifiedDashboard({ className }: GamifiedDashboardProps) {
       setError(null);
 
       const [progressRes, badgesRes, questsRes] = await Promise.all([
-        fetch('/api/gamification/progress'),
-        fetch('/api/gamification/badges'),
-        fetch('/api/gamification/quests'),
+        fetch("/api/gamification/progress"),
+        fetch("/api/gamification/badges"),
+        fetch("/api/gamification/quests"),
       ]);
 
       if (progressRes.ok) {
@@ -62,11 +62,11 @@ export function GamifiedDashboard({ className }: GamifiedDashboardProps) {
         setBadges({
           earned:
             badgesData.earned?.map(
-              (b: { badge: BadgeDefinition }) => b.badge
+              (b: { badge: BadgeDefinition }) => b.badge,
             ) ?? [],
           inProgress:
             badgesData.inProgress?.map(
-              (b: { badge: BadgeDefinition }) => b.badge
+              (b: { badge: BadgeDefinition }) => b.badge,
             ) ?? [],
         });
       }
@@ -80,17 +80,17 @@ export function GamifiedDashboard({ className }: GamifiedDashboardProps) {
             questsData.today?.reduce(
               (
                 acc: Record<string, number>,
-                q: { questId: string; isCompleted: boolean }
+                q: { questId: string; isCompleted: boolean },
               ) => {
                 acc[q.questId] = q.isCompleted ? 100 : 0;
                 return acc;
               },
-              {}
+              {},
             ) ?? {},
         });
       }
     } catch (_err) {
-      setError('Failed to load gamification data');
+      setError("Failed to load gamification data");
       // GamifiedDashboard error: Failed to load gamification data
       void _err;
     } finally {
@@ -100,12 +100,12 @@ export function GamifiedDashboard({ className }: GamifiedDashboardProps) {
 
   const handleCheckIn = async () => {
     try {
-      const res = await fetch('/api/gamification/progress', { method: 'POST' });
+      const res = await fetch("/api/gamification/progress", { method: "POST" });
       if (res.ok) {
         const data = await res.json();
         if (data.levelUp) {
           alert(
-            `Level Up! You're now Level ${data.newLevel}: ${data.newTitle}`
+            `Level Up! You're now Level ${data.newLevel}: ${data.newTitle}`,
           );
         }
         fetchData();
@@ -118,9 +118,9 @@ export function GamifiedDashboard({ className }: GamifiedDashboardProps) {
 
   const handleCompleteQuest = async (questId: string) => {
     try {
-      const res = await fetch('/api/gamification/quests', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/gamification/quests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ questId }),
       });
       if (res.ok) {
@@ -138,7 +138,7 @@ export function GamifiedDashboard({ className }: GamifiedDashboardProps) {
 
   if (loading) {
     return (
-      <div className={cn('p-6 animate-pulse', className)}>
+      <div className={cn("p-6 animate-pulse", className)}>
         <div className="h-8 bg-gray-200 dark:bg-slate-700 rounded w-1/3 mb-4" />
         <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-full mb-2" />
         <div className="h-32 bg-gray-200 dark:bg-slate-700 rounded mb-4" />
@@ -148,7 +148,7 @@ export function GamifiedDashboard({ className }: GamifiedDashboardProps) {
 
   if (error) {
     return (
-      <div className={cn('p-6 text-center', className)}>
+      <div className={cn("p-6 text-center", className)}>
         <p className="text-red-500">{error}</p>
         <button
           onClick={fetchData}
@@ -161,7 +161,7 @@ export function GamifiedDashboard({ className }: GamifiedDashboardProps) {
   }
 
   return (
-    <div className={cn('space-y-6', className)}>
+    <div className={cn("space-y-6", className)}>
       {/* Header with Level and XP */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-600 rounded-xl p-6 text-white">
         <div className="flex items-center justify-between mb-4">
@@ -204,12 +204,12 @@ export function GamifiedDashboard({ className }: GamifiedDashboardProps) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
           label="Total XP"
-          value={progress?.xp.totalEarned.toLocaleString() ?? '0'}
+          value={progress?.xp.totalEarned.toLocaleString() ?? "0"}
           icon=""
         />
         <StatCard
           label="Level"
-          value={progress?.level.current.toString() ?? '1'}
+          value={progress?.level.current.toString() ?? "1"}
           icon=""
         />
         <StatCard

@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
 /**
  * Chart Helper Components
- * 
+ *
  * Reusable tooltip and legend components for charts.
  */
 
-import { ReactNode } from 'react';
-import { formatCurrency, formatPercentage } from './chartUtils';
+import { ReactNode } from "react";
+import { formatCurrency, formatPercentage } from "./chartUtils";
 
 interface TooltipPayload {
   name: string;
@@ -66,7 +66,9 @@ export function ChartTooltip({
                 className="w-3 h-3 rounded-full flex-shrink-0"
                 style={{ backgroundColor: entry.color }}
               />
-              <span className="text-sm text-gray-600 dark:text-slate-400">{entry.name}</span>
+              <span className="text-sm text-gray-600 dark:text-slate-400">
+                {entry.name}
+              </span>
             </div>
             <span className="text-sm font-medium text-gray-900 dark:text-white">
               {formatValue(entry.value, entry.name)}
@@ -86,8 +88,8 @@ interface LegendItem {
 
 interface ChartLegendProps {
   items: LegendItem[];
-  layout?: 'horizontal' | 'vertical';
-  align?: 'left' | 'center' | 'right';
+  layout?: "horizontal" | "vertical";
+  align?: "left" | "center" | "right";
   showValues?: boolean;
   currency?: boolean;
   percentage?: boolean;
@@ -97,8 +99,8 @@ interface ChartLegendProps {
 
 export function ChartLegend({
   items,
-  layout = 'horizontal',
-  align = 'center',
+  layout = "horizontal",
+  align = "center",
   showValues = false,
   currency = false,
   percentage = false,
@@ -112,14 +114,15 @@ export function ChartLegend({
   };
 
   const alignClass = {
-    left: 'justify-start',
-    center: 'justify-center',
-    right: 'justify-end',
+    left: "justify-start",
+    center: "justify-center",
+    right: "justify-end",
   }[align];
 
-  const layoutClass = layout === 'horizontal' 
-    ? `flex flex-wrap gap-4 ${alignClass}` 
-    : 'flex flex-col gap-2';
+  const layoutClass =
+    layout === "horizontal"
+      ? `flex flex-wrap gap-4 ${alignClass}`
+      : "flex flex-col gap-2";
 
   const isActive = (name: string): boolean => {
     if (!activeItems) return true;
@@ -136,8 +139,8 @@ export function ChartLegend({
           disabled={!onItemClick}
           className={`
             flex items-center gap-2 text-sm transition-opacity
-            ${!isActive(item.name) ? 'opacity-40' : 'opacity-100'}
-            ${onItemClick ? 'cursor-pointer hover:opacity-80' : 'cursor-default'}
+            ${!isActive(item.name) ? "opacity-40" : "opacity-100"}
+            ${onItemClick ? "cursor-pointer hover:opacity-80" : "cursor-default"}
           `}
         >
           <span
@@ -155,4 +158,3 @@ export function ChartLegend({
     </div>
   );
 }
-

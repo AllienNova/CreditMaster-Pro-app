@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import Link from 'next/link';
+import React, { useState } from "react";
+import Link from "next/link";
 
 interface Report {
   id: string;
@@ -13,10 +13,34 @@ interface Report {
 
 export default function ReportsPage() {
   const [reports] = useState<Report[]>([
-    { id: '1', name: 'Credit Analysis Report - December 2024', type: 'analysis', generatedAt: '2024-12-01', size: '2.4 MB' },
-    { id: '2', name: 'Dispute Progress Summary - November 2024', type: 'disputes', generatedAt: '2024-11-30', size: '1.8 MB' },
-    { id: '3', name: 'Monthly Credit Score Report - November 2024', type: 'score', generatedAt: '2024-11-15', size: '1.2 MB' },
-    { id: '4', name: 'Credit Improvement Plan', type: 'plan', generatedAt: '2024-10-20', size: '3.1 MB' },
+    {
+      id: "1",
+      name: "Credit Analysis Report - December 2024",
+      type: "analysis",
+      generatedAt: "2024-12-01",
+      size: "2.4 MB",
+    },
+    {
+      id: "2",
+      name: "Dispute Progress Summary - November 2024",
+      type: "disputes",
+      generatedAt: "2024-11-30",
+      size: "1.8 MB",
+    },
+    {
+      id: "3",
+      name: "Monthly Credit Score Report - November 2024",
+      type: "score",
+      generatedAt: "2024-11-15",
+      size: "1.2 MB",
+    },
+    {
+      id: "4",
+      name: "Credit Improvement Plan",
+      type: "plan",
+      generatedAt: "2024-10-20",
+      size: "3.1 MB",
+    },
   ]);
   const [generating, setGenerating] = useState<string | null>(null);
 
@@ -27,19 +51,35 @@ export default function ReportsPage() {
 
   const getTypeIcon = (type: string) => {
     const icons: Record<string, string> = {
-      analysis: '',
-      disputes: '',
-      score: '',
-      plan: '',
+      analysis: "",
+      disputes: "",
+      score: "",
+      plan: "",
     };
-    return icons[type] || '';
+    return icons[type] || "";
   };
 
   const reportTypes = [
-    { type: 'analysis', name: 'Credit Analysis', desc: 'Comprehensive analysis of your credit report' },
-    { type: 'disputes', name: 'Dispute Summary', desc: 'Summary of all your disputes and outcomes' },
-    { type: 'score', name: 'Score Report', desc: 'Detailed credit score breakdown by bureau' },
-    { type: 'plan', name: 'Improvement Plan', desc: 'AI-generated credit improvement roadmap' },
+    {
+      type: "analysis",
+      name: "Credit Analysis",
+      desc: "Comprehensive analysis of your credit report",
+    },
+    {
+      type: "disputes",
+      name: "Dispute Summary",
+      desc: "Summary of all your disputes and outcomes",
+    },
+    {
+      type: "score",
+      name: "Score Report",
+      desc: "Detailed credit score breakdown by bureau",
+    },
+    {
+      type: "plan",
+      name: "Improvement Plan",
+      desc: "AI-generated credit improvement roadmap",
+    },
   ];
 
   return (
@@ -48,8 +88,15 @@ export default function ReportsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
-              <Link href="/dashboard" className="text-gray-600 hover:text-gray-900 dark:text-white dark:hover:text-white">← Back</Link>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">Reports</h1>
+              <Link
+                href="/dashboard"
+                className="text-gray-600 hover:text-gray-900 dark:text-white dark:hover:text-white"
+              >
+                ← Back
+              </Link>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+                Reports
+              </h1>
             </div>
           </div>
         </div>
@@ -58,7 +105,9 @@ export default function ReportsPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {/* Generate New Report */}
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
-          <h2 className="font-semibold text-gray-900 dark:text-white mb-4">Generate New Report</h2>
+          <h2 className="font-semibold text-gray-900 dark:text-white mb-4">
+            Generate New Report
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {reportTypes.map((rt) => (
               <button
@@ -68,8 +117,12 @@ export default function ReportsPage() {
                 className="p-4 border border-gray-200 dark:border-slate-700 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all text-left disabled:opacity-50"
               >
                 <span className="text-2xl">{getTypeIcon(rt.type)}</span>
-                <p className="font-medium text-gray-900 dark:text-white mt-2">{rt.name}</p>
-                <p className="text-sm text-gray-500 dark:text-slate-400">{rt.desc}</p>
+                <p className="font-medium text-gray-900 dark:text-white mt-2">
+                  {rt.name}
+                </p>
+                <p className="text-sm text-gray-500 dark:text-slate-400">
+                  {rt.desc}
+                </p>
                 {generating === rt.type && (
                   <p className="text-sm text-blue-600 mt-2">Generating...</p>
                 )}
@@ -81,23 +134,36 @@ export default function ReportsPage() {
         {/* Previous Reports */}
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700">
           <div className="px-6 py-4 border-b border-gray-200 dark:border-slate-700">
-            <h2 className="font-semibold text-gray-900 dark:text-white">Previous Reports</h2>
+            <h2 className="font-semibold text-gray-900 dark:text-white">
+              Previous Reports
+            </h2>
           </div>
           <div className="divide-y divide-gray-200 dark:divide-slate-700">
             {reports.map((report) => (
-              <div key={report.id} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900">
+              <div
+                key={report.id}
+                className="px-6 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-700 dark:bg-slate-900"
+              >
                 <div className="flex items-center space-x-4">
                   <span className="text-2xl">{getTypeIcon(report.type)}</span>
                   <div>
-                    <p className="font-medium text-gray-900 dark:text-white">{report.name}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      {report.name}
+                    </p>
                     <p className="text-sm text-gray-500 dark:text-slate-400">
-                      Generated {new Date(report.generatedAt).toLocaleDateString()} • {report.size}
+                      Generated{" "}
+                      {new Date(report.generatedAt).toLocaleDateString()} •{" "}
+                      {report.size}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <button className="px-3 py-1 text-sm text-blue-600 hover:text-blue-800">View</button>
-                  <button className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700">Download</button>
+                  <button className="px-3 py-1 text-sm text-blue-600 hover:text-blue-800">
+                    View
+                  </button>
+                  <button className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700">
+                    Download
+                  </button>
                 </div>
               </div>
             ))}
@@ -107,4 +173,3 @@ export default function ReportsPage() {
     </div>
   );
 }
-

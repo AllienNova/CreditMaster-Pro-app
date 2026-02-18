@@ -1,5 +1,5 @@
 // Advanced Dispute Engine - Automated dispute generation and management for student loans
-import type { StudentLoan } from '../types/student-loan';
+import type { StudentLoan } from "../types/student-loan";
 
 // Simplified interfaces for build success
 interface DisputeLetter {
@@ -47,13 +47,28 @@ export class AdvancedDisputeEngine {
   /**
    * Generate a complete dispute orchestration for a student loan
    */
-  async generateDisputeOrchestration(loan: StudentLoan): Promise<DisputeOrchestration> {
+  async generateDisputeOrchestration(
+    loan: StudentLoan,
+  ): Promise<DisputeOrchestration> {
     const servicerAnalysis = await this.analyzeServicer(loan);
-    const primaryDisputes = await this.generatePrimaryDisputes(loan, servicerAnalysis);
-    const regulatoryComplaints = await this.generateRegulatoryComplaints(loan, servicerAnalysis);
+    const primaryDisputes = await this.generatePrimaryDisputes(
+      loan,
+      servicerAnalysis,
+    );
+    const regulatoryComplaints = await this.generateRegulatoryComplaints(
+      loan,
+      servicerAnalysis,
+    );
     const movChallenges = await this.generateMOVChallenges(loan);
-    const timeline = this.generateTimeline(primaryDisputes, regulatoryComplaints, movChallenges);
-    const successProbability = this.calculateSuccessProbability(loan, servicerAnalysis);
+    const timeline = this.generateTimeline(
+      primaryDisputes,
+      regulatoryComplaints,
+      movChallenges,
+    );
+    const successProbability = this.calculateSuccessProbability(
+      loan,
+      servicerAnalysis,
+    );
 
     return {
       primary_disputes: primaryDisputes,
@@ -78,17 +93,20 @@ export class AdvancedDisputeEngine {
   /**
    * Generate primary dispute letters based on loan analysis
    */
-  private async generatePrimaryDisputes(loan: StudentLoan, servicerAnalysis: ServicerAnalysis): Promise<DisputeLetter[]> {
+  private async generatePrimaryDisputes(
+    loan: StudentLoan,
+    servicerAnalysis: ServicerAnalysis,
+  ): Promise<DisputeLetter[]> {
     const disputes: DisputeLetter[] = [];
-    
+
     // Method of Verification Challenge
-    if (loan.status === 'default' || loan.status === 'delinquent') {
+    if (loan.status === "default" || loan.status === "delinquent") {
       disputes.push({
         id: `mov-${loan.id}-${Date.now()}`,
-        type: 'method_of_verification',
+        type: "method_of_verification",
         content: this.generateMOVContent(loan),
-        target: 'servicer',
-        created_at: new Date()
+        target: "servicer",
+        created_at: new Date(),
       });
     }
 
@@ -96,10 +114,10 @@ export class AdvancedDisputeEngine {
     if (servicerAnalysis.transfer_errors.length > 0) {
       disputes.push({
         id: `payment-${loan.id}-${Date.now()}`,
-        type: 'payment_history',
+        type: "payment_history",
         content: this.generatePaymentHistoryDispute(loan),
-        target: 'servicer',
-        created_at: new Date()
+        target: "servicer",
+        created_at: new Date(),
       });
     }
 
@@ -109,16 +127,19 @@ export class AdvancedDisputeEngine {
   /**
    * Generate regulatory complaints
    */
-  private async generateRegulatoryComplaints(loan: StudentLoan, servicerAnalysis: ServicerAnalysis): Promise<RegulatoryComplaint[]> {
+  private async generateRegulatoryComplaints(
+    loan: StudentLoan,
+    servicerAnalysis: ServicerAnalysis,
+  ): Promise<RegulatoryComplaint[]> {
     const complaints: RegulatoryComplaint[] = [];
 
     if (servicerAnalysis.vulnerability_score > 0.7) {
       complaints.push({
         id: `cfpb-${loan.id}-${Date.now()}`,
-        agency: 'CFPB',
-        complaint_type: 'servicer_misconduct',
+        agency: "CFPB",
+        complaint_type: "servicer_misconduct",
         content: `Complaint regarding ${loan.servicer} for potential FCRA violations.`,
-        created_at: new Date()
+        created_at: new Date(),
       });
     }
 
@@ -128,13 +149,17 @@ export class AdvancedDisputeEngine {
   /**
    * Generate Method of Verification challenges
    */
-  private async generateMOVChallenges(loan: StudentLoan): Promise<MOVChallenge[]> {
-    return [{
-      id: `mov-challenge-${loan.id}-${Date.now()}`,
-      challenge_type: 'documentation_request',
-      content: `Request for complete documentation of loan ${loan.id} including original promissory note.`,
-      created_at: new Date()
-    }];
+  private async generateMOVChallenges(
+    loan: StudentLoan,
+  ): Promise<MOVChallenge[]> {
+    return [
+      {
+        id: `mov-challenge-${loan.id}-${Date.now()}`,
+        challenge_type: "documentation_request",
+        content: `Request for complete documentation of loan ${loan.id} including original promissory note.`,
+        created_at: new Date(),
+      },
+    ];
   }
 
   private generateMOVContent(loan: StudentLoan): string {
@@ -145,19 +170,38 @@ export class AdvancedDisputeEngine {
     return `Payment history dispute for loan ${loan.id}. Requesting verification of all payment records.`;
   }
 
-  private generateTimeline(disputes: DisputeLetter[], complaints: RegulatoryComplaint[], challenges: MOVChallenge[]): { phase: string; duration: string; actions: string[] }[] {
+  private generateTimeline(
+    disputes: DisputeLetter[],
+    complaints: RegulatoryComplaint[],
+    challenges: MOVChallenge[],
+  ): { phase: string; duration: string; actions: string[] }[] {
     return [
-      { phase: 'Initial Disputes', duration: '30 days', actions: disputes.map(d => d.type) },
-      { phase: 'Regulatory Complaints', duration: '45 days', actions: complaints.map(c => c.agency) },
-      { phase: 'MOV Challenges', duration: '30 days', actions: challenges.map(c => c.challenge_type) },
+      {
+        phase: "Initial Disputes",
+        duration: "30 days",
+        actions: disputes.map((d) => d.type),
+      },
+      {
+        phase: "Regulatory Complaints",
+        duration: "45 days",
+        actions: complaints.map((c) => c.agency),
+      },
+      {
+        phase: "MOV Challenges",
+        duration: "30 days",
+        actions: challenges.map((c) => c.challenge_type),
+      },
     ];
   }
 
-  private calculateSuccessProbability(loan: StudentLoan, servicerAnalysis: ServicerAnalysis): number {
+  private calculateSuccessProbability(
+    loan: StudentLoan,
+    servicerAnalysis: ServicerAnalysis,
+  ): number {
     let probability = 0.3;
 
     // Increase probability for defaulted loans (more dispute opportunities)
-    if (loan.status === 'default') {
+    if (loan.status === "default") {
       probability += 0.2;
     }
 
@@ -173,30 +217,42 @@ export class AdvancedDisputeEngine {
   async generateStudentLoanDispute(
     loan: StudentLoan,
     errorType: string,
-    evidence?: string[]
+    evidence?: string[],
   ): Promise<{
     letter_content: string;
     dispute_type: string;
     target: string;
     recommended_actions: string[];
   }> {
-    const letterContent = this.generateDisputeLetterContent(loan, errorType, evidence);
+    const letterContent = this.generateDisputeLetterContent(
+      loan,
+      errorType,
+      evidence,
+    );
 
     return {
       letter_content: letterContent,
       dispute_type: errorType,
       target: loan.servicer,
       recommended_actions: [
-        'Send via certified mail with return receipt',
-        'Keep copies of all correspondence',
-        'Follow up within 30 days if no response',
-        'File CFPB complaint if dispute is not resolved',
+        "Send via certified mail with return receipt",
+        "Keep copies of all correspondence",
+        "Follow up within 30 days if no response",
+        "File CFPB complaint if dispute is not resolved",
       ],
     };
   }
 
-  private generateDisputeLetterContent(loan: StudentLoan, errorType: string, evidence?: string[]): string {
-    const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  private generateDisputeLetterContent(
+    loan: StudentLoan,
+    errorType: string,
+    evidence?: string[],
+  ): string {
+    const date = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
 
     let content = `${date}
 
@@ -218,7 +274,7 @@ Current Status: ${loan.status}
 
     if (evidence && evidence.length > 0) {
       content += `Supporting Evidence:
-${evidence.map((e, i) => `${i + 1}. ${e}`).join('\n')}
+${evidence.map((e, i) => `${i + 1}. ${e}`).join("\n")}
 
 `;
     }
@@ -244,4 +300,3 @@ Sincerely,
 
 export const advancedDisputeEngine = new AdvancedDisputeEngine();
 export default advancedDisputeEngine;
-

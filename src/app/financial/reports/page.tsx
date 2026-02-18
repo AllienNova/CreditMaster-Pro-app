@@ -1,10 +1,10 @@
-import { Suspense } from 'react';
-import { Metadata } from 'next';
-import FinancialReports from '@/components/financial/FinancialReports';
+import { Suspense } from "react";
+import { Metadata } from "next";
+import FinancialReports from "@/components/financial/FinancialReports";
 
 export const metadata: Metadata = {
-  title: 'Financial Reports | Fynvita',
-  description: 'Generate and export financial reports',
+  title: "Financial Reports | Fynvita",
+  description: "Generate and export financial reports",
 };
 
 function ReportsLoadingSkeleton() {
@@ -14,7 +14,10 @@ function ReportsLoadingSkeleton() {
         <div className="h-6 bg-gray-200 dark:bg-slate-700 rounded w-1/4 mb-6"></div>
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 bg-gray-200 dark:bg-slate-700 rounded"></div>
+            <div
+              key={i}
+              className="h-20 bg-gray-200 dark:bg-slate-700 rounded"
+            ></div>
           ))}
         </div>
       </div>

@@ -6,9 +6,9 @@
  * - POST: Update risk settings, trigger kill switch
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { getPositionManager } from '@/lib/trading/positions';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { getPositionManager } from "@/lib/trading/positions";
 
 // ============================================================================
 // TYPES
@@ -43,7 +43,7 @@ interface RiskMetrics {
   correlatedGroups: string[][];
 
   riskScore: number;
-  riskLevel: 'low' | 'medium' | 'high' | 'critical';
+  riskLevel: "low" | "medium" | "high" | "critical";
 
   canTrade: boolean;
   blockReasons: string[];
@@ -69,7 +69,7 @@ interface RiskSettings {
 }
 
 // In-memory risk state
-let riskSettings: RiskSettings = {
+const riskSettings: RiskSettings = {
   maxHeat: 0.06,
   maxPositionSize: 0.2,
   maxGrossExposure: 2.0,
@@ -104,11 +104,11 @@ export async function GET(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const searchParams = request.nextUrl.searchParams;
-    const action = searchParams.get('action');
+    const action = searchParams.get("action");
 
     const positionManager = getPositionManager();
     await positionManager.loadPositions(user.id);
@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
     const summary = positionManager.getSummary();
 
     // Calculate risk metrics
-    if (action === 'metrics' || !action) {
+    if (action === "metrics" || !action) {
       const currentDrawdown =
         peakEquity > 0 ? (peakEquity - accountEquity) / peakEquity : 0;
 
@@ -131,7 +131,7 @@ export async function GET(request: NextRequest) {
       }
 
       // Determine risk level
-      let riskLevel: RiskMetrics['riskLevel'] = 'low';
+      let riskLevel: RiskMetrics["riskLevel"] = "low";
       let riskScore = 0;
 
       const heatRatio = portfolioHeat / riskSettings.maxHeat;
@@ -142,9 +142,9 @@ export async function GET(request: NextRequest) {
       riskScore =
         (heatRatio * 0.4 + drawdownRatio * 0.4 + exposureRatio * 0.2) * 100;
 
-      if (riskScore > 80) riskLevel = 'critical';
-      else if (riskScore > 60) riskLevel = 'high';
-      else if (riskScore > 40) riskLevel = 'medium';
+      if (riskScore > 80) riskLevel = "critical";
+      else if (riskScore > 60) riskLevel = "high";
+      else if (riskScore > 40) riskLevel = "medium";
 
       // Determine if trading is allowed
       const blockReasons: string[] = [];
@@ -154,12 +154,12 @@ export async function GET(request: NextRequest) {
       }
       if (portfolioHeat >= riskSettings.maxHeat) {
         blockReasons.push(
-          `Portfolio heat (${(portfolioHeat * 100).toFixed(1)}%) exceeds limit`
+          `Portfolio heat (${(portfolioHeat * 100).toFixed(1)}%) exceeds limit`,
         );
       }
       if (currentDrawdown >= riskSettings.maxDrawdown) {
         blockReasons.push(
-          `Drawdown (${(currentDrawdown * 100).toFixed(1)}%) exceeds limit`
+          `Drawdown (${(currentDrawdown * 100).toFixed(1)}%) exceeds limit`,
         );
       }
       if (
@@ -223,7 +223,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get settings
-    if (action === 'settings') {
+    if (action === "settings") {
       return NextResponse.json({
         success: true,
         data: riskSettings,
@@ -231,20 +231,20 @@ export async function GET(request: NextRequest) {
     }
 
     // Get kill switch status
-    if (action === 'killswitch') {
+    if (action === "killswitch") {
       return NextResponse.json({
         success: true,
         data: killSwitchState,
       });
     }
 
-    return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   } catch (_error) {
     // RiskAPI error: Risk GET error
     void _error;
     return NextResponse.json(
-      { error: 'Failed to retrieve risk metrics' },
-      { status: 500 }
+      { error: "Failed to retrieve risk metrics" },
+      { status: 500 },
     );
   }
 }
@@ -262,20 +262,20 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
     const { action } = body;
 
     switch (action) {
-      case 'updateSettings': {
+      case "updateSettings": {
         const { settings } = body;
 
-        if (!settings || typeof settings !== 'object') {
+        if (!settings || typeof settings !== "object") {
           return NextResponse.json(
-            { error: 'settings object required' },
-            { status: 400 }
+            { error: "settings object required" },
+            { status: 400 },
           );
         }
 
@@ -283,31 +283,31 @@ export async function POST(request: NextRequest) {
         if (settings.maxHeat !== undefined) {
           riskSettings.maxHeat = Math.max(
             0.01,
-            Math.min(0.2, settings.maxHeat)
+            Math.min(0.2, settings.maxHeat),
           );
         }
         if (settings.maxPositionSize !== undefined) {
           riskSettings.maxPositionSize = Math.max(
             0.01,
-            Math.min(0.5, settings.maxPositionSize)
+            Math.min(0.5, settings.maxPositionSize),
           );
         }
         if (settings.maxGrossExposure !== undefined) {
           riskSettings.maxGrossExposure = Math.max(
             0.5,
-            Math.min(4.0, settings.maxGrossExposure)
+            Math.min(4.0, settings.maxGrossExposure),
           );
         }
         if (settings.maxDailyLoss !== undefined) {
           riskSettings.maxDailyLoss = Math.max(
             0.01,
-            Math.min(0.1, settings.maxDailyLoss)
+            Math.min(0.1, settings.maxDailyLoss),
           );
         }
         if (settings.maxDrawdown !== undefined) {
           riskSettings.maxDrawdown = Math.max(
             0.05,
-            Math.min(0.25, settings.maxDrawdown)
+            Math.min(0.25, settings.maxDrawdown),
           );
         }
 
@@ -317,12 +317,12 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      case 'activateKillSwitch': {
+      case "activateKillSwitch": {
         const { reason } = body;
 
         killSwitchState = {
           active: true,
-          reason: reason || 'Manual activation',
+          reason: reason || "Manual activation",
           activatedAt: new Date(),
           activatedBy: user.id,
         };
@@ -333,7 +333,7 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      case 'deactivateKillSwitch': {
+      case "deactivateKillSwitch": {
         killSwitchState = {
           active: false,
           reason: undefined,
@@ -347,13 +347,13 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      case 'updateEquity': {
+      case "updateEquity": {
         const { equity } = body;
 
-        if (typeof equity !== 'number' || equity <= 0) {
+        if (typeof equity !== "number" || equity <= 0) {
           return NextResponse.json(
-            { error: 'Valid equity required' },
-            { status: 400 }
+            { error: "Valid equity required" },
+            { status: 400 },
           );
         }
 
@@ -371,7 +371,7 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      case 'resetPeak': {
+      case "resetPeak": {
         peakEquity = accountEquity;
 
         return NextResponse.json({
@@ -381,14 +381,14 @@ export async function POST(request: NextRequest) {
       }
 
       default:
-        return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+        return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }
   } catch (_error) {
     // RiskAPI error: Risk POST error
     void _error;
     return NextResponse.json(
-      { error: 'Failed to update risk settings' },
-      { status: 500 }
+      { error: "Failed to update risk settings" },
+      { status: 500 },
     );
   }
 }

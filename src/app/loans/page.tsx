@@ -1,10 +1,10 @@
-import Link from 'next/link';
-import type { Metadata } from 'next';
+import Link from "next/link";
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: 'Student Loans | Fynvita',
+  title: "Student Loans | Fynvita",
   description:
-    'Navigate student loan repayment with AI-powered strategies and federal program guidance.',
+    "Navigate student loan repayment with AI-powered strategies and federal program guidance.",
 };
 
 export default function LoansPage() {
@@ -184,7 +184,9 @@ export default function LoansPage() {
                 </div>
                 <div className="bg-white dark:bg-slate-800/10 backdrop-blur rounded-xl p-6">
                   <div className="text-center mb-6">
-                    <p className="text-gray-400 dark:text-slate-500 text-sm mb-2">Total Balance</p>
+                    <p className="text-gray-400 dark:text-slate-500 text-sm mb-2">
+                      Total Balance
+                    </p>
                     <p className="text-4xl font-bold text-white">$67,840</p>
                     <p className="text-orange-400 text-sm mt-2">
                       4.5% weighted avg rate
@@ -424,7 +426,9 @@ export default function LoansPage() {
                     </svg>
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900 dark:text-white">SAVE Plan</p>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      SAVE Plan
+                    </p>
                     <p className="text-sm text-gray-600 dark:text-slate-300">
                       Lowest payments for most borrowers
                     </p>
@@ -447,7 +451,9 @@ export default function LoansPage() {
                     </svg>
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900 dark:text-white">PAYE</p>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      PAYE
+                    </p>
                     <p className="text-sm text-gray-600 dark:text-slate-300">
                       Pay as you earn program
                     </p>
@@ -470,7 +476,9 @@ export default function LoansPage() {
                     </svg>
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900 dark:text-white">IBR</p>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      IBR
+                    </p>
                     <p className="text-sm text-gray-600 dark:text-slate-300">
                       Income-based repayment
                     </p>
@@ -501,7 +509,9 @@ export default function LoansPage() {
                     </svg>
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900 dark:text-white">PSLF</p>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      PSLF
+                    </p>
                     <p className="text-sm text-gray-600 dark:text-slate-300">
                       Public Service Loan Forgiveness
                     </p>
@@ -549,7 +559,9 @@ export default function LoansPage() {
                     </svg>
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900 dark:text-white">IDR Forgiveness</p>
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      IDR Forgiveness
+                    </p>
                     <p className="text-sm text-gray-600 dark:text-slate-300">
                       After 20-25 years of payments
                     </p>
@@ -569,19 +581,25 @@ export default function LoansPage() {
               <div className="text-5xl font-semibold text-gray-900 dark:text-white mb-2">
                 $1.7T
               </div>
-              <p className="text-gray-600 dark:text-slate-300">Total US Student Debt</p>
+              <p className="text-gray-600 dark:text-slate-300">
+                Total US Student Debt
+              </p>
             </div>
             <div>
               <div className="text-5xl font-semibold text-gray-900 dark:text-white mb-2">
                 43M+
               </div>
-              <p className="text-gray-600 dark:text-slate-300">Borrowers Nationwide</p>
+              <p className="text-gray-600 dark:text-slate-300">
+                Borrowers Nationwide
+              </p>
             </div>
             <div>
               <div className="text-5xl font-semibold text-gray-900 dark:text-white mb-2">
                 $28K
               </div>
-              <p className="text-gray-600 dark:text-slate-300">Average Debt Per Borrower</p>
+              <p className="text-gray-600 dark:text-slate-300">
+                Average Debt Per Borrower
+              </p>
             </div>
           </div>
         </div>

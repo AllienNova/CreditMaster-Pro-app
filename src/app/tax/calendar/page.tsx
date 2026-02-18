@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Tax Calendar Page
@@ -7,16 +7,16 @@
  * Helps users stay on track with their tax obligations and optimization opportunities.
  */
 
-import { useState, useMemo } from 'react';
-import Link from 'next/link';
+import { useState, useMemo } from "react";
+import Link from "next/link";
 
 interface TaxEvent {
   id: string;
   title: string;
   description: string;
   date: Date;
-  type: 'deadline' | 'reminder' | 'recommendation' | 'payment';
-  priority: 'critical' | 'high' | 'medium' | 'low';
+  type: "deadline" | "reminder" | "recommendation" | "payment";
+  priority: "critical" | "high" | "medium" | "low";
   isCompleted: boolean;
   category: string;
 }
@@ -24,179 +24,179 @@ interface TaxEvent {
 const TAX_EVENTS_2024: TaxEvent[] = [
   // Q1 Deadlines
   {
-    id: '1',
-    title: 'Q4 Estimated Tax Payment Due',
-    description: 'Final quarterly estimated tax payment for the prior year',
+    id: "1",
+    title: "Q4 Estimated Tax Payment Due",
+    description: "Final quarterly estimated tax payment for the prior year",
     date: new Date(2024, 0, 16),
-    type: 'payment',
-    priority: 'critical',
+    type: "payment",
+    priority: "critical",
     isCompleted: true,
-    category: 'Estimated Taxes',
+    category: "Estimated Taxes",
   },
   {
-    id: '2',
-    title: 'Tax Filing Deadline',
-    description: 'Federal and state income tax returns due (or extension)',
+    id: "2",
+    title: "Tax Filing Deadline",
+    description: "Federal and state income tax returns due (or extension)",
     date: new Date(2024, 3, 15),
-    type: 'deadline',
-    priority: 'critical',
+    type: "deadline",
+    priority: "critical",
     isCompleted: true,
-    category: 'Filing',
+    category: "Filing",
   },
   {
-    id: '3',
-    title: 'Q1 Estimated Tax Payment Due',
-    description: 'First quarterly estimated tax payment for current year',
+    id: "3",
+    title: "Q1 Estimated Tax Payment Due",
+    description: "First quarterly estimated tax payment for current year",
     date: new Date(2024, 3, 15),
-    type: 'payment',
-    priority: 'critical',
+    type: "payment",
+    priority: "critical",
     isCompleted: true,
-    category: 'Estimated Taxes',
+    category: "Estimated Taxes",
   },
   // Q2 Deadlines
   {
-    id: '4',
-    title: 'Q2 Estimated Tax Payment Due',
-    description: 'Second quarterly estimated tax payment',
+    id: "4",
+    title: "Q2 Estimated Tax Payment Due",
+    description: "Second quarterly estimated tax payment",
     date: new Date(2024, 5, 17),
-    type: 'payment',
-    priority: 'critical',
+    type: "payment",
+    priority: "critical",
     isCompleted: true,
-    category: 'Estimated Taxes',
+    category: "Estimated Taxes",
   },
   // Q3 Deadlines
   {
-    id: '5',
-    title: 'Q3 Estimated Tax Payment Due',
-    description: 'Third quarterly estimated tax payment',
+    id: "5",
+    title: "Q3 Estimated Tax Payment Due",
+    description: "Third quarterly estimated tax payment",
     date: new Date(2024, 8, 16),
-    type: 'payment',
-    priority: 'critical',
+    type: "payment",
+    priority: "critical",
     isCompleted: true,
-    category: 'Estimated Taxes',
+    category: "Estimated Taxes",
   },
   // Q4 Deadlines & Year-End
   {
-    id: '6',
-    title: 'Extended Tax Return Deadline',
-    description: 'Final deadline for extended returns',
+    id: "6",
+    title: "Extended Tax Return Deadline",
+    description: "Final deadline for extended returns",
     date: new Date(2024, 9, 15),
-    type: 'deadline',
-    priority: 'critical',
+    type: "deadline",
+    priority: "critical",
     isCompleted: true,
-    category: 'Filing',
+    category: "Filing",
   },
   {
-    id: '7',
-    title: 'Review 401(k) Contributions',
+    id: "7",
+    title: "Review 401(k) Contributions",
     description: "Ensure you're on track to max out 401(k) by year-end",
     date: new Date(2024, 10, 1),
-    type: 'reminder',
-    priority: 'high',
+    type: "reminder",
+    priority: "high",
     isCompleted: false,
-    category: 'Retirement',
+    category: "Retirement",
   },
   {
-    id: '8',
-    title: 'Tax-Loss Harvesting Review',
-    description: 'Review portfolio for tax-loss harvesting opportunities',
+    id: "8",
+    title: "Tax-Loss Harvesting Review",
+    description: "Review portfolio for tax-loss harvesting opportunities",
     date: new Date(2024, 10, 15),
-    type: 'recommendation',
-    priority: 'high',
+    type: "recommendation",
+    priority: "high",
     isCompleted: false,
-    category: 'Investment',
+    category: "Investment",
   },
   {
-    id: '9',
-    title: 'Charitable Giving Deadline',
-    description: 'Make charitable donations for current year deduction',
+    id: "9",
+    title: "Charitable Giving Deadline",
+    description: "Make charitable donations for current year deduction",
     date: new Date(2024, 11, 31),
-    type: 'deadline',
-    priority: 'medium',
+    type: "deadline",
+    priority: "medium",
     isCompleted: false,
-    category: 'Deductions',
+    category: "Deductions",
   },
   {
-    id: '10',
-    title: '401(k) Contribution Deadline',
-    description: 'Last day to make 401(k) contributions for the year',
+    id: "10",
+    title: "401(k) Contribution Deadline",
+    description: "Last day to make 401(k) contributions for the year",
     date: new Date(2024, 11, 31),
-    type: 'deadline',
-    priority: 'critical',
+    type: "deadline",
+    priority: "critical",
     isCompleted: false,
-    category: 'Retirement',
+    category: "Retirement",
   },
   // 2025
   {
-    id: '11',
-    title: 'IRA Contribution Deadline',
-    description: 'Last day to contribute to IRA for 2024 tax year',
+    id: "11",
+    title: "IRA Contribution Deadline",
+    description: "Last day to contribute to IRA for 2024 tax year",
     date: new Date(2025, 3, 15),
-    type: 'deadline',
-    priority: 'high',
+    type: "deadline",
+    priority: "high",
     isCompleted: false,
-    category: 'Retirement',
+    category: "Retirement",
   },
   {
-    id: '12',
-    title: 'HSA Contribution Deadline',
-    description: 'Last day to contribute to HSA for 2024 tax year',
+    id: "12",
+    title: "HSA Contribution Deadline",
+    description: "Last day to contribute to HSA for 2024 tax year",
     date: new Date(2025, 3, 15),
-    type: 'deadline',
-    priority: 'high',
+    type: "deadline",
+    priority: "high",
     isCompleted: false,
-    category: 'Healthcare',
+    category: "Healthcare",
   },
 ];
 
 const eventTypeColors = {
   deadline: {
-    bg: 'bg-red-100',
-    text: 'text-red-800',
-    border: 'border-red-200',
+    bg: "bg-red-100",
+    text: "text-red-800",
+    border: "border-red-200",
   },
   payment: {
-    bg: 'bg-blue-100',
-    text: 'text-blue-800',
-    border: 'border-blue-200',
+    bg: "bg-blue-100",
+    text: "text-blue-800",
+    border: "border-blue-200",
   },
   reminder: {
-    bg: 'bg-blue-100',
-    text: 'text-blue-800',
-    border: 'border-blue-200',
+    bg: "bg-blue-100",
+    text: "text-blue-800",
+    border: "border-blue-200",
   },
   recommendation: {
-    bg: 'bg-amber-100',
-    text: 'text-amber-800',
-    border: 'border-amber-200',
+    bg: "bg-amber-100",
+    text: "text-amber-800",
+    border: "border-amber-200",
   },
 };
 
 const priorityColors = {
-  critical: 'border-l-red-500',
-  high: 'border-l-orange-500',
-  medium: 'border-l-blue-500',
-  low: 'border-l-gray-400',
+  critical: "border-l-red-500",
+  high: "border-l-orange-500",
+  medium: "border-l-blue-500",
+  low: "border-l-gray-400",
 };
 
 export default function TaxCalendarPage() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [filter, setFilter] = useState<'all' | 'upcoming' | 'completed'>(
-    'upcoming'
+  const [filter, setFilter] = useState<"all" | "upcoming" | "completed">(
+    "upcoming",
   );
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
   const filteredEvents = useMemo(() => {
     const now = new Date();
 
     return TAX_EVENTS_2024.filter((event) => {
       // Filter by completion status
-      if (filter === 'upcoming' && event.isCompleted) return false;
-      if (filter === 'completed' && !event.isCompleted) return false;
+      if (filter === "upcoming" && event.isCompleted) return false;
+      if (filter === "completed" && !event.isCompleted) return false;
 
       // Filter by category
-      if (categoryFilter !== 'all' && event.category !== categoryFilter)
+      if (categoryFilter !== "all" && event.category !== categoryFilter)
         return false;
 
       return true;
@@ -212,15 +212,15 @@ export default function TaxCalendarPage() {
 
   const categories = useMemo(() => {
     const cats = new Set(TAX_EVENTS_2024.map((e) => e.category));
-    return ['all', ...Array.from(cats)];
+    return ["all", ...Array.from(cats)];
   }, []);
 
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
+    return date.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
     });
   };
 
@@ -230,12 +230,12 @@ export default function TaxCalendarPage() {
     const target = new Date(date);
     target.setHours(0, 0, 0, 0);
     const diff = Math.ceil(
-      (target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+      (target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
     );
 
-    if (diff < 0) return 'Past';
-    if (diff === 0) return 'Today';
-    if (diff === 1) return 'Tomorrow';
+    if (diff < 0) return "Past";
+    if (diff === 0) return "Today";
+    if (diff === 1) return "Tomorrow";
     if (diff <= 7) return `${diff} days`;
     if (diff <= 30) return `${Math.ceil(diff / 7)} weeks`;
     return `${Math.ceil(diff / 30)} months`;
@@ -250,7 +250,9 @@ export default function TaxCalendarPage() {
             <div className="flex items-center gap-4">
               <Link href="/tax" className="flex items-center gap-2">
                 <span className="text-gray-400 dark:text-slate-500">←</span>
-                <span className="text-gray-600 dark:text-slate-300">Back to Tax</span>
+                <span className="text-gray-600 dark:text-slate-300">
+                  Back to Tax
+                </span>
               </Link>
               <span className="text-gray-300">|</span>
               <h1 className="text-lg font-semibold text-amber-600">
@@ -267,7 +269,7 @@ export default function TaxCalendarPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Upcoming Deadlines Alert */}
             {upcomingEvents.length > 0 &&
-              upcomingEvents[0].priority === 'critical' && (
+              upcomingEvents[0].priority === "critical" && (
                 <div className="bg-red-50 border border-red-200 rounded-xl p-4">
                   <div className="flex items-start gap-3">
                     <span className="text-red-500 text-xl"></span>
@@ -276,7 +278,7 @@ export default function TaxCalendarPage() {
                         Upcoming Critical Deadline
                       </h3>
                       <p className="text-red-700 text-sm mt-1">
-                        {upcomingEvents[0].title} —{' '}
+                        {upcomingEvents[0].title} —{" "}
                         {formatDate(upcomingEvents[0].date)} (
                         {getDaysUntil(upcomingEvents[0].date)})
                       </p>
@@ -293,11 +295,11 @@ export default function TaxCalendarPage() {
                     Status
                   </label>
                   <div className="flex gap-2">
-                    {(['all', 'upcoming', 'completed'] as const).map((f) => (
+                    {(["all", "upcoming", "completed"] as const).map((f) => (
                       <button
                         key={f}
                         onClick={() => setFilter(f)}
-                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${ filter === f ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:bg-slate-700' }`}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${filter === f ? "bg-amber-500 text-white" : "bg-gray-100 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:bg-slate-700"}`}
                       >
                         {f.charAt(0).toUpperCase() + f.slice(1)}
                       </button>
@@ -315,7 +317,7 @@ export default function TaxCalendarPage() {
                   >
                     {categories.map((cat) => (
                       <option key={cat} value={cat}>
-                        {cat === 'all' ? 'All Categories' : cat}
+                        {cat === "all" ? "All Categories" : cat}
                       </option>
                     ))}
                   </select>
@@ -340,7 +342,7 @@ export default function TaxCalendarPage() {
                     <div
                       key={event.id}
                       className={`p-4 border-l-4 ${priorityColors[event.priority]} ${
-                        event.isCompleted ? 'opacity-60' : ''
+                        event.isCompleted ? "opacity-60" : ""
                       }`}
                     >
                       <div className="flex items-start gap-4">
@@ -364,7 +366,7 @@ export default function TaxCalendarPage() {
                             </span>
                           </div>
                           <h3
-                            className={`font-medium ${event.isCompleted ? 'line-through text-gray-400' : 'text-gray-900 dark:text-white'}`}
+                            className={`font-medium ${event.isCompleted ? "line-through text-gray-400" : "text-gray-900 dark:text-white"}`}
                           >
                             {event.title}
                           </h3>
@@ -377,7 +379,7 @@ export default function TaxCalendarPage() {
                             {formatDate(event.date)}
                           </div>
                           <div
-                            className={`text-xs ${ getDaysUntil(event.date) === 'Past' ? 'text-gray-400' : getDaysUntil(event.date) === 'Today' ? 'text-red-600 font-bold' : 'text-gray-500 dark:text-slate-400' }`}
+                            className={`text-xs ${getDaysUntil(event.date) === "Past" ? "text-gray-400" : getDaysUntil(event.date) === "Today" ? "text-red-600 font-bold" : "text-gray-500 dark:text-slate-400"}`}
                           >
                             {getDaysUntil(event.date)}
                           </div>
@@ -402,11 +404,11 @@ export default function TaxCalendarPage() {
                   <div key={event.id} className="flex items-center gap-3">
                     <div
                       className={`w-2 h-2 rounded-full ${
-                        event.priority === 'critical'
-                          ? 'bg-red-500'
-                          : event.priority === 'high'
-                            ? 'bg-orange-500'
-                            : 'bg-blue-500'
+                        event.priority === "critical"
+                          ? "bg-red-500"
+                          : event.priority === "high"
+                            ? "bg-orange-500"
+                            : "bg-blue-500"
                       }`}
                     />
                     <div className="flex-1 min-w-0">
@@ -448,19 +450,27 @@ export default function TaxCalendarPage() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-red-500" />
-                  <span className="text-sm text-gray-600 dark:text-slate-300">Critical</span>
+                  <span className="text-sm text-gray-600 dark:text-slate-300">
+                    Critical
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-orange-500" />
-                  <span className="text-sm text-gray-600 dark:text-slate-300">High</span>
+                  <span className="text-sm text-gray-600 dark:text-slate-300">
+                    High
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-blue-500" />
-                  <span className="text-sm text-gray-600 dark:text-slate-300">Medium</span>
+                  <span className="text-sm text-gray-600 dark:text-slate-300">
+                    Medium
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-gray-400" />
-                  <span className="text-sm text-gray-600 dark:text-slate-300">Low</span>
+                  <span className="text-sm text-gray-600 dark:text-slate-300">
+                    Low
+                  </span>
                 </div>
               </div>
             </div>

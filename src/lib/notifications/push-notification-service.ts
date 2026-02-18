@@ -3,14 +3,14 @@
  * Handles browser push notifications and in-app notifications
  */
 
-export type NotificationType = 
-  | 'dispute_update'
-  | 'score_change'
-  | 'payment_reminder'
-  | 'document_processed'
-  | 'recommendation'
-  | 'system'
-  | 'promotion';
+export type NotificationType =
+  | "dispute_update"
+  | "score_change"
+  | "payment_reminder"
+  | "document_processed"
+  | "recommendation"
+  | "system"
+  | "promotion";
 
 export interface NotificationPayload {
   id: string;
@@ -41,7 +41,7 @@ export interface NotificationPreferences {
   quietHours: {
     enabled: boolean;
     start: string; // HH:MM
-    end: string;   // HH:MM
+    end: string; // HH:MM
   };
 }
 
@@ -56,7 +56,11 @@ export class PushNotificationService {
    * Check if push notifications are supported
    */
   isSupported(): boolean {
-    return typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator;
+    return (
+      typeof window !== "undefined" &&
+      "Notification" in window &&
+      "serviceWorker" in navigator
+    );
   }
 
   /**
@@ -64,7 +68,7 @@ export class PushNotificationService {
    */
   async requestPermission(): Promise<NotificationPermission> {
     if (!this.isSupported()) {
-      return 'denied';
+      return "denied";
     }
     return Notification.requestPermission();
   }
@@ -78,13 +82,15 @@ export class PushNotificationService {
     }
 
     const permission = await this.requestPermission();
-    if (permission !== 'granted') {
+    if (permission !== "granted") {
       return null;
     }
 
     try {
       const registration = await navigator.serviceWorker.ready;
-      const applicationServerKey = this.urlBase64ToUint8Array(this.vapidPublicKey);
+      const applicationServerKey = this.urlBase64ToUint8Array(
+        this.vapidPublicKey,
+      );
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: applicationServerKey.buffer as ArrayBuffer,
@@ -103,14 +109,16 @@ export class PushNotificationService {
   /**
    * Send a local notification (for testing or in-app use)
    */
-  async sendLocalNotification(payload: Omit<NotificationPayload, 'id' | 'createdAt' | 'read'>): Promise<void> {
+  async sendLocalNotification(
+    payload: Omit<NotificationPayload, "id" | "createdAt" | "read">,
+  ): Promise<void> {
     if (!this.isSupported()) return;
 
     const permission = await Notification.requestPermission();
-    if (permission === 'granted') {
+    if (permission === "granted") {
       new Notification(payload.title, {
         body: payload.body,
-        icon: payload.icon || '/icon-192.png',
+        icon: payload.icon || "/icon-192.png",
         data: payload.data,
       });
     }
@@ -137,8 +145,8 @@ export class PushNotificationService {
       },
       quietHours: {
         enabled: false,
-        start: '22:00',
-        end: '08:00',
+        start: "22:00",
+        end: "08:00",
       },
     };
   }
@@ -146,18 +154,26 @@ export class PushNotificationService {
   /**
    * Update notification preferences
    */
-  async updatePreferences(userId: string, preferences: Partial<NotificationPreferences>): Promise<NotificationPreferences> {
+  async updatePreferences(
+    userId: string,
+    preferences: Partial<NotificationPreferences>,
+  ): Promise<NotificationPreferences> {
     const current = await this.getPreferences(userId);
     return { ...current, ...preferences };
   }
 
-  private async saveSubscription(_userId: string, _subscription: PushSubscription): Promise<void> {
+  private async saveSubscription(
+    _userId: string,
+    _subscription: PushSubscription,
+  ): Promise<void> {
     // Save to database - implementation depends on backend
   }
 
   private urlBase64ToUint8Array(base64String: string): Uint8Array {
-    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding)
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
     const rawData = atob(base64);
     const outputArray = new Uint8Array(rawData.length);
     for (let i = 0; i < rawData.length; i++) {
@@ -168,4 +184,3 @@ export class PushNotificationService {
 }
 
 export const pushNotificationService = new PushNotificationService();
-

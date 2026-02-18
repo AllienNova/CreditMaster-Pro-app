@@ -1,11 +1,11 @@
 /**
  * Trading Signals Mobile Screen
- * 
+ *
  * Phase 5.5.1: Mobile-optimized trading signals with swipe gestures,
  * pull-to-refresh, and bottom sheet filters
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -17,47 +17,47 @@ import {
   Modal,
   Animated,
   PanResponder,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { lightTheme as theme } from '../../src/constants/theme';
-import { Card } from '../../src/components/Card';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { lightTheme as theme } from "../../src/constants/theme";
+import { Card } from "../../src/components/Card";
 
-const { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get("window");
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 enum SignalType {
-  BUY = 'buy',
-  SELL = 'sell',
-  HOLD = 'hold',
-  STRONG_BUY = 'strong_buy',
-  STRONG_SELL = 'strong_sell',
+  BUY = "buy",
+  SELL = "sell",
+  HOLD = "hold",
+  STRONG_BUY = "strong_buy",
+  STRONG_SELL = "strong_sell",
 }
 
 enum SignalStatus {
-  ACTIVE = 'active',
-  EXECUTED = 'executed',
-  EXPIRED = 'expired',
-  CANCELLED = 'cancelled',
+  ACTIVE = "active",
+  EXECUTED = "executed",
+  EXPIRED = "expired",
+  CANCELLED = "cancelled",
 }
 
 enum AnalysisType {
-  TECHNICAL = 'technical',
-  FUNDAMENTAL = 'fundamental',
-  SENTIMENT = 'sentiment',
-  AI_COMBINED = 'ai_combined',
-  MOMENTUM = 'momentum',
-  MEAN_REVERSION = 'mean_reversion',
+  TECHNICAL = "technical",
+  FUNDAMENTAL = "fundamental",
+  SENTIMENT = "sentiment",
+  AI_COMBINED = "ai_combined",
+  MOMENTUM = "momentum",
+  MEAN_REVERSION = "mean_reversion",
 }
 
 interface TradingSignal {
   id: string;
   symbol: string;
-  assetType: 'stock' | 'etf' | 'crypto' | 'option';
+  assetType: "stock" | "etf" | "crypto" | "option";
   signalType: SignalType;
   confidence: number;
   currentPrice: number;
@@ -86,7 +86,9 @@ interface SignalPerformance {
 
 export default function SignalsScreen() {
   const [signals, setSignals] = useState<TradingSignal[]>([]);
-  const [performance, setPerformance] = useState<SignalPerformance | null>(null);
+  const [performance, setPerformance] = useState<SignalPerformance | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -94,22 +96,27 @@ export default function SignalsScreen() {
 
   // Filter states
   const [selectedTypes, setSelectedTypes] = useState<SignalType[]>([]);
-  const [selectedStatuses, setSelectedStatuses] = useState<SignalStatus[]>([SignalStatus.ACTIVE]);
+  const [selectedStatuses, setSelectedStatuses] = useState<SignalStatus[]>([
+    SignalStatus.ACTIVE,
+  ]);
   const [minConfidence, setMinConfidence] = useState(0);
-  const [timeframe, setTimeframe] = useState<string>('all');
+  const [timeframe, setTimeframe] = useState<string>("all");
 
   // Fetch signals
   const fetchSignals = useCallback(async () => {
     try {
       const params = new URLSearchParams();
-      if (selectedTypes.length > 0) params.append('types', selectedTypes.join(','));
-      if (selectedStatuses.length > 0) params.append('statuses', selectedStatuses.join(','));
-      if (minConfidence > 0) params.append('minConfidence', minConfidence.toString());
-      if (timeframe !== 'all') params.append('timeframe', timeframe);
+      if (selectedTypes.length > 0)
+        params.append("types", selectedTypes.join(","));
+      if (selectedStatuses.length > 0)
+        params.append("statuses", selectedStatuses.join(","));
+      if (minConfidence > 0)
+        params.append("minConfidence", minConfidence.toString());
+      if (timeframe !== "all") params.append("timeframe", timeframe);
 
       const [signalsRes, perfRes] = await Promise.all([
         fetch(`/api/investments/signals?${params.toString()}`),
-        fetch('/api/investments/signals/history'),
+        fetch("/api/investments/signals/history"),
       ]);
 
       if (signalsRes.ok && perfRes.ok) {
@@ -119,7 +126,7 @@ export default function SignalsScreen() {
         setPerformance(perfData.data || null);
       }
     } catch (error) {
-      console.error('Error fetching signals:', error);
+      console.error("Error fetching signals:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -136,21 +143,29 @@ export default function SignalsScreen() {
   }, [fetchSignals]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Trading Signals</Text>
-        <TouchableOpacity onPress={() => setShowFilters(true)} style={styles.filterButton}>
+        <TouchableOpacity
+          onPress={() => setShowFilters(true)}
+          style={styles.filterButton}
+        >
           <Ionicons name="filter" size={24} color={theme.colors.primary} />
         </TouchableOpacity>
       </View>
 
       <ScrollView
         style={styles.scrollView}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         {/* Performance Stats */}
         {performance && showPerformance && (
@@ -167,9 +182,15 @@ export default function SignalsScreen() {
           </View>
         ) : signals.length === 0 ? (
           <Card style={styles.emptyCard}>
-            <Ionicons name="analytics-outline" size={48} color={theme.colors.textSecondary} />
+            <Ionicons
+              name="analytics-outline"
+              size={48}
+              color={theme.colors.textSecondary}
+            />
             <Text style={styles.emptyText}>No signals found</Text>
-            <Text style={styles.emptySubtext}>Adjust your filters or check back later</Text>
+            <Text style={styles.emptySubtext}>
+              Adjust your filters or check back later
+            </Text>
           </Card>
         ) : (
           <SignalCards signals={signals} />
@@ -202,45 +223,82 @@ interface PerformanceDisplayProps {
   onToggle: () => void;
 }
 
-function PerformanceDisplay({ performance, onToggle }: PerformanceDisplayProps) {
+function PerformanceDisplay({
+  performance,
+  onToggle,
+}: PerformanceDisplayProps) {
   return (
     <Card style={styles.performanceCard}>
       <TouchableOpacity onPress={onToggle} style={styles.performanceHeader}>
         <Text style={styles.performanceTitle}>Performance</Text>
-        <Ionicons name="chevron-up" size={20} color={theme.colors.textSecondary} />
+        <Ionicons
+          name="chevron-up"
+          size={20}
+          color={theme.colors.textSecondary}
+        />
       </TouchableOpacity>
 
       <View style={styles.performanceGrid}>
         <View style={styles.performanceItem}>
           <Text style={styles.performanceLabel}>Win Rate</Text>
-          <Text style={[styles.performanceValue, { color: theme.colors.success }]}>
+          <Text
+            style={[styles.performanceValue, { color: theme.colors.success }]}
+          >
             {performance.winRate.toFixed(1)}%
           </Text>
         </View>
         <View style={styles.performanceItem}>
           <Text style={styles.performanceLabel}>Avg Return</Text>
-          <Text style={[styles.performanceValue, { color: performance.averageReturn >= 0 ? theme.colors.success : theme.colors.error }]}>
-            {performance.averageReturn >= 0 ? '+' : ''}{performance.averageReturn.toFixed(2)}%
+          <Text
+            style={[
+              styles.performanceValue,
+              {
+                color:
+                  performance.averageReturn >= 0
+                    ? theme.colors.success
+                    : theme.colors.error,
+              },
+            ]}
+          >
+            {performance.averageReturn >= 0 ? "+" : ""}
+            {performance.averageReturn.toFixed(2)}%
           </Text>
         </View>
         <View style={styles.performanceItem}>
           <Text style={styles.performanceLabel}>Sharpe Ratio</Text>
-          <Text style={styles.performanceValue}>{performance.sharpeRatio.toFixed(2)}</Text>
+          <Text style={styles.performanceValue}>
+            {performance.sharpeRatio.toFixed(2)}
+          </Text>
         </View>
         <View style={styles.performanceItem}>
           <Text style={styles.performanceLabel}>Total Signals</Text>
-          <Text style={styles.performanceValue}>{performance.totalSignals}</Text>
+          <Text style={styles.performanceValue}>
+            {performance.totalSignals}
+          </Text>
         </View>
         <View style={styles.performanceItem}>
           <Text style={styles.performanceLabel}>Profitable</Text>
-          <Text style={[styles.performanceValue, { color: theme.colors.success }]}>
+          <Text
+            style={[styles.performanceValue, { color: theme.colors.success }]}
+          >
             {performance.profitableSignals}
           </Text>
         </View>
         <View style={styles.performanceItem}>
           <Text style={styles.performanceLabel}>Total Return</Text>
-          <Text style={[styles.performanceValue, { color: performance.totalReturn >= 0 ? theme.colors.success : theme.colors.error }]}>
-            {performance.totalReturn >= 0 ? '+' : ''}{performance.totalReturn.toFixed(2)}%
+          <Text
+            style={[
+              styles.performanceValue,
+              {
+                color:
+                  performance.totalReturn >= 0
+                    ? theme.colors.success
+                    : theme.colors.error,
+              },
+            ]}
+          >
+            {performance.totalReturn >= 0 ? "+" : ""}
+            {performance.totalReturn.toFixed(2)}%
           </Text>
         </View>
       </View>
@@ -276,19 +334,24 @@ function SignalCards({ signals }: SignalCardsProps) {
     switch (type) {
       case SignalType.STRONG_BUY:
       case SignalType.BUY:
-        return 'trending-up';
+        return "trending-up";
       case SignalType.STRONG_SELL:
       case SignalType.SELL:
-        return 'trending-down';
+        return "trending-down";
       default:
-        return 'remove';
+        return "remove";
     }
   };
 
   return (
     <View style={styles.signalsContainer}>
       {signals.map((signal, index) => (
-        <SignalCard key={signal.id} signal={signal} color={getSignalColor(signal.signalType)} icon={getSignalIcon(signal.signalType)} />
+        <SignalCard
+          key={signal.id}
+          signal={signal}
+          color={getSignalColor(signal.signalType)}
+          icon={getSignalIcon(signal.signalType)}
+        />
       ))}
     </View>
   );
@@ -318,12 +381,16 @@ function SignalCard({ signal, color, icon }: SignalCardProps) {
           </View>
           <View style={styles.signalTitleInfo}>
             <Text style={styles.signalSymbol}>{signal.symbol}</Text>
-            <Text style={styles.signalAssetType}>{signal.assetType.toUpperCase()}</Text>
+            <Text style={styles.signalAssetType}>
+              {signal.assetType.toUpperCase()}
+            </Text>
           </View>
         </View>
-        <View style={[styles.signalTypeBadge, { backgroundColor: `${color}20` }]}>
+        <View
+          style={[styles.signalTypeBadge, { backgroundColor: `${color}20` }]}
+        >
           <Text style={[styles.signalTypeText, { color }]}>
-            {signal.signalType.replace('_', ' ').toUpperCase()}
+            {signal.signalType.replace("_", " ").toUpperCase()}
           </Text>
         </View>
       </View>
@@ -332,7 +399,9 @@ function SignalCard({ signal, color, icon }: SignalCardProps) {
       <View style={styles.priceTargets}>
         <View style={styles.priceItem}>
           <Text style={styles.priceLabel}>Current</Text>
-          <Text style={styles.priceValue}>{formatPrice(signal.currentPrice)}</Text>
+          <Text style={styles.priceValue}>
+            {formatPrice(signal.currentPrice)}
+          </Text>
         </View>
         <View style={styles.priceItem}>
           <Text style={styles.priceLabel}>Target</Text>
@@ -353,9 +422,19 @@ function SignalCard({ signal, color, icon }: SignalCardProps) {
         <View style={styles.metricItem}>
           <Text style={styles.metricLabel}>Confidence</Text>
           <View style={styles.confidenceBar}>
-            <View style={[styles.confidenceFill, { width: `${signal.confidence * 100}%`, backgroundColor: color }]} />
+            <View
+              style={[
+                styles.confidenceFill,
+                {
+                  width: `${signal.confidence * 100}%`,
+                  backgroundColor: color,
+                },
+              ]}
+            />
           </View>
-          <Text style={styles.metricValue}>{(signal.confidence * 100).toFixed(0)}%</Text>
+          <Text style={styles.metricValue}>
+            {(signal.confidence * 100).toFixed(0)}%
+          </Text>
         </View>
         <View style={styles.metricItem}>
           <Text style={styles.metricLabel}>Risk/Reward</Text>
@@ -374,7 +453,7 @@ function SignalCard({ signal, color, icon }: SignalCardProps) {
       <View style={styles.analysisTypes}>
         {signal.analysisTypes.slice(0, 3).map((type, idx) => (
           <View key={idx} style={styles.analysisTag}>
-            <Text style={styles.analysisTagText}>{type.replace('_', ' ')}</Text>
+            <Text style={styles.analysisTagText}>{type.replace("_", " ")}</Text>
           </View>
         ))}
       </View>
@@ -438,7 +517,7 @@ function SignalFilters({
 
   const toggleType = (type: SignalType) => {
     if (selectedTypes.includes(type)) {
-      setSelectedTypes(selectedTypes.filter(t => t !== type));
+      setSelectedTypes(selectedTypes.filter((t) => t !== type));
     } else {
       setSelectedTypes([...selectedTypes, type]);
     }
@@ -446,7 +525,7 @@ function SignalFilters({
 
   const toggleStatus = (status: SignalStatus) => {
     if (selectedStatuses.includes(status)) {
-      setSelectedStatuses(selectedStatuses.filter(s => s !== status));
+      setSelectedStatuses(selectedStatuses.filter((s) => s !== status));
     } else {
       setSelectedStatuses([...selectedStatuses, status]);
     }
@@ -456,7 +535,11 @@ function SignalFilters({
 
   return (
     <Modal transparent visible={visible} animationType="none">
-      <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={onClose}>
+      <TouchableOpacity
+        style={styles.modalOverlay}
+        activeOpacity={1}
+        onPress={onClose}
+      >
         <Animated.View
           style={[
             styles.filterSheet,
@@ -491,10 +574,11 @@ function SignalFilters({
                     <Text
                       style={[
                         styles.filterChipText,
-                        selectedTypes.includes(type) && styles.filterChipTextActive,
+                        selectedTypes.includes(type) &&
+                          styles.filterChipTextActive,
                       ]}
                     >
-                      {type.replace('_', ' ').toUpperCase()}
+                      {type.replace("_", " ").toUpperCase()}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -508,14 +592,16 @@ function SignalFilters({
                     key={status}
                     style={[
                       styles.filterChip,
-                      selectedStatuses.includes(status) && styles.filterChipActive,
+                      selectedStatuses.includes(status) &&
+                        styles.filterChipActive,
                     ]}
                     onPress={() => toggleStatus(status)}
                   >
                     <Text
                       style={[
                         styles.filterChipText,
-                        selectedStatuses.includes(status) && styles.filterChipTextActive,
+                        selectedStatuses.includes(status) &&
+                          styles.filterChipTextActive,
                       ]}
                     >
                       {status.toUpperCase()}
@@ -527,7 +613,7 @@ function SignalFilters({
               {/* Timeframe */}
               <Text style={styles.filterSectionTitle}>Timeframe</Text>
               <View style={styles.filterChips}>
-                {['all', '1d', '1w', '1m', '3m', '6m', '1y'].map((tf) => (
+                {["all", "1d", "1w", "1m", "3m", "6m", "1y"].map((tf) => (
                   <TouchableOpacity
                     key={tf}
                     style={[
@@ -565,7 +651,8 @@ function SignalFilters({
                     <Text
                       style={[
                         styles.confidenceButtonText,
-                        minConfidence === value && styles.confidenceButtonTextActive,
+                        minConfidence === value &&
+                          styles.confidenceButtonTextActive,
                       ]}
                     >
                       {value}%
@@ -596,9 +683,9 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
     backgroundColor: theme.colors.surface,
@@ -610,7 +697,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   filterButton: {
@@ -621,7 +708,7 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     padding: theme.spacing.xl,
-    alignItems: 'center',
+    alignItems: "center",
   },
   loadingText: {
     fontSize: 14,
@@ -630,11 +717,11 @@ const styles = StyleSheet.create({
   emptyCard: {
     margin: theme.spacing.lg,
     padding: theme.spacing.xl,
-    alignItems: 'center',
+    alignItems: "center",
   },
   emptyText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginTop: theme.spacing.md,
   },
@@ -642,29 +729,29 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: theme.colors.textSecondary,
     marginTop: theme.spacing.sm,
-    textAlign: 'center',
+    textAlign: "center",
   },
   performanceCard: {
     margin: theme.spacing.lg,
     padding: theme.spacing.md,
   },
   performanceHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: theme.spacing.md,
   },
   performanceTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   performanceGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
   },
   performanceItem: {
-    width: '33.33%',
+    width: "33.33%",
     marginBottom: theme.spacing.md,
   },
   performanceLabel: {
@@ -674,7 +761,7 @@ const styles = StyleSheet.create({
   },
   performanceValue: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
   },
   signalsContainer: {
@@ -685,22 +772,22 @@ const styles = StyleSheet.create({
     padding: theme.spacing.md,
   },
   signalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: theme.spacing.md,
   },
   signalTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
   },
   signalIcon: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: theme.spacing.sm,
   },
   signalTitleInfo: {
@@ -708,7 +795,7 @@ const styles = StyleSheet.create({
   },
   signalSymbol: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
   },
   signalAssetType: {
@@ -723,11 +810,11 @@ const styles = StyleSheet.create({
   },
   signalTypeText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   priceTargets: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
     borderTopWidth: 1,
@@ -735,7 +822,7 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border,
   },
   priceItem: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   priceLabel: {
     fontSize: 11,
@@ -744,11 +831,11 @@ const styles = StyleSheet.create({
   },
   priceValue: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   metricsRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: theme.spacing.md,
   },
   metricItem: {
@@ -762,7 +849,7 @@ const styles = StyleSheet.create({
   },
   metricValue: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   confidenceBar: {
@@ -770,10 +857,10 @@ const styles = StyleSheet.create({
     backgroundColor: `${theme.colors.border}`,
     borderRadius: 3,
     marginVertical: 4,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   confidenceFill: {
-    height: '100%',
+    height: "100%",
     borderRadius: 3,
   },
   reasoning: {
@@ -783,8 +870,8 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.sm,
   },
   analysisTypes: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     marginBottom: theme.spacing.sm,
   },
   analysisTag: {
@@ -798,12 +885,12 @@ const styles = StyleSheet.create({
   analysisTagText: {
     fontSize: 10,
     color: theme.colors.primary,
-    fontWeight: '500',
-    textTransform: 'capitalize',
+    fontWeight: "500",
+    textTransform: "capitalize",
   },
   signalFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     paddingTop: theme.spacing.sm,
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
@@ -814,8 +901,8 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
   },
   filterSheet: {
     backgroundColor: theme.colors.surface,
@@ -828,20 +915,20 @@ const styles = StyleSheet.create({
     height: 4,
     backgroundColor: theme.colors.border,
     borderRadius: 2,
-    alignSelf: 'center',
+    alignSelf: "center",
     marginTop: theme.spacing.sm,
   },
   sheetHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: theme.spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
   },
   sheetTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   sheetContent: {
@@ -849,14 +936,14 @@ const styles = StyleSheet.create({
   },
   filterSectionTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: theme.spacing.sm,
     marginTop: theme.spacing.md,
   },
   filterChips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
   },
   filterChip: {
     paddingHorizontal: theme.spacing.md,
@@ -874,14 +961,14 @@ const styles = StyleSheet.create({
   filterChipText: {
     fontSize: 12,
     color: theme.colors.text,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   filterChipTextActive: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
   confidenceSlider: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   confidenceButton: {
     flex: 1,
@@ -890,7 +977,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.sm,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    alignItems: 'center',
+    alignItems: "center",
   },
   confidenceButtonActive: {
     backgroundColor: theme.colors.primary,
@@ -899,22 +986,21 @@ const styles = StyleSheet.create({
   confidenceButtonText: {
     fontSize: 12,
     color: theme.colors.text,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   confidenceButtonTextActive: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
   applyButton: {
     margin: theme.spacing.lg,
     padding: theme.spacing.md,
     backgroundColor: theme.colors.primary,
     borderRadius: theme.borderRadius.md,
-    alignItems: 'center',
+    alignItems: "center",
   },
   applyButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
 });
-

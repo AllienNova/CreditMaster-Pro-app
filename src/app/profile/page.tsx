@@ -2,21 +2,71 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Icon } from '@/components/ui/Icon';
+import { Icon } from "@/components/ui/Icon";
 
 const achievements = [
-  { icon: "flag", title: "First Dispute", description: "Filed your first dispute", earned: true, date: "Nov 15, 2024" },
-  { icon: "⭐", title: "Score Booster", description: "Increased score by 50+ points", earned: true, date: "Nov 28, 2024" },
-  { icon: "chart-bar", title: "Quick Win", description: "Got an item removed in under 30 days", earned: true, date: "Dec 1, 2024" },
-  { icon: "bolt", title: "On Fire", description: "5 successful disputes in a row", earned: false, date: null },
-  { icon: "fire", title: "Credit Master", description: "Reach a 750+ credit score", earned: false, date: null },
+  {
+    icon: "flag",
+    title: "First Dispute",
+    description: "Filed your first dispute",
+    earned: true,
+    date: "Nov 15, 2024",
+  },
+  {
+    icon: "⭐",
+    title: "Score Booster",
+    description: "Increased score by 50+ points",
+    earned: true,
+    date: "Nov 28, 2024",
+  },
+  {
+    icon: "chart-bar",
+    title: "Quick Win",
+    description: "Got an item removed in under 30 days",
+    earned: true,
+    date: "Dec 1, 2024",
+  },
+  {
+    icon: "bolt",
+    title: "On Fire",
+    description: "5 successful disputes in a row",
+    earned: false,
+    date: null,
+  },
+  {
+    icon: "fire",
+    title: "Credit Master",
+    description: "Reach a 750+ credit score",
+    earned: false,
+    date: null,
+  },
 ];
 
 const activityHistory = [
-  { action: "Dispute resolved", details: "Late payment removed from Experian", date: "2 hours ago", type: "success" },
-  { action: "Score updated", details: "Credit score increased to 720", date: "1 day ago", type: "info" },
-  { action: "Dispute sent", details: "Collection dispute sent to Equifax", date: "3 days ago", type: "pending" },
-  { action: "Report pulled", details: "Credit reports refreshed", date: "5 days ago", type: "info" },
+  {
+    action: "Dispute resolved",
+    details: "Late payment removed from Experian",
+    date: "2 hours ago",
+    type: "success",
+  },
+  {
+    action: "Score updated",
+    details: "Credit score increased to 720",
+    date: "1 day ago",
+    type: "info",
+  },
+  {
+    action: "Dispute sent",
+    details: "Collection dispute sent to Equifax",
+    date: "3 days ago",
+    type: "pending",
+  },
+  {
+    action: "Report pulled",
+    details: "Credit reports refreshed",
+    date: "5 days ago",
+    type: "info",
+  },
 ];
 
 export default function ProfilePage() {
@@ -34,7 +84,10 @@ export default function ProfilePage() {
       {/* Header */}
       <header className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white">
         <div className="max-w-6xl mx-auto px-4 py-8">
-          <Link href="/dashboard" className="text-emerald-100 hover:text-white text-sm mb-4 inline-block">
+          <Link
+            href="/dashboard"
+            className="text-emerald-100 hover:text-white text-sm mb-4 inline-block"
+          >
             ← Back to Dashboard
           </Link>
           <div className="flex items-center gap-6">
@@ -45,8 +98,12 @@ export default function ProfilePage() {
               <h1 className="text-3xl font-bold">{profile.name}</h1>
               <p className="text-emerald-100">{profile.email}</p>
               <div className="flex items-center gap-4 mt-2">
-                <span className="px-3 py-1 bg-white dark:bg-slate-800/20 rounded-full text-sm">{profile.plan} Member</span>
-                <span className="text-sm text-emerald-100">Member since {profile.memberSince}</span>
+                <span className="px-3 py-1 bg-white dark:bg-slate-800/20 rounded-full text-sm">
+                  {profile.plan} Member
+                </span>
+                <span className="text-sm text-emerald-100">
+                  Member since {profile.memberSince}
+                </span>
               </div>
             </div>
           </div>
@@ -61,51 +118,92 @@ export default function ProfilePage() {
             <div className="grid grid-cols-3 gap-4">
               <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-700 text-center">
                 <p className="text-3xl font-bold text-emerald-500">720</p>
-                <p className="text-gray-500 dark:text-slate-400 text-sm">Credit Score</p>
+                <p className="text-gray-500 dark:text-slate-400 text-sm">
+                  Credit Score
+                </p>
               </div>
               <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-700 text-center">
                 <p className="text-3xl font-bold text-blue-500">12</p>
-                <p className="text-gray-500 dark:text-slate-400 text-sm">Items Removed</p>
+                <p className="text-gray-500 dark:text-slate-400 text-sm">
+                  Items Removed
+                </p>
               </div>
               <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-700 text-center">
                 <p className="text-3xl font-bold text-blue-500">78%</p>
-                <p className="text-gray-500 dark:text-slate-400 text-sm">Success Rate</p>
+                <p className="text-gray-500 dark:text-slate-400 text-sm">
+                  Success Rate
+                </p>
               </div>
             </div>
 
             {/* Personal Info */}
             <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700">
               <div className="p-6 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Personal Information</h2>
-                <button onClick={() => setIsEditing(!isEditing)} className="text-emerald-500 hover:text-emerald-600 text-sm font-medium">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Personal Information
+                </h2>
+                <button
+                  onClick={() => setIsEditing(!isEditing)}
+                  className="text-emerald-500 hover:text-emerald-600 text-sm font-medium"
+                >
                   {isEditing ? "Save" : "Edit"}
                 </button>
               </div>
               <div className="p-6 space-y-4">
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm text-gray-500 dark:text-slate-400 mb-1">Full Name</label>
+                    <label className="block text-sm text-gray-500 dark:text-slate-400 mb-1">
+                      Full Name
+                    </label>
                     {isEditing ? (
-                      <input type="text" value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg" />
+                      <input
+                        type="text"
+                        value={profile.name}
+                        onChange={(e) =>
+                          setProfile({ ...profile, name: e.target.value })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg"
+                      />
                     ) : (
-                      <p className="text-gray-900 dark:text-white">{profile.name}</p>
+                      <p className="text-gray-900 dark:text-white">
+                        {profile.name}
+                      </p>
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-500 dark:text-slate-400 mb-1">Email</label>
-                    <p className="text-gray-900 dark:text-white">{profile.email}</p>
+                    <label className="block text-sm text-gray-500 dark:text-slate-400 mb-1">
+                      Email
+                    </label>
+                    <p className="text-gray-900 dark:text-white">
+                      {profile.email}
+                    </p>
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-500 dark:text-slate-400 mb-1">Phone</label>
+                    <label className="block text-sm text-gray-500 dark:text-slate-400 mb-1">
+                      Phone
+                    </label>
                     {isEditing ? (
-                      <input type="tel" value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg" />
+                      <input
+                        type="tel"
+                        value={profile.phone}
+                        onChange={(e) =>
+                          setProfile({ ...profile, phone: e.target.value })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg"
+                      />
                     ) : (
-                      <p className="text-gray-900 dark:text-white">{profile.phone}</p>
+                      <p className="text-gray-900 dark:text-white">
+                        {profile.phone}
+                      </p>
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-500 dark:text-slate-400 mb-1">Plan</label>
-                    <p className="text-gray-900 dark:text-white">{profile.plan}</p>
+                    <label className="block text-sm text-gray-500 dark:text-slate-400 mb-1">
+                      Plan
+                    </label>
+                    <p className="text-gray-900 dark:text-white">
+                      {profile.plan}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -114,17 +212,27 @@ export default function ProfilePage() {
             {/* Activity History */}
             <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700">
               <div className="p-6 border-b border-gray-200 dark:border-slate-700">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Activity</h2>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Recent Activity
+                </h2>
               </div>
               <div className="divide-y divide-gray-100 dark:divide-slate-700">
                 {activityHistory.map((activity, i) => (
                   <div key={i} className="p-4 flex items-center gap-4">
-                    <span className={`w-2 h-2 rounded-full ${activity.type === "success" ? "bg-emerald-500" : activity.type === "pending" ? "bg-yellow-500" : "bg-blue-500"}`} />
+                    <span
+                      className={`w-2 h-2 rounded-full ${activity.type === "success" ? "bg-emerald-500" : activity.type === "pending" ? "bg-yellow-500" : "bg-blue-500"}`}
+                    />
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900 dark:text-white">{activity.action}</p>
-                      <p className="text-sm text-gray-500 dark:text-slate-400">{activity.details}</p>
+                      <p className="font-medium text-gray-900 dark:text-white">
+                        {activity.action}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-slate-400">
+                        {activity.details}
+                      </p>
                     </div>
-                    <span className="text-sm text-gray-400 dark:text-slate-500">{activity.date}</span>
+                    <span className="text-sm text-gray-400 dark:text-slate-500">
+                      {activity.date}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -134,17 +242,33 @@ export default function ProfilePage() {
           {/* Achievements */}
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 h-fit">
             <div className="p-6 border-b border-gray-200 dark:border-slate-700">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Achievements</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Achievements
+              </h2>
             </div>
             <div className="p-4 space-y-3">
               {achievements.map((achievement, i) => (
-                <div key={i} className={`p-3 rounded-lg ${achievement.earned ? "bg-emerald-50" : "bg-gray-50 dark:bg-slate-900 opacity-50"}`}>
+                <div
+                  key={i}
+                  className={`p-3 rounded-lg ${achievement.earned ? "bg-emerald-50" : "bg-gray-50 dark:bg-slate-900 opacity-50"}`}
+                >
                   <div className="flex items-center gap-3">
-                    <Icon name={achievement.icon} className="text-2xl inline-block" />
+                    <Icon
+                      name={achievement.icon}
+                      className="text-2xl inline-block"
+                    />
                     <div>
-                      <p className="font-medium text-gray-900 dark:text-white">{achievement.title}</p>
-                      <p className="text-xs text-gray-500 dark:text-slate-400">{achievement.description}</p>
-                      {achievement.earned && <p className="text-xs text-emerald-500 mt-1">Earned {achievement.date}</p>}
+                      <p className="font-medium text-gray-900 dark:text-white">
+                        {achievement.title}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-slate-400">
+                        {achievement.description}
+                      </p>
+                      {achievement.earned && (
+                        <p className="text-xs text-emerald-500 mt-1">
+                          Earned {achievement.date}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -156,4 +280,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-

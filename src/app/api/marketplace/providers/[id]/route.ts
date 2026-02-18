@@ -4,8 +4,12 @@
  * GET /api/marketplace/providers/[id] - Get provider by ID
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { providerService, tradelineService, reviewService } from '@/lib/marketplace';
+import { NextRequest, NextResponse } from "next/server";
+import {
+  providerService,
+  tradelineService,
+  reviewService,
+} from "@/lib/marketplace";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -19,9 +23,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Provider ID is required',
+          error: "Provider ID is required",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -31,16 +35,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Provider not found',
+          error: "Provider not found",
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     // Check if client wants extended data
     const searchParams = request.nextUrl.searchParams;
-    const includeProducts = searchParams.get('includeProducts') === 'true';
-    const includeReviews = searchParams.get('includeReviews') === 'true';
+    const includeProducts = searchParams.get("includeProducts") === "true";
+    const includeReviews = searchParams.get("includeReviews") === "true";
 
     const response: Record<string, unknown> = {
       success: true,
@@ -48,7 +52,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     };
 
     // Include tradelines/products if requested
-    if (includeProducts && provider.category === 'tradeline') {
+    if (includeProducts && provider.category === "tradeline") {
       const tradelines = await tradelineService.getTradelinesByProvider(id);
       response.tradelines = tradelines;
     }
@@ -61,14 +65,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error('Error fetching provider:', error);
+    console.error("Error fetching provider:", error);
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to fetch provider',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to fetch provider",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

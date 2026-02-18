@@ -4,7 +4,7 @@
  * Bottom sheet for placing orders on mobile.
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -16,14 +16,14 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-} from 'react-native';
+} from "react-native";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-type OrderSide = 'buy' | 'sell';
-type OrderType = 'market' | 'limit';
+type OrderSide = "buy" | "sell";
+type OrderType = "market" | "limit";
 
 interface OrderEntrySheetProps {
   visible: boolean;
@@ -57,7 +57,7 @@ interface CreatedOrder {
 export function OrderEntrySheet({
   visible,
   onClose,
-  symbol: initialSymbol = '',
+  symbol: initialSymbol = "",
   defaultSymbol,
   currentPrice,
   suggestedSide,
@@ -68,15 +68,15 @@ export function OrderEntrySheet({
   isPaperTrading = false,
 }: OrderEntrySheetProps) {
   const effectiveSymbol = defaultSymbol || initialSymbol;
-  const effectiveSide = defaultSide || suggestedSide || 'buy';
+  const effectiveSide = defaultSide || suggestedSide || "buy";
   const [symbol, setSymbol] = useState(effectiveSymbol);
   const [side, setSide] = useState<OrderSide>(effectiveSide);
-  const [orderType, setOrderType] = useState<OrderType>('limit');
-  const [quantity, setQuantity] = useState('');
-  const [limitPrice, setLimitPrice] = useState(currentPrice?.toFixed(2) || '');
-  const [stopLoss, setStopLoss] = useState(suggestedStopLoss?.toFixed(2) || '');
+  const [orderType, setOrderType] = useState<OrderType>("limit");
+  const [quantity, setQuantity] = useState("");
+  const [limitPrice, setLimitPrice] = useState(currentPrice?.toFixed(2) || "");
+  const [stopLoss, setStopLoss] = useState(suggestedStopLoss?.toFixed(2) || "");
   const [takeProfit, setTakeProfit] = useState(
-    suggestedTakeProfit?.toFixed(2) || ''
+    suggestedTakeProfit?.toFixed(2) || "",
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,10 +85,10 @@ export function OrderEntrySheet({
   React.useEffect(() => {
     if (visible) {
       setSymbol(defaultSymbol || initialSymbol);
-      setSide(defaultSide || suggestedSide || 'buy');
-      setLimitPrice(currentPrice?.toFixed(2) || '');
-      setStopLoss(suggestedStopLoss?.toFixed(2) || '');
-      setTakeProfit(suggestedTakeProfit?.toFixed(2) || '');
+      setSide(defaultSide || suggestedSide || "buy");
+      setLimitPrice(currentPrice?.toFixed(2) || "");
+      setStopLoss(suggestedStopLoss?.toFixed(2) || "");
+      setTakeProfit(suggestedTakeProfit?.toFixed(2) || "");
       setError(null);
     }
   }, [
@@ -106,7 +106,7 @@ export function OrderEntrySheet({
   const estimatedValue = React.useMemo(() => {
     const qty = parseFloat(quantity) || 0;
     const price =
-      orderType === 'limit' ? parseFloat(limitPrice) || 0 : currentPrice || 0;
+      orderType === "limit" ? parseFloat(limitPrice) || 0 : currentPrice || 0;
     return qty * price;
   }, [quantity, limitPrice, orderType, currentPrice]);
 
@@ -125,20 +125,20 @@ export function OrderEntrySheet({
 
     // Validation
     if (!symbol.trim()) {
-      setError('Symbol is required');
+      setError("Symbol is required");
       return;
     }
 
     const qty = parseFloat(quantity);
     if (!qty || qty <= 0) {
-      setError('Valid quantity is required');
+      setError("Valid quantity is required");
       return;
     }
 
-    if (orderType === 'limit') {
+    if (orderType === "limit") {
       const price = parseFloat(limitPrice);
       if (!price || price <= 0) {
-        setError('Valid limit price is required');
+        setError("Valid limit price is required");
         return;
       }
     }
@@ -146,20 +146,20 @@ export function OrderEntrySheet({
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('/api/trading/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/trading/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: 'create',
+          action: "create",
           symbol: symbol.toUpperCase(),
           side,
           type: orderType,
           quantity: qty,
           limitPrice:
-            orderType === 'limit' ? parseFloat(limitPrice) : undefined,
+            orderType === "limit" ? parseFloat(limitPrice) : undefined,
           stopLossPrice: stopLoss ? parseFloat(stopLoss) : undefined,
           takeProfitPrice: takeProfit ? parseFloat(takeProfit) : undefined,
-          timeInForce: 'day',
+          timeInForce: "day",
         }),
       });
 
@@ -170,11 +170,11 @@ export function OrderEntrySheet({
         onClose();
       } else {
         setError(
-          data.validation?.errors?.[0]?.message || 'Failed to create order'
+          data.validation?.errors?.[0]?.message || "Failed to create order",
         );
       }
     } catch (err) {
-      setError('Network error. Please try again.');
+      setError("Network error. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -198,7 +198,7 @@ export function OrderEntrySheet({
       onRequestClose={onClose}
     >
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.overlay}
       >
         <View style={styles.sheet}>
@@ -239,14 +239,14 @@ export function OrderEntrySheet({
                 <TouchableOpacity
                   style={[
                     styles.sideButton,
-                    side === 'buy' && styles.buyButtonActive,
+                    side === "buy" && styles.buyButtonActive,
                   ]}
-                  onPress={() => setSide('buy')}
+                  onPress={() => setSide("buy")}
                 >
                   <Text
                     style={[
                       styles.sideButtonText,
-                      side === 'buy' && styles.sideButtonTextActive,
+                      side === "buy" && styles.sideButtonTextActive,
                     ]}
                   >
                     Buy
@@ -255,14 +255,14 @@ export function OrderEntrySheet({
                 <TouchableOpacity
                   style={[
                     styles.sideButton,
-                    side === 'sell' && styles.sellButtonActive,
+                    side === "sell" && styles.sellButtonActive,
                   ]}
-                  onPress={() => setSide('sell')}
+                  onPress={() => setSide("sell")}
                 >
                   <Text
                     style={[
                       styles.sideButtonText,
-                      side === 'sell' && styles.sideButtonTextActive,
+                      side === "sell" && styles.sideButtonTextActive,
                     ]}
                   >
                     Sell
@@ -278,14 +278,14 @@ export function OrderEntrySheet({
                 <TouchableOpacity
                   style={[
                     styles.typeButton,
-                    orderType === 'market' && styles.typeButtonActive,
+                    orderType === "market" && styles.typeButtonActive,
                   ]}
-                  onPress={() => setOrderType('market')}
+                  onPress={() => setOrderType("market")}
                 >
                   <Text
                     style={[
                       styles.typeButtonText,
-                      orderType === 'market' && styles.typeButtonTextActive,
+                      orderType === "market" && styles.typeButtonTextActive,
                     ]}
                   >
                     Market
@@ -294,14 +294,14 @@ export function OrderEntrySheet({
                 <TouchableOpacity
                   style={[
                     styles.typeButton,
-                    orderType === 'limit' && styles.typeButtonActive,
+                    orderType === "limit" && styles.typeButtonActive,
                   ]}
-                  onPress={() => setOrderType('limit')}
+                  onPress={() => setOrderType("limit")}
                 >
                   <Text
                     style={[
                       styles.typeButtonText,
-                      orderType === 'limit' && styles.typeButtonTextActive,
+                      orderType === "limit" && styles.typeButtonTextActive,
                     ]}
                   >
                     Limit
@@ -324,7 +324,7 @@ export function OrderEntrySheet({
             </View>
 
             {/* Limit Price (for limit orders) */}
-            {orderType === 'limit' && (
+            {orderType === "limit" && (
               <View style={styles.field}>
                 <Text style={styles.label}>Limit Price</Text>
                 <TextInput
@@ -395,7 +395,7 @@ export function OrderEntrySheet({
             <TouchableOpacity
               style={[
                 styles.submitButton,
-                side === 'buy' ? styles.buyButton : styles.sellButton,
+                side === "buy" ? styles.buyButton : styles.sellButton,
                 isSubmitting && styles.submitButtonDisabled,
               ]}
               onPress={handleSubmit}
@@ -405,7 +405,7 @@ export function OrderEntrySheet({
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
                 <Text style={styles.submitButtonText}>
-                  {side === 'buy' ? 'Buy' : 'Sell'} {symbol || 'Symbol'}
+                  {side === "buy" ? "Buy" : "Sell"} {symbol || "Symbol"}
                 </Text>
               )}
             </TouchableOpacity>
@@ -423,46 +423,46 @@ export function OrderEntrySheet({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
   },
   sheet: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: '90%',
+    maxHeight: "90%",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: "#E5E7EB",
   },
   title: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
+    fontWeight: "600",
+    color: "#111827",
   },
   paperBadge: {
     fontSize: 12,
-    color: '#3B82F6',
-    fontWeight: '500',
+    color: "#3B82F6",
+    fontWeight: "500",
     marginTop: 2,
   },
   closeButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
+    justifyContent: "center",
   },
   closeText: {
     fontSize: 16,
-    color: '#6B7280',
+    color: "#6B7280",
   },
   content: {
     padding: 20,
@@ -472,126 +472,126 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
+    fontWeight: "500",
+    color: "#374151",
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: "#F9FAFB",
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: "#E5E7EB",
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
-    color: '#111827',
+    color: "#111827",
   },
   sideButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
   },
   sideButton: {
     flex: 1,
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
   },
   buyButtonActive: {
-    backgroundColor: '#10B981',
+    backgroundColor: "#10B981",
   },
   sellButtonActive: {
-    backgroundColor: '#EF4444',
+    backgroundColor: "#EF4444",
   },
   sideButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#6B7280',
+    fontWeight: "600",
+    color: "#6B7280",
   },
   sideButtonTextActive: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
   typeButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
   },
   typeButton: {
     flex: 1,
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
   },
   typeButtonActive: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: "#3B82F6",
   },
   typeButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#6B7280',
+    fontWeight: "600",
+    color: "#6B7280",
   },
   typeButtonTextActive: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
   summary: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: "#F9FAFB",
     borderRadius: 12,
     padding: 16,
     marginTop: 8,
     marginBottom: 16,
   },
   summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 8,
   },
   summaryLabel: {
     fontSize: 14,
-    color: '#6B7280',
+    color: "#6B7280",
   },
   summaryValue: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
+    fontWeight: "600",
+    color: "#111827",
   },
   riskValue: {
-    color: '#EF4444',
+    color: "#EF4444",
   },
   errorContainer: {
-    backgroundColor: '#FEE2E2',
+    backgroundColor: "#FEE2E2",
     borderRadius: 12,
     padding: 12,
     marginBottom: 16,
   },
   errorText: {
     fontSize: 14,
-    color: '#DC2626',
-    textAlign: 'center',
+    color: "#DC2626",
+    textAlign: "center",
   },
   footer: {
     padding: 20,
     paddingBottom: 34,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: "#E5E7EB",
   },
   submitButton: {
     paddingVertical: 16,
     borderRadius: 12,
-    alignItems: 'center',
+    alignItems: "center",
   },
   buyButton: {
-    backgroundColor: '#10B981',
+    backgroundColor: "#10B981",
   },
   sellButton: {
-    backgroundColor: '#EF4444',
+    backgroundColor: "#EF4444",
   },
   submitButtonDisabled: {
     opacity: 0.6,
   },
   submitButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
 });
 

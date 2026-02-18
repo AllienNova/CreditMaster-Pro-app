@@ -1,6 +1,6 @@
 /**
  * Portfolio Analysis Service
- * 
+ *
  * Comprehensive portfolio risk and performance analysis:
  * - Risk metrics (VaR, Sharpe, Beta, Correlation)
  * - Position sizing recommendations
@@ -23,7 +23,15 @@ export interface PortfolioHolding {
   weight?: number;
 }
 
-export type AssetClass = 'stock' | 'etf' | 'bond' | 'crypto' | 'commodity' | 'cash' | 'option' | 'reit';
+export type AssetClass =
+  | "stock"
+  | "etf"
+  | "bond"
+  | "crypto"
+  | "commodity"
+  | "cash"
+  | "option"
+  | "reit";
 
 export interface PortfolioMetrics {
   // Value metrics
@@ -76,7 +84,7 @@ export interface PositionSizeRecommendation {
 }
 
 export interface DiversificationAnalysis {
-  score: number;  // 0-100
+  score: number; // 0-100
   sectorDiversification: number;
   assetClassDiversification: number;
   geographicDiversification: number;
@@ -87,7 +95,7 @@ export interface DiversificationAnalysis {
 
 export interface StressTestResult {
   scenario: string;
-  portfolioImpact: number;  // percentage change
+  portfolioImpact: number; // percentage change
   affectedHoldings: { symbol: string; impact: number }[];
   recommendation: string;
 }
@@ -102,7 +110,7 @@ export interface RebalanceRecommendation {
 
 export interface RebalanceTrade {
   symbol: string;
-  action: 'buy' | 'sell';
+  action: "buy" | "sell";
   shares: number;
   value: number;
   currentWeight: number;
@@ -112,7 +120,7 @@ export interface RebalanceTrade {
 export interface TaxImplication {
   symbol: string;
   gainLoss: number;
-  holdingPeriod: 'short_term' | 'long_term';
+  holdingPeriod: "short_term" | "long_term";
   estimatedTax: number;
 }
 
@@ -121,7 +129,7 @@ export interface TaxImplication {
 // ============================================================================
 
 export class PortfolioAnalysisService {
-  private riskFreeRate = 0.05;  // 5% annual risk-free rate
+  private riskFreeRate = 0.05; // 5% annual risk-free rate
 
   // ============================================================================
   // MAIN ANALYSIS METHOD
@@ -129,10 +137,13 @@ export class PortfolioAnalysisService {
 
   analyzePortfolio(holdings: PortfolioHolding[]): PortfolioMetrics {
     const totalValue = this.calculateTotalValue(holdings);
-    const totalCostBasis = holdings.reduce((sum, h) => sum + (h.shares * h.costBasis), 0);
+    const totalCostBasis = holdings.reduce(
+      (sum, h) => sum + h.shares * h.costBasis,
+      0,
+    );
 
     // Add weights to holdings
-    const weightedHoldings = holdings.map(h => ({
+    const weightedHoldings = holdings.map((h) => ({
       ...h,
       weight: (h.shares * h.currentPrice) / totalValue,
     }));
@@ -146,18 +157,20 @@ export class PortfolioAnalysisService {
       totalValue,
       totalCostBasis,
       totalGainLoss: totalValue - totalCostBasis,
-      totalGainLossPercent: ((totalValue - totalCostBasis) / totalCostBasis) * 100,
+      totalGainLossPercent:
+        ((totalValue - totalCostBasis) / totalCostBasis) * 100,
       ...riskMetrics,
       diversificationScore: diversification.score,
       concentrationRisk: this.calculateConcentrationRisk(weightedHoldings),
       sectorExposure: this.calculateSectorExposure(weightedHoldings),
-      assetClassAllocation: this.calculateAssetClassAllocation(weightedHoldings),
+      assetClassAllocation:
+        this.calculateAssetClassAllocation(weightedHoldings),
       ...returns,
     };
   }
 
   private calculateTotalValue(holdings: PortfolioHolding[]): number {
-    return holdings.reduce((sum, h) => sum + (h.shares * h.currentPrice), 0);
+    return holdings.reduce((sum, h) => sum + h.shares * h.currentPrice, 0);
   }
 
   // ============================================================================
@@ -172,8 +185,14 @@ export class PortfolioAnalysisService {
     annualizedReturn: number;
   } {
     // Calculate weighted average return based on cost basis vs current
-    const totalCost = holdings.reduce((sum, h) => sum + (h.shares * h.costBasis), 0);
-    const totalValue = holdings.reduce((sum, h) => sum + (h.shares * h.currentPrice), 0);
+    const totalCost = holdings.reduce(
+      (sum, h) => sum + h.shares * h.costBasis,
+      0,
+    );
+    const totalValue = holdings.reduce(
+      (sum, h) => sum + h.shares * h.currentPrice,
+      0,
+    );
     const totalReturn = ((totalValue - totalCost) / totalCost) * 100;
 
     // Estimate periodic returns (simplified - in production use historical data)
@@ -181,7 +200,7 @@ export class PortfolioAnalysisService {
       dailyReturn: totalReturn / 252,
       weeklyReturn: totalReturn / 52,
       monthlyReturn: totalReturn / 12,
-      ytdReturn: totalReturn * 0.8,  // Approximation
+      ytdReturn: totalReturn * 0.8, // Approximation
       annualizedReturn: totalReturn,
     };
   }
@@ -192,7 +211,7 @@ export class PortfolioAnalysisService {
 
   private calculateRiskMetrics(
     holdings: PortfolioHolding[],
-    returns: { annualizedReturn: number }
+    returns: { annualizedReturn: number },
   ): {
     beta: number;
     alpha: number;
@@ -210,17 +229,25 @@ export class PortfolioAnalysisService {
     const beta = this.estimatePortfolioBeta(holdings);
 
     // Market return assumption
-    const marketReturn = 0.10;  // 10% annual market return
+    const marketReturn = 0.1; // 10% annual market return
 
     // Alpha = Portfolio Return - (Risk-Free + Beta * (Market - Risk-Free))
-    const alpha = returns.annualizedReturn - (this.riskFreeRate + beta * (marketReturn - this.riskFreeRate));
+    const alpha =
+      returns.annualizedReturn -
+      (this.riskFreeRate + beta * (marketReturn - this.riskFreeRate));
 
     // Sharpe Ratio = (Return - Risk-Free) / Volatility
-    const sharpeRatio = volatility > 0 ? (returns.annualizedReturn - this.riskFreeRate) / volatility : 0;
+    const sharpeRatio =
+      volatility > 0
+        ? (returns.annualizedReturn - this.riskFreeRate) / volatility
+        : 0;
 
     // Sortino Ratio (using downside volatility approximation)
     const downsideVolatility = volatility * 0.7;
-    const sortinoRatio = downsideVolatility > 0 ? (returns.annualizedReturn - this.riskFreeRate) / downsideVolatility : 0;
+    const sortinoRatio =
+      downsideVolatility > 0
+        ? (returns.annualizedReturn - this.riskFreeRate) / downsideVolatility
+        : 0;
 
     // Value at Risk calculations
     const valueAtRisk = this.calculateVaR(holdings, volatility);
@@ -230,32 +257,32 @@ export class PortfolioAnalysisService {
       alpha,
       sharpeRatio,
       sortinoRatio,
-      maxDrawdown: volatility * 2.5,  // Approximation
+      maxDrawdown: volatility * 2.5, // Approximation
       volatility,
       valueAtRisk,
-      correlationToMarket: beta * 0.85,  // Approximation
+      correlationToMarket: beta * 0.85, // Approximation
     };
   }
 
   private estimatePortfolioVolatility(holdings: PortfolioHolding[]): number {
     // Volatility estimates by asset class
     const volatilityByClass: Record<AssetClass, number> = {
-      stock: 0.20,
+      stock: 0.2,
       etf: 0.15,
       bond: 0.05,
-      crypto: 0.60,
+      crypto: 0.6,
       commodity: 0.25,
       cash: 0.01,
-      option: 0.40,
+      option: 0.4,
       reit: 0.18,
     };
 
     let weightedVolatility = 0;
     const totalValue = this.calculateTotalValue(holdings);
 
-    holdings.forEach(h => {
+    holdings.forEach((h) => {
       const weight = (h.shares * h.currentPrice) / totalValue;
-      const assetVol = volatilityByClass[h.assetClass || 'stock'];
+      const assetVol = volatilityByClass[h.assetClass || "stock"];
       weightedVolatility += weight * assetVol;
     });
 
@@ -277,16 +304,19 @@ export class PortfolioAnalysisService {
     let weightedBeta = 0;
     const totalValue = this.calculateTotalValue(holdings);
 
-    holdings.forEach(h => {
+    holdings.forEach((h) => {
       const weight = (h.shares * h.currentPrice) / totalValue;
-      const assetBeta = betaByClass[h.assetClass || 'stock'];
+      const assetBeta = betaByClass[h.assetClass || "stock"];
       weightedBeta += weight * assetBeta;
     });
 
     return weightedBeta;
   }
 
-  private calculateVaR(holdings: PortfolioHolding[], volatility: number): VaRMetrics {
+  private calculateVaR(
+    holdings: PortfolioHolding[],
+    volatility: number,
+  ): VaRMetrics {
     const totalValue = this.calculateTotalValue(holdings);
 
     // VaR = Portfolio Value * Volatility * Z-score * sqrt(time)
@@ -305,9 +335,11 @@ export class PortfolioAnalysisService {
   // DIVERSIFICATION ANALYSIS
   // ============================================================================
 
-  analyzeDiversification(holdings: PortfolioHolding[]): DiversificationAnalysis {
+  analyzeDiversification(
+    holdings: PortfolioHolding[],
+  ): DiversificationAnalysis {
     const totalValue = this.calculateTotalValue(holdings);
-    const weightedHoldings = holdings.map(h => ({
+    const weightedHoldings = holdings.map((h) => ({
       ...h,
       weight: (h.shares * h.currentPrice) / totalValue,
     }));
@@ -318,8 +350,11 @@ export class PortfolioAnalysisService {
     const sectorDiversification = Math.min(100, sectorCount * 10);
 
     // Asset class diversification
-    const assetClassAllocation = this.calculateAssetClassAllocation(weightedHoldings);
-    const assetClassCount = Object.values(assetClassAllocation).filter(v => v > 0).length;
+    const assetClassAllocation =
+      this.calculateAssetClassAllocation(weightedHoldings);
+    const assetClassCount = Object.values(assetClassAllocation).filter(
+      (v) => v > 0,
+    ).length;
     const assetClassDiversification = Math.min(100, assetClassCount * 15);
 
     // Geographic diversification (simplified - assume US for now)
@@ -328,8 +363,8 @@ export class PortfolioAnalysisService {
     // Overall score
     const score = Math.round(
       sectorDiversification * 0.4 +
-      assetClassDiversification * 0.4 +
-      geographicDiversification * 0.2
+        assetClassDiversification * 0.4 +
+        geographicDiversification * 0.2,
     );
 
     // Identify over/underweighted sectors
@@ -344,13 +379,19 @@ export class PortfolioAnalysisService {
     // Generate recommendations
     const recommendations: string[] = [];
     if (score < 50) {
-      recommendations.push('Portfolio is poorly diversified - consider adding different asset classes');
+      recommendations.push(
+        "Portfolio is poorly diversified - consider adding different asset classes",
+      );
     }
     if (overweightedSectors.length > 0) {
-      recommendations.push(`Consider reducing exposure to: ${overweightedSectors.join(', ')}`);
+      recommendations.push(
+        `Consider reducing exposure to: ${overweightedSectors.join(", ")}`,
+      );
     }
     if (assetClassCount < 3) {
-      recommendations.push('Add exposure to bonds or alternative assets for better diversification');
+      recommendations.push(
+        "Add exposure to bonds or alternative assets for better diversification",
+      );
     }
 
     return {
@@ -364,18 +405,22 @@ export class PortfolioAnalysisService {
     };
   }
 
-  private calculateSectorExposure(holdings: PortfolioHolding[]): Record<string, number> {
+  private calculateSectorExposure(
+    holdings: PortfolioHolding[],
+  ): Record<string, number> {
     const exposure: Record<string, number> = {};
 
-    holdings.forEach(h => {
-      const sector = h.sector || 'Unknown';
-      exposure[sector] = (exposure[sector] || 0) + ((h.weight || 0) * 100);
+    holdings.forEach((h) => {
+      const sector = h.sector || "Unknown";
+      exposure[sector] = (exposure[sector] || 0) + (h.weight || 0) * 100;
     });
 
     return exposure;
   }
 
-  private calculateAssetClassAllocation(holdings: PortfolioHolding[]): Record<AssetClass, number> {
+  private calculateAssetClassAllocation(
+    holdings: PortfolioHolding[],
+  ): Record<AssetClass, number> {
     const allocation: Record<AssetClass, number> = {
       stock: 0,
       etf: 0,
@@ -387,8 +432,8 @@ export class PortfolioAnalysisService {
       reit: 0,
     };
 
-    holdings.forEach(h => {
-      const assetClass = h.assetClass || 'stock';
+    holdings.forEach((h) => {
+      const assetClass = h.assetClass || "stock";
       allocation[assetClass] += (h.weight || 0) * 100;
     });
 
@@ -414,28 +459,30 @@ export class PortfolioAnalysisService {
     portfolioValue: number,
     entryPrice: number,
     stopLossPrice: number,
-    riskPercentage: number = 2  // Default 2% risk per trade
+    riskPercentage: number = 2, // Default 2% risk per trade
   ): PositionSizeRecommendation {
     const riskAmount = portfolioValue * (riskPercentage / 100);
     const riskPerShare = Math.abs(entryPrice - stopLossPrice);
 
     const recommendedShares = Math.floor(riskAmount / riskPerShare);
     const recommendedValue = recommendedShares * entryPrice;
-    const maxPositionSize = portfolioValue * 0.10;  // Max 10% in single position
+    const maxPositionSize = portfolioValue * 0.1; // Max 10% in single position
 
-    const actualShares = recommendedValue > maxPositionSize
-      ? Math.floor(maxPositionSize / entryPrice)
-      : recommendedShares;
+    const actualShares =
+      recommendedValue > maxPositionSize
+        ? Math.floor(maxPositionSize / entryPrice)
+        : recommendedShares;
 
     return {
-      symbol: '',
+      symbol: "",
       recommendedShares: actualShares,
       recommendedValue: actualShares * entryPrice,
       maxPositionSize,
       riskPerShare,
-      reasoning: recommendedValue > maxPositionSize
-        ? 'Position sized to max 10% of portfolio due to concentration limits'
-        : `Position sized for ${riskPercentage}% portfolio risk`,
+      reasoning:
+        recommendedValue > maxPositionSize
+          ? "Position sized to max 10% of portfolio due to concentration limits"
+          : `Position sized for ${riskPercentage}% portfolio risk`,
     };
   }
 
@@ -445,30 +492,55 @@ export class PortfolioAnalysisService {
 
   runStressTests(holdings: PortfolioHolding[]): StressTestResult[] {
     const scenarios = [
-      { name: 'Market Crash (-20%)', stockImpact: -0.20, bondImpact: 0.05, cryptoImpact: -0.40 },
-      { name: 'Interest Rate Hike', stockImpact: -0.08, bondImpact: -0.10, cryptoImpact: -0.15 },
-      { name: 'Recession', stockImpact: -0.30, bondImpact: 0.08, cryptoImpact: -0.50 },
-      { name: 'Tech Correction', stockImpact: -0.15, bondImpact: 0.02, cryptoImpact: -0.25 },
-      { name: 'Inflation Surge', stockImpact: -0.05, bondImpact: -0.15, cryptoImpact: 0.10 },
+      {
+        name: "Market Crash (-20%)",
+        stockImpact: -0.2,
+        bondImpact: 0.05,
+        cryptoImpact: -0.4,
+      },
+      {
+        name: "Interest Rate Hike",
+        stockImpact: -0.08,
+        bondImpact: -0.1,
+        cryptoImpact: -0.15,
+      },
+      {
+        name: "Recession",
+        stockImpact: -0.3,
+        bondImpact: 0.08,
+        cryptoImpact: -0.5,
+      },
+      {
+        name: "Tech Correction",
+        stockImpact: -0.15,
+        bondImpact: 0.02,
+        cryptoImpact: -0.25,
+      },
+      {
+        name: "Inflation Surge",
+        stockImpact: -0.05,
+        bondImpact: -0.15,
+        cryptoImpact: 0.1,
+      },
     ];
 
-    return scenarios.map(scenario => {
+    return scenarios.map((scenario) => {
       let totalImpact = 0;
       const affectedHoldings: { symbol: string; impact: number }[] = [];
 
-      holdings.forEach(h => {
+      holdings.forEach((h) => {
         const value = h.shares * h.currentPrice;
         let impact = 0;
 
         switch (h.assetClass) {
-          case 'stock':
-          case 'etf':
+          case "stock":
+          case "etf":
             impact = scenario.stockImpact;
             break;
-          case 'bond':
+          case "bond":
             impact = scenario.bondImpact;
             break;
-          case 'crypto':
+          case "crypto":
             impact = scenario.cryptoImpact;
             break;
           default:
@@ -487,9 +559,10 @@ export class PortfolioAnalysisService {
         scenario: scenario.name,
         portfolioImpact,
         affectedHoldings: affectedHoldings.sort((a, b) => a.impact - b.impact),
-        recommendation: portfolioImpact < -15
-          ? 'Consider hedging strategies or increasing bond allocation'
-          : 'Portfolio risk within acceptable limits',
+        recommendation:
+          portfolioImpact < -15
+            ? "Consider hedging strategies or increasing bond allocation"
+            : "Portfolio risk within acceptable limits",
       };
     });
   }
@@ -500,7 +573,7 @@ export class PortfolioAnalysisService {
 
   generateRebalanceRecommendation(
     holdings: PortfolioHolding[],
-    targetAllocation: Record<string, number>
+    targetAllocation: Record<string, number>,
   ): RebalanceRecommendation {
     const totalValue = this.calculateTotalValue(holdings);
     const trades: RebalanceTrade[] = [];
@@ -508,8 +581,9 @@ export class PortfolioAnalysisService {
 
     // Calculate current weights
     const currentWeights: Record<string, number> = {};
-    holdings.forEach(h => {
-      currentWeights[h.symbol] = ((h.shares * h.currentPrice) / totalValue) * 100;
+    holdings.forEach((h) => {
+      currentWeights[h.symbol] =
+        ((h.shares * h.currentPrice) / totalValue) * 100;
     });
 
     // Generate trades to reach target allocation
@@ -517,15 +591,16 @@ export class PortfolioAnalysisService {
       const currentWeight = currentWeights[symbol] || 0;
       const weightDiff = targetWeight - currentWeight;
 
-      if (Math.abs(weightDiff) > 1) {  // Only rebalance if >1% difference
-        const holding = holdings.find(h => h.symbol === symbol);
+      if (Math.abs(weightDiff) > 1) {
+        // Only rebalance if >1% difference
+        const holding = holdings.find((h) => h.symbol === symbol);
         const price = holding?.currentPrice || 100;
         const tradeValue = (weightDiff / 100) * totalValue;
         const shares = Math.abs(Math.floor(tradeValue / price));
 
         trades.push({
           symbol,
-          action: weightDiff > 0 ? 'buy' : 'sell',
+          action: weightDiff > 0 ? "buy" : "sell",
           shares,
           value: Math.abs(tradeValue),
           currentWeight,
@@ -539,7 +614,7 @@ export class PortfolioAnalysisService {
             taxImplications.push({
               symbol,
               gainLoss,
-              holdingPeriod: 'long_term',  // Simplified assumption
+              holdingPeriod: "long_term", // Simplified assumption
               estimatedTax: gainLoss * 0.15,
             });
           }
@@ -547,9 +622,9 @@ export class PortfolioAnalysisService {
       }
     });
 
-    const estimatedCost = trades.reduce((sum, t) => sum + t.value * 0.001, 0);  // 0.1% trading cost
+    const estimatedCost = trades.reduce((sum, t) => sum + t.value * 0.001, 0); // 0.1% trading cost
     const currentRisk = this.estimatePortfolioVolatility(holdings) * 100;
-    const projectedRisk = currentRisk * 0.95;  // Assume rebalancing reduces risk slightly
+    const projectedRisk = currentRisk * 0.95; // Assume rebalancing reduces risk slightly
 
     return {
       trades,

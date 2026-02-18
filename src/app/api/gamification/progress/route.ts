@@ -4,10 +4,10 @@
  * POST /api/gamification/progress - Update streak (daily check-in)
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { getGamificationEngine } from '@/lib/gamification';
-import type { GamificationProgressResponse } from '@/lib/gamification';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { getGamificationEngine } from "@/lib/gamification";
+import type { GamificationProgressResponse } from "@/lib/gamification";
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const engine = getGamificationEngine();
@@ -31,8 +31,8 @@ export async function GET(request: NextRequest) {
 
       if (!newProgress) {
         return NextResponse.json(
-          { error: 'Failed to initialize progress' },
-          { status: 500 }
+          { error: "Failed to initialize progress" },
+          { status: 500 },
         );
       }
 
@@ -77,10 +77,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error('Error fetching gamification progress:', error);
+    console.error("Error fetching gamification progress:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch progress' },
-      { status: 500 }
+      { error: "Failed to fetch progress" },
+      { status: 500 },
     );
   }
 }
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const engine = getGamificationEngine();
@@ -106,8 +106,8 @@ export async function POST(request: NextRequest) {
     const xpResult = await engine.awardXp(
       user.id,
       10,
-      'Daily login',
-      'daily_login'
+      "Daily login",
+      "daily_login",
     );
 
     return NextResponse.json({
@@ -118,10 +118,10 @@ export async function POST(request: NextRequest) {
       newTitle: xpResult.newTitle,
     });
   } catch (error) {
-    console.error('Error updating streak:', error);
+    console.error("Error updating streak:", error);
     return NextResponse.json(
-      { error: 'Failed to update streak' },
-      { status: 500 }
+      { error: "Failed to update streak" },
+      { status: 500 },
     );
   }
 }

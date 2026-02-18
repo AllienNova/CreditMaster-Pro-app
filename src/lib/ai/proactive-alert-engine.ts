@@ -15,34 +15,34 @@
  * Security: All alerts respect user privacy preferences and data handling policies.
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 export type AlertType =
-  | 'unusual_spending'
-  | 'low_balance'
-  | 'large_transaction'
-  | 'bill_due'
-  | 'subscription_change'
-  | 'savings_opportunity'
-  | 'credit_change'
-  | 'investment_opportunity'
-  | 'budget_exceeded'
-  | 'goal_milestone'
-  | 'fraud_suspected'
-  | 'rate_opportunity';
+  | "unusual_spending"
+  | "low_balance"
+  | "large_transaction"
+  | "bill_due"
+  | "subscription_change"
+  | "savings_opportunity"
+  | "credit_change"
+  | "investment_opportunity"
+  | "budget_exceeded"
+  | "goal_milestone"
+  | "fraud_suspected"
+  | "rate_opportunity";
 
-export type AlertPriority = 'low' | 'medium' | 'high' | 'critical';
+export type AlertPriority = "low" | "medium" | "high" | "critical";
 
 export type AlertStatus =
-  | 'pending'
-  | 'sent'
-  | 'read'
-  | 'dismissed'
-  | 'acted_upon';
+  | "pending"
+  | "sent"
+  | "read"
+  | "dismissed"
+  | "acted_upon";
 
 export interface ProactiveAlert {
   id: string;
@@ -70,20 +70,20 @@ export interface AlertRule {
   conditions: AlertCondition[];
   priority: AlertPriority;
   cooldownMinutes: number;
-  channels: ('push' | 'email' | 'sms' | 'in_app')[];
+  channels: ("push" | "email" | "sms" | "in_app")[];
 }
 
 export interface AlertCondition {
   field: string;
   operator:
-    | 'gt'
-    | 'lt'
-    | 'eq'
-    | 'ne'
-    | 'gte'
-    | 'lte'
-    | 'contains'
-    | 'percent_change';
+    | "gt"
+    | "lt"
+    | "eq"
+    | "ne"
+    | "gte"
+    | "lte"
+    | "contains"
+    | "percent_change";
   value: number | string;
   timeframeDays?: number;
 }
@@ -106,7 +106,7 @@ export interface SpendingPattern {
   avgWeekly: number;
   avgMonthly: number;
   stdDev: number;
-  trend: 'increasing' | 'decreasing' | 'stable';
+  trend: "increasing" | "decreasing" | "stable";
 }
 
 export interface AlertAnalysis {
@@ -121,104 +121,104 @@ export interface AlertAnalysis {
 // DEFAULT ALERT RULES
 // ============================================================================
 
-const DEFAULT_ALERT_RULES: Omit<AlertRule, 'id'>[] = [
+const DEFAULT_ALERT_RULES: Omit<AlertRule, "id">[] = [
   {
-    type: 'unusual_spending',
-    name: 'Unusual Spending Detection',
+    type: "unusual_spending",
+    name: "Unusual Spending Detection",
     description:
-      'Alert when spending in a category exceeds 2x the monthly average',
+      "Alert when spending in a category exceeds 2x the monthly average",
     enabled: true,
     conditions: [
       {
-        field: 'category_spending',
-        operator: 'percent_change',
+        field: "category_spending",
+        operator: "percent_change",
         value: 100,
         timeframeDays: 30,
       },
     ],
-    priority: 'medium',
+    priority: "medium",
     cooldownMinutes: 1440, // 24 hours
-    channels: ['push', 'in_app'],
+    channels: ["push", "in_app"],
   },
   {
-    type: 'low_balance',
-    name: 'Low Balance Warning',
-    description: 'Alert when checking account balance falls below threshold',
+    type: "low_balance",
+    name: "Low Balance Warning",
+    description: "Alert when checking account balance falls below threshold",
     enabled: true,
-    conditions: [{ field: 'balance', operator: 'lt', value: 500 }],
-    priority: 'high',
+    conditions: [{ field: "balance", operator: "lt", value: 500 }],
+    priority: "high",
     cooldownMinutes: 720, // 12 hours
-    channels: ['push', 'email', 'in_app'],
+    channels: ["push", "email", "in_app"],
   },
   {
-    type: 'large_transaction',
-    name: 'Large Transaction Alert',
-    description: 'Alert for transactions over $500',
+    type: "large_transaction",
+    name: "Large Transaction Alert",
+    description: "Alert for transactions over $500",
     enabled: true,
-    conditions: [{ field: 'amount', operator: 'gt', value: 500 }],
-    priority: 'medium',
+    conditions: [{ field: "amount", operator: "gt", value: 500 }],
+    priority: "medium",
     cooldownMinutes: 0, // No cooldown
-    channels: ['push', 'in_app'],
+    channels: ["push", "in_app"],
   },
   {
-    type: 'bill_due',
-    name: 'Bill Due Reminder',
-    description: 'Remind about upcoming bills 3 days before due date',
+    type: "bill_due",
+    name: "Bill Due Reminder",
+    description: "Remind about upcoming bills 3 days before due date",
     enabled: true,
-    conditions: [{ field: 'days_until_due', operator: 'lte', value: 3 }],
-    priority: 'medium',
+    conditions: [{ field: "days_until_due", operator: "lte", value: 3 }],
+    priority: "medium",
     cooldownMinutes: 1440,
-    channels: ['push', 'email', 'in_app'],
+    channels: ["push", "email", "in_app"],
   },
   {
-    type: 'subscription_change',
-    name: 'Subscription Price Change',
-    description: 'Alert when a subscription price increases',
+    type: "subscription_change",
+    name: "Subscription Price Change",
+    description: "Alert when a subscription price increases",
     enabled: true,
-    conditions: [{ field: 'price_change_percent', operator: 'gt', value: 0 }],
-    priority: 'medium',
+    conditions: [{ field: "price_change_percent", operator: "gt", value: 0 }],
+    priority: "medium",
     cooldownMinutes: 10080, // 7 days
-    channels: ['email', 'in_app'],
+    channels: ["email", "in_app"],
   },
   {
-    type: 'budget_exceeded',
-    name: 'Budget Exceeded',
-    description: 'Alert when spending exceeds budget category limit',
+    type: "budget_exceeded",
+    name: "Budget Exceeded",
+    description: "Alert when spending exceeds budget category limit",
     enabled: true,
-    conditions: [{ field: 'budget_percent', operator: 'gt', value: 100 }],
-    priority: 'high',
+    conditions: [{ field: "budget_percent", operator: "gt", value: 100 }],
+    priority: "high",
     cooldownMinutes: 1440,
-    channels: ['push', 'in_app'],
+    channels: ["push", "in_app"],
   },
   {
-    type: 'savings_opportunity',
-    name: 'Savings Opportunity',
-    description: 'Suggest savings opportunities based on spending patterns',
+    type: "savings_opportunity",
+    name: "Savings Opportunity",
+    description: "Suggest savings opportunities based on spending patterns",
     enabled: true,
-    conditions: [{ field: 'potential_savings', operator: 'gt', value: 50 }],
-    priority: 'low',
+    conditions: [{ field: "potential_savings", operator: "gt", value: 50 }],
+    priority: "low",
     cooldownMinutes: 10080,
-    channels: ['email', 'in_app'],
+    channels: ["email", "in_app"],
   },
   {
-    type: 'credit_change',
-    name: 'Credit Score Change',
-    description: 'Alert on significant credit score changes',
+    type: "credit_change",
+    name: "Credit Score Change",
+    description: "Alert on significant credit score changes",
     enabled: true,
-    conditions: [{ field: 'score_change', operator: 'gte', value: 10 }],
-    priority: 'medium',
+    conditions: [{ field: "score_change", operator: "gte", value: 10 }],
+    priority: "medium",
     cooldownMinutes: 1440,
-    channels: ['push', 'email', 'in_app'],
+    channels: ["push", "email", "in_app"],
   },
   {
-    type: 'fraud_suspected',
-    name: 'Suspected Fraud',
-    description: 'Alert on potentially fraudulent transactions',
+    type: "fraud_suspected",
+    name: "Suspected Fraud",
+    description: "Alert on potentially fraudulent transactions",
     enabled: true,
-    conditions: [{ field: 'fraud_score', operator: 'gt', value: 0.7 }],
-    priority: 'critical',
+    conditions: [{ field: "fraud_score", operator: "gt", value: 0.7 }],
+    priority: "critical",
     cooldownMinutes: 0,
-    channels: ['push', 'sms', 'email', 'in_app'],
+    channels: ["push", "sms", "email", "in_app"],
   },
 ];
 
@@ -277,33 +277,33 @@ export class ProactiveAlertEngine {
 
   private async analyzeForAlertType(
     userId: string,
-    alertType: AlertType
+    alertType: AlertType,
   ): Promise<AlertAnalysis> {
     switch (alertType) {
-      case 'unusual_spending':
+      case "unusual_spending":
         return this.analyzeUnusualSpending(userId);
-      case 'low_balance':
+      case "low_balance":
         return this.analyzeLowBalance(userId);
-      case 'large_transaction':
+      case "large_transaction":
         return this.analyzeLargeTransactions(userId);
-      case 'bill_due':
+      case "bill_due":
         return this.analyzeUpcomingBills(userId);
-      case 'subscription_change':
+      case "subscription_change":
         return this.analyzeSubscriptionChanges(userId);
-      case 'budget_exceeded':
+      case "budget_exceeded":
         return this.analyzeBudgetStatus(userId);
-      case 'savings_opportunity':
+      case "savings_opportunity":
         return this.analyzeSavingsOpportunities(userId);
-      case 'credit_change':
+      case "credit_change":
         return this.analyzeCreditChanges(userId);
-      case 'fraud_suspected':
+      case "fraud_suspected":
         return this.analyzeFraudRisk(userId);
       default:
         return {
           shouldAlert: false,
           confidence: 0,
-          reason: '',
-          suggestedPriority: 'low',
+          reason: "",
+          suggestedPriority: "low",
           relatedData: {},
         };
     }
@@ -316,18 +316,18 @@ export class ProactiveAlertEngine {
   private async analyzeUnusualSpending(userId: string): Promise<AlertAnalysis> {
     // Get recent transactions
     const { data: transactions } = await this.supabase
-      .from('transactions')
-      .select('*')
-      .eq('user_id', userId)
-      .gte('date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
-      .order('date', { ascending: false });
+      .from("transactions")
+      .select("*")
+      .eq("user_id", userId)
+      .gte("date", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+      .order("date", { ascending: false });
 
     if (!transactions || transactions.length === 0) {
       return {
         shouldAlert: false,
         confidence: 0,
-        reason: '',
-        suggestedPriority: 'low',
+        reason: "",
+        suggestedPriority: "low",
         relatedData: {},
       };
     }
@@ -349,13 +349,13 @@ export class ProactiveAlertEngine {
           shouldAlert: true,
           confidence: 0.85,
           reason: `Spending in ${category} is ${Math.round((spending / pattern.avgWeekly - 1) * 100)}% higher than usual`,
-          suggestedPriority: 'medium',
+          suggestedPriority: "medium",
           relatedData: {
             category,
             currentSpending: spending,
             averageSpending: pattern.avgWeekly,
             percentIncrease: Math.round(
-              (spending / pattern.avgWeekly - 1) * 100
+              (spending / pattern.avgWeekly - 1) * 100,
             ),
           },
         };
@@ -365,25 +365,25 @@ export class ProactiveAlertEngine {
     return {
       shouldAlert: false,
       confidence: 0,
-      reason: '',
-      suggestedPriority: 'low',
+      reason: "",
+      suggestedPriority: "low",
       relatedData: {},
     };
   }
 
   private async analyzeLowBalance(userId: string): Promise<AlertAnalysis> {
     const { data: accounts } = await this.supabase
-      .from('accounts')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('type', 'checking');
+      .from("accounts")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("type", "checking");
 
     if (!accounts) {
       return {
         shouldAlert: false,
         confidence: 0,
-        reason: '',
-        suggestedPriority: 'low',
+        reason: "",
+        suggestedPriority: "low",
         relatedData: {},
       };
     }
@@ -394,7 +394,7 @@ export class ProactiveAlertEngine {
           shouldAlert: true,
           confidence: 1.0,
           reason: `Your ${account.name} balance is low`,
-          suggestedPriority: account.balance < 100 ? 'critical' : 'high',
+          suggestedPriority: account.balance < 100 ? "critical" : "high",
           relatedData: {
             accountId: account.id,
             accountName: account.name,
@@ -408,31 +408,31 @@ export class ProactiveAlertEngine {
     return {
       shouldAlert: false,
       confidence: 0,
-      reason: '',
-      suggestedPriority: 'low',
+      reason: "",
+      suggestedPriority: "low",
       relatedData: {},
     };
   }
 
   private async analyzeLargeTransactions(
-    userId: string
+    userId: string,
   ): Promise<AlertAnalysis> {
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
     const { data: transactions } = await this.supabase
-      .from('transactions')
-      .select('*')
-      .eq('user_id', userId)
-      .gte('created_at', oneDayAgo)
-      .order('amount', { ascending: false })
+      .from("transactions")
+      .select("*")
+      .eq("user_id", userId)
+      .gte("created_at", oneDayAgo)
+      .order("amount", { ascending: false })
       .limit(1);
 
     if (!transactions || transactions.length === 0) {
       return {
         shouldAlert: false,
         confidence: 0,
-        reason: '',
-        suggestedPriority: 'low',
+        reason: "",
+        suggestedPriority: "low",
         relatedData: {},
       };
     }
@@ -442,9 +442,9 @@ export class ProactiveAlertEngine {
       return {
         shouldAlert: true,
         confidence: 1.0,
-        reason: `Large transaction detected: ${largestTx.merchant_name || 'Unknown'}`,
+        reason: `Large transaction detected: ${largestTx.merchant_name || "Unknown"}`,
         suggestedPriority:
-          Math.abs(largestTx.amount) > 1000 ? 'high' : 'medium',
+          Math.abs(largestTx.amount) > 1000 ? "high" : "medium",
         relatedData: {
           transactionId: largestTx.id,
           amount: largestTx.amount,
@@ -458,33 +458,33 @@ export class ProactiveAlertEngine {
     return {
       shouldAlert: false,
       confidence: 0,
-      reason: '',
-      suggestedPriority: 'low',
+      reason: "",
+      suggestedPriority: "low",
       relatedData: {},
     };
   }
 
   private async analyzeUpcomingBills(userId: string): Promise<AlertAnalysis> {
     const threeDaysFromNow = new Date(
-      Date.now() + 3 * 24 * 60 * 60 * 1000
+      Date.now() + 3 * 24 * 60 * 60 * 1000,
     ).toISOString();
     const today = new Date().toISOString();
 
     const { data: bills } = await this.supabase
-      .from('bills')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('status', 'pending')
-      .gte('due_date', today)
-      .lte('due_date', threeDaysFromNow)
-      .order('due_date', { ascending: true });
+      .from("bills")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", "pending")
+      .gte("due_date", today)
+      .lte("due_date", threeDaysFromNow)
+      .order("due_date", { ascending: true });
 
     if (!bills || bills.length === 0) {
       return {
         shouldAlert: false,
         confidence: 0,
-        reason: '',
-        suggestedPriority: 'low',
+        reason: "",
+        suggestedPriority: "low",
         relatedData: {},
       };
     }
@@ -493,14 +493,14 @@ export class ProactiveAlertEngine {
     const nextBill = bills[0];
     const daysUntilDue = Math.ceil(
       (new Date(nextBill.due_date).getTime() - Date.now()) /
-        (24 * 60 * 60 * 1000)
+        (24 * 60 * 60 * 1000),
     );
 
     return {
       shouldAlert: true,
       confidence: 1.0,
-      reason: `${bills.length} bill${bills.length > 1 ? 's' : ''} due within 3 days`,
-      suggestedPriority: daysUntilDue <= 1 ? 'high' : 'medium',
+      reason: `${bills.length} bill${bills.length > 1 ? "s" : ""} due within 3 days`,
+      suggestedPriority: daysUntilDue <= 1 ? "high" : "medium",
       relatedData: {
         billCount: bills.length,
         totalAmount: totalDue,
@@ -521,20 +521,20 @@ export class ProactiveAlertEngine {
   }
 
   private async analyzeSubscriptionChanges(
-    userId: string
+    userId: string,
   ): Promise<AlertAnalysis> {
     const { data: subscriptions } = await this.supabase
-      .from('subscriptions')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('status', 'active');
+      .from("subscriptions")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", "active");
 
     if (!subscriptions) {
       return {
         shouldAlert: false,
         confidence: 0,
-        reason: '',
-        suggestedPriority: 'low',
+        reason: "",
+        suggestedPriority: "low",
         relatedData: {},
       };
     }
@@ -549,7 +549,7 @@ export class ProactiveAlertEngine {
           shouldAlert: true,
           confidence: 0.95,
           reason: `${sub.name} subscription price increased`,
-          suggestedPriority: percentIncrease > 20 ? 'high' : 'medium',
+          suggestedPriority: percentIncrease > 20 ? "high" : "medium",
           relatedData: {
             subscriptionId: sub.id,
             subscriptionName: sub.name,
@@ -565,25 +565,25 @@ export class ProactiveAlertEngine {
     return {
       shouldAlert: false,
       confidence: 0,
-      reason: '',
-      suggestedPriority: 'low',
+      reason: "",
+      suggestedPriority: "low",
       relatedData: {},
     };
   }
 
   private async analyzeBudgetStatus(userId: string): Promise<AlertAnalysis> {
     const { data: budgets } = await this.supabase
-      .from('budgets')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('status', 'active');
+      .from("budgets")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", "active");
 
     if (!budgets) {
       return {
         shouldAlert: false,
         confidence: 0,
-        reason: '',
-        suggestedPriority: 'low',
+        reason: "",
+        suggestedPriority: "low",
         relatedData: {},
       };
     }
@@ -596,7 +596,7 @@ export class ProactiveAlertEngine {
           shouldAlert: true,
           confidence: 1.0,
           reason: `Budget exceeded for ${budget.category}`,
-          suggestedPriority: percentUsed > 120 ? 'high' : 'medium',
+          suggestedPriority: percentUsed > 120 ? "high" : "medium",
           relatedData: {
             budgetId: budget.id,
             category: budget.category,
@@ -611,7 +611,7 @@ export class ProactiveAlertEngine {
           shouldAlert: true,
           confidence: 0.9,
           reason: `Approaching budget limit for ${budget.category}`,
-          suggestedPriority: 'low',
+          suggestedPriority: "low",
           relatedData: {
             budgetId: budget.id,
             category: budget.category,
@@ -627,31 +627,31 @@ export class ProactiveAlertEngine {
     return {
       shouldAlert: false,
       confidence: 0,
-      reason: '',
-      suggestedPriority: 'low',
+      reason: "",
+      suggestedPriority: "low",
       relatedData: {},
     };
   }
 
   private async analyzeSavingsOpportunities(
-    userId: string
+    userId: string,
   ): Promise<AlertAnalysis> {
     // Analyze recurring charges for potential savings
     const { data: transactions } = await this.supabase
-      .from('transactions')
-      .select('*')
-      .eq('user_id', userId)
+      .from("transactions")
+      .select("*")
+      .eq("user_id", userId)
       .gte(
-        'date',
-        new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()
+        "date",
+        new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
       );
 
     if (!transactions || transactions.length < 10) {
       return {
         shouldAlert: false,
         confidence: 0,
-        reason: '',
-        suggestedPriority: 'low',
+        reason: "",
+        suggestedPriority: "low",
         relatedData: {},
       };
     }
@@ -692,14 +692,14 @@ export class ProactiveAlertEngine {
     if (potentialSavings.length > 0) {
       const totalPotential = potentialSavings.reduce(
         (sum, s) => sum + s.monthlyAmount * 0.2,
-        0
+        0,
       );
 
       return {
         shouldAlert: true,
         confidence: 0.7,
         reason: `Found ${potentialSavings.length} potential savings opportunities`,
-        suggestedPriority: 'low',
+        suggestedPriority: "low",
         relatedData: {
           opportunities: potentialSavings.slice(0, 5),
           estimatedMonthlySavings: Math.round(totalPotential),
@@ -710,26 +710,26 @@ export class ProactiveAlertEngine {
     return {
       shouldAlert: false,
       confidence: 0,
-      reason: '',
-      suggestedPriority: 'low',
+      reason: "",
+      suggestedPriority: "low",
       relatedData: {},
     };
   }
 
   private async analyzeCreditChanges(userId: string): Promise<AlertAnalysis> {
     const { data: creditHistory } = await this.supabase
-      .from('credit_scores')
-      .select('*')
-      .eq('user_id', userId)
-      .order('recorded_at', { ascending: false })
+      .from("credit_scores")
+      .select("*")
+      .eq("user_id", userId)
+      .order("recorded_at", { ascending: false })
       .limit(2);
 
     if (!creditHistory || creditHistory.length < 2) {
       return {
         shouldAlert: false,
         confidence: 0,
-        reason: '',
-        suggestedPriority: 'low',
+        reason: "",
+        suggestedPriority: "low",
         relatedData: {},
       };
     }
@@ -741,13 +741,13 @@ export class ProactiveAlertEngine {
       return {
         shouldAlert: true,
         confidence: 1.0,
-        reason: `Your credit score ${change > 0 ? 'increased' : 'decreased'} by ${Math.abs(change)} points`,
-        suggestedPriority: Math.abs(change) >= 30 ? 'high' : 'medium',
+        reason: `Your credit score ${change > 0 ? "increased" : "decreased"} by ${Math.abs(change)} points`,
+        suggestedPriority: Math.abs(change) >= 30 ? "high" : "medium",
         relatedData: {
           currentScore: current.score,
           previousScore: previous.score,
           change,
-          direction: change > 0 ? 'up' : 'down',
+          direction: change > 0 ? "up" : "down",
           recordedAt: current.recorded_at,
         },
       };
@@ -756,8 +756,8 @@ export class ProactiveAlertEngine {
     return {
       shouldAlert: false,
       confidence: 0,
-      reason: '',
-      suggestedPriority: 'low',
+      reason: "",
+      suggestedPriority: "low",
       relatedData: {},
     };
   }
@@ -765,18 +765,18 @@ export class ProactiveAlertEngine {
   private async analyzeFraudRisk(userId: string): Promise<AlertAnalysis> {
     // Get recent transactions
     const { data: transactions } = await this.supabase
-      .from('transactions')
-      .select('*')
-      .eq('user_id', userId)
-      .gte('date', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-      .order('date', { ascending: false });
+      .from("transactions")
+      .select("*")
+      .eq("user_id", userId)
+      .gte("date", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+      .order("date", { ascending: false });
 
     if (!transactions || transactions.length === 0) {
       return {
         shouldAlert: false,
         confidence: 0,
-        reason: '',
-        suggestedPriority: 'low',
+        reason: "",
+        suggestedPriority: "low",
         relatedData: {},
       };
     }
@@ -786,32 +786,32 @@ export class ProactiveAlertEngine {
       const fraudIndicators: string[] = [];
 
       // Unusual amount for merchant
-      if (Math.abs(tx.amount) > 1000) fraudIndicators.push('large_amount');
+      if (Math.abs(tx.amount) > 1000) fraudIndicators.push("large_amount");
 
       // Foreign transaction
-      if (tx.location && tx.location !== 'US')
-        fraudIndicators.push('foreign_location');
+      if (tx.location && tx.location !== "US")
+        fraudIndicators.push("foreign_location");
 
       // Multiple transactions in short time
       const recentCount = transactions.filter(
         (t) =>
           t.merchant_name === tx.merchant_name &&
           Math.abs(new Date(t.date).getTime() - new Date(tx.date).getTime()) <
-            3600000
+            3600000,
       ).length;
-      if (recentCount > 3) fraudIndicators.push('rapid_transactions');
+      if (recentCount > 3) fraudIndicators.push("rapid_transactions");
 
       // Unusual category for user
-      if (tx.category === 'gambling' || tx.category === 'wire_transfer') {
-        fraudIndicators.push('high_risk_category');
+      if (tx.category === "gambling" || tx.category === "wire_transfer") {
+        fraudIndicators.push("high_risk_category");
       }
 
       if (fraudIndicators.length >= 2) {
         return {
           shouldAlert: true,
           confidence: 0.8,
-          reason: 'Potentially suspicious transaction detected',
-          suggestedPriority: 'critical',
+          reason: "Potentially suspicious transaction detected",
+          suggestedPriority: "critical",
           relatedData: {
             transactionId: tx.id,
             amount: tx.amount,
@@ -826,8 +826,8 @@ export class ProactiveAlertEngine {
     return {
       shouldAlert: false,
       confidence: 0,
-      reason: '',
-      suggestedPriority: 'low',
+      reason: "",
+      suggestedPriority: "low",
       relatedData: {},
     };
   }
@@ -837,16 +837,16 @@ export class ProactiveAlertEngine {
   // ==========================================================================
 
   private async getSpendingPatterns(
-    userId: string
+    userId: string,
   ): Promise<SpendingPattern[]> {
     // Get last 90 days of transactions
     const { data: transactions } = await this.supabase
-      .from('transactions')
-      .select('category, amount, date')
-      .eq('user_id', userId)
+      .from("transactions")
+      .select("category, amount, date")
+      .eq("user_id", userId)
       .gte(
-        'date',
-        new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()
+        "date",
+        new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
       );
 
     if (!transactions) return [];
@@ -875,7 +875,7 @@ export class ProactiveAlertEngine {
         avgWeekly: total / 13,
         avgMonthly: total / 3,
         stdDev,
-        trend: 'stable', // Simplified - would calculate actual trend
+        trend: "stable", // Simplified - would calculate actual trend
       });
     }
 
@@ -883,12 +883,12 @@ export class ProactiveAlertEngine {
   }
 
   private async getUserPreferences(
-    userId: string
+    userId: string,
   ): Promise<UserAlertPreferences> {
     const { data } = await this.supabase
-      .from('alert_preferences')
-      .select('*')
-      .eq('user_id', userId)
+      .from("alert_preferences")
+      .select("*")
+      .eq("user_id", userId)
       .single();
 
     if (data) return data;
@@ -897,13 +897,13 @@ export class ProactiveAlertEngine {
     return {
       userId,
       enabledTypes: [
-        'unusual_spending',
-        'low_balance',
-        'large_transaction',
-        'bill_due',
-        'budget_exceeded',
-        'credit_change',
-        'fraud_suspected',
+        "unusual_spending",
+        "low_balance",
+        "large_transaction",
+        "bill_due",
+        "budget_exceeded",
+        "credit_change",
+        "fraud_suspected",
       ],
       emailEnabled: true,
       pushEnabled: true,
@@ -915,14 +915,14 @@ export class ProactiveAlertEngine {
 
   private async getLastAlert(
     userId: string,
-    alertType: AlertType
+    alertType: AlertType,
   ): Promise<ProactiveAlert | null> {
     const { data } = await this.supabase
-      .from('proactive_alerts')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('type', alertType)
-      .order('created_at', { ascending: false })
+      .from("proactive_alerts")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("type", alertType)
+      .order("created_at", { ascending: false })
       .limit(1)
       .single();
 
@@ -931,7 +931,7 @@ export class ProactiveAlertEngine {
 
   private isInCooldown(
     lastAlert: ProactiveAlert,
-    cooldownMinutes: number
+    cooldownMinutes: number,
   ): boolean {
     if (cooldownMinutes === 0) return false;
     const cooldownEnd =
@@ -943,9 +943,9 @@ export class ProactiveAlertEngine {
     userId: string,
     alertType: AlertType,
     analysis: AlertAnalysis,
-    rule: AlertRule
+    rule: AlertRule,
   ): Promise<ProactiveAlert> {
-    const alert: Omit<ProactiveAlert, 'id'> = {
+    const alert: Omit<ProactiveAlert, "id"> = {
       userId,
       type: alertType,
       priority: analysis.suggestedPriority,
@@ -954,12 +954,12 @@ export class ProactiveAlertEngine {
       actionUrl: this.getActionUrl(alertType),
       actionLabel: this.getActionLabel(alertType),
       data: analysis.relatedData,
-      status: 'pending',
+      status: "pending",
       createdAt: new Date(),
     };
 
     const { data, error } = await this.supabase
-      .from('proactive_alerts')
+      .from("proactive_alerts")
       .insert(alert)
       .select()
       .single();
@@ -970,62 +970,62 @@ export class ProactiveAlertEngine {
 
   private generateAlertTitle(
     alertType: AlertType,
-    analysis: AlertAnalysis
+    analysis: AlertAnalysis,
   ): string {
     const titles: Record<AlertType, string> = {
-      unusual_spending: 'Unusual Spending Detected',
-      low_balance: 'Low Balance Warning',
-      large_transaction: 'Large Transaction',
-      bill_due: 'Bill Due Soon',
-      subscription_change: 'Subscription Price Change',
-      savings_opportunity: 'Savings Opportunity',
-      credit_change: 'Credit Score Update',
-      investment_opportunity: 'Investment Opportunity',
-      budget_exceeded: 'Budget Exceeded',
-      goal_milestone: 'Goal Milestone',
-      fraud_suspected: 'Suspicious Activity',
-      rate_opportunity: 'Better Rate Available',
+      unusual_spending: "Unusual Spending Detected",
+      low_balance: "Low Balance Warning",
+      large_transaction: "Large Transaction",
+      bill_due: "Bill Due Soon",
+      subscription_change: "Subscription Price Change",
+      savings_opportunity: "Savings Opportunity",
+      credit_change: "Credit Score Update",
+      investment_opportunity: "Investment Opportunity",
+      budget_exceeded: "Budget Exceeded",
+      goal_milestone: "Goal Milestone",
+      fraud_suspected: "Suspicious Activity",
+      rate_opportunity: "Better Rate Available",
     };
 
-    return titles[alertType] || 'Financial Alert';
+    return titles[alertType] || "Financial Alert";
   }
 
   private getActionUrl(alertType: AlertType): string {
     const urls: Record<AlertType, string> = {
-      unusual_spending: '/insights/spending',
-      low_balance: '/financial/accounts',
-      large_transaction: '/financial/transactions',
-      bill_due: '/budgeting/bills',
-      subscription_change: '/budgeting/subscriptions',
-      savings_opportunity: '/insights/savings',
-      credit_change: '/credit',
-      investment_opportunity: '/investments',
-      budget_exceeded: '/budgeting',
-      goal_milestone: '/financial/goals',
-      fraud_suspected: '/settings/security',
-      rate_opportunity: '/financial/accounts',
+      unusual_spending: "/insights/spending",
+      low_balance: "/financial/accounts",
+      large_transaction: "/financial/transactions",
+      bill_due: "/budgeting/bills",
+      subscription_change: "/budgeting/subscriptions",
+      savings_opportunity: "/insights/savings",
+      credit_change: "/credit",
+      investment_opportunity: "/investments",
+      budget_exceeded: "/budgeting",
+      goal_milestone: "/financial/goals",
+      fraud_suspected: "/settings/security",
+      rate_opportunity: "/financial/accounts",
     };
 
-    return urls[alertType] || '/dashboard';
+    return urls[alertType] || "/dashboard";
   }
 
   private getActionLabel(alertType: AlertType): string {
     const labels: Record<AlertType, string> = {
-      unusual_spending: 'View Spending',
-      low_balance: 'View Account',
-      large_transaction: 'View Transaction',
-      bill_due: 'Pay Bill',
-      subscription_change: 'Review Subscription',
-      savings_opportunity: 'See Opportunities',
-      credit_change: 'View Score',
-      investment_opportunity: 'View Opportunity',
-      budget_exceeded: 'Adjust Budget',
-      goal_milestone: 'View Progress',
-      fraud_suspected: 'Review Activity',
-      rate_opportunity: 'Compare Rates',
+      unusual_spending: "View Spending",
+      low_balance: "View Account",
+      large_transaction: "View Transaction",
+      bill_due: "Pay Bill",
+      subscription_change: "Review Subscription",
+      savings_opportunity: "See Opportunities",
+      credit_change: "View Score",
+      investment_opportunity: "View Opportunity",
+      budget_exceeded: "Adjust Budget",
+      goal_milestone: "View Progress",
+      fraud_suspected: "Review Activity",
+      rate_opportunity: "Compare Rates",
     };
 
-    return labels[alertType] || 'View Details';
+    return labels[alertType] || "View Details";
   }
 
   // ==========================================================================
@@ -1034,16 +1034,16 @@ export class ProactiveAlertEngine {
 
   async getAlerts(
     userId: string,
-    options: { status?: AlertStatus; limit?: number; offset?: number } = {}
+    options: { status?: AlertStatus; limit?: number; offset?: number } = {},
   ): Promise<ProactiveAlert[]> {
     let query = this.supabase
-      .from('proactive_alerts')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .from("proactive_alerts")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
     if (options.status) {
-      query = query.eq('status', options.status);
+      query = query.eq("status", options.status);
     }
     if (options.limit) {
       query = query.limit(options.limit);
@@ -1051,7 +1051,7 @@ export class ProactiveAlertEngine {
     if (options.offset) {
       query = query.range(
         options.offset,
-        options.offset + (options.limit || 20) - 1
+        options.offset + (options.limit || 20) - 1,
       );
     }
 
@@ -1063,33 +1063,33 @@ export class ProactiveAlertEngine {
 
   async markAsRead(alertId: string): Promise<void> {
     await this.supabase
-      .from('proactive_alerts')
-      .update({ status: 'read', readAt: new Date() })
-      .eq('id', alertId);
+      .from("proactive_alerts")
+      .update({ status: "read", readAt: new Date() })
+      .eq("id", alertId);
   }
 
   async dismissAlert(alertId: string): Promise<void> {
     await this.supabase
-      .from('proactive_alerts')
-      .update({ status: 'dismissed' })
-      .eq('id', alertId);
+      .from("proactive_alerts")
+      .update({ status: "dismissed" })
+      .eq("id", alertId);
   }
 
   async markAsActedUpon(alertId: string): Promise<void> {
     await this.supabase
-      .from('proactive_alerts')
-      .update({ status: 'acted_upon' })
-      .eq('id', alertId);
+      .from("proactive_alerts")
+      .update({ status: "acted_upon" })
+      .eq("id", alertId);
   }
 
   async updatePreferences(
     userId: string,
-    preferences: Partial<UserAlertPreferences>
+    preferences: Partial<UserAlertPreferences>,
   ): Promise<void> {
     await this.supabase
-      .from('alert_preferences')
+      .from("alert_preferences")
       .upsert({ user_id: userId, ...preferences })
-      .eq('user_id', userId);
+      .eq("user_id", userId);
   }
 }
 
@@ -1106,7 +1106,7 @@ export function getProactiveAlertEngine(): ProactiveAlertEngine {
 
     proactiveAlertEngineInstance = new ProactiveAlertEngine(
       supabaseUrl,
-      supabaseKey
+      supabaseKey,
     );
   }
   return proactiveAlertEngineInstance;

@@ -8,8 +8,8 @@
  * - Performance monitoring
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
+import { NextRequest, NextResponse } from "next/server";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
 
 // ============================================================================
 // RATE LIMITING
@@ -34,7 +34,7 @@ setInterval(
       }
     }
   },
-  5 * 60 * 1000
+  5 * 60 * 1000,
 );
 
 export interface RateLimitConfig {
@@ -63,7 +63,7 @@ export interface RateLimitResult {
 export function checkRateLimit(
   userId: string,
   endpoint: string,
-  config: RateLimitConfig = FINANCIAL_API_RATE_LIMITS.default
+  config: RateLimitConfig = FINANCIAL_API_RATE_LIMITS.default,
 ): RateLimitResult {
   const now = Date.now();
   const key = `financial:${userId}`;
@@ -111,11 +111,11 @@ export function checkRateLimit(
  * Get rate limit config based on endpoint
  */
 export function getRateLimitConfig(pathname: string): RateLimitConfig {
-  if (pathname.includes('/health-score'))
+  if (pathname.includes("/health-score"))
     return FINANCIAL_API_RATE_LIMITS.healthScore;
-  if (pathname.includes('/insights')) return FINANCIAL_API_RATE_LIMITS.insights;
-  if (pathname.includes('/goals')) return FINANCIAL_API_RATE_LIMITS.goals;
-  if (pathname.includes('/context')) return FINANCIAL_API_RATE_LIMITS.context;
+  if (pathname.includes("/insights")) return FINANCIAL_API_RATE_LIMITS.insights;
+  if (pathname.includes("/goals")) return FINANCIAL_API_RATE_LIMITS.goals;
+  if (pathname.includes("/context")) return FINANCIAL_API_RATE_LIMITS.context;
   return FINANCIAL_API_RATE_LIMITS.default;
 }
 
@@ -125,14 +125,14 @@ export function getRateLimitConfig(pathname: string): RateLimitConfig {
 export function addRateLimitHeaders(
   response: NextResponse,
   result: RateLimitResult,
-  config: RateLimitConfig
+  config: RateLimitConfig,
 ): NextResponse {
-  response.headers.set('X-RateLimit-Limit', config.maxRequests.toString());
-  response.headers.set('X-RateLimit-Remaining', result.remaining.toString());
-  response.headers.set('X-RateLimit-Reset', result.resetAt.toISOString());
+  response.headers.set("X-RateLimit-Limit", config.maxRequests.toString());
+  response.headers.set("X-RateLimit-Remaining", result.remaining.toString());
+  response.headers.set("X-RateLimit-Reset", result.resetAt.toISOString());
 
   if (result.retryAfter) {
-    response.headers.set('Retry-After', result.retryAfter.toString());
+    response.headers.set("Retry-After", result.retryAfter.toString());
   }
 
   return response;
@@ -143,48 +143,48 @@ export function addRateLimitHeaders(
 // ============================================================================
 
 const ALLOWED_ORIGINS = [
-  'http://localhost:3000',
-  'http://localhost:3001',
-  'https://fynvita.com',
-  'https://www.fynvita.com',
-  'https://app.fynvita.com',
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "https://fynvita.com",
+  "https://www.fynvita.com",
+  "https://app.fynvita.com",
   process.env.NEXT_PUBLIC_APP_URL,
 ].filter(Boolean) as string[];
 
-const ALLOWED_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'];
+const ALLOWED_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"];
 const ALLOWED_HEADERS = [
-  'Content-Type',
-  'Authorization',
-  'X-Requested-With',
-  'Accept',
-  'Origin',
-  'X-CSRF-Token',
+  "Content-Type",
+  "Authorization",
+  "X-Requested-With",
+  "Accept",
+  "Origin",
+  "X-CSRF-Token",
 ];
 
 export function addCORSHeaders(
   request: NextRequest,
-  response: NextResponse
+  response: NextResponse,
 ): NextResponse {
-  const origin = request.headers.get('origin');
+  const origin = request.headers.get("origin");
 
   // Check if origin is allowed
   if (origin && ALLOWED_ORIGINS.includes(origin)) {
-    response.headers.set('Access-Control-Allow-Origin', origin);
-  } else if (process.env.NODE_ENV === 'development') {
+    response.headers.set("Access-Control-Allow-Origin", origin);
+  } else if (process.env.NODE_ENV === "development") {
     // Allow all origins in development
-    response.headers.set('Access-Control-Allow-Origin', origin || '*');
+    response.headers.set("Access-Control-Allow-Origin", origin || "*");
   }
 
   response.headers.set(
-    'Access-Control-Allow-Methods',
-    ALLOWED_METHODS.join(', ')
+    "Access-Control-Allow-Methods",
+    ALLOWED_METHODS.join(", "),
   );
   response.headers.set(
-    'Access-Control-Allow-Headers',
-    ALLOWED_HEADERS.join(', ')
+    "Access-Control-Allow-Headers",
+    ALLOWED_HEADERS.join(", "),
   );
-  response.headers.set('Access-Control-Allow-Credentials', 'true');
-  response.headers.set('Access-Control-Max-Age', '86400'); // 24 hours
+  response.headers.set("Access-Control-Allow-Credentials", "true");
+  response.headers.set("Access-Control-Max-Age", "86400"); // 24 hours
 
   return response;
 }
@@ -218,7 +218,6 @@ export function logRequest(log: RequestLog): void {
   if (requestLogs.length > MAX_LOGS) {
     requestLogs.shift();
   }
-
 }
 
 /**
@@ -314,7 +313,7 @@ export async function applyFinancialAPIMiddleware(
     rateLimit: true,
     cors: true,
     logging: true,
-  }
+  },
 ): Promise<{
   userId?: string;
   error?: NextResponse;
@@ -325,7 +324,7 @@ export async function applyFinancialAPIMiddleware(
   const method = request.method;
 
   // Get user info from request
-  let userId = 'anonymous';
+  let userId = "anonymous";
 
   // Authentication check
   if (options.requireAuth !== false) {
@@ -334,10 +333,10 @@ export async function applyFinancialAPIMiddleware(
       const errorResponse = NextResponse.json(
         {
           success: false,
-          error: 'Unauthorized',
+          error: "Unauthorized",
           _meta: { timestamp: new Date().toISOString() },
         },
-        { status: 401 }
+        { status: 401 },
       );
 
       if (options.cors !== false) {
@@ -351,12 +350,12 @@ export async function applyFinancialAPIMiddleware(
           endpoint: pathname,
           userId,
           ip:
-            request.headers.get('x-forwarded-for') ||
-            request.headers.get('x-real-ip') ||
-            'unknown',
-          userAgent: request.headers.get('user-agent') || 'unknown',
+            request.headers.get("x-forwarded-for") ||
+            request.headers.get("x-real-ip") ||
+            "unknown",
+          userAgent: request.headers.get("user-agent") || "unknown",
           status: 401,
-          error: 'Unauthorized',
+          error: "Unauthorized",
         });
       }
 
@@ -375,11 +374,11 @@ export async function applyFinancialAPIMiddleware(
       const errorResponse = NextResponse.json(
         {
           success: false,
-          error: 'Rate limit exceeded',
+          error: "Rate limit exceeded",
           retryAfter: rateLimitResult.retryAfter,
           _meta: { timestamp: new Date().toISOString() },
         },
-        { status: 429 }
+        { status: 429 },
       );
 
       addRateLimitHeaders(errorResponse, rateLimitResult, config);
@@ -395,12 +394,12 @@ export async function applyFinancialAPIMiddleware(
           endpoint: pathname,
           userId,
           ip:
-            request.headers.get('x-forwarded-for') ||
-            request.headers.get('x-real-ip') ||
-            'unknown',
-          userAgent: request.headers.get('user-agent') || 'unknown',
+            request.headers.get("x-forwarded-for") ||
+            request.headers.get("x-real-ip") ||
+            "unknown",
+          userAgent: request.headers.get("user-agent") || "unknown",
           status: 429,
-          error: 'Rate limit exceeded',
+          error: "Rate limit exceeded",
         });
       }
 
@@ -416,10 +415,10 @@ export async function applyFinancialAPIMiddleware(
       endpoint: pathname,
       userId,
       ip:
-        request.headers.get('x-forwarded-for') ||
-        request.headers.get('x-real-ip') ||
-        'unknown',
-      userAgent: request.headers.get('user-agent') || 'unknown',
+        request.headers.get("x-forwarded-for") ||
+        request.headers.get("x-real-ip") ||
+        "unknown",
+      userAgent: request.headers.get("user-agent") || "unknown",
     });
   }
 
@@ -433,8 +432,8 @@ export function finalizeResponse(
   request: NextRequest,
   response: NextResponse,
   startTime: number,
-  userId: string = 'anonymous',
-  options: MiddlewareOptions = { cors: true, rateLimit: true, logging: true }
+  userId: string = "anonymous",
+  options: MiddlewareOptions = { cors: true, rateLimit: true, logging: true },
 ): NextResponse {
   const pathname = request.nextUrl.pathname;
   const duration = Date.now() - startTime;
@@ -459,17 +458,17 @@ export function finalizeResponse(
       endpoint: pathname,
       userId,
       ip:
-        request.headers.get('x-forwarded-for') ||
-        request.headers.get('x-real-ip') ||
-        'unknown',
-      userAgent: request.headers.get('user-agent') || 'unknown',
+        request.headers.get("x-forwarded-for") ||
+        request.headers.get("x-real-ip") ||
+        "unknown",
+      userAgent: request.headers.get("user-agent") || "unknown",
       duration,
       status: response.status,
     });
   }
 
   // Add performance header
-  response.headers.set('X-Response-Time', `${duration}ms`);
+  response.headers.set("X-Response-Time", `${duration}ms`);
 
   return response;
 }

@@ -14,11 +14,11 @@
  * - Audit logging
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { db } from '@/lib/credit-repair/db';
-import { auditLogger } from '@/lib/security/audit-logging';
-import type { UpdateNegotiationInput } from '@/lib/credit-repair/db/negotiations-db-service';
+import { NextRequest, NextResponse } from "next/server";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { db } from "@/lib/credit-repair/db";
+import { auditLogger } from "@/lib/security/audit-logging";
+import type { UpdateNegotiationInput } from "@/lib/credit-repair/db/negotiations-db-service";
 
 /**
  * GET /api/credit-repair/negotiate/[id]
@@ -26,13 +26,13 @@ import type { UpdateNegotiationInput } from '@/lib/credit-repair/db/negotiations
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     // 1. Authenticate
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = validation.user;
@@ -41,20 +41,20 @@ export async function GET(
     // 2. Get negotiation from database
     const negotiation = await db.negotiations.getNegotiation(
       negotiationId,
-      user.id
+      user.id,
     );
 
     if (!negotiation) {
       return NextResponse.json(
-        { error: 'Negotiation not found' },
-        { status: 404 }
+        { error: "Negotiation not found" },
+        { status: 404 },
       );
     }
 
     // 3. Audit log
     await auditLogger.logAIInteraction({
       userId: user.id,
-      action: 'get_negotiation',
+      action: "get_negotiation",
       input: { negotiationId },
       output: { found: true },
       success: true,
@@ -69,8 +69,8 @@ export async function GET(
     // NegotiateRoute error: Failed to get negotiation
     void _error;
     return NextResponse.json(
-      { error: 'Failed to get negotiation' },
-      { status: 500 }
+      { error: "Failed to get negotiation" },
+      { status: 500 },
     );
   }
 }
@@ -81,13 +81,13 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     // 1. Authenticate
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = validation.user;
@@ -108,25 +108,25 @@ export async function PUT(
     } = body;
 
     // Validate status if provided
-    const statusMap: Record<string, UpdateNegotiationInput['status']> = {
-      pending: 'pending',
-      draft: 'pending',
-      sent: 'pending',
-      negotiating: 'negotiating',
-      accepted: 'agreed',
-      agreed: 'agreed',
-      paid: 'paid',
-      completed: 'completed',
-      failed: 'failed',
-      rejected: 'failed',
+    const statusMap: Record<string, UpdateNegotiationInput["status"]> = {
+      pending: "pending",
+      draft: "pending",
+      sent: "pending",
+      negotiating: "negotiating",
+      accepted: "agreed",
+      agreed: "agreed",
+      paid: "paid",
+      completed: "completed",
+      failed: "failed",
+      rejected: "failed",
     };
-    let normalizedStatus: UpdateNegotiationInput['status'] | undefined;
+    let normalizedStatus: UpdateNegotiationInput["status"] | undefined;
     if (status) {
       normalizedStatus = statusMap[status];
       if (!normalizedStatus) {
         return NextResponse.json(
-          { error: 'Invalid status', validStatuses: Object.keys(statusMap) },
-          { status: 400 }
+          { error: "Invalid status", validStatuses: Object.keys(statusMap) },
+          { status: 400 },
         );
       }
     }
@@ -151,13 +151,13 @@ export async function PUT(
     const negotiation = await db.negotiations.updateNegotiation(
       negotiationId,
       user.id,
-      updates
+      updates,
     );
 
     // 4. Audit log
     await auditLogger.logAIInteraction({
       userId: user.id,
-      action: 'update_negotiation',
+      action: "update_negotiation",
       input: { negotiationId, updates: Object.keys(updates) },
       output: { success: true },
       success: true,
@@ -172,8 +172,8 @@ export async function PUT(
     // NegotiateRoute error: Failed to update negotiation
     void _error;
     return NextResponse.json(
-      { error: 'Failed to update negotiation' },
-      { status: 500 }
+      { error: "Failed to update negotiation" },
+      { status: 500 },
     );
   }
 }
@@ -184,13 +184,13 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     // 1. Authenticate
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = validation.user;
@@ -199,20 +199,20 @@ export async function DELETE(
     // 2. Delete negotiation from database
     const deleted = await db.negotiations.deleteNegotiation(
       negotiationId,
-      user.id
+      user.id,
     );
 
     if (!deleted) {
       return NextResponse.json(
-        { error: 'Negotiation not found' },
-        { status: 404 }
+        { error: "Negotiation not found" },
+        { status: 404 },
       );
     }
 
     // 3. Audit log
     await auditLogger.logAIInteraction({
       userId: user.id,
-      action: 'delete_negotiation',
+      action: "delete_negotiation",
       input: { negotiationId },
       output: { deleted: true },
       success: true,
@@ -221,14 +221,14 @@ export async function DELETE(
     // 4. Return response
     return NextResponse.json({
       success: true,
-      message: 'Negotiation deleted successfully',
+      message: "Negotiation deleted successfully",
     });
   } catch (_error) {
     // NegotiateRoute error: Failed to delete negotiation
     void _error;
     return NextResponse.json(
-      { error: 'Failed to delete negotiation' },
-      { status: 500 }
+      { error: "Failed to delete negotiation" },
+      { status: 500 },
     );
   }
 }

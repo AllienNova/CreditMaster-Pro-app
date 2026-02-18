@@ -9,21 +9,21 @@
  * - Trend-based warnings
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type LimitPeriod = 'daily' | 'weekly' | 'monthly' | 'yearly';
-export type AlertSeverity = 'info' | 'warning' | 'critical';
-export type AlertStatus = 'active' | 'acknowledged' | 'dismissed';
+export type LimitPeriod = "daily" | "weekly" | "monthly" | "yearly";
+export type AlertSeverity = "info" | "warning" | "critical";
+export type AlertStatus = "active" | "acknowledged" | "dismissed";
 export type LimitType =
-  | 'category'
-  | 'merchant'
-  | 'total'
-  | 'recurring'
-  | 'custom';
+  | "category"
+  | "merchant"
+  | "total"
+  | "recurring"
+  | "custom";
 
 export interface SpendingLimit {
   id: string;
@@ -48,7 +48,7 @@ export interface SpendingLimit {
   notifyOnWarning: boolean;
   notifyOnCritical: boolean;
   notifyOnExceed: boolean;
-  notificationChannels: ('push' | 'email' | 'sms' | 'in_app')[];
+  notificationChannels: ("push" | "email" | "sms" | "in_app")[];
 
   // Tracking
   currentSpent: number;
@@ -102,7 +102,7 @@ export interface SpendingAnalysis {
   willExceed: boolean;
   averageDailySpend: number;
   safeDailySpend: number;
-  trend: 'increasing' | 'decreasing' | 'stable';
+  trend: "increasing" | "decreasing" | "stable";
   recentTransactions: TransactionSummary[];
 }
 
@@ -142,8 +142,8 @@ export class SpendingLimitAlertsService {
   async createLimit(
     limit: Omit<
       SpendingLimit,
-      'id' | 'currentSpent' | 'lastResetDate' | 'createdAt' | 'updatedAt'
-    >
+      "id" | "currentSpent" | "lastResetDate" | "createdAt" | "updatedAt"
+    >,
   ): Promise<SpendingLimit> {
     const now = new Date();
     const newLimit: SpendingLimit = {
@@ -156,7 +156,7 @@ export class SpendingLimitAlertsService {
     };
 
     const { data, error } = await this.supabase
-      .from('spending_limits')
+      .from("spending_limits")
       .insert(this.toDbFormat(newLimit))
       .select()
       .single();
@@ -167,15 +167,15 @@ export class SpendingLimitAlertsService {
 
   async updateLimit(
     limitId: string,
-    updates: Partial<SpendingLimit>
+    updates: Partial<SpendingLimit>,
   ): Promise<SpendingLimit> {
     const { data, error } = await this.supabase
-      .from('spending_limits')
+      .from("spending_limits")
       .update({
         ...this.toDbFormat(updates),
         updated_at: new Date().toISOString(),
       })
-      .eq('id', limitId)
+      .eq("id", limitId)
       .select()
       .single();
 
@@ -185,18 +185,18 @@ export class SpendingLimitAlertsService {
 
   async deleteLimit(limitId: string): Promise<void> {
     const { error } = await this.supabase
-      .from('spending_limits')
+      .from("spending_limits")
       .delete()
-      .eq('id', limitId);
+      .eq("id", limitId);
 
     if (error) throw error;
   }
 
   async getLimit(limitId: string): Promise<SpendingLimit | null> {
     const { data } = await this.supabase
-      .from('spending_limits')
-      .select('*')
-      .eq('id', limitId)
+      .from("spending_limits")
+      .select("*")
+      .eq("id", limitId)
       .single();
 
     return data ? this.fromDbFormat(data) : null;
@@ -204,16 +204,16 @@ export class SpendingLimitAlertsService {
 
   async getUserLimits(
     userId: string,
-    activeOnly = true
+    activeOnly = true,
   ): Promise<SpendingLimit[]> {
     let query = this.supabase
-      .from('spending_limits')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .from("spending_limits")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
     if (activeOnly) {
-      query = query.eq('is_active', true);
+      query = query.eq("is_active", true);
     }
 
     const { data, error } = await query;
@@ -232,7 +232,7 @@ export class SpendingLimitAlertsService {
     amount: number,
     merchant: string,
     category: string,
-    tags: string[] = []
+    tags: string[] = [],
   ): Promise<SpendingAlert[]> {
     const limits = await this.getUserLimits(userId, true);
     const alerts: SpendingAlert[] = [];
@@ -260,7 +260,7 @@ export class SpendingLimitAlertsService {
         transactionId,
         amount,
         merchant,
-        category
+        category,
       );
 
       if (alert) {
@@ -275,26 +275,26 @@ export class SpendingLimitAlertsService {
     limit: SpendingLimit,
     category: string,
     merchant: string,
-    tags: string[]
+    tags: string[],
   ): boolean {
     switch (limit.type) {
-      case 'total':
+      case "total":
         return true;
-      case 'category':
+      case "category":
         return limit.categories?.includes(category) || false;
-      case 'merchant':
+      case "merchant":
         return (
           limit.merchants?.some((m) =>
-            merchant.toLowerCase().includes(m.toLowerCase())
+            merchant.toLowerCase().includes(m.toLowerCase()),
           ) || false
         );
-      case 'custom':
+      case "custom":
         const categoryMatch =
           !limit.categories?.length || limit.categories.includes(category);
         const merchantMatch =
           !limit.merchants?.length ||
           limit.merchants.some((m) =>
-            merchant.toLowerCase().includes(m.toLowerCase())
+            merchant.toLowerCase().includes(m.toLowerCase()),
           );
         const tagMatch =
           !limit.tags?.length || limit.tags.some((t) => tags.includes(t));
@@ -305,7 +305,7 @@ export class SpendingLimitAlertsService {
   }
 
   private async checkAndResetIfNeeded(
-    limit: SpendingLimit
+    limit: SpendingLimit,
   ): Promise<SpendingLimit> {
     const periodStart = this.getPeriodStartDate(limit.period);
 
@@ -326,22 +326,22 @@ export class SpendingLimitAlertsService {
     transactionId: string,
     transactionAmount: number,
     merchant: string,
-    category: string
+    category: string,
   ): Promise<SpendingAlert | null> {
     let severity: AlertSeverity | null = null;
     let shouldNotify = false;
 
     if (percentUsed >= 100 && limit.notifyOnExceed) {
-      severity = 'critical';
+      severity = "critical";
       shouldNotify = true;
     } else if (
       percentUsed >= limit.criticalThreshold &&
       limit.notifyOnCritical
     ) {
-      severity = 'critical';
+      severity = "critical";
       shouldNotify = true;
     } else if (percentUsed >= limit.warningThreshold && limit.notifyOnWarning) {
-      severity = 'warning';
+      severity = "warning";
       shouldNotify = true;
     }
 
@@ -375,7 +375,7 @@ export class SpendingLimitAlertsService {
 
   private generateAlertTitle(
     limit: SpendingLimit,
-    percentUsed: number
+    percentUsed: number,
   ): string {
     if (percentUsed >= 100) {
       return `${limit.name} limit exceeded!`;
@@ -389,7 +389,7 @@ export class SpendingLimitAlertsService {
   private generateAlertMessage(
     limit: SpendingLimit,
     spent: number,
-    percentUsed: number
+    percentUsed: number,
   ): string {
     const remaining = Math.max(0, limit.limitAmount - spent);
     const periodLabel = this.getPeriodLabel(limit.period);
@@ -403,10 +403,10 @@ export class SpendingLimitAlertsService {
 
   private getPeriodLabel(period: LimitPeriod): string {
     const labels: Record<LimitPeriod, string> = {
-      daily: 'daily',
-      weekly: 'weekly',
-      monthly: 'monthly',
-      yearly: 'yearly',
+      daily: "daily",
+      weekly: "weekly",
+      monthly: "monthly",
+      yearly: "yearly",
     };
     return labels[period];
   }
@@ -416,7 +416,7 @@ export class SpendingLimitAlertsService {
   // ==========================================================================
 
   async createAlert(
-    alert: Omit<SpendingAlert, 'id' | 'status' | 'triggeredAt' | 'expiresAt'>
+    alert: Omit<SpendingAlert, "id" | "status" | "triggeredAt" | "expiresAt">,
   ): Promise<SpendingAlert> {
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days
@@ -424,13 +424,13 @@ export class SpendingLimitAlertsService {
     const newAlert: SpendingAlert = {
       ...alert,
       id: crypto.randomUUID(),
-      status: 'active',
+      status: "active",
       triggeredAt: now,
       expiresAt,
     };
 
     const { data, error } = await this.supabase
-      .from('spending_alerts')
+      .from("spending_alerts")
       .insert({
         id: newAlert.id,
         user_id: newAlert.userId,
@@ -460,12 +460,12 @@ export class SpendingLimitAlertsService {
 
   async acknowledgeAlert(alertId: string): Promise<SpendingAlert> {
     const { data, error } = await this.supabase
-      .from('spending_alerts')
+      .from("spending_alerts")
       .update({
-        status: 'acknowledged',
+        status: "acknowledged",
         acknowledged_at: new Date().toISOString(),
       })
-      .eq('id', alertId)
+      .eq("id", alertId)
       .select()
       .single();
 
@@ -475,19 +475,19 @@ export class SpendingLimitAlertsService {
 
   async dismissAlert(alertId: string): Promise<void> {
     await this.supabase
-      .from('spending_alerts')
-      .update({ status: 'dismissed' })
-      .eq('id', alertId);
+      .from("spending_alerts")
+      .update({ status: "dismissed" })
+      .eq("id", alertId);
   }
 
   async getActiveAlerts(userId: string): Promise<SpendingAlert[]> {
     const { data, error } = await this.supabase
-      .from('spending_alerts')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('status', 'active')
-      .gt('expires_at', new Date().toISOString())
-      .order('triggered_at', { ascending: false });
+      .from("spending_alerts")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .gt("expires_at", new Date().toISOString())
+      .order("triggered_at", { ascending: false });
 
     if (error) throw error;
     return (data || []).map(this.alertFromDb);
@@ -495,13 +495,13 @@ export class SpendingLimitAlertsService {
 
   async getAlertHistory(
     userId: string,
-    limit: number = 50
+    limit: number = 50,
   ): Promise<SpendingAlert[]> {
     const { data, error } = await this.supabase
-      .from('spending_alerts')
-      .select('*')
-      .eq('user_id', userId)
-      .order('triggered_at', { ascending: false })
+      .from("spending_alerts")
+      .select("*")
+      .eq("user_id", userId)
+      .order("triggered_at", { ascending: false })
       .limit(limit);
 
     if (error) throw error;
@@ -510,16 +510,16 @@ export class SpendingLimitAlertsService {
 
   private async getRecentAlertForLimit(
     limitId: string,
-    severity: AlertSeverity
+    severity: AlertSeverity,
   ): Promise<SpendingAlert | null> {
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
 
     const { data } = await this.supabase
-      .from('spending_alerts')
-      .select('*')
-      .eq('limit_id', limitId)
-      .eq('severity', severity)
-      .gte('triggered_at', oneHourAgo.toISOString())
+      .from("spending_alerts")
+      .select("*")
+      .eq("limit_id", limitId)
+      .eq("severity", severity)
+      .gte("triggered_at", oneHourAgo.toISOString())
       .single();
 
     return data ? this.alertFromDb(data) : null;
@@ -538,10 +538,10 @@ export class SpendingLimitAlertsService {
     const now = new Date();
 
     const daysInPeriod = Math.ceil(
-      (periodEnd.getTime() - periodStart.getTime()) / (24 * 60 * 60 * 1000)
+      (periodEnd.getTime() - periodStart.getTime()) / (24 * 60 * 60 * 1000),
     );
     const daysElapsed = Math.ceil(
-      (now.getTime() - periodStart.getTime()) / (24 * 60 * 60 * 1000)
+      (now.getTime() - periodStart.getTime()) / (24 * 60 * 60 * 1000),
     );
     const daysRemaining = Math.max(0, daysInPeriod - daysElapsed);
 
@@ -554,9 +554,9 @@ export class SpendingLimitAlertsService {
     const safeDailySpend = daysRemaining > 0 ? remaining / daysRemaining : 0;
 
     // Determine trend (would need historical data for accurate trend)
-    let trend: 'increasing' | 'decreasing' | 'stable' = 'stable';
-    if (averageDailySpend > safeDailySpend * 1.2) trend = 'increasing';
-    if (averageDailySpend < safeDailySpend * 0.8) trend = 'decreasing';
+    let trend: "increasing" | "decreasing" | "stable" = "stable";
+    if (averageDailySpend > safeDailySpend * 1.2) trend = "increasing";
+    if (averageDailySpend < safeDailySpend * 0.8) trend = "decreasing";
 
     return {
       limit,
@@ -613,15 +613,15 @@ export class SpendingLimitAlertsService {
     const now = new Date();
 
     switch (period) {
-      case 'daily':
+      case "daily":
         return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      case 'weekly':
+      case "weekly":
         const dayOfWeek = now.getDay();
         const diff = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
         return new Date(now.getFullYear(), now.getMonth(), diff);
-      case 'monthly':
+      case "monthly":
         return new Date(now.getFullYear(), now.getMonth(), 1);
-      case 'yearly':
+      case "yearly":
         return new Date(now.getFullYear(), 0, 1);
     }
   }
@@ -630,13 +630,13 @@ export class SpendingLimitAlertsService {
     const start = this.getPeriodStartDate(period);
 
     switch (period) {
-      case 'daily':
+      case "daily":
         return new Date(start.getTime() + 24 * 60 * 60 * 1000);
-      case 'weekly':
+      case "weekly":
         return new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000);
-      case 'monthly':
+      case "monthly":
         return new Date(start.getFullYear(), start.getMonth() + 1, 0);
-      case 'yearly':
+      case "yearly":
         return new Date(start.getFullYear() + 1, 0, 0);
     }
   }
@@ -683,10 +683,10 @@ export class SpendingLimitAlertsService {
       notifyOnCritical: data.notify_on_critical as boolean,
       notifyOnExceed: data.notify_on_exceed as boolean,
       notificationChannels: data.notification_channels as (
-        | 'push'
-        | 'email'
-        | 'sms'
-        | 'in_app'
+        | "push"
+        | "email"
+        | "sms"
+        | "in_app"
       )[],
       currentSpent: data.current_spent as number,
       lastResetDate: new Date(data.last_reset_date as string),
@@ -738,7 +738,7 @@ export function getSpendingLimitAlertsService(): SpendingLimitAlertsService {
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     spendingLimitAlertsServiceInstance = new SpendingLimitAlertsService(
       supabaseUrl,
-      supabaseKey
+      supabaseKey,
     );
   }
   return spendingLimitAlertsServiceInstance;

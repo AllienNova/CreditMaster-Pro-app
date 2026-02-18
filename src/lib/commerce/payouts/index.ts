@@ -4,7 +4,10 @@
  * Unified payout processing for affiliates, partners, and users.
  */
 
-export { payoutService, default as payoutServiceDefault } from './payout-service';
+export {
+  payoutService,
+  default as payoutServiceDefault,
+} from "./payout-service";
 export type {
   PayoutStatus,
   PayoutMethod,
@@ -14,4 +17,4 @@ export type {
   Payout,
   PayoutBatch,
   PayoutSchedule,
-} from './payout-service';
+} from "./payout-service";

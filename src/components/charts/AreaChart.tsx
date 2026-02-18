@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
 /**
  * Area Chart Component
- * 
+ *
  * Displays data as an area chart with gradient fills.
  * Used for cash flow, net worth trends, and cumulative data.
  */
@@ -16,9 +16,14 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-} from 'recharts';
-import { ChartTooltip } from './ChartHelpers';
-import { CHART_COLORS, formatCurrency, formatNumber, generateChartDescription } from './chartUtils';
+} from "recharts";
+import { ChartTooltip } from "./ChartHelpers";
+import {
+  CHART_COLORS,
+  formatCurrency,
+  formatNumber,
+  generateChartDescription,
+} from "./chartUtils";
 
 export interface AreaChartDataPoint {
   label: string;
@@ -59,10 +64,10 @@ export default function AreaChartComponent({
   showLegend = true,
   showTooltip = true,
   currency = false,
-  xAxisKey = 'label',
+  xAxisKey = "label",
   stacked = false,
   animationDuration = 1000,
-  className = '',
+  className = "",
   ariaLabel,
 }: AreaChartProps) {
   const formatAxis = (value: number): string => {
@@ -71,16 +76,28 @@ export default function AreaChartComponent({
   };
 
   // Generate accessible description
-  const accessibleDescription = ariaLabel || generateChartDescription(
-    'Area chart',
-    data.length,
-    undefined,
-    currency
-  );
+  const accessibleDescription =
+    ariaLabel ||
+    generateChartDescription("Area chart", data.length, undefined, currency);
 
-  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) => {
+  const CustomTooltip = ({
+    active,
+    payload,
+    label,
+  }: {
+    active?: boolean;
+    payload?: Array<{ name: string; value: number; color: string }>;
+    label?: string;
+  }) => {
     if (!active || !payload || payload.length === 0) return null;
-    return <ChartTooltip active={active} payload={payload} label={label} currency={currency} />;
+    return (
+      <ChartTooltip
+        active={active}
+        payload={payload}
+        label={label}
+        currency={currency}
+      />
+    );
   };
 
   const defaultColors = [
@@ -105,10 +122,18 @@ export default function AreaChartComponent({
         >
           <defs>
             {areas.map((area, index) => {
-              const color = area.color || defaultColors[index % defaultColors.length];
+              const color =
+                area.color || defaultColors[index % defaultColors.length];
               const gradientId = area.gradientId || `gradient-${area.dataKey}`;
               return (
-                <linearGradient key={gradientId} id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                <linearGradient
+                  key={gradientId}
+                  id={gradientId}
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="1"
+                >
                   <stop offset="5%" stopColor={color} stopOpacity={0.8} />
                   <stop offset="95%" stopColor={color} stopOpacity={0.1} />
                 </linearGradient>
@@ -124,22 +149,23 @@ export default function AreaChartComponent({
           )}
           <XAxis
             dataKey={xAxisKey}
-            tick={{ fontSize: 11, fill: 'currentColor' }}
-            tickLine={{ stroke: 'currentColor', opacity: 0.3 }}
-            axisLine={{ stroke: 'currentColor', opacity: 0.3 }}
+            tick={{ fontSize: 11, fill: "currentColor" }}
+            tickLine={{ stroke: "currentColor", opacity: 0.3 }}
+            axisLine={{ stroke: "currentColor", opacity: 0.3 }}
             className="text-gray-500 dark:text-slate-400"
           />
           <YAxis
-            tick={{ fontSize: 11, fill: 'currentColor' }}
-            tickLine={{ stroke: 'currentColor', opacity: 0.3 }}
-            axisLine={{ stroke: 'currentColor', opacity: 0.3 }}
+            tick={{ fontSize: 11, fill: "currentColor" }}
+            tickLine={{ stroke: "currentColor", opacity: 0.3 }}
+            axisLine={{ stroke: "currentColor", opacity: 0.3 }}
             className="text-gray-500 dark:text-slate-400"
             tickFormatter={formatAxis}
           />
           {showTooltip && <Tooltip content={<CustomTooltip />} />}
           {showLegend && <Legend wrapperStyle={{ paddingTop: 20 }} />}
           {areas.map((area, index) => {
-            const color = area.color || defaultColors[index % defaultColors.length];
+            const color =
+              area.color || defaultColors[index % defaultColors.length];
             const gradientId = area.gradientId || `gradient-${area.dataKey}`;
             return (
               <Area
@@ -151,7 +177,7 @@ export default function AreaChartComponent({
                 strokeWidth={area.strokeWidth || 2}
                 fillOpacity={1}
                 fill={`url(#${gradientId})`}
-                stackId={stacked || area.stacked ? 'stack' : undefined}
+                stackId={stacked || area.stacked ? "stack" : undefined}
                 animationDuration={animationDuration}
               />
             );
@@ -161,4 +187,3 @@ export default function AreaChartComponent({
     </div>
   );
 }
-

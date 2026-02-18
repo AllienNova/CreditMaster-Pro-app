@@ -1,16 +1,16 @@
-import { Suspense } from 'react';
-import { Metadata } from 'next';
-import AIFinancialCoach from '@/components/financial/AIFinancialCoach';
+import { Suspense } from "react";
+import { Metadata } from "next";
+import AIFinancialCoach from "@/components/financial/AIFinancialCoach";
 
 export const metadata: Metadata = {
-  title: 'AI Financial Coach | Fynvita',
+  title: "AI Financial Coach | Fynvita",
   description:
     "Get personalized financial coaching powered by AI using Dave Ramsey's proven strategies",
   openGraph: {
-    title: 'AI Financial Coach | Fynvita',
+    title: "AI Financial Coach | Fynvita",
     description:
       "Get personalized financial coaching powered by AI using Dave Ramsey's proven strategies",
-    type: 'website',
+    type: "website",
   },
 };
 

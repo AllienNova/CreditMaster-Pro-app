@@ -1,16 +1,16 @@
-import { Suspense } from 'react';
-import { Metadata } from 'next';
-import BudgetManagement from '@/components/financial/BudgetManagement';
+import { Suspense } from "react";
+import { Metadata } from "next";
+import BudgetManagement from "@/components/financial/BudgetManagement";
 
 export const metadata: Metadata = {
-  title: 'Budget Management | Fynvita',
+  title: "Budget Management | Fynvita",
   description:
-    'Create and manage your budgets to track spending and achieve financial goals',
+    "Create and manage your budgets to track spending and achieve financial goals",
   openGraph: {
-    title: 'Budget Management | Fynvita',
+    title: "Budget Management | Fynvita",
     description:
-      'Create and manage your budgets to track spending and achieve financial goals',
-    type: 'website',
+      "Create and manage your budgets to track spending and achieve financial goals",
+    type: "website",
   },
 };
 

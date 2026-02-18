@@ -344,7 +344,7 @@ export function formatPriceData(quote: any): string {
   return `
 Symbol: ${quote.symbol}
 Current Price: $${quote.price.toFixed(2)}
-Change: ${quote.change >= 0 ? '+' : ''}${quote.change.toFixed(2)} (${quote.changePercent.toFixed(2)}%)
+Change: ${quote.change >= 0 ? "+" : ""}${quote.change.toFixed(2)} (${quote.changePercent.toFixed(2)}%)
 Open: $${quote.open.toFixed(2)}
 High: $${quote.high.toFixed(2)}
 Low: $${quote.low.toFixed(2)}
@@ -389,4 +389,3 @@ Trend Indicators:
 - CCI: ${indicators.cci.toFixed(2)}
 `.trim();
 }
-

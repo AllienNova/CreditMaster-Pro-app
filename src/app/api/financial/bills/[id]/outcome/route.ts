@@ -5,10 +5,13 @@
  * Phase 2.4: Bill Negotiation Assistant
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
-import { getBillNegotiator } from '@/lib/financial/bill-negotiator';
-import { applyFinancialAPIMiddleware, finalizeResponse } from '@/lib/api/financial-api-middleware';
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { getBillNegotiator } from "@/lib/financial/bill-negotiator";
+import {
+  applyFinancialAPIMiddleware,
+  finalizeResponse,
+} from "@/lib/api/financial-api-middleware";
 
 // ============================================================================
 // VALIDATION SCHEMAS
@@ -19,7 +22,7 @@ const recordOutcomeSchema = z.object({
   savingsAchieved: z.number().min(0),
   newMonthlyRate: z.number().positive().optional(),
   previousMonthlyRate: z.number().positive(),
-  method: z.enum(['phone', 'chat', 'email', 'in_person']),
+  method: z.enum(["phone", "chat", "email", "in_person"]),
   duration: z.number().int().positive().optional(), // minutes
   representative: z.string().optional(),
   notes: z.string().max(1000).optional(),
@@ -34,7 +37,7 @@ const recordOutcomeSchema = z.object({
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const startTime = Date.now();
 
@@ -63,10 +66,10 @@ export async function POST(
       return NextResponse.json(
         {
           success: false,
-          error: 'Validation error',
-          message: 'followupDate is required when requiresFollowup is true',
+          error: "Validation error",
+          message: "followupDate is required when requiresFollowup is true",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -87,13 +90,17 @@ export async function POST(
       representative: validatedBody.representative,
       notes: validatedBody.notes,
       requiresFollowup: validatedBody.requiresFollowup || false,
-      followupDate: validatedBody.followupDate ? new Date(validatedBody.followupDate) : undefined,
+      followupDate: validatedBody.followupDate
+        ? new Date(validatedBody.followupDate)
+        : undefined,
       followupReason: validatedBody.followupReason,
       recordedAt: new Date(),
     });
 
     // Calculate updated savings estimate
-    const savingsEstimate = await billNegotiator.calculatePotentialSavings(userId!);
+    const savingsEstimate = await billNegotiator.calculatePotentialSavings(
+      userId!,
+    );
 
     return finalizeResponse(
       request,
@@ -123,30 +130,29 @@ export async function POST(
         },
       }),
       middlewareStartTime,
-      userId
+      userId,
     );
   } catch (error) {
-    console.error('Error in POST /api/financial/bills/[id]/outcome:', error);
+    console.error("Error in POST /api/financial/bills/[id]/outcome:", error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Validation error',
+          error: "Validation error",
           details: error.errors,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     return NextResponse.json(
       {
         success: false,
-        error: 'Internal server error',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Internal server error",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-

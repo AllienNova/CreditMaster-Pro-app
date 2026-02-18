@@ -1,13 +1,13 @@
 /**
  * Financial Chat API - Individual Session Endpoint
- * 
+ *
  * Phase 6.1.4: GET and DELETE endpoints for individual sessions
  * Handles retrieving session details and archiving sessions
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { FinancialChatEngine } from '@/lib/ai/financial-chat-engine';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { FinancialChatEngine } from "@/lib/ai/financial-chat-engine";
 
 /**
  * GET /api/chat/financial/sessions/[id]
@@ -15,7 +15,7 @@ import { FinancialChatEngine } from '@/lib/ai/financial-chat-engine';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     // Authenticate user
@@ -27,33 +27,34 @@ export async function GET(
 
     if (authError || !user) {
       return NextResponse.json(
-        { error: 'Unauthorized', message: 'Authentication required' },
-        { status: 401 }
+        { error: "Unauthorized", message: "Authentication required" },
+        { status: 401 },
       );
     }
 
     const { id: sessionId } = await params;
 
     // Validate session ID format (UUID)
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(sessionId)) {
       return NextResponse.json(
-        { error: 'Validation error', message: 'Invalid session ID format' },
-        { status: 400 }
+        { error: "Validation error", message: "Invalid session ID format" },
+        { status: 400 },
       );
     }
 
     // Get session from database
     const { data: session, error: sessionError } = await supabase
-      .from('chat_sessions')
-      .select('*')
-      .eq('id', sessionId)
+      .from("chat_sessions")
+      .select("*")
+      .eq("id", sessionId)
       .single();
 
     if (sessionError || !session) {
       return NextResponse.json(
-        { error: 'Not found', message: 'Session not found' },
-        { status: 404 }
+        { error: "Not found", message: "Session not found" },
+        { status: 404 },
       );
     }
 
@@ -72,8 +73,8 @@ export async function GET(
     // Verify session belongs to user
     if (sessionData.user_id !== user.id) {
       return NextResponse.json(
-        { error: 'Forbidden', message: 'Access denied to this session' },
-        { status: 403 }
+        { error: "Forbidden", message: "Access denied to this session" },
+        { status: 403 },
       );
     }
 
@@ -89,19 +90,16 @@ export async function GET(
       lastMessageAt: sessionData.last_message_at,
     };
 
-    return NextResponse.json(
-      { session: sessionResponse },
-      { status: 200 }
-    );
+    return NextResponse.json({ session: sessionResponse }, { status: 200 });
   } catch (error: unknown) {
-    console.error('Get session API error:', error);
+    console.error("Get session API error:", error);
 
     return NextResponse.json(
       {
-        error: 'Internal server error',
-        message: 'An error occurred while fetching the session',
+        error: "Internal server error",
+        message: "An error occurred while fetching the session",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -112,7 +110,7 @@ export async function GET(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     // Authenticate user
@@ -124,33 +122,34 @@ export async function DELETE(
 
     if (authError || !user) {
       return NextResponse.json(
-        { error: 'Unauthorized', message: 'Authentication required' },
-        { status: 401 }
+        { error: "Unauthorized", message: "Authentication required" },
+        { status: 401 },
       );
     }
 
     const { id: sessionId } = await params;
 
     // Validate session ID format (UUID)
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(sessionId)) {
       return NextResponse.json(
-        { error: 'Validation error', message: 'Invalid session ID format' },
-        { status: 400 }
+        { error: "Validation error", message: "Invalid session ID format" },
+        { status: 400 },
       );
     }
 
     // Verify session exists and belongs to user
     const { data: session, error: sessionError } = await supabase
-      .from('chat_sessions')
-      .select('user_id')
-      .eq('id', sessionId)
+      .from("chat_sessions")
+      .select("user_id")
+      .eq("id", sessionId)
       .single();
 
     if (sessionError || !session) {
       return NextResponse.json(
-        { error: 'Not found', message: 'Session not found' },
-        { status: 404 }
+        { error: "Not found", message: "Session not found" },
+        { status: 404 },
       );
     }
 
@@ -158,8 +157,8 @@ export async function DELETE(
     const sessionData = session as { user_id: string };
     if (sessionData.user_id !== user.id) {
       return NextResponse.json(
-        { error: 'Forbidden', message: 'Access denied to this session' },
-        { status: 403 }
+        { error: "Forbidden", message: "Access denied to this session" },
+        { status: 403 },
       );
     }
 
@@ -168,19 +167,18 @@ export async function DELETE(
     await chatEngine.deleteSession(sessionId);
 
     return NextResponse.json(
-      { message: 'Session archived successfully' },
-      { status: 200 }
+      { message: "Session archived successfully" },
+      { status: 200 },
     );
   } catch (error: unknown) {
-    console.error('Delete session API error:', error);
+    console.error("Delete session API error:", error);
 
     return NextResponse.json(
       {
-        error: 'Internal server error',
-        message: 'An error occurred while deleting the session',
+        error: "Internal server error",
+        message: "An error occurred while deleting the session",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-

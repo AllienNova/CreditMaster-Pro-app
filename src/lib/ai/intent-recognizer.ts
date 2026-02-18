@@ -5,14 +5,14 @@
  * Uses GPT-4o-mini for fast, cost-effective intent recognition
  */
 
-import { AIMLService } from '@/lib/aiml-service';
-import type { Intent, IntentType } from './types/chat.types';
+import { AIMLService } from "@/lib/aiml-service";
+import type { Intent, IntentType } from "./types/chat.types";
 
 // ============================================================================
 // CONFIGURATION
 // ============================================================================
 
-const INTENT_MODEL = 'openai/gpt-4o-mini';
+const INTENT_MODEL = "openai/gpt-4o-mini";
 
 const INTENT_SYSTEM_PROMPT = `You are an intent classification expert for a financial advisory chatbot.
 
@@ -77,64 +77,64 @@ Rules:
 
 const INTENT_EXAMPLES = [
   {
-    user: 'I want to save $5000 for a vacation by next summer',
+    user: "I want to save $5000 for a vacation by next summer",
     assistant: JSON.stringify({
-      intent: 'create_goal',
+      intent: "create_goal",
       confidence: 0.95,
-      reason: 'Clear goal creation with specific amount and deadline',
+      reason: "Clear goal creation with specific amount and deadline",
       requiresConfirmation: true,
       extractedDetails: {
         amount: 5000,
-        purpose: 'vacation',
-        deadline: 'next summer',
+        purpose: "vacation",
+        deadline: "next summer",
       },
     }),
   },
   {
-    user: 'Show me where I spent money last month',
+    user: "Show me where I spent money last month",
     assistant: JSON.stringify({
-      intent: 'analyze_spending',
+      intent: "analyze_spending",
       confidence: 0.92,
-      reason: 'User wants to analyze past spending patterns',
+      reason: "User wants to analyze past spending patterns",
       requiresConfirmation: false,
       extractedDetails: {
-        timeframe: 'last month',
+        timeframe: "last month",
       },
     }),
   },
   {
-    user: 'Should I pay off my credit card or save for emergency fund?',
+    user: "Should I pay off my credit card or save for emergency fund?",
     assistant: JSON.stringify({
-      intent: 'get_recommendations',
+      intent: "get_recommendations",
       confidence: 0.88,
-      reason: 'User is asking for advice on financial priorities',
+      reason: "User is asking for advice on financial priorities",
       requiresConfirmation: false,
       extractedDetails: {
-        options: ['pay off credit card', 'save for emergency fund'],
+        options: ["pay off credit card", "save for emergency fund"],
       },
     }),
   },
   {
-    user: 'Yes, create that budget',
+    user: "Yes, create that budget",
     assistant: JSON.stringify({
-      intent: 'execute_action',
+      intent: "execute_action",
       confidence: 0.98,
-      reason: 'Clear confirmation to execute pending action',
+      reason: "Clear confirmation to execute pending action",
       requiresConfirmation: false,
       extractedDetails: {
-        action: 'create_budget',
+        action: "create_budget",
       },
     }),
   },
   {
-    user: 'What is compound interest?',
+    user: "What is compound interest?",
     assistant: JSON.stringify({
-      intent: 'general_question',
+      intent: "general_question",
       confidence: 0.96,
-      reason: 'Educational question about financial concept',
+      reason: "Educational question about financial concept",
       requiresConfirmation: false,
       extractedDetails: {
-        topic: 'compound interest',
+        topic: "compound interest",
       },
     }),
   },
@@ -161,7 +161,7 @@ export class IntentRecognizer {
     conversationContext?: {
       recentIntents?: IntentType[];
       pendingAction?: IntentType | null;
-    }
+    },
   ): Promise<Intent> {
     // Check cache first
     const cacheKey = this.getCacheKey(userMessage, conversationContext);
@@ -180,7 +180,7 @@ export class IntentRecognizer {
         max_tokens: 300,
       });
 
-      const content = response.choices[0]?.message?.content || '';
+      const content = response.choices[0]?.message?.content || "";
 
       // Parse JSON response
       const result = this.parseIntentResponse(content);
@@ -214,7 +214,7 @@ export class IntentRecognizer {
    */
   async recognizeBatch(messages: string[]): Promise<Intent[]> {
     const results = await Promise.all(
-      messages.map((msg) => this.recognize(msg))
+      messages.map((msg) => this.recognize(msg)),
     );
     return results;
   }
@@ -231,10 +231,10 @@ export class IntentRecognizer {
     conversationContext?: {
       recentIntents?: IntentType[];
       pendingAction?: IntentType | null;
-    }
-  ): Array<{ role: 'system' | 'user' | 'assistant'; content: string }> {
+    },
+  ): Array<{ role: "system" | "user" | "assistant"; content: string }> {
     const messages: Array<{
-      role: 'system' | 'user' | 'assistant';
+      role: "system" | "user" | "assistant";
       content: string;
     }> = [];
 
@@ -247,7 +247,7 @@ export class IntentRecognizer {
         conversationContext.recentIntents &&
         conversationContext.recentIntents.length > 0
       ) {
-        systemPrompt += `\n\nRecent conversation intents: ${conversationContext.recentIntents.join(', ')}`;
+        systemPrompt += `\n\nRecent conversation intents: ${conversationContext.recentIntents.join(", ")}`;
       }
 
       if (conversationContext.pendingAction) {
@@ -259,16 +259,16 @@ export class IntentRecognizer {
       }
     }
 
-    messages.push({ role: 'system', content: systemPrompt });
+    messages.push({ role: "system", content: systemPrompt });
 
     // Add few-shot examples
     for (const example of INTENT_EXAMPLES) {
-      messages.push({ role: 'user', content: example.user });
-      messages.push({ role: 'assistant', content: example.assistant });
+      messages.push({ role: "user", content: example.user });
+      messages.push({ role: "assistant", content: example.assistant });
     }
 
     // Add user message
-    messages.push({ role: 'user', content: userMessage });
+    messages.push({ role: "user", content: userMessage });
 
     return messages;
   }
@@ -285,7 +285,7 @@ export class IntentRecognizer {
       // Try to extract JSON from response
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        throw new Error('No JSON found in response');
+        throw new Error("No JSON found in response");
       }
 
       const json = JSON.parse(jsonMatch[0]);
@@ -301,12 +301,12 @@ export class IntentRecognizer {
    */
   private validateIntent(result: any): Intent {
     // Validate required fields
-    if (!result.intent || typeof result.intent !== 'string') {
-      throw new Error('Invalid intent: missing or invalid intent field');
+    if (!result.intent || typeof result.intent !== "string") {
+      throw new Error("Invalid intent: missing or invalid intent field");
     }
 
     if (
-      typeof result.confidence !== 'number' ||
+      typeof result.confidence !== "number" ||
       result.confidence < 0 ||
       result.confidence > 1
     ) {
@@ -320,7 +320,7 @@ export class IntentRecognizer {
     const intent: Intent = {
       type,
       confidence: result.confidence,
-      reason: result.reason || 'Intent recognized by AI',
+      reason: result.reason || "Intent recognized by AI",
       requiresConfirmation:
         result.requiresConfirmation ?? this.shouldRequireConfirmation(type),
       metadata: result.extractedDetails || {},
@@ -334,23 +334,23 @@ export class IntentRecognizer {
    */
   private normalizeIntentType(intent: string): IntentType {
     const validIntents: IntentType[] = [
-      'create_goal',
-      'create_budget',
-      'analyze_spending',
-      'get_recommendations',
-      'debt_strategy',
-      'account_summary',
-      'investment_advice',
-      'credit_score',
-      'general_question',
-      'greeting',
-      'execute_action',
-      'cancel_action',
-      'clarification',
-      'feedback',
+      "create_goal",
+      "create_budget",
+      "analyze_spending",
+      "get_recommendations",
+      "debt_strategy",
+      "account_summary",
+      "investment_advice",
+      "credit_score",
+      "general_question",
+      "greeting",
+      "execute_action",
+      "cancel_action",
+      "clarification",
+      "feedback",
     ];
 
-    const normalized = intent.toLowerCase().replace(/-/g, '_');
+    const normalized = intent.toLowerCase().replace(/-/g, "_");
 
     if (validIntents.includes(normalized as IntentType)) {
       return normalized as IntentType;
@@ -358,7 +358,7 @@ export class IntentRecognizer {
 
     // Default to general_question if invalid
     // IntentRecognizer warning: Unknown intent type, defaulting to general_question
-    return 'general_question';
+    return "general_question";
   }
 
   /**
@@ -367,9 +367,9 @@ export class IntentRecognizer {
   private shouldRequireConfirmation(type: IntentType): boolean {
     // Actions that modify data should require confirmation
     const requiresConfirmation: IntentType[] = [
-      'create_goal',
-      'create_budget',
-      'execute_action',
+      "create_goal",
+      "create_budget",
+      "execute_action",
     ];
 
     return requiresConfirmation.includes(type);
@@ -387,7 +387,7 @@ export class IntentRecognizer {
     conversationContext?: {
       recentIntents?: IntentType[];
       pendingAction?: IntentType | null;
-    }
+    },
   ): Intent {
     const lower = userMessage.toLowerCase().trim();
 
@@ -395,9 +395,9 @@ export class IntentRecognizer {
     if (conversationContext?.pendingAction) {
       if (this.isConfirmation(lower)) {
         return {
-          type: 'execute_action',
+          type: "execute_action",
           confidence: 0.85,
-          reason: 'Confirmation keyword detected',
+          reason: "Confirmation keyword detected",
           requiresConfirmation: false,
           metadata: { pendingAction: conversationContext.pendingAction },
         };
@@ -405,9 +405,9 @@ export class IntentRecognizer {
 
       if (this.isCancellation(lower)) {
         return {
-          type: 'cancel_action',
+          type: "cancel_action",
           confidence: 0.85,
-          reason: 'Cancellation keyword detected',
+          reason: "Cancellation keyword detected",
           requiresConfirmation: false,
           metadata: { pendingAction: conversationContext.pendingAction },
         };
@@ -419,9 +419,9 @@ export class IntentRecognizer {
       /^(hi|hello|hey|good morning|good afternoon|good evening)\b/i.test(lower)
     ) {
       return {
-        type: 'greeting',
+        type: "greeting",
         confidence: 0.9,
-        reason: 'Greeting pattern detected',
+        reason: "Greeting pattern detected",
         requiresConfirmation: false,
         metadata: {},
       };
@@ -433,9 +433,9 @@ export class IntentRecognizer {
       /save.*for|saving.*for/i.test(lower)
     ) {
       return {
-        type: 'create_goal',
+        type: "create_goal",
         confidence: 0.75,
-        reason: 'Goal creation keywords detected',
+        reason: "Goal creation keywords detected",
         requiresConfirmation: true,
         metadata: {},
       };
@@ -447,9 +447,9 @@ export class IntentRecognizer {
       /budget.*for|budgeting/i.test(lower)
     ) {
       return {
-        type: 'create_budget',
+        type: "create_budget",
         confidence: 0.75,
-        reason: 'Budget creation keywords detected',
+        reason: "Budget creation keywords detected",
         requiresConfirmation: true,
         metadata: {},
       };
@@ -458,14 +458,14 @@ export class IntentRecognizer {
     // Analyze spending
     if (
       /(show|analyze|review|check).*(spending|expenses|transactions)/i.test(
-        lower
+        lower,
       ) ||
       /where.*(money|spending)/i.test(lower)
     ) {
       return {
-        type: 'analyze_spending',
+        type: "analyze_spending",
         confidence: 0.7,
-        reason: 'Spending analysis keywords detected',
+        reason: "Spending analysis keywords detected",
         requiresConfirmation: false,
         metadata: {},
       };
@@ -477,9 +477,9 @@ export class IntentRecognizer {
       /(debt|loan).*(strategy|plan|help)/i.test(lower)
     ) {
       return {
-        type: 'debt_strategy',
+        type: "debt_strategy",
         confidence: 0.7,
-        reason: 'Debt management keywords detected',
+        reason: "Debt management keywords detected",
         requiresConfirmation: false,
         metadata: {},
       };
@@ -491,9 +491,9 @@ export class IntentRecognizer {
       /investment.*(advice|recommendation)/i.test(lower)
     ) {
       return {
-        type: 'investment_advice',
+        type: "investment_advice",
         confidence: 0.7,
-        reason: 'Investment keywords detected',
+        reason: "Investment keywords detected",
         requiresConfirmation: false,
         metadata: {},
       };
@@ -502,9 +502,9 @@ export class IntentRecognizer {
     // Credit score
     if (/(credit score|credit report|fico|improve credit)/i.test(lower)) {
       return {
-        type: 'credit_score',
+        type: "credit_score",
         confidence: 0.8,
-        reason: 'Credit score keywords detected',
+        reason: "Credit score keywords detected",
         requiresConfirmation: false,
         metadata: {},
       };
@@ -516,9 +516,9 @@ export class IntentRecognizer {
       /(show|display).*(account|balance|net worth)/i.test(lower)
     ) {
       return {
-        type: 'account_summary',
+        type: "account_summary",
         confidence: 0.7,
-        reason: 'Account summary keywords detected',
+        reason: "Account summary keywords detected",
         requiresConfirmation: false,
         metadata: {},
       };
@@ -527,9 +527,9 @@ export class IntentRecognizer {
     // Recommendations
     if (/(what should|should i|recommend|advice|suggest)/i.test(lower)) {
       return {
-        type: 'get_recommendations',
+        type: "get_recommendations",
         confidence: 0.65,
-        reason: 'Recommendation request keywords detected',
+        reason: "Recommendation request keywords detected",
         requiresConfirmation: false,
         metadata: {},
       };
@@ -540,9 +540,9 @@ export class IntentRecognizer {
       /(thank|thanks|helpful|great|good job|not working|error|bug)/i.test(lower)
     ) {
       return {
-        type: 'feedback',
+        type: "feedback",
         confidence: 0.6,
-        reason: 'Feedback keywords detected',
+        reason: "Feedback keywords detected",
         requiresConfirmation: false,
         metadata: {},
       };
@@ -550,9 +550,9 @@ export class IntentRecognizer {
 
     // Default to general question
     return {
-      type: 'general_question',
+      type: "general_question",
       confidence: 0.5,
-      reason: 'No specific intent pattern matched',
+      reason: "No specific intent pattern matched",
       requiresConfirmation: false,
       metadata: {},
     };
@@ -601,7 +601,7 @@ export class IntentRecognizer {
     context?: {
       recentIntents?: IntentType[];
       pendingAction?: IntentType | null;
-    }
+    },
   ): string {
     let key = message.toLowerCase().trim();
 

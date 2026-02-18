@@ -10,7 +10,7 @@
  * - Log rotation
  */
 
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'fatal';
+export type LogLevel = "debug" | "info" | "warn" | "error" | "fatal";
 
 export interface LogContext {
   userId?: string;
@@ -51,28 +51,28 @@ class Logger {
   private environment: string;
   private minLevel: LogLevel;
 
-  constructor(serviceName: string = 'fynvita') {
+  constructor(serviceName: string = "fynvita") {
     this.serviceName = serviceName;
-    this.environment = process.env.NODE_ENV || 'development';
+    this.environment = process.env.NODE_ENV || "development";
     this.minLevel = this.getMinLevel();
   }
 
   private getMinLevel(): LogLevel {
     const level = process.env.LOG_LEVEL?.toLowerCase();
     if (
-      level === 'debug' ||
-      level === 'info' ||
-      level === 'warn' ||
-      level === 'error' ||
-      level === 'fatal'
+      level === "debug" ||
+      level === "info" ||
+      level === "warn" ||
+      level === "error" ||
+      level === "fatal"
     ) {
       return level;
     }
-    return this.environment === 'production' ? 'info' : 'debug';
+    return this.environment === "production" ? "info" : "debug";
   }
 
   private shouldLog(level: LogLevel): boolean {
-    const levels: LogLevel[] = ['debug', 'info', 'warn', 'error', 'fatal'];
+    const levels: LogLevel[] = ["debug", "info", "warn", "error", "fatal"];
     const currentLevelIndex = levels.indexOf(this.minLevel);
     const logLevelIndex = levels.indexOf(level);
     return logLevelIndex >= currentLevelIndex;
@@ -86,7 +86,7 @@ class Logger {
       timestamp: new Date().toISOString(),
     };
 
-    if (this.environment === 'development') {
+    if (this.environment === "development") {
       // Pretty print for development
       return this.prettyPrint(formatted);
     }
@@ -95,7 +95,9 @@ class Logger {
     return JSON.stringify(formatted);
   }
 
-  private prettyPrint(entry: LogEntry & { service: string; environment: string }): string {
+  private prettyPrint(
+    entry: LogEntry & { service: string; environment: string },
+  ): string {
     const level = entry.level.toUpperCase().padEnd(5);
     const timestamp = new Date(entry.timestamp).toLocaleTimeString();
     const message = entry.message;
@@ -124,7 +126,7 @@ class Logger {
     level: LogLevel,
     message: string,
     context?: LogContext,
-    error?: Error
+    error?: Error,
   ): void {
     if (!this.shouldLog(level)) {
       return;
@@ -161,23 +163,23 @@ class Logger {
   }
 
   debug(message: string, context?: LogContext): void {
-    this.log('debug', message, context);
+    this.log("debug", message, context);
   }
 
   info(message: string, context?: LogContext): void {
-    this.log('info', message, context);
+    this.log("info", message, context);
   }
 
   warn(message: string, context?: LogContext): void {
-    this.log('warn', message, context);
+    this.log("warn", message, context);
   }
 
   error(message: string, error?: Error, context?: LogContext): void {
-    this.log('error', message, context, error);
+    this.log("error", message, context, error);
   }
 
   fatal(message: string, error?: Error, context?: LogContext): void {
-    this.log('fatal', message, context, error);
+    this.log("fatal", message, context, error);
   }
 
   /**
@@ -193,7 +195,7 @@ class Logger {
     userId?: string;
     success: boolean;
   }): void {
-    this.info('AI Interaction', {
+    this.info("AI Interaction", {
       model: data.model,
       tokens: data.tokens,
       cost: data.cost,
@@ -218,10 +220,10 @@ class Logger {
   }): void {
     const level =
       data.statusCode >= 500
-        ? 'error'
+        ? "error"
         : data.statusCode >= 400
-          ? 'warn'
-          : 'info';
+          ? "warn"
+          : "info";
 
     this.log(level, `API Request: ${data.method} ${data.path}`, {
       method: data.method,
@@ -238,15 +240,15 @@ class Logger {
    */
   securityEvent(data: {
     event: string;
-    severity: 'low' | 'medium' | 'high' | 'critical';
+    severity: "low" | "medium" | "high" | "critical";
     userId?: string;
     ipAddress?: string;
     details?: Record<string, string | number | boolean | undefined | null>;
   }): void {
     const level =
-      data.severity === 'critical' || data.severity === 'high'
-        ? 'error'
-        : 'warn';
+      data.severity === "critical" || data.severity === "high"
+        ? "error"
+        : "warn";
 
     this.log(level, `Security Event: ${data.event}`, {
       event: data.event,
@@ -279,7 +281,7 @@ class Logger {
       level: LogLevel,
       message: string,
       childContext?: LogContext,
-      error?: Error
+      error?: Error,
     ) => {
       originalLog(level, message, { ...context, ...childContext }, error);
     };
@@ -296,7 +298,7 @@ export const logger = new Logger();
  */
 export function createRequestLogger(
   requestId: string,
-  userId?: string
+  userId?: string,
 ): Logger {
   return logger.child({ requestId, userId });
 }
@@ -308,7 +310,7 @@ export function trackPerformance(operation: string) {
   return function (
     _target: unknown,
     _propertyKey: string,
-    descriptor: PropertyDescriptor
+    descriptor: PropertyDescriptor,
   ) {
     const originalMethod = descriptor.value;
 
@@ -343,7 +345,7 @@ export interface LogRotationConfig {
  * Default log rotation config
  */
 export const DEFAULT_LOG_ROTATION: LogRotationConfig = {
-  maxSize: '100m',
+  maxSize: "100m",
   maxFiles: 10,
   compress: true,
 };
@@ -363,7 +365,7 @@ export interface LogAggregationConfig {
  * Default log aggregation config
  */
 export const DEFAULT_LOG_AGGREGATION: LogAggregationConfig = {
-  enabled: process.env.NODE_ENV === 'production',
+  enabled: process.env.NODE_ENV === "production",
   endpoint: process.env.LOG_AGGREGATION_ENDPOINT,
   apiKey: process.env.LOG_AGGREGATION_API_KEY,
   batchSize: 100,

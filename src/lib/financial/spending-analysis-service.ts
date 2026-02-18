@@ -5,14 +5,14 @@
  * trend analysis, and AI-powered insights.
  */
 
-import { getSupabase } from '@/lib/supabase/client';
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
-import { plaidService } from './plaid-service';
+import { plaidService } from "./plaid-service";
 import {
   BudgetCategoryValue,
   CATEGORY_DISPLAY_NAMES,
-} from './types/budget.types';
+} from "./types/budget.types";
 
 // ============================================================================
 // TYPES
@@ -42,7 +42,7 @@ export interface CategorySpending {
   percentage: number;
   transactionCount: number;
   averageTransaction: number;
-  trend: 'increasing' | 'decreasing' | 'stable';
+  trend: "increasing" | "decreasing" | "stable";
   changeFromLastPeriod: number;
 }
 
@@ -59,7 +59,7 @@ export interface MerchantSpending {
 export interface SpendingAnomaly {
   id: string;
   type: AnomalyType;
-  severity: 'low' | 'medium' | 'high';
+  severity: "low" | "medium" | "high";
   description: string;
   amount: number;
   expectedAmount?: number;
@@ -70,12 +70,12 @@ export interface SpendingAnomaly {
 }
 
 export type AnomalyType =
-  | 'unusual_large_transaction'
-  | 'unusual_merchant'
-  | 'unusual_category'
-  | 'unusual_frequency'
-  | 'duplicate_charge'
-  | 'subscription_increase';
+  | "unusual_large_transaction"
+  | "unusual_merchant"
+  | "unusual_category"
+  | "unusual_frequency"
+  | "duplicate_charge"
+  | "subscription_increase";
 
 export interface SpendingPattern {
   type: PatternType;
@@ -87,18 +87,18 @@ export interface SpendingPattern {
 }
 
 export type PatternType =
-  | 'recurring_subscription'
-  | 'weekly_spending'
-  | 'payday_spending'
-  | 'seasonal_spending'
-  | 'weekend_spending';
+  | "recurring_subscription"
+  | "weekly_spending"
+  | "payday_spending"
+  | "seasonal_spending"
+  | "weekend_spending";
 
 export interface SpendingInsight {
   id: string;
   type: InsightType;
   title: string;
   description: string;
-  impact: 'positive' | 'negative' | 'neutral';
+  impact: "positive" | "negative" | "neutral";
   potentialSavings?: number;
   actionSuggestion?: string;
   relatedCategory?: string;
@@ -106,13 +106,13 @@ export interface SpendingInsight {
 }
 
 export type InsightType =
-  | 'spending_increase'
-  | 'spending_decrease'
-  | 'budget_at_risk'
-  | 'savings_opportunity'
-  | 'subscription_review'
-  | 'category_optimization'
-  | 'merchant_alternative';
+  | "spending_increase"
+  | "spending_decrease"
+  | "budget_at_risk"
+  | "savings_opportunity"
+  | "subscription_review"
+  | "category_optimization"
+  | "merchant_alternative";
 
 export interface SpendingAnalysisResult {
   period: SpendingPeriod;
@@ -164,7 +164,7 @@ export interface MonthlyFlowData {
 }
 
 export interface CashFlowHealth {
-  status: 'excellent' | 'good' | 'fair' | 'poor';
+  status: "excellent" | "good" | "fair" | "poor";
   score: number;
   message: string;
 }
@@ -181,9 +181,9 @@ export interface CashFlowAnalysis {
     avgSavingsRate: number;
   };
   trends: {
-    income: 'increasing' | 'decreasing' | 'stable';
-    expenses: 'increasing' | 'decreasing' | 'stable';
-    netFlow: 'increasing' | 'decreasing' | 'stable';
+    income: "increasing" | "decreasing" | "stable";
+    expenses: "increasing" | "decreasing" | "stable";
+    netFlow: "increasing" | "decreasing" | "stable";
   };
   health: CashFlowHealth;
   recommendations: string[];
@@ -213,7 +213,7 @@ export interface CategoryTrend {
   monthlyAmounts: number[];
   total: number;
   average: number;
-  trend: 'increasing' | 'decreasing' | 'stable';
+  trend: "increasing" | "decreasing" | "stable";
   percentChange: number;
 }
 
@@ -233,7 +233,7 @@ export interface SignificantChange {
   previousMonth: string;
   amount: number;
   percentChange: number;
-  direction: 'increase' | 'decrease';
+  direction: "increase" | "decrease";
 }
 
 export interface ProjectedSpending {
@@ -245,7 +245,7 @@ export interface ProjectedSpending {
 export interface SpendingTrendAnalysis {
   period: SpendingPeriod;
   monthlyTotals: MonthlySpendingData[];
-  overallTrend: 'increasing' | 'decreasing' | 'stable';
+  overallTrend: "increasing" | "decreasing" | "stable";
   categoryTrends: CategoryTrend[];
   yoyComparison?: YearOverYearComparison;
   significantChanges: SignificantChange[];
@@ -257,28 +257,28 @@ export interface SpendingTrendAnalysis {
 // ============================================================================
 
 const PLAID_TO_BUDGET_CATEGORY: Record<string, BudgetCategoryValue> = {
-  'Food and Drink': 'dining_out',
-  'Food and Drink - Restaurants': 'dining_out',
-  'Food and Drink - Groceries': 'groceries',
-  Shops: 'shopping',
-  'Shops - Supermarkets and Groceries': 'groceries',
-  Travel: 'travel',
-  'Travel - Airlines and Aviation Services': 'travel',
-  Transfer: 'other',
-  Recreation: 'entertainment',
-  'Service - Utilities': 'utilities',
-  'Service - Insurance': 'insurance',
-  'Service - Financial': 'debt_payments',
-  'Service - Healthcare': 'healthcare',
-  'Payment - Rent': 'housing',
-  'Payment - Credit Card': 'debt_payments',
+  "Food and Drink": "dining_out",
+  "Food and Drink - Restaurants": "dining_out",
+  "Food and Drink - Groceries": "groceries",
+  Shops: "shopping",
+  "Shops - Supermarkets and Groceries": "groceries",
+  Travel: "travel",
+  "Travel - Airlines and Aviation Services": "travel",
+  Transfer: "other",
+  Recreation: "entertainment",
+  "Service - Utilities": "utilities",
+  "Service - Insurance": "insurance",
+  "Service - Financial": "debt_payments",
+  "Service - Healthcare": "healthcare",
+  "Payment - Rent": "housing",
+  "Payment - Credit Card": "debt_payments",
 };
 
 /**
  * Map Plaid category to budget category
  */
 function mapPlaidCategory(plaidCategory: string): BudgetCategoryValue {
-  return PLAID_TO_BUDGET_CATEGORY[plaidCategory] || 'other';
+  return PLAID_TO_BUDGET_CATEGORY[plaidCategory] || "other";
 }
 
 // ============================================================================
@@ -291,7 +291,7 @@ class SpendingAnalysisService {
    */
   async analyzeSpending(
     userId: string,
-    period: SpendingPeriod
+    period: SpendingPeriod,
   ): Promise<SpendingAnalysisResult> {
     // Get all transactions for the period
     const transactions = await this.getTransactions(userId, period);
@@ -306,7 +306,7 @@ class SpendingAnalysisService {
 
     const daysInPeriod = Math.ceil(
       (period.endDate.getTime() - period.startDate.getTime()) /
-        (1000 * 60 * 60 * 24)
+        (1000 * 60 * 60 * 24),
     );
     const averageDailySpending = totalSpending / Math.max(1, daysInPeriod);
 
@@ -329,7 +329,7 @@ class SpendingAnalysisService {
     const comparison = await this.compareToPreviousPeriod(
       userId,
       period,
-      byCategory
+      byCategory,
     );
 
     return {
@@ -352,7 +352,7 @@ class SpendingAnalysisService {
    */
   private async getTransactions(
     userId: string,
-    period: SpendingPeriod
+    period: SpendingPeriod,
   ): Promise<SpendingTransaction[]> {
     try {
       const accounts = await plaidService.getAccounts(userId);
@@ -362,7 +362,7 @@ class SpendingAnalysisService {
         const transactions = await plaidService.getTransactions(
           account.accountId,
           period.startDate,
-          period.endDate
+          period.endDate,
         );
 
         for (const txn of transactions) {
@@ -372,7 +372,7 @@ class SpendingAnalysisService {
             date: txn.date,
             amount: txn.amount,
             merchantName: txn.merchantName || txn.name,
-            category: mapPlaidCategory(txn.category[0] || 'Other'),
+            category: mapPlaidCategory(txn.category[0] || "Other"),
             subcategory: txn.category[1],
             isPending: txn.pending,
             isRecurring: this.detectRecurring(txn.name, txn.amount),
@@ -381,7 +381,7 @@ class SpendingAnalysisService {
       }
 
       return allTransactions.sort(
-        (a, b) => b.date.getTime() - a.date.getTime()
+        (a, b) => b.date.getTime() - a.date.getTime(),
       );
     } catch (_error) {
       // Error logged
@@ -394,26 +394,26 @@ class SpendingAnalysisService {
    */
   private detectRecurring(name: string, _amount: number): boolean {
     const recurringKeywords = [
-      'subscription',
-      'netflix',
-      'spotify',
-      'hulu',
-      'disney',
-      'amazon prime',
-      'apple',
-      'google',
-      'microsoft',
-      'adobe',
-      'gym',
-      'insurance',
-      'utility',
-      'electric',
-      'water',
-      'gas',
-      'internet',
-      'phone',
-      'rent',
-      'mortgage',
+      "subscription",
+      "netflix",
+      "spotify",
+      "hulu",
+      "disney",
+      "amazon prime",
+      "apple",
+      "google",
+      "microsoft",
+      "adobe",
+      "gym",
+      "insurance",
+      "utility",
+      "electric",
+      "water",
+      "gas",
+      "internet",
+      "phone",
+      "rent",
+      "mortgage",
     ];
 
     const lowerName = name.toLowerCase();
@@ -425,7 +425,7 @@ class SpendingAnalysisService {
    */
   private analyzeByCategory(
     transactions: SpendingTransaction[],
-    totalSpending: number
+    totalSpending: number,
   ): CategorySpending[] {
     const categoryMap = new Map<
       string,
@@ -457,7 +457,7 @@ class SpendingAnalysisService {
             : 0,
         transactionCount: data.count,
         averageTransaction: Math.round((data.amount / data.count) * 100) / 100,
-        trend: 'stable', // Would need historical data for real trend
+        trend: "stable", // Would need historical data for real trend
         changeFromLastPeriod: 0,
       });
     });
@@ -470,28 +470,28 @@ class SpendingAnalysisService {
    */
   private getCategoryDisplayName(category: string): string {
     const displayNames: Record<string, string> = {
-      housing: 'Housing',
-      utilities: 'Utilities',
-      groceries: 'Groceries',
-      transportation: 'Transportation',
-      insurance: 'Insurance',
-      healthcare: 'Healthcare',
-      debt_payments: 'Debt Payments',
-      dining_out: 'Dining Out',
-      entertainment: 'Entertainment',
-      shopping: 'Shopping',
-      personal_care: 'Personal Care',
-      fitness: 'Fitness',
-      subscriptions: 'Subscriptions',
-      savings: 'Savings',
-      investments: 'Investments',
-      emergency_fund: 'Emergency Fund',
-      education: 'Education',
-      travel: 'Travel',
-      gifts: 'Gifts',
-      pets: 'Pets',
-      childcare: 'Childcare',
-      other: 'Other',
+      housing: "Housing",
+      utilities: "Utilities",
+      groceries: "Groceries",
+      transportation: "Transportation",
+      insurance: "Insurance",
+      healthcare: "Healthcare",
+      debt_payments: "Debt Payments",
+      dining_out: "Dining Out",
+      entertainment: "Entertainment",
+      shopping: "Shopping",
+      personal_care: "Personal Care",
+      fitness: "Fitness",
+      subscriptions: "Subscriptions",
+      savings: "Savings",
+      investments: "Investments",
+      emergency_fund: "Emergency Fund",
+      education: "Education",
+      travel: "Travel",
+      gifts: "Gifts",
+      pets: "Pets",
+      childcare: "Childcare",
+      other: "Other",
     };
     return displayNames[category] || category;
   }
@@ -500,7 +500,7 @@ class SpendingAnalysisService {
    * Analyze spending by merchant
    */
   private analyzeByMerchant(
-    transactions: SpendingTransaction[]
+    transactions: SpendingTransaction[],
   ): MerchantSpending[] {
     const merchantMap = new Map<
       string,
@@ -514,7 +514,7 @@ class SpendingAnalysisService {
     >();
 
     for (const txn of transactions) {
-      const merchant = txn.merchantName || 'Unknown';
+      const merchant = txn.merchantName || "Unknown";
       const existing = merchantMap.get(merchant);
 
       if (existing) {
@@ -557,7 +557,7 @@ class SpendingAnalysisService {
    */
   private async detectAnomalies(
     userId: string,
-    transactions: SpendingTransaction[]
+    transactions: SpendingTransaction[],
   ): Promise<SpendingAnomaly[]> {
     const anomalies: SpendingAnomaly[] = [];
 
@@ -585,8 +585,8 @@ class SpendingAnalysisService {
         if (txn.amount > average * 3 && txn.amount > 100) {
           anomalies.push({
             id: `anomaly_${txn.id}`,
-            type: 'unusual_large_transaction',
-            severity: txn.amount > average * 5 ? 'high' : 'medium',
+            type: "unusual_large_transaction",
+            severity: txn.amount > average * 5 ? "high" : "medium",
             description: `Unusually large ${this.getCategoryDisplayName(txn.category)} transaction at ${txn.merchantName}`,
             amount: txn.amount,
             expectedAmount: average,
@@ -601,7 +601,7 @@ class SpendingAnalysisService {
 
     // Check for potential duplicate charges (same merchant, same amount, within 7 days)
     const sortedByMerchant = [...transactions].sort((a, b) =>
-      a.merchantName.localeCompare(b.merchantName)
+      a.merchantName.localeCompare(b.merchantName),
     );
 
     for (let i = 1; i < sortedByMerchant.length; i++) {
@@ -616,8 +616,8 @@ class SpendingAnalysisService {
       ) {
         anomalies.push({
           id: `duplicate_${curr.id}`,
-          type: 'duplicate_charge',
-          severity: 'medium',
+          type: "duplicate_charge",
+          severity: "medium",
           description: `Potential duplicate charge at ${curr.merchantName}`,
           amount: curr.amount,
           merchant: curr.merchantName,
@@ -634,7 +634,7 @@ class SpendingAnalysisService {
    * Detect spending patterns
    */
   private detectPatterns(
-    transactions: SpendingTransaction[]
+    transactions: SpendingTransaction[],
   ): SpendingPattern[] {
     const patterns: SpendingPattern[] = [];
 
@@ -653,18 +653,18 @@ class SpendingAnalysisService {
           const avgAmount =
             txns.reduce(
               (sum: number, t: SpendingTransaction) => sum + t.amount,
-              0
+              0,
             ) / txns.length;
           patterns.push({
-            type: 'recurring_subscription',
+            type: "recurring_subscription",
             description: `Monthly subscription to ${merchant}`,
-            frequency: 'monthly',
+            frequency: "monthly",
             averageAmount: Math.round(avgAmount * 100) / 100,
-            nextExpected: this.getNextExpectedDate(txns[0].date, 'monthly'),
+            nextExpected: this.getNextExpectedDate(txns[0].date, "monthly"),
             relatedTransactions: txns.map((t: SpendingTransaction) => t.id),
           });
         }
-      }
+      },
     );
 
     // Detect weekend spending pattern
@@ -678,9 +678,9 @@ class SpendingAnalysisService {
         weekendTransactions.reduce((sum, t) => sum + t.amount, 0) /
         weekendTransactions.length;
       patterns.push({
-        type: 'weekend_spending',
-        description: 'Higher spending on weekends detected',
-        frequency: 'weekly',
+        type: "weekend_spending",
+        description: "Higher spending on weekends detected",
+        frequency: "weekly",
         averageAmount: Math.round(avgWeekendSpending * 100) / 100,
         relatedTransactions: weekendTransactions.slice(0, 10).map((t) => t.id),
       });
@@ -694,17 +694,17 @@ class SpendingAnalysisService {
    */
   private getNextExpectedDate(
     lastDate: Date,
-    frequency: 'weekly' | 'biweekly' | 'monthly'
+    frequency: "weekly" | "biweekly" | "monthly",
   ): Date {
     const next = new Date(lastDate);
     switch (frequency) {
-      case 'weekly':
+      case "weekly":
         next.setDate(next.getDate() + 7);
         break;
-      case 'biweekly':
+      case "biweekly":
         next.setDate(next.getDate() + 14);
         break;
-      case 'monthly':
+      case "monthly":
         next.setMonth(next.getMonth() + 1);
         break;
     }
@@ -717,7 +717,7 @@ class SpendingAnalysisService {
   private generateInsights(
     byCategory: CategorySpending[],
     byMerchant: MerchantSpending[],
-    anomalies: SpendingAnomaly[]
+    anomalies: SpendingAnomaly[],
   ): SpendingInsight[] {
     const insights: SpendingInsight[] = [];
     let insightId = 0;
@@ -727,10 +727,10 @@ class SpendingAnalysisService {
       const topCategory = byCategory[0];
       insights.push({
         id: `insight_${++insightId}`,
-        type: 'category_optimization',
+        type: "category_optimization",
         title: `${topCategory.displayName} is your top spending category`,
         description: `You spent $${topCategory.amount.toFixed(2)} on ${topCategory.displayName} (${topCategory.percentage.toFixed(1)}% of total spending).`,
-        impact: topCategory.percentage > 30 ? 'negative' : 'neutral',
+        impact: topCategory.percentage > 30 ? "negative" : "neutral",
         relatedCategory: topCategory.category,
       });
     }
@@ -740,17 +740,17 @@ class SpendingAnalysisService {
     if (recurringMerchants.length > 3) {
       const totalSubscriptions = recurringMerchants.reduce(
         (sum, m) => sum + m.amount,
-        0
+        0,
       );
       insights.push({
         id: `insight_${++insightId}`,
-        type: 'subscription_review',
-        title: 'Consider reviewing your subscriptions',
+        type: "subscription_review",
+        title: "Consider reviewing your subscriptions",
         description: `You have ${recurringMerchants.length} recurring charges totaling $${totalSubscriptions.toFixed(2)}.`,
-        impact: 'neutral',
+        impact: "neutral",
         potentialSavings: totalSubscriptions * 0.2, // Assume 20% could be saved
         actionSuggestion:
-          'Review your subscriptions and cancel any you no longer use.',
+          "Review your subscriptions and cancel any you no longer use.",
       });
     }
 
@@ -758,13 +758,13 @@ class SpendingAnalysisService {
     if (anomalies.length > 0) {
       insights.push({
         id: `insight_${++insightId}`,
-        type: 'spending_increase',
+        type: "spending_increase",
         title: `${anomalies.length} unusual transaction(s) detected`,
         description:
-          'We found some transactions that seem unusual compared to your typical spending.',
-        impact: 'negative',
+          "We found some transactions that seem unusual compared to your typical spending.",
+        impact: "negative",
         actionSuggestion:
-          'Review these transactions to ensure they are legitimate.',
+          "Review these transactions to ensure they are legitimate.",
       });
     }
 
@@ -777,7 +777,7 @@ class SpendingAnalysisService {
   private async compareToPreviousPeriod(
     userId: string,
     currentPeriod: SpendingPeriod,
-    currentByCategory: CategorySpending[]
+    currentByCategory: CategorySpending[],
   ): Promise<PeriodComparison> {
     const periodDuration =
       currentPeriod.endDate.getTime() - currentPeriod.startDate.getTime();
@@ -790,22 +790,22 @@ class SpendingAnalysisService {
     // Get previous period transactions
     const previousTransactions = await this.getTransactions(
       userId,
-      previousPeriod
+      previousPeriod,
     );
     const previousExpenses = previousTransactions.filter((t) => t.amount > 0);
     const previousTotal = previousExpenses.reduce(
       (sum, t) => sum + t.amount,
-      0
+      0,
     );
     const previousByCategory = this.analyzeByCategory(
       previousExpenses,
-      previousTotal
+      previousTotal,
     );
 
     // Calculate current total
     const currentTotal = currentByCategory.reduce(
       (sum, c) => sum + c.amount,
-      0
+      0,
     );
 
     // Calculate changes
@@ -817,7 +817,7 @@ class SpendingAnalysisService {
     const categoryChanges: CategoryChange[] = [];
     for (const current of currentByCategory) {
       const previous = previousByCategory.find(
-        (p) => p.category === current.category
+        (p) => p.category === current.category,
       );
       const prevAmount = previous?.amount || 0;
       const change = current.amount - prevAmount;
@@ -841,7 +841,7 @@ class SpendingAnalysisService {
       spendingChange: Math.round(spendingChange * 100) / 100,
       spendingChangePercent: Math.round(spendingChangePercent * 100) / 100,
       categoryChanges: categoryChanges.sort(
-        (a, b) => Math.abs(b.change) - Math.abs(a.change)
+        (a, b) => Math.abs(b.change) - Math.abs(a.change),
       ),
     };
   }
@@ -851,7 +851,7 @@ class SpendingAnalysisService {
    */
   async predictSpending(
     userId: string,
-    months: number = 3
+    months: number = 3,
   ): Promise<SpendingPrediction> {
     // Get spending for the last N months
     const endDate = new Date();
@@ -917,7 +917,7 @@ class SpendingAnalysisService {
       thisMonth: thisMonthAnalysis.totalSpending,
       lastMonth: lastMonthAnalysis.totalSpending,
       changePercent: Math.round(changePercent * 100) / 100,
-      topCategory: topCategory?.displayName || 'None',
+      topCategory: topCategory?.displayName || "None",
       topCategoryAmount: topCategory?.amount || 0,
     };
   }
@@ -931,7 +931,7 @@ class SpendingAnalysisService {
    */
   async getCashFlowAnalysis(
     userId: string,
-    months: number = 6
+    months: number = 6,
   ): Promise<CashFlowAnalysis> {
     const now = new Date();
     const monthlyData: MonthlyFlowData[] = [];
@@ -948,9 +948,9 @@ class SpendingAnalysisService {
 
       monthlyData.unshift({
         month: monthStart.toISOString().slice(0, 7),
-        monthLabel: monthStart.toLocaleDateString('en-US', {
-          month: 'short',
-          year: 'numeric',
+        monthLabel: monthStart.toLocaleDateString("en-US", {
+          month: "short",
+          year: "numeric",
         }),
         income: analysis.totalIncome,
         expenses: analysis.totalSpending,
@@ -974,14 +974,14 @@ class SpendingAnalysisService {
     // Calculate trend (linear regression slope)
     const incomeTrend = this.calculateTrend(monthlyData.map((m) => m.income));
     const expensesTrend = this.calculateTrend(
-      monthlyData.map((m) => m.expenses)
+      monthlyData.map((m) => m.expenses),
     );
     const netFlowTrend = this.calculateTrend(monthlyData.map((m) => m.netFlow));
 
     // Determine overall health
     const cashFlowHealth = this.determineCashFlowHealth(
       avgSavingsRate,
-      netFlowTrend
+      netFlowTrend,
     );
 
     return {
@@ -1008,7 +1008,7 @@ class SpendingAnalysisService {
         avgSavingsRate,
         incomeTrend,
         expensesTrend,
-        monthlyData
+        monthlyData,
       ),
     };
   }
@@ -1017,9 +1017,9 @@ class SpendingAnalysisService {
    * Calculate linear trend from data points
    */
   private calculateTrend(
-    values: number[]
-  ): 'increasing' | 'decreasing' | 'stable' {
-    if (values.length < 2) return 'stable';
+    values: number[],
+  ): "increasing" | "decreasing" | "stable" {
+    if (values.length < 2) return "stable";
 
     const n = values.length;
     const sumX = (n * (n - 1)) / 2;
@@ -1031,9 +1031,9 @@ class SpendingAnalysisService {
     const avgValue = sumY / n;
     const percentChange = avgValue !== 0 ? (slope / avgValue) * 100 : 0;
 
-    if (percentChange > 5) return 'increasing';
-    if (percentChange < -5) return 'decreasing';
-    return 'stable';
+    if (percentChange > 5) return "increasing";
+    if (percentChange < -5) return "decreasing";
+    return "stable";
   }
 
   /**
@@ -1041,34 +1041,34 @@ class SpendingAnalysisService {
    */
   private determineCashFlowHealth(
     savingsRate: number,
-    netFlowTrend: 'increasing' | 'decreasing' | 'stable'
+    netFlowTrend: "increasing" | "decreasing" | "stable",
   ): CashFlowHealth {
-    if (savingsRate >= 20 && netFlowTrend !== 'decreasing') {
+    if (savingsRate >= 20 && netFlowTrend !== "decreasing") {
       return {
-        status: 'excellent',
+        status: "excellent",
         score: 95,
-        message: 'Excellent cash flow! You are saving well above average.',
+        message: "Excellent cash flow! You are saving well above average.",
       };
     }
     if (savingsRate >= 10) {
       return {
-        status: 'good',
+        status: "good",
         score: 75,
-        message: 'Good cash flow. Consider increasing savings if possible.',
+        message: "Good cash flow. Consider increasing savings if possible.",
       };
     }
     if (savingsRate >= 0) {
       return {
-        status: 'fair',
+        status: "fair",
         score: 50,
-        message: 'Breaking even. Look for ways to reduce expenses.',
+        message: "Breaking even. Look for ways to reduce expenses.",
       };
     }
     return {
-      status: 'poor',
+      status: "poor",
       score: 25,
       message:
-        'Negative cash flow. Immediate action needed to reduce spending.',
+        "Negative cash flow. Immediate action needed to reduce spending.",
     };
   }
 
@@ -1077,33 +1077,33 @@ class SpendingAnalysisService {
    */
   private generateCashFlowRecommendations(
     savingsRate: number,
-    incomeTrend: 'increasing' | 'decreasing' | 'stable',
-    expensesTrend: 'increasing' | 'decreasing' | 'stable',
-    monthlyData: MonthlyFlowData[]
+    incomeTrend: "increasing" | "decreasing" | "stable",
+    expensesTrend: "increasing" | "decreasing" | "stable",
+    monthlyData: MonthlyFlowData[],
   ): string[] {
     const recommendations: string[] = [];
 
     if (savingsRate < 10) {
       recommendations.push(
-        'Aim to save at least 10-20% of your income each month.'
+        "Aim to save at least 10-20% of your income each month.",
       );
     }
 
-    if (expensesTrend === 'increasing') {
+    if (expensesTrend === "increasing") {
       recommendations.push(
-        'Your expenses are trending upward. Review recent spending for areas to cut back.'
+        "Your expenses are trending upward. Review recent spending for areas to cut back.",
       );
     }
 
-    if (incomeTrend === 'decreasing') {
+    if (incomeTrend === "decreasing") {
       recommendations.push(
-        'Your income is trending downward. Consider additional income sources.'
+        "Your income is trending downward. Consider additional income sources.",
       );
     }
 
     if (savingsRate < 0) {
       recommendations.push(
-        'You are spending more than you earn. Create a strict budget immediately.'
+        "You are spending more than you earn. Create a strict budget immediately.",
       );
     }
 
@@ -1114,13 +1114,13 @@ class SpendingAnalysisService {
 
     if (hasNegativeMonths && avgNetFlow > 0) {
       recommendations.push(
-        'Some months show negative cash flow. Build an emergency fund for irregular months.'
+        "Some months show negative cash flow. Build an emergency fund for irregular months.",
       );
     }
 
     if (recommendations.length === 0) {
       recommendations.push(
-        'Great job! Maintain your current spending habits and consider investing surplus.'
+        "Great job! Maintain your current spending habits and consider investing surplus.",
       );
     }
 
@@ -1136,7 +1136,7 @@ class SpendingAnalysisService {
    */
   async getSpendingTrends(
     userId: string,
-    options: TrendAnalysisOptions = {}
+    options: TrendAnalysisOptions = {},
   ): Promise<SpendingTrendAnalysis> {
     const { months = 6, compareYoY = false, categories } = options;
     const now = new Date();
@@ -1145,7 +1145,7 @@ class SpendingAnalysisService {
     const currentPeriodData = await this.getMonthlySpendingData(
       userId,
       months,
-      now
+      now,
     );
 
     // Get year-over-year comparison if requested
@@ -1156,11 +1156,11 @@ class SpendingAnalysisService {
       const lastYearData = await this.getMonthlySpendingData(
         userId,
         months,
-        lastYearDate
+        lastYearDate,
       );
       yoyComparison = this.calculateYoYComparison(
         currentPeriodData,
-        lastYearData
+        lastYearData,
       );
     }
 
@@ -1168,7 +1168,7 @@ class SpendingAnalysisService {
     const categoryTrends = await this.getCategoryTrends(
       userId,
       months,
-      categories
+      categories,
     );
 
     // Calculate overall trend
@@ -1198,7 +1198,7 @@ class SpendingAnalysisService {
   private async getMonthlySpendingData(
     userId: string,
     months: number,
-    endDate: Date
+    endDate: Date,
   ): Promise<MonthlySpendingData[]> {
     const data: MonthlySpendingData[] = [];
 
@@ -1206,12 +1206,12 @@ class SpendingAnalysisService {
       const monthStart = new Date(
         endDate.getFullYear(),
         endDate.getMonth() - i,
-        1
+        1,
       );
       const monthEnd = new Date(
         endDate.getFullYear(),
         endDate.getMonth() - i + 1,
-        0
+        0,
       );
 
       const analysis = await this.analyzeSpending(userId, {
@@ -1226,15 +1226,15 @@ class SpendingAnalysisService {
 
       data.unshift({
         month: monthStart.toISOString().slice(0, 7),
-        monthLabel: monthStart.toLocaleDateString('en-US', {
-          month: 'short',
-          year: 'numeric',
+        monthLabel: monthStart.toLocaleDateString("en-US", {
+          month: "short",
+          year: "numeric",
         }),
         total: analysis.totalSpending,
         byCategory,
         transactionCount: analysis.byCategory.reduce(
           (sum, c) => sum + c.transactionCount,
-          0
+          0,
         ),
       });
     }
@@ -1248,7 +1248,7 @@ class SpendingAnalysisService {
   private async getCategoryTrends(
     userId: string,
     months: number,
-    filterCategories?: string[]
+    filterCategories?: string[],
   ): Promise<CategoryTrend[]> {
     const now = new Date();
     const categoryData: Record<string, number[]> = {};
@@ -1299,7 +1299,7 @@ class SpendingAnalysisService {
    */
   private calculateYoYComparison(
     currentData: MonthlySpendingData[],
-    lastYearData: MonthlySpendingData[]
+    lastYearData: MonthlySpendingData[],
   ): YearOverYearComparison {
     const currentTotal = currentData.reduce((sum, m) => sum + m.total, 0);
     const lastYearTotal = lastYearData.reduce((sum, m) => sum + m.total, 0);
@@ -1352,7 +1352,7 @@ class SpendingAnalysisService {
    * Find significant month-over-month changes
    */
   private findSignificantChanges(
-    data: MonthlySpendingData[]
+    data: MonthlySpendingData[],
   ): SignificantChange[] {
     const changes: SignificantChange[] = [];
     const threshold = 20; // 20% change threshold
@@ -1371,7 +1371,7 @@ class SpendingAnalysisService {
             previousMonth: previous.month,
             amount: current.total - previous.total,
             percentChange: Math.round(percentChange * 100) / 100,
-            direction: percentChange > 0 ? 'increase' : 'decrease',
+            direction: percentChange > 0 ? "increase" : "decrease",
           });
         }
       }

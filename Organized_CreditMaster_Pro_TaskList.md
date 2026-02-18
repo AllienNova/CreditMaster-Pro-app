@@ -1,13 +1,12 @@
-
 # CreditMaster Pro: Organized Task List
 
 ## Summary
 
-| Status | Count |
-|--------|-------|
-| ✅ Completed | 379 |
-| ⏳ In Progress | 2 |
-| ⬜ Pending | 255 |
+| Status          | Count   |
+| --------------- | ------- |
+| ✅ Completed    | 379     |
+| ⏳ In Progress  | 2       |
+| ⬜ Pending      | 255     |
 | **Total Tasks** | **636** |
 
 ---
@@ -269,7 +268,7 @@
   - [x] **PHASE 6C: QUALITY & COMPLIANCE (Week 2) ** -16 hours - Quality improvements and compliance
   - [x] **6C.1 Add error boundaries ** -Global error handling components - 2h
   - [x] **6C.2 Add loading states ** -Skeleton loaders for all pages - 2h
-  - [x] **6C.3 Add rate limit headers ** -X-RateLimit-* headers in API responses - 1h
+  - [x] **6C.3 Add rate limit headers ** -X-RateLimit-\* headers in API responses - 1h
   - [x] **6C.4 Email unsubscribe links ** -CAN-SPAM compliance for all emails - 2h
   - [x] **6C.5 CSRF protection ** -Token-based protection for mutations - 3h
   - [x] **6C.6 Audit logging for admin ** -Track sensitive admin operations - 2h
@@ -344,589 +343,397 @@
 - [x] **6.3 Admin Module Expansion (8 screens) ** -Created analytics, audit, config, disputes, features, health, logs, subscriptions screens
 - [x] **6.4 Additional Missing Screens (4 screens) ** -Create documents list, credit-repair screens, billing pages
 - [ ] **CPFI Intelligent Financial Suite Implementation ** -Complete 12-week implementation of Intelligent Banking, AI Financial Coach, Investment Intelligence, and Financial Chat features
-  - [x] **PHASE 1: Foundation & Financial Context Engine (Weeks 1-2) ** -Database migrations, Financial Context Engine, Health Score Calculator - 40h total
-    - [ ] **1.1 Database Schema & Migrations ** -Create all new database tables for financial suite - 8h
-      - [ ] **1.1.1 Create Supabase migration file for financial_goals table ** -Create: supabase/migrations/[timestamp]_create_financial_goals.sql
-Table: financial_goals with columns: id, user_id, name, type, target_amount, current_amount, target_date, priority, auto_save_enabled, auto_save_amount, auto_save_frequency, linked_account_id, status, ai_recommendations, created_at, updated_at
-Includes: RLS policies, indexes on user_id and status
-      - [ ] **1.1.2 Create Supabase migration for financial_health_scores table ** -Create: supabase/migrations/[timestamp]_create_financial_health_scores.sql
-Table: financial_health_scores with columns: id, user_id, overall_score (0-100), category_scores (JSONB), factors (JSONB), recommendations (JSONB), calculated_at
-Includes: RLS policies, unique constraint on (user_id, calculated_at::date)
-      - [ ] **1.1.3 Create Supabase migration for financial_insights table ** -Create: supabase/migrations/[timestamp]_create_financial_insights.sql
-Table: financial_insights with columns: id, user_id, type, category, title, message, impact_amount, action_type, action_data, priority, is_read, is_dismissed, expires_at, created_at
-Includes: RLS policies, index on user_id and unread filter
-      - [ ] **1.1.4 Create Supabase migration for recurring_bills table ** -Create: supabase/migrations/[timestamp]_create_recurring_bills.sql
-Table: recurring_bills with columns: id, user_id, name, category, provider, amount, frequency, due_day, last_payment_date, negotiation_status, negotiation_savings, auto_pay_enabled, linked_transaction_pattern, created_at, updated_at
-Includes: RLS policies, index on user_id
-      - [ ] **1.1.5 Create Supabase migration for investment tables ** -Create: supabase/migrations/[timestamp]_create_investment_tables.sql
-Tables: investment_portfolios, investment_holdings, investment_transactions
-Includes: All columns from schema, foreign keys, RLS policies, indexes on portfolio_id, symbol, user_id
-      - [ ] **1.1.6 Create Supabase migration for trading_signals table ** -Create: supabase/migrations/[timestamp]_create_trading_signals.sql
-Table: trading_signals with columns: id, user_id, symbol, signal_type, confidence_score, analysis_type, price_target, stop_loss, time_horizon, reasoning, supporting_data, is_active, triggered_at, outcome, created_at, expires_at
-Includes: RLS policies, index on active signals
-      - [ ] **1.1.7 Create Supabase migration for financial chat tables ** -Create: supabase/migrations/[timestamp]_create_financial_chat.sql
-Tables: financial_chat_sessions, financial_chat_messages
-Includes: All columns from schema, foreign keys, RLS policies, indexes on session_id and user_id
-      - [ ] **1.1.8 Run migrations and verify in Supabase ** -Execute: npx supabase db push
-Verify: All 8 new tables created with correct columns, RLS enabled, indexes created
-Test: Insert/select operations work with RLS
-    - [ ] **1.2 Financial Context Engine ** -Build unified financial context service - 12h
-      - [ ] **1.2.1 Create FinancialContext TypeScript interfaces ** -Create: src/lib/financial/types/financial-context.types.ts
-Interfaces: FinancialContext, UserProfile, AggregatedAccounts, CategorizedTransactions, BudgetStatus, FinancialGoal, DebtAnalysis, PortfolioSummary, CreditSummary, FinancialHealthScore, AIInsight, Recommendation
-Export all types for use across the application
-      - [ ] **1.2.2 Create Financial Context Engine service ** -Create: src/lib/financial/financial-context-engine.ts
-Class: FinancialContextEngine
-Methods: getFullContext(userId), getAccountsSummary(userId), getTransactionsSummary(userId, days), getBudgetStatus(userId), getGoalProgress(userId), getDebtAnalysis(userId), getCreditSummary(userId)
-Dependencies: plaid-service.ts, financial-service.ts, supabase client
-      - [ ] **1.2.3 Implement account aggregation enhancement ** -Enhance: src/lib/financial/plaid-service.ts
-Add: getAggregatedBalances(), getCategorizedAccounts(), getAccountTrends()
-Integrate with existing Plaid sync to provide unified account view
-      - [ ] **1.2.4 Implement transaction categorization ** -Create: src/lib/financial/transaction-categorizer.ts
-Methods: categorizeTransaction(transaction), getCategorySpending(userId, period), detectRecurringTransactions(userId)
-Use Plaid categories + AI enhancement for accuracy
-      - [ ] **1.2.5 Write unit tests for Financial Context Engine ** -Create: src/lib/financial/__tests__/financial-context-engine.test.ts
-Tests: getFullContext returns complete data, handles missing accounts, handles API errors, caches results
-Coverage target: 95%
-    - [ ] **1.3 Health Score Calculator ** -Implement financial health score algorithm - 8h
-      - [ ] **1.3.1 Create Health Score TypeScript interfaces ** -Create: src/lib/financial/types/health-score.types.ts
-Interfaces: HealthScore, CategoryScore, ScoreFactor, ScoreRecommendation, ScoreComparison
-Categories: savings, debt, spending, credit, insurance (0-100 each)
-      - [ ] **1.3.2 Implement Health Score Calculator service ** -Create: src/lib/financial/health-score-calculator.ts
-Class: HealthScoreCalculator
-Methods: calculateOverallScore(context), calculateSavingsScore(context), calculateDebtScore(context), calculateSpendingScore(context), calculateCreditScore(context), calculateInsuranceScore(context), generateRecommendations(scores)
-Algorithm: Weighted average of 5 categories with factor breakdowns
-      - [ ] **1.3.3 Implement score comparison and benchmarking ** -Add to health-score-calculator.ts:
-Methods: getNationalAverage(), getPeerGroupAverage(age, income), getScorePercentile(score)
-Data: Use industry benchmarks for comparison
-      - [ ] **1.3.4 Write unit tests for Health Score Calculator ** -Create: src/lib/financial/__tests__/health-score-calculator.test.ts
-Tests: Overall score calculation, individual category scores, recommendations generation, edge cases (no debt, no savings), score persistence
-Coverage target: 95%
-    - [ ] **1.4 Financial Context API ** -Build /api/financial/context endpoint - 6h
-      - [ ] **1.4.1 Create GET /api/financial/context endpoint ** -Create: src/app/api/financial/context/route.ts
-Method: GET
-Auth: Required (JWT)
-Response: FinancialContextResponse with summary, accounts, budgetStatus, goals, healthScore, insights
-Caching: 5 minute TTL with stale-while-revalidate
-      - [ ] **1.4.2 Create POST /api/financial/health-score endpoint ** -Create: src/app/api/financial/health-score/route.ts
-Method: POST
-Auth: Required
-Request: { forceRecalculate?: boolean }
-Response: HealthScoreResponse with overall, categories, recommendations, comparisons
-Behavior: Calculate and store score, return cached if recent
-      - [ ] **1.4.3 Create CRUD endpoints for financial_goals ** -Create: src/app/api/financial/goals/route.ts
-Methods: GET (list), POST (create)
-Create: src/app/api/financial/goals/[id]/route.ts
-Methods: GET, PATCH, DELETE
-Validation: Zod schemas for all requests
-Auth: User can only access own goals
-      - [ ] **1.4.4 Create GET /api/financial/insights endpoint ** -Create: src/app/api/financial/insights/route.ts
-Methods: GET (list with filters), PATCH (mark read/dismissed)
-Filters: type, priority, is_read
-Sorting: priority, created_at
-      - [ ] **1.4.5 Write API integration tests ** -Create: src/app/api/financial/__tests__/
-Tests: context.test.ts, health-score.test.ts, goals.test.ts, insights.test.ts
-Coverage: Success cases, auth failures, validation errors, edge cases
-    - [ ] **1.5 Phase 1 QC Checkpoint ** -Quality control verification for Phase 1 deliverables
-      - [ ] **1.5.1 QC: Verify all migrations ran successfully ** -Verification: Check Supabase dashboard for 8 new tables
-Test: Run SQL queries to verify RLS policies work
-Document: Screenshot of schema in Supabase Studio
-      - [ ] **1.5.2 QC: Run TypeScript type checking ** -Command: npx tsc --noEmit
-Expected: 0 type errors
-Fix any type issues in new files
-      - [ ] **1.5.3 QC: Run all unit tests ** -Command: npm test -- --coverage
-Expected: All tests pass, coverage > 90% for new files
-Files: financial-context-engine.test.ts, health-score-calculator.test.ts
-      - [ ] **1.5.4 QC: Test API endpoints with Postman/curl ** -Test: GET /api/financial/context - returns valid response
-Test: POST /api/financial/health-score - calculates score
-Test: CRUD /api/financial/goals - all operations work
-Document: API response examples
-      - [ ] **1.5.5 QC: Performance benchmark ** -Test: /api/financial/context response time < 500ms
-Test: Health score calculation < 200ms
-Tool: Use Chrome DevTools or k6 for benchmarking
-  - [ ] **PHASE 2: Smart Banking Suite (Weeks 3-4) ** -AI-powered budgeting, savings optimizer, spending intelligence, bill negotiation - 50h total
-    - [ ] **2.1 Smart Budget Engine ** -AI-powered budget generation and management - 16h
-      - [ ] **2.1.1 Create Smart Budget types ** -Create: src/lib/financial/types/budget.types.ts
-Interfaces: SmartBudget, BudgetCategory, BudgetRule, BudgetRecommendation, BudgetAlert
-Enums: BudgetPeriod, CategoryType
-      - [ ] **2.1.2 Create Smart Budget Engine service ** -Create: src/lib/financial/smart-budget-engine.ts
-Class: SmartBudgetEngine
-Methods: generateBudget(userId, preferences), analyzeBudgetVsActual(userId, period), suggestCategoryAdjustments(userId), predictMonthEnd(userId)
-AI: Use AIML API for intelligent budget generation based on spending history
-      - [ ] **2.1.3 Implement automatic transaction categorization ** -Enhance: src/lib/financial/transaction-categorizer.ts
-Methods: autoCategorizeBatch(transactions), trainOnUserCorrections(corrections), getMerchantCategory(merchant)
-AI: Use AI model for ambiguous categorization
-      - [ ] **2.1.4 Create Budget API endpoints ** -Create: src/app/api/financial/budget/route.ts (GET, POST)
-Create: src/app/api/financial/budget/[id]/route.ts (GET, PATCH, DELETE)
-Create: src/app/api/financial/budget/generate/route.ts (POST - AI generation)
-Validation: Zod schemas for all requests
-      - [ ] **2.1.5 Write unit tests for Smart Budget Engine ** -Create: src/lib/financial/__tests__/smart-budget-engine.test.ts
-Tests: Budget generation, category analysis, prediction accuracy, AI integration
-Coverage: 95%
-    - [ ] **2.2 Savings Optimizer ** -Intelligent savings recommendations - 8h
-      - [ ] **2.2.1 Create Savings Optimizer service ** -Create: src/lib/financial/savings-optimizer.ts
-Class: SavingsOptimizer
-Methods: analyzeSpendingForSavings(userId), findRecurringCharges(userId), suggestCancelableSubscriptions(userId), calculatePotentialSavings(userId), generateSavingsGoalRecommendations(userId)
-AI: Use AI to identify non-essential spending patterns
-      - [x] **2.2.2 Create Savings API endpoints ** -Create: src/app/api/financial/savings/analyze/route.ts (GET - spending analysis)
-Create: src/app/api/financial/savings/recommendations/route.ts (GET - savings tips)
-Create: src/app/api/financial/savings/subscriptions/route.ts (GET - subscription audit)
-      - [ ] **2.2.3 Write tests for Savings Optimizer ** -Create: src/lib/financial/__tests__/savings-optimizer.test.ts
-Tests: Recurring charge detection, subscription identification, savings calculation
-Coverage: 95%
-    - [ ] **2.3 Spending Intelligence ** -AI-driven spending analysis and insights - 10h
-      - [ ] **2.3.1 Create Spending Analyzer service ** -Create: src/lib/ai/spending-analyzer.ts
-Class: SpendingAnalyzer
-Methods: analyzeSpendingPatterns(userId, period), detectAnomalies(userId), getSpendingTrends(userId), generateInsights(userId), compareToLastPeriod(userId)
-AI: Use AIML API for pattern recognition and insight generation
-      - [ ] **2.3.2 Create Spending API endpoints ** -Create: src/app/api/financial/spending/analysis/route.ts (GET)
-Create: src/app/api/financial/spending/trends/route.ts (GET)
-Create: src/app/api/financial/spending/insights/route.ts (GET)
-Query params: period, category, merchant
-      - [ ] **2.3.3 Write tests for Spending Analyzer ** -Create: src/lib/ai/__tests__/spending-analyzer.test.ts
-Tests: Pattern detection, anomaly alerts, trend calculation, insight generation
-Coverage: 95%
-    - [ ] **2.4 Bill Negotiation AI (P2) ** -AI-powered bill negotiation assistant - 8h
-      - [ ] **2.4.1 Create Bill Negotiator service ** -Create: src/lib/financial/bill-negotiator.ts
-Class: BillNegotiator
-Methods: identifyNegotiableBills(userId), analyzeMarketRates(billType, provider), generateNegotiationScript(bill), trackNegotiationOutcome(billId, result)
-AI: Use AIML API for negotiation strategy generation
-      - [ ] **2.4.2 Create Bills API endpoints ** -Create: src/app/api/financial/bills/route.ts (GET, POST)
-Create: src/app/api/financial/bills/[id]/route.ts (GET, PATCH, DELETE)
-Create: src/app/api/financial/bills/[id]/negotiate/route.ts (POST - get script)
-Create: src/app/api/financial/bills/[id]/outcome/route.ts (POST - record result)
-      - [ ] **2.4.3 Write tests for Bill Negotiator ** -Create: src/lib/financial/__tests__/bill-negotiator.test.ts
-Tests: Bill identification, script generation, outcome tracking
-Coverage: 90%
-    - [ ] **2.5 Smart Banking Web Screens ** -Web UI for smart banking features - 8h
-      - [ ] **2.5.1 Create Financial Dashboard page (Web) ** -Create: src/app/financial/page.tsx
-Components: HealthScoreCard, AccountsSummaryCard, BudgetStatusCard, InsightsPanel, QuickActionsBar
-Features: Real-time health score display, account balances, budget vs actual, AI insights
-Styling: Use existing design system, responsive layout
-      - [ ] **2.5.2 Create Smart Budget page (Web) ** -Create: src/app/financial/smart-budget/page.tsx
-Components: BudgetOverview, CategoryBreakdown, SpendingVsBudgetChart, AIRecommendations, BudgetEditor
-Features: AI-generated budget view, category management, spending tracking, adjustment suggestions
-      - [ ] **2.5.3 Create Goals page (Web) ** -Create: src/app/financial/goals/page.tsx
-Components: GoalCard, GoalProgressBar, GoalForm, AutoSaveToggle, MilestoneTimeline
-Features: Goal CRUD, progress tracking, auto-save configuration, milestone celebrations
-      - [ ] **2.5.4 Create Spending Analysis page (Web) ** -Create: src/app/financial/spending/page.tsx
-Components: SpendingChart, CategoryBreakdown, TrendComparison, AnomalyAlerts, InsightsList
-Features: Interactive charts, category drill-down, period comparison, AI insights
-      - [ ] **2.5.5 Create Bills page (Web) ** -Create: src/app/financial/bills/page.tsx
-Components: BillsList, BillCalendar, NegotiationStatus, SavingsTracker, AddBillForm
-Features: Bill management, calendar view, negotiation workflow, savings tracking
-    - [ ] **2.6 Smart Banking Mobile Screens ** -Mobile UI for smart banking features - 8h
-      - [ ] **2.6.1 Create Financial Dashboard screen (Mobile) ** -Create: mobile-app/app/financial-intelligence/index.tsx
-Components: HealthScoreGauge, AccountCards, BudgetSummary, InsightsList
-Navigation: Add to tab bar and financial module
-Styling: React Native + lightTheme
-      - [ ] **2.6.2 Create Smart Budget screen (Mobile) ** -Create: mobile-app/app/financial-intelligence/smart-budget.tsx
-Components: BudgetOverview, CategoryList, SpendingChart, Recommendations
-Features: Budget viewing, category editing, AI tips
-      - [ ] **2.6.3 Create Goals Manager screen (Mobile) ** -Create: mobile-app/app/financial-intelligence/goals-manager.tsx
-Components: GoalCards, ProgressBars, AddGoalSheet, AutoSaveConfig
-Features: Goal management, progress tracking, auto-save setup
-      - [ ] **2.6.4 Create Spending Insights screen (Mobile) ** -Create: mobile-app/app/financial-intelligence/spending-insights.tsx
-Components: SpendingChart, CategoryBreakdown, Alerts, Insights
-Features: Spending visualization, trend analysis, anomaly alerts
-      - [ ] **2.6.5 Create Bill Negotiator screen (Mobile) ** -Create: mobile-app/app/financial-intelligence/bill-negotiator.tsx
-Components: BillsList, NegotiationCard, SavingsDisplay, ScriptViewer
-Features: Bill list, negotiation guidance, savings tracker
-      - [ ] **2.6.6 Update financial navigation layout ** -Update: mobile-app/app/financial-intelligence/_layout.tsx
-Add: Routes for all new screens
-Ensure: Consistent navigation headers and back buttons
-    - [ ] **2.7 Phase 2 QC Checkpoint ** -Quality control verification for Phase 2 deliverables
-      - [ ] **2.7.1 QC: Run TypeScript checks for Phase 2 ** -Command: npx tsc --noEmit
-Scope: All new files in src/lib/financial/, src/app/financial/, mobile-app/app/financial-intelligence/
-Expected: 0 type errors
-      - [ ] **2.7.2 QC: Run unit tests with coverage ** -Command: npm test -- --coverage --collectCoverageFrom='src/lib/financial/**/*'
-Expected: 90%+ coverage on new services
-Tests: smart-budget-engine, savings-optimizer, spending-analyzer, bill-negotiator
-      - [ ] **2.7.3 QC: Test all new API endpoints ** -Test: /api/financial/budget/* - CRUD and generation
-Test: /api/financial/savings/* - analysis and recommendations
-Test: /api/financial/spending/* - analysis and trends
-Test: /api/financial/bills/* - CRUD and negotiation
-Document: API responses
-      - [ ] **2.7.4 QC: Web screens functionality test ** -Test: /financial - dashboard loads with real data
-Test: /financial/smart-budget - budget displays correctly
-Test: /financial/goals - goal CRUD works
-Test: /financial/spending - charts render
-Test: /financial/bills - bills display
-      - [ ] **2.7.5 QC: Mobile screens functionality test ** -Test: Financial dashboard renders on iOS/Android
-Test: Smart budget screen navigation works
-Test: Goals manager creates/edits goals
-Test: Spending insights charts display
-Test: Bill negotiator shows scripts
-Tools: Expo Go or simulator
-      - [ ] **2.7.6 QC: Integration test between services ** -Test: Budget engine uses Financial Context
-Test: Savings optimizer uses transaction data
-Test: Spending analyzer feeds into insights
-Test: All services work with real Plaid data
-  - [ ] **PHASE 3: AI Financial Coach (Weeks 5-6) ** -Financial profile engine, debt optimizer, goal system, coach screens - 50h total
-    - [ ] **3.1 Financial Coach Service ** -AI-powered financial coaching engine - 16h
-      - [ ] **3.1.1 Create Financial Coach types ** -Create: src/lib/ai/types/financial-coach.types.ts
-Interfaces: CoachAnalysis, PersonalizedAdvice, ActionPlan, CoachSession, CoachMessage
-Enums: FocusArea, RiskTolerance, Timeframe
-      - [ ] **3.1.2 Create Financial Coach service ** -Create: src/lib/ai/financial-coach.ts
-Class: FinancialCoach
-Methods: analyzeFinancialSituation(userId, focusArea), generateActionPlan(userId, goals, timeframe), getPersonalizedAdvice(userId, question), getProactiveRecommendations(userId)
-AI: Use AIML API with Dave Ramsey EveryDollar philosophy prompts
-      - [ ] **3.1.3 Create AI prompt templates for coach ** -Create: src/lib/ai/prompts/financial-coach-prompts.ts
-Prompts: ANALYSIS_SYSTEM_PROMPT, ACTION_PLAN_PROMPT, ADVICE_PROMPT, RECOMMENDATION_PROMPT
-Philosophy: Dave Ramsey principles, debt-free focus, emergency fund priority
-      - [ ] **3.1.4 Create Financial Coach API endpoints ** -Create: src/app/api/ai/financial-coach/analyze/route.ts (POST)
-Create: src/app/api/ai/financial-coach/plan/route.ts (POST)
-Create: src/app/api/ai/financial-coach/advice/route.ts (POST)
-Validation: Zod schemas, rate limiting
-      - [ ] **3.1.5 Write tests for Financial Coach ** -Create: src/lib/ai/__tests__/financial-coach.test.ts
-Tests: Analysis generation, action plan creation, advice accuracy, context utilization
-Mocks: AIML API responses
-Coverage: 90%
-    - [ ] **3.2 Debt Strategy Optimizer ** -Snowball/Avalanche/AI-optimized debt payoff - 10h
-      - [ ] **3.2.1 Create Debt Strategy types ** -Create: src/lib/financial/types/debt-strategy.types.ts
-Interfaces: Debt, DebtPayoffPlan, PayoffSchedule, DebtStrategy, DebtComparison
-Enums: PayoffMethod (snowball, avalanche, ai_optimized)
-      - [ ] **3.2.2 Create Debt Strategy Optimizer service ** -Create: src/lib/financial/debt-strategy-optimizer.ts
-Class: DebtStrategyOptimizer
-Methods: calculateSnowball(debts, extraPayment), calculateAvalanche(debts, extraPayment), calculateAIOptimized(debts, context), compareStrategies(debts, extraPayment), generatePayoffSchedule(strategy)
-Algorithm: Interest savings, psychological wins, AI-balanced approach
-      - [ ] **3.2.3 Create Debt Strategy API endpoints ** -Create: src/app/api/ai/financial-coach/debt-strategy/route.ts (POST)
-Request: { method, extraPayment, priorityDebts }
-Response: PayoffPlan with timeline, savings, monthly breakdown
-      - [ ] **3.2.4 Write tests for Debt Strategy Optimizer ** -Create: src/lib/financial/__tests__/debt-strategy-optimizer.test.ts
-Tests: Snowball calculation, avalanche calculation, AI optimization, timeline accuracy
-Coverage: 95%
-    - [ ] **3.3 Goal Planning System ** -Goal setting and tracking with AI guidance - 8h
-      - [ ] **3.3.1 Enhance goal planning with AI ** -Enhance: Financial goals from Phase 1
-Add: AI-generated milestone suggestions, progress predictions, adjustment recommendations
-Integrate: With Financial Coach for goal-based advice
-      - [ ] **3.3.2 Create goal progress tracking ** -Add to goals service: trackProgress(goalId), predictCompletion(goalId), suggestAdjustments(goalId)
-Features: Milestone celebrations, progress notifications, pace tracking
-      - [ ] **3.3.3 Write tests for goal planning ** -Create: src/lib/financial/__tests__/goal-planning.test.ts
-Tests: AI milestone generation, progress tracking, completion prediction
-Coverage: 90%
-    - [ ] **3.4 AI Coach Web Screens ** -Web UI for financial coach - 8h
-      - [ ] **3.4.1 Create AI Coach Dashboard page (Web) ** -Create: src/app/financial/coach/page.tsx
-Components: CoachWelcome, FinancialSnapshot, ActionPlanCard, RecommendationsList, AskCoachInput
-Features: Personalized greeting, quick actions, AI recommendations
-      - [ ] **3.4.2 Create Debt Payoff Planner page (Web) ** -Create: src/app/financial/coach/debt-payoff/page.tsx
-Components: DebtList, StrategySelector, PayoffTimeline, SavingsComparison, MonthlySchedule
-Features: Strategy comparison, interactive timeline, what-if scenarios
-      - [ ] **3.4.3 Create Action Plan page (Web) ** -Create: src/app/financial/coach/action-plan/page.tsx
-Components: PlanOverview, StepsList, ProgressTracker, MilestoneTimeline, CoachNotes
-Features: Step-by-step guidance, progress tracking, coach feedback
-    - [ ] **3.5 AI Coach Mobile Screens ** -Mobile UI for financial coach - 8h
-      - [ ] **3.5.1 Create AI Coach screen (Mobile) ** -Create: mobile-app/app/financial-intelligence/ai-coach.tsx
-Components: CoachAvatar, QuickActions, RecommendationCards, AskInput
-Features: Coach interface, quick questions, personalized tips
-      - [ ] **3.5.2 Create Debt Payoff screen (Mobile) ** -Create: mobile-app/app/financial-intelligence/debt-payoff.tsx
-Components: DebtCards, StrategyPicker, Timeline, SavingsDisplay
-Features: Debt management, strategy selection, progress tracking
-      - [ ] **3.5.3 Create Action Plan screen (Mobile) ** -Create: mobile-app/app/financial-intelligence/action-plan.tsx
-Components: PlanHeader, StepCards, ProgressBar, MilestoneList
-Features: Plan viewing, step completion, milestone tracking
-      - [ ] **3.5.4 Update mobile navigation for coach screens ** -Update: mobile-app/app/financial-intelligence/_layout.tsx
-Add: Routes for ai-coach, debt-payoff, action-plan
-Ensure: Proper navigation flow
-    - [ ] **3.6 Phase 3 QC Checkpoint ** -Quality control verification for Phase 3 deliverables
-      - [ ] **3.6.1 QC: TypeScript checks for Phase 3 ** -Command: npx tsc --noEmit
-Scope: src/lib/ai/financial-coach.ts, src/lib/financial/debt-strategy-optimizer.ts, all coach screens
-Expected: 0 type errors
-      - [ ] **3.6.2 QC: Unit tests for Phase 3 ** -Command: npm test -- --coverage
-Tests: financial-coach.test.ts, debt-strategy-optimizer.test.ts, goal-planning.test.ts
-Expected: 90%+ coverage
-      - [ ] **3.6.3 QC: Test AI Coach API endpoints ** -Test: POST /api/ai/financial-coach/analyze - returns analysis
-Test: POST /api/ai/financial-coach/plan - generates plan
-Test: POST /api/ai/financial-coach/debt-strategy - calculates strategies
-Verify: AI responses are coherent and actionable
-      - [ ] **3.6.4 QC: Web and Mobile screen tests ** -Test: /financial/coach - dashboard loads
-Test: /financial/coach/debt-payoff - strategies display
-Test: Mobile ai-coach screen renders
-Test: Mobile debt-payoff screen works
-  - [ ] **PHASE 4: Investment Intelligence Phase 1 (Weeks 7-8) ** -Market data integration, portfolio tracker, basic AI analysis - 50h total
-    - [ ] **4.1 Market Data Integrations ** -Alpha Vantage, Polygon.io, CoinGecko integrations - 12h
-      - [ ] **4.1.1 Create market data types ** -Create: src/lib/investments/types/market-data.types.ts
-Interfaces: StockQuote, StockHistory, CryptoQuote, MarketNews, EarningsData, CompanyProfile
-Enums: AssetType, TimeInterval
-      - [ ] **4.1.2 Create Alpha Vantage integration ** -Create: src/lib/integrations/alpha-vantage.ts
-Class: AlphaVantageClient
-Methods: getQuote(symbol), getHistory(symbol, interval), getCompanyOverview(symbol), getEarnings(symbol), searchSymbol(query)
-Config: API key from env, rate limiting
-      - [ ] **4.1.3 Create Polygon.io integration ** -Create: src/lib/integrations/polygon.ts
-Class: PolygonClient
-Methods: getQuote(symbol), getAggregates(symbol, timespan), getNews(symbol), getTickers(query)
-Config: API key from env, WebSocket for real-time
-      - [ ] **4.1.4 Create CoinGecko integration ** -Create: src/lib/integrations/coingecko.ts
-Class: CoinGeckoClient
-Methods: getCoinPrice(coinId), getCoinHistory(coinId, days), getTrendingCoins(), searchCoins(query)
-Config: Free tier rate limiting
-      - [ ] **4.1.5 Create unified Market Data Service ** -Create: src/lib/investments/market-data-service.ts
-Class: MarketDataService
-Methods: getQuote(symbol, type), getHistory(symbol, type, interval), getNews(symbol), search(query)
-Features: Unified interface, caching, fallback between providers
-      - [ ] **4.1.6 Write tests for market data integrations ** -Create: src/lib/integrations/__tests__/alpha-vantage.test.ts
-Create: src/lib/integrations/__tests__/polygon.test.ts
-Create: src/lib/integrations/__tests__/coingecko.test.ts
-Create: src/lib/investments/__tests__/market-data-service.test.ts
-Coverage: 90%
-    - [ ] **4.2 Portfolio Service ** -Portfolio tracking and management - 10h
-      - [ ] **4.2.1 Create portfolio types ** -Create: src/lib/investments/types/portfolio.types.ts
-Interfaces: Portfolio, Holding, Transaction, PortfolioSummary, PerformanceMetrics, Allocation
-Enums: TransactionType (buy, sell, dividend, split)
-      - [ ] **4.2.2 Create Portfolio Service ** -Create: src/lib/investments/portfolio-service.ts
-Class: PortfolioService
-Methods: createPortfolio(userId, name), addHolding(portfolioId, holding), recordTransaction(portfolioId, transaction), getPortfolioSummary(portfolioId), calculatePerformance(portfolioId, period), getAllocation(portfolioId)
-DB: Uses investment_portfolios, investment_holdings, investment_transactions tables
-      - [ ] **4.2.3 Create Portfolio API endpoints ** -Create: src/app/api/investments/portfolio/route.ts (GET, POST)
-Create: src/app/api/investments/portfolio/[id]/route.ts (GET, PATCH, DELETE)
-Create: src/app/api/investments/holdings/route.ts (GET, POST)
-Create: src/app/api/investments/transactions/route.ts (GET, POST)
-Validation: Zod schemas
-      - [ ] **4.2.4 Write tests for Portfolio Service ** -Create: src/lib/investments/__tests__/portfolio-service.test.ts
-Tests: Portfolio CRUD, holding management, transaction recording, performance calculation
-Coverage: 95%
-    - [ ] **4.3 AI Stock Analyst ** -AI-powered stock analysis - 12h
-      - [ ] **4.3.1 Create AI analyst types ** -Create: src/lib/investments/types/ai-analyst.types.ts
-Interfaces: StockAnalysis, TechnicalIndicators, FundamentalAnalysis, SentimentAnalysis, AIRecommendation
-Enums: AnalysisType, Recommendation (strong_buy, buy, hold, sell, strong_sell)
-      - [ ] **4.3.2 Create AI Stock Analyst service ** -Create: src/lib/investments/ai-analyst.ts
-Class: AIStockAnalyst
-Methods: analyzeStock(symbol), getTechnicalAnalysis(symbol), getFundamentalAnalysis(symbol), getSentimentAnalysis(symbol), getAIRecommendation(symbol)
-AI: Use AIML API for analysis synthesis and recommendation generation
-      - [ ] **4.3.3 Create AI analysis prompts ** -Create: src/lib/ai/prompts/investment-analyst-prompts.ts
-Prompts: TECHNICAL_ANALYSIS_PROMPT, FUNDAMENTAL_ANALYSIS_PROMPT, SENTIMENT_ANALYSIS_PROMPT, RECOMMENDATION_PROMPT
-Style: Hedge fund analyst perspective, data-driven
-      - [ ] **4.3.4 Create AI Analyst API endpoints ** -Create: src/app/api/investments/analyze/[symbol]/route.ts (GET)
-Create: src/app/api/investments/analyze/[symbol]/technical/route.ts (GET)
-Create: src/app/api/investments/analyze/[symbol]/fundamental/route.ts (GET)
-Create: src/app/api/investments/analyze/[symbol]/sentiment/route.ts (GET)
-Caching: 1 hour TTL for analysis results
-      - [ ] **4.3.5 Write tests for AI Stock Analyst ** -Create: src/lib/investments/__tests__/ai-analyst.test.ts
-Tests: Analysis generation, recommendation accuracy, data integration
-Mocks: Market data and AI responses
-Coverage: 90%
---- [/] **4.4 Investment Web Screens P1 ** -Web UI for portfolio and analysis - Creating PortfolioOverview, StockAnalysisView, HoldingsManagement components and pages
-      - [ ] **4.4.1 Create Portfolio Dashboard page (Web) ** -Create: src/app/investments/page.tsx
-Components: PortfolioSummaryCard, HoldingsList, AllocationChart, PerformanceChart, QuickActions
-Features: Portfolio overview, holdings list, allocation pie chart, performance graph
-      - [ ] **4.4.2 Create Stock Analysis page (Web) ** -Create: src/app/investments/analyze/[symbol]/page.tsx
-Components: StockHeader, PriceChart, TechnicalIndicators, FundamentalMetrics, AIAnalysis, NewsSection
-Features: Stock details, interactive chart, AI analysis display, news feed
-      - [ ] **4.4.3 Create Holdings Management page (Web) ** -Create: src/app/investments/holdings/page.tsx
-Components: HoldingsTable, AddHoldingForm, TransactionHistory, PerformanceByHolding
-Features: Holdings CRUD, transaction logging, per-holding performance
-    - [ ] **4.5 Investment Mobile Screens P1 ** -Mobile UI for portfolio and analysis - 8h
-      - [ ] **4.5.1 Create Portfolio screen (Mobile) ** -Create: mobile-app/app/investments/index.tsx
-Components: PortfolioCard, HoldingsList, AllocationPie, PerformanceGraph
-Features: Portfolio summary, holdings view, allocation chart
-      - [ ] **4.5.2 Create Stock Analysis screen (Mobile) ** -Create: mobile-app/app/investments/analyze.tsx
-Components: StockHeader, PriceChart, AnalysisTabs, AIRecommendation
-Features: Stock details, chart, tabbed analysis views
-      - [ ] **4.5.3 Create Holdings screen (Mobile) ** -Create: mobile-app/app/investments/holdings.tsx
-Components: HoldingCards, AddHoldingSheet, TransactionList
-Features: Holdings management, add/edit holdings, transaction history
-      - [ ] **4.5.4 Update investments navigation layout ** -Update: mobile-app/app/investments/_layout.tsx
-Add: Routes for index, analyze, holdings
-Ensure: Proper navigation with symbol passing
-    - [ ] **4.6 Phase 4 QC Checkpoint ** -Quality control verification for Phase 4 deliverables
-      - [ ] **4.6.1 QC: TypeScript checks for Phase 4 ** -Command: npx tsc --noEmit
-Scope: src/lib/investments/*, src/lib/integrations/*, src/app/investments/*, mobile-app/app/investments/*
-Expected: 0 type errors
-      - [ ] **4.6.2 QC: Unit tests for Phase 4 ** -Command: npm test -- --coverage
-Tests: market-data-service, portfolio-service, ai-analyst, integrations
-Expected: 90%+ coverage
-      - [ ] **4.6.3 QC: Test market data integrations ** -Test: Alpha Vantage API calls work
-Test: Polygon.io API calls work
-Test: CoinGecko API calls work
-Test: Unified service fallback works
-Verify: Rate limiting is respected
-      - [ ] **4.6.4 QC: Test investment API endpoints ** -Test: /api/investments/portfolio/* - CRUD works
-Test: /api/investments/holdings/* - CRUD works
-Test: /api/investments/analyze/[symbol] - returns analysis
-Document: API responses
-      - [ ] **4.6.5 QC: Web and Mobile screen tests ** -Test: /investments - portfolio loads
-Test: /investments/analyze/AAPL - analysis displays
-Test: Mobile portfolio screen renders
-Test: Mobile analysis screen works
-  - [ ] **PHASE 5: Investment Intelligence Phase 2 (Weeks 9-10) ** -Advanced AI analysis, trading signals, portfolio optimizer - 40h total
-    - [ ] **5.1 Trading Signal Generator ** -AI-powered trading signals - 12h
-      - [ ] **5.1.1 Create trading signal types ** -Create: src/lib/investments/types/trading-signals.types.ts
-Interfaces: TradingSignal, SignalAnalysis, SignalOutcome, SignalPerformance
-Enums: SignalType (buy, sell, hold), AnalysisType (technical, fundamental, sentiment, ai_combined)
-      - [ ] **5.1.2 Create Signal Generator service ** -Create: src/lib/investments/signal-generator.ts
-Class: SignalGenerator
-Methods: generateSignal(symbol, analysisTypes), evaluateSignalStrength(signal), trackSignalOutcome(signalId, outcome), getSignalHistory(userId), getActiveSignals(userId)
-AI: Multi-model consensus for signal generation
-      - [ ] **5.1.3 Create Signal API endpoints ** -Create: src/app/api/investments/signals/route.ts (GET - list, POST - generate)
-Create: src/app/api/investments/signals/[id]/route.ts (GET, PATCH - outcome)
-Create: src/app/api/investments/signals/active/route.ts (GET)
-Features: Signal filtering, pagination, outcome tracking
-      - [ ] **5.1.4 Write tests for Signal Generator ** -Create: src/lib/investments/__tests__/signal-generator.test.ts
-Tests: Signal generation, strength evaluation, outcome tracking, history retrieval
-Coverage: 90%
-    - [ ] **5.2 Advanced Portfolio Analytics ** -Risk analysis, diversification scoring - 10h
-      - [ ] **5.2.1 Create advanced analytics types ** -Create: src/lib/investments/types/advanced-analytics.types.ts
-Interfaces: RiskMetrics, DiversificationScore, CorrelationMatrix, SectorExposure, VolatilityAnalysis
-Enums: RiskLevel, SectorType
-      - [ ] **5.2.2 Create Portfolio Analytics service ** -Create: src/lib/investments/portfolio-analytics.ts
-Class: PortfolioAnalytics
-Methods: calculateRiskMetrics(portfolioId), getDiversificationScore(portfolioId), getCorrelationMatrix(portfolioId), getSectorExposure(portfolioId), getVolatilityAnalysis(portfolioId), suggestRebalancing(portfolioId)
-Algorithm: Modern Portfolio Theory calculations
-      - [ ] **5.2.3 Create Analytics API endpoints ** -Create: src/app/api/investments/analytics/risk/route.ts (GET)
-Create: src/app/api/investments/analytics/diversification/route.ts (GET)
-Create: src/app/api/investments/analytics/rebalance/route.ts (GET)
-Query: portfolioId required
-      - [ ] **5.2.4 Write tests for Portfolio Analytics ** -Create: src/lib/investments/__tests__/portfolio-analytics.test.ts
-Tests: Risk calculation, diversification scoring, correlation matrix, rebalancing suggestions
-Coverage: 90%
-    - [ ] **5.3 Crypto Analysis Module ** -Cryptocurrency-specific analysis - 8h
-      - [ ] **5.3.1 Create crypto analysis types ** -Create: src/lib/investments/types/crypto-analysis.types.ts
-Interfaces: CryptoAnalysis, OnChainMetrics, DeFiMetrics, TokenomicsAnalysis, CryptoSentiment
-Enums: CryptoCategory (layer1, layer2, defi, nft, meme)
-      - [ ] **5.3.2 Create Crypto Analyst service ** -Create: src/lib/investments/crypto-analyst.ts
-Class: CryptoAnalyst
-Methods: analyzeCrypto(coinId), getOnChainMetrics(coinId), getDeFiMetrics(coinId), getTokenomics(coinId), getCryptoSentiment(coinId)
-Data: CoinGecko + on-chain data sources
-      - [ ] **5.3.3 Create Crypto API endpoints ** -Create: src/app/api/investments/crypto/[coinId]/route.ts (GET - full analysis)
-Create: src/app/api/investments/crypto/trending/route.ts (GET)
-Create: src/app/api/investments/crypto/[coinId]/sentiment/route.ts (GET)
-      - [ ] **5.3.4 Write tests for Crypto Analyst ** -Create: src/lib/investments/__tests__/crypto-analyst.test.ts
-Tests: Crypto analysis, on-chain metrics, sentiment analysis
-Coverage: 90%
-    - [ ] **5.4 Investment Web Screens P2 ** -Web UI for signals and advanced analytics - 8h
-      - [ ] **5.4.1 Create Trading Signals page (Web) ** -Create: src/app/investments/signals/page.tsx
-Components: SignalsList, SignalCard, SignalFilters, PerformanceStats, GenerateSignalButton
-Features: Active signals, signal history, performance tracking
-      - [ ] **5.4.2 Create Portfolio Analytics page (Web) ** -Create: src/app/investments/analytics/page.tsx
-Components: RiskGauge, DiversificationChart, CorrelationHeatmap, SectorPieChart, RebalanceRecommendations
-Features: Risk visualization, diversification analysis, rebalancing suggestions
-      - [ ] **5.4.3 Create Crypto Analysis page (Web) ** -Create: src/app/investments/crypto/[coinId]/page.tsx
-Components: CryptoHeader, PriceChart, OnChainMetrics, TokenomicsCard, SentimentGauge
-Features: Crypto details, on-chain data, sentiment analysis
-    - [ ] **5.5 Investment Mobile Screens P2 ** -Mobile UI for signals and advanced analytics - 8h
-      - [ ] **5.5.1 Create Trading Signals screen (Mobile) ** -Create: mobile-app/app/investments/signals.tsx
-Components: SignalCards, SignalFilters, PerformanceDisplay
-Features: Signal viewing, filtering, performance stats
-      - [ ] **5.5.2 Create Portfolio Analytics screen (Mobile) ** -Create: mobile-app/app/investments/analytics.tsx
-Components: RiskCard, DiversificationChart, SectorBreakdown, RebalanceList
-Features: Risk display, diversification view, rebalancing tips
-      - [ ] **5.5.3 Create Crypto Analysis screen (Mobile) ** -Create: mobile-app/app/investments/crypto-analysis.tsx
-Components: CryptoHeader, PriceChart, MetricsTabs, SentimentBar
-Features: Crypto details, metrics tabs, sentiment display
-      - [ ] **5.5.4 Update investments navigation for P2 screens ** -Update: mobile-app/app/investments/_layout.tsx
-Add: Routes for signals, analytics, crypto-analysis
-Ensure: Proper navigation flow
-    - [ ] **5.6 Phase 5 QC Checkpoint ** -Quality control verification for Phase 5 deliverables
-      - [ ] **5.6.1 QC: TypeScript checks for Phase 5 ** -Command: npx tsc --noEmit
-Scope: All new Phase 5 files in src/lib/investments/*, src/app/investments/*, mobile-app/app/investments/*
-Expected: 0 type errors
-      - [ ] **5.6.2 QC: Unit tests for Phase 5 ** -Command: npm test -- --coverage
-Tests: signal-generator, portfolio-analytics, crypto-analyst
-Expected: 90%+ coverage
-      - [ ] **5.6.3 QC: Test signal and analytics APIs ** -Test: /api/investments/signals/* - signal generation and tracking
-Test: /api/investments/analytics/* - risk and diversification
-Test: /api/investments/crypto/* - crypto analysis
-Verify: AI responses are accurate
-      - [ ] **5.6.4 QC: Web and Mobile screen tests ** -Test: /investments/signals - signals display
-Test: /investments/analytics - analytics load
-Test: /investments/crypto/bitcoin - crypto analysis works
-Test: Mobile screens render correctly
-  - [ ] **PHASE 6: Financial Chat & Polish (Weeks 11-12) ** -Financial chat interface, integration testing, performance optimization - 40h total
-    - [ ] **6.1 Financial Chat Engine ** -Conversational AI for financial planning - 16h
-      - [ ] **6.1.1 Create chat types ** -Create: src/lib/ai/types/financial-chat.types.ts
-Interfaces: ChatSession, ChatMessage, ChatContext, ChatIntent, ChatResponse
-Enums: MessageRole (user, assistant, system), IntentType (question, action, education)
-      - [ ] **6.1.2 Create Financial Chat Engine service ** -Create: src/lib/ai/financial-chat-engine.ts
-Class: FinancialChatEngine
-Methods: createSession(userId), sendMessage(sessionId, message), getSessionHistory(sessionId), detectIntent(message), generateResponse(intent, context), executeAction(action)
-AI: Use AIML API with financial context injection
-      - [ ] **6.1.3 Create chat prompt templates ** -Create: src/lib/ai/prompts/financial-chat-prompts.ts
-Prompts: CHAT_SYSTEM_PROMPT, INTENT_DETECTION_PROMPT, RESPONSE_GENERATION_PROMPT, ACTION_EXECUTION_PROMPT
-Features: Context-aware responses, action suggestions, educational content
-      - [ ] **6.1.4 Create Chat API endpoints ** -Create: src/app/api/chat/financial/route.ts (POST - send message)
-Create: src/app/api/chat/financial/sessions/route.ts (GET, POST)
-Create: src/app/api/chat/financial/sessions/[id]/route.ts (GET, DELETE)
-Features: Streaming responses, session management
-      - [ ] **6.1.5 Write tests for Financial Chat Engine ** -Create: src/lib/ai/__tests__/financial-chat-engine.test.ts
-Tests: Session management, intent detection, response generation, action execution
-Coverage: 90%
-    - [ ] **6.2 Chat Web Interface ** -Web UI for financial chat - 8h
-      - [ ] **6.2.1 Create Financial Chat page (Web) ** -Create: src/app/financial/chat/page.tsx
-Components: ChatContainer, MessageList, MessageInput, QuickActions, SessionSidebar
-Features: Real-time chat, message history, quick action buttons, session management
-      - [ ] **6.2.2 Create chat UI components (Web) ** -Create: src/components/chat/ChatMessage.tsx
-Create: src/components/chat/ChatInput.tsx
-Create: src/components/chat/ChatSuggestions.tsx
-Create: src/components/chat/ChatActionCard.tsx
-Features: Message bubbles, typing indicator, suggestions, action cards
-      - [ ] **6.2.3 Implement streaming responses (Web) ** -Enhance: Chat page with streaming support
-Features: Real-time token streaming, typing animation, progressive rendering
-Tech: Server-Sent Events or WebSocket
-    - [ ] **6.3 Chat Mobile Interface ** -Mobile UI for financial chat - 8h
-      - [ ] **6.3.1 Create Financial Chat screen (Mobile) ** -Create: mobile-app/app/financial-intelligence/chat.tsx
-Components: ChatView, MessageBubbles, InputBar, QuickReplies
-Features: Chat interface, message history, quick replies
-      - [ ] **6.3.2 Create mobile chat components ** -Create: mobile-app/components/chat/ChatBubble.tsx
-Create: mobile-app/components/chat/ChatInput.tsx
-Create: mobile-app/components/chat/SuggestionChips.tsx
-Features: Native-feeling chat UI, keyboard handling, suggestions
-      - [ ] **6.3.3 Update mobile navigation for chat ** -Update: mobile-app/app/financial-intelligence/_layout.tsx
-Add: Route for chat screen
-Add: Chat FAB button on financial dashboard
-    - [ ] **6.4 Integration Testing ** -End-to-end testing across all modules - 8h
-      - [ ] **6.4.1 Create E2E test suite for financial flows ** -Create: tests/e2e/financial-suite.spec.ts
-Tests: Complete budget creation flow, goal setting flow, debt payoff flow
-Tool: Playwright or Cypress
-      - [ ] **6.4.2 Create E2E test suite for investment flows ** -Create: tests/e2e/investment-suite.spec.ts
-Tests: Portfolio creation, stock analysis, signal generation
-Tool: Playwright or Cypress
-      - [ ] **6.4.3 Create E2E test suite for chat flows ** -Create: tests/e2e/chat-suite.spec.ts
-Tests: Chat session creation, message sending, action execution
-Tool: Playwright or Cypress
-      - [ ] **6.4.4 Create integration tests for service interactions ** -Create: tests/integration/service-integration.test.ts
-Tests: Financial Context -> Health Score, Budget -> Insights, Portfolio -> Signals
-Verify: Data flows correctly between services
-    - [ ] **6.5 Performance Optimization ** -Optimize API response times and caching - 6h
-      - [ ] **6.5.1 Implement API response caching ** -Add: Redis or in-memory caching for expensive API calls
-Targets: Market data (5 min), AI analysis (1 hour), health score (15 min)
-Tech: Use existing caching infrastructure or add Redis
-      - [ ] **6.5.2 Optimize database queries ** -Review: All new database queries for N+1 issues
-Add: Proper indexes for common query patterns
-Optimize: Use batch queries where possible
-      - [ ] **6.5.3 Implement lazy loading for screens ** -Add: Code splitting for investment and financial modules
-Add: Skeleton loaders for data-heavy components
-Optimize: Initial bundle size
-      - [ ] **6.5.4 Performance benchmarking ** -Test: All API endpoints response times < 500ms
-Test: Page load times < 2s
-Test: Mobile app startup time < 3s
-Tool: Lighthouse, k6, or custom benchmarks
-    - [ ] **6.6 Final QC Checkpoint ** -Complete quality control verification for entire suite
-      - [ ] **6.6.1 Final TypeScript verification ** -Command: npx tsc --noEmit
-Scope: Entire codebase
-Expected: 0 type errors across all new files
-      - [ ] **6.6.2 Final unit test coverage check ** -Command: npm test -- --coverage
-Expected: 90%+ coverage on all new services
-Report: Generate coverage report for review
-      - [ ] **6.6.3 Run all E2E tests ** -Command: npm run test:e2e
-Expected: All E2E tests pass
-Scope: Financial, investment, and chat flows
-      - [ ] **6.6.4 Mobile app build verification ** -Command: cd mobile-app && npx expo build
-Test: iOS and Android builds succeed
-Verify: No runtime errors on device/simulator
-      - [ ] **6.6.5 API documentation update ** -Update: API documentation with all new endpoints
-Format: OpenAPI/Swagger spec
-Include: Request/response examples
-      - [ ] **6.6.6 Final security review ** -Review: All new API endpoints have proper auth
-Verify: RLS policies on all new tables
-Check: No sensitive data exposure in responses
-Test: Rate limiting on AI endpoints
-      - [ ] **6.6.7 Production readiness checklist ** -Verify: All environment variables documented
-Verify: Error handling and logging in place
-Verify: Monitoring and alerting configured
-Verify: Backup and recovery procedures
-Sign-off: Ready for production deployment
+  - [x] **PHASE 1: Foundation & Financial Context Engine (Weeks 1-2) ** -Database migrations, Financial Context Engine, Health Score Calculator - 40h total - [ ] **1.1 Database Schema & Migrations ** -Create all new database tables for financial suite - 8h - [ ] **1.1.1 Create Supabase migration file for financial_goals table ** -Create: supabase/migrations/[timestamp]\_create_financial_goals.sql
+        Table: financial_goals with columns: id, user_id, name, type, target_amount, current_amount, target_date, priority, auto_save_enabled, auto_save_amount, auto_save_frequency, linked_account_id, status, ai_recommendations, created_at, updated_at
+        Includes: RLS policies, indexes on user_id and status - [ ] **1.1.2 Create Supabase migration for financial_health_scores table ** -Create: supabase/migrations/[timestamp]\_create_financial_health_scores.sql
+        Table: financial_health_scores with columns: id, user_id, overall_score (0-100), category_scores (JSONB), factors (JSONB), recommendations (JSONB), calculated_at
+        Includes: RLS policies, unique constraint on (user_id, calculated_at::date) - [ ] **1.1.3 Create Supabase migration for financial_insights table ** -Create: supabase/migrations/[timestamp]\_create_financial_insights.sql
+        Table: financial_insights with columns: id, user_id, type, category, title, message, impact_amount, action_type, action_data, priority, is_read, is_dismissed, expires_at, created_at
+        Includes: RLS policies, index on user_id and unread filter - [ ] **1.1.4 Create Supabase migration for recurring_bills table ** -Create: supabase/migrations/[timestamp]\_create_recurring_bills.sql
+        Table: recurring_bills with columns: id, user_id, name, category, provider, amount, frequency, due_day, last_payment_date, negotiation_status, negotiation_savings, auto_pay_enabled, linked_transaction_pattern, created_at, updated_at
+        Includes: RLS policies, index on user_id - [ ] **1.1.5 Create Supabase migration for investment tables ** -Create: supabase/migrations/[timestamp]\_create_investment_tables.sql
+        Tables: investment_portfolios, investment_holdings, investment_transactions
+        Includes: All columns from schema, foreign keys, RLS policies, indexes on portfolio_id, symbol, user_id - [ ] **1.1.6 Create Supabase migration for trading_signals table ** -Create: supabase/migrations/[timestamp]\_create_trading_signals.sql
+        Table: trading_signals with columns: id, user_id, symbol, signal_type, confidence_score, analysis_type, price_target, stop_loss, time_horizon, reasoning, supporting_data, is_active, triggered_at, outcome, created_at, expires_at
+        Includes: RLS policies, index on active signals - [ ] **1.1.7 Create Supabase migration for financial chat tables ** -Create: supabase/migrations/[timestamp]\_create_financial_chat.sql
+        Tables: financial_chat_sessions, financial_chat_messages
+        Includes: All columns from schema, foreign keys, RLS policies, indexes on session_id and user_id - [ ] **1.1.8 Run migrations and verify in Supabase ** -Execute: npx supabase db push
+        Verify: All 8 new tables created with correct columns, RLS enabled, indexes created
+        Test: Insert/select operations work with RLS - [ ] **1.2 Financial Context Engine ** -Build unified financial context service - 12h - [ ] **1.2.1 Create FinancialContext TypeScript interfaces ** -Create: src/lib/financial/types/financial-context.types.ts
+        Interfaces: FinancialContext, UserProfile, AggregatedAccounts, CategorizedTransactions, BudgetStatus, FinancialGoal, DebtAnalysis, PortfolioSummary, CreditSummary, FinancialHealthScore, AIInsight, Recommendation
+        Export all types for use across the application - [ ] **1.2.2 Create Financial Context Engine service ** -Create: src/lib/financial/financial-context-engine.ts
+        Class: FinancialContextEngine
+        Methods: getFullContext(userId), getAccountsSummary(userId), getTransactionsSummary(userId, days), getBudgetStatus(userId), getGoalProgress(userId), getDebtAnalysis(userId), getCreditSummary(userId)
+        Dependencies: plaid-service.ts, financial-service.ts, supabase client - [ ] **1.2.3 Implement account aggregation enhancement ** -Enhance: src/lib/financial/plaid-service.ts
+        Add: getAggregatedBalances(), getCategorizedAccounts(), getAccountTrends()
+        Integrate with existing Plaid sync to provide unified account view - [ ] **1.2.4 Implement transaction categorization ** -Create: src/lib/financial/transaction-categorizer.ts
+        Methods: categorizeTransaction(transaction), getCategorySpending(userId, period), detectRecurringTransactions(userId)
+        Use Plaid categories + AI enhancement for accuracy - [ ] **1.2.5 Write unit tests for Financial Context Engine ** -Create: src/lib/financial/**tests**/financial-context-engine.test.ts
+        Tests: getFullContext returns complete data, handles missing accounts, handles API errors, caches results
+        Coverage target: 95% - [ ] **1.3 Health Score Calculator ** -Implement financial health score algorithm - 8h - [ ] **1.3.1 Create Health Score TypeScript interfaces ** -Create: src/lib/financial/types/health-score.types.ts
+        Interfaces: HealthScore, CategoryScore, ScoreFactor, ScoreRecommendation, ScoreComparison
+        Categories: savings, debt, spending, credit, insurance (0-100 each) - [ ] **1.3.2 Implement Health Score Calculator service ** -Create: src/lib/financial/health-score-calculator.ts
+        Class: HealthScoreCalculator
+        Methods: calculateOverallScore(context), calculateSavingsScore(context), calculateDebtScore(context), calculateSpendingScore(context), calculateCreditScore(context), calculateInsuranceScore(context), generateRecommendations(scores)
+        Algorithm: Weighted average of 5 categories with factor breakdowns - [ ] **1.3.3 Implement score comparison and benchmarking ** -Add to health-score-calculator.ts:
+        Methods: getNationalAverage(), getPeerGroupAverage(age, income), getScorePercentile(score)
+        Data: Use industry benchmarks for comparison - [ ] **1.3.4 Write unit tests for Health Score Calculator ** -Create: src/lib/financial/**tests**/health-score-calculator.test.ts
+        Tests: Overall score calculation, individual category scores, recommendations generation, edge cases (no debt, no savings), score persistence
+        Coverage target: 95% - [ ] **1.4 Financial Context API ** -Build /api/financial/context endpoint - 6h - [ ] **1.4.1 Create GET /api/financial/context endpoint ** -Create: src/app/api/financial/context/route.ts
+        Method: GET
+        Auth: Required (JWT)
+        Response: FinancialContextResponse with summary, accounts, budgetStatus, goals, healthScore, insights
+        Caching: 5 minute TTL with stale-while-revalidate - [ ] **1.4.2 Create POST /api/financial/health-score endpoint ** -Create: src/app/api/financial/health-score/route.ts
+        Method: POST
+        Auth: Required
+        Request: { forceRecalculate?: boolean }
+        Response: HealthScoreResponse with overall, categories, recommendations, comparisons
+        Behavior: Calculate and store score, return cached if recent - [ ] **1.4.3 Create CRUD endpoints for financial_goals ** -Create: src/app/api/financial/goals/route.ts
+        Methods: GET (list), POST (create)
+        Create: src/app/api/financial/goals/[id]/route.ts
+        Methods: GET, PATCH, DELETE
+        Validation: Zod schemas for all requests
+        Auth: User can only access own goals - [ ] **1.4.4 Create GET /api/financial/insights endpoint ** -Create: src/app/api/financial/insights/route.ts
+        Methods: GET (list with filters), PATCH (mark read/dismissed)
+        Filters: type, priority, is_read
+        Sorting: priority, created_at - [ ] **1.4.5 Write API integration tests ** -Create: src/app/api/financial/**tests**/
+        Tests: context.test.ts, health-score.test.ts, goals.test.ts, insights.test.ts
+        Coverage: Success cases, auth failures, validation errors, edge cases - [ ] **1.5 Phase 1 QC Checkpoint ** -Quality control verification for Phase 1 deliverables - [ ] **1.5.1 QC: Verify all migrations ran successfully ** -Verification: Check Supabase dashboard for 8 new tables
+        Test: Run SQL queries to verify RLS policies work
+        Document: Screenshot of schema in Supabase Studio - [ ] **1.5.2 QC: Run TypeScript type checking ** -Command: npx tsc --noEmit
+        Expected: 0 type errors
+        Fix any type issues in new files - [ ] **1.5.3 QC: Run all unit tests ** -Command: npm test -- --coverage
+        Expected: All tests pass, coverage > 90% for new files
+        Files: financial-context-engine.test.ts, health-score-calculator.test.ts - [ ] **1.5.4 QC: Test API endpoints with Postman/curl ** -Test: GET /api/financial/context - returns valid response
+        Test: POST /api/financial/health-score - calculates score
+        Test: CRUD /api/financial/goals - all operations work
+        Document: API response examples - [ ] **1.5.5 QC: Performance benchmark ** -Test: /api/financial/context response time < 500ms
+        Test: Health score calculation < 200ms
+        Tool: Use Chrome DevTools or k6 for benchmarking
+  - [ ] **PHASE 2: Smart Banking Suite (Weeks 3-4) ** -AI-powered budgeting, savings optimizer, spending intelligence, bill negotiation - 50h total - [ ] **2.1 Smart Budget Engine ** -AI-powered budget generation and management - 16h - [ ] **2.1.1 Create Smart Budget types ** -Create: src/lib/financial/types/budget.types.ts
+        Interfaces: SmartBudget, BudgetCategory, BudgetRule, BudgetRecommendation, BudgetAlert
+        Enums: BudgetPeriod, CategoryType - [ ] **2.1.2 Create Smart Budget Engine service ** -Create: src/lib/financial/smart-budget-engine.ts
+        Class: SmartBudgetEngine
+        Methods: generateBudget(userId, preferences), analyzeBudgetVsActual(userId, period), suggestCategoryAdjustments(userId), predictMonthEnd(userId)
+        AI: Use AIML API for intelligent budget generation based on spending history - [ ] **2.1.3 Implement automatic transaction categorization ** -Enhance: src/lib/financial/transaction-categorizer.ts
+        Methods: autoCategorizeBatch(transactions), trainOnUserCorrections(corrections), getMerchantCategory(merchant)
+        AI: Use AI model for ambiguous categorization - [ ] **2.1.4 Create Budget API endpoints ** -Create: src/app/api/financial/budget/route.ts (GET, POST)
+        Create: src/app/api/financial/budget/[id]/route.ts (GET, PATCH, DELETE)
+        Create: src/app/api/financial/budget/generate/route.ts (POST - AI generation)
+        Validation: Zod schemas for all requests - [ ] **2.1.5 Write unit tests for Smart Budget Engine ** -Create: src/lib/financial/**tests**/smart-budget-engine.test.ts
+        Tests: Budget generation, category analysis, prediction accuracy, AI integration
+        Coverage: 95% - [ ] **2.2 Savings Optimizer ** -Intelligent savings recommendations - 8h - [ ] **2.2.1 Create Savings Optimizer service ** -Create: src/lib/financial/savings-optimizer.ts
+        Class: SavingsOptimizer
+        Methods: analyzeSpendingForSavings(userId), findRecurringCharges(userId), suggestCancelableSubscriptions(userId), calculatePotentialSavings(userId), generateSavingsGoalRecommendations(userId)
+        AI: Use AI to identify non-essential spending patterns - [x] **2.2.2 Create Savings API endpoints ** -Create: src/app/api/financial/savings/analyze/route.ts (GET - spending analysis)
+        Create: src/app/api/financial/savings/recommendations/route.ts (GET - savings tips)
+        Create: src/app/api/financial/savings/subscriptions/route.ts (GET - subscription audit) - [ ] **2.2.3 Write tests for Savings Optimizer ** -Create: src/lib/financial/**tests**/savings-optimizer.test.ts
+        Tests: Recurring charge detection, subscription identification, savings calculation
+        Coverage: 95% - [ ] **2.3 Spending Intelligence ** -AI-driven spending analysis and insights - 10h - [ ] **2.3.1 Create Spending Analyzer service ** -Create: src/lib/ai/spending-analyzer.ts
+        Class: SpendingAnalyzer
+        Methods: analyzeSpendingPatterns(userId, period), detectAnomalies(userId), getSpendingTrends(userId), generateInsights(userId), compareToLastPeriod(userId)
+        AI: Use AIML API for pattern recognition and insight generation - [ ] **2.3.2 Create Spending API endpoints ** -Create: src/app/api/financial/spending/analysis/route.ts (GET)
+        Create: src/app/api/financial/spending/trends/route.ts (GET)
+        Create: src/app/api/financial/spending/insights/route.ts (GET)
+        Query params: period, category, merchant - [ ] **2.3.3 Write tests for Spending Analyzer ** -Create: src/lib/ai/**tests**/spending-analyzer.test.ts
+        Tests: Pattern detection, anomaly alerts, trend calculation, insight generation
+        Coverage: 95% - [ ] **2.4 Bill Negotiation AI (P2) ** -AI-powered bill negotiation assistant - 8h - [ ] **2.4.1 Create Bill Negotiator service ** -Create: src/lib/financial/bill-negotiator.ts
+        Class: BillNegotiator
+        Methods: identifyNegotiableBills(userId), analyzeMarketRates(billType, provider), generateNegotiationScript(bill), trackNegotiationOutcome(billId, result)
+        AI: Use AIML API for negotiation strategy generation - [ ] **2.4.2 Create Bills API endpoints ** -Create: src/app/api/financial/bills/route.ts (GET, POST)
+        Create: src/app/api/financial/bills/[id]/route.ts (GET, PATCH, DELETE)
+        Create: src/app/api/financial/bills/[id]/negotiate/route.ts (POST - get script)
+        Create: src/app/api/financial/bills/[id]/outcome/route.ts (POST - record result) - [ ] **2.4.3 Write tests for Bill Negotiator ** -Create: src/lib/financial/**tests**/bill-negotiator.test.ts
+        Tests: Bill identification, script generation, outcome tracking
+        Coverage: 90% - [ ] **2.5 Smart Banking Web Screens ** -Web UI for smart banking features - 8h - [ ] **2.5.1 Create Financial Dashboard page (Web) ** -Create: src/app/financial/page.tsx
+        Components: HealthScoreCard, AccountsSummaryCard, BudgetStatusCard, InsightsPanel, QuickActionsBar
+        Features: Real-time health score display, account balances, budget vs actual, AI insights
+        Styling: Use existing design system, responsive layout - [ ] **2.5.2 Create Smart Budget page (Web) ** -Create: src/app/financial/smart-budget/page.tsx
+        Components: BudgetOverview, CategoryBreakdown, SpendingVsBudgetChart, AIRecommendations, BudgetEditor
+        Features: AI-generated budget view, category management, spending tracking, adjustment suggestions - [ ] **2.5.3 Create Goals page (Web) ** -Create: src/app/financial/goals/page.tsx
+        Components: GoalCard, GoalProgressBar, GoalForm, AutoSaveToggle, MilestoneTimeline
+        Features: Goal CRUD, progress tracking, auto-save configuration, milestone celebrations - [ ] **2.5.4 Create Spending Analysis page (Web) ** -Create: src/app/financial/spending/page.tsx
+        Components: SpendingChart, CategoryBreakdown, TrendComparison, AnomalyAlerts, InsightsList
+        Features: Interactive charts, category drill-down, period comparison, AI insights - [ ] **2.5.5 Create Bills page (Web) ** -Create: src/app/financial/bills/page.tsx
+        Components: BillsList, BillCalendar, NegotiationStatus, SavingsTracker, AddBillForm
+        Features: Bill management, calendar view, negotiation workflow, savings tracking - [ ] **2.6 Smart Banking Mobile Screens ** -Mobile UI for smart banking features - 8h - [ ] **2.6.1 Create Financial Dashboard screen (Mobile) ** -Create: mobile-app/app/financial-intelligence/index.tsx
+        Components: HealthScoreGauge, AccountCards, BudgetSummary, InsightsList
+        Navigation: Add to tab bar and financial module
+        Styling: React Native + lightTheme - [ ] **2.6.2 Create Smart Budget screen (Mobile) ** -Create: mobile-app/app/financial-intelligence/smart-budget.tsx
+        Components: BudgetOverview, CategoryList, SpendingChart, Recommendations
+        Features: Budget viewing, category editing, AI tips - [ ] **2.6.3 Create Goals Manager screen (Mobile) ** -Create: mobile-app/app/financial-intelligence/goals-manager.tsx
+        Components: GoalCards, ProgressBars, AddGoalSheet, AutoSaveConfig
+        Features: Goal management, progress tracking, auto-save setup - [ ] **2.6.4 Create Spending Insights screen (Mobile) ** -Create: mobile-app/app/financial-intelligence/spending-insights.tsx
+        Components: SpendingChart, CategoryBreakdown, Alerts, Insights
+        Features: Spending visualization, trend analysis, anomaly alerts - [ ] **2.6.5 Create Bill Negotiator screen (Mobile) ** -Create: mobile-app/app/financial-intelligence/bill-negotiator.tsx
+        Components: BillsList, NegotiationCard, SavingsDisplay, ScriptViewer
+        Features: Bill list, negotiation guidance, savings tracker - [ ] **2.6.6 Update financial navigation layout ** -Update: mobile-app/app/financial-intelligence/\_layout.tsx
+        Add: Routes for all new screens
+        Ensure: Consistent navigation headers and back buttons - [ ] **2.7 Phase 2 QC Checkpoint ** -Quality control verification for Phase 2 deliverables - [ ] **2.7.1 QC: Run TypeScript checks for Phase 2 ** -Command: npx tsc --noEmit
+        Scope: All new files in src/lib/financial/, src/app/financial/, mobile-app/app/financial-intelligence/
+        Expected: 0 type errors - [ ] **2.7.2 QC: Run unit tests with coverage ** -Command: npm test -- --coverage --collectCoverageFrom='src/lib/financial/**/\*'
+        Expected: 90%+ coverage on new services
+        Tests: smart-budget-engine, savings-optimizer, spending-analyzer, bill-negotiator - [ ] **2.7.3 QC: Test all new API endpoints ** -Test: /api/financial/budget/* - CRUD and generation
+        Test: /api/financial/savings/* - analysis and recommendations
+        Test: /api/financial/spending/* - analysis and trends
+        Test: /api/financial/bills/* - CRUD and negotiation
+        Document: API responses - [ ] **2.7.4 QC: Web screens functionality test ** -Test: /financial - dashboard loads with real data
+        Test: /financial/smart-budget - budget displays correctly
+        Test: /financial/goals - goal CRUD works
+        Test: /financial/spending - charts render
+        Test: /financial/bills - bills display - [ ] **2.7.5 QC: Mobile screens functionality test ** -Test: Financial dashboard renders on iOS/Android
+        Test: Smart budget screen navigation works
+        Test: Goals manager creates/edits goals
+        Test: Spending insights charts display
+        Test: Bill negotiator shows scripts
+        Tools: Expo Go or simulator - [ ] **2.7.6 QC: Integration test between services \*\* -Test: Budget engine uses Financial Context
+        Test: Savings optimizer uses transaction data
+        Test: Spending analyzer feeds into insights
+        Test: All services work with real Plaid data
+  - [ ] **PHASE 3: AI Financial Coach (Weeks 5-6) ** -Financial profile engine, debt optimizer, goal system, coach screens - 50h total - [ ] **3.1 Financial Coach Service ** -AI-powered financial coaching engine - 16h - [ ] **3.1.1 Create Financial Coach types ** -Create: src/lib/ai/types/financial-coach.types.ts
+        Interfaces: CoachAnalysis, PersonalizedAdvice, ActionPlan, CoachSession, CoachMessage
+        Enums: FocusArea, RiskTolerance, Timeframe - [ ] **3.1.2 Create Financial Coach service ** -Create: src/lib/ai/financial-coach.ts
+        Class: FinancialCoach
+        Methods: analyzeFinancialSituation(userId, focusArea), generateActionPlan(userId, goals, timeframe), getPersonalizedAdvice(userId, question), getProactiveRecommendations(userId)
+        AI: Use AIML API with Dave Ramsey EveryDollar philosophy prompts - [ ] **3.1.3 Create AI prompt templates for coach ** -Create: src/lib/ai/prompts/financial-coach-prompts.ts
+        Prompts: ANALYSIS_SYSTEM_PROMPT, ACTION_PLAN_PROMPT, ADVICE_PROMPT, RECOMMENDATION_PROMPT
+        Philosophy: Dave Ramsey principles, debt-free focus, emergency fund priority - [ ] **3.1.4 Create Financial Coach API endpoints ** -Create: src/app/api/ai/financial-coach/analyze/route.ts (POST)
+        Create: src/app/api/ai/financial-coach/plan/route.ts (POST)
+        Create: src/app/api/ai/financial-coach/advice/route.ts (POST)
+        Validation: Zod schemas, rate limiting - [ ] **3.1.5 Write tests for Financial Coach ** -Create: src/lib/ai/**tests**/financial-coach.test.ts
+        Tests: Analysis generation, action plan creation, advice accuracy, context utilization
+        Mocks: AIML API responses
+        Coverage: 90% - [ ] **3.2 Debt Strategy Optimizer ** -Snowball/Avalanche/AI-optimized debt payoff - 10h - [ ] **3.2.1 Create Debt Strategy types ** -Create: src/lib/financial/types/debt-strategy.types.ts
+        Interfaces: Debt, DebtPayoffPlan, PayoffSchedule, DebtStrategy, DebtComparison
+        Enums: PayoffMethod (snowball, avalanche, ai_optimized) - [ ] **3.2.2 Create Debt Strategy Optimizer service ** -Create: src/lib/financial/debt-strategy-optimizer.ts
+        Class: DebtStrategyOptimizer
+        Methods: calculateSnowball(debts, extraPayment), calculateAvalanche(debts, extraPayment), calculateAIOptimized(debts, context), compareStrategies(debts, extraPayment), generatePayoffSchedule(strategy)
+        Algorithm: Interest savings, psychological wins, AI-balanced approach - [ ] **3.2.3 Create Debt Strategy API endpoints ** -Create: src/app/api/ai/financial-coach/debt-strategy/route.ts (POST)
+        Request: { method, extraPayment, priorityDebts }
+        Response: PayoffPlan with timeline, savings, monthly breakdown - [ ] **3.2.4 Write tests for Debt Strategy Optimizer ** -Create: src/lib/financial/**tests**/debt-strategy-optimizer.test.ts
+        Tests: Snowball calculation, avalanche calculation, AI optimization, timeline accuracy
+        Coverage: 95% - [ ] **3.3 Goal Planning System ** -Goal setting and tracking with AI guidance - 8h - [ ] **3.3.1 Enhance goal planning with AI ** -Enhance: Financial goals from Phase 1
+        Add: AI-generated milestone suggestions, progress predictions, adjustment recommendations
+        Integrate: With Financial Coach for goal-based advice - [ ] **3.3.2 Create goal progress tracking ** -Add to goals service: trackProgress(goalId), predictCompletion(goalId), suggestAdjustments(goalId)
+        Features: Milestone celebrations, progress notifications, pace tracking - [ ] **3.3.3 Write tests for goal planning ** -Create: src/lib/financial/**tests**/goal-planning.test.ts
+        Tests: AI milestone generation, progress tracking, completion prediction
+        Coverage: 90% - [ ] **3.4 AI Coach Web Screens ** -Web UI for financial coach - 8h - [ ] **3.4.1 Create AI Coach Dashboard page (Web) ** -Create: src/app/financial/coach/page.tsx
+        Components: CoachWelcome, FinancialSnapshot, ActionPlanCard, RecommendationsList, AskCoachInput
+        Features: Personalized greeting, quick actions, AI recommendations - [ ] **3.4.2 Create Debt Payoff Planner page (Web) ** -Create: src/app/financial/coach/debt-payoff/page.tsx
+        Components: DebtList, StrategySelector, PayoffTimeline, SavingsComparison, MonthlySchedule
+        Features: Strategy comparison, interactive timeline, what-if scenarios - [ ] **3.4.3 Create Action Plan page (Web) ** -Create: src/app/financial/coach/action-plan/page.tsx
+        Components: PlanOverview, StepsList, ProgressTracker, MilestoneTimeline, CoachNotes
+        Features: Step-by-step guidance, progress tracking, coach feedback - [ ] **3.5 AI Coach Mobile Screens ** -Mobile UI for financial coach - 8h - [ ] **3.5.1 Create AI Coach screen (Mobile) ** -Create: mobile-app/app/financial-intelligence/ai-coach.tsx
+        Components: CoachAvatar, QuickActions, RecommendationCards, AskInput
+        Features: Coach interface, quick questions, personalized tips - [ ] **3.5.2 Create Debt Payoff screen (Mobile) ** -Create: mobile-app/app/financial-intelligence/debt-payoff.tsx
+        Components: DebtCards, StrategyPicker, Timeline, SavingsDisplay
+        Features: Debt management, strategy selection, progress tracking - [ ] **3.5.3 Create Action Plan screen (Mobile) ** -Create: mobile-app/app/financial-intelligence/action-plan.tsx
+        Components: PlanHeader, StepCards, ProgressBar, MilestoneList
+        Features: Plan viewing, step completion, milestone tracking - [ ] **3.5.4 Update mobile navigation for coach screens ** -Update: mobile-app/app/financial-intelligence/\_layout.tsx
+        Add: Routes for ai-coach, debt-payoff, action-plan
+        Ensure: Proper navigation flow - [ ] **3.6 Phase 3 QC Checkpoint ** -Quality control verification for Phase 3 deliverables - [ ] **3.6.1 QC: TypeScript checks for Phase 3 ** -Command: npx tsc --noEmit
+        Scope: src/lib/ai/financial-coach.ts, src/lib/financial/debt-strategy-optimizer.ts, all coach screens
+        Expected: 0 type errors - [ ] **3.6.2 QC: Unit tests for Phase 3 ** -Command: npm test -- --coverage
+        Tests: financial-coach.test.ts, debt-strategy-optimizer.test.ts, goal-planning.test.ts
+        Expected: 90%+ coverage - [ ] **3.6.3 QC: Test AI Coach API endpoints ** -Test: POST /api/ai/financial-coach/analyze - returns analysis
+        Test: POST /api/ai/financial-coach/plan - generates plan
+        Test: POST /api/ai/financial-coach/debt-strategy - calculates strategies
+        Verify: AI responses are coherent and actionable - [ ] **3.6.4 QC: Web and Mobile screen tests ** -Test: /financial/coach - dashboard loads
+        Test: /financial/coach/debt-payoff - strategies display
+        Test: Mobile ai-coach screen renders
+        Test: Mobile debt-payoff screen works
+  - [ ] **PHASE 4: Investment Intelligence Phase 1 (Weeks 7-8) ** -Market data integration, portfolio tracker, basic AI analysis - 50h total - [ ] **4.1 Market Data Integrations ** -Alpha Vantage, Polygon.io, CoinGecko integrations - 12h - [ ] **4.1.1 Create market data types ** -Create: src/lib/investments/types/market-data.types.ts
+        Interfaces: StockQuote, StockHistory, CryptoQuote, MarketNews, EarningsData, CompanyProfile
+        Enums: AssetType, TimeInterval - [ ] **4.1.2 Create Alpha Vantage integration ** -Create: src/lib/integrations/alpha-vantage.ts
+        Class: AlphaVantageClient
+        Methods: getQuote(symbol), getHistory(symbol, interval), getCompanyOverview(symbol), getEarnings(symbol), searchSymbol(query)
+        Config: API key from env, rate limiting - [ ] **4.1.3 Create Polygon.io integration ** -Create: src/lib/integrations/polygon.ts
+        Class: PolygonClient
+        Methods: getQuote(symbol), getAggregates(symbol, timespan), getNews(symbol), getTickers(query)
+        Config: API key from env, WebSocket for real-time - [ ] **4.1.4 Create CoinGecko integration ** -Create: src/lib/integrations/coingecko.ts
+        Class: CoinGeckoClient
+        Methods: getCoinPrice(coinId), getCoinHistory(coinId, days), getTrendingCoins(), searchCoins(query)
+        Config: Free tier rate limiting - [ ] **4.1.5 Create unified Market Data Service ** -Create: src/lib/investments/market-data-service.ts
+        Class: MarketDataService
+        Methods: getQuote(symbol, type), getHistory(symbol, type, interval), getNews(symbol), search(query)
+        Features: Unified interface, caching, fallback between providers - [ ] **4.1.6 Write tests for market data integrations ** -Create: src/lib/integrations/**tests**/alpha-vantage.test.ts
+        Create: src/lib/integrations/**tests**/polygon.test.ts
+        Create: src/lib/integrations/**tests**/coingecko.test.ts
+        Create: src/lib/investments/**tests**/market-data-service.test.ts
+        Coverage: 90% - [ ] **4.2 Portfolio Service ** -Portfolio tracking and management - 10h - [ ] **4.2.1 Create portfolio types ** -Create: src/lib/investments/types/portfolio.types.ts
+        Interfaces: Portfolio, Holding, Transaction, PortfolioSummary, PerformanceMetrics, Allocation
+        Enums: TransactionType (buy, sell, dividend, split) - [ ] **4.2.2 Create Portfolio Service ** -Create: src/lib/investments/portfolio-service.ts
+        Class: PortfolioService
+        Methods: createPortfolio(userId, name), addHolding(portfolioId, holding), recordTransaction(portfolioId, transaction), getPortfolioSummary(portfolioId), calculatePerformance(portfolioId, period), getAllocation(portfolioId)
+        DB: Uses investment_portfolios, investment_holdings, investment_transactions tables - [ ] **4.2.3 Create Portfolio API endpoints ** -Create: src/app/api/investments/portfolio/route.ts (GET, POST)
+        Create: src/app/api/investments/portfolio/[id]/route.ts (GET, PATCH, DELETE)
+        Create: src/app/api/investments/holdings/route.ts (GET, POST)
+        Create: src/app/api/investments/transactions/route.ts (GET, POST)
+        Validation: Zod schemas - [ ] **4.2.4 Write tests for Portfolio Service ** -Create: src/lib/investments/**tests**/portfolio-service.test.ts
+        Tests: Portfolio CRUD, holding management, transaction recording, performance calculation
+        Coverage: 95% - [ ] **4.3 AI Stock Analyst ** -AI-powered stock analysis - 12h - [ ] **4.3.1 Create AI analyst types ** -Create: src/lib/investments/types/ai-analyst.types.ts
+        Interfaces: StockAnalysis, TechnicalIndicators, FundamentalAnalysis, SentimentAnalysis, AIRecommendation
+        Enums: AnalysisType, Recommendation (strong_buy, buy, hold, sell, strong_sell) - [ ] **4.3.2 Create AI Stock Analyst service ** -Create: src/lib/investments/ai-analyst.ts
+        Class: AIStockAnalyst
+        Methods: analyzeStock(symbol), getTechnicalAnalysis(symbol), getFundamentalAnalysis(symbol), getSentimentAnalysis(symbol), getAIRecommendation(symbol)
+        AI: Use AIML API for analysis synthesis and recommendation generation - [ ] **4.3.3 Create AI analysis prompts ** -Create: src/lib/ai/prompts/investment-analyst-prompts.ts
+        Prompts: TECHNICAL_ANALYSIS_PROMPT, FUNDAMENTAL_ANALYSIS_PROMPT, SENTIMENT_ANALYSIS_PROMPT, RECOMMENDATION_PROMPT
+        Style: Hedge fund analyst perspective, data-driven - [ ] **4.3.4 Create AI Analyst API endpoints ** -Create: src/app/api/investments/analyze/[symbol]/route.ts (GET)
+        Create: src/app/api/investments/analyze/[symbol]/technical/route.ts (GET)
+        Create: src/app/api/investments/analyze/[symbol]/fundamental/route.ts (GET)
+        Create: src/app/api/investments/analyze/[symbol]/sentiment/route.ts (GET)
+        Caching: 1 hour TTL for analysis results - [ ] **4.3.5 Write tests for AI Stock Analyst ** -Create: src/lib/investments/**tests**/ai-analyst.test.ts
+        Tests: Analysis generation, recommendation accuracy, data integration
+        Mocks: Market data and AI responses
+        Coverage: 90%
+        --- [/] **4.4 Investment Web Screens P1 ** -Web UI for portfolio and analysis - Creating PortfolioOverview, StockAnalysisView, HoldingsManagement components and pages - [ ] **4.4.1 Create Portfolio Dashboard page (Web) ** -Create: src/app/investments/page.tsx
+        Components: PortfolioSummaryCard, HoldingsList, AllocationChart, PerformanceChart, QuickActions
+        Features: Portfolio overview, holdings list, allocation pie chart, performance graph - [ ] **4.4.2 Create Stock Analysis page (Web) ** -Create: src/app/investments/analyze/[symbol]/page.tsx
+        Components: StockHeader, PriceChart, TechnicalIndicators, FundamentalMetrics, AIAnalysis, NewsSection
+        Features: Stock details, interactive chart, AI analysis display, news feed - [ ] **4.4.3 Create Holdings Management page (Web) ** -Create: src/app/investments/holdings/page.tsx
+        Components: HoldingsTable, AddHoldingForm, TransactionHistory, PerformanceByHolding
+        Features: Holdings CRUD, transaction logging, per-holding performance - [ ] **4.5 Investment Mobile Screens P1 ** -Mobile UI for portfolio and analysis - 8h - [ ] **4.5.1 Create Portfolio screen (Mobile) ** -Create: mobile-app/app/investments/index.tsx
+        Components: PortfolioCard, HoldingsList, AllocationPie, PerformanceGraph
+        Features: Portfolio summary, holdings view, allocation chart - [ ] **4.5.2 Create Stock Analysis screen (Mobile) ** -Create: mobile-app/app/investments/analyze.tsx
+        Components: StockHeader, PriceChart, AnalysisTabs, AIRecommendation
+        Features: Stock details, chart, tabbed analysis views - [ ] **4.5.3 Create Holdings screen (Mobile) ** -Create: mobile-app/app/investments/holdings.tsx
+        Components: HoldingCards, AddHoldingSheet, TransactionList
+        Features: Holdings management, add/edit holdings, transaction history - [ ] **4.5.4 Update investments navigation layout ** -Update: mobile-app/app/investments/\_layout.tsx
+        Add: Routes for index, analyze, holdings
+        Ensure: Proper navigation with symbol passing - [ ] **4.6 Phase 4 QC Checkpoint ** -Quality control verification for Phase 4 deliverables - [ ] **4.6.1 QC: TypeScript checks for Phase 4 ** -Command: npx tsc --noEmit
+        Scope: src/lib/investments/_, src/lib/integrations/_, src/app/investments/_, mobile-app/app/investments/_
+        Expected: 0 type errors - [ ] **4.6.2 QC: Unit tests for Phase 4 ** -Command: npm test -- --coverage
+        Tests: market-data-service, portfolio-service, ai-analyst, integrations
+        Expected: 90%+ coverage - [ ] **4.6.3 QC: Test market data integrations ** -Test: Alpha Vantage API calls work
+        Test: Polygon.io API calls work
+        Test: CoinGecko API calls work
+        Test: Unified service fallback works
+        Verify: Rate limiting is respected - [ ] **4.6.4 QC: Test investment API endpoints ** -Test: /api/investments/portfolio/_ - CRUD works
+        Test: /api/investments/holdings/_ - CRUD works
+        Test: /api/investments/analyze/[symbol] - returns analysis
+        Document: API responses - [ ] **4.6.5 QC: Web and Mobile screen tests ** -Test: /investments - portfolio loads
+        Test: /investments/analyze/AAPL - analysis displays
+        Test: Mobile portfolio screen renders
+        Test: Mobile analysis screen works
+  - [ ] **PHASE 5: Investment Intelligence Phase 2 (Weeks 9-10) ** -Advanced AI analysis, trading signals, portfolio optimizer - 40h total - [ ] **5.1 Trading Signal Generator ** -AI-powered trading signals - 12h - [ ] **5.1.1 Create trading signal types ** -Create: src/lib/investments/types/trading-signals.types.ts
+        Interfaces: TradingSignal, SignalAnalysis, SignalOutcome, SignalPerformance
+        Enums: SignalType (buy, sell, hold), AnalysisType (technical, fundamental, sentiment, ai_combined) - [ ] **5.1.2 Create Signal Generator service ** -Create: src/lib/investments/signal-generator.ts
+        Class: SignalGenerator
+        Methods: generateSignal(symbol, analysisTypes), evaluateSignalStrength(signal), trackSignalOutcome(signalId, outcome), getSignalHistory(userId), getActiveSignals(userId)
+        AI: Multi-model consensus for signal generation - [ ] **5.1.3 Create Signal API endpoints ** -Create: src/app/api/investments/signals/route.ts (GET - list, POST - generate)
+        Create: src/app/api/investments/signals/[id]/route.ts (GET, PATCH - outcome)
+        Create: src/app/api/investments/signals/active/route.ts (GET)
+        Features: Signal filtering, pagination, outcome tracking - [ ] **5.1.4 Write tests for Signal Generator ** -Create: src/lib/investments/**tests**/signal-generator.test.ts
+        Tests: Signal generation, strength evaluation, outcome tracking, history retrieval
+        Coverage: 90% - [ ] **5.2 Advanced Portfolio Analytics ** -Risk analysis, diversification scoring - 10h - [ ] **5.2.1 Create advanced analytics types ** -Create: src/lib/investments/types/advanced-analytics.types.ts
+        Interfaces: RiskMetrics, DiversificationScore, CorrelationMatrix, SectorExposure, VolatilityAnalysis
+        Enums: RiskLevel, SectorType - [ ] **5.2.2 Create Portfolio Analytics service ** -Create: src/lib/investments/portfolio-analytics.ts
+        Class: PortfolioAnalytics
+        Methods: calculateRiskMetrics(portfolioId), getDiversificationScore(portfolioId), getCorrelationMatrix(portfolioId), getSectorExposure(portfolioId), getVolatilityAnalysis(portfolioId), suggestRebalancing(portfolioId)
+        Algorithm: Modern Portfolio Theory calculations - [ ] **5.2.3 Create Analytics API endpoints ** -Create: src/app/api/investments/analytics/risk/route.ts (GET)
+        Create: src/app/api/investments/analytics/diversification/route.ts (GET)
+        Create: src/app/api/investments/analytics/rebalance/route.ts (GET)
+        Query: portfolioId required - [ ] **5.2.4 Write tests for Portfolio Analytics ** -Create: src/lib/investments/**tests**/portfolio-analytics.test.ts
+        Tests: Risk calculation, diversification scoring, correlation matrix, rebalancing suggestions
+        Coverage: 90% - [ ] **5.3 Crypto Analysis Module ** -Cryptocurrency-specific analysis - 8h - [ ] **5.3.1 Create crypto analysis types ** -Create: src/lib/investments/types/crypto-analysis.types.ts
+        Interfaces: CryptoAnalysis, OnChainMetrics, DeFiMetrics, TokenomicsAnalysis, CryptoSentiment
+        Enums: CryptoCategory (layer1, layer2, defi, nft, meme) - [ ] **5.3.2 Create Crypto Analyst service ** -Create: src/lib/investments/crypto-analyst.ts
+        Class: CryptoAnalyst
+        Methods: analyzeCrypto(coinId), getOnChainMetrics(coinId), getDeFiMetrics(coinId), getTokenomics(coinId), getCryptoSentiment(coinId)
+        Data: CoinGecko + on-chain data sources - [ ] **5.3.3 Create Crypto API endpoints ** -Create: src/app/api/investments/crypto/[coinId]/route.ts (GET - full analysis)
+        Create: src/app/api/investments/crypto/trending/route.ts (GET)
+        Create: src/app/api/investments/crypto/[coinId]/sentiment/route.ts (GET) - [ ] **5.3.4 Write tests for Crypto Analyst ** -Create: src/lib/investments/**tests**/crypto-analyst.test.ts
+        Tests: Crypto analysis, on-chain metrics, sentiment analysis
+        Coverage: 90% - [ ] **5.4 Investment Web Screens P2 ** -Web UI for signals and advanced analytics - 8h - [ ] **5.4.1 Create Trading Signals page (Web) ** -Create: src/app/investments/signals/page.tsx
+        Components: SignalsList, SignalCard, SignalFilters, PerformanceStats, GenerateSignalButton
+        Features: Active signals, signal history, performance tracking - [ ] **5.4.2 Create Portfolio Analytics page (Web) ** -Create: src/app/investments/analytics/page.tsx
+        Components: RiskGauge, DiversificationChart, CorrelationHeatmap, SectorPieChart, RebalanceRecommendations
+        Features: Risk visualization, diversification analysis, rebalancing suggestions - [ ] **5.4.3 Create Crypto Analysis page (Web) ** -Create: src/app/investments/crypto/[coinId]/page.tsx
+        Components: CryptoHeader, PriceChart, OnChainMetrics, TokenomicsCard, SentimentGauge
+        Features: Crypto details, on-chain data, sentiment analysis - [ ] **5.5 Investment Mobile Screens P2 ** -Mobile UI for signals and advanced analytics - 8h - [ ] **5.5.1 Create Trading Signals screen (Mobile) ** -Create: mobile-app/app/investments/signals.tsx
+        Components: SignalCards, SignalFilters, PerformanceDisplay
+        Features: Signal viewing, filtering, performance stats - [ ] **5.5.2 Create Portfolio Analytics screen (Mobile) ** -Create: mobile-app/app/investments/analytics.tsx
+        Components: RiskCard, DiversificationChart, SectorBreakdown, RebalanceList
+        Features: Risk display, diversification view, rebalancing tips - [ ] **5.5.3 Create Crypto Analysis screen (Mobile) ** -Create: mobile-app/app/investments/crypto-analysis.tsx
+        Components: CryptoHeader, PriceChart, MetricsTabs, SentimentBar
+        Features: Crypto details, metrics tabs, sentiment display - [ ] **5.5.4 Update investments navigation for P2 screens ** -Update: mobile-app/app/investments/\_layout.tsx
+        Add: Routes for signals, analytics, crypto-analysis
+        Ensure: Proper navigation flow - [ ] **5.6 Phase 5 QC Checkpoint ** -Quality control verification for Phase 5 deliverables - [ ] **5.6.1 QC: TypeScript checks for Phase 5 ** -Command: npx tsc --noEmit
+        Scope: All new Phase 5 files in src/lib/investments/_, src/app/investments/_, mobile-app/app/investments/_
+        Expected: 0 type errors - [ ] **5.6.2 QC: Unit tests for Phase 5 ** -Command: npm test -- --coverage
+        Tests: signal-generator, portfolio-analytics, crypto-analyst
+        Expected: 90%+ coverage - [ ] **5.6.3 QC: Test signal and analytics APIs ** -Test: /api/investments/signals/_ - signal generation and tracking
+        Test: /api/investments/analytics/_ - risk and diversification
+        Test: /api/investments/crypto/_ - crypto analysis
+        Verify: AI responses are accurate - [ ] **5.6.4 QC: Web and Mobile screen tests ** -Test: /investments/signals - signals display
+        Test: /investments/analytics - analytics load
+        Test: /investments/crypto/bitcoin - crypto analysis works
+        Test: Mobile screens render correctly
+  - [ ] **PHASE 6: Financial Chat & Polish (Weeks 11-12) ** -Financial chat interface, integration testing, performance optimization - 40h total - [ ] **6.1 Financial Chat Engine ** -Conversational AI for financial planning - 16h - [ ] **6.1.1 Create chat types ** -Create: src/lib/ai/types/financial-chat.types.ts
+        Interfaces: ChatSession, ChatMessage, ChatContext, ChatIntent, ChatResponse
+        Enums: MessageRole (user, assistant, system), IntentType (question, action, education) - [ ] **6.1.2 Create Financial Chat Engine service ** -Create: src/lib/ai/financial-chat-engine.ts
+        Class: FinancialChatEngine
+        Methods: createSession(userId), sendMessage(sessionId, message), getSessionHistory(sessionId), detectIntent(message), generateResponse(intent, context), executeAction(action)
+        AI: Use AIML API with financial context injection - [ ] **6.1.3 Create chat prompt templates ** -Create: src/lib/ai/prompts/financial-chat-prompts.ts
+        Prompts: CHAT_SYSTEM_PROMPT, INTENT_DETECTION_PROMPT, RESPONSE_GENERATION_PROMPT, ACTION_EXECUTION_PROMPT
+        Features: Context-aware responses, action suggestions, educational content - [ ] **6.1.4 Create Chat API endpoints ** -Create: src/app/api/chat/financial/route.ts (POST - send message)
+        Create: src/app/api/chat/financial/sessions/route.ts (GET, POST)
+        Create: src/app/api/chat/financial/sessions/[id]/route.ts (GET, DELETE)
+        Features: Streaming responses, session management - [ ] **6.1.5 Write tests for Financial Chat Engine ** -Create: src/lib/ai/**tests**/financial-chat-engine.test.ts
+        Tests: Session management, intent detection, response generation, action execution
+        Coverage: 90% - [ ] **6.2 Chat Web Interface ** -Web UI for financial chat - 8h - [ ] **6.2.1 Create Financial Chat page (Web) ** -Create: src/app/financial/chat/page.tsx
+        Components: ChatContainer, MessageList, MessageInput, QuickActions, SessionSidebar
+        Features: Real-time chat, message history, quick action buttons, session management - [ ] **6.2.2 Create chat UI components (Web) ** -Create: src/components/chat/ChatMessage.tsx
+        Create: src/components/chat/ChatInput.tsx
+        Create: src/components/chat/ChatSuggestions.tsx
+        Create: src/components/chat/ChatActionCard.tsx
+        Features: Message bubbles, typing indicator, suggestions, action cards - [ ] **6.2.3 Implement streaming responses (Web) ** -Enhance: Chat page with streaming support
+        Features: Real-time token streaming, typing animation, progressive rendering
+        Tech: Server-Sent Events or WebSocket - [ ] **6.3 Chat Mobile Interface ** -Mobile UI for financial chat - 8h - [ ] **6.3.1 Create Financial Chat screen (Mobile) ** -Create: mobile-app/app/financial-intelligence/chat.tsx
+        Components: ChatView, MessageBubbles, InputBar, QuickReplies
+        Features: Chat interface, message history, quick replies - [ ] **6.3.2 Create mobile chat components ** -Create: mobile-app/components/chat/ChatBubble.tsx
+        Create: mobile-app/components/chat/ChatInput.tsx
+        Create: mobile-app/components/chat/SuggestionChips.tsx
+        Features: Native-feeling chat UI, keyboard handling, suggestions - [ ] **6.3.3 Update mobile navigation for chat ** -Update: mobile-app/app/financial-intelligence/\_layout.tsx
+        Add: Route for chat screen
+        Add: Chat FAB button on financial dashboard - [ ] **6.4 Integration Testing ** -End-to-end testing across all modules - 8h - [ ] **6.4.1 Create E2E test suite for financial flows ** -Create: tests/e2e/financial-suite.spec.ts
+        Tests: Complete budget creation flow, goal setting flow, debt payoff flow
+        Tool: Playwright or Cypress - [ ] **6.4.2 Create E2E test suite for investment flows ** -Create: tests/e2e/investment-suite.spec.ts
+        Tests: Portfolio creation, stock analysis, signal generation
+        Tool: Playwright or Cypress - [ ] **6.4.3 Create E2E test suite for chat flows ** -Create: tests/e2e/chat-suite.spec.ts
+        Tests: Chat session creation, message sending, action execution
+        Tool: Playwright or Cypress - [ ] **6.4.4 Create integration tests for service interactions ** -Create: tests/integration/service-integration.test.ts
+        Tests: Financial Context -> Health Score, Budget -> Insights, Portfolio -> Signals
+        Verify: Data flows correctly between services - [ ] **6.5 Performance Optimization ** -Optimize API response times and caching - 6h - [ ] **6.5.1 Implement API response caching ** -Add: Redis or in-memory caching for expensive API calls
+        Targets: Market data (5 min), AI analysis (1 hour), health score (15 min)
+        Tech: Use existing caching infrastructure or add Redis - [ ] **6.5.2 Optimize database queries ** -Review: All new database queries for N+1 issues
+        Add: Proper indexes for common query patterns
+        Optimize: Use batch queries where possible - [ ] **6.5.3 Implement lazy loading for screens ** -Add: Code splitting for investment and financial modules
+        Add: Skeleton loaders for data-heavy components
+        Optimize: Initial bundle size - [ ] **6.5.4 Performance benchmarking ** -Test: All API endpoints response times < 500ms
+        Test: Page load times < 2s
+        Test: Mobile app startup time < 3s
+        Tool: Lighthouse, k6, or custom benchmarks - [ ] **6.6 Final QC Checkpoint ** -Complete quality control verification for entire suite - [ ] **6.6.1 Final TypeScript verification ** -Command: npx tsc --noEmit
+        Scope: Entire codebase
+        Expected: 0 type errors across all new files - [ ] **6.6.2 Final unit test coverage check ** -Command: npm test -- --coverage
+        Expected: 90%+ coverage on all new services
+        Report: Generate coverage report for review - [ ] **6.6.3 Run all E2E tests ** -Command: npm run test:e2e
+        Expected: All E2E tests pass
+        Scope: Financial, investment, and chat flows - [ ] **6.6.4 Mobile app build verification ** -Command: cd mobile-app && npx expo build
+        Test: iOS and Android builds succeed
+        Verify: No runtime errors on device/simulator - [ ] **6.6.5 API documentation update ** -Update: API documentation with all new endpoints
+        Format: OpenAPI/Swagger spec
+        Include: Request/response examples - [ ] **6.6.6 Final security review ** -Review: All new API endpoints have proper auth
+        Verify: RLS policies on all new tables
+        Check: No sensitive data exposure in responses
+        Test: Rate limiting on AI endpoints - [ ] **6.6.7 Production readiness checklist ** -Verify: All environment variables documented
+        Verify: Error handling and logging in place
+        Verify: Monitoring and alerting configured
+        Verify: Backup and recovery procedures
+        Sign-off: Ready for production deployment
 - [x] **Create bill types and database schema ** -Create src/lib/financial/types/bill.types.ts with Bill, BillDetectionRule, BillPayment types and supabase migration for bills tables
 - [x] **Create bill detection service ** -Create src/lib/financial/bill-detection-service.ts with methods for detecting recurring bills from transactions, managing bills, tracking payments
-- [x] **Create bill detection service tests ** -Create src/lib/financial/__tests__/bill-detection-service.test.ts with 90%+ coverage
+- [x] **Create bill detection service tests ** -Create src/lib/financial/**tests**/bill-detection-service.test.ts with 90%+ coverage
 - [x] **Create bill API endpoints ** -Create API routes: /api/financial/bills (GET, POST), /api/financial/bills/[id] (GET, PATCH, DELETE), /api/financial/bills/detect (POST), /api/financial/bills/upcoming (GET)
 - [ ] **Create bill API tests ** -Create comprehensive tests for all bill API endpoints
 - [x] **Run build and verify ** -Build succeeded. All tests pass (802 passed, 10 skipped). Updated layout.test.tsx to match new metadata.
@@ -961,14 +768,14 @@ Sign-off: Ready for production deployment
     - [ ] **Add network error handling with retry ** -Implement retry logic for failed API calls with exponential backoff. Add user-friendly error messages.
     - [ ] **Add loading states to all mobile screens ** -Ensure all mobile screens show proper loading indicators while fetching data.
   - [ ] **HIGH: API Route Tests ** -Write comprehensive tests for all investment API routes. Effort: 4-6 hours.
-    - [ ] **Test portfolio API route ** -Write tests for GET /api/investments/portfolio including auth, data aggregation, and error cases. File: src/app/api/investments/__tests__/portfolio.test.ts (new)
-    - [ ] **Test holdings API route ** -Write tests for GET/POST /api/investments/holdings including CRUD operations, validation, and auth. File: src/app/api/investments/__tests__/holdings.test.ts (new)
-    - [ ] **Test holdings/[id] API route ** -Write tests for GET/PATCH/DELETE /api/investments/holdings/[id] including ownership verification. File: src/app/api/investments/__tests__/holdings-id.test.ts (new)
-    - [ ] **Test analyze/[symbol] API route ** -Write tests for GET/POST /api/investments/analyze/[symbol] including analysis options. File: src/app/api/investments/__tests__/analyze.test.ts (new)
+    - [ ] **Test portfolio API route ** -Write tests for GET /api/investments/portfolio including auth, data aggregation, and error cases. File: src/app/api/investments/**tests**/portfolio.test.ts (new)
+    - [ ] **Test holdings API route ** -Write tests for GET/POST /api/investments/holdings including CRUD operations, validation, and auth. File: src/app/api/investments/**tests**/holdings.test.ts (new)
+    - [ ] **Test holdings/[id] API route ** -Write tests for GET/PATCH/DELETE /api/investments/holdings/[id] including ownership verification. File: src/app/api/investments/**tests**/holdings-id.test.ts (new)
+    - [ ] **Test analyze/[symbol] API route ** -Write tests for GET/POST /api/investments/analyze/[symbol] including analysis options. File: src/app/api/investments/**tests**/analyze.test.ts (new)
   - [ ] **HIGH: Component Tests ** -Write tests for all investment React components. Effort: 6-8 hours.
-    - [ ] **Test PortfolioOverview component ** -Write tests for PortfolioOverview including data fetching, chart rendering, and user interactions. File: src/components/investments/__tests__/PortfolioOverview.test.tsx (new)
-    - [ ] **Test HoldingsManagement component ** -Write tests for HoldingsManagement including CRUD modals, filtering, sorting, and CSV export. File: src/components/investments/__tests__/HoldingsManagement.test.tsx (new)
-    - [ ] **Test StockAnalysisView component ** -Write tests for StockAnalysisView including tab switching, data display, and chart rendering. File: src/components/investments/__tests__/StockAnalysisView.test.tsx (new)
+    - [ ] **Test PortfolioOverview component ** -Write tests for PortfolioOverview including data fetching, chart rendering, and user interactions. File: src/components/investments/**tests**/PortfolioOverview.test.tsx (new)
+    - [ ] **Test HoldingsManagement component ** -Write tests for HoldingsManagement including CRUD modals, filtering, sorting, and CSV export. File: src/components/investments/**tests**/HoldingsManagement.test.tsx (new)
+    - [ ] **Test StockAnalysisView component ** -Write tests for StockAnalysisView including tab switching, data display, and chart rendering. File: src/components/investments/**tests**/StockAnalysisView.test.tsx (new)
   - [ ] **HIGH: Holdings API Pagination ** -Add pagination support (limit/offset) to holdings API route to handle large portfolios efficiently. Files: src/app/api/investments/holdings/route.ts. Effort: 2 hours.
   - [ ] **HIGH: Mobile Performance Chart ** -Add performance history chart to mobile portfolio dashboard to match web functionality. Files: mobile-app/app/financial/investments.tsx. Effort: 3 hours.
   - [ ] **MEDIUM: Response Caching Headers ** -Add Cache-Control headers to all investment API routes for better performance. Files: All routes in src/app/api/investments/. Effort: 1 hour.
@@ -985,16 +792,16 @@ Sign-off: Ready for production deployment
   - [x] **A.2 Mobile Error Handling (CRITICAL) ** -Add ErrorBoundary component and proper error handling to all mobile investment screens. Create ErrorBoundary.tsx, add retry logic to API client, add loading states to investments.tsx, holdings.tsx, stock-analysis.tsx. Effort: 2 hours.
   - [x] **A.3 Verify Build & Test Investment Features ** -Run npm run build to verify no TS errors. Test mobile investment screens on simulator. Verify API integration works end-to-end. Mark Phase A complete. Effort: 1 hour.
 - [ ] **PHASE B: Mobile Parity - Phase 1 P0 Features (Weeks 1-4) ** -Execute Phase 1 from Mobile App Parity Plan (docs/MOBILE_APP_PARITY_IMPLEMENTATION_PLAN.md) - Critical P0 features for mobile app. 35 screens, 200 hours estimated. Focus on credit dashboard, monitoring, onboarding, credit builder. START AFTER Phase A complete.
-  - [x] **B.1 Core Mobile Infrastructure (Week 1) ** -Build foundational mobile infrastructure - state management (Zustand stores for credit, disputes, financial, notifications, sync), shared components (ScoreGauge, CreditFactorCard, AlertCard, charts, etc.), navigation structure (97 placeholder screens), API service layer (credit, disputes, financial, user endpoints). Effort: 30 hours. Files: mobile-app/src/store/*, mobile-app/components/shared/*, mobile-app/src/services/api/*
-    - [x] **B.1.1 Create Zustand State Management Stores ** -Create 5 Zustand stores: creditStore.ts (credit score, reports, factors, history), disputeStore.ts (dispute items, status, workflow), financialStore.ts (budget, transactions, accounts, goals), notificationStore.ts (alerts, preferences, read status), syncStore.ts (offline sync queue, sync status). Follow pattern from authStore.ts with AsyncStorage persistence. Files: mobile-app/src/store/*.ts. Effort: 6 hours.
-    - [x] **B.1.2 Verify and Test Shared Components ** -Verify existing shared components work correctly: ScoreGauge, CreditFactorCard, AlertCard, charts (Line, Bar, Pie), ProgressRing, TimelineItem, BottomSheet, SearchInput, EmptyState, LoadingSkeleton. Add unit tests for all components in mobile-app/src/components/__tests__/. Create any missing components. Effort: 12 hours.
-    - [x] **B.1.3 Create Navigation Structure and Placeholder Screens ** -Create 97 placeholder screens for missing mobile screens. Organize by feature area: credit/, disputes/, financial/, credit-builder/, settings/. Update mobile-app/app/_layout.tsx with route configuration. Add deep linking. Each placeholder shows 'Coming Soon' message. Effort: 4 hours.
-    - [x] **B.1.4 Extend API Service Layer ** -Create 4 API service modules: credit.ts (credit bureau, monitoring, score), disputes.ts (dispute CRUD, workflow, documents), financial.ts (budget, transactions, accounts, goals), user.ts (profile, preferences, settings). Follow pattern from investments.ts. Full TypeScript types. Files: mobile-app/src/services/api/*.ts. Effort: 8 hours.
+  - [x] **B.1 Core Mobile Infrastructure (Week 1) ** -Build foundational mobile infrastructure - state management (Zustand stores for credit, disputes, financial, notifications, sync), shared components (ScoreGauge, CreditFactorCard, AlertCard, charts, etc.), navigation structure (97 placeholder screens), API service layer (credit, disputes, financial, user endpoints). Effort: 30 hours. Files: mobile-app/src/store/_, mobile-app/components/shared/_, mobile-app/src/services/api/\*
+    - [x] **B.1.1 Create Zustand State Management Stores ** -Create 5 Zustand stores: creditStore.ts (credit score, reports, factors, history), disputeStore.ts (dispute items, status, workflow), financialStore.ts (budget, transactions, accounts, goals), notificationStore.ts (alerts, preferences, read status), syncStore.ts (offline sync queue, sync status). Follow pattern from authStore.ts with AsyncStorage persistence. Files: mobile-app/src/store/\*.ts. Effort: 6 hours.
+    - [x] **B.1.2 Verify and Test Shared Components ** -Verify existing shared components work correctly: ScoreGauge, CreditFactorCard, AlertCard, charts (Line, Bar, Pie), ProgressRing, TimelineItem, BottomSheet, SearchInput, EmptyState, LoadingSkeleton. Add unit tests for all components in mobile-app/src/components/**tests**/. Create any missing components. Effort: 12 hours.
+    - [x] **B.1.3 Create Navigation Structure and Placeholder Screens ** -Create 97 placeholder screens for missing mobile screens. Organize by feature area: credit/, disputes/, financial/, credit-builder/, settings/. Update mobile-app/app/\_layout.tsx with route configuration. Add deep linking. Each placeholder shows 'Coming Soon' message. Effort: 4 hours.
+    - [x] **B.1.4 Extend API Service Layer ** -Create 4 API service modules: credit.ts (credit bureau, monitoring, score), disputes.ts (dispute CRUD, workflow, documents), financial.ts (budget, transactions, accounts, goals), user.ts (profile, preferences, settings). Follow pattern from investments.ts. Full TypeScript types. Files: mobile-app/src/services/api/\*.ts. Effort: 8 hours.
   - [ ] **B.2 Credit Score Dashboard (Week 1-2) ** -Build mobile credit score dashboard with real data from credit bureau API. Replace hardcoded 678 score. Screens: Dashboard home redesign (mobile-app/app/(tabs)/index.tsx), score detail (mobile-app/app/credit/score.tsx), factor analysis (mobile-app/app/credit/factors.tsx), score history (mobile-app/app/credit/history.tsx). Connect to GET /api/credit-bureau/report. Effort: 28 hours.
     - [ ] **FIX: Remove Duplicate Investments Route ** -Remove duplicate src/app/(dashboard)/investments/page.tsx that conflicts with src/app/investments/page.tsx. Next.js doesn't allow two pages resolving to same path.
     - [ ] **FIX: Update Investment API Routes Auth Pattern ** -Fix src/app/api/investments/alerts/route.ts, patterns/route.ts, portfolio/analyze/route.ts to use jwtValidation.validateFromHeaders instead of getServerSession(authOptions) which doesn't exist.
   - [ ] **B.3 Credit Monitoring (Week 2) ** -Build credit monitoring dashboard with push notifications for alerts. Screens: Monitoring dashboard (mobile-app/app/credit/monitoring.tsx), alert detail (mobile-app/app/credit/alert/[id].tsx), monitoring settings (mobile-app/app/credit/monitoring-settings.tsx), push notification integration (mobile-app/src/services/notifications.ts, mobile-app/src/hooks/usePushNotifications.ts). Connect to GET /api/credit-monitoring/dashboard, GET /api/credit-monitoring/alerts. Effort: 24 hours.
-  - [ ] **B.4 Onboarding Flow (Week 2-3) ** -Build complete mobile onboarding flow matching web functionality. Screens: Onboarding layout (mobile-app/app/onboarding/_layout.tsx), welcome (mobile-app/app/onboarding/welcome.tsx), profile setup (mobile-app/app/onboarding/profile.tsx), goals selection (mobile-app/app/onboarding/goals.tsx), connect accounts (mobile-app/app/onboarding/connect.tsx), completion (mobile-app/app/onboarding/complete.tsx). Connect to POST /api/credit-bureau/connect, POST /api/plaid/link. Effort: 26 hours.
+  - [ ] **B.4 Onboarding Flow (Week 2-3) ** -Build complete mobile onboarding flow matching web functionality. Screens: Onboarding layout (mobile-app/app/onboarding/\_layout.tsx), welcome (mobile-app/app/onboarding/welcome.tsx), profile setup (mobile-app/app/onboarding/profile.tsx), goals selection (mobile-app/app/onboarding/goals.tsx), connect accounts (mobile-app/app/onboarding/connect.tsx), completion (mobile-app/app/onboarding/complete.tsx). Connect to POST /api/credit-bureau/connect, POST /api/plaid/link. Effort: 26 hours.
   - [ ] **B.5 Credit Builder Module (Week 3-4) ** -Build 18 credit builder tools for mobile. Screens: Builder hub (mobile-app/app/credit-builder/index.tsx), score simulator (mobile-app/app/credit-builder/simulator.tsx), utilization calculator (mobile-app/app/credit-builder/utilization.tsx), payment history (mobile-app/app/credit-builder/payments.tsx), credit age (mobile-app/app/credit-builder/age.tsx), credit mix (mobile-app/app/credit-builder/mix.tsx), and 12 more tools (secured-card, authorized-user, debt-strategy, goodwill, pay-for-delete, freeze, etc.). Connect to POST /api/credit-builder/simulate. Effort: 46 hours.
   - [ ] **B.6 Identity Theft Protection (Week 4) ** -Build identity protection dashboard and dark web monitoring. Screens: Protection dashboard (mobile-app/app/credit-builder/identity-theft.tsx), dark web monitoring (mobile-app/app/credit-builder/dark-web.tsx). Create API endpoints: POST /api/credit-builder/dark-web/scan, GET /api/credit-builder/dark-web/results. Integrate with HaveIBeenPwned API or similar. Effort: 18 hours.
   - [ ] **B.7 Phase 1 QC Checkpoint ** -Quality control verification for Phase 1 deliverables. Verify all 35 screens work, tests pass, build succeeds. Run: npm run build, npm test, test on iOS/Android simulators. Document completion status. Effort: 8 hours.

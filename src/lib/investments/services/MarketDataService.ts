@@ -12,8 +12,8 @@
  * - Rate limiting and error handling
  */
 
-import { CandleData } from '../types/charting.types';
-import { Timeframe, Quote, Asset } from '../types/investment.types';
+import { CandleData } from "../types/charting.types";
+import { Timeframe, Quote, Asset } from "../types/investment.types";
 
 // ============================================================================
 // TYPES
@@ -25,11 +25,11 @@ export interface MarketDataProvider {
   fetchHistoricalData: (
     symbol: string,
     timeframe: Timeframe,
-    limit?: number
+    limit?: number,
   ) => Promise<CandleData[]>;
   subscribeToRealTime?: (
     symbols: string[],
-    callback: (data: RealtimeUpdate) => void
+    callback: (data: RealtimeUpdate) => void,
   ) => () => void;
 }
 
@@ -77,7 +77,7 @@ export class MarketDataService {
 
   constructor(
     private alphaVantageKey?: string,
-    private polygonKey?: string
+    private polygonKey?: string,
   ) {}
 
   // ============================================================================
@@ -115,7 +115,7 @@ export class MarketDataService {
   async getHistoricalData(
     symbol: string,
     timeframe: Timeframe,
-    limit: number = 500
+    limit: number = 500,
   ): Promise<CandleData[]> {
     const cacheKey = `historical:${symbol}:${timeframe}:${limit}`;
     const ttlKey = `historical_${timeframe}` as keyof typeof CACHE_TTL;
@@ -127,7 +127,7 @@ export class MarketDataService {
     const data = await this.fetchHistoricalFromProvider(
       symbol,
       timeframe,
-      limit
+      limit,
     );
     this.setCache(cacheKey, data, ttl);
     return data;
@@ -161,10 +161,10 @@ export class MarketDataService {
 
   subscribeToSymbols(
     symbols: string[],
-    callback: RealtimeCallback
+    callback: RealtimeCallback,
   ): () => void {
     const unsubscribers = symbols.map((symbol) =>
-      this.subscribeToSymbol(symbol, callback)
+      this.subscribeToSymbol(symbol, callback),
     );
     return () => unsubscribers.forEach((unsub) => unsub());
   }
@@ -216,15 +216,15 @@ export class MarketDataService {
         this.reconnectAttempts.set(symbol, 0);
 
         // Authenticate and subscribe
-        ws.send(JSON.stringify({ action: 'auth', params: this.polygonKey }));
-        ws.send(JSON.stringify({ action: 'subscribe', params: `T.${symbol}` }));
+        ws.send(JSON.stringify({ action: "auth", params: this.polygonKey }));
+        ws.send(JSON.stringify({ action: "subscribe", params: `T.${symbol}` }));
       };
 
       ws.onmessage = (event) => {
         try {
           const messages = JSON.parse(event.data);
           for (const msg of messages) {
-            if (msg.ev === 'T') {
+            if (msg.ev === "T") {
               // Trade event
               this.handleRealtimeUpdate({
                 symbol: msg.sym,
@@ -329,7 +329,7 @@ export class MarketDataService {
   private async fetchHistoricalFromProvider(
     symbol: string,
     timeframe: Timeframe,
-    limit: number
+    limit: number,
   ): Promise<CandleData[]> {
     // Try Alpha Vantage first
     if (this.alphaVantageKey) {
@@ -346,25 +346,25 @@ export class MarketDataService {
 
   private async fetchAlphaVantageQuote(symbol: string): Promise<Quote> {
     const response = await fetch(
-      `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${this.alphaVantageKey}`
+      `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${this.alphaVantageKey}`,
     );
     const data = await response.json();
 
-    if (data['Error Message'] || !data['Global Quote']) {
-      throw new Error('Invalid response from Alpha Vantage');
+    if (data["Error Message"] || !data["Global Quote"]) {
+      throw new Error("Invalid response from Alpha Vantage");
     }
 
-    const quote = data['Global Quote'];
+    const quote = data["Global Quote"];
     return {
       symbol,
-      price: parseFloat(quote['05. price']),
-      change: parseFloat(quote['09. change']),
-      changePercent: parseFloat(quote['10. change percent'].replace('%', '')),
-      previousClose: parseFloat(quote['08. previous close']),
-      open: parseFloat(quote['02. open']),
-      high: parseFloat(quote['03. high']),
-      low: parseFloat(quote['04. low']),
-      volume: parseInt(quote['06. volume']),
+      price: parseFloat(quote["05. price"]),
+      change: parseFloat(quote["09. change"]),
+      changePercent: parseFloat(quote["10. change percent"].replace("%", "")),
+      previousClose: parseFloat(quote["08. previous close"]),
+      open: parseFloat(quote["02. open"]),
+      high: parseFloat(quote["03. high"]),
+      low: parseFloat(quote["04. low"]),
+      volume: parseInt(quote["06. volume"]),
       avgVolume: 0,
       week52High: 0,
       week52Low: 0,
@@ -375,7 +375,7 @@ export class MarketDataService {
   private async fetchAlphaVantageHistorical(
     symbol: string,
     timeframe: Timeframe,
-    limit: number
+    limit: number,
   ): Promise<CandleData[]> {
     const functionName = this.getAlphaVantageFunction(timeframe);
     const interval = this.getAlphaVantageInterval(timeframe);
@@ -388,15 +388,15 @@ export class MarketDataService {
     const response = await fetch(url);
     const data = await response.json();
 
-    if (data['Error Message']) {
-      throw new Error('Invalid response from Alpha Vantage');
+    if (data["Error Message"]) {
+      throw new Error("Invalid response from Alpha Vantage");
     }
 
     const timeSeriesKey = Object.keys(data).find((key) =>
-      key.includes('Time Series')
+      key.includes("Time Series"),
     );
     if (!timeSeriesKey || !data[timeSeriesKey]) {
-      throw new Error('No time series data found');
+      throw new Error("No time series data found");
     }
 
     const timeSeries = data[timeSeriesKey];
@@ -404,16 +404,16 @@ export class MarketDataService {
 
     for (const [dateStr, values] of Object.entries(timeSeries).slice(
       0,
-      limit
+      limit,
     )) {
       const v = values as any;
       candles.push({
         timestamp: new Date(dateStr).getTime(),
-        open: parseFloat(v['1. open']),
-        high: parseFloat(v['2. high']),
-        low: parseFloat(v['3. low']),
-        close: parseFloat(v['4. close']),
-        volume: parseInt(v['5. volume'] || v['6. volume'] || '0'),
+        open: parseFloat(v["1. open"]),
+        high: parseFloat(v["2. high"]),
+        low: parseFloat(v["3. low"]),
+        close: parseFloat(v["4. close"]),
+        volume: parseInt(v["5. volume"] || v["6. volume"] || "0"),
       });
     }
 
@@ -421,25 +421,25 @@ export class MarketDataService {
   }
 
   private getAlphaVantageFunction(timeframe: Timeframe): string {
-    if (['1m', '5m', '15m', '30m', '1h'].includes(timeframe)) {
-      return 'TIME_SERIES_INTRADAY';
+    if (["1m", "5m", "15m", "30m", "1h"].includes(timeframe)) {
+      return "TIME_SERIES_INTRADAY";
     }
-    if (timeframe === '1w') {
-      return 'TIME_SERIES_WEEKLY';
+    if (timeframe === "1w") {
+      return "TIME_SERIES_WEEKLY";
     }
-    if (timeframe === '1M') {
-      return 'TIME_SERIES_MONTHLY';
+    if (timeframe === "1M") {
+      return "TIME_SERIES_MONTHLY";
     }
-    return 'TIME_SERIES_DAILY';
+    return "TIME_SERIES_DAILY";
   }
 
   private getAlphaVantageInterval(timeframe: Timeframe): string | null {
     const intervalMap: Record<string, string> = {
-      '1m': '1min',
-      '5m': '5min',
-      '15m': '15min',
-      '30m': '30min',
-      '1h': '60min',
+      "1m": "1min",
+      "5m": "5min",
+      "15m": "15min",
+      "30m": "30min",
+      "1h": "60min",
     };
     return intervalMap[timeframe] || null;
   }
@@ -534,12 +534,12 @@ let marketDataServiceInstance: MarketDataService | null = null;
 
 export function getMarketDataService(
   alphaVantageKey?: string,
-  polygonKey?: string
+  polygonKey?: string,
 ): MarketDataService {
   if (!marketDataServiceInstance) {
     marketDataServiceInstance = new MarketDataService(
       alphaVantageKey,
-      polygonKey
+      polygonKey,
     );
   }
   return marketDataServiceInstance;

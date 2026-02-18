@@ -1,12 +1,15 @@
 /**
  * Risk Gateway
- * 
+ *
  * Central risk management layer that validates all trades before execution.
  * Enforces portfolio-level risk rules and provides kill switch functionality.
  */
 
-import { supabaseAdmin } from '@/lib/supabase/server';
-import { CorrelationMonitor, type RegimeChangeEvent } from '@/lib/trading/correlation-monitor';
+import { supabaseAdmin } from "@/lib/supabase/server";
+import {
+  CorrelationMonitor,
+  type RegimeChangeEvent,
+} from "@/lib/trading/correlation-monitor";
 
 // ============================================================================
 // TYPES
@@ -14,19 +17,19 @@ import { CorrelationMonitor, type RegimeChangeEvent } from '@/lib/trading/correl
 
 export interface RiskRules {
   // Position limits
-  maxPositionSize: number;        // % of portfolio per position
-  maxSectorExposure: number;      // % per sector
-  maxCorrelatedExposure: number;  // % correlated assets
+  maxPositionSize: number; // % of portfolio per position
+  maxSectorExposure: number; // % per sector
+  maxCorrelatedExposure: number; // % correlated assets
   maxOpenPositions: number;
 
   // Loss limits
-  maxDailyLoss: number;           // % triggers pause
-  maxWeeklyLoss: number;          // % triggers review
-  maxDrawdown: number;            // % triggers kill switch
-  maxLossPerTrade: number;        // Hard stop per trade
+  maxDailyLoss: number; // % triggers pause
+  maxWeeklyLoss: number; // % triggers review
+  maxDrawdown: number; // % triggers kill switch
+  maxLossPerTrade: number; // Hard stop per trade
 
   // Cash management
-  minCashReserve: number;         // Always maintain %
+  minCashReserve: number; // Always maintain %
   marginUtilizationLimit: number; // Max margin usage %
 
   // Time rules
@@ -35,24 +38,24 @@ export interface RiskRules {
   noTradesAroundFOMC: boolean;
 
   // Consensus requirements
-  minSignalConsensus: number;     // Min agreement %
-  minConfidence: number;          // Min confidence score
+  minSignalConsensus: number; // Min agreement %
+  minConfidence: number; // Min confidence score
 
   // Kill switch auto-trigger thresholds (RSK-003)
-  lossVelocityWindowMs: number;   // Rolling window for velocity calc
-  lossVelocityThreshold: number;  // % loss per hour to trigger
+  lossVelocityWindowMs: number; // Rolling window for velocity calc
+  lossVelocityThreshold: number; // % loss per hour to trigger
   correlationSpikeThreshold: number; // Average corr jump to trigger
-  maxConsecutiveLosses: number;   // Consecutive losing trades before halt
+  maxConsecutiveLosses: number; // Consecutive losing trades before halt
 
   // Concentration limits (RSK-006)
-  maxHHI: number;                 // Max Herfindahl-Hirschman Index (0-10000)
-  maxSinglePositionPct: number;   // Hard cap % for any single position
+  maxHHI: number; // Max Herfindahl-Hirschman Index (0-10000)
+  maxSinglePositionPct: number; // Hard cap % for any single position
   maxSectorWeights: Record<string, number>; // Per-sector weight limits
 }
 
 export interface ProposedTrade {
   symbol: string;
-  side: 'buy' | 'sell';
+  side: "buy" | "sell";
   quantity: number;
   price: number;
   stopLoss?: number;
@@ -87,7 +90,7 @@ export interface RiskValidation {
 export interface RiskViolation {
   rule: string;
   message: string;
-  severity: 'critical' | 'high' | 'medium';
+  severity: "critical" | "high" | "medium";
   currentValue: number;
   limit: number;
 }
@@ -103,25 +106,25 @@ export interface KillSwitchStatus {
   active: boolean;
   reason?: string;
   triggeredAt?: Date;
-  triggeredBy?: 'system' | 'user';
+  triggeredBy?: "system" | "user";
   triggerType?: KillSwitchTrigger;
 }
 
 export type KillSwitchTrigger =
-  | 'max_drawdown'
-  | 'loss_velocity'
-  | 'correlation_spike'
-  | 'consecutive_losses'
-  | 'manual';
+  | "max_drawdown"
+  | "loss_velocity"
+  | "correlation_spike"
+  | "consecutive_losses"
+  | "manual";
 
 export interface LossEvent {
   timestamp: number; // ms epoch
-  lossPct: number;   // loss as positive %
+  lossPct: number; // loss as positive %
 }
 
 export interface ConcentrationReport {
-  hhi: number;                    // 0-10000 scale
-  normalizedHHI: number;          // 0-1 scale
+  hhi: number; // 0-10000 scale
+  normalizedHHI: number; // 0-1 scale
   topHolding: { symbol: string; pct: number } | null;
   sectorWeights: Record<string, number>;
   violations: RiskViolation[];
@@ -149,14 +152,14 @@ export const DEFAULT_RISK_RULES: RiskRules = {
   minSignalConsensus: 0.6,
   minConfidence: 0.5,
   // Kill switch auto-trigger thresholds
-  lossVelocityWindowMs: 3600_000,   // 1 hour
-  lossVelocityThreshold: 3,          // 3% per hour
-  correlationSpikeThreshold: 0.3,    // avg corr jump of 0.3
+  lossVelocityWindowMs: 3600_000, // 1 hour
+  lossVelocityThreshold: 3, // 3% per hour
+  correlationSpikeThreshold: 0.3, // avg corr jump of 0.3
   maxConsecutiveLosses: 5,
   // Concentration limits
-  maxHHI: 2500,                       // > 2500 = highly concentrated
-  maxSinglePositionPct: 15,           // hard cap 15%
-  maxSectorWeights: {},                // empty = use maxSectorExposure for all
+  maxHHI: 2500, // > 2500 = highly concentrated
+  maxSinglePositionPct: 15, // hard cap 15%
+  maxSectorWeights: {}, // empty = use maxSectorExposure for all
 };
 
 // ============================================================================
@@ -189,7 +192,7 @@ export class RiskGateway {
 
   async validateTrade(
     trade: ProposedTrade,
-    portfolio: PortfolioState
+    portfolio: PortfolioState,
   ): Promise<RiskValidation> {
     const violations: RiskViolation[] = [];
     const warnings: RiskWarning[] = [];
@@ -197,9 +200,9 @@ export class RiskGateway {
     // Check kill switch first
     if (this.killSwitch.active) {
       violations.push({
-        rule: 'kill_switch',
+        rule: "kill_switch",
         message: `Trading halted: ${this.killSwitch.reason}`,
-        severity: 'critical',
+        severity: "critical",
         currentValue: 1,
         limit: 0,
       });
@@ -209,12 +212,12 @@ export class RiskGateway {
     // Position size check
     const tradeValue = trade.quantity * trade.price;
     const positionPercent = (tradeValue / portfolio.totalValue) * 100;
-    
+
     if (positionPercent > this.rules.maxPositionSize) {
       violations.push({
-        rule: 'max_position_size',
+        rule: "max_position_size",
         message: `Position size ${positionPercent.toFixed(1)}% exceeds limit of ${this.rules.maxPositionSize}%`,
-        severity: 'high',
+        severity: "high",
         currentValue: positionPercent,
         limit: this.rules.maxPositionSize,
       });
@@ -223,35 +226,39 @@ export class RiskGateway {
     // Cash reserve check
     const cashAfterTrade = portfolio.cashBalance - tradeValue;
     const cashPercent = (cashAfterTrade / portfolio.totalValue) * 100;
-    
+
     if (cashPercent < this.rules.minCashReserve) {
       violations.push({
-        rule: 'min_cash_reserve',
+        rule: "min_cash_reserve",
         message: `Trade would leave only ${cashPercent.toFixed(1)}% cash, below ${this.rules.minCashReserve}% minimum`,
-        severity: 'high',
+        severity: "high",
         currentValue: cashPercent,
         limit: this.rules.minCashReserve,
       });
     }
 
     // Open positions check
-    if (trade.side === 'buy' && portfolio.openPositionCount >= this.rules.maxOpenPositions) {
+    if (
+      trade.side === "buy" &&
+      portfolio.openPositionCount >= this.rules.maxOpenPositions
+    ) {
       violations.push({
-        rule: 'max_open_positions',
+        rule: "max_open_positions",
         message: `Already at maximum ${this.rules.maxOpenPositions} open positions`,
-        severity: 'medium',
+        severity: "medium",
         currentValue: portfolio.openPositionCount,
         limit: this.rules.maxOpenPositions,
       });
     }
 
     // Daily loss check
-    const dailyLossPercent = Math.abs(Math.min(0, portfolio.dailyPnL)) / portfolio.totalValue * 100;
+    const dailyLossPercent =
+      (Math.abs(Math.min(0, portfolio.dailyPnL)) / portfolio.totalValue) * 100;
     if (dailyLossPercent >= this.rules.maxDailyLoss) {
       violations.push({
-        rule: 'max_daily_loss',
+        rule: "max_daily_loss",
         message: `Daily loss ${dailyLossPercent.toFixed(1)}% has reached limit of ${this.rules.maxDailyLoss}%`,
-        severity: 'critical',
+        severity: "critical",
         currentValue: dailyLossPercent,
         limit: this.rules.maxDailyLoss,
       });
@@ -260,28 +267,36 @@ export class RiskGateway {
     // Drawdown check
     if (portfolio.drawdown >= this.rules.maxDrawdown) {
       violations.push({
-        rule: 'max_drawdown',
+        rule: "max_drawdown",
         message: `Drawdown ${portfolio.drawdown.toFixed(1)}% has reached limit of ${this.rules.maxDrawdown}%`,
-        severity: 'critical',
+        severity: "critical",
         currentValue: portfolio.drawdown,
         limit: this.rules.maxDrawdown,
       });
-      
+
       // Auto-trigger kill switch
-      await this.triggerKillSwitch(`Max drawdown of ${this.rules.maxDrawdown}% reached`, 'max_drawdown');
+      await this.triggerKillSwitch(
+        `Max drawdown of ${this.rules.maxDrawdown}% reached`,
+        "max_drawdown",
+      );
     }
 
     // Sector exposure check
     if (trade.sector) {
-      const sectorExposure = this.calculateSectorExposure(portfolio, trade.sector);
+      const sectorExposure = this.calculateSectorExposure(
+        portfolio,
+        trade.sector,
+      );
       const newExposure = sectorExposure + positionPercent;
-      const sectorLimit = this.rules.maxSectorWeights[trade.sector] ?? this.rules.maxSectorExposure;
+      const sectorLimit =
+        this.rules.maxSectorWeights[trade.sector] ??
+        this.rules.maxSectorExposure;
 
       if (newExposure > sectorLimit) {
         violations.push({
-          rule: 'max_sector_exposure',
+          rule: "max_sector_exposure",
           message: `${trade.sector} exposure would be ${newExposure.toFixed(1)}%, exceeds ${sectorLimit}%`,
-          severity: 'medium',
+          severity: "medium",
           currentValue: newExposure,
           limit: sectorLimit,
         });
@@ -291,35 +306,42 @@ export class RiskGateway {
     // RSK-006: Single position hard cap
     if (positionPercent > this.rules.maxSinglePositionPct) {
       violations.push({
-        rule: 'max_single_position',
+        rule: "max_single_position",
         message: `Position ${positionPercent.toFixed(1)}% exceeds hard cap of ${this.rules.maxSinglePositionPct}%`,
-        severity: 'critical',
+        severity: "critical",
         currentValue: positionPercent,
         limit: this.rules.maxSinglePositionPct,
       });
     }
 
     // RSK-006: HHI concentration check (simulate adding this trade)
-    if (trade.side === 'buy') {
+    if (trade.side === "buy") {
       const simulatedPositions = [...portfolio.positions];
-      const existing = simulatedPositions.find(p => p.symbol === trade.symbol);
+      const existing = simulatedPositions.find(
+        (p) => p.symbol === trade.symbol,
+      );
       if (existing) {
         existing.percent += positionPercent;
       } else {
-        simulatedPositions.push({ symbol: trade.symbol, value: tradeValue, percent: positionPercent, sector: trade.sector });
+        simulatedPositions.push({
+          symbol: trade.symbol,
+          value: tradeValue,
+          percent: positionPercent,
+          sector: trade.sector,
+        });
       }
-      const hhi = this.calculateHHI(simulatedPositions.map(p => p.percent));
+      const hhi = this.calculateHHI(simulatedPositions.map((p) => p.percent));
       if (hhi > this.rules.maxHHI) {
         violations.push({
-          rule: 'max_hhi_concentration',
+          rule: "max_hhi_concentration",
           message: `Portfolio HHI would be ${hhi.toFixed(0)}, exceeds limit of ${this.rules.maxHHI}`,
-          severity: 'high',
+          severity: "high",
           currentValue: hhi,
           limit: this.rules.maxHHI,
         });
       } else if (hhi > this.rules.maxHHI * 0.8) {
         warnings.push({
-          rule: 'hhi_concentration_warning',
+          rule: "hhi_concentration_warning",
           message: `Portfolio HHI ${hhi.toFixed(0)} approaching limit of ${this.rules.maxHHI}`,
           currentValue: hhi,
           threshold: this.rules.maxHHI,
@@ -330,26 +352,35 @@ export class RiskGateway {
     // RSK-003: Correlation spike kill switch
     if (this.correlationMonitor) {
       const regimeEvents = this.correlationMonitor.detectRegimeChange(
-        portfolio.positions.map(p => p.symbol)
+        portfolio.positions.map((p) => p.symbol),
       );
       const criticalSpikes = regimeEvents.filter(
-        (e: RegimeChangeEvent) => e.severity === 'critical' || e.severity === 'high'
+        (e: RegimeChangeEvent) =>
+          e.severity === "critical" || e.severity === "high",
       );
       if (criticalSpikes.length > 0) {
-        const avgChange = criticalSpikes.reduce((sum: number, e: RegimeChangeEvent) => {
-          const pairChanges = e.affectedPairs.map(p => Math.abs(p.after - p.before));
-          return sum + (pairChanges.length > 0 ? pairChanges.reduce((a, b) => a + b, 0) / pairChanges.length : 0);
-        }, 0) / criticalSpikes.length;
+        const avgChange =
+          criticalSpikes.reduce((sum: number, e: RegimeChangeEvent) => {
+            const pairChanges = e.affectedPairs.map((p) =>
+              Math.abs(p.after - p.before),
+            );
+            return (
+              sum +
+              (pairChanges.length > 0
+                ? pairChanges.reduce((a, b) => a + b, 0) / pairChanges.length
+                : 0)
+            );
+          }, 0) / criticalSpikes.length;
 
         if (avgChange >= this.rules.correlationSpikeThreshold) {
           await this.triggerKillSwitch(
             `Correlation spike detected: avg change ${avgChange.toFixed(2)} across ${criticalSpikes.length} events`,
-            'correlation_spike'
+            "correlation_spike",
           );
           violations.push({
-            rule: 'correlation_spike_halt',
+            rule: "correlation_spike_halt",
             message: `Trading halted: correlation spike (avg delta ${avgChange.toFixed(2)})`,
-            severity: 'critical',
+            severity: "critical",
             currentValue: avgChange,
             limit: this.rules.correlationSpikeThreshold,
           });
@@ -358,22 +389,28 @@ export class RiskGateway {
     }
 
     // Signal consensus check
-    if (trade.signalConsensus !== undefined && trade.signalConsensus < this.rules.minSignalConsensus) {
+    if (
+      trade.signalConsensus !== undefined &&
+      trade.signalConsensus < this.rules.minSignalConsensus
+    ) {
       violations.push({
-        rule: 'min_signal_consensus',
+        rule: "min_signal_consensus",
         message: `Signal consensus ${(trade.signalConsensus * 100).toFixed(0)}% below minimum ${(this.rules.minSignalConsensus * 100).toFixed(0)}%`,
-        severity: 'medium',
+        severity: "medium",
         currentValue: trade.signalConsensus,
         limit: this.rules.minSignalConsensus,
       });
     }
 
     // Signal confidence check
-    if (trade.signalConfidence !== undefined && trade.signalConfidence < this.rules.minConfidence) {
+    if (
+      trade.signalConfidence !== undefined &&
+      trade.signalConfidence < this.rules.minConfidence
+    ) {
       violations.push({
-        rule: 'min_confidence',
+        rule: "min_confidence",
         message: `Signal confidence ${(trade.signalConfidence * 100).toFixed(0)}% below minimum ${(this.rules.minConfidence * 100).toFixed(0)}%`,
-        severity: 'medium',
+        severity: "medium",
         currentValue: trade.signalConfidence,
         limit: this.rules.minConfidence,
       });
@@ -382,18 +419,19 @@ export class RiskGateway {
     // Stop loss check
     if (!trade.stopLoss) {
       warnings.push({
-        rule: 'missing_stop_loss',
-        message: 'Trade has no stop loss defined',
+        rule: "missing_stop_loss",
+        message: "Trade has no stop loss defined",
         currentValue: 0,
         threshold: 1,
       });
     } else {
-      const riskPercent = Math.abs(trade.price - trade.stopLoss) / trade.price * 100;
+      const riskPercent =
+        (Math.abs(trade.price - trade.stopLoss) / trade.price) * 100;
       if (riskPercent > this.rules.maxLossPerTrade) {
         violations.push({
-          rule: 'max_loss_per_trade',
+          rule: "max_loss_per_trade",
           message: `Stop loss risk ${riskPercent.toFixed(1)}% exceeds limit of ${this.rules.maxLossPerTrade}%`,
-          severity: 'high',
+          severity: "high",
           currentValue: riskPercent,
           limit: this.rules.maxLossPerTrade,
         });
@@ -401,10 +439,11 @@ export class RiskGateway {
     }
 
     // Weekly loss warning
-    const weeklyLossPercent = Math.abs(Math.min(0, portfolio.weeklyPnL)) / portfolio.totalValue * 100;
+    const weeklyLossPercent =
+      (Math.abs(Math.min(0, portfolio.weeklyPnL)) / portfolio.totalValue) * 100;
     if (weeklyLossPercent >= this.rules.maxWeeklyLoss * 0.8) {
       warnings.push({
-        rule: 'weekly_loss_warning',
+        rule: "weekly_loss_warning",
         message: `Weekly loss ${weeklyLossPercent.toFixed(1)}% approaching limit of ${this.rules.maxWeeklyLoss}%`,
         currentValue: weeklyLossPercent,
         threshold: this.rules.maxWeeklyLoss,
@@ -413,9 +452,9 @@ export class RiskGateway {
 
     // Generate adjusted trade if possible
     let adjustedTrade: ProposedTrade | undefined;
-    if (violations.some(v => v.rule === 'max_position_size')) {
+    if (violations.some((v) => v.rule === "max_position_size")) {
       const maxQuantity = Math.floor(
-        (portfolio.totalValue * this.rules.maxPositionSize / 100) / trade.price
+        (portfolio.totalValue * this.rules.maxPositionSize) / 100 / trade.price,
       );
       if (maxQuantity > 0) {
         adjustedTrade = { ...trade, quantity: maxQuantity };
@@ -435,53 +474,68 @@ export class RiskGateway {
   // ============================================================================
 
   async checkPortfolioRisk(portfolio: PortfolioState): Promise<{
-    status: 'healthy' | 'warning' | 'critical';
+    status: "healthy" | "warning" | "critical";
     issues: string[];
     metrics: Record<string, number>;
   }> {
     const issues: string[] = [];
-    let status: 'healthy' | 'warning' | 'critical' = 'healthy';
+    let status: "healthy" | "warning" | "critical" = "healthy";
 
     const metrics = {
       cashPercent: (portfolio.cashBalance / portfolio.totalValue) * 100,
-      dailyLossPercent: Math.abs(Math.min(0, portfolio.dailyPnL)) / portfolio.totalValue * 100,
-      weeklyLossPercent: Math.abs(Math.min(0, portfolio.weeklyPnL)) / portfolio.totalValue * 100,
+      dailyLossPercent:
+        (Math.abs(Math.min(0, portfolio.dailyPnL)) / portfolio.totalValue) *
+        100,
+      weeklyLossPercent:
+        (Math.abs(Math.min(0, portfolio.weeklyPnL)) / portfolio.totalValue) *
+        100,
       drawdown: portfolio.drawdown,
       positionCount: portfolio.openPositionCount,
-      largestPosition: Math.max(...portfolio.positions.map(p => p.percent), 0),
+      largestPosition: Math.max(
+        ...portfolio.positions.map((p) => p.percent),
+        0,
+      ),
     };
 
     // Check critical conditions
     if (metrics.drawdown >= this.rules.maxDrawdown) {
-      status = 'critical';
+      status = "critical";
       issues.push(`Drawdown ${metrics.drawdown.toFixed(1)}% at or above limit`);
     }
 
     if (metrics.dailyLossPercent >= this.rules.maxDailyLoss) {
-      status = 'critical';
-      issues.push(`Daily loss ${metrics.dailyLossPercent.toFixed(1)}% at or above limit`);
+      status = "critical";
+      issues.push(
+        `Daily loss ${metrics.dailyLossPercent.toFixed(1)}% at or above limit`,
+      );
     }
 
     // Check warning conditions
-    if (status !== 'critical') {
+    if (status !== "critical") {
       if (metrics.drawdown >= this.rules.maxDrawdown * 0.8) {
-        status = 'warning';
-        issues.push(`Drawdown ${metrics.drawdown.toFixed(1)}% approaching limit`);
+        status = "warning";
+        issues.push(
+          `Drawdown ${metrics.drawdown.toFixed(1)}% approaching limit`,
+        );
       }
 
       if (metrics.dailyLossPercent >= this.rules.maxDailyLoss * 0.8) {
-        status = 'warning';
-        issues.push(`Daily loss ${metrics.dailyLossPercent.toFixed(1)}% approaching limit`);
+        status = "warning";
+        issues.push(
+          `Daily loss ${metrics.dailyLossPercent.toFixed(1)}% approaching limit`,
+        );
       }
 
       if (metrics.cashPercent < this.rules.minCashReserve * 1.5) {
-        status = 'warning';
+        status = "warning";
         issues.push(`Cash reserve ${metrics.cashPercent.toFixed(1)}% is low`);
       }
 
       if (metrics.largestPosition > this.rules.maxPositionSize * 0.9) {
-        status = 'warning';
-        issues.push(`Largest position ${metrics.largestPosition.toFixed(1)}% near limit`);
+        status = "warning";
+        issues.push(
+          `Largest position ${metrics.largestPosition.toFixed(1)}% near limit`,
+        );
       }
     }
 
@@ -496,14 +550,16 @@ export class RiskGateway {
    * Record a trade loss and check velocity-based kill switch.
    * Call this after each closed trade with a loss.
    */
-  async recordLoss(lossPct: number): Promise<{ triggered: boolean; reason?: string }> {
+  async recordLoss(
+    lossPct: number,
+  ): Promise<{ triggered: boolean; reason?: string }> {
     const now = Date.now();
     this.lossEvents.push({ timestamp: now, lossPct });
     this.consecutiveLosses++;
 
     // Prune stale loss events outside the velocity window
     const windowStart = now - this.rules.lossVelocityWindowMs;
-    this.lossEvents = this.lossEvents.filter(e => e.timestamp >= windowStart);
+    this.lossEvents = this.lossEvents.filter((e) => e.timestamp >= windowStart);
 
     // Check loss velocity: total loss% in window / window hours
     const totalLoss = this.lossEvents.reduce((sum, e) => sum + e.lossPct, 0);
@@ -512,14 +568,14 @@ export class RiskGateway {
 
     if (velocity >= this.rules.lossVelocityThreshold) {
       const reason = `Loss velocity ${velocity.toFixed(2)}%/hr exceeds threshold of ${this.rules.lossVelocityThreshold}%/hr`;
-      await this.triggerKillSwitch(reason, 'loss_velocity');
+      await this.triggerKillSwitch(reason, "loss_velocity");
       return { triggered: true, reason };
     }
 
     // Check consecutive losses
     if (this.consecutiveLosses >= this.rules.maxConsecutiveLosses) {
       const reason = `${this.consecutiveLosses} consecutive losses reached limit of ${this.rules.maxConsecutiveLosses}`;
-      await this.triggerKillSwitch(reason, 'consecutive_losses');
+      await this.triggerKillSwitch(reason, "consecutive_losses");
       return { triggered: true, reason };
     }
 
@@ -535,7 +591,9 @@ export class RiskGateway {
   getLossVelocity(): number {
     const now = Date.now();
     const windowStart = now - this.rules.lossVelocityWindowMs;
-    const recentLosses = this.lossEvents.filter(e => e.timestamp >= windowStart);
+    const recentLosses = this.lossEvents.filter(
+      (e) => e.timestamp >= windowStart,
+    );
     const totalLoss = recentLosses.reduce((sum, e) => sum + e.lossPct, 0);
     const windowHours = this.rules.lossVelocityWindowMs / 3600_000;
     return totalLoss / windowHours;
@@ -567,22 +625,22 @@ export class RiskGateway {
     const warnings: RiskWarning[] = [];
 
     // HHI
-    const pcts = portfolio.positions.map(p => p.percent);
+    const pcts = portfolio.positions.map((p) => p.percent);
     const hhi = this.calculateHHI(pcts);
     const n = pcts.length;
     const normalizedHHI = n > 1 ? (hhi - 10000 / n) / (10000 - 10000 / n) : 1;
 
     if (hhi > this.rules.maxHHI) {
       violations.push({
-        rule: 'max_hhi_concentration',
+        rule: "max_hhi_concentration",
         message: `Portfolio HHI ${hhi.toFixed(0)} exceeds limit of ${this.rules.maxHHI}`,
-        severity: 'high',
+        severity: "high",
         currentValue: hhi,
         limit: this.rules.maxHHI,
       });
     } else if (hhi > this.rules.maxHHI * 0.8) {
       warnings.push({
-        rule: 'hhi_concentration_warning',
+        rule: "hhi_concentration_warning",
         message: `Portfolio HHI ${hhi.toFixed(0)} approaching limit of ${this.rules.maxHHI}`,
         currentValue: hhi,
         threshold: this.rules.maxHHI,
@@ -590,17 +648,20 @@ export class RiskGateway {
     }
 
     // Single position hard cap
-    const sorted = [...portfolio.positions].sort((a, b) => b.percent - a.percent);
-    const topHolding = sorted.length > 0
-      ? { symbol: sorted[0].symbol, pct: sorted[0].percent }
-      : null;
+    const sorted = [...portfolio.positions].sort(
+      (a, b) => b.percent - a.percent,
+    );
+    const topHolding =
+      sorted.length > 0
+        ? { symbol: sorted[0].symbol, pct: sorted[0].percent }
+        : null;
 
     for (const pos of sorted) {
       if (pos.percent > this.rules.maxSinglePositionPct) {
         violations.push({
-          rule: 'max_single_position',
+          rule: "max_single_position",
           message: `${pos.symbol} at ${pos.percent.toFixed(1)}% exceeds hard cap of ${this.rules.maxSinglePositionPct}%`,
-          severity: 'critical',
+          severity: "critical",
           currentValue: pos.percent,
           limit: this.rules.maxSinglePositionPct,
         });
@@ -610,23 +671,24 @@ export class RiskGateway {
     // Sector weights
     const sectorWeights: Record<string, number> = {};
     for (const pos of portfolio.positions) {
-      const sector = pos.sector ?? 'unknown';
+      const sector = pos.sector ?? "unknown";
       sectorWeights[sector] = (sectorWeights[sector] ?? 0) + pos.percent;
     }
 
     for (const [sector, weight] of Object.entries(sectorWeights)) {
-      const sectorLimit = this.rules.maxSectorWeights[sector] ?? this.rules.maxSectorExposure;
+      const sectorLimit =
+        this.rules.maxSectorWeights[sector] ?? this.rules.maxSectorExposure;
       if (weight > sectorLimit) {
         violations.push({
-          rule: 'sector_weight_limit',
+          rule: "sector_weight_limit",
           message: `${sector} sector at ${weight.toFixed(1)}% exceeds limit of ${sectorLimit}%`,
-          severity: 'medium',
+          severity: "medium",
           currentValue: weight,
           limit: sectorLimit,
         });
       } else if (weight > sectorLimit * 0.85) {
         warnings.push({
-          rule: 'sector_weight_warning',
+          rule: "sector_weight_warning",
           message: `${sector} sector at ${weight.toFixed(1)}% approaching limit of ${sectorLimit}%`,
           currentValue: weight,
           threshold: sectorLimit,
@@ -634,19 +696,29 @@ export class RiskGateway {
       }
     }
 
-    return { hhi, normalizedHHI, topHolding, sectorWeights, violations, warnings };
+    return {
+      hhi,
+      normalizedHHI,
+      topHolding,
+      sectorWeights,
+      violations,
+      warnings,
+    };
   }
 
   // ============================================================================
   // KILL SWITCH
   // ============================================================================
 
-  async triggerKillSwitch(reason: string, triggerType: KillSwitchTrigger = 'manual'): Promise<void> {
+  async triggerKillSwitch(
+    reason: string,
+    triggerType: KillSwitchTrigger = "manual",
+  ): Promise<void> {
     this.killSwitch = {
       active: true,
       reason,
       triggeredAt: new Date(),
-      triggeredBy: triggerType === 'manual' ? 'user' : 'system',
+      triggeredBy: triggerType === "manual" ? "user" : "system",
       triggerType,
     };
 
@@ -656,8 +728,11 @@ export class RiskGateway {
     // RiskGateway: KILL SWITCH TRIGGERED
   }
 
-  async resetKillSwitch(userId: string, confirmation: string): Promise<boolean> {
-    if (confirmation !== 'CONFIRM_RESET') {
+  async resetKillSwitch(
+    userId: string,
+    confirmation: string,
+  ): Promise<boolean> {
+    if (confirmation !== "CONFIRM_RESET") {
       return false;
     }
 
@@ -689,20 +764,24 @@ export class RiskGateway {
   // HELPER METHODS
   // ============================================================================
 
-  private calculateSectorExposure(portfolio: PortfolioState, sector: string): number {
+  private calculateSectorExposure(
+    portfolio: PortfolioState,
+    sector: string,
+  ): number {
     return portfolio.positions
-      .filter(p => p.sector === sector)
+      .filter((p) => p.sector === sector)
       .reduce((sum, p) => sum + p.percent, 0);
   }
 
   private async saveKillSwitchStatus(): Promise<void> {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabaseAdmin.from as any)('risk_rules').upsert({
+      await (supabaseAdmin.from as any)("risk_rules").upsert({
         user_id: this.userId,
         kill_switch_active: this.killSwitch.active,
         kill_switch_reason: this.killSwitch.reason ?? null,
-        kill_switch_triggered_at: this.killSwitch.triggeredAt?.toISOString() ?? null,
+        kill_switch_triggered_at:
+          this.killSwitch.triggeredAt?.toISOString() ?? null,
         kill_switch_triggered_by: this.killSwitch.triggeredBy ?? null,
         kill_switch_trigger_type: this.killSwitch.triggerType ?? null,
         updated_at: new Date().toISOString(),
@@ -715,7 +794,7 @@ export class RiskGateway {
   private async saveRules(): Promise<void> {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabaseAdmin.from as any)('risk_rules').upsert({
+      await (supabaseAdmin.from as any)("risk_rules").upsert({
         user_id: this.userId,
         max_position_size: this.rules.maxPositionSize,
         max_sector_exposure: this.rules.maxSectorExposure,
@@ -749,43 +828,71 @@ export class RiskGateway {
   async loadRules(): Promise<void> {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data } = await (supabaseAdmin.from as any)('risk_rules')
-        .select('*')
-        .eq('user_id', this.userId)
+      const { data } = await (supabaseAdmin.from as any)("risk_rules")
+        .select("*")
+        .eq("user_id", this.userId)
         .single();
 
       if (data) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const row = data as any;
         this.rules = {
-          maxPositionSize: row.max_position_size ?? DEFAULT_RISK_RULES.maxPositionSize,
-          maxSectorExposure: row.max_sector_exposure ?? DEFAULT_RISK_RULES.maxSectorExposure,
-          maxCorrelatedExposure: row.max_correlated_exposure ?? DEFAULT_RISK_RULES.maxCorrelatedExposure,
-          maxOpenPositions: row.max_open_positions ?? DEFAULT_RISK_RULES.maxOpenPositions,
+          maxPositionSize:
+            row.max_position_size ?? DEFAULT_RISK_RULES.maxPositionSize,
+          maxSectorExposure:
+            row.max_sector_exposure ?? DEFAULT_RISK_RULES.maxSectorExposure,
+          maxCorrelatedExposure:
+            row.max_correlated_exposure ??
+            DEFAULT_RISK_RULES.maxCorrelatedExposure,
+          maxOpenPositions:
+            row.max_open_positions ?? DEFAULT_RISK_RULES.maxOpenPositions,
           maxDailyLoss: row.max_daily_loss ?? DEFAULT_RISK_RULES.maxDailyLoss,
-          maxWeeklyLoss: row.max_weekly_loss ?? DEFAULT_RISK_RULES.maxWeeklyLoss,
+          maxWeeklyLoss:
+            row.max_weekly_loss ?? DEFAULT_RISK_RULES.maxWeeklyLoss,
           maxDrawdown: row.max_drawdown ?? DEFAULT_RISK_RULES.maxDrawdown,
-          maxLossPerTrade: row.max_loss_per_trade ?? DEFAULT_RISK_RULES.maxLossPerTrade,
-          minCashReserve: row.min_cash_reserve ?? DEFAULT_RISK_RULES.minCashReserve,
-          marginUtilizationLimit: row.margin_utilization_limit ?? DEFAULT_RISK_RULES.marginUtilizationLimit,
-          tradingHoursOnly: row.trading_hours_only ?? DEFAULT_RISK_RULES.tradingHoursOnly,
-          noTradesBeforeEarnings: row.no_trades_before_earnings ?? DEFAULT_RISK_RULES.noTradesBeforeEarnings,
-          noTradesAroundFOMC: row.no_trades_around_fomc ?? DEFAULT_RISK_RULES.noTradesAroundFOMC,
-          minSignalConsensus: row.min_signal_consensus ?? DEFAULT_RISK_RULES.minSignalConsensus,
+          maxLossPerTrade:
+            row.max_loss_per_trade ?? DEFAULT_RISK_RULES.maxLossPerTrade,
+          minCashReserve:
+            row.min_cash_reserve ?? DEFAULT_RISK_RULES.minCashReserve,
+          marginUtilizationLimit:
+            row.margin_utilization_limit ??
+            DEFAULT_RISK_RULES.marginUtilizationLimit,
+          tradingHoursOnly:
+            row.trading_hours_only ?? DEFAULT_RISK_RULES.tradingHoursOnly,
+          noTradesBeforeEarnings:
+            row.no_trades_before_earnings ??
+            DEFAULT_RISK_RULES.noTradesBeforeEarnings,
+          noTradesAroundFOMC:
+            row.no_trades_around_fomc ?? DEFAULT_RISK_RULES.noTradesAroundFOMC,
+          minSignalConsensus:
+            row.min_signal_consensus ?? DEFAULT_RISK_RULES.minSignalConsensus,
           minConfidence: row.min_confidence ?? DEFAULT_RISK_RULES.minConfidence,
-          lossVelocityWindowMs: row.loss_velocity_window_ms ?? DEFAULT_RISK_RULES.lossVelocityWindowMs,
-          lossVelocityThreshold: row.loss_velocity_threshold ?? DEFAULT_RISK_RULES.lossVelocityThreshold,
-          correlationSpikeThreshold: row.correlation_spike_threshold ?? DEFAULT_RISK_RULES.correlationSpikeThreshold,
-          maxConsecutiveLosses: row.max_consecutive_losses ?? DEFAULT_RISK_RULES.maxConsecutiveLosses,
+          lossVelocityWindowMs:
+            row.loss_velocity_window_ms ??
+            DEFAULT_RISK_RULES.lossVelocityWindowMs,
+          lossVelocityThreshold:
+            row.loss_velocity_threshold ??
+            DEFAULT_RISK_RULES.lossVelocityThreshold,
+          correlationSpikeThreshold:
+            row.correlation_spike_threshold ??
+            DEFAULT_RISK_RULES.correlationSpikeThreshold,
+          maxConsecutiveLosses:
+            row.max_consecutive_losses ??
+            DEFAULT_RISK_RULES.maxConsecutiveLosses,
           maxHHI: row.max_hhi ?? DEFAULT_RISK_RULES.maxHHI,
-          maxSinglePositionPct: row.max_single_position_pct ?? DEFAULT_RISK_RULES.maxSinglePositionPct,
-          maxSectorWeights: row.max_sector_weights ?? DEFAULT_RISK_RULES.maxSectorWeights,
+          maxSinglePositionPct:
+            row.max_single_position_pct ??
+            DEFAULT_RISK_RULES.maxSinglePositionPct,
+          maxSectorWeights:
+            row.max_sector_weights ?? DEFAULT_RISK_RULES.maxSectorWeights,
         };
 
         this.killSwitch = {
           active: row.kill_switch_active ?? false,
           reason: row.kill_switch_reason,
-          triggeredAt: row.kill_switch_triggered_at ? new Date(row.kill_switch_triggered_at) : undefined,
+          triggeredAt: row.kill_switch_triggered_at
+            ? new Date(row.kill_switch_triggered_at)
+            : undefined,
           triggeredBy: row.kill_switch_triggered_by ?? undefined,
           triggerType: row.kill_switch_trigger_type ?? undefined,
         };
@@ -797,6 +904,9 @@ export class RiskGateway {
 }
 
 // Factory function
-export function createRiskGateway(userId: string, rules?: Partial<RiskRules>): RiskGateway {
+export function createRiskGateway(
+  userId: string,
+  rules?: Partial<RiskRules>,
+): RiskGateway {
   return new RiskGateway(userId, rules);
 }

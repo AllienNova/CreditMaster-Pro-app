@@ -1,27 +1,27 @@
 /**
  * Credit Analysis API
- * 
+ *
  * Analyzes credit reports using AIML API's reasoning models
  * (DeepSeek R1 for advanced analysis)
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getAIOrchestrator, CreditAnalysisInput } from '@/lib/ai-orchestrator';
+import { NextRequest, NextResponse } from "next/server";
+import { getAIOrchestrator, CreditAnalysisInput } from "@/lib/ai-orchestrator";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
+
     // Validate required fields
     const { creditReport } = body;
-    
+
     if (!creditReport) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Missing required field: creditReport',
+          error: "Missing required field: creditReport",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       success: true,
       data: {
         analysis,
-        model: 'deepseek/deepseek-r1',
+        model: "deepseek/deepseek-r1",
         timestamp: new Date().toISOString(),
       },
     });
@@ -48,21 +48,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: _error instanceof Error ? _error.message : 'Failed to analyze credit report',
+        error:
+          _error instanceof Error
+            ? _error.message
+            : "Failed to analyze credit report",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function GET() {
   return NextResponse.json({
-    message: 'Credit Analysis API',
-    method: 'POST',
-    endpoint: '/api/credit/analyze',
-    requiredFields: ['creditReport'],
-    optionalFields: ['creditScore', 'goals'],
-    model: 'deepseek/deepseek-r1',
+    message: "Credit Analysis API",
+    method: "POST",
+    endpoint: "/api/credit/analyze",
+    requiredFields: ["creditReport"],
+    optionalFields: ["creditScore", "goals"],
+    model: "deepseek/deepseek-r1",
   });
 }
-

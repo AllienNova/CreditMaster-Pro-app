@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
 /**
  * Goal Progress Bar Component
- * 
+ *
  * Animated progress indicator with milestones and color-coded status.
  */
 
@@ -11,20 +11,23 @@ interface GoalProgressBarProps {
   showAnimation?: boolean;
 }
 
-export default function GoalProgressBar({ progress, showAnimation = true }: GoalProgressBarProps) {
+export default function GoalProgressBar({
+  progress,
+  showAnimation = true,
+}: GoalProgressBarProps) {
   const getProgressColor = (progress: number): string => {
-    if (progress >= 100) return 'from-green-500 to-emerald-600';
-    if (progress >= 75) return 'from-blue-500 to-blue-600';
-    if (progress >= 50) return 'from-yellow-500 to-orange-500';
-    if (progress >= 25) return 'from-orange-500 to-red-500';
-    return 'from-red-600 to-red-700';
+    if (progress >= 100) return "from-green-500 to-emerald-600";
+    if (progress >= 75) return "from-blue-500 to-blue-600";
+    if (progress >= 50) return "from-yellow-500 to-orange-500";
+    if (progress >= 25) return "from-orange-500 to-red-500";
+    return "from-red-600 to-red-700";
   };
 
   const getGlowColor = (progress: number): string => {
-    if (progress >= 100) return 'shadow-green-500/50';
-    if (progress >= 75) return 'shadow-blue-500/50';
-    if (progress >= 50) return 'shadow-yellow-500/50';
-    return 'shadow-orange-500/50';
+    if (progress >= 100) return "shadow-green-500/50";
+    if (progress >= 75) return "shadow-blue-500/50";
+    if (progress >= 50) return "shadow-yellow-500/50";
+    return "shadow-orange-500/50";
   };
 
   return (
@@ -34,8 +37,8 @@ export default function GoalProgressBar({ progress, showAnimation = true }: Goal
         {/* Progress Fill */}
         <div
           className={`h-full bg-gradient-to-r ${getProgressColor(progress)} ${
-            showAnimation ? 'transition-all duration-1000 ease-out' : ''
-          } ${progress >= 75 ? `shadow-lg ${getGlowColor(progress)}` : ''}`}
+            showAnimation ? "transition-all duration-1000 ease-out" : ""
+          } ${progress >= 75 ? `shadow-lg ${getGlowColor(progress)}` : ""}`}
           style={{ width: `${Math.min(100, progress)}%` }}
         >
           {/* Shimmer Effect */}
@@ -53,9 +56,9 @@ export default function GoalProgressBar({ progress, showAnimation = true }: Goal
           style={{ left: `${milestone}%` }}
         >
           <div className="absolute -top-1 left-1/2 -translate-x-1/2 text-xs text-gray-400 dark:text-slate-500">
-            {milestone === 25 && progress < 25 && '¼'}
-            {milestone === 50 && progress < 50 && '½'}
-            {milestone === 75 && progress < 75 && '¾'}
+            {milestone === 25 && progress < 25 && "¼"}
+            {milestone === 50 && progress < 50 && "½"}
+            {milestone === 75 && progress < 75 && "¾"}
           </div>
         </div>
       ))}
@@ -69,4 +72,3 @@ export default function GoalProgressBar({ progress, showAnimation = true }: Goal
     </div>
   );
 }
-

@@ -3,21 +3,18 @@
  * Displays achievement badges with rarity styling
  */
 
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { lightTheme as theme } from '../../constants/theme';
-import type {
-  Badge,
-  BadgeRarity,
-} from '../../services/api/gamification';
+import React from "react";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { lightTheme as theme } from "../../constants/theme";
+import type { Badge, BadgeRarity } from "../../services/api/gamification";
 
 interface BadgeCardProps {
   badge: Badge;
   isEarned?: boolean;
   progress?: number;
   earnedDate?: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: "sm" | "md" | "lg";
   onPress?: () => void;
 }
 
@@ -25,11 +22,11 @@ const rarityStyles: Record<
   BadgeRarity,
   { bg: string; border: string; text: string }
 > = {
-  common: { bg: '#F3F4F6', border: '#9CA3AF', text: '#6B7280' },
-  uncommon: { bg: '#DCFCE7', border: '#22C55E', text: '#16A34A' },
-  rare: { bg: '#DBEAFE', border: '#3B82F6', text: '#2563EB' },
-  epic: { bg: '#F3E8FF', border: '#A855F7', text: '#9333EA' },
-  legendary: { bg: '#FEF3C7', border: '#F59E0B', text: '#D97706' },
+  common: { bg: "#F3F4F6", border: "#9CA3AF", text: "#6B7280" },
+  uncommon: { bg: "#DCFCE7", border: "#22C55E", text: "#16A34A" },
+  rare: { bg: "#DBEAFE", border: "#3B82F6", text: "#2563EB" },
+  epic: { bg: "#F3E8FF", border: "#A855F7", text: "#9333EA" },
+  legendary: { bg: "#FEF3C7", border: "#F59E0B", text: "#D97706" },
 };
 
 export function BadgeCard({
@@ -37,7 +34,7 @@ export function BadgeCard({
   isEarned = false,
   progress = 0,
   earnedDate,
-  size = 'md',
+  size = "md",
   onPress,
 }: BadgeCardProps) {
   const rarity = rarityStyles[badge.rarity];
@@ -63,8 +60,8 @@ export function BadgeCard({
           {
             width: currentSize.badge,
             height: currentSize.badge,
-            backgroundColor: isEarned ? rarity.bg : '#F3F4F6',
-            borderColor: isEarned ? rarity.border : '#E5E7EB',
+            backgroundColor: isEarned ? rarity.bg : "#F3F4F6",
+            borderColor: isEarned ? rarity.border : "#E5E7EB",
             opacity: isEarned ? 1 : 0.5,
           },
         ]}
@@ -86,7 +83,7 @@ export function BadgeCard({
           styles.badgeName,
           {
             fontSize: currentSize.name,
-            color: isEarned ? theme.colors.text : '#9CA3AF',
+            color: isEarned ? theme.colors.text : "#9CA3AF",
           },
         ]}
         numberOfLines={2}
@@ -103,13 +100,13 @@ export function BadgeCard({
         </View>
       )}
 
-      {isEarned && earnedDate && size !== 'sm' && (
+      {isEarned && earnedDate && size !== "sm" && (
         <Text style={styles.earnedDate}>
           {new Date(earnedDate).toLocaleDateString()}
         </Text>
       )}
 
-      {size !== 'sm' && (
+      {size !== "sm" && (
         <View style={[styles.rarityBadge, { backgroundColor: rarity.bg }]}>
           <Text style={[styles.rarityText, { color: rarity.text }]}>
             {badge.rarity}
@@ -122,7 +119,7 @@ export function BadgeCard({
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
+    alignItems: "center",
     backgroundColor: theme.colors.surface,
     borderRadius: 12,
     borderWidth: 1,
@@ -143,45 +140,45 @@ const styles = StyleSheet.create({
   badgeCircle: {
     borderRadius: 999,
     borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 8,
   },
   lockOverlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(255,255,255,0.7)',
+    backgroundColor: "rgba(255,255,255,0.7)",
     borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   badgeName: {
-    fontWeight: '600',
-    textAlign: 'center',
+    fontWeight: "600",
+    textAlign: "center",
     marginBottom: 4,
   },
   progressContainer: {
-    width: '100%',
+    width: "100%",
     marginTop: 4,
   },
   progressBar: {
     height: 4,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: "#E5E7EB",
     borderRadius: 2,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   progressFill: {
-    height: '100%',
+    height: "100%",
     backgroundColor: theme.colors.primary,
     borderRadius: 2,
   },
   progressText: {
     fontSize: 9,
     color: theme.colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 2,
   },
   earnedDate: {
@@ -197,8 +194,8 @@ const styles = StyleSheet.create({
   },
   rarityText: {
     fontSize: 9,
-    fontWeight: '600',
-    textTransform: 'capitalize',
+    fontWeight: "600",
+    textTransform: "capitalize",
   },
 });
 

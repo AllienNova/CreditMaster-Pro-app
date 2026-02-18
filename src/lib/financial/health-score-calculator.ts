@@ -12,7 +12,7 @@
  * - 0-59: Critical (F)
  */
 
-import { getSupabase } from '@/lib/supabase/client';
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
 import {
@@ -25,7 +25,7 @@ import {
   FinancialGoal,
   DebtAnalysis,
   CreditSummary,
-} from './types/financial-context.types';
+} from "./types/financial-context.types";
 
 // Score weights (must sum to 1.0)
 const SCORE_WEIGHTS = {
@@ -76,14 +76,14 @@ export class HealthScoreCalculator {
         breakdown.debt.score * SCORE_WEIGHTS.debt +
         breakdown.spending.score * SCORE_WEIGHTS.spending +
         breakdown.credit.score * SCORE_WEIGHTS.credit +
-        breakdown.insurance.score * SCORE_WEIGHTS.insurance
+        breakdown.insurance.score * SCORE_WEIGHTS.insurance,
     );
 
     return {
       overallScore,
       grade: this.getGrade(overallScore),
       breakdown,
-      trend: 'stable', // Would compare with historical data
+      trend: "stable", // Would compare with historical data
       calculatedAt: new Date(),
     };
   }
@@ -98,23 +98,23 @@ export class HealthScoreCalculator {
     // Check emergency fund
     const savingsBalance = input.accounts.savings.reduce(
       (sum, a) => sum + a.currentBalance,
-      0
+      0,
     );
     const monthlyExpenses = input.transactions.totalExpenses || 1;
     const emergencyMonths = savingsBalance / monthlyExpenses;
 
     if (emergencyMonths >= THRESHOLDS.emergencyFundMonths.excellent) {
       score += 25;
-      factors.push('Excellent emergency fund (6+ months)');
+      factors.push("Excellent emergency fund (6+ months)");
     } else if (emergencyMonths >= THRESHOLDS.emergencyFundMonths.good) {
       score += 15;
-      factors.push('Good emergency fund (3-6 months)');
+      factors.push("Good emergency fund (3-6 months)");
     } else if (emergencyMonths >= THRESHOLDS.emergencyFundMonths.fair) {
       score += 5;
-      factors.push('Building emergency fund (1-3 months)');
+      factors.push("Building emergency fund (1-3 months)");
     } else {
       score -= 10;
-      factors.push('Low emergency fund (< 1 month)');
+      factors.push("Low emergency fund (< 1 month)");
     }
 
     // Check savings rate
@@ -140,7 +140,7 @@ export class HealthScoreCalculator {
     }
 
     // Check active savings goals
-    const activeGoals = input.goals.filter((g) => g.status === 'active');
+    const activeGoals = input.goals.filter((g) => g.status === "active");
     if (activeGoals.length > 0) {
       score += 10;
       factors.push(`${activeGoals.length} active savings goal(s)`);
@@ -165,11 +165,11 @@ export class HealthScoreCalculator {
 
     // No debt is excellent
     if (totalDebt === 0) {
-      factors.push('Debt-free!');
+      factors.push("Debt-free!");
       return {
         score: 100,
         weight: SCORE_WEIGHTS.debt,
-        status: 'excellent',
+        status: "excellent",
         factors,
       };
     }
@@ -177,22 +177,22 @@ export class HealthScoreCalculator {
     // Check debt-to-income ratio
     if (debtToIncomeRatio <= THRESHOLDS.debtToIncome.excellent) {
       factors.push(
-        `Low debt-to-income ratio (${debtToIncomeRatio.toFixed(1)}%)`
+        `Low debt-to-income ratio (${debtToIncomeRatio.toFixed(1)}%)`,
       );
     } else if (debtToIncomeRatio <= THRESHOLDS.debtToIncome.good) {
       score -= 20;
       factors.push(
-        `Moderate debt-to-income ratio (${debtToIncomeRatio.toFixed(1)}%)`
+        `Moderate debt-to-income ratio (${debtToIncomeRatio.toFixed(1)}%)`,
       );
     } else if (debtToIncomeRatio <= THRESHOLDS.debtToIncome.fair) {
       score -= 40;
       factors.push(
-        `High debt-to-income ratio (${debtToIncomeRatio.toFixed(1)}%)`
+        `High debt-to-income ratio (${debtToIncomeRatio.toFixed(1)}%)`,
       );
     } else {
       score -= 60;
       factors.push(
-        `Very high debt-to-income ratio (${debtToIncomeRatio.toFixed(1)}%)`
+        `Very high debt-to-income ratio (${debtToIncomeRatio.toFixed(1)}%)`,
       );
     }
 
@@ -201,7 +201,7 @@ export class HealthScoreCalculator {
     if (highInterestDebts.length > 0) {
       score -= 10;
       factors.push(
-        `${highInterestDebts.length} high-interest debt(s) (>15% APR)`
+        `${highInterestDebts.length} high-interest debt(s) (>15% APR)`,
       );
     }
 
@@ -222,14 +222,14 @@ export class HealthScoreCalculator {
 
     // Check budget adherence
     const budgetsWithSpending = input.budgets.filter(
-      (b) => b.budgetedAmount > 0
+      (b) => b.budgetedAmount > 0,
     );
     if (budgetsWithSpending.length > 0) {
       const avgAdherence =
         budgetsWithSpending.reduce((sum, b) => {
           const adherence = Math.min(
             100,
-            (1 - (b.spentAmount - b.budgetedAmount) / b.budgetedAmount) * 100
+            (1 - (b.spentAmount - b.budgetedAmount) / b.budgetedAmount) * 100,
           );
           return sum + adherence;
         }, 0) / budgetsWithSpending.length;
@@ -237,7 +237,7 @@ export class HealthScoreCalculator {
       if (avgAdherence >= THRESHOLDS.budgetAdherence.excellent) {
         score += 20;
         factors.push(
-          `Excellent budget adherence (${avgAdherence.toFixed(0)}%)`
+          `Excellent budget adherence (${avgAdherence.toFixed(0)}%)`,
         );
       } else if (avgAdherence >= THRESHOLDS.budgetAdherence.good) {
         score += 10;
@@ -250,12 +250,12 @@ export class HealthScoreCalculator {
       }
     } else {
       score -= 10;
-      factors.push('No budgets set up');
+      factors.push("No budgets set up");
     }
 
     // Check for overspending categories
     const overBudgetCount = input.budgets.filter(
-      (b) => b.status === 'over_budget'
+      (b) => b.status === "over_budget",
     ).length;
     if (overBudgetCount > 0) {
       score -= overBudgetCount * 5;
@@ -271,12 +271,12 @@ export class HealthScoreCalculator {
 
     if (spendingRatio <= 70) {
       score += 10;
-      factors.push('Living well below means');
+      factors.push("Living well below means");
     } else if (spendingRatio <= 90) {
-      factors.push('Spending within means');
+      factors.push("Spending within means");
     } else {
       score -= 20;
-      factors.push('Spending exceeds or near income');
+      factors.push("Spending exceeds or near income");
     }
 
     return {
@@ -313,17 +313,17 @@ export class HealthScoreCalculator {
       factors.push(`Poor credit score (${creditScore})`);
     } else {
       score = 50; // No credit score available
-      factors.push('Credit score not available');
+      factors.push("Credit score not available");
     }
 
     // Check credit utilization
     const totalCreditLimit = input.accounts.credit.reduce(
       (sum, a) => sum + (a.creditLimit || 0),
-      0
+      0,
     );
     const totalCreditUsed = input.accounts.credit.reduce(
       (sum, a) => sum + Math.abs(a.currentBalance),
-      0
+      0,
     );
     const utilization =
       totalCreditLimit > 0 ? (totalCreditUsed / totalCreditLimit) * 100 : 0;
@@ -363,38 +363,38 @@ export class HealthScoreCalculator {
     return {
       score: 70,
       weight: SCORE_WEIGHTS.insurance,
-      status: 'fair',
-      factors: ['Insurance coverage not yet tracked'],
+      status: "fair",
+      factors: ["Insurance coverage not yet tracked"],
     };
   }
 
   /**
    * Get letter grade from score
    */
-  private getGrade(score: number): 'A' | 'B' | 'C' | 'D' | 'F' {
-    if (score >= 90) return 'A';
-    if (score >= 80) return 'B';
-    if (score >= 70) return 'C';
-    if (score >= 60) return 'D';
-    return 'F';
+  private getGrade(score: number): "A" | "B" | "C" | "D" | "F" {
+    if (score >= 90) return "A";
+    if (score >= 80) return "B";
+    if (score >= 70) return "C";
+    if (score >= 60) return "D";
+    return "F";
   }
 
   /**
    * Get status from score
    */
-  private getStatus(score: number): ComponentScore['status'] {
-    if (score >= 90) return 'excellent';
-    if (score >= 75) return 'good';
-    if (score >= 60) return 'fair';
-    if (score >= 40) return 'poor';
-    return 'critical';
+  private getStatus(score: number): ComponentScore["status"] {
+    if (score >= 90) return "excellent";
+    if (score >= 75) return "good";
+    if (score >= 60) return "fair";
+    if (score >= 40) return "poor";
+    return "critical";
   }
 
   /**
    * Save health score to database
    */
   async saveScore(userId: string, score: FinancialHealthScore): Promise<void> {
-    await supabase.from('financial_health_scores').insert({
+    await supabase.from("financial_health_scores").insert({
       user_id: userId,
       overall_score: score.overallScore,
       savings_score: score.breakdown.savings.score,
@@ -413,23 +413,23 @@ export class HealthScoreCalculator {
    */
   async getHistoricalScores(
     userId: string,
-    days = 30
+    days = 30,
   ): Promise<FinancialHealthScore[]> {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
     const { data } = await supabase
-      .from('financial_health_scores')
-      .select('*')
-      .eq('user_id', userId)
-      .gte('calculated_at', startDate.toISOString())
-      .order('calculated_at', { ascending: true });
+      .from("financial_health_scores")
+      .select("*")
+      .eq("user_id", userId)
+      .gte("calculated_at", startDate.toISOString())
+      .order("calculated_at", { ascending: true });
 
     return (data || []).map((d) => ({
       overallScore: d.overall_score,
       grade: this.getGrade(d.overall_score),
       breakdown: d.breakdown as HealthScoreBreakdown,
-      trend: 'stable',
+      trend: "stable",
       calculatedAt: new Date(d.calculated_at),
     }));
   }

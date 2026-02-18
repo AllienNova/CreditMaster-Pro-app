@@ -21,7 +21,7 @@ import {
   TaxProfile,
   CONTRIBUTION_LIMITS_2024,
   INCOME_THRESHOLDS_2024,
-} from '../types/tax-profile.types';
+} from "../types/tax-profile.types";
 import {
   FEDERAL_TAX_BRACKETS_2024,
   LTCG_BRACKETS_2024,
@@ -30,8 +30,8 @@ import {
   TaxBracket,
   getStateTaxInfo,
   type StateTaxInfo,
-} from '../types/tax-jurisdiction.types';
-import type { TaxProjection } from '../types';
+} from "../types/tax-jurisdiction.types";
+import type { TaxProjection } from "../types";
 
 // ============================================================================
 // TYPES
@@ -148,72 +148,72 @@ export interface StateTaxComparison {
 export const STATE_TAX_CONFIGS: Record<string, StateTaxConfig> = {
   // ---- NO INCOME TAX STATES ----
   AK: {
-    stateCode: 'AK',
-    stateName: 'Alaska',
+    stateCode: "AK",
+    stateName: "Alaska",
     brackets: [],
     standardDeduction: 0,
     personalExemption: 0,
     hasLocalTax: false,
   },
   FL: {
-    stateCode: 'FL',
-    stateName: 'Florida',
+    stateCode: "FL",
+    stateName: "Florida",
     brackets: [],
     standardDeduction: 0,
     personalExemption: 0,
     hasLocalTax: false,
   },
   NV: {
-    stateCode: 'NV',
-    stateName: 'Nevada',
+    stateCode: "NV",
+    stateName: "Nevada",
     brackets: [],
     standardDeduction: 0,
     personalExemption: 0,
     hasLocalTax: false,
   },
   NH: {
-    stateCode: 'NH',
-    stateName: 'New Hampshire',
+    stateCode: "NH",
+    stateName: "New Hampshire",
     brackets: [],
     standardDeduction: 0,
     personalExemption: 0,
     hasLocalTax: false,
   },
   SD: {
-    stateCode: 'SD',
-    stateName: 'South Dakota',
+    stateCode: "SD",
+    stateName: "South Dakota",
     brackets: [],
     standardDeduction: 0,
     personalExemption: 0,
     hasLocalTax: false,
   },
   TN: {
-    stateCode: 'TN',
-    stateName: 'Tennessee',
+    stateCode: "TN",
+    stateName: "Tennessee",
     brackets: [],
     standardDeduction: 0,
     personalExemption: 0,
     hasLocalTax: false,
   },
   TX: {
-    stateCode: 'TX',
-    stateName: 'Texas',
+    stateCode: "TX",
+    stateName: "Texas",
     brackets: [],
     standardDeduction: 0,
     personalExemption: 0,
     hasLocalTax: false,
   },
   WA: {
-    stateCode: 'WA',
-    stateName: 'Washington',
+    stateCode: "WA",
+    stateName: "Washington",
     brackets: [],
     standardDeduction: 0,
     personalExemption: 0,
     hasLocalTax: false,
   },
   WY: {
-    stateCode: 'WY',
-    stateName: 'Wyoming',
+    stateCode: "WY",
+    stateName: "Wyoming",
     brackets: [],
     standardDeduction: 0,
     personalExemption: 0,
@@ -222,64 +222,64 @@ export const STATE_TAX_CONFIGS: Record<string, StateTaxConfig> = {
 
   // ---- FLAT TAX STATES ----
   AZ: {
-    stateCode: 'AZ',
-    stateName: 'Arizona',
+    stateCode: "AZ",
+    stateName: "Arizona",
     brackets: [{ rate: 0.025, min: 0, max: Infinity }],
     standardDeduction: 14600,
     personalExemption: 0,
     hasLocalTax: false,
   },
   CO: {
-    stateCode: 'CO',
-    stateName: 'Colorado',
+    stateCode: "CO",
+    stateName: "Colorado",
     brackets: [{ rate: 0.044, min: 0, max: Infinity }],
     standardDeduction: 14600,
     personalExemption: 0,
     hasLocalTax: false,
   },
   ID: {
-    stateCode: 'ID',
-    stateName: 'Idaho',
+    stateCode: "ID",
+    stateName: "Idaho",
     brackets: [{ rate: 0.058, min: 0, max: Infinity }],
     standardDeduction: 14600,
     personalExemption: 0,
     hasLocalTax: false,
   },
   IL: {
-    stateCode: 'IL',
-    stateName: 'Illinois',
+    stateCode: "IL",
+    stateName: "Illinois",
     brackets: [{ rate: 0.0495, min: 0, max: Infinity }],
     standardDeduction: 0,
     personalExemption: 2625,
     hasLocalTax: false,
   },
   IN: {
-    stateCode: 'IN',
-    stateName: 'Indiana',
+    stateCode: "IN",
+    stateName: "Indiana",
     brackets: [{ rate: 0.0305, min: 0, max: Infinity }],
     standardDeduction: 0,
     personalExemption: 1000,
     hasLocalTax: true,
   },
   IA: {
-    stateCode: 'IA',
-    stateName: 'Iowa',
+    stateCode: "IA",
+    stateName: "Iowa",
     brackets: [{ rate: 0.06, min: 0, max: Infinity }],
     standardDeduction: 14600,
     personalExemption: 40,
     hasLocalTax: false,
   },
   KY: {
-    stateCode: 'KY',
-    stateName: 'Kentucky',
+    stateCode: "KY",
+    stateName: "Kentucky",
     brackets: [{ rate: 0.04, min: 0, max: Infinity }],
     standardDeduction: 3160,
     personalExemption: 0,
     hasLocalTax: true,
   },
   MA: {
-    stateCode: 'MA',
-    stateName: 'Massachusetts',
+    stateCode: "MA",
+    stateName: "Massachusetts",
     brackets: [
       { rate: 0.05, min: 0, max: 1000000 },
       { rate: 0.09, min: 1000000, max: Infinity },
@@ -289,56 +289,56 @@ export const STATE_TAX_CONFIGS: Record<string, StateTaxConfig> = {
     hasLocalTax: false,
   },
   MI: {
-    stateCode: 'MI',
-    stateName: 'Michigan',
+    stateCode: "MI",
+    stateName: "Michigan",
     brackets: [{ rate: 0.0425, min: 0, max: Infinity }],
     standardDeduction: 0,
     personalExemption: 5600,
     hasLocalTax: true,
   },
   MS: {
-    stateCode: 'MS',
-    stateName: 'Mississippi',
+    stateCode: "MS",
+    stateName: "Mississippi",
     brackets: [{ rate: 0.05, min: 0, max: Infinity }],
     standardDeduction: 2300,
     personalExemption: 6000,
     hasLocalTax: false,
   },
   MT: {
-    stateCode: 'MT',
-    stateName: 'Montana',
+    stateCode: "MT",
+    stateName: "Montana",
     brackets: [{ rate: 0.059, min: 0, max: Infinity }],
     standardDeduction: 14600,
     personalExemption: 0,
     hasLocalTax: false,
   },
   NC: {
-    stateCode: 'NC',
-    stateName: 'North Carolina',
+    stateCode: "NC",
+    stateName: "North Carolina",
     brackets: [{ rate: 0.0525, min: 0, max: Infinity }],
     standardDeduction: 12750,
     personalExemption: 0,
     hasLocalTax: false,
   },
   ND: {
-    stateCode: 'ND',
-    stateName: 'North Dakota',
+    stateCode: "ND",
+    stateName: "North Dakota",
     brackets: [{ rate: 0.0195, min: 0, max: Infinity }],
     standardDeduction: 14600,
     personalExemption: 0,
     hasLocalTax: false,
   },
   PA: {
-    stateCode: 'PA',
-    stateName: 'Pennsylvania',
+    stateCode: "PA",
+    stateName: "Pennsylvania",
     brackets: [{ rate: 0.0307, min: 0, max: Infinity }],
     standardDeduction: 0,
     personalExemption: 0,
     hasLocalTax: true,
   },
   UT: {
-    stateCode: 'UT',
-    stateName: 'Utah',
+    stateCode: "UT",
+    stateName: "Utah",
     brackets: [{ rate: 0.0465, min: 0, max: Infinity }],
     standardDeduction: 0,
     personalExemption: 0,
@@ -347,8 +347,8 @@ export const STATE_TAX_CONFIGS: Record<string, StateTaxConfig> = {
 
   // ---- PROGRESSIVE TAX STATES ----
   AL: {
-    stateCode: 'AL',
-    stateName: 'Alabama',
+    stateCode: "AL",
+    stateName: "Alabama",
     brackets: [
       { rate: 0.02, min: 0, max: 500 },
       { rate: 0.04, min: 500, max: 3000 },
@@ -359,8 +359,8 @@ export const STATE_TAX_CONFIGS: Record<string, StateTaxConfig> = {
     hasLocalTax: true,
   },
   AR: {
-    stateCode: 'AR',
-    stateName: 'Arkansas',
+    stateCode: "AR",
+    stateName: "Arkansas",
     brackets: [
       { rate: 0.02, min: 0, max: 4400 },
       { rate: 0.04, min: 4400, max: 8800 },
@@ -371,8 +371,8 @@ export const STATE_TAX_CONFIGS: Record<string, StateTaxConfig> = {
     hasLocalTax: false,
   },
   CA: {
-    stateCode: 'CA',
-    stateName: 'California',
+    stateCode: "CA",
+    stateName: "California",
     brackets: [
       { rate: 0.01, min: 0, max: 10412 },
       { rate: 0.02, min: 10412, max: 24684 },
@@ -390,8 +390,8 @@ export const STATE_TAX_CONFIGS: Record<string, StateTaxConfig> = {
     hasLocalTax: false,
   },
   CT: {
-    stateCode: 'CT',
-    stateName: 'Connecticut',
+    stateCode: "CT",
+    stateName: "Connecticut",
     brackets: [
       { rate: 0.02, min: 0, max: 10000 },
       { rate: 0.045, min: 10000, max: 50000 },
@@ -406,8 +406,8 @@ export const STATE_TAX_CONFIGS: Record<string, StateTaxConfig> = {
     hasLocalTax: false,
   },
   DE: {
-    stateCode: 'DE',
-    stateName: 'Delaware',
+    stateCode: "DE",
+    stateName: "Delaware",
     brackets: [
       { rate: 0.0, min: 0, max: 2000 },
       { rate: 0.022, min: 2000, max: 5000 },
@@ -422,8 +422,8 @@ export const STATE_TAX_CONFIGS: Record<string, StateTaxConfig> = {
     hasLocalTax: true,
   },
   GA: {
-    stateCode: 'GA',
-    stateName: 'Georgia',
+    stateCode: "GA",
+    stateName: "Georgia",
     brackets: [
       { rate: 0.01, min: 0, max: 750 },
       { rate: 0.02, min: 750, max: 2250 },
@@ -437,8 +437,8 @@ export const STATE_TAX_CONFIGS: Record<string, StateTaxConfig> = {
     hasLocalTax: false,
   },
   HI: {
-    stateCode: 'HI',
-    stateName: 'Hawaii',
+    stateCode: "HI",
+    stateName: "Hawaii",
     brackets: [
       { rate: 0.014, min: 0, max: 2400 },
       { rate: 0.032, min: 2400, max: 4800 },
@@ -458,8 +458,8 @@ export const STATE_TAX_CONFIGS: Record<string, StateTaxConfig> = {
     hasLocalTax: false,
   },
   KS: {
-    stateCode: 'KS',
-    stateName: 'Kansas',
+    stateCode: "KS",
+    stateName: "Kansas",
     brackets: [
       { rate: 0.031, min: 0, max: 15000 },
       { rate: 0.0525, min: 15000, max: 30000 },
@@ -470,8 +470,8 @@ export const STATE_TAX_CONFIGS: Record<string, StateTaxConfig> = {
     hasLocalTax: false,
   },
   LA: {
-    stateCode: 'LA',
-    stateName: 'Louisiana',
+    stateCode: "LA",
+    stateName: "Louisiana",
     brackets: [
       { rate: 0.0185, min: 0, max: 12500 },
       { rate: 0.035, min: 12500, max: 50000 },
@@ -482,8 +482,8 @@ export const STATE_TAX_CONFIGS: Record<string, StateTaxConfig> = {
     hasLocalTax: false,
   },
   ME: {
-    stateCode: 'ME',
-    stateName: 'Maine',
+    stateCode: "ME",
+    stateName: "Maine",
     brackets: [
       { rate: 0.058, min: 0, max: 24500 },
       { rate: 0.0675, min: 24500, max: 58050 },
@@ -494,8 +494,8 @@ export const STATE_TAX_CONFIGS: Record<string, StateTaxConfig> = {
     hasLocalTax: false,
   },
   MD: {
-    stateCode: 'MD',
-    stateName: 'Maryland',
+    stateCode: "MD",
+    stateName: "Maryland",
     brackets: [
       { rate: 0.02, min: 0, max: 1000 },
       { rate: 0.03, min: 1000, max: 2000 },
@@ -511,8 +511,8 @@ export const STATE_TAX_CONFIGS: Record<string, StateTaxConfig> = {
     hasLocalTax: true,
   },
   MN: {
-    stateCode: 'MN',
-    stateName: 'Minnesota',
+    stateCode: "MN",
+    stateName: "Minnesota",
     brackets: [
       { rate: 0.0535, min: 0, max: 30070 },
       { rate: 0.068, min: 30070, max: 98760 },
@@ -524,8 +524,8 @@ export const STATE_TAX_CONFIGS: Record<string, StateTaxConfig> = {
     hasLocalTax: false,
   },
   MO: {
-    stateCode: 'MO',
-    stateName: 'Missouri',
+    stateCode: "MO",
+    stateName: "Missouri",
     brackets: [
       { rate: 0.0, min: 0, max: 1207 },
       { rate: 0.02, min: 1207, max: 2414 },
@@ -541,8 +541,8 @@ export const STATE_TAX_CONFIGS: Record<string, StateTaxConfig> = {
     hasLocalTax: true,
   },
   NE: {
-    stateCode: 'NE',
-    stateName: 'Nebraska',
+    stateCode: "NE",
+    stateName: "Nebraska",
     brackets: [
       { rate: 0.0246, min: 0, max: 3700 },
       { rate: 0.0351, min: 3700, max: 22170 },
@@ -554,8 +554,8 @@ export const STATE_TAX_CONFIGS: Record<string, StateTaxConfig> = {
     hasLocalTax: false,
   },
   NJ: {
-    stateCode: 'NJ',
-    stateName: 'New Jersey',
+    stateCode: "NJ",
+    stateName: "New Jersey",
     brackets: [
       { rate: 0.014, min: 0, max: 20000 },
       { rate: 0.0175, min: 20000, max: 35000 },
@@ -570,8 +570,8 @@ export const STATE_TAX_CONFIGS: Record<string, StateTaxConfig> = {
     hasLocalTax: false,
   },
   NM: {
-    stateCode: 'NM',
-    stateName: 'New Mexico',
+    stateCode: "NM",
+    stateName: "New Mexico",
     brackets: [
       { rate: 0.017, min: 0, max: 5500 },
       { rate: 0.032, min: 5500, max: 11000 },
@@ -584,8 +584,8 @@ export const STATE_TAX_CONFIGS: Record<string, StateTaxConfig> = {
     hasLocalTax: false,
   },
   NY: {
-    stateCode: 'NY',
-    stateName: 'New York',
+    stateCode: "NY",
+    stateName: "New York",
     brackets: [
       { rate: 0.04, min: 0, max: 8500 },
       { rate: 0.045, min: 8500, max: 11700 },
@@ -602,8 +602,8 @@ export const STATE_TAX_CONFIGS: Record<string, StateTaxConfig> = {
     hasLocalTax: true,
   },
   OH: {
-    stateCode: 'OH',
-    stateName: 'Ohio',
+    stateCode: "OH",
+    stateName: "Ohio",
     brackets: [
       { rate: 0.0, min: 0, max: 26050 },
       { rate: 0.02765, min: 26050, max: 100000 },
@@ -614,8 +614,8 @@ export const STATE_TAX_CONFIGS: Record<string, StateTaxConfig> = {
     hasLocalTax: true,
   },
   OK: {
-    stateCode: 'OK',
-    stateName: 'Oklahoma',
+    stateCode: "OK",
+    stateName: "Oklahoma",
     brackets: [
       { rate: 0.0025, min: 0, max: 1000 },
       { rate: 0.0075, min: 1000, max: 2500 },
@@ -629,8 +629,8 @@ export const STATE_TAX_CONFIGS: Record<string, StateTaxConfig> = {
     hasLocalTax: false,
   },
   OR: {
-    stateCode: 'OR',
-    stateName: 'Oregon',
+    stateCode: "OR",
+    stateName: "Oregon",
     brackets: [
       { rate: 0.0475, min: 0, max: 4050 },
       { rate: 0.0675, min: 4050, max: 10200 },
@@ -642,8 +642,8 @@ export const STATE_TAX_CONFIGS: Record<string, StateTaxConfig> = {
     hasLocalTax: true,
   },
   RI: {
-    stateCode: 'RI',
-    stateName: 'Rhode Island',
+    stateCode: "RI",
+    stateName: "Rhode Island",
     brackets: [
       { rate: 0.0375, min: 0, max: 73450 },
       { rate: 0.0475, min: 73450, max: 166950 },
@@ -654,8 +654,8 @@ export const STATE_TAX_CONFIGS: Record<string, StateTaxConfig> = {
     hasLocalTax: false,
   },
   SC: {
-    stateCode: 'SC',
-    stateName: 'South Carolina',
+    stateCode: "SC",
+    stateName: "South Carolina",
     brackets: [
       { rate: 0.0, min: 0, max: 3200 },
       { rate: 0.03, min: 3200, max: 16040 },
@@ -666,8 +666,8 @@ export const STATE_TAX_CONFIGS: Record<string, StateTaxConfig> = {
     hasLocalTax: false,
   },
   VA: {
-    stateCode: 'VA',
-    stateName: 'Virginia',
+    stateCode: "VA",
+    stateName: "Virginia",
     brackets: [
       { rate: 0.02, min: 0, max: 3000 },
       { rate: 0.03, min: 3000, max: 5000 },
@@ -679,8 +679,8 @@ export const STATE_TAX_CONFIGS: Record<string, StateTaxConfig> = {
     hasLocalTax: false,
   },
   VT: {
-    stateCode: 'VT',
-    stateName: 'Vermont',
+    stateCode: "VT",
+    stateName: "Vermont",
     brackets: [
       { rate: 0.0335, min: 0, max: 45400 },
       { rate: 0.066, min: 45400, max: 110050 },
@@ -692,8 +692,8 @@ export const STATE_TAX_CONFIGS: Record<string, StateTaxConfig> = {
     hasLocalTax: false,
   },
   WI: {
-    stateCode: 'WI',
-    stateName: 'Wisconsin',
+    stateCode: "WI",
+    stateName: "Wisconsin",
     brackets: [
       { rate: 0.0354, min: 0, max: 14320 },
       { rate: 0.0465, min: 14320, max: 28640 },
@@ -705,8 +705,8 @@ export const STATE_TAX_CONFIGS: Record<string, StateTaxConfig> = {
     hasLocalTax: false,
   },
   WV: {
-    stateCode: 'WV',
-    stateName: 'West Virginia',
+    stateCode: "WV",
+    stateName: "West Virginia",
     brackets: [
       { rate: 0.0236, min: 0, max: 10000 },
       { rate: 0.0315, min: 10000, max: 25000 },
@@ -719,8 +719,8 @@ export const STATE_TAX_CONFIGS: Record<string, StateTaxConfig> = {
     hasLocalTax: false,
   },
   DC: {
-    stateCode: 'DC',
-    stateName: 'District of Columbia',
+    stateCode: "DC",
+    stateName: "District of Columbia",
     brackets: [
       { rate: 0.04, min: 0, max: 10000 },
       { rate: 0.06, min: 10000, max: 40000 },
@@ -740,7 +740,15 @@ export const STATE_TAX_CONFIGS: Record<string, StateTaxConfig> = {
  * List of state codes with no income tax
  */
 const STATE_NO_INCOME_TAX_CODES: readonly string[] = [
-  'AK', 'FL', 'NV', 'NH', 'SD', 'TN', 'TX', 'WA', 'WY',
+  "AK",
+  "FL",
+  "NV",
+  "NH",
+  "SD",
+  "TN",
+  "TX",
+  "WA",
+  "WY",
 ] as const;
 
 // ============================================================================
@@ -774,21 +782,21 @@ export class TaxBracketCalculator {
     const ordinaryIncome = taxableIncome - profile.capitalGainsLongTerm;
     const federalBreakdown = this.calculateProgressiveTax(
       Math.max(0, ordinaryIncome),
-      this.federalBrackets[filingStatus]
+      this.federalBrackets[filingStatus],
     );
 
     // Step 4: Calculate Long-Term Capital Gains Tax
     const capitalGainsTax = this.calculateCapitalGainsTax(
       profile.capitalGainsLongTerm,
       taxableIncome,
-      filingStatus
+      filingStatus,
     );
 
     // Step 5: Calculate State Tax
     const { stateTax, stateBreakdown } = this.calculateStateTax(
       taxableIncome,
       profile.stateOfResidence,
-      filingStatus
+      filingStatus,
     );
 
     // Step 6: Calculate FICA Taxes
@@ -845,11 +853,11 @@ export class TaxBracketCalculator {
     // Above-the-line deductions
     agi -= Math.min(
       profile.studentLoanInterest,
-      CONTRIBUTION_LIMITS_2024.studentLoanInterestMax
+      CONTRIBUTION_LIMITS_2024.studentLoanInterestMax,
     );
     agi -= Math.min(
       profile.educatorExpenses,
-      CONTRIBUTION_LIMITS_2024.educatorExpensesMax
+      CONTRIBUTION_LIMITS_2024.educatorExpensesMax,
     );
     agi -= profile.ytd401kContribution;
     agi -= profile.ytdIraContribution; // Traditional IRA (if deductible)
@@ -891,7 +899,7 @@ export class TaxBracketCalculator {
         getStateTaxInfo(profile.stateOfResidence)?.hasIncomeTax
         ? profile.stateTaxesPaid + profile.propertyTaxes
         : profile.propertyTaxes,
-      CONTRIBUTION_LIMITS_2024.saltCap
+      CONTRIBUTION_LIMITS_2024.saltCap,
     );
     itemized += salt;
 
@@ -915,9 +923,9 @@ export class TaxBracketCalculator {
    */
   private calculateProgressiveTax(
     income: number,
-    brackets: TaxBracket[]
+    brackets: TaxBracket[],
   ): TaxCalculationBreakdown {
-    const bracketDetails: TaxCalculationBreakdown['bracketDetails'] = [];
+    const bracketDetails: TaxCalculationBreakdown["bracketDetails"] = [];
     let totalTax = 0;
     let remainingIncome = income;
     let marginalRate = 0;
@@ -957,7 +965,7 @@ export class TaxBracketCalculator {
   private calculateCapitalGainsTax(
     ltcg: number,
     totalTaxableIncome: number,
-    filingStatus: keyof typeof LTCG_BRACKETS_2024
+    filingStatus: keyof typeof LTCG_BRACKETS_2024,
   ): number {
     if (ltcg <= 0) return 0;
 
@@ -979,7 +987,7 @@ export class TaxBracketCalculator {
 
       const roomInBracket = Math.max(
         0,
-        bracket.max - Math.max(currentIncome, bracket.min)
+        bracket.max - Math.max(currentIncome, bracket.min),
       );
       const gainsInBracket = Math.min(remainingGains, roomInBracket);
 
@@ -999,7 +1007,7 @@ export class TaxBracketCalculator {
   private calculateStateTax(
     taxableIncome: number,
     stateCode: string,
-    _filingStatus: string
+    _filingStatus: string,
   ): { stateTax: number; stateBreakdown?: TaxCalculationBreakdown } {
     const stateInfo = getStateTaxInfo(stateCode);
 
@@ -1032,7 +1040,7 @@ export class TaxBracketCalculator {
     if (stateInfo.brackets && stateInfo.brackets.length > 0) {
       const breakdown = this.calculateProgressiveTax(
         taxableIncome,
-        stateInfo.brackets
+        stateInfo.brackets,
       );
       return {
         stateTax: breakdown.totalTax,
@@ -1091,7 +1099,7 @@ export class TaxBracketCalculator {
     // Social Security portion (12.4% up to wage base, minus W-2 wages)
     const remainingSSWageBase = Math.max(
       0,
-      FICA_RATES_2024.socialSecurityWageBase - profile.w2Income
+      FICA_RATES_2024.socialSecurityWageBase - profile.w2Income,
     );
     const ssTaxableIncome = Math.min(netSE, remainingSSWageBase);
     const ssTax = ssTaxableIncome * 0.124;
@@ -1163,20 +1171,20 @@ export class TaxBracketCalculator {
    * Map FilingStatus enum to bracket key
    */
   private mapFilingStatus(
-    status: FilingStatus
+    status: FilingStatus,
   ): keyof typeof FEDERAL_TAX_BRACKETS_2024 {
     switch (status) {
       case FilingStatus.SINGLE:
-        return 'single';
+        return "single";
       case FilingStatus.MARRIED_FILING_JOINTLY:
       case FilingStatus.QUALIFYING_SURVIVING_SPOUSE:
-        return 'married_filing_jointly';
+        return "married_filing_jointly";
       case FilingStatus.MARRIED_FILING_SEPARATELY:
-        return 'married_filing_separately';
+        return "married_filing_separately";
       case FilingStatus.HEAD_OF_HOUSEHOLD:
-        return 'head_of_household';
+        return "head_of_household";
       default:
-        return 'single';
+        return "single";
     }
   }
 
@@ -1203,7 +1211,7 @@ export class TaxBracketCalculator {
     deductionAmount: number,
     currentIncome: number,
     filingStatus: FilingStatus,
-    stateCode?: string
+    stateCode?: string,
   ): { federalSavings: number; stateSavings: number; totalSavings: number } {
     const marginalRate = this.getMarginalRate(currentIncome, filingStatus);
     const federalSavings = deductionAmount * marginalRate;
@@ -1251,14 +1259,18 @@ export class TaxBracketCalculator {
   calculateStateTaxPublic(
     income: number,
     stateCode: string,
-    filingStatus: FilingStatus
+    filingStatus: FilingStatus,
   ): number {
     const config = STATE_TAX_CONFIGS[stateCode.toUpperCase()];
     if (!config || config.brackets.length === 0) {
       return 0;
     }
 
-    const stateTaxableIncome = this.getStateTaxableIncome(income, config, filingStatus);
+    const stateTaxableIncome = this.getStateTaxableIncome(
+      income,
+      config,
+      filingStatus,
+    );
     if (stateTaxableIncome <= 0) {
       return 0;
     }
@@ -1284,11 +1296,14 @@ export class TaxBracketCalculator {
     const stateTaxableIncome = this.getStateTaxableIncome(
       income,
       config,
-      FilingStatus.SINGLE
+      FilingStatus.SINGLE,
     );
     if (stateTaxableIncome <= 0) return 0;
 
-    const stateRate = this.applyStateBrackets(stateTaxableIncome, config.brackets);
+    const stateRate = this.applyStateBrackets(
+      stateTaxableIncome,
+      config.brackets,
+    );
     return stateRate / income;
   }
 
@@ -1298,7 +1313,7 @@ export class TaxBracketCalculator {
   getStateTaxSummary(
     income: number,
     stateCode: string,
-    filingStatus: FilingStatus
+    filingStatus: FilingStatus,
   ): StateTaxSummary {
     const code = stateCode.toUpperCase();
     const config = STATE_TAX_CONFIGS[code];
@@ -1316,7 +1331,7 @@ export class TaxBracketCalculator {
         stateMarginalRate: 0,
         bracketBreakdown: [],
         hasLocalTax: false,
-        notes: 'Unknown state code',
+        notes: "Unknown state code",
       };
     }
 
@@ -1333,14 +1348,14 @@ export class TaxBracketCalculator {
         stateMarginalRate: 0,
         bracketBreakdown: [],
         hasLocalTax: config.hasLocalTax,
-        notes: 'No state income tax',
+        notes: "No state income tax",
       };
     }
 
     const stateDeduction = config.standardDeduction + config.personalExemption;
     const stateTaxableIncome = Math.max(0, income - stateDeduction);
 
-    const bracketBreakdown: StateTaxSummary['bracketBreakdown'] = [];
+    const bracketBreakdown: StateTaxSummary["bracketBreakdown"] = [];
     let totalStateTax = 0;
     let remainingIncome = stateTaxableIncome;
     let stateMarginalRate = 0;
@@ -1380,7 +1395,7 @@ export class TaxBracketCalculator {
       stateMarginalRate,
       bracketBreakdown,
       hasLocalTax: config.hasLocalTax,
-      notes: stateInfo?.notes ?? '',
+      notes: stateInfo?.notes ?? "",
     };
   }
 
@@ -1393,7 +1408,7 @@ export class TaxBracketCalculator {
   compareStateTaxes(
     income: number,
     stateCodes: string[],
-    filingStatus: FilingStatus
+    filingStatus: FilingStatus,
   ): StateTaxComparison[] {
     const results: StateTaxComparison[] = stateCodes.map((code) => {
       const upperCode = code.toUpperCase();
@@ -1439,7 +1454,7 @@ export class TaxBracketCalculator {
    * @returns Array of bracket objects, empty array for no-income-tax states
    */
   getStateTaxBrackets(
-    stateCode: string
+    stateCode: string,
   ): { rate: number; min: number; max: number }[] {
     const config = STATE_TAX_CONFIGS[stateCode.toUpperCase()];
     if (!config) return [];
@@ -1456,7 +1471,7 @@ export class TaxBracketCalculator {
   private getStateTaxableIncome(
     income: number,
     config: StateTaxConfig,
-    _filingStatus: FilingStatus
+    _filingStatus: FilingStatus,
   ): number {
     const deduction = config.standardDeduction + config.personalExemption;
     return Math.max(0, income - deduction);
@@ -1467,7 +1482,7 @@ export class TaxBracketCalculator {
    */
   private applyStateBrackets(
     taxableIncome: number,
-    brackets: StateTaxConfig['brackets']
+    brackets: StateTaxConfig["brackets"],
   ): number {
     let remaining = taxableIncome;
     let tax = 0;

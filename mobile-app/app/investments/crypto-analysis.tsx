@@ -1,11 +1,11 @@
 /**
  * Cryptocurrency Analysis Mobile Screen
- * 
+ *
  * Phase 5.5.3: Mobile-optimized crypto analysis with horizontal scrollable tabs,
  * interactive charts, and gesture controls
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -15,14 +15,14 @@ import {
   RefreshControl,
   Dimensions,
   Share,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
-import { lightTheme as theme } from '../../src/constants/theme';
-import { Card } from '../../src/components/Card';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { router, useLocalSearchParams } from "expo-router";
+import { lightTheme as theme } from "../../src/constants/theme";
+import { Card } from "../../src/components/Card";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 // ============================================================================
 // TYPES
@@ -102,7 +102,7 @@ interface CryptoAnalysis {
   risks: string[];
 }
 
-type MetricTab = 'price' | 'onchain' | 'defi' | 'sentiment';
+type MetricTab = "price" | "onchain" | "defi" | "sentiment";
 
 // ============================================================================
 // MAIN COMPONENT
@@ -110,9 +110,9 @@ type MetricTab = 'price' | 'onchain' | 'defi' | 'sentiment';
 
 export default function CryptoAnalysisScreen() {
   const params = useLocalSearchParams();
-  const coinId = params.coinId as string || 'bitcoin';
+  const coinId = (params.coinId as string) || "bitcoin";
 
-  const [activeTab, setActiveTab] = useState<MetricTab>('price');
+  const [activeTab, setActiveTab] = useState<MetricTab>("price");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -139,7 +139,7 @@ export default function CryptoAnalysisScreen() {
         setSentiment(sentimentData.data);
       }
     } catch (error) {
-      console.error('Error fetching crypto analysis:', error);
+      console.error("Error fetching crypto analysis:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -162,31 +162,49 @@ export default function CryptoAnalysisScreen() {
         message: `Check out ${analysis.name} (${analysis.symbol}) analysis on Fynvita Pro!`,
       });
     } catch (error) {
-      console.error('Error sharing:', error);
+      console.error("Error sharing:", error);
     }
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.headerButton}
+        >
           <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{analysis?.symbol.toUpperCase() || coinId}</Text>
+        <Text style={styles.headerTitle}>
+          {analysis?.symbol.toUpperCase() || coinId}
+        </Text>
         <View style={styles.headerActions}>
-          <TouchableOpacity onPress={() => setIsFavorite(!isFavorite)} style={styles.headerButton}>
-            <Ionicons name={isFavorite ? 'star' : 'star-outline'} size={24} color={isFavorite ? '#F59E0B' : theme.colors.text} />
+          <TouchableOpacity
+            onPress={() => setIsFavorite(!isFavorite)}
+            style={styles.headerButton}
+          >
+            <Ionicons
+              name={isFavorite ? "star" : "star-outline"}
+              size={24}
+              color={isFavorite ? "#F59E0B" : theme.colors.text}
+            />
           </TouchableOpacity>
           <TouchableOpacity onPress={handleShare} style={styles.headerButton}>
-            <Ionicons name="share-outline" size={24} color={theme.colors.text} />
+            <Ionicons
+              name="share-outline"
+              size={24}
+              color={theme.colors.text}
+            />
           </TouchableOpacity>
         </View>
       </View>
 
       <ScrollView
         style={styles.scrollView}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         {loading ? (
           <View style={styles.loadingContainer}>
@@ -198,51 +216,131 @@ export default function CryptoAnalysisScreen() {
             <CryptoHeader analysis={analysis} />
 
             {/* Metric Tabs */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.tabsScroll}
+            >
               <TouchableOpacity
-                style={[styles.tab, activeTab === 'price' && styles.tabActive]}
-                onPress={() => setActiveTab('price')}
+                style={[styles.tab, activeTab === "price" && styles.tabActive]}
+                onPress={() => setActiveTab("price")}
               >
-                <Ionicons name="trending-up" size={20} color={activeTab === 'price' ? theme.colors.primary : theme.colors.textSecondary} />
-                <Text style={[styles.tabText, activeTab === 'price' && styles.tabTextActive]}>Price</Text>
+                <Ionicons
+                  name="trending-up"
+                  size={20}
+                  color={
+                    activeTab === "price"
+                      ? theme.colors.primary
+                      : theme.colors.textSecondary
+                  }
+                />
+                <Text
+                  style={[
+                    styles.tabText,
+                    activeTab === "price" && styles.tabTextActive,
+                  ]}
+                >
+                  Price
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.tab, activeTab === 'onchain' && styles.tabActive]}
-                onPress={() => setActiveTab('onchain')}
+                style={[
+                  styles.tab,
+                  activeTab === "onchain" && styles.tabActive,
+                ]}
+                onPress={() => setActiveTab("onchain")}
               >
-                <Ionicons name="link" size={20} color={activeTab === 'onchain' ? theme.colors.primary : theme.colors.textSecondary} />
-                <Text style={[styles.tabText, activeTab === 'onchain' && styles.tabTextActive]}>On-Chain</Text>
+                <Ionicons
+                  name="link"
+                  size={20}
+                  color={
+                    activeTab === "onchain"
+                      ? theme.colors.primary
+                      : theme.colors.textSecondary
+                  }
+                />
+                <Text
+                  style={[
+                    styles.tabText,
+                    activeTab === "onchain" && styles.tabTextActive,
+                  ]}
+                >
+                  On-Chain
+                </Text>
               </TouchableOpacity>
               {analysis.defiMetrics && (
                 <TouchableOpacity
-                  style={[styles.tab, activeTab === 'defi' && styles.tabActive]}
-                  onPress={() => setActiveTab('defi')}
+                  style={[styles.tab, activeTab === "defi" && styles.tabActive]}
+                  onPress={() => setActiveTab("defi")}
                 >
-                  <Ionicons name="wallet" size={20} color={activeTab === 'defi' ? theme.colors.primary : theme.colors.textSecondary} />
-                  <Text style={[styles.tabText, activeTab === 'defi' && styles.tabTextActive]}>DeFi</Text>
+                  <Ionicons
+                    name="wallet"
+                    size={20}
+                    color={
+                      activeTab === "defi"
+                        ? theme.colors.primary
+                        : theme.colors.textSecondary
+                    }
+                  />
+                  <Text
+                    style={[
+                      styles.tabText,
+                      activeTab === "defi" && styles.tabTextActive,
+                    ]}
+                  >
+                    DeFi
+                  </Text>
                 </TouchableOpacity>
               )}
               <TouchableOpacity
-                style={[styles.tab, activeTab === 'sentiment' && styles.tabActive]}
-                onPress={() => setActiveTab('sentiment')}
+                style={[
+                  styles.tab,
+                  activeTab === "sentiment" && styles.tabActive,
+                ]}
+                onPress={() => setActiveTab("sentiment")}
               >
-                <Ionicons name="happy" size={20} color={activeTab === 'sentiment' ? theme.colors.primary : theme.colors.textSecondary} />
-                <Text style={[styles.tabText, activeTab === 'sentiment' && styles.tabTextActive]}>Sentiment</Text>
+                <Ionicons
+                  name="happy"
+                  size={20}
+                  color={
+                    activeTab === "sentiment"
+                      ? theme.colors.primary
+                      : theme.colors.textSecondary
+                  }
+                />
+                <Text
+                  style={[
+                    styles.tabText,
+                    activeTab === "sentiment" && styles.tabTextActive,
+                  ]}
+                >
+                  Sentiment
+                </Text>
               </TouchableOpacity>
             </ScrollView>
 
             {/* Tab Content */}
-            {activeTab === 'price' && <PriceMetrics analysis={analysis} />}
-            {activeTab === 'onchain' && <OnChainMetricsCard metrics={analysis.onChainMetrics} />}
-            {activeTab === 'defi' && analysis.defiMetrics && <DeFiMetricsCard metrics={analysis.defiMetrics} />}
-            {activeTab === 'sentiment' && <SentimentBar sentiment={sentiment} />}
+            {activeTab === "price" && <PriceMetrics analysis={analysis} />}
+            {activeTab === "onchain" && (
+              <OnChainMetricsCard metrics={analysis.onChainMetrics} />
+            )}
+            {activeTab === "defi" && analysis.defiMetrics && (
+              <DeFiMetricsCard metrics={analysis.defiMetrics} />
+            )}
+            {activeTab === "sentiment" && (
+              <SentimentBar sentiment={sentiment} />
+            )}
 
             {/* AI Insights */}
             <AIInsightsCard analysis={analysis} />
           </>
         ) : (
           <Card style={styles.errorCard}>
-            <Ionicons name="alert-circle" size={48} color={theme.colors.error} />
+            <Ionicons
+              name="alert-circle"
+              size={48}
+              color={theme.colors.error}
+            />
             <Text style={styles.errorText}>Failed to load crypto analysis</Text>
           </Card>
         )}
@@ -263,10 +361,10 @@ function CryptoHeader({ analysis }: CryptoHeaderProps) {
   const isPositive = analysis.priceChange24h >= 0;
 
   const getGradeColor = (grade: string): string => {
-    if (grade.startsWith('A')) return theme.colors.success;
-    if (grade.startsWith('B')) return '#10B981';
-    if (grade.startsWith('C')) return theme.colors.warning;
-    if (grade.startsWith('D')) return '#F59E0B';
+    if (grade.startsWith("A")) return theme.colors.success;
+    if (grade.startsWith("B")) return "#10B981";
+    if (grade.startsWith("C")) return theme.colors.warning;
+    if (grade.startsWith("D")) return "#F59E0B";
     return theme.colors.error;
   };
 
@@ -276,11 +374,23 @@ function CryptoHeader({ analysis }: CryptoHeaderProps) {
         <View style={styles.cryptoInfo}>
           <Text style={styles.cryptoName}>{analysis.name}</Text>
           <View style={styles.categoryBadge}>
-            <Text style={styles.categoryText}>{analysis.category.replace('_', ' ')}</Text>
+            <Text style={styles.categoryText}>
+              {analysis.category.replace("_", " ")}
+            </Text>
           </View>
         </View>
-        <View style={[styles.gradeBadge, { backgroundColor: `${getGradeColor(analysis.overallGrade)}20` }]}>
-          <Text style={[styles.gradeText, { color: getGradeColor(analysis.overallGrade) }]}>
+        <View
+          style={[
+            styles.gradeBadge,
+            { backgroundColor: `${getGradeColor(analysis.overallGrade)}20` },
+          ]}
+        >
+          <Text
+            style={[
+              styles.gradeText,
+              { color: getGradeColor(analysis.overallGrade) },
+            ]}
+          >
             {analysis.overallGrade}
           </Text>
         </View>
@@ -288,25 +398,41 @@ function CryptoHeader({ analysis }: CryptoHeaderProps) {
 
       <View style={styles.priceRow}>
         <Text style={styles.currentPrice}>
-          ${analysis.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          $
+          {analysis.currentPrice.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}
         </Text>
-        <Text style={[styles.priceChange, { color: isPositive ? theme.colors.success : theme.colors.error }]}>
-          {isPositive ? '+' : ''}{analysis.priceChange24h.toFixed(2)}%
+        <Text
+          style={[
+            styles.priceChange,
+            { color: isPositive ? theme.colors.success : theme.colors.error },
+          ]}
+        >
+          {isPositive ? "+" : ""}
+          {analysis.priceChange24h.toFixed(2)}%
         </Text>
       </View>
 
       <View style={styles.statsGrid}>
         <View style={styles.statItem}>
           <Text style={styles.statLabel}>Market Cap</Text>
-          <Text style={styles.statValue}>${(analysis.marketCap / 1e9).toFixed(2)}B</Text>
+          <Text style={styles.statValue}>
+            ${(analysis.marketCap / 1e9).toFixed(2)}B
+          </Text>
         </View>
         <View style={styles.statItem}>
           <Text style={styles.statLabel}>24h Volume</Text>
-          <Text style={styles.statValue}>${(analysis.volume24h / 1e9).toFixed(2)}B</Text>
+          <Text style={styles.statValue}>
+            ${(analysis.volume24h / 1e9).toFixed(2)}B
+          </Text>
         </View>
         <View style={styles.statItem}>
           <Text style={styles.statLabel}>Circulating Supply</Text>
-          <Text style={styles.statValue}>{(analysis.circulatingSupply / 1e6).toFixed(2)}M</Text>
+          <Text style={styles.statValue}>
+            {(analysis.circulatingSupply / 1e6).toFixed(2)}M
+          </Text>
         </View>
       </View>
     </Card>
@@ -333,18 +459,32 @@ function PriceMetrics({ analysis }: PriceMetricsProps) {
           <View style={styles.metricItem}>
             <Text style={styles.metricLabel}>Total Supply</Text>
             <Text style={styles.metricValue}>
-              {(analysis.tokenomics.supplyMetrics.totalSupply / 1e6).toFixed(2)}M
+              {(analysis.tokenomics.supplyMetrics.totalSupply / 1e6).toFixed(2)}
+              M
             </Text>
           </View>
           <View style={styles.metricItem}>
             <Text style={styles.metricLabel}>Circulating</Text>
             <Text style={styles.metricValue}>
-              {(analysis.tokenomics.supplyMetrics.circulatingSupply / 1e6).toFixed(2)}M
+              {(
+                analysis.tokenomics.supplyMetrics.circulatingSupply / 1e6
+              ).toFixed(2)}
+              M
             </Text>
           </View>
           <View style={styles.metricItem}>
             <Text style={styles.metricLabel}>Inflation Rate</Text>
-            <Text style={[styles.metricValue, { color: analysis.tokenomics.supplyMetrics.inflationRate < 5 ? theme.colors.success : theme.colors.error }]}>
+            <Text
+              style={[
+                styles.metricValue,
+                {
+                  color:
+                    analysis.tokenomics.supplyMetrics.inflationRate < 5
+                      ? theme.colors.success
+                      : theme.colors.error,
+                },
+              ]}
+            >
               {analysis.tokenomics.supplyMetrics.inflationRate.toFixed(2)}%
             </Text>
           </View>
@@ -362,11 +502,20 @@ function PriceMetrics({ analysis }: PriceMetricsProps) {
         <Text style={styles.sectionTitle}>Token Distribution</Text>
         {analysis.tokenomics.distribution.slice(0, 5).map((dist, idx) => (
           <View key={idx} style={styles.distributionItem}>
-            <Text style={styles.distributionLabel}>{dist.category.replace('_', ' ')}</Text>
+            <Text style={styles.distributionLabel}>
+              {dist.category.replace("_", " ")}
+            </Text>
             <View style={styles.distributionBar}>
-              <View style={[styles.distributionFill, { width: `${dist.percentage}%` }]} />
+              <View
+                style={[
+                  styles.distributionFill,
+                  { width: `${dist.percentage}%` },
+                ]}
+              />
             </View>
-            <Text style={styles.distributionValue}>{dist.percentage.toFixed(1)}%</Text>
+            <Text style={styles.distributionValue}>
+              {dist.percentage.toFixed(1)}%
+            </Text>
           </View>
         ))}
       </View>
@@ -405,8 +554,19 @@ function OnChainMetricsCard({ metrics }: OnChainMetricsCardProps) {
           </View>
           <View style={styles.metricItem}>
             <Text style={styles.metricLabel}>Address Growth</Text>
-            <Text style={[styles.metricValue, { color: metrics.networkActivity.addressGrowthRate >= 0 ? theme.colors.success : theme.colors.error }]}>
-              {metrics.networkActivity.addressGrowthRate >= 0 ? '+' : ''}{metrics.networkActivity.addressGrowthRate.toFixed(2)}%
+            <Text
+              style={[
+                styles.metricValue,
+                {
+                  color:
+                    metrics.networkActivity.addressGrowthRate >= 0
+                      ? theme.colors.success
+                      : theme.colors.error,
+                },
+              ]}
+            >
+              {metrics.networkActivity.addressGrowthRate >= 0 ? "+" : ""}
+              {metrics.networkActivity.addressGrowthRate.toFixed(2)}%
             </Text>
           </View>
         </View>
@@ -425,7 +585,11 @@ function OnChainMetricsCard({ metrics }: OnChainMetricsCardProps) {
           <View style={styles.metricItem}>
             <Text style={styles.metricLabel}>Volume (24h)</Text>
             <Text style={styles.metricValue}>
-              ${(metrics.transactionMetrics.transactionVolume24h / 1e6).toFixed(2)}M
+              $
+              {(metrics.transactionMetrics.transactionVolume24h / 1e6).toFixed(
+                2,
+              )}
+              M
             </Text>
           </View>
           <View style={styles.metricItem}>
@@ -462,14 +626,29 @@ function DeFiMetricsCard({ metrics }: DeFiMetricsCardProps) {
       <View style={styles.defiGrid}>
         <View style={styles.defiItem}>
           <Text style={styles.defiLabel}>Total Value Locked</Text>
-          <Text style={styles.defiValue}>${(metrics.totalValueLocked / 1e9).toFixed(2)}B</Text>
-          <Text style={[styles.defiChange, { color: metrics.tvlChange24h >= 0 ? theme.colors.success : theme.colors.error }]}>
-            {metrics.tvlChange24h >= 0 ? '+' : ''}{metrics.tvlChange24h.toFixed(2)}% (24h)
+          <Text style={styles.defiValue}>
+            ${(metrics.totalValueLocked / 1e9).toFixed(2)}B
+          </Text>
+          <Text
+            style={[
+              styles.defiChange,
+              {
+                color:
+                  metrics.tvlChange24h >= 0
+                    ? theme.colors.success
+                    : theme.colors.error,
+              },
+            ]}
+          >
+            {metrics.tvlChange24h >= 0 ? "+" : ""}
+            {metrics.tvlChange24h.toFixed(2)}% (24h)
           </Text>
         </View>
         <View style={styles.defiItem}>
           <Text style={styles.defiLabel}>Protocol Revenue (24h)</Text>
-          <Text style={styles.defiValue}>${(metrics.protocolRevenue24h / 1e6).toFixed(2)}M</Text>
+          <Text style={styles.defiValue}>
+            ${(metrics.protocolRevenue24h / 1e6).toFixed(2)}M
+          </Text>
         </View>
         <View style={styles.defiItem}>
           <Text style={styles.defiLabel}>Average APY</Text>
@@ -493,16 +672,16 @@ interface SentimentBarProps {
 function SentimentBar({ sentiment }: SentimentBarProps) {
   const getSentimentColor = (score: number): string => {
     if (score >= 70) return theme.colors.success;
-    if (score >= 50) return '#10B981';
+    if (score >= 50) return "#10B981";
     if (score >= 30) return theme.colors.warning;
     return theme.colors.error;
   };
 
   const getSentimentLabel = (score: number): string => {
-    if (score >= 70) return 'Extreme Greed';
-    if (score >= 50) return 'Greed';
-    if (score >= 30) return 'Fear';
-    return 'Extreme Fear';
+    if (score >= 70) return "Extreme Greed";
+    if (score >= 50) return "Greed";
+    if (score >= 30) return "Fear";
+    return "Extreme Fear";
   };
 
   return (
@@ -512,12 +691,24 @@ function SentimentBar({ sentiment }: SentimentBarProps) {
 
         {/* Fear & Greed Index */}
         <View style={styles.sentimentGauge}>
-          <View style={[styles.sentimentCircle, { borderColor: getSentimentColor(sentiment.fearGreedIndex) }]}>
-            <Text style={[styles.sentimentScore, { color: getSentimentColor(sentiment.fearGreedIndex) }]}>
+          <View
+            style={[
+              styles.sentimentCircle,
+              { borderColor: getSentimentColor(sentiment.fearGreedIndex) },
+            ]}
+          >
+            <Text
+              style={[
+                styles.sentimentScore,
+                { color: getSentimentColor(sentiment.fearGreedIndex) },
+              ]}
+            >
               {sentiment.fearGreedIndex}
             </Text>
           </View>
-          <Text style={styles.sentimentLabel}>{getSentimentLabel(sentiment.fearGreedIndex)}</Text>
+          <Text style={styles.sentimentLabel}>
+            {getSentimentLabel(sentiment.fearGreedIndex)}
+          </Text>
         </View>
 
         {/* Social Metrics */}
@@ -526,17 +717,29 @@ function SentimentBar({ sentiment }: SentimentBarProps) {
           <View style={styles.socialMetrics}>
             <View style={styles.socialItem}>
               <Ionicons name="logo-twitter" size={20} color="#1DA1F2" />
-              <Text style={styles.socialValue}>{sentiment.socialMetrics.twitterMentions24h.toLocaleString()}</Text>
+              <Text style={styles.socialValue}>
+                {sentiment.socialMetrics.twitterMentions24h.toLocaleString()}
+              </Text>
               <Text style={styles.socialLabel}>mentions</Text>
             </View>
             <View style={styles.socialItem}>
               <Ionicons name="logo-reddit" size={20} color="#FF4500" />
-              <Text style={styles.socialValue}>{sentiment.socialMetrics.redditPosts24h.toLocaleString()}</Text>
+              <Text style={styles.socialValue}>
+                {sentiment.socialMetrics.redditPosts24h.toLocaleString()}
+              </Text>
               <Text style={styles.socialLabel}>posts</Text>
             </View>
             <View style={styles.socialItem}>
-              <Ionicons name="happy" size={20} color={getSentimentColor(sentiment.socialMetrics.sentimentScore * 100)} />
-              <Text style={styles.socialValue}>{(sentiment.socialMetrics.sentimentScore * 100).toFixed(0)}</Text>
+              <Ionicons
+                name="happy"
+                size={20}
+                color={getSentimentColor(
+                  sentiment.socialMetrics.sentimentScore * 100,
+                )}
+              />
+              <Text style={styles.socialValue}>
+                {(sentiment.socialMetrics.sentimentScore * 100).toFixed(0)}
+              </Text>
               <Text style={styles.socialLabel}>sentiment</Text>
             </View>
           </View>
@@ -547,19 +750,40 @@ function SentimentBar({ sentiment }: SentimentBarProps) {
           <Text style={styles.sectionTitle}>News Sentiment</Text>
           <View style={styles.newsMetrics}>
             <View style={styles.newsItem}>
-              <View style={[styles.newsDot, { backgroundColor: theme.colors.success }]} />
+              <View
+                style={[
+                  styles.newsDot,
+                  { backgroundColor: theme.colors.success },
+                ]}
+              />
               <Text style={styles.newsLabel}>Positive</Text>
-              <Text style={styles.newsValue}>{sentiment.newsSentiment.positiveCount}</Text>
+              <Text style={styles.newsValue}>
+                {sentiment.newsSentiment.positiveCount}
+              </Text>
             </View>
             <View style={styles.newsItem}>
-              <View style={[styles.newsDot, { backgroundColor: theme.colors.textSecondary }]} />
+              <View
+                style={[
+                  styles.newsDot,
+                  { backgroundColor: theme.colors.textSecondary },
+                ]}
+              />
               <Text style={styles.newsLabel}>Neutral</Text>
-              <Text style={styles.newsValue}>{sentiment.newsSentiment.neutralCount}</Text>
+              <Text style={styles.newsValue}>
+                {sentiment.newsSentiment.neutralCount}
+              </Text>
             </View>
             <View style={styles.newsItem}>
-              <View style={[styles.newsDot, { backgroundColor: theme.colors.error }]} />
+              <View
+                style={[
+                  styles.newsDot,
+                  { backgroundColor: theme.colors.error },
+                ]}
+              />
               <Text style={styles.newsLabel}>Negative</Text>
-              <Text style={styles.newsValue}>{sentiment.newsSentiment.negativeCount}</Text>
+              <Text style={styles.newsValue}>
+                {sentiment.newsSentiment.negativeCount}
+              </Text>
             </View>
           </View>
         </View>
@@ -578,8 +802,8 @@ interface AIInsightsCardProps {
 
 function AIInsightsCard({ analysis }: AIInsightsCardProps) {
   const getRecommendationColor = (rec: string): string => {
-    if (rec === 'strong_buy' || rec === 'buy') return theme.colors.success;
-    if (rec === 'hold') return theme.colors.warning;
+    if (rec === "strong_buy" || rec === "buy") return theme.colors.success;
+    if (rec === "hold") return theme.colors.warning;
     return theme.colors.error;
   };
 
@@ -588,9 +812,21 @@ function AIInsightsCard({ analysis }: AIInsightsCardProps) {
       <Text style={styles.cardTitle}>AI Insights & Recommendations</Text>
 
       {/* Recommendation */}
-      <View style={[styles.recommendationBadge, { backgroundColor: `${getRecommendationColor(analysis.recommendation)}20` }]}>
-        <Text style={[styles.recommendationText, { color: getRecommendationColor(analysis.recommendation) }]}>
-          {analysis.recommendation.replace('_', ' ').toUpperCase()}
+      <View
+        style={[
+          styles.recommendationBadge,
+          {
+            backgroundColor: `${getRecommendationColor(analysis.recommendation)}20`,
+          },
+        ]}
+      >
+        <Text
+          style={[
+            styles.recommendationText,
+            { color: getRecommendationColor(analysis.recommendation) },
+          ]}
+        >
+          {analysis.recommendation.replace("_", " ").toUpperCase()}
         </Text>
         <Text style={styles.confidenceText}>
           Confidence: {(analysis.confidence * 100).toFixed(0)}%
@@ -602,7 +838,11 @@ function AIInsightsCard({ analysis }: AIInsightsCardProps) {
         <Text style={styles.sectionTitle}>Key Insights</Text>
         {analysis.aiInsights.slice(0, 5).map((insight, idx) => (
           <View key={idx} style={styles.insightItem}>
-            <Ionicons name="checkmark-circle" size={16} color={theme.colors.primary} />
+            <Ionicons
+              name="checkmark-circle"
+              size={16}
+              color={theme.colors.primary}
+            />
             <Text style={styles.insightText}>{insight}</Text>
           </View>
         ))}
@@ -634,9 +874,9 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
     backgroundColor: theme.colors.surface,
@@ -648,18 +888,18 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
   },
   headerActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   scrollView: {
     flex: 1,
   },
   loadingContainer: {
     padding: theme.spacing.xl,
-    alignItems: 'center',
+    alignItems: "center",
   },
   loadingText: {
     fontSize: 14,
@@ -668,7 +908,7 @@ const styles = StyleSheet.create({
   errorCard: {
     margin: theme.spacing.lg,
     padding: theme.spacing.xl,
-    alignItems: 'center',
+    alignItems: "center",
   },
   errorText: {
     fontSize: 14,
@@ -681,8 +921,8 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.border,
   },
   tab: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.md,
     marginHorizontal: 4,
@@ -695,20 +935,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: theme.colors.textSecondary,
     marginLeft: theme.spacing.xs,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   tabTextActive: {
     color: theme.colors.primary,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   headerCard: {
     margin: theme.spacing.lg,
     padding: theme.spacing.md,
   },
   cryptoTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
     marginBottom: theme.spacing.md,
   },
   cryptoInfo: {
@@ -716,7 +956,7 @@ const styles = StyleSheet.create({
   },
   cryptoName: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
     marginBottom: theme.spacing.xs,
   },
@@ -725,43 +965,43 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: 4,
     borderRadius: theme.borderRadius.sm,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
   },
   categoryText: {
     fontSize: 11,
     color: theme.colors.primary,
-    fontWeight: '600',
-    textTransform: 'uppercase',
+    fontWeight: "600",
+    textTransform: "uppercase",
   },
   gradeBadge: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   gradeText: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   priceRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
+    flexDirection: "row",
+    alignItems: "baseline",
     marginBottom: theme.spacing.md,
   },
   currentPrice: {
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
     marginRight: theme.spacing.sm,
   },
   priceChange: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   statsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   statItem: {
     flex: 1,
@@ -773,7 +1013,7 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   card: {
@@ -782,7 +1022,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: theme.spacing.md,
   },
@@ -791,16 +1031,16 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: theme.spacing.sm,
   },
   metricsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
   },
   metricItem: {
-    width: '50%',
+    width: "50%",
     marginBottom: theme.spacing.md,
   },
   metricLabel: {
@@ -810,7 +1050,7 @@ const styles = StyleSheet.create({
   },
   metricValue: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
   },
   distributionItem: {
@@ -820,24 +1060,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: theme.colors.text,
     marginBottom: 4,
-    textTransform: 'capitalize',
+    textTransform: "capitalize",
   },
   distributionBar: {
     height: 8,
     backgroundColor: theme.colors.border,
     borderRadius: 4,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginBottom: 4,
   },
   distributionFill: {
-    height: '100%',
+    height: "100%",
     backgroundColor: theme.colors.primary,
     borderRadius: 4,
   },
   distributionValue: {
     fontSize: 11,
     color: theme.colors.textSecondary,
-    textAlign: 'right',
+    textAlign: "right",
   },
   defiGrid: {
     marginTop: theme.spacing.sm,
@@ -852,16 +1092,16 @@ const styles = StyleSheet.create({
   },
   defiValue: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
     marginBottom: 4,
   },
   defiChange: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   sentimentGauge: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: theme.spacing.lg,
   },
   sentimentCircle: {
@@ -869,29 +1109,29 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 60,
     borderWidth: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: theme.spacing.md,
   },
   sentimentScore: {
     fontSize: 36,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   sentimentLabel: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   socialMetrics: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    flexDirection: "row",
+    justifyContent: "space-around",
   },
   socialItem: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   socialValue: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
     marginTop: theme.spacing.xs,
   },
@@ -904,8 +1144,8 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.sm,
   },
   newsItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: theme.spacing.sm,
   },
   newsDot: {
@@ -921,18 +1161,18 @@ const styles = StyleSheet.create({
   },
   newsValue: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   recommendationBadge: {
     padding: theme.spacing.md,
     borderRadius: theme.borderRadius.md,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: theme.spacing.md,
   },
   recommendationText: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 4,
   },
   confidenceText: {
@@ -940,8 +1180,8 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   insightItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     marginBottom: theme.spacing.sm,
   },
   insightText: {
@@ -952,4 +1192,3 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 });
-

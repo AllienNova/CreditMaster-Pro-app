@@ -5,11 +5,11 @@
  */
 
 // Using Jest - no explicit imports needed for describe, it, expect, beforeEach
-import { TaxBracketCalculator } from '../services/TaxBracketCalculator';
-import { FilingStatus, BusinessType, OptimizationGoal } from '../types';
-import type { TaxProfile } from '../types';
+import { TaxBracketCalculator } from "../services/TaxBracketCalculator";
+import { FilingStatus, BusinessType, OptimizationGoal } from "../types";
+import type { TaxProfile } from "../types";
 
-describe('TaxBracketCalculator', () => {
+describe("TaxBracketCalculator", () => {
   let calculator: TaxBracketCalculator;
 
   beforeEach(() => {
@@ -17,13 +17,13 @@ describe('TaxBracketCalculator', () => {
   });
 
   const createMockProfile = (
-    overrides: Partial<TaxProfile> = {}
+    overrides: Partial<TaxProfile> = {},
   ): TaxProfile => ({
-    id: 'test-profile',
-    userId: 'test-user',
+    id: "test-profile",
+    userId: "test-user",
     taxYear: 2024,
     filingStatus: FilingStatus.SINGLE,
-    stateOfResidence: 'CA',
+    stateOfResidence: "CA",
     grossIncome: 100000,
     w2Income: 100000,
     selfEmploymentIncome: 0,
@@ -50,7 +50,7 @@ describe('TaxBracketCalculator', () => {
     studentLoanInterest: 0,
     educatorExpenses: 0,
     hasHdhp: false,
-    healthInsuranceType: 'employer' as const,
+    healthInsuranceType: "employer" as const,
     ytd401kContribution: 0,
     ytdIraContribution: 0,
     ytdHsaContribution: 0,
@@ -58,14 +58,14 @@ describe('TaxBracketCalculator', () => {
     ytdCharitableGiving: 0,
     accounts: [],
     optimizationGoal: OptimizationGoal.BALANCED,
-    riskTolerance: 'moderate' as const,
+    riskTolerance: "moderate" as const,
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,
   });
 
-  describe('calculateTaxes', () => {
-    it('calculates taxes for a basic single filer', () => {
+  describe("calculateTaxes", () => {
+    it("calculates taxes for a basic single filer", () => {
       const profile = createMockProfile({ grossIncome: 100000 });
       const result = calculator.calculateTaxes(profile);
 
@@ -78,7 +78,7 @@ describe('TaxBracketCalculator', () => {
       expect(result.effectiveRate).toBeLessThan(0.5);
     });
 
-    it('reduces taxable income with 401k contributions', () => {
+    it("reduces taxable income with 401k contributions", () => {
       const baseProfile = createMockProfile({ grossIncome: 100000 });
       const optimizedProfile = createMockProfile({
         grossIncome: 100000,
@@ -89,15 +89,15 @@ describe('TaxBracketCalculator', () => {
       const optimizedResult = calculator.calculateTaxes(optimizedProfile);
 
       expect(optimizedResult.adjustedGrossIncome).toBeLessThan(
-        baseResult.adjustedGrossIncome
+        baseResult.adjustedGrossIncome,
       );
       expect(optimizedResult.totalTax).toBeLessThan(baseResult.totalTax);
       expect(optimizedResult.takeHomePay).toBeGreaterThan(
-        baseResult.takeHomePay - 23000
+        baseResult.takeHomePay - 23000,
       );
     });
 
-    it('calculates FICA taxes correctly', () => {
+    it("calculates FICA taxes correctly", () => {
       const profile = createMockProfile({ grossIncome: 100000 });
       const result = calculator.calculateTaxes(profile);
 
@@ -108,36 +108,39 @@ describe('TaxBracketCalculator', () => {
       expect(result.fica.totalFICA).toBe(
         result.fica.socialSecurityTax +
           result.fica.medicareTax +
-          result.fica.additionalMedicareTax
+          result.fica.additionalMedicareTax,
       );
     });
 
-    it('applies Additional Medicare Tax for high earners', () => {
-      const profile = createMockProfile({ grossIncome: 300000, w2Income: 300000 });
+    it("applies Additional Medicare Tax for high earners", () => {
+      const profile = createMockProfile({
+        grossIncome: 300000,
+        w2Income: 300000,
+      });
       const result = calculator.calculateTaxes(profile);
 
       // Additional Medicare Tax: 0.9% on wages over $200,000
       expect(result.fica.additionalMedicareTax).toBeGreaterThan(0);
     });
 
-    it('returns zero state tax for no-income-tax states', () => {
+    it("returns zero state tax for no-income-tax states", () => {
       const profile = createMockProfile({
         grossIncome: 100000,
-        stateOfResidence: 'TX',
+        stateOfResidence: "TX",
       });
       const result = calculator.calculateTaxes(profile);
 
       expect(result.stateTax).toBe(0);
     });
 
-    it('calculates monthly take-home correctly', () => {
+    it("calculates monthly take-home correctly", () => {
       const profile = createMockProfile({ grossIncome: 120000 });
       const result = calculator.calculateTaxes(profile);
 
       expect(result.monthlyTakeHome).toBe(result.takeHomePay / 12);
     });
 
-    it('handles zero income', () => {
+    it("handles zero income", () => {
       const profile = createMockProfile({ grossIncome: 0, w2Income: 0 });
       const result = calculator.calculateTaxes(profile);
 
@@ -146,7 +149,7 @@ describe('TaxBracketCalculator', () => {
       expect(result.takeHomePay).toBe(0);
     });
 
-    it('calculates higher taxes for high earners', () => {
+    it("calculates higher taxes for high earners", () => {
       const lowEarner = createMockProfile({ grossIncome: 50000 });
       const highEarner = createMockProfile({ grossIncome: 500000 });
 
@@ -157,7 +160,7 @@ describe('TaxBracketCalculator', () => {
       expect(highResult.marginalRate).toBeGreaterThan(lowResult.marginalRate);
     });
 
-    it('calculates capital gains tax for long-term gains', () => {
+    it("calculates capital gains tax for long-term gains", () => {
       const profile = createMockProfile({
         grossIncome: 100000,
         capitalGainsLongTerm: 50000,
@@ -167,7 +170,7 @@ describe('TaxBracketCalculator', () => {
       expect(result.capitalGainsTax).toBeGreaterThan(0);
     });
 
-    it('respects HSA contribution deductions', () => {
+    it("respects HSA contribution deductions", () => {
       const baseProfile = createMockProfile({
         grossIncome: 100000,
         hasHdhp: true,
@@ -182,7 +185,7 @@ describe('TaxBracketCalculator', () => {
       const hsaResult = calculator.calculateTaxes(withHSA);
 
       expect(hsaResult.adjustedGrossIncome).toBeLessThan(
-        baseResult.adjustedGrossIncome
+        baseResult.adjustedGrossIncome,
       );
     });
   });

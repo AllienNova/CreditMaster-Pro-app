@@ -1,6 +1,6 @@
 /**
  * Service Worker Registration
- * 
+ *
  * Handles PWA service worker registration and updates
  */
 
@@ -14,31 +14,31 @@ export interface ServiceWorkerConfig {
  * Register the service worker
  */
 export async function registerServiceWorker(
-  config?: ServiceWorkerConfig
+  config?: ServiceWorkerConfig,
 ): Promise<ServiceWorkerRegistration | null> {
-  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+  if (typeof window === "undefined" || !("serviceWorker" in navigator)) {
     // Service workers not supported
     return null;
   }
 
   // Only register in production
-  if (process.env.NODE_ENV !== 'production') {
+  if (process.env.NODE_ENV !== "production") {
     // Service worker disabled in development
     return null;
   }
 
   try {
-    const registration = await navigator.serviceWorker.register('/sw.js', {
-      scope: '/'
+    const registration = await navigator.serviceWorker.register("/sw.js", {
+      scope: "/",
     });
 
     // Check for updates
-    registration.addEventListener('updatefound', () => {
+    registration.addEventListener("updatefound", () => {
       const installingWorker = registration.installing;
       if (!installingWorker) return;
 
-      installingWorker.addEventListener('statechange', () => {
-        if (installingWorker.state === 'installed') {
+      installingWorker.addEventListener("statechange", () => {
+        if (installingWorker.state === "installed") {
           if (navigator.serviceWorker.controller) {
             // New content available
             // New content available
@@ -64,7 +64,7 @@ export async function registerServiceWorker(
  * Unregister all service workers
  */
 export async function unregisterServiceWorker(): Promise<boolean> {
-  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+  if (typeof window === "undefined" || !("serviceWorker" in navigator)) {
     return false;
   }
 
@@ -81,10 +81,10 @@ export async function unregisterServiceWorker(): Promise<boolean> {
  * Check if app is installed as PWA
  */
 export function isPWAInstalled(): boolean {
-  if (typeof window === 'undefined') return false;
-  
+  if (typeof window === "undefined") return false;
+
   return (
-    window.matchMedia('(display-mode: standalone)').matches ||
+    window.matchMedia("(display-mode: standalone)").matches ||
     (window.navigator as any).standalone === true
   );
 }
@@ -93,12 +93,12 @@ export function isPWAInstalled(): boolean {
  * Request notification permission
  */
 export async function requestNotificationPermission(): Promise<NotificationPermission> {
-  if (typeof window === 'undefined' || !('Notification' in window)) {
-    return 'denied';
+  if (typeof window === "undefined" || !("Notification" in window)) {
+    return "denied";
   }
 
-  if (Notification.permission === 'granted') {
-    return 'granted';
+  if (Notification.permission === "granted") {
+    return "granted";
   }
 
   return await Notification.requestPermission();
@@ -108,15 +108,15 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
  * Subscribe to push notifications
  */
 export async function subscribeToPushNotifications(
-  vapidPublicKey: string
+  vapidPublicKey: string,
 ): Promise<PushSubscription | null> {
   try {
     const registration = await navigator.serviceWorker.ready;
-    
+
     const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: applicationServerKey.buffer as ArrayBuffer
+      applicationServerKey: applicationServerKey.buffer as ArrayBuffer,
     });
 
     return subscription;
@@ -130,10 +130,8 @@ export async function subscribeToPushNotifications(
  * Convert VAPID key to Uint8Array
  */
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding)
-    .replace(/-/g, '+')
-    .replace(/_/g, '/');
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
 
   const rawData = window.atob(base64);
   const outputArray = new Uint8Array(rawData.length);
@@ -149,11 +147,10 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
  * Check for service worker updates
  */
 export async function checkForUpdates(): Promise<void> {
-  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+  if (typeof window === "undefined" || !("serviceWorker" in navigator)) {
     return;
   }
 
   const registration = await navigator.serviceWorker.ready;
   await registration.update();
 }
-

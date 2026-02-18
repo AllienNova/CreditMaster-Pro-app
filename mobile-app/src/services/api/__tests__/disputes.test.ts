@@ -2,11 +2,11 @@
  * Fynvita Disputes API Service Tests
  */
 
-import { disputeApi, disputeLetterApi, disputeResourcesApi } from '../disputes';
-import { api } from '../client';
+import { disputeApi, disputeLetterApi, disputeResourcesApi } from "../disputes";
+import { api } from "../client";
 
 // Mock the API client
-jest.mock('../client', () => ({
+jest.mock("../client", () => ({
   api: {
     get: jest.fn(),
     post: jest.fn(),
@@ -15,158 +15,201 @@ jest.mock('../client', () => ({
   },
 }));
 
-describe('Dispute API', () => {
+describe("Dispute API", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  describe('getAll', () => {
-    it('should fetch all disputes', async () => {
+  describe("getAll", () => {
+    it("should fetch all disputes", async () => {
       const mockDisputes = { items: [], total: 0 };
 
-      (api.get as jest.Mock).mockResolvedValueOnce({ success: true, data: mockDisputes });
+      (api.get as jest.Mock).mockResolvedValueOnce({
+        success: true,
+        data: mockDisputes,
+      });
 
       const result = await disputeApi.getAll();
 
-      expect(api.get).toHaveBeenCalledWith('/disputes');
+      expect(api.get).toHaveBeenCalledWith("/disputes");
       expect(result.data).toEqual(mockDisputes);
     });
 
-    it('should fetch disputes with filters', async () => {
-      (api.get as jest.Mock).mockResolvedValueOnce({ success: true, data: { items: [] } });
+    it("should fetch disputes with filters", async () => {
+      (api.get as jest.Mock).mockResolvedValueOnce({
+        success: true,
+        data: { items: [] },
+      });
 
-      await disputeApi.getAll({ status: 'pending', bureau: 'experian', page: 1 });
+      await disputeApi.getAll({
+        status: "pending",
+        bureau: "experian",
+        page: 1,
+      });
 
-      expect(api.get).toHaveBeenCalledWith('/disputes?page=1&status=pending&bureau=experian');
+      expect(api.get).toHaveBeenCalledWith(
+        "/disputes?page=1&status=pending&bureau=experian",
+      );
     });
   });
 
-  describe('getById', () => {
-    it('should fetch single dispute', async () => {
-      const mockDispute = { id: 'dispute-1', status: 'pending' };
+  describe("getById", () => {
+    it("should fetch single dispute", async () => {
+      const mockDispute = { id: "dispute-1", status: "pending" };
 
-      (api.get as jest.Mock).mockResolvedValueOnce({ success: true, data: mockDispute });
+      (api.get as jest.Mock).mockResolvedValueOnce({
+        success: true,
+        data: mockDispute,
+      });
 
-      const result = await disputeApi.getById('dispute-1');
+      const result = await disputeApi.getById("dispute-1");
 
-      expect(api.get).toHaveBeenCalledWith('/disputes/dispute-1');
+      expect(api.get).toHaveBeenCalledWith("/disputes/dispute-1");
       expect(result.data).toEqual(mockDispute);
     });
   });
 
-  describe('create', () => {
-    it('should create new dispute', async () => {
+  describe("create", () => {
+    it("should create new dispute", async () => {
       const newDispute: any = {
-        bureau: 'experian' as const,
-        itemType: 'late_payment',
-        creditorName: 'Test Creditor',
-        disputeReason: 'Not mine',
+        bureau: "experian" as const,
+        itemType: "late_payment",
+        creditorName: "Test Creditor",
+        disputeReason: "Not mine",
       };
-      const createdDispute = { id: 'new-1', ...newDispute };
+      const createdDispute = { id: "new-1", ...newDispute };
 
-      (api.post as jest.Mock).mockResolvedValueOnce({ success: true, data: createdDispute });
+      (api.post as jest.Mock).mockResolvedValueOnce({
+        success: true,
+        data: createdDispute,
+      });
 
       const result = await disputeApi.create(newDispute);
 
-      expect(api.post).toHaveBeenCalledWith('/disputes', newDispute);
+      expect(api.post).toHaveBeenCalledWith("/disputes", newDispute);
       expect(result.data).toEqual(createdDispute);
     });
   });
 
-  describe('update', () => {
-    it('should update dispute', async () => {
-      const updates: any = { status: 'in_progress' as const };
+  describe("update", () => {
+    it("should update dispute", async () => {
+      const updates: any = { status: "in_progress" as const };
 
-      (api.patch as jest.Mock).mockResolvedValueOnce({ success: true, data: { id: '1', ...updates } });
+      (api.patch as jest.Mock).mockResolvedValueOnce({
+        success: true,
+        data: { id: "1", ...updates },
+      });
 
-      await disputeApi.update('1', updates);
+      await disputeApi.update("1", updates);
 
-      expect(api.patch).toHaveBeenCalledWith('/disputes/1', updates);
+      expect(api.patch).toHaveBeenCalledWith("/disputes/1", updates);
     });
   });
 
-  describe('delete', () => {
-    it('should delete dispute', async () => {
+  describe("delete", () => {
+    it("should delete dispute", async () => {
       (api.delete as jest.Mock).mockResolvedValueOnce({ success: true });
 
-      await disputeApi.delete('dispute-1');
+      await disputeApi.delete("dispute-1");
 
-      expect(api.delete).toHaveBeenCalledWith('/disputes/dispute-1');
+      expect(api.delete).toHaveBeenCalledWith("/disputes/dispute-1");
     });
   });
 
-  describe('send', () => {
-    it('should send dispute', async () => {
-      (api.patch as jest.Mock).mockResolvedValueOnce({ success: true, data: { status: 'sent' } });
+  describe("send", () => {
+    it("should send dispute", async () => {
+      (api.patch as jest.Mock).mockResolvedValueOnce({
+        success: true,
+        data: { status: "sent" },
+      });
 
-      await disputeApi.send('dispute-1');
+      await disputeApi.send("dispute-1");
 
-      expect(api.patch).toHaveBeenCalledWith('/disputes/dispute-1/send', { sentDate: expect.any(String) });
+      expect(api.patch).toHaveBeenCalledWith("/disputes/dispute-1/send", {
+        sentDate: expect.any(String),
+      });
     });
   });
 });
 
-describe('Dispute Letter API', () => {
+describe("Dispute Letter API", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  describe('generateAILetter', () => {
-    it('should generate AI letter', async () => {
-      const disputeId = 'dispute-123';
+  describe("generateAILetter", () => {
+    it("should generate AI letter", async () => {
+      const disputeId = "dispute-123";
 
       (api.post as jest.Mock).mockResolvedValueOnce({
         success: true,
-        data: { letter: 'Generated letter content', confidence: 0.95 },
+        data: { letter: "Generated letter content", confidence: 0.95 },
       });
 
       const result = await disputeLetterApi.generateAILetter(disputeId);
 
-      expect(api.post).toHaveBeenCalledWith('/disputes/dispute-123/generate', { mode: 'ai' });
-      expect(result.data?.letter).toBe('Generated letter content');
+      expect(api.post).toHaveBeenCalledWith("/disputes/dispute-123/generate", {
+        mode: "ai",
+      });
+      expect(result.data?.letter).toBe("Generated letter content");
     });
   });
 
-  describe('getStrategyRecommendations', () => {
-    it('should get strategy recommendations', async () => {
+  describe("getStrategyRecommendations", () => {
+    it("should get strategy recommendations", async () => {
       const scenario = {
-        disputeType: 'late_payment',
+        disputeType: "late_payment",
         previousAttempts: 0,
         hasEvidence: true,
       };
 
       (api.post as jest.Mock).mockResolvedValueOnce({
         success: true,
-        data: { recommendations: [{ strategyId: '1', name: 'Aggressive', confidence: 0.9, reasoning: 'Best approach' }] },
+        data: {
+          recommendations: [
+            {
+              strategyId: "1",
+              name: "Aggressive",
+              confidence: 0.9,
+              reasoning: "Best approach",
+            },
+          ],
+        },
       });
 
       await disputeLetterApi.getStrategyRecommendations(scenario);
 
-      expect(api.post).toHaveBeenCalledWith('/disputes/recommend-strategy', scenario);
+      expect(api.post).toHaveBeenCalledWith(
+        "/disputes/recommend-strategy",
+        scenario,
+      );
     });
   });
 });
 
-describe('Dispute Resources API', () => {
+describe("Dispute Resources API", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  describe('getTemplates', () => {
-    it('should fetch templates', async () => {
+  describe("getTemplates", () => {
+    it("should fetch templates", async () => {
       (api.get as jest.Mock).mockResolvedValueOnce({
         success: true,
-        data: { templates: [{ id: '1', name: 'Template 1' }] },
+        data: { templates: [{ id: "1", name: "Template 1" }] },
       });
 
       await disputeResourcesApi.getTemplates();
 
-      expect(api.get).toHaveBeenCalledWith('/disputes/templates', { enableCache: true, cacheTime: 1800000 });
+      expect(api.get).toHaveBeenCalledWith("/disputes/templates", {
+        enableCache: true,
+        cacheTime: 1800000,
+      });
     });
   });
 
-  describe('getStrategies', () => {
-    it('should fetch strategies', async () => {
+  describe("getStrategies", () => {
+    it("should fetch strategies", async () => {
       (api.get as jest.Mock).mockResolvedValueOnce({
         success: true,
         data: { strategies: [] },
@@ -174,12 +217,15 @@ describe('Dispute Resources API', () => {
 
       await disputeResourcesApi.getStrategies();
 
-      expect(api.get).toHaveBeenCalledWith('/disputes/strategies', { enableCache: true, cacheTime: 1800000 });
+      expect(api.get).toHaveBeenCalledWith("/disputes/strategies", {
+        enableCache: true,
+        cacheTime: 1800000,
+      });
     });
   });
 
-  describe('getReasons', () => {
-    it('should fetch dispute reasons', async () => {
+  describe("getReasons", () => {
+    it("should fetch dispute reasons", async () => {
       (api.get as jest.Mock).mockResolvedValueOnce({
         success: true,
         data: { reasons: [] },
@@ -187,8 +233,10 @@ describe('Dispute Resources API', () => {
 
       await disputeResourcesApi.getReasons();
 
-      expect(api.get).toHaveBeenCalledWith('/disputes/reasons', { enableCache: true, cacheTime: 3600000 });
+      expect(api.get).toHaveBeenCalledWith("/disputes/reasons", {
+        enableCache: true,
+        cacheTime: 3600000,
+      });
     });
   });
 });
-

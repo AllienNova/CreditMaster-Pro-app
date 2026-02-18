@@ -1,2 +1,2 @@
 export const useRouter = () => ({});
-export const usePathname = () => '/';
+export const usePathname = () => "/";

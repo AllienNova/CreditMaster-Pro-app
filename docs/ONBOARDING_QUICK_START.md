@@ -44,6 +44,7 @@ You should see the table structure (even if empty).
 ## Step 2: Install Dependencies (1 minute)
 
 ### Web App (Already Done)
+
 No new dependencies needed! ✅
 
 ### Mobile App (If Testing Mobile)
@@ -105,7 +106,7 @@ Open http://localhost:3000/onboarding
 ### Test 5: Enhanced Progress Indicator ✅
 
 1. Navigate through the onboarding flow
-2. **Expected:** 
+2. **Expected:**
    - Progress bar fills as you advance
    - Time estimates show for each step
    - "~X min remaining" updates
@@ -120,12 +121,14 @@ Open http://localhost:3000/onboarding
 Use this checklist to verify all features work:
 
 ### Database & API
+
 - [ ] Migration applied successfully
 - [ ] GET /api/onboarding/progress returns data
 - [ ] POST /api/onboarding/progress saves data
 - [ ] Progress persists across page refreshes
 
 ### Form Validation
+
 - [ ] Invalid fields show red border + error
 - [ ] Valid fields show green checkmark
 - [ ] Phone auto-formats to (XXX) XXX-XXXX
@@ -134,6 +137,7 @@ Use this checklist to verify all features work:
 - [ ] Errors only show after field is touched
 
 ### Educational Tooltips
+
 - [ ] Tooltips open on click
 - [ ] Tooltips close on Escape key
 - [ ] Tooltips close on backdrop click
@@ -141,6 +145,7 @@ Use this checklist to verify all features work:
 - [ ] Tooltips are readable and helpful
 
 ### Split Profile Screen
+
 - [ ] Shows "Basic Information" first
 - [ ] Sub-step progress dots display
 - [ ] Validates basic fields before advancing
@@ -149,6 +154,7 @@ Use this checklist to verify all features work:
 - [ ] Continue button advances to Goals
 
 ### Progress Indicator
+
 - [ ] Shows current step name
 - [ ] Shows time estimate for current step
 - [ ] Shows total time remaining
@@ -180,7 +186,8 @@ Use this checklist to verify all features work:
 
 ### Issue: Auto-save not triggering
 
-**Solution:** 
+**Solution:**
+
 1. Check browser console for errors
 2. Verify you're authenticated
 3. Wait the full 30 seconds
@@ -193,16 +200,19 @@ Use this checklist to verify all features work:
 Track these metrics to measure success:
 
 ### Before Phase 1
+
 - Completion Rate: 45%
 - Time to Complete: 10 minutes
 - Drop-off at Profile: 35%
 
 ### After Phase 1 (Expected)
+
 - Completion Rate: 60-65% (+15-20%)
 - Time to Complete: 6-7 minutes (-30-40%)
 - Drop-off at Profile: 15-20% (-43-57%)
 
 ### How to Measure
+
 1. Set up analytics tracking (Google Analytics, Mixpanel, etc.)
 2. Track these events:
    - `onboarding_started`
@@ -234,4 +244,3 @@ Phase 1 is successful if:
 ---
 
 **Ready to test?** Start with Step 1 above! 🚀
-

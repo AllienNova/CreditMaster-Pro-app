@@ -7,15 +7,15 @@
  * Phase 2.2: Savings Optimizer
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getSavingsOptimizer } from '@/lib/financial/savings-optimizer';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { rbac } from '@/lib/auth/rbac';
+import { NextRequest, NextResponse } from "next/server";
+import { getSavingsOptimizer } from "@/lib/financial/savings-optimizer";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { rbac } from "@/lib/auth/rbac";
 import {
   applyFinancialAPIMiddleware,
   finalizeResponse,
-} from '@/lib/api/financial-api-middleware';
-import { z } from 'zod';
+} from "@/lib/api/financial-api-middleware";
+import { z } from "zod";
 
 // ============================================================================
 // VALIDATION SCHEMA
@@ -87,33 +87,34 @@ export async function GET(request: NextRequest) {
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
       );
     }
 
-    if (!rbac.hasPermission(validation.user, 'financial:read')) {
+    if (!rbac.hasPermission(validation.user, "financial:read")) {
       return NextResponse.json(
-        { success: false, error: 'Forbidden - Insufficient permissions' },
-        { status: 403 }
+        { success: false, error: "Forbidden - Insufficient permissions" },
+        { status: 403 },
       );
     }
 
     // Parse and validate query parameters
     const { searchParams } = new URL(request.url);
     const queryParams = {
-      targetAmount: searchParams.get('targetAmount'),
+      targetAmount: searchParams.get("targetAmount"),
     };
 
-    const validationResult = GoalRecommendationsQuerySchema.safeParse(queryParams);
+    const validationResult =
+      GoalRecommendationsQuerySchema.safeParse(queryParams);
     if (!validationResult.success) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Invalid query parameters',
+          error: "Invalid query parameters",
           details: validationResult.error.errors,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -121,10 +122,11 @@ export async function GET(request: NextRequest) {
 
     // Generate savings goal recommendations
     const savingsOptimizer = getSavingsOptimizer();
-    const recommendations = await savingsOptimizer.generateSavingsGoalRecommendations(
-      userId,
-      targetAmount
-    );
+    const recommendations =
+      await savingsOptimizer.generateSavingsGoalRecommendations(
+        userId,
+        targetAmount,
+      );
 
     const response = NextResponse.json(
       {
@@ -137,20 +139,19 @@ export async function GET(request: NextRequest) {
           aiGenerated: recommendations.some((rec) => rec.aiGenerated),
         },
       },
-      { status: 200 }
+      { status: 200 },
     );
 
     return finalizeResponse(request, response, startTime, userId);
   } catch (error) {
-    console.error('Savings goal recommendations error:', error);
+    console.error("Savings goal recommendations error:", error);
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to generate savings goal recommendations',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to generate savings goal recommendations",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-

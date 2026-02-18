@@ -1,32 +1,38 @@
-'use client';
+"use client";
 
 interface LoadingSkeletonProps {
-  variant?: 'text' | 'card' | 'avatar' | 'button' | 'table' | 'dashboard';
+  variant?: "text" | "card" | "avatar" | "button" | "table" | "dashboard";
   count?: number;
   className?: string;
 }
 
 export default function LoadingSkeleton({
-  variant = 'text',
+  variant = "text",
   count = 1,
-  className = '',
+  className = "",
 }: LoadingSkeletonProps) {
   const renderSkeleton = () => {
     switch (variant) {
-      case 'text':
+      case "text":
         return (
           <div className={`animate-pulse space-y-3 ${className}`}>
             {Array.from({ length: count }).map((_, i) => (
-              <div key={i} className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-full" />
+              <div
+                key={i}
+                className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-full"
+              />
             ))}
           </div>
         );
 
-      case 'card':
+      case "card":
         return (
           <div className={`animate-pulse ${className}`}>
             {Array.from({ length: count }).map((_, i) => (
-              <div key={i} className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 mb-4">
+              <div
+                key={i}
+                className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6 mb-4"
+              >
                 <div className="h-6 bg-gray-200 dark:bg-slate-700 rounded w-3/4 mb-4" />
                 <div className="space-y-3">
                   <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-full" />
@@ -38,9 +44,11 @@ export default function LoadingSkeleton({
           </div>
         );
 
-      case 'avatar':
+      case "avatar":
         return (
-          <div className={`animate-pulse flex items-center space-x-4 ${className}`}>
+          <div
+            className={`animate-pulse flex items-center space-x-4 ${className}`}
+          >
             <div className="rounded-full bg-gray-200 dark:bg-slate-700 h-12 w-12" />
             <div className="flex-1 space-y-2">
               <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-3/4" />
@@ -49,16 +57,19 @@ export default function LoadingSkeleton({
           </div>
         );
 
-      case 'button':
+      case "button":
         return (
           <div className={`animate-pulse ${className}`}>
             {Array.from({ length: count }).map((_, i) => (
-              <div key={i} className="h-10 bg-gray-200 dark:bg-slate-700 rounded-lg w-32 mr-2 inline-block" />
+              <div
+                key={i}
+                className="h-10 bg-gray-200 dark:bg-slate-700 rounded-lg w-32 mr-2 inline-block"
+              />
             ))}
           </div>
         );
 
-      case 'table':
+      case "table":
         return (
           <div className={`animate-pulse ${className}`}>
             <div className="bg-white dark:bg-slate-800 rounded-lg shadow overflow-hidden">
@@ -73,7 +84,10 @@ export default function LoadingSkeleton({
               </div>
               {/* Table rows */}
               {Array.from({ length: count }).map((_, i) => (
-                <div key={i} className="px-6 py-4 border-b border-gray-200 dark:border-slate-700">
+                <div
+                  key={i}
+                  className="px-6 py-4 border-b border-gray-200 dark:border-slate-700"
+                >
                   <div className="flex space-x-4">
                     <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/4" />
                     <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/4" />
@@ -86,7 +100,7 @@ export default function LoadingSkeleton({
           </div>
         );
 
-      case 'dashboard':
+      case "dashboard":
         return (
           <div className={`animate-pulse space-y-6 ${className}`}>
             {/* Header */}
@@ -98,7 +112,10 @@ export default function LoadingSkeleton({
             {/* Metrics cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6">
+                <div
+                  key={i}
+                  className="bg-white dark:bg-slate-800 rounded-lg shadow-lg p-6"
+                >
                   <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/2 mb-4" />
                   <div className="h-8 bg-gray-200 dark:bg-slate-700 rounded w-3/4 mb-2" />
                   <div className="h-3 bg-gray-200 dark:bg-slate-700 rounded w-1/2" />
@@ -127,37 +144,43 @@ export default function LoadingSkeleton({
 }
 
 // Pulse animation for inline loading
-export function PulseLoader({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
+export function PulseLoader({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
   const sizeClasses = {
-    sm: 'h-4 w-4',
-    md: 'h-8 w-8',
-    lg: 'h-12 w-12',
+    sm: "h-4 w-4",
+    md: "h-8 w-8",
+    lg: "h-12 w-12",
   };
 
   return (
     <div className="flex items-center justify-center space-x-2">
       <div
         className={`${sizeClasses[size]} bg-blue-500 rounded-full animate-pulse`}
-        style={{ animationDelay: '0ms' }}
+        style={{ animationDelay: "0ms" }}
       />
       <div
         className={`${sizeClasses[size]} bg-blue-500 rounded-full animate-pulse`}
-        style={{ animationDelay: '150ms' }}
+        style={{ animationDelay: "150ms" }}
       />
       <div
         className={`${sizeClasses[size]} bg-blue-500 rounded-full animate-pulse`}
-        style={{ animationDelay: '300ms' }}
+        style={{ animationDelay: "300ms" }}
       />
     </div>
   );
 }
 
 // Spinner for loading states
-export function Spinner({ size = 'md', label }: { size?: 'sm' | 'md' | 'lg'; label?: string }) {
+export function Spinner({
+  size = "md",
+  label,
+}: {
+  size?: "sm" | "md" | "lg";
+  label?: string;
+}) {
   const sizeClasses = {
-    sm: 'h-6 w-6 border-2',
-    md: 'h-12 w-12 border-4',
-    lg: 'h-16 w-16 border-4',
+    sm: "h-6 w-6 border-2",
+    md: "h-12 w-12 border-4",
+    lg: "h-16 w-16 border-4",
   };
 
   return (
@@ -165,8 +188,9 @@ export function Spinner({ size = 'md', label }: { size?: 'sm' | 'md' | 'lg'; lab
       <div
         className={`${sizeClasses[size]} border-blue-600 border-t-transparent rounded-full animate-spin`}
       />
-      {label && <p className="text-sm text-gray-600 dark:text-slate-300">{label}</p>}
+      {label && (
+        <p className="text-sm text-gray-600 dark:text-slate-300">{label}</p>
+      )}
     </div>
   );
 }
-

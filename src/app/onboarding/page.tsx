@@ -1,33 +1,39 @@
 "use client";
 
 import Link from "next/link";
-import { StarIcon, ShieldCheckIcon, ClockIcon, UserGroupIcon } from "@heroicons/react/24/solid";
-import { Icon } from '@/components/ui/Icon';
+import {
+  StarIcon,
+  ShieldCheckIcon,
+  ClockIcon,
+  UserGroupIcon,
+} from "@heroicons/react/24/solid";
+import { Icon } from "@/components/ui/Icon";
 
 const features = [
   {
     icon: "sparkles",
     title: "AI-Powered Analysis",
-    description: "Our AI analyzes your credit reports to find errors and opportunities",
-    benefit: "Find up to 30% more errors than manual review"
+    description:
+      "Our AI analyzes your credit reports to find errors and opportunities",
+    benefit: "Find up to 30% more errors than manual review",
   },
   {
     icon: "document-text",
     title: "Automated Disputes",
     description: "Generate professional dispute letters with one click",
-    benefit: "Save 10+ hours per month on paperwork"
+    benefit: "Save 10+ hours per month on paperwork",
   },
   {
     icon: "chart-bar",
     title: "Score Tracking",
     description: "Monitor your credit score progress across all bureaus",
-    benefit: "See improvements in as little as 30 days"
+    benefit: "See improvements in as little as 30 days",
   },
   {
     icon: "target",
     title: "Personalized Plan",
     description: "Get a customized roadmap to reach your credit goals",
-    benefit: "Achieve your target score 2x faster"
+    benefit: "Achieve your target score 2x faster",
   },
 ];
 
@@ -42,20 +48,22 @@ const testimonials = [
   {
     name: "Sarah M.",
     score: "+142 points",
-    quote: "Went from 580 to 722 in 6 months. Finally qualified for my dream home!",
-    timeframe: "6 months"
+    quote:
+      "Went from 580 to 722 in 6 months. Finally qualified for my dream home!",
+    timeframe: "6 months",
   },
   {
     name: "James T.",
     score: "+98 points",
     quote: "The AI found errors I never would have spotted. Highly recommend!",
-    timeframe: "4 months"
+    timeframe: "4 months",
   },
   {
     name: "Maria L.",
     score: "+156 points",
-    quote: "Best investment I've made. Saved thousands on my car loan interest.",
-    timeframe: "8 months"
+    quote:
+      "Best investment I've made. Saved thousands on my car loan interest.",
+    timeframe: "8 months",
   },
 ];
 
@@ -71,15 +79,23 @@ export default function OnboardingWelcomePage() {
           Welcome to Fynvita!
         </h1>
         <p className="text-xl text-gray-600 dark:text-slate-300 max-w-2xl mx-auto mb-6">
-          Join thousands who&apos;ve improved their credit scores by an average of <span className="font-bold text-emerald-600">127 points</span>
+          Join thousands who&apos;ve improved their credit scores by an average
+          of <span className="font-bold text-emerald-600">127 points</span>
         </p>
 
         {/* Social Proof Metrics */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto mb-8">
           {socialProof.map((item) => (
-            <div key={item.label} className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-slate-700">
-              <div className="text-2xl md:text-3xl font-bold text-emerald-600">{item.metric}</div>
-              <div className="text-xs md:text-sm text-gray-600 dark:text-slate-300 mt-1">{item.label}</div>
+            <div
+              key={item.label}
+              className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-slate-700"
+            >
+              <div className="text-2xl md:text-3xl font-bold text-emerald-600">
+                {item.metric}
+              </div>
+              <div className="text-xs md:text-sm text-gray-600 dark:text-slate-300 mt-1">
+                {item.label}
+              </div>
             </div>
           ))}
         </div>
@@ -108,22 +124,38 @@ export default function OnboardingWelcomePage() {
       {/* Features Grid */}
       <div className="grid md:grid-cols-2 gap-6 mb-12">
         {features.map((feature) => (
-          <div key={feature.title} className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-700 text-left hover:shadow-md transition-shadow">
+          <div
+            key={feature.title}
+            className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-700 text-left hover:shadow-md transition-shadow"
+          >
             <Icon name={feature.icon} className="text-3xl mb-4 inline-block" />
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{feature.title}</h3>
-            <p className="text-gray-600 dark:text-slate-300 mb-3">{feature.description}</p>
-            <p className="text-sm text-emerald-600 font-medium">{feature.benefit}</p>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              {feature.title}
+            </h3>
+            <p className="text-gray-600 dark:text-slate-300 mb-3">
+              {feature.description}
+            </p>
+            <p className="text-sm text-emerald-600 font-medium">
+              {feature.benefit}
+            </p>
           </div>
         ))}
       </div>
 
       {/* Success Stories */}
       <div className="bg-gradient-to-br from-emerald-50 to-blue-50 rounded-xl p-8 mb-12">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Real Results from Real People</h2>
-        <p className="text-gray-600 dark:text-slate-300 mb-6">See what our users have achieved</p>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          Real Results from Real People
+        </h2>
+        <p className="text-gray-600 dark:text-slate-300 mb-6">
+          See what our users have achieved
+        </p>
         <div className="grid md:grid-cols-3 gap-6">
           {testimonials.map((testimonial) => (
-            <div key={testimonial.name} className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-sm text-left">
+            <div
+              key={testimonial.name}
+              className="bg-white dark:bg-slate-800 rounded-lg p-6 shadow-sm text-left"
+            >
               <div className="flex items-center gap-2 mb-3">
                 <div className="flex text-yellow-400">
                   {[...Array(5)].map((_, i) => (
@@ -131,14 +163,22 @@ export default function OnboardingWelcomePage() {
                   ))}
                 </div>
               </div>
-              <p className="text-gray-700 dark:text-slate-200 mb-4 italic">&quot;{testimonial.quote}&quot;</p>
+              <p className="text-gray-700 dark:text-slate-200 mb-4 italic">
+                &quot;{testimonial.quote}&quot;
+              </p>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-semibold text-gray-900 dark:text-white">{testimonial.name}</p>
-                  <p className="text-xs text-gray-500 dark:text-slate-400">{testimonial.timeframe}</p>
+                  <p className="font-semibold text-gray-900 dark:text-white">
+                    {testimonial.name}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400">
+                    {testimonial.timeframe}
+                  </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-bold text-emerald-600">{testimonial.score}</p>
+                  <p className="text-2xl font-bold text-emerald-600">
+                    {testimonial.score}
+                  </p>
                 </div>
               </div>
             </div>
@@ -148,44 +188,70 @@ export default function OnboardingWelcomePage() {
 
       {/* What to Expect */}
       <div className="bg-white dark:bg-slate-800 rounded-xl p-8 mb-12 shadow-sm border border-gray-200 dark:border-slate-700">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Your Journey in 4 Simple Steps</h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+          Your Journey in 4 Simple Steps
+        </h2>
         <div className="grid md:grid-cols-4 gap-6 text-left">
           <div className="relative">
             <div className="flex items-start gap-3">
-              <span className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center text-lg font-bold flex-shrink-0">1</span>
+              <span className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center text-lg font-bold flex-shrink-0">
+                1
+              </span>
               <div>
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Complete Profile</h3>
-                <p className="text-sm text-gray-600 dark:text-slate-300">Basic info to verify your identity</p>
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                  Complete Profile
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-slate-300">
+                  Basic info to verify your identity
+                </p>
                 <p className="text-xs text-emerald-600 mt-1">~2 minutes</p>
               </div>
             </div>
           </div>
           <div className="relative">
             <div className="flex items-start gap-3">
-              <span className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center text-lg font-bold flex-shrink-0">2</span>
+              <span className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center text-lg font-bold flex-shrink-0">
+                2
+              </span>
               <div>
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Set Goals</h3>
-                <p className="text-sm text-gray-600 dark:text-slate-300">Tell us what you want to achieve</p>
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                  Set Goals
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-slate-300">
+                  Tell us what you want to achieve
+                </p>
                 <p className="text-xs text-emerald-600 mt-1">~1 minute</p>
               </div>
             </div>
           </div>
           <div className="relative">
             <div className="flex items-start gap-3">
-              <span className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center text-lg font-bold flex-shrink-0">3</span>
+              <span className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center text-lg font-bold flex-shrink-0">
+                3
+              </span>
               <div>
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Connect Accounts</h3>
-                <p className="text-sm text-gray-600 dark:text-slate-300">Securely link credit bureaus</p>
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                  Connect Accounts
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-slate-300">
+                  Securely link credit bureaus
+                </p>
                 <p className="text-xs text-emerald-600 mt-1">~1 minute</p>
               </div>
             </div>
           </div>
           <div className="relative">
             <div className="flex items-start gap-3">
-              <span className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center text-lg font-bold flex-shrink-0">4</span>
+              <span className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center text-lg font-bold flex-shrink-0">
+                4
+              </span>
               <div>
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Get Your Plan</h3>
-                <p className="text-sm text-gray-600 dark:text-slate-300">Receive personalized action steps</p>
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                  Get Your Plan
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-slate-300">
+                  Receive personalized action steps
+                </p>
                 <p className="text-xs text-emerald-600 mt-1">~30 seconds</p>
               </div>
             </div>
@@ -212,4 +278,3 @@ export default function OnboardingWelcomePage() {
     </div>
   );
 }
-

@@ -1,10 +1,12 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import LoanList from '@/components/student-loans/LoanList';
-import PortfolioAnalysis from '@/components/student-loans/PortfolioAnalysis';
-import AddLoanForm, { type NewLoanFormData } from '@/components/student-loans/AddLoanForm';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import LoanList from "@/components/student-loans/LoanList";
+import PortfolioAnalysis from "@/components/student-loans/PortfolioAnalysis";
+import AddLoanForm, {
+  type NewLoanFormData,
+} from "@/components/student-loans/AddLoanForm";
 
 interface StudentLoan {
   loan_id: string;
@@ -28,7 +30,9 @@ interface PortfolioStats {
 export default function StudentLoansPage() {
   const router = useRouter();
   const [loans, setLoans] = useState<StudentLoan[]>([]);
-  const [portfolioStats, setPortfolioStats] = useState<PortfolioStats | null>(null);
+  const [portfolioStats, setPortfolioStats] = useState<PortfolioStats | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -42,21 +46,21 @@ export default function StudentLoansPage() {
     setError(null);
 
     try {
-      const response = await fetch('/api/student-loans/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: 'current-user' }),
+      const response = await fetch("/api/student-loans/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: "current-user" }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch loans');
+        throw new Error("Failed to fetch loans");
       }
 
       const data = await response.json();
       setLoans(data.loans || []);
       setPortfolioStats(data.analysis || null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setLoading(false);
     }
@@ -65,13 +69,13 @@ export default function StudentLoansPage() {
   const handleAddLoan = async (loanData: NewLoanFormData) => {
     try {
       // In a real app, this would call an API to add the loan
-      console.log('Adding loan:', loanData);
-      
+      console.log("Adding loan:", loanData);
+
       // Refresh loans after adding
       await fetchLoans();
       setShowAddForm(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add loan');
+      setError(err instanceof Error ? err.message : "Failed to add loan");
     }
   };
 
@@ -107,7 +111,9 @@ export default function StudentLoansPage() {
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Student Loans</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              Student Loans
+            </h1>
             <p className="text-gray-600 dark:text-slate-300 mt-2">
               Manage your student loan portfolio and get AI-powered strategies
             </p>
@@ -137,9 +143,12 @@ export default function StudentLoansPage() {
         {/* Loan List */}
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm">
           <div className="p-6 border-b border-gray-200 dark:border-slate-700">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Your Loans</h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              Your Loans
+            </h2>
             <p className="text-gray-600 dark:text-slate-300 mt-1">
-              {loans.length} {loans.length === 1 ? 'loan' : 'loans'} in your portfolio
+              {loans.length} {loans.length === 1 ? "loan" : "loans"} in your
+              portfolio
             </p>
           </div>
           <LoanList
@@ -154,13 +163,25 @@ export default function StudentLoansPage() {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white dark:bg-slate-800 rounded-lg p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Add Student Loan</h2>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Add Student Loan
+                </h2>
                 <button
                   onClick={() => setShowAddForm(false)}
                   className="text-gray-400 hover:text-gray-600 dark:text-slate-300"
                 >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
               </div>
@@ -188,9 +209,12 @@ export default function StudentLoansPage() {
                 d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               />
             </svg>
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No loans yet</h3>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+              No loans yet
+            </h3>
             <p className="text-gray-600 dark:text-slate-300 mb-6">
-              Add your first student loan to get started with AI-powered strategies
+              Add your first student loan to get started with AI-powered
+              strategies
             </p>
             <button
               onClick={() => setShowAddForm(true)}

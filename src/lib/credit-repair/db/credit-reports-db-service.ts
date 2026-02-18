@@ -1,9 +1,9 @@
 /**
  * Credit Reports Database Service
- * 
+ *
  * Provides database operations for credit report management.
  * Includes full CRUD operations, bureau filtering, and TypeScript types.
- * 
+ *
  * Features:
  * - Credit report CRUD operations
  * - Bureau filtering (Experian, Equifax, TransUnion)
@@ -12,12 +12,18 @@
  * - Full error handling
  */
 
-import { getSupabase } from '@/lib/supabase/client';
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
-import type { Bureau, CreditReport } from './types';
+import type { Bureau, CreditReport } from "./types";
 
-type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
 type JsonRecord = Record<string, JsonValue>;
 
 // ============================================================================
@@ -87,16 +93,16 @@ type CreditReportUpdateRow = Partial<{
  * Create a new credit report
  */
 export async function createCreditReport(
-  input: CreateCreditReportInput
+  input: CreateCreditReportInput,
 ): Promise<CreditReport> {
   try {
     const { data, error } = await supabase
-      .from('credit_reports')
+      .from("credit_reports")
       .insert({
         user_id: input.userId,
         report_data: input.reportData,
         bureau: input.bureau,
-        report_date: input.reportDate.toISOString().split('T')[0],
+        report_date: input.reportDate.toISOString().split("T")[0],
         score: input.score,
         accounts: input.accounts,
         inquiries: input.inquiries,
@@ -111,7 +117,9 @@ export async function createCreditReport(
     return mapCreditReportFromDb(data as CreditReportRow);
   } catch (error) {
     // CreditReportsDB error: Error creating credit report
-    throw new Error(`Failed to create credit report: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to create credit report: ${(error as Error).message}`,
+    );
   }
 }
 
@@ -120,18 +128,18 @@ export async function createCreditReport(
  */
 export async function getCreditReport(
   reportId: string,
-  userId: string
+  userId: string,
 ): Promise<CreditReport | null> {
   try {
     const { data, error } = await supabase
-      .from('credit_reports')
-      .select('*')
-      .eq('id', reportId)
-      .eq('user_id', userId)
+      .from("credit_reports")
+      .select("*")
+      .eq("id", reportId)
+      .eq("user_id", userId)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
+      if (error.code === "PGRST116") {
         return null;
       }
       throw error;
@@ -154,25 +162,31 @@ export async function getCreditReportsByUser(
     startDate?: Date;
     endDate?: Date;
     limit?: number;
-  }
+  },
 ): Promise<CreditReport[]> {
   try {
     let query = supabase
-      .from('credit_reports')
-      .select('*')
-      .eq('user_id', userId)
-      .order('report_date', { ascending: false });
+      .from("credit_reports")
+      .select("*")
+      .eq("user_id", userId)
+      .order("report_date", { ascending: false });
 
     if (filters?.bureau) {
-      query = query.eq('bureau', filters.bureau);
+      query = query.eq("bureau", filters.bureau);
     }
 
     if (filters?.startDate) {
-      query = query.gte('report_date', filters.startDate.toISOString().split('T')[0]);
+      query = query.gte(
+        "report_date",
+        filters.startDate.toISOString().split("T")[0],
+      );
     }
 
     if (filters?.endDate) {
-      query = query.lte('report_date', filters.endDate.toISOString().split('T')[0]);
+      query = query.lte(
+        "report_date",
+        filters.endDate.toISOString().split("T")[0],
+      );
     }
 
     if (filters?.limit) {
@@ -187,7 +201,9 @@ export async function getCreditReportsByUser(
     return rows.map(mapCreditReportFromDb);
   } catch (error) {
     // CreditReportsDB error: Error getting credit reports by user
-    throw new Error(`Failed to get credit reports: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to get credit reports: ${(error as Error).message}`,
+    );
   }
 }
 
@@ -196,20 +212,20 @@ export async function getCreditReportsByUser(
  */
 export async function getLatestCreditReport(
   userId: string,
-  bureau: Bureau
+  bureau: Bureau,
 ): Promise<CreditReport | null> {
   try {
     const { data, error } = await supabase
-      .from('credit_reports')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('bureau', bureau)
-      .order('report_date', { ascending: false })
+      .from("credit_reports")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("bureau", bureau)
+      .order("report_date", { ascending: false })
       .limit(1)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
+      if (error.code === "PGRST116") {
         return null;
       }
       throw error;
@@ -218,7 +234,9 @@ export async function getLatestCreditReport(
     return mapCreditReportFromDb(data as CreditReportRow);
   } catch (error) {
     // CreditReportsDB error: Error getting latest credit report
-    throw new Error(`Failed to get latest credit report: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to get latest credit report: ${(error as Error).message}`,
+    );
   }
 }
 
@@ -228,15 +246,15 @@ export async function getLatestCreditReport(
 export async function getCreditReportsByBureau(
   userId: string,
   bureau: Bureau,
-  limit?: number
+  limit?: number,
 ): Promise<CreditReport[]> {
   try {
     let query = supabase
-      .from('credit_reports')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('bureau', bureau)
-      .order('report_date', { ascending: false });
+      .from("credit_reports")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("bureau", bureau)
+      .order("report_date", { ascending: false });
 
     if (limit) {
       query = query.limit(limit);
@@ -250,7 +268,9 @@ export async function getCreditReportsByBureau(
     return rows.map(mapCreditReportFromDb);
   } catch (error) {
     // CreditReportsDB error: Error getting credit reports by bureau
-    throw new Error(`Failed to get credit reports by bureau: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to get credit reports by bureau: ${(error as Error).message}`,
+    );
   }
 }
 
@@ -260,25 +280,30 @@ export async function getCreditReportsByBureau(
 export async function updateCreditReport(
   reportId: string,
   userId: string,
-  updates: UpdateCreditReportInput
+  updates: UpdateCreditReportInput,
 ): Promise<CreditReport> {
   try {
     const updateData: CreditReportUpdateRow = {};
 
-    if (updates.reportData !== undefined) updateData.report_data = updates.reportData;
+    if (updates.reportData !== undefined)
+      updateData.report_data = updates.reportData;
     if (updates.bureau !== undefined) updateData.bureau = updates.bureau;
-    if (updates.reportDate !== undefined) updateData.report_date = updates.reportDate.toISOString().split('T')[0];
+    if (updates.reportDate !== undefined)
+      updateData.report_date = updates.reportDate.toISOString().split("T")[0];
     if (updates.score !== undefined) updateData.score = updates.score;
     if (updates.accounts !== undefined) updateData.accounts = updates.accounts;
-    if (updates.inquiries !== undefined) updateData.inquiries = updates.inquiries;
-    if (updates.collections !== undefined) updateData.collections = updates.collections;
-    if (updates.publicRecords !== undefined) updateData.public_records = updates.publicRecords;
+    if (updates.inquiries !== undefined)
+      updateData.inquiries = updates.inquiries;
+    if (updates.collections !== undefined)
+      updateData.collections = updates.collections;
+    if (updates.publicRecords !== undefined)
+      updateData.public_records = updates.publicRecords;
 
     const { data, error } = await supabase
-      .from('credit_reports')
+      .from("credit_reports")
       .update(updateData)
-      .eq('id', reportId)
-      .eq('user_id', userId)
+      .eq("id", reportId)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -287,7 +312,9 @@ export async function updateCreditReport(
     return mapCreditReportFromDb(data as CreditReportRow);
   } catch (error) {
     // CreditReportsDB error: Error updating credit report
-    throw new Error(`Failed to update credit report: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to update credit report: ${(error as Error).message}`,
+    );
   }
 }
 
@@ -296,21 +323,23 @@ export async function updateCreditReport(
  */
 export async function deleteCreditReport(
   reportId: string,
-  userId: string
+  userId: string,
 ): Promise<boolean> {
   try {
     const { error } = await supabase
-      .from('credit_reports')
+      .from("credit_reports")
       .delete()
-      .eq('id', reportId)
-      .eq('user_id', userId);
+      .eq("id", reportId)
+      .eq("user_id", userId);
 
     if (error) throw error;
 
     return true;
   } catch (error) {
     // CreditReportsDB error: Error deleting credit report
-    throw new Error(`Failed to delete credit report: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to delete credit report: ${(error as Error).message}`,
+    );
   }
 }
 
@@ -320,18 +349,18 @@ export async function deleteCreditReport(
 export async function getCreditScoreHistory(
   userId: string,
   bureau?: Bureau,
-  limit?: number
+  limit?: number,
 ): Promise<Array<{ date: Date; score: number; bureau: Bureau }>> {
   try {
     let query = supabase
-      .from('credit_reports')
-      .select('report_date, score, bureau')
-      .eq('user_id', userId)
-      .not('score', 'is', null)
-      .order('report_date', { ascending: true });
+      .from("credit_reports")
+      .select("report_date, score, bureau")
+      .eq("user_id", userId)
+      .not("score", "is", null)
+      .order("report_date", { ascending: true });
 
     if (bureau) {
-      query = query.eq('bureau', bureau);
+      query = query.eq("bureau", bureau);
     }
 
     if (limit) {
@@ -351,16 +380,16 @@ export async function getCreditScoreHistory(
     }));
   } catch (error) {
     // CreditReportsDB error: Error getting credit score history
-    throw new Error(`Failed to get credit score history: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to get credit score history: ${(error as Error).message}`,
+    );
   }
 }
 
 /**
  * Get credit report statistics
  */
-export async function getCreditReportStats(
-  userId: string
-): Promise<{
+export async function getCreditReportStats(userId: string): Promise<{
   totalReports: number;
   byBureau: Record<Bureau, number>;
   latestScores: Record<Bureau, number | null>;
@@ -380,16 +409,20 @@ export async function getCreditReportStats(
 
     // Get latest scores by bureau
     const latestScores: Record<string, number | null> = {};
-    for (const bureau of ['experian', 'equifax', 'transunion'] as Bureau[]) {
+    for (const bureau of ["experian", "equifax", "transunion"] as Bureau[]) {
       const latest = await getLatestCreditReport(userId, bureau);
       latestScores[bureau] = latest?.score || null;
     }
 
     // Calculate average score
-    const scoresWithValues = Object.values(latestScores).filter((s) => s !== null) as number[];
-    const averageScore = scoresWithValues.length > 0
-      ? scoresWithValues.reduce((sum, s) => sum + s, 0) / scoresWithValues.length
-      : 0;
+    const scoresWithValues = Object.values(latestScores).filter(
+      (s) => s !== null,
+    ) as number[];
+    const averageScore =
+      scoresWithValues.length > 0
+        ? scoresWithValues.reduce((sum, s) => sum + s, 0) /
+          scoresWithValues.length
+        : 0;
 
     // Calculate score change (last 30 days)
     const thirtyDaysAgo = new Date();
@@ -399,9 +432,10 @@ export async function getCreditReportStats(
       limit: 3,
     });
     const oldScores = oldReports.filter((r) => r.score).map((r) => r.score!);
-    const oldAverageScore = oldScores.length > 0
-      ? oldScores.reduce((sum, s) => sum + s, 0) / oldScores.length
-      : 0;
+    const oldAverageScore =
+      oldScores.length > 0
+        ? oldScores.reduce((sum, s) => sum + s, 0) / oldScores.length
+        : 0;
     const scoreChange = averageScore - oldAverageScore;
 
     return {
@@ -413,7 +447,9 @@ export async function getCreditReportStats(
     };
   } catch (error) {
     // CreditReportsDB error: Error getting credit report stats
-    throw new Error(`Failed to get credit report stats: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to get credit report stats: ${(error as Error).message}`,
+    );
   }
 }
 

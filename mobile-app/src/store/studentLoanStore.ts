@@ -3,9 +3,9 @@
  * Manages student loan portfolio and AI repayment strategies
  */
 
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   studentLoansApi,
   StudentLoan,
@@ -16,7 +16,7 @@ import {
   FinancialSituation,
   LoanStatus,
   LoanType,
-} from '../services/api/studentLoans';
+} from "../services/api/studentLoans";
 
 // Re-export types for convenience
 export type {
@@ -56,15 +56,22 @@ interface StudentLoanState {
   fetchLoans: () => Promise<void>;
   fetchLoan: (id: string) => Promise<StudentLoan | null>;
   addLoan: (loan: CreateLoanInput) => Promise<StudentLoan | null>;
-  updateLoan: (id: string, data: UpdateLoanInput) => Promise<StudentLoan | null>;
+  updateLoan: (
+    id: string,
+    data: UpdateLoanInput,
+  ) => Promise<StudentLoan | null>;
   deleteLoan: (id: string) => Promise<boolean>;
   selectLoan: (loan: StudentLoan | null) => void;
 
   // Actions - Analysis
   analyzePortfolio: () => Promise<PortfolioStats | null>;
-  generateStrategies: (financialSituation: FinancialSituation) => Promise<AIStrategyRecommendation[]>;
+  generateStrategies: (
+    financialSituation: FinancialSituation,
+  ) => Promise<AIStrategyRecommendation[]>;
   selectStrategy: (strategy: AIStrategyRecommendation | null) => void;
-  checkEligibility: (financialSituation: FinancialSituation) => Promise<Record<string, unknown> | null>;
+  checkEligibility: (
+    financialSituation: FinancialSituation,
+  ) => Promise<Record<string, unknown> | null>;
 
   // Actions - Financial Situation
   setFinancialSituation: (situation: FinancialSituation) => void;
@@ -110,7 +117,8 @@ export const useStudentLoanStore = create<StudentLoanState>()(
           }
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'Failed to fetch loans',
+            error:
+              error instanceof Error ? error.message : "Failed to fetch loans",
             isLoadingLoans: false,
           });
         }
@@ -122,14 +130,18 @@ export const useStudentLoanStore = create<StudentLoanState>()(
         try {
           const response = await studentLoansApi.getLoan(id);
           if (response.error || !response.data) {
-            set({ error: response.error || 'Loan not found', isLoadingLoans: false });
+            set({
+              error: response.error || "Loan not found",
+              isLoadingLoans: false,
+            });
             return null;
           }
           set({ selectedLoan: response.data, isLoadingLoans: false });
           return response.data;
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'Failed to fetch loan',
+            error:
+              error instanceof Error ? error.message : "Failed to fetch loan",
             isLoadingLoans: false,
           });
           return null;
@@ -142,7 +154,10 @@ export const useStudentLoanStore = create<StudentLoanState>()(
         try {
           const response = await studentLoansApi.addLoan(loan);
           if (response.error || !response.data) {
-            set({ error: response.error || 'Failed to add loan', isAddingLoan: false });
+            set({
+              error: response.error || "Failed to add loan",
+              isAddingLoan: false,
+            });
             return null;
           }
           // Add to local state
@@ -153,7 +168,8 @@ export const useStudentLoanStore = create<StudentLoanState>()(
           return response.data;
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'Failed to add loan',
+            error:
+              error instanceof Error ? error.message : "Failed to add loan",
             isAddingLoan: false,
           });
           return null;
@@ -166,19 +182,26 @@ export const useStudentLoanStore = create<StudentLoanState>()(
         try {
           const response = await studentLoansApi.updateLoan(id, data);
           if (response.error || !response.data) {
-            set({ error: response.error || 'Failed to update loan', isUpdatingLoan: false });
+            set({
+              error: response.error || "Failed to update loan",
+              isUpdatingLoan: false,
+            });
             return null;
           }
           // Update in local state
           set((state) => ({
             loans: state.loans.map((l) => (l.id === id ? response.data! : l)),
-            selectedLoan: state.selectedLoan?.id === id ? response.data : state.selectedLoan,
+            selectedLoan:
+              state.selectedLoan?.id === id
+                ? response.data
+                : state.selectedLoan,
             isUpdatingLoan: false,
           }));
           return response.data;
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'Failed to update loan',
+            error:
+              error instanceof Error ? error.message : "Failed to update loan",
             isUpdatingLoan: false,
           });
           return null;
@@ -191,19 +214,24 @@ export const useStudentLoanStore = create<StudentLoanState>()(
         try {
           const response = await studentLoansApi.deleteLoan(id);
           if (!response.success) {
-            set({ error: response.error || 'Failed to delete loan', isDeletingLoan: false });
+            set({
+              error: response.error || "Failed to delete loan",
+              isDeletingLoan: false,
+            });
             return false;
           }
           // Remove from local state
           set((state) => ({
             loans: state.loans.filter((l) => l.id !== id),
-            selectedLoan: state.selectedLoan?.id === id ? null : state.selectedLoan,
+            selectedLoan:
+              state.selectedLoan?.id === id ? null : state.selectedLoan,
             isDeletingLoan: false,
           }));
           return true;
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'Failed to delete loan',
+            error:
+              error instanceof Error ? error.message : "Failed to delete loan",
             isDeletingLoan: false,
           });
           return false;
@@ -227,14 +255,20 @@ export const useStudentLoanStore = create<StudentLoanState>()(
         try {
           const response = await studentLoansApi.analyzePortfolio(loans);
           if (response.error || !response.data) {
-            set({ error: response.error || 'Failed to analyze portfolio', isLoadingStats: false });
+            set({
+              error: response.error || "Failed to analyze portfolio",
+              isLoadingStats: false,
+            });
             return null;
           }
           set({ portfolioStats: response.data, isLoadingStats: false });
           return response.data;
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'Failed to analyze portfolio',
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to analyze portfolio",
             isLoadingStats: false,
           });
           return null;
@@ -251,7 +285,10 @@ export const useStudentLoanStore = create<StudentLoanState>()(
 
         set({ isLoadingStrategies: true, error: null, financialSituation });
         try {
-          const response = await studentLoansApi.generateStrategies(loans, financialSituation);
+          const response = await studentLoansApi.generateStrategies(
+            loans,
+            financialSituation,
+          );
           if (response.error) {
             set({ error: response.error, isLoadingStrategies: false });
             return [];
@@ -260,7 +297,10 @@ export const useStudentLoanStore = create<StudentLoanState>()(
           return response.data;
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'Failed to generate strategies',
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to generate strategies",
             isLoadingStrategies: false,
           });
           return [];
@@ -281,19 +321,28 @@ export const useStudentLoanStore = create<StudentLoanState>()(
 
         set({ isCheckingEligibility: true, error: null });
         try {
-          const response = await studentLoansApi.checkEligibility(loans, financialSituation);
+          const response = await studentLoansApi.checkEligibility(
+            loans,
+            financialSituation,
+          );
           if (response.error || !response.data) {
             set({
-              error: response.error || 'Failed to check eligibility',
+              error: response.error || "Failed to check eligibility",
               isCheckingEligibility: false,
             });
             return null;
           }
-          set({ eligibilityResults: response.data, isCheckingEligibility: false });
+          set({
+            eligibilityResults: response.data,
+            isCheckingEligibility: false,
+          });
           return response.data;
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'Failed to check eligibility',
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to check eligibility",
             isCheckingEligibility: false,
           });
           return null;
@@ -313,7 +362,12 @@ export const useStudentLoanStore = create<StudentLoanState>()(
 
       // Refresh all data
       refreshAll: async () => {
-        const { fetchLoans, analyzePortfolio, financialSituation, generateStrategies } = get();
+        const {
+          fetchLoans,
+          analyzePortfolio,
+          financialSituation,
+          generateStrategies,
+        } = get();
         await fetchLoans();
         await analyzePortfolio();
         if (financialSituation) {
@@ -322,7 +376,7 @@ export const useStudentLoanStore = create<StudentLoanState>()(
       },
     }),
     {
-      name: 'cpfi-student-loan-store',
+      name: "cpfi-student-loan-store",
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         loans: state.loans,
@@ -330,18 +384,23 @@ export const useStudentLoanStore = create<StudentLoanState>()(
         financialSituation: state.financialSituation,
         strategies: state.strategies,
       }),
-    }
-  )
+    },
+  ),
 );
 
 // Selectors
 export const selectLoans = (state: StudentLoanState) => state.loans;
-export const selectSelectedLoan = (state: StudentLoanState) => state.selectedLoan;
-export const selectPortfolioStats = (state: StudentLoanState) => state.portfolioStats;
+export const selectSelectedLoan = (state: StudentLoanState) =>
+  state.selectedLoan;
+export const selectPortfolioStats = (state: StudentLoanState) =>
+  state.portfolioStats;
 export const selectStrategies = (state: StudentLoanState) => state.strategies;
-export const selectSelectedStrategy = (state: StudentLoanState) => state.selectedStrategy;
-export const selectFinancialSituation = (state: StudentLoanState) => state.financialSituation;
-export const selectEligibilityResults = (state: StudentLoanState) => state.eligibilityResults;
+export const selectSelectedStrategy = (state: StudentLoanState) =>
+  state.selectedStrategy;
+export const selectFinancialSituation = (state: StudentLoanState) =>
+  state.financialSituation;
+export const selectEligibilityResults = (state: StudentLoanState) =>
+  state.eligibilityResults;
 
 // Computed selectors
 export const selectTotalDebt = (state: StudentLoanState) =>
@@ -352,40 +411,46 @@ export const selectTotalMonthlyPayment = (state: StudentLoanState) =>
 
 export const selectAverageInterestRate = (state: StudentLoanState) => {
   if (state.loans.length === 0) return 0;
-  const totalBalance = state.loans.reduce((sum, loan) => sum + loan.currentBalance, 0);
+  const totalBalance = state.loans.reduce(
+    (sum, loan) => sum + loan.currentBalance,
+    0,
+  );
   if (totalBalance === 0) return 0;
   return state.loans.reduce(
-    (sum, loan) => sum + (loan.interestRate * loan.currentBalance) / totalBalance,
-    0
+    (sum, loan) =>
+      sum + (loan.interestRate * loan.currentBalance) / totalBalance,
+    0,
   );
 };
 
-export const selectLoansByType = (type: LoanType) => (state: StudentLoanState) =>
-  state.loans.filter((loan) => loan.loanType === type);
+export const selectLoansByType =
+  (type: LoanType) => (state: StudentLoanState) =>
+    state.loans.filter((loan) => loan.loanType === type);
 
-export const selectLoansByStatus = (status: LoanStatus) => (state: StudentLoanState) =>
-  state.loans.filter((loan) => loan.status === status);
+export const selectLoansByStatus =
+  (status: LoanStatus) => (state: StudentLoanState) =>
+    state.loans.filter((loan) => loan.status === status);
 
 export const selectFederalLoans = (state: StudentLoanState) =>
-  state.loans.filter((loan) => loan.loanType !== 'private');
+  state.loans.filter((loan) => loan.loanType !== "private");
 
 export const selectPrivateLoans = (state: StudentLoanState) =>
-  state.loans.filter((loan) => loan.loanType === 'private');
+  state.loans.filter((loan) => loan.loanType === "private");
 
 export const selectLoansInRepayment = (state: StudentLoanState) =>
-  state.loans.filter((loan) => loan.status === 'in_repayment');
+  state.loans.filter((loan) => loan.status === "in_repayment");
 
 export const selectHighestInterestLoan = (state: StudentLoanState) => {
   if (state.loans.length === 0) return null;
   return state.loans.reduce((highest, loan) =>
-    loan.interestRate > highest.interestRate ? loan : highest
+    loan.interestRate > highest.interestRate ? loan : highest,
   );
 };
 
 export const selectSmallestBalanceLoan = (state: StudentLoanState) => {
   if (state.loans.length === 0) return null;
   return state.loans.reduce((smallest, loan) =>
-    loan.currentBalance < smallest.currentBalance ? loan : smallest
+    loan.currentBalance < smallest.currentBalance ? loan : smallest,
   );
 };
 

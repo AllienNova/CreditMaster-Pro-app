@@ -5,12 +5,12 @@
  * Manages conversations, integrates with AI models, and coordinates all chat operations
  */
 
-import { AIMLService } from '@/lib/aiml-service';
-import { chatDbService } from './chat-db-service';
-import { getIntentRecognizer } from './intent-recognizer';
-import { getEntityExtractor } from './entity-extractor';
-import { getActionExecutor } from './action-executor';
-import { ChatError } from './types/chat.types';
+import { AIMLService } from "@/lib/aiml-service";
+import { chatDbService } from "./chat-db-service";
+import { getIntentRecognizer } from "./intent-recognizer";
+import { getEntityExtractor } from "./entity-extractor";
+import { getActionExecutor } from "./action-executor";
+import { ChatError } from "./types/chat.types";
 import type {
   ChatSession,
   ChatMessage,
@@ -27,7 +27,7 @@ import type {
   IntentType,
   MessageRole,
   ActionResult,
-} from './types/chat.types';
+} from "./types/chat.types";
 
 // ============================================================================
 // CONFIGURATION
@@ -57,13 +57,13 @@ Guidelines:
 When you identify a clear user intent to perform an action (like creating a budget or goal), confirm the details and offer to execute it.`;
 
 const MODEL_CONFIG = {
-  chat: 'openai/gpt-4o', // Fast, cost-effective for chat
-  chatAlternate: 'google/gemini-2.0-flash', // Alternative chat model
-  intent: 'openai/gpt-4o-mini', // Quick intent recognition
-  extract: 'openai/gpt-4o-mini', // Entity extraction
-  complex: 'anthropic/claude-4.5-sonnet', // Complex financial advice
-  complexAlternate: 'x-ai/grok-2-1212', // Alternative complex reasoning
-  creative: 'google/gemini-2.5-pro', // Creative financial planning
+  chat: "openai/gpt-4o", // Fast, cost-effective for chat
+  chatAlternate: "google/gemini-2.0-flash", // Alternative chat model
+  intent: "openai/gpt-4o-mini", // Quick intent recognition
+  extract: "openai/gpt-4o-mini", // Entity extraction
+  complex: "anthropic/claude-4.5-sonnet", // Complex financial advice
+  complexAlternate: "x-ai/grok-2-1212", // Alternative complex reasoning
+  creative: "google/gemini-2.5-pro", // Creative financial planning
 };
 
 // ============================================================================
@@ -87,7 +87,7 @@ export class FinancialChatEngine {
   async sendMessage(
     userId: string,
     request: SendMessageRequest,
-    options: SendMessageOptions = {}
+    options: SendMessageOptions = {},
   ): Promise<ChatResponse> {
     const startTime = Date.now();
 
@@ -95,13 +95,13 @@ export class FinancialChatEngine {
       // 1. Get or validate session
       const session = await chatDbService.getSession(request.sessionId, userId);
       if (!session) {
-        throw new ChatError('Session not found', 'SESSION_NOT_FOUND', {
+        throw new ChatError("Session not found", "SESSION_NOT_FOUND", {
           sessionId: request.sessionId,
         });
       }
 
-      if (session.status !== 'active') {
-        throw new ChatError('Session is not active', 'SESSION_NOT_FOUND', {
+      if (session.status !== "active") {
+        throw new ChatError("Session is not active", "SESSION_NOT_FOUND", {
           status: session.status,
         });
       }
@@ -109,8 +109,8 @@ export class FinancialChatEngine {
       // 2. Validate message length
       if (request.message.length > 10000) {
         throw new ChatError(
-          'Message too long (max 10,000 characters)',
-          'MESSAGE_TOO_LONG'
+          "Message too long (max 10,000 characters)",
+          "MESSAGE_TOO_LONG",
         );
       }
 
@@ -121,7 +121,7 @@ export class FinancialChatEngine {
         {
           sessionId: request.sessionId,
           userId,
-          role: 'user',
+          role: "user",
           content: request.message,
           intent: null,
           entities: null,
@@ -133,7 +133,7 @@ export class FinancialChatEngine {
           latencyMs: 0,
           feedbackRating: null,
           feedbackText: null,
-        }
+        },
       );
 
       // 4. Build conversation context
@@ -149,7 +149,7 @@ export class FinancialChatEngine {
       const intent = await this.recognizeIntent(
         request.message,
         aiResponse.content,
-        context
+        context,
       );
       const entities = await this.extractEntities(request.message, intent);
 
@@ -171,7 +171,7 @@ export class FinancialChatEngine {
               userId,
               intent.type,
               entities,
-              context
+              context,
             );
           } catch (error) {
             // Action execution failed
@@ -179,8 +179,8 @@ export class FinancialChatEngine {
               success: false,
               type: intent.type,
               data: null,
-              message: 'Failed to execute action',
-              error: error instanceof Error ? error.message : 'Unknown error',
+              message: "Failed to execute action",
+              error: error instanceof Error ? error.message : "Unknown error",
             };
           }
         } else {
@@ -188,8 +188,8 @@ export class FinancialChatEngine {
             success: false,
             type: intent.type,
             data: null,
-            message: validation.reason || 'Cannot execute action',
-            error: validation.missingData?.join(', '),
+            message: validation.reason || "Cannot execute action",
+            error: validation.missingData?.join(", "),
           };
         }
       }
@@ -204,7 +204,7 @@ export class FinancialChatEngine {
         {
           sessionId: request.sessionId,
           userId,
-          role: 'assistant',
+          role: "assistant",
           content: aiResponse.content,
           intent: intent.type,
           entities,
@@ -218,14 +218,14 @@ export class FinancialChatEngine {
           latencyMs: latency,
           feedbackRating: null,
           feedbackText: null,
-        }
+        },
       );
 
       // 11. Generate response suggestions
       const suggestions = this.generateSuggestions(intent, context);
       const relatedQuestions = this.generateRelatedQuestions(
         session.sessionType,
-        intent
+        intent,
       );
 
       return {
@@ -246,9 +246,9 @@ export class FinancialChatEngine {
       }
 
       throw new ChatError(
-        error instanceof Error ? error.message : 'Unknown error occurred',
-        'AI_SERVICE_ERROR',
-        { originalError: error }
+        error instanceof Error ? error.message : "Unknown error occurred",
+        "AI_SERVICE_ERROR",
+        { originalError: error },
       );
     }
   }
@@ -261,7 +261,7 @@ export class FinancialChatEngine {
   async streamMessage(
     userId: string,
     request: SendMessageRequest,
-    onChunk: (chunk: string) => void
+    onChunk: (chunk: string) => void,
   ): Promise<ChatResponse> {
     // Streaming not yet implemented - fall back to standard response
     // Future: Use SSE (Server-Sent Events) or WebSocket for real-time streaming
@@ -286,13 +286,13 @@ export class FinancialChatEngine {
    */
   private async buildContext(
     session: ChatSession,
-    userId: string
+    userId: string,
   ): Promise<ConversationContext> {
     // Get recent messages for context
     const recentMessages = await chatDbService.getRecentMessages(
       session.id,
       userId,
-      10
+      10,
     );
 
     // Get financial snapshot if available
@@ -316,10 +316,10 @@ export class FinancialChatEngine {
   private async buildPrompt(
     userMessage: string,
     context: ConversationContext,
-    options: SendMessageOptions
+    options: SendMessageOptions,
   ): Promise<BuiltPrompt> {
     const messages: Array<{
-      role: 'system' | 'user' | 'assistant';
+      role: "system" | "user" | "assistant";
       content: string;
     }> = [];
 
@@ -329,16 +329,16 @@ export class FinancialChatEngine {
     // Add financial context if available
     if (options.includeContext !== false && context.financialContext) {
       systemPrompt +=
-        '\n\n' + this.buildFinancialContextPrompt(context.financialContext);
+        "\n\n" + this.buildFinancialContextPrompt(context.financialContext);
     }
 
     // Add conversation summary if available
     if (context.conversationSummary) {
       systemPrompt +=
-        '\n\nConversation Summary:\n' + context.conversationSummary;
+        "\n\nConversation Summary:\n" + context.conversationSummary;
     }
 
-    messages.push({ role: 'system', content: systemPrompt });
+    messages.push({ role: "system", content: systemPrompt });
 
     // 2. Add recent message history
     if (options.includeContext !== false && context.recentMessages.length > 0) {
@@ -349,19 +349,19 @@ export class FinancialChatEngine {
 
       for (const msg of recentToInclude) {
         messages.push({
-          role: msg.role as 'user' | 'assistant',
+          role: msg.role as "user" | "assistant",
           content: msg.content,
         });
       }
     }
 
     // 3. Add current user message
-    messages.push({ role: 'user', content: userMessage });
+    messages.push({ role: "user", content: userMessage });
 
     // 4. Estimate tokens
     const tokenEstimate = messages.reduce(
       (sum, msg) => sum + this.estimateTokens(msg.content),
-      0
+      0,
     );
 
     return {
@@ -384,7 +384,7 @@ export class FinancialChatEngine {
     parts.push(`- Net Worth: $${snapshot.netWorth.toLocaleString()}`);
     parts.push(`- Monthly Income: $${snapshot.monthlyIncome.toLocaleString()}`);
     parts.push(
-      `- Monthly Expenses: $${snapshot.monthlyExpenses.toLocaleString()}`
+      `- Monthly Expenses: $${snapshot.monthlyExpenses.toLocaleString()}`,
     );
     parts.push(`- Monthly Cash Flow: $${snapshot.cashFlow.toLocaleString()}`);
     parts.push(`- Financial Health Score: ${snapshot.healthScore}/100`);
@@ -393,16 +393,16 @@ export class FinancialChatEngine {
     parts.push(`- Active Goals: ${snapshot.activeGoals}`);
 
     if (snapshot.budgets.length > 0) {
-      parts.push('\nBudgets:');
+      parts.push("\nBudgets:");
       for (const budget of snapshot.budgets.slice(0, 5)) {
         const utilization = ((budget.spent / budget.limit) * 100).toFixed(0);
         parts.push(
-          `  - ${budget.category}: $${budget.spent}/$${budget.limit} (${utilization}% used)`
+          `  - ${budget.category}: $${budget.spent}/$${budget.limit} (${utilization}% used)`,
         );
       }
     }
 
-    return parts.join('\n');
+    return parts.join("\n");
   }
 
   // ==========================================================================
@@ -414,11 +414,11 @@ export class FinancialChatEngine {
    */
   private async getAIResponse(
     prompt: BuiltPrompt,
-    sessionType: string
+    sessionType: string,
   ): Promise<{ content: string; tokensUsed: number; model: string }> {
     // Select model based on complexity
     const model =
-      sessionType === 'general' ? MODEL_CONFIG.chat : MODEL_CONFIG.complex;
+      sessionType === "general" ? MODEL_CONFIG.chat : MODEL_CONFIG.complex;
 
     try {
       const response = await this.aimlService.chat(model, prompt.messages, {
@@ -426,7 +426,7 @@ export class FinancialChatEngine {
         max_tokens: 2000,
       });
 
-      const content = response.choices[0]?.message?.content || '';
+      const content = response.choices[0]?.message?.content || "";
       const tokensUsed = response.usage?.total_tokens || 0;
 
       return {
@@ -436,7 +436,7 @@ export class FinancialChatEngine {
       };
     } catch (error) {
       // ChatEngine error: AI response error
-      throw new ChatError('Failed to get AI response', 'AI_SERVICE_ERROR', {
+      throw new ChatError("Failed to get AI response", "AI_SERVICE_ERROR", {
         error,
       });
     }
@@ -453,7 +453,7 @@ export class FinancialChatEngine {
   private async recognizeIntent(
     userMessage: string,
     aiResponse: string,
-    context?: ConversationContext
+    context?: ConversationContext,
   ): Promise<Intent> {
     const intentRecognizer = getIntentRecognizer();
 
@@ -474,9 +474,9 @@ export class FinancialChatEngine {
 
       // Fallback to simple keyword detection
       return {
-        type: 'general_question',
+        type: "general_question",
         confidence: 0.5,
-        reason: 'Intent recognition failed, defaulting to general question',
+        reason: "Intent recognition failed, defaulting to general question",
         requiresConfirmation: false,
         metadata: {},
       };
@@ -489,7 +489,7 @@ export class FinancialChatEngine {
    */
   private async extractEntities(
     userMessage: string,
-    intent: Intent
+    intent: Intent,
   ): Promise<ExtractedEntities | null> {
     const entityExtractor = getEntityExtractor();
 
@@ -511,30 +511,30 @@ export class FinancialChatEngine {
    */
   private generateSuggestions(
     intent: Intent,
-    context: ConversationContext
+    context: ConversationContext,
   ): string[] {
     const suggestions: string[] = [];
 
     switch (intent.type) {
-      case 'create_budget':
-        suggestions.push('Show me my spending categories');
-        suggestions.push('Help me set realistic budget limits');
+      case "create_budget":
+        suggestions.push("Show me my spending categories");
+        suggestions.push("Help me set realistic budget limits");
         break;
-      case 'create_goal':
-        suggestions.push('What goals should I prioritize?');
-        suggestions.push('Show me goal templates');
+      case "create_goal":
+        suggestions.push("What goals should I prioritize?");
+        suggestions.push("Show me goal templates");
         break;
-      case 'analyze_spending':
-        suggestions.push('Compare this month to last month');
-        suggestions.push('Show unusual transactions');
+      case "analyze_spending":
+        suggestions.push("Compare this month to last month");
+        suggestions.push("Show unusual transactions");
         break;
-      case 'debt_strategy':
-        suggestions.push('Calculate debt payoff timeline');
-        suggestions.push('Compare avalanche vs snowball methods');
+      case "debt_strategy":
+        suggestions.push("Calculate debt payoff timeline");
+        suggestions.push("Compare avalanche vs snowball methods");
         break;
       default:
-        suggestions.push('Tell me about my financial health');
-        suggestions.push('What can you help me with?');
+        suggestions.push("Tell me about my financial health");
+        suggestions.push("What can you help me with?");
     }
 
     return suggestions;
@@ -545,22 +545,22 @@ export class FinancialChatEngine {
    */
   private generateRelatedQuestions(
     sessionType: string,
-    intent: Intent
+    intent: Intent,
   ): string[] {
     const questions: string[] = [];
 
-    if (sessionType === 'budget') {
-      questions.push('How can I reduce my monthly expenses?');
-      questions.push('What percentage should I allocate to savings?');
-    } else if (sessionType === 'debt') {
-      questions.push('Should I focus on high-interest debt first?');
-      questions.push('Can I negotiate lower interest rates?');
-    } else if (sessionType === 'investing') {
+    if (sessionType === "budget") {
+      questions.push("How can I reduce my monthly expenses?");
+      questions.push("What percentage should I allocate to savings?");
+    } else if (sessionType === "debt") {
+      questions.push("Should I focus on high-interest debt first?");
+      questions.push("Can I negotiate lower interest rates?");
+    } else if (sessionType === "investing") {
       questions.push("What's my risk tolerance?");
-      questions.push('How should I diversify my portfolio?');
+      questions.push("How should I diversify my portfolio?");
     } else {
-      questions.push('How can I improve my credit score?');
-      questions.push('What are smart saving strategies?');
+      questions.push("How can I improve my credit score?");
+      questions.push("What are smart saving strategies?");
     }
 
     return questions;
@@ -581,7 +581,7 @@ export class FinancialChatEngine {
       .filter((m) => m.intent)
       .map((m) => m.intent)
       .filter((intent, index, self) => self.indexOf(intent) === index)
-      .join(', ');
+      .join(", ");
 
     if (!topics) return null;
 

@@ -106,152 +106,152 @@ export interface StateTaxInfo {
 export const STATE_TAX_INFO: Record<string, StateTaxInfo> = {
   // No Income Tax States
   AK: {
-    stateCode: 'AK',
-    stateName: 'Alaska',
+    stateCode: "AK",
+    stateName: "Alaska",
     hasIncomeTax: false,
     isFlat: false,
   },
   FL: {
-    stateCode: 'FL',
-    stateName: 'Florida',
+    stateCode: "FL",
+    stateName: "Florida",
     hasIncomeTax: false,
     isFlat: false,
   },
   NV: {
-    stateCode: 'NV',
-    stateName: 'Nevada',
+    stateCode: "NV",
+    stateName: "Nevada",
     hasIncomeTax: false,
     isFlat: false,
   },
   SD: {
-    stateCode: 'SD',
-    stateName: 'South Dakota',
+    stateCode: "SD",
+    stateName: "South Dakota",
     hasIncomeTax: false,
     isFlat: false,
   },
   TX: {
-    stateCode: 'TX',
-    stateName: 'Texas',
+    stateCode: "TX",
+    stateName: "Texas",
     hasIncomeTax: false,
     isFlat: false,
   },
   WA: {
-    stateCode: 'WA',
-    stateName: 'Washington',
+    stateCode: "WA",
+    stateName: "Washington",
     hasIncomeTax: false,
     isFlat: false,
-    notes: 'Has capital gains tax starting at 7% for gains over $262,000',
+    notes: "Has capital gains tax starting at 7% for gains over $262,000",
   },
   WY: {
-    stateCode: 'WY',
-    stateName: 'Wyoming',
+    stateCode: "WY",
+    stateName: "Wyoming",
     hasIncomeTax: false,
     isFlat: false,
   },
   NH: {
-    stateCode: 'NH',
-    stateName: 'New Hampshire',
+    stateCode: "NH",
+    stateName: "New Hampshire",
     hasIncomeTax: false,
     isFlat: false,
-    notes: 'Interest and dividends tax being phased out',
+    notes: "Interest and dividends tax being phased out",
   },
   TN: {
-    stateCode: 'TN',
-    stateName: 'Tennessee',
+    stateCode: "TN",
+    stateName: "Tennessee",
     hasIncomeTax: false,
     isFlat: false,
   },
 
   // Flat Tax States
   AZ: {
-    stateCode: 'AZ',
-    stateName: 'Arizona',
+    stateCode: "AZ",
+    stateName: "Arizona",
     hasIncomeTax: true,
     isFlat: true,
     flatRate: 0.025,
   },
   CO: {
-    stateCode: 'CO',
-    stateName: 'Colorado',
+    stateCode: "CO",
+    stateName: "Colorado",
     hasIncomeTax: true,
     isFlat: true,
     flatRate: 0.044,
   },
   ID: {
-    stateCode: 'ID',
-    stateName: 'Idaho',
+    stateCode: "ID",
+    stateName: "Idaho",
     hasIncomeTax: true,
     isFlat: true,
     flatRate: 0.058,
   },
   IL: {
-    stateCode: 'IL',
-    stateName: 'Illinois',
+    stateCode: "IL",
+    stateName: "Illinois",
     hasIncomeTax: true,
     isFlat: true,
     flatRate: 0.0495,
   },
   IN: {
-    stateCode: 'IN',
-    stateName: 'Indiana',
+    stateCode: "IN",
+    stateName: "Indiana",
     hasIncomeTax: true,
     isFlat: true,
     flatRate: 0.0305,
   },
   KY: {
-    stateCode: 'KY',
-    stateName: 'Kentucky',
+    stateCode: "KY",
+    stateName: "Kentucky",
     hasIncomeTax: true,
     isFlat: true,
     flatRate: 0.04,
   },
   MA: {
-    stateCode: 'MA',
-    stateName: 'Massachusetts',
+    stateCode: "MA",
+    stateName: "Massachusetts",
     hasIncomeTax: true,
     isFlat: true,
     flatRate: 0.05,
-    notes: '4% surtax on income over $1M',
+    notes: "4% surtax on income over $1M",
   },
   MI: {
-    stateCode: 'MI',
-    stateName: 'Michigan',
+    stateCode: "MI",
+    stateName: "Michigan",
     hasIncomeTax: true,
     isFlat: true,
     flatRate: 0.0425,
   },
   MS: {
-    stateCode: 'MS',
-    stateName: 'Mississippi',
+    stateCode: "MS",
+    stateName: "Mississippi",
     hasIncomeTax: true,
     isFlat: true,
     flatRate: 0.05,
-    notes: 'Rate decreasing to 4% by 2026',
+    notes: "Rate decreasing to 4% by 2026",
   },
   NC: {
-    stateCode: 'NC',
-    stateName: 'North Carolina',
+    stateCode: "NC",
+    stateName: "North Carolina",
     hasIncomeTax: true,
     isFlat: true,
     flatRate: 0.0525,
   },
   ND: {
-    stateCode: 'ND',
-    stateName: 'North Dakota',
+    stateCode: "ND",
+    stateName: "North Dakota",
     hasIncomeTax: true,
     isFlat: true,
     flatRate: 0.0195,
   },
   PA: {
-    stateCode: 'PA',
-    stateName: 'Pennsylvania',
+    stateCode: "PA",
+    stateName: "Pennsylvania",
     hasIncomeTax: true,
     isFlat: true,
     flatRate: 0.0307,
   },
   UT: {
-    stateCode: 'UT',
-    stateName: 'Utah',
+    stateCode: "UT",
+    stateName: "Utah",
     hasIncomeTax: true,
     isFlat: true,
     flatRate: 0.0465,
@@ -259,8 +259,8 @@ export const STATE_TAX_INFO: Record<string, StateTaxInfo> = {
 
   // Progressive Tax States (Major ones with brackets)
   CA: {
-    stateCode: 'CA',
-    stateName: 'California',
+    stateCode: "CA",
+    stateName: "California",
     hasIncomeTax: true,
     isFlat: false,
     brackets: [
@@ -275,11 +275,11 @@ export const STATE_TAX_INFO: Record<string, StateTaxInfo> = {
       { min: 698271, max: 1000000, rate: 0.123 },
       { min: 1000000, max: Infinity, rate: 0.133 },
     ],
-    notes: 'Mental Health Services Tax adds 1% on income over $1M',
+    notes: "Mental Health Services Tax adds 1% on income over $1M",
   },
   NY: {
-    stateCode: 'NY',
-    stateName: 'New York',
+    stateCode: "NY",
+    stateName: "New York",
     hasIncomeTax: true,
     isFlat: false,
     brackets: [
@@ -293,11 +293,11 @@ export const STATE_TAX_INFO: Record<string, StateTaxInfo> = {
       { min: 5000000, max: 25000000, rate: 0.103 },
       { min: 25000000, max: Infinity, rate: 0.109 },
     ],
-    notes: 'NYC has additional 3.078% - 3.876% local tax',
+    notes: "NYC has additional 3.078% - 3.876% local tax",
   },
   NJ: {
-    stateCode: 'NJ',
-    stateName: 'New Jersey',
+    stateCode: "NJ",
+    stateName: "New Jersey",
     hasIncomeTax: true,
     isFlat: false,
     brackets: [
@@ -311,8 +311,8 @@ export const STATE_TAX_INFO: Record<string, StateTaxInfo> = {
     ],
   },
   CT: {
-    stateCode: 'CT',
-    stateName: 'Connecticut',
+    stateCode: "CT",
+    stateName: "Connecticut",
     hasIncomeTax: true,
     isFlat: false,
     brackets: [
@@ -326,8 +326,8 @@ export const STATE_TAX_INFO: Record<string, StateTaxInfo> = {
     ],
   },
   GA: {
-    stateCode: 'GA',
-    stateName: 'Georgia',
+    stateCode: "GA",
+    stateName: "Georgia",
     hasIncomeTax: true,
     isFlat: false,
     brackets: [
@@ -338,11 +338,11 @@ export const STATE_TAX_INFO: Record<string, StateTaxInfo> = {
       { min: 5250, max: 7000, rate: 0.05 },
       { min: 7000, max: Infinity, rate: 0.055 },
     ],
-    notes: 'Moving to 5.39% flat rate in 2024',
+    notes: "Moving to 5.39% flat rate in 2024",
   },
   MN: {
-    stateCode: 'MN',
-    stateName: 'Minnesota',
+    stateCode: "MN",
+    stateName: "Minnesota",
     hasIncomeTax: true,
     isFlat: false,
     brackets: [
@@ -353,8 +353,8 @@ export const STATE_TAX_INFO: Record<string, StateTaxInfo> = {
     ],
   },
   OR: {
-    stateCode: 'OR',
-    stateName: 'Oregon',
+    stateCode: "OR",
+    stateName: "Oregon",
     hasIncomeTax: true,
     isFlat: false,
     brackets: [
@@ -365,8 +365,8 @@ export const STATE_TAX_INFO: Record<string, StateTaxInfo> = {
     ],
   },
   VA: {
-    stateCode: 'VA',
-    stateName: 'Virginia',
+    stateCode: "VA",
+    stateName: "Virginia",
     hasIncomeTax: true,
     isFlat: false,
     brackets: [
@@ -377,8 +377,8 @@ export const STATE_TAX_INFO: Record<string, StateTaxInfo> = {
     ],
   },
   WI: {
-    stateCode: 'WI',
-    stateName: 'Wisconsin',
+    stateCode: "WI",
+    stateName: "Wisconsin",
     hasIncomeTax: true,
     isFlat: false,
     brackets: [
@@ -389,8 +389,8 @@ export const STATE_TAX_INFO: Record<string, StateTaxInfo> = {
     ],
   },
   OH: {
-    stateCode: 'OH',
-    stateName: 'Ohio',
+    stateCode: "OH",
+    stateName: "Ohio",
     hasIncomeTax: true,
     isFlat: false,
     brackets: [
@@ -402,8 +402,8 @@ export const STATE_TAX_INFO: Record<string, StateTaxInfo> = {
 
   // Additional States with simpler structures
   AL: {
-    stateCode: 'AL',
-    stateName: 'Alabama',
+    stateCode: "AL",
+    stateName: "Alabama",
     hasIncomeTax: true,
     isFlat: false,
     brackets: [
@@ -413,8 +413,8 @@ export const STATE_TAX_INFO: Record<string, StateTaxInfo> = {
     ],
   },
   AR: {
-    stateCode: 'AR',
-    stateName: 'Arkansas',
+    stateCode: "AR",
+    stateName: "Arkansas",
     hasIncomeTax: true,
     isFlat: false,
     brackets: [
@@ -424,8 +424,8 @@ export const STATE_TAX_INFO: Record<string, StateTaxInfo> = {
     ],
   },
   DE: {
-    stateCode: 'DE',
-    stateName: 'Delaware',
+    stateCode: "DE",
+    stateName: "Delaware",
     hasIncomeTax: true,
     isFlat: false,
     brackets: [
@@ -439,8 +439,8 @@ export const STATE_TAX_INFO: Record<string, StateTaxInfo> = {
     ],
   },
   HI: {
-    stateCode: 'HI',
-    stateName: 'Hawaii',
+    stateCode: "HI",
+    stateName: "Hawaii",
     hasIncomeTax: true,
     isFlat: false,
     brackets: [
@@ -459,16 +459,16 @@ export const STATE_TAX_INFO: Record<string, StateTaxInfo> = {
     ],
   },
   IA: {
-    stateCode: 'IA',
-    stateName: 'Iowa',
+    stateCode: "IA",
+    stateName: "Iowa",
     hasIncomeTax: true,
     isFlat: true,
     flatRate: 0.06,
-    notes: 'Moving to flat tax',
+    notes: "Moving to flat tax",
   },
   KS: {
-    stateCode: 'KS',
-    stateName: 'Kansas',
+    stateCode: "KS",
+    stateName: "Kansas",
     hasIncomeTax: true,
     isFlat: false,
     brackets: [
@@ -478,8 +478,8 @@ export const STATE_TAX_INFO: Record<string, StateTaxInfo> = {
     ],
   },
   LA: {
-    stateCode: 'LA',
-    stateName: 'Louisiana',
+    stateCode: "LA",
+    stateName: "Louisiana",
     hasIncomeTax: true,
     isFlat: false,
     brackets: [
@@ -489,8 +489,8 @@ export const STATE_TAX_INFO: Record<string, StateTaxInfo> = {
     ],
   },
   MD: {
-    stateCode: 'MD',
-    stateName: 'Maryland',
+    stateCode: "MD",
+    stateName: "Maryland",
     hasIncomeTax: true,
     isFlat: false,
     brackets: [
@@ -503,11 +503,11 @@ export const STATE_TAX_INFO: Record<string, StateTaxInfo> = {
       { min: 150000, max: 250000, rate: 0.055 },
       { min: 250000, max: Infinity, rate: 0.0575 },
     ],
-    notes: 'Local taxes can add 2.25% - 3.2%',
+    notes: "Local taxes can add 2.25% - 3.2%",
   },
   ME: {
-    stateCode: 'ME',
-    stateName: 'Maine',
+    stateCode: "ME",
+    stateName: "Maine",
     hasIncomeTax: true,
     isFlat: false,
     brackets: [
@@ -517,8 +517,8 @@ export const STATE_TAX_INFO: Record<string, StateTaxInfo> = {
     ],
   },
   MO: {
-    stateCode: 'MO',
-    stateName: 'Missouri',
+    stateCode: "MO",
+    stateName: "Missouri",
     hasIncomeTax: true,
     isFlat: false,
     brackets: [
@@ -533,16 +533,16 @@ export const STATE_TAX_INFO: Record<string, StateTaxInfo> = {
     ],
   },
   MT: {
-    stateCode: 'MT',
-    stateName: 'Montana',
+    stateCode: "MT",
+    stateName: "Montana",
     hasIncomeTax: true,
     isFlat: true,
     flatRate: 0.059,
-    notes: 'Moving to flat tax in 2024',
+    notes: "Moving to flat tax in 2024",
   },
   NE: {
-    stateCode: 'NE',
-    stateName: 'Nebraska',
+    stateCode: "NE",
+    stateName: "Nebraska",
     hasIncomeTax: true,
     isFlat: false,
     brackets: [
@@ -553,8 +553,8 @@ export const STATE_TAX_INFO: Record<string, StateTaxInfo> = {
     ],
   },
   NM: {
-    stateCode: 'NM',
-    stateName: 'New Mexico',
+    stateCode: "NM",
+    stateName: "New Mexico",
     hasIncomeTax: true,
     isFlat: false,
     brackets: [
@@ -566,8 +566,8 @@ export const STATE_TAX_INFO: Record<string, StateTaxInfo> = {
     ],
   },
   OK: {
-    stateCode: 'OK',
-    stateName: 'Oklahoma',
+    stateCode: "OK",
+    stateName: "Oklahoma",
     hasIncomeTax: true,
     isFlat: false,
     brackets: [
@@ -580,8 +580,8 @@ export const STATE_TAX_INFO: Record<string, StateTaxInfo> = {
     ],
   },
   RI: {
-    stateCode: 'RI',
-    stateName: 'Rhode Island',
+    stateCode: "RI",
+    stateName: "Rhode Island",
     hasIncomeTax: true,
     isFlat: false,
     brackets: [
@@ -591,8 +591,8 @@ export const STATE_TAX_INFO: Record<string, StateTaxInfo> = {
     ],
   },
   SC: {
-    stateCode: 'SC',
-    stateName: 'South Carolina',
+    stateCode: "SC",
+    stateName: "South Carolina",
     hasIncomeTax: true,
     isFlat: false,
     brackets: [
@@ -600,11 +600,11 @@ export const STATE_TAX_INFO: Record<string, StateTaxInfo> = {
       { min: 3200, max: 16040, rate: 0.03 },
       { min: 16040, max: Infinity, rate: 0.065 },
     ],
-    notes: 'Top rate decreasing to 6% by 2027',
+    notes: "Top rate decreasing to 6% by 2027",
   },
   VT: {
-    stateCode: 'VT',
-    stateName: 'Vermont',
+    stateCode: "VT",
+    stateName: "Vermont",
     hasIncomeTax: true,
     isFlat: false,
     brackets: [
@@ -615,8 +615,8 @@ export const STATE_TAX_INFO: Record<string, StateTaxInfo> = {
     ],
   },
   WV: {
-    stateCode: 'WV',
-    stateName: 'West Virginia',
+    stateCode: "WV",
+    stateName: "West Virginia",
     hasIncomeTax: true,
     isFlat: false,
     brackets: [
@@ -628,8 +628,8 @@ export const STATE_TAX_INFO: Record<string, StateTaxInfo> = {
     ],
   },
   DC: {
-    stateCode: 'DC',
-    stateName: 'District of Columbia',
+    stateCode: "DC",
+    stateName: "District of Columbia",
     hasIncomeTax: true,
     isFlat: false,
     brackets: [

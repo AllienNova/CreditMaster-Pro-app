@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React, { useMemo } from 'react';
+import React, { useMemo } from "react";
 import {
   ScatterChart,
   Scatter,
@@ -13,8 +13,8 @@ import {
   ReferenceDot,
   Line,
   ComposedChart,
-} from 'recharts';
-import { RiskTolerance } from '@/lib/investments/types/asset-allocation.types';
+} from "recharts";
+import { RiskTolerance } from "@/lib/investments/types/asset-allocation.types";
 
 /**
  * Efficient Frontier Point
@@ -66,17 +66,20 @@ const CustomTooltip = ({ active, payload }: CustomTooltipProps) => {
     return (
       <div className="bg-white dark:bg-slate-800 p-3 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg">
         <p className="font-semibold text-gray-900 dark:text-white mb-2">
-          {data.label || 'Portfolio'}
+          {data.label || "Portfolio"}
         </p>
         <p className="text-sm text-gray-600 dark:text-slate-300">
-          <span className="font-medium">Expected Return:</span> {data.expectedReturn.toFixed(2)}%
+          <span className="font-medium">Expected Return:</span>{" "}
+          {data.expectedReturn.toFixed(2)}%
         </p>
         <p className="text-sm text-gray-600 dark:text-slate-300">
-          <span className="font-medium">Volatility:</span> {data.volatility.toFixed(2)}%
+          <span className="font-medium">Volatility:</span>{" "}
+          {data.volatility.toFixed(2)}%
         </p>
         {data.sharpeRatio !== undefined && (
           <p className="text-sm text-gray-600 dark:text-slate-300">
-            <span className="font-medium">Sharpe Ratio:</span> {data.sharpeRatio.toFixed(2)}
+            <span className="font-medium">Sharpe Ratio:</span>{" "}
+            {data.sharpeRatio.toFixed(2)}
           </p>
         )}
       </div>
@@ -109,7 +112,7 @@ export const EfficientFrontierChart: React.FC<EfficientFrontierChartProps> = ({
   // Combine all data points for the chart
   const chartData = useMemo(() => {
     const data = [...sortedFrontierPoints];
-    
+
     if (currentPortfolio) {
       data.push({
         ...currentPortfolio,
@@ -117,7 +120,7 @@ export const EfficientFrontierChart: React.FC<EfficientFrontierChartProps> = ({
         isOptimal: false,
       });
     }
-    
+
     if (recommendedPortfolio) {
       data.push({
         ...recommendedPortfolio,
@@ -125,7 +128,7 @@ export const EfficientFrontierChart: React.FC<EfficientFrontierChartProps> = ({
         isOptimal: true,
       });
     }
-    
+
     return data;
   }, [sortedFrontierPoints, currentPortfolio, recommendedPortfolio]);
 
@@ -136,49 +139,56 @@ export const EfficientFrontierChart: React.FC<EfficientFrontierChartProps> = ({
           Efficient Frontier
         </h3>
         <p className="text-sm text-gray-600 dark:text-slate-400">
-          Risk vs. Return tradeoff. Points on the curve represent optimal portfolios.
+          Risk vs. Return tradeoff. Points on the curve represent optimal
+          portfolios.
         </p>
       </div>
 
       <ResponsiveContainer width="100%" height={height}>
-        <ScatterChart
-          margin={{ top: 20, right: 30, bottom: 20, left: 20 }}
-        >
+        <ScatterChart margin={{ top: 20, right: 30, bottom: 20, left: 20 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-          
+
           <XAxis
             type="number"
             dataKey="volatility"
             name="Volatility"
             unit="%"
-            label={{ value: 'Risk (Volatility %)', position: 'insideBottom', offset: -10 }}
-            domain={['auto', 'auto']}
+            label={{
+              value: "Risk (Volatility %)",
+              position: "insideBottom",
+              offset: -10,
+            }}
+            domain={["auto", "auto"]}
             stroke="#6b7280"
           />
-          
+
           <YAxis
             type="number"
             dataKey="expectedReturn"
             name="Expected Return"
             unit="%"
-            label={{ value: 'Expected Return (%)', angle: -90, position: 'insideLeft' }}
-            domain={['auto', 'auto']}
+            label={{
+              value: "Expected Return (%)",
+              angle: -90,
+              position: "insideLeft",
+            }}
+            domain={["auto", "auto"]}
             stroke="#6b7280"
           />
-          
+
           <Tooltip content={<CustomTooltip />} />
-          
+
           <Legend />
-          
+
           {/* Efficient Frontier Points */}
           <Scatter
             name="Efficient Frontier"
             data={sortedFrontierPoints}
             fill="#3b82f6"
-            line={{ stroke: '#3b82f6', strokeWidth: 2 }}
+            line={{ stroke: "#3b82f6", strokeWidth: 2 }}
             shape="circle"
             onClick={(data) => onPointClick?.(data)}
-            cursor={onPointClick ? 'pointer' : 'default'}
+            cursor={onPointClick ? "pointer" : "default"}
           />
 
           {/* Current Portfolio Position */}
@@ -225,7 +235,13 @@ export const EfficientFrontierChart: React.FC<EfficientFrontierChartProps> = ({
 
         {recommendedPortfolio && (
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-green-500" style={{ clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)' }}></div>
+            <div
+              className="w-3 h-3 bg-green-500"
+              style={{
+                clipPath:
+                  "polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)",
+              }}
+            ></div>
             <span className="text-gray-700 dark:text-slate-300">
               Recommended Portfolio
             </span>
@@ -237,4 +253,3 @@ export const EfficientFrontierChart: React.FC<EfficientFrontierChartProps> = ({
 };
 
 export default EfficientFrontierChart;
-

@@ -1,6 +1,6 @@
 /**
  * Simple Rate Limiter
- * 
+ *
  * Lightweight rate limiting utility for API endpoints
  */
 
@@ -45,7 +45,9 @@ export function rateLimit(config: RateLimitConfig) {
       // Check if limit exceeded
       if (entry.count >= limit) {
         const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
-        throw new Error(`Rate limit exceeded. Retry after ${retryAfter} seconds.`);
+        throw new Error(
+          `Rate limit exceeded. Retry after ${retryAfter} seconds.`,
+        );
       }
 
       // Increment counter
@@ -66,4 +68,3 @@ export function rateLimit(config: RateLimitConfig) {
     },
   };
 }
-

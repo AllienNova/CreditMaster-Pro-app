@@ -5,22 +5,22 @@
 const createMockChain = () => {
   const chain: Record<string, unknown> = {};
   const methods = [
-    'select',
-    'eq',
-    'neq',
-    'gt',
-    'gte',
-    'lt',
-    'lte',
-    'order',
-    'limit',
-    'range',
-    'in',
-    'is',
-    'insert',
-    'update',
-    'delete',
-    'upsert',
+    "select",
+    "eq",
+    "neq",
+    "gt",
+    "gte",
+    "lt",
+    "lte",
+    "order",
+    "limit",
+    "range",
+    "in",
+    "is",
+    "insert",
+    "update",
+    "delete",
+    "upsert",
   ];
 
   methods.forEach((m) => {
@@ -39,8 +39,12 @@ const createMockChain = () => {
 export const supabase = {
   from: jest.fn(() => createMockChain()),
   auth: {
-    getUser: jest.fn(() => Promise.resolve({ data: { user: null }, error: null })),
-    getSession: jest.fn(() => Promise.resolve({ data: { session: null }, error: null })),
+    getUser: jest.fn(() =>
+      Promise.resolve({ data: { user: null }, error: null }),
+    ),
+    getSession: jest.fn(() =>
+      Promise.resolve({ data: { session: null }, error: null }),
+    ),
     signInWithPassword: jest.fn(),
     signOut: jest.fn(),
   },
@@ -54,4 +58,3 @@ export const supabase = {
 };
 
 export default supabase;
-

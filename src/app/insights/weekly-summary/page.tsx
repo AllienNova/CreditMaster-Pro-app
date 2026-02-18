@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState } from "react";
+import { motion } from "framer-motion";
 import {
   BarChart3,
   TrendingUp,
@@ -20,8 +20,8 @@ import {
   Bell,
   CheckCircle,
   AlertTriangle,
-} from 'lucide-react';
-import Link from 'next/link';
+} from "lucide-react";
+import Link from "next/link";
 
 interface WeeklySummary {
   healthScore: number;
@@ -29,7 +29,7 @@ interface WeeklySummary {
   spending: {
     totalSpent: number;
     comparedToLastWeek: number;
-    trend: 'up' | 'down' | 'stable';
+    trend: "up" | "down" | "stable";
     topCategories: {
       category: string;
       amount: number;
@@ -65,7 +65,7 @@ interface WeeklySummary {
   };
   insights: {
     id: string;
-    type: 'tip' | 'alert' | 'achievement';
+    type: "tip" | "alert" | "achievement";
     title: string;
     description: string;
     actionUrl?: string;
@@ -78,13 +78,13 @@ const MOCK_SUMMARY: WeeklySummary = {
   spending: {
     totalSpent: 1245.67,
     comparedToLastWeek: -12.5,
-    trend: 'down',
+    trend: "down",
     topCategories: [
-      { category: 'Groceries', amount: 342.15, percentOfTotal: 27.5 },
-      { category: 'Dining', amount: 256.8, percentOfTotal: 20.6 },
-      { category: 'Transportation', amount: 189.45, percentOfTotal: 15.2 },
-      { category: 'Shopping', amount: 167.9, percentOfTotal: 13.5 },
-      { category: 'Entertainment', amount: 98.5, percentOfTotal: 7.9 },
+      { category: "Groceries", amount: 342.15, percentOfTotal: 27.5 },
+      { category: "Dining", amount: 256.8, percentOfTotal: 20.6 },
+      { category: "Transportation", amount: 189.45, percentOfTotal: 15.2 },
+      { category: "Shopping", amount: 167.9, percentOfTotal: 13.5 },
+      { category: "Entertainment", amount: 98.5, percentOfTotal: 7.9 },
     ],
   },
   budget: {
@@ -116,45 +116,45 @@ const MOCK_SUMMARY: WeeklySummary = {
   },
   insights: [
     {
-      id: '1',
-      type: 'achievement',
-      title: 'Credit Score Improved!',
+      id: "1",
+      type: "achievement",
+      title: "Credit Score Improved!",
       description:
-        'Your credit score went up 8 points this week. Great progress!',
-      actionUrl: '/credit',
+        "Your credit score went up 8 points this week. Great progress!",
+      actionUrl: "/credit",
     },
     {
-      id: '2',
-      type: 'tip',
-      title: 'Spending Down 12.5%',
-      description: 'You spent less this week than last week. Keep it up!',
-      actionUrl: '/financial/transactions',
+      id: "2",
+      type: "tip",
+      title: "Spending Down 12.5%",
+      description: "You spent less this week than last week. Keep it up!",
+      actionUrl: "/financial/transactions",
     },
     {
-      id: '3',
-      type: 'alert',
-      title: 'Goal Needs Attention',
-      description: 'Your vacation fund is behind schedule by $150',
-      actionUrl: '/financial/goals',
+      id: "3",
+      type: "alert",
+      title: "Goal Needs Attention",
+      description: "Your vacation fund is behind schedule by $150",
+      actionUrl: "/financial/goals",
     },
   ],
 };
 
 const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
   }).format(amount);
 };
 
 const formatPercent = (value: number, showSign = true) => {
-  const sign = showSign && value > 0 ? '+' : '';
+  const sign = showSign && value > 0 ? "+" : "";
   return `${sign}${value.toFixed(1)}%`;
 };
 
-const TrendIcon = ({ trend }: { trend: 'up' | 'down' | 'stable' }) => {
-  if (trend === 'up') return <ArrowUp className="w-4 h-4 text-red-500" />;
-  if (trend === 'down') return <ArrowDown className="w-4 h-4 text-green-500" />;
+const TrendIcon = ({ trend }: { trend: "up" | "down" | "stable" }) => {
+  if (trend === "up") return <ArrowUp className="w-4 h-4 text-red-500" />;
+  if (trend === "down") return <ArrowDown className="w-4 h-4 text-green-500" />;
   return <Minus className="w-4 h-4 text-gray-500 dark:text-slate-400" />;
 };
 
@@ -162,15 +162,15 @@ export default function WeeklySummaryPage() {
   const [summary] = useState<WeeklySummary>(MOCK_SUMMARY);
 
   const getHealthScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600';
-    if (score >= 60) return 'text-yellow-600';
-    return 'text-red-600';
+    if (score >= 80) return "text-green-600";
+    if (score >= 60) return "text-yellow-600";
+    return "text-red-600";
   };
 
   const getHealthScoreBg = (score: number) => {
-    if (score >= 80) return 'from-green-500 to-emerald-600';
-    if (score >= 60) return 'from-yellow-500 to-orange-600';
-    return 'from-red-500 to-rose-600';
+    if (score >= 80) return "from-green-500 to-emerald-600";
+    if (score >= 60) return "from-yellow-500 to-orange-600";
+    return "from-red-500 to-rose-600";
   };
 
   return (
@@ -208,8 +208,8 @@ export default function WeeklySummaryPage() {
                 <span
                   className={`flex items-center gap-1 px-2 py-1 rounded-full text-sm ${
                     summary.healthScoreChange > 0
-                      ? 'bg-white dark:bg-slate-800/20'
-                      : 'bg-red-500/30'
+                      ? "bg-white dark:bg-slate-800/20"
+                      : "bg-red-500/30"
                   }`}
                 >
                   {summary.healthScoreChange > 0 ? (
@@ -222,10 +222,10 @@ export default function WeeklySummaryPage() {
               </div>
               <p className="text-white/70 mt-2">
                 {summary.healthScore >= 80
-                  ? 'Excellent! Keep up the great work!'
+                  ? "Excellent! Keep up the great work!"
                   : summary.healthScore >= 60
-                    ? 'Good progress. A few areas to improve.'
-                    : 'Needs attention. Review recommendations below.'}
+                    ? "Good progress. A few areas to improve."
+                    : "Needs attention. Review recommendations below."}
               </p>
             </div>
             <div className="hidden sm:block">
@@ -254,9 +254,9 @@ export default function WeeklySummaryPage() {
               <TrendIcon trend={summary.spending.trend} />
               <span
                 className={
-                  summary.spending.trend === 'down'
-                    ? 'text-green-600'
-                    : 'text-red-600'
+                  summary.spending.trend === "down"
+                    ? "text-green-600"
+                    : "text-red-600"
                 }
               >
                 {formatPercent(summary.spending.comparedToLastWeek)} vs last
@@ -299,11 +299,11 @@ export default function WeeklySummaryPage() {
               <span
                 className={
                   summary.credit.scoreChange >= 0
-                    ? 'text-green-600'
-                    : 'text-red-600'
+                    ? "text-green-600"
+                    : "text-red-600"
                 }
               >
-                {summary.credit.scoreChange > 0 ? '+' : ''}
+                {summary.credit.scoreChange > 0 ? "+" : ""}
                 {summary.credit.scoreChange} pts
               </span>
             </div>
@@ -328,8 +328,8 @@ export default function WeeklySummaryPage() {
               <span
                 className={
                   summary.investments.weeklyChangePercent >= 0
-                    ? 'text-green-600'
-                    : 'text-red-600'
+                    ? "text-green-600"
+                    : "text-red-600"
                 }
               >
                 {formatPercent(summary.investments.weeklyChangePercent)}
@@ -352,13 +352,13 @@ export default function WeeklySummaryPage() {
                 {summary.insights.map((insight) => (
                   <div
                     key={insight.id}
-                    className={`p-4 rounded-lg ${ insight.type === 'achievement' ? 'bg-green-50 border border-green-200' : insight.type === 'alert' ? 'bg-amber-50 border border-amber-200' : 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800' }`}
+                    className={`p-4 rounded-lg ${insight.type === "achievement" ? "bg-green-50 border border-green-200" : insight.type === "alert" ? "bg-amber-50 border border-amber-200" : "bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800"}`}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-3">
-                        {insight.type === 'achievement' ? (
+                        {insight.type === "achievement" ? (
                           <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
-                        ) : insight.type === 'alert' ? (
+                        ) : insight.type === "alert" ? (
                           <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
                         ) : (
                           <Lightbulb className="w-5 h-5 text-blue-600 mt-0.5" />
@@ -477,19 +477,25 @@ export default function WeeklySummaryPage() {
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {summary.goals.activeGoals}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-slate-400">Active</p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400">
+                    Active
+                  </p>
                 </div>
                 <div className="p-3 bg-green-50 dark:bg-green-900/30 rounded-lg">
                   <p className="text-2xl font-bold text-green-600">
                     {summary.goals.goalsOnTrack}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-slate-400">On Track</p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400">
+                    On Track
+                  </p>
                 </div>
                 <div className="p-3 bg-amber-50 dark:bg-amber-900/30 rounded-lg">
                   <p className="text-2xl font-bold text-amber-600">
                     {summary.goals.goalsAtRisk}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-slate-400">At Risk</p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400">
+                    At Risk
+                  </p>
                 </div>
               </div>
               <Link
@@ -515,11 +521,11 @@ export default function WeeklySummaryPage() {
                   <span
                     className={`font-semibold ${
                       summary.investments.weeklyChange >= 0
-                        ? 'text-green-600'
-                        : 'text-red-600'
+                        ? "text-green-600"
+                        : "text-red-600"
                     }`}
                   >
-                    {summary.investments.weeklyChange >= 0 ? '+' : ''}
+                    {summary.investments.weeklyChange >= 0 ? "+" : ""}
                     {formatCurrency(summary.investments.weeklyChange)}
                   </span>
                 </div>

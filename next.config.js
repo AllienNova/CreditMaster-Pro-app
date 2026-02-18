@@ -1,36 +1,36 @@
 /** @type {import('next').NextConfig} */
 
-const isDev = process.env.NODE_ENV !== 'production';
+const isDev = process.env.NODE_ENV !== "production";
 
 // Security headers
 const securityHeaders = [
   {
-    key: 'X-Frame-Options',
-    value: 'DENY',
+    key: "X-Frame-Options",
+    value: "DENY",
   },
   {
-    key: 'X-Content-Type-Options',
-    value: 'nosniff',
+    key: "X-Content-Type-Options",
+    value: "nosniff",
   },
   {
-    key: 'X-XSS-Protection',
-    value: '1; mode=block',
+    key: "X-XSS-Protection",
+    value: "1; mode=block",
   },
   {
-    key: 'Referrer-Policy',
-    value: 'strict-origin-when-cross-origin',
+    key: "Referrer-Policy",
+    value: "strict-origin-when-cross-origin",
   },
   {
-    key: 'Permissions-Policy',
-    value: 'camera=(), microphone=(), geolocation=()',
+    key: "Permissions-Policy",
+    value: "camera=(), microphone=(), geolocation=()",
   },
 ];
 
 // Add HSTS only in production
 if (!isDev) {
   securityHeaders.push({
-    key: 'Strict-Transport-Security',
-    value: 'max-age=31536000; includeSubDomains; preload',
+    key: "Strict-Transport-Security",
+    value: "max-age=31536000; includeSubDomains; preload",
   });
 }
 
@@ -44,7 +44,7 @@ const nextConfig = {
   },
 
   // Enable standalone output for Docker
-  output: 'standalone',
+  output: "standalone",
 
   // Powered by header
   poweredByHeader: false,
@@ -56,22 +56,22 @@ const nextConfig = {
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: '**.supabase.co',
+        protocol: "https",
+        hostname: "**.supabase.co",
       },
       {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
+        protocol: "https",
+        hostname: "images.unsplash.com",
       },
     ],
-    formats: ['image/avif', 'image/webp'],
+    formats: ["image/avif", "image/webp"],
   },
 
   // Experimental features
   experimental: {
     // Enable server actions
     serverActions: {
-      bodySizeLimit: '2mb',
+      bodySizeLimit: "2mb",
     },
   },
 
@@ -79,26 +79,26 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/:path*',
+        source: "/:path*",
         headers: securityHeaders,
       },
       // Cache static assets
       {
-        source: '/static/:path*',
+        source: "/static/:path*",
         headers: [
           {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
           },
         ],
       },
       // Cache images
       {
-        source: '/_next/image/:path*',
+        source: "/_next/image/:path*",
         headers: [
           {
-            key: 'Cache-Control',
-            value: 'public, max-age=86400, stale-while-revalidate=604800',
+            key: "Cache-Control",
+            value: "public, max-age=86400, stale-while-revalidate=604800",
           },
         ],
       },
@@ -110,9 +110,9 @@ const nextConfig = {
     return [
       // Redirect www to non-www
       {
-        source: '/:path*',
-        has: [{ type: 'host', value: 'www.fynvita.com' }],
-        destination: 'https://fynvita.com/:path*',
+        source: "/:path*",
+        has: [{ type: "host", value: "www.fynvita.com" }],
+        destination: "https://fynvita.com/:path*",
         permanent: true,
       },
     ];
@@ -133,33 +133,33 @@ const nextConfig = {
       config.optimization = {
         ...config.optimization,
         splitChunks: {
-          chunks: 'all',
+          chunks: "all",
           cacheGroups: {
             // Vendor chunk for node_modules
             vendor: {
               test: /[\\/]node_modules[\\/]/,
-              name: 'vendors',
+              name: "vendors",
               priority: 10,
               reuseExistingChunk: true,
             },
             // React and React DOM in separate chunk
             react: {
               test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
-              name: 'react',
+              name: "react",
               priority: 20,
               reuseExistingChunk: true,
             },
             // Chart libraries in separate chunk
             charts: {
               test: /[\\/]node_modules[\\/](chart\.js|react-chartjs-2|recharts)[\\/]/,
-              name: 'charts',
+              name: "charts",
               priority: 15,
               reuseExistingChunk: true,
             },
             // AI/ML libraries in separate chunk
             aiml: {
               test: /[\\/]node_modules[\\/](@anthropic-ai|openai)[\\/]/,
-              name: 'aiml',
+              name: "aiml",
               priority: 15,
               reuseExistingChunk: true,
             },
@@ -177,8 +177,8 @@ const nextConfig = {
     // Minimize bundle size with compression
     config.plugins.push(
       new webpack.DefinePlugin({
-        'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
-      })
+        "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV),
+      }),
     );
 
     return config;
@@ -186,9 +186,8 @@ const nextConfig = {
 
   // Environment variables
   env: {
-    NEXT_PUBLIC_APP_VERSION: process.env.npm_package_version || '1.0.0',
+    NEXT_PUBLIC_APP_VERSION: process.env.npm_package_version || "1.0.0",
   },
 };
 
 module.exports = nextConfig;
-

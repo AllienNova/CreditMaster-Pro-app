@@ -8,26 +8,26 @@
 // ENUMS
 // ============================================================================
 
-export type OrderSide = 'buy' | 'sell';
+export type OrderSide = "buy" | "sell";
 export type OrderType =
-  | 'market'
-  | 'limit'
-  | 'stop'
-  | 'stop_limit'
-  | 'trailing_stop';
+  | "market"
+  | "limit"
+  | "stop"
+  | "stop_limit"
+  | "trailing_stop";
 export type OrderStatus =
-  | 'pending' // Created but not submitted
-  | 'submitted' // Sent to broker
-  | 'accepted' // Acknowledged by broker
-  | 'partial' // Partially filled
-  | 'filled' // Fully filled
-  | 'cancelled' // Cancelled by user
-  | 'rejected' // Rejected by broker
-  | 'expired' // Time expired
-  | 'error'; // Error state
+  | "pending" // Created but not submitted
+  | "submitted" // Sent to broker
+  | "accepted" // Acknowledged by broker
+  | "partial" // Partially filled
+  | "filled" // Fully filled
+  | "cancelled" // Cancelled by user
+  | "rejected" // Rejected by broker
+  | "expired" // Time expired
+  | "error"; // Error state
 
-export type TimeInForce = 'day' | 'gtc' | 'ioc' | 'fok' | 'opg' | 'cls';
-export type OrderClass = 'simple' | 'bracket' | 'oco' | 'oto';
+export type TimeInForce = "day" | "gtc" | "ioc" | "fok" | "opg" | "cls";
+export type OrderClass = "simple" | "bracket" | "oco" | "oto";
 
 // ============================================================================
 // ORDER INTERFACES
@@ -131,15 +131,15 @@ export interface OrderEvent {
   id: string;
   orderId: string;
   eventType:
-    | 'created'
-    | 'submitted'
-    | 'accepted'
-    | 'partial_fill'
-    | 'filled'
-    | 'cancelled'
-    | 'rejected'
-    | 'expired'
-    | 'error';
+    | "created"
+    | "submitted"
+    | "accepted"
+    | "partial_fill"
+    | "filled"
+    | "cancelled"
+    | "rejected"
+    | "expired"
+    | "error";
   timestamp: Date;
   previousStatus?: OrderStatus;
   newStatus: OrderStatus;
@@ -244,8 +244,8 @@ export const DEFAULT_ORDER_MANAGER_CONFIG: OrderManagerConfig = {
   maxDailyOrders: 100,
   maxOrderValue: 100000,
   maxPositionSize: 0.2,
-  defaultTimeInForce: 'day',
-  defaultOrderType: 'limit',
+  defaultTimeInForce: "day",
+  defaultOrderType: "limit",
   requireStopLoss: true,
   maxSlippagePercent: 0.5,
   enableBracketOrders: true,

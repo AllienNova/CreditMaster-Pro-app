@@ -9,30 +9,30 @@
  * - Update user profile subscription tier
  */
 
-import { getSupabase } from '../supabase/client';
-import type { Database } from '../supabase/types';
-import { stripeService } from '../payment/stripe-service';
-import type Stripe from 'stripe';
+import { getSupabase } from "../supabase/client";
+import type { Database } from "../supabase/types";
+import { stripeService } from "../payment/stripe-service";
+import type Stripe from "stripe";
 
 // Type helpers for Supabase operations
-type SubscriptionRow = Database['public']['Tables']['subscriptions']['Row'];
+type SubscriptionRow = Database["public"]["Tables"]["subscriptions"]["Row"];
 type SubscriptionInsert =
-  Database['public']['Tables']['subscriptions']['Insert'];
+  Database["public"]["Tables"]["subscriptions"]["Insert"];
 type SubscriptionUpdate =
-  Database['public']['Tables']['subscriptions']['Update'];
-type ProfileRow = Database['public']['Tables']['profiles']['Row'];
-type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
+  Database["public"]["Tables"]["subscriptions"]["Update"];
+type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
+type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
 
 // Helper to get typed table references
-const subscriptions = () => getSupabase().from('subscriptions');
-const profiles = () => getSupabase().from('profiles');
+const subscriptions = () => getSupabase().from("subscriptions");
+const profiles = () => getSupabase().from("profiles");
 
 export type SubscriptionStatus =
-  | 'active'
-  | 'canceled'
-  | 'past_due'
-  | 'trialing';
-export type SubscriptionTier = 'free' | 'basic' | 'premium' | 'enterprise';
+  | "active"
+  | "canceled"
+  | "past_due"
+  | "trialing";
+export type SubscriptionTier = "free" | "basic" | "premium" | "enterprise";
 
 export interface Subscription {
   id: string;
@@ -51,7 +51,7 @@ export interface UserProfile {
   id: string;
   fullName: string | null;
   subscriptionTier: SubscriptionTier;
-  subscriptionStatus: 'active' | 'canceled' | 'past_due' | null;
+  subscriptionStatus: "active" | "canceled" | "past_due" | null;
   stripeCustomerId: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -67,7 +67,7 @@ class SubscriptionService {
   async createSubscription(
     userId: string,
     priceId: string,
-    trialDays?: number
+    trialDays?: number,
   ): Promise<{ subscription: Subscription; clientSecret: string }> {
     // Get or create Stripe customer
     const profile = await this.getUserProfile(userId);
@@ -77,14 +77,14 @@ class SubscriptionService {
       // Get user email from auth
       const { data: authUser } = await getSupabase().auth.getUser();
       if (!authUser.user) {
-        throw new Error('User not authenticated');
+        throw new Error("User not authenticated");
       }
 
       // Create Stripe customer
       const customer = await stripeService.createCustomer(
         authUser.user.email!,
         profile?.fullName || undefined,
-        { userId }
+        { userId },
       );
 
       customerId = customer.id;
@@ -97,7 +97,7 @@ class SubscriptionService {
     const stripeSubscription = await stripeService.createSubscription(
       customerId,
       priceId,
-      trialDays
+      trialDays,
     );
 
     // Get client secret for payment confirmation
@@ -135,7 +135,7 @@ class SubscriptionService {
     await this.updateProfileSubscriptionTier(
       userId,
       tier,
-      stripeSubscription.status
+      stripeSubscription.status,
     );
 
     return {
@@ -149,15 +149,15 @@ class SubscriptionService {
    */
   async getUserSubscription(userId: string): Promise<Subscription | null> {
     const { data, error } = await subscriptions()
-      .select('*')
-      .eq('user_id', userId)
-      .in('status', ['active', 'trialing'])
-      .order('created_at', { ascending: false })
+      .select("*")
+      .eq("user_id", userId)
+      .in("status", ["active", "trialing"])
+      .order("created_at", { ascending: false })
       .limit(1)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
+      if (error.code === "PGRST116") {
         // Not found
         return null;
       }
@@ -172,15 +172,15 @@ class SubscriptionService {
    * Get subscription by Stripe subscription ID
    */
   async getSubscriptionByStripeId(
-    stripeSubscriptionId: string
+    stripeSubscriptionId: string,
   ): Promise<Subscription | null> {
     const { data, error } = await subscriptions()
-      .select('*')
-      .eq('stripe_subscription_id', stripeSubscriptionId)
+      .select("*")
+      .eq("stripe_subscription_id", stripeSubscriptionId)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
+      if (error.code === "PGRST116") {
         return null;
       }
       // Subscription error:('Failed to fetch subscription:', error);
@@ -198,18 +198,18 @@ class SubscriptionService {
     status: string,
     currentPeriodStart?: number,
     currentPeriodEnd?: number,
-    cancelAtPeriodEnd?: boolean
+    cancelAtPeriodEnd?: boolean,
   ): Promise<Subscription> {
     const updates: SubscriptionUpdate = { status };
 
     if (currentPeriodStart) {
       updates.current_period_start = new Date(
-        currentPeriodStart * 1000
+        currentPeriodStart * 1000,
       ).toISOString();
     }
     if (currentPeriodEnd) {
       updates.current_period_end = new Date(
-        currentPeriodEnd * 1000
+        currentPeriodEnd * 1000,
       ).toISOString();
     }
     if (cancelAtPeriodEnd !== undefined) {
@@ -220,7 +220,7 @@ class SubscriptionService {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (query1 as any)
       .update(updates)
-      .eq('stripe_subscription_id', stripeSubscriptionId)
+      .eq("stripe_subscription_id", stripeSubscriptionId)
       .select()
       .single();
 
@@ -241,17 +241,17 @@ class SubscriptionService {
    */
   async cancelSubscription(
     userId: string,
-    immediately: boolean = false
+    immediately: boolean = false,
   ): Promise<Subscription> {
     const subscription = await this.getUserSubscription(userId);
     if (!subscription) {
-      throw new Error('No active subscription found');
+      throw new Error("No active subscription found");
     }
 
     // Cancel in Stripe
     const stripeSubscription = await stripeService.cancelSubscription(
       subscription.stripeSubscriptionId,
-      immediately
+      immediately,
     );
 
     // Update database
@@ -264,7 +264,7 @@ class SubscriptionService {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (query2 as any)
       .update(updateData)
-      .eq('stripe_subscription_id', subscription.stripeSubscriptionId)
+      .eq("stripe_subscription_id", subscription.stripeSubscriptionId)
       .select()
       .single();
 
@@ -275,11 +275,11 @@ class SubscriptionService {
 
     // Update profile
     if (immediately) {
-      await this.updateProfileSubscriptionTier(userId, 'free', 'canceled');
+      await this.updateProfileSubscriptionTier(userId, "free", "canceled");
     } else {
       await this.updateProfileSubscriptionStatus(
         userId,
-        stripeSubscription.status
+        stripeSubscription.status,
       );
     }
 
@@ -292,12 +292,12 @@ class SubscriptionService {
   async reactivateSubscription(userId: string): Promise<Subscription> {
     const subscription = await this.getUserSubscription(userId);
     if (!subscription || !subscription.cancelAtPeriodEnd) {
-      throw new Error('No subscription to reactivate');
+      throw new Error("No subscription to reactivate");
     }
 
     // Reactivate in Stripe
     const stripeSubscription = await stripeService.reactivateSubscription(
-      subscription.stripeSubscriptionId
+      subscription.stripeSubscriptionId,
     );
 
     // Update database
@@ -310,7 +310,7 @@ class SubscriptionService {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (query3 as any)
       .update(updateData)
-      .eq('stripe_subscription_id', subscription.stripeSubscriptionId)
+      .eq("stripe_subscription_id", subscription.stripeSubscriptionId)
       .select()
       .single();
 
@@ -322,7 +322,7 @@ class SubscriptionService {
     // Update profile
     await this.updateProfileSubscriptionStatus(
       userId,
-      stripeSubscription.status
+      stripeSubscription.status,
     );
 
     return this.mapToSubscription(data as SubscriptionRow);
@@ -333,17 +333,17 @@ class SubscriptionService {
    */
   async changeSubscriptionPlan(
     userId: string,
-    newPriceId: string
+    newPriceId: string,
   ): Promise<Subscription> {
     const subscription = await this.getUserSubscription(userId);
     if (!subscription) {
-      throw new Error('No active subscription found');
+      throw new Error("No active subscription found");
     }
 
     // Update in Stripe
     const stripeSubscription = await stripeService.updateSubscription(
       subscription.stripeSubscriptionId,
-      newPriceId
+      newPriceId,
     );
 
     // Update database
@@ -356,7 +356,7 @@ class SubscriptionService {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (query4 as any)
       .update(updateData2)
-      .eq('stripe_subscription_id', subscription.stripeSubscriptionId)
+      .eq("stripe_subscription_id", subscription.stripeSubscriptionId)
       .select()
       .single();
 
@@ -370,7 +370,7 @@ class SubscriptionService {
     await this.updateProfileSubscriptionTier(
       userId,
       tier,
-      stripeSubscription.status
+      stripeSubscription.status,
     );
 
     return this.mapToSubscription(data as SubscriptionRow);
@@ -381,12 +381,12 @@ class SubscriptionService {
    */
   async getUserProfile(userId: string): Promise<UserProfile | null> {
     const { data, error } = await profiles()
-      .select('*')
-      .eq('id', userId)
+      .select("*")
+      .eq("id", userId)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
+      if (error.code === "PGRST116") {
         return null;
       }
       // Subscription error:('Failed to fetch profile:', error);
@@ -401,12 +401,12 @@ class SubscriptionService {
    */
   private async updateProfileStripeCustomer(
     userId: string,
-    stripeCustomerId: string
+    stripeCustomerId: string,
   ): Promise<void> {
     const updateData: ProfileUpdate = { stripe_customer_id: stripeCustomerId };
     const query5 = profiles();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (query5 as any).update(updateData).eq('id', userId);
+    const { error } = await (query5 as any).update(updateData).eq("id", userId);
 
     if (error) {
       // Subscription error:('Failed to update profile Stripe customer:', error);
@@ -420,15 +420,15 @@ class SubscriptionService {
   private async updateProfileSubscriptionTier(
     userId: string,
     tier: SubscriptionTier,
-    status: string
+    status: string,
   ): Promise<void> {
     const updateData: ProfileUpdate = {
       subscription_tier: tier,
-      subscription_status: status as 'active' | 'canceled' | 'past_due',
+      subscription_status: status as "active" | "canceled" | "past_due",
     };
     const query6 = profiles();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (query6 as any).update(updateData).eq('id', userId);
+    const { error } = await (query6 as any).update(updateData).eq("id", userId);
 
     if (error) {
       // Subscription error:('Failed to update profile subscription tier:', error);
@@ -441,14 +441,14 @@ class SubscriptionService {
    */
   private async updateProfileSubscriptionStatus(
     userId: string,
-    status: string
+    status: string,
   ): Promise<void> {
     const updateData: ProfileUpdate = {
-      subscription_status: status as 'active' | 'canceled' | 'past_due',
+      subscription_status: status as "active" | "canceled" | "past_due",
     };
     const query7 = profiles();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (query7 as any).update(updateData).eq('id', userId);
+    const { error } = await (query7 as any).update(updateData).eq("id", userId);
 
     if (error) {
       // Subscription error:('Failed to update profile subscription status:', error);
@@ -461,13 +461,13 @@ class SubscriptionService {
    */
   private getTierFromPriceId(priceId: string): SubscriptionTier {
     if (priceId === process.env.STRIPE_BASIC_PRICE_ID) {
-      return 'basic';
+      return "basic";
     } else if (priceId === process.env.STRIPE_PREMIUM_PRICE_ID) {
-      return 'premium';
+      return "premium";
     } else if (priceId === process.env.STRIPE_ENTERPRISE_PRICE_ID) {
-      return 'enterprise';
+      return "enterprise";
     }
-    return 'free';
+    return "free";
   }
 
   /**
@@ -476,25 +476,25 @@ class SubscriptionService {
    */
   private extractClientSecret(subscription: Stripe.Subscription): string {
     const latestInvoice = subscription.latest_invoice;
-    if (typeof latestInvoice === 'object' && latestInvoice !== null) {
+    if (typeof latestInvoice === "object" && latestInvoice !== null) {
       const invoice = latestInvoice as Stripe.Invoice;
       // In newer Stripe API versions, use confirmation_secret
       const confirmationSecret = invoice.confirmation_secret;
-      if (confirmationSecret && typeof confirmationSecret === 'object') {
+      if (confirmationSecret && typeof confirmationSecret === "object") {
         // The confirmation_secret object contains the client_secret
         return (
-          (confirmationSecret as { client_secret?: string }).client_secret || ''
+          (confirmationSecret as { client_secret?: string }).client_secret || ""
         );
       }
     }
-    return '';
+    return "";
   }
 
   /**
    * Webhook handler: Subscription created
    */
   async handleSubscriptionCreated(
-    stripeSubscription: Stripe.Subscription
+    stripeSubscription: Stripe.Subscription,
   ): Promise<void> {
     const userId = stripeSubscription.metadata?.userId;
     if (!userId) {
@@ -504,7 +504,7 @@ class SubscriptionService {
 
     // Check if already exists
     const existing = await this.getSubscriptionByStripeId(
-      stripeSubscription.id
+      stripeSubscription.id,
     );
     if (existing) {
       // Subscription:('Subscription already exists, skipping');
@@ -539,7 +539,7 @@ class SubscriptionService {
     await this.updateProfileSubscriptionTier(
       userId,
       tier,
-      stripeSubscription.status
+      stripeSubscription.status,
     );
   }
 
@@ -547,7 +547,7 @@ class SubscriptionService {
    * Webhook handler: Subscription updated
    */
   async handleSubscriptionUpdated(
-    stripeSubscription: Stripe.Subscription
+    stripeSubscription: Stripe.Subscription,
   ): Promise<void> {
     const firstItem = stripeSubscription.items.data[0];
     await this.updateSubscriptionStatus(
@@ -555,7 +555,7 @@ class SubscriptionService {
       stripeSubscription.status,
       firstItem?.current_period_start,
       firstItem?.current_period_end,
-      stripeSubscription.cancel_at_period_end
+      stripeSubscription.cancel_at_period_end,
     );
   }
 
@@ -563,10 +563,10 @@ class SubscriptionService {
    * Webhook handler: Subscription deleted
    */
   async handleSubscriptionDeleted(
-    stripeSubscription: Stripe.Subscription
+    stripeSubscription: Stripe.Subscription,
   ): Promise<void> {
     const subscription = await this.getSubscriptionByStripeId(
-      stripeSubscription.id
+      stripeSubscription.id,
     );
     if (!subscription) {
       // Subscription error:('Subscription not found for deletion');
@@ -574,13 +574,13 @@ class SubscriptionService {
     }
 
     // Update status to canceled
-    await this.updateSubscriptionStatus(stripeSubscription.id, 'canceled');
+    await this.updateSubscriptionStatus(stripeSubscription.id, "canceled");
 
     // Update profile to free tier
     await this.updateProfileSubscriptionTier(
       subscription.userId,
-      'free',
-      'canceled'
+      "free",
+      "canceled",
     );
   }
 
@@ -588,7 +588,7 @@ class SubscriptionService {
    * Map database row to Subscription interface
    */
   private mapToSubscription(
-    row: Database['public']['Tables']['subscriptions']['Row']
+    row: Database["public"]["Tables"]["subscriptions"]["Row"],
   ): Subscription {
     return {
       id: row.id,
@@ -612,7 +612,7 @@ class SubscriptionService {
    * Map database row to UserProfile interface
    */
   private mapToUserProfile(
-    row: Database['public']['Tables']['profiles']['Row']
+    row: Database["public"]["Tables"]["profiles"]["Row"],
   ): UserProfile {
     return {
       id: row.id,

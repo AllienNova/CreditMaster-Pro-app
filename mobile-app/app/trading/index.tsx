@@ -3,7 +3,7 @@
  * Main trading hub with positions, orders, signals overview, and risk metrics
  */
 
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -12,13 +12,13 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { lightTheme as theme } from '../../src/constants/theme';
-import { useTradingStore } from '../../src/store/tradingStore';
-import { OrderEntrySheet } from '../../src/components/trading/OrderEntrySheet';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { lightTheme as theme } from "../../src/constants/theme";
+import { useTradingStore } from "../../src/store/tradingStore";
+import { OrderEntrySheet } from "../../src/components/trading/OrderEntrySheet";
 
 // ============================================================================
 // TYPES
@@ -37,12 +37,48 @@ type QuickAction = {
 // ============================================================================
 
 const QUICK_ACTIONS: QuickAction[] = [
-  { id: 'positions', title: 'Positions', icon: 'trending-up', route: '/trading/positions', color: '#10B981' },
-  { id: 'orders', title: 'Orders', icon: 'list', route: '/trading/orders', color: '#3B82F6' },
-  { id: 'signals', title: 'Signals', icon: 'flash', route: '/trading/signals', color: '#8B5CF6' },
-  { id: 'risk', title: 'Risk', icon: 'shield-checkmark', route: '/trading/risk', color: '#F59E0B' },
-  { id: 'paper', title: 'Paper', icon: 'document-text', route: '/trading/paper', color: '#6366F1' },
-  { id: 'history', title: 'History', icon: 'time', route: '/trading/history', color: '#EC4899' },
+  {
+    id: "positions",
+    title: "Positions",
+    icon: "trending-up",
+    route: "/trading/positions",
+    color: "#10B981",
+  },
+  {
+    id: "orders",
+    title: "Orders",
+    icon: "list",
+    route: "/trading/orders",
+    color: "#3B82F6",
+  },
+  {
+    id: "signals",
+    title: "Signals",
+    icon: "flash",
+    route: "/trading/signals",
+    color: "#8B5CF6",
+  },
+  {
+    id: "risk",
+    title: "Risk",
+    icon: "shield-checkmark",
+    route: "/trading/risk",
+    color: "#F59E0B",
+  },
+  {
+    id: "paper",
+    title: "Paper",
+    icon: "document-text",
+    route: "/trading/paper",
+    color: "#6366F1",
+  },
+  {
+    id: "history",
+    title: "History",
+    icon: "time",
+    route: "/trading/history",
+    color: "#EC4899",
+  },
 ];
 
 // ============================================================================
@@ -68,7 +104,9 @@ function StatCard({
         <Text style={styles.statTitle}>{title}</Text>
         <Ionicons name={icon} size={20} color={theme.colors.textSecondary} />
       </View>
-      <Text style={[styles.statValue, valueColor ? { color: valueColor } : null]}>
+      <Text
+        style={[styles.statValue, valueColor ? { color: valueColor } : null]}
+      >
         {value}
       </Text>
       {subtitle && <Text style={styles.statSubtitle}>{subtitle}</Text>}
@@ -76,7 +114,11 @@ function StatCard({
   );
 }
 
-function RiskBanner({ canTrade, blockReasons, riskLevel }: {
+function RiskBanner({
+  canTrade,
+  blockReasons,
+  riskLevel,
+}: {
   canTrade: boolean;
   blockReasons: string[];
   riskLevel: string;
@@ -90,7 +132,7 @@ function RiskBanner({ canTrade, blockReasons, riskLevel }: {
         <View style={styles.riskBannerText}>
           <Text style={styles.riskBannerTitle}>Trading Restricted</Text>
           <Text style={styles.riskBannerSubtitle}>
-            {blockReasons[0] || 'Risk limits exceeded'}
+            {blockReasons[0] || "Risk limits exceeded"}
           </Text>
         </View>
       </View>
@@ -104,7 +146,12 @@ function QuickActionCard({ action }: { action: QuickAction }) {
       style={styles.quickActionCard}
       onPress={() => router.push(action.route as any)}
     >
-      <View style={[styles.quickActionIcon, { backgroundColor: `${action.color}20` }]}>
+      <View
+        style={[
+          styles.quickActionIcon,
+          { backgroundColor: `${action.color}20` },
+        ]}
+      >
         <Ionicons name={action.icon} size={24} color={action.color} />
       </View>
       <Text style={styles.quickActionTitle}>{action.title}</Text>
@@ -120,14 +167,21 @@ function PositionItem({ position }: { position: any }) {
       <View style={styles.positionLeft}>
         <Text style={styles.positionSymbol}>{position.symbol}</Text>
         <View style={styles.positionMeta}>
-          <View style={[
-            styles.sideBadge,
-            { backgroundColor: position.side === 'long' ? '#10B98120' : '#EF444420' }
-          ]}>
-            <Text style={[
-              styles.sideBadgeText,
-              { color: position.side === 'long' ? '#10B981' : '#EF4444' }
-            ]}>
+          <View
+            style={[
+              styles.sideBadge,
+              {
+                backgroundColor:
+                  position.side === "long" ? "#10B98120" : "#EF444420",
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.sideBadgeText,
+                { color: position.side === "long" ? "#10B981" : "#EF4444" },
+              ]}
+            >
               {position.side.toUpperCase()}
             </Text>
           </View>
@@ -135,11 +189,17 @@ function PositionItem({ position }: { position: any }) {
         </View>
       </View>
       <View style={styles.positionRight}>
-        <Text style={[styles.positionPL, { color: isProfit ? '#10B981' : '#EF4444' }]}>
-          {isProfit ? '+' : ''}${position.unrealizedPL.toFixed(2)}
+        <Text
+          style={[
+            styles.positionPL,
+            { color: isProfit ? "#10B981" : "#EF4444" },
+          ]}
+        >
+          {isProfit ? "+" : ""}${position.unrealizedPL.toFixed(2)}
         </Text>
         <Text style={styles.positionPLPercent}>
-          {isProfit ? '+' : ''}{(position.unrealizedPLPercent * 100).toFixed(2)}%
+          {isProfit ? "+" : ""}
+          {(position.unrealizedPLPercent * 100).toFixed(2)}%
         </Text>
       </View>
     </View>
@@ -149,27 +209,38 @@ function PositionItem({ position }: { position: any }) {
 function SignalItem({ signal }: { signal: any }) {
   return (
     <TouchableOpacity style={styles.signalItem}>
-      <View style={[
-        styles.signalIcon,
-        { backgroundColor: signal.side === 'long' ? '#10B98120' : '#EF444420' }
-      ]}>
+      <View
+        style={[
+          styles.signalIcon,
+          {
+            backgroundColor: signal.side === "long" ? "#10B98120" : "#EF444420",
+          },
+        ]}
+      >
         <Ionicons
-          name={signal.side === 'long' ? 'trending-up' : 'trending-down'}
+          name={signal.side === "long" ? "trending-up" : "trending-down"}
           size={20}
-          color={signal.side === 'long' ? '#10B981' : '#EF4444'}
+          color={signal.side === "long" ? "#10B981" : "#EF4444"}
         />
       </View>
       <View style={styles.signalContent}>
         <View style={styles.signalHeader}>
           <Text style={styles.signalSymbol}>{signal.symbol}</Text>
-          <View style={[
-            styles.sideBadge,
-            { backgroundColor: signal.side === 'long' ? '#10B98120' : '#EF444420' }
-          ]}>
-            <Text style={[
-              styles.sideBadgeText,
-              { color: signal.side === 'long' ? '#10B981' : '#EF4444' }
-            ]}>
+          <View
+            style={[
+              styles.sideBadge,
+              {
+                backgroundColor:
+                  signal.side === "long" ? "#10B98120" : "#EF444420",
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.sideBadgeText,
+                { color: signal.side === "long" ? "#10B981" : "#EF4444" },
+              ]}
+            >
               {signal.side.toUpperCase()}
             </Text>
           </View>
@@ -220,14 +291,20 @@ export default function TradingDashboard() {
   }, [refreshAll]);
 
   // Calculate totals
-  const totalUnrealizedPL = openPositions.reduce((sum, p) => sum + p.unrealizedPL, 0);
-  const totalMarketValue = openPositions.reduce((sum, p) => sum + p.marketValue, 0);
+  const totalUnrealizedPL = openPositions.reduce(
+    (sum, p) => sum + p.unrealizedPL,
+    0,
+  );
+  const totalMarketValue = openPositions.reduce(
+    (sum, p) => sum + p.marketValue,
+    0,
+  );
   const highConfidenceSignals = signals.filter((s) => s.confidence > 0.8);
 
   // Format currency
   const formatCurrency = (amount: number) => {
-    const sign = amount >= 0 ? '+' : '';
-    return `${sign}$${Math.abs(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const sign = amount >= 0 ? "+" : "";
+    return `${sign}$${Math.abs(amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   if (isLoading && openPositions.length === 0) {
@@ -254,23 +331,32 @@ export default function TradingDashboard() {
         <View style={styles.header}>
           <View>
             <Text style={styles.headerTitle}>Trading</Text>
-            <Text style={styles.headerSubtitle}>Real-time portfolio management</Text>
+            <Text style={styles.headerSubtitle}>
+              Real-time portfolio management
+            </Text>
           </View>
           <View style={styles.headerActions}>
             <TouchableOpacity
               style={styles.headerButton}
-              onPress={() => router.push('/trading/chart' as any)}
+              onPress={() => router.push("/trading/chart" as any)}
             >
-              <Ionicons name="analytics-outline" size={24} color={theme.colors.text} />
+              <Ionicons
+                name="analytics-outline"
+                size={24}
+                color={theme.colors.text}
+              />
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.headerButton}
-              onPress={() => {}}
-            >
-              <Ionicons name="notifications-outline" size={24} color={theme.colors.text} />
+            <TouchableOpacity style={styles.headerButton} onPress={() => {}}>
+              <Ionicons
+                name="notifications-outline"
+                size={24}
+                color={theme.colors.text}
+              />
               {signals.length > 0 && (
                 <View style={styles.notificationBadge}>
-                  <Text style={styles.notificationBadgeText}>{signals.length}</Text>
+                  <Text style={styles.notificationBadgeText}>
+                    {signals.length}
+                  </Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -290,25 +376,36 @@ export default function TradingDashboard() {
         <View style={styles.statsGrid}>
           <StatCard
             title="Portfolio Value"
-            value={`$${totalMarketValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+            value={`$${totalMarketValue.toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
             subtitle={`${openPositions.length} positions`}
             icon="wallet-outline"
           />
           <StatCard
             title="Unrealized P&L"
             value={formatCurrency(totalUnrealizedPL)}
-            subtitle={riskMetrics ? `Today: ${formatCurrency(riskMetrics.dailyPL)}` : undefined}
+            subtitle={
+              riskMetrics
+                ? `Today: ${formatCurrency(riskMetrics.dailyPL)}`
+                : undefined
+            }
             icon="trending-up-outline"
-            valueColor={totalUnrealizedPL >= 0 ? '#10B981' : '#EF4444'}
+            valueColor={totalUnrealizedPL >= 0 ? "#10B981" : "#EF4444"}
           />
           <StatCard
             title="Portfolio Heat"
-            value={riskMetrics ? `${(riskMetrics.heatUtilization * 100).toFixed(1)}%` : '--'}
-            subtitle={`of ${riskMetrics ? (riskMetrics.maxHeat * 100).toFixed(0) : '--'}% max`}
+            value={
+              riskMetrics
+                ? `${(riskMetrics.heatUtilization * 100).toFixed(1)}%`
+                : "--"
+            }
+            subtitle={`of ${riskMetrics ? (riskMetrics.maxHeat * 100).toFixed(0) : "--"}% max`}
             icon="flame-outline"
             valueColor={
-              riskMetrics && riskMetrics.heatUtilization > 0.8 ? '#EF4444' :
-              riskMetrics && riskMetrics.heatUtilization > 0.6 ? '#F59E0B' : '#10B981'
+              riskMetrics && riskMetrics.heatUtilization > 0.8
+                ? "#EF4444"
+                : riskMetrics && riskMetrics.heatUtilization > 0.6
+                  ? "#F59E0B"
+                  : "#10B981"
             }
           />
           <StatCard
@@ -333,15 +430,23 @@ export default function TradingDashboard() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Open Positions</Text>
-            <TouchableOpacity onPress={() => router.push('/trading/positions' as any)}>
+            <TouchableOpacity
+              onPress={() => router.push("/trading/positions" as any)}
+            >
               <Text style={styles.sectionLink}>View All</Text>
             </TouchableOpacity>
           </View>
           {openPositions.length === 0 ? (
             <View style={styles.emptyState}>
-              <Ionicons name="analytics-outline" size={48} color={theme.colors.textSecondary} />
+              <Ionicons
+                name="analytics-outline"
+                size={48}
+                color={theme.colors.textSecondary}
+              />
               <Text style={styles.emptyStateText}>No open positions</Text>
-              <Text style={styles.emptyStateSubtext}>Place an order to open a position</Text>
+              <Text style={styles.emptyStateSubtext}>
+                Place an order to open a position
+              </Text>
             </View>
           ) : (
             <View style={styles.positionsList}>
@@ -357,7 +462,9 @@ export default function TradingDashboard() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Active Signals</Text>
-              <TouchableOpacity onPress={() => router.push('/trading/signals' as any)}>
+              <TouchableOpacity
+                onPress={() => router.push("/trading/signals" as any)}
+              >
                 <Text style={styles.sectionLink}>View All</Text>
               </TouchableOpacity>
             </View>
@@ -374,13 +481,18 @@ export default function TradingDashboard() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Open Orders</Text>
-              <TouchableOpacity onPress={() => router.push('/trading/orders' as any)}>
-                <Text style={styles.sectionLink}>View All ({openOrders.length})</Text>
+              <TouchableOpacity
+                onPress={() => router.push("/trading/orders" as any)}
+              >
+                <Text style={styles.sectionLink}>
+                  View All ({openOrders.length})
+                </Text>
               </TouchableOpacity>
             </View>
             <View style={styles.ordersPreview}>
               <Text style={styles.ordersPreviewText}>
-                {openOrders.length} pending order{openOrders.length > 1 ? 's' : ''}
+                {openOrders.length} pending order
+                {openOrders.length > 1 ? "s" : ""}
               </Text>
             </View>
           </View>
@@ -424,8 +536,8 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     marginTop: 12,
@@ -433,16 +545,16 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 12,
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
   },
   headerSubtitle: {
@@ -451,7 +563,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   headerActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
   },
   headerButton: {
@@ -459,38 +571,38 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     backgroundColor: theme.colors.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   notificationBadge: {
-    position: 'absolute',
+    position: "absolute",
     top: 6,
     right: 6,
     minWidth: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: '#EF4444',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#EF4444",
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 4,
   },
   notificationBadgeText: {
     fontSize: 10,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
   riskBanner: {
     marginHorizontal: 20,
     marginBottom: 16,
     padding: 16,
-    backgroundColor: '#FEE2E2',
+    backgroundColor: "#FEE2E2",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#FECACA',
+    borderColor: "#FECACA",
   },
   riskBannerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   riskBannerText: {
@@ -498,32 +610,32 @@ const styles = StyleSheet.create({
   },
   riskBannerTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#DC2626',
+    fontWeight: "600",
+    color: "#DC2626",
   },
   riskBannerSubtitle: {
     fontSize: 14,
-    color: '#B91C1C',
+    color: "#B91C1C",
     marginTop: 2,
   },
   statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     paddingHorizontal: 12,
     gap: 8,
   },
   statCard: {
     flex: 1,
-    minWidth: '45%',
+    minWidth: "45%",
     backgroundColor: theme.colors.surface,
     borderRadius: 12,
     padding: 16,
     margin: 4,
   },
   statHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 8,
   },
   statTitle: {
@@ -532,7 +644,7 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
   },
   statSubtitle: {
@@ -545,30 +657,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 12,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   sectionLink: {
     fontSize: 14,
     color: theme.colors.primary,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   quickActionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     marginTop: 8,
     gap: 12,
   },
   quickActionCard: {
-    width: '30%',
-    alignItems: 'center',
+    width: "30%",
+    alignItems: "center",
     padding: 16,
     backgroundColor: theme.colors.surface,
     borderRadius: 12,
@@ -577,25 +689,25 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 8,
   },
   quickActionTitle: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: "500",
     color: theme.colors.text,
-    textAlign: 'center',
+    textAlign: "center",
   },
   emptyState: {
-    alignItems: 'center',
+    alignItems: "center",
     padding: 32,
     backgroundColor: theme.colors.surface,
     borderRadius: 12,
   },
   emptyStateText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginTop: 12,
   },
@@ -607,12 +719,12 @@ const styles = StyleSheet.create({
   positionsList: {
     backgroundColor: theme.colors.surface,
     borderRadius: 12,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   positionItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
@@ -622,12 +734,12 @@ const styles = StyleSheet.create({
   },
   positionSymbol: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   positionMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     marginTop: 4,
   },
@@ -638,18 +750,18 @@ const styles = StyleSheet.create({
   },
   sideBadgeText: {
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   positionQty: {
     fontSize: 12,
     color: theme.colors.textSecondary,
   },
   positionRight: {
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   positionPL: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   positionPLPercent: {
     fontSize: 12,
@@ -660,8 +772,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   signalItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 16,
     backgroundColor: theme.colors.surface,
     borderRadius: 12,
@@ -671,20 +783,20 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   signalContent: {
     flex: 1,
   },
   signalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   signalSymbol: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   signalSource: {
@@ -693,11 +805,11 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   signalConfidence: {
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   signalConfidenceValue: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
   },
   signalConfidenceLabel: {
@@ -708,7 +820,7 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: theme.colors.surface,
     borderRadius: 12,
-    alignItems: 'center',
+    alignItems: "center",
   },
   ordersPreviewText: {
     fontSize: 14,
@@ -718,16 +830,16 @@ const styles = StyleSheet.create({
     height: 100,
   },
   fab: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 24,
     right: 20,
     width: 56,
     height: 56,
     borderRadius: 28,
     backgroundColor: theme.colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

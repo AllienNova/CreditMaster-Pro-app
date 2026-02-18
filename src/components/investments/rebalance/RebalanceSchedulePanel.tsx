@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Rebalance Schedule Panel
@@ -7,8 +7,8 @@
  * and managing pending approval requests.
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useCallback, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar,
   Clock,
@@ -23,24 +23,24 @@ import {
   ChevronDown,
   Loader2,
   DollarSign,
-} from 'lucide-react';
+} from "lucide-react";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 export type ScheduleFrequency =
-  | 'daily'
-  | 'weekly'
-  | 'monthly'
-  | 'quarterly'
-  | 'manual';
+  | "daily"
+  | "weekly"
+  | "monthly"
+  | "quarterly"
+  | "manual";
 export type ApprovalStatus =
-  | 'pending_review'
-  | 'approved'
-  | 'rejected'
-  | 'expired'
-  | 'executed';
+  | "pending_review"
+  | "approved"
+  | "rejected"
+  | "expired"
+  | "executed";
 
 export interface ScheduleConfig {
   portfolioId: string;
@@ -61,7 +61,7 @@ export interface PendingApproval {
   id: string;
   portfolioId: string;
   portfolioName: string;
-  triggerType: 'scheduled' | 'threshold' | 'manual';
+  triggerType: "scheduled" | "threshold" | "manual";
   status: ApprovalStatus;
   trades: TradePreview[];
   totalValue: number;
@@ -72,7 +72,7 @@ export interface PendingApproval {
 
 export interface TradePreview {
   assetClass: string;
-  action: 'buy' | 'sell';
+  action: "buy" | "sell";
   amount: number;
   currentPercent: number;
   targetPercent: number;
@@ -97,25 +97,25 @@ const FREQUENCY_OPTIONS: {
   label: string;
   description: string;
 }[] = [
-  { value: 'daily', label: 'Daily', description: 'Check every day' },
-  { value: 'weekly', label: 'Weekly', description: 'Check once per week' },
-  { value: 'monthly', label: 'Monthly', description: 'Check once per month' },
+  { value: "daily", label: "Daily", description: "Check every day" },
+  { value: "weekly", label: "Weekly", description: "Check once per week" },
+  { value: "monthly", label: "Monthly", description: "Check once per month" },
   {
-    value: 'quarterly',
-    label: 'Quarterly',
-    description: 'Check every 3 months',
+    value: "quarterly",
+    label: "Quarterly",
+    description: "Check every 3 months",
   },
-  { value: 'manual', label: 'Manual Only', description: 'Only when triggered' },
+  { value: "manual", label: "Manual Only", description: "Only when triggered" },
 ];
 
 const DAY_NAMES = [
-  'Sunday',
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
 ];
 
 // ============================================================================
@@ -134,12 +134,12 @@ export function RebalanceSchedulePanel({
   const [editingSchedule, setEditingSchedule] = useState<string | null>(null);
   const [localConfig, setLocalConfig] = useState<ScheduleConfig | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
-  const [rejectReason, setRejectReason] = useState('');
+  const [rejectReason, setRejectReason] = useState("");
   const [showRejectModal, setShowRejectModal] = useState<string | null>(null);
 
   const activePendingApprovals = useMemo(
-    () => pendingApprovals.filter((p) => p.status === 'pending_review'),
-    [pendingApprovals]
+    () => pendingApprovals.filter((p) => p.status === "pending_review"),
+    [pendingApprovals],
   );
 
   const handleEditSchedule = useCallback((schedule: ScheduleConfig) => {
@@ -169,7 +169,7 @@ export function RebalanceSchedulePanel({
         setProcessingId(null);
       }
     },
-    [onApprove]
+    [onApprove],
   );
 
   const handleReject = useCallback(
@@ -178,12 +178,12 @@ export function RebalanceSchedulePanel({
       try {
         await onReject(approvalId, rejectReason);
         setShowRejectModal(null);
-        setRejectReason('');
+        setRejectReason("");
       } finally {
         setProcessingId(null);
       }
     },
-    [onReject, rejectReason]
+    [onReject, rejectReason],
   );
 
   const handleTriggerManual = useCallback(
@@ -195,7 +195,7 @@ export function RebalanceSchedulePanel({
         setProcessingId(null);
       }
     },
-    [onTriggerManual]
+    [onTriggerManual],
   );
 
   return (
@@ -221,7 +221,7 @@ export function RebalanceSchedulePanel({
                       {approval.portfolioName}
                     </h3>
                     <p className="text-sm text-gray-400 dark:text-slate-500 mt-1">
-                      Triggered by {approval.triggerType} • Expires{' '}
+                      Triggered by {approval.triggerType} • Expires{" "}
                       {new Date(approval.expiresAt).toLocaleString()}
                     </p>
                   </div>
@@ -244,9 +244,9 @@ export function RebalanceSchedulePanel({
                         <div className="flex items-center gap-2">
                           <span
                             className={`w-12 px-1.5 py-0.5 text-center text-xs font-medium rounded ${
-                              trade.action === 'buy'
-                                ? 'bg-emerald-500/20 text-emerald-400'
-                                : 'bg-red-500/20 text-red-400'
+                              trade.action === "buy"
+                                ? "bg-emerald-500/20 text-emerald-400"
+                                : "bg-red-500/20 text-red-400"
                             }`}
                           >
                             {trade.action.toUpperCase()}
@@ -257,7 +257,7 @@ export function RebalanceSchedulePanel({
                         </div>
                         <div className="flex items-center gap-4">
                           <span className="text-gray-500 dark:text-slate-400">
-                            {trade.currentPercent.toFixed(1)}% →{' '}
+                            {trade.currentPercent.toFixed(1)}% →{" "}
                             {trade.targetPercent.toFixed(1)}%
                           </span>
                           <span className="text-white font-medium">
@@ -277,7 +277,9 @@ export function RebalanceSchedulePanel({
                   </div>
                   {approval.estimatedTaxImpact !== undefined && (
                     <div className="mt-2 flex items-center justify-between text-sm">
-                      <span className="text-gray-400 dark:text-slate-500">Est. Tax Impact</span>
+                      <span className="text-gray-400 dark:text-slate-500">
+                        Est. Tax Impact
+                      </span>
                       <span className="text-amber-400">
                         ${approval.estimatedTaxImpact.toLocaleString()}
                       </span>
@@ -341,21 +343,21 @@ export function RebalanceSchedulePanel({
                         <>
                           {
                             FREQUENCY_OPTIONS.find(
-                              (f) => f.value === schedule.frequency
+                              (f) => f.value === schedule.frequency,
                             )?.label
-                          }{' '}
+                          }{" "}
                           rebalancing
-                          {schedule.frequency === 'weekly' &&
+                          {schedule.frequency === "weekly" &&
                             schedule.dayOfWeek !== undefined && (
                               <> on {DAY_NAMES[schedule.dayOfWeek]}</>
                             )}
-                          {schedule.frequency === 'monthly' &&
+                          {schedule.frequency === "monthly" &&
                             schedule.dayOfMonth && (
                               <> on day {schedule.dayOfMonth}</>
                             )}
                         </>
                       ) : (
-                        'Automatic rebalancing disabled'
+                        "Automatic rebalancing disabled"
                       )}
                     </p>
                   </div>
@@ -370,7 +372,7 @@ export function RebalanceSchedulePanel({
                       {processingId === schedule.portfolioId ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
-                        'Check Now'
+                        "Check Now"
                       )}
                     </button>
                     <button
@@ -391,7 +393,7 @@ export function RebalanceSchedulePanel({
                   {isEditing && localConfig && (
                     <motion.div
                       initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
+                      animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       className="overflow-hidden"
                     >
@@ -413,18 +415,18 @@ export function RebalanceSchedulePanel({
                               setLocalConfig((prev) =>
                                 prev
                                   ? { ...prev, enabled: !prev.enabled }
-                                  : null
+                                  : null,
                               )
                             }
                             className={`w-12 h-6 rounded-full transition-colors ${
-                              config.enabled ? 'bg-emerald-600' : 'bg-gray-700'
+                              config.enabled ? "bg-emerald-600" : "bg-gray-700"
                             }`}
                           >
                             <div
                               className={`w-5 h-5 bg-white dark:bg-slate-800 rounded-full transition-transform ${
                                 config.enabled
-                                  ? 'translate-x-6'
-                                  : 'translate-x-0.5'
+                                  ? "translate-x-6"
+                                  : "translate-x-0.5"
                               }`}
                             />
                           </button>
@@ -445,7 +447,7 @@ export function RebalanceSchedulePanel({
                                       frequency: e.target
                                         .value as ScheduleFrequency,
                                     }
-                                  : null
+                                  : null,
                               )
                             }
                             className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm"
@@ -459,7 +461,7 @@ export function RebalanceSchedulePanel({
                         </div>
 
                         {/* Day Selection */}
-                        {config.frequency === 'weekly' && (
+                        {config.frequency === "weekly" && (
                           <div>
                             <label className="block text-sm text-gray-400 dark:text-slate-500 mb-2">
                               Day of Week
@@ -473,7 +475,7 @@ export function RebalanceSchedulePanel({
                                         ...prev,
                                         dayOfWeek: parseInt(e.target.value),
                                       }
-                                    : null
+                                    : null,
                                 )
                               }
                               className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm"
@@ -487,7 +489,7 @@ export function RebalanceSchedulePanel({
                           </div>
                         )}
 
-                        {config.frequency === 'monthly' && (
+                        {config.frequency === "monthly" && (
                           <div>
                             <label className="block text-sm text-gray-400 dark:text-slate-500 mb-2">
                               Day of Month
@@ -502,7 +504,7 @@ export function RebalanceSchedulePanel({
                                         ...prev,
                                         dayOfMonth: parseInt(e.target.value),
                                       }
-                                    : null
+                                    : null,
                                 )
                               }
                               min="1"
@@ -526,10 +528,10 @@ export function RebalanceSchedulePanel({
                                   ? {
                                       ...prev,
                                       driftThreshold: parseFloat(
-                                        e.target.value
+                                        e.target.value,
                                       ),
                                     }
-                                  : null
+                                  : null,
                               )
                             }
                             min="1"
@@ -557,10 +559,10 @@ export function RebalanceSchedulePanel({
                                   ? {
                                       ...prev,
                                       minTradeAmount: parseFloat(
-                                        e.target.value
+                                        e.target.value,
                                       ),
                                     }
-                                  : null
+                                  : null,
                               )
                             }
                             min="0"
@@ -585,20 +587,20 @@ export function RebalanceSchedulePanel({
                                       ...prev,
                                       requireApproval: !prev.requireApproval,
                                     }
-                                  : null
+                                  : null,
                               )
                             }
                             className={`w-12 h-6 rounded-full transition-colors ${
                               config.requireApproval
-                                ? 'bg-blue-600'
-                                : 'bg-gray-700'
+                                ? "bg-blue-600"
+                                : "bg-gray-700"
                             }`}
                           >
                             <div
                               className={`w-5 h-5 bg-white dark:bg-slate-800 rounded-full transition-transform ${
                                 config.requireApproval
-                                  ? 'translate-x-6'
-                                  : 'translate-x-0.5'
+                                  ? "translate-x-6"
+                                  : "translate-x-0.5"
                               }`}
                             />
                           </button>
@@ -620,20 +622,20 @@ export function RebalanceSchedulePanel({
                                       ...prev,
                                       taxOptimized: !prev.taxOptimized,
                                     }
-                                  : null
+                                  : null,
                               )
                             }
                             className={`w-12 h-6 rounded-full transition-colors ${
                               config.taxOptimized
-                                ? 'bg-emerald-600'
-                                : 'bg-gray-700'
+                                ? "bg-emerald-600"
+                                : "bg-gray-700"
                             }`}
                           >
                             <div
                               className={`w-5 h-5 bg-white dark:bg-slate-800 rounded-full transition-transform ${
                                 config.taxOptimized
-                                  ? 'translate-x-6'
-                                  : 'translate-x-0.5'
+                                  ? "translate-x-6"
+                                  : "translate-x-0.5"
                               }`}
                             />
                           </button>
@@ -674,7 +676,9 @@ export function RebalanceSchedulePanel({
           {schedules.length === 0 && (
             <div className="px-6 py-12 text-center">
               <Calendar className="w-12 h-12 text-gray-600 dark:text-slate-300 mx-auto mb-3" />
-              <p className="text-gray-400 dark:text-slate-500">No portfolios configured</p>
+              <p className="text-gray-400 dark:text-slate-500">
+                No portfolios configured
+              </p>
               <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
                 Add a portfolio to set up automatic rebalancing
               </p>
@@ -713,7 +717,7 @@ export function RebalanceSchedulePanel({
                 <button
                   onClick={() => {
                     setShowRejectModal(null);
-                    setRejectReason('');
+                    setRejectReason("");
                   }}
                   className="px-4 py-2 text-gray-400 dark:text-slate-500 hover:text-white transition-colors"
                 >

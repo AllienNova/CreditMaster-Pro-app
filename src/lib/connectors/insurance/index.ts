@@ -4,7 +4,7 @@
  * Unified insurance data access across multiple providers.
  */
 
-export { CanopyConnector, createCanopyConnector } from './canopy-connector';
+export { CanopyConnector, createCanopyConnector } from "./canopy-connector";
 export type {
   InsuranceType,
   PolicyStatus,
@@ -17,4 +17,4 @@ export type {
   InsuranceClaim,
   InsuranceDocument,
   InsuranceScore,
-} from './canopy-connector';
+} from "./canopy-connector";

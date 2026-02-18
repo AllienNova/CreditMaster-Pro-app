@@ -20,7 +20,7 @@ export async function handler(req: Request): Promise<Response> {
     // 2. Authenticate/Authorize
     const user = await authenticate(req);
     if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // 3. Business logic
@@ -28,13 +28,15 @@ export async function handler(req: Request): Promise<Response> {
 
     // 4. Return response
     return Response.json({ success: true, data: result });
-
   } catch (error) {
     if (error instanceof ZodError) {
-      return Response.json({ error: 'Validation failed', details: error.errors }, { status: 400 });
+      return Response.json(
+        { error: "Validation failed", details: error.errors },
+        { status: 400 },
+      );
     }
-    console.error('API Error:', error);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
+    console.error("API Error:", error);
+    return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 ```

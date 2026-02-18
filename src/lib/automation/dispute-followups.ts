@@ -4,13 +4,13 @@
  * Sends scheduled reminder emails for dispute status updates
  */
 
-import { createClient } from '@supabase/supabase-js';
-import { Resend } from 'resend';
+import { createClient } from "@supabase/supabase-js";
+import { Resend } from "resend";
 
 function getSupabaseClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 }
 
@@ -20,11 +20,11 @@ function getResendClient() {
 
 // Follow-up schedule (days after dispute submission)
 const FOLLOWUP_SCHEDULE = [
-  { days: 7, type: 'first_reminder' },
-  { days: 14, type: 'second_reminder' },
-  { days: 21, type: 'third_reminder' },
-  { days: 30, type: 'final_reminder' },
-  { days: 45, type: 'escalation_notice' },
+  { days: 7, type: "first_reminder" },
+  { days: 14, type: "second_reminder" },
+  { days: 21, type: "third_reminder" },
+  { days: 30, type: "final_reminder" },
+  { days: 45, type: "escalation_notice" },
 ];
 
 interface Dispute {
@@ -86,10 +86,10 @@ export async function processFollowups(): Promise<{
 async function getDisputesNeedingFollowup(): Promise<Dispute[]> {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
-    .from('disputes')
-    .select('*')
-    .in('status', ['pending', 'submitted', 'in_review'])
-    .order('created_at', { ascending: true });
+    .from("disputes")
+    .select("*")
+    .in("status", ["pending", "submitted", "in_review"])
+    .order("created_at", { ascending: true });
 
   if (error) {
     // DisputeFollowups error: Error fetching disputes
@@ -110,7 +110,7 @@ function determineFollowupType(dispute: Dispute): string | null {
   const now = new Date();
 
   const daysSinceCreation = Math.floor(
-    (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24)
+    (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24),
   );
 
   // Find the appropriate follow-up based on days
@@ -119,7 +119,7 @@ function determineFollowupType(dispute: Dispute): string | null {
       // Check if we already sent this type
       if (lastFollowup) {
         const daysSinceLastFollowup = Math.floor(
-          (now.getTime() - lastFollowup.getTime()) / (1000 * 60 * 60 * 24)
+          (now.getTime() - lastFollowup.getTime()) / (1000 * 60 * 60 * 24),
         );
         if (daysSinceLastFollowup < 7) continue; // Don't send more than once per week
       }
@@ -136,9 +136,9 @@ function determineFollowupType(dispute: Dispute): string | null {
 async function getUser(userId: string): Promise<User | null> {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
-    .from('profiles')
-    .select('id, email, full_name')
-    .eq('id', userId)
+    .from("profiles")
+    .select("id, email, full_name")
+    .eq("id", userId)
     .single();
 
   if (error) return null;
@@ -151,7 +151,7 @@ async function getUser(userId: string): Promise<User | null> {
 async function sendFollowupEmail(
   user: User,
   dispute: Dispute,
-  followupType: string
+  followupType: string,
 ): Promise<void> {
   const supabase = getSupabaseClient();
   const resend = getResendClient();
@@ -159,14 +159,14 @@ async function sendFollowupEmail(
   const body = getEmailBody(user, dispute, followupType);
 
   await resend.emails.send({
-    from: 'Fynvita <noreply@fynvita.com>',
+    from: "Fynvita <noreply@fynvita.com>",
     to: user.email,
     subject,
     html: body,
   });
 
   // Log the follow-up
-  await supabase.from('email_logs').insert({
+  await supabase.from("email_logs").insert({
     user_id: user.id,
     dispute_id: dispute.id,
     email_type: `dispute_followup_${followupType}`,
@@ -180,20 +180,20 @@ async function sendFollowupEmail(
 async function updateLastFollowup(disputeId: string): Promise<void> {
   const supabase = getSupabaseClient();
   await supabase
-    .from('disputes')
+    .from("disputes")
     .update({ last_followup_at: new Date().toISOString() })
-    .eq('id', disputeId);
+    .eq("id", disputeId);
 }
 
 function getEmailSubject(type: string): string {
   const subjects: Record<string, string> = {
-    first_reminder: 'Dispute Update: 1 Week Status Check',
-    second_reminder: 'Dispute Update: 2 Week Progress Report',
-    third_reminder: 'Dispute Update: 3 Week Status - Action May Be Needed',
-    final_reminder: 'Dispute Update: 30 Day Review Required',
-    escalation_notice: 'Important: Dispute Escalation Notice',
+    first_reminder: "Dispute Update: 1 Week Status Check",
+    second_reminder: "Dispute Update: 2 Week Progress Report",
+    third_reminder: "Dispute Update: 3 Week Status - Action May Be Needed",
+    final_reminder: "Dispute Update: 30 Day Review Required",
+    escalation_notice: "Important: Dispute Escalation Notice",
   };
-  return subjects[type] || 'Dispute Status Update';
+  return subjects[type] || "Dispute Status Update";
 }
 
 function getEmailBody(user: User, dispute: Dispute, type: string): string {

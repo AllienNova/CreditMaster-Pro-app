@@ -8,33 +8,33 @@
  * - Impact estimation
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 export type RentReportingProvider =
-  | 'boom'
-  | 'rental_kharma'
-  | 'rent_reporters'
-  | 'self_rent'
-  | 'experian_boost'
-  | 'level_credit'
-  | 'piñata';
+  | "boom"
+  | "rental_kharma"
+  | "rent_reporters"
+  | "self_rent"
+  | "experian_boost"
+  | "level_credit"
+  | "piñata";
 
 export type ReportingStatus =
-  | 'pending'
-  | 'verified'
-  | 'reporting'
-  | 'paused'
-  | 'cancelled';
+  | "pending"
+  | "verified"
+  | "reporting"
+  | "paused"
+  | "cancelled";
 export type PaymentStatus =
-  | 'pending'
-  | 'on_time'
-  | 'late'
-  | 'missed'
-  | 'partial';
+  | "pending"
+  | "on_time"
+  | "late"
+  | "missed"
+  | "partial";
 
 export interface RentReportingService {
   id: string;
@@ -47,10 +47,10 @@ export interface RentReportingService {
   historicalReportingFee?: number;
 
   // Features
-  bureausReported: ('equifax' | 'experian' | 'transunion')[];
+  bureausReported: ("equifax" | "experian" | "transunion")[];
   historicalReporting: boolean;
   maxHistoricalMonths: number;
-  verificationMethod: 'bank' | 'landlord' | 'both';
+  verificationMethod: "bank" | "landlord" | "both";
 
   // Requirements
   minRentAmount?: number;
@@ -81,8 +81,8 @@ export interface RentReportingAccount {
   leaseEndDate?: Date;
 
   // Verification
-  verificationStatus: 'pending' | 'verified' | 'failed';
-  verificationMethod: 'bank' | 'landlord';
+  verificationStatus: "pending" | "verified" | "failed";
+  verificationMethod: "bank" | "landlord";
   verifiedAt?: Date;
 
   // Reporting
@@ -113,7 +113,7 @@ export interface RentPayment {
   // Reporting
   reportedToCredit: boolean;
   reportedDate?: Date;
-  bureausReported: ('equifax' | 'experian' | 'transunion')[];
+  bureausReported: ("equifax" | "experian" | "transunion")[];
 
   createdAt: Date;
 }
@@ -133,141 +133,141 @@ export interface RentReportingRecommendation {
 
 const RENT_REPORTING_SERVICES: RentReportingService[] = [
   {
-    id: 'boom-rent',
-    provider: 'boom',
-    name: 'Boom Pay',
+    id: "boom-rent",
+    provider: "boom",
+    name: "Boom Pay",
     monthlyFee: 2,
     setupFee: 0,
     historicalReportingFee: 25,
-    bureausReported: ['equifax', 'experian', 'transunion'],
+    bureausReported: ["equifax", "experian", "transunion"],
     historicalReporting: true,
     maxHistoricalMonths: 24,
-    verificationMethod: 'bank',
+    verificationMethod: "bank",
     requiresLandlordApproval: false,
     description:
-      'Report rent to all 3 bureaus with bank verification. Up to 24 months historical.',
+      "Report rent to all 3 bureaus with bank verification. Up to 24 months historical.",
     pros: [
-      'Reports to all 3 bureaus',
-      'Low monthly cost',
-      'Bank verification (no landlord needed)',
+      "Reports to all 3 bureaus",
+      "Low monthly cost",
+      "Bank verification (no landlord needed)",
     ],
-    cons: ['Historical reporting costs extra', 'Requires linked bank account'],
+    cons: ["Historical reporting costs extra", "Requires linked bank account"],
     estimatedScoreImpact: { min: 20, max: 50 },
-    signupUrl: 'https://www.boompay.app',
+    signupUrl: "https://www.boompay.app",
     rating: 4.5,
   },
   {
-    id: 'rental-kharma',
-    provider: 'rental_kharma',
-    name: 'Rental Kharma',
+    id: "rental-kharma",
+    provider: "rental_kharma",
+    name: "Rental Kharma",
     monthlyFee: 8.95,
     setupFee: 50,
     historicalReportingFee: 0,
-    bureausReported: ['transunion'],
+    bureausReported: ["transunion"],
     historicalReporting: true,
     maxHistoricalMonths: 24,
-    verificationMethod: 'landlord',
+    verificationMethod: "landlord",
     requiresLandlordApproval: true,
     description:
-      'One of the original rent reporting services. Reports to TransUnion with landlord verification.',
-    pros: ['Up to 24 months historical included', 'Established service'],
+      "One of the original rent reporting services. Reports to TransUnion with landlord verification.",
+    pros: ["Up to 24 months historical included", "Established service"],
     cons: [
-      'Only reports to TransUnion',
-      'Higher setup fee',
-      'Requires landlord cooperation',
+      "Only reports to TransUnion",
+      "Higher setup fee",
+      "Requires landlord cooperation",
     ],
     estimatedScoreImpact: { min: 15, max: 40 },
-    signupUrl: 'https://www.rentalkharma.com',
+    signupUrl: "https://www.rentalkharma.com",
     rating: 4.0,
   },
   {
-    id: 'rent-reporters',
-    provider: 'rent_reporters',
-    name: 'Rent Reporters',
+    id: "rent-reporters",
+    provider: "rent_reporters",
+    name: "Rent Reporters",
     monthlyFee: 9.95,
     setupFee: 94.95,
     historicalReportingFee: 0,
-    bureausReported: ['transunion', 'equifax'],
+    bureausReported: ["transunion", "equifax"],
     historicalReporting: true,
     maxHistoricalMonths: 24,
-    verificationMethod: 'both',
+    verificationMethod: "both",
     requiresLandlordApproval: false,
     description:
-      'Reports to TransUnion and Equifax with historical reporting included.',
+      "Reports to TransUnion and Equifax with historical reporting included.",
     pros: [
-      'Reports to 2 bureaus',
-      '24 months historical included',
-      'No landlord required',
+      "Reports to 2 bureaus",
+      "24 months historical included",
+      "No landlord required",
     ],
-    cons: ['Higher setup fee', "Doesn't report to Experian"],
+    cons: ["Higher setup fee", "Doesn't report to Experian"],
     estimatedScoreImpact: { min: 20, max: 45 },
-    signupUrl: 'https://www.rentreporters.com',
+    signupUrl: "https://www.rentreporters.com",
     rating: 4.2,
   },
   {
-    id: 'self-rent-track',
-    provider: 'self_rent',
-    name: 'Self Rent Track',
+    id: "self-rent-track",
+    provider: "self_rent",
+    name: "Self Rent Track",
     monthlyFee: 6.95,
     setupFee: 0,
     historicalReportingFee: 0,
-    bureausReported: ['equifax', 'experian', 'transunion'],
+    bureausReported: ["equifax", "experian", "transunion"],
     historicalReporting: false,
     maxHistoricalMonths: 0,
-    verificationMethod: 'bank',
+    verificationMethod: "bank",
     requiresLandlordApproval: false,
     description:
-      'Part of the Self credit building ecosystem. Easy integration if you have Self account.',
+      "Part of the Self credit building ecosystem. Easy integration if you have Self account.",
     pros: [
-      'Reports to all 3 bureaus',
-      'No setup fee',
-      'Integrates with Self credit builder',
+      "Reports to all 3 bureaus",
+      "No setup fee",
+      "Integrates with Self credit builder",
     ],
-    cons: ['No historical reporting', 'Works best with Self account'],
+    cons: ["No historical reporting", "Works best with Self account"],
     estimatedScoreImpact: { min: 15, max: 35 },
-    signupUrl: 'https://www.self.inc/rent-track',
+    signupUrl: "https://www.self.inc/rent-track",
     rating: 4.3,
   },
   {
-    id: 'experian-boost',
-    provider: 'experian_boost',
-    name: 'Experian Boost',
+    id: "experian-boost",
+    provider: "experian_boost",
+    name: "Experian Boost",
     monthlyFee: 0,
     setupFee: 0,
-    bureausReported: ['experian'],
+    bureausReported: ["experian"],
     historicalReporting: true,
     maxHistoricalMonths: 24,
-    verificationMethod: 'bank',
+    verificationMethod: "bank",
     requiresLandlordApproval: false,
     description:
-      'Free service from Experian that reports rent, utilities, and streaming payments.',
+      "Free service from Experian that reports rent, utilities, and streaming payments.",
     pros: [
-      'Completely free',
-      'Instant score impact',
-      'Also reports utilities and streaming',
+      "Completely free",
+      "Instant score impact",
+      "Also reports utilities and streaming",
     ],
-    cons: ['Only affects Experian score', 'Must link bank account'],
+    cons: ["Only affects Experian score", "Must link bank account"],
     estimatedScoreImpact: { min: 10, max: 30 },
-    signupUrl: 'https://www.experian.com/boost',
+    signupUrl: "https://www.experian.com/boost",
     rating: 4.7,
   },
   {
-    id: 'level-credit',
-    provider: 'level_credit',
-    name: 'Level Credit (Self)',
+    id: "level-credit",
+    provider: "level_credit",
+    name: "Level Credit (Self)",
     monthlyFee: 6.95,
     setupFee: 0,
-    bureausReported: ['equifax', 'experian', 'transunion'],
+    bureausReported: ["equifax", "experian", "transunion"],
     historicalReporting: false,
     maxHistoricalMonths: 0,
-    verificationMethod: 'bank',
+    verificationMethod: "bank",
     requiresLandlordApproval: false,
     description:
-      'Formerly LevelCredit, now part of Self. Reports rent to all 3 bureaus.',
-    pros: ['All 3 bureaus', 'No setup fee', 'Established track record'],
-    cons: ['No historical reporting'],
+      "Formerly LevelCredit, now part of Self. Reports rent to all 3 bureaus.",
+    pros: ["All 3 bureaus", "No setup fee", "Established track record"],
+    cons: ["No historical reporting"],
     estimatedScoreImpact: { min: 15, max: 40 },
-    signupUrl: 'https://www.self.inc',
+    signupUrl: "https://www.self.inc",
     rating: 4.4,
   },
 ];
@@ -291,7 +291,7 @@ export class RentReportingIntegrationService {
     monthlyRent: number,
     budget: number,
     wantHistorical: boolean,
-    prioritizeCost: boolean
+    prioritizeCost: boolean,
   ): RentReportingRecommendation[] {
     const recommendations: RentReportingRecommendation[] = [];
 
@@ -305,17 +305,17 @@ export class RentReportingIntegrationService {
       // Bureau coverage
       if (service.bureausReported.length === 3) {
         matchScore += 25;
-        reasons.push('Reports to all 3 credit bureaus');
+        reasons.push("Reports to all 3 credit bureaus");
       } else if (service.bureausReported.length === 2) {
         matchScore += 15;
-        reasons.push(`Reports to ${service.bureausReported.join(' and ')}`);
+        reasons.push(`Reports to ${service.bureausReported.join(" and ")}`);
       }
 
       // Historical reporting
       if (wantHistorical && service.historicalReporting) {
         matchScore += 20;
         reasons.push(
-          `Up to ${service.maxHistoricalMonths} months of historical rent`
+          `Up to ${service.maxHistoricalMonths} months of historical rent`,
         );
       }
 
@@ -323,17 +323,17 @@ export class RentReportingIntegrationService {
       if (prioritizeCost) {
         if (service.monthlyFee === 0) {
           matchScore += 20;
-          reasons.push('Completely free service');
+          reasons.push("Completely free service");
         } else if (service.monthlyFee <= 5) {
           matchScore += 10;
-          reasons.push('Very affordable monthly fee');
+          reasons.push("Very affordable monthly fee");
         }
       }
 
       // No landlord approval
       if (!service.requiresLandlordApproval) {
         matchScore += 10;
-        reasons.push('No landlord approval required');
+        reasons.push("No landlord approval required");
       }
 
       // Estimated impact
@@ -361,7 +361,7 @@ export class RentReportingIntegrationService {
   // ==========================================================================
 
   async createAccount(
-    account: Omit<RentReportingAccount, 'id' | 'createdAt' | 'updatedAt'>
+    account: Omit<RentReportingAccount, "id" | "createdAt" | "updatedAt">,
   ): Promise<RentReportingAccount> {
     const now = new Date();
     const newAccount: RentReportingAccount = {
@@ -372,7 +372,7 @@ export class RentReportingIntegrationService {
     };
 
     const { data, error } = await this.supabase
-      .from('rent_reporting_accounts')
+      .from("rent_reporting_accounts")
       .insert(this.accountToDb(newAccount))
       .select()
       .single();
@@ -383,15 +383,15 @@ export class RentReportingIntegrationService {
 
   async updateAccount(
     accountId: string,
-    updates: Partial<RentReportingAccount>
+    updates: Partial<RentReportingAccount>,
   ): Promise<RentReportingAccount> {
     const { data, error } = await this.supabase
-      .from('rent_reporting_accounts')
+      .from("rent_reporting_accounts")
       .update({
         ...this.accountToDb(updates),
         updated_at: new Date().toISOString(),
       })
-      .eq('id', accountId)
+      .eq("id", accountId)
       .select()
       .single();
 
@@ -401,10 +401,10 @@ export class RentReportingIntegrationService {
 
   async getUserAccounts(userId: string): Promise<RentReportingAccount[]> {
     const { data, error } = await this.supabase
-      .from('rent_reporting_accounts')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .from("rent_reporting_accounts")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
     if (error) throw error;
     return (data || []).map(this.accountFromDb);
@@ -415,7 +415,7 @@ export class RentReportingIntegrationService {
   // ==========================================================================
 
   async recordPayment(
-    payment: Omit<RentPayment, 'id' | 'createdAt'>
+    payment: Omit<RentPayment, "id" | "createdAt">,
   ): Promise<RentPayment> {
     const newPayment = {
       ...payment,
@@ -424,7 +424,7 @@ export class RentReportingIntegrationService {
     };
 
     const { data, error } = await this.supabase
-      .from('rent_payments')
+      .from("rent_payments")
       .insert({
         id: newPayment.id,
         account_id: newPayment.accountId,
@@ -447,10 +447,10 @@ export class RentReportingIntegrationService {
 
   async getPaymentHistory(accountId: string): Promise<RentPayment[]> {
     const { data, error } = await this.supabase
-      .from('rent_payments')
-      .select('*')
-      .eq('account_id', accountId)
-      .order('due_date', { ascending: false });
+      .from("rent_payments")
+      .select("*")
+      .eq("account_id", accountId)
+      .order("due_date", { ascending: false });
 
     if (error) throw error;
     return (data || []).map(this.paymentFromDb);
@@ -492,7 +492,7 @@ export class RentReportingIntegrationService {
 
     const monthsReporting = earliestStart
       ? Math.floor(
-          (Date.now() - earliestStart.getTime()) / (30 * 24 * 60 * 60 * 1000)
+          (Date.now() - earliestStart.getTime()) / (30 * 24 * 60 * 60 * 1000),
         )
       : 0;
 
@@ -522,7 +522,7 @@ export class RentReportingIntegrationService {
   }
 
   getServiceByProvider(
-    provider: RentReportingProvider
+    provider: RentReportingProvider,
   ): RentReportingService | undefined {
     return RENT_REPORTING_SERVICES.find((s) => s.provider === provider);
   }
@@ -536,7 +536,7 @@ export class RentReportingIntegrationService {
   // ==========================================================================
 
   private accountToDb(
-    account: Partial<RentReportingAccount>
+    account: Partial<RentReportingAccount>,
   ): Record<string, unknown> {
     return {
       id: account.id,
@@ -580,10 +580,10 @@ export class RentReportingIntegrationService {
         ? new Date(data.lease_end_date as string)
         : undefined,
       verificationStatus: data.verification_status as
-        | 'pending'
-        | 'verified'
-        | 'failed',
-      verificationMethod: data.verification_method as 'bank' | 'landlord',
+        | "pending"
+        | "verified"
+        | "failed",
+      verificationMethod: data.verification_method as "bank" | "landlord",
       verifiedAt: data.verified_at
         ? new Date(data.verified_at as string)
         : undefined,
@@ -614,9 +614,9 @@ export class RentReportingIntegrationService {
         ? new Date(data.reported_date as string)
         : undefined,
       bureausReported: data.bureaus_reported as (
-        | 'equifax'
-        | 'experian'
-        | 'transunion'
+        | "equifax"
+        | "experian"
+        | "transunion"
       )[],
       createdAt: new Date(data.created_at as string),
     };
@@ -635,7 +635,7 @@ export function getRentReportingService(): RentReportingIntegrationService {
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
     rentReportingServiceInstance = new RentReportingIntegrationService(
       supabaseUrl,
-      supabaseKey
+      supabaseKey,
     );
   }
   return rentReportingServiceInstance;

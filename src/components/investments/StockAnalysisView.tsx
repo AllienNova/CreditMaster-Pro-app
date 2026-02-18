@@ -1,24 +1,24 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { LineChartComponent, ChartContainer } from '@/components/charts';
-import type { ComprehensiveStockAnalysis } from '@/lib/investments/types/stock-analysis.types';
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { LineChartComponent, ChartContainer } from "@/components/charts";
+import type { ComprehensiveStockAnalysis } from "@/lib/investments/types/stock-analysis.types";
 
 interface StockAnalysisViewProps {
   symbol: string;
 }
 
-type AnalysisTab = 'technical' | 'fundamental' | 'sentiment' | 'ai';
+type AnalysisTab = "technical" | "fundamental" | "sentiment" | "ai";
 
 export default function StockAnalysisView({ symbol }: StockAnalysisViewProps) {
   const { user, loading: authLoading } = useAuth();
   const [analysis, setAnalysis] = useState<ComprehensiveStockAnalysis | null>(
-    null
+    null,
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<AnalysisTab>('technical');
+  const [activeTab, setActiveTab] = useState<AnalysisTab>("technical");
 
   const fetchAnalysis = useCallback(async () => {
     if (!user || !symbol) return;
@@ -28,16 +28,16 @@ export default function StockAnalysisView({ symbol }: StockAnalysisViewProps) {
       const response = await fetch(`/api/investments/analyze/${symbol}`);
       if (!response.ok) {
         const errData = await response.json();
-        throw new Error(errData.error || 'Failed to fetch analysis');
+        throw new Error(errData.error || "Failed to fetch analysis");
       }
       const result = await response.json();
       if (result.success) {
         setAnalysis(result.data);
       } else {
-        throw new Error(result.error || 'Analysis failed');
+        throw new Error(result.error || "Analysis failed");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load analysis');
+      setError(err instanceof Error ? err.message : "Failed to load analysis");
     } finally {
       setLoading(false);
     }
@@ -50,12 +50,12 @@ export default function StockAnalysisView({ symbol }: StockAnalysisViewProps) {
   }, [authLoading, user, symbol, fetchAnalysis]);
 
   const formatCurrency = (n: number) =>
-    new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(n);
 
-  const formatPercent = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`;
+  const formatPercent = (n: number) => `${n >= 0 ? "+" : ""}${n.toFixed(2)}%`;
 
   const formatLargeNumber = (n: number) => {
     if (n >= 1e12) return `$${(n / 1e12).toFixed(2)}T`;
@@ -122,12 +122,14 @@ export default function StockAnalysisView({ symbol }: StockAnalysisViewProps) {
               className="text-3xl font-bold text-gray-900 dark:text-white"
               data-testid="stock-price"
             >
-              <span data-testid="current-price">{formatCurrency(quote.price)}</span>
+              <span data-testid="current-price">
+                {formatCurrency(quote.price)}
+              </span>
             </p>
             <p
-              className={`text-lg font-medium ${isPositive ? 'text-green-600' : 'text-red-600 dark:text-red-400'}`}
+              className={`text-lg font-medium ${isPositive ? "text-green-600" : "text-red-600 dark:text-red-400"}`}
             >
-              {isPositive ? '▲' : '▼'} {formatCurrency(Math.abs(quote.change))}{' '}
+              {isPositive ? "▲" : "▼"} {formatCurrency(Math.abs(quote.change))}{" "}
               ({formatPercent(quote.changePercent)})
             </p>
           </div>
@@ -138,7 +140,10 @@ export default function StockAnalysisView({ symbol }: StockAnalysisViewProps) {
             action={recommendation.action}
             confidence={recommendation.confidence}
           />
-          <span className="text-sm text-gray-500 dark:text-slate-400" data-testid="target-price">
+          <span
+            className="text-sm text-gray-500 dark:text-slate-400"
+            data-testid="target-price"
+          >
             Target: {formatCurrency(recommendation.targetPrice)}
           </span>
         </div>
@@ -149,7 +154,7 @@ export default function StockAnalysisView({ symbol }: StockAnalysisViewProps) {
         <ChartContainer title="Price History" className="h-[350px]">
           <LineChartComponent
             data={generateMockPriceData(quote.price, 30)}
-            lines={[{ dataKey: 'price', name: 'Price', color: '#3B82F6' }]}
+            lines={[{ dataKey: "price", name: "Price", color: "#3B82F6" }]}
             height={280}
             currency
           />
@@ -159,9 +164,13 @@ export default function StockAnalysisView({ symbol }: StockAnalysisViewProps) {
       {/* Analysis Tabs */}
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow">
         <div className="border-b border-gray-200 dark:border-slate-700">
-          <nav className="flex -mb-px" role="tablist" aria-label="Analysis tabs">
+          <nav
+            className="flex -mb-px"
+            role="tablist"
+            aria-label="Analysis tabs"
+          >
             {(
-              ['technical', 'fundamental', 'sentiment', 'ai'] as AnalysisTab[]
+              ["technical", "fundamental", "sentiment", "ai"] as AnalysisTab[]
             ).map((tab) => (
               <button
                 key={tab}
@@ -171,7 +180,7 @@ export default function StockAnalysisView({ symbol }: StockAnalysisViewProps) {
                 role="tab"
                 aria-selected={activeTab === tab}
                 aria-controls={`analysis-panel-${tab}`}
-                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${ activeTab === tab ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-200 dark:hover:text-gray-300' }`}
+                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === tab ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-200 dark:hover:text-gray-300"}`}
               >
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
               </button>
@@ -179,26 +188,42 @@ export default function StockAnalysisView({ symbol }: StockAnalysisViewProps) {
           </nav>
         </div>
         <div className="p-6">
-          {activeTab === 'technical' && (
-            <div id="analysis-panel-technical" role="tabpanel" aria-labelledby="analysis-tab-technical">
+          {activeTab === "technical" && (
+            <div
+              id="analysis-panel-technical"
+              role="tabpanel"
+              aria-labelledby="analysis-tab-technical"
+            >
               <TechnicalTab analysis={analysis} />
             </div>
           )}
-          {activeTab === 'fundamental' && (
-            <div id="analysis-panel-fundamental" role="tabpanel" aria-labelledby="analysis-tab-fundamental">
+          {activeTab === "fundamental" && (
+            <div
+              id="analysis-panel-fundamental"
+              role="tabpanel"
+              aria-labelledby="analysis-tab-fundamental"
+            >
               <FundamentalTab
                 analysis={analysis}
                 formatLargeNumber={formatLargeNumber}
               />
             </div>
           )}
-          {activeTab === 'sentiment' && (
-            <div id="analysis-panel-sentiment" role="tabpanel" aria-labelledby="analysis-tab-sentiment">
+          {activeTab === "sentiment" && (
+            <div
+              id="analysis-panel-sentiment"
+              role="tabpanel"
+              aria-labelledby="analysis-tab-sentiment"
+            >
               <SentimentTab analysis={analysis} />
             </div>
           )}
-          {activeTab === 'ai' && (
-            <div id="analysis-panel-ai" role="tabpanel" aria-labelledby="analysis-tab-ai">
+          {activeTab === "ai" && (
+            <div
+              id="analysis-panel-ai"
+              role="tabpanel"
+              aria-labelledby="analysis-tab-ai"
+            >
               <AITab analysis={analysis} />
             </div>
           )}
@@ -220,22 +245,22 @@ function RecommendationBadge({
   confidence: number;
 }) {
   const colors: Record<string, string> = {
-    strong_buy: 'bg-green-600',
-    buy: 'bg-green-500',
-    hold: 'bg-yellow-500',
-    sell: 'bg-red-500',
-    strong_sell: 'bg-red-600',
+    strong_buy: "bg-green-600",
+    buy: "bg-green-500",
+    hold: "bg-yellow-500",
+    sell: "bg-red-500",
+    strong_sell: "bg-red-600",
   };
   const labels: Record<string, string> = {
-    strong_buy: 'Strong Buy',
-    buy: 'Buy',
-    hold: 'Hold',
-    sell: 'Sell',
-    strong_sell: 'Strong Sell',
+    strong_buy: "Strong Buy",
+    buy: "Buy",
+    hold: "Hold",
+    sell: "Sell",
+    strong_sell: "Strong Sell",
   };
   return (
     <span
-      className={`px-3 py-1 text-white text-sm font-medium rounded ${colors[action] || 'bg-gray-500'}`}
+      className={`px-3 py-1 text-white text-sm font-medium rounded ${colors[action] || "bg-gray-500"}`}
       data-testid="recommendation"
     >
       {labels[action] || action} ({Math.round(confidence * 100)}%)
@@ -248,9 +273,9 @@ function TechnicalTab({ analysis }: { analysis: ComprehensiveStockAnalysis }) {
   const { indicators } = technical;
 
   const getRSIColor = (rsi: number) => {
-    if (rsi >= 70) return 'text-red-600 dark:text-red-400';
-    if (rsi <= 30) return 'text-green-600 dark:text-green-400';
-    return 'text-gray-900 dark:text-white';
+    if (rsi >= 70) return "text-red-600 dark:text-red-400";
+    if (rsi <= 30) return "text-green-600 dark:text-green-400";
+    return "text-gray-900 dark:text-white";
   };
 
   return (
@@ -258,23 +283,25 @@ function TechnicalTab({ analysis }: { analysis: ComprehensiveStockAnalysis }) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* RSI */}
         <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-4">
-          <h4 className="text-sm text-gray-500 dark:text-slate-400">RSI (14)</h4>
+          <h4 className="text-sm text-gray-500 dark:text-slate-400">
+            RSI (14)
+          </h4>
           <p className={`text-2xl font-bold ${getRSIColor(indicators.rsi)}`}>
             {indicators.rsi.toFixed(2)}
           </p>
           <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
             {indicators.rsi >= 70
-              ? 'Overbought'
+              ? "Overbought"
               : indicators.rsi <= 30
-                ? 'Oversold'
-                : 'Neutral'}
+                ? "Oversold"
+                : "Neutral"}
           </p>
         </div>
         {/* MACD */}
         <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-4">
           <h4 className="text-sm text-gray-500 dark:text-slate-400">MACD</h4>
           <p
-            className={`text-2xl font-bold ${indicators.macd.histogram >= 0 ? 'text-green-600' : 'text-red-600 dark:text-red-400'}`}
+            className={`text-2xl font-bold ${indicators.macd.histogram >= 0 ? "text-green-600" : "text-red-600 dark:text-red-400"}`}
           >
             {indicators.macd.histogram.toFixed(4)}
           </p>
@@ -291,7 +318,7 @@ function TechnicalTab({ analysis }: { analysis: ComprehensiveStockAnalysis }) {
             {indicators.adx.toFixed(2)}
           </p>
           <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
-            {indicators.adx >= 25 ? 'Strong Trend' : 'Weak Trend'}
+            {indicators.adx >= 25 ? "Strong Trend" : "Weak Trend"}
           </p>
         </div>
       </div>
@@ -343,7 +370,7 @@ function TechnicalTab({ analysis }: { analysis: ComprehensiveStockAnalysis }) {
             Technical Signal
           </span>
           <span className="font-bold text-blue-600 dark:text-blue-400">
-            {technical.overallSignal.replace('_', ' ').toUpperCase()}
+            {technical.overallSignal.replace("_", " ").toUpperCase()}
           </span>
         </div>
         <div className="mt-2 text-sm text-gray-500 dark:text-slate-400">
@@ -373,11 +400,11 @@ function FundamentalTab({
         />
         <MetricCard
           label="P/E Ratio"
-          value={quote.peRatio?.toFixed(2) || 'N/A'}
+          value={quote.peRatio?.toFixed(2) || "N/A"}
         />
         <MetricCard
           label="EPS"
-          value={quote.eps ? `$${quote.eps.toFixed(2)}` : 'N/A'}
+          value={quote.eps ? `$${quote.eps.toFixed(2)}` : "N/A"}
         />
         <MetricCard
           label="52W Range"
@@ -392,19 +419,19 @@ function FundamentalTab({
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <MetricCard
             label="P/B Ratio"
-            value={fundamental.valuation.priceToBook?.toFixed(2) || 'N/A'}
+            value={fundamental.valuation.priceToBook?.toFixed(2) || "N/A"}
           />
           <MetricCard
             label="P/S Ratio"
-            value={fundamental.valuation.priceToSales?.toFixed(2) || 'N/A'}
+            value={fundamental.valuation.priceToSales?.toFixed(2) || "N/A"}
           />
           <MetricCard
             label="PEG Ratio"
-            value={fundamental.valuation.pegRatio?.toFixed(2) || 'N/A'}
+            value={fundamental.valuation.pegRatio?.toFixed(2) || "N/A"}
           />
           <MetricCard
             label="EV/EBITDA"
-            value={fundamental.valuation.evToEbitda?.toFixed(2) || 'N/A'}
+            value={fundamental.valuation.evToEbitda?.toFixed(2) || "N/A"}
           />
         </div>
       </div>
@@ -462,18 +489,18 @@ function SentimentTab({ analysis }: { analysis: ComprehensiveStockAnalysis }) {
 
   const getSentimentColor = (score: number) => {
     const normalized = normalizeScore(score);
-    if (normalized >= 0.6) return 'text-green-600 dark:text-green-400';
-    if (normalized <= 0.4) return 'text-red-600 dark:text-red-400';
-    return 'text-yellow-600 dark:text-yellow-400';
+    if (normalized >= 0.6) return "text-green-600 dark:text-green-400";
+    if (normalized <= 0.4) return "text-red-600 dark:text-red-400";
+    return "text-yellow-600 dark:text-yellow-400";
   };
 
   const getSentimentLabel = (score: number) => {
     const normalized = normalizeScore(score);
-    if (normalized >= 0.7) return 'Very Bullish';
-    if (normalized >= 0.6) return 'Bullish';
-    if (normalized >= 0.5) return 'Neutral';
-    if (normalized >= 0.4) return 'Bearish';
-    return 'Very Bearish';
+    if (normalized >= 0.7) return "Very Bullish";
+    if (normalized >= 0.6) return "Bullish";
+    if (normalized >= 0.5) return "Neutral";
+    if (normalized >= 0.4) return "Bearish";
+    return "Very Bearish";
   };
 
   const totalAnalysts =
@@ -502,7 +529,7 @@ function SentimentTab({ analysis }: { analysis: ComprehensiveStockAnalysis }) {
             <p
               className={`font-medium ${getSentimentColor(sentiment.overallSentiment.score)}`}
             >
-              {sentiment.overallSentiment.label.replace('_', ' ').toUpperCase()}
+              {sentiment.overallSentiment.label.replace("_", " ").toUpperCase()}
             </p>
             <p className="text-sm text-gray-500 dark:text-slate-400">
               Based on news, social media, and analyst data
@@ -544,7 +571,7 @@ function SentimentTab({ analysis }: { analysis: ComprehensiveStockAnalysis }) {
           </h5>
           <p className="text-xl font-bold text-gray-900 dark:text-white">
             {sentiment.analystSentiment.consensusRating
-              .replace('_', ' ')
+              .replace("_", " ")
               .toUpperCase()}
           </p>
           <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
@@ -623,7 +650,9 @@ function AITab({ analysis }: { analysis: ComprehensiveStockAnalysis }) {
         <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-3">
           AI Analysis Summary
         </h4>
-        <p className="text-gray-700 dark:text-slate-300">{aiAnalysis.summary}</p>
+        <p className="text-gray-700 dark:text-slate-300">
+          {aiAnalysis.summary}
+        </p>
       </div>
       {/* Investment Thesis */}
       <div>
@@ -727,9 +756,9 @@ function generateMockPriceData(currentPrice: number, days: number) {
     date.setDate(date.getDate() - i);
     price = price * (1 + (Math.random() - 0.48) * 0.03);
     data.push({
-      label: date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
+      label: date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
       }),
       price: Math.round(price * 100) / 100,
     });

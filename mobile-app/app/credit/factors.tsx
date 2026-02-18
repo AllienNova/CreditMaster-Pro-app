@@ -3,7 +3,7 @@
  * 5 factor breakdown with impact indicators and recommendations
  */
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -12,14 +12,14 @@ import {
   TouchableOpacity,
   RefreshControl,
   Animated,
-} from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { lightTheme as theme } from '../../src/constants/theme';
-import { Card } from '../../src/components/Card';
-import { useCreditStore } from '../../src/store/creditStore';
-import type { CreditFactor } from '../../src/services/api/types';
+} from "react-native";
+import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { lightTheme as theme } from "../../src/constants/theme";
+import { Card } from "../../src/components/Card";
+import { useCreditStore } from "../../src/store/creditStore";
+import type { CreditFactor } from "../../src/services/api/types";
 
 interface FactorInfo {
   name: string;
@@ -29,105 +29,170 @@ interface FactorInfo {
   tips: string[];
   improvementActions: {
     action: string;
-    impact: 'high' | 'medium' | 'low';
+    impact: "high" | "medium" | "low";
     timeframe: string;
   }[];
 }
 
 const FACTOR_INFO: Record<string, FactorInfo> = {
   payment_history: {
-    name: 'Payment History',
+    name: "Payment History",
     weight: 35,
-    icon: 'calendar-outline',
-    description: 'Your track record of paying bills on time. This is the most important factor in your credit score.',
+    icon: "calendar-outline",
+    description:
+      "Your track record of paying bills on time. This is the most important factor in your credit score.",
     tips: [
-      'Set up autopay for all accounts',
-      'Pay at least the minimum before due date',
-      'Contact creditors if you might miss a payment',
+      "Set up autopay for all accounts",
+      "Pay at least the minimum before due date",
+      "Contact creditors if you might miss a payment",
     ],
     improvementActions: [
-      { action: 'Set up automatic payments', impact: 'high', timeframe: 'Immediate' },
-      { action: 'Request goodwill adjustment for late payments', impact: 'high', timeframe: '30-60 days' },
-      { action: 'Become an authorized user on account with perfect history', impact: 'medium', timeframe: '30-45 days' },
+      {
+        action: "Set up automatic payments",
+        impact: "high",
+        timeframe: "Immediate",
+      },
+      {
+        action: "Request goodwill adjustment for late payments",
+        impact: "high",
+        timeframe: "30-60 days",
+      },
+      {
+        action: "Become an authorized user on account with perfect history",
+        impact: "medium",
+        timeframe: "30-45 days",
+      },
     ],
   },
   credit_utilization: {
-    name: 'Credit Utilization',
+    name: "Credit Utilization",
     weight: 30,
-    icon: 'card-outline',
-    description: "How much of your available credit you're using. Lower is better - aim for under 30%.",
+    icon: "card-outline",
+    description:
+      "How much of your available credit you're using. Lower is better - aim for under 30%.",
     tips: [
-      'Keep utilization below 30%',
-      'Pay down balances before statement closes',
-      'Request credit limit increases',
+      "Keep utilization below 30%",
+      "Pay down balances before statement closes",
+      "Request credit limit increases",
     ],
     improvementActions: [
-      { action: 'Pay down credit card balances', impact: 'high', timeframe: '1-2 billing cycles' },
-      { action: 'Request credit limit increase', impact: 'medium', timeframe: '7-14 days' },
-      { action: 'Open a new credit card (if appropriate)', impact: 'medium', timeframe: '30-45 days' },
+      {
+        action: "Pay down credit card balances",
+        impact: "high",
+        timeframe: "1-2 billing cycles",
+      },
+      {
+        action: "Request credit limit increase",
+        impact: "medium",
+        timeframe: "7-14 days",
+      },
+      {
+        action: "Open a new credit card (if appropriate)",
+        impact: "medium",
+        timeframe: "30-45 days",
+      },
     ],
   },
   credit_age: {
-    name: 'Credit Age',
+    name: "Credit Age",
     weight: 15,
-    icon: 'time-outline',
-    description: 'The average age of your credit accounts. Longer history shows stability.',
+    icon: "time-outline",
+    description:
+      "The average age of your credit accounts. Longer history shows stability.",
     tips: [
-      'Keep old accounts open',
-      'Avoid opening too many new accounts',
-      'Become an authorized user on old accounts',
+      "Keep old accounts open",
+      "Avoid opening too many new accounts",
+      "Become an authorized user on old accounts",
     ],
     improvementActions: [
-      { action: 'Keep oldest accounts open and active', impact: 'high', timeframe: 'Ongoing' },
-      { action: 'Become authorized user on old account', impact: 'medium', timeframe: '30-45 days' },
-      { action: 'Avoid opening unnecessary new accounts', impact: 'low', timeframe: 'Ongoing' },
+      {
+        action: "Keep oldest accounts open and active",
+        impact: "high",
+        timeframe: "Ongoing",
+      },
+      {
+        action: "Become authorized user on old account",
+        impact: "medium",
+        timeframe: "30-45 days",
+      },
+      {
+        action: "Avoid opening unnecessary new accounts",
+        impact: "low",
+        timeframe: "Ongoing",
+      },
     ],
   },
   credit_mix: {
-    name: 'Credit Mix',
+    name: "Credit Mix",
     weight: 10,
-    icon: 'layers-outline',
-    description: 'The variety of credit types you have. A healthy mix shows you can manage different types.',
+    icon: "layers-outline",
+    description:
+      "The variety of credit types you have. A healthy mix shows you can manage different types.",
     tips: [
-      'Have a mix of credit cards and loans',
-      'Consider a credit builder loan',
+      "Have a mix of credit cards and loans",
+      "Consider a credit builder loan",
       "Don't open accounts just for mix",
     ],
     improvementActions: [
-      { action: 'Consider a credit builder loan', impact: 'medium', timeframe: '30-60 days' },
-      { action: 'Add a secured credit card', impact: 'medium', timeframe: '14-30 days' },
-      { action: 'Keep existing account types active', impact: 'low', timeframe: 'Ongoing' },
+      {
+        action: "Consider a credit builder loan",
+        impact: "medium",
+        timeframe: "30-60 days",
+      },
+      {
+        action: "Add a secured credit card",
+        impact: "medium",
+        timeframe: "14-30 days",
+      },
+      {
+        action: "Keep existing account types active",
+        impact: "low",
+        timeframe: "Ongoing",
+      },
     ],
   },
   new_credit: {
-    name: 'New Credit',
+    name: "New Credit",
     weight: 10,
-    icon: 'add-circle-outline',
-    description: 'Recent credit inquiries and new accounts. Too many can signal risk.',
+    icon: "add-circle-outline",
+    description:
+      "Recent credit inquiries and new accounts. Too many can signal risk.",
     tips: [
-      'Limit hard inquiries',
-      'Space out credit applications',
-      'Rate shop within 14-45 days',
+      "Limit hard inquiries",
+      "Space out credit applications",
+      "Rate shop within 14-45 days",
     ],
     improvementActions: [
-      { action: 'Wait before applying for new credit', impact: 'medium', timeframe: '6-12 months' },
-      { action: 'Rate shop within 14-45 day window', impact: 'low', timeframe: 'When needed' },
-      { action: 'Use pre-qualification tools (soft pulls)', impact: 'low', timeframe: 'Immediate' },
+      {
+        action: "Wait before applying for new credit",
+        impact: "medium",
+        timeframe: "6-12 months",
+      },
+      {
+        action: "Rate shop within 14-45 day window",
+        impact: "low",
+        timeframe: "When needed",
+      },
+      {
+        action: "Use pre-qualification tools (soft pulls)",
+        impact: "low",
+        timeframe: "Immediate",
+      },
     ],
   },
 };
 
 const getStatusColor = (status: string) => {
   switch (status) {
-    case 'excellent':
-      return '#22C55E';
-    case 'good':
-      return '#84CC16';
-    case 'fair':
-      return '#F59E0B';
-    case 'poor':
-    case 'very_poor':
-      return '#EF4444';
+    case "excellent":
+      return "#22C55E";
+    case "good":
+      return "#84CC16";
+    case "fair":
+      return "#F59E0B";
+    case "poor":
+    case "very_poor":
+      return "#EF4444";
     default:
       return theme.colors.textSecondary;
   }
@@ -135,33 +200,33 @@ const getStatusColor = (status: string) => {
 
 const getStatusLabel = (status: string) => {
   switch (status) {
-    case 'excellent':
-      return 'Excellent';
-    case 'good':
-      return 'Good';
-    case 'fair':
-      return 'Needs Work';
-    case 'poor':
-      return 'Poor';
-    case 'very_poor':
-      return 'Critical';
+    case "excellent":
+      return "Excellent";
+    case "good":
+      return "Good";
+    case "fair":
+      return "Needs Work";
+    case "poor":
+      return "Poor";
+    case "very_poor":
+      return "Critical";
     default:
-      return 'Unknown';
+      return "Unknown";
   }
 };
 
 const getImpactColor = (impact: string) => {
   switch (impact) {
-    case 'high_positive':
-      return '#22C55E';
-    case 'positive':
-      return '#84CC16';
-    case 'neutral':
-      return '#6B7280';
-    case 'negative':
-      return '#F59E0B';
-    case 'high_negative':
-      return '#EF4444';
+    case "high_positive":
+      return "#22C55E";
+    case "positive":
+      return "#84CC16";
+    case "neutral":
+      return "#6B7280";
+    case "negative":
+      return "#F59E0B";
+    case "high_negative":
+      return "#EF4444";
     default:
       return theme.colors.textSecondary;
   }
@@ -169,33 +234,33 @@ const getImpactColor = (impact: string) => {
 
 const getImpactLabel = (impact: string) => {
   switch (impact) {
-    case 'high_positive':
-      return 'Strong Positive';
-    case 'positive':
-      return 'Positive';
-    case 'neutral':
-      return 'Neutral';
-    case 'negative':
-      return 'Negative';
-    case 'high_negative':
-      return 'Strong Negative';
+    case "high_positive":
+      return "Strong Positive";
+    case "positive":
+      return "Positive";
+    case "neutral":
+      return "Neutral";
+    case "negative":
+      return "Negative";
+    case "high_negative":
+      return "Strong Negative";
     default:
-      return 'Unknown';
+      return "Unknown";
   }
 };
 
 const getImpactIcon = (impact: string): keyof typeof Ionicons.glyphMap => {
   switch (impact) {
-    case 'high_positive':
-    case 'positive':
-      return 'trending-up';
-    case 'neutral':
-      return 'remove';
-    case 'negative':
-    case 'high_negative':
-      return 'trending-down';
+    case "high_positive":
+    case "positive":
+      return "trending-up";
+    case "neutral":
+      return "remove";
+    case "negative":
+    case "high_negative":
+      return "trending-down";
     default:
-      return 'help-circle';
+      return "help-circle";
   }
 };
 
@@ -236,17 +301,22 @@ export default function FactorsScreen() {
     return factors.reduce((total, factor) => {
       const info = FACTOR_INFO[factor.id];
       if (!info) return total;
-      return total + calculateImpactPoints(factor.status || 'fair', info.weight);
+      return (
+        total + calculateImpactPoints(factor.status || "fair", info.weight)
+      );
     }, 0);
   }, [factors]);
 
   // Get factors that need improvement
   const factorsNeedingImprovement = useMemo(() => {
-    return factors.filter(f => f.status === 'fair' || f.status === 'poor' || f.status === 'very_poor');
+    return factors.filter(
+      (f) =>
+        f.status === "fair" || f.status === "poor" || f.status === "very_poor",
+    );
   }, [factors]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView
         style={styles.scrollView}
         refreshControl={
@@ -268,7 +338,7 @@ export default function FactorsScreen() {
           </TouchableOpacity>
           <Text style={styles.title}>Credit Factors</Text>
           <TouchableOpacity
-            onPress={() => router.push('/help/guides/credit-factors')}
+            onPress={() => router.push("/help/guides/credit-factors")}
           >
             <Ionicons
               name="help-circle-outline"
@@ -284,7 +354,9 @@ export default function FactorsScreen() {
             <View style={styles.summaryHeader}>
               <View>
                 <Text style={styles.summaryTitle}>Factor Score</Text>
-                <Text style={styles.summarySubtitle}>Based on your credit profile</Text>
+                <Text style={styles.summarySubtitle}>
+                  Based on your credit profile
+                </Text>
               </View>
               <View style={styles.scoreCircle}>
                 <Text style={styles.scoreValue}>{totalImpactScore}</Text>
@@ -295,7 +367,9 @@ export default function FactorsScreen() {
               <View style={styles.improvementAlert}>
                 <Ionicons name="alert-circle" size={20} color="#F59E0B" />
                 <Text style={styles.improvementText}>
-                  {factorsNeedingImprovement.length} factor{factorsNeedingImprovement.length > 1 ? 's' : ''} need{factorsNeedingImprovement.length === 1 ? 's' : ''} attention
+                  {factorsNeedingImprovement.length} factor
+                  {factorsNeedingImprovement.length > 1 ? "s" : ""} need
+                  {factorsNeedingImprovement.length === 1 ? "s" : ""} attention
                 </Text>
               </View>
             )}
@@ -312,7 +386,7 @@ export default function FactorsScreen() {
           <View style={styles.weightChart}>
             {Object.entries(FACTOR_INFO).map(([key, info]) => {
               const factor = factors.find((f) => f.id === key);
-              const status = factor?.status || 'fair';
+              const status = factor?.status || "fair";
               return (
                 <View
                   key={key}
@@ -336,13 +410,15 @@ export default function FactorsScreen() {
           </View>
           <View style={styles.legendContainer}>
             {[
-              { label: 'Excellent', color: '#22C55E' },
-              { label: 'Good', color: '#84CC16' },
-              { label: 'Fair', color: '#F59E0B' },
-              { label: 'Poor', color: '#EF4444' },
+              { label: "Excellent", color: "#22C55E" },
+              { label: "Good", color: "#84CC16" },
+              { label: "Fair", color: "#F59E0B" },
+              { label: "Poor", color: "#EF4444" },
             ].map((item) => (
               <View key={item.label} style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: item.color }]} />
+                <View
+                  style={[styles.legendDot, { backgroundColor: item.color }]}
+                />
                 <Text style={styles.legendText}>{item.label}</Text>
               </View>
             ))}
@@ -360,15 +436,18 @@ export default function FactorsScreen() {
             const info = FACTOR_INFO[factor.id] || {
               name: factor.name,
               weight: factor.percentImpact || 0,
-              icon: 'help-circle-outline' as keyof typeof Ionicons.glyphMap,
-              description: factor.description || '',
+              icon: "help-circle-outline" as keyof typeof Ionicons.glyphMap,
+              description: factor.description || "",
               tips: [],
               improvementActions: [],
             };
             const isExpanded = expandedFactor === factor.id;
-            const statusColor = getStatusColor(factor.status || 'fair');
+            const statusColor = getStatusColor(factor.status || "fair");
             const impactColor = getImpactColor(factor.impact);
-            const impactPoints = calculateImpactPoints(factor.status || 'fair', info.weight);
+            const impactPoints = calculateImpactPoints(
+              factor.status || "fair",
+              info.weight,
+            );
 
             return (
               <TouchableOpacity
@@ -402,7 +481,9 @@ export default function FactorsScreen() {
                             size={12}
                             color={impactColor}
                           />
-                          <Text style={[styles.impactText, { color: impactColor }]}>
+                          <Text
+                            style={[styles.impactText, { color: impactColor }]}
+                          >
                             {getImpactLabel(factor.impact)}
                           </Text>
                         </View>
@@ -418,12 +499,12 @@ export default function FactorsScreen() {
                         <Text
                           style={[styles.statusText, { color: statusColor }]}
                         >
-                          {getStatusLabel(factor.status || 'fair')}
+                          {getStatusLabel(factor.status || "fair")}
                         </Text>
                       </View>
                       <Text style={styles.pointsText}>{impactPoints} pts</Text>
                       <Ionicons
-                        name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                        name={isExpanded ? "chevron-up" : "chevron-down"}
                         size={20}
                         color={theme.colors.textSecondary}
                       />
@@ -440,7 +521,11 @@ export default function FactorsScreen() {
                       {/* Current Value */}
                       {factor.value && (
                         <View style={styles.currentValueContainer}>
-                          <Ionicons name="analytics" size={16} color={theme.colors.primary} />
+                          <Ionicons
+                            name="analytics"
+                            size={16}
+                            color={theme.colors.primary}
+                          />
                           <Text style={styles.factorValue}>
                             Current: {factor.value}
                           </Text>
@@ -452,43 +537,79 @@ export default function FactorsScreen() {
                         <View style={styles.recommendationBox}>
                           <View style={styles.recommendationHeader}>
                             <Ionicons name="bulb" size={18} color="#F59E0B" />
-                            <Text style={styles.recommendationTitle}>AI Recommendation</Text>
+                            <Text style={styles.recommendationTitle}>
+                              AI Recommendation
+                            </Text>
                           </View>
-                          <Text style={styles.recommendationText}>{factor.recommendation}</Text>
+                          <Text style={styles.recommendationText}>
+                            {factor.recommendation}
+                          </Text>
                         </View>
                       )}
 
                       {/* Improvement Actions */}
-                      {info.improvementActions && info.improvementActions.length > 0 && (
-                        <View style={styles.actionsSection}>
-                          <Text style={styles.tipsTitle}>Action Plan</Text>
-                          {info.improvementActions.map((action, index) => (
-                            <View key={index} style={styles.actionItem}>
-                              <View style={[
-                                styles.actionImpactDot,
-                                { backgroundColor: action.impact === 'high' ? '#22C55E' : action.impact === 'medium' ? '#F59E0B' : '#6B7280' }
-                              ]} />
-                              <View style={styles.actionContent}>
-                                <Text style={styles.actionText}>{action.action}</Text>
-                                <View style={styles.actionMeta}>
-                                  <Text style={styles.actionTimeframe}>{action.timeframe}</Text>
-                                  <View style={[
-                                    styles.actionImpactBadge,
-                                    { backgroundColor: action.impact === 'high' ? '#22C55E20' : action.impact === 'medium' ? '#F59E0B20' : '#6B728020' }
-                                  ]}>
-                                    <Text style={[
-                                      styles.actionImpactText,
-                                      { color: action.impact === 'high' ? '#22C55E' : action.impact === 'medium' ? '#F59E0B' : '#6B7280' }
-                                    ]}>
-                                      {action.impact.toUpperCase()} IMPACT
+                      {info.improvementActions &&
+                        info.improvementActions.length > 0 && (
+                          <View style={styles.actionsSection}>
+                            <Text style={styles.tipsTitle}>Action Plan</Text>
+                            {info.improvementActions.map((action, index) => (
+                              <View key={index} style={styles.actionItem}>
+                                <View
+                                  style={[
+                                    styles.actionImpactDot,
+                                    {
+                                      backgroundColor:
+                                        action.impact === "high"
+                                          ? "#22C55E"
+                                          : action.impact === "medium"
+                                            ? "#F59E0B"
+                                            : "#6B7280",
+                                    },
+                                  ]}
+                                />
+                                <View style={styles.actionContent}>
+                                  <Text style={styles.actionText}>
+                                    {action.action}
+                                  </Text>
+                                  <View style={styles.actionMeta}>
+                                    <Text style={styles.actionTimeframe}>
+                                      {action.timeframe}
                                     </Text>
+                                    <View
+                                      style={[
+                                        styles.actionImpactBadge,
+                                        {
+                                          backgroundColor:
+                                            action.impact === "high"
+                                              ? "#22C55E20"
+                                              : action.impact === "medium"
+                                                ? "#F59E0B20"
+                                                : "#6B728020",
+                                        },
+                                      ]}
+                                    >
+                                      <Text
+                                        style={[
+                                          styles.actionImpactText,
+                                          {
+                                            color:
+                                              action.impact === "high"
+                                                ? "#22C55E"
+                                                : action.impact === "medium"
+                                                  ? "#F59E0B"
+                                                  : "#6B7280",
+                                          },
+                                        ]}
+                                      >
+                                        {action.impact.toUpperCase()} IMPACT
+                                      </Text>
+                                    </View>
                                   </View>
                                 </View>
                               </View>
-                            </View>
-                          ))}
-                        </View>
-                      )}
+                            ))}
+                          </View>
+                        )}
 
                       {/* Quick Tips */}
                       <View style={styles.tipsSection}>
@@ -510,7 +631,7 @@ export default function FactorsScreen() {
                         style={styles.learnMoreButton}
                         onPress={() =>
                           router.push(
-                            `/credit-builder/${factor.id.replace('_', '-')}`
+                            `/credit-builder/${factor.id.replace("_", "-")}`,
                           )
                         }
                       >
@@ -552,28 +673,28 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1 },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.md,
   },
   backButton: { padding: 4 },
-  title: { fontSize: 20, fontWeight: '700', color: theme.colors.text },
+  title: { fontSize: 20, fontWeight: "700", color: theme.colors.text },
   // Summary Card Styles
   summaryCard: {
     marginHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.md,
-    backgroundColor: theme.colors.primary + '08',
+    backgroundColor: theme.colors.primary + "08",
   },
   summaryHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   summaryTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   summarySubtitle: {
@@ -582,12 +703,12 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   scoreCircle: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
+    flexDirection: "row",
+    alignItems: "baseline",
   },
   scoreValue: {
     fontSize: 32,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.primary,
   },
   scoreMax: {
@@ -596,8 +717,8 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   },
   improvementAlert: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: theme.spacing.md,
     paddingTop: theme.spacing.md,
     borderTopWidth: 1,
@@ -605,9 +726,9 @@ const styles = StyleSheet.create({
   },
   improvementText: {
     fontSize: 13,
-    color: '#F59E0B',
+    color: "#F59E0B",
     marginLeft: 8,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   // Overview Card Styles
   overviewCard: {
@@ -616,7 +737,7 @@ const styles = StyleSheet.create({
   },
   overviewTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: 8,
   },
@@ -627,28 +748,28 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   weightChart: {
-    flexDirection: 'row',
+    flexDirection: "row",
     height: 12,
     borderRadius: 6,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
-  weightBar: { height: '100%' },
-  weightLabels: { flexDirection: 'row', marginTop: 4 },
+  weightBar: { height: "100%" },
+  weightLabels: { flexDirection: "row", marginTop: 4 },
   weightLabel: {
     flex: 1,
     fontSize: 10,
     color: theme.colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
   },
   legendContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     marginTop: theme.spacing.md,
-    flexWrap: 'wrap',
+    flexWrap: "wrap",
   },
   legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginRight: theme.spacing.md,
     marginBottom: 4,
   },
@@ -667,20 +788,20 @@ const styles = StyleSheet.create({
     marginHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.sm,
   },
-  factorHeader: { flexDirection: 'row', alignItems: 'center' },
+  factorHeader: { flexDirection: "row", alignItems: "center" },
   factorIcon: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: theme.spacing.md,
   },
   factorInfo: { flex: 1 },
-  factorName: { fontSize: 16, fontWeight: '600', color: theme.colors.text },
+  factorName: { fontSize: 16, fontWeight: "600", color: theme.colors.text },
   factorMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: 4,
   },
   factorWeight: {
@@ -688,8 +809,8 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   impactBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginLeft: 8,
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -698,17 +819,17 @@ const styles = StyleSheet.create({
   },
   impactText: {
     fontSize: 10,
-    fontWeight: '500',
+    fontWeight: "500",
     marginLeft: 2,
   },
-  factorStatus: { alignItems: 'flex-end' },
+  factorStatus: { alignItems: "flex-end" },
   statusBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
     marginBottom: 4,
   },
-  statusText: { fontSize: 12, fontWeight: '600' },
+  statusText: { fontSize: 12, fontWeight: "600" },
   pointsText: {
     fontSize: 11,
     color: theme.colors.textSecondary,
@@ -728,40 +849,40 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   currentValueContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: theme.spacing.md,
     padding: theme.spacing.sm,
-    backgroundColor: theme.colors.primary + '10',
+    backgroundColor: theme.colors.primary + "10",
     borderRadius: theme.borderRadius.sm,
   },
   factorValue: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     color: theme.colors.text,
     marginLeft: 8,
   },
   // Recommendation Box Styles
   recommendationBox: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: "#FEF3C7",
     borderRadius: theme.borderRadius.md,
     padding: theme.spacing.md,
     marginBottom: theme.spacing.md,
   },
   recommendationHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 8,
   },
   recommendationTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#92400E',
+    fontWeight: "600",
+    color: "#92400E",
     marginLeft: 8,
   },
   recommendationText: {
     fontSize: 13,
-    color: '#78350F',
+    color: "#78350F",
     lineHeight: 18,
   },
   // Action Plan Styles
@@ -769,7 +890,7 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   actionItem: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: 12,
   },
   actionImpactDot: {
@@ -785,11 +906,11 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 13,
     color: theme.colors.text,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   actionMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: 4,
   },
   actionTimeframe: {
@@ -804,17 +925,17 @@ const styles = StyleSheet.create({
   },
   actionImpactText: {
     fontSize: 9,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   // Tips Section Styles
   tipsSection: { marginBottom: theme.spacing.md },
   tipsTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: 8,
   },
-  tipItem: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 6 },
+  tipItem: { flexDirection: "row", alignItems: "flex-start", marginBottom: 6 },
   tipText: {
     fontSize: 13,
     color: theme.colors.textSecondary,
@@ -822,27 +943,27 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   learnMoreButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: theme.spacing.sm,
     backgroundColor: `${theme.colors.primary}10`,
     borderRadius: theme.borderRadius.md,
   },
   learnMoreText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     color: theme.colors.primary,
     marginRight: 4,
   },
   emptyCard: {
     marginHorizontal: theme.spacing.lg,
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: theme.spacing.xl,
   },
   emptyText: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
     color: theme.colors.text,
     marginTop: theme.spacing.md,
   },

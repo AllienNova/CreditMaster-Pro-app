@@ -1,6 +1,6 @@
 /**
  * Mock Credit Report Generator
- * 
+ *
  * Generates realistic mock credit reports for development and testing.
  * This allows us to build and test the credit bureau integration without
  * needing actual API access during development.
@@ -17,13 +17,13 @@ import {
   PaymentStatus,
   InquiryType,
   PublicRecordType,
-} from '@/types/credit-bureau';
+} from "@/types/credit-bureau";
 
 /**
  * Generate a mock credit report
  */
 export function generateMockCreditReport(
-  options: MockCreditReportOptions
+  options: MockCreditReportOptions,
 ): ParsedCreditReport {
   const {
     creditScore = randomScore(),
@@ -47,29 +47,56 @@ export function generateMockCreditReport(
  * Generate personal information
  */
 function generatePersonalInfo(): PersonalInfo {
-  const firstNames = ['John', 'Jane', 'Michael', 'Sarah', 'David', 'Emily'];
-  const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia'];
-  
+  const firstNames = ["John", "Jane", "Michael", "Sarah", "David", "Emily"];
+  const lastNames = [
+    "Smith",
+    "Johnson",
+    "Williams",
+    "Brown",
+    "Jones",
+    "Garcia",
+  ];
+
   return {
     firstName: randomChoice(firstNames),
     lastName: randomChoice(lastNames),
-    middleName: randomChoice(['A', 'B', 'C', 'D', 'E']),
-    dateOfBirth: new Date(1980 + randomInt(0, 30), randomInt(0, 11), randomInt(1, 28)),
+    middleName: randomChoice(["A", "B", "C", "D", "E"]),
+    dateOfBirth: new Date(
+      1980 + randomInt(0, 30),
+      randomInt(0, 11),
+      randomInt(1, 28),
+    ),
     ssn: `***-**-${randomInt(1000, 9999)}`, // Last 4 digits only
     addresses: [
       {
         street: `${randomInt(100, 9999)} Main St`,
-        city: randomChoice(['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix']),
-        state: randomChoice(['NY', 'CA', 'IL', 'TX', 'AZ']),
+        city: randomChoice([
+          "New York",
+          "Los Angeles",
+          "Chicago",
+          "Houston",
+          "Phoenix",
+        ]),
+        state: randomChoice(["NY", "CA", "IL", "TX", "AZ"]),
         zipCode: `${randomInt(10000, 99999)}`,
-        type: 'current',
+        type: "current",
         reportedDate: new Date(),
       },
     ],
     employers: [
       {
-        name: randomChoice(['Tech Corp', 'Finance Inc', 'Healthcare LLC', 'Retail Co']),
-        position: randomChoice(['Manager', 'Engineer', 'Analyst', 'Specialist']),
+        name: randomChoice([
+          "Tech Corp",
+          "Finance Inc",
+          "Healthcare LLC",
+          "Retail Co",
+        ]),
+        position: randomChoice([
+          "Manager",
+          "Engineer",
+          "Analyst",
+          "Specialist",
+        ]),
         startDate: new Date(2020, 0, 1),
       },
     ],
@@ -81,23 +108,23 @@ function generatePersonalInfo(): PersonalInfo {
  */
 function generateScoreFactors(score: number): string[] {
   const factors: string[] = [];
-  
+
   if (score < 650) {
-    factors.push('High credit utilization');
-    factors.push('Recent late payments');
-    factors.push('Too many recent inquiries');
+    factors.push("High credit utilization");
+    factors.push("Recent late payments");
+    factors.push("Too many recent inquiries");
   } else if (score < 700) {
-    factors.push('Limited credit history');
-    factors.push('High balance on revolving accounts');
+    factors.push("Limited credit history");
+    factors.push("High balance on revolving accounts");
   } else if (score < 750) {
-    factors.push('Short credit history');
-    factors.push('Few accounts');
+    factors.push("Short credit history");
+    factors.push("Few accounts");
   } else {
-    factors.push('Excellent payment history');
-    factors.push('Low credit utilization');
-    factors.push('Long credit history');
+    factors.push("Excellent payment history");
+    factors.push("Low credit utilization");
+    factors.push("Long credit history");
   }
-  
+
   return factors;
 }
 
@@ -106,40 +133,52 @@ function generateScoreFactors(score: number): string[] {
  */
 function generateAccounts(
   count: number,
-  includeNegativeItems: boolean
-): Omit<CreditAccount, 'id' | 'reportId' | 'userId' | 'createdAt' | 'updatedAt'>[] {
-  const accounts: Omit<CreditAccount, 'id' | 'reportId' | 'userId' | 'createdAt' | 'updatedAt'>[] = [];
-  
+  includeNegativeItems: boolean,
+): Omit<
+  CreditAccount,
+  "id" | "reportId" | "userId" | "createdAt" | "updatedAt"
+>[] {
+  const accounts: Omit<
+    CreditAccount,
+    "id" | "reportId" | "userId" | "createdAt" | "updatedAt"
+  >[] = [];
+
   const accountTypes: AccountType[] = [
-    'credit_card',
-    'mortgage',
-    'auto_loan',
-    'student_loan',
-    'personal_loan',
+    "credit_card",
+    "mortgage",
+    "auto_loan",
+    "student_loan",
+    "personal_loan",
   ];
-  
+
   const creditors = [
-    'Chase Bank',
-    'Bank of America',
-    'Wells Fargo',
-    'Citibank',
-    'Capital One',
-    'Discover',
-    'American Express',
-    'US Bank',
+    "Chase Bank",
+    "Bank of America",
+    "Wells Fargo",
+    "Citibank",
+    "Capital One",
+    "Discover",
+    "American Express",
+    "US Bank",
   ];
-  
+
   for (let i = 0; i < count; i++) {
     const accountType = randomChoice(accountTypes);
     const balance = randomInt(0, 50000);
-    const creditLimit = accountType === 'credit_card' ? randomInt(balance, 100000) : undefined;
+    const creditLimit =
+      accountType === "credit_card" ? randomInt(balance, 100000) : undefined;
     const openedDate = new Date(2015 + randomInt(0, 8), randomInt(0, 11), 1);
-    
-    let paymentStatus: PaymentStatus = 'current';
+
+    let paymentStatus: PaymentStatus = "current";
     if (includeNegativeItems && Math.random() < 0.3) {
-      paymentStatus = randomChoice<PaymentStatus>(['late_30', 'late_60', 'late_90', 'charge_off']);
+      paymentStatus = randomChoice<PaymentStatus>([
+        "late_30",
+        "late_60",
+        "late_90",
+        "charge_off",
+      ]);
     }
-    
+
     accounts.push({
       accountType,
       accountNumber: `****${randomInt(1000, 9999)}`,
@@ -153,7 +192,7 @@ function generateAccounts(
       isDisputed: false,
     });
   }
-  
+
   return accounts;
 }
 
@@ -162,29 +201,30 @@ function generateAccounts(
  */
 function generatePaymentHistory(
   months: number,
-  currentStatus: PaymentStatus
+  currentStatus: PaymentStatus,
 ): { month: string; status: PaymentStatus; amount?: number }[] {
-  const history: { month: string; status: PaymentStatus; amount?: number }[] = [];
+  const history: { month: string; status: PaymentStatus; amount?: number }[] =
+    [];
   const now = new Date();
-  
+
   for (let i = 0; i < months; i++) {
     const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const month = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    
-    let status: PaymentStatus = 'current';
-    if (currentStatus !== 'current' && i < 3) {
+    const month = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+    let status: PaymentStatus = "current";
+    if (currentStatus !== "current" && i < 3) {
       status = currentStatus;
     } else if (Math.random() < 0.05) {
-      status = 'late_30';
+      status = "late_30";
     }
-    
+
     history.push({
       month,
       status,
       amount: randomInt(50, 500),
     });
   }
-  
+
   return history.reverse();
 }
 
@@ -192,32 +232,35 @@ function generatePaymentHistory(
  * Generate credit inquiries
  */
 function generateInquiries(
-  count: number
-): Omit<CreditInquiry, 'id' | 'reportId' | 'userId' | 'createdAt'>[] {
-  const inquiries: Omit<CreditInquiry, 'id' | 'reportId' | 'userId' | 'createdAt'>[] = [];
-  
+  count: number,
+): Omit<CreditInquiry, "id" | "reportId" | "userId" | "createdAt">[] {
+  const inquiries: Omit<
+    CreditInquiry,
+    "id" | "reportId" | "userId" | "createdAt"
+  >[] = [];
+
   const creditors = [
-    'Chase Bank',
-    'Capital One',
-    'Discover',
-    'American Express',
-    'Wells Fargo',
-    'Auto Dealer',
-    'Mortgage Lender',
+    "Chase Bank",
+    "Capital One",
+    "Discover",
+    "American Express",
+    "Wells Fargo",
+    "Auto Dealer",
+    "Mortgage Lender",
   ];
-  
+
   for (let i = 0; i < count; i++) {
     const inquiryDate = new Date();
     inquiryDate.setMonth(inquiryDate.getMonth() - randomInt(0, 24));
-    
+
     inquiries.push({
-      inquiryType: randomChoice<InquiryType>(['hard', 'soft']),
+      inquiryType: randomChoice<InquiryType>(["hard", "soft"]),
       creditorName: randomChoice(creditors),
       inquiryDate,
       isDisputed: false,
     });
   }
-  
+
   return inquiries;
 }
 
@@ -225,32 +268,35 @@ function generateInquiries(
  * Generate public records
  */
 function generatePublicRecords(
-  count: number
-): Omit<PublicRecord, 'id' | 'reportId' | 'userId' | 'createdAt'>[] {
-  const records: Omit<PublicRecord, 'id' | 'reportId' | 'userId' | 'createdAt'>[] = [];
-  
+  count: number,
+): Omit<PublicRecord, "id" | "reportId" | "userId" | "createdAt">[] {
+  const records: Omit<
+    PublicRecord,
+    "id" | "reportId" | "userId" | "createdAt"
+  >[] = [];
+
   const recordTypes: PublicRecordType[] = [
-    'bankruptcy',
-    'judgment',
-    'tax_lien',
-    'foreclosure',
+    "bankruptcy",
+    "judgment",
+    "tax_lien",
+    "foreclosure",
   ];
-  
+
   for (let i = 0; i < count; i++) {
     const filingDate = new Date();
     filingDate.setFullYear(filingDate.getFullYear() - randomInt(1, 7));
-    
+
     records.push({
       recordType: randomChoice(recordTypes),
       filingDate,
-      status: randomChoice(['filed', 'discharged', 'satisfied', 'pending']),
+      status: randomChoice(["filed", "discharged", "satisfied", "pending"]),
       amount: randomInt(5000, 100000),
-      courtName: `${randomChoice(['County', 'District', 'Superior'])} Court`,
+      courtName: `${randomChoice(["County", "District", "Superior"])} Court`,
       caseNumber: `${randomInt(2020, 2024)}-${randomInt(1000, 9999)}`,
       isDisputed: false,
     });
   }
-  
+
   return records;
 }
 
@@ -295,7 +341,7 @@ export function generateSampleReports(): {
 } {
   return {
     experian: generateMockCreditReport({
-      bureau: 'experian',
+      bureau: "experian",
       creditScore: 720,
       accountCount: 10,
       inquiryCount: 3,
@@ -303,7 +349,7 @@ export function generateSampleReports(): {
       includeNegativeItems: false,
     }),
     equifax: generateMockCreditReport({
-      bureau: 'equifax',
+      bureau: "equifax",
       creditScore: 715,
       accountCount: 9,
       inquiryCount: 2,
@@ -311,7 +357,7 @@ export function generateSampleReports(): {
       includeNegativeItems: false,
     }),
     transunion: generateMockCreditReport({
-      bureau: 'transunion',
+      bureau: "transunion",
       creditScore: 725,
       accountCount: 11,
       inquiryCount: 4,

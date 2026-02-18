@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { Suspense, useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { createBrowserClient } from '@supabase/ssr';
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { createBrowserClient } from "@supabase/ssr";
 
 /**
  * OAuth Callback Page
@@ -22,13 +22,13 @@ function AuthCallbackContent() {
         // Create browser client for OAuth callback
         const supabase = createBrowserClient(
           process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         );
 
         // Handle PKCE code exchange (modern OAuth flow)
-        const code = searchParams.get('code');
-        const errorParam = searchParams.get('error');
-        const errorDescription = searchParams.get('error_description');
+        const code = searchParams.get("code");
+        const errorParam = searchParams.get("error");
+        const errorDescription = searchParams.get("error_description");
 
         // Check for OAuth errors
         if (errorParam) {
@@ -37,7 +37,8 @@ function AuthCallbackContent() {
 
         if (code) {
           // Exchange code for session (PKCE flow)
-          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          const { data, error: exchangeError } =
+            await supabase.auth.exchangeCodeForSession(code);
 
           if (exchangeError) {
             throw exchangeError;
@@ -46,22 +47,23 @@ function AuthCallbackContent() {
           if (data.user) {
             // Check if user profile exists in 'profiles' table (canonical table)
             const { data: profileData, error: profileError } = await supabase
-              .from('profiles')
-              .select('id')
-              .eq('id', data.user.id)
+              .from("profiles")
+              .select("id")
+              .eq("id", data.user.id)
               .single();
 
             // If profile doesn't exist, create it
             if (profileError || !profileData) {
               const { error: insertError } = await supabase
-                .from('profiles')
+                .from("profiles")
                 .insert({
                   id: data.user.id,
-                  full_name: data.user.user_metadata?.full_name ||
-                             data.user.user_metadata?.name ||
-                             data.user.email?.split('@')[0] ||
-                             'User',
-                  subscription_tier: 'free',
+                  full_name:
+                    data.user.user_metadata?.full_name ||
+                    data.user.user_metadata?.name ||
+                    data.user.email?.split("@")[0] ||
+                    "User",
+                  subscription_tier: "free",
                   created_at: new Date().toISOString(),
                   updated_at: new Date().toISOString(),
                 });
@@ -73,17 +75,19 @@ function AuthCallbackContent() {
             }
 
             // Respect 'next' parameter for redirect, default to dashboard
-            const nextUrl = searchParams.get('next') || '/dashboard';
+            const nextUrl = searchParams.get("next") || "/dashboard";
             router.push(nextUrl);
             return;
           }
         }
 
         // Legacy: Handle hash tokens (fallback for older OAuth configs)
-        if (typeof window !== 'undefined' && window.location.hash) {
-          const hashParams = new URLSearchParams(window.location.hash.substring(1));
-          const accessToken = hashParams.get('access_token');
-          const refreshToken = hashParams.get('refresh_token');
+        if (typeof window !== "undefined" && window.location.hash) {
+          const hashParams = new URLSearchParams(
+            window.location.hash.substring(1),
+          );
+          const accessToken = hashParams.get("access_token");
+          const refreshToken = hashParams.get("refresh_token");
 
           if (accessToken && refreshToken) {
             // AuthCallback: Using legacy hash token flow (consider PKCE for OAuth config)
@@ -97,7 +101,10 @@ function AuthCallbackContent() {
               throw sessionError;
             }
 
-            const { data: { user }, error: userError } = await supabase.auth.getUser();
+            const {
+              data: { user },
+              error: userError,
+            } = await supabase.auth.getUser();
 
             if (userError) {
               throw userError;
@@ -106,27 +113,26 @@ function AuthCallbackContent() {
             if (user) {
               // Create profile in 'profiles' table
               const { data: profileData } = await supabase
-                .from('profiles')
-                .select('id')
-                .eq('id', user.id)
+                .from("profiles")
+                .select("id")
+                .eq("id", user.id)
                 .single();
 
               if (!profileData) {
-                await supabase
-                  .from('profiles')
-                  .insert({
-                    id: user.id,
-                    full_name: user.user_metadata?.full_name ||
-                               user.user_metadata?.name ||
-                               user.email?.split('@')[0] ||
-                               'User',
-                    subscription_tier: 'free',
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString(),
-                  });
+                await supabase.from("profiles").insert({
+                  id: user.id,
+                  full_name:
+                    user.user_metadata?.full_name ||
+                    user.user_metadata?.name ||
+                    user.email?.split("@")[0] ||
+                    "User",
+                  subscription_tier: "free",
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                });
               }
 
-              const nextUrl = searchParams.get('next') || '/dashboard';
+              const nextUrl = searchParams.get("next") || "/dashboard";
               router.push(nextUrl);
               return;
             }
@@ -134,14 +140,14 @@ function AuthCallbackContent() {
         }
 
         // If we get here without a code or hash, something went wrong
-        throw new Error('No authentication code received');
+        throw new Error("No authentication code received");
       } catch (err) {
         // AuthCallback error: OAuth callback failed
-        setError(err instanceof Error ? err.message : 'Authentication failed');
+        setError(err instanceof Error ? err.message : "Authentication failed");
 
         // Redirect to canonical login page after 3 seconds
         setTimeout(() => {
-          router.push('/auth/login');
+          router.push("/auth/login");
         }, 3000);
       }
     };
@@ -157,9 +163,7 @@ function AuthCallbackContent() {
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
             Authentication Failed
           </h2>
-          <p className="text-gray-600 dark:text-slate-300 mb-6">
-            {error}
-          </p>
+          <p className="text-gray-600 dark:text-slate-300 mb-6">{error}</p>
           <p className="text-sm text-gray-500 dark:text-slate-400">
             Redirecting to login page...
           </p>

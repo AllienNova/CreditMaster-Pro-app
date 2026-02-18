@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Credit Age Tracker
@@ -7,17 +7,17 @@
  * Provides keep-alive strategies and closure impact calculations.
  */
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { useAuth } from '@/hooks/useAuth';
+import { useState } from "react";
+import Link from "next/link";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Account {
   id: string;
   name: string;
-  type: 'credit_card' | 'loan' | 'mortgage';
+  type: "credit_card" | "loan" | "mortgage";
   openDate: string;
   ageYears: number;
-  status: 'open' | 'closed';
+  status: "open" | "closed";
   impactIfClosed: number;
 }
 
@@ -25,39 +25,39 @@ export default function CreditAgePage() {
   const { user, loading: authLoading } = useAuth();
   const [accounts, setAccounts] = useState<Account[]>([
     {
-      id: '1',
-      name: 'Chase Freedom',
-      type: 'credit_card',
-      openDate: '2018-03-15',
+      id: "1",
+      name: "Chase Freedom",
+      type: "credit_card",
+      openDate: "2018-03-15",
       ageYears: 6.75,
-      status: 'open',
+      status: "open",
       impactIfClosed: -25,
     },
     {
-      id: '2',
-      name: 'Capital One Quicksilver',
-      type: 'credit_card',
-      openDate: '2020-06-20',
+      id: "2",
+      name: "Capital One Quicksilver",
+      type: "credit_card",
+      openDate: "2020-06-20",
       ageYears: 4.5,
-      status: 'open',
+      status: "open",
       impactIfClosed: -12,
     },
     {
-      id: '3',
-      name: 'Discover it',
-      type: 'credit_card',
-      openDate: '2023-01-10',
+      id: "3",
+      name: "Discover it",
+      type: "credit_card",
+      openDate: "2023-01-10",
       ageYears: 2,
-      status: 'open',
+      status: "open",
       impactIfClosed: -5,
     },
     {
-      id: '4',
-      name: 'Personal Loan',
-      type: 'loan',
-      openDate: '2021-09-01',
+      id: "4",
+      name: "Personal Loan",
+      type: "loan",
+      openDate: "2021-09-01",
       ageYears: 3.25,
-      status: 'open',
+      status: "open",
       impactIfClosed: -8,
     },
   ]);
@@ -73,7 +73,7 @@ export default function CreditAgePage() {
     );
   }
 
-  const openAccounts = accounts.filter((acc) => acc.status === 'open');
+  const openAccounts = accounts.filter((acc) => acc.status === "open");
   const averageAge =
     openAccounts.length > 0
       ? openAccounts.reduce((sum, acc) => sum + acc.ageYears, 0) /
@@ -89,26 +89,26 @@ export default function CreditAgePage() {
       : 0;
 
   const getAgeColor = (years: number) => {
-    if (years >= 7) return 'text-green-600';
-    if (years >= 3) return 'text-yellow-600';
-    return 'text-red-600';
+    if (years >= 7) return "text-green-600";
+    if (years >= 3) return "text-yellow-600";
+    return "text-red-600";
   };
 
   const getAgeStatus = (years: number) => {
     if (years >= 7)
-      return { label: 'Excellent', color: 'bg-green-100 text-green-700' };
+      return { label: "Excellent", color: "bg-green-100 text-green-700" };
     if (years >= 3)
-      return { label: 'Good', color: 'bg-yellow-100 text-yellow-700' };
-    return { label: 'Building', color: 'bg-red-100 text-red-700' };
+      return { label: "Good", color: "bg-yellow-100 text-yellow-700" };
+    return { label: "Building", color: "bg-red-100 text-red-700" };
   };
 
   const toggleAccountStatus = (id: string) => {
     setAccounts(
       accounts.map((acc) =>
         acc.id === id
-          ? { ...acc, status: acc.status === 'open' ? 'closed' : 'open' }
-          : acc
-      )
+          ? { ...acc, status: acc.status === "open" ? "closed" : "open" }
+          : acc,
+      ),
     );
   };
 
@@ -145,7 +145,9 @@ export default function CreditAgePage() {
               <div className="text-4xl font-bold mb-2">
                 {averageAge.toFixed(1)} yrs
               </div>
-              <div className="text-sm text-emerald-100">Average Account Age</div>
+              <div className="text-sm text-emerald-100">
+                Average Account Age
+              </div>
             </div>
             <div className="text-center">
               <div className="text-4xl font-bold mb-2">
@@ -249,10 +251,10 @@ export default function CreditAgePage() {
               <div
                 className={`h-4 rounded-full transition-all duration-500 ${
                   averageAge >= 7
-                    ? 'bg-green-500'
+                    ? "bg-green-500"
                     : averageAge >= 3
-                      ? 'bg-yellow-500'
-                      : 'bg-red-500'
+                      ? "bg-yellow-500"
+                      : "bg-red-500"
                 }`}
                 style={{ width: `${Math.min(100, (averageAge / 10) * 100)}%` }}
               ></div>
@@ -325,34 +327,34 @@ export default function CreditAgePage() {
                 <div
                   key={account.id}
                   className={`border-2 rounded-lg p-6 transition-all ${
-                    account.status === 'open'
-                      ? 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800'
-                      : 'border-red-200 bg-red-50 opacity-60'
+                    account.status === "open"
+                      ? "border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800"
+                      : "border-red-200 bg-red-50 opacity-60"
                   }`}
                 >
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-3">
                       <div
                         className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl ${
-                          account.type === 'credit_card'
-                            ? 'bg-blue-100'
-                            : account.type === 'loan'
-                              ? 'bg-blue-100'
-                              : 'bg-green-100'
+                          account.type === "credit_card"
+                            ? "bg-blue-100"
+                            : account.type === "loan"
+                              ? "bg-blue-100"
+                              : "bg-green-100"
                         }`}
                       >
-                        {account.type === 'credit_card'
-                          ? ''
-                          : account.type === 'loan'
-                            ? ''
-                            : ''}
+                        {account.type === "credit_card"
+                          ? ""
+                          : account.type === "loan"
+                            ? ""
+                            : ""}
                       </div>
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                           {account.name}
                         </h3>
                         <p className="text-sm text-gray-600 dark:text-slate-300 capitalize">
-                          {account.type.replace('_', ' ')} • Opened{' '}
+                          {account.type.replace("_", " ")} • Opened{" "}
                           {account.openDate}
                         </p>
                       </div>
@@ -381,10 +383,10 @@ export default function CreditAgePage() {
                           <div
                             className={`h-2 rounded-full ${
                               account.ageYears >= 7
-                                ? 'bg-green-500'
+                                ? "bg-green-500"
                                 : account.ageYears >= 3
-                                  ? 'bg-yellow-500'
-                                  : 'bg-red-500'
+                                  ? "bg-yellow-500"
+                                  : "bg-red-500"
                             }`}
                             style={{
                               width: `${Math.min(100, (account.ageYears / 10) * 100)}%`,
@@ -405,7 +407,7 @@ export default function CreditAgePage() {
 
                   <div className="flex items-center justify-between">
                     <div className="text-sm text-gray-600 dark:text-slate-300">
-                      {account.status === 'open' ? (
+                      {account.status === "open" ? (
                         <span className="flex items-center space-x-2">
                           <svg
                             className="w-4 h-4 text-green-500"
@@ -440,14 +442,14 @@ export default function CreditAgePage() {
                     <button
                       onClick={() => toggleAccountStatus(account.id)}
                       className={`px-4 py-2 rounded-lg font-medium text-sm ${
-                        account.status === 'open'
-                          ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                          : 'bg-green-100 text-green-700 hover:bg-green-200'
+                        account.status === "open"
+                          ? "bg-red-100 text-red-700 hover:bg-red-200"
+                          : "bg-green-100 text-green-700 hover:bg-green-200"
                       }`}
                     >
-                      {account.status === 'open'
-                        ? 'Simulate Closure'
-                        : 'Reopen'}
+                      {account.status === "open"
+                        ? "Simulate Closure"
+                        : "Reopen"}
                     </button>
                   </div>
                 </div>
@@ -469,17 +471,17 @@ export default function CreditAgePage() {
               return (
                 <div key={months} className="flex items-center space-x-4">
                   <div className="w-32 text-sm font-medium text-gray-700 dark:text-slate-200">
-                    In {months / 12} year{months > 12 ? 's' : ''}
+                    In {months / 12} year{months > 12 ? "s" : ""}
                   </div>
                   <div className="flex-1">
                     <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-6 relative overflow-hidden">
                       <div
                         className={`h-6 rounded-full transition-all duration-500 flex items-center justify-end pr-3 ${
                           projected >= 7
-                            ? 'bg-green-500'
+                            ? "bg-green-500"
                             : projected >= 3
-                              ? 'bg-yellow-500'
-                              : 'bg-red-500'
+                              ? "bg-yellow-500"
+                              : "bg-red-500"
                         }`}
                         style={{
                           width: `${Math.min(100, (projected / 10) * 100)}%`,

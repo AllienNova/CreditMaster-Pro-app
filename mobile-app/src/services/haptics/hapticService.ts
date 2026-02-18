@@ -4,54 +4,54 @@
  * Provides consistent tactile feedback across both platforms
  */
 
-import * as Haptics from 'expo-haptics';
-import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Haptics from "expo-haptics";
+import { Platform } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const HAPTICS_ENABLED_KEY = '@fynvita_haptics_enabled';
+const HAPTICS_ENABLED_KEY = "@fynvita_haptics_enabled";
 
 // Haptic feedback types
 export enum HapticFeedbackType {
   // Light feedback for subtle interactions
-  Light = 'light',
+  Light = "light",
   // Medium feedback for standard interactions
-  Medium = 'medium',
+  Medium = "medium",
   // Heavy feedback for important actions
-  Heavy = 'heavy',
+  Heavy = "heavy",
   // Success feedback for positive outcomes
-  Success = 'success',
+  Success = "success",
   // Warning feedback for cautionary actions
-  Warning = 'warning',
+  Warning = "warning",
   // Error feedback for failures or problems
-  Error = 'error',
+  Error = "error",
   // Selection feedback for picker/toggle changes
-  Selection = 'selection',
+  Selection = "selection",
 }
 
 // Context-specific haptic patterns
 export enum HapticContext {
   // Button press
-  ButtonPress = 'buttonPress',
+  ButtonPress = "buttonPress",
   // Toggle switch
-  Toggle = 'toggle',
+  Toggle = "toggle",
   // Tab change
-  TabChange = 'tabChange',
+  TabChange = "tabChange",
   // Pull to refresh
-  PullToRefresh = 'pullToRefresh',
+  PullToRefresh = "pullToRefresh",
   // Item deletion
-  Delete = 'delete',
+  Delete = "delete",
   // Successful action
-  Success = 'success',
+  Success = "success",
   // Error action
-  Error = 'error',
+  Error = "error",
   // Score change (credit score updates)
-  ScoreChange = 'scoreChange',
+  ScoreChange = "scoreChange",
   // Payment processed
-  Payment = 'payment',
+  Payment = "payment",
   // Dispute filed
-  DisputeFiled = 'disputeFiled',
+  DisputeFiled = "disputeFiled",
   // Goal achieved
-  GoalAchieved = 'goalAchieved',
+  GoalAchieved = "goalAchieved",
 }
 
 /**
@@ -70,7 +70,7 @@ class HapticService {
 
     try {
       const enabled = await AsyncStorage.getItem(HAPTICS_ENABLED_KEY);
-      this.isEnabled = enabled !== 'false';
+      this.isEnabled = enabled !== "false";
       this.isInitialized = true;
     } catch {
       this.isEnabled = true;
@@ -114,13 +114,19 @@ class HapticService {
           await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
           break;
         case HapticFeedbackType.Success:
-          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          await Haptics.notificationAsync(
+            Haptics.NotificationFeedbackType.Success,
+          );
           break;
         case HapticFeedbackType.Warning:
-          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          await Haptics.notificationAsync(
+            Haptics.NotificationFeedbackType.Warning,
+          );
           break;
         case HapticFeedbackType.Error:
-          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          await Haptics.notificationAsync(
+            Haptics.NotificationFeedbackType.Error,
+          );
           break;
         case HapticFeedbackType.Selection:
           await Haptics.selectionAsync();
@@ -129,7 +135,7 @@ class HapticService {
     } catch (error) {
       // Haptics not available on this device
       if (__DEV__) {
-        console.log('Haptics not available:', error);
+        console.log("Haptics not available:", error);
       }
     }
   }
@@ -159,49 +165,57 @@ class HapticService {
           break;
 
         case HapticContext.Delete:
-          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          await Haptics.notificationAsync(
+            Haptics.NotificationFeedbackType.Warning,
+          );
           break;
 
         case HapticContext.Success:
-          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          await Haptics.notificationAsync(
+            Haptics.NotificationFeedbackType.Success,
+          );
           break;
 
         case HapticContext.Error:
-          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          await Haptics.notificationAsync(
+            Haptics.NotificationFeedbackType.Error,
+          );
           break;
 
         case HapticContext.ScoreChange:
           // Special pattern for score changes
           await this.playPattern([
-            { type: 'impact', style: 'medium', delay: 0 },
-            { type: 'impact', style: 'light', delay: 100 },
+            { type: "impact", style: "medium", delay: 0 },
+            { type: "impact", style: "light", delay: 100 },
           ]);
           break;
 
         case HapticContext.Payment:
           // Confirmation pattern for payments
           await this.playPattern([
-            { type: 'impact', style: 'medium', delay: 0 },
-            { type: 'notification', style: 'success', delay: 200 },
+            { type: "impact", style: "medium", delay: 0 },
+            { type: "notification", style: "success", delay: 200 },
           ]);
           break;
 
         case HapticContext.DisputeFiled:
-          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          await Haptics.notificationAsync(
+            Haptics.NotificationFeedbackType.Success,
+          );
           break;
 
         case HapticContext.GoalAchieved:
           // Celebration pattern
           await this.playPattern([
-            { type: 'impact', style: 'heavy', delay: 0 },
-            { type: 'impact', style: 'medium', delay: 100 },
-            { type: 'notification', style: 'success', delay: 200 },
+            { type: "impact", style: "heavy", delay: 0 },
+            { type: "impact", style: "medium", delay: 100 },
+            { type: "notification", style: "success", delay: 200 },
           ]);
           break;
       }
     } catch (error) {
       if (__DEV__) {
-        console.log('Haptics not available:', error);
+        console.log("Haptics not available:", error);
       }
     }
   }
@@ -211,10 +225,10 @@ class HapticService {
    */
   private async playPattern(
     pattern: Array<{
-      type: 'impact' | 'notification' | 'selection';
+      type: "impact" | "notification" | "selection";
       style?: string;
       delay: number;
-    }>
+    }>,
   ): Promise<void> {
     for (const step of pattern) {
       if (step.delay > 0) {
@@ -222,27 +236,27 @@ class HapticService {
       }
 
       switch (step.type) {
-        case 'impact':
+        case "impact":
           await Haptics.impactAsync(
-            step.style === 'heavy'
+            step.style === "heavy"
               ? Haptics.ImpactFeedbackStyle.Heavy
-              : step.style === 'light'
+              : step.style === "light"
                 ? Haptics.ImpactFeedbackStyle.Light
-                : Haptics.ImpactFeedbackStyle.Medium
+                : Haptics.ImpactFeedbackStyle.Medium,
           );
           break;
 
-        case 'notification':
+        case "notification":
           await Haptics.notificationAsync(
-            step.style === 'error'
+            step.style === "error"
               ? Haptics.NotificationFeedbackType.Error
-              : step.style === 'warning'
+              : step.style === "warning"
                 ? Haptics.NotificationFeedbackType.Warning
-                : Haptics.NotificationFeedbackType.Success
+                : Haptics.NotificationFeedbackType.Success,
           );
           break;
 
-        case 'selection':
+        case "selection":
           await Haptics.selectionAsync();
           break;
       }

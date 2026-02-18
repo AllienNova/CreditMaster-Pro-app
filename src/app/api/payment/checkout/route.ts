@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient, getSupabase } from '@/lib/supabase/client';
-import { subscriptionService } from '@/lib/subscriptions/subscription-service';
-import { stripeService } from '@/lib/payment/stripe-service';
-import type { Database } from '@/lib/supabase/types';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient, getSupabase } from "@/lib/supabase/client";
+import { subscriptionService } from "@/lib/subscriptions/subscription-service";
+import { stripeService } from "@/lib/payment/stripe-service";
+import type { Database } from "@/lib/supabase/types";
 
-type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
+type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
 
 // Helper to get typed table reference
-const profiles = () => getSupabase().from('profiles');
+const profiles = () => getSupabase().from("profiles");
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,8 +20,8 @@ export async function POST(request: NextRequest) {
 
     if (authError || !user) {
       return NextResponse.json(
-        { error: 'Unauthorized - Please sign in to continue' },
-        { status: 401 }
+        { error: "Unauthorized - Please sign in to continue" },
+        { status: 401 },
       );
     }
 
@@ -31,8 +31,8 @@ export async function POST(request: NextRequest) {
 
     if (!priceId) {
       return NextResponse.json(
-        { error: 'Missing required field: priceId' },
-        { status: 400 }
+        { error: "Missing required field: priceId" },
+        { status: 400 },
       );
     }
 
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       const customer = await stripeService.createCustomer(
         user.email!,
         profile?.fullName || undefined,
-        { userId: user.id }
+        { userId: user.id },
       );
 
       stripeCustomerId = customer.id;
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
         stripe_customer_id: stripeCustomerId,
       };
       const query = profiles();
-      await query.update(updateData).eq('id', user.id);
+      await query.update(updateData).eq("id", user.id);
     }
 
     // Create Stripe Checkout session
@@ -66,20 +66,20 @@ export async function POST(request: NextRequest) {
       stripeCustomerId,
       successUrl || `${process.env.NEXT_PUBLIC_APP_URL}/payment/success`,
       cancelUrl || `${process.env.NEXT_PUBLIC_APP_URL}/pricing?canceled=true`,
-      trialDays
+      trialDays,
     );
 
     return NextResponse.json({ sessionId: session.id, url: session.url });
   } catch (error) {
-    console.error('Checkout error:', error);
+    console.error("Checkout error:", error);
     return NextResponse.json(
       {
         error:
           error instanceof Error
             ? error.message
-            : 'Failed to create checkout session',
+            : "Failed to create checkout session",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

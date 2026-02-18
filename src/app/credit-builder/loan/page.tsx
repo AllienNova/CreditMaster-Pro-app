@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Credit Builder Loan Page
@@ -14,17 +14,17 @@
  * - Step-by-step application guidance
  */
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useAuth } from '@/hooks/useAuth';
-import type { CreditBuilderLoan } from '@/lib/credit-builder/credit-builder-service';
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { useAuth } from "@/hooks/useAuth";
+import type { CreditBuilderLoan } from "@/lib/credit-builder/credit-builder-service";
 
 export default function CreditBuilderLoanPage() {
   const { user, loading: authLoading } = useAuth();
   const [loans, setLoans] = useState<CreditBuilderLoan[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedLoan, setSelectedLoan] = useState<CreditBuilderLoan | null>(
-    null
+    null,
   );
   const [showComparison, setShowComparison] = useState(false);
   const [compareLoans, setCompareLoans] = useState<CreditBuilderLoan[]>([]);
@@ -35,17 +35,17 @@ export default function CreditBuilderLoanPage() {
 
   const fetchLoans = async () => {
     try {
-      const response = await fetch('/api/credit-builder/loans');
+      const response = await fetch("/api/credit-builder/loans");
       const data = await response.json();
       setLoans(data.loans || []);
     } catch (error) {
-      console.error('Error fetching loans:', error);
+      console.error("Error fetching loans:", error);
       // Set mock data for development
       setLoans([
         {
-          id: 'cbl-1',
-          provider: 'Self',
-          name: 'Credit Builder Account',
+          id: "cbl-1",
+          provider: "Self",
+          name: "Credit Builder Account",
           loanAmount: 1000,
           monthlyPayment: 48,
           term: 24,
@@ -55,12 +55,12 @@ export default function CreditBuilderLoanPage() {
             bankAccountRequired: true,
           },
           benefits: [
-            'No credit check required',
-            'Reports to all 3 bureaus',
-            'Build savings while building credit',
-            'Average 49-point increase',
+            "No credit check required",
+            "Reports to all 3 bureaus",
+            "Build savings while building credit",
+            "Average 49-point increase",
           ],
-          reporting: ['Experian', 'Equifax', 'TransUnion'],
+          reporting: ["Experian", "Equifax", "TransUnion"],
           fees: {
             application: 0,
             monthly: 0,
@@ -68,12 +68,12 @@ export default function CreditBuilderLoanPage() {
           },
           recommended: true,
           aiReasoning:
-            'Recommended for beginners with no credit history. No credit check makes approval virtually guaranteed, and reporting to all 3 bureaus maximizes impact.',
+            "Recommended for beginners with no credit history. No credit check makes approval virtually guaranteed, and reporting to all 3 bureaus maximizes impact.",
         },
         {
-          id: 'cbl-2',
-          provider: 'MoneyLion',
-          name: 'Credit Builder Plus',
+          id: "cbl-2",
+          provider: "MoneyLion",
+          name: "Credit Builder Plus",
           loanAmount: 1000,
           monthlyPayment: 19.99,
           term: 12,
@@ -83,23 +83,23 @@ export default function CreditBuilderLoanPage() {
             bankAccountRequired: true,
           },
           benefits: [
-            'Low APR',
-            'Fast credit building',
-            'Managed investment account',
-            'Cash advances available',
+            "Low APR",
+            "Fast credit building",
+            "Managed investment account",
+            "Cash advances available",
           ],
-          reporting: ['Experian', 'Equifax', 'TransUnion'],
+          reporting: ["Experian", "Equifax", "TransUnion"],
           fees: {
             monthly: 19.99,
           },
           recommended: false,
           aiReasoning:
-            'Best for employed individuals seeking fast results. Lower APR saves money, but requires employment verification.',
+            "Best for employed individuals seeking fast results. Lower APR saves money, but requires employment verification.",
         },
         {
-          id: 'cbl-3',
-          provider: 'Kikoff',
-          name: 'Credit Account',
+          id: "cbl-3",
+          provider: "Kikoff",
+          name: "Credit Account",
           loanAmount: 500,
           monthlyPayment: 5,
           term: 12,
@@ -110,19 +110,19 @@ export default function CreditBuilderLoanPage() {
             bankAccountRequired: true,
           },
           benefits: [
-            '0% APR',
-            'Lowest monthly payment',
-            'Reports to all 3 bureaus',
-            'No credit check',
+            "0% APR",
+            "Lowest monthly payment",
+            "Reports to all 3 bureaus",
+            "No credit check",
           ],
-          reporting: ['Experian', 'Equifax', 'TransUnion'],
+          reporting: ["Experian", "Equifax", "TransUnion"],
           fees: {
             application: 0,
             monthly: 0,
           },
           recommended: true,
           aiReasoning:
-            '0% APR makes this the most affordable option. Perfect for those on tight budgets who want to build credit slowly.',
+            "0% APR makes this the most affordable option. Perfect for those on tight budgets who want to build credit slowly.",
         },
       ]);
     } finally {
@@ -154,7 +154,9 @@ export default function CreditBuilderLoanPage() {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-slate-300">Loading credit builder loans...</p>
+          <p className="mt-4 text-gray-600 dark:text-slate-300">
+            Loading credit builder loans...
+          </p>
         </div>
       </div>
     );
@@ -187,7 +189,7 @@ export default function CreditBuilderLoanPage() {
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Compare {compareLoans.length} Loan
-                {compareLoans.length > 1 ? 's' : ''}
+                {compareLoans.length > 1 ? "s" : ""}
               </button>
             )}
           </div>
@@ -300,7 +302,7 @@ export default function CreditBuilderLoanPage() {
                 AI-Powered Recommendations
               </h2>
               <p className="text-gray-700 dark:text-slate-200">
-                Based on your credit profile, we recommend starting with a{' '}
+                Based on your credit profile, we recommend starting with a{" "}
                 <strong>no credit check</strong> option that reports to all 3
                 bureaus. This maximizes your chances of approval while building
                 credit across all major bureaus.
@@ -314,7 +316,7 @@ export default function CreditBuilderLoanPage() {
           {loans.map((loan) => (
             <div
               key={loan.id}
-              className={`bg-white dark:bg-slate-800 rounded-xl shadow-sm border-2 transition-all ${ loan.recommended ? 'border-blue-500 shadow-lg' : compareLoans.find((l) => l.id === loan.id) ? 'border-green-500' : 'border-gray-200 hover:border-gray-300 dark:border-slate-600' }`}
+              className={`bg-white dark:bg-slate-800 rounded-xl shadow-sm border-2 transition-all ${loan.recommended ? "border-blue-500 shadow-lg" : compareLoans.find((l) => l.id === loan.id) ? "border-green-500" : "border-gray-200 hover:border-gray-300 dark:border-slate-600"}`}
             >
               {loan.recommended && (
                 <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2 rounded-t-xl flex items-center justify-between">
@@ -344,19 +346,21 @@ export default function CreditBuilderLoanPage() {
                         </span>
                       )}
                     </div>
-                    <p className="text-lg text-gray-600 dark:text-slate-300">{loan.name}</p>
+                    <p className="text-lg text-gray-600 dark:text-slate-300">
+                      {loan.name}
+                    </p>
                   </div>
                   <button
                     onClick={() => toggleCompare(loan)}
                     className={`px-4 py-2 rounded-lg border-2 transition-all ${
                       compareLoans.find((l) => l.id === loan.id)
-                        ? 'bg-green-50 border-green-500 text-green-700'
-                        : 'border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 hover:border-blue-500'
+                        ? "bg-green-50 border-green-500 text-green-700"
+                        : "border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 hover:border-blue-500"
                     }`}
                   >
                     {compareLoans.find((l) => l.id === loan.id)
-                      ? 'Added'
-                      : 'Compare'}
+                      ? "Added"
+                      : "Compare"}
                   </button>
                 </div>
 
@@ -386,25 +390,33 @@ export default function CreditBuilderLoanPage() {
                     <div className="text-2xl font-bold text-gray-900 dark:text-white">
                       ${loan.loanAmount.toLocaleString()}
                     </div>
-                    <div className="text-sm text-gray-600 dark:text-slate-300">Loan Amount</div>
+                    <div className="text-sm text-gray-600 dark:text-slate-300">
+                      Loan Amount
+                    </div>
                   </div>
                   <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-4">
                     <div className="text-2xl font-bold text-gray-900 dark:text-white">
                       ${loan.monthlyPayment}
                     </div>
-                    <div className="text-sm text-gray-600 dark:text-slate-300">Monthly Payment</div>
+                    <div className="text-sm text-gray-600 dark:text-slate-300">
+                      Monthly Payment
+                    </div>
                   </div>
                   <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-4">
                     <div className="text-2xl font-bold text-gray-900 dark:text-white">
                       {loan.term} mo
                     </div>
-                    <div className="text-sm text-gray-600 dark:text-slate-300">Term Length</div>
+                    <div className="text-sm text-gray-600 dark:text-slate-300">
+                      Term Length
+                    </div>
                   </div>
                   <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-4">
                     <div className="text-2xl font-bold text-gray-900 dark:text-white">
                       {loan.apr}%
                     </div>
-                    <div className="text-sm text-gray-600 dark:text-slate-300">APR</div>
+                    <div className="text-sm text-gray-600 dark:text-slate-300">
+                      APR
+                    </div>
                   </div>
                 </div>
 
@@ -488,8 +500,8 @@ export default function CreditBuilderLoanPage() {
                         )}
                         <span className="text-sm text-gray-700 dark:text-slate-200">
                           {loan.requirements.employmentRequired
-                            ? 'Employment Required'
-                            : 'No Employment Required'}
+                            ? "Employment Required"
+                            : "No Employment Required"}
                         </span>
                       </li>
                       <li className="flex items-start space-x-2">
@@ -547,7 +559,9 @@ export default function CreditBuilderLoanPage() {
                     )}
                     {(loan.fees.monthly || 0) > 0 && (
                       <div>
-                        <div className="text-sm text-gray-600 dark:text-slate-300">Monthly Fee</div>
+                        <div className="text-sm text-gray-600 dark:text-slate-300">
+                          Monthly Fee
+                        </div>
                         <div className="text-lg font-bold text-gray-900 dark:text-white">
                           ${loan.fees.monthly}
                         </div>
@@ -580,8 +594,8 @@ export default function CreditBuilderLoanPage() {
                   onClick={() => setSelectedLoan(loan)}
                   className={`w-full py-3 rounded-lg font-semibold transition-all ${
                     loan.recommended
-                      ? 'bg-blue-600 text-white hover:bg-blue-700'
-                      : 'bg-gray-900 text-white hover:bg-gray-800'
+                      ? "bg-blue-600 text-white hover:bg-blue-700"
+                      : "bg-gray-900 text-white hover:bg-gray-800"
                   }`}
                 >
                   View Details & Apply
@@ -602,7 +616,9 @@ export default function CreditBuilderLoanPage() {
               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl font-bold text-blue-600">1</span>
               </div>
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Apply</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                Apply
+              </h3>
               <p className="text-sm text-gray-600 dark:text-slate-300">
                 Choose a loan amount and submit your application online
               </p>
@@ -612,7 +628,9 @@ export default function CreditBuilderLoanPage() {
               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl font-bold text-blue-600">2</span>
               </div>
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Get Approved</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                Get Approved
+              </h3>
               <p className="text-sm text-gray-600 dark:text-slate-300">
                 Most approvals happen instantly, even with no credit
               </p>
@@ -635,7 +653,9 @@ export default function CreditBuilderLoanPage() {
               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl font-bold text-blue-600">4</span>
               </div>
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Build Credit</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                Build Credit
+              </h3>
               <p className="text-sm text-gray-600 dark:text-slate-300">
                 After completing payments, receive your savings plus interest
               </p>
@@ -680,39 +700,53 @@ export default function CreditBuilderLoanPage() {
                     className="border-2 border-gray-200 dark:border-slate-700 rounded-lg p-4"
                   >
                     <h3 className="font-bold text-lg mb-2">{loan.provider}</h3>
-                    <p className="text-sm text-gray-600 dark:text-slate-300 mb-4">{loan.name}</p>
+                    <p className="text-sm text-gray-600 dark:text-slate-300 mb-4">
+                      {loan.name}
+                    </p>
 
                     <div className="space-y-3 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-slate-300">Loan Amount:</span>
+                        <span className="text-gray-600 dark:text-slate-300">
+                          Loan Amount:
+                        </span>
                         <span className="font-semibold">
                           ${loan.loanAmount.toLocaleString()}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-slate-300">Monthly Payment:</span>
+                        <span className="text-gray-600 dark:text-slate-300">
+                          Monthly Payment:
+                        </span>
                         <span className="font-semibold">
                           ${loan.monthlyPayment}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-slate-300">Term:</span>
+                        <span className="text-gray-600 dark:text-slate-300">
+                          Term:
+                        </span>
                         <span className="font-semibold">
                           {loan.term} months
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-slate-300">APR:</span>
+                        <span className="text-gray-600 dark:text-slate-300">
+                          APR:
+                        </span>
                         <span className="font-semibold">{loan.apr}%</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-slate-300">Total Interest:</span>
+                        <span className="text-gray-600 dark:text-slate-300">
+                          Total Interest:
+                        </span>
                         <span className="font-semibold">
                           ${calculateTotalInterest(loan).toLocaleString()}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600 dark:text-slate-300">Total Cost:</span>
+                        <span className="text-gray-600 dark:text-slate-300">
+                          Total Cost:
+                        </span>
                         <span className="font-semibold">
                           ${calculateTotalCost(loan).toLocaleString()}
                         </span>

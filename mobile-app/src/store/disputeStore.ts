@@ -3,72 +3,80 @@
  * Manages disputes, templates, strategies, and AI letter generation
  */
 
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { disputeApi, disputeLetterApi, disputeResourcesApi } from '../services/api';
-import type { 
-  Dispute, 
-  DisputeTemplate, 
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  disputeApi,
+  disputeLetterApi,
+  disputeResourcesApi,
+} from "../services/api";
+import type {
+  Dispute,
+  DisputeTemplate,
   DisputeStrategy,
-  DisputeReason 
-} from '../services/api/types';
+  DisputeReason,
+} from "../services/api/types";
 
 interface DisputeState {
   // Disputes
   disputes: Dispute[];
   currentDispute: Dispute | null;
   totalDisputes: number;
-  
+
   // Templates & Strategies
   templates: DisputeTemplate[];
   strategies: DisputeStrategy[];
   reasons: DisputeReason[];
-  
+
   // AI Letter Generation
   generatedLetter: string | null;
   isGeneratingLetter: boolean;
-  
+
   // Loading states
   isLoading: boolean;
   isCreating: boolean;
   isSending: boolean;
-  
+
   // Errors
   error: string | null;
-  
+
   // Filters
-  statusFilter: Dispute['status'] | 'all';
-  bureauFilter: string | 'all';
-  
+  statusFilter: Dispute["status"] | "all";
+  bureauFilter: string | "all";
+
   // Actions - Disputes
   fetchDisputes: (params?: { page?: number; status?: string }) => Promise<void>;
   fetchDisputeById: (id: string) => Promise<void>;
-  createDispute: (dispute: Omit<Dispute, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<Dispute | null>;
+  createDispute: (
+    dispute: Omit<Dispute, "id" | "userId" | "createdAt" | "updatedAt">,
+  ) => Promise<Dispute | null>;
   updateDispute: (id: string, updates: Partial<Dispute>) => Promise<boolean>;
   deleteDispute: (id: string) => Promise<boolean>;
   sendDispute: (id: string) => Promise<boolean>;
-  
+
   // Actions - AI Letters
   generateAILetter: (params: {
     disputeType: string;
     bureau: string;
     accountInfo: Record<string, unknown>;
-    tone?: 'professional' | 'assertive' | 'legal';
+    tone?: "professional" | "assertive" | "legal";
     includeStatutes?: boolean;
   }) => Promise<string | null>;
   clearGeneratedLetter: () => void;
-  
+
   // Actions - Resources
   fetchTemplates: () => Promise<void>;
   fetchStrategies: () => Promise<void>;
   fetchReasons: () => Promise<void>;
-  getStrategyRecommendations: (disputeType: string) => Promise<DisputeStrategy[]>;
-  
+  getStrategyRecommendations: (
+    disputeType: string,
+  ) => Promise<DisputeStrategy[]>;
+
   // Actions - Filters
-  setStatusFilter: (status: Dispute['status'] | 'all') => void;
-  setBureauFilter: (bureau: string | 'all') => void;
-  
+  setStatusFilter: (status: Dispute["status"] | "all") => void;
+  setBureauFilter: (bureau: string | "all") => void;
+
   // Actions - Utility
   clearError: () => void;
   resetStore: () => void;
@@ -90,8 +98,8 @@ const initialState = {
   isCreating: false,
   isSending: false,
   error: null,
-  statusFilter: 'all' as const,
-  bureauFilter: 'all' as const,
+  statusFilter: "all" as const,
+  bureauFilter: "all" as const,
 };
 
 export const useDisputeStore = create<DisputeState>()(
@@ -105,22 +113,25 @@ export const useDisputeStore = create<DisputeState>()(
           const { statusFilter, bureauFilter } = get();
           const response = await disputeApi.getAll({
             ...params,
-            status: statusFilter !== 'all' ? statusFilter : undefined,
-            bureau: bureauFilter !== 'all' ? bureauFilter : undefined,
+            status: statusFilter !== "all" ? statusFilter : undefined,
+            bureau: bureauFilter !== "all" ? bureauFilter : undefined,
           });
           if (response.success && response.data) {
-            set({ 
+            set({
               disputes: response.data.items,
               totalDisputes: response.data.total,
-              isLoading: false 
+              isLoading: false,
             });
           } else {
             set({ error: response.error?.message, isLoading: false });
           }
         } catch (error) {
-          set({ 
-            error: error instanceof Error ? error.message : 'Failed to fetch disputes',
-            isLoading: false 
+          set({
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to fetch disputes",
+            isLoading: false,
           });
         }
       },
@@ -135,9 +146,12 @@ export const useDisputeStore = create<DisputeState>()(
             set({ error: response.error?.message, isLoading: false });
           }
         } catch (error) {
-          set({ 
-            error: error instanceof Error ? error.message : 'Failed to fetch dispute',
-            isLoading: false 
+          set({
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to fetch dispute",
+            isLoading: false,
           });
         }
       },
@@ -147,19 +161,22 @@ export const useDisputeStore = create<DisputeState>()(
         try {
           const response = await disputeApi.create(dispute);
           if (response.success && response.data) {
-            set((state) => ({ 
+            set((state) => ({
               disputes: [response.data!, ...state.disputes],
               totalDisputes: state.totalDisputes + 1,
-              isCreating: false 
+              isCreating: false,
             }));
             return response.data;
           }
           set({ error: response.error?.message, isCreating: false });
           return null;
         } catch (error) {
-          set({ 
-            error: error instanceof Error ? error.message : 'Failed to create dispute',
-            isCreating: false 
+          set({
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to create dispute",
+            isCreating: false,
           });
           return null;
         }
@@ -170,8 +187,13 @@ export const useDisputeStore = create<DisputeState>()(
           const response = await disputeApi.update(id, updates);
           if (response.success && response.data) {
             set((state) => ({
-              disputes: state.disputes.map(d => d.id === id ? response.data! : d),
-              currentDispute: state.currentDispute?.id === id ? response.data : state.currentDispute,
+              disputes: state.disputes.map((d) =>
+                d.id === id ? response.data! : d,
+              ),
+              currentDispute:
+                state.currentDispute?.id === id
+                  ? response.data
+                  : state.currentDispute,
             }));
             return true;
           }
@@ -186,9 +208,10 @@ export const useDisputeStore = create<DisputeState>()(
           const response = await disputeApi.delete(id);
           if (response.success) {
             set((state) => ({
-              disputes: state.disputes.filter(d => d.id !== id),
+              disputes: state.disputes.filter((d) => d.id !== id),
               totalDisputes: state.totalDisputes - 1,
-              currentDispute: state.currentDispute?.id === id ? null : state.currentDispute,
+              currentDispute:
+                state.currentDispute?.id === id ? null : state.currentDispute,
             }));
             return true;
           }
@@ -204,8 +227,13 @@ export const useDisputeStore = create<DisputeState>()(
           const response = await disputeApi.send(id);
           if (response.success && response.data) {
             set((state) => ({
-              disputes: state.disputes.map(d => d.id === id ? response.data! : d),
-              currentDispute: state.currentDispute?.id === id ? response.data : state.currentDispute,
+              disputes: state.disputes.map((d) =>
+                d.id === id ? response.data! : d,
+              ),
+              currentDispute:
+                state.currentDispute?.id === id
+                  ? response.data
+                  : state.currentDispute,
               isSending: false,
             }));
             return true;
@@ -214,8 +242,9 @@ export const useDisputeStore = create<DisputeState>()(
           return false;
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'Failed to send dispute',
-            isSending: false
+            error:
+              error instanceof Error ? error.message : "Failed to send dispute",
+            isSending: false,
           });
           return false;
         }
@@ -234,26 +263,38 @@ export const useDisputeStore = create<DisputeState>()(
               params.disputeType,
               {
                 bureau: params.bureau,
-                ...params.accountInfo as Record<string, string>,
-              }
+                ...(params.accountInfo as Record<string, string>),
+              },
             );
             if (response.success && response.data) {
-              set({ generatedLetter: response.data.letter, isGeneratingLetter: false });
+              set({
+                generatedLetter: response.data.letter,
+                isGeneratingLetter: false,
+              });
               return response.data.letter;
             }
           } else {
             const response = await disputeLetterApi.generateAILetter(disputeId);
             if (response.success && response.data) {
-              set({ generatedLetter: response.data.letter, isGeneratingLetter: false });
+              set({
+                generatedLetter: response.data.letter,
+                isGeneratingLetter: false,
+              });
               return response.data.letter;
             }
           }
-          set({ error: 'Failed to generate letter', isGeneratingLetter: false });
+          set({
+            error: "Failed to generate letter",
+            isGeneratingLetter: false,
+          });
           return null;
         } catch (error) {
           set({
-            error: error instanceof Error ? error.message : 'Failed to generate letter',
-            isGeneratingLetter: false
+            error:
+              error instanceof Error
+                ? error.message
+                : "Failed to generate letter",
+            isGeneratingLetter: false,
           });
           return null;
         }
@@ -268,7 +309,7 @@ export const useDisputeStore = create<DisputeState>()(
             set({ templates: response.data.templates });
           }
         } catch (error) {
-          if (__DEV__) console.error('Failed to fetch templates:', error);
+          if (__DEV__) console.error("Failed to fetch templates:", error);
         }
       },
 
@@ -279,7 +320,7 @@ export const useDisputeStore = create<DisputeState>()(
             set({ strategies: response.data.strategies });
           }
         } catch (error) {
-          if (__DEV__) console.error('Failed to fetch strategies:', error);
+          if (__DEV__) console.error("Failed to fetch strategies:", error);
         }
       },
 
@@ -290,18 +331,20 @@ export const useDisputeStore = create<DisputeState>()(
             set({ reasons: response.data.reasons });
           }
         } catch (error) {
-          if (__DEV__) console.error('Failed to fetch reasons:', error);
+          if (__DEV__) console.error("Failed to fetch reasons:", error);
         }
       },
 
       getStrategyRecommendations: async (disputeType) => {
         try {
-          const response = await disputeLetterApi.getStrategyRecommendations({ disputeType });
+          const response = await disputeLetterApi.getStrategyRecommendations({
+            disputeType,
+          });
           if (response.success && response.data) {
             // Map recommendations to strategies
             const strategies = get().strategies;
             return response.data.recommendations
-              .map(rec => strategies.find(s => s.id === rec.strategyId))
+              .map((rec) => strategies.find((s) => s.id === rec.strategyId))
               .filter((s): s is DisputeStrategy => s !== undefined);
           }
           return [];
@@ -324,33 +367,36 @@ export const useDisputeStore = create<DisputeState>()(
 
       resetStore: () => set(initialState),
 
-      setDisputes: (disputes) => set({ disputes, totalDisputes: disputes.length }),
+      setDisputes: (disputes) =>
+        set({ disputes, totalDisputes: disputes.length }),
     }),
     {
-      name: 'cpfi-dispute-store',
+      name: "cpfi-dispute-store",
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         templates: state.templates,
         strategies: state.strategies,
         reasons: state.reasons,
       }),
-    }
-  )
+    },
+  ),
 );
 
 // Selectors
 export const selectDisputes = (state: DisputeState) => state.disputes;
-export const selectDisputesByStatus = (status: Dispute['status']) => (state: DisputeState) =>
-  state.disputes.filter(d => d.status === status);
+export const selectDisputesByStatus =
+  (status: Dispute["status"]) => (state: DisputeState) =>
+    state.disputes.filter((d) => d.status === status);
 export const selectActiveDisputes = (state: DisputeState) =>
-  state.disputes.filter(d => ['pending', 'in_progress', 'under_review'].includes(d.status));
+  state.disputes.filter((d) =>
+    ["pending", "in_progress", "under_review"].includes(d.status),
+  );
 export const selectResolvedDisputes = (state: DisputeState) =>
-  state.disputes.filter(d => d.status === 'resolved');
+  state.disputes.filter((d) => d.status === "resolved");
 export const selectDisputeStats = (state: DisputeState) => ({
   total: state.totalDisputes,
-  pending: state.disputes.filter(d => d.status === 'pending').length,
-  inProgress: state.disputes.filter(d => d.status === 'in_progress').length,
-  resolved: state.disputes.filter(d => d.status === 'resolved').length,
-  rejected: state.disputes.filter(d => d.status === 'rejected').length,
+  pending: state.disputes.filter((d) => d.status === "pending").length,
+  inProgress: state.disputes.filter((d) => d.status === "in_progress").length,
+  resolved: state.disputes.filter((d) => d.status === "resolved").length,
+  rejected: state.disputes.filter((d) => d.status === "rejected").length,
 });
-

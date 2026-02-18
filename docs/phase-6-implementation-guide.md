@@ -1,11 +1,13 @@
 # Phase 6: Financial Chat & Polish - Implementation Guide
 
 ## Overview
+
 This document provides a comprehensive guide for implementing the remaining Phase 6 tasks with zero trust security principles.
 
 ## Zero Trust Security Principles Applied
 
 ### Core Principles
+
 1. **Never Trust, Always Verify** - Authenticate and authorize every request
 2. **Assume Breach** - Design systems assuming attackers have access
 3. **Least Privilege** - Grant minimum necessary permissions
@@ -18,7 +20,9 @@ This document provides a comprehensive guide for implementing the remaining Phas
 ### Components Created
 
 #### 1. Main Chat Interface (`src/components/chat/ChatInterface.tsx`)
+
 **Security Features:**
+
 - ✅ Authentication verification on mount and every 5 minutes
 - ✅ Session ownership validation before every operation
 - ✅ Input sanitization using DOMPurify (XSS protection)
@@ -28,6 +32,7 @@ This document provides a comprehensive guide for implementing the remaining Phas
 - ✅ Optimistic UI updates with rollback on error
 
 **Key Functions:**
+
 ```typescript
 - verifyAuthentication(): Periodic auth checks
 - validateSessionOwnership(sessionId): Verify user owns session
@@ -40,7 +45,9 @@ This document provides a comprehensive guide for implementing the remaining Phas
 ```
 
 #### 2. Chat Message List (`src/components/chat/ChatMessageList.tsx`)
+
 **Features:**
+
 - Message rendering with role-based styling
 - Timestamp formatting
 - Loading states
@@ -50,7 +57,9 @@ This document provides a comprehensive guide for implementing the remaining Phas
 - Educational content cards
 
 #### 3. Chat Input (`src/components/chat/ChatInput.tsx`)
+
 **Security Features:**
+
 - Input sanitization before submission
 - Character count display
 - Enter to send (Shift+Enter for new line)
@@ -58,7 +67,9 @@ This document provides a comprehensive guide for implementing the remaining Phas
 - Rate limiting feedback
 
 #### 4. Chat Sidebar (`src/components/chat/ChatSidebar.tsx`)
+
 **Features:**
+
 - Session list with timestamps
 - New session button
 - Session deletion with confirmation
@@ -66,18 +77,22 @@ This document provides a comprehensive guide for implementing the remaining Phas
 - Responsive collapse on mobile
 
 #### 5. Chat Header (`src/components/chat/ChatHeader.tsx`)
+
 **Features:**
+
 - Current session title display
 - Session metadata
 - User profile dropdown
 - Logout functionality
 
 ### Responsive Design
+
 - Desktop: Full sidebar + chat area
 - Tablet: Collapsible sidebar
 - Mobile: Drawer-style sidebar
 
 ### State Management
+
 - React hooks (useState, useEffect, useCallback)
 - Optimistic UI updates
 - Error boundary implementation
@@ -90,18 +105,22 @@ This document provides a comprehensive guide for implementing the remaining Phas
 ### Implementation Strategy
 
 #### Option A: Responsive Web (Recommended)
+
 Use CSS media queries and responsive components from Phase 6.2
 
 **Advantages:**
+
 - Code reuse from web interface
 - Single codebase
 - Faster development
 - Consistent UX
 
 #### Option B: React Native
+
 Create native mobile app with separate codebase
 
 **Components to Create:**
+
 1. `MobileChatScreen.tsx` - Main chat screen
 2. `MobileSessionList.tsx` - Session list screen
 3. `MobileMessageInput.tsx` - Touch-optimized input
@@ -110,17 +129,18 @@ Create native mobile app with separate codebase
 ### Mobile-Specific Security Features
 
 #### 1. Biometric Authentication
+
 ```typescript
-import * as LocalAuthentication from 'expo-local-authentication';
+import * as LocalAuthentication from "expo-local-authentication";
 
 async function authenticateWithBiometrics() {
   const hasHardware = await LocalAuthentication.hasHardwareAsync();
   const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-  
+
   if (hasHardware && isEnrolled) {
     const result = await LocalAuthentication.authenticateAsync({
-      promptMessage: 'Authenticate to access financial chat',
-      fallbackLabel: 'Use passcode',
+      promptMessage: "Authenticate to access financial chat",
+      fallbackLabel: "Use passcode",
     });
     return result.success;
   }
@@ -129,22 +149,24 @@ async function authenticateWithBiometrics() {
 ```
 
 #### 2. Secure Token Storage
+
 ```typescript
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from "expo-secure-store";
 
 // Store auth token securely
-await SecureStore.setItemAsync('auth_token', token, {
+await SecureStore.setItemAsync("auth_token", token, {
   keychainAccessible: SecureStore.WHEN_UNLOCKED,
 });
 
 // Retrieve token
-const token = await SecureStore.getItemAsync('auth_token');
+const token = await SecureStore.getItemAsync("auth_token");
 ```
 
 #### 3. Device Fingerprinting
+
 ```typescript
-import * as Device from 'expo-device';
-import * as Application from 'expo-application';
+import * as Device from "expo-device";
+import * as Application from "expo-application";
 
 function generateDeviceFingerprint() {
   return {
@@ -157,10 +179,11 @@ function generateDeviceFingerprint() {
 ```
 
 #### 4. Continuous Authentication
+
 ```typescript
 // Check auth status every time app comes to foreground
-AppState.addEventListener('change', async (nextAppState) => {
-  if (nextAppState === 'active') {
+AppState.addEventListener("change", async (nextAppState) => {
+  if (nextAppState === "active") {
     await verifyAuthentication();
     await validateActiveSession();
   }
@@ -168,6 +191,7 @@ AppState.addEventListener('change', async (nextAppState) => {
 ```
 
 ### Touch-Friendly UI
+
 - Minimum touch target: 44x44 pixels
 - Swipe gestures for navigation
 - Pull-to-refresh for message list
@@ -181,9 +205,10 @@ AppState.addEventListener('change', async (nextAppState) => {
 ### Test Files to Create
 
 #### 1. End-to-End Chat Flow (`src/__tests__/e2e/chat-flow.test.ts`)
+
 ```typescript
-describe('Financial Chat E2E Flow', () => {
-  it('should complete full chat conversation', async () => {
+describe("Financial Chat E2E Flow", () => {
+  it("should complete full chat conversation", async () => {
     // 1. User logs in
     // 2. Creates new session
     // 3. Sends message
@@ -196,45 +221,48 @@ describe('Financial Chat E2E Flow', () => {
 ```
 
 #### 2. API Integration Tests (`src/__tests__/integration/chat-api.test.ts`)
+
 ```typescript
-describe('Chat API Integration', () => {
-  it('should create session and send messages', async () => {
+describe("Chat API Integration", () => {
+  it("should create session and send messages", async () => {
     // Test full API flow
   });
-  
-  it('should enforce rate limiting', async () => {
+
+  it("should enforce rate limiting", async () => {
     // Test rate limit enforcement
   });
-  
-  it('should validate session ownership', async () => {
+
+  it("should validate session ownership", async () => {
     // Test unauthorized access prevention
   });
 });
 ```
 
 #### 3. Security Tests (`src/__tests__/security/chat-security.test.ts`)
+
 ```typescript
-describe('Chat Security', () => {
-  it('should prevent XSS attacks', async () => {
+describe("Chat Security", () => {
+  it("should prevent XSS attacks", async () => {
     const maliciousInput = '<script>alert("XSS")</script>';
     // Verify input is sanitized
   });
-  
-  it('should prevent session hijacking', async () => {
+
+  it("should prevent session hijacking", async () => {
     // Test session token validation
   });
-  
-  it('should prevent privilege escalation', async () => {
+
+  it("should prevent privilege escalation", async () => {
     // Test user cannot access other users' sessions
   });
-  
-  it('should enforce authentication on all endpoints', async () => {
+
+  it("should enforce authentication on all endpoints", async () => {
     // Test unauthenticated requests are rejected
   });
 });
 ```
 
 ### Test Coverage Goals
+
 - Unit tests: 90%+ coverage
 - Integration tests: All API endpoints
 - E2E tests: Critical user flows
@@ -247,14 +275,15 @@ describe('Chat Security', () => {
 ### Database Optimizations
 
 #### 1. Query Optimization
+
 ```sql
 -- Add composite indexes
-CREATE INDEX idx_chat_messages_session_timestamp 
+CREATE INDEX idx_chat_messages_session_timestamp
 ON chat_messages(session_id, timestamp DESC);
 
 -- Materialized view for session stats
 CREATE MATERIALIZED VIEW session_stats AS
-SELECT 
+SELECT
   session_id,
   COUNT(*) as message_count,
   MAX(timestamp) as last_message_at
@@ -263,6 +292,7 @@ GROUP BY session_id;
 ```
 
 #### 2. Connection Pooling
+
 ```typescript
 // Configure Supabase connection pool
 const supabase = createClient(url, key, {
@@ -278,8 +308,9 @@ const supabase = createClient(url, key, {
 ### Caching Strategy
 
 #### 1. Redis Caching
+
 ```typescript
-import Redis from 'ioredis';
+import Redis from "ioredis";
 
 const redis = new Redis(process.env.REDIS_URL);
 
@@ -287,7 +318,7 @@ const redis = new Redis(process.env.REDIS_URL);
 async function getCachedSession(sessionId: string) {
   const cached = await redis.get(`session:${sessionId}`);
   if (cached) return JSON.parse(cached);
-  
+
   const session = await fetchSessionFromDB(sessionId);
   await redis.setex(`session:${sessionId}`, 300, JSON.stringify(session));
   return session;
@@ -295,12 +326,13 @@ async function getCachedSession(sessionId: string) {
 ```
 
 #### 2. React Query for Client-Side Caching
+
 ```typescript
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation } from "@tanstack/react-query";
 
 function useChatMessages(sessionId: string) {
   return useQuery({
-    queryKey: ['messages', sessionId],
+    queryKey: ["messages", sessionId],
     queryFn: () => fetchMessages(sessionId),
     staleTime: 30000, // 30 seconds
     cacheTime: 300000, // 5 minutes
@@ -311,23 +343,25 @@ function useChatMessages(sessionId: string) {
 ### Message Pagination
 
 #### 1. Cursor-Based Pagination
+
 ```typescript
 async function loadMoreMessages(sessionId: string, cursor?: string) {
   const response = await fetch(
     `/api/chat/financial/sessions/${sessionId}/messages?` +
-    `limit=50&beforeTimestamp=${cursor || new Date().toISOString()}`
+      `limit=50&beforeTimestamp=${cursor || new Date().toISOString()}`,
   );
   return response.json();
 }
 ```
 
 #### 2. Infinite Scroll
+
 ```typescript
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from "@tanstack/react-query";
 
 function useInfiniteMessages(sessionId: string) {
   return useInfiniteQuery({
-    queryKey: ['messages', sessionId],
+    queryKey: ["messages", sessionId],
     queryFn: ({ pageParam }) => loadMoreMessages(sessionId, pageParam),
     getNextPageParam: (lastPage) => lastPage.nextCursor,
   });
@@ -337,20 +371,22 @@ function useInfiniteMessages(sessionId: string) {
 ### Bundle Optimization
 
 #### 1. Code Splitting
+
 ```typescript
 // Lazy load chat components
-const ChatInterface = lazy(() => import('@/components/chat/ChatInterface'));
+const ChatInterface = lazy(() => import("@/components/chat/ChatInterface"));
 
 // Route-based code splitting
 const routes = [
   {
-    path: '/chat',
-    component: lazy(() => import('@/pages/ChatPage')),
+    path: "/chat",
+    component: lazy(() => import("@/pages/ChatPage")),
   },
 ];
 ```
 
 #### 2. Tree Shaking
+
 ```json
 // package.json
 {
@@ -359,11 +395,13 @@ const routes = [
 ```
 
 #### 3. Bundle Analysis
+
 ```bash
 npm run build -- --analyze
 ```
 
 ### Performance Metrics
+
 - First Contentful Paint: < 1.5s
 - Time to Interactive: < 3.5s
 - Largest Contentful Paint: < 2.5s
@@ -378,13 +416,15 @@ npm run build -- --analyze
 
 Create `docs/api/financial-chat-api.md`:
 
-```markdown
+````markdown
 # Financial Chat API Documentation
 
 ## Authentication
+
 All endpoints require authentication via Supabase Auth.
 
 ## Rate Limiting
+
 - 20 requests per minute per user
 - 429 status code when exceeded
 - Retry-After header included
@@ -392,9 +432,11 @@ All endpoints require authentication via Supabase Auth.
 ## Endpoints
 
 ### POST /api/chat/financial
+
 Send a message to the financial chat AI.
 
 **Request:**
+
 ```json
 {
   "sessionId": "uuid",
@@ -402,8 +444,10 @@ Send a message to the financial chat AI.
   "streaming": boolean
 }
 ```
+````
 
 **Response:**
+
 ```json
 {
   "message": "string",
@@ -414,10 +458,12 @@ Send a message to the financial chat AI.
 ```
 
 **Security:**
+
 - Input sanitization applied
 - Session ownership validated
 - XSS protection enabled
-```
+
+````
 
 ### User Guide
 
@@ -442,7 +488,7 @@ Create `docs/user-guides/financial-chat-guide.md`:
 - All conversations are encrypted
 - Sessions are validated continuously
 - Automatic logout after 30 minutes of inactivity
-```
+````
 
 ### Zero Trust Documentation
 
@@ -454,22 +500,26 @@ Create `docs/security/zero-trust-implementation.md`:
 ## Principles Applied
 
 ### 1. Never Trust, Always Verify
+
 - Every API call requires authentication
 - Session ownership validated on every operation
 - Periodic re-authentication (every 5 minutes)
 
 ### 2. Assume Breach
+
 - Input sanitization on all user inputs
 - Output encoding to prevent XSS
 - SQL injection prevention via parameterized queries
 - CSRF protection via SameSite cookies
 
 ### 3. Least Privilege
+
 - Users can only access their own sessions
 - RLS policies enforce data isolation
 - API endpoints validate permissions
 
 ### 4. Continuous Validation
+
 - Session validation on every request
 - Token expiration checks
 - Device fingerprinting on mobile
@@ -479,16 +529,18 @@ Create `docs/security/zero-trust-implementation.md`:
 
 Create `docs/deployment/chat-deployment-guide.md`:
 
-```markdown
+````markdown
 # Chat Deployment Guide
 
 ## Prerequisites
+
 - Node.js 18+
 - PostgreSQL 14+
 - Redis 6+
 - Supabase project
 
 ## Environment Variables
+
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
@@ -496,8 +548,10 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_key
 REDIS_URL=your_redis_url
 AIML_API_KEY=your_aiml_key
 ```
+````
 
 ## Security Checklist
+
 - [ ] Enable HTTPS
 - [ ] Configure CORS properly
 - [ ] Set secure cookie flags
@@ -506,6 +560,7 @@ AIML_API_KEY=your_aiml_key
 - [ ] Enable RLS policies
 - [ ] Set up monitoring
 - [ ] Configure backups
+
 ```
 
 ---
@@ -566,3 +621,4 @@ AIML_API_KEY=your_aiml_key
 
 **Phase 6 Financial Chat Engine is architecturally complete and ready for implementation!**
 
+```

@@ -8,10 +8,10 @@
  * dashboard widgets and quick status checks.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { rbac } from '@/lib/auth/rbac';
-import { financialContextEngine } from '@/lib/financial/financial-context-engine';
+import { NextRequest, NextResponse } from "next/server";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { rbac } from "@/lib/auth/rbac";
+import { financialContextEngine } from "@/lib/financial/financial-context-engine";
 
 /**
  * GET /api/financial/context/summary
@@ -47,21 +47,21 @@ export async function GET(request: NextRequest) {
     const validation = await jwtValidation.validateFromHeaders(request);
 
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check permissions
     if (
       !rbac.hasPermission(
         validation.user as Parameters<typeof rbac.hasPermission>[0],
-        'financial:read'
+        "financial:read",
       )
     ) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const summary = await financialContextEngine.getFinancialSummary(
-      validation.user.id
+      validation.user.id,
     );
 
     return NextResponse.json({
@@ -69,11 +69,10 @@ export async function GET(request: NextRequest) {
       data: summary,
     });
   } catch (error) {
-    console.error('Error fetching financial summary:', error);
+    console.error("Error fetching financial summary:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch financial summary' },
-      { status: 500 }
+      { error: "Failed to fetch financial summary" },
+      { status: 500 },
     );
   }
 }
-

@@ -4,10 +4,10 @@
  * Provider operations: getProviders, getProviderDetails, searchProviders
  */
 
-import { getSupabase } from '../supabase/client';
-import type { Database } from '../supabase/types';
+import { getSupabase } from "../supabase/client";
+import type { Database } from "../supabase/types";
 
-type ProviderRow = Database['public']['Tables']['marketplace_providers']['Row'];
+type ProviderRow = Database["public"]["Tables"]["marketplace_providers"]["Row"];
 
 export interface Provider {
   id: string;
@@ -21,12 +21,12 @@ export interface Provider {
   yearsInBusiness: number | null;
   verified: boolean;
   category:
-    | 'tradeline'
-    | 'credit_repair'
-    | 'monitoring'
-    | 'education'
-    | 'legal'
-    | 'coaching';
+    | "tradeline"
+    | "credit_repair"
+    | "monitoring"
+    | "education"
+    | "legal"
+    | "coaching";
   createdAt: Date;
 }
 
@@ -37,26 +37,26 @@ export interface ProviderFilters {
   search?: string;
 }
 
-const providers = () => getSupabase().from('marketplace_providers');
+const providers = () => getSupabase().from("marketplace_providers");
 
 class ProviderService {
   async getProviders(filters?: ProviderFilters): Promise<Provider[]> {
-    let query = providers().select('*');
+    let query = providers().select("*");
 
     if (filters?.category) {
-      query = query.eq('category', filters.category);
+      query = query.eq("category", filters.category);
     }
     if (filters?.minRating !== undefined) {
-      query = query.gte('rating', filters.minRating);
+      query = query.gte("rating", filters.minRating);
     }
     if (filters?.verified !== undefined) {
-      query = query.eq('verified', filters.verified);
+      query = query.eq("verified", filters.verified);
     }
     if (filters?.search) {
-      query = query.ilike('name', `%${filters.search}%`);
+      query = query.ilike("name", `%${filters.search}%`);
     }
 
-    const { data, error } = await query.order('rating', { ascending: false });
+    const { data, error } = await query.order("rating", { ascending: false });
 
     if (error) {
       // ProviderService error: Error fetching providers
@@ -67,7 +67,7 @@ class ProviderService {
   }
 
   async getProviderById(id: string): Promise<Provider | null> {
-    const { data, error } = await providers().select('*').eq('id', id).single();
+    const { data, error } = await providers().select("*").eq("id", id).single();
 
     if (error || !data) {
       return null;
@@ -78,10 +78,10 @@ class ProviderService {
 
   async getProvidersByCategory(category: string): Promise<Provider[]> {
     const { data, error } = await providers()
-      .select('*')
-      .eq('category', category)
-      .eq('verified', true)
-      .order('rating', { ascending: false });
+      .select("*")
+      .eq("category", category)
+      .eq("verified", true)
+      .order("rating", { ascending: false });
 
     if (error) {
       // ProviderService error: Error fetching providers by category
@@ -93,9 +93,9 @@ class ProviderService {
 
   async searchProviders(query: string): Promise<Provider[]> {
     const { data, error } = await providers()
-      .select('*')
+      .select("*")
       .or(`name.ilike.%${query}%,description.ilike.%${query}%`)
-      .order('rating', { ascending: false })
+      .order("rating", { ascending: false })
       .limit(20);
 
     if (error) {
@@ -108,10 +108,10 @@ class ProviderService {
 
   async getTopProviders(limit: number = 10): Promise<Provider[]> {
     const { data, error } = await providers()
-      .select('*')
-      .eq('verified', true)
-      .gte('rating', 4.0)
-      .order('review_count', { ascending: false })
+      .select("*")
+      .eq("verified", true)
+      .gte("rating", 4.0)
+      .order("review_count", { ascending: false })
       .limit(limit);
 
     if (error) {

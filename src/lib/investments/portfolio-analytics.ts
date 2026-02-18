@@ -23,12 +23,12 @@ import {
   SectorExposure,
   RebalanceReason,
   TradeSuggestion,
-} from './types/advanced-analytics.types';
-import { AssetType, TimeInterval } from './types/market-data.types';
-import { marketDataService } from './market-data-service';
-import { portfolioService } from './portfolio-service';
-import { redisCache } from '@/lib/cache/redis-cache-service';
-import { createClient } from '@/lib/supabase/server';
+} from "./types/advanced-analytics.types";
+import { AssetType, TimeInterval } from "./types/market-data.types";
+import { marketDataService } from "./market-data-service";
+import { portfolioService } from "./portfolio-service";
+import { redisCache } from "@/lib/cache/redis-cache-service";
+import { createClient } from "@/lib/supabase/server";
 
 /**
  * Portfolio Analytics Service Class
@@ -41,7 +41,7 @@ export class PortfolioAnalytics {
    */
   async calculateRiskMetrics(
     portfolioId: string,
-    timeHorizon: TimeHorizon = '1Y'
+    timeHorizon: TimeHorizon = "1Y",
   ): Promise<RiskMetrics> {
     // Check cache first
     const cacheKey = `risk-metrics:${portfolioId}:${timeHorizon}`;
@@ -60,15 +60,28 @@ export class PortfolioAnalytics {
     }
 
     const days = this.timeHorizonToDays(timeHorizon);
-    const historicalData = await this.getHistoricalDataForHoldings(holdings, days);
+    const historicalData = await this.getHistoricalDataForHoldings(
+      holdings,
+      days,
+    );
 
     // Calculate portfolio returns
-    const portfolioReturns = this.calculatePortfolioReturns(holdings, historicalData);
+    const portfolioReturns = this.calculatePortfolioReturns(
+      holdings,
+      historicalData,
+    );
 
     // Get benchmark data if available
-    const benchmark = portfolio.benchmark || 'SPY';
-    const benchmarkHistory = await marketDataService.getHistory(benchmark, AssetType.STOCK, TimeInterval.ONE_DAY, days);
-    const benchmarkReturns = this.calculateReturns(benchmarkHistory.data.map(d => d.close));
+    const benchmark = portfolio.benchmark || "SPY";
+    const benchmarkHistory = await marketDataService.getHistory(
+      benchmark,
+      AssetType.STOCK,
+      TimeInterval.ONE_DAY,
+      days,
+    );
+    const benchmarkReturns = this.calculateReturns(
+      benchmarkHistory.data.map((d) => d.close),
+    );
 
     // Calculate volatility metrics
     const dailyVolatility = this.calculateStandardDeviation(portfolioReturns);
@@ -79,36 +92,46 @@ export class PortfolioAnalytics {
     const dailyRiskFreeRate = riskFreeRate / 252;
 
     // Calculate downside deviation for Sortino ratio
-    const downsideDeviation = this.calculateDownsideDeviation(portfolioReturns, dailyRiskFreeRate);
+    const downsideDeviation = this.calculateDownsideDeviation(
+      portfolioReturns,
+      dailyRiskFreeRate,
+    );
 
     // Calculate VaR and CVaR using Monte Carlo simulation
     const { var95, var99, cvar95, cvar99 } = await this.calculateVaRCVaR(
       portfolioReturns,
       portfolio.totalValue,
-      10000 // Monte Carlo iterations
+      10000, // Monte Carlo iterations
     );
 
     // Calculate returns
-    const totalReturn = portfolioReturns.reduce((acc, r) => acc * (1 + r), 1) - 1;
+    const totalReturn =
+      portfolioReturns.reduce((acc, r) => acc * (1 + r), 1) - 1;
     const annualizedReturn = Math.pow(1 + totalReturn, 252 / days) - 1;
 
     // Calculate risk-adjusted return metrics
-    const sharpeRatio = (annualizedReturn - riskFreeRate) / annualizedVolatility;
-    const sortinoRatio = (annualizedReturn - riskFreeRate) / (downsideDeviation * Math.sqrt(252));
+    const sharpeRatio =
+      (annualizedReturn - riskFreeRate) / annualizedVolatility;
+    const sortinoRatio =
+      (annualizedReturn - riskFreeRate) / (downsideDeviation * Math.sqrt(252));
 
     // Calculate drawdowns
-    const { maxDrawdown, currentDrawdown, averageDrawdown } = this.calculateDrawdowns(portfolioReturns);
+    const { maxDrawdown, currentDrawdown, averageDrawdown } =
+      this.calculateDrawdowns(portfolioReturns);
     const calmarRatio = annualizedReturn / Math.abs(maxDrawdown);
 
     // Calculate beta and alpha vs benchmark
     const { beta, alpha, rSquared } = this.calculateBetaAlpha(
       portfolioReturns,
       benchmarkReturns,
-      riskFreeRate
+      riskFreeRate,
     );
 
     // Calculate tracking error and information ratio
-    const trackingError = this.calculateTrackingError(portfolioReturns, benchmarkReturns);
+    const trackingError = this.calculateTrackingError(
+      portfolioReturns,
+      benchmarkReturns,
+    );
     const informationRatio = alpha / trackingError;
 
     const riskMetrics: RiskMetrics = {
@@ -156,7 +179,9 @@ export class PortfolioAnalytics {
   /**
    * Calculate diversification score across sectors, geography, and asset classes
    */
-  async getDiversificationScore(portfolioId: string): Promise<DiversificationScore> {
+  async getDiversificationScore(
+    portfolioId: string,
+  ): Promise<DiversificationScore> {
     const cacheKey = `diversification:${portfolioId}`;
     const cached = await redisCache.get<DiversificationScore>(cacheKey);
     if (cached) return cached;
@@ -178,31 +203,45 @@ export class PortfolioAnalytics {
       return sum + weight * weight;
     }, 0);
 
-    const maxSectorAllocation = Math.max(...sectorExposures.map(s => s.allocation));
+    const maxSectorAllocation = Math.max(
+      ...sectorExposures.map((s) => s.allocation),
+    );
 
     // Sector diversification score (0-100)
     // Higher score = better diversification
-    const sectorScore = Math.min(100, (numberOfSectors / 11) * 100 * (1 - herfindahlIndex));
+    const sectorScore = Math.min(
+      100,
+      (numberOfSectors / 11) * 100 * (1 - herfindahlIndex),
+    );
 
     // Geographic diversification (simplified)
-    const geographicScore = await this.calculateGeographicDiversification(holdings, totalValue);
+    const geographicScore = await this.calculateGeographicDiversification(
+      holdings,
+      totalValue,
+    );
 
     // Asset class diversification (simplified - assume all stocks for now)
     const assetClassScore = 50; // Simplified
 
     // Overall diversification score (weighted average)
-    const overallScore = (sectorScore * 0.4 + geographicScore * 0.3 + assetClassScore * 0.3);
+    const overallScore =
+      sectorScore * 0.4 + geographicScore * 0.3 + assetClassScore * 0.3;
 
     // Concentration risk
     const top5Holdings = holdings
       .sort((a, b) => b.currentValue - a.currentValue)
       .slice(0, 5);
 
-    const top5Concentration = top5Holdings.reduce((sum, h) => sum + h.currentValue, 0) / totalValue * 100;
-    const top10Concentration = holdings
-      .sort((a, b) => b.currentValue - a.currentValue)
-      .slice(0, 10)
-      .reduce((sum, h) => sum + h.currentValue, 0) / totalValue * 100;
+    const top5Concentration =
+      (top5Holdings.reduce((sum, h) => sum + h.currentValue, 0) / totalValue) *
+      100;
+    const top10Concentration =
+      (holdings
+        .sort((a, b) => b.currentValue - a.currentValue)
+        .slice(0, 10)
+        .reduce((sum, h) => sum + h.currentValue, 0) /
+        totalValue) *
+      100;
 
     const diversificationScore: DiversificationScore = {
       portfolioId,
@@ -225,7 +264,7 @@ export class PortfolioAnalytics {
       assetClassDiversification: {
         score: assetClassScore,
         numberOfAssetClasses: 1,
-        assetClasses: [{ assetClass: 'stock' as const, allocation: 100 }], // Simplified
+        assetClasses: [{ assetClass: "stock" as const, allocation: 100 }], // Simplified
       },
       concentrationRisk: {
         topHoldingAllocation: maxSectorAllocation,
@@ -234,8 +273,12 @@ export class PortfolioAnalytics {
         numberOfHoldings: holdings.length,
       },
       recommendations: [
-        overallScore < 50 ? 'Consider diversifying across more sectors' : 'Good diversification',
-        top5Concentration > 50 ? 'Top 5 holdings represent significant concentration risk' : 'Concentration risk is manageable',
+        overallScore < 50
+          ? "Consider diversifying across more sectors"
+          : "Good diversification",
+        top5Concentration > 50
+          ? "Top 5 holdings represent significant concentration risk"
+          : "Concentration risk is manageable",
       ],
     };
 
@@ -248,7 +291,7 @@ export class PortfolioAnalytics {
    */
   async getCorrelationMatrix(
     portfolioId: string,
-    timeHorizon: TimeHorizon = '1Y'
+    timeHorizon: TimeHorizon = "1Y",
   ): Promise<CorrelationMatrix> {
     const cacheKey = `correlation:${portfolioId}:${timeHorizon}`;
     const cached = await redisCache.get<CorrelationMatrix>(cacheKey);
@@ -256,25 +299,35 @@ export class PortfolioAnalytics {
 
     const holdings = await portfolioService.getHoldings(portfolioId);
     if (holdings.length < 2) {
-      throw new Error(`Portfolio ${portfolioId} needs at least 2 holdings for correlation analysis`);
+      throw new Error(
+        `Portfolio ${portfolioId} needs at least 2 holdings for correlation analysis`,
+      );
     }
 
     const days = this.timeHorizonToDays(timeHorizon);
-    const historicalData = await this.getHistoricalDataForHoldings(holdings, days);
+    const historicalData = await this.getHistoricalDataForHoldings(
+      holdings,
+      days,
+    );
 
     // Calculate returns for each holding
     const returnsMap = new Map<string, number[]>();
     for (const holding of holdings) {
       const data = historicalData.get(holding.symbol);
       if (data && data.length > 1) {
-        const returns = this.calculateReturns(data.map(d => d.close));
+        const returns = this.calculateReturns(data.map((d) => d.close));
         returnsMap.set(holding.symbol, returns);
       }
     }
 
     // Calculate correlation for all pairs
     const symbols = Array.from(returnsMap.keys());
-    const correlations: Array<{ symbol1: string; symbol2: string; correlation: number; covariance: number }> = [];
+    const correlations: Array<{
+      symbol1: string;
+      symbol2: string;
+      correlation: number;
+      covariance: number;
+    }> = [];
 
     for (let i = 0; i < symbols.length; i++) {
       for (let j = i + 1; j < symbols.length; j++) {
@@ -292,13 +345,19 @@ export class PortfolioAnalytics {
 
     // Find highly correlated pairs (|correlation| > 0.7)
     const highlyCorrelatedPairs = correlations
-      .filter(c => Math.abs(c.correlation) > 0.7)
-      .map(c => ({ symbol1: c.symbol1, symbol2: c.symbol2, correlation: c.correlation }));
+      .filter((c) => Math.abs(c.correlation) > 0.7)
+      .map((c) => ({
+        symbol1: c.symbol1,
+        symbol2: c.symbol2,
+        correlation: c.correlation,
+      }));
 
     // Calculate average correlation
-    const avgCorrelation = correlations.reduce((sum, c) => sum + Math.abs(c.correlation), 0) / correlations.length;
-    const maxCorrelation = Math.max(...correlations.map(c => c.correlation));
-    const minCorrelation = Math.min(...correlations.map(c => c.correlation));
+    const avgCorrelation =
+      correlations.reduce((sum, c) => sum + Math.abs(c.correlation), 0) /
+      correlations.length;
+    const maxCorrelation = Math.max(...correlations.map((c) => c.correlation));
+    const minCorrelation = Math.min(...correlations.map((c) => c.correlation));
 
     const correlationMatrix: CorrelationMatrix = {
       portfolioId,
@@ -311,14 +370,13 @@ export class PortfolioAnalytics {
       minCorrelation,
       metadata: {
         dataPoints: correlations.length,
-        missingDataHandling: 'Excluded from analysis',
+        missingDataHandling: "Excluded from analysis",
       },
     };
 
     await redisCache.set(cacheKey, correlationMatrix, this.CACHE_TTL);
     return correlationMatrix;
   }
-
 
   /**
    * Get sector exposure analysis
@@ -327,7 +385,10 @@ export class PortfolioAnalytics {
     const holdings = await portfolioService.getHoldings(portfolioId);
     const totalValue = holdings.reduce((sum, h) => sum + h.currentValue, 0);
 
-    const sectorMap = new Map<SectorType, { value: number; holdings: Array<{ symbol: string; allocation: number }> }>();
+    const sectorMap = new Map<
+      SectorType,
+      { value: number; holdings: Array<{ symbol: string; allocation: number }> }
+    >();
 
     for (const holding of holdings) {
       const sector = await this.getSectorForSymbol(holding.symbol);
@@ -356,7 +417,7 @@ export class PortfolioAnalytics {
    */
   async getVolatilityAnalysis(
     portfolioId: string,
-    timeHorizon: TimeHorizon = '1Y'
+    timeHorizon: TimeHorizon = "1Y",
   ): Promise<VolatilityAnalysis> {
     const cacheKey = `volatility:${portfolioId}:${timeHorizon}`;
     const cached = await redisCache.get<VolatilityAnalysis>(cacheKey);
@@ -364,9 +425,15 @@ export class PortfolioAnalytics {
 
     const holdings = await portfolioService.getHoldings(portfolioId);
     const days = this.timeHorizonToDays(timeHorizon);
-    const historicalData = await this.getHistoricalDataForHoldings(holdings, days);
+    const historicalData = await this.getHistoricalDataForHoldings(
+      holdings,
+      days,
+    );
 
-    const portfolioReturns = this.calculatePortfolioReturns(holdings, historicalData);
+    const portfolioReturns = this.calculatePortfolioReturns(
+      holdings,
+      historicalData,
+    );
 
     // Calculate historical volatility at different frequencies
     const dailyVol = this.calculateStandardDeviation(portfolioReturns);
@@ -382,24 +449,30 @@ export class PortfolioAnalytics {
       const window = portfolioReturns.slice(i - windowSize, i);
       const vol = this.calculateStandardDeviation(window);
       rollingVolatility.push({
-        date: new Date(Date.now() - (portfolioReturns.length - i) * 24 * 60 * 60 * 1000),
+        date: new Date(
+          Date.now() - (portfolioReturns.length - i) * 24 * 60 * 60 * 1000,
+        ),
         volatility: vol,
       });
     }
 
     // Determine volatility regime
-    const avgVol = this.calculateMean(rollingVolatility.map(r => r.volatility));
-    const stdVol = this.calculateStandardDeviation(rollingVolatility.map(r => r.volatility));
+    const avgVol = this.calculateMean(
+      rollingVolatility.map((r) => r.volatility),
+    );
+    const stdVol = this.calculateStandardDeviation(
+      rollingVolatility.map((r) => r.volatility),
+    );
 
     const lowThreshold = avgVol - stdVol;
     const normalThreshold = avgVol;
     const highThreshold = avgVol + stdVol;
 
-    let currentRegime: 'low' | 'normal' | 'high' | 'extreme';
-    if (dailyVol < lowThreshold) currentRegime = 'low';
-    else if (dailyVol < normalThreshold) currentRegime = 'normal';
-    else if (dailyVol < highThreshold) currentRegime = 'high';
-    else currentRegime = 'extreme';
+    let currentRegime: "low" | "normal" | "high" | "extreme";
+    if (dailyVol < lowThreshold) currentRegime = "low";
+    else if (dailyVol < normalThreshold) currentRegime = "normal";
+    else if (dailyVol < highThreshold) currentRegime = "high";
+    else currentRegime = "extreme";
 
     const volatilityAnalysis: VolatilityAnalysis = {
       portfolioId,
@@ -434,7 +507,7 @@ export class PortfolioAnalytics {
    */
   async suggestRebalancing(
     portfolioId: string,
-    targetRiskLevel: RiskLevel = RiskLevel.MODERATE
+    targetRiskLevel: RiskLevel = RiskLevel.MODERATE,
   ): Promise<RebalancingRecommendation> {
     const cacheKey = `rebalance:${portfolioId}:${targetRiskLevel}`;
     const cached = await redisCache.get<RebalancingRecommendation>(cacheKey);
@@ -450,14 +523,17 @@ export class PortfolioAnalytics {
     const totalValue = portfolio.totalValue;
 
     // Current allocations
-    const currentAllocation = holdings.map(h => ({
+    const currentAllocation = holdings.map((h) => ({
       symbol: h.symbol,
       allocation: (h.currentValue / totalValue) * 100,
       value: h.currentValue,
     }));
 
     // Calculate optimal allocations using MPT
-    const targetAllocation = await this.calculateOptimalAllocation(holdings, targetRiskLevel);
+    const targetAllocation = await this.calculateOptimalAllocation(
+      holdings,
+      targetRiskLevel,
+    );
 
     // Generate trade suggestions
     const trades: TradeSuggestion[] = [];
@@ -468,13 +544,16 @@ export class PortfolioAnalytics {
 
     for (const holding of holdings) {
       const currentAlloc = (holding.currentValue / totalValue) * 100;
-      const targetAlloc = targetAllocation.find(t => t.symbol === holding.symbol)?.allocation || 0;
+      const targetAlloc =
+        targetAllocation.find((t) => t.symbol === holding.symbol)?.allocation ||
+        0;
       const drift = Math.abs(currentAlloc - targetAlloc);
 
       if (drift > maxDrift) maxDrift = drift;
       totalDrift += drift;
 
-      if (drift > 5) { // 5% drift threshold
+      if (drift > 5) {
+        // 5% drift threshold
         driftedHoldings.push(holding.symbol);
         if (!reasons.includes(RebalanceReason.DRIFT_THRESHOLD)) {
           reasons.push(RebalanceReason.DRIFT_THRESHOLD);
@@ -487,18 +566,18 @@ export class PortfolioAnalytics {
       const targetShares = targetValue / currentPrice;
       const sharesToTrade = targetShares - currentShares;
 
-      let action: 'buy' | 'sell' | 'hold';
-      let priority: 'high' | 'medium' | 'low';
+      let action: "buy" | "sell" | "hold";
+      let priority: "high" | "medium" | "low";
 
       if (Math.abs(sharesToTrade) < 1) {
-        action = 'hold';
-        priority = 'low';
+        action = "hold";
+        priority = "low";
       } else if (sharesToTrade > 0) {
-        action = 'buy';
-        priority = drift > 10 ? 'high' : drift > 5 ? 'medium' : 'low';
+        action = "buy";
+        priority = drift > 10 ? "high" : drift > 5 ? "medium" : "low";
       } else {
-        action = 'sell';
-        priority = drift > 10 ? 'high' : drift > 5 ? 'medium' : 'low';
+        action = "sell";
+        priority = drift > 10 ? "high" : drift > 5 ? "medium" : "low";
       }
 
       trades.push({
@@ -515,7 +594,10 @@ export class PortfolioAnalytics {
       });
     }
 
-    const totalTradingCost = trades.reduce((sum, t) => sum + t.estimatedCost, 0);
+    const totalTradingCost = trades.reduce(
+      (sum, t) => sum + t.estimatedCost,
+      0,
+    );
     const averageDrift = totalDrift / holdings.length;
 
     const recommendation: RebalancingRecommendation = {
@@ -542,8 +624,8 @@ export class PortfolioAnalytics {
         `Estimated trading cost: $${totalTradingCost.toFixed(2)}`,
       ],
       metadata: {
-        optimizationMethod: 'Modern Portfolio Theory',
-        constraints: ['No short selling', 'Minimum position size: 1%'],
+        optimizationMethod: "Modern Portfolio Theory",
+        constraints: ["No short selling", "Minimum position size: 1%"],
       },
     };
 
@@ -557,26 +639,35 @@ export class PortfolioAnalytics {
   async getPortfolioPerformance(
     portfolioId: string,
     benchmark?: string,
-    timeHorizon: TimeHorizon = '1Y'
+    timeHorizon: TimeHorizon = "1Y",
   ): Promise<PortfolioPerformance> {
-    const cacheKey = `performance:${portfolioId}:${benchmark || 'none'}:${timeHorizon}`;
+    const cacheKey = `performance:${portfolioId}:${benchmark || "none"}:${timeHorizon}`;
     const cached = await redisCache.get<PortfolioPerformance>(cacheKey);
     if (cached) return cached;
 
     const holdings = await portfolioService.getHoldings(portfolioId);
     const days = this.timeHorizonToDays(timeHorizon);
-    const historicalData = await this.getHistoricalDataForHoldings(holdings, days);
+    const historicalData = await this.getHistoricalDataForHoldings(
+      holdings,
+      days,
+    );
 
-    const portfolioReturns = this.calculatePortfolioReturns(holdings, historicalData);
+    const portfolioReturns = this.calculatePortfolioReturns(
+      holdings,
+      historicalData,
+    );
 
     // Calculate cumulative returns
-    const cumulativeReturns: Array<{ date: Date; cumulativeReturn: number }> = [];
+    const cumulativeReturns: Array<{ date: Date; cumulativeReturn: number }> =
+      [];
     let cumulative = 1;
 
     for (let i = 0; i < portfolioReturns.length; i++) {
-      cumulative *= (1 + portfolioReturns[i]);
+      cumulative *= 1 + portfolioReturns[i];
       cumulativeReturns.push({
-        date: new Date(Date.now() - (portfolioReturns.length - i) * 24 * 60 * 60 * 1000),
+        date: new Date(
+          Date.now() - (portfolioReturns.length - i) * 24 * 60 * 60 * 1000,
+        ),
         cumulativeReturn: (cumulative - 1) * 100,
       });
     }
@@ -585,21 +676,32 @@ export class PortfolioAnalytics {
     const annualizedReturn = (Math.pow(cumulative, 252 / days) - 1) * 100;
 
     // Calculate risk-adjusted returns
-    const riskMetrics = await this.calculateRiskMetrics(portfolioId, timeHorizon);
+    const riskMetrics = await this.calculateRiskMetrics(
+      portfolioId,
+      timeHorizon,
+    );
 
     // Benchmark comparison
     let benchmarkData;
     if (benchmark) {
-      const benchmarkHistory = await marketDataService.getHistory(benchmark, AssetType.STOCK, TimeInterval.ONE_DAY, days);
-      const benchmarkReturns = this.calculateReturns(benchmarkHistory.data.map(d => d.close));
+      const benchmarkHistory = await marketDataService.getHistory(
+        benchmark,
+        AssetType.STOCK,
+        TimeInterval.ONE_DAY,
+        days,
+      );
+      const benchmarkReturns = this.calculateReturns(
+        benchmarkHistory.data.map((d) => d.close),
+      );
 
       let benchmarkCumulative = 1;
       for (const ret of benchmarkReturns) {
-        benchmarkCumulative *= (1 + ret);
+        benchmarkCumulative *= 1 + ret;
       }
 
       const benchmarkTotalReturn = (benchmarkCumulative - 1) * 100;
-      const benchmarkAnnualizedReturn = (Math.pow(benchmarkCumulative, 252 / days) - 1) * 100;
+      const benchmarkAnnualizedReturn =
+        (Math.pow(benchmarkCumulative, 252 / days) - 1) * 100;
 
       benchmarkData = {
         symbol: benchmark,
@@ -616,7 +718,7 @@ export class PortfolioAnalytics {
 
     // Performance attribution
     const sectorExposures = await this.getSectorExposure(portfolioId);
-    const sectorContribution = sectorExposures.map(s => ({
+    const sectorContribution = sectorExposures.map((s) => ({
       sector: s.sector,
       contribution: s.allocation * 0.1, // Simplified
     }));
@@ -625,23 +727,30 @@ export class PortfolioAnalytics {
     const holdingReturns = await Promise.all(
       holdings.map(async (h) => {
         const data = historicalData.get(h.symbol);
-        if (!data || data.length < 2) return { symbol: h.symbol, contribution: 0 };
+        if (!data || data.length < 2)
+          return { symbol: h.symbol, contribution: 0 };
 
         const startPrice = data[0].close;
         const endPrice = data[data.length - 1].close;
         const holdingReturn = ((endPrice - startPrice) / startPrice) * 100;
-        const contribution = holdingReturn * (h.currentValue / holdings.reduce((sum, hh) => sum + hh.currentValue, 0));
+        const contribution =
+          holdingReturn *
+          (h.currentValue /
+            holdings.reduce((sum, hh) => sum + hh.currentValue, 0));
 
         return { symbol: h.symbol, contribution };
-      })
+      }),
     );
 
-    const sortedContributions = holdingReturns.sort((a, b) => b.contribution - a.contribution);
+    const sortedContributions = holdingReturns.sort(
+      (a, b) => b.contribution - a.contribution,
+    );
     const topContributors = sortedContributions.slice(0, 5);
     const topDetractors = sortedContributions.slice(-5).reverse();
 
     // Drawdown analysis
-    const { maxDrawdown, currentDrawdown, averageDrawdown } = this.calculateDrawdowns(portfolioReturns);
+    const { maxDrawdown, currentDrawdown, averageDrawdown } =
+      this.calculateDrawdowns(portfolioReturns);
 
     const performance: PortfolioPerformance = {
       portfolioId,
@@ -651,7 +760,9 @@ export class PortfolioAnalytics {
         total: totalReturn,
         annualized: annualizedReturn,
         daily: portfolioReturns.map((ret, i) => ({
-          date: new Date(Date.now() - (portfolioReturns.length - i) * 24 * 60 * 60 * 1000),
+          date: new Date(
+            Date.now() - (portfolioReturns.length - i) * 24 * 60 * 60 * 1000,
+          ),
           return: ret * 100,
         })),
         cumulative: cumulativeReturns,
@@ -693,12 +804,12 @@ export class PortfolioAnalytics {
    */
   private timeHorizonToDays(timeHorizon: TimeHorizon): number {
     const map: Record<TimeHorizon, number> = {
-      '1M': 30,
-      '3M': 90,
-      '6M': 180,
-      '1Y': 252,
-      '3Y': 756,
-      '5Y': 1260,
+      "1M": 30,
+      "3M": 90,
+      "6M": 180,
+      "1Y": 252,
+      "3Y": 756,
+      "5Y": 1260,
     };
     return map[timeHorizon];
   }
@@ -708,14 +819,19 @@ export class PortfolioAnalytics {
    */
   private async getHistoricalDataForHoldings(
     holdings: any[],
-    days: number
+    days: number,
   ): Promise<Map<string, Array<{ date: Date; close: number }>>> {
     const dataMap = new Map();
 
     for (const holding of holdings) {
       try {
-        const history = await marketDataService.getHistory(holding.symbol, AssetType.STOCK, TimeInterval.ONE_DAY, days);
-        const prices = history.data.map(d => ({
+        const history = await marketDataService.getHistory(
+          holding.symbol,
+          AssetType.STOCK,
+          TimeInterval.ONE_DAY,
+          days,
+        );
+        const prices = history.data.map((d) => ({
           date: d.timestamp,
           close: d.close,
         }));
@@ -734,13 +850,15 @@ export class PortfolioAnalytics {
    */
   private calculatePortfolioReturns(
     holdings: any[],
-    historicalData: Map<string, Array<{ date: Date; close: number }>>
+    historicalData: Map<string, Array<{ date: Date; close: number }>>,
   ): number[] {
     const totalValue = holdings.reduce((sum, h) => sum + h.currentValue, 0);
-    const weights = holdings.map(h => h.currentValue / totalValue);
+    const weights = holdings.map((h) => h.currentValue / totalValue);
 
     // Get the minimum length across all holdings
-    const minLength = Math.min(...Array.from(historicalData.values()).map(d => d.length));
+    const minLength = Math.min(
+      ...Array.from(historicalData.values()).map((d) => d.length),
+    );
     const portfolioReturns: number[] = [];
 
     for (let i = 1; i < minLength; i++) {
@@ -788,7 +906,7 @@ export class PortfolioAnalytics {
   private calculateStandardDeviation(values: number[]): number {
     if (values.length === 0) return 0;
     const mean = this.calculateMean(values);
-    const squaredDiffs = values.map(v => Math.pow(v - mean, 2));
+    const squaredDiffs = values.map((v) => Math.pow(v - mean, 2));
     const variance = this.calculateMean(squaredDiffs);
     return Math.sqrt(variance);
   }
@@ -796,11 +914,16 @@ export class PortfolioAnalytics {
   /**
    * Calculate downside deviation (for Sortino ratio)
    */
-  private calculateDownsideDeviation(returns: number[], targetReturn: number): number {
-    const downsideReturns = returns.filter(r => r < targetReturn).map(r => r - targetReturn);
+  private calculateDownsideDeviation(
+    returns: number[],
+    targetReturn: number,
+  ): number {
+    const downsideReturns = returns
+      .filter((r) => r < targetReturn)
+      .map((r) => r - targetReturn);
     if (downsideReturns.length === 0) return 0;
 
-    const squaredDownside = downsideReturns.map(r => r * r);
+    const squaredDownside = downsideReturns.map((r) => r * r);
     const variance = this.calculateMean(squaredDownside);
     return Math.sqrt(variance);
   }
@@ -811,7 +934,7 @@ export class PortfolioAnalytics {
   private async calculateVaRCVaR(
     returns: number[],
     portfolioValue: number,
-    iterations: number
+    iterations: number,
   ): Promise<{ var95: number; var99: number; cvar95: number; cvar99: number }> {
     const mean = this.calculateMean(returns);
     const stdDev = this.calculateStandardDeviation(returns);
@@ -854,14 +977,20 @@ export class PortfolioAnalytics {
   private calculateBetaAlpha(
     portfolioReturns: number[],
     benchmarkReturns: number[],
-    riskFreeRate: number
+    riskFreeRate: number,
   ): { beta: number; alpha: number; rSquared: number } {
-    const minLength = Math.min(portfolioReturns.length, benchmarkReturns.length);
+    const minLength = Math.min(
+      portfolioReturns.length,
+      benchmarkReturns.length,
+    );
     const portReturns = portfolioReturns.slice(0, minLength);
     const benchReturns = benchmarkReturns.slice(0, minLength);
 
     const covariance = this.calculateCovariance(portReturns, benchReturns);
-    const benchmarkVariance = Math.pow(this.calculateStandardDeviation(benchReturns), 2);
+    const benchmarkVariance = Math.pow(
+      this.calculateStandardDeviation(benchReturns),
+      2,
+    );
 
     const beta = covariance / benchmarkVariance;
 
@@ -869,7 +998,10 @@ export class PortfolioAnalytics {
     const benchmarkMean = this.calculateMean(benchReturns);
     const dailyRiskFreeRate = riskFreeRate / 252;
 
-    const alpha = (portfolioMean - dailyRiskFreeRate) - beta * (benchmarkMean - dailyRiskFreeRate);
+    const alpha =
+      portfolioMean -
+      dailyRiskFreeRate -
+      beta * (benchmarkMean - dailyRiskFreeRate);
 
     // Calculate R-squared
     const correlation = this.calculateCorrelation(portReturns, benchReturns);
@@ -885,7 +1017,9 @@ export class PortfolioAnalytics {
     const mean1 = this.calculateMean(returns1);
     const mean2 = this.calculateMean(returns2);
 
-    const products = returns1.map((r1, i) => (r1 - mean1) * (returns2[i] - mean2));
+    const products = returns1.map(
+      (r1, i) => (r1 - mean1) * (returns2[i] - mean2),
+    );
     return this.calculateMean(products);
   }
 
@@ -904,9 +1038,17 @@ export class PortfolioAnalytics {
   /**
    * Calculate tracking error
    */
-  private calculateTrackingError(portfolioReturns: number[], benchmarkReturns: number[]): number {
-    const minLength = Math.min(portfolioReturns.length, benchmarkReturns.length);
-    const differences = portfolioReturns.slice(0, minLength).map((r, i) => r - benchmarkReturns[i]);
+  private calculateTrackingError(
+    portfolioReturns: number[],
+    benchmarkReturns: number[],
+  ): number {
+    const minLength = Math.min(
+      portfolioReturns.length,
+      benchmarkReturns.length,
+    );
+    const differences = portfolioReturns
+      .slice(0, minLength)
+      .map((r, i) => r - benchmarkReturns[i]);
     return this.calculateStandardDeviation(differences) * Math.sqrt(252); // Annualize
   }
 
@@ -924,7 +1066,7 @@ export class PortfolioAnalytics {
     const drawdowns: number[] = [];
 
     for (const ret of returns) {
-      currentValue *= (1 + ret);
+      currentValue *= 1 + ret;
 
       if (currentValue > peak) {
         peak = currentValue;
@@ -939,7 +1081,7 @@ export class PortfolioAnalytics {
     }
 
     const currentDrawdown = drawdowns[drawdowns.length - 1] || 0;
-    const averageDrawdown = this.calculateMean(drawdowns.filter(d => d > 0));
+    const averageDrawdown = this.calculateMean(drawdowns.filter((d) => d > 0));
 
     return { maxDrawdown, currentDrawdown, averageDrawdown };
   }
@@ -950,7 +1092,7 @@ export class PortfolioAnalytics {
    */
   private async calculateOptimalAllocation(
     holdings: any[],
-    targetRiskLevel: RiskLevel
+    targetRiskLevel: RiskLevel,
   ): Promise<Array<{ symbol: string; allocation: number; value: number }>> {
     // Risk level to target volatility mapping
     const targetVolatilityMap: Record<RiskLevel, number> = {
@@ -966,10 +1108,12 @@ export class PortfolioAnalytics {
     // In production, use quadratic programming for true MPT optimization
     const baseAllocation = 100 / holdings.length;
 
-    return holdings.map(h => ({
+    return holdings.map((h) => ({
       symbol: h.symbol,
       allocation: baseAllocation,
-      value: (baseAllocation / 100) * holdings.reduce((sum, hh) => sum + hh.currentValue, 0),
+      value:
+        (baseAllocation / 100) *
+        holdings.reduce((sum, hh) => sum + hh.currentValue, 0),
     }));
   }
 
@@ -979,16 +1123,16 @@ export class PortfolioAnalytics {
   private async getSectorForSymbol(symbol: string): Promise<SectorType> {
     // Simplified sector mapping - in production, fetch from market data API
     const sectorMap: Record<string, SectorType> = {
-      'AAPL': SectorType.TECHNOLOGY,
-      'MSFT': SectorType.TECHNOLOGY,
-      'GOOGL': SectorType.COMMUNICATION_SERVICES,
-      'AMZN': SectorType.CONSUMER_DISCRETIONARY,
-      'TSLA': SectorType.CONSUMER_DISCRETIONARY,
-      'JNJ': SectorType.HEALTHCARE,
-      'JPM': SectorType.FINANCIALS,
-      'XOM': SectorType.ENERGY,
-      'PG': SectorType.CONSUMER_STAPLES,
-      'BA': SectorType.INDUSTRIALS,
+      AAPL: SectorType.TECHNOLOGY,
+      MSFT: SectorType.TECHNOLOGY,
+      GOOGL: SectorType.COMMUNICATION_SERVICES,
+      AMZN: SectorType.CONSUMER_DISCRETIONARY,
+      TSLA: SectorType.CONSUMER_DISCRETIONARY,
+      JNJ: SectorType.HEALTHCARE,
+      JPM: SectorType.FINANCIALS,
+      XOM: SectorType.ENERGY,
+      PG: SectorType.CONSUMER_STAPLES,
+      BA: SectorType.INDUSTRIALS,
     };
 
     return sectorMap[symbol] || SectorType.TECHNOLOGY; // Default to technology
@@ -999,7 +1143,7 @@ export class PortfolioAnalytics {
    */
   private async calculateGeographicDiversification(
     holdings: any[],
-    totalValue: number
+    totalValue: number,
   ): Promise<number> {
     // Simplified - assume 70% domestic, 30% international
     // In production, fetch actual geographic exposure from market data API

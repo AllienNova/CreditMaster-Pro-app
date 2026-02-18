@@ -4,27 +4,27 @@
  * Handles credit monitoring, data sync, and silent push notifications
  */
 
-import * as TaskManager from 'expo-task-manager';
-import * as BackgroundFetch from 'expo-background-fetch';
-import * as Notifications from 'expo-notifications';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
-import { api } from '../api/client';
+import * as TaskManager from "expo-task-manager";
+import * as BackgroundFetch from "expo-background-fetch";
+import * as Notifications from "expo-notifications";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from "react-native";
+import { api } from "../api/client";
 
 // Task names
 export const BACKGROUND_TASKS = {
-  CREDIT_MONITOR: 'FYNVITA_CREDIT_MONITOR',
-  DATA_SYNC: 'FYNVITA_DATA_SYNC',
-  SILENT_PUSH: 'FYNVITA_SILENT_PUSH',
-  PRICE_ALERT: 'FYNVITA_PRICE_ALERT',
+  CREDIT_MONITOR: "FYNVITA_CREDIT_MONITOR",
+  DATA_SYNC: "FYNVITA_DATA_SYNC",
+  SILENT_PUSH: "FYNVITA_SILENT_PUSH",
+  PRICE_ALERT: "FYNVITA_PRICE_ALERT",
 } as const;
 
 // Storage keys
 const STORAGE_KEYS = {
-  LAST_CREDIT_CHECK: '@fynvita_last_credit_check',
-  LAST_SYNC: '@fynvita_last_sync',
-  BACKGROUND_ENABLED: '@fynvita_background_enabled',
-  PRICE_ALERTS: '@fynvita_price_alerts',
+  LAST_CREDIT_CHECK: "@fynvita_last_credit_check",
+  LAST_SYNC: "@fynvita_last_sync",
+  BACKGROUND_ENABLED: "@fynvita_background_enabled",
+  PRICE_ALERTS: "@fynvita_price_alerts",
 };
 
 // Task intervals (in seconds)
@@ -39,7 +39,7 @@ interface CreditCheckResult {
   alerts: Array<{
     type: string;
     message: string;
-    severity: 'info' | 'warning' | 'critical';
+    severity: "info" | "warning" | "critical";
   }>;
 }
 
@@ -47,7 +47,7 @@ interface PriceAlert {
   id: string;
   symbol: string;
   targetPrice: number;
-  condition: 'above' | 'below';
+  condition: "above" | "below";
   active: boolean;
 }
 
@@ -64,7 +64,7 @@ class BackgroundTaskService {
   async initialize(): Promise<void> {
     if (this.isInitialized) {
       if (__DEV__) {
-        console.log('Background services already initialized');
+        console.log("Background services already initialized");
       }
       return;
     }
@@ -74,7 +74,7 @@ class BackgroundTaskService {
       this.registerTaskHandlers();
 
       // Request background fetch permissions (iOS)
-      if (Platform.OS === 'ios') {
+      if (Platform.OS === "ios") {
         await this.requestIOSBackgroundPermissions();
       }
 
@@ -83,10 +83,11 @@ class BackgroundTaskService {
 
       this.isInitialized = true;
       if (__DEV__) {
-        console.log('Background services initialized successfully');
+        console.log("Background services initialized successfully");
       }
     } catch (error) {
-      if (__DEV__) console.error('Failed to initialize background services:', error);
+      if (__DEV__)
+        console.error("Failed to initialize background services:", error);
     }
   }
 
@@ -98,7 +99,7 @@ class BackgroundTaskService {
     TaskManager.defineTask(BACKGROUND_TASKS.CREDIT_MONITOR, async () => {
       try {
         if (__DEV__) {
-          console.log('[Background] Running credit monitor task');
+          console.log("[Background] Running credit monitor task");
         }
         const result = await this.performCreditCheck();
 
@@ -108,12 +109,13 @@ class BackgroundTaskService {
 
         await AsyncStorage.setItem(
           STORAGE_KEYS.LAST_CREDIT_CHECK,
-          new Date().toISOString()
+          new Date().toISOString(),
         );
 
         return BackgroundFetch.BackgroundFetchResult.NewData;
       } catch (error) {
-        if (__DEV__) console.error('[Background] Credit monitor failed:', error);
+        if (__DEV__)
+          console.error("[Background] Credit monitor failed:", error);
         return BackgroundFetch.BackgroundFetchResult.Failed;
       }
     });
@@ -122,9 +124,9 @@ class BackgroundTaskService {
     TaskManager.defineTask(BACKGROUND_TASKS.DATA_SYNC, async () => {
       try {
         if (__DEV__) {
-          console.log('[Background] Running data sync task');
+          console.log("[Background] Running data sync task");
         }
-        const { useSyncStore } = await import('../../store/syncStore');
+        const { useSyncStore } = await import("../../store/syncStore");
         const store = useSyncStore.getState();
 
         if (store.pendingActions.length > 0) {
@@ -133,12 +135,12 @@ class BackgroundTaskService {
 
         await AsyncStorage.setItem(
           STORAGE_KEYS.LAST_SYNC,
-          new Date().toISOString()
+          new Date().toISOString(),
         );
 
         return BackgroundFetch.BackgroundFetchResult.NewData;
       } catch (error) {
-        if (__DEV__) console.error('[Background] Data sync failed:', error);
+        if (__DEV__) console.error("[Background] Data sync failed:", error);
         return BackgroundFetch.BackgroundFetchResult.Failed;
       }
     });
@@ -147,12 +149,13 @@ class BackgroundTaskService {
     TaskManager.defineTask(BACKGROUND_TASKS.PRICE_ALERT, async () => {
       try {
         if (__DEV__) {
-          console.log('[Background] Running price alert task');
+          console.log("[Background] Running price alert task");
         }
         await this.checkPriceAlerts();
         return BackgroundFetch.BackgroundFetchResult.NewData;
       } catch (error) {
-        if (__DEV__) console.error('[Background] Price alert check failed:', error);
+        if (__DEV__)
+          console.error("[Background] Price alert check failed:", error);
         return BackgroundFetch.BackgroundFetchResult.Failed;
       }
     });
@@ -168,13 +171,13 @@ class BackgroundTaskService {
     if (__DEV__) {
       switch (status) {
         case BackgroundFetch.BackgroundFetchStatus.Restricted:
-          console.log('Background fetch is restricted');
+          console.log("Background fetch is restricted");
           break;
         case BackgroundFetch.BackgroundFetchStatus.Denied:
-          console.log('Background fetch is denied');
+          console.log("Background fetch is denied");
           break;
         case BackgroundFetch.BackgroundFetchStatus.Available:
-          console.log('Background fetch is available');
+          console.log("Background fetch is available");
           break;
       }
     }
@@ -187,7 +190,7 @@ class BackgroundTaskService {
     const isEnabled = await this.isBackgroundEnabled();
     if (!isEnabled) {
       if (__DEV__) {
-        console.log('Background tasks are disabled');
+        console.log("Background tasks are disabled");
       }
       return;
     }
@@ -208,10 +211,10 @@ class BackgroundTaskService {
       });
 
       if (__DEV__) {
-        console.log('Background fetch tasks registered');
+        console.log("Background fetch tasks registered");
       }
     } catch (error) {
-      if (__DEV__) console.error('Failed to register background fetch:', error);
+      if (__DEV__) console.error("Failed to register background fetch:", error);
     }
   }
 
@@ -220,13 +223,16 @@ class BackgroundTaskService {
    */
   async unregisterBackgroundFetch(): Promise<void> {
     try {
-      await BackgroundFetch.unregisterTaskAsync(BACKGROUND_TASKS.CREDIT_MONITOR);
+      await BackgroundFetch.unregisterTaskAsync(
+        BACKGROUND_TASKS.CREDIT_MONITOR,
+      );
       await BackgroundFetch.unregisterTaskAsync(BACKGROUND_TASKS.DATA_SYNC);
       if (__DEV__) {
-        console.log('Background fetch tasks unregistered');
+        console.log("Background fetch tasks unregistered");
       }
     } catch (error) {
-      if (__DEV__) console.error('Failed to unregister background fetch:', error);
+      if (__DEV__)
+        console.error("Failed to unregister background fetch:", error);
     }
   }
 
@@ -235,7 +241,7 @@ class BackgroundTaskService {
    */
   private async performCreditCheck(): Promise<CreditCheckResult> {
     try {
-      const response = await api.get('/api/credit/check');
+      const response = await api.get("/api/credit/check");
       return response.data as CreditCheckResult;
     } catch {
       // Return mock data for development
@@ -256,8 +262,12 @@ class BackgroundTaskService {
         content: {
           title: this.getAlertTitle(alert.type),
           body: alert.message,
-          data: { notificationType: 'credit_alert', alertType: alert.type, ...alert },
-          sound: alert.severity === 'critical' ? 'default' : undefined,
+          data: {
+            notificationType: "credit_alert",
+            alertType: alert.type,
+            ...alert,
+          },
+          sound: alert.severity === "critical" ? "default" : undefined,
         },
         trigger: null, // Send immediately
       });
@@ -269,12 +279,12 @@ class BackgroundTaskService {
    */
   private getAlertTitle(type: string): string {
     const titles: Record<string, string> = {
-      score_change: '📊 Credit Score Update',
-      new_account: '🆕 New Account Detected',
-      inquiry: '🔍 New Credit Inquiry',
-      delinquency: '⚠️ Payment Alert',
-      balance_change: '💳 Balance Change',
-      default: '📢 Credit Alert',
+      score_change: "📊 Credit Score Update",
+      new_account: "🆕 New Account Detected",
+      inquiry: "🔍 New Credit Inquiry",
+      delinquency: "⚠️ Payment Alert",
+      balance_change: "💳 Balance Change",
+      default: "📢 Credit Alert",
     };
     return titles[type] || titles.default;
   }
@@ -294,7 +304,9 @@ class BackgroundTaskService {
 
       // Get current prices for all symbols
       const symbols = [...new Set(activeAlerts.map((a) => a.symbol))];
-      const response = await api.get(`/api/investments/prices?symbols=${symbols.join(',')}`);
+      const response = await api.get(
+        `/api/investments/prices?symbols=${symbols.join(",")}`,
+      );
       const prices = response.data as Record<string, number>;
 
       // Check each alert
@@ -303,39 +315,39 @@ class BackgroundTaskService {
         if (!currentPrice) continue;
 
         const triggered =
-          (alert.condition === 'above' && currentPrice >= alert.targetPrice) ||
-          (alert.condition === 'below' && currentPrice <= alert.targetPrice);
+          (alert.condition === "above" && currentPrice >= alert.targetPrice) ||
+          (alert.condition === "below" && currentPrice <= alert.targetPrice);
 
         if (triggered) {
           // Notify user
           await Notifications.scheduleNotificationAsync({
             content: {
-              title: '📈 Price Alert Triggered',
-              body: `${alert.symbol} is now ${alert.condition === 'above' ? 'above' : 'below'} $${alert.targetPrice.toFixed(2)} (Current: $${currentPrice.toFixed(2)})`,
-              data: { type: 'price_alert', symbol: alert.symbol },
+              title: "📈 Price Alert Triggered",
+              body: `${alert.symbol} is now ${alert.condition === "above" ? "above" : "below"} $${alert.targetPrice.toFixed(2)} (Current: $${currentPrice.toFixed(2)})`,
+              data: { type: "price_alert", symbol: alert.symbol },
             },
             trigger: null,
           });
 
           // Mark alert as inactive
           const updatedAlerts = alerts.map((a) =>
-            a.id === alert.id ? { ...a, active: false } : a
+            a.id === alert.id ? { ...a, active: false } : a,
           );
           await AsyncStorage.setItem(
             STORAGE_KEYS.PRICE_ALERTS,
-            JSON.stringify(updatedAlerts)
+            JSON.stringify(updatedAlerts),
           );
         }
       }
     } catch (error) {
-      if (__DEV__) console.error('Failed to check price alerts:', error);
+      if (__DEV__) console.error("Failed to check price alerts:", error);
     }
   }
 
   /**
    * Add a price alert
    */
-  async addPriceAlert(alert: Omit<PriceAlert, 'id' | 'active'>): Promise<void> {
+  async addPriceAlert(alert: Omit<PriceAlert, "id" | "active">): Promise<void> {
     try {
       const alertsJson = await AsyncStorage.getItem(STORAGE_KEYS.PRICE_ALERTS);
       const alerts: PriceAlert[] = alertsJson ? JSON.parse(alertsJson) : [];
@@ -347,9 +359,12 @@ class BackgroundTaskService {
       };
 
       alerts.push(newAlert);
-      await AsyncStorage.setItem(STORAGE_KEYS.PRICE_ALERTS, JSON.stringify(alerts));
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.PRICE_ALERTS,
+        JSON.stringify(alerts),
+      );
     } catch (error) {
-      if (__DEV__) console.error('Failed to add price alert:', error);
+      if (__DEV__) console.error("Failed to add price alert:", error);
     }
   }
 
@@ -363,9 +378,12 @@ class BackgroundTaskService {
 
       const alerts: PriceAlert[] = JSON.parse(alertsJson);
       const filtered = alerts.filter((a) => a.id !== alertId);
-      await AsyncStorage.setItem(STORAGE_KEYS.PRICE_ALERTS, JSON.stringify(filtered));
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.PRICE_ALERTS,
+        JSON.stringify(filtered),
+      );
     } catch (error) {
-      if (__DEV__) console.error('Failed to remove price alert:', error);
+      if (__DEV__) console.error("Failed to remove price alert:", error);
     }
   }
 
@@ -377,7 +395,7 @@ class BackgroundTaskService {
       const alertsJson = await AsyncStorage.getItem(STORAGE_KEYS.PRICE_ALERTS);
       return alertsJson ? JSON.parse(alertsJson) : [];
     } catch (error) {
-      if (__DEV__) console.error('Failed to get price alerts:', error);
+      if (__DEV__) console.error("Failed to get price alerts:", error);
       return [];
     }
   }
@@ -387,8 +405,10 @@ class BackgroundTaskService {
    */
   async isBackgroundEnabled(): Promise<boolean> {
     try {
-      const enabled = await AsyncStorage.getItem(STORAGE_KEYS.BACKGROUND_ENABLED);
-      return enabled !== 'false';
+      const enabled = await AsyncStorage.getItem(
+        STORAGE_KEYS.BACKGROUND_ENABLED,
+      );
+      return enabled !== "false";
     } catch {
       return true;
     }
@@ -398,7 +418,10 @@ class BackgroundTaskService {
    * Enable/disable background tasks
    */
   async setBackgroundEnabled(enabled: boolean): Promise<void> {
-    await AsyncStorage.setItem(STORAGE_KEYS.BACKGROUND_ENABLED, String(enabled));
+    await AsyncStorage.setItem(
+      STORAGE_KEYS.BACKGROUND_ENABLED,
+      String(enabled),
+    );
     if (enabled) {
       await this.registerBackgroundFetch();
     } else {
@@ -410,7 +433,9 @@ class BackgroundTaskService {
    * Get last credit check time
    */
   async getLastCreditCheck(): Promise<Date | null> {
-    const timestamp = await AsyncStorage.getItem(STORAGE_KEYS.LAST_CREDIT_CHECK);
+    const timestamp = await AsyncStorage.getItem(
+      STORAGE_KEYS.LAST_CREDIT_CHECK,
+    );
     return timestamp ? new Date(timestamp) : null;
   }
 

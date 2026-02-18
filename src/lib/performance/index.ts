@@ -3,6 +3,5 @@
  * Exports all performance utilities
  */
 
-export * from './cache';
-export * from './compression';
-
+export * from "./cache";
+export * from "./compression";

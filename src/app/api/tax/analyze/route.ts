@@ -11,16 +11,16 @@
  * - No PII in logs
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { taxOptimizationEngine } from '@/lib/tax';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { taxOptimizationEngine } from "@/lib/tax";
 import {
   FilingStatus,
   OptimizationGoal,
   BusinessType,
   TaxAccountType,
-} from '@/lib/tax/types/tax-profile.types';
-import type { TaxProfile } from '@/lib/tax/types/tax-profile.types';
+} from "@/lib/tax/types/tax-profile.types";
+import type { TaxProfile } from "@/lib/tax/types/tax-profile.types";
 
 // Rate limiting (simple in-memory for demo; use Redis in production)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
@@ -56,10 +56,10 @@ export async function POST(request: NextRequest) {
     if (authError || !user) {
       return NextResponse.json(
         {
-          error: 'Unauthorized',
-          message: 'Please sign in to access tax optimization.',
+          error: "Unauthorized",
+          message: "Please sign in to access tax optimization.",
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -67,10 +67,10 @@ export async function POST(request: NextRequest) {
     if (!checkRateLimit(user.id)) {
       return NextResponse.json(
         {
-          error: 'Rate limited',
-          message: 'Too many requests. Please try again later.',
+          error: "Rate limited",
+          message: "Too many requests. Please try again later.",
         },
-        { status: 429 }
+        { status: 429 },
       );
     }
 
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     // 5. Run tax optimization analysis
     const result = await taxOptimizationEngine.analyzeAndRecommend(
       user.id,
-      profile!
+      profile!,
     );
 
     // 6. Return results with disclaimers
@@ -107,13 +107,13 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Tax analysis error:', error);
+    console.error("Tax analysis error:", error);
     return NextResponse.json(
       {
-        error: 'Analysis failed',
-        message: 'Unable to complete tax analysis. Please try again.',
+        error: "Analysis failed",
+        message: "Unable to complete tax analysis. Please try again.",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -121,13 +121,13 @@ export async function POST(request: NextRequest) {
 async function fetchTaxProfile(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
-  taxYear: number
+  taxYear: number,
 ): Promise<TaxProfile | null> {
   const { data, error } = await supabase
-    .from('tax_profiles')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('tax_year', taxYear)
+    .from("tax_profiles")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("tax_year", taxYear)
     .single();
 
   if (error || !data) {
@@ -136,16 +136,16 @@ async function fetchTaxProfile(
 
   // Fetch associated accounts
   const { data: accounts } = await supabase
-    .from('tax_accounts')
-    .select('*')
-    .eq('user_id', userId);
+    .from("tax_accounts")
+    .select("*")
+    .eq("user_id", userId);
 
   return mapDatabaseToProfile(data, accounts || []);
 }
 
 function mapDatabaseToProfile(
   dbProfile: Record<string, unknown>,
-  dbAccounts: Record<string, unknown>[]
+  dbAccounts: Record<string, unknown>[],
 ): TaxProfile {
   return {
     id: dbProfile.id as string,
@@ -154,7 +154,7 @@ function mapDatabaseToProfile(
 
     filingStatus:
       (dbProfile.filing_status as FilingStatus) || FilingStatus.SINGLE,
-    stateOfResidence: (dbProfile.state_of_residence as string) || 'CA',
+    stateOfResidence: (dbProfile.state_of_residence as string) || "CA",
 
     grossIncome: Number(dbProfile.gross_income) || 0,
     w2Income: Number(dbProfile.w2_income) || 0,
@@ -172,7 +172,7 @@ function mapDatabaseToProfile(
     stateWithheld: Number(dbProfile.state_withheld) || 0,
     estimatedPayments: Number(dbProfile.estimated_payments) || 0,
 
-    dependents: (dbProfile.dependents_data as TaxProfile['dependents']) || [],
+    dependents: (dbProfile.dependents_data as TaxProfile["dependents"]) || [],
 
     isEmployed: (dbProfile.is_employed as boolean) ?? true,
     isSelfEmployed: (dbProfile.is_self_employed as boolean) ?? false,
@@ -191,8 +191,8 @@ function mapDatabaseToProfile(
 
     hasHdhp: (dbProfile.has_hdhp as boolean) ?? false,
     healthInsuranceType:
-      (dbProfile.health_insurance_type as TaxProfile['healthInsuranceType']) ||
-      'employer',
+      (dbProfile.health_insurance_type as TaxProfile["healthInsuranceType"]) ||
+      "employer",
 
     accounts: dbAccounts.map((acc) => ({
       id: acc.id as string,
@@ -222,7 +222,7 @@ function mapDatabaseToProfile(
       (dbProfile.optimization_goal as OptimizationGoal) ||
       OptimizationGoal.BALANCED,
     riskTolerance:
-      (dbProfile.risk_tolerance as TaxProfile['riskTolerance']) || 'moderate',
+      (dbProfile.risk_tolerance as TaxProfile["riskTolerance"]) || "moderate",
 
     createdAt: new Date(dbProfile.created_at as string),
     updatedAt: new Date(dbProfile.updated_at as string),
@@ -235,7 +235,7 @@ function mapDatabaseToProfile(
 function createDefaultProfile(
   userId: string,
   taxYear: number,
-  body: Record<string, unknown>
+  body: Record<string, unknown>,
 ): TaxProfile {
   const now = new Date();
 
@@ -245,7 +245,7 @@ function createDefaultProfile(
     taxYear,
 
     filingStatus: (body.filingStatus as FilingStatus) || FilingStatus.SINGLE,
-    stateOfResidence: (body.stateOfResidence as string) || 'CA',
+    stateOfResidence: (body.stateOfResidence as string) || "CA",
 
     grossIncome: Number(body.grossIncome) || 100000,
     w2Income: Number(body.w2Income) || Number(body.grossIncome) || 100000,
@@ -278,7 +278,7 @@ function createDefaultProfile(
     educatorExpenses: 0,
 
     hasHdhp: Boolean(body.hasHdhp),
-    healthInsuranceType: 'employer',
+    healthInsuranceType: "employer",
 
     accounts: [],
 
@@ -289,7 +289,7 @@ function createDefaultProfile(
     ytdCharitableGiving: 0,
 
     optimizationGoal: OptimizationGoal.BALANCED,
-    riskTolerance: 'moderate',
+    riskTolerance: "moderate",
 
     createdAt: now,
     updatedAt: now,

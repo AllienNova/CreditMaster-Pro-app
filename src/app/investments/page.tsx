@@ -1,16 +1,16 @@
-import { Suspense } from 'react';
-import { Metadata } from 'next';
-import PortfolioOverview from '@/components/investments/PortfolioOverview';
+import { Suspense } from "react";
+import { Metadata } from "next";
+import PortfolioOverview from "@/components/investments/PortfolioOverview";
 
 export const metadata: Metadata = {
-  title: 'Investment Portfolio | Fynvita',
+  title: "Investment Portfolio | Fynvita",
   description:
-    'Track your investment portfolio, analyze stocks, and monitor performance',
+    "Track your investment portfolio, analyze stocks, and monitor performance",
   openGraph: {
-    title: 'Investment Portfolio | Fynvita',
+    title: "Investment Portfolio | Fynvita",
     description:
-      'Track your investment portfolio, analyze stocks, and monitor performance',
-    type: 'website',
+      "Track your investment portfolio, analyze stocks, and monitor performance",
+    type: "website",
   },
 };
 

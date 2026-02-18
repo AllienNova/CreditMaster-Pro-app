@@ -6,24 +6,24 @@ This document provides a comprehensive list of ALL API keys and external service
 
 ## Quick Reference Table
 
-| Category | Service | Required | Env Variable(s) |
-|----------|---------|----------|-----------------|
-| Database | Supabase | ✅ Critical | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` |
-| Payments | Stripe | ✅ Critical | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` |
-| AI/ML | AIML API | ✅ Critical | `AIML_API_KEY`, `AIML_API_URL` |
-| Banking | Plaid | ✅ Critical | `PLAID_CLIENT_ID`, `PLAID_SECRET` |
-| Email | Resend | ✅ Critical | `RESEND_API_KEY` |
-| Market Data | Polygon.io | ⚠️ Trading | `POLYGON_API_KEY` |
-| Market Data | Finnhub | ⚠️ Trading | `FINNHUB_API_KEY` |
-| Market Data | Alpha Vantage | ⚠️ Trading | `ALPHA_VANTAGE_API_KEY` |
-| Broker | Alpaca | ⚠️ Trading | `ALPACA_API_KEY`, `ALPACA_SECRET_KEY` |
-| Credit Bureau | Experian | ⚠️ Credit | `EXPERIAN_CLIENT_ID`, `EXPERIAN_CLIENT_SECRET` |
-| Credit Bureau | Equifax | ⚠️ Credit | `EQUIFAX_API_KEY`, `EQUIFAX_CLIENT_ID` |
-| Credit Bureau | TransUnion | ⚠️ Credit | `TRANSUNION_SUBSCRIBER_ID`, `TRANSUNION_API_KEY` |
-| Banking (EU) | TrueLayer | Optional | `TRUELAYER_CLIENT_ID`, `TRUELAYER_CLIENT_SECRET` |
-| Insurance | Canopy Connect | Optional | `CANOPY_CLIENT_ID`, `CANOPY_CLIENT_SECRET` |
-| Monitoring | Sentry | Optional | `SENTRY_DSN` |
-| Analytics | Google Analytics | Optional | `NEXT_PUBLIC_GA_MEASUREMENT_ID` |
+| Category      | Service          | Required    | Env Variable(s)                                             |
+| ------------- | ---------------- | ----------- | ----------------------------------------------------------- |
+| Database      | Supabase         | ✅ Critical | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` |
+| Payments      | Stripe           | ✅ Critical | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`                |
+| AI/ML         | AIML API         | ✅ Critical | `AIML_API_KEY`, `AIML_API_URL`                              |
+| Banking       | Plaid            | ✅ Critical | `PLAID_CLIENT_ID`, `PLAID_SECRET`                           |
+| Email         | Resend           | ✅ Critical | `RESEND_API_KEY`                                            |
+| Market Data   | Polygon.io       | ⚠️ Trading  | `POLYGON_API_KEY`                                           |
+| Market Data   | Finnhub          | ⚠️ Trading  | `FINNHUB_API_KEY`                                           |
+| Market Data   | Alpha Vantage    | ⚠️ Trading  | `ALPHA_VANTAGE_API_KEY`                                     |
+| Broker        | Alpaca           | ⚠️ Trading  | `ALPACA_API_KEY`, `ALPACA_SECRET_KEY`                       |
+| Credit Bureau | Experian         | ⚠️ Credit   | `EXPERIAN_CLIENT_ID`, `EXPERIAN_CLIENT_SECRET`              |
+| Credit Bureau | Equifax          | ⚠️ Credit   | `EQUIFAX_API_KEY`, `EQUIFAX_CLIENT_ID`                      |
+| Credit Bureau | TransUnion       | ⚠️ Credit   | `TRANSUNION_SUBSCRIBER_ID`, `TRANSUNION_API_KEY`            |
+| Banking (EU)  | TrueLayer        | Optional    | `TRUELAYER_CLIENT_ID`, `TRUELAYER_CLIENT_SECRET`            |
+| Insurance     | Canopy Connect   | Optional    | `CANOPY_CLIENT_ID`, `CANOPY_CLIENT_SECRET`                  |
+| Monitoring    | Sentry           | Optional    | `SENTRY_DSN`                                                |
+| Analytics     | Google Analytics | Optional    | `NEXT_PUBLIC_GA_MEASUREMENT_ID`                             |
 
 ---
 
@@ -45,6 +45,7 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
 **Files using this**:
+
 - `src/lib/supabase/client.ts`
 - `src/lib/supabase/server.ts`
 - All API routes and services
@@ -79,6 +80,7 @@ STRIPE_FAMILY_PLUS_ANNUAL_PRICE_ID=price_xxx
 ```
 
 **Files using this**:
+
 - `src/lib/payment/stripe-service.ts`
 - `src/lib/pricing.ts`
 - `src/lib/subscriptions/subscription-service.ts`
@@ -105,6 +107,7 @@ AIML_VOICE_MODEL=tts-1
 ```
 
 **Files using this**:
+
 - `src/lib/aiml-service.ts`
 - `src/lib/model-router.ts`
 - `src/lib/trading/engines/llm-trading-engine.ts`
@@ -125,6 +128,7 @@ EMAIL_FROM=Fynvita <noreply@fynvita.com>
 ```
 
 **Files using this**:
+
 - `src/lib/notifications/notification-service.ts`
 - `src/lib/email/email-service.ts`
 
@@ -145,6 +149,7 @@ PLAID_ENV=sandbox  # sandbox, development, production
 ```
 
 **Files using this**:
+
 - `src/lib/financial/plaid-service.ts`
 - `src/components/financial/PlaidLinkButton.tsx`
 - `src/app/api/financial/plaid/exchange-token/route.ts`
@@ -164,6 +169,7 @@ TRUELAYER_SANDBOX=true  # true for testing
 ```
 
 **Files using this**:
+
 - `src/lib/connectors/banking/truelayer-connector.ts`
 - `src/lib/connectors/payments/truelayer-payments.ts`
 
@@ -183,12 +189,14 @@ POLYGON_WS_URL=wss://socket.polygon.io  # Optional, has default
 ```
 
 **Pricing Tiers**:
+
 - Free: 5 API calls/minute, delayed data
 - Starter ($29/mo): 1000 calls/minute, real-time
 - Developer ($79/mo): Unlimited calls
 - Advanced ($199/mo): Full historical data
 
 **Files using this**:
+
 - `src/lib/integrations/polygon.ts`
 - `src/lib/investments/market-data-service.ts`
 
@@ -205,10 +213,12 @@ FINNHUB_API_KEY=your_api_key
 ```
 
 **Pricing**:
+
 - Free: 60 API calls/minute
 - Premium: Higher limits, more data
 
 **Files using this**:
+
 - `src/lib/connectors/market-data/finnhub-connector.ts`
 - `src/lib/investments/market-data-service.ts`
 
@@ -225,10 +235,12 @@ ALPHA_VANTAGE_API_KEY=your_api_key
 ```
 
 **Pricing**:
+
 - Free: 5 calls/minute, 500/day
 - Premium ($49.99/mo): 75 calls/minute
 
 **Files using this**:
+
 - `src/lib/integrations/alpha-vantage.ts`
 - `src/lib/investments/market-data-service.ts`
 
@@ -255,6 +267,7 @@ ALPACA_PAPER=false
 ```
 
 **Files using this**:
+
 - `src/lib/trading/brokers/alpaca-broker.ts`
 - `src/lib/trading/pctt/pctt-trading-service.ts`
 
@@ -277,6 +290,7 @@ EXPERIAN_SANDBOX=true  # true for testing
 **Requirements**: Business verification, compliance agreements
 
 **Files using this**:
+
 - `src/lib/credit-bureau/experian-client.ts`
 - `src/lib/credit-bureau/credit-bureau-service.ts`
 
@@ -297,6 +311,7 @@ EQUIFAX_ENVIRONMENT=sandbox  # sandbox or production
 **Requirements**: Business verification, compliance agreements
 
 **Files using this**:
+
 - `src/lib/credit-bureau/equifax-client.ts`
 - `src/lib/credit-bureau/credit-bureau-service.ts`
 
@@ -317,6 +332,7 @@ TRANSUNION_ENVIRONMENT=test  # test or production
 **Requirements**: Business verification, compliance agreements
 
 **Files using this**:
+
 - `src/lib/credit-bureau/transunion-client.ts`
 - `src/lib/credit-bureau/credit-bureau-service.ts`
 
@@ -338,6 +354,7 @@ CANOPY_SANDBOX=true
 ```
 
 **Files using this**:
+
 - `src/lib/connectors/insurance/canopy-connector.ts`
 
 ---
@@ -356,6 +373,7 @@ SENTRY_AUTH_TOKEN=sntrys_xxx
 ```
 
 **Files using this**:
+
 - `src/lib/monitoring/sentry.ts`
 
 ---
@@ -410,6 +428,7 @@ AWS_S3_BUCKET=fynvita-documents
 ```
 
 **Files using this**:
+
 - `src/lib/documents/document-service.ts`
 
 ---
@@ -430,22 +449,27 @@ Copy from `.env.production.example` and fill in production keys.
 ## Service Priority for MVP Testing
 
 ### Phase 1: Core (Must Have)
+
 1. ✅ Supabase (Database)
 2. ✅ Stripe (Payments - can use test mode)
 3. ✅ AIML API (AI features)
 4. ✅ Resend (Email)
 
 ### Phase 2: Financial Features
+
 5. ⚠️ Plaid (Bank connections)
 
 ### Phase 3: Trading Module
+
 6. ⚠️ Polygon.io OR Finnhub (Market data)
 7. ⚠️ Alpaca (Broker - paper trading)
 
 ### Phase 4: Credit Features
+
 8. ⚠️ Credit Bureau APIs (Experian/Equifax/TransUnion)
 
 ### Phase 5: Optional Enhancements
+
 9. TrueLayer (EU banking)
 10. Canopy (Insurance)
 11. Sentry (Monitoring)
@@ -455,18 +479,18 @@ Copy from `.env.production.example` and fill in production keys.
 
 ## Cost Estimates (Monthly)
 
-| Service | Free Tier | Paid Tier |
-|---------|-----------|-----------|
-| Supabase | Up to 500MB | $25+/mo |
-| Stripe | 2.9% + $0.30/transaction | Same |
-| AIML API | Limited | $20-100/mo |
-| Resend | 3,000 emails/mo | $20+/mo |
-| Plaid | 100 items | Contact sales |
-| Polygon.io | 5 calls/min | $29-199/mo |
-| Finnhub | 60 calls/min | $50+/mo |
-| Alpaca | Free | Free |
-| Credit Bureaus | N/A | Enterprise pricing |
-| Sentry | 5K errors/mo | $26+/mo |
+| Service        | Free Tier                | Paid Tier          |
+| -------------- | ------------------------ | ------------------ |
+| Supabase       | Up to 500MB              | $25+/mo            |
+| Stripe         | 2.9% + $0.30/transaction | Same               |
+| AIML API       | Limited                  | $20-100/mo         |
+| Resend         | 3,000 emails/mo          | $20+/mo            |
+| Plaid          | 100 items                | Contact sales      |
+| Polygon.io     | 5 calls/min              | $29-199/mo         |
+| Finnhub        | 60 calls/min             | $50+/mo            |
+| Alpaca         | Free                     | Free               |
+| Credit Bureaus | N/A                      | Enterprise pricing |
+| Sentry         | 5K errors/mo             | $26+/mo            |
 
 **Estimated MVP Monthly Cost**: ~$100-300/mo (excluding credit bureau APIs)
 

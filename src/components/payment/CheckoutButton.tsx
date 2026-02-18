@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export interface CheckoutButtonProps {
   priceId: string;
@@ -15,7 +15,7 @@ export default function CheckoutButton({
   priceId,
   planName,
   planPrice,
-  className = '',
+  className = "",
   children,
 }: CheckoutButtonProps) {
   const [loading, setLoading] = useState(false);
@@ -28,9 +28,9 @@ export default function CheckoutButton({
 
     try {
       // Create checkout session
-      const response = await fetch('/api/payment/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/payment/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           priceId,
           planName,
@@ -41,7 +41,7 @@ export default function CheckoutButton({
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Failed to create checkout session');
+        throw new Error(data.error || "Failed to create checkout session");
       }
 
       const { url } = await response.json();
@@ -50,11 +50,11 @@ export default function CheckoutButton({
       if (url) {
         window.location.href = url;
       } else {
-        throw new Error('No checkout URL returned');
+        throw new Error("No checkout URL returned");
       }
     } catch (err) {
       // Error logged
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : "An error occurred");
       setLoading(false);
     }
   };
@@ -66,8 +66,8 @@ export default function CheckoutButton({
         disabled={loading}
         className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-200 ${
           loading
-            ? 'bg-gray-400 cursor-not-allowed'
-            : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl'
+            ? "bg-gray-400 cursor-not-allowed"
+            : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl"
         } ${className}`}
       >
         {loading ? (

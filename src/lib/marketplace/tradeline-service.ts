@@ -1,13 +1,13 @@
 /**
  * Tradeline Service
- * 
+ *
  * Tradeline operations: getTradelines, getTradelineDetails, filterTradelines
  */
 
-import { getSupabase } from '../supabase/client';
-import type { Database } from '../supabase/types';
+import { getSupabase } from "../supabase/client";
+import type { Database } from "../supabase/types";
 
-type TradelineRow = Database['public']['Tables']['tradelines']['Row'];
+type TradelineRow = Database["public"]["Tables"]["tradelines"]["Row"];
 
 export interface Tradeline {
   id: string;
@@ -32,32 +32,34 @@ export interface TradelineFilters {
   available?: boolean;
 }
 
-const tradelines = () => getSupabase().from('tradelines');
+const tradelines = () => getSupabase().from("tradelines");
 
 class TradelineService {
   async getTradelines(filters?: TradelineFilters): Promise<Tradeline[]> {
-    let query = tradelines().select('*');
+    let query = tradelines().select("*");
 
     if (filters?.available !== undefined) {
-      query = query.eq('available', filters.available);
+      query = query.eq("available", filters.available);
     }
     if (filters?.minCreditLimit !== undefined) {
-      query = query.gte('credit_limit', filters.minCreditLimit);
+      query = query.gte("credit_limit", filters.minCreditLimit);
     }
     if (filters?.maxCreditLimit !== undefined) {
-      query = query.lte('credit_limit', filters.maxCreditLimit);
+      query = query.lte("credit_limit", filters.maxCreditLimit);
     }
     if (filters?.minAge !== undefined) {
-      query = query.gte('age_months', filters.minAge);
+      query = query.gte("age_months", filters.minAge);
     }
     if (filters?.maxPrice !== undefined) {
-      query = query.lte('price', filters.maxPrice);
+      query = query.lte("price", filters.maxPrice);
     }
     if (filters?.minScoreImpact !== undefined) {
-      query = query.gte('estimated_score_impact', filters.minScoreImpact);
+      query = query.gte("estimated_score_impact", filters.minScoreImpact);
     }
 
-    const { data, error } = await query.order('estimated_score_impact', { ascending: false });
+    const { data, error } = await query.order("estimated_score_impact", {
+      ascending: false,
+    });
 
     if (error) {
       // TradelineService error: Error fetching tradelines
@@ -69,7 +71,7 @@ class TradelineService {
     // Filter by bureaus if specified (post-query filter for array contains)
     if (filters?.bureaus && filters.bureaus.length > 0) {
       results = results.filter((t) =>
-        filters.bureaus!.some((b) => t.bureausReporting.includes(b))
+        filters.bureaus!.some((b) => t.bureausReporting.includes(b)),
       );
     }
 
@@ -78,8 +80,8 @@ class TradelineService {
 
   async getTradelineById(id: string): Promise<Tradeline | null> {
     const { data, error } = await tradelines()
-      .select('*')
-      .eq('id', id)
+      .select("*")
+      .eq("id", id)
       .single();
 
     if (error || !data) {
@@ -95,10 +97,10 @@ class TradelineService {
 
   async getTradelinesByProvider(providerId: string): Promise<Tradeline[]> {
     const { data, error } = await tradelines()
-      .select('*')
-      .eq('provider_id', providerId)
-      .eq('available', true)
-      .order('estimated_score_impact', { ascending: false });
+      .select("*")
+      .eq("provider_id", providerId)
+      .eq("available", true)
+      .order("estimated_score_impact", { ascending: false });
 
     if (error) {
       // TradelineService error: Error fetching tradelines by provider
@@ -110,9 +112,9 @@ class TradelineService {
 
   async getTopTradelines(limit: number = 10): Promise<Tradeline[]> {
     const { data, error } = await tradelines()
-      .select('*')
-      .eq('available', true)
-      .order('estimated_score_impact', { ascending: false })
+      .select("*")
+      .eq("available", true)
+      .order("estimated_score_impact", { ascending: false })
       .limit(limit);
 
     if (error) {
@@ -126,7 +128,9 @@ class TradelineService {
   calculateValueScore(tradeline: Tradeline): number {
     // Value score = (score impact * age factor) / price
     const ageFactor = Math.min(tradeline.ageMonths / 24, 2); // Cap at 2x for 2+ years
-    return (tradeline.estimatedScoreImpact * ageFactor) / (tradeline.price / 100);
+    return (
+      (tradeline.estimatedScoreImpact * ageFactor) / (tradeline.price / 100)
+    );
   }
 
   private mapToTradeline(row: TradelineRow): Tradeline {
@@ -146,4 +150,3 @@ class TradelineService {
 }
 
 export const tradelineService = new TradelineService();
-

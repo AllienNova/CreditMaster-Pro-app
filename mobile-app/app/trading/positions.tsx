@@ -3,7 +3,7 @@
  * Position tracking with P&L display and close functionality
  */
 
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -13,27 +13,27 @@ import {
   RefreshControl,
   ActivityIndicator,
   Alert,
-} from 'react-native';
-import { Stack, router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { lightTheme as theme } from '../../src/constants/theme';
-import { useTradingStore } from '../../src/store/tradingStore';
-import type { Position } from '../../src/services/api/trading';
+} from "react-native";
+import { Stack, router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { lightTheme as theme } from "../../src/constants/theme";
+import { useTradingStore } from "../../src/store/tradingStore";
+import type { Position } from "../../src/services/api/trading";
 
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
 
 const formatCurrency = (amount: number): string => {
-  const sign = amount >= 0 ? '+' : '';
-  return `${sign}$${Math.abs(amount).toLocaleString('en-US', {
+  const sign = amount >= 0 ? "+" : "";
+  return `${sign}$${Math.abs(amount).toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
 };
 
 const formatPercent = (value: number): string => {
-  const sign = value >= 0 ? '+' : '';
+  const sign = value >= 0 ? "+" : "";
   return `${sign}${(value * 100).toFixed(2)}%`;
 };
 
@@ -58,7 +58,7 @@ function PositionSummaryCard({
         <View style={styles.summaryItem}>
           <Text style={styles.summaryLabel}>Total Value</Text>
           <Text style={styles.summaryValue}>
-            ${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            ${totalValue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
           </Text>
         </View>
         <View style={styles.summaryItem}>
@@ -73,7 +73,7 @@ function PositionSummaryCard({
           <Text
             style={[
               styles.summaryValue,
-              { color: totalPL >= 0 ? '#10B981' : '#EF4444' },
+              { color: totalPL >= 0 ? "#10B981" : "#EF4444" },
             ]}
           >
             {formatCurrency(totalPL)}
@@ -84,7 +84,7 @@ function PositionSummaryCard({
           <Text
             style={[
               styles.summaryValue,
-              { color: dayPL >= 0 ? '#10B981' : '#EF4444' },
+              { color: dayPL >= 0 ? "#10B981" : "#EF4444" },
             ]}
           >
             {formatCurrency(dayPL)}
@@ -108,16 +108,16 @@ function PositionCard({
 
   const handleClose = () => {
     Alert.alert(
-      'Close Position',
+      "Close Position",
       `Close ${position.quantity} shares of ${position.symbol} at market price?`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Close Position',
-          style: 'destructive',
+          text: "Close Position",
+          style: "destructive",
           onPress: () => onClose(position.id),
         },
-      ]
+      ],
     );
   };
 
@@ -133,18 +133,21 @@ function PositionCard({
           <View
             style={[
               styles.sideBadge,
-              { backgroundColor: position.side === 'long' ? '#10B98120' : '#EF444420' },
+              {
+                backgroundColor:
+                  position.side === "long" ? "#10B98120" : "#EF444420",
+              },
             ]}
           >
             <Ionicons
-              name={position.side === 'long' ? 'trending-up' : 'trending-down'}
+              name={position.side === "long" ? "trending-up" : "trending-down"}
               size={12}
-              color={position.side === 'long' ? '#10B981' : '#EF4444'}
+              color={position.side === "long" ? "#10B981" : "#EF4444"}
             />
             <Text
               style={[
                 styles.sideBadgeText,
-                { color: position.side === 'long' ? '#10B981' : '#EF4444' },
+                { color: position.side === "long" ? "#10B981" : "#EF4444" },
               ]}
             >
               {position.side.toUpperCase()}
@@ -155,7 +158,7 @@ function PositionCard({
           <Text
             style={[
               styles.positionPLValue,
-              { color: isProfit ? '#10B981' : '#EF4444' },
+              { color: isProfit ? "#10B981" : "#EF4444" },
             ]}
           >
             {formatCurrency(position.unrealizedPL)}
@@ -163,7 +166,7 @@ function PositionCard({
           <Text
             style={[
               styles.positionPLPercent,
-              { color: isProfit ? '#10B981' : '#EF4444' },
+              { color: isProfit ? "#10B981" : "#EF4444" },
             ]}
           >
             {formatPercent(position.unrealizedPLPercent)}
@@ -193,7 +196,10 @@ function PositionCard({
           <View style={styles.positionDetailItem}>
             <Text style={styles.positionDetailLabel}>Value</Text>
             <Text style={styles.positionDetailValue}>
-              ${position.marketValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              $
+              {position.marketValue.toLocaleString("en-US", {
+                minimumFractionDigits: 2,
+              })}
             </Text>
           </View>
         </View>
@@ -233,9 +239,15 @@ function PositionCard({
       <View style={styles.positionFooter}>
         <TouchableOpacity
           style={styles.chartButton}
-          onPress={() => router.push(`/trading/chart?symbol=${position.symbol}` as any)}
+          onPress={() =>
+            router.push(`/trading/chart?symbol=${position.symbol}` as any)
+          }
         >
-          <Ionicons name="analytics-outline" size={18} color={theme.colors.primary} />
+          <Ionicons
+            name="analytics-outline"
+            size={18}
+            color={theme.colors.primary}
+          />
           <Text style={styles.chartButtonText}>Chart</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
@@ -283,31 +295,40 @@ export default function PositionsScreen() {
     if (openPositions.length === 0) return;
 
     Alert.alert(
-      'Close All Positions',
+      "Close All Positions",
       `Are you sure you want to close all ${openPositions.length} positions at market price?`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Close All',
-          style: 'destructive',
+          text: "Close All",
+          style: "destructive",
           onPress: closeAllPositions,
         },
-      ]
+      ],
     );
   };
 
   // Calculate totals
-  const totalUnrealizedPL = openPositions.reduce((sum, p) => sum + p.unrealizedPL, 0);
-  const totalMarketValue = openPositions.reduce((sum, p) => sum + p.marketValue, 0);
+  const totalUnrealizedPL = openPositions.reduce(
+    (sum, p) => sum + p.unrealizedPL,
+    0,
+  );
+  const totalMarketValue = openPositions.reduce(
+    (sum, p) => sum + p.marketValue,
+    0,
+  );
 
   return (
     <View style={styles.container}>
       <Stack.Screen
         options={{
-          title: 'Positions',
+          title: "Positions",
           headerRight: () =>
             openPositions.length > 0 ? (
-              <TouchableOpacity style={styles.headerButton} onPress={handleCloseAll}>
+              <TouchableOpacity
+                style={styles.headerButton}
+                onPress={handleCloseAll}
+              >
                 <Text style={styles.headerButtonText}>Close All</Text>
               </TouchableOpacity>
             ) : null,
@@ -383,8 +404,8 @@ const styles = StyleSheet.create({
   },
   headerButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#EF4444',
+    fontWeight: "600",
+    color: "#EF4444",
   },
   scrollView: {
     flex: 1,
@@ -400,8 +421,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   summaryItem: {
     flex: 1,
@@ -413,7 +434,7 @@ const styles = StyleSheet.create({
   },
   summaryValue: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
   },
   summaryDivider: {
@@ -423,8 +444,8 @@ const styles = StyleSheet.create({
   },
   centerContent: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingTop: 80,
   },
   loadingText: {
@@ -434,26 +455,26 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingTop: 60,
     paddingHorizontal: 32,
   },
   emptyStateTitle: {
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginTop: 16,
   },
   emptyStateText: {
     fontSize: 14,
     color: theme.colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 8,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: 12,
   },
@@ -467,24 +488,24 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   positionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     marginBottom: 16,
   },
   positionSymbolContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   positionSymbol: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
   },
   sideBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
@@ -492,14 +513,14 @@ const styles = StyleSheet.create({
   },
   sideBadgeText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   positionPL: {
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   positionPLValue: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   positionPLPercent: {
     fontSize: 13,
@@ -512,11 +533,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   positionDetailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   positionDetailItem: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   positionDetailLabel: {
     fontSize: 11,
@@ -525,17 +546,17 @@ const styles = StyleSheet.create({
   },
   positionDetailValue: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   positionRisk: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 16,
     marginBottom: 12,
   },
   positionRiskItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   positionRiskLabel: {
@@ -544,19 +565,19 @@ const styles = StyleSheet.create({
   },
   positionRiskValue: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   positionFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
   },
   chartButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -565,21 +586,21 @@ const styles = StyleSheet.create({
   },
   chartButtonText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     color: theme.colors.primary,
   },
   closeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#FEE2E2',
+    backgroundColor: "#FEE2E2",
     borderRadius: 8,
   },
   closeButtonText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#EF4444',
+    fontWeight: "500",
+    color: "#EF4444",
   },
 });

@@ -10,7 +10,7 @@
  */
 
 // Auth Store
-export { useAuthStore } from './authStore';
+export { useAuthStore } from "./authStore";
 
 // Credit Store
 export {
@@ -20,7 +20,7 @@ export {
   selectScoreByBureau,
   selectUnreadAlerts,
   selectIsMonitoringActive,
-} from './creditStore';
+} from "./creditStore";
 
 // Dispute Store
 export {
@@ -30,7 +30,7 @@ export {
   selectActiveDisputes,
   selectResolvedDisputes,
   selectDisputeStats,
-} from './disputeStore';
+} from "./disputeStore";
 
 // Dashboard Store (formerly part of financialStore)
 export {
@@ -43,7 +43,7 @@ export {
   selectMonthlyIncome,
   selectMonthlyExpenses,
   selectCashFlow,
-} from './dashboardStore';
+} from "./dashboardStore";
 
 // Account Store (split from financialStore)
 export {
@@ -52,7 +52,7 @@ export {
   selectSelectedAccount,
   selectAccountsByType,
   selectTotalBalance,
-} from './accountStore';
+} from "./accountStore";
 
 // Transaction Store (split from financialStore)
 export {
@@ -62,7 +62,7 @@ export {
   selectTransactionsByCategory,
   selectTransactionsByAccount,
   selectRecentTransactions,
-} from './transactionStore';
+} from "./transactionStore";
 
 // Budget Store (split from financialStore)
 export {
@@ -73,7 +73,7 @@ export {
   selectOverBudgetAlerts,
   selectWarningAlerts,
   selectBudgetProgress,
-} from './budgetStore';
+} from "./budgetStore";
 
 // Goal Store (split from financialStore)
 export {
@@ -84,7 +84,7 @@ export {
   selectGoalById,
   selectGoalProgress,
   selectTotalGoalProgress,
-} from './goalStore';
+} from "./goalStore";
 
 // Debt Store (split from financialStore)
 export {
@@ -99,7 +99,7 @@ export {
   selectSmallestDebt,
   selectDebtFreeDate,
   selectInterestSavings,
-} from './debtStore';
+} from "./debtStore";
 
 // Notification Store
 export {
@@ -109,7 +109,7 @@ export {
   selectUnreadCount,
   selectNotificationsByType,
   selectPushEnabled,
-} from './notificationStore';
+} from "./notificationStore";
 
 // Sync Store
 export {
@@ -119,7 +119,7 @@ export {
   selectPendingCount,
   selectFailedCount,
   selectHasPendingChanges,
-} from './syncStore';
+} from "./syncStore";
 
 // Investment Store
 export {
@@ -134,10 +134,10 @@ export {
   selectError as selectInvestmentError,
   selectRecommendationForSymbol,
   selectPatternScanForSymbol,
-} from './investmentStore';
+} from "./investmentStore";
 
 // Coach Store
-export { useCoachStore } from './coachStore';
+export { useCoachStore } from "./coachStore";
 
 // Student Loan Store
 export {
@@ -164,10 +164,10 @@ export {
   selectIDREligibleLoans,
   selectIsLoading as selectStudentLoanLoading,
   selectError as selectStudentLoanError,
-} from './studentLoanStore';
+} from "./studentLoanStore";
 
 // Gamification Store
-export { useGamificationStore } from './gamificationStore';
+export { useGamificationStore } from "./gamificationStore";
 
 // Tax Store
 export {
@@ -192,7 +192,7 @@ export {
   selectYearComparisons,
   selectIsLoading as selectTaxIsLoading,
   selectError as selectTaxError,
-} from './taxStore';
+} from "./taxStore";
 
 // Re-export student loan types
 export type {
@@ -204,25 +204,25 @@ export type {
   FinancialSituation,
   LoanStatus,
   LoanType,
-} from './studentLoanStore';
+} from "./studentLoanStore";
 
 // DEPRECATED: For backward compatibility only - remove in next major version
-export { useDashboardStore as useFinancialStore } from './dashboardStore';
+export { useDashboardStore as useFinancialStore } from "./dashboardStore";
 
 /**
  * Initialize all stores and listeners
  * Call this on app startup
  */
 export async function initializeStores(): Promise<void> {
-  const { useAuthStore } = await import('./authStore');
-  const { useSyncStore } = await import('./syncStore');
-  
+  const { useAuthStore } = await import("./authStore");
+  const { useSyncStore } = await import("./syncStore");
+
   // Initialize auth
   await useAuthStore.getState().initialize();
-  
+
   // Initialize network listener
   const unsubscribe = useSyncStore.getState().initializeNetworkListener();
-  
+
   // Store cleanup function for later use
   (globalThis as Record<string, unknown>).__storeCleanup = unsubscribe;
 }
@@ -232,20 +232,20 @@ export async function initializeStores(): Promise<void> {
  * Updated to include new modular stores
  */
 export async function resetAllStores(): Promise<void> {
-  const { useCreditStore } = await import('./creditStore');
-  const { useDisputeStore } = await import('./disputeStore');
-  const { useDashboardStore } = await import('./dashboardStore');
-  const { useAccountStore } = await import('./accountStore');
-  const { useTransactionStore } = await import('./transactionStore');
-  const { useBudgetStore } = await import('./budgetStore');
-  const { useGoalStore } = await import('./goalStore');
-  const { useDebtStore } = await import('./debtStore');
-  const { useNotificationStore } = await import('./notificationStore');
-  const { useSyncStore } = await import('./syncStore');
-  const { useInvestmentStore } = await import('./investmentStore');
-  const { useStudentLoanStore } = await import('./studentLoanStore');
-  const { useGamificationStore } = await import('./gamificationStore');
-  const { useTaxStore } = await import('./taxStore');
+  const { useCreditStore } = await import("./creditStore");
+  const { useDisputeStore } = await import("./disputeStore");
+  const { useDashboardStore } = await import("./dashboardStore");
+  const { useAccountStore } = await import("./accountStore");
+  const { useTransactionStore } = await import("./transactionStore");
+  const { useBudgetStore } = await import("./budgetStore");
+  const { useGoalStore } = await import("./goalStore");
+  const { useDebtStore } = await import("./debtStore");
+  const { useNotificationStore } = await import("./notificationStore");
+  const { useSyncStore } = await import("./syncStore");
+  const { useInvestmentStore } = await import("./investmentStore");
+  const { useStudentLoanStore } = await import("./studentLoanStore");
+  const { useGamificationStore } = await import("./gamificationStore");
+  const { useTaxStore } = await import("./taxStore");
 
   // Reset all stores
   useCreditStore.getState().resetStore();
@@ -269,19 +269,19 @@ export async function resetAllStores(): Promise<void> {
  * Updated to use new modular stores
  */
 export async function fetchInitialData(): Promise<void> {
-  const { useCreditStore } = await import('./creditStore');
-  const { useDisputeStore } = await import('./disputeStore');
-  const { useDashboardStore } = await import('./dashboardStore');
-  const { useAccountStore } = await import('./accountStore');
-  const { useTransactionStore } = await import('./transactionStore');
-  const { useBudgetStore } = await import('./budgetStore');
-  const { useGoalStore } = await import('./goalStore');
-  const { useDebtStore } = await import('./debtStore');
-  const { useNotificationStore } = await import('./notificationStore');
-  const { useInvestmentStore } = await import('./investmentStore');
-  const { useStudentLoanStore } = await import('./studentLoanStore');
-  const { useGamificationStore } = await import('./gamificationStore');
-  const { useTaxStore } = await import('./taxStore');
+  const { useCreditStore } = await import("./creditStore");
+  const { useDisputeStore } = await import("./disputeStore");
+  const { useDashboardStore } = await import("./dashboardStore");
+  const { useAccountStore } = await import("./accountStore");
+  const { useTransactionStore } = await import("./transactionStore");
+  const { useBudgetStore } = await import("./budgetStore");
+  const { useGoalStore } = await import("./goalStore");
+  const { useDebtStore } = await import("./debtStore");
+  const { useNotificationStore } = await import("./notificationStore");
+  const { useInvestmentStore } = await import("./investmentStore");
+  const { useStudentLoanStore } = await import("./studentLoanStore");
+  const { useGamificationStore } = await import("./gamificationStore");
+  const { useTaxStore } = await import("./taxStore");
 
   // Fetch data in parallel
   await Promise.all([
@@ -327,7 +327,10 @@ export async function fetchInitialData(): Promise<void> {
 /**
  * Sync all offline data
  */
-export async function syncOfflineData(): Promise<{ success: number; failed: number }> {
-  const { useSyncStore } = await import('./syncStore');
+export async function syncOfflineData(): Promise<{
+  success: number;
+  failed: number;
+}> {
+  const { useSyncStore } = await import("./syncStore");
   return useSyncStore.getState().syncAll();
 }

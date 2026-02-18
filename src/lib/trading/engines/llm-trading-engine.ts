@@ -1,11 +1,11 @@
 /**
  * LLM Trading Engine
- * 
+ *
  * Large Language Model-powered trading analysis using:
  * - Claude 4.5 for deep market analysis
  * - GPT-4o Mini for quick signal interpretation
  * - DeepSeek R1 for reasoning chains
- * 
+ *
  * Capabilities:
  * - Market condition analysis
  * - Trade idea generation
@@ -14,13 +14,13 @@
  * - Portfolio review
  */
 
-import { AIMLService } from '@/lib/aiml-service';
+import { AIMLService } from "@/lib/aiml-service";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type LLMProvider = 'claude' | 'gpt' | 'deepseek';
+export type LLMProvider = "claude" | "gpt" | "deepseek";
 
 export interface MarketContext {
   symbol: string;
@@ -31,16 +31,16 @@ export interface MarketContext {
   volumeChange: number;
   marketCap?: number;
   sector?: string;
-  
+
   // Technical context
   technicalSummary?: {
-    trend: 'bullish' | 'bearish' | 'neutral';
+    trend: "bullish" | "bearish" | "neutral";
     support: number;
     resistance: number;
     rsi: number;
-    macdSignal: 'bullish' | 'bearish' | 'neutral';
+    macdSignal: "bullish" | "bearish" | "neutral";
   };
-  
+
   // News/sentiment
   recentNews?: { headline: string; sentiment: number }[];
   socialSentiment?: number;
@@ -49,53 +49,53 @@ export interface MarketContext {
 export interface TradeIdeaParams {
   symbol: string;
   context: MarketContext;
-  riskTolerance: 'conservative' | 'moderate' | 'aggressive';
-  timeHorizon: 'intraday' | 'swing' | 'position';
+  riskTolerance: "conservative" | "moderate" | "aggressive";
+  timeHorizon: "intraday" | "swing" | "position";
   accountSize: number;
   existingPositions?: { symbol: string; side: string; pnl: number }[];
 }
 
 export interface TradeIdea {
   symbol: string;
-  direction: 'long' | 'short' | 'neutral';
-  conviction: 'high' | 'medium' | 'low';
-  
+  direction: "long" | "short" | "neutral";
+  conviction: "high" | "medium" | "low";
+
   entry: {
-    type: 'market' | 'limit' | 'stop_limit';
+    type: "market" | "limit" | "stop_limit";
     price: number;
     zone: { low: number; high: number };
   };
-  
+
   stopLoss: {
     price: number;
     type: string;
     rationale: string;
   };
-  
+
   targets: {
     price: number;
     exitPercent: number;
     rationale: string;
   }[];
-  
+
   trailingStop?: {
     type: string;
     activationPrice: number;
     distance: number;
   };
-  
+
   riskReward: {
     risk: number;
     reward: number;
     ratio: number;
   };
-  
+
   positionSize: {
     shares: number;
     dollarAmount: number;
     portfolioPercent: number;
   };
-  
+
   rationale: string;
   keyRisks: string[];
   catalysts: string[];
@@ -103,63 +103,63 @@ export interface TradeIdea {
 }
 
 export interface SignalInterpretation {
-  overallSignal: 'strong_buy' | 'buy' | 'hold' | 'sell' | 'strong_sell';
+  overallSignal: "strong_buy" | "buy" | "hold" | "sell" | "strong_sell";
   confidence: number;
-  
-  recommendation: 'execute' | 'wait' | 'skip';
-  
+
+  recommendation: "execute" | "wait" | "skip";
+
   signalQuality: {
     technical: number;
     fundamental: number;
     sentiment: number;
     overall: number;
   };
-  
+
   conflicts: {
     signal1: string;
     signal2: string;
     resolution: string;
   }[];
-  
+
   considerations: string[];
   riskFactors: string[];
   rationale: string;
 }
 
 export interface RiskAssessment {
-  overallRisk: 'low' | 'medium' | 'high' | 'extreme';
+  overallRisk: "low" | "medium" | "high" | "extreme";
   riskScore: number;
-  
+
   factors: {
     factor: string;
-    impact: 'positive' | 'negative' | 'neutral';
+    impact: "positive" | "negative" | "neutral";
     severity: number;
     description: string;
   }[];
-  
+
   recommendations: string[];
   warnings: string[];
 }
 
 export interface PortfolioReview {
   healthScore: number;
-  
+
   diversification: {
     score: number;
     issues: string[];
     suggestions: string[];
   };
-  
+
   riskExposure: {
-    overall: 'low' | 'medium' | 'high';
+    overall: "low" | "medium" | "high";
     byCategory: Record<string, number>;
     concerns: string[];
   };
-  
+
   performanceInsights: string[];
-  
+
   actionItems: {
-    priority: 'high' | 'medium' | 'low';
+    priority: "high" | "medium" | "low";
     action: string;
     rationale: string;
   }[];
@@ -167,29 +167,29 @@ export interface PortfolioReview {
 
 export interface MarketAnalysis {
   timestamp: Date;
-  marketCondition: 'bullish' | 'bearish' | 'neutral' | 'volatile';
-  
+  marketCondition: "bullish" | "bearish" | "neutral" | "volatile";
+
   summary: string;
-  
+
   sectors: {
     name: string;
-    outlook: 'bullish' | 'bearish' | 'neutral';
+    outlook: "bullish" | "bearish" | "neutral";
     reasoning: string;
   }[];
-  
+
   keyLevels: {
     symbol: string;
     support: number[];
     resistance: number[];
   }[];
-  
+
   tradingOpportunities: {
     symbol: string;
     direction: string;
     confidence: number;
     reasoning: string;
   }[];
-  
+
   risks: string[];
   catalysts: string[];
 }
@@ -200,17 +200,26 @@ export interface MarketAnalysis {
 
 export interface SentimentAnalysis {
   symbol: string;
-  overallSentiment: 'very_bullish' | 'bullish' | 'neutral' | 'bearish' | 'very_bearish';
+  overallSentiment:
+    | "very_bullish"
+    | "bullish"
+    | "neutral"
+    | "bearish"
+    | "very_bearish";
   sentimentScore: number; // -1.0 to 1.0
   confidence: number;
-  drivers: { factor: string; impact: 'positive' | 'negative' | 'neutral'; weight: number }[];
+  drivers: {
+    factor: string;
+    impact: "positive" | "negative" | "neutral";
+    weight: number;
+  }[];
   summary: string;
   timestamp: Date;
 }
 
 export interface GeneratedSignal {
   symbol: string;
-  action: 'strong_buy' | 'buy' | 'hold' | 'sell' | 'strong_sell';
+  action: "strong_buy" | "buy" | "hold" | "sell" | "strong_sell";
   confidence: number;
   timeframe: string;
   entry?: { price: number; type: string };
@@ -224,12 +233,12 @@ export interface GeneratedSignal {
 
 export class LLMTradingEngine {
   private aiml: AIMLService | null = null;
-  private defaultProvider: LLMProvider = 'claude';
+  private defaultProvider: LLMProvider = "claude";
 
   private readonly MODEL_MAP: Record<LLMProvider, string> = {
-    claude: 'anthropic/claude-4.5-sonnet',
-    gpt: 'openai/gpt-4o-mini',
-    deepseek: 'deepseek/deepseek-r1',
+    claude: "anthropic/claude-4.5-sonnet",
+    gpt: "openai/gpt-4o-mini",
+    deepseek: "deepseek/deepseek-r1",
   };
 
   constructor() {
@@ -246,31 +255,42 @@ export class LLMTradingEngine {
 
   async analyzeMarketConditions(
     symbols: string[],
-    contexts: MarketContext[]
+    contexts: MarketContext[],
   ): Promise<MarketAnalysis> {
     const prompt = this.buildMarketAnalysisPrompt(symbols, contexts);
-    const response = await this.callLLM(prompt, 'claude');
+    const response = await this.callLLM(prompt, "claude");
     return this.parseMarketAnalysis(response);
   }
 
-  private buildMarketAnalysisPrompt(symbols: string[], contexts: MarketContext[]): string {
+  private buildMarketAnalysisPrompt(
+    symbols: string[],
+    contexts: MarketContext[],
+  ): string {
     return `You are an expert market analyst. Analyze the following market data and provide a comprehensive market analysis.
 
 ## Market Data
-${contexts.map(c => `
+${contexts
+  .map(
+    (c) => `
 ### ${c.symbol}
 - Current Price: $${c.currentPrice.toFixed(2)}
 - 24h Change: ${(c.priceChange24h * 100).toFixed(2)}%
 - 7d Change: ${(c.priceChange7d * 100).toFixed(2)}%
 - Volume: ${c.volume.toLocaleString()}
-- Sector: ${c.sector || 'N/A'}
-${c.technicalSummary ? `
+- Sector: ${c.sector || "N/A"}
+${
+  c.technicalSummary
+    ? `
 - Trend: ${c.technicalSummary.trend}
 - RSI: ${c.technicalSummary.rsi.toFixed(1)}
 - Support: $${c.technicalSummary.support.toFixed(2)}
 - Resistance: $${c.technicalSummary.resistance.toFixed(2)}
-` : ''}
-`).join('\n')}
+`
+    : ""
+}
+`,
+  )
+  .join("\n")}
 
 ## Required Output (JSON)
 Provide your analysis in the following JSON format:
@@ -291,25 +311,29 @@ Provide your analysis in the following JSON format:
 
   async generateTradeIdea(params: TradeIdeaParams): Promise<TradeIdea> {
     const prompt = this.buildTradeIdeaPrompt(params);
-    const response = await this.callLLM(prompt, 'claude');
+    const response = await this.callLLM(prompt, "claude");
     return this.parseTradeIdea(response, params);
   }
 
   private buildTradeIdeaPrompt(params: TradeIdeaParams): string {
     const { symbol, context, riskTolerance, timeHorizon, accountSize } = params;
-    
+
     return `You are an expert trader generating a detailed trade idea.
 
 ## Symbol: ${symbol}
 - Current Price: $${context.currentPrice.toFixed(2)}
 - 24h Change: ${(context.priceChange24h * 100).toFixed(2)}%
 - Volume: ${context.volume.toLocaleString()}
-${context.technicalSummary ? `
+${
+  context.technicalSummary
+    ? `
 - Trend: ${context.technicalSummary.trend}
 - RSI: ${context.technicalSummary.rsi.toFixed(1)}
 - Support: $${context.technicalSummary.support.toFixed(2)}
 - Resistance: $${context.technicalSummary.resistance.toFixed(2)}
-` : ''}
+`
+    : ""
+}
 
 ## Trading Parameters
 - Risk Tolerance: ${riskTolerance}
@@ -353,17 +377,27 @@ Generate a complete trade idea:
   // ============================================================================
 
   async interpretSignals(
-    signals: { source: string; signal: string; confidence: number; details?: string }[],
-    context: MarketContext
+    signals: {
+      source: string;
+      signal: string;
+      confidence: number;
+      details?: string;
+    }[],
+    context: MarketContext,
   ): Promise<SignalInterpretation> {
     const prompt = this.buildSignalInterpretationPrompt(signals, context);
-    const response = await this.callLLM(prompt, 'gpt');
+    const response = await this.callLLM(prompt, "gpt");
     return this.parseSignalInterpretation(response);
   }
 
   private buildSignalInterpretationPrompt(
-    signals: { source: string; signal: string; confidence: number; details?: string }[],
-    context: MarketContext
+    signals: {
+      source: string;
+      signal: string;
+      confidence: number;
+      details?: string;
+    }[],
+    context: MarketContext,
   ): string {
     return `You are an expert at interpreting trading signals. Analyze these signals and provide a unified recommendation.
 
@@ -371,7 +405,7 @@ Generate a complete trade idea:
 Current Price: $${context.currentPrice.toFixed(2)}
 
 ## Signals
-${signals.map(s => `- ${s.source}: ${s.signal} (confidence: ${(s.confidence * 100).toFixed(0)}%)${s.details ? ` - ${s.details}` : ''}`).join('\n')}
+${signals.map((s) => `- ${s.source}: ${s.signal} (confidence: ${(s.confidence * 100).toFixed(0)}%)${s.details ? ` - ${s.details}` : ""}`).join("\n")}
 
 ## Required Output (JSON)
 {
@@ -395,15 +429,24 @@ ${signals.map(s => `- ${s.source}: ${s.signal} (confidence: ${(s.confidence * 10
   // RISK ASSESSMENT
   // ============================================================================
 
-  async assessRisk(trade: TradeIdea, portfolio?: { value: number; positions: { symbol: string; value: number }[] }): Promise<RiskAssessment> {
+  async assessRisk(
+    trade: TradeIdea,
+    portfolio?: {
+      value: number;
+      positions: { symbol: string; value: number }[];
+    },
+  ): Promise<RiskAssessment> {
     const prompt = this.buildRiskAssessmentPrompt(trade, portfolio);
-    const response = await this.callLLM(prompt, 'deepseek');
+    const response = await this.callLLM(prompt, "deepseek");
     return this.parseRiskAssessment(response);
   }
 
   private buildRiskAssessmentPrompt(
     trade: TradeIdea,
-    portfolio?: { value: number; positions: { symbol: string; value: number }[] }
+    portfolio?: {
+      value: number;
+      positions: { symbol: string; value: number }[];
+    },
   ): string {
     return `Assess the risk of this proposed trade.
 
@@ -415,11 +458,15 @@ ${signals.map(s => `- ${s.source}: ${s.signal} (confidence: ${(s.confidence * 10
 - Risk/Reward: ${trade.riskReward.ratio.toFixed(2)}
 - Position Size: ${trade.positionSize.portfolioPercent.toFixed(1)}% of portfolio
 
-${portfolio ? `
+${
+  portfolio
+    ? `
 ## Portfolio Context
 - Total Value: $${portfolio.value.toLocaleString()}
 - Existing Positions: ${portfolio.positions.length}
-` : ''}
+`
+    : ""
+}
 
 ## Required Output (JSON)
 {
@@ -438,28 +485,42 @@ ${portfolio ? `
   // ============================================================================
 
   async reviewPortfolio(
-    positions: { symbol: string; shares: number; avgCost: number; currentPrice: number; sector?: string }[],
-    totalValue: number
+    positions: {
+      symbol: string;
+      shares: number;
+      avgCost: number;
+      currentPrice: number;
+      sector?: string;
+    }[],
+    totalValue: number,
   ): Promise<PortfolioReview> {
     const prompt = this.buildPortfolioReviewPrompt(positions, totalValue);
-    const response = await this.callLLM(prompt, 'claude');
+    const response = await this.callLLM(prompt, "claude");
     return this.parsePortfolioReview(response);
   }
 
   private buildPortfolioReviewPrompt(
-    positions: { symbol: string; shares: number; avgCost: number; currentPrice: number; sector?: string }[],
-    totalValue: number
+    positions: {
+      symbol: string;
+      shares: number;
+      avgCost: number;
+      currentPrice: number;
+      sector?: string;
+    }[],
+    totalValue: number,
   ): string {
     return `Review this investment portfolio and provide recommendations.
 
 ## Portfolio Value: $${totalValue.toLocaleString()}
 
 ## Positions
-${positions.map(p => {
-  const value = p.shares * p.currentPrice;
-  const pnl = (p.currentPrice - p.avgCost) / p.avgCost * 100;
-  return `- ${p.symbol}: ${p.shares} shares @ $${p.currentPrice.toFixed(2)} (${pnl >= 0 ? '+' : ''}${pnl.toFixed(1)}%) - ${(value / totalValue * 100).toFixed(1)}% of portfolio${p.sector ? ` [${p.sector}]` : ''}`;
-}).join('\n')}
+${positions
+  .map((p) => {
+    const value = p.shares * p.currentPrice;
+    const pnl = ((p.currentPrice - p.avgCost) / p.avgCost) * 100;
+    return `- ${p.symbol}: ${p.shares} shares @ $${p.currentPrice.toFixed(2)} (${pnl >= 0 ? "+" : ""}${pnl.toFixed(1)}%) - ${((value / totalValue) * 100).toFixed(1)}% of portfolio${p.sector ? ` [${p.sector}]` : ""}`;
+  })
+  .join("\n")}
 
 ## Required Output (JSON)
 {
@@ -493,9 +554,9 @@ ${positions.map(p => {
 - 24h Change: ${(context.priceChange24h * 100).toFixed(2)}%
 - 7d Change: ${(context.priceChange7d * 100).toFixed(2)}%
 - Volume: ${context.volume.toLocaleString()} (change: ${(context.volumeChange * 100).toFixed(1)}%)
-${context.technicalSummary ? `- Technical Trend: ${context.technicalSummary.trend}, RSI: ${context.technicalSummary.rsi.toFixed(1)}` : ''}
-${context.recentNews?.length ? `\n## Recent News\n${context.recentNews.map(n => `- ${n.headline} (sentiment: ${n.sentiment.toFixed(2)})`).join('\n')}` : ''}
-${context.socialSentiment !== undefined ? `- Social Sentiment Score: ${context.socialSentiment.toFixed(2)}` : ''}
+${context.technicalSummary ? `- Technical Trend: ${context.technicalSummary.trend}, RSI: ${context.technicalSummary.rsi.toFixed(1)}` : ""}
+${context.recentNews?.length ? `\n## Recent News\n${context.recentNews.map((n) => `- ${n.headline} (sentiment: ${n.sentiment.toFixed(2)})`).join("\n")}` : ""}
+${context.socialSentiment !== undefined ? `- Social Sentiment Score: ${context.socialSentiment.toFixed(2)}` : ""}
 
 ## Required Output (JSON)
 {
@@ -506,30 +567,33 @@ ${context.socialSentiment !== undefined ? `- Social Sentiment Score: ${context.s
   "summary": "Brief sentiment summary"
 }`;
 
-    const response = await this.callLLM(prompt, 'claude');
+    const response = await this.callLLM(prompt, "claude");
     return this.parseSentimentAnalysis(response, context.symbol);
   }
 
-  private parseSentimentAnalysis(response: string, symbol: string): SentimentAnalysis {
+  private parseSentimentAnalysis(
+    response: string,
+    symbol: string,
+  ): SentimentAnalysis {
     try {
       const json = this.extractJSON(response);
       return {
         symbol,
-        overallSentiment: json.overallSentiment || 'neutral',
+        overallSentiment: json.overallSentiment || "neutral",
         sentimentScore: Math.max(-1, Math.min(1, json.sentimentScore ?? 0)),
         confidence: Math.max(0, Math.min(1, json.confidence ?? 0.5)),
         drivers: json.drivers || [],
-        summary: json.summary || '',
+        summary: json.summary || "",
         timestamp: new Date(),
       };
     } catch {
       return {
         symbol,
-        overallSentiment: 'neutral',
+        overallSentiment: "neutral",
         sentimentScore: 0,
         confidence: 0.5,
         drivers: [],
-        summary: 'Unable to analyze sentiment',
+        summary: "Unable to analyze sentiment",
         timestamp: new Date(),
       };
     }
@@ -542,7 +606,7 @@ ${context.socialSentiment !== undefined ? `- Social Sentiment Score: ${context.s
   async generateSignal(
     context: MarketContext,
     signals?: { source: string; signal: string; confidence: number }[],
-    sentiment?: SentimentAnalysis
+    sentiment?: SentimentAnalysis,
   ): Promise<GeneratedSignal> {
     const prompt = `You are an expert quantitative analyst. Generate a trading signal for the following asset, synthesizing all available data.
 
@@ -551,16 +615,20 @@ ${context.socialSentiment !== undefined ? `- Social Sentiment Score: ${context.s
 - 24h Change: ${(context.priceChange24h * 100).toFixed(2)}%
 - 7d Change: ${(context.priceChange7d * 100).toFixed(2)}%
 - Volume: ${context.volume.toLocaleString()}
-${context.technicalSummary ? `
+${
+  context.technicalSummary
+    ? `
 - Trend: ${context.technicalSummary.trend}
 - RSI: ${context.technicalSummary.rsi.toFixed(1)}
 - MACD: ${context.technicalSummary.macdSignal}
 - Support: $${context.technicalSummary.support.toFixed(2)}
-- Resistance: $${context.technicalSummary.resistance.toFixed(2)}` : ''}
+- Resistance: $${context.technicalSummary.resistance.toFixed(2)}`
+    : ""
+}
 
-${signals?.length ? `## Existing Signals\n${signals.map(s => `- ${s.source}: ${s.signal} (${(s.confidence * 100).toFixed(0)}%)`).join('\n')}` : ''}
+${signals?.length ? `## Existing Signals\n${signals.map((s) => `- ${s.source}: ${s.signal} (${(s.confidence * 100).toFixed(0)}%)`).join("\n")}` : ""}
 
-${sentiment ? `## Sentiment\n- Overall: ${sentiment.overallSentiment} (score: ${sentiment.sentimentScore.toFixed(2)}, confidence: ${(sentiment.confidence * 100).toFixed(0)}%)` : ''}
+${sentiment ? `## Sentiment\n- Overall: ${sentiment.overallSentiment} (score: ${sentiment.sentimentScore.toFixed(2)}, confidence: ${(sentiment.confidence * 100).toFixed(0)}%)` : ""}
 
 ## Required Output (JSON)
 {
@@ -575,22 +643,25 @@ ${sentiment ? `## Sentiment\n- Overall: ${sentiment.overallSentiment} (score: ${
   "contraryFactors": ["factor1", "factor2"]
 }`;
 
-    const response = await this.callLLM(prompt, 'deepseek');
+    const response = await this.callLLM(prompt, "deepseek");
     return this.parseGeneratedSignal(response, context.symbol);
   }
 
-  private parseGeneratedSignal(response: string, symbol: string): GeneratedSignal {
+  private parseGeneratedSignal(
+    response: string,
+    symbol: string,
+  ): GeneratedSignal {
     try {
       const json = this.extractJSON(response);
       return {
         symbol,
-        action: json.action || 'hold',
+        action: json.action || "hold",
         confidence: Math.max(0, Math.min(1, json.confidence ?? 0.5)),
-        timeframe: json.timeframe || 'swing',
+        timeframe: json.timeframe || "swing",
         entry: json.entry,
         stopLoss: json.stopLoss,
         takeProfit: json.takeProfit,
-        reasoning: json.reasoning || '',
+        reasoning: json.reasoning || "",
         supportingFactors: json.supportingFactors || [],
         contraryFactors: json.contraryFactors || [],
         timestamp: new Date(),
@@ -598,10 +669,10 @@ ${sentiment ? `## Sentiment\n- Overall: ${sentiment.overallSentiment} (score: ${
     } catch {
       return {
         symbol,
-        action: 'hold',
+        action: "hold",
         confidence: 0.5,
-        timeframe: 'swing',
-        reasoning: 'Unable to generate signal',
+        timeframe: "swing",
+        reasoning: "Unable to generate signal",
         supportingFactors: [],
         contraryFactors: [],
         timestamp: new Date(),
@@ -613,7 +684,10 @@ ${sentiment ? `## Sentiment\n- Overall: ${sentiment.overallSentiment} (score: ${
   // LLM COMMUNICATION
   // ============================================================================
 
-  private async callLLM(prompt: string, provider: LLMProvider): Promise<string> {
+  private async callLLM(
+    prompt: string,
+    provider: LLMProvider,
+  ): Promise<string> {
     if (!this.aiml) {
       return this.getMockResponse(prompt);
     }
@@ -622,10 +696,12 @@ ${sentiment ? `## Sentiment\n- Overall: ${sentiment.overallSentiment} (score: ${
       const model = this.MODEL_MAP[provider] || this.MODEL_MAP.claude;
       const response = await this.aiml.chat(
         model,
-        [{ role: 'user', content: prompt }],
-        { max_tokens: 4096, temperature: 0.3 }
+        [{ role: "user", content: prompt }],
+        { max_tokens: 4096, temperature: 0.3 },
       );
-      return response.choices[0]?.message?.content || this.getMockResponse(prompt);
+      return (
+        response.choices[0]?.message?.content || this.getMockResponse(prompt)
+      );
     } catch {
       return this.getMockResponse(prompt);
     }
@@ -634,81 +710,128 @@ ${sentiment ? `## Sentiment\n- Overall: ${sentiment.overallSentiment} (score: ${
   private getMockResponse(prompt: string): string {
     const lowerPrompt = prompt.toLowerCase();
 
-    if (lowerPrompt.includes('market analysis') || lowerPrompt.includes('market analyst')) {
+    if (
+      lowerPrompt.includes("market analysis") ||
+      lowerPrompt.includes("market analyst")
+    ) {
       return JSON.stringify({
-        marketCondition: 'neutral',
-        summary: 'Market showing mixed signals with no clear directional bias',
-        sectors: [{ name: 'Technology', outlook: 'neutral', reasoning: 'Awaiting earnings catalysts' }],
+        marketCondition: "neutral",
+        summary: "Market showing mixed signals with no clear directional bias",
+        sectors: [
+          {
+            name: "Technology",
+            outlook: "neutral",
+            reasoning: "Awaiting earnings catalysts",
+          },
+        ],
         keyLevels: [],
         tradingOpportunities: [],
-        risks: ['Elevated volatility', 'Macro uncertainty'],
-        catalysts: ['Upcoming earnings season', 'Central bank policy decisions'],
+        risks: ["Elevated volatility", "Macro uncertainty"],
+        catalysts: [
+          "Upcoming earnings season",
+          "Central bank policy decisions",
+        ],
       });
     }
-    if (lowerPrompt.includes('trade idea') || lowerPrompt.includes('expert trader')) {
+    if (
+      lowerPrompt.includes("trade idea") ||
+      lowerPrompt.includes("expert trader")
+    ) {
       return JSON.stringify({
-        direction: 'neutral',
-        conviction: 'low',
-        entry: { type: 'limit', price: 100, zone: { low: 99, high: 101 } },
-        stopLoss: { price: 95, type: 'fixed', rationale: 'Below recent support' },
-        targets: [{ price: 110, exitPercent: 100, rationale: 'Next resistance level' }],
+        direction: "neutral",
+        conviction: "low",
+        entry: { type: "limit", price: 100, zone: { low: 99, high: 101 } },
+        stopLoss: {
+          price: 95,
+          type: "fixed",
+          rationale: "Below recent support",
+        },
+        targets: [
+          { price: 110, exitPercent: 100, rationale: "Next resistance level" },
+        ],
         positionSizePercent: 2,
-        rationale: 'Insufficient data for high-conviction trade',
-        keyRisks: ['Market uncertainty'],
+        rationale: "Insufficient data for high-conviction trade",
+        keyRisks: ["Market uncertainty"],
         catalysts: [],
-        invalidationCriteria: 'Break below support',
+        invalidationCriteria: "Break below support",
       });
     }
-    if (lowerPrompt.includes('sentiment')) {
+    if (lowerPrompt.includes("sentiment")) {
       return JSON.stringify({
-        overallSentiment: 'neutral',
+        overallSentiment: "neutral",
         sentimentScore: 0,
         confidence: 0.5,
-        drivers: [{ factor: 'Mixed market signals', impact: 'neutral', weight: 1.0 }],
-        summary: 'Sentiment is neutral with no strong directional bias',
+        drivers: [
+          { factor: "Mixed market signals", impact: "neutral", weight: 1.0 },
+        ],
+        summary: "Sentiment is neutral with no strong directional bias",
       });
     }
-    if (lowerPrompt.includes('trading signal') || lowerPrompt.includes('generate a trading signal')) {
+    if (
+      lowerPrompt.includes("trading signal") ||
+      lowerPrompt.includes("generate a trading signal")
+    ) {
       return JSON.stringify({
-        action: 'hold',
+        action: "hold",
         confidence: 0.5,
-        timeframe: 'swing',
-        reasoning: 'Insufficient conviction for directional trade',
-        supportingFactors: ['Stable price action'],
-        contraryFactors: ['Low volume', 'No clear trend'],
+        timeframe: "swing",
+        reasoning: "Insufficient conviction for directional trade",
+        supportingFactors: ["Stable price action"],
+        contraryFactors: ["Low volume", "No clear trend"],
       });
     }
-    if (lowerPrompt.includes('interpret') || lowerPrompt.includes('interpreting trading signals')) {
+    if (
+      lowerPrompt.includes("interpret") ||
+      lowerPrompt.includes("interpreting trading signals")
+    ) {
       return JSON.stringify({
-        overallSignal: 'hold',
+        overallSignal: "hold",
         confidence: 0.5,
-        recommendation: 'wait',
-        signalQuality: { technical: 0.5, fundamental: 0.5, sentiment: 0.5, overall: 0.5 },
+        recommendation: "wait",
+        signalQuality: {
+          technical: 0.5,
+          fundamental: 0.5,
+          sentiment: 0.5,
+          overall: 0.5,
+        },
         conflicts: [],
-        considerations: ['Wait for clearer signals'],
-        riskFactors: ['Market uncertainty'],
-        rationale: 'Signals do not converge on a clear direction',
+        considerations: ["Wait for clearer signals"],
+        riskFactors: ["Market uncertainty"],
+        rationale: "Signals do not converge on a clear direction",
       });
     }
-    if (lowerPrompt.includes('risk') && lowerPrompt.includes('assess')) {
+    if (lowerPrompt.includes("risk") && lowerPrompt.includes("assess")) {
       return JSON.stringify({
-        overallRisk: 'medium',
+        overallRisk: "medium",
         riskScore: 50,
-        factors: [{ factor: 'Market volatility', impact: 'negative', severity: 5, description: 'Standard market conditions' }],
-        recommendations: ['Use appropriate position sizing'],
+        factors: [
+          {
+            factor: "Market volatility",
+            impact: "negative",
+            severity: 5,
+            description: "Standard market conditions",
+          },
+        ],
+        recommendations: ["Use appropriate position sizing"],
         warnings: [],
       });
     }
-    if (lowerPrompt.includes('portfolio') && lowerPrompt.includes('review')) {
+    if (lowerPrompt.includes("portfolio") && lowerPrompt.includes("review")) {
       return JSON.stringify({
         healthScore: 70,
-        diversification: { score: 70, issues: [], suggestions: ['Consider adding more sectors'] },
-        riskExposure: { overall: 'medium', byCategory: {}, concerns: [] },
-        performanceInsights: ['Portfolio performance is in line with market averages'],
+        diversification: {
+          score: 70,
+          issues: [],
+          suggestions: ["Consider adding more sectors"],
+        },
+        riskExposure: { overall: "medium", byCategory: {}, concerns: [] },
+        performanceInsights: [
+          "Portfolio performance is in line with market averages",
+        ],
         actionItems: [],
       });
     }
-    return '{}';
+    return "{}";
   }
 
   // ============================================================================
@@ -720,8 +843,8 @@ ${sentiment ? `## Sentiment\n- Overall: ${sentiment.overallSentiment} (score: ${
       const json = this.extractJSON(response);
       return {
         timestamp: new Date(),
-        marketCondition: json.marketCondition || 'neutral',
-        summary: json.summary || '',
+        marketCondition: json.marketCondition || "neutral",
+        summary: json.summary || "",
         sectors: json.sectors || [],
         keyLevels: json.keyLevels || [],
         tradingOpportunities: json.tradingOpportunities || [],
@@ -731,8 +854,8 @@ ${sentiment ? `## Sentiment\n- Overall: ${sentiment.overallSentiment} (score: ${
     } catch {
       return {
         timestamp: new Date(),
-        marketCondition: 'neutral',
-        summary: 'Unable to parse analysis',
+        marketCondition: "neutral",
+        summary: "Unable to parse analysis",
         sectors: [],
         keyLevels: [],
         tradingOpportunities: [],
@@ -746,22 +869,44 @@ ${sentiment ? `## Sentiment\n- Overall: ${sentiment.overallSentiment} (score: ${
     try {
       const json = this.extractJSON(response);
       const { context, accountSize } = params;
-      
+
       const positionPercent = json.positionSizePercent || 2;
       const dollarAmount = accountSize * (positionPercent / 100);
       const shares = Math.floor(dollarAmount / context.currentPrice);
-      
+
       return {
         symbol: context.symbol,
-        direction: json.direction || 'neutral',
-        conviction: json.conviction || 'low',
-        entry: json.entry || { type: 'limit', price: context.currentPrice, zone: { low: context.currentPrice * 0.99, high: context.currentPrice * 1.01 } },
-        stopLoss: json.stopLoss || { price: context.currentPrice * 0.95, type: 'fixed', rationale: 'Default 5% stop' },
-        targets: json.targets || [{ price: context.currentPrice * 1.1, exitPercent: 100, rationale: 'Default 10% target' }],
+        direction: json.direction || "neutral",
+        conviction: json.conviction || "low",
+        entry: json.entry || {
+          type: "limit",
+          price: context.currentPrice,
+          zone: {
+            low: context.currentPrice * 0.99,
+            high: context.currentPrice * 1.01,
+          },
+        },
+        stopLoss: json.stopLoss || {
+          price: context.currentPrice * 0.95,
+          type: "fixed",
+          rationale: "Default 5% stop",
+        },
+        targets: json.targets || [
+          {
+            price: context.currentPrice * 1.1,
+            exitPercent: 100,
+            rationale: "Default 10% target",
+          },
+        ],
         trailingStop: json.trailingStop,
         riskReward: {
-          risk: Math.abs(context.currentPrice - (json.stopLoss?.price || context.currentPrice * 0.95)),
-          reward: (json.targets?.[0]?.price || context.currentPrice * 1.1) - context.currentPrice,
+          risk: Math.abs(
+            context.currentPrice -
+              (json.stopLoss?.price || context.currentPrice * 0.95),
+          ),
+          reward:
+            (json.targets?.[0]?.price || context.currentPrice * 1.1) -
+            context.currentPrice,
           ratio: 2,
         },
         positionSize: {
@@ -769,10 +914,10 @@ ${sentiment ? `## Sentiment\n- Overall: ${sentiment.overallSentiment} (score: ${
           dollarAmount,
           portfolioPercent: positionPercent,
         },
-        rationale: json.rationale || '',
+        rationale: json.rationale || "",
         keyRisks: json.keyRisks || [],
         catalysts: json.catalysts || [],
-        invalidationCriteria: json.invalidationCriteria || '',
+        invalidationCriteria: json.invalidationCriteria || "",
       };
     } catch {
       return this.getDefaultTradeIdea(params);
@@ -783,25 +928,35 @@ ${sentiment ? `## Sentiment\n- Overall: ${sentiment.overallSentiment} (score: ${
     try {
       const json = this.extractJSON(response);
       return {
-        overallSignal: json.overallSignal || 'hold',
+        overallSignal: json.overallSignal || "hold",
         confidence: json.confidence || 0.5,
-        recommendation: json.recommendation || 'wait',
-        signalQuality: json.signalQuality || { technical: 0.5, fundamental: 0.5, sentiment: 0.5, overall: 0.5 },
+        recommendation: json.recommendation || "wait",
+        signalQuality: json.signalQuality || {
+          technical: 0.5,
+          fundamental: 0.5,
+          sentiment: 0.5,
+          overall: 0.5,
+        },
         conflicts: json.conflicts || [],
         considerations: json.considerations || [],
         riskFactors: json.riskFactors || [],
-        rationale: json.rationale || '',
+        rationale: json.rationale || "",
       };
     } catch {
       return {
-        overallSignal: 'hold',
+        overallSignal: "hold",
         confidence: 0.5,
-        recommendation: 'wait',
-        signalQuality: { technical: 0.5, fundamental: 0.5, sentiment: 0.5, overall: 0.5 },
+        recommendation: "wait",
+        signalQuality: {
+          technical: 0.5,
+          fundamental: 0.5,
+          sentiment: 0.5,
+          overall: 0.5,
+        },
         conflicts: [],
         considerations: [],
         riskFactors: [],
-        rationale: 'Unable to parse interpretation',
+        rationale: "Unable to parse interpretation",
       };
     }
   }
@@ -810,7 +965,7 @@ ${sentiment ? `## Sentiment\n- Overall: ${sentiment.overallSentiment} (score: ${
     try {
       const json = this.extractJSON(response);
       return {
-        overallRisk: json.overallRisk || 'medium',
+        overallRisk: json.overallRisk || "medium",
         riskScore: json.riskScore || 50,
         factors: json.factors || [],
         recommendations: json.recommendations || [],
@@ -818,7 +973,7 @@ ${sentiment ? `## Sentiment\n- Overall: ${sentiment.overallSentiment} (score: ${
       };
     } catch {
       return {
-        overallRisk: 'medium',
+        overallRisk: "medium",
         riskScore: 50,
         factors: [],
         recommendations: [],
@@ -832,8 +987,16 @@ ${sentiment ? `## Sentiment\n- Overall: ${sentiment.overallSentiment} (score: ${
       const json = this.extractJSON(response);
       return {
         healthScore: json.healthScore || 70,
-        diversification: json.diversification || { score: 70, issues: [], suggestions: [] },
-        riskExposure: json.riskExposure || { overall: 'medium', byCategory: {}, concerns: [] },
+        diversification: json.diversification || {
+          score: 70,
+          issues: [],
+          suggestions: [],
+        },
+        riskExposure: json.riskExposure || {
+          overall: "medium",
+          byCategory: {},
+          concerns: [],
+        },
         performanceInsights: json.performanceInsights || [],
         actionItems: json.actionItems || [],
       };
@@ -841,7 +1004,7 @@ ${sentiment ? `## Sentiment\n- Overall: ${sentiment.overallSentiment} (score: ${
       return {
         healthScore: 70,
         diversification: { score: 70, issues: [], suggestions: [] },
-        riskExposure: { overall: 'medium', byCategory: {}, concerns: [] },
+        riskExposure: { overall: "medium", byCategory: {}, concerns: [] },
         performanceInsights: [],
         actionItems: [],
       };
@@ -862,17 +1025,42 @@ ${sentiment ? `## Sentiment\n- Overall: ${sentiment.overallSentiment} (score: ${
     const { context, accountSize } = params;
     return {
       symbol: context.symbol,
-      direction: 'neutral',
-      conviction: 'low',
-      entry: { type: 'limit', price: context.currentPrice, zone: { low: context.currentPrice * 0.99, high: context.currentPrice * 1.01 } },
-      stopLoss: { price: context.currentPrice * 0.95, type: 'fixed', rationale: 'Default stop' },
-      targets: [{ price: context.currentPrice * 1.1, exitPercent: 100, rationale: 'Default target' }],
-      riskReward: { risk: context.currentPrice * 0.05, reward: context.currentPrice * 0.1, ratio: 2 },
-      positionSize: { shares: Math.floor(accountSize * 0.02 / context.currentPrice), dollarAmount: accountSize * 0.02, portfolioPercent: 2 },
-      rationale: 'Unable to generate trade idea',
+      direction: "neutral",
+      conviction: "low",
+      entry: {
+        type: "limit",
+        price: context.currentPrice,
+        zone: {
+          low: context.currentPrice * 0.99,
+          high: context.currentPrice * 1.01,
+        },
+      },
+      stopLoss: {
+        price: context.currentPrice * 0.95,
+        type: "fixed",
+        rationale: "Default stop",
+      },
+      targets: [
+        {
+          price: context.currentPrice * 1.1,
+          exitPercent: 100,
+          rationale: "Default target",
+        },
+      ],
+      riskReward: {
+        risk: context.currentPrice * 0.05,
+        reward: context.currentPrice * 0.1,
+        ratio: 2,
+      },
+      positionSize: {
+        shares: Math.floor((accountSize * 0.02) / context.currentPrice),
+        dollarAmount: accountSize * 0.02,
+        portfolioPercent: 2,
+      },
+      rationale: "Unable to generate trade idea",
       keyRisks: [],
       catalysts: [],
-      invalidationCriteria: '',
+      invalidationCriteria: "",
     };
   }
 }

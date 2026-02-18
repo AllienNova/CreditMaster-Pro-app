@@ -8,44 +8,44 @@
  * Asset classes for portfolio allocation
  */
 export enum AssetClass {
-  STOCKS = 'stocks',
-  BONDS = 'bonds',
-  CASH = 'cash',
-  REAL_ESTATE = 'real_estate',
-  COMMODITIES = 'commodities',
-  CRYPTO = 'crypto',
-  ALTERNATIVES = 'alternatives',
+  STOCKS = "stocks",
+  BONDS = "bonds",
+  CASH = "cash",
+  REAL_ESTATE = "real_estate",
+  COMMODITIES = "commodities",
+  CRYPTO = "crypto",
+  ALTERNATIVES = "alternatives",
 }
 
 /**
  * Risk tolerance levels
  */
 export enum RiskTolerance {
-  VERY_CONSERVATIVE = 'very_conservative',
-  CONSERVATIVE = 'conservative',
-  MODERATE = 'moderate',
-  AGGRESSIVE = 'aggressive',
-  VERY_AGGRESSIVE = 'very_aggressive',
+  VERY_CONSERVATIVE = "very_conservative",
+  CONSERVATIVE = "conservative",
+  MODERATE = "moderate",
+  AGGRESSIVE = "aggressive",
+  VERY_AGGRESSIVE = "very_aggressive",
 }
 
 /**
  * Investment time horizon
  */
 export enum TimeHorizon {
-  SHORT_TERM = 'short_term', // < 3 years
-  MEDIUM_TERM = 'medium_term', // 3-10 years
-  LONG_TERM = 'long_term', // > 10 years
+  SHORT_TERM = "short_term", // < 3 years
+  MEDIUM_TERM = "medium_term", // 3-10 years
+  LONG_TERM = "long_term", // > 10 years
 }
 
 /**
  * Allocation strategy types
  */
 export enum AllocationStrategy {
-  STRATEGIC = 'strategic', // Long-term, buy-and-hold
-  TACTICAL = 'tactical', // Active, market-timing
-  DYNAMIC = 'dynamic', // Adaptive based on market conditions
-  RISK_PARITY = 'risk_parity', // Equal risk contribution
-  TARGET_DATE = 'target_date', // Age-based glide path
+  STRATEGIC = "strategic", // Long-term, buy-and-hold
+  TACTICAL = "tactical", // Active, market-timing
+  DYNAMIC = "dynamic", // Adaptive based on market conditions
+  RISK_PARITY = "risk_parity", // Equal risk contribution
+  TARGET_DATE = "target_date", // Age-based glide path
 }
 
 /**
@@ -103,11 +103,11 @@ export interface RebalancingRecommendation {
   targetPercentage: number;
   targetValue: number;
   targetShares: number;
-  action: 'buy' | 'sell' | 'hold';
+  action: "buy" | "sell" | "hold";
   sharesToTrade: number;
   valueToTrade: number;
   reason: string;
-  priority: 'high' | 'medium' | 'low';
+  priority: "high" | "medium" | "low";
   taxImpact?: number; // Estimated tax impact
   transactionCost?: number;
 }
@@ -116,9 +116,9 @@ export interface RebalancingRecommendation {
  * Rebalancing strategy
  */
 export interface RebalancingStrategy {
-  type: 'threshold' | 'calendar' | 'hybrid';
+  type: "threshold" | "calendar" | "hybrid";
   thresholdPercentage?: number; // Rebalance if deviation > threshold
-  calendarFrequency?: 'monthly' | 'quarterly' | 'annually';
+  calendarFrequency?: "monthly" | "quarterly" | "annually";
   minimumTradeSize?: number; // Don't trade if < this amount
   taxLossHarvestingEnabled?: boolean;
   considerTransactionCosts?: boolean;
@@ -156,4 +156,3 @@ export interface AssetAllocationAnalysis {
     sharpeRatios: number[];
   };
 }
-

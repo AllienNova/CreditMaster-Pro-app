@@ -20,7 +20,7 @@ import {
   MarketStatus,
   MarketDataAPIError,
   SentimentScore,
-} from '../investments/types/market-data.types';
+} from "../investments/types/market-data.types";
 
 // ============================================================================
 // TYPES
@@ -80,7 +80,7 @@ const RATE_LIMIT = {
 };
 
 const WEBSOCKET_CONFIG = {
-  url: 'wss://socket.polygon.io',
+  url: "wss://socket.polygon.io",
   reconnectDelay: 1000,
   maxReconnectDelay: 30000,
   reconnectBackoff: 1.5,
@@ -93,18 +93,21 @@ const WEBSOCKET_CONFIG = {
 
 export class PolygonClient {
   private apiKey: string;
-  private baseUrl = 'https://api.polygon.io';
+  private baseUrl = "https://api.polygon.io";
   private cache: Map<string, CacheEntry<any>> = new Map();
   private ws: WebSocket | null = null;
   private wsSubscriptions: Map<string, Set<RealtimeCallback>> = new Map();
   private reconnectAttempts = 0;
   private reconnectTimeout: NodeJS.Timeout | null = null;
   private isConnecting = false;
-  private tier: 'free' | 'starter' | 'developer' | 'advanced' = 'free';
+  private tier: "free" | "starter" | "developer" | "advanced" = "free";
 
-  constructor(apiKey?: string, tier?: 'free' | 'starter' | 'developer' | 'advanced') {
-    this.apiKey = apiKey || process.env.POLYGON_API_KEY || '';
-    this.tier = tier || 'free';
+  constructor(
+    apiKey?: string,
+    tier?: "free" | "starter" | "developer" | "advanced",
+  ) {
+    this.apiKey = apiKey || process.env.POLYGON_API_KEY || "";
+    this.tier = tier || "free";
     if (!this.apiKey) {
       // Polygon: API key not configured
     }
@@ -128,9 +131,9 @@ export class PolygonClient {
     if (!data.results || data.results.length === 0) {
       throw new MarketDataAPIError(
         `No quote data found for symbol: ${symbol}`,
-        'NO_DATA',
-        'Polygon',
-        false
+        "NO_DATA",
+        "Polygon",
+        false,
       );
     }
 
@@ -144,10 +147,10 @@ export class PolygonClient {
    */
   async getAggregates(
     symbol: string,
-    timespan: 'minute' | 'hour' | 'day' | 'week' | 'month',
+    timespan: "minute" | "hour" | "day" | "week" | "month",
     from: string,
     to: string,
-    limit: number = 5000
+    limit: number = 5000,
   ): Promise<StockHistory> {
     const cacheKey = `aggregates:${symbol}:${timespan}:${from}:${to}`;
     const cached = this.getFromCache<StockHistory>(cacheKey);
@@ -159,9 +162,9 @@ export class PolygonClient {
     if (!data.results || data.results.length === 0) {
       throw new MarketDataAPIError(
         `No aggregate data found for symbol: ${symbol}`,
-        'NO_DATA',
-        'Polygon',
-        false
+        "NO_DATA",
+        "Polygon",
+        false,
       );
     }
 
@@ -174,20 +177,20 @@ export class PolygonClient {
    * Get market news
    */
   async getNews(symbol?: string, limit: number = 10): Promise<MarketNews[]> {
-    const cacheKey = `news:${symbol || 'all'}:${limit}`;
+    const cacheKey = `news:${symbol || "all"}:${limit}`;
     const cached = this.getFromCache<MarketNews[]>(cacheKey);
     if (cached) return cached;
 
     const params: Record<string, string> = {
       limit: limit.toString(),
-      order: 'desc',
+      order: "desc",
     };
 
     if (symbol) {
       params.ticker = symbol;
     }
 
-    const endpoint = '/v2/reference/news';
+    const endpoint = "/v2/reference/news";
     const data = await this.makeRequest(endpoint, params);
 
     if (!data.results || data.results.length === 0) {
@@ -202,22 +205,25 @@ export class PolygonClient {
   /**
    * Search for tickers
    */
-  async getTickers(query: string, type?: string): Promise<TickerSearchResult[]> {
-    const cacheKey = `tickers:${query}:${type || 'all'}`;
+  async getTickers(
+    query: string,
+    type?: string,
+  ): Promise<TickerSearchResult[]> {
+    const cacheKey = `tickers:${query}:${type || "all"}`;
     const cached = this.getFromCache<TickerSearchResult[]>(cacheKey);
     if (cached) return cached;
 
     const params: Record<string, string> = {
       search: query,
-      active: 'true',
-      limit: '10',
+      active: "true",
+      limit: "10",
     };
 
     if (type) {
       params.type = type;
     }
 
-    const endpoint = '/v3/reference/tickers';
+    const endpoint = "/v3/reference/tickers";
     const data = await this.makeRequest(endpoint, params);
 
     if (!data.results || data.results.length === 0) {
@@ -250,7 +256,9 @@ export class PolygonClient {
 
       // Send subscription message
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-        this.ws.send(JSON.stringify({ action: 'subscribe', params: `T.${symbol}` }));
+        this.ws.send(
+          JSON.stringify({ action: "subscribe", params: `T.${symbol}` }),
+        );
       }
     });
 
@@ -264,7 +272,12 @@ export class PolygonClient {
             this.wsSubscriptions.delete(symbol);
             // Send unsubscribe message
             if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-              this.ws.send(JSON.stringify({ action: 'unsubscribe', params: `T.${symbol}` }));
+              this.ws.send(
+                JSON.stringify({
+                  action: "unsubscribe",
+                  params: `T.${symbol}`,
+                }),
+              );
             }
           }
         }
@@ -294,9 +307,12 @@ export class PolygonClient {
   // PRIVATE METHODS - REST API
   // ============================================================================
 
-  private async makeRequest(endpoint: string, params?: Record<string, string>): Promise<any> {
+  private async makeRequest(
+    endpoint: string,
+    params?: Record<string, string>,
+  ): Promise<any> {
     const url = new URL(`${this.baseUrl}${endpoint}`);
-    url.searchParams.append('apiKey', this.apiKey);
+    url.searchParams.append("apiKey", this.apiKey);
 
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
@@ -310,28 +326,28 @@ export class PolygonClient {
       if (!response.ok) {
         if (response.status === 429) {
           throw new MarketDataAPIError(
-            'API rate limit exceeded',
-            'RATE_LIMIT',
-            'Polygon',
-            true
+            "API rate limit exceeded",
+            "RATE_LIMIT",
+            "Polygon",
+            true,
           );
         }
         throw new MarketDataAPIError(
           `HTTP ${response.status}: ${response.statusText}`,
-          'HTTP_ERROR',
-          'Polygon',
-          response.status >= 500
+          "HTTP_ERROR",
+          "Polygon",
+          response.status >= 500,
         );
       }
 
       const data = await response.json();
 
-      if (data.status === 'ERROR') {
+      if (data.status === "ERROR") {
         throw new MarketDataAPIError(
-          data.error || 'Unknown API error',
-          'API_ERROR',
-          'Polygon',
-          false
+          data.error || "Unknown API error",
+          "API_ERROR",
+          "Polygon",
+          false,
         );
       }
 
@@ -342,9 +358,9 @@ export class PolygonClient {
       }
       throw new MarketDataAPIError(
         `Request failed: ${(error as Error).message}`,
-        'NETWORK_ERROR',
-        'Polygon',
-        true
+        "NETWORK_ERROR",
+        "Polygon",
+        true,
       );
     }
   }
@@ -354,7 +370,10 @@ export class PolygonClient {
   // ============================================================================
 
   private connectWebSocket(): void {
-    if (this.isConnecting || (this.ws && this.ws.readyState === WebSocket.OPEN)) {
+    if (
+      this.isConnecting ||
+      (this.ws && this.ws.readyState === WebSocket.OPEN)
+    ) {
       return;
     }
 
@@ -369,11 +388,13 @@ export class PolygonClient {
         this.reconnectAttempts = 0;
 
         // Authenticate
-        this.ws!.send(JSON.stringify({ action: 'auth', params: this.apiKey }));
+        this.ws!.send(JSON.stringify({ action: "auth", params: this.apiKey }));
 
         // Resubscribe to all symbols
         this.wsSubscriptions.forEach((_, symbol) => {
-          this.ws!.send(JSON.stringify({ action: 'subscribe', params: `T.${symbol}` }));
+          this.ws!.send(
+            JSON.stringify({ action: "subscribe", params: `T.${symbol}` }),
+          );
         });
       };
 
@@ -409,7 +430,7 @@ export class PolygonClient {
   private lastPrices: Map<string, number> = new Map();
 
   private handleWebSocketMessage(msg: WebSocketMessage): void {
-    if (msg.ev === 'T' && msg.sym && msg.p) {
+    if (msg.ev === "T" && msg.sym && msg.p) {
       // Trade message
       const callbacks = this.wsSubscriptions.get(msg.sym);
       if (callbacks) {
@@ -441,8 +462,9 @@ export class PolygonClient {
     }
 
     const delay = Math.min(
-      WEBSOCKET_CONFIG.reconnectDelay * Math.pow(WEBSOCKET_CONFIG.reconnectBackoff, this.reconnectAttempts),
-      WEBSOCKET_CONFIG.maxReconnectDelay
+      WEBSOCKET_CONFIG.reconnectDelay *
+        Math.pow(WEBSOCKET_CONFIG.reconnectBackoff, this.reconnectAttempts),
+      WEBSOCKET_CONFIG.maxReconnectDelay,
     );
 
     this.reconnectAttempts++;
@@ -476,7 +498,11 @@ export class PolygonClient {
     };
   }
 
-  private parseAggregates(symbol: string, timespan: string, results: any[]): StockHistory {
+  private parseAggregates(
+    symbol: string,
+    timespan: string,
+    results: any[],
+  ): StockHistory {
     const ohlcvData: OHLCVData[] = results.map((item) => ({
       timestamp: new Date(item.t),
       open: item.o,
@@ -505,8 +531,8 @@ export class PolygonClient {
     return {
       id: item.id || item.article_url,
       headline: item.title,
-      summary: item.description || '',
-      source: item.publisher?.name || 'Unknown',
+      summary: item.description || "",
+      source: item.publisher?.name || "Unknown",
       url: item.article_url,
       imageUrl: item.image_url,
       publishedAt: new Date(item.published_utc),
@@ -521,9 +547,9 @@ export class PolygonClient {
     const sentiment = insights.find((i) => i.sentiment);
     if (!sentiment) return undefined;
 
-    const score = sentiment.sentiment_reasoning?.toLowerCase() || '';
-    if (score.includes('bullish')) return SentimentScore.BULLISH;
-    if (score.includes('bearish')) return SentimentScore.BEARISH;
+    const score = sentiment.sentiment_reasoning?.toLowerCase() || "";
+    if (score.includes("bullish")) return SentimentScore.BULLISH;
+    if (score.includes("bearish")) return SentimentScore.BEARISH;
     return SentimentScore.NEUTRAL;
   }
 
@@ -576,4 +602,3 @@ export class PolygonClient {
     });
   }
 }
-

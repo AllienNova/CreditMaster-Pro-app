@@ -1,12 +1,12 @@
 /**
  * Financial API Monitoring Endpoint
- * 
+ *
  * Provides monitoring and statistics for financial API endpoints
  * - Request logs
  * - Performance metrics
  * - Rate limit statistics
  * - Error tracking
- * 
+ *
  * @swagger
  * /api/financial/monitoring:
  *   get:
@@ -31,10 +31,13 @@
  *         description: Forbidden - Admin access required
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { rbac } from '@/lib/auth/rbac';
-import { getRequestLogs, getRequestStats } from '@/lib/api/financial-api-middleware';
+import { NextRequest, NextResponse } from "next/server";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { rbac } from "@/lib/auth/rbac";
+import {
+  getRequestLogs,
+  getRequestStats,
+} from "@/lib/api/financial-api-middleware";
 
 export async function GET(request: NextRequest) {
   try {
@@ -42,22 +45,30 @@ export async function GET(request: NextRequest) {
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized', _meta: { timestamp: new Date().toISOString() } },
-        { status: 401 }
+        {
+          success: false,
+          error: "Unauthorized",
+          _meta: { timestamp: new Date().toISOString() },
+        },
+        { status: 401 },
       );
     }
 
     // Check admin permission
     if (!rbac.isAdmin(validation.user)) {
       return NextResponse.json(
-        { success: false, error: 'Forbidden - Admin access required', _meta: { timestamp: new Date().toISOString() } },
-        { status: 403 }
+        {
+          success: false,
+          error: "Forbidden - Admin access required",
+          _meta: { timestamp: new Date().toISOString() },
+        },
+        { status: 403 },
       );
     }
 
     // Get query parameters
     const { searchParams } = request.nextUrl;
-    const limit = parseInt(searchParams.get('limit') || '100', 10);
+    const limit = parseInt(searchParams.get("limit") || "100", 10);
 
     // Get monitoring data
     const logs = getRequestLogs(limit);
@@ -82,15 +93,14 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Monitoring endpoint error:', error);
+    console.error("Monitoring endpoint error:", error);
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to retrieve monitoring data',
+        error: "Failed to retrieve monitoring data",
         _meta: { timestamp: new Date().toISOString() },
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-

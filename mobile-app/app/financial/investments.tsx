@@ -3,7 +3,7 @@
  * Track investment portfolio, performance, and navigate to analysis/holdings
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -15,27 +15,27 @@ import {
   TextInput,
   Modal,
   Alert,
-} from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { lightTheme as theme } from '../../src/constants/theme';
-import { Card } from '../../src/components/Card';
-import { PieChart } from '../../src/components/charts';
+} from "react-native";
+import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { lightTheme as theme } from "../../src/constants/theme";
+import { Card } from "../../src/components/Card";
+import { PieChart } from "../../src/components/charts";
 import {
   investmentsApi,
   type Holding as ApiHolding,
   type PortfolioResponse,
-} from '../../src/services/api';
+} from "../../src/services/api";
 
 type AssetType =
-  | 'stock'
-  | 'etf'
-  | 'crypto'
-  | 'bond'
-  | 'mutual_fund'
-  | 'option'
-  | 'other';
+  | "stock"
+  | "etf"
+  | "crypto"
+  | "bond"
+  | "mutual_fund"
+  | "option"
+  | "other";
 
 // Local interface that maps API Holding to component needs
 interface Holding {
@@ -83,13 +83,13 @@ function transformHolding(apiHolding: ApiHolding): Holding {
 }
 
 const ALLOCATION_COLORS: Record<string, string> = {
-  etf: '#3B82F6',
-  stock: '#8B5CF6',
-  crypto: '#F59E0B',
-  bond: '#22C55E',
-  mutual_fund: '#EC4899',
-  option: '#14B8A6',
-  other: '#6B7280',
+  etf: "#3B82F6",
+  stock: "#8B5CF6",
+  crypto: "#F59E0B",
+  bond: "#22C55E",
+  mutual_fund: "#EC4899",
+  option: "#14B8A6",
+  other: "#6B7280",
 };
 
 export default function InvestmentsScreen() {
@@ -99,7 +99,7 @@ export default function InvestmentsScreen() {
   const [holdings, setHoldings] = useState<Holding[]>([]);
   const [summary, setSummary] = useState<PortfolioSummary | null>(null);
   const [allocations, setAllocations] = useState<Allocation[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [showSearchModal, setShowSearchModal] = useState(false);
 
   const fetchPortfolio = useCallback(async () => {
@@ -108,7 +108,7 @@ export default function InvestmentsScreen() {
       const response = await investmentsApi.getPortfolio();
 
       if (!response.success || !response.data) {
-        throw new Error(response.error?.message || 'Failed to load portfolio');
+        throw new Error(response.error?.message || "Failed to load portfolio");
       }
 
       const {
@@ -136,14 +136,14 @@ export default function InvestmentsScreen() {
           type: a.type,
           value: a.value,
           percentage: a.percentage,
-          color: ALLOCATION_COLORS[a.type] || '#6B7280',
-        }))
+          color: ALLOCATION_COLORS[a.type] || "#6B7280",
+        })),
       );
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : 'Failed to load portfolio';
+        err instanceof Error ? err.message : "Failed to load portfolio";
       setError(errorMessage);
-      console.error('Portfolio fetch error:', err);
+      console.error("Portfolio fetch error:", err);
     }
   }, []);
 
@@ -165,30 +165,30 @@ export default function InvestmentsScreen() {
 
   const getTypeIcon = (type: AssetType): keyof typeof Ionicons.glyphMap => {
     const icons: Record<AssetType, keyof typeof Ionicons.glyphMap> = {
-      stock: 'trending-up',
-      etf: 'pie-chart',
-      crypto: 'logo-bitcoin',
-      bond: 'document-text',
-      mutual_fund: 'layers',
-      option: 'options',
-      other: 'cash',
+      stock: "trending-up",
+      etf: "pie-chart",
+      crypto: "logo-bitcoin",
+      bond: "document-text",
+      mutual_fund: "layers",
+      option: "options",
+      other: "cash",
     };
-    return icons[type] || 'cash';
+    return icons[type] || "cash";
   };
 
   const formatCurrency = (n: number) =>
     `$${Math.abs(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  const formatPercent = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`;
+  const formatPercent = (n: number) => `${n >= 0 ? "+" : ""}${n.toFixed(2)}%`;
 
   const filteredHoldings = holdings.filter(
     (h) =>
       h.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      h.symbol.toLowerCase().includes(searchQuery.toLowerCase())
+      h.symbol.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={["top"]}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={styles.loadingText}>Loading portfolio...</Text>
@@ -199,7 +199,7 @@ export default function InvestmentsScreen() {
 
   if (error) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={["top"]}>
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle" size={48} color={theme.colors.error} />
           <Text style={styles.errorTitle}>Unable to Load Portfolio</Text>
@@ -214,7 +214,7 @@ export default function InvestmentsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -266,7 +266,7 @@ export default function InvestmentsScreen() {
                 ]}
               >
                 <Ionicons
-                  name={summary.dayChange >= 0 ? 'arrow-up' : 'arrow-down'}
+                  name={summary.dayChange >= 0 ? "arrow-up" : "arrow-down"}
                   size={14}
                   color={
                     summary.dayChange >= 0
@@ -285,7 +285,7 @@ export default function InvestmentsScreen() {
                     },
                   ]}
                 >
-                  {summary.dayChange >= 0 ? '+' : '-'}
+                  {summary.dayChange >= 0 ? "+" : "-"}
                   {formatCurrency(summary.dayChange)} (
                   {formatPercent(summary.dayChangePercent)})
                 </Text>
@@ -304,7 +304,7 @@ export default function InvestmentsScreen() {
                   },
                 ]}
               >
-                {summary.totalReturn >= 0 ? '+' : '-'}
+                {summary.totalReturn >= 0 ? "+" : "-"}
                 {formatCurrency(summary.totalReturn)} (
                 {formatPercent(summary.totalReturnPercent)})
               </Text>
@@ -316,7 +316,7 @@ export default function InvestmentsScreen() {
         <View style={styles.actionsRow}>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => router.push('/financial/holdings')}
+            onPress={() => router.push("/financial/holdings")}
           >
             <Ionicons name="list" size={20} color={theme.colors.primary} />
             <Text style={styles.actionText}>Holdings</Text>
@@ -330,7 +330,7 @@ export default function InvestmentsScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => router.push('/financial/holdings')}
+            onPress={() => router.push("/financial/holdings")}
           >
             <Ionicons
               name="add-circle"
@@ -347,7 +347,7 @@ export default function InvestmentsScreen() {
           {allocations.length > 0 && (
             <View style={styles.allocationChartContainer}>
               <PieChart
-                data={allocations.map(a => ({
+                data={allocations.map((a) => ({
                   value: a.value,
                   label: a.type.charAt(0).toUpperCase() + a.type.slice(1),
                   color: a.color,
@@ -376,7 +376,7 @@ export default function InvestmentsScreen() {
               <View key={i} style={styles.allocItem}>
                 <View style={[styles.allocDot, { backgroundColor: a.color }]} />
                 <Text style={styles.allocText}>
-                  {a.type.charAt(0).toUpperCase() + a.type.slice(1)}{' '}
+                  {a.type.charAt(0).toUpperCase() + a.type.slice(1)}{" "}
                   {a.percentage.toFixed(0)}%
                 </Text>
               </View>
@@ -391,7 +391,7 @@ export default function InvestmentsScreen() {
               Holdings ({holdings.length})
             </Text>
             <TouchableOpacity
-              onPress={() => router.push('/financial/holdings')}
+              onPress={() => router.push("/financial/holdings")}
             >
               <Text style={styles.seeAllText}>See All</Text>
             </TouchableOpacity>
@@ -399,9 +399,7 @@ export default function InvestmentsScreen() {
           {filteredHoldings.slice(0, 5).map((h) => (
             <TouchableOpacity
               key={h.id}
-              onPress={() =>
-                router.push(`/investments/analyze/${h.symbol}`)
-              }
+              onPress={() => router.push(`/investments/analyze/${h.symbol}`)}
             >
               <Card style={styles.holdingCard}>
                 <View style={styles.holdingRow}>
@@ -500,17 +498,19 @@ export default function InvestmentsScreen() {
               disabled={!searchQuery}
               onPress={() => {
                 setShowSearchModal(false);
-                router.push(`/investments/analyze/${searchQuery.toUpperCase()}`);
-                setSearchQuery('');
+                router.push(
+                  `/investments/analyze/${searchQuery.toUpperCase()}`,
+                );
+                setSearchQuery("");
               }}
             >
               <Text style={styles.analyzeButtonText}>
-                Analyze {searchQuery.toUpperCase() || 'Stock'}
+                Analyze {searchQuery.toUpperCase() || "Stock"}
               </Text>
             </TouchableOpacity>
             <Text style={styles.popularLabel}>Popular Stocks</Text>
             <View style={styles.popularGrid}>
-              {['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA'].map((s) => (
+              {["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "NVDA"].map((s) => (
                 <TouchableOpacity
                   key={s}
                   style={styles.popularChip}
@@ -533,80 +533,80 @@ export default function InvestmentsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1 },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   loadingText: {
     marginTop: theme.spacing.md,
     color: theme.colors.textSecondary,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: theme.spacing.lg,
   },
   backButton: { padding: theme.spacing.sm },
   headerContent: { flex: 1, marginLeft: theme.spacing.sm },
-  title: { fontSize: 24, fontWeight: '700', color: theme.colors.text },
+  title: { fontSize: 24, fontWeight: "700", color: theme.colors.text },
   subtitle: { fontSize: 14, color: theme.colors.textSecondary },
   searchButton: { padding: theme.spacing.sm },
   summaryCard: {
     marginHorizontal: theme.spacing.lg,
     padding: theme.spacing.xl,
-    alignItems: 'center',
+    alignItems: "center",
   },
   summaryLabel: { fontSize: 14, color: theme.colors.textSecondary },
   summaryValue: {
     fontSize: 36,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
     marginTop: 8,
   },
   summaryRow: { marginTop: 12 },
   changeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
   },
-  changeText: { fontSize: 14, fontWeight: '600', marginLeft: 4 },
-  returnRow: { flexDirection: 'row', alignItems: 'center', marginTop: 12 },
+  changeText: { fontSize: 14, fontWeight: "600", marginLeft: 4 },
+  returnRow: { flexDirection: "row", alignItems: "center", marginTop: 12 },
   returnLabel: { fontSize: 12, color: theme.colors.textSecondary },
-  returnValue: { fontSize: 12, fontWeight: '600', marginLeft: 4 },
+  returnValue: { fontSize: 12, fontWeight: "600", marginLeft: 4 },
   actionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    flexDirection: "row",
+    justifyContent: "space-around",
     paddingHorizontal: theme.spacing.lg,
     marginTop: theme.spacing.md,
   },
-  actionButton: { alignItems: 'center', padding: theme.spacing.md },
+  actionButton: { alignItems: "center", padding: theme.spacing.md },
   actionText: { fontSize: 12, color: theme.colors.primary, marginTop: 4 },
   section: { paddingHorizontal: theme.spacing.lg, marginTop: theme.spacing.lg },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: theme.spacing.md,
   },
-  sectionTitle: { fontSize: 16, fontWeight: '600', color: theme.colors.text },
+  sectionTitle: { fontSize: 16, fontWeight: "600", color: theme.colors.text },
   seeAllText: { fontSize: 14, color: theme.colors.primary },
   holdingCard: { marginBottom: theme.spacing.sm, padding: theme.spacing.md },
-  holdingRow: { flexDirection: 'row', alignItems: 'center' },
+  holdingRow: { flexDirection: "row", alignItems: "center" },
   typeIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   holdingInfo: { flex: 1, marginLeft: 12 },
-  holdingName: { fontSize: 14, fontWeight: '600', color: theme.colors.text },
+  holdingName: { fontSize: 14, fontWeight: "600", color: theme.colors.text },
   holdingSymbol: {
     fontSize: 12,
     color: theme.colors.textSecondary,
     marginTop: 2,
   },
-  holdingValue: { alignItems: 'flex-end' },
-  valueText: { fontSize: 14, fontWeight: '600', color: theme.colors.text },
+  holdingValue: { alignItems: "flex-end" },
+  valueText: { fontSize: 14, fontWeight: "600", color: theme.colors.text },
   changeSmall: { fontSize: 12, marginTop: 2 },
   allocationCard: {
     marginHorizontal: theme.spacing.lg,
@@ -614,26 +614,26 @@ const styles = StyleSheet.create({
     padding: theme.spacing.lg,
   },
   allocationChartContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: theme.spacing.md,
   },
   allocationBar: {
-    flexDirection: 'row',
+    flexDirection: "row",
     height: 12,
     borderRadius: 6,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginTop: theme.spacing.sm,
   },
   allocSegment: { height: 12 },
   allocLegend: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     marginTop: theme.spacing.md,
   },
   allocItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '50%',
+    flexDirection: "row",
+    alignItems: "center",
+    width: "50%",
     marginTop: 8,
   },
   allocDot: { width: 10, height: 10, borderRadius: 5, marginRight: 8 },
@@ -644,15 +644,15 @@ const styles = StyleSheet.create({
     padding: theme.spacing.lg,
   },
   insightsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: theme.spacing.md,
   },
   insightText: { fontSize: 13, color: theme.colors.text, lineHeight: 24 },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
   },
   modalContent: {
     backgroundColor: theme.colors.surface,
@@ -662,15 +662,15 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: theme.spacing.lg,
   },
-  modalTitle: { fontSize: 18, fontWeight: '600', color: theme.colors.text },
+  modalTitle: { fontSize: 18, fontWeight: "600", color: theme.colors.text },
   searchInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: theme.colors.background,
     borderRadius: 12,
     paddingHorizontal: 16,
@@ -686,18 +686,18 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.primary,
     borderRadius: 12,
     paddingVertical: 14,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: theme.spacing.md,
   },
   analyzeButtonDisabled: { backgroundColor: theme.colors.border },
-  analyzeButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  analyzeButtonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
   popularLabel: {
     fontSize: 14,
     color: theme.colors.textSecondary,
     marginTop: theme.spacing.lg,
     marginBottom: theme.spacing.sm,
   },
-  popularGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  popularGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   popularChip: {
     backgroundColor: theme.colors.background,
     paddingHorizontal: 16,
@@ -706,31 +706,31 @@ const styles = StyleSheet.create({
   },
   popularChipText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     color: theme.colors.text,
   },
   errorContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: theme.spacing.xl,
   },
   errorTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginTop: theme.spacing.md,
-    textAlign: 'center',
+    textAlign: "center",
   },
   errorMessage: {
     fontSize: 14,
     color: theme.colors.textSecondary,
     marginTop: theme.spacing.sm,
-    textAlign: 'center',
+    textAlign: "center",
   },
   retryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: theme.colors.primary,
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.md,
@@ -739,8 +739,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   retryButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

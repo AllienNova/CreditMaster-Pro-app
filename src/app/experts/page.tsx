@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState } from "react";
+import { motion } from "framer-motion";
 import {
   Award,
   Star,
@@ -18,7 +18,7 @@ import {
   MessageSquare,
   ThumbsUp,
   Zap,
-} from 'lucide-react';
+} from "lucide-react";
 
 interface RatingBreakdown {
   knowledge: number;
@@ -48,11 +48,11 @@ interface Expert {
 
 const MOCK_EXPERTS: Expert[] = [
   {
-    id: '1',
-    name: 'Dr. Sarah Mitchell',
-    headline: 'Certified Financial Planner | Retirement Specialist',
-    certifications: ['CFP', 'ChFC'],
-    specialties: ['Retirement Planning', 'Estate Planning', 'Tax Optimization'],
+    id: "1",
+    name: "Dr. Sarah Mitchell",
+    headline: "Certified Financial Planner | Retirement Specialist",
+    certifications: ["CFP", "ChFC"],
+    specialties: ["Retirement Planning", "Estate Planning", "Tax Optimization"],
     yearsExperience: 15,
     hourlyRate: 200,
     rating: 4.9,
@@ -60,21 +60,21 @@ const MOCK_EXPERTS: Expert[] = [
     reviewCount: 127,
     totalSessions: 342,
     repeatClientRate: 78,
-    responseTime: '< 2 hours',
+    responseTime: "< 2 hours",
     offersFreeConsult: true,
-    bio: 'Helping families build generational wealth through strategic financial planning.',
+    bio: "Helping families build generational wealth through strategic financial planning.",
     topReview:
-      'Sarah helped us create a clear retirement roadmap. We finally feel confident about our future!',
+      "Sarah helped us create a clear retirement roadmap. We finally feel confident about our future!",
   },
   {
-    id: '2',
-    name: 'Marcus Johnson, CFA',
-    headline: 'Investment Analyst | Portfolio Management',
-    certifications: ['CFA', 'CFP'],
+    id: "2",
+    name: "Marcus Johnson, CFA",
+    headline: "Investment Analyst | Portfolio Management",
+    certifications: ["CFA", "CFP"],
     specialties: [
-      'Investment Strategy',
-      'Portfolio Management',
-      'Risk Assessment',
+      "Investment Strategy",
+      "Portfolio Management",
+      "Risk Assessment",
     ],
     yearsExperience: 12,
     hourlyRate: 175,
@@ -83,18 +83,18 @@ const MOCK_EXPERTS: Expert[] = [
     reviewCount: 89,
     totalSessions: 256,
     repeatClientRate: 65,
-    responseTime: '< 4 hours',
+    responseTime: "< 4 hours",
     offersFreeConsult: true,
-    bio: 'Data-driven investment strategies for long-term wealth building.',
+    bio: "Data-driven investment strategies for long-term wealth building.",
     topReview:
-      'Marcus explained complex investment concepts in simple terms I could understand.',
+      "Marcus explained complex investment concepts in simple terms I could understand.",
   },
   {
-    id: '3',
-    name: 'Jennifer Williams',
-    headline: 'Debt Management Expert | Credit Counselor',
-    certifications: ['AFC', 'FFC'],
-    specialties: ['Debt Management', 'Credit Building', 'Budgeting'],
+    id: "3",
+    name: "Jennifer Williams",
+    headline: "Debt Management Expert | Credit Counselor",
+    certifications: ["AFC", "FFC"],
+    specialties: ["Debt Management", "Credit Building", "Budgeting"],
     yearsExperience: 8,
     hourlyRate: 125,
     rating: 4.9,
@@ -102,21 +102,21 @@ const MOCK_EXPERTS: Expert[] = [
     reviewCount: 203,
     totalSessions: 512,
     repeatClientRate: 82,
-    responseTime: '< 1 hour',
+    responseTime: "< 1 hour",
     offersFreeConsult: true,
-    bio: 'Passionate about helping people achieve debt freedom and financial peace.',
+    bio: "Passionate about helping people achieve debt freedom and financial peace.",
     topReview:
-      'Jennifer gave me hope when I thought there was none. Paid off $30k in 18 months!',
+      "Jennifer gave me hope when I thought there was none. Paid off $30k in 18 months!",
   },
   {
-    id: '4',
-    name: 'Robert Chen, CPA',
-    headline: 'Tax Strategist | Small Business Finance',
-    certifications: ['CPA', 'CFP'],
+    id: "4",
+    name: "Robert Chen, CPA",
+    headline: "Tax Strategist | Small Business Finance",
+    certifications: ["CPA", "CFP"],
     specialties: [
-      'Tax Optimization',
-      'Small Business Finance',
-      'Estate Planning',
+      "Tax Optimization",
+      "Small Business Finance",
+      "Estate Planning",
     ],
     yearsExperience: 20,
     hourlyRate: 225,
@@ -125,36 +125,36 @@ const MOCK_EXPERTS: Expert[] = [
     reviewCount: 156,
     totalSessions: 428,
     repeatClientRate: 71,
-    responseTime: '< 6 hours',
+    responseTime: "< 6 hours",
     offersFreeConsult: false,
-    bio: 'Minimizing tax burden while maximizing wealth for entrepreneurs and professionals.',
+    bio: "Minimizing tax burden while maximizing wealth for entrepreneurs and professionals.",
     topReview:
-      'Robert saved my business $45k in taxes last year. Worth every penny!',
+      "Robert saved my business $45k in taxes last year. Worth every penny!",
   },
 ];
 
 const SPECIALTIES = [
-  'Retirement Planning',
-  'Investment Strategy',
-  'Debt Management',
-  'Tax Optimization',
-  'Credit Building',
-  'Estate Planning',
-  'Small Business',
-  'Budgeting',
+  "Retirement Planning",
+  "Investment Strategy",
+  "Debt Management",
+  "Tax Optimization",
+  "Credit Building",
+  "Estate Planning",
+  "Small Business",
+  "Budgeting",
 ];
 
 // Visual star rating component
 function StarRating({
   rating,
-  size = 'sm',
+  size = "sm",
 }: {
   rating: number;
-  size?: 'sm' | 'md';
+  size?: "sm" | "md";
 }) {
   const fullStars = Math.floor(rating);
   const partialStar = rating - fullStars;
-  const iconSize = size === 'sm' ? 'w-4 h-4' : 'w-5 h-5';
+  const iconSize = size === "sm" ? "w-4 h-4" : "w-5 h-5";
 
   return (
     <div className="flex items-center gap-0.5">
@@ -202,7 +202,7 @@ function RatingBar({
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${percentage}%` }}
-          transition={{ duration: 0.8, ease: 'easeOut' }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
           className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full"
         />
       </div>
@@ -215,13 +215,13 @@ function RatingBar({
 
 // Experience level visual indicator
 function ExperienceLevel({ years }: { years: number }) {
-  const level = years >= 15 ? 'Expert' : years >= 8 ? 'Senior' : 'Professional';
+  const level = years >= 15 ? "Expert" : years >= 8 ? "Senior" : "Professional";
   const color =
     years >= 15
-      ? 'from-blue-500 to-blue-500'
+      ? "from-blue-500 to-blue-500"
       : years >= 8
-        ? 'from-blue-500 to-blue-500'
-        : 'from-green-500 to-emerald-500';
+        ? "from-blue-500 to-blue-500"
+        : "from-green-500 to-emerald-500";
   const filled = Math.min(Math.ceil(years / 5), 4);
 
   return (
@@ -230,7 +230,7 @@ function ExperienceLevel({ years }: { years: number }) {
         {[...Array(4)].map((_, i) => (
           <div
             key={i}
-            className={`w-2 h-6 rounded-sm ${i < filled ? `bg-gradient-to-t ${color}` : 'bg-gray-200 dark:bg-slate-700'}`}
+            className={`w-2 h-6 rounded-sm ${i < filled ? `bg-gradient-to-t ${color}` : "bg-gray-200 dark:bg-slate-700"}`}
           />
         ))}
       </div>
@@ -238,7 +238,9 @@ function ExperienceLevel({ years }: { years: number }) {
         <span className="text-xs font-medium text-gray-900 dark:text-white">
           {level}
         </span>
-        <span className="text-xs text-gray-500 dark:text-slate-400 ml-1">({years} yrs)</span>
+        <span className="text-xs text-gray-500 dark:text-slate-400 ml-1">
+          ({years} yrs)
+        </span>
       </div>
     </div>
   );
@@ -264,7 +266,7 @@ function TrustBadges({
           </span>
         </div>
       )}
-      {responseTime.includes('1') || responseTime.includes('2') ? (
+      {responseTime.includes("1") || responseTime.includes("2") ? (
         <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-full">
           <Zap className="w-3 h-3 text-blue-600" />
           <span className="text-xs font-medium text-blue-700 dark:text-blue-400">
@@ -286,9 +288,9 @@ function TrustBadges({
 
 export default function ExpertsPage() {
   const [experts] = useState<Expert[]>(MOCK_EXPERTS);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(
-    null
+    null,
   );
   const [expandedExpert, setExpandedExpert] = useState<string | null>(null);
 
@@ -297,7 +299,7 @@ export default function ExpertsPage() {
       !searchQuery ||
       expert.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       expert.specialties.some((s) =>
-        s.toLowerCase().includes(searchQuery.toLowerCase())
+        s.toLowerCase().includes(searchQuery.toLowerCase()),
       );
     const matchesSpecialty =
       !selectedSpecialty || expert.specialties.includes(selectedSpecialty);
@@ -341,7 +343,9 @@ export default function ExpertsPage() {
             <p className="text-2xl font-bold text-gray-900 dark:text-white">
               {totalExperts}
             </p>
-            <p className="text-sm text-gray-500 dark:text-slate-400">Verified Experts</p>
+            <p className="text-sm text-gray-500 dark:text-slate-400">
+              Verified Experts
+            </p>
           </motion.div>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -355,7 +359,9 @@ export default function ExpertsPage() {
             <p className="text-2xl font-bold text-gray-900 dark:text-white">
               {avgRating}
             </p>
-            <p className="text-sm text-gray-500 dark:text-slate-400">Average Rating</p>
+            <p className="text-sm text-gray-500 dark:text-slate-400">
+              Average Rating
+            </p>
           </motion.div>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -369,7 +375,9 @@ export default function ExpertsPage() {
             <p className="text-2xl font-bold text-gray-900 dark:text-white">
               {totalSessions.toLocaleString()}
             </p>
-            <p className="text-sm text-gray-500 dark:text-slate-400">Sessions Completed</p>
+            <p className="text-sm text-gray-500 dark:text-slate-400">
+              Sessions Completed
+            </p>
           </motion.div>
         </div>
 
@@ -389,7 +397,7 @@ export default function ExpertsPage() {
             <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
               <button
                 onClick={() => setSelectedSpecialty(null)}
-                className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${!selectedSpecialty ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600'}`}
+                className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${!selectedSpecialty ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600"}`}
               >
                 All
               </button>
@@ -398,10 +406,10 @@ export default function ExpertsPage() {
                   key={specialty}
                   onClick={() =>
                     setSelectedSpecialty(
-                      selectedSpecialty === specialty ? null : specialty
+                      selectedSpecialty === specialty ? null : specialty,
                     )
                   }
-                  className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${selectedSpecialty === specialty ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600'}`}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${selectedSpecialty === specialty ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600"}`}
                 >
                   {specialty}
                 </button>
@@ -429,9 +437,9 @@ export default function ExpertsPage() {
                     <div className="relative shrink-0">
                       <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center text-white text-2xl font-bold">
                         {expert.name
-                          .split(' ')
+                          .split(" ")
                           .map((n) => n[0])
-                          .join('')}
+                          .join("")}
                       </div>
                       <div className="absolute -bottom-2 -right-2 bg-white dark:bg-slate-800 rounded-full px-2 py-0.5 shadow-md flex items-center gap-1">
                         <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
@@ -505,7 +513,9 @@ export default function ExpertsPage() {
                         <span className="text-3xl font-bold text-gray-900 dark:text-white">
                           ${expert.hourlyRate}
                         </span>
-                        <span className="text-gray-500 dark:text-slate-400 text-sm">/hr</span>
+                        <span className="text-gray-500 dark:text-slate-400 text-sm">
+                          /hr
+                        </span>
                       </div>
                       {expert.offersFreeConsult && (
                         <div className="mb-3 px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded text-center">
@@ -523,7 +533,7 @@ export default function ExpertsPage() {
                         }
                         className="w-full mt-2 px-4 py-1 text-xs text-blue-600 hover:text-blue-700 font-medium"
                       >
-                        {isExpanded ? 'Less info' : 'More details'}
+                        {isExpanded ? "Less info" : "More details"}
                       </button>
                     </div>
                   </div>
@@ -533,7 +543,7 @@ export default function ExpertsPage() {
                 {isExpanded && (
                   <motion.div
                     initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
+                    animate={{ height: "auto", opacity: 1 }}
                     className="border-t border-gray-100 dark:border-slate-700 p-6 bg-gray-50 dark:bg-slate-800/50"
                   >
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

@@ -3,7 +3,7 @@
  * Display and manage AI-generated trading signals
  */
 
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -14,13 +14,16 @@ import {
   ActivityIndicator,
   TextInput,
   Alert,
-} from 'react-native';
-import { Stack, router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { lightTheme as theme } from '../../src/constants/theme';
-import { useTradingStore } from '../../src/store/tradingStore';
-import { OrderEntrySheet } from '../../src/components/trading/OrderEntrySheet';
-import type { TradingSignal, SignalSource } from '../../src/services/api/trading';
+} from "react-native";
+import { Stack, router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { lightTheme as theme } from "../../src/constants/theme";
+import { useTradingStore } from "../../src/store/tradingStore";
+import { OrderEntrySheet } from "../../src/components/trading/OrderEntrySheet";
+import type {
+  TradingSignal,
+  SignalSource,
+} from "../../src/services/api/trading";
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -28,24 +31,24 @@ import type { TradingSignal, SignalSource } from '../../src/services/api/trading
 
 const getSourceColor = (source: SignalSource): string => {
   switch (source) {
-    case 'pctt':
-      return '#8B5CF6';
-    case 'rule':
-      return '#3B82F6';
-    case 'ml':
-      return '#10B981';
-    case 'llm':
-      return '#EC4899';
-    case 'fused':
+    case "pctt":
+      return "#8B5CF6";
+    case "rule":
+      return "#3B82F6";
+    case "ml":
+      return "#10B981";
+    case "llm":
+      return "#EC4899";
+    case "fused":
     default:
-      return '#F59E0B';
+      return "#F59E0B";
   }
 };
 
 const getConfidenceColor = (confidence: number): string => {
-  if (confidence >= 0.8) return '#10B981';
-  if (confidence >= 0.6) return '#F59E0B';
-  return '#EF4444';
+  if (confidence >= 0.8) return "#10B981";
+  if (confidence >= 0.6) return "#F59E0B";
+  return "#EF4444";
 };
 
 // ============================================================================
@@ -87,7 +90,9 @@ function SignalsSummaryCard({
               key={source}
               style={[
                 styles.sourceBadge,
-                { backgroundColor: `${getSourceColor(source as SignalSource)}20` },
+                {
+                  backgroundColor: `${getSourceColor(source as SignalSource)}20`,
+                },
               ]}
             >
               <Text
@@ -99,7 +104,7 @@ function SignalsSummaryCard({
                 {source.toUpperCase()}: {count}
               </Text>
             </View>
-          ) : null
+          ) : null,
         )}
       </View>
     </View>
@@ -113,11 +118,11 @@ function AnalyzeSymbolCard({
   onAnalyze: (symbol: string) => void;
   isAnalyzing: boolean;
 }) {
-  const [symbol, setSymbol] = useState('');
+  const [symbol, setSymbol] = useState("");
 
   const handleAnalyze = () => {
     if (!symbol.trim()) {
-      Alert.alert('Error', 'Please enter a symbol');
+      Alert.alert("Error", "Please enter a symbol");
       return;
     }
     onAnalyze(symbol.toUpperCase());
@@ -140,7 +145,10 @@ function AnalyzeSymbolCard({
           editable={!isAnalyzing}
         />
         <TouchableOpacity
-          style={[styles.analyzeButton, isAnalyzing && styles.analyzeButtonDisabled]}
+          style={[
+            styles.analyzeButton,
+            isAnalyzing && styles.analyzeButtonDisabled,
+          ]}
           onPress={handleAnalyze}
           disabled={isAnalyzing}
         >
@@ -167,7 +175,7 @@ function SignalCard({
   onTrade: (signal: TradingSignal) => void;
   onCancel: (signalId: string) => void;
 }) {
-  const isLong = signal.side === 'long';
+  const isLong = signal.side === "long";
 
   return (
     <View style={styles.signalCard}>
@@ -177,13 +185,13 @@ function SignalCard({
           <View
             style={[
               styles.signalIcon,
-              { backgroundColor: isLong ? '#10B98120' : '#EF444420' },
+              { backgroundColor: isLong ? "#10B98120" : "#EF444420" },
             ]}
           >
             <Ionicons
-              name={isLong ? 'trending-up' : 'trending-down'}
+              name={isLong ? "trending-up" : "trending-down"}
               size={24}
-              color={isLong ? '#10B981' : '#EF4444'}
+              color={isLong ? "#10B981" : "#EF4444"}
             />
           </View>
           <View>
@@ -192,13 +200,13 @@ function SignalCard({
               <View
                 style={[
                   styles.sideBadge,
-                  { backgroundColor: isLong ? '#10B98120' : '#EF444420' },
+                  { backgroundColor: isLong ? "#10B98120" : "#EF444420" },
                 ]}
               >
                 <Text
                   style={[
                     styles.sideBadgeText,
-                    { color: isLong ? '#10B981' : '#EF4444' },
+                    { color: isLong ? "#10B981" : "#EF4444" },
                   ]}
                 >
                   {signal.side.toUpperCase()}
@@ -242,13 +250,15 @@ function SignalCard({
         {signal.entryPrice && (
           <View style={styles.signalDetailItem}>
             <Text style={styles.signalDetailLabel}>Entry</Text>
-            <Text style={styles.signalDetailValue}>${signal.entryPrice.toFixed(2)}</Text>
+            <Text style={styles.signalDetailValue}>
+              ${signal.entryPrice.toFixed(2)}
+            </Text>
           </View>
         )}
         {signal.stopLoss && (
           <View style={styles.signalDetailItem}>
             <Text style={styles.signalDetailLabel}>Stop Loss</Text>
-            <Text style={[styles.signalDetailValue, { color: '#EF4444' }]}>
+            <Text style={[styles.signalDetailValue, { color: "#EF4444" }]}>
               ${signal.stopLoss.toFixed(2)}
             </Text>
           </View>
@@ -256,7 +266,7 @@ function SignalCard({
         {signal.targets && signal.targets[0] && (
           <View style={styles.signalDetailItem}>
             <Text style={styles.signalDetailLabel}>Target</Text>
-            <Text style={[styles.signalDetailValue, { color: '#10B981' }]}>
+            <Text style={[styles.signalDetailValue, { color: "#10B981" }]}>
               ${signal.targets[0].toFixed(2)}
             </Text>
           </View>
@@ -290,13 +300,17 @@ function SignalCard({
           style={styles.cancelSignalButton}
           onPress={() => onCancel(signal.id)}
         >
-          <Ionicons name="close-outline" size={18} color={theme.colors.textSecondary} />
+          <Ionicons
+            name="close-outline"
+            size={18}
+            color={theme.colors.textSecondary}
+          />
           <Text style={styles.cancelSignalText}>Dismiss</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[
             styles.tradeButton,
-            { backgroundColor: isLong ? '#10B981' : '#EF4444' },
+            { backgroundColor: isLong ? "#10B981" : "#EF4444" },
           ]}
           onPress={() => onTrade(signal)}
         >
@@ -314,7 +328,9 @@ function SignalCard({
 
 export default function SignalsScreen() {
   const [showOrderEntry, setShowOrderEntry] = useState(false);
-  const [selectedSignal, setSelectedSignal] = useState<TradingSignal | null>(null);
+  const [selectedSignal, setSelectedSignal] = useState<TradingSignal | null>(
+    null,
+  );
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const {
@@ -342,19 +358,19 @@ export default function SignalsScreen() {
       const signal = await analyzeSymbol(symbol);
       if (signal) {
         Alert.alert(
-          'Signal Generated',
+          "Signal Generated",
           `${signal.side.toUpperCase()} signal for ${symbol} with ${(signal.confidence * 100).toFixed(0)}% confidence`,
           [
-            { text: 'Dismiss', style: 'cancel' },
+            { text: "Dismiss", style: "cancel" },
             {
-              text: 'Trade Now',
+              text: "Trade Now",
               onPress: () => handleTrade(signal),
             },
-          ]
+          ],
         );
         fetchSignals(); // Refresh signals list
       } else {
-        Alert.alert('No Signal', `No trading signal generated for ${symbol}`);
+        Alert.alert("No Signal", `No trading signal generated for ${symbol}`);
       }
     } finally {
       setIsAnalyzing(false);
@@ -367,23 +383,31 @@ export default function SignalsScreen() {
   };
 
   const handleCancelSignal = (signalId: string) => {
-    Alert.alert('Dismiss Signal', 'Are you sure you want to dismiss this signal?', [
-      { text: 'No', style: 'cancel' },
-      { text: 'Yes', onPress: () => cancelSignal(signalId) },
-    ]);
+    Alert.alert(
+      "Dismiss Signal",
+      "Are you sure you want to dismiss this signal?",
+      [
+        { text: "No", style: "cancel" },
+        { text: "Yes", onPress: () => cancelSignal(signalId) },
+      ],
+    );
   };
 
   return (
     <View style={styles.container}>
       <Stack.Screen
         options={{
-          title: 'Trading Signals',
+          title: "Trading Signals",
           headerRight: () => (
             <TouchableOpacity
               style={styles.headerButton}
-              onPress={() => router.push('/trading/chart' as any)}
+              onPress={() => router.push("/trading/chart" as any)}
             >
-              <Ionicons name="analytics-outline" size={24} color={theme.colors.primary} />
+              <Ionicons
+                name="analytics-outline"
+                size={24}
+                color={theme.colors.primary}
+              />
             </TouchableOpacity>
           ),
         }}
@@ -407,7 +431,10 @@ export default function SignalsScreen() {
         )}
 
         {/* Analyze Symbol */}
-        <AnalyzeSymbolCard onAnalyze={handleAnalyze} isAnalyzing={isAnalyzing} />
+        <AnalyzeSymbolCard
+          onAnalyze={handleAnalyze}
+          isAnalyzing={isAnalyzing}
+        />
 
         {/* Signals List */}
         {isLoading && signals.length === 0 ? (
@@ -417,7 +444,11 @@ export default function SignalsScreen() {
           </View>
         ) : signals.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name="flash-outline" size={64} color={theme.colors.textSecondary} />
+            <Ionicons
+              name="flash-outline"
+              size={64}
+              color={theme.colors.textSecondary}
+            />
             <Text style={styles.emptyStateTitle}>No Active Signals</Text>
             <Text style={styles.emptyStateText}>
               Analyze a symbol to generate trading signals
@@ -425,7 +456,9 @@ export default function SignalsScreen() {
           </View>
         ) : (
           <View style={styles.signalsList}>
-            <Text style={styles.sectionTitle}>Active Signals ({signals.length})</Text>
+            <Text style={styles.sectionTitle}>
+              Active Signals ({signals.length})
+            </Text>
             {signals.map((signal) => (
               <SignalCard
                 key={signal.id}
@@ -447,7 +480,7 @@ export default function SignalsScreen() {
         }}
         symbol={selectedSignal?.symbol}
         currentPrice={selectedSignal?.entryPrice}
-        suggestedSide={selectedSignal?.side === 'long' ? 'buy' : 'sell'}
+        suggestedSide={selectedSignal?.side === "long" ? "buy" : "sell"}
         suggestedStopLoss={selectedSignal?.stopLoss}
         suggestedTakeProfit={selectedSignal?.targets?.[0]}
         onOrderCreated={() => {
@@ -486,14 +519,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   summaryHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 16,
   },
   summaryMain: {},
   summaryValue: {
     fontSize: 36,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
   },
   summaryLabel: {
@@ -502,11 +535,11 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   summaryConfidence: {
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   confidenceValue: {
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   confidenceLabel: {
     fontSize: 12,
@@ -514,8 +547,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   sourceBadges: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
   },
   sourceBadge: {
@@ -525,7 +558,7 @@ const styles = StyleSheet.create({
   },
   sourceBadgeText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   analyzeCard: {
     backgroundColor: theme.colors.surface,
@@ -535,7 +568,7 @@ const styles = StyleSheet.create({
   },
   analyzeTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: 4,
   },
@@ -545,7 +578,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   analyzeInputRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
   },
   analyzeInput: {
@@ -560,27 +593,27 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border,
   },
   analyzeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     backgroundColor: theme.colors.primary,
     paddingHorizontal: 20,
     borderRadius: 12,
     minWidth: 110,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   analyzeButtonDisabled: {
     opacity: 0.7,
   },
   analyzeButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
   centerContent: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingTop: 60,
   },
   loadingText: {
@@ -590,26 +623,26 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingTop: 40,
     paddingHorizontal: 32,
   },
   emptyStateTitle: {
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginTop: 16,
   },
   emptyStateText: {
     fontSize: 14,
     color: theme.colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 8,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: 12,
   },
@@ -623,31 +656,31 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   signalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     marginBottom: 16,
   },
   signalSymbolContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   signalIcon: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   signalSymbolRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   signalSymbol: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
   },
   sideBadge: {
@@ -657,17 +690,17 @@ const styles = StyleSheet.create({
   },
   sideBadgeText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   signalSourceRow: {
     marginTop: 4,
   },
   signalConfidence: {
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   signalDetails: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 12,
     backgroundColor: theme.colors.background,
     borderRadius: 12,
@@ -676,7 +709,7 @@ const styles = StyleSheet.create({
   },
   signalDetailItem: {
     flex: 1,
-    minWidth: '40%',
+    minWidth: "40%",
   },
   signalDetailLabel: {
     fontSize: 11,
@@ -685,18 +718,18 @@ const styles = StyleSheet.create({
   },
   signalDetailValue: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   strengthBar: {
     height: 8,
     backgroundColor: theme.colors.border,
     borderRadius: 4,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginTop: 4,
   },
   strengthFill: {
-    height: '100%',
+    height: "100%",
     borderRadius: 4,
   },
   rationaleContainer: {
@@ -708,15 +741,15 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   signalActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
   },
   cancelSignalButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -725,12 +758,12 @@ const styles = StyleSheet.create({
   },
   cancelSignalText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     color: theme.colors.textSecondary,
   },
   tradeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     paddingHorizontal: 24,
     paddingVertical: 10,
@@ -738,7 +771,7 @@ const styles = StyleSheet.create({
   },
   tradeButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
 });

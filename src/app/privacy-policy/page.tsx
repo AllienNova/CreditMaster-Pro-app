@@ -9,18 +9,18 @@
  * - Cookie policy
  */
 
-import type { Metadata } from 'next';
-import Link from 'next/link';
+import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy | Fynvita',
+  title: "Privacy Policy | Fynvita",
   description:
-    'Fynvita Privacy Policy - Learn how we collect, use, and protect your personal information. GDPR and CCPA compliant.',
+    "Fynvita Privacy Policy - Learn how we collect, use, and protect your personal information. GDPR and CCPA compliant.",
   openGraph: {
-    title: 'Privacy Policy | Fynvita',
+    title: "Privacy Policy | Fynvita",
     description:
-      'Learn how Fynvita collects, uses, and protects your personal information.',
-    type: 'website',
+      "Learn how Fynvita collects, uses, and protects your personal information.",
+    type: "website",
   },
 };
 
@@ -244,7 +244,9 @@ export default function PrivacyPolicyPage() {
               1.3 Usage Data
             </h3>
             <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-slate-300 ml-4 mb-4">
-              <li>Device information (browser type, operating system, device ID)</li>
+              <li>
+                Device information (browser type, operating system, device ID)
+              </li>
               <li>IP address and approximate location</li>
               <li>Pages visited, features used, and actions taken</li>
               <li>Time and date of visits</li>
@@ -256,7 +258,10 @@ export default function PrivacyPolicyPage() {
               1.4 Documents and Communications
             </h3>
             <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-slate-300 ml-4">
-              <li>Uploaded documents (credit reports, ID documents, financial statements)</li>
+              <li>
+                Uploaded documents (credit reports, ID documents, financial
+                statements)
+              </li>
               <li>Dispute letters and correspondence</li>
               <li>Customer support communications</li>
               <li>Feedback and survey responses</li>
@@ -721,7 +726,10 @@ export default function PrivacyPolicyPage() {
               safeguards:
             </p>
             <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-slate-300 ml-4">
-              <li>Standard Contractual Clauses (SCCs) approved by the European Commission</li>
+              <li>
+                Standard Contractual Clauses (SCCs) approved by the European
+                Commission
+              </li>
               <li>Data Processing Agreements with all third-party providers</li>
               <li>Ensuring recipients provide adequate protection levels</li>
             </ul>
@@ -744,7 +752,7 @@ export default function PrivacyPolicyPage() {
             </p>
             <p className="text-gray-700 dark:text-slate-300 leading-relaxed">
               If you believe a child has provided us with personal information,
-              please contact us at{' '}
+              please contact us at{" "}
               <a
                 href="mailto:privacy@fynvita.com"
                 className="text-emerald-600 dark:text-emerald-400 hover:underline"
@@ -765,7 +773,10 @@ export default function PrivacyPolicyPage() {
               changes:
             </p>
             <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-slate-300 ml-4 mb-4">
-              <li>We will update the &quot;Last Updated&quot; date at the top of this page</li>
+              <li>
+                We will update the &quot;Last Updated&quot; date at the top of
+                this page
+              </li>
               <li>
                 For significant changes, we will notify you via email or a
                 prominent notice on our platform
@@ -795,7 +806,7 @@ export default function PrivacyPolicyPage() {
                 <strong>Data Protection Officer:</strong>
               </p>
               <p className="text-gray-700 dark:text-slate-300">
-                <strong>Email:</strong>{' '}
+                <strong>Email:</strong>{" "}
                 <a
                   href="mailto:privacy@fynvita.com"
                   className="text-emerald-600 dark:text-emerald-400 hover:underline"
@@ -804,7 +815,7 @@ export default function PrivacyPolicyPage() {
                 </a>
               </p>
               <p className="text-gray-700 dark:text-slate-300">
-                <strong>General Inquiries:</strong>{' '}
+                <strong>General Inquiries:</strong>{" "}
                 <a
                   href="mailto:support@fynvita.com"
                   className="text-emerald-600 dark:text-emerald-400 hover:underline"
@@ -825,7 +836,7 @@ export default function PrivacyPolicyPage() {
             </h2>
             <p className="text-blue-700 dark:text-blue-300 text-sm leading-relaxed">
               If you are located in the European Union, you may contact our EU
-              representative for privacy matters at{' '}
+              representative for privacy matters at{" "}
               <a
                 href="mailto:eu-privacy@fynvita.com"
                 className="underline hover:text-blue-900 dark:hover:text-blue-100"
@@ -871,13 +882,22 @@ export default function PrivacyPolicyPage() {
             &copy; 2026 Fynvita. All rights reserved.
           </p>
           <div className="flex gap-6 text-sm text-gray-500 dark:text-slate-400">
-            <Link href="/terms" className="hover:text-emerald-600 dark:hover:text-emerald-400">
+            <Link
+              href="/terms"
+              className="hover:text-emerald-600 dark:hover:text-emerald-400"
+            >
               Terms
             </Link>
-            <Link href="/privacy-policy" className="text-emerald-600 dark:text-emerald-400">
+            <Link
+              href="/privacy-policy"
+              className="text-emerald-600 dark:text-emerald-400"
+            >
               Privacy
             </Link>
-            <Link href="/help" className="hover:text-emerald-600 dark:hover:text-emerald-400">
+            <Link
+              href="/help"
+              className="hover:text-emerald-600 dark:hover:text-emerald-400"
+            >
               Help
             </Link>
           </div>

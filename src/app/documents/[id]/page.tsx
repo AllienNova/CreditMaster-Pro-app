@@ -1,9 +1,9 @@
-import { Suspense } from 'react';
-import DocumentViewer from '@/components/documents/DocumentViewer';
+import { Suspense } from "react";
+import DocumentViewer from "@/components/documents/DocumentViewer";
 
 export const metadata = {
-  title: 'Document Viewer | Fynvita',
-  description: 'View document details',
+  title: "Document Viewer | Fynvita",
+  description: "View document details",
 };
 
 interface DocumentPageProps {

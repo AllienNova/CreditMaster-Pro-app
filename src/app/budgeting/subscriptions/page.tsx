@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   CreditCard,
   Search,
@@ -20,16 +20,16 @@ import {
   Trash2,
   Eye,
   EyeOff,
-} from 'lucide-react';
+} from "lucide-react";
 
 interface Subscription {
   id: string;
   name: string;
   merchantName: string;
   amount: number;
-  frequency: 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+  frequency: "weekly" | "monthly" | "quarterly" | "yearly";
   category: string;
-  status: 'active' | 'paused' | 'cancelled';
+  status: "active" | "paused" | "cancelled";
   nextBillingDate: Date;
   logoUrl?: string;
   autopay: boolean;
@@ -37,11 +37,11 @@ interface Subscription {
 
 interface SubscriptionInsight {
   id: string;
-  type: 'duplicate' | 'unused' | 'price_increase' | 'free_alternative';
+  type: "duplicate" | "unused" | "price_increase" | "free_alternative";
   title: string;
   description: string;
   potentialSavings: number;
-  priority: 'low' | 'medium' | 'high';
+  priority: "low" | "medium" | "high";
   subscriptionIds: string[];
 }
 
@@ -56,68 +56,68 @@ interface DetectedSubscription {
 
 const MOCK_SUBSCRIPTIONS: Subscription[] = [
   {
-    id: '1',
-    name: 'Netflix',
-    merchantName: 'Netflix',
+    id: "1",
+    name: "Netflix",
+    merchantName: "Netflix",
     amount: 15.99,
-    frequency: 'monthly',
-    category: 'streaming',
-    status: 'active',
+    frequency: "monthly",
+    category: "streaming",
+    status: "active",
     nextBillingDate: new Date(2026, 1, 15),
     autopay: true,
   },
   {
-    id: '2',
-    name: 'Spotify',
-    merchantName: 'Spotify',
+    id: "2",
+    name: "Spotify",
+    merchantName: "Spotify",
     amount: 10.99,
-    frequency: 'monthly',
-    category: 'music',
-    status: 'active',
+    frequency: "monthly",
+    category: "music",
+    status: "active",
     nextBillingDate: new Date(2026, 1, 20),
     autopay: true,
   },
   {
-    id: '3',
-    name: 'Disney+',
-    merchantName: 'Disney Plus',
+    id: "3",
+    name: "Disney+",
+    merchantName: "Disney Plus",
     amount: 13.99,
-    frequency: 'monthly',
-    category: 'streaming',
-    status: 'active',
+    frequency: "monthly",
+    category: "streaming",
+    status: "active",
     nextBillingDate: new Date(2026, 1, 10),
     autopay: true,
   },
   {
-    id: '4',
-    name: 'Gym Membership',
-    merchantName: 'Planet Fitness',
+    id: "4",
+    name: "Gym Membership",
+    merchantName: "Planet Fitness",
     amount: 24.99,
-    frequency: 'monthly',
-    category: 'fitness',
-    status: 'active',
+    frequency: "monthly",
+    category: "fitness",
+    status: "active",
     nextBillingDate: new Date(2026, 1, 1),
     autopay: true,
   },
   {
-    id: '5',
-    name: 'iCloud Storage',
-    merchantName: 'Apple',
+    id: "5",
+    name: "iCloud Storage",
+    merchantName: "Apple",
     amount: 2.99,
-    frequency: 'monthly',
-    category: 'cloud_storage',
-    status: 'active',
+    frequency: "monthly",
+    category: "cloud_storage",
+    status: "active",
     nextBillingDate: new Date(2026, 1, 25),
     autopay: true,
   },
   {
-    id: '6',
-    name: 'Adobe Creative Cloud',
-    merchantName: 'Adobe',
+    id: "6",
+    name: "Adobe Creative Cloud",
+    merchantName: "Adobe",
     amount: 54.99,
-    frequency: 'monthly',
-    category: 'software',
-    status: 'active',
+    frequency: "monthly",
+    category: "software",
+    status: "active",
     nextBillingDate: new Date(2026, 1, 5),
     autopay: true,
   },
@@ -125,51 +125,51 @@ const MOCK_SUBSCRIPTIONS: Subscription[] = [
 
 const MOCK_INSIGHTS: SubscriptionInsight[] = [
   {
-    id: '1',
-    type: 'duplicate',
-    title: 'Multiple streaming services detected',
+    id: "1",
+    type: "duplicate",
+    title: "Multiple streaming services detected",
     description:
-      'You have 2 video streaming services (Netflix, Disney+) totaling $29.98/month',
+      "You have 2 video streaming services (Netflix, Disney+) totaling $29.98/month",
     potentialSavings: 13.99,
-    priority: 'medium',
-    subscriptionIds: ['1', '3'],
+    priority: "medium",
+    subscriptionIds: ["1", "3"],
   },
   {
-    id: '2',
-    type: 'free_alternative',
-    title: 'Free alternative available',
-    description: 'Consider using free cloud storage options instead of iCloud',
+    id: "2",
+    type: "free_alternative",
+    title: "Free alternative available",
+    description: "Consider using free cloud storage options instead of iCloud",
     potentialSavings: 2.99,
-    priority: 'low',
-    subscriptionIds: ['5'],
+    priority: "low",
+    subscriptionIds: ["5"],
   },
   {
-    id: '3',
-    type: 'unused',
-    title: 'Potentially unused subscription',
-    description: 'Your gym membership shows no activity in the last 60 days',
+    id: "3",
+    type: "unused",
+    title: "Potentially unused subscription",
+    description: "Your gym membership shows no activity in the last 60 days",
     potentialSavings: 24.99,
-    priority: 'high',
-    subscriptionIds: ['4'],
+    priority: "high",
+    subscriptionIds: ["4"],
   },
 ];
 
 const MOCK_DETECTED: DetectedSubscription[] = [
   {
-    merchantName: 'HBO Max',
+    merchantName: "HBO Max",
     amount: 15.99,
-    frequency: 'monthly',
+    frequency: "monthly",
     confidence: 92,
     chargeCount: 4,
-    category: 'streaming',
+    category: "streaming",
   },
   {
-    merchantName: 'Hulu',
+    merchantName: "Hulu",
     amount: 17.99,
-    frequency: 'monthly',
+    frequency: "monthly",
     confidence: 88,
     chargeCount: 3,
-    category: 'streaming',
+    category: "streaming",
   },
 ];
 
@@ -177,8 +177,8 @@ export default function SubscriptionTrackerPage() {
   const [subscriptions] = useState<Subscription[]>(MOCK_SUBSCRIPTIONS);
   const [insights] = useState<SubscriptionInsight[]>(MOCK_INSIGHTS);
   const [detectedSubs] = useState<DetectedSubscription[]>(MOCK_DETECTED);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [showDetectedModal, setShowDetectedModal] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
 
@@ -187,21 +187,21 @@ export default function SubscriptionTrackerPage() {
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
     const matchesCategory =
-      selectedCategory === 'all' || sub.category === selectedCategory;
+      selectedCategory === "all" || sub.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
   const totalMonthly = subscriptions
-    .filter((s) => s.status === 'active')
+    .filter((s) => s.status === "active")
     .reduce((sum, s) => {
       switch (s.frequency) {
-        case 'weekly':
+        case "weekly":
           return sum + s.amount * 4.33;
-        case 'monthly':
+        case "monthly":
           return sum + s.amount;
-        case 'quarterly':
+        case "quarterly":
           return sum + s.amount / 3;
-        case 'yearly':
+        case "yearly":
           return sum + s.amount / 12;
         default:
           return sum;
@@ -211,40 +211,40 @@ export default function SubscriptionTrackerPage() {
   const totalAnnual = totalMonthly * 12;
   const potentialSavings = insights.reduce(
     (sum, i) => sum + i.potentialSavings,
-    0
+    0,
   );
 
-  const categories = ['all', ...new Set(subscriptions.map((s) => s.category))];
+  const categories = ["all", ...new Set(subscriptions.map((s) => s.category))];
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(amount);
   };
 
   const getCategoryLabel = (category: string) => {
     const labels: Record<string, string> = {
-      all: 'All',
-      streaming: 'Streaming',
-      music: 'Music',
-      fitness: 'Fitness',
-      cloud_storage: 'Cloud Storage',
-      software: 'Software',
+      all: "All",
+      streaming: "Streaming",
+      music: "Music",
+      fitness: "Fitness",
+      cloud_storage: "Cloud Storage",
+      software: "Software",
     };
     return labels[category] || category;
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'high':
-        return 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300';
-      case 'medium':
-        return 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300';
-      case 'low':
-        return 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300';
+      case "high":
+        return "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300";
+      case "medium":
+        return "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300";
+      case "low":
+        return "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300";
       default:
-        return 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200';
+        return "bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-200";
     }
   };
 
@@ -343,7 +343,7 @@ export default function SubscriptionTrackerPage() {
                   Active Subscriptions
                 </p>
                 <p className="text-xl font-bold text-gray-900 dark:text-white">
-                  {subscriptions.filter((s) => s.status === 'active').length}
+                  {subscriptions.filter((s) => s.status === "active").length}
                 </p>
               </div>
             </div>
@@ -388,7 +388,7 @@ export default function SubscriptionTrackerPage() {
                     <button
                       key={cat}
                       onClick={() => setSelectedCategory(cat)}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${ selectedCategory === cat ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600 dark:text-slate-400 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600' }`}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${selectedCategory === cat ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-600 dark:text-slate-400 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600"}`}
                     >
                       {getCategoryLabel(cat)}
                     </button>
@@ -417,7 +417,7 @@ export default function SubscriptionTrackerPage() {
                           {sub.name}
                         </h3>
                         <p className="text-sm text-gray-500 dark:text-slate-400">
-                          {sub.merchantName} • Next:{' '}
+                          {sub.merchantName} • Next:{" "}
                           {sub.nextBillingDate.toLocaleDateString()}
                         </p>
                       </div>
@@ -435,7 +435,7 @@ export default function SubscriptionTrackerPage() {
                   <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100 dark:border-slate-700">
                     <div className="flex items-center gap-2">
                       <span
-                        className={`px-2 py-1 rounded text-xs font-medium ${ sub.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-slate-300' }`}
+                        className={`px-2 py-1 rounded text-xs font-medium ${sub.status === "active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-slate-300"}`}
                       >
                         {sub.status}
                       </span>
@@ -642,7 +642,9 @@ export default function SubscriptionTrackerPage() {
                       <p className="font-semibold text-gray-900 dark:text-white">
                         {formatCurrency(sub.amount)}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-slate-400">/{sub.frequency}</p>
+                      <p className="text-xs text-gray-500 dark:text-slate-400">
+                        /{sub.frequency}
+                      </p>
                     </div>
                   </div>
                 ))}

@@ -1,26 +1,26 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/components/ui/Toast';
-import { Modal, ConfirmDialog } from '@/components/ui';
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/components/ui/Toast";
+import { Modal, ConfirmDialog } from "@/components/ui";
 import {
   PieChartComponent,
   LineChartComponent,
   ChartContainer,
-} from '@/components/charts';
+} from "@/components/charts";
 import type {
   Bill,
   BillSummary,
   DetectedBill,
   BillCategory,
   BillFrequency,
-} from '@/lib/financial/types/bill.types';
-import AIBillsOptimizer from './AIBillsOptimizer';
+} from "@/lib/financial/types/bill.types";
+import AIBillsOptimizer from "./AIBillsOptimizer";
 
 // Extended Bill interface for UI display
 interface BillWithStatus extends Bill {
-  displayStatus: 'upcoming' | 'paid' | 'overdue';
+  displayStatus: "upcoming" | "paid" | "overdue";
   daysUntilDue: number;
 }
 
@@ -36,13 +36,13 @@ interface BillFormData {
 }
 
 const initialFormData: BillFormData = {
-  merchantName: '',
-  category: 'subscription',
-  amount: '',
-  frequency: 'monthly',
-  nextDueDate: '',
+  merchantName: "",
+  category: "subscription",
+  amount: "",
+  frequency: "monthly",
+  nextDueDate: "",
   isAutoPay: false,
-  notes: '',
+  notes: "",
 };
 
 export default function BillsSubscriptions() {
@@ -54,8 +54,8 @@ export default function BillsSubscriptions() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<
-    'all' | 'upcoming' | 'overdue' | 'subscriptions'
-  >('all');
+    "all" | "upcoming" | "overdue" | "subscriptions"
+  >("all");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -71,15 +71,15 @@ export default function BillsSubscriptions() {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('/api/financial/bills', {
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+      const response = await fetch("/api/financial/bills", {
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
       });
-      if (!response.ok) throw new Error('Failed to fetch bills');
+      if (!response.ok) throw new Error("Failed to fetch bills");
       const data = await response.json();
       setBills(data.bills || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch bills');
+      setError(err instanceof Error ? err.message : "Failed to fetch bills");
     } finally {
       setLoading(false);
     }
@@ -89,16 +89,16 @@ export default function BillsSubscriptions() {
   const fetchSummary = useCallback(async () => {
     if (!user) return;
     try {
-      const response = await fetch('/api/financial/bills/summary', {
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+      const response = await fetch("/api/financial/bills/summary", {
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
       });
       if (response.ok) {
         const data = await response.json();
         setSummary(data.summary);
       }
     } catch (err) {
-      console.error('Failed to fetch summary:', err);
+      console.error("Failed to fetch summary:", err);
     }
   }, [user]);
 
@@ -107,19 +107,19 @@ export default function BillsSubscriptions() {
     if (!user) return;
     try {
       setIsDetecting(true);
-      const response = await fetch('/api/financial/bills/detect', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+      const response = await fetch("/api/financial/bills/detect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ minOccurrences: 2, confidenceThreshold: 70 }),
       });
-      if (!response.ok) throw new Error('Failed to detect bills');
+      if (!response.ok) throw new Error("Failed to detect bills");
       const data = await response.json();
       setDetectedBills(data.detectedBills || []);
       setShowDetectModal(true);
       toast.success(`Found ${data.detectedBills?.length || 0} potential bills`);
     } catch (err) {
-      toast.error('Failed to detect bills');
+      toast.error("Failed to detect bills");
     } finally {
       setIsDetecting(false);
     }
@@ -128,15 +128,15 @@ export default function BillsSubscriptions() {
   // Create bill
   const handleCreateBill = async () => {
     if (!formData.merchantName || !formData.amount || !formData.nextDueDate) {
-      toast.error('Please fill in all required fields');
+      toast.error("Please fill in all required fields");
       return;
     }
     try {
       setIsSubmitting(true);
-      const response = await fetch('/api/financial/bills', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+      const response = await fetch("/api/financial/bills", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           merchantName: formData.merchantName,
           category: formData.category,
@@ -147,14 +147,14 @@ export default function BillsSubscriptions() {
           notes: formData.notes || undefined,
         }),
       });
-      if (!response.ok) throw new Error('Failed to create bill');
-      toast.success('Bill created successfully');
+      if (!response.ok) throw new Error("Failed to create bill");
+      toast.success("Bill created successfully");
       setShowAddModal(false);
       setFormData(initialFormData);
       void fetchBills();
       void fetchSummary();
     } catch (err) {
-      toast.error('Failed to create bill');
+      toast.error("Failed to create bill");
     } finally {
       setIsSubmitting(false);
     }
@@ -166,9 +166,9 @@ export default function BillsSubscriptions() {
     try {
       setIsSubmitting(true);
       const response = await fetch(`/api/financial/bills/${selectedBill.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           merchantName: formData.merchantName,
           category: formData.category,
@@ -179,14 +179,14 @@ export default function BillsSubscriptions() {
           notes: formData.notes || undefined,
         }),
       });
-      if (!response.ok) throw new Error('Failed to update bill');
-      toast.success('Bill updated successfully');
+      if (!response.ok) throw new Error("Failed to update bill");
+      toast.success("Bill updated successfully");
       setShowEditModal(false);
       setSelectedBill(null);
       setFormData(initialFormData);
       void fetchBills();
     } catch (err) {
-      toast.error('Failed to update bill');
+      toast.error("Failed to update bill");
     } finally {
       setIsSubmitting(false);
     }
@@ -198,17 +198,17 @@ export default function BillsSubscriptions() {
     try {
       setIsSubmitting(true);
       const response = await fetch(`/api/financial/bills/${selectedBill.id}`, {
-        method: 'DELETE',
-        credentials: 'include',
+        method: "DELETE",
+        credentials: "include",
       });
-      if (!response.ok) throw new Error('Failed to delete bill');
-      toast.success('Bill deleted successfully');
+      if (!response.ok) throw new Error("Failed to delete bill");
+      toast.success("Bill deleted successfully");
       setShowDeleteConfirm(false);
       setSelectedBill(null);
       void fetchBills();
       void fetchSummary();
     } catch (err) {
-      toast.error('Failed to delete bill');
+      toast.error("Failed to delete bill");
     } finally {
       setIsSubmitting(false);
     }
@@ -222,9 +222,9 @@ export default function BillsSubscriptions() {
       category: bill.category,
       amount: bill.amount.toString(),
       frequency: bill.frequency,
-      nextDueDate: new Date(bill.nextDueDate).toISOString().split('T')[0],
+      nextDueDate: new Date(bill.nextDueDate).toISOString().split("T")[0],
       isAutoPay: bill.isAutoPay,
-      notes: bill.notes || '',
+      notes: bill.notes || "",
     });
     setShowEditModal(true);
   };
@@ -237,75 +237,75 @@ export default function BillsSubscriptions() {
   }, [authLoading, user, fetchBills, fetchSummary]);
 
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(amount);
   };
 
   const getCategoryIcon = (category: string): string => {
     const icons: Record<string, string> = {
-      utilities: '',
-      rent: '',
-      mortgage: '',
-      insurance: '',
-      subscription: '',
-      loan: '',
-      credit_card: '',
-      phone: '',
-      internet: '',
-      streaming: '',
-      other: '',
+      utilities: "",
+      rent: "",
+      mortgage: "",
+      insurance: "",
+      subscription: "",
+      loan: "",
+      credit_card: "",
+      phone: "",
+      internet: "",
+      streaming: "",
+      other: "",
     };
-    return icons[category] || '';
+    return icons[category] || "";
   };
 
   const getStatusColor = (status: string): string => {
     switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
-      case 'paused':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
-      case 'cancelled':
-        return 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100 dark:bg-slate-700 dark:text-slate-400';
+      case "active":
+        return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
+      case "paused":
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400";
+      case "cancelled":
+        return "bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100 dark:bg-slate-700 dark:text-slate-400";
       default:
-        return 'bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100 dark:bg-slate-700 dark:text-slate-400';
+        return "bg-gray-100 dark:bg-slate-800 text-gray-800 dark:text-slate-100 dark:bg-slate-700 dark:text-slate-400";
     }
   };
 
   // Calculate bill status based on due date
-  const getBillDisplayStatus = (bill: Bill): 'upcoming' | 'overdue' => {
+  const getBillDisplayStatus = (bill: Bill): "upcoming" | "overdue" => {
     const today = new Date();
     const dueDate = new Date(bill.nextDueDate);
-    return dueDate < today ? 'overdue' : 'upcoming';
+    return dueDate < today ? "overdue" : "upcoming";
   };
 
   const getDaysUntilDue = (bill: Bill): number => {
     const today = new Date();
     const dueDate = new Date(bill.nextDueDate);
     return Math.ceil(
-      (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+      (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
     );
   };
 
   // Filter bills
   const filteredBills = bills.filter((b) => {
-    if (filter === 'all') return true;
-    if (filter === 'subscriptions')
-      return ['subscription', 'streaming'].includes(b.category);
-    if (filter === 'upcoming') return getBillDisplayStatus(b) === 'upcoming';
-    if (filter === 'overdue') return getBillDisplayStatus(b) === 'overdue';
+    if (filter === "all") return true;
+    if (filter === "subscriptions")
+      return ["subscription", "streaming"].includes(b.category);
+    if (filter === "upcoming") return getBillDisplayStatus(b) === "upcoming";
+    if (filter === "overdue") return getBillDisplayStatus(b) === "overdue";
     return true;
   });
 
   const totalMonthly = bills
-    .filter((b) => b.frequency === 'monthly' && b.status === 'active')
+    .filter((b) => b.frequency === "monthly" && b.status === "active")
     .reduce((sum, b) => sum + b.amount, 0);
   const upcomingCount = bills.filter(
-    (b) => getBillDisplayStatus(b) === 'upcoming' && b.status === 'active'
+    (b) => getBillDisplayStatus(b) === "upcoming" && b.status === "active",
   ).length;
   const overdueCount = bills.filter(
-    (b) => getBillDisplayStatus(b) === 'overdue' && b.status === 'active'
+    (b) => getBillDisplayStatus(b) === "overdue" && b.status === "active",
   ).length;
 
   // Chart data
@@ -315,8 +315,8 @@ export default function BillsSubscriptions() {
         acc[bill.category] = (acc[bill.category] || 0) + bill.amount;
         return acc;
       },
-      {} as Record<string, number>
-    )
+      {} as Record<string, number>,
+    ),
   ).map(([name, value]) => ({ name, value }));
 
   // Bill form component
@@ -469,7 +469,7 @@ export default function BillsSubscriptions() {
           disabled={isSubmitting}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
         >
-          {isSubmitting ? 'Saving...' : submitLabel}
+          {isSubmitting ? "Saving..." : submitLabel}
         </button>
       </div>
     </div>
@@ -538,7 +538,7 @@ export default function BillsSubscriptions() {
             <span className="text-2xl"></span>
           </div>
           <div className="text-3xl font-bold">
-            {bills.filter((b) => b.status === 'active').length}
+            {bills.filter((b) => b.status === "active").length}
           </div>
           <div className="text-sm opacity-90 mt-1">Active bills</div>
         </div>
@@ -567,23 +567,23 @@ export default function BillsSubscriptions() {
           </div>
         </div>
         <div
-          className={`rounded-lg shadow p-6 ${overdueCount > 0 ? 'bg-gradient-to-br from-red-500 to-red-600 text-white' : 'bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700'}`}
+          className={`rounded-lg shadow p-6 ${overdueCount > 0 ? "bg-gradient-to-br from-red-500 to-red-600 text-white" : "bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700"}`}
         >
           <div className="flex items-center justify-between mb-2">
             <h3
-              className={`text-sm font-semibold ${overdueCount > 0 ? 'opacity-90' : 'text-gray-600 dark:text-slate-400'}`}
+              className={`text-sm font-semibold ${overdueCount > 0 ? "opacity-90" : "text-gray-600 dark:text-slate-400"}`}
             >
               Overdue
             </h3>
             <span className="text-2xl"></span>
           </div>
           <div
-            className={`text-3xl font-bold ${overdueCount > 0 ? '' : 'text-red-600'}`}
+            className={`text-3xl font-bold ${overdueCount > 0 ? "" : "text-red-600"}`}
           >
             {overdueCount}
           </div>
           <div
-            className={`text-sm mt-1 ${overdueCount > 0 ? 'opacity-90' : 'text-gray-500 dark:text-slate-400'}`}
+            className={`text-sm mt-1 ${overdueCount > 0 ? "opacity-90" : "text-gray-500 dark:text-slate-400"}`}
           >
             Need attention
           </div>
@@ -602,11 +602,11 @@ export default function BillsSubscriptions() {
             </h3>
             <div className="space-y-3 max-h-64 overflow-y-auto">
               {bills
-                .filter((b) => b.status === 'active')
+                .filter((b) => b.status === "active")
                 .sort(
                   (a, b) =>
                     new Date(a.nextDueDate).getTime() -
-                    new Date(b.nextDueDate).getTime()
+                    new Date(b.nextDueDate).getTime(),
                 )
                 .slice(0, 5)
                 .map((bill) => {
@@ -614,7 +614,7 @@ export default function BillsSubscriptions() {
                   return (
                     <div
                       key={bill.id}
-                      className={`flex items-center justify-between p-3 rounded-lg ${days < 0 ? 'bg-red-50' : days <= 7 ? 'bg-yellow-50' : 'bg-gray-50 dark:bg-slate-700'}`}
+                      className={`flex items-center justify-between p-3 rounded-lg ${days < 0 ? "bg-red-50" : days <= 7 ? "bg-yellow-50" : "bg-gray-50 dark:bg-slate-700"}`}
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-2xl">
@@ -625,12 +625,12 @@ export default function BillsSubscriptions() {
                             {bill.merchantName}
                           </div>
                           <div
-                            className={`text-sm ${days < 0 ? 'text-red-600' : days <= 7 ? 'text-yellow-600' : 'text-gray-600 dark:text-slate-400'}`}
+                            className={`text-sm ${days < 0 ? "text-red-600" : days <= 7 ? "text-yellow-600" : "text-gray-600 dark:text-slate-400"}`}
                           >
                             {days < 0
                               ? `${Math.abs(days)} days overdue`
                               : days === 0
-                                ? 'Due today'
+                                ? "Due today"
                                 : `Due in ${days} days`}
                           </div>
                         </div>
@@ -650,17 +650,17 @@ export default function BillsSubscriptions() {
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex flex-wrap gap-2">
-            {(['all', 'upcoming', 'overdue', 'subscriptions'] as const).map(
+            {(["all", "upcoming", "overdue", "subscriptions"] as const).map(
               (status) => (
                 <button
                   key={status}
                   type="button"
                   onClick={() => setFilter(status)}
-                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors capitalize ${filter === status ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600'}`}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors capitalize ${filter === status ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600"}`}
                 >
                   {status}
                 </button>
-              )
+              ),
             )}
           </div>
           <div className="flex gap-2">
@@ -668,7 +668,7 @@ export default function BillsSubscriptions() {
               type="button"
               onClick={() => {
                 window.location.href =
-                  '/api/financial/export?type=bills&format=csv';
+                  "/api/financial/export?type=bills&format=csv";
               }}
               className="px-3 py-2 bg-gray-100 text-gray-700 dark:text-slate-300 rounded-lg hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 flex items-center gap-2 text-sm"
               title="Export to CSV"
@@ -694,7 +694,7 @@ export default function BillsSubscriptions() {
               disabled={isDetecting}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-semibold"
             >
-              {isDetecting ? 'Detecting...' : 'Detect Bills'}
+              {isDetecting ? "Detecting..." : "Detect Bills"}
             </button>
             <button
               type="button"
@@ -765,7 +765,7 @@ export default function BillsSubscriptions() {
                           >
                             {bill.status}
                           </span>
-                          {displayStatus === 'overdue' && (
+                          {displayStatus === "overdue" && (
                             <span className="px-2 py-1 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 rounded text-xs font-semibold">
                               Overdue
                             </span>
@@ -778,7 +778,7 @@ export default function BillsSubscriptions() {
                         </div>
                         <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-slate-400">
                           <span className="capitalize">
-                            {bill.category.replace('_', ' ')}
+                            {bill.category.replace("_", " ")}
                           </span>
                           <span>•</span>
                           <span className="capitalize">{bill.frequency}</span>
@@ -786,16 +786,16 @@ export default function BillsSubscriptions() {
                           <span
                             className={
                               days < 0
-                                ? 'text-red-600'
+                                ? "text-red-600"
                                 : days <= 7
-                                  ? 'text-yellow-600'
-                                  : ''
+                                  ? "text-yellow-600"
+                                  : ""
                             }
                           >
                             {days < 0
                               ? `${Math.abs(days)} days overdue`
                               : days === 0
-                                ? 'Due today'
+                                ? "Due today"
                                 : `Due in ${days} days`}
                           </span>
                         </div>
@@ -816,8 +816,7 @@ export default function BillsSubscriptions() {
                           onClick={() => openEditModal(bill)}
                           className="p-2 text-gray-500 dark:text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"
                           title="Edit"
-                        >
-                                                  </button>
+                        ></button>
                         <button
                           type="button"
                           onClick={() => {
@@ -826,8 +825,7 @@ export default function BillsSubscriptions() {
                           }}
                           className="p-2 text-gray-500 dark:text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
                           title="Delete"
-                        >
-                                                  </button>
+                        ></button>
                       </div>
                     </div>
                   </div>
@@ -920,7 +918,9 @@ export default function BillsSubscriptions() {
                     <div className="font-bold text-gray-900 dark:text-white">
                       {formatCurrency(detected.averageAmount)}
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-slate-400">avg amount</div>
+                    <div className="text-xs text-gray-500 dark:text-slate-400">
+                      avg amount
+                    </div>
                   </div>
                   <button
                     type="button"
@@ -932,9 +932,9 @@ export default function BillsSubscriptions() {
                         frequency: detected.frequency,
                         nextDueDate: new Date(detected.nextExpectedDate)
                           .toISOString()
-                          .split('T')[0],
+                          .split("T")[0],
                         isAutoPay: false,
-                        notes: '',
+                        notes: "",
                       });
                       setShowDetectModal(false);
                       setShowAddModal(true);

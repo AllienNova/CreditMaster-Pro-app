@@ -11,7 +11,7 @@
 
 export interface SpendingPatternAnalysis {
   userId: string;
-  period: 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+  period: "weekly" | "monthly" | "quarterly" | "yearly";
   periodStart: Date;
   periodEnd: Date;
   patterns: DetectedPattern[];
@@ -28,14 +28,21 @@ export interface DetectedPattern {
   type: PatternType;
   name: string;
   description: string;
-  frequency: 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly' | 'irregular';
+  frequency:
+    | "daily"
+    | "weekly"
+    | "biweekly"
+    | "monthly"
+    | "quarterly"
+    | "yearly"
+    | "irregular";
   confidence: number; // 0-100
   averageAmount: number;
   totalAmount: number;
   occurrences: number;
   category?: string;
   merchant?: string;
-  timeOfDay?: 'morning' | 'afternoon' | 'evening' | 'night';
+  timeOfDay?: "morning" | "afternoon" | "evening" | "night";
   dayOfWeek?: number; // 0-6
   dayOfMonth?: number; // 1-31
   relatedTransactionIds: string[];
@@ -46,16 +53,16 @@ export interface DetectedPattern {
 }
 
 export type PatternType =
-  | 'recurring_subscription'
-  | 'weekly_routine'
-  | 'payday_spending'
-  | 'weekend_spending'
-  | 'seasonal_spending'
-  | 'impulse_buying'
-  | 'stress_spending'
-  | 'social_spending'
-  | 'convenience_spending'
-  | 'planned_purchase';
+  | "recurring_subscription"
+  | "weekly_routine"
+  | "payday_spending"
+  | "weekend_spending"
+  | "seasonal_spending"
+  | "impulse_buying"
+  | "stress_spending"
+  | "social_spending"
+  | "convenience_spending"
+  | "planned_purchase";
 
 export interface SpendingHabit {
   id: string;
@@ -63,27 +70,27 @@ export interface SpendingHabit {
   description: string;
   frequency: string;
   averageAmount: number;
-  impact: 'positive' | 'negative' | 'neutral';
+  impact: "positive" | "negative" | "neutral";
   healthScore: number; // 0-100
   recommendation?: string;
   potentialSavings?: number;
 }
 
 export type HabitType =
-  | 'daily_coffee'
-  | 'frequent_dining_out'
-  | 'subscription_accumulation'
-  | 'impulse_shopping'
-  | 'late_night_purchases'
-  | 'weekend_splurging'
-  | 'emotional_spending'
-  | 'convenience_purchases';
+  | "daily_coffee"
+  | "frequent_dining_out"
+  | "subscription_accumulation"
+  | "impulse_shopping"
+  | "late_night_purchases"
+  | "weekend_splurging"
+  | "emotional_spending"
+  | "convenience_purchases";
 
 export interface SpendingVelocity {
   current: number; // $ per day
   average: number; // $ per day
   acceleration: number; // % change
-  trend: 'accelerating' | 'decelerating' | 'stable';
+  trend: "accelerating" | "decelerating" | "stable";
   projectedMonthEnd: number;
   daysRemaining: number;
   burnRate: number; // Days until funds depleted (if applicable)
@@ -101,16 +108,16 @@ export interface BehavioralTrigger {
 }
 
 export type TriggerType =
-  | 'time_of_day'
-  | 'day_of_week'
-  | 'payday'
-  | 'weekend'
-  | 'holiday'
-  | 'weather'
-  | 'location'
-  | 'social_event'
-  | 'stress'
-  | 'boredom';
+  | "time_of_day"
+  | "day_of_week"
+  | "payday"
+  | "weekend"
+  | "holiday"
+  | "weather"
+  | "location"
+  | "social_event"
+  | "stress"
+  | "boredom";
 
 export interface SpendingHealthScore {
   overall: number; // 0-100
@@ -121,20 +128,20 @@ export interface SpendingHealthScore {
     efficiency: number; // Value for money
     sustainability: number; // Long-term sustainability
   };
-  grade: 'A+' | 'A' | 'B+' | 'B' | 'C+' | 'C' | 'D' | 'F';
-  trend: 'improving' | 'declining' | 'stable';
+  grade: "A+" | "A" | "B+" | "B" | "C+" | "C" | "D" | "F";
+  trend: "improving" | "declining" | "stable";
   comparedToLastPeriod: number;
 }
 
 export interface AIInsight {
   id: string;
   type: InsightType;
-  priority: 'high' | 'medium' | 'low';
+  priority: "high" | "medium" | "low";
   title: string;
   description: string;
   reasoning: string[];
   confidence: number; // 0-100
-  impact: 'positive' | 'negative' | 'neutral';
+  impact: "positive" | "negative" | "neutral";
   potentialSavings?: number;
   actionItems: ActionItem[];
   relatedCategory?: string;
@@ -145,14 +152,14 @@ export interface AIInsight {
 }
 
 export type InsightType =
-  | 'spending_pattern'
-  | 'anomaly_detected'
-  | 'trend_alert'
-  | 'savings_opportunity'
-  | 'budget_warning'
-  | 'habit_formation'
-  | 'behavioral_trigger'
-  | 'optimization_suggestion';
+  | "spending_pattern"
+  | "anomaly_detected"
+  | "trend_alert"
+  | "savings_opportunity"
+  | "budget_warning"
+  | "habit_formation"
+  | "behavioral_trigger"
+  | "optimization_suggestion";
 
 // ============================================================================
 // ANOMALY DETECTION TYPES
@@ -161,7 +168,7 @@ export type InsightType =
 export interface AnomalyDetectionResult {
   userId: string;
   timeframe: number; // days analyzed
-  sensitivity: 'low' | 'medium' | 'high';
+  sensitivity: "low" | "medium" | "high";
   anomalies: SpendingAnomaly[];
   summary: AnomalySummary;
   detectedAt: Date;
@@ -170,7 +177,7 @@ export interface AnomalyDetectionResult {
 export interface SpendingAnomaly {
   id: string;
   type: AnomalyType;
-  severity: 'low' | 'medium' | 'high' | 'critical';
+  severity: "low" | "medium" | "high" | "critical";
   title: string;
   description: string;
   transactionId: string;
@@ -181,23 +188,23 @@ export interface SpendingAnomaly {
   merchant: string;
   date: Date;
   confidence: number; // 0-100
-  detectionMethod: 'zscore' | 'iqr' | 'isolation_forest' | 'ai';
+  detectionMethod: "zscore" | "iqr" | "isolation_forest" | "ai";
   requiresAction: boolean;
   actionSuggestion?: string;
   relatedAnomalies?: string[]; // IDs of related anomalies
 }
 
 export type AnomalyType =
-  | 'unusual_large_transaction'
-  | 'unusual_small_transaction'
-  | 'unusual_merchant'
-  | 'unusual_category'
-  | 'unusual_frequency'
-  | 'unusual_time'
-  | 'duplicate_charge'
-  | 'subscription_increase'
-  | 'spending_spike'
-  | 'location_anomaly';
+  | "unusual_large_transaction"
+  | "unusual_small_transaction"
+  | "unusual_merchant"
+  | "unusual_category"
+  | "unusual_frequency"
+  | "unusual_time"
+  | "duplicate_charge"
+  | "subscription_increase"
+  | "spending_spike"
+  | "location_anomaly";
 
 export interface AnomalySummary {
   totalAnomalies: number;
@@ -245,11 +252,11 @@ export interface CategoryTrend {
 }
 
 export type TrendDirection =
-  | 'increasing'
-  | 'decreasing'
-  | 'stable'
-  | 'volatile'
-  | 'seasonal';
+  | "increasing"
+  | "decreasing"
+  | "stable"
+  | "volatile"
+  | "seasonal";
 
 export interface TrendDataPoint {
   date: Date;
@@ -262,7 +269,7 @@ export interface SeasonalityAnalysis {
   seasonalityStrength: number; // 0-100
   peakPeriods: string[];
   lowPeriods: string[];
-  seasonalPattern: 'monthly' | 'quarterly' | 'yearly' | 'none';
+  seasonalPattern: "monthly" | "quarterly" | "yearly" | "none";
   adjustedTrend: TrendDirection;
 }
 
@@ -280,7 +287,7 @@ export interface SpendingForecast {
 }
 
 export interface PeriodComparison {
-  compareWith: 'previous' | 'year_ago' | 'average';
+  compareWith: "previous" | "year_ago" | "average";
   currentPeriod: {
     start: Date;
     end: Date;
@@ -308,11 +315,11 @@ export interface CategoryChange {
 
 export interface SignificantChange {
   category: string;
-  type: 'increase' | 'decrease';
+  type: "increase" | "decrease";
   amount: number;
   percent: number;
   reason?: string;
-  impact: 'positive' | 'negative' | 'neutral';
+  impact: "positive" | "negative" | "neutral";
 }
 
 // ============================================================================
@@ -321,8 +328,8 @@ export interface SignificantChange {
 
 export interface InsightGenerationRequest {
   userId: string;
-  analysisType?: 'patterns' | 'trends' | 'anomalies' | 'all';
-  priority?: 'high' | 'medium' | 'low' | 'all';
+  analysisType?: "patterns" | "trends" | "anomalies" | "all";
+  priority?: "high" | "medium" | "low" | "all";
   includeAI?: boolean;
   maxInsights?: number;
 }
@@ -351,9 +358,8 @@ export interface InsightSummary {
 export interface ActionItem {
   id: string;
   action: string;
-  difficulty: 'easy' | 'medium' | 'hard';
+  difficulty: "easy" | "medium" | "hard";
   estimatedImpact: number; // $ savings
   estimatedTime: string; // e.g., "5 minutes", "1 hour"
   priority: number; // 1-5
 }
-

@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Wallet,
   PiggyBank,
@@ -18,14 +18,14 @@ import {
   RefreshCw,
   Target,
   DollarSign,
-} from 'lucide-react';
+} from "lucide-react";
 
 interface BudgetCategory {
   id: string;
   name: string;
   icon: React.ReactNode;
   allocated: number;
-  type: 'essential' | 'debt' | 'savings' | 'lifestyle';
+  type: "essential" | "debt" | "savings" | "lifestyle";
   color: string;
 }
 
@@ -38,64 +38,64 @@ interface BudgetPriorities {
 
 const CATEGORY_TEMPLATES: Record<
   string,
-  { icon: React.ReactNode; color: string; type: BudgetCategory['type'] }
+  { icon: React.ReactNode; color: string; type: BudgetCategory["type"] }
 > = {
   housing: {
     icon: <Home className="w-4 h-4" />,
-    color: 'bg-blue-500',
-    type: 'essential',
+    color: "bg-blue-500",
+    type: "essential",
   },
   utilities: {
     icon: <Sparkles className="w-4 h-4" />,
-    color: 'bg-blue-500',
-    type: 'essential',
+    color: "bg-blue-500",
+    type: "essential",
   },
   groceries: {
     icon: <ShoppingCart className="w-4 h-4" />,
-    color: 'bg-green-500',
-    type: 'essential',
+    color: "bg-green-500",
+    type: "essential",
   },
   transportation: {
     icon: <Car className="w-4 h-4" />,
-    color: 'bg-orange-500',
-    type: 'essential',
+    color: "bg-orange-500",
+    type: "essential",
   },
   debt_payments: {
     icon: <CreditCard className="w-4 h-4" />,
-    color: 'bg-red-500',
-    type: 'debt',
+    color: "bg-red-500",
+    type: "debt",
   },
   savings: {
     icon: <PiggyBank className="w-4 h-4" />,
-    color: 'bg-emerald-500',
-    type: 'savings',
+    color: "bg-emerald-500",
+    type: "savings",
   },
   emergency_fund: {
     icon: <Target className="w-4 h-4" />,
-    color: 'bg-teal-500',
-    type: 'savings',
+    color: "bg-teal-500",
+    type: "savings",
   },
   dining_out: {
     icon: <Utensils className="w-4 h-4" />,
-    color: 'bg-emerald-500',
-    type: 'lifestyle',
+    color: "bg-emerald-500",
+    type: "lifestyle",
   },
   entertainment: {
     icon: <Sparkles className="w-4 h-4" />,
-    color: 'bg-blue-500',
-    type: 'lifestyle',
+    color: "bg-blue-500",
+    type: "lifestyle",
   },
   shopping: {
     icon: <ShoppingCart className="w-4 h-4" />,
-    color: 'bg-blue-500',
-    type: 'lifestyle',
+    color: "bg-blue-500",
+    type: "lifestyle",
   },
 };
 
 export default function ZeroBasedBudgetPage() {
   const [step, setStep] = useState<
-    'income' | 'priorities' | 'allocate' | 'review'
-  >('income');
+    "income" | "priorities" | "allocate" | "review"
+  >("income");
   const [monthlyIncome, setMonthlyIncome] = useState<number>(5000);
   const [priorities, setPriorities] = useState<BudgetPriorities>({
     essentials: 50,
@@ -108,7 +108,7 @@ export default function ZeroBasedBudgetPage() {
 
   const totalAllocated = categories.reduce(
     (sum, cat) => sum + cat.allocated,
-    0
+    0,
   );
   const unallocated = monthlyIncome - totalAllocated;
   const prioritiesTotal =
@@ -130,62 +130,62 @@ export default function ZeroBasedBudgetPage() {
 
     const newCategories: BudgetCategory[] = [
       {
-        id: '1',
-        name: 'Housing',
+        id: "1",
+        name: "Housing",
         ...CATEGORY_TEMPLATES.housing,
         allocated: Math.round(pools.essentials * 0.5),
       },
       {
-        id: '2',
-        name: 'Utilities',
+        id: "2",
+        name: "Utilities",
         ...CATEGORY_TEMPLATES.utilities,
         allocated: Math.round(pools.essentials * 0.1),
       },
       {
-        id: '3',
-        name: 'Groceries',
+        id: "3",
+        name: "Groceries",
         ...CATEGORY_TEMPLATES.groceries,
         allocated: Math.round(pools.essentials * 0.25),
       },
       {
-        id: '4',
-        name: 'Transportation',
+        id: "4",
+        name: "Transportation",
         ...CATEGORY_TEMPLATES.transportation,
         allocated: Math.round(pools.essentials * 0.15),
       },
       {
-        id: '5',
-        name: 'Debt Payments',
+        id: "5",
+        name: "Debt Payments",
         ...CATEGORY_TEMPLATES.debt_payments,
         allocated: Math.round(pools.debt),
       },
       {
-        id: '6',
-        name: 'Savings',
+        id: "6",
+        name: "Savings",
         ...CATEGORY_TEMPLATES.savings,
         allocated: Math.round(pools.savings * 0.6),
       },
       {
-        id: '7',
-        name: 'Emergency Fund',
+        id: "7",
+        name: "Emergency Fund",
         ...CATEGORY_TEMPLATES.emergency_fund,
         allocated: Math.round(pools.savings * 0.4),
       },
       {
-        id: '8',
-        name: 'Dining Out',
+        id: "8",
+        name: "Dining Out",
         ...CATEGORY_TEMPLATES.dining_out,
         allocated: Math.round(pools.lifestyle * 0.35),
       },
       {
-        id: '9',
-        name: 'Entertainment',
+        id: "9",
+        name: "Entertainment",
         ...CATEGORY_TEMPLATES.entertainment,
         allocated: Math.round(pools.lifestyle * 0.35),
       },
       {
-        id: '10',
-        name: 'Shopping',
+        id: "10",
+        name: "Shopping",
         ...CATEGORY_TEMPLATES.shopping,
         allocated: Math.round(pools.lifestyle * 0.3),
       },
@@ -193,48 +193,50 @@ export default function ZeroBasedBudgetPage() {
 
     setCategories(newCategories);
     setIsGenerating(false);
-    setStep('allocate');
+    setStep("allocate");
   };
 
   const updateCategoryAllocation = (categoryId: string, amount: number) => {
     setCategories((prev) =>
       prev.map((cat) =>
-        cat.id === categoryId ? { ...cat, allocated: Math.max(0, amount) } : cat
-      )
+        cat.id === categoryId
+          ? { ...cat, allocated: Math.max(0, amount) }
+          : cat,
+      ),
     );
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       maximumFractionDigits: 0,
     }).format(amount);
   };
 
-  const getCategoryTypeLabel = (type: BudgetCategory['type']) => {
+  const getCategoryTypeLabel = (type: BudgetCategory["type"]) => {
     switch (type) {
-      case 'essential':
-        return 'Essential';
-      case 'debt':
-        return 'Debt';
-      case 'savings':
-        return 'Savings';
-      case 'lifestyle':
-        return 'Lifestyle';
+      case "essential":
+        return "Essential";
+      case "debt":
+        return "Debt";
+      case "savings":
+        return "Savings";
+      case "lifestyle":
+        return "Lifestyle";
     }
   };
 
-  const getCategoryTypeColor = (type: BudgetCategory['type']) => {
+  const getCategoryTypeColor = (type: BudgetCategory["type"]) => {
     switch (type) {
-      case 'essential':
-        return 'text-blue-600 bg-blue-100 dark:bg-blue-900/50';
-      case 'debt':
-        return 'text-red-600 bg-red-100 dark:bg-red-900/50';
-      case 'savings':
-        return 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/50';
-      case 'lifestyle':
-        return 'text-blue-600 bg-blue-100 dark:bg-blue-900/50';
+      case "essential":
+        return "text-blue-600 bg-blue-100 dark:bg-blue-900/50";
+      case "debt":
+        return "text-red-600 bg-red-100 dark:bg-red-900/50";
+      case "savings":
+        return "text-emerald-600 bg-emerald-100 dark:bg-emerald-900/50";
+      case "lifestyle":
+        return "text-blue-600 bg-blue-100 dark:bg-blue-900/50";
     }
   };
 
@@ -259,21 +261,21 @@ export default function ZeroBasedBudgetPage() {
         {/* Progress Steps */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
-            {['income', 'priorities', 'allocate', 'review'].map((s, index) => (
+            {["income", "priorities", "allocate", "review"].map((s, index) => (
               <div key={s} className="flex items-center">
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
                     step === s
-                      ? 'bg-blue-600 text-white'
-                      : ['income', 'priorities', 'allocate', 'review'].indexOf(
-                            step
+                      ? "bg-blue-600 text-white"
+                      : ["income", "priorities", "allocate", "review"].indexOf(
+                            step,
                           ) > index
-                        ? 'bg-green-500 text-white'
-                        : 'bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-slate-400'
+                        ? "bg-green-500 text-white"
+                        : "bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-slate-400"
                   }`}
                 >
-                  {['income', 'priorities', 'allocate', 'review'].indexOf(
-                    step
+                  {["income", "priorities", "allocate", "review"].indexOf(
+                    step,
                   ) > index ? (
                     <Check className="w-5 h-5" />
                   ) : (
@@ -283,30 +285,38 @@ export default function ZeroBasedBudgetPage() {
                 {index < 3 && (
                   <div
                     className={`w-full h-1 mx-2 ${
-                      ['income', 'priorities', 'allocate', 'review'].indexOf(
-                        step
+                      ["income", "priorities", "allocate", "review"].indexOf(
+                        step,
                       ) > index
-                        ? 'bg-green-500'
-                        : 'bg-gray-200 dark:bg-slate-700'
+                        ? "bg-green-500"
+                        : "bg-gray-200 dark:bg-slate-700"
                     }`}
-                    style={{ width: '60px' }}
+                    style={{ width: "60px" }}
                   />
                 )}
               </div>
             ))}
           </div>
           <div className="flex justify-between mt-2">
-            <span className="text-xs text-gray-500 dark:text-slate-400">Income</span>
-            <span className="text-xs text-gray-500 dark:text-slate-400">Priorities</span>
-            <span className="text-xs text-gray-500 dark:text-slate-400">Allocate</span>
-            <span className="text-xs text-gray-500 dark:text-slate-400">Review</span>
+            <span className="text-xs text-gray-500 dark:text-slate-400">
+              Income
+            </span>
+            <span className="text-xs text-gray-500 dark:text-slate-400">
+              Priorities
+            </span>
+            <span className="text-xs text-gray-500 dark:text-slate-400">
+              Allocate
+            </span>
+            <span className="text-xs text-gray-500 dark:text-slate-400">
+              Review
+            </span>
           </div>
         </div>
 
         {/* Step Content */}
         <AnimatePresence mode="wait">
           {/* Step 1: Income */}
-          {step === 'income' && (
+          {step === "income" && (
             <motion.div
               key="income"
               initial={{ opacity: 0, x: 20 }}
@@ -354,7 +364,7 @@ export default function ZeroBasedBudgetPage() {
               </div>
 
               <button
-                onClick={() => setStep('priorities')}
+                onClick={() => setStep("priorities")}
                 disabled={monthlyIncome <= 0}
                 className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
@@ -365,7 +375,7 @@ export default function ZeroBasedBudgetPage() {
           )}
 
           {/* Step 2: Priorities */}
-          {step === 'priorities' && (
+          {step === "priorities" && (
             <motion.div
               key="priorities"
               initial={{ opacity: 0, x: 20 }}
@@ -383,28 +393,28 @@ export default function ZeroBasedBudgetPage() {
               <div className="space-y-6 mb-6">
                 {[
                   {
-                    key: 'essentials',
-                    label: 'Essentials',
-                    desc: 'Housing, utilities, groceries, transportation',
-                    color: 'bg-blue-500',
+                    key: "essentials",
+                    label: "Essentials",
+                    desc: "Housing, utilities, groceries, transportation",
+                    color: "bg-blue-500",
                   },
                   {
-                    key: 'debtPayoff',
-                    label: 'Debt Payoff',
-                    desc: 'Credit cards, loans, other debt payments',
-                    color: 'bg-red-500',
+                    key: "debtPayoff",
+                    label: "Debt Payoff",
+                    desc: "Credit cards, loans, other debt payments",
+                    color: "bg-red-500",
                   },
                   {
-                    key: 'savings',
-                    label: 'Savings',
-                    desc: 'Emergency fund, retirement, investments',
-                    color: 'bg-emerald-500',
+                    key: "savings",
+                    label: "Savings",
+                    desc: "Emergency fund, retirement, investments",
+                    color: "bg-emerald-500",
                   },
                   {
-                    key: 'lifestyle',
-                    label: 'Lifestyle',
-                    desc: 'Dining, entertainment, shopping, travel',
-                    color: 'bg-blue-500',
+                    key: "lifestyle",
+                    label: "Lifestyle",
+                    desc: "Dining, entertainment, shopping, travel",
+                    color: "bg-blue-500",
                   },
                 ].map((item) => (
                   <div key={item.key} className="space-y-2">
@@ -433,14 +443,16 @@ export default function ZeroBasedBudgetPage() {
                               ...prev,
                               [item.key]: Math.min(
                                 100,
-                                Math.max(0, parseInt(e.target.value) || 0)
+                                Math.max(0, parseInt(e.target.value) || 0),
                               ),
                             }))
                           }
                           className="w-20 px-3 py-2 text-right border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                           aria-label={`${item.label} percentage`}
                         />
-                        <span className="text-gray-500 dark:text-slate-400">%</span>
+                        <span className="text-gray-500 dark:text-slate-400">
+                          %
+                        </span>
                       </div>
                     </div>
                     <div className="ml-5">
@@ -456,7 +468,7 @@ export default function ZeroBasedBudgetPage() {
                         {formatCurrency(
                           monthlyIncome *
                             (priorities[item.key as keyof BudgetPriorities] /
-                              100)
+                              100),
                         )}
                       </p>
                     </div>
@@ -466,7 +478,7 @@ export default function ZeroBasedBudgetPage() {
 
               {/* Total Indicator */}
               <div
-                className={`p-4 rounded-lg mb-6 ${ prioritiesTotal === 100 ? 'bg-green-50 border border-green-200' : 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800' }`}
+                className={`p-4 rounded-lg mb-6 ${prioritiesTotal === 100 ? "bg-green-50 border border-green-200" : "bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800"}`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -476,10 +488,10 @@ export default function ZeroBasedBudgetPage() {
                       <AlertCircle className="w-5 h-5 text-amber-600" />
                     )}
                     <span
-                      className={`font-medium ${ prioritiesTotal === 100 ? 'text-green-700' : 'text-amber-700 dark:text-amber-300' }`}
+                      className={`font-medium ${prioritiesTotal === 100 ? "text-green-700" : "text-amber-700 dark:text-amber-300"}`}
                     >
                       {prioritiesTotal === 100
-                        ? 'Perfect!'
+                        ? "Perfect!"
                         : `Total: ${prioritiesTotal}%`}
                     </span>
                   </div>
@@ -495,7 +507,7 @@ export default function ZeroBasedBudgetPage() {
 
               <div className="flex gap-3">
                 <button
-                  onClick={() => setStep('income')}
+                  onClick={() => setStep("income")}
                   className="flex-1 py-3 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
                 >
                   Back
@@ -522,7 +534,7 @@ export default function ZeroBasedBudgetPage() {
           )}
 
           {/* Step 3: Allocate */}
-          {step === 'allocate' && (
+          {step === "allocate" && (
             <motion.div
               key="allocate"
               initial={{ opacity: 0, x: 20 }}
@@ -532,7 +544,7 @@ export default function ZeroBasedBudgetPage() {
             >
               {/* Unallocated Banner */}
               <div
-                className={`rounded-xl p-4 ${ unallocated === 0 ? 'bg-green-100 border border-green-200' : unallocated > 0 ? 'bg-amber-100 border border-amber-200' : 'bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800' }`}
+                className={`rounded-xl p-4 ${unallocated === 0 ? "bg-green-100 border border-green-200" : unallocated > 0 ? "bg-amber-100 border border-amber-200" : "bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800"}`}
               >
                 <div className="flex items-center justify-between">
                   <div>
@@ -540,7 +552,7 @@ export default function ZeroBasedBudgetPage() {
                       Unallocated
                     </p>
                     <p
-                      className={`text-2xl font-bold ${ unallocated === 0 ? 'text-green-700' : unallocated > 0 ? 'text-amber-700' : 'text-red-700 dark:text-red-300' }`}
+                      className={`text-2xl font-bold ${unallocated === 0 ? "text-green-700" : unallocated > 0 ? "text-amber-700" : "text-red-700 dark:text-red-300"}`}
                     >
                       {formatCurrency(unallocated)}
                     </p>
@@ -561,18 +573,18 @@ export default function ZeroBasedBudgetPage() {
                 </h2>
 
                 <div className="space-y-4">
-                  {['essential', 'debt', 'savings', 'lifestyle'].map((type) => {
+                  {["essential", "debt", "savings", "lifestyle"].map((type) => {
                     const typeCategories = categories.filter(
-                      (c) => c.type === type
+                      (c) => c.type === type,
                     );
                     if (typeCategories.length === 0) return null;
 
                     return (
                       <div key={type}>
                         <h3
-                          className={`text-sm font-medium mb-2 ${getCategoryTypeColor(type as BudgetCategory['type'])} inline-block px-2 py-1 rounded`}
+                          className={`text-sm font-medium mb-2 ${getCategoryTypeColor(type as BudgetCategory["type"])} inline-block px-2 py-1 rounded`}
                         >
-                          {getCategoryTypeLabel(type as BudgetCategory['type'])}
+                          {getCategoryTypeLabel(type as BudgetCategory["type"])}
                         </h3>
                         <div className="space-y-2">
                           {typeCategories.map((cat) => (
@@ -591,14 +603,16 @@ export default function ZeroBasedBudgetPage() {
                                 </span>
                               </div>
                               <div className="flex items-center gap-2">
-                                <span className="text-gray-400 dark:text-slate-500">$</span>
+                                <span className="text-gray-400 dark:text-slate-500">
+                                  $
+                                </span>
                                 <input
                                   type="number"
                                   value={cat.allocated}
                                   onChange={(e) =>
                                     updateCategoryAllocation(
                                       cat.id,
-                                      parseInt(e.target.value) || 0
+                                      parseInt(e.target.value) || 0,
                                     )
                                   }
                                   className="w-24 px-3 py-2 text-right border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
@@ -616,13 +630,13 @@ export default function ZeroBasedBudgetPage() {
 
               <div className="flex gap-3">
                 <button
-                  onClick={() => setStep('priorities')}
+                  onClick={() => setStep("priorities")}
                   className="flex-1 py-3 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
                 >
                   Back
                 </button>
                 <button
-                  onClick={() => setStep('review')}
+                  onClick={() => setStep("review")}
                   disabled={unallocated !== 0}
                   className="flex-1 flex items-center justify-center gap-2 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
@@ -634,7 +648,7 @@ export default function ZeroBasedBudgetPage() {
           )}
 
           {/* Step 4: Review */}
-          {step === 'review' && (
+          {step === "review" && (
             <motion.div
               key="review"
               initial={{ opacity: 0, x: 20 }}
@@ -668,40 +682,48 @@ export default function ZeroBasedBudgetPage() {
                     <p className="text-2xl font-bold text-gray-900 dark:text-white">
                       {formatCurrency(monthlyIncome)}
                     </p>
-                    <p className="text-sm text-gray-500 dark:text-slate-400">Monthly Income</p>
+                    <p className="text-sm text-gray-500 dark:text-slate-400">
+                      Monthly Income
+                    </p>
                   </div>
                   <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-center">
                     <Home className="w-6 h-6 mx-auto text-blue-500 mb-2" />
                     <p className="text-2xl font-bold text-blue-600">
                       {formatCurrency(
                         categories
-                          .filter((c) => c.type === 'essential')
-                          .reduce((s, c) => s + c.allocated, 0)
+                          .filter((c) => c.type === "essential")
+                          .reduce((s, c) => s + c.allocated, 0),
                       )}
                     </p>
-                    <p className="text-sm text-gray-500 dark:text-slate-400">Essentials</p>
+                    <p className="text-sm text-gray-500 dark:text-slate-400">
+                      Essentials
+                    </p>
                   </div>
                   <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg text-center">
                     <PiggyBank className="w-6 h-6 mx-auto text-emerald-500 mb-2" />
                     <p className="text-2xl font-bold text-emerald-600">
                       {formatCurrency(
                         categories
-                          .filter((c) => c.type === 'savings')
-                          .reduce((s, c) => s + c.allocated, 0)
+                          .filter((c) => c.type === "savings")
+                          .reduce((s, c) => s + c.allocated, 0),
                       )}
                     </p>
-                    <p className="text-sm text-gray-500 dark:text-slate-400">Savings</p>
+                    <p className="text-sm text-gray-500 dark:text-slate-400">
+                      Savings
+                    </p>
                   </div>
                   <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-center">
                     <TrendingUp className="w-6 h-6 mx-auto text-blue-500 mb-2" />
                     <p className="text-2xl font-bold text-blue-600">
                       {formatCurrency(
                         categories
-                          .filter((c) => c.type === 'lifestyle')
-                          .reduce((s, c) => s + c.allocated, 0)
+                          .filter((c) => c.type === "lifestyle")
+                          .reduce((s, c) => s + c.allocated, 0),
                       )}
                     </p>
-                    <p className="text-sm text-gray-500 dark:text-slate-400">Lifestyle</p>
+                    <p className="text-sm text-gray-500 dark:text-slate-400">
+                      Lifestyle
+                    </p>
                   </div>
                 </div>
 
@@ -742,7 +764,7 @@ export default function ZeroBasedBudgetPage() {
 
               <div className="flex gap-3">
                 <button
-                  onClick={() => setStep('allocate')}
+                  onClick={() => setStep("allocate")}
                   className="flex-1 py-3 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
                 >
                   Edit Budget

@@ -3,13 +3,22 @@
  * Track and complete AI-generated financial action plans
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Animated } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { lightTheme as theme } from '../../src/constants/theme';
-import { Card } from '../../src/components/Card';
-import { ProgressBar } from '../../src/components/ProgressBar';
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  RefreshControl,
+  Animated,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { lightTheme as theme } from "../../src/constants/theme";
+import { Card } from "../../src/components/Card";
+import { ProgressBar } from "../../src/components/ProgressBar";
 
 interface ActionStep {
   id: string;
@@ -21,7 +30,7 @@ interface ActionPlan {
   id: string;
   title: string;
   description: string;
-  priority: 'critical' | 'high' | 'medium' | 'low';
+  priority: "critical" | "high" | "medium" | "low";
   steps: ActionStep[];
   completed: boolean;
   progress: number;
@@ -30,7 +39,9 @@ interface ActionPlan {
 export default function ActionPlanScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('active');
+  const [filter, setFilter] = useState<"all" | "active" | "completed">(
+    "active",
+  );
   const [plans, setPlans] = useState<ActionPlan[]>([]);
   const [celebratingPlan, setCelebratingPlan] = useState<string | null>(null);
   const celebrationScale = useRef(new Animated.Value(1)).current;
@@ -38,13 +49,13 @@ export default function ActionPlanScreen() {
   const fetchPlans = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/ai/financial-coach/recommendations');
+      const response = await fetch("/api/ai/financial-coach/recommendations");
       if (response.ok) {
         const data = await response.json();
         setPlans(data.actionPlans || []);
       }
     } catch (error) {
-      console.error('Error fetching action plans:', error);
+      console.error("Error fetching action plans:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -81,24 +92,31 @@ export default function ActionPlanScreen() {
   const toggleStep = async (planId: string, stepId: string) => {
     // Optimistic update
     let planCompleted = false;
-    setPlans(plans.map(plan => {
-      if (plan.id === planId) {
-        const updatedSteps = plan.steps.map(step =>
-          step.id === stepId ? { ...step, completed: !step.completed } : step
-        );
-        const completedSteps = updatedSteps.filter(s => s.completed).length;
-        const progress = (completedSteps / updatedSteps.length) * 100;
-        const isCompleted = progress === 100;
+    setPlans(
+      plans.map((plan) => {
+        if (plan.id === planId) {
+          const updatedSteps = plan.steps.map((step) =>
+            step.id === stepId ? { ...step, completed: !step.completed } : step,
+          );
+          const completedSteps = updatedSteps.filter((s) => s.completed).length;
+          const progress = (completedSteps / updatedSteps.length) * 100;
+          const isCompleted = progress === 100;
 
-        // Trigger celebration if plan just completed
-        if (isCompleted && !plan.completed) {
-          planCompleted = true;
+          // Trigger celebration if plan just completed
+          if (isCompleted && !plan.completed) {
+            planCompleted = true;
+          }
+
+          return {
+            ...plan,
+            steps: updatedSteps,
+            progress,
+            completed: isCompleted,
+          };
         }
-
-        return { ...plan, steps: updatedSteps, progress, completed: isCompleted };
-      }
-      return plan;
-    }));
+        return plan;
+      }),
+    );
 
     if (planCompleted) {
       celebrateCompletion(planId);
@@ -106,11 +124,14 @@ export default function ActionPlanScreen() {
 
     // API call
     try {
-      await fetch(`/api/ai/financial-coach/action-plans/${planId}/steps/${stepId}`, {
-        method: 'PATCH',
-      });
+      await fetch(
+        `/api/ai/financial-coach/action-plans/${planId}/steps/${stepId}`,
+        {
+          method: "PATCH",
+        },
+      );
     } catch (error) {
-      console.error('Error updating step:', error);
+      console.error("Error updating step:", error);
       // Revert on error
       fetchPlans();
     }
@@ -118,17 +139,22 @@ export default function ActionPlanScreen() {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'critical': return '#EF4444';
-      case 'high': return '#F59E0B';
-      case 'medium': return '#F59E0B';
-      case 'low': return theme.colors.primary;
-      default: return '#6B7280';
+      case "critical":
+        return "#EF4444";
+      case "high":
+        return "#F59E0B";
+      case "medium":
+        return "#F59E0B";
+      case "low":
+        return theme.colors.primary;
+      default:
+        return "#6B7280";
     }
   };
 
-  const filteredPlans = plans.filter(plan => {
-    if (filter === 'active') return !plan.completed;
-    if (filter === 'completed') return plan.completed;
+  const filteredPlans = plans.filter((plan) => {
+    if (filter === "active") return !plan.completed;
+    if (filter === "completed") return plan.completed;
     return true;
   });
 
@@ -143,9 +169,10 @@ export default function ActionPlanScreen() {
     );
   }
 
-  const overallProgress = plans.length > 0
-    ? (plans.filter(p => p.completed).length / plans.length) * 100
-    : 0;
+  const overallProgress =
+    plans.length > 0
+      ? (plans.filter((p) => p.completed).length / plans.length) * 100
+      : 0;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -154,38 +181,64 @@ export default function ActionPlanScreen() {
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>Your Action Plans</Text>
           <Text style={styles.headerSubtitle}>
-            {plans.filter(p => p.completed).length} of {plans.length} completed
+            {plans.filter((p) => p.completed).length} of {plans.length}{" "}
+            completed
           </Text>
         </View>
         <View style={styles.headerProgress}>
-          <ProgressBar progress={overallProgress / 100} color={theme.colors.primary} height={6} />
+          <ProgressBar
+            progress={overallProgress / 100}
+            color={theme.colors.primary}
+            height={6}
+          />
         </View>
       </View>
 
       {/* Filter Tabs */}
       <View style={styles.filterContainer}>
         <TouchableOpacity
-          style={[styles.filterTab, filter === 'all' && styles.filterTabActive]}
-          onPress={() => setFilter('all')}
+          style={[styles.filterTab, filter === "all" && styles.filterTabActive]}
+          onPress={() => setFilter("all")}
         >
-          <Text style={[styles.filterTabText, filter === 'all' && styles.filterTabTextActive]}>
+          <Text
+            style={[
+              styles.filterTabText,
+              filter === "all" && styles.filterTabTextActive,
+            ]}
+          >
             All ({plans.length})
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.filterTab, filter === 'active' && styles.filterTabActive]}
-          onPress={() => setFilter('active')}
+          style={[
+            styles.filterTab,
+            filter === "active" && styles.filterTabActive,
+          ]}
+          onPress={() => setFilter("active")}
         >
-          <Text style={[styles.filterTabText, filter === 'active' && styles.filterTabTextActive]}>
-            Active ({plans.filter(p => !p.completed).length})
+          <Text
+            style={[
+              styles.filterTabText,
+              filter === "active" && styles.filterTabTextActive,
+            ]}
+          >
+            Active ({plans.filter((p) => !p.completed).length})
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.filterTab, filter === 'completed' && styles.filterTabActive]}
-          onPress={() => setFilter('completed')}
+          style={[
+            styles.filterTab,
+            filter === "completed" && styles.filterTabActive,
+          ]}
+          onPress={() => setFilter("completed")}
         >
-          <Text style={[styles.filterTabText, filter === 'completed' && styles.filterTabTextActive]}>
-            Completed ({plans.filter(p => p.completed).length})
+          <Text
+            style={[
+              styles.filterTabText,
+              filter === "completed" && styles.filterTabTextActive,
+            ]}
+          >
+            Completed ({plans.filter((p) => p.completed).length})
           </Text>
         </TouchableOpacity>
       </View>
@@ -193,28 +246,48 @@ export default function ActionPlanScreen() {
       <ScrollView
         style={styles.scrollView}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[theme.colors.primary]}
+          />
         }
       >
         {filteredPlans.map((plan) => (
           <Animated.View
             key={plan.id}
             style={[
-              { transform: [{ scale: celebratingPlan === plan.id ? celebrationScale : 1 }] }
+              {
+                transform: [
+                  { scale: celebratingPlan === plan.id ? celebrationScale : 1 },
+                ],
+              },
             ]}
           >
             <Card style={styles.planCard}>
               <View style={styles.planHeader}>
                 <Text style={styles.planTitle}>{plan.title}</Text>
-                <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(plan.priority) }]}>
-                  <Text style={styles.priorityText}>{plan.priority.toUpperCase()}</Text>
+                <View
+                  style={[
+                    styles.priorityBadge,
+                    { backgroundColor: getPriorityColor(plan.priority) },
+                  ]}
+                >
+                  <Text style={styles.priorityText}>
+                    {plan.priority.toUpperCase()}
+                  </Text>
                 </View>
               </View>
               <Text style={styles.planDescription}>{plan.description}</Text>
 
               <View style={styles.progressContainer}>
-                <ProgressBar progress={plan.progress / 100} color={theme.colors.primary} />
-                <Text style={styles.progressText}>{Math.round(plan.progress)}% complete</Text>
+                <ProgressBar
+                  progress={plan.progress / 100}
+                  color={theme.colors.primary}
+                />
+                <Text style={styles.progressText}>
+                  {Math.round(plan.progress)}% complete
+                </Text>
               </View>
 
               <View style={styles.stepsContainer}>
@@ -227,12 +300,21 @@ export default function ActionPlanScreen() {
                   >
                     <View style={styles.checkbox}>
                       <Ionicons
-                        name={step.completed ? 'checkmark-circle' : 'ellipse-outline'}
+                        name={
+                          step.completed
+                            ? "checkmark-circle"
+                            : "ellipse-outline"
+                        }
                         size={28}
-                        color={step.completed ? '#10B981' : '#9CA3AF'}
+                        color={step.completed ? "#10B981" : "#9CA3AF"}
                       />
                     </View>
-                    <Text style={[styles.stepText, step.completed && styles.stepTextCompleted]}>
+                    <Text
+                      style={[
+                        styles.stepText,
+                        step.completed && styles.stepTextCompleted,
+                      ]}
+                    >
                       {step.title}
                     </Text>
                   </TouchableOpacity>
@@ -274,8 +356,8 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     marginTop: theme.spacing.md,
@@ -283,17 +365,17 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   stickyHeader: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     padding: theme.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: "#E5E7EB",
   },
   headerContent: {
     marginBottom: theme.spacing.sm,
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: theme.colors.text,
     marginBottom: 4,
   },
@@ -305,24 +387,24 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.xs,
   },
   filterContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
+    flexDirection: "row",
+    backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: "#E5E7EB",
   },
   filterTab: {
     flex: 1,
     paddingVertical: theme.spacing.md,
-    alignItems: 'center',
+    alignItems: "center",
     borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+    borderBottomColor: "transparent",
   },
   filterTabActive: {
     borderBottomColor: theme.colors.primary,
   },
   filterTabText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.textSecondary,
   },
   filterTabTextActive: {
@@ -335,15 +417,15 @@ const styles = StyleSheet.create({
     margin: theme.spacing.md,
   },
   planHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     marginBottom: theme.spacing.sm,
   },
   planTitle: {
     flex: 1,
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: theme.colors.text,
     marginRight: theme.spacing.sm,
   },
@@ -354,8 +436,8 @@ const styles = StyleSheet.create({
   },
   priorityText: {
     fontSize: 10,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontWeight: "bold",
+    color: "#FFFFFF",
   },
   planDescription: {
     fontSize: 14,
@@ -369,24 +451,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: theme.colors.textSecondary,
     marginTop: 4,
-    textAlign: 'right',
+    textAlign: "right",
   },
   stepsContainer: {
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: "#E5E7EB",
     paddingTop: theme.spacing.md,
   },
   stepRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: theme.spacing.md,
     paddingVertical: theme.spacing.xs,
   },
   checkbox: {
     width: 44,
     height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   stepText: {
     flex: 1,
@@ -395,28 +477,28 @@ const styles = StyleSheet.create({
     marginLeft: theme.spacing.xs,
   },
   stepTextCompleted: {
-    textDecorationLine: 'line-through',
+    textDecorationLine: "line-through",
     color: theme.colors.textSecondary,
   },
   completedBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#D1FAE5',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#D1FAE5",
     padding: theme.spacing.sm,
     borderRadius: theme.borderRadius.md,
     marginTop: theme.spacing.md,
   },
   completedText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#10B981',
+    fontWeight: "600",
+    color: "#10B981",
     marginLeft: theme.spacing.sm,
   },
   emptyState: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingVertical: theme.spacing.xl * 2,
   },
   emptyStateText: {
@@ -425,14 +507,14 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.md,
   },
   celebrationOverlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(16, 185, 129, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
     borderRadius: theme.borderRadius.lg,
   },
   celebrationEmoji: {
@@ -441,8 +523,7 @@ const styles = StyleSheet.create({
   },
   celebrationText: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#10B981',
+    fontWeight: "bold",
+    color: "#10B981",
   },
 });
-

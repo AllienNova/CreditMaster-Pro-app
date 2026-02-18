@@ -5,16 +5,16 @@
  */
 
 // Affiliate system
-export * from './affiliate';
+export * from "./affiliate";
 
 // Offers and disclosures
-export * from './offers';
+export * from "./offers";
 
 // Product matching
-export * from './matching';
+export * from "./matching";
 
 // Payment routing
-export * from './payments';
+export * from "./payments";
 
 // Payouts
-export * from './payouts';
+export * from "./payouts";

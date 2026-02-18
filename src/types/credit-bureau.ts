@@ -1,42 +1,45 @@
 /**
  * Credit Bureau Types
- * 
+ *
  * Type definitions for credit reports, accounts, inquiries, and public records
  */
 
-export type Bureau = 'experian' | 'equifax' | 'transunion';
+export type Bureau = "experian" | "equifax" | "transunion";
 
-export type AccountType = 
-  | 'credit_card'
-  | 'mortgage'
-  | 'auto_loan'
-  | 'student_loan'
-  | 'personal_loan'
-  | 'installment'
-  | 'revolving'
-  | 'other';
+export type AccountType =
+  | "credit_card"
+  | "mortgage"
+  | "auto_loan"
+  | "student_loan"
+  | "personal_loan"
+  | "installment"
+  | "revolving"
+  | "other";
 
-export type PaymentStatus = 
-  | 'current'
-  | 'late_30'
-  | 'late_60'
-  | 'late_90'
-  | 'late_120'
-  | 'charge_off'
-  | 'collection'
-  | 'closed';
+export type PaymentStatus =
+  | "current"
+  | "late_30"
+  | "late_60"
+  | "late_90"
+  | "late_120"
+  | "charge_off"
+  | "collection"
+  | "closed";
 
-export type InquiryType = 'hard' | 'soft';
+export type InquiryType = "hard" | "soft";
 
-export type PublicRecordType = 
-  | 'bankruptcy'
-  | 'judgment'
-  | 'tax_lien'
-  | 'foreclosure'
-  | 'repossession';
+export type PublicRecordType =
+  | "bankruptcy"
+  | "judgment"
+  | "tax_lien"
+  | "foreclosure"
+  | "repossession";
 
 type JsonPrimitive = string | number | boolean | null | Date;
-export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
+export type JsonValue =
+  | JsonPrimitive
+  | JsonValue[]
+  | { [key: string]: JsonValue };
 
 export type CreditBureauRawPayload = Record<string, JsonValue>;
 
@@ -59,7 +62,7 @@ export interface Address {
   city: string;
   state: string;
   zipCode: string;
-  type: 'current' | 'previous';
+  type: "current" | "previous";
   reportedDate?: Date;
 }
 
@@ -169,7 +172,7 @@ export interface CreditScore {
 
 export interface ScoreFactor {
   factor: string;
-  impact: 'positive' | 'negative' | 'neutral';
+  impact: "positive" | "negative" | "neutral";
   description: string;
 }
 
@@ -250,9 +253,15 @@ export interface ParsedCreditReport {
   personalInfo: PersonalInfo;
   creditScore: number;
   scoreFactors: string[];
-  accounts: Omit<CreditAccount, 'id' | 'reportId' | 'userId' | 'createdAt' | 'updatedAt'>[];
-  inquiries: Omit<CreditInquiry, 'id' | 'reportId' | 'userId' | 'createdAt'>[];
-  publicRecords: Omit<PublicRecord, 'id' | 'reportId' | 'userId' | 'createdAt'>[];
+  accounts: Omit<
+    CreditAccount,
+    "id" | "reportId" | "userId" | "createdAt" | "updatedAt"
+  >[];
+  inquiries: Omit<CreditInquiry, "id" | "reportId" | "userId" | "createdAt">[];
+  publicRecords: Omit<
+    PublicRecord,
+    "id" | "reportId" | "userId" | "createdAt"
+  >[];
 }
 
 // =====================================================

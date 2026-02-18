@@ -4,10 +4,10 @@
  * Reusable tooltip and legend components for charts.
  */
 
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { lightTheme as theme } from '../../constants/theme';
-import { formatCurrency, formatPercentage } from './chartUtils';
+import React from "react";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { lightTheme as theme } from "../../constants/theme";
+import { formatCurrency, formatPercentage } from "./chartUtils";
 
 interface TooltipPayload {
   name: string;
@@ -85,8 +85,8 @@ interface LegendItem {
 
 interface ChartLegendProps {
   items: LegendItem[];
-  layout?: 'horizontal' | 'vertical';
-  align?: 'left' | 'center' | 'right';
+  layout?: "horizontal" | "vertical";
+  align?: "left" | "center" | "right";
   showValues?: boolean;
   currency?: boolean;
   percentage?: boolean;
@@ -96,8 +96,8 @@ interface ChartLegendProps {
 
 export function ChartLegend({
   items,
-  layout = 'horizontal',
-  align = 'center',
+  layout = "horizontal",
+  align = "center",
   showValues = false,
   currency = false,
   percentage = false,
@@ -117,18 +117,18 @@ export function ChartLegend({
 
   const getAlignStyle = () => {
     switch (align) {
-      case 'left':
-        return { justifyContent: 'flex-start' as const };
-      case 'right':
-        return { justifyContent: 'flex-end' as const };
-      case 'center':
+      case "left":
+        return { justifyContent: "flex-start" as const };
+      case "right":
+        return { justifyContent: "flex-end" as const };
+      case "center":
       default:
-        return { justifyContent: 'center' as const };
+        return { justifyContent: "center" as const };
     }
   };
 
   const containerStyle = [
-    layout === 'horizontal' ? styles.legendHorizontal : styles.legendVertical,
+    layout === "horizontal" ? styles.legendHorizontal : styles.legendVertical,
     getAlignStyle(),
   ];
 
@@ -198,7 +198,7 @@ interface EmptyChartProps {
 }
 
 export function EmptyChart({
-  message = 'No data available',
+  message = "No data available",
   height = 200,
 }: EmptyChartProps) {
   return (
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border,
     padding: theme.spacing.sm,
     minWidth: 150,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 4,
@@ -238,21 +238,21 @@ const styles = StyleSheet.create({
   },
   tooltipLabel: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
   tooltipContent: {
     gap: 4,
   },
   tooltipRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     gap: 16,
   },
   tooltipNameContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
   },
   tooltipDot: {
@@ -266,25 +266,25 @@ const styles = StyleSheet.create({
   },
   tooltipValue: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
   },
 
   // Legend styles
   legendHorizontal: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 16,
     paddingVertical: theme.spacing.sm,
   },
   legendVertical: {
-    flexDirection: 'column',
+    flexDirection: "column",
     gap: 8,
     paddingVertical: theme.spacing.sm,
   },
   legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
   },
   legendItemInactive: {
@@ -301,14 +301,14 @@ const styles = StyleSheet.create({
   },
   legendValue: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginLeft: 4,
   },
 
   // Inline tooltip styles (absolute positioned)
   inlineTooltip: {
-    position: 'absolute',
+    position: "absolute",
     backgroundColor: theme.colors.surface,
     borderRadius: theme.borderRadius.md,
     borderWidth: 1,
@@ -316,8 +316,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: 6,
     minWidth: 100,
-    alignItems: 'center',
-    shadowColor: '#000',
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 4,
@@ -330,37 +330,37 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   inlineTooltipValueRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   inlineTooltipValue: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.text,
   },
   inlineTooltipArrow: {
-    position: 'absolute',
+    position: "absolute",
     bottom: -6,
     width: 0,
     height: 0,
     borderLeftWidth: 6,
     borderRightWidth: 6,
     borderTopWidth: 6,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
+    borderLeftColor: "transparent",
+    borderRightColor: "transparent",
     borderTopColor: theme.colors.border,
   },
 
   // Empty chart styles
   emptyContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: theme.colors.background,
     borderRadius: theme.borderRadius.md,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    borderStyle: 'dashed',
+    borderStyle: "dashed",
   },
   emptyIcon: {
     marginBottom: theme.spacing.sm,
@@ -371,7 +371,7 @@ const styles = StyleSheet.create({
   emptyMessage: {
     fontSize: 14,
     color: theme.colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
   },
 });
 

@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState } from "react";
+import { motion } from "framer-motion";
 import {
   PieChart,
   RefreshCw,
@@ -13,14 +13,14 @@ import {
   Settings,
   Info,
   BarChart3,
-} from 'lucide-react';
+} from "lucide-react";
 
 type AssetClass =
-  | 'us_stocks'
-  | 'international_stocks'
-  | 'bonds'
-  | 'real_estate'
-  | 'cash';
+  | "us_stocks"
+  | "international_stocks"
+  | "bonds"
+  | "real_estate"
+  | "cash";
 
 interface Allocation {
   assetClass: AssetClass;
@@ -35,74 +35,74 @@ interface Allocation {
 interface RebalanceTrade {
   assetClass: AssetClass;
   name: string;
-  action: 'buy' | 'sell';
+  action: "buy" | "sell";
   amount: number;
   shares?: number;
 }
 
 const MOCK_ALLOCATIONS: Allocation[] = [
   {
-    assetClass: 'us_stocks',
-    name: 'US Stocks',
+    assetClass: "us_stocks",
+    name: "US Stocks",
     targetPercent: 50,
     currentPercent: 55,
     currentValue: 27500,
     drift: 5,
-    color: 'bg-blue-500',
+    color: "bg-blue-500",
   },
   {
-    assetClass: 'international_stocks',
-    name: 'International Stocks',
+    assetClass: "international_stocks",
+    name: "International Stocks",
     targetPercent: 20,
     currentPercent: 18,
     currentValue: 9000,
     drift: -2,
-    color: 'bg-green-500',
+    color: "bg-green-500",
   },
   {
-    assetClass: 'bonds',
-    name: 'Bonds',
+    assetClass: "bonds",
+    name: "Bonds",
     targetPercent: 20,
     currentPercent: 17,
     currentValue: 8500,
     drift: -3,
-    color: 'bg-blue-500',
+    color: "bg-blue-500",
   },
   {
-    assetClass: 'real_estate',
-    name: 'Real Estate',
+    assetClass: "real_estate",
+    name: "Real Estate",
     targetPercent: 5,
     currentPercent: 6,
     currentValue: 3000,
     drift: 1,
-    color: 'bg-orange-500',
+    color: "bg-orange-500",
   },
   {
-    assetClass: 'cash',
-    name: 'Cash',
+    assetClass: "cash",
+    name: "Cash",
     targetPercent: 5,
     currentPercent: 4,
     currentValue: 2000,
     drift: -1,
-    color: 'bg-gray-500',
+    color: "bg-gray-500",
   },
 ];
 
 const MOCK_TRADES: RebalanceTrade[] = [
-  { assetClass: 'us_stocks', name: 'US Stocks', action: 'sell', amount: 2500 },
+  { assetClass: "us_stocks", name: "US Stocks", action: "sell", amount: 2500 },
   {
-    assetClass: 'international_stocks',
-    name: 'International Stocks',
-    action: 'buy',
+    assetClass: "international_stocks",
+    name: "International Stocks",
+    action: "buy",
     amount: 1000,
   },
-  { assetClass: 'bonds', name: 'Bonds', action: 'buy', amount: 1500 },
+  { assetClass: "bonds", name: "Bonds", action: "buy", amount: 1500 },
 ];
 
 const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
     minimumFractionDigits: 0,
   }).format(amount);
 };
@@ -117,7 +117,7 @@ export default function PortfolioRebalancePage() {
   const needsRebalance = maxDrift > driftThreshold;
 
   const outOfBoundsCount = allocations.filter(
-    (a) => Math.abs(a.drift) > driftThreshold
+    (a) => Math.abs(a.drift) > driftThreshold,
   ).length;
 
   return (
@@ -155,7 +155,7 @@ export default function PortfolioRebalancePage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className={`rounded-xl p-6 mb-8 ${ needsRebalance ? 'bg-amber-100 border border-amber-300' : 'bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700' }`}
+          className={`rounded-xl p-6 mb-8 ${needsRebalance ? "bg-amber-100 border border-amber-300" : "bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700"}`}
         >
           <div className="flex items-start gap-4">
             {needsRebalance ? (
@@ -165,18 +165,18 @@ export default function PortfolioRebalancePage() {
             )}
             <div>
               <h2
-                className={`font-semibold text-lg ${ needsRebalance ? 'text-amber-800' : 'text-green-800 dark:text-green-200' }`}
+                className={`font-semibold text-lg ${needsRebalance ? "text-amber-800" : "text-green-800 dark:text-green-200"}`}
               >
                 {needsRebalance
-                  ? 'Rebalancing Recommended'
-                  : 'Portfolio is Balanced'}
+                  ? "Rebalancing Recommended"
+                  : "Portfolio is Balanced"}
               </h2>
               <p
-                className={`mt-1 ${ needsRebalance ? 'text-amber-700' : 'text-green-700 dark:text-green-300' }`}
+                className={`mt-1 ${needsRebalance ? "text-amber-700" : "text-green-700 dark:text-green-300"}`}
               >
                 {needsRebalance
-                  ? `${outOfBoundsCount} asset class${outOfBoundsCount !== 1 ? 'es are' : ' is'} outside your target allocation. Maximum drift: ${maxDrift.toFixed(1)}%`
-                  : 'All asset classes are within your target allocation range.'}
+                  ? `${outOfBoundsCount} asset class${outOfBoundsCount !== 1 ? "es are" : " is"} outside your target allocation. Maximum drift: ${maxDrift.toFixed(1)}%`
+                  : "All asset classes are within your target allocation range."}
               </p>
             </div>
           </div>
@@ -197,7 +197,7 @@ export default function PortfolioRebalancePage() {
               Max Drift
             </p>
             <p
-              className={`text-2xl font-bold ${maxDrift > driftThreshold ? 'text-amber-600' : 'text-green-600'}`}
+              className={`text-2xl font-bold ${maxDrift > driftThreshold ? "text-amber-600" : "text-green-600"}`}
             >
               {maxDrift.toFixed(1)}%
             </p>
@@ -264,13 +264,13 @@ export default function PortfolioRebalancePage() {
                     <span
                       className={`text-xs font-medium ${
                         alloc.drift > 0
-                          ? 'text-amber-600'
+                          ? "text-amber-600"
                           : alloc.drift < 0
-                            ? 'text-blue-600'
-                            : 'text-gray-500 dark:text-slate-400'
+                            ? "text-blue-600"
+                            : "text-gray-500 dark:text-slate-400"
                       }`}
                     >
-                      {alloc.drift > 0 ? '+' : ''}
+                      {alloc.drift > 0 ? "+" : ""}
                       {alloc.drift}% drift
                     </span>
                   </div>
@@ -297,35 +297,35 @@ export default function PortfolioRebalancePage() {
                 {trades.map((trade, index) => (
                   <div
                     key={index}
-                    className={`p-4 rounded-lg ${ trade.action === 'sell' ? 'bg-red-50 border border-red-200' : 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' }`}
+                    className={`p-4 rounded-lg ${trade.action === "sell" ? "bg-red-50 border border-red-200" : "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800"}`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        {trade.action === 'sell' ? (
+                        {trade.action === "sell" ? (
                           <TrendingDown className="w-5 h-5 text-red-600 dark:text-red-400" />
                         ) : (
                           <TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />
                         )}
                         <div>
                           <p className="font-medium text-gray-900 dark:text-white">
-                            {trade.action === 'sell' ? 'Sell' : 'Buy'}{' '}
+                            {trade.action === "sell" ? "Sell" : "Buy"}{" "}
                             {trade.name}
                           </p>
                           <p className="text-sm text-gray-500 dark:text-slate-400">
-                            {trade.action === 'sell'
-                              ? 'Overweight'
-                              : 'Underweight'}
+                            {trade.action === "sell"
+                              ? "Overweight"
+                              : "Underweight"}
                           </p>
                         </div>
                       </div>
                       <span
                         className={`text-lg font-semibold ${
-                          trade.action === 'sell'
-                            ? 'text-red-600'
-                            : 'text-green-600'
+                          trade.action === "sell"
+                            ? "text-red-600"
+                            : "text-green-600"
                         }`}
                       >
-                        {trade.action === 'sell' ? '-' : '+'}
+                        {trade.action === "sell" ? "-" : "+"}
                         {formatCurrency(trade.amount)}
                       </span>
                     </div>
@@ -337,7 +337,7 @@ export default function PortfolioRebalancePage() {
                     <span>Total trade value</span>
                     <span className="font-medium">
                       {formatCurrency(
-                        trades.reduce((sum, t) => sum + t.amount, 0)
+                        trades.reduce((sum, t) => sum + t.amount, 0),
                       )}
                     </span>
                   </div>

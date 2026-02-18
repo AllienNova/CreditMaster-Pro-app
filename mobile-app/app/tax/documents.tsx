@@ -11,7 +11,7 @@
  * - Empty state when no documents
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -24,14 +24,14 @@ import {
   Modal,
   Linking,
   Platform,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
-import { api } from '../../src/services/api';
+} from "react-native";
+import { useRouter } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import * as DocumentPicker from "expo-document-picker";
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
+import { api } from "../../src/services/api";
 
 // Types
 interface TaxDocument {
@@ -48,87 +48,107 @@ interface TaxDocument {
 }
 
 type TaxDocumentType =
-  | 'w2'
-  | '1099_div'
-  | '1099_int'
-  | '1099_b'
-  | '1099_nec'
-  | '1099_misc'
-  | '1099_r'
-  | '1098'
-  | '1098_e'
-  | 'charitable_receipt'
-  | 'medical_expense'
-  | 'business_expense'
-  | 'property_tax'
-  | 'other'
-  | 'unknown';
+  | "w2"
+  | "1099_div"
+  | "1099_int"
+  | "1099_b"
+  | "1099_nec"
+  | "1099_misc"
+  | "1099_r"
+  | "1098"
+  | "1098_e"
+  | "charitable_receipt"
+  | "medical_expense"
+  | "business_expense"
+  | "property_tax"
+  | "other"
+  | "unknown";
 
-type FilterCategory = 'all' | 'income' | 'deductions' | 'other';
+type FilterCategory = "all" | "income" | "deductions" | "other";
 
 // Constants
 const DOCUMENT_TYPE_CONFIG: Record<
   TaxDocumentType,
   { icon: string; label: string; category: FilterCategory }
 > = {
-  w2: { icon: 'document-text', label: 'W-2', category: 'income' },
-  '1099_div': { icon: 'cash', label: '1099-DIV', category: 'income' },
-  '1099_int': { icon: 'business', label: '1099-INT', category: 'income' },
-  '1099_b': { icon: 'trending-up', label: '1099-B', category: 'income' },
-  '1099_nec': { icon: 'briefcase', label: '1099-NEC', category: 'income' },
-  '1099_misc': { icon: 'clipboard', label: '1099-MISC', category: 'income' },
-  '1099_r': { icon: 'wallet', label: '1099-R', category: 'income' },
-  '1098': { icon: 'home', label: '1098 (Mortgage)', category: 'deductions' },
-  '1098_e': { icon: 'school', label: '1098-E (Student Loan)', category: 'deductions' },
-  charitable_receipt: { icon: 'heart', label: 'Donation Receipt', category: 'deductions' },
-  medical_expense: { icon: 'medkit', label: 'Medical Expense', category: 'deductions' },
-  business_expense: { icon: 'receipt', label: 'Business Expense', category: 'deductions' },
-  property_tax: { icon: 'home-outline', label: 'Property Tax', category: 'deductions' },
-  other: { icon: 'document', label: 'Other', category: 'other' },
-  unknown: { icon: 'help-circle', label: 'Unknown', category: 'other' },
+  w2: { icon: "document-text", label: "W-2", category: "income" },
+  "1099_div": { icon: "cash", label: "1099-DIV", category: "income" },
+  "1099_int": { icon: "business", label: "1099-INT", category: "income" },
+  "1099_b": { icon: "trending-up", label: "1099-B", category: "income" },
+  "1099_nec": { icon: "briefcase", label: "1099-NEC", category: "income" },
+  "1099_misc": { icon: "clipboard", label: "1099-MISC", category: "income" },
+  "1099_r": { icon: "wallet", label: "1099-R", category: "income" },
+  "1098": { icon: "home", label: "1098 (Mortgage)", category: "deductions" },
+  "1098_e": {
+    icon: "school",
+    label: "1098-E (Student Loan)",
+    category: "deductions",
+  },
+  charitable_receipt: {
+    icon: "heart",
+    label: "Donation Receipt",
+    category: "deductions",
+  },
+  medical_expense: {
+    icon: "medkit",
+    label: "Medical Expense",
+    category: "deductions",
+  },
+  business_expense: {
+    icon: "receipt",
+    label: "Business Expense",
+    category: "deductions",
+  },
+  property_tax: {
+    icon: "home-outline",
+    label: "Property Tax",
+    category: "deductions",
+  },
+  other: { icon: "document", label: "Other", category: "other" },
+  unknown: { icon: "help-circle", label: "Unknown", category: "other" },
 };
 
 const FILTER_CATEGORIES: { key: FilterCategory; label: string }[] = [
-  { key: 'all', label: 'All' },
-  { key: 'income', label: 'Income' },
-  { key: 'deductions', label: 'Deductions' },
-  { key: 'other', label: 'Other' },
+  { key: "all", label: "All" },
+  { key: "income", label: "Income" },
+  { key: "deductions", label: "Deductions" },
+  { key: "other", label: "Other" },
 ];
 
 const UPLOAD_DOCUMENT_TYPES: { type: TaxDocumentType; label: string }[] = [
-  { type: 'w2', label: 'W-2 (Employment Income)' },
-  { type: '1099_div', label: '1099-DIV (Dividends)' },
-  { type: '1099_int', label: '1099-INT (Interest)' },
-  { type: '1099_b', label: '1099-B (Investments)' },
-  { type: '1099_nec', label: '1099-NEC (Self-Employment)' },
-  { type: '1099_misc', label: '1099-MISC (Miscellaneous)' },
-  { type: '1099_r', label: '1099-R (Retirement)' },
-  { type: '1098', label: '1098 (Mortgage Interest)' },
-  { type: '1098_e', label: '1098-E (Student Loan Interest)' },
-  { type: 'charitable_receipt', label: 'Charitable Donation Receipt' },
-  { type: 'medical_expense', label: 'Medical Expense Receipt' },
-  { type: 'business_expense', label: 'Business Expense Receipt' },
-  { type: 'property_tax', label: 'Property Tax Statement' },
-  { type: 'other', label: 'Other Tax Document' },
+  { type: "w2", label: "W-2 (Employment Income)" },
+  { type: "1099_div", label: "1099-DIV (Dividends)" },
+  { type: "1099_int", label: "1099-INT (Interest)" },
+  { type: "1099_b", label: "1099-B (Investments)" },
+  { type: "1099_nec", label: "1099-NEC (Self-Employment)" },
+  { type: "1099_misc", label: "1099-MISC (Miscellaneous)" },
+  { type: "1099_r", label: "1099-R (Retirement)" },
+  { type: "1098", label: "1098 (Mortgage Interest)" },
+  { type: "1098_e", label: "1098-E (Student Loan Interest)" },
+  { type: "charitable_receipt", label: "Charitable Donation Receipt" },
+  { type: "medical_expense", label: "Medical Expense Receipt" },
+  { type: "business_expense", label: "Business Expense Receipt" },
+  { type: "property_tax", label: "Property Tax Statement" },
+  { type: "other", label: "Other Tax Document" },
 ];
 
 // Theme colors (amber/orange for tax screens)
 const COLORS = {
-  primary: '#f59e0b',
-  primaryLight: '#fef3c7',
-  primaryDark: '#d97706',
-  background: '#fffbeb',
-  surface: '#ffffff',
-  text: '#1f2937',
-  textSecondary: '#6b7280',
-  textTertiary: '#9ca3af',
-  border: '#e5e7eb',
-  success: '#10b981',
-  successLight: '#d1fae5',
-  warning: '#f59e0b',
-  warningLight: '#fef3c7',
-  error: '#ef4444',
-  errorLight: '#fee2e2',
+  primary: "#f59e0b",
+  primaryLight: "#fef3c7",
+  primaryDark: "#d97706",
+  background: "#fffbeb",
+  surface: "#ffffff",
+  text: "#1f2937",
+  textSecondary: "#6b7280",
+  textTertiary: "#9ca3af",
+  border: "#e5e7eb",
+  success: "#10b981",
+  successLight: "#d1fae5",
+  warning: "#f59e0b",
+  warningLight: "#fef3c7",
+  error: "#ef4444",
+  errorLight: "#fee2e2",
 };
 
 export default function TaxDocumentsScreen() {
@@ -141,22 +161,27 @@ export default function TaxDocumentsScreen() {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [filterCategory, setFilterCategory] = useState<FilterCategory>('all');
+  const [filterCategory, setFilterCategory] = useState<FilterCategory>("all");
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showDocumentModal, setShowDocumentModal] = useState(false);
-  const [selectedDocument, setSelectedDocument] = useState<TaxDocument | null>(null);
+  const [selectedDocument, setSelectedDocument] = useState<TaxDocument | null>(
+    null,
+  );
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
 
   // Generate available years (current year and 3 previous)
-  const years = Array.from({ length: 4 }, (_, i) => new Date().getFullYear() - i);
+  const years = Array.from(
+    { length: 4 },
+    (_, i) => new Date().getFullYear() - i,
+  );
 
   // Fetch documents
   const fetchDocuments = useCallback(async () => {
     try {
       setError(null);
       const response = await api.get<{ documents: TaxDocument[] }>(
-        `/tax/documents?year=${selectedYear}`
+        `/tax/documents?year=${selectedYear}`,
       );
 
       if (response.success && response.data) {
@@ -165,9 +190,9 @@ export default function TaxDocumentsScreen() {
         // Use mock data for development
         setDocuments([
           {
-            id: '1',
-            documentType: 'w2',
-            documentName: 'W-2_Employer_2024.pdf',
+            id: "1",
+            documentType: "w2",
+            documentName: "W-2_Employer_2024.pdf",
             taxYear: selectedYear,
             extractionConfidence: 0.95,
             isVerified: true,
@@ -175,9 +200,9 @@ export default function TaxDocumentsScreen() {
             fileSize: 245760,
           },
           {
-            id: '2',
-            documentType: '1099_div',
-            documentName: 'Fidelity_1099-DIV_2024.pdf',
+            id: "2",
+            documentType: "1099_div",
+            documentName: "Fidelity_1099-DIV_2024.pdf",
             taxYear: selectedYear,
             extractionConfidence: 0.92,
             isVerified: true,
@@ -185,9 +210,9 @@ export default function TaxDocumentsScreen() {
             fileSize: 189440,
           },
           {
-            id: '3',
-            documentType: '1098',
-            documentName: 'Mortgage_Interest_2024.pdf',
+            id: "3",
+            documentType: "1098",
+            documentName: "Mortgage_Interest_2024.pdf",
             taxYear: selectedYear,
             extractionConfidence: 0.88,
             isVerified: false,
@@ -195,9 +220,9 @@ export default function TaxDocumentsScreen() {
             fileSize: 312320,
           },
           {
-            id: '4',
-            documentType: 'charitable_receipt',
-            documentName: 'Red_Cross_Donation_Receipt.pdf',
+            id: "4",
+            documentType: "charitable_receipt",
+            documentName: "Red_Cross_Donation_Receipt.pdf",
             taxYear: selectedYear,
             extractionConfidence: 0.85,
             isVerified: true,
@@ -207,8 +232,8 @@ export default function TaxDocumentsScreen() {
         ]);
       }
     } catch (err) {
-      console.error('Failed to fetch documents:', err);
-      setError('Failed to load documents. Pull to refresh.');
+      console.error("Failed to fetch documents:", err);
+      setError("Failed to load documents. Pull to refresh.");
       // Still show mock data on error for development
       setDocuments([]);
     } finally {
@@ -232,7 +257,7 @@ export default function TaxDocumentsScreen() {
   const handleUploadDocument = async (documentType: TaxDocumentType) => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'],
+        type: ["application/pdf", "image/png", "image/jpeg", "image/jpg"],
         copyToCacheDirectory: true,
       });
 
@@ -244,7 +269,10 @@ export default function TaxDocumentsScreen() {
 
       // Check file size (10MB max)
       if (file.size && file.size > 10 * 1024 * 1024) {
-        Alert.alert('File Too Large', 'Please select a file smaller than 10MB.');
+        Alert.alert(
+          "File Too Large",
+          "Please select a file smaller than 10MB.",
+        );
         return;
       }
 
@@ -253,24 +281,24 @@ export default function TaxDocumentsScreen() {
 
       // Create form data for upload
       const formData = new FormData();
-      formData.append('file', {
+      formData.append("file", {
         uri: file.uri,
-        name: file.name || 'document.pdf',
-        type: file.mimeType || 'application/pdf',
+        name: file.name || "document.pdf",
+        type: file.mimeType || "application/pdf",
       } as unknown as Blob);
-      formData.append('taxYear', String(selectedYear));
-      formData.append('documentType', documentType);
+      formData.append("taxYear", String(selectedYear));
+      formData.append("documentType", documentType);
 
       // Upload via API
       const response = await fetch(
-        `${process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api'}/tax/documents/upload`,
+        `${process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000/api"}/tax/documents/upload`,
         {
-          method: 'POST',
+          method: "POST",
           body: formData,
           headers: {
-            'Content-Type': 'multipart/form-data',
+            "Content-Type": "multipart/form-data",
           },
-        }
+        },
       );
 
       if (response.ok) {
@@ -278,24 +306,27 @@ export default function TaxDocumentsScreen() {
         const typeConfig = DOCUMENT_TYPE_CONFIG[documentType];
 
         Alert.alert(
-          'Upload Successful',
+          "Upload Successful",
           `Your ${typeConfig.label} has been uploaded and is being processed with AI extraction.\n\nConfidence: ${
             data.data?.overallConfidence
               ? `${(data.data.overallConfidence * 100).toFixed(0)}%`
-              : 'Processing...'
+              : "Processing..."
           }`,
-          [{ text: 'OK', onPress: () => fetchDocuments() }]
+          [{ text: "OK", onPress: () => fetchDocuments() }],
         );
       } else {
         const errorData = await response.json().catch(() => ({}));
         Alert.alert(
-          'Upload Failed',
-          errorData.message || 'Failed to upload document. Please try again.'
+          "Upload Failed",
+          errorData.message || "Failed to upload document. Please try again.",
         );
       }
     } catch (err) {
-      console.error('Upload error:', err);
-      Alert.alert('Upload Error', 'An error occurred while uploading. Please try again.');
+      console.error("Upload error:", err);
+      Alert.alert(
+        "Upload Error",
+        "An error occurred while uploading. Please try again.",
+      );
     } finally {
       setIsUploading(false);
     }
@@ -308,25 +339,25 @@ export default function TaxDocumentsScreen() {
 
       // Get download URL from API
       const response = await api.get<{ url: string; expiresAt: string }>(
-        `/tax/documents/${doc.id}/download`
+        `/tax/documents/${doc.id}/download`,
       );
 
       if (response.success && response.data?.url) {
         // Open in browser or share
-        if (Platform.OS === 'ios' || Platform.OS === 'android') {
+        if (Platform.OS === "ios" || Platform.OS === "android") {
           const canShare = await Sharing.isAvailableAsync();
           if (canShare) {
             // Download file first
             const fileUri = `${FileSystem.cacheDirectory}${doc.documentName}`;
             const downloadResult = await FileSystem.downloadAsync(
               response.data.url,
-              fileUri
+              fileUri,
             );
 
             if (downloadResult.status === 200) {
               await Sharing.shareAsync(downloadResult.uri);
             } else {
-              throw new Error('Download failed');
+              throw new Error("Download failed");
             }
           } else {
             await Linking.openURL(response.data.url);
@@ -337,13 +368,16 @@ export default function TaxDocumentsScreen() {
       } else {
         // Fallback: open mock URL or show message
         Alert.alert(
-          'Preview',
-          `Document: ${doc.documentName}\n\nIn production, this would open the document for viewing.`
+          "Preview",
+          `Document: ${doc.documentName}\n\nIn production, this would open the document for viewing.`,
         );
       }
     } catch (err) {
-      console.error('Download error:', err);
-      Alert.alert('Download Failed', 'Unable to download the document. Please try again.');
+      console.error("Download error:", err);
+      Alert.alert(
+        "Download Failed",
+        "Unable to download the document. Please try again.",
+      );
     } finally {
       setIsDownloading(false);
       setShowDocumentModal(false);
@@ -353,18 +387,18 @@ export default function TaxDocumentsScreen() {
   // Delete document
   const handleDeleteDocument = async (doc: TaxDocument) => {
     Alert.alert(
-      'Delete Document',
+      "Delete Document",
       `Are you sure you want to delete "${doc.documentName}"? This action cannot be undone.`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Delete',
-          style: 'destructive',
+          text: "Delete",
+          style: "destructive",
           onPress: async () => {
             try {
               setIsDeleting(true);
               const response = await api.delete<{ success: boolean }>(
-                `/tax/documents/${doc.id}`
+                `/tax/documents/${doc.id}`,
               );
 
               if (response.success) {
@@ -372,7 +406,10 @@ export default function TaxDocumentsScreen() {
                 setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
                 setShowDocumentModal(false);
                 setSelectedDocument(null);
-                Alert.alert('Deleted', 'Document has been deleted successfully.');
+                Alert.alert(
+                  "Deleted",
+                  "Document has been deleted successfully.",
+                );
               } else {
                 // Mock deletion for development
                 setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
@@ -380,21 +417,25 @@ export default function TaxDocumentsScreen() {
                 setSelectedDocument(null);
               }
             } catch (err) {
-              console.error('Delete error:', err);
-              Alert.alert('Delete Failed', 'Unable to delete the document. Please try again.');
+              console.error("Delete error:", err);
+              Alert.alert(
+                "Delete Failed",
+                "Unable to delete the document. Please try again.",
+              );
             } finally {
               setIsDeleting(false);
             }
           },
         },
-      ]
+      ],
     );
   };
 
   // Filter documents
   const filteredDocuments = documents.filter((doc) => {
-    if (filterCategory === 'all') return true;
-    const config = DOCUMENT_TYPE_CONFIG[doc.documentType] || DOCUMENT_TYPE_CONFIG.unknown;
+    if (filterCategory === "all") return true;
+    const config =
+      DOCUMENT_TYPE_CONFIG[doc.documentType] || DOCUMENT_TYPE_CONFIG.unknown;
     return config.category === filterCategory;
   });
 
@@ -405,13 +446,14 @@ export default function TaxDocumentsScreen() {
     needsReview: documents.filter((d) => !d.isVerified).length,
     avgConfidence:
       documents.length > 0
-        ? documents.reduce((sum, d) => sum + d.extractionConfidence, 0) / documents.length
+        ? documents.reduce((sum, d) => sum + d.extractionConfidence, 0) /
+          documents.length
         : 0,
   };
 
   // Format file size
   const formatFileSize = (bytes?: number): string => {
-    if (!bytes) return 'Unknown size';
+    if (!bytes) return "Unknown size";
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -419,7 +461,8 @@ export default function TaxDocumentsScreen() {
 
   // Render document card
   const renderDocumentCard = (doc: TaxDocument) => {
-    const config = DOCUMENT_TYPE_CONFIG[doc.documentType] || DOCUMENT_TYPE_CONFIG.unknown;
+    const config =
+      DOCUMENT_TYPE_CONFIG[doc.documentType] || DOCUMENT_TYPE_CONFIG.unknown;
 
     return (
       <TouchableOpacity
@@ -450,10 +493,12 @@ export default function TaxDocumentsScreen() {
               <Text
                 style={[
                   styles.statusBadgeText,
-                  doc.isVerified ? styles.verifiedBadgeText : styles.reviewBadgeText,
+                  doc.isVerified
+                    ? styles.verifiedBadgeText
+                    : styles.reviewBadgeText,
                 ]}
               >
-                {doc.isVerified ? 'Verified' : 'Review'}
+                {doc.isVerified ? "Verified" : "Review"}
               </Text>
             </View>
           </View>
@@ -470,7 +515,11 @@ export default function TaxDocumentsScreen() {
             </Text>
           </View>
         </View>
-        <Ionicons name="chevron-forward" size={20} color={COLORS.textTertiary} />
+        <Ionicons
+          name="chevron-forward"
+          size={20}
+          color={COLORS.textTertiary}
+        />
       </TouchableOpacity>
     );
   };
@@ -497,7 +546,10 @@ export default function TaxDocumentsScreen() {
           <Text style={styles.modalSubtitle}>
             Select the type of document you are uploading for {selectedYear}
           </Text>
-          <ScrollView style={styles.documentTypeList} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={styles.documentTypeList}
+            showsVerticalScrollIndicator={false}
+          >
             {UPLOAD_DOCUMENT_TYPES.map((item) => (
               <TouchableOpacity
                 key={item.type}
@@ -507,14 +559,19 @@ export default function TaxDocumentsScreen() {
                 <View style={styles.documentTypeIcon}>
                   <Ionicons
                     name={
-                      DOCUMENT_TYPE_CONFIG[item.type].icon as keyof typeof Ionicons.glyphMap
+                      DOCUMENT_TYPE_CONFIG[item.type]
+                        .icon as keyof typeof Ionicons.glyphMap
                     }
                     size={20}
                     color={COLORS.primary}
                   />
                 </View>
                 <Text style={styles.documentTypeLabel}>{item.label}</Text>
-                <Ionicons name="chevron-forward" size={18} color={COLORS.textTertiary} />
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color={COLORS.textTertiary}
+                />
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -528,7 +585,8 @@ export default function TaxDocumentsScreen() {
     if (!selectedDocument) return null;
 
     const config =
-      DOCUMENT_TYPE_CONFIG[selectedDocument.documentType] || DOCUMENT_TYPE_CONFIG.unknown;
+      DOCUMENT_TYPE_CONFIG[selectedDocument.documentType] ||
+      DOCUMENT_TYPE_CONFIG.unknown;
 
     return (
       <Modal
@@ -564,7 +622,9 @@ export default function TaxDocumentsScreen() {
                 />
               </View>
               <Text style={styles.documentDetailType}>{config.label}</Text>
-              <Text style={styles.documentDetailName}>{selectedDocument.documentName}</Text>
+              <Text style={styles.documentDetailName}>
+                {selectedDocument.documentName}
+              </Text>
 
               <View
                 style={[
@@ -575,9 +635,17 @@ export default function TaxDocumentsScreen() {
                 ]}
               >
                 <Ionicons
-                  name={selectedDocument.isVerified ? 'checkmark-circle' : 'alert-circle'}
+                  name={
+                    selectedDocument.isVerified
+                      ? "checkmark-circle"
+                      : "alert-circle"
+                  }
                   size={14}
-                  color={selectedDocument.isVerified ? COLORS.success : COLORS.warning}
+                  color={
+                    selectedDocument.isVerified
+                      ? COLORS.success
+                      : COLORS.warning
+                  }
                 />
                 <Text
                   style={[
@@ -587,7 +655,7 @@ export default function TaxDocumentsScreen() {
                       : styles.reviewBadgeText,
                   ]}
                 >
-                  {selectedDocument.isVerified ? 'Verified' : 'Needs Review'}
+                  {selectedDocument.isVerified ? "Verified" : "Needs Review"}
                 </Text>
               </View>
             </View>
@@ -595,7 +663,9 @@ export default function TaxDocumentsScreen() {
             <View style={styles.documentDetailsList}>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Tax Year</Text>
-                <Text style={styles.detailValue}>{selectedDocument.taxYear}</Text>
+                <Text style={styles.detailValue}>
+                  {selectedDocument.taxYear}
+                </Text>
               </View>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>AI Confidence</Text>
@@ -612,11 +682,14 @@ export default function TaxDocumentsScreen() {
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Uploaded</Text>
                 <Text style={styles.detailValue}>
-                  {new Date(selectedDocument.createdAt).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                  })}
+                  {new Date(selectedDocument.createdAt).toLocaleDateString(
+                    "en-US",
+                    {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    },
+                  )}
                 </Text>
               </View>
             </View>
@@ -646,7 +719,11 @@ export default function TaxDocumentsScreen() {
                   <ActivityIndicator size="small" color={COLORS.error} />
                 ) : (
                   <>
-                    <Ionicons name="trash-outline" size={20} color={COLORS.error} />
+                    <Ionicons
+                      name="trash-outline"
+                      size={20}
+                      color={COLORS.error}
+                    />
                     <Text style={styles.deleteButtonText}>Delete</Text>
                   </>
                 )}
@@ -661,7 +738,7 @@ export default function TaxDocumentsScreen() {
   // Loading state
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={["top"]}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.primary} />
           <Text style={styles.loadingText}>Loading documents...</Text>
@@ -671,10 +748,13 @@ export default function TaxDocumentsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
         <View style={styles.headerContent}>
@@ -701,7 +781,10 @@ export default function TaxDocumentsScreen() {
             <TouchableOpacity
               key={year}
               onPress={() => setSelectedYear(year)}
-              style={[styles.yearButton, selectedYear === year && styles.yearButtonActive]}
+              style={[
+                styles.yearButton,
+                selectedYear === year && styles.yearButtonActive,
+              ]}
             >
               <Text
                 style={[
@@ -731,7 +814,8 @@ export default function TaxDocumentsScreen() {
               <Text
                 style={[
                   styles.categoryChipText,
-                  filterCategory === category.key && styles.categoryChipTextActive,
+                  filterCategory === category.key &&
+                    styles.categoryChipTextActive,
                 ]}
               >
                 {category.label}
@@ -745,7 +829,9 @@ export default function TaxDocumentsScreen() {
       {isUploading && (
         <View style={styles.uploadingBanner}>
           <ActivityIndicator size="small" color="#fff" />
-          <Text style={styles.uploadingText}>Processing document with AI...</Text>
+          <Text style={styles.uploadingText}>
+            Processing document with AI...
+          </Text>
         </View>
       )}
 
@@ -773,15 +859,21 @@ export default function TaxDocumentsScreen() {
         {filteredDocuments.length === 0 ? (
           <View style={styles.emptyState}>
             <View style={styles.emptyIconContainer}>
-              <Ionicons name="document-text-outline" size={48} color={COLORS.primary} />
+              <Ionicons
+                name="document-text-outline"
+                size={48}
+                color={COLORS.primary}
+              />
             </View>
             <Text style={styles.emptyTitle}>
-              {documents.length === 0 ? 'No documents yet' : 'No matching documents'}
+              {documents.length === 0
+                ? "No documents yet"
+                : "No matching documents"}
             </Text>
             <Text style={styles.emptySubtitle}>
               {documents.length === 0
                 ? `Upload your W-2s, 1099s, and other tax documents for ${selectedYear} to get started with AI-powered extraction.`
-                : 'Try selecting a different category or year.'}
+                : "Try selecting a different category or year."}
             </Text>
             {documents.length === 0 && (
               <TouchableOpacity
@@ -789,7 +881,9 @@ export default function TaxDocumentsScreen() {
                 style={styles.emptyUploadButton}
               >
                 <Ionicons name="cloud-upload" size={20} color="#fff" />
-                <Text style={styles.emptyUploadButtonText}>Upload Your First Document</Text>
+                <Text style={styles.emptyUploadButtonText}>
+                  Upload Your First Document
+                </Text>
               </TouchableOpacity>
             )}
           </View>
@@ -814,7 +908,9 @@ export default function TaxDocumentsScreen() {
                 <Text style={styles.statLabel}>Review</Text>
               </View>
               <View style={styles.statCard}>
-                <Text style={styles.statValue}>{(stats.avgConfidence * 100).toFixed(0)}%</Text>
+                <Text style={styles.statValue}>
+                  {(stats.avgConfidence * 100).toFixed(0)}%
+                </Text>
                 <Text style={styles.statLabel}>Avg Conf.</Text>
               </View>
             </View>
@@ -829,7 +925,11 @@ export default function TaxDocumentsScreen() {
               style={styles.addDocumentCard}
               onPress={() => setShowUploadModal(true)}
             >
-              <Ionicons name="add-circle-outline" size={24} color={COLORS.primary} />
+              <Ionicons
+                name="add-circle-outline"
+                size={24}
+                color={COLORS.primary}
+              />
               <Text style={styles.addDocumentText}>Add Another Document</Text>
             </TouchableOpacity>
           </>
@@ -852,8 +952,8 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   loadingText: {
     marginTop: 12,
@@ -861,8 +961,8 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: COLORS.surface,
@@ -878,7 +978,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     color: COLORS.primary,
   },
   headerSubtitle: {
@@ -891,8 +991,8 @@ const styles = StyleSheet.create({
     height: 44,
     backgroundColor: COLORS.primary,
     borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   yearFilterContainer: {
     paddingVertical: 12,
@@ -905,7 +1005,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: "#f3f4f6",
     marginRight: 8,
   },
   yearButtonActive: {
@@ -913,11 +1013,11 @@ const styles = StyleSheet.create({
   },
   yearButtonText: {
     color: COLORS.textSecondary,
-    fontWeight: '500',
+    fontWeight: "500",
     fontSize: 14,
   },
   yearButtonTextActive: {
-    color: '#fff',
+    color: "#fff",
   },
   categoryFilterContainer: {
     paddingVertical: 10,
@@ -928,10 +1028,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: "#f3f4f6",
     marginRight: 8,
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: "transparent",
   },
   categoryChipActive: {
     backgroundColor: COLORS.primaryLight,
@@ -940,27 +1040,27 @@ const styles = StyleSheet.create({
   categoryChipText: {
     fontSize: 13,
     color: COLORS.textSecondary,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   categoryChipTextActive: {
     color: COLORS.primaryDark,
   },
   uploadingBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: COLORS.primary,
     paddingVertical: 10,
     paddingHorizontal: 16,
   },
   uploadingText: {
-    color: '#fff',
-    fontWeight: '500',
+    color: "#fff",
+    fontWeight: "500",
     marginLeft: 8,
   },
   errorBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: COLORS.errorLight,
     paddingVertical: 10,
     paddingHorizontal: 16,
@@ -977,8 +1077,8 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 60,
     paddingHorizontal: 32,
   },
@@ -987,39 +1087,39 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     backgroundColor: COLORS.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 16,
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.text,
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
     color: COLORS.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 20,
     marginBottom: 24,
   },
   emptyUploadButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: COLORS.primary,
     paddingHorizontal: 24,
     paddingVertical: 14,
     borderRadius: 12,
   },
   emptyUploadButtonText: {
-    color: '#fff',
-    fontWeight: '600',
+    color: "#fff",
+    fontWeight: "600",
     fontSize: 16,
     marginLeft: 8,
   },
   statsContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingHorizontal: 16,
     marginBottom: 16,
   },
@@ -1029,8 +1129,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     marginHorizontal: 4,
-    alignItems: 'center',
-    shadowColor: '#000',
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
@@ -1038,7 +1138,7 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     color: COLORS.text,
   },
   statLabel: {
@@ -1050,13 +1150,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   documentCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: COLORS.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 10,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
@@ -1067,21 +1167,21 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 10,
     backgroundColor: COLORS.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 12,
   },
   documentInfo: {
     flex: 1,
   },
   documentHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 4,
   },
   documentType: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.text,
     marginRight: 8,
   },
@@ -1098,13 +1198,13 @@ const styles = StyleSheet.create({
   },
   statusBadgeText: {
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   verifiedBadgeText: {
-    color: '#047857',
+    color: "#047857",
   },
   reviewBadgeText: {
-    color: '#b45309',
+    color: "#b45309",
   },
   documentName: {
     fontSize: 13,
@@ -1112,8 +1212,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   documentMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   documentMetaText: {
     fontSize: 11,
@@ -1125,22 +1225,22 @@ const styles = StyleSheet.create({
     marginHorizontal: 6,
   },
   addDocumentCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: COLORS.surface,
     borderRadius: 12,
     padding: 16,
     marginHorizontal: 16,
     marginTop: 8,
     borderWidth: 2,
-    borderStyle: 'dashed',
+    borderStyle: "dashed",
     borderColor: COLORS.border,
   },
   addDocumentText: {
     fontSize: 14,
     color: COLORS.primary,
-    fontWeight: '500',
+    fontWeight: "500",
     marginLeft: 8,
   },
   bottomPadding: {
@@ -1149,20 +1249,20 @@ const styles = StyleSheet.create({
   // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
   },
   modalContent: {
     backgroundColor: COLORS.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: '80%',
+    maxHeight: "80%",
     paddingBottom: 34,
   },
   modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 12,
@@ -1171,7 +1271,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.text,
   },
   modalSubtitle: {
@@ -1185,8 +1285,8 @@ const styles = StyleSheet.create({
     maxHeight: 400,
   },
   documentTypeItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 14,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
@@ -1197,8 +1297,8 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 8,
     backgroundColor: COLORS.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 12,
   },
   documentTypeLabel: {
@@ -1208,7 +1308,7 @@ const styles = StyleSheet.create({
   },
   // Document detail modal
   documentDetailCard: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 24,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
@@ -1219,32 +1319,32 @@ const styles = StyleSheet.create({
     height: 64,
     borderRadius: 16,
     backgroundColor: COLORS.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 12,
   },
   documentDetailType: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.primary,
     marginBottom: 4,
   },
   documentDetailName: {
     fontSize: 14,
     color: COLORS.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 12,
   },
   detailStatusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
   },
   detailStatusText: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: "500",
     marginLeft: 4,
   },
   documentDetailsList: {
@@ -1252,8 +1352,8 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
@@ -1264,19 +1364,19 @@ const styles = StyleSheet.create({
   },
   detailValue: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     color: COLORS.text,
   },
   documentActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingHorizontal: 20,
     paddingTop: 16,
   },
   actionButton: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 14,
     borderRadius: 12,
     marginHorizontal: 6,
@@ -1285,8 +1385,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
   },
   downloadButtonText: {
-    color: '#fff',
-    fontWeight: '600',
+    color: "#fff",
+    fontWeight: "600",
     fontSize: 15,
     marginLeft: 8,
   },
@@ -1297,7 +1397,7 @@ const styles = StyleSheet.create({
   },
   deleteButtonText: {
     color: COLORS.error,
-    fontWeight: '600',
+    fontWeight: "600",
     fontSize: 15,
     marginLeft: 8,
   },

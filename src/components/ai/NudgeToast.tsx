@@ -1,15 +1,14 @@
-'use client';
+"use client";
 
-
-import { Icon } from '@/components/ui/Icon';
+import { Icon } from "@/components/ui/Icon";
 /**
  * Nudge Toast Component
  * Displays AI nudges as dismissible notifications
  */
 
-import React from 'react';
-import { cn } from '@/lib/utils';
-import type { NudgeHistory, NudgeAction } from '@/lib/ai-personalization';
+import React from "react";
+import { cn } from "@/lib/utils";
+import type { NudgeHistory, NudgeAction } from "@/lib/ai-personalization";
 
 interface NudgeToastProps {
   nudge: NudgeHistory;
@@ -20,13 +19,13 @@ interface NudgeToastProps {
 }
 
 const typeStyles = {
-  motivational: { icon: "sparkles", color: 'border-blue-500' },
-  progress: { icon: "sparkles", color: 'border-green-500' },
-  warning: { icon: "sparkles", color: 'border-amber-500' },
-  celebration: { icon: "sparkles", color: 'border-blue-500' },
-  reminder: { icon: "sparkles", color: 'border-orange-500' },
-  insight: { icon: "sparkles", color: 'border-blue-500' },
-  coaching: { icon: "sparkles", color: 'border-blue-500' },
+  motivational: { icon: "sparkles", color: "border-blue-500" },
+  progress: { icon: "sparkles", color: "border-green-500" },
+  warning: { icon: "sparkles", color: "border-amber-500" },
+  celebration: { icon: "sparkles", color: "border-blue-500" },
+  reminder: { icon: "sparkles", color: "border-orange-500" },
+  insight: { icon: "sparkles", color: "border-blue-500" },
+  coaching: { icon: "sparkles", color: "border-blue-500" },
 };
 
 export function NudgeToast({
@@ -41,9 +40,9 @@ export function NudgeToast({
   return (
     <div
       className={cn(
-        'bg-white dark:bg-slate-800 rounded-xl shadow-lg border-l-4 p-4 max-w-sm',
+        "bg-white dark:bg-slate-800 rounded-xl shadow-lg border-l-4 p-4 max-w-sm",
         style.color,
-        className
+        className,
       )}
     >
       <div className="flex items-start gap-3">

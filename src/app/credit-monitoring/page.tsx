@@ -1,9 +1,9 @@
-import { Suspense } from 'react';
-import CreditMonitoringDashboard from '@/components/credit-monitoring/CreditMonitoringDashboard';
+import { Suspense } from "react";
+import CreditMonitoringDashboard from "@/components/credit-monitoring/CreditMonitoringDashboard";
 
 export const metadata = {
-  title: 'Credit Monitoring | Fynvita',
-  description: 'Monitor your credit scores across all three bureaus',
+  title: "Credit Monitoring | Fynvita",
+  description: "Monitor your credit scores across all three bureaus",
 };
 
 export default function CreditMonitoringPage() {
@@ -34,7 +34,10 @@ function DashboardLoadingSkeleton() {
       {/* Score Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+          <div
+            key={i}
+            className="bg-white dark:bg-slate-800 rounded-lg shadow p-6"
+          >
             <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/2 mb-4"></div>
             <div className="h-12 bg-gray-200 dark:bg-slate-700 rounded w-3/4 mb-2"></div>
             <div className="h-3 bg-gray-200 dark:bg-slate-700 rounded w-1/3"></div>
@@ -53,7 +56,10 @@ function DashboardLoadingSkeleton() {
         <div className="h-6 bg-gray-200 dark:bg-slate-700 rounded w-1/4 mb-6"></div>
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-16 bg-gray-200 dark:bg-slate-700 rounded"></div>
+            <div
+              key={i}
+              className="h-16 bg-gray-200 dark:bg-slate-700 rounded"
+            ></div>
           ))}
         </div>
       </div>

@@ -2,7 +2,7 @@
 
 export interface FederalProgramApplication {
   userId: string;
-  programType: 'fresh-start' | 'rehabilitation' | 'consolidation';
+  programType: "fresh-start" | "rehabilitation" | "consolidation";
   loanIds: string[];
   personalInfo: {
     firstName: string;
@@ -22,7 +22,7 @@ export interface FederalProgramApplication {
 
 export interface ApplicationStatus {
   applicationId: string;
-  status: 'pending' | 'in-progress' | 'approved' | 'denied' | 'completed';
+  status: "pending" | "in-progress" | "approved" | "denied" | "completed";
   submittedDate: string;
   lastUpdated: string;
   details: string;
@@ -32,10 +32,10 @@ export interface ApplicationStatus {
 export interface StudentLoan {
   id: string;
   servicer: string;
-  loanType: 'federal' | 'private';
+  loanType: "federal" | "private";
   balance: number;
   interestRate: number;
-  status: 'current' | 'delinquent' | 'default' | 'forbearance' | 'deferment';
+  status: "current" | "delinquent" | "default" | "forbearance" | "deferment";
   monthlyPayment: number;
   originationDate: string;
   disbursementAmount: number;
@@ -97,9 +97,13 @@ export interface NSLDSData {
 export interface DisputeItem {
   id: string;
   loanId: string;
-  disputeType: 'inaccurate-balance' | 'incorrect-status' | 'unauthorized-inquiry' | 'other';
+  disputeType:
+    | "inaccurate-balance"
+    | "incorrect-status"
+    | "unauthorized-inquiry"
+    | "other";
   description: string;
-  status: 'pending' | 'investigating' | 'resolved' | 'rejected';
+  status: "pending" | "investigating" | "resolved" | "rejected";
   submittedDate: string;
   resolvedDate?: string;
   outcome?: string;
@@ -112,13 +116,19 @@ export interface CreditImpactAnalysis {
   timeframe: string;
   factors: {
     factor: string;
-    impact: 'positive' | 'negative' | 'neutral';
+    impact: "positive" | "negative" | "neutral";
     weight: number;
   }[];
 }
 
 // ML Prediction Types
-export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
 export type JsonRecord = Record<string, unknown>;
 
 export interface PredictionFeatures {
@@ -193,7 +203,7 @@ export interface ServicerVulnerability {
   vulnerability_id: string;
   servicer_id: string;
   type: string;
-  severity: 'low' | 'medium' | 'high' | 'critical';
+  severity: "low" | "medium" | "high" | "critical";
   description: string;
   exploitation_potential?: number;
   legal_basis?: string[];
@@ -221,9 +231,9 @@ export interface ComplianceViolation {
   servicer_id: string;
   regulation: string;
   violation_type: string;
-  severity: 'minor' | 'moderate' | 'major' | 'critical';
+  severity: "minor" | "moderate" | "major" | "critical";
   date_identified?: Date;
-  status: 'open' | 'investigating' | 'resolved' | 'escalated';
+  status: "open" | "investigating" | "resolved" | "escalated";
   evidence?: string[];
   remediation_required?: string;
 }
@@ -241,7 +251,7 @@ export interface ServicerAnalysisResult {
   recommended_strategies: string[];
   confidence_level?: number;
   risk_assessment?: {
-    level: 'low' | 'medium' | 'high';
+    level: "low" | "medium" | "high";
     factors: string[];
   };
 }
@@ -273,7 +283,7 @@ export interface Strategy {
   is_active: boolean;
   created_at: string;
   description?: string;
-  complexity?: 'low' | 'medium' | 'high';
+  complexity?: "low" | "medium" | "high";
   estimated_timeline?: string;
   required_documents?: string[];
 }
@@ -287,7 +297,7 @@ export interface AIStrategyRecommendation {
   recommended_actions?: string[];
   risk_factors?: string[];
   expected_timeline?: number;
-  priority?: 'low' | 'medium' | 'high' | 'critical';
+  priority?: "low" | "medium" | "high" | "critical";
   // Extended properties for AI engine
   loan_id?: string;
   recommendation_id?: string;
@@ -336,7 +346,7 @@ export interface AutomationWorkflow {
   name: string;
   steps: WorkflowStep[];
   triggers: WorkflowTrigger[];
-  status: 'active' | 'paused' | 'completed' | 'failed';
+  status: "active" | "paused" | "completed" | "failed";
   created_at: Date;
   updated_at: Date;
 }
@@ -347,12 +357,12 @@ export interface WorkflowStep {
   action: string;
   parameters: Record<string, unknown>;
   dependencies: string[];
-  status: 'pending' | 'running' | 'completed' | 'failed';
+  status: "pending" | "running" | "completed" | "failed";
 }
 
 export interface WorkflowTrigger {
   trigger_id: string;
-  type: 'schedule' | 'event' | 'condition';
+  type: "schedule" | "event" | "condition";
   configuration: Record<string, unknown>;
 }
 
@@ -370,6 +380,6 @@ export interface PaymentHistory {
   loan_id: string;
   amount: number;
   date: Date;
-  status: 'pending' | 'completed' | 'failed' | 'reversed';
+  status: "pending" | "completed" | "failed" | "reversed";
   allocation?: Record<string, number>;
 }

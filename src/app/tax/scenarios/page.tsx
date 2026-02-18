@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Tax Scenario Modeler
@@ -7,8 +7,8 @@
  * Compare different scenarios to optimize tax outcomes.
  */
 
-import { useState, useCallback } from 'react';
-import Link from 'next/link';
+import { useState, useCallback } from "react";
+import Link from "next/link";
 
 interface ScenarioInput {
   name: string;
@@ -33,7 +33,7 @@ interface ScenarioResult {
 }
 
 const defaultScenario: ScenarioInput = {
-  name: 'Current Plan',
+  name: "Current Plan",
   grossIncome: 300000,
   additional401k: 0,
   additionalIra: 0,
@@ -46,13 +46,13 @@ const defaultScenario: ScenarioInput = {
 export default function TaxScenarioModelerPage() {
   const [baseScenario, setBaseScenario] = useState<ScenarioInput>({
     ...defaultScenario,
-    name: 'Baseline',
+    name: "Baseline",
   });
   const [scenarios, setScenarios] = useState<ScenarioInput[]>([
-    { ...defaultScenario, name: 'Max 401(k)', additional401k: 13000 },
+    { ...defaultScenario, name: "Max 401(k)", additional401k: 13000 },
     {
       ...defaultScenario,
-      name: 'Max All Retirement',
+      name: "Max All Retirement",
       additional401k: 13000,
       additionalIra: 7000,
       additionalHsa: 3150,
@@ -73,7 +73,7 @@ export default function TaxScenarioModelerPage() {
 
       const taxableIncome = Math.max(
         0,
-        adjustedIncome - standardDeduction - scenario.additionalCharitable
+        adjustedIncome - standardDeduction - scenario.additionalCharitable,
       );
 
       // Federal tax brackets (2024 single)
@@ -131,7 +131,7 @@ export default function TaxScenarioModelerPage() {
         takeHomePay: scenario.grossIncome - totalTax,
       };
     },
-    []
+    [],
   );
 
   const runComparison = useCallback(() => {
@@ -159,7 +159,7 @@ export default function TaxScenarioModelerPage() {
   const updateScenario = (
     index: number,
     field: keyof ScenarioInput,
-    value: string | number
+    value: string | number,
   ) => {
     const updated = [...scenarios];
     updated[index] = { ...updated[index], [field]: value };
@@ -167,9 +167,9 @@ export default function TaxScenarioModelerPage() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
@@ -179,7 +179,7 @@ export default function TaxScenarioModelerPage() {
     return `${(rate * 100).toFixed(1)}%`;
   };
 
-  const baselineResult = results.find((r) => r.name === 'Baseline');
+  const baselineResult = results.find((r) => r.name === "Baseline");
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-orange-50">
@@ -190,7 +190,9 @@ export default function TaxScenarioModelerPage() {
             <div className="flex items-center gap-4">
               <Link href="/tax" className="flex items-center gap-2">
                 <span className="text-gray-400 dark:text-slate-500">←</span>
-                <span className="text-gray-600 dark:text-slate-300">Back to Tax</span>
+                <span className="text-gray-600 dark:text-slate-300">
+                  Back to Tax
+                </span>
               </Link>
               <span className="text-gray-300">|</span>
               <h1 className="text-lg font-semibold text-amber-600">
@@ -282,7 +284,7 @@ export default function TaxScenarioModelerPage() {
                   type="text"
                   value={scenario.name}
                   onChange={(e) =>
-                    updateScenario(index, 'name', e.target.value)
+                    updateScenario(index, "name", e.target.value)
                   }
                   className="text-lg font-semibold text-gray-900 dark:text-white border-none focus:ring-0 p-0"
                 />
@@ -304,8 +306,8 @@ export default function TaxScenarioModelerPage() {
                     onChange={(e) =>
                       updateScenario(
                         index,
-                        'additional401k',
-                        Number(e.target.value)
+                        "additional401k",
+                        Number(e.target.value),
                       )
                     }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-amber-500"
@@ -321,8 +323,8 @@ export default function TaxScenarioModelerPage() {
                     onChange={(e) =>
                       updateScenario(
                         index,
-                        'additionalIra',
-                        Number(e.target.value)
+                        "additionalIra",
+                        Number(e.target.value),
                       )
                     }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-amber-500"
@@ -338,8 +340,8 @@ export default function TaxScenarioModelerPage() {
                     onChange={(e) =>
                       updateScenario(
                         index,
-                        'additionalHsa',
-                        Number(e.target.value)
+                        "additionalHsa",
+                        Number(e.target.value),
                       )
                     }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-amber-500"
@@ -355,8 +357,8 @@ export default function TaxScenarioModelerPage() {
                     onChange={(e) =>
                       updateScenario(
                         index,
-                        'additionalCharitable',
-                        Number(e.target.value)
+                        "additionalCharitable",
+                        Number(e.target.value),
                       )
                     }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-amber-500"
@@ -380,7 +382,7 @@ export default function TaxScenarioModelerPage() {
             disabled={isCalculating}
             className="px-6 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg hover:from-amber-600 hover:to-orange-600 transition-colors disabled:opacity-50"
           >
-            {isCalculating ? 'Calculating...' : 'Compare Scenarios'}
+            {isCalculating ? "Calculating..." : "Compare Scenarios"}
           </button>
         </div>
 
@@ -431,7 +433,7 @@ export default function TaxScenarioModelerPage() {
                       <tr
                         key={index}
                         className={
-                          result.name === 'Baseline' ? 'bg-amber-50' : ''
+                          result.name === "Baseline" ? "bg-amber-50" : ""
                         }
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -458,8 +460,10 @@ export default function TaxScenarioModelerPage() {
                           {formatCurrency(result.takeHomePay)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right">
-                          {result.name === 'Baseline' ? (
-                            <span className="text-gray-400 dark:text-slate-500">—</span>
+                          {result.name === "Baseline" ? (
+                            <span className="text-gray-400 dark:text-slate-500">
+                              —
+                            </span>
                           ) : savings > 0 ? (
                             <span className="text-green-600 font-medium">
                               +{formatCurrency(savings)}
@@ -469,7 +473,9 @@ export default function TaxScenarioModelerPage() {
                               {formatCurrency(savings)}
                             </span>
                           ) : (
-                            <span className="text-gray-400 dark:text-slate-500">$0</span>
+                            <span className="text-gray-400 dark:text-slate-500">
+                              $0
+                            </span>
                           )}
                         </td>
                       </tr>

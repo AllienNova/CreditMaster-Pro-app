@@ -15,15 +15,15 @@
  * - Audit logging
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { db } from '@/lib/credit-repair/db';
-import { auditLogger } from '@/lib/security/audit-logging';
+import { NextRequest, NextResponse } from "next/server";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { db } from "@/lib/credit-repair/db";
+import { auditLogger } from "@/lib/security/audit-logging";
 import type {
   DisputeStrategy,
   DisputeStatus,
   Bureau,
-} from '@/lib/credit-repair/db/types';
+} from "@/lib/credit-repair/db/types";
 
 interface DisputeUpdatePayload {
   itemType?: string;
@@ -38,7 +38,7 @@ interface DisputeUpdatePayload {
   bureau?: Bureau;
   sentAt?: Date;
   responseReceivedAt?: Date;
-  outcome?: 'removed' | 'updated' | 'verified' | 'pending';
+  outcome?: "removed" | "updated" | "verified" | "pending";
   notes?: string;
 }
 
@@ -48,13 +48,13 @@ interface DisputeUpdatePayload {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     // 1. Authenticate
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = validation.user;
@@ -64,13 +64,13 @@ export async function GET(
     const dispute = await db.disputes.getDispute(disputeId, user.id);
 
     if (!dispute) {
-      return NextResponse.json({ error: 'Dispute not found' }, { status: 404 });
+      return NextResponse.json({ error: "Dispute not found" }, { status: 404 });
     }
 
     // 3. Audit log
     await auditLogger.logAIInteraction({
       userId: user.id,
-      action: 'get_dispute',
+      action: "get_dispute",
       input: { disputeId },
       output: { found: true },
       success: true,
@@ -85,8 +85,8 @@ export async function GET(
     // CreditRepairDisputeRoute error: Failed to get dispute
     void _error;
     return NextResponse.json(
-      { error: 'Failed to get dispute' },
-      { status: 500 }
+      { error: "Failed to get dispute" },
+      { status: 500 },
     );
   }
 }
@@ -97,13 +97,13 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     // 1. Authenticate
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = validation.user;
@@ -132,49 +132,49 @@ export async function PUT(
     // Validate enum values if provided
     if (strategy) {
       const validStrategies: DisputeStrategy[] = [
-        'basic_dispute',
-        'debt_validation',
-        'method_of_verification',
-        'procedural_violation',
-        'statute_of_limitations',
-        'identity_theft',
-        'mixed_file',
-        'creditor_direct',
-        'goodwill',
-        'pay_for_delete',
+        "basic_dispute",
+        "debt_validation",
+        "method_of_verification",
+        "procedural_violation",
+        "statute_of_limitations",
+        "identity_theft",
+        "mixed_file",
+        "creditor_direct",
+        "goodwill",
+        "pay_for_delete",
       ];
 
       if (!validStrategies.includes(strategy)) {
         return NextResponse.json(
-          { error: 'Invalid strategy', validStrategies },
-          { status: 400 }
+          { error: "Invalid strategy", validStrategies },
+          { status: 400 },
         );
       }
     }
 
     if (status) {
       const validStatuses: DisputeStatus[] = [
-        'draft',
-        'sent',
-        'under_review',
-        'resolved',
-        'rejected',
+        "draft",
+        "sent",
+        "under_review",
+        "resolved",
+        "rejected",
       ];
 
       if (!validStatuses.includes(status)) {
         return NextResponse.json(
-          { error: 'Invalid status', validStatuses },
-          { status: 400 }
+          { error: "Invalid status", validStatuses },
+          { status: 400 },
         );
       }
     }
 
     if (bureau) {
-      const validBureaus: Bureau[] = ['experian', 'equifax', 'transunion'];
+      const validBureaus: Bureau[] = ["experian", "equifax", "transunion"];
       if (!validBureaus.includes(bureau)) {
         return NextResponse.json(
-          { error: 'Invalid bureau', validBureaus },
-          { status: 400 }
+          { error: "Invalid bureau", validBureaus },
+          { status: 400 },
         );
       }
     }
@@ -207,13 +207,13 @@ export async function PUT(
       disputeId,
       user.id,
       updates,
-      expectedDate
+      expectedDate,
     );
 
     // 4. Audit log
     await auditLogger.logAIInteraction({
       userId: user.id,
-      action: 'update_dispute',
+      action: "update_dispute",
       input: { disputeId, updates: Object.keys(updates) },
       output: { success: true },
       success: true,
@@ -228,19 +228,19 @@ export async function PUT(
     // CreditRepairDisputeRoute error: Failed to update dispute
 
     // Check for optimistic locking error
-    if ((_error as Error).message.includes('modified by another process')) {
+    if ((_error as Error).message.includes("modified by another process")) {
       return NextResponse.json(
         {
           error:
-            'Dispute has been modified by another process. Please refresh and try again.',
+            "Dispute has been modified by another process. Please refresh and try again.",
         },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
     return NextResponse.json(
-      { error: 'Failed to update dispute' },
-      { status: 500 }
+      { error: "Failed to update dispute" },
+      { status: 500 },
     );
   }
 }
@@ -251,13 +251,13 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     // 1. Authenticate
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = validation.user;
@@ -267,13 +267,13 @@ export async function DELETE(
     const deleted = await db.disputes.deleteDispute(disputeId, user.id);
 
     if (!deleted) {
-      return NextResponse.json({ error: 'Dispute not found' }, { status: 404 });
+      return NextResponse.json({ error: "Dispute not found" }, { status: 404 });
     }
 
     // 3. Audit log
     await auditLogger.logAIInteraction({
       userId: user.id,
-      action: 'delete_dispute',
+      action: "delete_dispute",
       input: { disputeId },
       output: { deleted: true },
       success: true,
@@ -282,14 +282,14 @@ export async function DELETE(
     // 4. Return response
     return NextResponse.json({
       success: true,
-      message: 'Dispute deleted successfully',
+      message: "Dispute deleted successfully",
     });
   } catch (_error) {
     // CreditRepairDisputeRoute error: Failed to delete dispute
     void _error;
     return NextResponse.json(
-      { error: 'Failed to delete dispute' },
-      { status: 500 }
+      { error: "Failed to delete dispute" },
+      { status: 500 },
     );
   }
 }

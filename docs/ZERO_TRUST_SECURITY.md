@@ -11,18 +11,21 @@
 CreditMaster Pro implements a **Zero Trust Security Model** based on three core principles:
 
 ### 1. Never Trust, Always Verify
+
 - **No Implicit Trust**: Every request is authenticated, regardless of source
 - **Continuous Verification**: Authentication is verified on every API call
 - **Session Validation**: User sessions are validated every 5 minutes
 - **Token Expiration**: Access tokens expire after 24 hours
 
 ### 2. Assume Breach
+
 - **Defense in Depth**: Multiple layers of security controls
 - **Input Sanitization**: All user input is sanitized and validated
 - **Output Encoding**: All output is encoded to prevent XSS
 - **Least Privilege**: Users have minimum necessary permissions
 
 ### 3. Verify Explicitly
+
 - **Multi-Factor Authentication**: Required for sensitive operations
 - **Row Level Security**: Database-level access control
 - **Audit Logging**: All actions are logged for compliance
@@ -35,31 +38,35 @@ CreditMaster Pro implements a **Zero Trust Security Model** based on three core 
 ### Supabase Authentication
 
 **Authentication Flow**:
+
 ```typescript
 // 1. User logs in
 const { data, error } = await supabase.auth.signInWithPassword({
-  email: 'user@example.com',
-  password: 'secure-password',
+  email: "user@example.com",
+  password: "secure-password",
 });
 
 // 2. Supabase returns JWT token
 const token = data.session?.access_token;
 
 // 3. Token is included in all API requests
-const response = await fetch('/api/chat/financial/sessions', {
+const response = await fetch("/api/chat/financial/sessions", {
   headers: {
-    'Authorization': `Bearer ${token}`,
+    Authorization: `Bearer ${token}`,
   },
 });
 
 // 4. Server validates token on every request
-const { data: { user } } = await supabase.auth.getUser();
+const {
+  data: { user },
+} = await supabase.auth.getUser();
 if (!user) {
-  return new Response('Unauthorized', { status: 401 });
+  return new Response("Unauthorized", { status: 401 });
 }
 ```
 
 **Token Security**:
+
 - **Algorithm**: RS256 (RSA Signature with SHA-256)
 - **Expiration**: 1 hour (access token), 7 days (refresh token)
 - **Storage**: HttpOnly cookies (web), Secure storage (mobile)
@@ -68,6 +75,7 @@ if (!user) {
 ### Session Management
 
 **Session Lifecycle**:
+
 1. **Creation**: User logs in, session created with unique ID
 2. **Validation**: Session validated on every request
 3. **Refresh**: Token refreshed automatically before expiration
@@ -75,16 +83,22 @@ if (!user) {
 5. **Termination**: User logs out, session invalidated
 
 **Session Security**:
+
 ```typescript
 // Periodic session validation (every 5 minutes)
 useEffect(() => {
-  const interval = setInterval(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      // Redirect to login
-      router.push('/login');
-    }
-  }, 5 * 60 * 1000); // 5 minutes
+  const interval = setInterval(
+    async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        // Redirect to login
+        router.push("/login");
+      }
+    },
+    5 * 60 * 1000,
+  ); // 5 minutes
 
   return () => clearInterval(interval);
 }, []);
@@ -126,7 +140,7 @@ CREATE POLICY "Users can delete their own chat sessions"
 
 ### Chat Messages RLS Policies
 
-```sql
+````sql
 -- Policy 1: Users can view messages from their own sessions
 CREATE POLICY "Users can view messages from their own sessions"
   ON chat_messages FOR SELECT
@@ -179,9 +193,10 @@ interface AuditLog {
   errorMessage?: string;
   metadata: Record<string, any>;
 }
-```
+````
 
 **Example Audit Log**:
+
 ```json
 {
   "id": "log-uuid",
@@ -204,6 +219,7 @@ interface AuditLog {
 ### Real-Time Monitoring
 
 **Metrics Tracked**:
+
 - API response times
 - Error rates
 - Authentication failures
@@ -212,6 +228,7 @@ interface AuditLog {
 - Cache hit rates
 
 **Alerting**:
+
 - **High Error Rate**: >5% errors in 5 minutes
 - **Failed Logins**: >5 failed attempts from same IP
 - **Slow Queries**: >1 second average response time
@@ -224,11 +241,13 @@ interface AuditLog {
 ### Encryption at Rest
 
 **Database Encryption**:
+
 - **Algorithm**: AES-256
 - **Key Management**: Supabase managed keys
 - **Scope**: All database tables and backups
 
 **File Storage Encryption**:
+
 - **Algorithm**: AES-256-GCM
 - **Key Rotation**: Automatic every 90 days
 - **Scope**: All uploaded files and attachments
@@ -236,17 +255,19 @@ interface AuditLog {
 ### Encryption in Transit
 
 **TLS/SSL**:
+
 - **Protocol**: TLS 1.3
 - **Cipher Suites**: Strong ciphers only (AES-256-GCM, ChaCha20-Poly1305)
 - **Certificate**: Let's Encrypt with automatic renewal
 - **HSTS**: Enabled with 1-year max-age
 
 **API Communication**:
+
 ```typescript
 // All API calls use HTTPS
-const response = await fetch('https://api.creditmasterpro.com/...', {
+const response = await fetch("https://api.creditmasterpro.com/...", {
   headers: {
-    'Authorization': `Bearer ${token}`,
+    Authorization: `Bearer ${token}`,
   },
 });
 ```
@@ -254,20 +275,22 @@ const response = await fetch('https://api.creditmasterpro.com/...', {
 ### Sensitive Data Handling
 
 **PII Protection**:
+
 - **Tokenization**: Credit card numbers tokenized
 - **Masking**: SSN displayed as XXX-XX-1234
 - **Redaction**: Sensitive data redacted in logs
 - **Encryption**: All PII encrypted at rest
 
 **Example**:
+
 ```typescript
 // Mask sensitive data in logs
 function maskSensitiveData(data: any) {
   return {
     ...data,
-    ssn: data.ssn?.replace(/\d(?=\d{4})/g, 'X'),
-    creditCard: data.creditCard?.replace(/\d(?=\d{4})/g, '*'),
-    email: data.email?.replace(/(.{2})(.*)(@.*)/, '$1***$3'),
+    ssn: data.ssn?.replace(/\d(?=\d{4})/g, "X"),
+    creditCard: data.creditCard?.replace(/\d(?=\d{4})/g, "*"),
+    email: data.email?.replace(/(.{2})(.*)(@.*)/, "$1***$3"),
   };
 }
 ```
@@ -334,12 +357,14 @@ function maskSensitiveData(data: any) {
 ### Automated Security Scans
 
 **Tools Used**:
+
 - **OWASP ZAP**: Web application security scanner
 - **Snyk**: Dependency vulnerability scanner
 - **SonarQube**: Code quality and security analysis
 - **npm audit**: Node.js dependency auditing
 
 **CI/CD Integration**:
+
 ```yaml
 # .github/workflows/security.yml
 name: Security Scan
@@ -360,11 +385,13 @@ jobs:
 ### Manual Security Testing
 
 **Penetration Testing**:
+
 - Quarterly penetration tests by third-party security firm
 - Annual comprehensive security audit
 - Bug bounty program for responsible disclosure
 
 **Test Scenarios**:
+
 - SQL injection attempts
 - XSS attacks
 - CSRF attacks
@@ -380,17 +407,20 @@ jobs:
 ### Regulatory Compliance
 
 **SOC 2 Type II**:
+
 - Annual audit by independent auditor
 - Security, availability, confidentiality controls
 - Continuous monitoring and reporting
 
 **GDPR Compliance**:
+
 - Right to access personal data
 - Right to deletion (data portability)
 - Data breach notification (72 hours)
 - Privacy by design and default
 
 **PCI DSS** (if handling credit cards):
+
 - Secure network and systems
 - Protect cardholder data
 - Vulnerability management program
@@ -399,6 +429,7 @@ jobs:
 ### Industry Standards
 
 **OWASP Top 10**:
+
 - ✅ Injection prevention
 - ✅ Broken authentication protection
 - ✅ Sensitive data exposure prevention
@@ -411,6 +442,7 @@ jobs:
 - ✅ Insufficient logging & monitoring prevention
 
 **NIST Cybersecurity Framework**:
+
 - **Identify**: Asset management, risk assessment
 - **Protect**: Access control, data security
 - **Detect**: Anomaly detection, continuous monitoring
@@ -424,31 +456,37 @@ jobs:
 ### Incident Response Plan
 
 **Phase 1: Detection**
+
 - Automated alerts for suspicious activity
 - User reports of security issues
 - Security scan findings
 
 **Phase 2: Containment**
+
 - Isolate affected systems
 - Revoke compromised credentials
 - Block malicious IP addresses
 
 **Phase 3: Investigation**
+
 - Analyze audit logs
 - Identify root cause
 - Assess impact and scope
 
 **Phase 4: Remediation**
+
 - Patch vulnerabilities
 - Update security controls
 - Restore from backups if needed
 
 **Phase 5: Recovery**
+
 - Restore normal operations
 - Monitor for recurrence
 - Communicate with affected users
 
 **Phase 6: Post-Incident**
+
 - Document lessons learned
 - Update security policies
 - Improve detection and prevention
@@ -456,6 +494,7 @@ jobs:
 ### Security Contact
 
 **Report Security Issues**:
+
 - **Email**: security@creditmasterpro.com
 - **PGP Key**: Available at https://creditmasterpro.com/.well-known/pgp-key.txt
 - **Bug Bounty**: https://creditmasterpro.com/security/bug-bounty
@@ -471,5 +510,3 @@ jobs:
 - [Deployment Guide](./DEPLOYMENT_GUIDE.md)
 - [OWASP Top 10](https://owasp.org/www-project-top-ten/)
 - [NIST Cybersecurity Framework](https://www.nist.gov/cyberframework)
-
-

@@ -4,8 +4,8 @@
  * AI-powered investment recommendations and price predictions
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
+import { NextRequest, NextResponse } from "next/server";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
 
 // ============================================================================
 // POST - Generate Recommendation
@@ -15,38 +15,38 @@ export async function POST(request: NextRequest) {
   try {
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
     const { symbol, includePrice = false, userProfile } = body;
 
     if (!symbol) {
-      return NextResponse.json({ error: 'Symbol required' }, { status: 400 });
+      return NextResponse.json({ error: "Symbol required" }, { status: 400 });
     }
 
     // Import services dynamically
     const { AIRecommendationEngine } =
-      await import('@/lib/investments/services/AIRecommendationEngine');
+      await import("@/lib/investments/services/AIRecommendationEngine");
     const { MarketDataService } =
-      await import('@/lib/investments/services/MarketDataService');
+      await import("@/lib/investments/services/MarketDataService");
 
     const recommendationEngine = new AIRecommendationEngine();
     const marketService = new MarketDataService();
 
     // Get market data for technical analysis
-    const marketData = await marketService.getHistoricalData(symbol, '1d', 100);
+    const marketData = await marketService.getHistoricalData(symbol, "1d", 100);
 
     if (!marketData || marketData.length === 0) {
       return NextResponse.json(
-        { error: 'No market data available' },
-        { status: 400 }
+        { error: "No market data available" },
+        { status: 400 },
       );
     }
 
     // Calculate technical indicators
     const { calculateSMA, calculateRSI, calculateMACD } =
-      await import('@/components/investments/charts/TechnicalIndicators');
+      await import("@/components/investments/charts/TechnicalIndicators");
 
     const currentPrice = marketData[marketData.length - 1].close;
     const sma20 = calculateSMA(marketData, 20);
@@ -59,8 +59,8 @@ export async function POST(request: NextRequest) {
       trend: {
         direction:
           sma20[sma20.length - 1]?.value < currentPrice
-            ? 'bullish'
-            : ('bearish' as const),
+            ? "bullish"
+            : ("bearish" as const),
         strength: 0.6,
       },
       indicators: {
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       technicalData as any,
       undefined, // Fundamental data
       undefined, // Sentiment data
-      userProfile
+      userProfile,
     );
 
     // Optionally include price prediction
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
       pricePrediction = await recommendationEngine.predictPrice(
         symbol,
         currentPrice,
-        technicalData as any
+        technicalData as any,
       );
     }
 
@@ -106,10 +106,10 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Recommendation error:', error);
+    console.error("Recommendation error:", error);
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: "Internal server error" },
+      { status: 500 },
     );
   }
 }
@@ -122,34 +122,34 @@ export async function GET(request: NextRequest) {
   try {
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
-    const symbol = searchParams.get('symbol');
+    const symbol = searchParams.get("symbol");
 
     if (!symbol) {
       // Return list of recent recommendations (from cache/DB in production)
       return NextResponse.json({
         recommendations: [],
-        message: 'Provide symbol parameter for specific recommendation',
+        message: "Provide symbol parameter for specific recommendation",
       });
     }
 
     // Generate fresh recommendation
     const response = await POST(
       new NextRequest(request.url, {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify({ symbol }),
-      })
+      }),
     );
 
     return response;
   } catch (error) {
-    console.error('Recommendation GET error:', error);
+    console.error("Recommendation GET error:", error);
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: "Internal server error" },
+      { status: 500 },
     );
   }
 }

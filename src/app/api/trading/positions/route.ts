@@ -6,14 +6,14 @@
  * - POST: Close/modify positions
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 import {
   getPositionManager,
   PositionFilter,
   PositionStatus,
   PositionSide,
-} from '@/lib/trading/positions';
+} from "@/lib/trading/positions";
 
 // ============================================================================
 // GET - Retrieve Positions
@@ -28,11 +28,11 @@ export async function GET(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const searchParams = request.nextUrl.searchParams;
-    const action = searchParams.get('action');
+    const action = searchParams.get("action");
 
     const positionManager = getPositionManager();
 
@@ -40,15 +40,15 @@ export async function GET(request: NextRequest) {
     await positionManager.loadPositions(user.id);
 
     // Handle specific actions
-    if (action === 'summary') {
+    if (action === "summary") {
       const summary = positionManager.getSummary();
       return NextResponse.json({ success: true, data: summary });
     }
 
-    if (action === 'trades') {
-      const positionId = searchParams.get('positionId');
-      const symbol = searchParams.get('symbol');
-      const limit = searchParams.get('limit');
+    if (action === "trades") {
+      const positionId = searchParams.get("positionId");
+      const symbol = searchParams.get("symbol");
+      const limit = searchParams.get("limit");
 
       const trades = positionManager.getTrades({
         positionId: positionId || undefined,
@@ -60,20 +60,20 @@ export async function GET(request: NextRequest) {
     }
 
     // Get single position by ID
-    const positionId = searchParams.get('id');
+    const positionId = searchParams.get("id");
     if (positionId) {
       const position = positionManager.getPosition(positionId);
       if (!position) {
         return NextResponse.json(
-          { error: 'Position not found' },
-          { status: 404 }
+          { error: "Position not found" },
+          { status: 404 },
         );
       }
       return NextResponse.json({ success: true, data: position });
     }
 
     // Get position by symbol
-    const symbol = searchParams.get('symbol');
+    const symbol = searchParams.get("symbol");
     if (symbol) {
       const position = positionManager.getPositionBySymbol(symbol);
       return NextResponse.json({
@@ -86,37 +86,37 @@ export async function GET(request: NextRequest) {
     // Build filter from query params
     const filter: PositionFilter = {};
 
-    const status = searchParams.get('status');
+    const status = searchParams.get("status");
     if (status) {
-      filter.status = status.split(',') as PositionStatus[];
+      filter.status = status.split(",") as PositionStatus[];
     }
 
-    const side = searchParams.get('side');
-    if (side === 'long' || side === 'short') {
+    const side = searchParams.get("side");
+    if (side === "long" || side === "short") {
       filter.side = side as PositionSide;
     }
 
-    const strategyId = searchParams.get('strategyId');
+    const strategyId = searchParams.get("strategyId");
     if (strategyId) {
       filter.strategyId = strategyId;
     }
 
-    const minValue = searchParams.get('minValue');
+    const minValue = searchParams.get("minValue");
     if (minValue) {
       filter.minValue = parseFloat(minValue);
     }
 
-    const maxValue = searchParams.get('maxValue');
+    const maxValue = searchParams.get("maxValue");
     if (maxValue) {
       filter.maxValue = parseFloat(maxValue);
     }
 
-    const limit = searchParams.get('limit');
+    const limit = searchParams.get("limit");
     if (limit) {
       filter.limit = parseInt(limit, 10);
     }
 
-    const offset = searchParams.get('offset');
+    const offset = searchParams.get("offset");
     if (offset) {
       filter.offset = parseInt(offset, 10);
     }
@@ -138,8 +138,8 @@ export async function GET(request: NextRequest) {
     // PositionsAPI error: Positions GET error
     void _error;
     return NextResponse.json(
-      { error: 'Failed to retrieve positions' },
-      { status: 500 }
+      { error: "Failed to retrieve positions" },
+      { status: 500 },
     );
   }
 }
@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
@@ -167,21 +167,21 @@ export async function POST(request: NextRequest) {
     await positionManager.loadPositions(user.id);
 
     switch (action) {
-      case 'close': {
+      case "close": {
         const { positionId, closePrice, closeQuantity, reason } = body;
 
         if (!positionId) {
           return NextResponse.json(
-            { error: 'positionId required' },
-            { status: 400 }
+            { error: "positionId required" },
+            { status: 400 },
           );
         }
 
         const position = positionManager.getPosition(positionId);
         if (!position) {
           return NextResponse.json(
-            { error: 'Position not found' },
-            { status: 404 }
+            { error: "Position not found" },
+            { status: 404 },
           );
         }
 
@@ -192,7 +192,7 @@ export async function POST(request: NextRequest) {
           closePrice: price,
           closeQuantity,
           timestamp: new Date(),
-          reason: reason || 'manual',
+          reason: reason || "manual",
         });
 
         return NextResponse.json({
@@ -201,13 +201,13 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      case 'updatePrice': {
+      case "updatePrice": {
         const { symbol, price } = body;
 
         if (!symbol || !price) {
           return NextResponse.json(
-            { error: 'symbol and price required' },
-            { status: 400 }
+            { error: "symbol and price required" },
+            { status: 400 },
           );
         }
 
@@ -221,13 +221,13 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      case 'updatePrices': {
+      case "updatePrices": {
         const { prices } = body;
 
-        if (!prices || typeof prices !== 'object') {
+        if (!prices || typeof prices !== "object") {
           return NextResponse.json(
-            { error: 'prices object required' },
-            { status: 400 }
+            { error: "prices object required" },
+            { status: 400 },
           );
         }
 
@@ -241,13 +241,13 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      case 'setEquity': {
+      case "setEquity": {
         const { equity } = body;
 
-        if (typeof equity !== 'number') {
+        if (typeof equity !== "number") {
           return NextResponse.json(
-            { error: 'equity number required' },
-            { status: 400 }
+            { error: "equity number required" },
+            { status: 400 },
           );
         }
 
@@ -259,7 +259,7 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      case 'closeAll': {
+      case "closeAll": {
         const openPositions = positionManager.getOpenPositions();
         const results = [];
 
@@ -268,7 +268,7 @@ export async function POST(request: NextRequest) {
             positionId: position.id,
             closePrice: position.currentPrice,
             timestamp: new Date(),
-            reason: 'manual',
+            reason: "manual",
           });
           results.push(result);
         }
@@ -283,14 +283,14 @@ export async function POST(request: NextRequest) {
       }
 
       default:
-        return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+        return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }
   } catch (_error) {
     // PositionsAPI error: Positions POST error
     void _error;
     return NextResponse.json(
-      { error: 'Failed to process position request' },
-      { status: 500 }
+      { error: "Failed to process position request" },
+      { status: 500 },
     );
   }
 }

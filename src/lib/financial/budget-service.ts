@@ -5,8 +5,8 @@
  * spending tracking, alerts, and intelligent recommendations.
  */
 
-import { getSupabase } from '@/lib/supabase/client';
-import { supabaseAdmin } from '@/lib/supabase/server';
+import { getSupabase } from "@/lib/supabase/client";
+import { supabaseAdmin } from "@/lib/supabase/server";
 
 const supabase = getSupabase();
 import {
@@ -31,17 +31,17 @@ import {
   BudgetTrend,
   BudgetHistoryEntry,
   BUDGET_CATEGORIES,
-} from './types/budget.types';
+} from "./types/budget.types";
 
 // ============================================================================
 // FAMILY COLLABORATION TYPES
 // ============================================================================
 
 /** Role assigned to a family member on a shared budget */
-export type FamilyMemberRole = 'owner' | 'editor' | 'viewer';
+export type FamilyMemberRole = "owner" | "editor" | "viewer";
 
 /** Visibility level for a shared budget */
-export type SharedBudgetVisibility = 'private' | 'family' | 'public';
+export type SharedBudgetVisibility = "private" | "family" | "public";
 
 /**
  * Represents a family member collaborating on a shared budget.
@@ -131,28 +131,28 @@ export interface FamilyBudgetSummary {
 // ============================================================================
 
 export const CATEGORY_DISPLAY_NAMES: Record<BudgetCategoryValue, string> = {
-  housing: 'Housing',
-  utilities: 'Utilities',
-  groceries: 'Groceries',
-  transportation: 'Transportation',
-  insurance: 'Insurance',
-  healthcare: 'Healthcare',
-  debt_payments: 'Debt Payments',
-  dining_out: 'Dining Out',
-  entertainment: 'Entertainment',
-  shopping: 'Shopping',
-  personal_care: 'Personal Care',
-  fitness: 'Fitness',
-  subscriptions: 'Subscriptions',
-  savings: 'Savings',
-  investments: 'Investments',
-  emergency_fund: 'Emergency Fund',
-  education: 'Education',
-  travel: 'Travel',
-  gifts: 'Gifts',
-  pets: 'Pets',
-  childcare: 'Childcare',
-  other: 'Other',
+  housing: "Housing",
+  utilities: "Utilities",
+  groceries: "Groceries",
+  transportation: "Transportation",
+  insurance: "Insurance",
+  healthcare: "Healthcare",
+  debt_payments: "Debt Payments",
+  dining_out: "Dining Out",
+  entertainment: "Entertainment",
+  shopping: "Shopping",
+  personal_care: "Personal Care",
+  fitness: "Fitness",
+  subscriptions: "Subscriptions",
+  savings: "Savings",
+  investments: "Investments",
+  emergency_fund: "Emergency Fund",
+  education: "Education",
+  travel: "Travel",
+  gifts: "Gifts",
+  pets: "Pets",
+  childcare: "Childcare",
+  other: "Other",
 };
 
 // ============================================================================
@@ -171,18 +171,18 @@ export function calculatePeriodDates(period: BudgetPeriod): {
   const end = new Date(now);
 
   switch (period) {
-    case 'weekly':
+    case "weekly":
       // Start of current week (Sunday)
       start.setDate(now.getDate() - now.getDay());
       start.setHours(0, 0, 0, 0);
       end.setDate(start.getDate() + 6);
       end.setHours(23, 59, 59, 999);
       break;
-    case 'biweekly':
+    case "biweekly":
       // Start of current bi-week
       const dayOfYear = Math.floor(
         (now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) /
-          (1000 * 60 * 60 * 24)
+          (1000 * 60 * 60 * 24),
       );
       const biweekStart = dayOfYear - (dayOfYear % 14);
       start.setMonth(0, biweekStart);
@@ -190,7 +190,7 @@ export function calculatePeriodDates(period: BudgetPeriod): {
       end.setTime(start.getTime() + 13 * 24 * 60 * 60 * 1000);
       end.setHours(23, 59, 59, 999);
       break;
-    case 'monthly':
+    case "monthly":
       // Start of current month
       start.setDate(1);
       start.setHours(0, 0, 0, 0);
@@ -198,7 +198,7 @@ export function calculatePeriodDates(period: BudgetPeriod): {
       end.setDate(0);
       end.setHours(23, 59, 59, 999);
       break;
-    case 'quarterly':
+    case "quarterly":
       // Start of current quarter
       const quarter = Math.floor(now.getMonth() / 3);
       start.setMonth(quarter * 3, 1);
@@ -207,7 +207,7 @@ export function calculatePeriodDates(period: BudgetPeriod): {
       end.setDate(0);
       end.setHours(23, 59, 59, 999);
       break;
-    case 'yearly':
+    case "yearly":
       // Start of current year
       start.setMonth(0, 1);
       start.setHours(0, 0, 0, 0);
@@ -224,11 +224,11 @@ export function calculatePeriodDates(period: BudgetPeriod): {
  */
 export function determineBudgetStatus(
   percentUsed: number,
-  alertThreshold: number
+  alertThreshold: number,
 ): BudgetStatus {
-  if (percentUsed >= 100) return 'over_budget';
-  if (percentUsed >= alertThreshold) return 'warning';
-  return 'on_track';
+  if (percentUsed >= 100) return "over_budget";
+  if (percentUsed >= alertThreshold) return "warning";
+  return "on_track";
 }
 
 /**
@@ -297,7 +297,7 @@ export class BudgetService {
     const { start, end } = calculatePeriodDates(input.period);
 
     const { data, error } = await supabase
-      .from('budgets')
+      .from("budgets")
       .insert({
         user_id: input.userId,
         name: input.name,
@@ -329,13 +329,13 @@ export class BudgetService {
    */
   async getBudgetById(
     budgetId: string,
-    userId: string
+    userId: string,
   ): Promise<Budget | null> {
     const { data, error } = await supabase
-      .from('budgets')
-      .select('*')
-      .eq('id', budgetId)
-      .eq('user_id', userId)
+      .from("budgets")
+      .select("*")
+      .eq("id", budgetId)
+      .eq("user_id", userId)
       .single();
 
     if (error || !data) {
@@ -350,19 +350,19 @@ export class BudgetService {
    */
   async getBudgetsByUser(
     userId: string,
-    options?: { activeOnly?: boolean; category?: BudgetCategoryValue }
+    options?: { activeOnly?: boolean; category?: BudgetCategoryValue },
   ): Promise<Budget[]> {
-    let query = supabase.from('budgets').select('*').eq('user_id', userId);
+    let query = supabase.from("budgets").select("*").eq("user_id", userId);
 
     if (options?.activeOnly) {
-      query = query.eq('is_active', true);
+      query = query.eq("is_active", true);
     }
 
     if (options?.category) {
-      query = query.eq('category', options.category);
+      query = query.eq("category", options.category);
     }
 
-    const { data, error } = await query.order('created_at', {
+    const { data, error } = await query.order("created_at", {
       ascending: false,
     });
 
@@ -379,7 +379,7 @@ export class BudgetService {
   async updateBudget(
     budgetId: string,
     userId: string,
-    updates: UpdateBudgetInput
+    updates: UpdateBudgetInput,
   ): Promise<Budget> {
     const updateData: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
@@ -403,10 +403,10 @@ export class BudgetService {
     }
 
     const { data, error } = await supabase
-      .from('budgets')
+      .from("budgets")
       .update(updateData)
-      .eq('id', budgetId)
-      .eq('user_id', userId)
+      .eq("id", budgetId)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -422,10 +422,10 @@ export class BudgetService {
    */
   async deleteBudget(budgetId: string, userId: string): Promise<boolean> {
     const { error } = await supabase
-      .from('budgets')
+      .from("budgets")
       .delete()
-      .eq('id', budgetId)
-      .eq('user_id', userId);
+      .eq("id", budgetId)
+      .eq("user_id", userId);
 
     if (error) {
       throw new Error(`Failed to delete budget: ${error.message}`);
@@ -440,24 +440,24 @@ export class BudgetService {
   async updateSpentAmount(
     budgetId: string,
     userId: string,
-    amount: number
+    amount: number,
   ): Promise<Budget> {
     // Get current budget
     const current = await this.getBudgetById(budgetId, userId);
     if (!current) {
-      throw new Error('Budget not found');
+      throw new Error("Budget not found");
     }
 
     const newSpentAmount = current.spentAmount + amount;
 
     const { data, error } = await supabase
-      .from('budgets')
+      .from("budgets")
       .update({
         spent_amount: newSpentAmount,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', budgetId)
-      .eq('user_id', userId)
+      .eq("id", budgetId)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -478,11 +478,11 @@ export class BudgetService {
    */
   async resetBudgetForNewPeriod(
     budgetId: string,
-    userId: string
+    userId: string,
   ): Promise<Budget> {
     const current = await this.getBudgetById(budgetId, userId);
     if (!current) {
-      throw new Error('Budget not found');
+      throw new Error("Budget not found");
     }
 
     const { start, end } = calculatePeriodDates(current.period);
@@ -494,7 +494,7 @@ export class BudgetService {
     }
 
     const { data, error } = await supabase
-      .from('budgets')
+      .from("budgets")
       .update({
         spent_amount: 0,
         rollover_amount: rolloverAmount,
@@ -502,8 +502,8 @@ export class BudgetService {
         period_end: end.toISOString(),
         updated_at: new Date().toISOString(),
       })
-      .eq('id', budgetId)
-      .eq('user_id', userId)
+      .eq("id", budgetId)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -576,12 +576,12 @@ export class BudgetService {
     const budgets = await this.getBudgetsByUser(userId, { activeOnly: true });
 
     const budgetsWithRollover = budgets.filter(
-      (b) => b.rolloverEnabled && b.rolloverAmount > 0
+      (b) => b.rolloverEnabled && b.rolloverAmount > 0,
     );
 
     const totalRollover = budgetsWithRollover.reduce(
       (sum, b) => sum + b.rolloverAmount,
-      0
+      0,
     );
 
     const rolloverByCategory = budgetsWithRollover.map((b) => ({
@@ -604,29 +604,29 @@ export class BudgetService {
   async adjustRolloverAmount(
     budgetId: string,
     userId: string,
-    newRolloverAmount: number
+    newRolloverAmount: number,
   ): Promise<Budget> {
     const budget = await this.getBudgetById(budgetId, userId);
     if (!budget) {
-      throw new Error('Budget not found');
+      throw new Error("Budget not found");
     }
 
     if (!budget.rolloverEnabled) {
-      throw new Error('Rollover is not enabled for this budget');
+      throw new Error("Rollover is not enabled for this budget");
     }
 
     if (newRolloverAmount < 0) {
-      throw new Error('Rollover amount cannot be negative');
+      throw new Error("Rollover amount cannot be negative");
     }
 
     const { data, error } = await supabase
-      .from('budgets')
+      .from("budgets")
       .update({
         rollover_amount: newRolloverAmount,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', budgetId)
-      .eq('user_id', userId)
+      .eq("id", budgetId)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -655,9 +655,9 @@ export class BudgetService {
 
     // Count by status
     const budgetsByStatus: BudgetStatusCount = {
-      onTrack: budgets.filter((b) => b.status === 'on_track').length,
-      warning: budgets.filter((b) => b.status === 'warning').length,
-      overBudget: budgets.filter((b) => b.status === 'over_budget').length,
+      onTrack: budgets.filter((b) => b.status === "on_track").length,
+      warning: budgets.filter((b) => b.status === "warning").length,
+      overBudget: budgets.filter((b) => b.status === "over_budget").length,
       inactive: budgets.filter((b) => !b.isActive).length,
     };
 
@@ -691,17 +691,17 @@ export class BudgetService {
 
     // Get period summary (assuming monthly for now)
     const now = new Date();
-    const { start, end } = calculatePeriodDates('monthly');
+    const { start, end } = calculatePeriodDates("monthly");
     const totalDays = Math.ceil(
-      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
+      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
     );
     const daysElapsed = Math.ceil(
-      (now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
+      (now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
     );
     const daysRemaining = Math.max(0, totalDays - daysElapsed);
 
     const periodSummary: PeriodSummary = {
-      period: 'monthly',
+      period: "monthly",
       startDate: start,
       endDate: end,
       daysElapsed: Math.max(0, daysElapsed),
@@ -742,7 +742,7 @@ export class BudgetService {
   async getBudgetTrends(
     userId: string,
     category: BudgetCategoryValue,
-    periods: number = 6
+    periods: number = 6,
   ): Promise<BudgetTrend> {
     // This would typically query historical data
     // For now, return a calculated trend based on current data
@@ -754,7 +754,7 @@ export class BudgetService {
         history: [],
         averageSpent: 0,
         averageBudgeted: 0,
-        trend: 'stable',
+        trend: "stable",
         trendPercentage: 0,
       };
     }
@@ -776,7 +776,7 @@ export class BudgetService {
       history,
       averageSpent: current.spentAmount,
       averageBudgeted: current.budgetedAmount,
-      trend: 'stable',
+      trend: "stable",
       trendPercentage: 0,
     };
   }
@@ -791,14 +791,14 @@ export class BudgetService {
   private async checkAndCreateAlerts(budget: Budget): Promise<void> {
     // Check for threshold warning
     if (
-      budget.status === 'warning' &&
+      budget.status === "warning" &&
       budget.percentUsed >= budget.alertThreshold
     ) {
       await this.createAlert({
         userId: budget.userId,
         budgetId: budget.id,
-        type: 'threshold_warning',
-        severity: 'warning',
+        type: "threshold_warning",
+        severity: "warning",
         title: `Budget Warning: ${CATEGORY_DISPLAY_NAMES[budget.category]}`,
         message: `You've used ${budget.percentUsed.toFixed(1)}% of your ${CATEGORY_DISPLAY_NAMES[budget.category]} budget.`,
         data: {
@@ -810,12 +810,12 @@ export class BudgetService {
     }
 
     // Check for over budget
-    if (budget.status === 'over_budget') {
+    if (budget.status === "over_budget") {
       await this.createAlert({
         userId: budget.userId,
         budgetId: budget.id,
-        type: 'over_budget',
-        severity: 'critical',
+        type: "over_budget",
+        severity: "critical",
         title: `Over Budget: ${CATEGORY_DISPLAY_NAMES[budget.category]}`,
         message: `You've exceeded your ${CATEGORY_DISPLAY_NAMES[budget.category]} budget by $${(budget.spentAmount - budget.budgetedAmount).toFixed(2)}.`,
         data: {
@@ -832,7 +832,7 @@ export class BudgetService {
    */
   async createAlert(input: CreateBudgetAlertInput): Promise<BudgetAlert> {
     const { data, error } = await supabase
-      .from('budget_alerts')
+      .from("budget_alerts")
       .insert({
         user_id: input.userId,
         budget_id: input.budgetId || null,
@@ -860,20 +860,20 @@ export class BudgetService {
    */
   async getAlerts(
     userId: string,
-    options?: { unreadOnly?: boolean; limit?: number }
+    options?: { unreadOnly?: boolean; limit?: number },
   ): Promise<BudgetAlert[]> {
     let query = supabase
-      .from('budget_alerts')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('dismissed', false);
+      .from("budget_alerts")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("dismissed", false);
 
     if (options?.unreadOnly) {
-      query = query.eq('read', false);
+      query = query.eq("read", false);
     }
 
     const { data, error } = await query
-      .order('created_at', { ascending: false })
+      .order("created_at", { ascending: false })
       .limit(options?.limit || 50);
 
     if (error) {
@@ -888,10 +888,10 @@ export class BudgetService {
    */
   async markAlertAsRead(alertId: string, userId: string): Promise<void> {
     const { error } = await supabase
-      .from('budget_alerts')
+      .from("budget_alerts")
       .update({ read: true })
-      .eq('id', alertId)
-      .eq('user_id', userId);
+      .eq("id", alertId)
+      .eq("user_id", userId);
 
     if (error) {
       throw new Error(`Failed to mark alert as read: ${error.message}`);
@@ -903,10 +903,10 @@ export class BudgetService {
    */
   async dismissAlert(alertId: string, userId: string): Promise<void> {
     const { error } = await supabase
-      .from('budget_alerts')
+      .from("budget_alerts")
       .update({ dismissed: true })
-      .eq('id', alertId)
-      .eq('user_id', userId);
+      .eq("id", alertId)
+      .eq("user_id", userId);
 
     if (error) {
       throw new Error(`Failed to dismiss alert: ${error.message}`);
@@ -929,16 +929,16 @@ export class BudgetService {
       if (budget.percentUsed > 120) {
         recommendations.push({
           id: `rec_increase_${budget.id}`,
-          type: 'increase_budget',
+          type: "increase_budget",
           category: budget.category,
           currentAmount: budget.budgetedAmount,
           suggestedAmount: Math.ceil(budget.spentAmount * 1.1),
           reason: `You've consistently exceeded your ${CATEGORY_DISPLAY_NAMES[budget.category]} budget.`,
-          impact: 'medium',
+          impact: "medium",
           actionSteps: [
-            'Review your recent transactions in this category',
-            'Identify if the increased spending is temporary or permanent',
-            'Adjust your budget to match reality or find ways to reduce spending',
+            "Review your recent transactions in this category",
+            "Identify if the increased spending is temporary or permanent",
+            "Adjust your budget to match reality or find ways to reduce spending",
           ],
         });
       }
@@ -947,16 +947,16 @@ export class BudgetService {
       if (budget.percentUsed < 30 && budget.budgetedAmount > 100) {
         recommendations.push({
           id: `rec_decrease_${budget.id}`,
-          type: 'decrease_budget',
+          type: "decrease_budget",
           category: budget.category,
           currentAmount: budget.budgetedAmount,
           suggestedAmount: Math.ceil(budget.spentAmount * 1.5),
           reason: `Your ${CATEGORY_DISPLAY_NAMES[budget.category]} budget seems too high.`,
-          impact: 'low',
+          impact: "low",
           potentialSavings: budget.budgetedAmount - budget.spentAmount * 1.5,
           actionSteps: [
-            'Consider reallocating unused budget to savings or debt payoff',
-            'Lower the budget to free up funds for other priorities',
+            "Consider reallocating unused budget to savings or debt payoff",
+            "Lower the budget to free up funds for other priorities",
           ],
         });
       }
@@ -965,7 +965,8 @@ export class BudgetService {
     // Sort by impact
     const impactOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
     recommendations.sort(
-      (a, b) => impactOrder[a.impact as string] - impactOrder[b.impact as string]
+      (a, b) =>
+        impactOrder[a.impact as string] - impactOrder[b.impact as string],
     );
 
     return recommendations;
@@ -977,7 +978,7 @@ export class BudgetService {
   getAvailableCategories(existingBudgets: Budget[]): BudgetCategoryValue[] {
     const existingCategories = new Set(existingBudgets.map((b) => b.category));
     return Object.values(BUDGET_CATEGORIES).filter(
-      (cat) => !existingCategories.has(cat)
+      (cat) => !existingCategories.has(cat),
     );
   }
 
@@ -1004,58 +1005,60 @@ export class BudgetService {
     budgetId: string,
     ownerUserId: string,
     memberUserIds: string[],
-    role: FamilyMemberRole = 'viewer',
-    visibility: SharedBudgetVisibility = 'family'
+    role: FamilyMemberRole = "viewer",
+    visibility: SharedBudgetVisibility = "family",
   ): Promise<SharedBudget> {
     // Validate that the budget exists and belongs to the caller
     const budget = await this.getBudgetById(budgetId, ownerUserId);
     if (!budget) {
       throw new Error(
-        'Budget not found or you do not have permission to share it'
+        "Budget not found or you do not have permission to share it",
       );
     }
 
     if (memberUserIds.length === 0) {
-      throw new Error('At least one family member userId is required to share a budget');
+      throw new Error(
+        "At least one family member userId is required to share a budget",
+      );
     }
 
     // Filter out the owner from the member list — cannot share with yourself
     const filteredMemberIds = memberUserIds.filter((id) => id !== ownerUserId);
     if (filteredMemberIds.length === 0) {
-      throw new Error('Cannot share a budget with yourself');
+      throw new Error("Cannot share a budget with yourself");
     }
 
     const now = new Date().toISOString();
 
     // Check which members already have a shared record for this budget
     const { data: existingRows } = await (supabaseAdmin.from as any)(
-      'shared_budget_members'
+      "shared_budget_members",
     )
-      .select('member_user_id')
-      .eq('budget_id', budgetId)
-      .in('member_user_id', filteredMemberIds);
+      .select("member_user_id")
+      .eq("budget_id", budgetId)
+      .in("member_user_id", filteredMemberIds);
 
     const existingMemberIds = new Set(
       (existingRows || []).map(
-        (r: { member_user_id: string }) => r.member_user_id
-      )
+        (r: { member_user_id: string }) => r.member_user_id,
+      ),
     );
 
     // Update existing members' roles and visibility
     for (const existingMemberId of existingMemberIds) {
-      await (supabaseAdmin.from as any)('shared_budget_members')
+      await (supabaseAdmin.from as any)("shared_budget_members")
         .update({
           role,
           visibility,
           updated_at: now,
         })
-        .eq('budget_id', budgetId)
-        .eq('member_user_id', existingMemberId);
+        .eq("budget_id", budgetId)
+        .eq("member_user_id", existingMemberId);
     }
 
     // Insert new members
     const newMemberIds = filteredMemberIds.filter(
-      (id) => !existingMemberIds.has(id)
+      (id) => !existingMemberIds.has(id),
     );
 
     if (newMemberIds.length > 0) {
@@ -1063,7 +1066,7 @@ export class BudgetService {
         budget_id: budgetId,
         owner_user_id: ownerUserId,
         member_user_id: memberId,
-        member_name: '', // Will be enriched on read from profiles
+        member_name: "", // Will be enriched on read from profiles
         member_email: null,
         role,
         visibility,
@@ -1075,12 +1078,12 @@ export class BudgetService {
       }));
 
       const { error: insertError } = await (supabaseAdmin.from as any)(
-        'shared_budget_members'
+        "shared_budget_members",
       ).insert(insertRows);
 
       if (insertError) {
         throw new Error(
-          `Failed to share budget with family members: ${insertError.message}`
+          `Failed to share budget with family members: ${insertError.message}`,
         );
       }
     }
@@ -1102,44 +1105,44 @@ export class BudgetService {
   async unshareBudget(
     budgetId: string,
     ownerUserId: string,
-    memberUserId: string
+    memberUserId: string,
   ): Promise<void> {
     // Verify ownership
     const budget = await this.getBudgetById(budgetId, ownerUserId);
     if (!budget) {
       throw new Error(
-        'Budget not found or you do not have permission to modify sharing'
+        "Budget not found or you do not have permission to modify sharing",
       );
     }
 
     if (memberUserId === ownerUserId) {
-      throw new Error('Cannot remove yourself as the budget owner from a shared budget');
+      throw new Error(
+        "Cannot remove yourself as the budget owner from a shared budget",
+      );
     }
 
-    const { error } = await (supabaseAdmin.from as any)(
-      'shared_budget_members'
-    )
+    const { error } = await (supabaseAdmin.from as any)("shared_budget_members")
       .delete()
-      .eq('budget_id', budgetId)
-      .eq('member_user_id', memberUserId);
+      .eq("budget_id", budgetId)
+      .eq("member_user_id", memberUserId);
 
     if (error) {
       throw new Error(
-        `Failed to remove family member from shared budget: ${error.message}`
+        `Failed to remove family member from shared budget: ${error.message}`,
       );
     }
 
     // If no members remain, reset visibility to private
     const { data: remaining } = await (supabaseAdmin.from as any)(
-      'shared_budget_members'
+      "shared_budget_members",
     )
-      .select('id')
-      .eq('budget_id', budgetId);
+      .select("id")
+      .eq("budget_id", budgetId);
 
     if (!remaining || remaining.length === 0) {
-      await (supabaseAdmin.from as any)('shared_budget_members')
-        .update({ visibility: 'private' })
-        .eq('budget_id', budgetId);
+      await (supabaseAdmin.from as any)("shared_budget_members")
+        .update({ visibility: "private" })
+        .eq("budget_id", budgetId);
     }
   }
 
@@ -1157,13 +1160,13 @@ export class BudgetService {
     // Find all shared_budget_members rows where this user is a member
     const { data: memberRows, error: memberError } = await (
       supabaseAdmin.from as any
-    )('shared_budget_members')
-      .select('*')
-      .eq('member_user_id', userId);
+    )("shared_budget_members")
+      .select("*")
+      .eq("member_user_id", userId);
 
     if (memberError) {
       throw new Error(
-        `Failed to fetch shared budgets for family member: ${memberError.message}`
+        `Failed to fetch shared budgets for family member: ${memberError.message}`,
       );
     }
 
@@ -1174,7 +1177,7 @@ export class BudgetService {
     // Get the distinct budget IDs this user has been shared on
     const budgetIds = [
       ...new Set(
-        (memberRows as SharedBudgetMemberRow[]).map((r) => r.budget_id)
+        (memberRows as SharedBudgetMemberRow[]).map((r) => r.budget_id),
       ),
     ];
 
@@ -1182,15 +1185,15 @@ export class BudgetService {
     const sharedBudgets: SharedBudget[] = [];
     for (const budgetId of budgetIds) {
       const ownerRow = (memberRows as SharedBudgetMemberRow[]).find(
-        (r) => r.budget_id === budgetId
+        (r) => r.budget_id === budgetId,
       );
       if (!ownerRow) continue;
 
       // Fetch the budget data — use the owner's userId so the query works
       const { data: budgetData, error: budgetError } = await supabase
-        .from('budgets')
-        .select('*')
-        .eq('id', budgetId)
+        .from("budgets")
+        .select("*")
+        .eq("id", budgetId)
         .single();
 
       if (budgetError || !budgetData) continue;
@@ -1229,47 +1232,47 @@ export class BudgetService {
     budgetId: string,
     ownerUserId: string,
     memberUserId: string,
-    newRole: FamilyMemberRole
+    newRole: FamilyMemberRole,
   ): Promise<FamilyMember> {
     // Verify ownership
     const budget = await this.getBudgetById(budgetId, ownerUserId);
     if (!budget) {
       throw new Error(
-        'Budget not found or you do not have permission to update member roles'
+        "Budget not found or you do not have permission to update member roles",
       );
     }
 
-    const validRoles: FamilyMemberRole[] = ['owner', 'editor', 'viewer'];
+    const validRoles: FamilyMemberRole[] = ["owner", "editor", "viewer"];
     if (!validRoles.includes(newRole)) {
       throw new Error(
-        `Invalid family member role: ${newRole}. Must be one of: ${validRoles.join(', ')}`
+        `Invalid family member role: ${newRole}. Must be one of: ${validRoles.join(", ")}`,
       );
     }
 
     const now = new Date().toISOString();
 
     const { data, error } = await (supabaseAdmin.from as any)(
-      'shared_budget_members'
+      "shared_budget_members",
     )
       .update({
         role: newRole,
         updated_at: now,
       })
-      .eq('budget_id', budgetId)
-      .eq('member_user_id', memberUserId)
+      .eq("budget_id", budgetId)
+      .eq("member_user_id", memberUserId)
       .select()
       .single();
 
     if (error || !data) {
       throw new Error(
-        `Failed to update family member role on shared budget: ${error?.message || 'Member not found'}`
+        `Failed to update family member role on shared budget: ${error?.message || "Member not found"}`,
       );
     }
 
     const row = data as SharedBudgetMemberRow;
     return {
       userId: row.member_user_id,
-      name: row.member_name || '',
+      name: row.member_name || "",
       email: row.member_email || undefined,
       role: row.role as FamilyMemberRole,
       invitedAt: new Date(row.invited_at),
@@ -1294,26 +1297,26 @@ export class BudgetService {
     // Fetch all shared budget membership rows for this user
     const { data: memberRows, error: memberError } = await (
       supabaseAdmin.from as any
-    )('shared_budget_members')
-      .select('*')
-      .eq('member_user_id', userId);
+    )("shared_budget_members")
+      .select("*")
+      .eq("member_user_id", userId);
 
     if (memberError) {
       throw new Error(
-        `Failed to fetch family budget summary: ${memberError.message}`
+        `Failed to fetch family budget summary: ${memberError.message}`,
       );
     }
 
     // Also fetch budgets this user owns that have been shared with others
     const { data: ownedShareRows, error: ownedError } = await (
       supabaseAdmin.from as any
-    )('shared_budget_members')
-      .select('*')
-      .eq('owner_user_id', userId);
+    )("shared_budget_members")
+      .select("*")
+      .eq("owner_user_id", userId);
 
     if (ownedError) {
       throw new Error(
-        `Failed to fetch owned shared budgets for family summary: ${ownedError.message}`
+        `Failed to fetch owned shared budgets for family summary: ${ownedError.message}`,
       );
     }
 
@@ -1358,21 +1361,21 @@ export class BudgetService {
 
     for (const entry of uniqueBudgetEntries) {
       const { data: budgetData } = await supabase
-        .from('budgets')
-        .select('*')
-        .eq('id', entry.budget_id)
+        .from("budgets")
+        .select("*")
+        .eq("id", entry.budget_id)
         .single();
 
       if (!budgetData) continue;
 
       const budget = mapRowToBudget(budgetData as BudgetRow);
       const memberRole = (
-        entry.owner_user_id === userId ? 'owner' : entry.role
+        entry.owner_user_id === userId ? "owner" : entry.role
       ) as FamilyMemberRole;
 
       // Tally role counts
-      if (memberRole === 'owner') ownedCount++;
-      else if (memberRole === 'editor') editableCount++;
+      if (memberRole === "owner") ownedCount++;
+      else if (memberRole === "editor") editableCount++;
       else viewOnlyCount++;
 
       totalFamilyBudgeted += budget.budgetedAmount;
@@ -1442,11 +1445,9 @@ export class BudgetService {
     return {
       userId,
       totalSharedBudgets: familyBudgets.length,
-      totalFamilyBudgeted:
-        Math.round(totalFamilyBudgeted * 100) / 100,
+      totalFamilyBudgeted: Math.round(totalFamilyBudgeted * 100) / 100,
       totalFamilySpent: Math.round(totalFamilySpent * 100) / 100,
-      totalFamilyRemaining:
-        Math.round(totalFamilyRemaining * 100) / 100,
+      totalFamilyRemaining: Math.round(totalFamilyRemaining * 100) / 100,
       overallFamilyPercentUsed,
       budgetsByRole: {
         owned: ownedCount,
@@ -1469,18 +1470,18 @@ export class BudgetService {
    * @returns Array of FamilyMember records
    */
   private async getFamilyMembersForBudget(
-    budgetId: string
+    budgetId: string,
   ): Promise<FamilyMember[]> {
     const { data, error } = await (supabaseAdmin.from as any)(
-      'shared_budget_members'
+      "shared_budget_members",
     )
-      .select('*')
-      .eq('budget_id', budgetId)
-      .order('invited_at', { ascending: true });
+      .select("*")
+      .eq("budget_id", budgetId)
+      .order("invited_at", { ascending: true });
 
     if (error) {
       throw new Error(
-        `Failed to fetch family members for shared budget: ${error.message}`
+        `Failed to fetch family members for shared budget: ${error.message}`,
       );
     }
 
@@ -1490,7 +1491,7 @@ export class BudgetService {
 
     return (data as SharedBudgetMemberRow[]).map((row) => ({
       userId: row.member_user_id,
-      name: row.member_name || '',
+      name: row.member_name || "",
       email: row.member_email || undefined,
       role: row.role as FamilyMemberRole,
       invitedAt: new Date(row.invited_at),
@@ -1507,18 +1508,18 @@ export class BudgetService {
    */
   private async getSharedBudgetById(
     budgetId: string,
-    userId: string
+    userId: string,
   ): Promise<SharedBudget> {
     // Fetch the base budget
     const { data: budgetData, error: budgetError } = await supabase
-      .from('budgets')
-      .select('*')
-      .eq('id', budgetId)
+      .from("budgets")
+      .select("*")
+      .eq("id", budgetId)
       .single();
 
     if (budgetError || !budgetData) {
       throw new Error(
-        `Failed to fetch shared budget: ${budgetError?.message || 'Not found'}`
+        `Failed to fetch shared budget: ${budgetError?.message || "Not found"}`,
       );
     }
 
@@ -1529,11 +1530,11 @@ export class BudgetService {
 
     // Determine shared_at and visibility from the first share record
     const { data: shareRow } = await (supabaseAdmin.from as any)(
-      'shared_budget_members'
+      "shared_budget_members",
     )
-      .select('shared_at, visibility, owner_user_id')
-      .eq('budget_id', budgetId)
-      .order('shared_at', { ascending: true })
+      .select("shared_at, visibility, owner_user_id")
+      .eq("budget_id", budgetId)
+      .order("shared_at", { ascending: true })
       .limit(1)
       .single();
 
@@ -1541,7 +1542,7 @@ export class BudgetService {
       ? new Date(shareRow.shared_at)
       : new Date();
     const visibility: SharedBudgetVisibility =
-      (shareRow?.visibility as SharedBudgetVisibility) || 'family';
+      (shareRow?.visibility as SharedBudgetVisibility) || "family";
 
     return {
       ...budget,
@@ -1563,32 +1564,32 @@ export class BudgetService {
    */
   async acceptSharedBudgetInvitation(
     budgetId: string,
-    memberUserId: string
+    memberUserId: string,
   ): Promise<FamilyMember> {
     const now = new Date().toISOString();
 
     const { data, error } = await (supabaseAdmin.from as any)(
-      'shared_budget_members'
+      "shared_budget_members",
     )
       .update({
         accepted_at: now,
         updated_at: now,
       })
-      .eq('budget_id', budgetId)
-      .eq('member_user_id', memberUserId)
+      .eq("budget_id", budgetId)
+      .eq("member_user_id", memberUserId)
       .select()
       .single();
 
     if (error || !data) {
       throw new Error(
-        `Failed to accept shared budget invitation: ${error?.message || 'Invitation not found'}`
+        `Failed to accept shared budget invitation: ${error?.message || "Invitation not found"}`,
       );
     }
 
     const row = data as SharedBudgetMemberRow;
     return {
       userId: row.member_user_id,
-      name: row.member_name || '',
+      name: row.member_name || "",
       email: row.member_email || undefined,
       role: row.role as FamilyMemberRole,
       invitedAt: new Date(row.invited_at),
@@ -1611,41 +1612,39 @@ export class BudgetService {
   async updateSharedBudgetVisibility(
     budgetId: string,
     ownerUserId: string,
-    visibility: SharedBudgetVisibility
+    visibility: SharedBudgetVisibility,
   ): Promise<void> {
     const budget = await this.getBudgetById(budgetId, ownerUserId);
     if (!budget) {
       throw new Error(
-        'Budget not found or you do not have permission to change visibility'
+        "Budget not found or you do not have permission to change visibility",
       );
     }
 
     const validVisibilities: SharedBudgetVisibility[] = [
-      'private',
-      'family',
-      'public',
+      "private",
+      "family",
+      "public",
     ];
     if (!validVisibilities.includes(visibility)) {
       throw new Error(
-        `Invalid shared budget visibility: ${visibility}. Must be one of: ${validVisibilities.join(', ')}`
+        `Invalid shared budget visibility: ${visibility}. Must be one of: ${validVisibilities.join(", ")}`,
       );
     }
 
     const now = new Date().toISOString();
 
-    const { error } = await (supabaseAdmin.from as any)(
-      'shared_budget_members'
-    )
+    const { error } = await (supabaseAdmin.from as any)("shared_budget_members")
       .update({
         visibility,
         updated_at: now,
       })
-      .eq('budget_id', budgetId)
-      .eq('owner_user_id', ownerUserId);
+      .eq("budget_id", budgetId)
+      .eq("owner_user_id", ownerUserId);
 
     if (error) {
       throw new Error(
-        `Failed to update shared budget visibility: ${error.message}`
+        `Failed to update shared budget visibility: ${error.message}`,
       );
     }
   }
@@ -1666,7 +1665,7 @@ export class BudgetService {
   async checkSharedBudgetPermission(
     budgetId: string,
     userId: string,
-    requiredRole: FamilyMemberRole
+    requiredRole: FamilyMemberRole,
   ): Promise<boolean> {
     const roleHierarchy: Record<FamilyMemberRole, number> = {
       viewer: 1,
@@ -1676,9 +1675,9 @@ export class BudgetService {
 
     // Check if user is the budget owner
     const { data: budgetData } = await supabase
-      .from('budgets')
-      .select('user_id')
-      .eq('id', budgetId)
+      .from("budgets")
+      .select("user_id")
+      .eq("id", budgetId)
       .single();
 
     if (budgetData && (budgetData as { user_id: string }).user_id === userId) {
@@ -1687,11 +1686,11 @@ export class BudgetService {
 
     // Check family member role
     const { data: memberRow } = await (supabaseAdmin.from as any)(
-      'shared_budget_members'
+      "shared_budget_members",
     )
-      .select('role')
-      .eq('budget_id', budgetId)
-      .eq('member_user_id', userId)
+      .select("role")
+      .eq("budget_id", budgetId)
+      .eq("member_user_id", userId)
       .single();
 
     if (!memberRow) {
@@ -1712,18 +1711,18 @@ export class BudgetService {
    * @returns Array of SharedBudgets with pending invitations
    */
   async getPendingSharedBudgetInvitations(
-    userId: string
+    userId: string,
   ): Promise<SharedBudget[]> {
     const { data: pendingRows, error } = await (supabaseAdmin.from as any)(
-      'shared_budget_members'
+      "shared_budget_members",
     )
-      .select('*')
-      .eq('member_user_id', userId)
-      .is('accepted_at', null);
+      .select("*")
+      .eq("member_user_id", userId)
+      .is("accepted_at", null);
 
     if (error) {
       throw new Error(
-        `Failed to fetch pending shared budget invitations: ${error.message}`
+        `Failed to fetch pending shared budget invitations: ${error.message}`,
       );
     }
 
@@ -1734,17 +1733,15 @@ export class BudgetService {
     const sharedBudgets: SharedBudget[] = [];
     for (const row of pendingRows as SharedBudgetMemberRow[]) {
       const { data: budgetData } = await supabase
-        .from('budgets')
-        .select('*')
-        .eq('id', row.budget_id)
+        .from("budgets")
+        .select("*")
+        .eq("id", row.budget_id)
         .single();
 
       if (!budgetData) continue;
 
       const budget = mapRowToBudget(budgetData as BudgetRow);
-      const familyMembers = await this.getFamilyMembersForBudget(
-        row.budget_id
-      );
+      const familyMembers = await this.getFamilyMembersForBudget(row.budget_id);
 
       sharedBudgets.push({
         ...budget,

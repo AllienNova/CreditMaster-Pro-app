@@ -5,14 +5,14 @@
  * POST /api/marketplace/reviews - Create a new review (authenticated)
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { reviewService, type CreateReviewInput } from '@/lib/marketplace';
-import { createClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from "next/server";
+import { reviewService, type CreateReviewInput } from "@/lib/marketplace";
+import { createClient } from "@supabase/supabase-js";
 
 // Helper to get user from auth header
 async function getAuthenticatedUser(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
+  const authHeader = request.headers.get("authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
     return null;
   }
 
@@ -21,7 +21,7 @@ async function getAuthenticatedUser(request: NextRequest) {
   try {
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     );
 
     const {
@@ -43,18 +43,18 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
 
-    const productId = searchParams.get('productId');
-    const providerId = searchParams.get('providerId');
-    const userId = searchParams.get('userId');
+    const productId = searchParams.get("productId");
+    const providerId = searchParams.get("providerId");
+    const userId = searchParams.get("userId");
 
     // Must have at least one filter
     if (!productId && !providerId && !userId) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Must provide productId, providerId, or userId',
+          error: "Must provide productId, providerId, or userId",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
       reviews = await reviewService.getReviewsForProvider(providerId);
       const avgRating = await reviewService.getAverageRating(
         undefined,
-        providerId
+        providerId,
       );
       meta = { providerId, averageRating: avgRating };
     } else if (userId) {
@@ -88,14 +88,14 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching reviews:', error);
+    console.error("Error fetching reviews:", error);
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to fetch reviews',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to fetch reviews",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -108,9 +108,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Authentication required',
+          error: "Authentication required",
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -123,29 +123,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Must provide productId or providerId',
+          error: "Must provide productId or providerId",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    if (typeof rating !== 'number' || rating < 1 || rating > 5) {
+    if (typeof rating !== "number" || rating < 1 || rating > 5) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Rating must be a number between 1 and 5',
+          error: "Rating must be a number between 1 and 5",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    if (!content || typeof content !== 'string' || content.trim().length < 10) {
+    if (!content || typeof content !== "string" || content.trim().length < 10) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Review content must be at least 10 characters',
+          error: "Review content must be at least 10 characters",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -163,9 +163,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Failed to create review',
+          error: "Failed to create review",
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -174,17 +174,17 @@ export async function POST(request: NextRequest) {
         success: true,
         data: review,
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
-    console.error('Error creating review:', error);
+    console.error("Error creating review:", error);
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to create review',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to create review",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

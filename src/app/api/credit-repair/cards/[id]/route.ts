@@ -15,10 +15,10 @@
  * - Audit logging
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { db } from '@/lib/credit-repair/db';
-import { auditLogger } from '@/lib/security/audit-logging';
+import { NextRequest, NextResponse } from "next/server";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { db } from "@/lib/credit-repair/db";
+import { auditLogger } from "@/lib/security/audit-logging";
 
 interface CardUpdatePayload {
   cardName?: string;
@@ -35,13 +35,13 @@ interface CardUpdatePayload {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     // 1. Authenticate
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = validation.user;
@@ -52,15 +52,15 @@ export async function GET(
 
     if (!card) {
       return NextResponse.json(
-        { error: 'Credit card not found' },
-        { status: 404 }
+        { error: "Credit card not found" },
+        { status: 404 },
       );
     }
 
     // 3. Audit log
     await auditLogger.logAIInteraction({
       userId: user.id,
-      action: 'get_credit_card',
+      action: "get_credit_card",
       input: { cardId },
       output: { found: true },
       success: true,
@@ -75,8 +75,8 @@ export async function GET(
     // CreditCardsRoute error: Failed to get credit card
     void _error;
     return NextResponse.json(
-      { error: 'Failed to get credit card' },
-      { status: 500 }
+      { error: "Failed to get credit card" },
+      { status: 500 },
     );
   }
 }
@@ -87,13 +87,13 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     // 1. Authenticate
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = validation.user;
@@ -113,16 +113,16 @@ export async function PUT(
     // Validate credit limit if provided
     if (creditLimit !== undefined && creditLimit <= 0) {
       return NextResponse.json(
-        { error: 'Credit limit must be greater than 0' },
-        { status: 400 }
+        { error: "Credit limit must be greater than 0" },
+        { status: 400 },
       );
     }
 
     // Validate current balance if provided
     if (currentBalance !== undefined && currentBalance < 0) {
       return NextResponse.json(
-        { error: 'Current balance cannot be negative' },
-        { status: 400 }
+        { error: "Current balance cannot be negative" },
+        { status: 400 },
       );
     }
 
@@ -132,8 +132,8 @@ export async function PUT(
       (statementClosingDay < 1 || statementClosingDay > 31)
     ) {
       return NextResponse.json(
-        { error: 'Statement closing day must be between 1 and 31' },
-        { status: 400 }
+        { error: "Statement closing day must be between 1 and 31" },
+        { status: 400 },
       );
     }
 
@@ -143,8 +143,8 @@ export async function PUT(
       (paymentDueDay < 1 || paymentDueDay > 31)
     ) {
       return NextResponse.json(
-        { error: 'Payment due day must be between 1 and 31' },
-        { status: 400 }
+        { error: "Payment due day must be between 1 and 31" },
+        { status: 400 },
       );
     }
 
@@ -161,13 +161,13 @@ export async function PUT(
     const card = await db.creditCards.updateCreditCard(
       cardId,
       user.id,
-      updates
+      updates,
     );
 
     // 4. Audit log
     await auditLogger.logAIInteraction({
       userId: user.id,
-      action: 'update_credit_card',
+      action: "update_credit_card",
       input: { cardId, updates: Object.keys(updates) },
       output: { success: true, utilization: card.utilization },
       success: true,
@@ -182,8 +182,8 @@ export async function PUT(
     // CreditCardsRoute error: Failed to update credit card
     void _error;
     return NextResponse.json(
-      { error: 'Failed to update credit card' },
-      { status: 500 }
+      { error: "Failed to update credit card" },
+      { status: 500 },
     );
   }
 }
@@ -194,13 +194,13 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     // 1. Authenticate
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = validation.user;
@@ -211,15 +211,15 @@ export async function DELETE(
 
     if (!deleted) {
       return NextResponse.json(
-        { error: 'Credit card not found' },
-        { status: 404 }
+        { error: "Credit card not found" },
+        { status: 404 },
       );
     }
 
     // 3. Audit log
     await auditLogger.logAIInteraction({
       userId: user.id,
-      action: 'delete_credit_card',
+      action: "delete_credit_card",
       input: { cardId },
       output: { deleted: true },
       success: true,
@@ -228,14 +228,14 @@ export async function DELETE(
     // 4. Return response
     return NextResponse.json({
       success: true,
-      message: 'Credit card deleted successfully',
+      message: "Credit card deleted successfully",
     });
   } catch (_error) {
     // CreditCardsRoute error: Failed to delete credit card
     void _error;
     return NextResponse.json(
-      { error: 'Failed to delete credit card' },
-      { status: 500 }
+      { error: "Failed to delete credit card" },
+      { status: 500 },
     );
   }
 }

@@ -10,25 +10,25 @@
  * Complies with FCRA requirements and best practices.
  */
 
-import { AIMLService } from '@/lib/aiml-service';
+import { AIMLService } from "@/lib/aiml-service";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 export type DisputeReason =
-  | 'inaccurate_balance'
-  | 'inaccurate_payment_history'
-  | 'account_not_mine'
-  | 'identity_theft'
-  | 'outdated_information'
-  | 'duplicate_account'
-  | 'paid_collection'
-  | 'unauthorized_inquiry'
-  | 'incorrect_personal_info'
-  | 'goodwill_adjustment';
+  | "inaccurate_balance"
+  | "inaccurate_payment_history"
+  | "account_not_mine"
+  | "identity_theft"
+  | "outdated_information"
+  | "duplicate_account"
+  | "paid_collection"
+  | "unauthorized_inquiry"
+  | "incorrect_personal_info"
+  | "goodwill_adjustment";
 
-export type CreditBureau = 'experian' | 'equifax' | 'transunion';
+export type CreditBureau = "experian" | "equifax" | "transunion";
 
 export interface DisputeItem {
   creditorName: string;
@@ -52,7 +52,7 @@ export interface DisputeLetterRequest {
   };
   disputeItems: DisputeItem[];
   includeDocumentation?: boolean;
-  tone?: 'formal' | 'firm' | 'friendly';
+  tone?: "formal" | "firm" | "friendly";
 }
 
 export interface GeneratedLetter {
@@ -76,59 +76,59 @@ const BUREAU_ADDRESSES: Record<
   { name: string; address: string }
 > = {
   experian: {
-    name: 'Experian',
-    address: 'P.O. Box 4500\nAllen, TX 75013',
+    name: "Experian",
+    address: "P.O. Box 4500\nAllen, TX 75013",
   },
   equifax: {
-    name: 'Equifax Information Services LLC',
-    address: 'P.O. Box 740256\nAtlanta, GA 30374',
+    name: "Equifax Information Services LLC",
+    address: "P.O. Box 740256\nAtlanta, GA 30374",
   },
   transunion: {
-    name: 'TransUnion Consumer Solutions',
-    address: 'P.O. Box 2000\nChester, PA 19016',
+    name: "TransUnion Consumer Solutions",
+    address: "P.O. Box 2000\nChester, PA 19016",
   },
 };
 
 const DISPUTE_REASON_DESCRIPTIONS: Record<DisputeReason, string> = {
-  inaccurate_balance: 'The reported balance is incorrect',
-  inaccurate_payment_history: 'The payment history contains errors',
-  account_not_mine: 'This account does not belong to me',
-  identity_theft: 'This account was opened fraudulently due to identity theft',
-  outdated_information: 'This information is outdated and should be removed',
-  duplicate_account: 'This account is reported multiple times',
-  paid_collection: 'This collection has been paid but is not reflected',
-  unauthorized_inquiry: 'This inquiry was not authorized by me',
-  incorrect_personal_info: 'My personal information is incorrect',
-  goodwill_adjustment: 'Request for goodwill adjustment of late payment',
+  inaccurate_balance: "The reported balance is incorrect",
+  inaccurate_payment_history: "The payment history contains errors",
+  account_not_mine: "This account does not belong to me",
+  identity_theft: "This account was opened fraudulently due to identity theft",
+  outdated_information: "This information is outdated and should be removed",
+  duplicate_account: "This account is reported multiple times",
+  paid_collection: "This collection has been paid but is not reflected",
+  unauthorized_inquiry: "This inquiry was not authorized by me",
+  incorrect_personal_info: "My personal information is incorrect",
+  goodwill_adjustment: "Request for goodwill adjustment of late payment",
 };
 
 const RECOMMENDED_DOCUMENTS: Record<DisputeReason, string[]> = {
-  inaccurate_balance: ['Recent account statement', 'Payment receipts'],
+  inaccurate_balance: ["Recent account statement", "Payment receipts"],
   inaccurate_payment_history: [
-    'Bank statements showing payments',
-    'Cancelled checks',
+    "Bank statements showing payments",
+    "Cancelled checks",
   ],
   account_not_mine: [
-    'Government-issued ID',
-    'Utility bill for address verification',
+    "Government-issued ID",
+    "Utility bill for address verification",
   ],
   identity_theft: [
-    'FTC Identity Theft Report',
-    'Police report',
-    'Government-issued ID',
+    "FTC Identity Theft Report",
+    "Police report",
+    "Government-issued ID",
   ],
-  outdated_information: ['Documentation showing correct dates'],
-  duplicate_account: ['Credit report highlighting duplicates'],
-  paid_collection: ['Paid in full letter', 'Payment receipt', 'Bank statement'],
-  unauthorized_inquiry: ['Statement denying authorization'],
+  outdated_information: ["Documentation showing correct dates"],
+  duplicate_account: ["Credit report highlighting duplicates"],
+  paid_collection: ["Paid in full letter", "Payment receipt", "Bank statement"],
+  unauthorized_inquiry: ["Statement denying authorization"],
   incorrect_personal_info: [
-    'Government-issued ID',
-    'Social Security card',
-    'Utility bill',
+    "Government-issued ID",
+    "Social Security card",
+    "Utility bill",
   ],
   goodwill_adjustment: [
-    'Payment history showing good standing',
-    'Explanation letter',
+    "Payment history showing good standing",
+    "Explanation letter",
   ],
 };
 
@@ -141,10 +141,10 @@ export class DisputeLetterGenerator {
    * Generate a dispute letter using AI
    */
   async generateLetter(
-    request: DisputeLetterRequest
+    request: DisputeLetterRequest,
   ): Promise<GeneratedLetter> {
     const bureauInfo = BUREAU_ADDRESSES[request.bureau];
-    const tone = request.tone || 'formal';
+    const tone = request.tone || "formal";
 
     // Build dispute items description
     const disputeItemsText = request.disputeItems
@@ -161,14 +161,14 @@ export class DisputeLetterGenerator {
           text += `   Details: ${item.additionalDetails}\n`;
         return text;
       })
-      .join('\n');
+      .join("\n");
 
     // Generate letter content using AI
     const prompt = this.buildPrompt(
       request,
       bureauInfo,
       disputeItemsText,
-      tone
+      tone,
     );
     const letterContent = await this.callAI(prompt);
 
@@ -177,7 +177,7 @@ export class DisputeLetterGenerator {
 
     // Collect recommended documents
     const recommendedDocuments = this.getRecommendedDocuments(
-      request.disputeItems
+      request.disputeItems,
     );
 
     return {
@@ -197,12 +197,12 @@ export class DisputeLetterGenerator {
    * Generate letters for all three bureaus
    */
   async generateAllBureauLetters(
-    request: Omit<DisputeLetterRequest, 'bureau'>
+    request: Omit<DisputeLetterRequest, "bureau">,
   ): Promise<GeneratedLetter[]> {
-    const bureaus: CreditBureau[] = ['experian', 'equifax', 'transunion'];
+    const bureaus: CreditBureau[] = ["experian", "equifax", "transunion"];
 
     const letters = await Promise.all(
-      bureaus.map((bureau) => this.generateLetter({ ...request, bureau }))
+      bureaus.map((bureau) => this.generateLetter({ ...request, bureau })),
     );
 
     return letters;
@@ -214,8 +214,8 @@ export class DisputeLetterGenerator {
   async generateGoodwillLetter(
     creditorName: string,
     accountNumber: string,
-    userInfo: DisputeLetterRequest['userInfo'],
-    explanation: string
+    userInfo: DisputeLetterRequest["userInfo"],
+    explanation: string,
   ): Promise<string> {
     const prompt = `Generate a professional goodwill letter to ${creditorName} requesting removal of a late payment from credit reports.
 
@@ -247,7 +247,7 @@ Generate only the letter content, nothing else.`;
   async generateIdentityTheftLetter(
     request: DisputeLetterRequest,
     ftcReportNumber?: string,
-    policeReportNumber?: string
+    policeReportNumber?: string,
   ): Promise<GeneratedLetter> {
     // Add identity theft specific details
     const enhancedRequest = {
@@ -260,7 +260,7 @@ Generate only the letter content, nothing else.`;
           policeReportNumber ? `Police Report #: ${policeReportNumber}` : null,
         ]
           .filter(Boolean)
-          .join('. '),
+          .join(". "),
       })),
     };
 
@@ -275,18 +275,18 @@ Generate only the letter content, nothing else.`;
     request: DisputeLetterRequest,
     bureauInfo: { name: string; address: string },
     disputeItemsText: string,
-    tone: 'formal' | 'firm' | 'friendly'
+    tone: "formal" | "firm" | "friendly",
   ): string {
     const toneInstructions = {
-      formal: 'Use a professional, formal tone throughout.',
-      firm: 'Use a firm but professional tone. Be assertive about rights under FCRA.',
-      friendly: 'Use a polite, friendly tone while still being professional.',
+      formal: "Use a professional, formal tone throughout.",
+      firm: "Use a firm but professional tone. Be assertive about rights under FCRA.",
+      friendly: "Use a polite, friendly tone while still being professional.",
     };
 
-    const currentDate = new Date().toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+    const currentDate = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
 
     return `Generate a credit dispute letter following this exact structure:
@@ -302,8 +302,8 @@ ${request.userInfo.city}, ${request.userInfo.state} ${request.userInfo.zipCode}
 
 DATE: ${currentDate}
 
-${request.userInfo.ssn ? `SSN (Last 4): XXX-XX-${request.userInfo.ssn}` : ''}
-${request.userInfo.dateOfBirth ? `Date of Birth: ${request.userInfo.dateOfBirth}` : ''}
+${request.userInfo.ssn ? `SSN (Last 4): XXX-XX-${request.userInfo.ssn}` : ""}
+${request.userInfo.dateOfBirth ? `Date of Birth: ${request.userInfo.dateOfBirth}` : ""}
 
 DISPUTE ITEMS:
 ${disputeItemsText}
@@ -325,55 +325,55 @@ Generate only the letter content in plain text format. Do not include any explan
     try {
       const aiService = new AIMLService();
       const response = await aiService.chat(
-        'anthropic/claude-4.5-sonnet',
+        "anthropic/claude-4.5-sonnet",
         [
           {
-            role: 'system',
+            role: "system",
             content:
-              'You are an expert credit repair specialist who writes professional, effective dispute letters. Your letters are legally sound, reference relevant consumer protection laws, and are designed to maximize the chances of successful dispute resolution.',
+              "You are an expert credit repair specialist who writes professional, effective dispute letters. Your letters are legally sound, reference relevant consumer protection laws, and are designed to maximize the chances of successful dispute resolution.",
           },
           {
-            role: 'user',
+            role: "user",
             content: prompt,
           },
         ],
         {
           temperature: 0.3,
           max_tokens: 2000,
-        }
+        },
       );
 
-      return response.choices[0]?.message?.content || '';
+      return response.choices[0]?.message?.content || "";
     } catch (error) {
       // DisputeLetterGenerator error: AI generation error
-      throw new Error('Failed to generate dispute letter');
+      throw new Error("Failed to generate dispute letter");
     }
   }
 
   private maskAccountNumber(accountNumber: string): string {
     if (accountNumber.length <= 4) return accountNumber;
     const lastFour = accountNumber.slice(-4);
-    const masked = 'X'.repeat(accountNumber.length - 4);
+    const masked = "X".repeat(accountNumber.length - 4);
     return masked + lastFour;
   }
 
   private convertToHtml(letterContent: string): string {
     // Convert plain text to HTML with proper formatting
-    const lines = letterContent.split('\n');
+    const lines = letterContent.split("\n");
     let html =
       '<div class="dispute-letter" style="font-family: Times New Roman, serif; font-size: 12pt; line-height: 1.5;">';
 
     for (const line of lines) {
-      if (line.trim() === '') {
-        html += '<br/>';
-      } else if (line.startsWith('Subject:') || line.includes('DISPUTE')) {
+      if (line.trim() === "") {
+        html += "<br/>";
+      } else if (line.startsWith("Subject:") || line.includes("DISPUTE")) {
         html += `<p style="font-weight: bold;">${line}</p>`;
       } else {
         html += `<p style="margin: 0;">${line}</p>`;
       }
     }
 
-    html += '</div>';
+    html += "</div>";
     return html;
   }
 
@@ -381,8 +381,8 @@ Generate only the letter content in plain text format. Do not include any explan
     const docs = new Set<string>();
 
     // Always recommend ID
-    docs.add('Copy of government-issued photo ID');
-    docs.add('Proof of current address (utility bill or bank statement)');
+    docs.add("Copy of government-issued photo ID");
+    docs.add("Proof of current address (utility bill or bank statement)");
 
     // Add reason-specific documents
     for (const item of items) {
@@ -400,7 +400,7 @@ Generate only the letter content in plain text format. Do not include any explan
     ];
     const bureauName = BUREAU_ADDRESSES[request.bureau].name;
 
-    return `Dispute letter to ${bureauName} regarding ${itemCount} item(s): ${reasons.map((r) => DISPUTE_REASON_DESCRIPTIONS[r]).join(', ')}.`;
+    return `Dispute letter to ${bureauName} regarding ${itemCount} item(s): ${reasons.map((r) => DISPUTE_REASON_DESCRIPTIONS[r]).join(", ")}.`;
   }
 }
 

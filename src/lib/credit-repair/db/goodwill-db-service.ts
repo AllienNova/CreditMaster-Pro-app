@@ -1,9 +1,9 @@
 /**
  * Goodwill Letters Database Service
- * 
+ *
  * Provides database operations for goodwill letter requests.
  * Includes full CRUD operations, error handling, and TypeScript types.
- * 
+ *
  * Features:
  * - Goodwill letter CRUD operations
  * - Status tracking
@@ -12,7 +12,7 @@
  * - Full error handling
  */
 
-import { getSupabase } from '@/lib/supabase/client';
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
 
@@ -28,10 +28,10 @@ export interface GoodwillLetter {
   latePaymentDate: Date;
   reason: string;
   letterContent: string;
-  status: 'draft' | 'sent' | 'response_received' | 'approved' | 'denied';
+  status: "draft" | "sent" | "response_received" | "approved" | "denied";
   sentAt?: Date;
   responseReceivedAt?: Date;
-  outcome?: 'removed' | 'denied' | 'pending';
+  outcome?: "removed" | "denied" | "pending";
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -44,7 +44,7 @@ export interface CreateGoodwillLetterInput {
   latePaymentDate: Date;
   reason: string;
   letterContent: string;
-  status?: 'draft' | 'sent' | 'response_received' | 'approved' | 'denied';
+  status?: "draft" | "sent" | "response_received" | "approved" | "denied";
   notes?: string;
 }
 
@@ -54,10 +54,10 @@ export interface UpdateGoodwillLetterInput {
   latePaymentDate?: Date;
   reason?: string;
   letterContent?: string;
-  status?: 'draft' | 'sent' | 'response_received' | 'approved' | 'denied';
+  status?: "draft" | "sent" | "response_received" | "approved" | "denied";
   sentAt?: Date;
   responseReceivedAt?: Date;
-  outcome?: 'removed' | 'denied' | 'pending';
+  outcome?: "removed" | "denied" | "pending";
   notes?: string;
 }
 
@@ -69,10 +69,10 @@ interface GoodwillLetterRow {
   late_payment_date: string;
   reason: string;
   letter_content: string;
-  status: 'draft' | 'sent' | 'response_received' | 'approved' | 'denied';
+  status: "draft" | "sent" | "response_received" | "approved" | "denied";
   sent_at?: string | null;
   response_received_at?: string | null;
-  outcome?: 'removed' | 'denied' | 'pending' | null;
+  outcome?: "removed" | "denied" | "pending" | null;
   notes?: string | null;
   created_at: string;
   updated_at: string;
@@ -84,10 +84,10 @@ type GoodwillLetterUpdateRow = Partial<{
   late_payment_date: string;
   reason: string;
   letter_content: string;
-  status: 'draft' | 'sent' | 'response_received' | 'approved' | 'denied';
+  status: "draft" | "sent" | "response_received" | "approved" | "denied";
   sent_at: string;
   response_received_at: string;
-  outcome: 'removed' | 'denied' | 'pending';
+  outcome: "removed" | "denied" | "pending";
   notes: string;
 }>;
 
@@ -99,19 +99,19 @@ type GoodwillLetterUpdateRow = Partial<{
  * Create a new goodwill letter
  */
 export async function createGoodwillLetter(
-  input: CreateGoodwillLetterInput
+  input: CreateGoodwillLetterInput,
 ): Promise<GoodwillLetter> {
   try {
     const { data, error } = await supabase
-      .from('goodwill_letters')
+      .from("goodwill_letters")
       .insert({
         user_id: input.userId,
         creditor_name: input.creditorName,
         account_number: input.accountNumber,
-        late_payment_date: input.latePaymentDate.toISOString().split('T')[0],
+        late_payment_date: input.latePaymentDate.toISOString().split("T")[0],
         reason: input.reason,
         letter_content: input.letterContent,
-        status: input.status || 'draft',
+        status: input.status || "draft",
         notes: input.notes,
       })
       .select()
@@ -122,7 +122,9 @@ export async function createGoodwillLetter(
     return mapGoodwillLetterFromDb(data as GoodwillLetterRow);
   } catch (error) {
     // GoodwillDB error: Error creating goodwill letter
-    throw new Error(`Failed to create goodwill letter: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to create goodwill letter: ${(error as Error).message}`,
+    );
   }
 }
 
@@ -131,18 +133,18 @@ export async function createGoodwillLetter(
  */
 export async function getGoodwillLetter(
   letterId: string,
-  userId: string
+  userId: string,
 ): Promise<GoodwillLetter | null> {
   try {
     const { data, error } = await supabase
-      .from('goodwill_letters')
-      .select('*')
-      .eq('id', letterId)
-      .eq('user_id', userId)
+      .from("goodwill_letters")
+      .select("*")
+      .eq("id", letterId)
+      .eq("user_id", userId)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
+      if (error.code === "PGRST116") {
         return null;
       }
       throw error;
@@ -151,7 +153,9 @@ export async function getGoodwillLetter(
     return data ? mapGoodwillLetterFromDb(data as GoodwillLetterRow) : null;
   } catch (error) {
     // GoodwillDB error: Error getting goodwill letter
-    throw new Error(`Failed to get goodwill letter: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to get goodwill letter: ${(error as Error).message}`,
+    );
   }
 }
 
@@ -165,21 +169,21 @@ export async function getGoodwillLettersByUser(
     creditorName?: string;
     limit?: number;
     offset?: number;
-  }
+  },
 ): Promise<{ letters: GoodwillLetter[]; total: number }> {
   try {
     let query = supabase
-      .from('goodwill_letters')
-      .select('*', { count: 'exact' })
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .from("goodwill_letters")
+      .select("*", { count: "exact" })
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
     if (filters?.status) {
-      query = query.eq('status', filters.status);
+      query = query.eq("status", filters.status);
     }
 
     if (filters?.creditorName) {
-      query = query.ilike('creditor_name', `%${filters.creditorName}%`);
+      query = query.ilike("creditor_name", `%${filters.creditorName}%`);
     }
 
     if (filters?.limit) {
@@ -187,7 +191,10 @@ export async function getGoodwillLettersByUser(
     }
 
     if (filters?.offset) {
-      query = query.range(filters.offset, filters.offset + (filters.limit || 10) - 1);
+      query = query.range(
+        filters.offset,
+        filters.offset + (filters.limit || 10) - 1,
+      );
     }
 
     const { data, error, count } = await query;
@@ -202,7 +209,9 @@ export async function getGoodwillLettersByUser(
     };
   } catch (error) {
     // GoodwillDB error: Error getting goodwill letters by user
-    throw new Error(`Failed to get goodwill letters: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to get goodwill letters: ${(error as Error).message}`,
+    );
   }
 }
 
@@ -212,15 +221,15 @@ export async function getGoodwillLettersByUser(
 export async function getGoodwillLettersByStatus(
   userId: string,
   status: string,
-  limit?: number
+  limit?: number,
 ): Promise<GoodwillLetter[]> {
   try {
     let query = supabase
-      .from('goodwill_letters')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('status', status)
-      .order('created_at', { ascending: false });
+      .from("goodwill_letters")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", status)
+      .order("created_at", { ascending: false });
 
     if (limit) {
       query = query.limit(limit);
@@ -234,7 +243,9 @@ export async function getGoodwillLettersByStatus(
     return rows.map(mapGoodwillLetterFromDb);
   } catch (error) {
     // GoodwillDB error: Error getting goodwill letters by status
-    throw new Error(`Failed to get goodwill letters by status: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to get goodwill letters by status: ${(error as Error).message}`,
+    );
   }
 }
 
@@ -244,27 +255,36 @@ export async function getGoodwillLettersByStatus(
 export async function updateGoodwillLetter(
   letterId: string,
   userId: string,
-  updates: UpdateGoodwillLetterInput
+  updates: UpdateGoodwillLetterInput,
 ): Promise<GoodwillLetter> {
   try {
     const updateData: GoodwillLetterUpdateRow = {};
 
-    if (updates.creditorName !== undefined) updateData.creditor_name = updates.creditorName;
-    if (updates.accountNumber !== undefined) updateData.account_number = updates.accountNumber;
-    if (updates.latePaymentDate !== undefined) updateData.late_payment_date = updates.latePaymentDate.toISOString().split('T')[0];
+    if (updates.creditorName !== undefined)
+      updateData.creditor_name = updates.creditorName;
+    if (updates.accountNumber !== undefined)
+      updateData.account_number = updates.accountNumber;
+    if (updates.latePaymentDate !== undefined)
+      updateData.late_payment_date = updates.latePaymentDate
+        .toISOString()
+        .split("T")[0];
     if (updates.reason !== undefined) updateData.reason = updates.reason;
-    if (updates.letterContent !== undefined) updateData.letter_content = updates.letterContent;
+    if (updates.letterContent !== undefined)
+      updateData.letter_content = updates.letterContent;
     if (updates.status !== undefined) updateData.status = updates.status;
-    if (updates.sentAt !== undefined) updateData.sent_at = updates.sentAt.toISOString();
-    if (updates.responseReceivedAt !== undefined) updateData.response_received_at = updates.responseReceivedAt.toISOString();
+    if (updates.sentAt !== undefined)
+      updateData.sent_at = updates.sentAt.toISOString();
+    if (updates.responseReceivedAt !== undefined)
+      updateData.response_received_at =
+        updates.responseReceivedAt.toISOString();
     if (updates.outcome !== undefined) updateData.outcome = updates.outcome;
     if (updates.notes !== undefined) updateData.notes = updates.notes;
 
     const { data, error } = await supabase
-      .from('goodwill_letters')
+      .from("goodwill_letters")
       .update(updateData)
-      .eq('id', letterId)
-      .eq('user_id', userId)
+      .eq("id", letterId)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -273,7 +293,9 @@ export async function updateGoodwillLetter(
     return mapGoodwillLetterFromDb(data as GoodwillLetterRow);
   } catch (error) {
     // GoodwillDB error: Error updating goodwill letter
-    throw new Error(`Failed to update goodwill letter: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to update goodwill letter: ${(error as Error).message}`,
+    );
   }
 }
 
@@ -282,43 +304,45 @@ export async function updateGoodwillLetter(
  */
 export async function deleteGoodwillLetter(
   letterId: string,
-  userId: string
+  userId: string,
 ): Promise<boolean> {
   try {
     const { error } = await supabase
-      .from('goodwill_letters')
+      .from("goodwill_letters")
       .delete()
-      .eq('id', letterId)
-      .eq('user_id', userId);
+      .eq("id", letterId)
+      .eq("user_id", userId);
 
     if (error) throw error;
 
     return true;
   } catch (error) {
     // GoodwillDB error: Error deleting goodwill letter
-    throw new Error(`Failed to delete goodwill letter: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to delete goodwill letter: ${(error as Error).message}`,
+    );
   }
 }
 
 /**
  * Get goodwill letter statistics
  */
-export async function getGoodwillLetterStats(
-  userId: string
-): Promise<{
+export async function getGoodwillLetterStats(userId: string): Promise<{
   total: number;
   byStatus: Record<string, number>;
   successRate: number;
 }> {
   try {
     const { data, error } = await supabase
-      .from('goodwill_letters')
-      .select('*')
-      .eq('user_id', userId);
+      .from("goodwill_letters")
+      .select("*")
+      .eq("user_id", userId);
 
     if (error) throw error;
 
-    const letters = ((data ?? []) as GoodwillLetterRow[]).map(mapGoodwillLetterFromDb);
+    const letters = ((data ?? []) as GoodwillLetterRow[]).map(
+      mapGoodwillLetterFromDb,
+    );
 
     const total = letters.length;
 
@@ -329,9 +353,12 @@ export async function getGoodwillLetterStats(
     }
 
     // Calculate success rate
-    const responded = letters.filter((l) => l.status === 'approved' || l.status === 'denied');
-    const approved = letters.filter((l) => l.status === 'approved');
-    const successRate = responded.length > 0 ? (approved.length / responded.length) * 100 : 0;
+    const responded = letters.filter(
+      (l) => l.status === "approved" || l.status === "denied",
+    );
+    const approved = letters.filter((l) => l.status === "approved");
+    const successRate =
+      responded.length > 0 ? (approved.length / responded.length) * 100 : 0;
 
     return {
       total,
@@ -340,7 +367,9 @@ export async function getGoodwillLetterStats(
     };
   } catch (error) {
     // GoodwillDB error: Error getting goodwill letter stats
-    throw new Error(`Failed to get goodwill letter stats: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to get goodwill letter stats: ${(error as Error).message}`,
+    );
   }
 }
 
@@ -359,7 +388,9 @@ function mapGoodwillLetterFromDb(data: GoodwillLetterRow): GoodwillLetter {
     letterContent: data.letter_content,
     status: data.status,
     sentAt: data.sent_at ? new Date(data.sent_at) : undefined,
-    responseReceivedAt: data.response_received_at ? new Date(data.response_received_at) : undefined,
+    responseReceivedAt: data.response_received_at
+      ? new Date(data.response_received_at)
+      : undefined,
     outcome: data.outcome ?? undefined,
     notes: data.notes ?? undefined,
     createdAt: new Date(data.created_at),

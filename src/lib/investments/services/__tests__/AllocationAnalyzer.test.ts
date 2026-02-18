@@ -4,17 +4,17 @@
  * Tests for asset allocation, diversification, and rebalancing calculations.
  */
 
-import { AllocationAnalyzer } from '../AllocationAnalyzer';
-import { PortfolioService } from '../PortfolioService';
-import { AssetType } from '../../types/portfolio-db.types';
+import { AllocationAnalyzer } from "../AllocationAnalyzer";
+import { PortfolioService } from "../PortfolioService";
+import { AssetType } from "../../types/portfolio-db.types";
 
-jest.mock('../PortfolioService');
+jest.mock("../PortfolioService");
 
-describe('AllocationAnalyzer', () => {
+describe("AllocationAnalyzer", () => {
   let analyzer: AllocationAnalyzer;
   let mockPortfolioService: jest.Mocked<PortfolioService>;
-  const userId = 'test-user-123';
-  const portfolioId = 'portfolio-1';
+  const userId = "test-user-123";
+  const portfolioId = "portfolio-1";
 
   beforeEach(() => {
     analyzer = new AllocationAnalyzer(userId);
@@ -22,8 +22,8 @@ describe('AllocationAnalyzer', () => {
     jest.clearAllMocks();
   });
 
-  describe('calculateAssetAllocation', () => {
-    it('should calculate asset allocation breakdown', async () => {
+  describe("calculateAssetAllocation", () => {
+    it("should calculate asset allocation breakdown", async () => {
       const mockPortfolio = { id: portfolioId, user_id: userId };
       const mockHoldings = [
         { asset_type: AssetType.STOCK, current_value: 6000 },
@@ -31,8 +31,12 @@ describe('AllocationAnalyzer', () => {
         { asset_type: AssetType.CASH, current_value: 1000 },
       ];
 
-      mockPortfolioService.getPortfolio = jest.fn().mockResolvedValue(mockPortfolio);
-      mockPortfolioService.getHoldings = jest.fn().mockResolvedValue(mockHoldings);
+      mockPortfolioService.getPortfolio = jest
+        .fn()
+        .mockResolvedValue(mockPortfolio);
+      mockPortfolioService.getHoldings = jest
+        .fn()
+        .mockResolvedValue(mockHoldings);
 
       const result = await analyzer.calculateAssetAllocation(portfolioId);
 
@@ -43,9 +47,11 @@ describe('AllocationAnalyzer', () => {
       expect(result.other).toBe(0);
     });
 
-    it('should return zeros for empty portfolio', async () => {
+    it("should return zeros for empty portfolio", async () => {
       const mockPortfolio = { id: portfolioId, user_id: userId };
-      mockPortfolioService.getPortfolio = jest.fn().mockResolvedValue(mockPortfolio);
+      mockPortfolioService.getPortfolio = jest
+        .fn()
+        .mockResolvedValue(mockPortfolio);
       mockPortfolioService.getHoldings = jest.fn().mockResolvedValue([]);
 
       const result = await analyzer.calculateAssetAllocation(portfolioId);
@@ -55,7 +61,7 @@ describe('AllocationAnalyzer', () => {
       expect(result.cash).toBe(0);
     });
 
-    it('should handle crypto and other asset types', async () => {
+    it("should handle crypto and other asset types", async () => {
       const mockPortfolio = { id: portfolioId, user_id: userId };
       const mockHoldings = [
         { asset_type: AssetType.CRYPTO, current_value: 5000 },
@@ -63,8 +69,12 @@ describe('AllocationAnalyzer', () => {
         { asset_type: AssetType.MUTUAL_FUND, current_value: 2000 },
       ];
 
-      mockPortfolioService.getPortfolio = jest.fn().mockResolvedValue(mockPortfolio);
-      mockPortfolioService.getHoldings = jest.fn().mockResolvedValue(mockHoldings);
+      mockPortfolioService.getPortfolio = jest
+        .fn()
+        .mockResolvedValue(mockPortfolio);
+      mockPortfolioService.getHoldings = jest
+        .fn()
+        .mockResolvedValue(mockHoldings);
 
       const result = await analyzer.calculateAssetAllocation(portfolioId);
 
@@ -73,31 +83,35 @@ describe('AllocationAnalyzer', () => {
     });
   });
 
-  describe('calculateSectorAllocation', () => {
-    it('should calculate sector allocation', async () => {
+  describe("calculateSectorAllocation", () => {
+    it("should calculate sector allocation", async () => {
       const mockPortfolio = { id: portfolioId, user_id: userId };
       const mockHoldings = [
-        { sector: 'Technology', current_value: 6000 },
-        { sector: 'Healthcare', current_value: 3000 },
-        { sector: 'Technology', current_value: 1000 },
+        { sector: "Technology", current_value: 6000 },
+        { sector: "Healthcare", current_value: 3000 },
+        { sector: "Technology", current_value: 1000 },
       ];
 
-      mockPortfolioService.getPortfolio = jest.fn().mockResolvedValue(mockPortfolio);
-      mockPortfolioService.getHoldings = jest.fn().mockResolvedValue(mockHoldings);
+      mockPortfolioService.getPortfolio = jest
+        .fn()
+        .mockResolvedValue(mockPortfolio);
+      mockPortfolioService.getHoldings = jest
+        .fn()
+        .mockResolvedValue(mockHoldings);
 
       const result = await analyzer.calculateSectorAllocation(portfolioId);
 
       expect(result).toHaveLength(2);
-      expect(result[0].sector).toBe('Technology');
+      expect(result[0].sector).toBe("Technology");
       expect(result[0].percentage).toBe(70); // 7000 / 10000 * 100
       expect(result[0].holdings_count).toBe(2);
-      expect(result[1].sector).toBe('Healthcare');
+      expect(result[1].sector).toBe("Healthcare");
       expect(result[1].percentage).toBe(30);
     });
   });
 
-  describe('calculateDiversificationScore', () => {
-    it('should calculate diversification metrics', async () => {
+  describe("calculateDiversificationScore", () => {
+    it("should calculate diversification metrics", async () => {
       const mockPortfolio = { id: portfolioId, user_id: userId };
       const mockHoldings = [
         { current_value: 2500 }, // 25%
@@ -106,8 +120,12 @@ describe('AllocationAnalyzer', () => {
         { current_value: 2500 }, // 25%
       ];
 
-      mockPortfolioService.getPortfolio = jest.fn().mockResolvedValue(mockPortfolio);
-      mockPortfolioService.getHoldings = jest.fn().mockResolvedValue(mockHoldings);
+      mockPortfolioService.getPortfolio = jest
+        .fn()
+        .mockResolvedValue(mockPortfolio);
+      mockPortfolioService.getHoldings = jest
+        .fn()
+        .mockResolvedValue(mockHoldings);
 
       const result = await analyzer.calculateDiversificationScore(portfolioId);
 
@@ -116,12 +134,16 @@ describe('AllocationAnalyzer', () => {
       expect(result.diversification_score).toBeGreaterThan(0);
     });
 
-    it('should show high concentration for single holding', async () => {
+    it("should show high concentration for single holding", async () => {
       const mockPortfolio = { id: portfolioId, user_id: userId };
       const mockHoldings = [{ current_value: 10000 }];
 
-      mockPortfolioService.getPortfolio = jest.fn().mockResolvedValue(mockPortfolio);
-      mockPortfolioService.getHoldings = jest.fn().mockResolvedValue(mockHoldings);
+      mockPortfolioService.getPortfolio = jest
+        .fn()
+        .mockResolvedValue(mockPortfolio);
+      mockPortfolioService.getHoldings = jest
+        .fn()
+        .mockResolvedValue(mockHoldings);
 
       const result = await analyzer.calculateDiversificationScore(portfolioId);
 
@@ -132,32 +154,36 @@ describe('AllocationAnalyzer', () => {
     });
   });
 
-  describe('assessConcentrationRisk', () => {
-    it('should identify high concentration risks', async () => {
+  describe("assessConcentrationRisk", () => {
+    it("should identify high concentration risks", async () => {
       const mockPortfolio = { id: portfolioId, user_id: userId };
       const mockHoldings = [
-        { symbol: 'AAPL', name: 'Apple Inc.', current_value: 7000 }, // 70%
-        { symbol: 'GOOGL', name: 'Alphabet Inc.', current_value: 2000 }, // 20%
-        { symbol: 'MSFT', name: 'Microsoft Corp.', current_value: 1000 }, // 10%
+        { symbol: "AAPL", name: "Apple Inc.", current_value: 7000 }, // 70%
+        { symbol: "GOOGL", name: "Alphabet Inc.", current_value: 2000 }, // 20%
+        { symbol: "MSFT", name: "Microsoft Corp.", current_value: 1000 }, // 10%
       ];
 
-      mockPortfolioService.getPortfolio = jest.fn().mockResolvedValue(mockPortfolio);
-      mockPortfolioService.getHoldings = jest.fn().mockResolvedValue(mockHoldings);
+      mockPortfolioService.getPortfolio = jest
+        .fn()
+        .mockResolvedValue(mockPortfolio);
+      mockPortfolioService.getHoldings = jest
+        .fn()
+        .mockResolvedValue(mockHoldings);
 
       const result = await analyzer.assessConcentrationRisk(portfolioId);
 
       expect(result).toHaveLength(3); // All holdings are >5%
-      expect(result[0].symbol).toBe('AAPL');
-      expect(result[0].risk_level).toBe('critical'); // >20%
-      expect(result[1].symbol).toBe('GOOGL');
-      expect(result[1].risk_level).toBe('critical'); // >20%
-      expect(result[2].symbol).toBe('MSFT');
-      expect(result[2].risk_level).toBe('high'); // 10-20%
+      expect(result[0].symbol).toBe("AAPL");
+      expect(result[0].risk_level).toBe("critical"); // >20%
+      expect(result[1].symbol).toBe("GOOGL");
+      expect(result[1].risk_level).toBe("critical"); // >20%
+      expect(result[2].symbol).toBe("MSFT");
+      expect(result[2].risk_level).toBe("high"); // 10-20%
     });
   });
 
-  describe('generateRebalancingRecommendations', () => {
-    it('should generate rebalancing recommendations', async () => {
+  describe("generateRebalancingRecommendations", () => {
+    it("should generate rebalancing recommendations", async () => {
       const mockPortfolio = {
         id: portfolioId,
         user_id: userId,
@@ -170,31 +196,42 @@ describe('AllocationAnalyzer', () => {
         { asset_type: AssetType.CASH, current_value: 1000 }, // 10%
       ];
 
-      mockPortfolioService.getPortfolio = jest.fn().mockResolvedValue(mockPortfolio);
-      mockPortfolioService.getHoldings = jest.fn().mockResolvedValue(mockHoldings);
+      mockPortfolioService.getPortfolio = jest
+        .fn()
+        .mockResolvedValue(mockPortfolio);
+      mockPortfolioService.getHoldings = jest
+        .fn()
+        .mockResolvedValue(mockHoldings);
 
-      const result = await analyzer.generateRebalancingRecommendations(portfolioId);
+      const result =
+        await analyzer.generateRebalancingRecommendations(portfolioId);
 
       expect(result.length).toBeGreaterThan(0);
-      expect(result[0].action).toBe('sell'); // stocks are over-allocated
+      expect(result[0].action).toBe("sell"); // stocks are over-allocated
       expect(result[0].deviation).toBeGreaterThan(5);
     });
 
-    it('should return empty for no target allocation', async () => {
+    it("should return empty for no target allocation", async () => {
       const mockPortfolio = {
         id: portfolioId,
         user_id: userId,
         target_allocation: {},
       };
-      const mockHoldings = [{ asset_type: AssetType.STOCK, current_value: 10000 }];
+      const mockHoldings = [
+        { asset_type: AssetType.STOCK, current_value: 10000 },
+      ];
 
-      mockPortfolioService.getPortfolio = jest.fn().mockResolvedValue(mockPortfolio);
-      mockPortfolioService.getHoldings = jest.fn().mockResolvedValue(mockHoldings);
+      mockPortfolioService.getPortfolio = jest
+        .fn()
+        .mockResolvedValue(mockPortfolio);
+      mockPortfolioService.getHoldings = jest
+        .fn()
+        .mockResolvedValue(mockHoldings);
 
-      const result = await analyzer.generateRebalancingRecommendations(portfolioId);
+      const result =
+        await analyzer.generateRebalancingRecommendations(portfolioId);
 
       expect(result).toEqual([]);
     });
   });
 });
-

@@ -4,7 +4,10 @@
  * Payment processing across multiple providers and regions.
  */
 
-export { TrueLayerPaymentsConnector, createTrueLayerPaymentsConnector } from './truelayer-payments';
+export {
+  TrueLayerPaymentsConnector,
+  createTrueLayerPaymentsConnector,
+} from "./truelayer-payments";
 export type {
   PaymentStatus,
   PaymentMethod,
@@ -18,4 +21,4 @@ export type {
   MerchantAccount,
   MandateRequest,
   Mandate,
-} from './truelayer-payments';
+} from "./truelayer-payments";

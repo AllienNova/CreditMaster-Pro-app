@@ -1,10 +1,10 @@
-import { Suspense } from 'react';
-import { Metadata } from 'next';
-import FinancialSettings from '@/components/financial/FinancialSettings';
+import { Suspense } from "react";
+import { Metadata } from "next";
+import FinancialSettings from "@/components/financial/FinancialSettings";
 
 export const metadata: Metadata = {
-  title: 'Financial Settings | Fynvita',
-  description: 'Manage your financial preferences and settings',
+  title: "Financial Settings | Fynvita",
+  description: "Manage your financial preferences and settings",
 };
 
 function SettingsLoadingSkeleton() {
@@ -14,7 +14,10 @@ function SettingsLoadingSkeleton() {
         <div className="h-6 bg-gray-200 dark:bg-slate-700 rounded w-1/4 mb-6"></div>
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-16 bg-gray-200 dark:bg-slate-700 rounded"></div>
+            <div
+              key={i}
+              className="h-16 bg-gray-200 dark:bg-slate-700 rounded"
+            ></div>
           ))}
         </div>
       </div>

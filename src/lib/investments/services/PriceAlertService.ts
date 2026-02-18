@@ -1,6 +1,6 @@
 /**
  * Price Alert Service
- * 
+ *
  * Comprehensive alert system for investment monitoring:
  * - Price level alerts (above/below)
  * - Percentage change alerts
@@ -13,16 +13,16 @@
 // TYPES
 // ============================================================================
 
-export type AlertType = 
-  | 'price_above' 
-  | 'price_below' 
-  | 'percent_change' 
-  | 'volume_spike' 
-  | 'indicator_crossover'
-  | 'pattern_detected';
+export type AlertType =
+  | "price_above"
+  | "price_below"
+  | "percent_change"
+  | "volume_spike"
+  | "indicator_crossover"
+  | "pattern_detected";
 
-export type AlertStatus = 'active' | 'triggered' | 'expired' | 'disabled';
-export type AlertPriority = 'low' | 'medium' | 'high' | 'critical';
+export type AlertStatus = "active" | "triggered" | "expired" | "disabled";
+export type AlertPriority = "low" | "medium" | "high" | "critical";
 
 export interface PriceAlert {
   id: string;
@@ -45,21 +45,21 @@ export interface PriceAlert {
 export interface AlertCondition {
   // Price alerts
   targetPrice?: number;
-  direction?: 'above' | 'below';
-  
+  direction?: "above" | "below";
+
   // Percentage change
   percentChange?: number;
   timeframeMins?: number;
-  
+
   // Volume alerts
   volumeMultiplier?: number;
   avgVolumePeriod?: number;
-  
+
   // Indicator crossover
   indicatorType?: string;
   indicatorPeriod?: number;
-  crossoverType?: 'bullish' | 'bearish';
-  
+  crossoverType?: "bullish" | "bearish";
+
   // Pattern alerts
   patternType?: string;
 }
@@ -91,9 +91,10 @@ export interface AlertStats {
 export class PriceAlertService {
   private alerts: Map<string, PriceAlert> = new Map();
   private notifications: AlertNotification[] = [];
-  private subscribers: Map<string, Set<(alert: PriceAlert) => void>> = new Map();
+  private subscribers: Map<string, Set<(alert: PriceAlert) => void>> =
+    new Map();
   private checkIntervalId?: NodeJS.Timeout;
-  private notificationPermission: NotificationPermission = 'default';
+  private notificationPermission: NotificationPermission = "default";
 
   constructor() {
     this.requestNotificationPermission();
@@ -104,19 +105,19 @@ export class PriceAlertService {
   // ============================================================================
 
   async requestNotificationPermission(): Promise<boolean> {
-    if (typeof window === 'undefined' || !('Notification' in window)) {
+    if (typeof window === "undefined" || !("Notification" in window)) {
       return false;
     }
 
-    if (Notification.permission === 'granted') {
-      this.notificationPermission = 'granted';
+    if (Notification.permission === "granted") {
+      this.notificationPermission = "granted";
       return true;
     }
 
-    if (Notification.permission !== 'denied') {
+    if (Notification.permission !== "denied") {
       const permission = await Notification.requestPermission();
       this.notificationPermission = permission;
-      return permission === 'granted';
+      return permission === "granted";
     }
 
     return false;
@@ -126,11 +127,16 @@ export class PriceAlertService {
   // ALERT CRUD OPERATIONS
   // ============================================================================
 
-  createAlert(params: Omit<PriceAlert, 'id' | 'createdAt' | 'status' | 'notificationSent'>): PriceAlert {
+  createAlert(
+    params: Omit<
+      PriceAlert,
+      "id" | "createdAt" | "status" | "notificationSent"
+    >,
+  ): PriceAlert {
     const alert: PriceAlert = {
       ...params,
       id: this.generateId(),
-      status: 'active',
+      status: "active",
       notificationSent: false,
       createdAt: new Date(),
     };
@@ -145,15 +151,17 @@ export class PriceAlertService {
   }
 
   getAlertsBySymbol(symbol: string): PriceAlert[] {
-    return Array.from(this.alerts.values()).filter(a => a.symbol === symbol);
+    return Array.from(this.alerts.values()).filter((a) => a.symbol === symbol);
   }
 
   getAlertsByUser(userId: string): PriceAlert[] {
-    return Array.from(this.alerts.values()).filter(a => a.userId === userId);
+    return Array.from(this.alerts.values()).filter((a) => a.userId === userId);
   }
 
   getActiveAlerts(): PriceAlert[] {
-    return Array.from(this.alerts.values()).filter(a => a.status === 'active');
+    return Array.from(this.alerts.values()).filter(
+      (a) => a.status === "active",
+    );
   }
 
   updateAlert(id: string, updates: Partial<PriceAlert>): PriceAlert | null {
@@ -176,16 +184,22 @@ export class PriceAlertService {
   // ALERT CHECKING
   // ============================================================================
 
-  checkPriceAlert(alert: PriceAlert, currentPrice: number, previousPrice?: number): boolean {
-    if (alert.status !== 'active') return false;
+  checkPriceAlert(
+    alert: PriceAlert,
+    currentPrice: number,
+    previousPrice?: number,
+  ): boolean {
+    if (alert.status !== "active") return false;
     if (alert.expiresAt && new Date() > alert.expiresAt) {
-      this.updateAlert(alert.id, { status: 'expired' });
+      this.updateAlert(alert.id, { status: "expired" });
       return false;
     }
 
     // Check cooldown
     if (alert.lastNotifiedAt && alert.cooldownMinutes > 0) {
-      const cooldownEnd = new Date(alert.lastNotifiedAt.getTime() + alert.cooldownMinutes * 60000);
+      const cooldownEnd = new Date(
+        alert.lastNotifiedAt.getTime() + alert.cooldownMinutes * 60000,
+      );
       if (new Date() < cooldownEnd) return false;
     }
 
@@ -193,15 +207,19 @@ export class PriceAlertService {
     let triggered = false;
 
     switch (alert.type) {
-      case 'price_above':
-        triggered = condition.targetPrice !== undefined && currentPrice >= condition.targetPrice;
+      case "price_above":
+        triggered =
+          condition.targetPrice !== undefined &&
+          currentPrice >= condition.targetPrice;
         break;
 
-      case 'price_below':
-        triggered = condition.targetPrice !== undefined && currentPrice <= condition.targetPrice;
+      case "price_below":
+        triggered =
+          condition.targetPrice !== undefined &&
+          currentPrice <= condition.targetPrice;
         break;
 
-      case 'percent_change':
+      case "percent_change":
         if (previousPrice && condition.percentChange !== undefined) {
           const change = ((currentPrice - previousPrice) / previousPrice) * 100;
           triggered = Math.abs(change) >= Math.abs(condition.percentChange);
@@ -216,15 +234,23 @@ export class PriceAlertService {
     return triggered;
   }
 
-  checkVolumeAlert(alert: PriceAlert, currentVolume: number, avgVolume: number): boolean {
-    if (alert.type !== 'volume_spike' || alert.status !== 'active') return false;
+  checkVolumeAlert(
+    alert: PriceAlert,
+    currentVolume: number,
+    avgVolume: number,
+  ): boolean {
+    if (alert.type !== "volume_spike" || alert.status !== "active")
+      return false;
 
     const { condition } = alert;
     const multiplier = condition.volumeMultiplier || 2;
     const triggered = currentVolume >= avgVolume * multiplier;
 
     if (triggered) {
-      this.triggerAlert(alert, currentVolume, { avgVolume, multiplier: currentVolume / avgVolume });
+      this.triggerAlert(alert, currentVolume, {
+        avgVolume,
+        multiplier: currentVolume / avgVolume,
+      });
     }
 
     return triggered;
@@ -235,23 +261,27 @@ export class PriceAlertService {
     currentValue: number,
     signalValue: number,
     previousValue: number,
-    previousSignal: number
+    previousSignal: number,
   ): boolean {
-    if (alert.type !== 'indicator_crossover' || alert.status !== 'active') return false;
+    if (alert.type !== "indicator_crossover" || alert.status !== "active")
+      return false;
 
     const { condition } = alert;
     let triggered = false;
 
-    if (condition.crossoverType === 'bullish') {
+    if (condition.crossoverType === "bullish") {
       // Bullish crossover: value crosses above signal
       triggered = previousValue <= previousSignal && currentValue > signalValue;
-    } else if (condition.crossoverType === 'bearish') {
+    } else if (condition.crossoverType === "bearish") {
       // Bearish crossover: value crosses below signal
       triggered = previousValue >= previousSignal && currentValue < signalValue;
     }
 
     if (triggered) {
-      this.triggerAlert(alert, currentValue, { signalValue, crossoverType: condition.crossoverType });
+      this.triggerAlert(alert, currentValue, {
+        signalValue,
+        crossoverType: condition.crossoverType,
+      });
     }
 
     return triggered;
@@ -261,7 +291,11 @@ export class PriceAlertService {
   // ALERT TRIGGERING & NOTIFICATIONS
   // ============================================================================
 
-  private triggerAlert(alert: PriceAlert, value: number, extraData?: Record<string, any>): void {
+  private triggerAlert(
+    alert: PriceAlert,
+    value: number,
+    extraData?: Record<string, any>,
+  ): void {
     const now = new Date();
 
     // Update alert status
@@ -272,7 +306,7 @@ export class PriceAlertService {
     };
 
     if (!alert.repeatEnabled) {
-      updates.status = 'triggered';
+      updates.status = "triggered";
     }
 
     this.updateAlert(alert.id, updates);
@@ -290,7 +324,7 @@ export class PriceAlertService {
   private createNotification(
     alert: PriceAlert,
     value: number,
-    extraData?: Record<string, any>
+    extraData?: Record<string, any>,
   ): AlertNotification {
     const notification: AlertNotification = {
       id: this.generateId(),
@@ -328,38 +362,38 @@ export class PriceAlertService {
   private getNotificationMessage(
     alert: PriceAlert,
     value: number,
-    extraData?: Record<string, any>
+    extraData?: Record<string, any>,
   ): string {
     const { condition } = alert;
 
     switch (alert.type) {
-      case 'price_above':
+      case "price_above":
         return `Price crossed above $${condition.targetPrice?.toFixed(2)} (Current: $${value.toFixed(2)})`;
-      case 'price_below':
+      case "price_below":
         return `Price dropped below $${condition.targetPrice?.toFixed(2)} (Current: $${value.toFixed(2)})`;
-      case 'percent_change':
+      case "percent_change":
         return `Price changed by ${value.toFixed(2)}% in ${condition.timeframeMins} minutes`;
-      case 'volume_spike':
+      case "volume_spike":
         return `Volume spike: ${extraData?.multiplier?.toFixed(1)}x average volume`;
-      case 'indicator_crossover':
+      case "indicator_crossover":
         return `${condition.indicatorType} ${condition.crossoverType} crossover detected`;
-      case 'pattern_detected':
+      case "pattern_detected":
         return `${condition.patternType} pattern detected on chart`;
       default:
-        return alert.message || 'Alert triggered';
+        return alert.message || "Alert triggered";
     }
   }
 
   private sendBrowserNotification(notification: AlertNotification): void {
-    if (this.notificationPermission !== 'granted') return;
-    if (typeof window === 'undefined') return;
+    if (this.notificationPermission !== "granted") return;
+    if (typeof window === "undefined") return;
 
     try {
       new Notification(notification.title, {
         body: notification.message,
-        icon: '/icons/alert-icon.png',
+        icon: "/icons/alert-icon.png",
         tag: notification.id,
-        requireInteraction: notification.priority === 'critical',
+        requireInteraction: notification.priority === "critical",
       });
     } catch (_error) {
       // PriceAlertService error: Failed to send browser notification
@@ -384,7 +418,7 @@ export class PriceAlertService {
 
   private notifySubscribers(alert: PriceAlert): void {
     const callbacks = this.subscribers.get(alert.symbol);
-    callbacks?.forEach(cb => {
+    callbacks?.forEach((cb) => {
       try {
         cb(alert);
       } catch (_error) {
@@ -403,16 +437,16 @@ export class PriceAlertService {
   }
 
   getUnreadNotifications(): AlertNotification[] {
-    return this.notifications.filter(n => !n.read);
+    return this.notifications.filter((n) => !n.read);
   }
 
   markNotificationRead(id: string): void {
-    const notification = this.notifications.find(n => n.id === id);
+    const notification = this.notifications.find((n) => n.id === id);
     if (notification) notification.read = true;
   }
 
   markAllNotificationsRead(): void {
-    this.notifications.forEach(n => n.read = true);
+    this.notifications.forEach((n) => (n.read = true));
   }
 
   clearNotifications(): void {
@@ -430,15 +464,15 @@ export class PriceAlertService {
 
     const stats: AlertStats = {
       totalAlerts: userAlerts.length,
-      activeAlerts: userAlerts.filter(a => a.status === 'active').length,
-      triggeredToday: userAlerts.filter(a =>
-        a.triggeredAt && a.triggeredAt >= today
+      activeAlerts: userAlerts.filter((a) => a.status === "active").length,
+      triggeredToday: userAlerts.filter(
+        (a) => a.triggeredAt && a.triggeredAt >= today,
       ).length,
       bySymbol: {},
       byType: {} as Record<AlertType, number>,
     };
 
-    userAlerts.forEach(alert => {
+    userAlerts.forEach((alert) => {
       stats.bySymbol[alert.symbol] = (stats.bySymbol[alert.symbol] || 0) + 1;
       stats.byType[alert.type] = (stats.byType[alert.type] || 0) + 1;
     });
@@ -451,10 +485,10 @@ export class PriceAlertService {
   // ============================================================================
 
   private persistAlerts(): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
     try {
       const data = Array.from(this.alerts.values());
-      localStorage.setItem('investment_alerts', JSON.stringify(data));
+      localStorage.setItem("investment_alerts", JSON.stringify(data));
     } catch (_error) {
       // PriceAlertService error: Failed to persist alerts
       void _error;
@@ -462,16 +496,18 @@ export class PriceAlertService {
   }
 
   loadAlerts(): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
     try {
-      const data = localStorage.getItem('investment_alerts');
+      const data = localStorage.getItem("investment_alerts");
       if (data) {
         const alerts: PriceAlert[] = JSON.parse(data);
-        alerts.forEach(alert => {
+        alerts.forEach((alert) => {
           alert.createdAt = new Date(alert.createdAt);
-          if (alert.triggeredAt) alert.triggeredAt = new Date(alert.triggeredAt);
+          if (alert.triggeredAt)
+            alert.triggeredAt = new Date(alert.triggeredAt);
           if (alert.expiresAt) alert.expiresAt = new Date(alert.expiresAt);
-          if (alert.lastNotifiedAt) alert.lastNotifiedAt = new Date(alert.lastNotifiedAt);
+          if (alert.lastNotifiedAt)
+            alert.lastNotifiedAt = new Date(alert.lastNotifiedAt);
           this.alerts.set(alert.id, alert);
         });
       }
@@ -500,4 +536,3 @@ export function getPriceAlertService(): PriceAlertService {
   }
   return alertServiceInstance;
 }
-

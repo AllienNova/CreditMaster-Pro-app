@@ -1,6 +1,6 @@
 /**
  * Technical Indicators Calculator
- * 
+ *
  * Implementation of common technical analysis indicators:
  * - Moving Averages (SMA, EMA)
  * - RSI (Relative Strength Index)
@@ -8,8 +8,8 @@
  * - Bollinger Bands
  */
 
-import { CandleData } from '@/lib/investments/types/charting.types';
-import { Time } from 'lightweight-charts';
+import { CandleData } from "@/lib/investments/types/charting.types";
+import { Time } from "lightweight-charts";
 
 // ============================================================================
 // TYPES
@@ -38,9 +38,12 @@ export interface BollingerBandsPoint {
 // SIMPLE MOVING AVERAGE (SMA)
 // ============================================================================
 
-export function calculateSMA(data: CandleData[], period: number): IndicatorPoint[] {
+export function calculateSMA(
+  data: CandleData[],
+  period: number,
+): IndicatorPoint[] {
   const result: IndicatorPoint[] = [];
-  
+
   if (data.length < period) return result;
 
   for (let i = period - 1; i < data.length; i++) {
@@ -61,20 +64,23 @@ export function calculateSMA(data: CandleData[], period: number): IndicatorPoint
 // EXPONENTIAL MOVING AVERAGE (EMA)
 // ============================================================================
 
-export function calculateEMA(data: CandleData[], period: number): IndicatorPoint[] {
+export function calculateEMA(
+  data: CandleData[],
+  period: number,
+): IndicatorPoint[] {
   const result: IndicatorPoint[] = [];
-  
+
   if (data.length < period) return result;
 
   const multiplier = 2 / (period + 1);
-  
+
   // Calculate initial SMA
   let sum = 0;
   for (let i = 0; i < period; i++) {
     sum += data[i].close;
   }
   let ema = sum / period;
-  
+
   result.push({
     time: (data[period - 1].timestamp / 1000) as Time,
     value: ema,
@@ -96,9 +102,12 @@ export function calculateEMA(data: CandleData[], period: number): IndicatorPoint
 // RELATIVE STRENGTH INDEX (RSI)
 // ============================================================================
 
-export function calculateRSI(data: CandleData[], period: number = 14): IndicatorPoint[] {
+export function calculateRSI(
+  data: CandleData[],
+  period: number = 14,
+): IndicatorPoint[] {
   const result: IndicatorPoint[] = [];
-  
+
   if (data.length < period + 1) return result;
 
   const gains: number[] = [];
@@ -119,18 +128,18 @@ export function calculateRSI(data: CandleData[], period: number = 14): Indicator
   let rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
   result.push({
     time: (data[period].timestamp / 1000) as Time,
-    value: 100 - (100 / (1 + rs)),
+    value: 100 - 100 / (1 + rs),
   });
 
   // Calculate RSI for remaining data using smoothed averages
   for (let i = period; i < gains.length; i++) {
     avgGain = (avgGain * (period - 1) + gains[i]) / period;
     avgLoss = (avgLoss * (period - 1) + losses[i]) / period;
-    
+
     rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
     result.push({
       time: (data[i + 1].timestamp / 1000) as Time,
-      value: 100 - (100 / (1 + rs)),
+      value: 100 - 100 / (1 + rs),
     });
   }
 
@@ -145,20 +154,26 @@ export function calculateMACD(
   data: CandleData[],
   fastPeriod: number = 12,
   slowPeriod: number = 26,
-  signalPeriod: number = 9
+  signalPeriod: number = 9,
 ): MACDPoint[] {
   const result: MACDPoint[] = [];
-  
+
   if (data.length < slowPeriod + signalPeriod) return result;
 
   // Calculate fast and slow EMAs
-  const fastEMA = calculateEMAValues(data.map(d => d.close), fastPeriod);
-  const slowEMA = calculateEMAValues(data.map(d => d.close), slowPeriod);
+  const fastEMA = calculateEMAValues(
+    data.map((d) => d.close),
+    fastPeriod,
+  );
+  const slowEMA = calculateEMAValues(
+    data.map((d) => d.close),
+    slowPeriod,
+  );
 
   // Calculate MACD line
   const macdLine: number[] = [];
   const startIndex = slowPeriod - 1;
-  
+
   for (let i = startIndex; i < data.length; i++) {
     const fastIdx = i - (slowPeriod - fastPeriod);
     macdLine.push(fastEMA[fastIdx] - slowEMA[i - startIndex]);
@@ -190,7 +205,7 @@ export function calculateMACD(
 export function calculateBollingerBands(
   data: CandleData[],
   period: number = 20,
-  stdDevMultiplier: number = 2
+  stdDevMultiplier: number = 2,
 ): BollingerBandsPoint[] {
   const result: BollingerBandsPoint[] = [];
 
@@ -215,9 +230,9 @@ export function calculateBollingerBands(
     // Calculate bands
     result.push({
       time: (data[i].timestamp / 1000) as Time,
-      upper: sma + (stdDevMultiplier * stdDev),
+      upper: sma + stdDevMultiplier * stdDev,
       middle: sma,
-      lower: sma - (stdDevMultiplier * stdDev),
+      lower: sma - stdDevMultiplier * stdDev,
     });
   }
 
@@ -228,7 +243,10 @@ export function calculateBollingerBands(
 // ATR (Average True Range)
 // ============================================================================
 
-export function calculateATR(data: CandleData[], period: number = 14): IndicatorPoint[] {
+export function calculateATR(
+  data: CandleData[],
+  period: number = 14,
+): IndicatorPoint[] {
   const result: IndicatorPoint[] = [];
 
   if (data.length < period + 1) return result;
@@ -251,7 +269,7 @@ export function calculateATR(data: CandleData[], period: number = 14): Indicator
 
   // Calculate smoothed ATR
   for (let i = period; i < trueRanges.length; i++) {
-    atr = ((atr * (period - 1)) + trueRanges[i]) / period;
+    atr = (atr * (period - 1) + trueRanges[i]) / period;
     result.push({
       time: (data[i + 1].timestamp / 1000) as Time,
       value: atr,
@@ -268,7 +286,7 @@ export function calculateATR(data: CandleData[], period: number = 14): Indicator
 export function calculateVWAP(data: CandleData[]): IndicatorPoint[] {
   const result: IndicatorPoint[] = [];
 
-  let cumulativeTPV = 0;  // Cumulative Typical Price * Volume
+  let cumulativeTPV = 0; // Cumulative Typical Price * Volume
   let cumulativeVolume = 0;
 
   for (const candle of data) {
@@ -278,7 +296,8 @@ export function calculateVWAP(data: CandleData[]): IndicatorPoint[] {
 
     result.push({
       time: (candle.timestamp / 1000) as Time,
-      value: cumulativeVolume > 0 ? cumulativeTPV / cumulativeVolume : typicalPrice,
+      value:
+        cumulativeVolume > 0 ? cumulativeTPV / cumulativeVolume : typicalPrice,
     });
   }
 
@@ -298,7 +317,7 @@ export interface StochasticPoint {
 export function calculateStochastic(
   data: CandleData[],
   kPeriod: number = 14,
-  dPeriod: number = 3
+  dPeriod: number = 3,
 ): StochasticPoint[] {
   const result: StochasticPoint[] = [];
 
@@ -365,4 +384,3 @@ function calculateEMAValues(values: number[], period: number): number[] {
 
   return result;
 }
-

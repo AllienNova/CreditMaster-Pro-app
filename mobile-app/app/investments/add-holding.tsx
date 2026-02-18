@@ -3,7 +3,7 @@
  * Form to add a new investment holding
  */
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -14,48 +14,48 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-} from 'react-native';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { lightTheme as theme } from '../../src/constants/theme';
-import { Card } from '../../src/components/Card';
-import { useInvestmentStore } from '../../src/store';
-import { investmentsApi, AssetType } from '../../src/services/api/investments';
+} from "react-native";
+import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { lightTheme as theme } from "../../src/constants/theme";
+import { Card } from "../../src/components/Card";
+import { useInvestmentStore } from "../../src/store";
+import { investmentsApi, AssetType } from "../../src/services/api/investments";
 
 const assetTypes: { value: AssetType; label: string }[] = [
-  { value: 'stock', label: 'Stocks' },
-  { value: 'etf', label: 'ETFs' },
-  { value: 'mutual_fund', label: 'Mutual Funds' },
-  { value: 'bond', label: 'Bonds' },
-  { value: 'crypto', label: 'Cryptocurrency' },
-  { value: 'option', label: 'Options' },
-  { value: 'other', label: 'Other' },
+  { value: "stock", label: "Stocks" },
+  { value: "etf", label: "ETFs" },
+  { value: "mutual_fund", label: "Mutual Funds" },
+  { value: "bond", label: "Bonds" },
+  { value: "crypto", label: "Cryptocurrency" },
+  { value: "option", label: "Options" },
+  { value: "other", label: "Other" },
 ];
 
 export default function AddHoldingScreen() {
-  const [symbol, setSymbol] = useState('');
-  const [name, setName] = useState('');
-  const [shares, setShares] = useState('');
-  const [costBasis, setCostBasis] = useState('');
-  const [assetType, setAssetType] = useState<AssetType>('stock');
-  const [purchaseDate, setPurchaseDate] = useState('');
-  const [notes, setNotes] = useState('');
+  const [symbol, setSymbol] = useState("");
+  const [name, setName] = useState("");
+  const [shares, setShares] = useState("");
+  const [costBasis, setCostBasis] = useState("");
+  const [assetType, setAssetType] = useState<AssetType>("stock");
+  const [purchaseDate, setPurchaseDate] = useState("");
+  const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { fetchPortfolio } = useInvestmentStore();
 
   const validateForm = (): boolean => {
     if (!symbol.trim()) {
-      Alert.alert('Validation Error', 'Please enter a stock symbol');
+      Alert.alert("Validation Error", "Please enter a stock symbol");
       return false;
     }
     if (!shares || parseFloat(shares) <= 0) {
-      Alert.alert('Validation Error', 'Please enter a valid number of shares');
+      Alert.alert("Validation Error", "Please enter a valid number of shares");
       return false;
     }
     if (!costBasis || parseFloat(costBasis) <= 0) {
-      Alert.alert('Validation Error', 'Please enter a valid cost basis');
+      Alert.alert("Validation Error", "Please enter a valid cost basis");
       return false;
     }
     return true;
@@ -72,19 +72,19 @@ export default function AddHoldingScreen() {
         quantity: parseFloat(shares),
         purchase_price: parseFloat(costBasis),
         asset_type: assetType,
-        purchase_date: purchaseDate || new Date().toISOString().split('T')[0],
+        purchase_date: purchaseDate || new Date().toISOString().split("T")[0],
       });
 
       // Refresh portfolio
       await fetchPortfolio();
 
-      Alert.alert('Success', 'Holding added successfully', [
-        { text: 'OK', onPress: () => router.back() },
+      Alert.alert("Success", "Holding added successfully", [
+        { text: "OK", onPress: () => router.back() },
       ]);
     } catch (error) {
       Alert.alert(
-        'Error',
-        error instanceof Error ? error.message : 'Failed to add holding'
+        "Error",
+        error instanceof Error ? error.message : "Failed to add holding",
       );
     } finally {
       setIsSubmitting(false);
@@ -92,9 +92,9 @@ export default function AddHoldingScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={["bottom"]}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardView}
       >
         <ScrollView
@@ -205,10 +205,14 @@ export default function AddHoldingScreen() {
               <View style={styles.totalPreview}>
                 <Text style={styles.totalLabel}>Total Investment</Text>
                 <Text style={styles.totalValue}>
-                  ${(parseFloat(shares) * parseFloat(costBasis)).toLocaleString('en-US', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
+                  $
+                  {(parseFloat(shares) * parseFloat(costBasis)).toLocaleString(
+                    "en-US",
+                    {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    },
+                  )}
                 </Text>
               </View>
             )}
@@ -231,12 +235,15 @@ export default function AddHoldingScreen() {
 
           {/* Submit Button */}
           <TouchableOpacity
-            style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+            style={[
+              styles.submitButton,
+              isSubmitting && styles.submitButtonDisabled,
+            ]}
             onPress={handleSubmit}
             disabled={isSubmitting}
           >
             <Text style={styles.submitButtonText}>
-              {isSubmitting ? 'Adding...' : 'Add Holding'}
+              {isSubmitting ? "Adding..." : "Add Holding"}
             </Text>
           </TouchableOpacity>
 
@@ -266,7 +273,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.text,
     marginBottom: theme.spacing.md,
   },
@@ -275,7 +282,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     color: theme.colors.textSecondary,
     marginBottom: 8,
   },
@@ -288,12 +295,12 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
   },
   row: {
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   currencyInput: {
     height: 48,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: theme.colors.background,
     borderRadius: theme.borderRadius.md,
     paddingHorizontal: theme.spacing.md,
@@ -309,8 +316,8 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
   },
   assetTypeGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
   },
   assetTypeButton: {
@@ -324,18 +331,18 @@ const styles = StyleSheet.create({
   },
   assetTypeText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     color: theme.colors.textSecondary,
   },
   assetTypeTextActive: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
   totalPreview: {
     marginTop: theme.spacing.md,
     padding: theme.spacing.md,
     backgroundColor: `${theme.colors.primary}10`,
     borderRadius: theme.borderRadius.md,
-    alignItems: 'center',
+    alignItems: "center",
   },
   totalLabel: {
     fontSize: 13,
@@ -344,7 +351,7 @@ const styles = StyleSheet.create({
   },
   totalValue: {
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: "700",
     color: theme.colors.primary,
   },
   notesInput: {
@@ -362,15 +369,15 @@ const styles = StyleSheet.create({
     height: 52,
     backgroundColor: theme.colors.primary,
     borderRadius: theme.borderRadius.lg,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   submitButtonDisabled: {
     opacity: 0.6,
   },
   submitButtonText: {
     fontSize: 17,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
 });

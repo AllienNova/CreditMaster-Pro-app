@@ -3,11 +3,17 @@
  * Horizontal scrollable chips for quick actions with haptic feedback
  */
 
-import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
-import { lightTheme as theme } from '../../constants/theme';
+import React from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import { lightTheme as theme } from "../../constants/theme";
 
 export interface SuggestionChip {
   id: string;
@@ -70,40 +76,40 @@ export const SuggestionChips: React.FC<SuggestionChipsProps> = ({
 // Pre-defined suggestion sets
 export const DEFAULT_SUGGESTIONS: SuggestionChip[] = [
   {
-    id: '1',
-    label: 'Portfolio Status',
-    icon: 'briefcase',
-    action: 'VIEW_PORTFOLIO',
+    id: "1",
+    label: "Portfolio Status",
+    icon: "briefcase",
+    action: "VIEW_PORTFOLIO",
   },
   {
-    id: '2',
-    label: 'Budget Review',
-    icon: 'calculator',
-    action: 'BUDGET_ANALYSIS',
+    id: "2",
+    label: "Budget Review",
+    icon: "calculator",
+    action: "BUDGET_ANALYSIS",
   },
   {
-    id: '3',
-    label: 'Debt Analysis',
-    icon: 'trending-down',
-    action: 'DEBT_STRATEGY',
+    id: "3",
+    label: "Debt Analysis",
+    icon: "trending-down",
+    action: "DEBT_STRATEGY",
   },
   {
-    id: '4',
-    label: 'Market Insights',
-    icon: 'trending-up',
-    action: 'MARKET_INSIGHTS',
+    id: "4",
+    label: "Market Insights",
+    icon: "trending-up",
+    action: "MARKET_INSIGHTS",
   },
   {
-    id: '5',
-    label: 'Credit Score',
-    icon: 'card',
-    action: 'CREDIT_IMPROVEMENT',
+    id: "5",
+    label: "Credit Score",
+    icon: "card",
+    action: "CREDIT_IMPROVEMENT",
   },
   {
-    id: '6',
-    label: 'Investment Ideas',
-    icon: 'bulb',
-    action: 'INVESTMENT_ADVICE',
+    id: "6",
+    label: "Investment Ideas",
+    icon: "bulb",
+    action: "INVESTMENT_ADVICE",
   },
 ];
 
@@ -111,12 +117,12 @@ const styles = StyleSheet.create({
   container: {
     paddingVertical: theme.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
+    borderBottomColor: "#E5E7EB",
+    backgroundColor: "#FFFFFF",
   },
   title: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     color: theme.colors.textSecondary,
     marginBottom: theme.spacing.sm,
     paddingHorizontal: theme.spacing.md,
@@ -126,14 +132,14 @@ const styles = StyleSheet.create({
     gap: theme.spacing.sm,
   },
   chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F3F4F6',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F3F4F6",
     paddingVertical: theme.spacing.sm,
     paddingHorizontal: theme.spacing.md,
     borderRadius: theme.borderRadius.full,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: "#E5E7EB",
     marginRight: theme.spacing.sm,
   },
   icon: {
@@ -142,7 +148,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     color: theme.colors.text,
-    fontWeight: '500',
+    fontWeight: "500",
   },
 });
-

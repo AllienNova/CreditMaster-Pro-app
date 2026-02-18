@@ -5,23 +5,26 @@
  * PROTECTED: Requires authentication
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getAIMLService, ChatMessage } from '@/lib/aiml-service';
-import { createClient } from '@/lib/supabase/server';
+import { NextRequest, NextResponse } from "next/server";
+import { getAIMLService, ChatMessage } from "@/lib/aiml-service";
+import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: NextRequest) {
   try {
     // AUTHENTICATION CHECK - Required for all AI endpoints
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Unauthorized - Authentication required',
+          error: "Unauthorized - Authentication required",
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -29,14 +32,14 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     const { model, messages } = body;
-    
+
     if (!model || !messages || !Array.isArray(messages)) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Missing required fields: model, messages',
+          error: "Missing required fields: model, messages",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -44,14 +47,10 @@ export async function POST(request: NextRequest) {
     const aiml = getAIMLService();
 
     // Call chat API
-    const response = await aiml.chat(
-      model,
-      messages as ChatMessage[],
-      {
-        temperature: body.temperature ?? 0.7,
-        max_tokens: body.max_tokens ?? 1000,
-      }
-    );
+    const response = await aiml.chat(model, messages as ChatMessage[], {
+      temperature: body.temperature ?? 0.7,
+      max_tokens: body.max_tokens ?? 1000,
+    });
 
     return NextResponse.json({
       success: true,
@@ -64,24 +63,26 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     // Error handled - returning 500
-    
+
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to get chat response',
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to get chat response",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function GET() {
   return NextResponse.json({
-    message: 'AI Chat API',
-    method: 'POST',
-    endpoint: '/api/ai/chat',
-    requiredFields: ['model', 'messages'],
-    optionalFields: ['temperature', 'max_tokens'],
+    message: "AI Chat API",
+    method: "POST",
+    endpoint: "/api/ai/chat",
+    requiredFields: ["model", "messages"],
+    optionalFields: ["temperature", "max_tokens"],
   });
 }
-

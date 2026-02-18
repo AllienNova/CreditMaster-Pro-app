@@ -9,7 +9,7 @@
  * - Tax-loss harvesting opportunities
  */
 
-import { Subject, Observable, BehaviorSubject } from 'rxjs';
+import { Subject, Observable, BehaviorSubject } from "rxjs";
 import {
   PortfolioRebalanceService,
   getPortfolioRebalanceService,
@@ -18,29 +18,29 @@ import {
   RebalanceTrade,
   CurrentAllocation,
   AssetClass,
-} from './PortfolioRebalanceService';
+} from "./PortfolioRebalanceService";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 export type ScheduleFrequency =
-  | 'daily'
-  | 'weekly'
-  | 'monthly'
-  | 'quarterly'
-  | 'manual';
+  | "daily"
+  | "weekly"
+  | "monthly"
+  | "quarterly"
+  | "manual";
 
 export type RebalanceApprovalStatus =
-  | 'pending_review'
-  | 'approved'
-  | 'rejected'
-  | 'expired'
-  | 'executed'
-  | 'partially_executed'
-  | 'failed';
+  | "pending_review"
+  | "approved"
+  | "rejected"
+  | "expired"
+  | "executed"
+  | "partially_executed"
+  | "failed";
 
-export type TriggerType = 'scheduled' | 'threshold' | 'manual' | 'cash_flow';
+export type TriggerType = "scheduled" | "threshold" | "manual" | "cash_flow";
 
 export interface RebalanceScheduleConfig {
   portfolioId: string;
@@ -105,15 +105,15 @@ export interface SchedulerStatus {
 
 export interface RebalanceEvent {
   type:
-    | 'schedule_created'
-    | 'schedule_updated'
-    | 'rebalance_triggered'
-    | 'approval_required'
-    | 'rebalance_approved'
-    | 'rebalance_rejected'
-    | 'rebalance_executed'
-    | 'rebalance_failed'
-    | 'rebalance_expired';
+    | "schedule_created"
+    | "schedule_updated"
+    | "rebalance_triggered"
+    | "approval_required"
+    | "rebalance_approved"
+    | "rebalance_rejected"
+    | "rebalance_executed"
+    | "rebalance_failed"
+    | "rebalance_expired";
   portfolioId: string;
   userId: string;
   pendingRebalanceId?: string;
@@ -123,10 +123,10 @@ export interface RebalanceEvent {
 
 export const DEFAULT_SCHEDULE_CONFIG: Omit<
   RebalanceScheduleConfig,
-  'portfolioId' | 'userId'
+  "portfolioId" | "userId"
 > = {
   enabled: false,
-  frequency: 'monthly',
+  frequency: "monthly",
   driftThreshold: 5,
   minTradeAmount: 100,
   requireApproval: true,
@@ -151,7 +151,7 @@ export class AutoRebalanceScheduler {
   // Event subjects
   private eventSubject = new Subject<RebalanceEvent>();
   private statusSubject = new BehaviorSubject<SchedulerStatus>(
-    this.getStatus()
+    this.getStatus(),
   );
 
   constructor() {
@@ -172,7 +172,7 @@ export class AutoRebalanceScheduler {
     this.schedules.set(key, config);
 
     this.emitEvent({
-      type: isNew ? 'schedule_created' : 'schedule_updated',
+      type: isNew ? "schedule_created" : "schedule_updated",
       portfolioId: config.portfolioId,
       userId: config.userId,
       data: config,
@@ -187,7 +187,7 @@ export class AutoRebalanceScheduler {
    */
   getSchedule(
     portfolioId: string,
-    userId: string
+    userId: string,
   ): RebalanceScheduleConfig | undefined {
     return this.schedules.get(this.getScheduleKey(portfolioId, userId));
   }
@@ -197,7 +197,7 @@ export class AutoRebalanceScheduler {
    */
   getUserSchedules(userId: string): RebalanceScheduleConfig[] {
     return Array.from(this.schedules.values()).filter(
-      (s) => s.userId === userId
+      (s) => s.userId === userId,
     );
   }
 
@@ -232,13 +232,13 @@ export class AutoRebalanceScheduler {
   async triggerRebalanceCheck(
     portfolioId: string,
     userId: string,
-    triggerType: TriggerType = 'manual'
+    triggerType: TriggerType = "manual",
   ): Promise<PendingRebalance | null> {
     try {
       // Get portfolio and analyze drift
       const analysis = await this.rebalanceService.analyzePortfolioDrift(
         portfolioId,
-        userId
+        userId,
       );
 
       if (!analysis.needsRebalance) {
@@ -250,14 +250,14 @@ export class AutoRebalanceScheduler {
       const recommendation =
         this.rebalanceService.generateRebalanceRecommendation(
           analysis.portfolio,
-          { taxOptimized: schedule?.taxOptimized ?? true }
+          { taxOptimized: schedule?.taxOptimized ?? true },
         );
 
       // Filter trades below minimum threshold
       const minAmount =
         schedule?.minTradeAmount ?? DEFAULT_SCHEDULE_CONFIG.minTradeAmount;
       recommendation.trades = recommendation.trades.filter(
-        (t) => t.tradeAmount >= minAmount
+        (t) => t.tradeAmount >= minAmount,
       );
 
       if (recommendation.trades.length === 0) {
@@ -270,7 +270,7 @@ export class AutoRebalanceScheduler {
         userId,
         triggerType,
         recommendation,
-        schedule?.approvalTimeout ?? DEFAULT_SCHEDULE_CONFIG.approvalTimeout
+        schedule?.approvalTimeout ?? DEFAULT_SCHEDULE_CONFIG.approvalTimeout,
       );
 
       this.pendingRebalances.set(pending.id, pending);
@@ -278,7 +278,7 @@ export class AutoRebalanceScheduler {
       // Emit event
       const requiresApproval = schedule?.requireApproval ?? true;
       this.emitEvent({
-        type: requiresApproval ? 'approval_required' : 'rebalance_triggered',
+        type: requiresApproval ? "approval_required" : "rebalance_triggered",
         portfolioId,
         userId,
         pendingRebalanceId: pending.id,
@@ -288,7 +288,7 @@ export class AutoRebalanceScheduler {
 
       // If no approval required, auto-approve
       if (!requiresApproval) {
-        pending.status = 'approved';
+        pending.status = "approved";
         pending.approvedAt = new Date();
       }
 
@@ -310,7 +310,7 @@ export class AutoRebalanceScheduler {
    */
   getPendingRebalances(userId: string): PendingRebalance[] {
     return Array.from(this.pendingRebalances.values()).filter(
-      (p) => p.userId === userId && p.status === 'pending_review'
+      (p) => p.userId === userId && p.status === "pending_review",
     );
   }
 
@@ -323,21 +323,21 @@ export class AutoRebalanceScheduler {
       return false;
     }
 
-    if (pending.status !== 'pending_review') {
+    if (pending.status !== "pending_review") {
       return false;
     }
 
     if (new Date() > pending.expiresAt) {
-      pending.status = 'expired';
+      pending.status = "expired";
       return false;
     }
 
-    pending.status = 'approved';
+    pending.status = "approved";
     pending.approvedAt = new Date();
     pending.notes = notes;
 
     this.emitEvent({
-      type: 'rebalance_approved',
+      type: "rebalance_approved",
       portfolioId: pending.portfolioId,
       userId,
       pendingRebalanceId: pendingId,
@@ -356,15 +356,15 @@ export class AutoRebalanceScheduler {
       return false;
     }
 
-    if (pending.status !== 'pending_review') {
+    if (pending.status !== "pending_review") {
       return false;
     }
 
-    pending.status = 'rejected';
+    pending.status = "rejected";
     pending.notes = reason;
 
     this.emitEvent({
-      type: 'rebalance_rejected',
+      type: "rebalance_rejected",
       portfolioId: pending.portfolioId,
       userId,
       pendingRebalanceId: pendingId,
@@ -392,7 +392,7 @@ export class AutoRebalanceScheduler {
    */
   async executeRebalance(
     pendingId: string,
-    userId: string
+    userId: string,
   ): Promise<RebalanceExecutionResult> {
     const pending = this.pendingRebalances.get(pendingId);
     if (!pending || pending.userId !== userId) {
@@ -403,11 +403,11 @@ export class AutoRebalanceScheduler {
         totalExecutedValue: 0,
         totalFailedValue: 0,
         executionTime: new Date(),
-        errors: ['Pending rebalance not found'],
+        errors: ["Pending rebalance not found"],
       };
     }
 
-    if (pending.status !== 'approved') {
+    if (pending.status !== "approved") {
       return {
         success: false,
         executedTrades: [],
@@ -419,7 +419,7 @@ export class AutoRebalanceScheduler {
       };
     }
 
-    pending.status = 'executed';
+    pending.status = "executed";
     pending.executedAt = new Date();
 
     // In production, this would call OrderExecutionEngine
@@ -431,7 +431,7 @@ export class AutoRebalanceScheduler {
         executedPrice: trade.targetValue / (trade.tradeAmount / 100), // Simulated
         executedQuantity: trade.tradeAmount,
         commission: trade.tradeAmount * 0.001, // 0.1% commission
-      })
+      }),
     );
 
     const result: RebalanceExecutionResult = {
@@ -440,7 +440,7 @@ export class AutoRebalanceScheduler {
       failedTrades: [],
       totalExecutedValue: executedTrades.reduce(
         (sum, t) => sum + t.tradeAmount,
-        0
+        0,
       ),
       totalFailedValue: 0,
       executionTime: new Date(),
@@ -452,7 +452,7 @@ export class AutoRebalanceScheduler {
     try {
       const portfolio = await this.rebalanceService.getPortfolio(
         pending.portfolioId,
-        userId
+        userId,
       );
 
       if (portfolio) {
@@ -471,7 +471,7 @@ export class AutoRebalanceScheduler {
           userId,
           portfolio.currentAllocations,
           postAllocations,
-          pending.recommendation.trades
+          pending.recommendation.trades,
         );
       }
     } catch (_error) {
@@ -480,7 +480,7 @@ export class AutoRebalanceScheduler {
     }
 
     this.emitEvent({
-      type: 'rebalance_executed',
+      type: "rebalance_executed",
       portfolioId: pending.portfolioId,
       userId,
       pendingRebalanceId: pendingId,
@@ -533,12 +533,12 @@ export class AutoRebalanceScheduler {
     // Check for expired pending rebalances
     for (const [id, pending] of this.pendingRebalances) {
       if (
-        pending.status === 'pending_review' &&
+        pending.status === "pending_review" &&
         new Date() > pending.expiresAt
       ) {
-        pending.status = 'expired';
+        pending.status = "expired";
         this.emitEvent({
-          type: 'rebalance_expired',
+          type: "rebalance_expired",
           portfolioId: pending.portfolioId,
           userId: pending.userId,
           pendingRebalanceId: id,
@@ -555,7 +555,7 @@ export class AutoRebalanceScheduler {
         await this.triggerRebalanceCheck(
           schedule.portfolioId,
           schedule.userId,
-          'scheduled'
+          "scheduled",
         );
       }
     }
@@ -574,28 +574,28 @@ export class AutoRebalanceScheduler {
       (p) =>
         p.portfolioId === schedule.portfolioId &&
         p.userId === schedule.userId &&
-        (p.status === 'pending_review' || p.status === 'approved')
+        (p.status === "pending_review" || p.status === "approved"),
     );
     if (hasPending) return false;
 
     // Check frequency
     switch (schedule.frequency) {
-      case 'daily':
+      case "daily":
         return this.isPreferredTime(schedule.preferredTime);
 
-      case 'weekly':
+      case "weekly":
         return (
           now.getDay() === (schedule.dayOfWeek ?? 0) &&
           this.isPreferredTime(schedule.preferredTime)
         );
 
-      case 'monthly':
+      case "monthly":
         return (
           now.getDate() === (schedule.dayOfMonth ?? 1) &&
           this.isPreferredTime(schedule.preferredTime)
         );
 
-      case 'quarterly':
+      case "quarterly":
         const isQuarterStart =
           [0, 3, 6, 9].includes(now.getMonth()) && now.getDate() === 1;
         return isQuarterStart && this.isPreferredTime(schedule.preferredTime);
@@ -609,7 +609,7 @@ export class AutoRebalanceScheduler {
     if (!preferredTime) return true;
 
     const now = new Date();
-    const [hours, minutes] = preferredTime.split(':').map(Number);
+    const [hours, minutes] = preferredTime.split(":").map(Number);
 
     // Check within 5 minute window
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
@@ -631,7 +631,7 @@ export class AutoRebalanceScheduler {
     userId: string,
     triggerType: TriggerType,
     recommendation: RebalanceRecommendation,
-    timeoutHours: number
+    timeoutHours: number,
   ): PendingRebalance {
     const now = new Date();
     const expiresAt = new Date(now.getTime() + timeoutHours * 60 * 60 * 1000);
@@ -642,7 +642,7 @@ export class AutoRebalanceScheduler {
       userId,
       triggerType,
       recommendation,
-      status: 'pending_review',
+      status: "pending_review",
       createdAt: now,
       expiresAt,
     };
@@ -670,7 +670,7 @@ export class AutoRebalanceScheduler {
 
   getStatus(): SchedulerStatus {
     const pendingCount = Array.from(this.pendingRebalances.values()).filter(
-      (p) => p.status === 'pending_review' || p.status === 'approved'
+      (p) => p.status === "pending_review" || p.status === "approved",
     ).length;
 
     return {
@@ -681,7 +681,7 @@ export class AutoRebalanceScheduler {
           ? new Date(this.lastCheckTime.getTime() + 60000)
           : undefined,
       activeSchedules: Array.from(this.schedules.values()).filter(
-        (s) => s.enabled
+        (s) => s.enabled,
       ).length,
       pendingRebalances: pendingCount,
     };

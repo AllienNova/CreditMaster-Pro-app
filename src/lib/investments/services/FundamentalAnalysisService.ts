@@ -32,8 +32,8 @@ import type {
   FundamentalMetricSet,
   ImpliedValue,
   EarningsData,
-} from '../types/fundamental-analysis.types';
-import type { SignalStrength, RiskLevel } from '../types/investment.types';
+} from "../types/fundamental-analysis.types";
+import type { SignalStrength, RiskLevel } from "../types/investment.types";
 
 // ============================================================================
 // FUNDAMENTAL ANALYSIS SERVICE
@@ -50,7 +50,7 @@ export class FundamentalAnalysisService {
       includeComparables?: boolean;
       includeEarnings?: boolean;
       includeSector?: boolean;
-    }
+    },
   ): Promise<FundamentalAnalysis> {
     const {
       includeDCF = true,
@@ -77,36 +77,76 @@ export class FundamentalAnalysisService {
       this.getLeverageMetrics(symbol),
       this.getEfficiencyMetrics(symbol),
       includeDCF ? this.calculateDCF(symbol) : Promise.resolve(undefined),
-      includeComparables ? this.performComparableAnalysis(symbol) : Promise.resolve(undefined),
-      includeEarnings ? this.getEarningsHistory(symbol) : Promise.resolve(this.getDefaultEarningsHistory(symbol)),
-      includeSector ? this.performSectorAnalysis(symbol) : Promise.resolve(undefined),
+      includeComparables
+        ? this.performComparableAnalysis(symbol)
+        : Promise.resolve(undefined),
+      includeEarnings
+        ? this.getEarningsHistory(symbol)
+        : Promise.resolve(this.getDefaultEarningsHistory(symbol)),
+      includeSector
+        ? this.performSectorAnalysis(symbol)
+        : Promise.resolve(undefined),
     ]);
 
     // Calculate quality, value, and growth scores
-    const qualityScore = this.calculateQualityScore(profitability, leverage, efficiency);
+    const qualityScore = this.calculateQualityScore(
+      profitability,
+      leverage,
+      efficiency,
+    );
     const valueScore = this.calculateValueScore(valuation);
     const growthScore = this.calculateGrowthScore(growth);
-    const financialHealthScore = this.calculateFinancialHealthScore(leverage, profitability);
-    const overallScore = this.calculateOverallScore(qualityScore, valueScore, growthScore, financialHealthScore);
+    const financialHealthScore = this.calculateFinancialHealthScore(
+      leverage,
+      profitability,
+    );
+    const overallScore = this.calculateOverallScore(
+      qualityScore,
+      valueScore,
+      growthScore,
+      financialHealthScore,
+    );
 
     // Determine signal strength
     const signal = this.determineSignal(overallScore, valuation, growth);
 
     // Estimate fair value
-    const fairValueEstimate = this.estimateFairValue(dcf, comparables, valuation);
+    const fairValueEstimate = this.estimateFairValue(
+      dcf,
+      comparables,
+      valuation,
+    );
 
     // Calculate upside
-    const currentPrice = valuation.marketCap / (valuation.eps > 0 ? valuation.marketCap / (valuation.peRatio * valuation.eps) : 1);
-    const upside = fairValueEstimate > 0 ? ((fairValueEstimate - currentPrice) / currentPrice) * 100 : 0;
+    const currentPrice =
+      valuation.marketCap /
+      (valuation.eps > 0
+        ? valuation.marketCap / (valuation.peRatio * valuation.eps)
+        : 1);
+    const upside =
+      fairValueEstimate > 0
+        ? ((fairValueEstimate - currentPrice) / currentPrice) * 100
+        : 0;
 
     // Determine risk level
     const riskLevel = this.determineRiskLevel(leverage, profitability, growth);
 
     // Generate summary
-    const summary = this.generateSummary(symbol, signal, fairValueEstimate, upside, riskLevel);
+    const summary = this.generateSummary(
+      symbol,
+      signal,
+      fairValueEstimate,
+      upside,
+      riskLevel,
+    );
 
     // Generate key metrics
-    const keyMetrics = this.generateKeyMetrics(valuation, profitability, growth, leverage);
+    const keyMetrics = this.generateKeyMetrics(
+      valuation,
+      profitability,
+      growth,
+      leverage,
+    );
 
     return {
       symbol,
@@ -159,12 +199,12 @@ export class FundamentalAnalysisService {
       // Per Share Values
       eps: 5.25,
       epsGrowth: 15.3,
-      bookValue: 32.50,
-      revenuePerShare: 42.30,
+      bookValue: 32.5,
+      revenuePerShare: 42.3,
       fcfPerShare: 7.15,
       // Dividends
       dividendYield: 1.8,
-      dividendPerShare: 2.40,
+      dividendPerShare: 2.4,
       payoutRatio: 45.7,
       dividendGrowth5Y: 8.5,
     };
@@ -252,11 +292,15 @@ export class FundamentalAnalysisService {
     const freeCashFlow = 12_000_000_000;
     const growthRate = 0.15; // 15%
     const terminalGrowthRate = 0.03; // 3%
-    const discountRate = 0.10; // 10% WACC
+    const discountRate = 0.1; // 10% WACC
     const projectionYears = 5;
 
     // Project cash flows
-    const projectedCashFlows: Array<{ year: number; fcf: number; discountedFcf: number }> = [];
+    const projectedCashFlows: Array<{
+      year: number;
+      fcf: number;
+      discountedFcf: number;
+    }> = [];
     let currentFcf = freeCashFlow;
 
     for (let year = 1; year <= projectionYears; year++) {
@@ -272,10 +316,14 @@ export class FundamentalAnalysisService {
     // Calculate terminal value
     const terminalFcf = currentFcf * (1 + terminalGrowthRate);
     const terminalValue = terminalFcf / (discountRate - terminalGrowthRate);
-    const discountedTerminalValue = terminalValue / Math.pow(1 + discountRate, projectionYears);
+    const discountedTerminalValue =
+      terminalValue / Math.pow(1 + discountRate, projectionYears);
 
     // Calculate enterprise value
-    const pvOfProjectedCashFlows = projectedCashFlows.reduce((sum, cf) => sum + cf.discountedFcf, 0);
+    const pvOfProjectedCashFlows = projectedCashFlows.reduce(
+      (sum, cf) => sum + cf.discountedFcf,
+      0,
+    );
     const enterpriseValue = pvOfProjectedCashFlows + discountedTerminalValue;
 
     // Calculate equity value (assume no net debt for simplicity)
@@ -284,12 +332,17 @@ export class FundamentalAnalysisService {
     const fairValue = equityValue / sharesOutstanding;
 
     // Get current price
-    const currentPrice = 135.50;
+    const currentPrice = 135.5;
     const upside = ((fairValue - currentPrice) / currentPrice) * 100;
     const marginOfSafety = ((fairValue - currentPrice) / fairValue) * 100;
 
     // Generate sensitivity analysis
-    const sensitivity = this.generateDCFSensitivity(freeCashFlow, discountRate, growthRate, sharesOutstanding);
+    const sensitivity = this.generateDCFSensitivity(
+      freeCashFlow,
+      discountRate,
+      growthRate,
+      sharesOutstanding,
+    );
 
     return {
       symbol,
@@ -319,7 +372,7 @@ export class FundamentalAnalysisService {
     fcf: number,
     baseDiscountRate: number,
     baseGrowthRate: number,
-    shares: number
+    shares: number,
   ): DCFSensitivity {
     const growthRates = [
       baseGrowthRate - 0.05,
@@ -361,7 +414,7 @@ export class FundamentalAnalysisService {
    * Perform comparable company analysis
    */
   async performComparableAnalysis(symbol: string): Promise<ComparableAnalysis> {
-    const peers = ['AAPL', 'MSFT', 'GOOGL', 'META'];
+    const peers = ["AAPL", "MSFT", "GOOGL", "META"];
 
     const subject: FundamentalMetricSet = {
       peRatio: 25.5,
@@ -416,36 +469,36 @@ export class FundamentalAnalysisService {
 
     // Calculate implied values
     const eps = 5.25;
-    const bookValue = 32.50;
-    const revenuePerShare = 42.30;
+    const bookValue = 32.5;
+    const revenuePerShare = 42.3;
     const ebitda = 25_000_000_000;
     const revenue = 110_000_000_000;
     const shares = 1_000_000_000;
 
     const impliedValues: ImpliedValue[] = [
       {
-        metric: 'P/E',
+        metric: "P/E",
         peerMultiple: peerMedian.peRatio,
         subjectValue: eps,
         impliedPrice: peerMedian.peRatio * eps,
-        weight: 0.30,
+        weight: 0.3,
       },
       {
-        metric: 'P/B',
+        metric: "P/B",
         peerMultiple: peerMedian.pbRatio,
         subjectValue: bookValue,
         impliedPrice: peerMedian.pbRatio * bookValue,
         weight: 0.15,
       },
       {
-        metric: 'P/S',
+        metric: "P/S",
         peerMultiple: peerMedian.psRatio,
         subjectValue: revenuePerShare,
         impliedPrice: peerMedian.psRatio * revenuePerShare,
-        weight: 0.20,
+        weight: 0.2,
       },
       {
-        metric: 'EV/EBITDA',
+        metric: "EV/EBITDA",
         peerMultiple: peerMedian.evToEbitda,
         subjectValue: ebitda / shares,
         impliedPrice: (peerMedian.evToEbitda * ebitda) / shares,
@@ -454,14 +507,17 @@ export class FundamentalAnalysisService {
     ];
 
     // Calculate weighted average fair value
-    const averageFairValue = impliedValues.reduce((sum, iv) => sum + iv.impliedPrice * iv.weight, 0);
+    const averageFairValue = impliedValues.reduce(
+      (sum, iv) => sum + iv.impliedPrice * iv.weight,
+      0,
+    );
 
     // Calculate median fair value
     const medianFairValue = impliedValues
-      .map(iv => iv.impliedPrice)
+      .map((iv) => iv.impliedPrice)
       .sort((a, b) => a - b)[Math.floor(impliedValues.length / 2)];
 
-    const currentPrice = 135.50;
+    const currentPrice = 135.5;
     const upside = ((averageFairValue - currentPrice) / currentPrice) * 100;
 
     return {
@@ -489,8 +545,8 @@ export class FundamentalAnalysisService {
     const earnings: EarningsData[] = [
       {
         symbol,
-        fiscalQuarter: 'Q4 2024',
-        reportDate: new Date('2024-01-31'),
+        fiscalQuarter: "Q4 2024",
+        reportDate: new Date("2024-01-31"),
         eps: 1.35,
         epsEstimate: 1.28,
         epsSurprise: 0.07,
@@ -502,8 +558,8 @@ export class FundamentalAnalysisService {
       },
       {
         symbol,
-        fiscalQuarter: 'Q3 2024',
-        reportDate: new Date('2023-10-31'),
+        fiscalQuarter: "Q3 2024",
+        reportDate: new Date("2023-10-31"),
         eps: 1.28,
         epsEstimate: 1.22,
         epsSurprise: 0.06,
@@ -515,10 +571,13 @@ export class FundamentalAnalysisService {
       },
     ];
 
-    const beats = earnings.filter(e => e.epsSurprise > 0).length;
+    const beats = earnings.filter((e) => e.epsSurprise > 0).length;
     const beatRate = (beats / earnings.length) * 100;
-    const avgSurprise = earnings.reduce((sum, e) => sum + e.epsSurprisePercent, 0) / earnings.length;
-    const trend: 'improving' | 'stable' | 'declining' = avgSurprise > 3 ? 'improving' : avgSurprise < -3 ? 'declining' : 'stable';
+    const avgSurprise =
+      earnings.reduce((sum, e) => sum + e.epsSurprisePercent, 0) /
+      earnings.length;
+    const trend: "improving" | "stable" | "declining" =
+      avgSurprise > 3 ? "improving" : avgSurprise < -3 ? "declining" : "stable";
 
     return {
       symbol,
@@ -535,15 +594,15 @@ export class FundamentalAnalysisService {
   async performSectorAnalysis(symbol: string): Promise<SectorAnalysis> {
     return {
       symbol,
-      sector: 'Technology',
-      industry: 'Software - Infrastructure',
+      sector: "Technology",
+      industry: "Software - Infrastructure",
       sectorRank: 45,
       industryRank: 12,
       sectorPeers: 250,
       industryPeers: 45,
       metrics: [
         {
-          metric: 'P/E Ratio',
+          metric: "P/E Ratio",
           value: 25.5,
           sectorAvg: 28.3,
           industryAvg: 26.1,
@@ -551,7 +610,7 @@ export class FundamentalAnalysisService {
           percentileVsIndustry: 58,
         },
         {
-          metric: 'ROE',
+          metric: "ROE",
           value: 22.4,
           sectorAvg: 20.5,
           industryAvg: 21.8,
@@ -559,7 +618,7 @@ export class FundamentalAnalysisService {
           percentileVsIndustry: 68,
         },
         {
-          metric: 'Net Margin',
+          metric: "Net Margin",
           value: 18.7,
           sectorAvg: 16.2,
           industryAvg: 17.5,
@@ -567,8 +626,15 @@ export class FundamentalAnalysisService {
           percentileVsIndustry: 71,
         },
       ],
-      strengths: ['Above-average profitability', 'Strong ROE', 'Efficient capital allocation'],
-      weaknesses: ['Slightly below-sector valuation', 'Lower growth than peers'],
+      strengths: [
+        "Above-average profitability",
+        "Strong ROE",
+        "Efficient capital allocation",
+      ],
+      weaknesses: [
+        "Slightly below-sector valuation",
+        "Lower growth than peers",
+      ],
     };
   }
 
@@ -582,14 +648,14 @@ export class FundamentalAnalysisService {
   private calculateQualityScore(
     profitability: ProfitabilityMetrics,
     leverage: LeverageMetrics,
-    efficiency: EfficiencyMetrics
+    efficiency: EfficiencyMetrics,
   ): number {
     let score = 0;
 
     // Profitability (40 points)
     score += Math.min(profitability.returnOnEquity / 0.25, 1) * 15; // ROE > 25% = 15 points
     score += Math.min(profitability.returnOnAssets / 0.15, 1) * 10; // ROA > 15% = 10 points
-    score += Math.min(profitability.netMargin / 0.20, 1) * 15; // Net margin > 20% = 15 points
+    score += Math.min(profitability.netMargin / 0.2, 1) * 15; // Net margin > 20% = 15 points
 
     // Financial Health (30 points)
     score += Math.min(leverage.interestCoverage / 10, 1) * 15; // Coverage > 10x = 15 points
@@ -623,7 +689,8 @@ export class FundamentalAnalysisService {
     score += Math.min(valuation.dividendYield * 5, 15);
 
     // FCF yield
-    const fcfYield = (valuation.fcfPerShare / (valuation.marketCap / 1_000_000_000)) * 100;
+    const fcfYield =
+      (valuation.fcfPerShare / (valuation.marketCap / 1_000_000_000)) * 100;
     score += Math.min(fcfYield * 2, 15);
 
     return Math.round(Math.min(score, 100));
@@ -636,16 +703,19 @@ export class FundamentalAnalysisService {
     let score = 0;
 
     // Revenue growth
-    score += Math.min(growth.revenueGrowth5Y / 0.20, 1) * 20; // 20% = max points
+    score += Math.min(growth.revenueGrowth5Y / 0.2, 1) * 20; // 20% = max points
 
     // Earnings growth
     score += Math.min(growth.epsGrowth5Y / 0.25, 1) * 25; // 25% = max points
 
     // FCF growth
-    score += Math.min(growth.fcfGrowthYoY / 0.20, 1) * 20; // 20% = max points
+    score += Math.min(growth.fcfGrowthYoY / 0.2, 1) * 20; // 20% = max points
 
     // Growth consistency (5Y vs 3Y vs YoY)
-    const consistency = 1 - (Math.abs(growth.revenueGrowth5Y - growth.revenueGrowthYoY) / growth.revenueGrowth5Y);
+    const consistency =
+      1 -
+      Math.abs(growth.revenueGrowth5Y - growth.revenueGrowthYoY) /
+        growth.revenueGrowth5Y;
     score += Math.max(0, consistency) * 15;
 
     // Dividend growth
@@ -660,7 +730,10 @@ export class FundamentalAnalysisService {
   /**
    * Calculate financial health score (0-100)
    */
-  private calculateFinancialHealthScore(leverage: LeverageMetrics, profitability: ProfitabilityMetrics): number {
+  private calculateFinancialHealthScore(
+    leverage: LeverageMetrics,
+    profitability: ProfitabilityMetrics,
+  ): number {
     let score = 0;
 
     // Debt levels (lower is better)
@@ -675,7 +748,7 @@ export class FundamentalAnalysisService {
     score += Math.min(leverage.quickRatio / 1.5, 1) * 10;
 
     // Profitability
-    score += Math.min(profitability.returnOnEquity / 0.20, 1) * 15;
+    score += Math.min(profitability.returnOnEquity / 0.2, 1) * 15;
 
     return Math.round(Math.min(score, 100));
   }
@@ -687,10 +760,10 @@ export class FundamentalAnalysisService {
     quality: number,
     value: number,
     growth: number,
-    health: number
+    health: number,
   ): number {
     // Weighted average
-    const score = quality * 0.30 + value * 0.25 + growth * 0.25 + health * 0.20;
+    const score = quality * 0.3 + value * 0.25 + growth * 0.25 + health * 0.2;
     return Math.round(score);
   }
 
@@ -700,18 +773,22 @@ export class FundamentalAnalysisService {
   private determineSignal(
     overallScore: number,
     valuation: ValuationMetrics,
-    growth: GrowthMetrics
+    growth: GrowthMetrics,
   ): SignalStrength {
-    if (overallScore >= 80 && growth.epsGrowth5Y > 15 && valuation.pegRatio < 2.0) {
-      return 'strong_buy';
+    if (
+      overallScore >= 80 &&
+      growth.epsGrowth5Y > 15 &&
+      valuation.pegRatio < 2.0
+    ) {
+      return "strong_buy";
     } else if (overallScore >= 65) {
-      return 'buy';
+      return "buy";
     } else if (overallScore >= 45) {
-      return 'neutral';
+      return "neutral";
     } else if (overallScore >= 30) {
-      return 'sell';
+      return "sell";
     } else {
-      return 'strong_sell';
+      return "strong_sell";
     }
   }
 
@@ -721,7 +798,7 @@ export class FundamentalAnalysisService {
   private estimateFairValue(
     dcf?: DCFValuation,
     comparables?: ComparableAnalysis,
-    valuation?: ValuationMetrics
+    valuation?: ValuationMetrics,
   ): number {
     const values: number[] = [];
 
@@ -739,7 +816,9 @@ export class FundamentalAnalysisService {
       values.push(valuation.eps * 20); // Assume fair P/E of 20
     }
 
-    return values.length > 0 ? values.reduce((sum, v) => sum + v, 0) / values.length : 0;
+    return values.length > 0
+      ? values.reduce((sum, v) => sum + v, 0) / values.length
+      : 0;
   }
 
   /**
@@ -748,7 +827,7 @@ export class FundamentalAnalysisService {
   private determineRiskLevel(
     leverage: LeverageMetrics,
     profitability: ProfitabilityMetrics,
-    growth: GrowthMetrics
+    growth: GrowthMetrics,
   ): RiskLevel {
     let riskScore = 0;
 
@@ -768,10 +847,10 @@ export class FundamentalAnalysisService {
     if (growth.revenueGrowth5Y < 0) riskScore += 2;
     else if (growth.revenueGrowth5Y < 5) riskScore += 1;
 
-    if (riskScore >= 5) return 'very_high';
-    if (riskScore >= 3) return 'high';
-    if (riskScore >= 1) return 'moderate';
-    return 'low';
+    if (riskScore >= 5) return "very_high";
+    if (riskScore >= 3) return "high";
+    if (riskScore >= 1) return "moderate";
+    return "low";
   }
 
   /**
@@ -782,12 +861,14 @@ export class FundamentalAnalysisService {
     signal: SignalStrength,
     fairValue: number,
     upside: number,
-    risk: RiskLevel
+    risk: RiskLevel,
   ): string {
-    const signalText = signal.replace('_', ' ').toUpperCase();
-    return `${symbol} receives a ${signalText} rating with an estimated fair value of $${fairValue.toFixed(2)}, ` +
-      `representing ${upside.toFixed(1)}% ${upside >= 0 ? 'upside' : 'downside'} potential. ` +
-      `Risk level: ${risk.replace('_', ' ').toUpperCase()}.`;
+    const signalText = signal.replace("_", " ").toUpperCase();
+    return (
+      `${symbol} receives a ${signalText} rating with an estimated fair value of $${fairValue.toFixed(2)}, ` +
+      `representing ${upside.toFixed(1)}% ${upside >= 0 ? "upside" : "downside"} potential. ` +
+      `Risk level: ${risk.replace("_", " ").toUpperCase()}.`
+    );
   }
 
   /**
@@ -797,48 +878,92 @@ export class FundamentalAnalysisService {
     valuation: ValuationMetrics,
     profitability: ProfitabilityMetrics,
     growth: GrowthMetrics,
-    leverage: LeverageMetrics
-  ): Array<{ name: string; value: number; status: 'good' | 'neutral' | 'concern' }> {
+    leverage: LeverageMetrics,
+  ): Array<{
+    name: string;
+    value: number;
+    status: "good" | "neutral" | "concern";
+  }> {
     return [
       {
-        name: 'P/E Ratio',
+        name: "P/E Ratio",
         value: valuation.peRatio,
-        status: valuation.peRatio < 20 ? 'good' : valuation.peRatio < 30 ? 'neutral' : 'concern',
+        status:
+          valuation.peRatio < 20
+            ? "good"
+            : valuation.peRatio < 30
+              ? "neutral"
+              : "concern",
       },
       {
-        name: 'PEG Ratio',
+        name: "PEG Ratio",
         value: valuation.pegRatio,
-        status: valuation.pegRatio < 1.5 ? 'good' : valuation.pegRatio < 2.5 ? 'neutral' : 'concern',
+        status:
+          valuation.pegRatio < 1.5
+            ? "good"
+            : valuation.pegRatio < 2.5
+              ? "neutral"
+              : "concern",
       },
       {
-        name: 'ROE (%)',
+        name: "ROE (%)",
         value: profitability.returnOnEquity,
-        status: profitability.returnOnEquity > 15 ? 'good' : profitability.returnOnEquity > 10 ? 'neutral' : 'concern',
+        status:
+          profitability.returnOnEquity > 15
+            ? "good"
+            : profitability.returnOnEquity > 10
+              ? "neutral"
+              : "concern",
       },
       {
-        name: 'Net Margin (%)',
+        name: "Net Margin (%)",
         value: profitability.netMargin,
-        status: profitability.netMargin > 15 ? 'good' : profitability.netMargin > 5 ? 'neutral' : 'concern',
+        status:
+          profitability.netMargin > 15
+            ? "good"
+            : profitability.netMargin > 5
+              ? "neutral"
+              : "concern",
       },
       {
-        name: 'Revenue Growth (%)',
+        name: "Revenue Growth (%)",
         value: growth.revenueGrowth5Y,
-        status: growth.revenueGrowth5Y > 15 ? 'good' : growth.revenueGrowth5Y > 5 ? 'neutral' : 'concern',
+        status:
+          growth.revenueGrowth5Y > 15
+            ? "good"
+            : growth.revenueGrowth5Y > 5
+              ? "neutral"
+              : "concern",
       },
       {
-        name: 'Debt/Equity',
+        name: "Debt/Equity",
         value: leverage.debtToEquity,
-        status: leverage.debtToEquity < 0.5 ? 'good' : leverage.debtToEquity < 1.0 ? 'neutral' : 'concern',
+        status:
+          leverage.debtToEquity < 0.5
+            ? "good"
+            : leverage.debtToEquity < 1.0
+              ? "neutral"
+              : "concern",
       },
       {
-        name: 'Interest Coverage',
+        name: "Interest Coverage",
         value: leverage.interestCoverage,
-        status: leverage.interestCoverage > 10 ? 'good' : leverage.interestCoverage > 5 ? 'neutral' : 'concern',
+        status:
+          leverage.interestCoverage > 10
+            ? "good"
+            : leverage.interestCoverage > 5
+              ? "neutral"
+              : "concern",
       },
       {
-        name: 'Current Ratio',
+        name: "Current Ratio",
         value: leverage.currentRatio,
-        status: leverage.currentRatio > 1.5 ? 'good' : leverage.currentRatio > 1.0 ? 'neutral' : 'concern',
+        status:
+          leverage.currentRatio > 1.5
+            ? "good"
+            : leverage.currentRatio > 1.0
+              ? "neutral"
+              : "concern",
       },
     ];
   }
@@ -852,13 +977,14 @@ export class FundamentalAnalysisService {
       earnings: [],
       beatRate: 0,
       avgSurprise: 0,
-      trend: 'stable',
+      trend: "stable",
     };
   }
 }
 
 // Singleton instance
-let fundamentalAnalysisServiceInstance: FundamentalAnalysisService | null = null;
+let fundamentalAnalysisServiceInstance: FundamentalAnalysisService | null =
+  null;
 
 /**
  * Get singleton instance of FundamentalAnalysisService

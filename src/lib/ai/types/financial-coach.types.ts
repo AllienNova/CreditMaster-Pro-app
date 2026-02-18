@@ -13,33 +13,33 @@
  * Focus areas for financial coaching
  */
 export enum FocusArea {
-  DEBT_ELIMINATION = 'debt_elimination',
-  EMERGENCY_FUND = 'emergency_fund',
-  BUDGETING = 'budgeting',
-  SAVINGS = 'savings',
-  INVESTMENT = 'investment',
-  RETIREMENT = 'retirement',
-  INCOME_INCREASE = 'income_increase',
-  EXPENSE_REDUCTION = 'expense_reduction',
-  OVERALL = 'overall',
+  DEBT_ELIMINATION = "debt_elimination",
+  EMERGENCY_FUND = "emergency_fund",
+  BUDGETING = "budgeting",
+  SAVINGS = "savings",
+  INVESTMENT = "investment",
+  RETIREMENT = "retirement",
+  INCOME_INCREASE = "income_increase",
+  EXPENSE_REDUCTION = "expense_reduction",
+  OVERALL = "overall",
 }
 
 /**
  * Risk tolerance levels for investment recommendations
  */
 export enum RiskTolerance {
-  CONSERVATIVE = 'conservative',
-  MODERATE = 'moderate',
-  AGGRESSIVE = 'aggressive',
+  CONSERVATIVE = "conservative",
+  MODERATE = "moderate",
+  AGGRESSIVE = "aggressive",
 }
 
 /**
  * Timeframe for financial goals and plans
  */
 export enum Timeframe {
-  SHORT_TERM = 'short_term',    // 0-1 year
-  MEDIUM_TERM = 'medium_term',  // 1-5 years
-  LONG_TERM = 'long_term',      // 5+ years
+  SHORT_TERM = "short_term", // 0-1 year
+  MEDIUM_TERM = "medium_term", // 1-5 years
+  LONG_TERM = "long_term", // 5+ years
 }
 
 /**
@@ -50,12 +50,12 @@ export type BabyStep = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 /**
  * Priority levels for advice and recommendations
  */
-export type PriorityLevel = 'critical' | 'high' | 'medium' | 'low';
+export type PriorityLevel = "critical" | "high" | "medium" | "low";
 
 /**
  * Difficulty levels for action items
  */
-export type DifficultyLevel = 'easy' | 'moderate' | 'hard';
+export type DifficultyLevel = "easy" | "moderate" | "hard";
 
 // ============================================================================
 // COACH ANALYSIS TYPES
@@ -131,10 +131,10 @@ export interface BabyStepProgress {
  */
 export interface FinancialHealthAssessment {
   score: number; // 0-100
-  cashFlowStatus: 'positive' | 'neutral' | 'negative';
-  debtStatus: 'debt_free' | 'manageable' | 'concerning' | 'crisis';
-  savingsStatus: 'excellent' | 'good' | 'fair' | 'poor' | 'none';
-  budgetStatus: 'disciplined' | 'tracking' | 'loose' | 'none';
+  cashFlowStatus: "positive" | "neutral" | "negative";
+  debtStatus: "debt_free" | "manageable" | "concerning" | "crisis";
+  savingsStatus: "excellent" | "good" | "fair" | "poor" | "none";
+  budgetStatus: "disciplined" | "tracking" | "loose" | "none";
   summary: string;
   recommendations: string[];
 }
@@ -146,7 +146,7 @@ export interface EmergencyFundStatus {
   currentAmount: number;
   targetAmount: number;
   monthsCovered: number;
-  status: 'none' | 'starter' | 'partial' | 'complete' | 'excellent';
+  status: "none" | "starter" | "partial" | "complete" | "excellent";
   recommendation: string;
 }
 
@@ -157,8 +157,8 @@ export interface SpendingPattern {
   category: string;
   monthlyAverage: number;
   percentOfIncome: number;
-  trend: 'increasing' | 'stable' | 'decreasing';
-  comparison: 'above_average' | 'average' | 'below_average';
+  trend: "increasing" | "stable" | "decreasing";
+  comparison: "above_average" | "average" | "below_average";
   recommendation?: string;
 }
 
@@ -228,7 +228,7 @@ export interface ActionableStep {
  * Educational or reference resource
  */
 export interface Resource {
-  type: 'article' | 'video' | 'tool' | 'calculator' | 'book';
+  type: "article" | "video" | "tool" | "calculator" | "book";
   title: string;
   description: string;
   url?: string;
@@ -315,7 +315,7 @@ export interface CoachSession {
   messages: CoachMessage[];
   context: SessionContext;
   preferences: UserPreferences;
-  status: 'active' | 'paused' | 'completed' | 'archived';
+  status: "active" | "paused" | "completed" | "archived";
   createdAt: Date;
   updatedAt: Date;
   lastMessageAt: Date | null;
@@ -327,7 +327,7 @@ export interface CoachSession {
 export interface CoachMessage {
   id: string;
   sessionId: string;
-  role: 'user' | 'coach' | 'system';
+  role: "user" | "coach" | "system";
   type: MessageType;
   content: string;
   metadata: MessageMetadata;
@@ -338,14 +338,14 @@ export interface CoachMessage {
  * Message type classification
  */
 export type MessageType =
-  | 'advice'
-  | 'question'
-  | 'recommendation'
-  | 'analysis'
-  | 'encouragement'
-  | 'clarification'
-  | 'action_confirmation'
-  | 'milestone_celebration';
+  | "advice"
+  | "question"
+  | "recommendation"
+  | "analysis"
+  | "encouragement"
+  | "clarification"
+  | "action_confirmation"
+  | "milestone_celebration";
 
 /**
  * Message metadata
@@ -391,8 +391,8 @@ export interface PendingAction {
  * User preferences for coaching style
  */
 export interface UserPreferences {
-  communicationStyle: 'direct' | 'encouraging' | 'balanced';
-  detailLevel: 'brief' | 'moderate' | 'detailed';
+  communicationStyle: "direct" | "encouraging" | "balanced";
+  detailLevel: "brief" | "moderate" | "detailed";
   riskTolerance: RiskTolerance;
   priorityFocus: FocusArea[];
   notificationPreferences: {
@@ -401,4 +401,3 @@ export interface UserPreferences {
     opportunityAlerts: boolean;
   };
 }
-

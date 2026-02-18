@@ -10,35 +10,35 @@
 // ============================================================================
 
 export enum MessageRole {
-  USER = 'user',
-  ASSISTANT = 'assistant',
-  SYSTEM = 'system',
+  USER = "user",
+  ASSISTANT = "assistant",
+  SYSTEM = "system",
 }
 
 export enum IntentType {
-  QUESTION = 'question',
-  ACTION = 'action',
-  EDUCATION = 'education',
-  PORTFOLIO_ANALYSIS = 'portfolio_analysis',
-  INVESTMENT_ADVICE = 'investment_advice',
-  BUDGET_PLANNING = 'budget_planning',
-  DEBT_STRATEGY = 'debt_strategy',
-  CREDIT_IMPROVEMENT = 'credit_improvement',
-  MARKET_INSIGHTS = 'market_insights',
-  RISK_ASSESSMENT = 'risk_assessment',
+  QUESTION = "question",
+  ACTION = "action",
+  EDUCATION = "education",
+  PORTFOLIO_ANALYSIS = "portfolio_analysis",
+  INVESTMENT_ADVICE = "investment_advice",
+  BUDGET_PLANNING = "budget_planning",
+  DEBT_STRATEGY = "debt_strategy",
+  CREDIT_IMPROVEMENT = "credit_improvement",
+  MARKET_INSIGHTS = "market_insights",
+  RISK_ASSESSMENT = "risk_assessment",
 }
 
 export enum ActionType {
-  VIEW_PORTFOLIO = 'view_portfolio',
-  CREATE_BUDGET = 'create_budget',
-  ANALYZE_INVESTMENT = 'analyze_investment',
-  GENERATE_REPORT = 'generate_report',
-  OPTIMIZE_DEBT = 'optimize_debt',
-  ASSESS_RISK = 'assess_risk',
-  GET_TRADING_SIGNAL = 'get_trading_signal',
-  TRACK_GOALS = 'track_goals',
-  ANALYZE_SPENDING = 'analyze_spending',
-  RECOMMEND_STRATEGY = 'recommend_strategy',
+  VIEW_PORTFOLIO = "view_portfolio",
+  CREATE_BUDGET = "create_budget",
+  ANALYZE_INVESTMENT = "analyze_investment",
+  GENERATE_REPORT = "generate_report",
+  OPTIMIZE_DEBT = "optimize_debt",
+  ASSESS_RISK = "assess_risk",
+  GET_TRADING_SIGNAL = "get_trading_signal",
+  TRACK_GOALS = "track_goals",
+  ANALYZE_SPENDING = "analyze_spending",
+  RECOMMEND_STRATEGY = "recommend_strategy",
 }
 
 // ============================================================================
@@ -135,7 +135,7 @@ export interface PortfolioContext {
 
 export interface TransactionContext {
   id: string;
-  type: 'buy' | 'sell' | 'deposit' | 'withdrawal';
+  type: "buy" | "sell" | "deposit" | "withdrawal";
   symbol?: string;
   amount: number;
   date: Date;
@@ -143,10 +143,10 @@ export interface TransactionContext {
 }
 
 export interface UserPreferences {
-  riskTolerance: 'conservative' | 'moderate' | 'aggressive';
-  investmentHorizon: 'short' | 'medium' | 'long';
+  riskTolerance: "conservative" | "moderate" | "aggressive";
+  investmentHorizon: "short" | "medium" | "long";
   preferredAssets: string[];
-  communicationStyle: 'concise' | 'detailed' | 'educational';
+  communicationStyle: "concise" | "detailed" | "educational";
   notificationPreferences: {
     marketAlerts: boolean;
     portfolioUpdates: boolean;
@@ -160,13 +160,13 @@ export interface FinancialGoal {
   targetAmount: number;
   currentAmount: number;
   deadline: Date;
-  priority: 'high' | 'medium' | 'low';
-  category: 'retirement' | 'emergency' | 'investment' | 'debt' | 'other';
+  priority: "high" | "medium" | "low";
+  category: "retirement" | "emergency" | "investment" | "debt" | "other";
 }
 
 export interface RiskProfile {
   score: number; // 0-100
-  category: 'conservative' | 'moderate' | 'aggressive';
+  category: "conservative" | "moderate" | "aggressive";
   factors: {
     age: number;
     income: number;
@@ -177,7 +177,7 @@ export interface RiskProfile {
 }
 
 export interface EntityExtraction {
-  type: 'symbol' | 'amount' | 'date' | 'percentage' | 'category' | 'asset_type';
+  type: "symbol" | "amount" | "date" | "percentage" | "category" | "asset_type";
   value: string | number | Date;
   confidence: number;
   context?: string;
@@ -188,15 +188,21 @@ export interface ActionSuggestion {
   label: string;
   description: string;
   parameters?: Record<string, any>;
-  priority: 'high' | 'medium' | 'low';
+  priority: "high" | "medium" | "low";
   estimatedImpact?: string;
 }
 
 export interface EducationalContent {
   title: string;
   summary: string;
-  category: 'investing' | 'budgeting' | 'debt' | 'credit' | 'retirement' | 'taxes';
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  category:
+    | "investing"
+    | "budgeting"
+    | "debt"
+    | "credit"
+    | "retirement"
+    | "taxes";
+  difficulty: "beginner" | "intermediate" | "advanced";
   readTime: number; // minutes
   url?: string;
   keyTakeaways?: string[];
@@ -271,7 +277,7 @@ export interface ChatMessageDB {
 // ============================================================================
 
 export interface StreamChunk {
-  type: 'token' | 'intent' | 'action' | 'complete' | 'error';
+  type: "token" | "intent" | "action" | "complete" | "error";
   content?: string;
   intent?: ChatIntent;
   action?: ActionSuggestion;
@@ -291,27 +297,27 @@ export interface StreamOptions {
 // ============================================================================
 
 export const ChatSessionSchema = {
-  id: 'string',
-  userId: 'string',
-  createdAt: 'Date',
-  updatedAt: 'Date',
-  title: 'string?',
-  metadata: 'object?',
+  id: "string",
+  userId: "string",
+  createdAt: "Date",
+  updatedAt: "Date",
+  title: "string?",
+  metadata: "object?",
 } as const;
 
 export const ChatMessageSchema = {
-  id: 'string',
-  sessionId: 'string',
-  role: 'MessageRole',
-  content: 'string',
-  timestamp: 'Date',
-  metadata: 'object?',
+  id: "string",
+  sessionId: "string",
+  role: "MessageRole",
+  content: "string",
+  timestamp: "Date",
+  metadata: "object?",
 } as const;
 
 export const ChatIntentSchema = {
-  type: 'IntentType',
-  confidence: 'number',
-  entities: 'array?',
-  action: 'ActionType?',
-  parameters: 'object?',
+  type: "IntentType",
+  confidence: "number",
+  entities: "array?",
+  action: "ActionType?",
+  parameters: "object?",
 } as const;

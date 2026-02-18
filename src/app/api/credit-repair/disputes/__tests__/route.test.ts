@@ -9,12 +9,12 @@
  * - Error handling
  */
 
-import 'openai/shims/node';
-import { NextRequest } from 'next/server';
+import "openai/shims/node";
+import { NextRequest } from "next/server";
 
 // Mock dependencies BEFORE importing modules that use them
-jest.mock('@/lib/auth/jwt-validation');
-jest.mock('@/lib/credit-repair/db', () => ({
+jest.mock("@/lib/auth/jwt-validation");
+jest.mock("@/lib/credit-repair/db", () => ({
   db: {
     disputes: {
       getDisputesByUser: jest.fn(),
@@ -25,15 +25,15 @@ jest.mock('@/lib/credit-repair/db', () => ({
     },
   },
 }));
-jest.mock('@/lib/credit-repair/dispute-service');
-jest.mock('@/lib/security/audit-logging');
+jest.mock("@/lib/credit-repair/dispute-service");
+jest.mock("@/lib/security/audit-logging");
 
 // Import after mocks are set up
-import { GET, POST } from '../route';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { db } from '@/lib/credit-repair/db';
-import { disputeService } from '@/lib/credit-repair/dispute-service';
-import { auditLogger } from '@/lib/security/audit-logging';
+import { GET, POST } from "../route";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { db } from "@/lib/credit-repair/db";
+import { disputeService } from "@/lib/credit-repair/dispute-service";
+import { auditLogger } from "@/lib/security/audit-logging";
 
 interface MockRequestOptions {
   method?: string;
@@ -47,7 +47,7 @@ interface MockRequestOptions {
 function createMockRequest(url: string, options?: MockRequestOptions) {
   const request = {
     url,
-    method: options?.method || 'GET',
+    method: options?.method || "GET",
     json: jest.fn().mockResolvedValue(options?.body || {}),
     headers: new Headers(),
     nextUrl: new URL(url),
@@ -55,39 +55,39 @@ function createMockRequest(url: string, options?: MockRequestOptions) {
   return request;
 }
 
-describe('/api/credit-repair/disputes', () => {
+describe("/api/credit-repair/disputes", () => {
   const mockUser = {
-    id: 'user-123',
-    email: 'test@example.com',
-    name: 'Test User',
+    id: "user-123",
+    email: "test@example.com",
+    name: "Test User",
   };
 
   const mockDispute = {
-    id: 'dispute-123',
-    userId: 'user-123',
-    itemType: 'late_payment',
-    itemDescription: 'Late payment on credit card',
-    creditorName: 'Test Bank',
-    accountNumber: '****1234',
-    disputeReason: 'Not my account',
-    strategy: 'basic_dispute',
-    bureau: 'experian',
-    status: 'draft',
-    letterContent: 'Dispute letter content...',
+    id: "dispute-123",
+    userId: "user-123",
+    itemType: "late_payment",
+    itemDescription: "Late payment on credit card",
+    creditorName: "Test Bank",
+    accountNumber: "****1234",
+    disputeReason: "Not my account",
+    strategy: "basic_dispute",
+    bureau: "experian",
+    status: "draft",
+    letterContent: "Dispute letter content...",
     createdAt: new Date(),
     updatedAt: new Date(),
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Mock audit logger
     (auditLogger.logAIInteraction as jest.Mock).mockResolvedValue(undefined);
     (auditLogger.logSecurityEvent as jest.Mock).mockResolvedValue(undefined);
   });
 
-  describe('GET /api/credit-repair/disputes', () => {
-    it('should return all disputes for user', async () => {
+  describe("GET /api/credit-repair/disputes", () => {
+    it("should return all disputes for user", async () => {
       // Mock authentication
       (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
         valid: true,
@@ -105,7 +105,9 @@ describe('/api/credit-repair/disputes', () => {
         byBureau: { experian: 1 },
       });
 
-      const request = createMockRequest('http://localhost:3000/api/credit-repair/disputes');
+      const request = createMockRequest(
+        "http://localhost:3000/api/credit-repair/disputes",
+      );
       const response = await GET(request);
       const data = await response.json();
 
@@ -125,7 +127,7 @@ describe('/api/credit-repair/disputes', () => {
       });
     });
 
-    it('should filter disputes by status', async () => {
+    it("should filter disputes by status", async () => {
       // Mock authentication
       (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
         valid: true,
@@ -133,52 +135,62 @@ describe('/api/credit-repair/disputes', () => {
       });
 
       // Mock database - when status is provided, API calls getDisputesByStatus
-      (db.disputes.getDisputesByStatus as jest.Mock).mockResolvedValue([mockDispute]);
+      (db.disputes.getDisputesByStatus as jest.Mock).mockResolvedValue([
+        mockDispute,
+      ]);
       (db.disputes.getDisputeStats as jest.Mock).mockResolvedValue({
         total: 1,
         byStatus: { draft: 1 },
         byBureau: { experian: 1 },
       });
 
-      const request = createMockRequest('http://localhost:3000/api/credit-repair/disputes?status=draft');
+      const request = createMockRequest(
+        "http://localhost:3000/api/credit-repair/disputes?status=draft",
+      );
       const response = await GET(request);
       const data = await response.json();
 
       expect(response.status).toBe(200);
       expect(data.success).toBe(true);
-      expect(db.disputes.getDisputesByStatus).toHaveBeenCalledWith(mockUser.id, 'draft', 50);
+      expect(db.disputes.getDisputesByStatus).toHaveBeenCalledWith(
+        mockUser.id,
+        "draft",
+        50,
+      );
     });
 
-    it('should return 401 if not authenticated', async () => {
+    it("should return 401 if not authenticated", async () => {
       // Mock authentication failure
       (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
         valid: false,
         user: null,
       });
 
-      const request = createMockRequest('http://localhost:3000/api/credit-repair/disputes');
+      const request = createMockRequest(
+        "http://localhost:3000/api/credit-repair/disputes",
+      );
       const response = await GET(request);
       const data = await response.json();
 
       expect(response.status).toBe(401);
-      expect(data.error).toBe('Unauthorized');
+      expect(data.error).toBe("Unauthorized");
     });
   });
 
-  describe('POST /api/credit-repair/disputes', () => {
+  describe("POST /api/credit-repair/disputes", () => {
     const validInput = {
-      itemType: 'late_payment',
-      itemDescription: 'Late payment on credit card',
-      creditorName: 'Test Bank',
-      accountNumber: '****1234',
+      itemType: "late_payment",
+      itemDescription: "Late payment on credit card",
+      creditorName: "Test Bank",
+      accountNumber: "****1234",
       balance: 1000,
-      inaccuracyType: 'not_mine',
-      strategy: 'basic_dispute',
-      bureau: 'experian',
+      inaccuracyType: "not_mine",
+      strategy: "basic_dispute",
+      bureau: "experian",
       generateLetter: true,
     };
 
-    it('should create new dispute with AI-generated letter', async () => {
+    it("should create new dispute with AI-generated letter", async () => {
       // Mock authentication
       (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
         valid: true,
@@ -187,18 +199,21 @@ describe('/api/credit-repair/disputes', () => {
 
       // Mock dispute service
       (disputeService.generateDisputeLetter as jest.Mock).mockResolvedValue({
-        letter: 'Generated dispute letter...',
-        subject: 'Dispute Letter',
-        tips: ['Tip 1', 'Tip 2'],
+        letter: "Generated dispute letter...",
+        subject: "Dispute Letter",
+        tips: ["Tip 1", "Tip 2"],
       });
 
       // Mock database
       (db.disputes.createDispute as jest.Mock).mockResolvedValue(mockDispute);
 
-      const request = createMockRequest('http://localhost:3000/api/credit-repair/disputes', {
-        method: 'POST',
-        body: validInput,
-      });
+      const request = createMockRequest(
+        "http://localhost:3000/api/credit-repair/disputes",
+        {
+          method: "POST",
+          body: validInput,
+        },
+      );
       const response = await POST(request);
       const data = await response.json();
 
@@ -211,7 +226,7 @@ describe('/api/credit-repair/disputes', () => {
       expect(auditLogger.logAIInteraction).toHaveBeenCalled();
     });
 
-    it('should create dispute without generating letter', async () => {
+    it("should create dispute without generating letter", async () => {
       // Mock authentication
       (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
         valid: true,
@@ -222,10 +237,13 @@ describe('/api/credit-repair/disputes', () => {
       (db.disputes.createDispute as jest.Mock).mockResolvedValue(mockDispute);
 
       const input = { ...validInput, generateLetter: false };
-      const request = createMockRequest('http://localhost:3000/api/credit-repair/disputes', {
-        method: 'POST',
-        body: input,
-      });
+      const request = createMockRequest(
+        "http://localhost:3000/api/credit-repair/disputes",
+        {
+          method: "POST",
+          body: input,
+        },
+      );
       const response = await POST(request);
       const data = await response.json();
 
@@ -235,79 +253,91 @@ describe('/api/credit-repair/disputes', () => {
       expect(db.disputes.createDispute).toHaveBeenCalled();
     });
 
-    it('should return 400 for missing required fields', async () => {
+    it("should return 400 for missing required fields", async () => {
       // Mock authentication
       (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
         valid: true,
         user: mockUser,
       });
 
-      const invalidInput = { itemType: 'late_payment' }; // Missing required fields
-      const request = createMockRequest('http://localhost:3000/api/credit-repair/disputes', {
-        method: 'POST',
-        body: invalidInput,
-      });
+      const invalidInput = { itemType: "late_payment" }; // Missing required fields
+      const request = createMockRequest(
+        "http://localhost:3000/api/credit-repair/disputes",
+        {
+          method: "POST",
+          body: invalidInput,
+        },
+      );
       const response = await POST(request);
       const data = await response.json();
 
       expect(response.status).toBe(400);
-      expect(data.error).toBe('Missing required fields');
+      expect(data.error).toBe("Missing required fields");
     });
 
-    it('should return 400 for invalid strategy', async () => {
+    it("should return 400 for invalid strategy", async () => {
       // Mock authentication
       (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
         valid: true,
         user: mockUser,
       });
 
-      const invalidInput = { ...validInput, strategy: 'invalid_strategy' };
-      const request = createMockRequest('http://localhost:3000/api/credit-repair/disputes', {
-        method: 'POST',
-        body: invalidInput,
-      });
+      const invalidInput = { ...validInput, strategy: "invalid_strategy" };
+      const request = createMockRequest(
+        "http://localhost:3000/api/credit-repair/disputes",
+        {
+          method: "POST",
+          body: invalidInput,
+        },
+      );
       const response = await POST(request);
       const data = await response.json();
 
       expect(response.status).toBe(400);
-      expect(data.error).toBe('Invalid strategy');
+      expect(data.error).toBe("Invalid strategy");
     });
 
-    it('should return 400 for invalid bureau', async () => {
+    it("should return 400 for invalid bureau", async () => {
       // Mock authentication
       (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
         valid: true,
         user: mockUser,
       });
 
-      const invalidInput = { ...validInput, bureau: 'invalid_bureau' };
-      const request = createMockRequest('http://localhost:3000/api/credit-repair/disputes', {
-        method: 'POST',
-        body: invalidInput,
-      });
+      const invalidInput = { ...validInput, bureau: "invalid_bureau" };
+      const request = createMockRequest(
+        "http://localhost:3000/api/credit-repair/disputes",
+        {
+          method: "POST",
+          body: invalidInput,
+        },
+      );
       const response = await POST(request);
       const data = await response.json();
 
       expect(response.status).toBe(400);
-      expect(data.error).toBe('Invalid bureau');
+      expect(data.error).toBe("Invalid bureau");
     });
 
-    it('should return 401 if not authenticated', async () => {
+    it("should return 401 if not authenticated", async () => {
       // Mock authentication failure
       (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
         valid: false,
         user: null,
       });
 
-      const request = createMockRequest('http://localhost:3000/api/credit-repair/disputes', {
-        method: 'POST',
-        body: validInput,
-      });
+      const request = createMockRequest(
+        "http://localhost:3000/api/credit-repair/disputes",
+        {
+          method: "POST",
+          body: validInput,
+        },
+      );
       const response = await POST(request);
       const data = await response.json();
 
       expect(response.status).toBe(401);
-      expect(data.error).toBe('Unauthorized');
+      expect(data.error).toBe("Unauthorized");
     });
   });
 });

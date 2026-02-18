@@ -12,18 +12,22 @@
 All endpoints require authentication via Supabase Auth. The API uses Row Level Security (RLS) to ensure users can only access their own data.
 
 **Authentication Methods**:
+
 ```typescript
 // Client-side (automatic with Supabase client)
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from "@/lib/supabase/client";
 const supabase = createClient();
 
 // Server-side API routes
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from "@/lib/supabase/server";
 const supabase = createClient();
-const { data: { user } } = await supabase.auth.getUser();
+const {
+  data: { user },
+} = await supabase.auth.getUser();
 ```
 
 **Security Headers**:
+
 - `Authorization: Bearer <token>` - Supabase session token
 - `Content-Type: application/json`
 
@@ -44,6 +48,7 @@ Get all chat sessions for the authenticated user with pagination support.
 | `offset` | number | No | 0 | Number of sessions to skip |
 
 **Response**: `200 OK`
+
 ```json
 {
   "sessions": [
@@ -66,14 +71,16 @@ Get all chat sessions for the authenticated user with pagination support.
 ```
 
 **Error Responses**:
+
 - `401 Unauthorized` - Missing or invalid authentication
 - `500 Internal Server Error` - Server error
 
 **Caching**: Cached for 2 minutes (client-side with React Query)
 
 **Example**:
+
 ```typescript
-const response = await fetch('/api/chat/financial/sessions?limit=10&offset=0');
+const response = await fetch("/api/chat/financial/sessions?limit=10&offset=0");
 const { sessions, total } = await response.json();
 ```
 
@@ -86,6 +93,7 @@ const { sessions, total } = await response.json();
 Create a new chat session for the authenticated user.
 
 **Request Body**:
+
 ```json
 {
   "title": "Investment Strategy Discussion"
@@ -93,10 +101,12 @@ Create a new chat session for the authenticated user.
 ```
 
 **Validation**:
+
 - `title`: Optional string, max 200 characters
 - If not provided, defaults to "New Chat"
 
 **Response**: `201 Created`
+
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
@@ -112,20 +122,23 @@ Create a new chat session for the authenticated user.
 ```
 
 **Error Responses**:
+
 - `400 Bad Request` - Invalid request body
 - `401 Unauthorized` - Missing or invalid authentication
 - `500 Internal Server Error` - Server error
 
 **Side Effects**:
+
 - Invalidates user sessions cache
 - Creates database record with RLS protection
 
 **Example**:
+
 ```typescript
-const response = await fetch('/api/chat/financial/sessions', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ title: 'My New Chat' }),
+const response = await fetch("/api/chat/financial/sessions", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ title: "My New Chat" }),
 });
 const session = await response.json();
 ```
@@ -144,6 +157,7 @@ Get a specific chat session by ID. Only returns if user owns the session (RLS).
 | `id` | UUID | Yes | Session ID |
 
 **Response**: `200 OK`
+
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
@@ -159,6 +173,7 @@ Get a specific chat session by ID. Only returns if user owns the session (RLS).
 ```
 
 **Error Responses**:
+
 - `400 Bad Request` - Invalid request body
 - `401 Unauthorized` - Missing or invalid authentication
 - `403 Forbidden` - User doesn't own this session
@@ -166,6 +181,7 @@ Get a specific chat session by ID. Only returns if user owns the session (RLS).
 - `500 Internal Server Error` - Server error
 
 **Side Effects**:
+
 - Updates `updated_at` timestamp
 - Invalidates session cache
 
@@ -183,6 +199,7 @@ Archive a chat session (soft delete). Only allowed if user owns the session (RLS
 | `id` | UUID | Yes | Session ID |
 
 **Response**: `200 OK`
+
 ```json
 {
   "success": true,
@@ -191,12 +208,14 @@ Archive a chat session (soft delete). Only allowed if user owns the session (RLS
 ```
 
 **Error Responses**:
+
 - `401 Unauthorized` - Missing or invalid authentication
 - `403 Forbidden` - User doesn't own this session
 - `404 Not Found` - Session not found
 - `500 Internal Server Error` - Server error
 
 **Side Effects**:
+
 - Sets `archived = true` (soft delete)
 - Invalidates session and user sessions cache
 - Messages remain in database but session is hidden
@@ -223,6 +242,7 @@ Get all messages for a chat session with pagination support.
 | `offset` | number | No | 0 | Number of messages to skip |
 
 **Response**: `200 OK`
+
 ```json
 {
   "messages": [
@@ -259,11 +279,13 @@ Get all messages for a chat session with pagination support.
 ```
 
 **Message Roles**:
+
 - `user`: Message from the user
 - `assistant`: AI-generated response
 - `system`: System messages (e.g., session started)
 
 **Intent Types** (for user messages):
+
 - `PORTFOLIO_ADVICE`: Portfolio allocation questions
 - `BUDGET_HELP`: Budget planning assistance
 - `DEBT_STRATEGY`: Debt payoff strategies
@@ -276,6 +298,7 @@ Get all messages for a chat session with pagination support.
 - `GREETING`: Greetings and small talk
 
 **Error Responses**:
+
 - `401 Unauthorized` - Missing or invalid authentication
 - `403 Forbidden` - User doesn't own this session
 - `404 Not Found` - Session not found
@@ -299,6 +322,7 @@ Send a message to a chat session and receive an AI-generated response.
 | `id` | UUID | Yes | Session ID |
 
 **Request Body**:
+
 ```json
 {
   "content": "What's the best way to pay off my credit card debt?"
@@ -306,10 +330,12 @@ Send a message to a chat session and receive an AI-generated response.
 ```
 
 **Validation**:
+
 - `content`: Required string, max 2000 characters
 - Content is sanitized for XSS protection
 
 **Response**: `200 OK`
+
 ```json
 {
   "userMessage": {
@@ -346,6 +372,7 @@ Send a message to a chat session and receive an AI-generated response.
 ```
 
 **Processing Steps**:
+
 1. Validate and sanitize user input
 2. Detect intent and extract entities
 3. Build chat context (portfolio, goals, preferences)
@@ -355,6 +382,7 @@ Send a message to a chat session and receive an AI-generated response.
 7. Update session metadata
 
 **Error Responses**:
+
 - `400 Bad Request` - Invalid request body or content too long
 - `401 Unauthorized` - Missing or invalid authentication
 - `403 Forbidden` - User doesn't own this session
@@ -365,6 +393,7 @@ Send a message to a chat session and receive an AI-generated response.
 **Rate Limiting**: 60 requests per minute per user
 
 **Side Effects**:
+
 - Creates 2 message records (user + assistant)
 - Updates session `message_count` and `last_message_at`
 - Invalidates messages cache
@@ -401,6 +430,7 @@ CREATE POLICY "Users can view messages from their own sessions"
 ### Input Sanitization
 
 All user input is sanitized to prevent XSS attacks:
+
 - Content is limited to 2000 characters
 - HTML tags are stripped using DOMPurify
 - SQL injection is prevented by parameterized queries
@@ -408,6 +438,7 @@ All user input is sanitized to prevent XSS attacks:
 ### Authentication Verification
 
 Every request verifies:
+
 1. Valid Supabase session token
 2. User ID matches session owner
 3. Session is not archived
@@ -415,6 +446,7 @@ Every request verifies:
 ### Rate Limiting
 
 API endpoints are rate-limited to prevent abuse:
+
 - 60 requests per minute per user
 - 429 status code returned when exceeded
 - Retry-After header indicates wait time
@@ -426,11 +458,13 @@ API endpoints are rate-limited to prevent abuse:
 ### Caching Strategy
 
 **Server-Side Cache** (In-Memory):
+
 - User sessions: 2 minutes TTL
 - Session messages: 3 minutes TTL
 - Session details: 10 minutes TTL
 
 **Client-Side Cache** (React Query):
+
 - Sessions list: 2 minutes stale time
 - Session details: 5 minutes stale time
 - Messages list: 1 minute stale time
@@ -438,15 +472,18 @@ API endpoints are rate-limited to prevent abuse:
 ### Database Optimizations
 
 **Indexes**:
+
 - `idx_chat_sessions_user_archived_updated` - Composite index for session queries
 - `idx_chat_messages_session_timestamp` - Composite index for message queries
 - `idx_chat_sessions_metadata_gin` - GIN index for JSONB searches
 
 **Stored Procedures**:
+
 - `get_recent_sessions_with_preview()` - Optimized session list with last message
 - `get_session_messages_paginated()` - Proper pagination for messages
 
 **Materialized View**:
+
 - `chat_session_stats` - Cached statistics for dashboard
 
 ---
@@ -457,24 +494,29 @@ API endpoints are rate-limited to prevent abuse:
 
 ```typescript
 // Test: Create session
-const session = await fetch('/api/chat/financial/sessions', {
-  method: 'POST',
-  body: JSON.stringify({ title: 'Test Chat' }),
+const session = await fetch("/api/chat/financial/sessions", {
+  method: "POST",
+  body: JSON.stringify({ title: "Test Chat" }),
 });
 expect(session.status).toBe(201);
 
 // Test: Send message
-const response = await fetch(`/api/chat/financial/sessions/${sessionId}/messages`, {
-  method: 'POST',
-  body: JSON.stringify({ content: 'Hello' }),
-});
+const response = await fetch(
+  `/api/chat/financial/sessions/${sessionId}/messages`,
+  {
+    method: "POST",
+    body: JSON.stringify({ content: "Hello" }),
+  },
+);
 expect(response.status).toBe(200);
 const { userMessage, assistantMessage } = await response.json();
-expect(userMessage.role).toBe('user');
-expect(assistantMessage.role).toBe('assistant');
+expect(userMessage.role).toBe("user");
+expect(assistantMessage.role).toBe("assistant");
 
 // Test: Unauthorized access
-const otherUserSession = await fetch(`/api/chat/financial/sessions/${otherUserId}`);
+const otherUserSession = await fetch(
+  `/api/chat/financial/sessions/${otherUserId}`,
+);
 expect(otherUserSession.status).toBe(403);
 ```
 
@@ -486,5 +528,3 @@ expect(otherUserSession.status).toBe(403);
 - [Performance Optimization Guide](./PERFORMANCE_OPTIMIZATION_GUIDE.md)
 - [Zero Trust Security Documentation](./ZERO_TRUST_SECURITY.md)
 - [Deployment Guide](./DEPLOYMENT_GUIDE.md)
-
-

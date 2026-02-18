@@ -12,7 +12,7 @@
 import {
   CorrelationMonitor,
   correlationMonitor,
-} from '@/lib/trading/correlation-monitor';
+} from "@/lib/trading/correlation-monitor";
 
 // ============================================================================
 // TYPES
@@ -25,22 +25,22 @@ export interface VaRPosition {
 }
 
 export interface VaRConfig {
-  confidenceLevel: number;   // e.g. 0.95, 0.99
-  horizonDays: number;       // holding period
-  windowDays: number;        // lookback for historical data
+  confidenceLevel: number; // e.g. 0.95, 0.99
+  horizonDays: number; // holding period
+  windowDays: number; // lookback for historical data
 }
 
 export interface VaRResult {
-  method: 'parametric' | 'historical' | 'conditional';
-  var: number;               // dollar VaR (positive = potential loss)
-  varPercent: number;        // VaR as % of portfolio
+  method: "parametric" | "historical" | "conditional";
+  var: number; // dollar VaR (positive = potential loss)
+  varPercent: number; // VaR as % of portfolio
   confidenceLevel: number;
   horizonDays: number;
   timestamp: Date;
 }
 
 export interface ConditionalVaRResult extends VaRResult {
-  method: 'conditional';
+  method: "conditional";
   expectedShortfall: number;
   expectedShortfallPercent: number;
   tailObservations: number;
@@ -51,7 +51,12 @@ export interface ComprehensiveVaR {
   parametric: VaRResult;
   historical: VaRResult;
   conditional: ConditionalVaRResult;
-  componentVaR: { symbol: string; marginalVaR: number; componentVaR: number; percentContribution: number }[];
+  componentVaR: {
+    symbol: string;
+    marginalVaR: number;
+    componentVaR: number;
+    percentContribution: number;
+  }[];
   diversificationBenefit: number;
   diversificationBenefitPercent: number;
   timestamp: Date;
@@ -100,15 +105,15 @@ export class VaRCalculator {
    */
   parametricVaR(
     positions: VaRPosition[],
-    config: VaRConfig = DEFAULT_VAR_CONFIG
+    config: VaRConfig = DEFAULT_VAR_CONFIG,
   ): VaRResult {
     const portfolioValue = positions.reduce((sum, p) => sum + p.value, 0);
     if (portfolioValue === 0 || positions.length === 0) {
-      return this.emptyResult('parametric', config);
+      return this.emptyResult("parametric", config);
     }
 
-    const symbols = positions.map(p => p.symbol);
-    const weights = positions.map(p => p.value / portfolioValue);
+    const symbols = positions.map((p) => p.symbol);
+    const weights = positions.map((p) => p.value / portfolioValue);
 
     // Get individual volatilities
     const vols = this.getVolatilities(symbols, config.windowDays);
@@ -122,7 +127,8 @@ export class VaRCalculator {
     for (let i = 0; i < n; i++) {
       for (let j = 0; j < n; j++) {
         const rho = cm.matrix[i]?.[j] ?? (i === j ? 1 : 0);
-        const covIJ = vols[i] * vols[j] * (isNaN(rho) ? (i === j ? 1 : 0) : rho);
+        const covIJ =
+          vols[i] * vols[j] * (isNaN(rho) ? (i === j ? 1 : 0) : rho);
         portfolioVariance += weights[i] * weights[j] * covIJ;
       }
     }
@@ -138,7 +144,7 @@ export class VaRCalculator {
     const varDollars = z * scaledVol * portfolioValue;
 
     return {
-      method: 'parametric',
+      method: "parametric",
       var: varDollars,
       varPercent: (varDollars / portfolioValue) * 100,
       confidenceLevel: config.confidenceLevel,
@@ -159,28 +165,32 @@ export class VaRCalculator {
    */
   historicalVaR(
     positions: VaRPosition[],
-    config: VaRConfig = DEFAULT_VAR_CONFIG
+    config: VaRConfig = DEFAULT_VAR_CONFIG,
   ): VaRResult {
     const portfolioValue = positions.reduce((sum, p) => sum + p.value, 0);
     if (portfolioValue === 0 || positions.length === 0) {
-      return this.emptyResult('historical', config);
+      return this.emptyResult("historical", config);
     }
 
     // Get portfolio return series
-    const portfolioReturns = this.computePortfolioReturns(positions, config.windowDays);
+    const portfolioReturns = this.computePortfolioReturns(
+      positions,
+      config.windowDays,
+    );
 
     if (portfolioReturns.length < 10) {
       // Insufficient data — fall back to parametric
       return {
         ...this.parametricVaR(positions, config),
-        method: 'historical',
+        method: "historical",
       };
     }
 
     // Scale returns to horizon if needed
-    const scaledReturns = config.horizonDays === 1
-      ? portfolioReturns
-      : this.scaleReturnsToHorizon(portfolioReturns, config.horizonDays);
+    const scaledReturns =
+      config.horizonDays === 1
+        ? portfolioReturns
+        : this.scaleReturnsToHorizon(portfolioReturns, config.horizonDays);
 
     // Sort ascending (worst losses first)
     const sorted = [...scaledReturns].sort((a, b) => a - b);
@@ -190,7 +200,7 @@ export class VaRCalculator {
     const varReturn = -sorted[Math.max(0, idx)];
 
     return {
-      method: 'historical',
+      method: "historical",
       var: varReturn * portfolioValue,
       varPercent: varReturn * 100,
       confidenceLevel: config.confidenceLevel,
@@ -209,7 +219,7 @@ export class VaRCalculator {
    */
   conditionalVaR(
     positions: VaRPosition[],
-    config: VaRConfig = DEFAULT_VAR_CONFIG
+    config: VaRConfig = DEFAULT_VAR_CONFIG,
   ): ConditionalVaRResult {
     const portfolioValue = positions.reduce((sum, p) => sum + p.value, 0);
     if (portfolioValue === 0 || positions.length === 0) {
@@ -217,7 +227,10 @@ export class VaRCalculator {
     }
 
     // Get portfolio return series
-    const portfolioReturns = this.computePortfolioReturns(positions, config.windowDays);
+    const portfolioReturns = this.computePortfolioReturns(
+      positions,
+      config.windowDays,
+    );
 
     if (portfolioReturns.length < 10) {
       // Insufficient data — use parametric approximation
@@ -227,14 +240,18 @@ export class VaRCalculator {
       const pdfZ = Math.exp(-0.5 * z * z) / Math.sqrt(2 * Math.PI);
       const cvarMultiplier = pdfZ / (1 - config.confidenceLevel);
       const vols = this.getVolatilities(
-        positions.map(p => p.symbol),
-        config.windowDays
+        positions.map((p) => p.symbol),
+        config.windowDays,
       );
       const avgVol = vols.reduce((a, b) => a + b, 0) / vols.length;
-      const cvarDollars = cvarMultiplier * avgVol * Math.sqrt(config.horizonDays) * portfolioValue;
+      const cvarDollars =
+        cvarMultiplier *
+        avgVol *
+        Math.sqrt(config.horizonDays) *
+        portfolioValue;
 
       return {
-        method: 'conditional',
+        method: "conditional",
         var: parametric.var,
         varPercent: parametric.varPercent,
         expectedShortfall: cvarDollars,
@@ -247,9 +264,10 @@ export class VaRCalculator {
     }
 
     // Scale returns to horizon
-    const scaledReturns = config.horizonDays === 1
-      ? portfolioReturns
-      : this.scaleReturnsToHorizon(portfolioReturns, config.horizonDays);
+    const scaledReturns =
+      config.horizonDays === 1
+        ? portfolioReturns
+        : this.scaleReturnsToHorizon(portfolioReturns, config.horizonDays);
 
     // Sort ascending
     const sorted = [...scaledReturns].sort((a, b) => a - b);
@@ -261,10 +279,12 @@ export class VaRCalculator {
 
     // CVaR = average of all returns below VaR
     const tailReturns = sorted.slice(0, Math.max(1, cutoff));
-    const avgTailLoss = -(tailReturns.reduce((a, b) => a + b, 0) / tailReturns.length);
+    const avgTailLoss = -(
+      tailReturns.reduce((a, b) => a + b, 0) / tailReturns.length
+    );
 
     return {
-      method: 'conditional',
+      method: "conditional",
       var: varReturn * portfolioValue,
       varPercent: varReturn * 100,
       expectedShortfall: avgTailLoss * portfolioValue,
@@ -285,7 +305,7 @@ export class VaRCalculator {
    */
   comprehensiveVaR(
     positions: VaRPosition[],
-    config: VaRConfig = DEFAULT_VAR_CONFIG
+    config: VaRConfig = DEFAULT_VAR_CONFIG,
   ): ComprehensiveVaR {
     const portfolioValue = positions.reduce((sum, p) => sum + p.value, 0);
 
@@ -298,7 +318,10 @@ export class VaRCalculator {
 
     // Diversification benefit: undiversified VaR - diversified VaR
     const undiversifiedVaR = this.computeUndiversifiedVaR(positions, config);
-    const diversificationBenefit = Math.max(0, undiversifiedVaR - parametric.var);
+    const diversificationBenefit = Math.max(
+      0,
+      undiversifiedVaR - parametric.var,
+    );
 
     return {
       portfolioValue,
@@ -307,9 +330,10 @@ export class VaRCalculator {
       conditional,
       componentVaR,
       diversificationBenefit,
-      diversificationBenefitPercent: portfolioValue > 0
-        ? (diversificationBenefit / portfolioValue) * 100
-        : 0,
+      diversificationBenefitPercent:
+        portfolioValue > 0
+          ? (diversificationBenefit / portfolioValue) * 100
+          : 0,
       timestamp: new Date(),
     };
   }
@@ -326,21 +350,21 @@ export class VaRCalculator {
    */
   private computeComponentVaR(
     positions: VaRPosition[],
-    config: VaRConfig
-  ): ComprehensiveVaR['componentVaR'] {
+    config: VaRConfig,
+  ): ComprehensiveVaR["componentVaR"] {
     const portfolioVaR = this.parametricVaR(positions, config);
 
-    return positions.map(pos => {
+    return positions.map((pos) => {
       // Marginal VaR via numerical derivative
       const delta = pos.value * 0.01; // 1% shift
-      const shiftedPositions = positions.map(p =>
+      const shiftedPositions = positions.map((p) =>
         p.symbol === pos.symbol
           ? { ...p, value: p.value + delta, weight: p.weight }
-          : p
+          : p,
       );
       // Recalculate weights for shifted portfolio
       const shiftedTotal = shiftedPositions.reduce((s, p) => s + p.value, 0);
-      const shiftedWeighted = shiftedPositions.map(p => ({
+      const shiftedWeighted = shiftedPositions.map((p) => ({
         ...p,
         weight: p.value / shiftedTotal,
       }));
@@ -355,9 +379,8 @@ export class VaRCalculator {
         symbol: pos.symbol,
         marginalVaR,
         componentVaR: componentVar,
-        percentContribution: portfolioVaR.var > 0
-          ? (componentVar / portfolioVaR.var) * 100
-          : 0,
+        percentContribution:
+          portfolioVaR.var > 0 ? (componentVar / portfolioVaR.var) * 100 : 0,
       };
     });
   }
@@ -367,17 +390,18 @@ export class VaRCalculator {
    */
   private computeUndiversifiedVaR(
     positions: VaRPosition[],
-    config: VaRConfig
+    config: VaRConfig,
   ): number {
     const z = this.normalInverseCDF(config.confidenceLevel);
     const vols = this.getVolatilities(
-      positions.map(p => p.symbol),
-      config.windowDays
+      positions.map((p) => p.symbol),
+      config.windowDays,
     );
 
     let sum = 0;
     for (let i = 0; i < positions.length; i++) {
-      const posVaR = z * vols[i] * Math.sqrt(config.horizonDays) * positions[i].value;
+      const posVaR =
+        z * vols[i] * Math.sqrt(config.horizonDays) * positions[i].value;
       sum += posVaR;
     }
 
@@ -394,13 +418,14 @@ export class VaRCalculator {
    */
   private computePortfolioReturns(
     positions: VaRPosition[],
-    windowDays: number
+    windowDays: number,
   ): number[] {
     const portfolioValue = positions.reduce((sum, p) => sum + p.value, 0);
     if (portfolioValue === 0) return [];
 
     // Collect per-symbol returns
-    const allReturns: { symbol: string; weight: number; returns: number[] }[] = [];
+    const allReturns: { symbol: string; weight: number; returns: number[] }[] =
+      [];
     for (const pos of positions) {
       const returns = this.returnData.get(pos.symbol);
       if (returns && returns.length > 0) {
@@ -415,7 +440,7 @@ export class VaRCalculator {
     if (allReturns.length === 0) return [];
 
     // Use shortest common length
-    const minLen = Math.min(...allReturns.map(r => r.returns.length));
+    const minLen = Math.min(...allReturns.map((r) => r.returns.length));
     if (minLen === 0) return [];
 
     // Build portfolio returns
@@ -434,7 +459,10 @@ export class VaRCalculator {
    * Scale daily returns to multi-day horizon using overlapping windows.
    * Uses sum of log returns for accuracy.
    */
-  private scaleReturnsToHorizon(dailyReturns: number[], horizonDays: number): number[] {
+  private scaleReturnsToHorizon(
+    dailyReturns: number[],
+    horizonDays: number,
+  ): number[] {
     if (dailyReturns.length < horizonDays) return dailyReturns;
 
     const scaled: number[] = [];
@@ -458,7 +486,7 @@ export class VaRCalculator {
    * Uses provided return data if available, otherwise defaults.
    */
   private getVolatilities(symbols: string[], windowDays: number): number[] {
-    return symbols.map(symbol => {
+    return symbols.map((symbol) => {
       const returns = this.returnData.get(symbol);
       if (returns && returns.length >= 10) {
         const recent = returns.slice(-windowDays);
@@ -484,33 +512,20 @@ export class VaRCalculator {
 
     // Coefficients for rational approximation
     const a = [
-      -3.969683028665376e+01,
-       2.209460984245205e+02,
-      -2.759285104469687e+02,
-       1.383577518672690e+02,
-      -3.066479806614716e+01,
-       2.506628277459239e+00,
+      -3.969683028665376e1, 2.209460984245205e2, -2.759285104469687e2,
+      1.38357751867269e2, -3.066479806614716e1, 2.506628277459239,
     ];
     const b = [
-      -5.447609879822406e+01,
-       1.615858368580409e+02,
-      -1.556989798598866e+02,
-       6.680131188771972e+01,
-      -1.328068155288572e+01,
+      -5.447609879822406e1, 1.615858368580409e2, -1.556989798598866e2,
+      6.680131188771972e1, -1.328068155288572e1,
     ];
     const c = [
-      -7.784894002430293e-03,
-      -3.223964580411365e-01,
-      -2.400758277161838e+00,
-      -2.549732539343734e+00,
-       4.374664141464968e+00,
-       2.938163982698783e+00,
+      -7.784894002430293e-3, -3.223964580411365e-1, -2.400758277161838,
+      -2.549732539343734, 4.374664141464968, 2.938163982698783,
     ];
     const d = [
-       7.784695709041462e-03,
-       3.224671290700398e-01,
-       2.445134137142996e+00,
-       3.754408661907416e+00,
+      7.784695709041462e-3, 3.224671290700398e-1, 2.445134137142996,
+      3.754408661907416,
     ];
 
     const pLow = 0.02425;
@@ -522,26 +537,34 @@ export class VaRCalculator {
     if (p < pLow) {
       // Lower tail
       q = Math.sqrt(-2 * Math.log(p));
-      return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
-        ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+      return (
+        (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+        ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1)
+      );
     } else if (p <= pHigh) {
       // Central region
       q = p - 0.5;
       r = q * q;
-      return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q /
-        (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
+      return (
+        ((((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) *
+          q) /
+        (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1)
+      );
     } else {
       // Upper tail
       q = Math.sqrt(-2 * Math.log(1 - p));
-      return -((((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
-        ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1));
+      return -(
+        (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+        ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1)
+      );
     }
   }
 
   private standardDeviation(values: number[]): number {
     if (values.length === 0) return 0;
     const mean = values.reduce((a, b) => a + b, 0) / values.length;
-    const variance = values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / values.length;
+    const variance =
+      values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / values.length;
     return Math.sqrt(variance);
   }
 
@@ -549,7 +572,10 @@ export class VaRCalculator {
   // EMPTY RESULTS
   // ============================================================================
 
-  private emptyResult(method: VaRResult['method'], config: VaRConfig): VaRResult {
+  private emptyResult(
+    method: VaRResult["method"],
+    config: VaRConfig,
+  ): VaRResult {
     return {
       method,
       var: 0,
@@ -562,7 +588,7 @@ export class VaRCalculator {
 
   private emptyConditionalResult(config: VaRConfig): ConditionalVaRResult {
     return {
-      method: 'conditional',
+      method: "conditional",
       var: 0,
       varPercent: 0,
       expectedShortfall: 0,

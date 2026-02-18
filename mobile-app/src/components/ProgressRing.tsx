@@ -3,10 +3,10 @@
  * Circular progress indicator for goals, budgets, etc.
  */
 
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Circle, G } from 'react-native-svg';
-import { useTheme } from '../hooks/useTheme';
+import React from "react";
+import { View, Text, StyleSheet } from "react-native";
+import Svg, { Circle, G } from "react-native-svg";
+import { useTheme } from "../hooks/useTheme";
 
 interface ProgressRingProps {
   progress: number; // 0-100
@@ -38,7 +38,8 @@ export function ProgressRing({
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const normalizedProgress = Math.min(100, Math.max(0, progress));
-  const strokeDashoffset = circumference - (normalizedProgress / 100) * circumference;
+  const strokeDashoffset =
+    circumference - (normalizedProgress / 100) * circumference;
 
   return (
     <View style={[styles.container, { width: size, height: size }]}>
@@ -68,11 +69,32 @@ export function ProgressRing({
       <View style={styles.content}>
         {value ? (
           <>
-            <Text style={[styles.value, { fontSize: size * 0.2, color: colors.text }]}>{value}</Text>
-            {label && <Text style={[styles.label, { fontSize: size * 0.1, color: colors.textSecondary }]}>{label}</Text>}
+            <Text
+              style={[
+                styles.value,
+                { fontSize: size * 0.2, color: colors.text },
+              ]}
+            >
+              {value}
+            </Text>
+            {label && (
+              <Text
+                style={[
+                  styles.label,
+                  { fontSize: size * 0.1, color: colors.textSecondary },
+                ]}
+              >
+                {label}
+              </Text>
+            )}
           </>
         ) : showPercentage ? (
-          <Text style={[styles.percentage, { fontSize: size * 0.2, color: colors.text }]}>
+          <Text
+            style={[
+              styles.percentage,
+              { fontSize: size * 0.2, color: colors.text },
+            ]}
+          >
             {Math.round(normalizedProgress)}%
           </Text>
         ) : null}
@@ -83,19 +105,19 @@ export function ProgressRing({
 
 const styles = StyleSheet.create({
   container: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   content: {
-    position: 'absolute',
-    justifyContent: 'center',
-    alignItems: 'center',
+    position: "absolute",
+    justifyContent: "center",
+    alignItems: "center",
   },
   percentage: {
-    fontWeight: '700',
+    fontWeight: "700",
   },
   value: {
-    fontWeight: '700',
+    fontWeight: "700",
   },
   label: {
     marginTop: 2,

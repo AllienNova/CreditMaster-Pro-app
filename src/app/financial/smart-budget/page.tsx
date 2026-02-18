@@ -1,6 +1,6 @@
-import { Suspense } from 'react';
-import SmartBudgetManagement from '@/components/financial/SmartBudgetManagement';
-import LoadingSkeleton from '@/components/ui/LoadingSkeleton';
+import { Suspense } from "react";
+import SmartBudgetManagement from "@/components/financial/SmartBudgetManagement";
+import LoadingSkeleton from "@/components/ui/LoadingSkeleton";
 
 /**
  * Smart Budget Management Page
@@ -17,8 +17,8 @@ import LoadingSkeleton from '@/components/ui/LoadingSkeleton';
  */
 
 export const metadata = {
-  title: 'Smart Budget | Fynvita',
-  description: 'AI-powered budget management with intelligent recommendations',
+  title: "Smart Budget | Fynvita",
+  description: "AI-powered budget management with intelligent recommendations",
 };
 
 function SmartBudgetLoadingSkeleton() {
@@ -32,7 +32,10 @@ function SmartBudgetLoadingSkeleton() {
           {/* Overview Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+              <div
+                key={i}
+                className="bg-white dark:bg-slate-800 rounded-lg shadow p-6"
+              >
                 <div className="h-4 bg-gray-200 dark:bg-slate-700 rounded w-1/2 mb-4"></div>
                 <div className="h-8 bg-gray-200 dark:bg-slate-700 rounded w-3/4"></div>
               </div>
@@ -45,7 +48,10 @@ function SmartBudgetLoadingSkeleton() {
               <div className="h-6 bg-gray-200 dark:bg-slate-700 rounded w-1/3 mb-6"></div>
               <div className="space-y-4">
                 {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="h-20 bg-gray-200 dark:bg-slate-700 rounded"></div>
+                  <div
+                    key={i}
+                    className="h-20 bg-gray-200 dark:bg-slate-700 rounded"
+                  ></div>
                 ))}
               </div>
             </div>
@@ -53,7 +59,10 @@ function SmartBudgetLoadingSkeleton() {
               <div className="h-6 bg-gray-200 dark:bg-slate-700 rounded w-1/2 mb-6"></div>
               <div className="space-y-3">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-16 bg-gray-200 dark:bg-slate-700 rounded"></div>
+                  <div
+                    key={i}
+                    className="h-16 bg-gray-200 dark:bg-slate-700 rounded"
+                  ></div>
                 ))}
               </div>
             </div>

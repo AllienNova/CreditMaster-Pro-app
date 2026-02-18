@@ -1,13 +1,13 @@
 /**
  * OfflineIndicator Component
- * 
+ *
  * Displays offline status banner with cached data timestamp
  */
 
-'use client';
+"use client";
 
-import { useOnline } from '@/hooks/useOnline';
-import { useEffect, useState } from 'react';
+import { useOnline } from "@/hooks/useOnline";
+import { useEffect, useState } from "react";
 
 export interface OfflineIndicatorProps {
   /** Show cached data timestamp */
@@ -17,17 +17,17 @@ export interface OfflineIndicatorProps {
   /** Custom className */
   className?: string;
   /** Position of the indicator */
-  position?: 'top' | 'bottom';
+  position?: "top" | "bottom";
   /** Variant style */
-  variant?: 'banner' | 'badge';
+  variant?: "banner" | "badge";
 }
 
 export function OfflineIndicator({
   showCachedTimestamp = true,
   cachedAt = null,
-  className = '',
-  position = 'top',
-  variant = 'banner',
+  className = "",
+  position = "top",
+  variant = "banner",
 }: OfflineIndicatorProps) {
   const { isOnline, wasOffline, lastOnlineAt } = useOnline();
   const [showReconnected, setShowReconnected] = useState(false);
@@ -46,21 +46,21 @@ export function OfflineIndicator({
     return null;
   }
 
-  const positionClasses = position === 'top' ? 'top-0' : 'bottom-0';
+  const positionClasses = position === "top" ? "top-0" : "bottom-0";
 
-  if (variant === 'badge') {
+  if (variant === "badge") {
     return (
       <div
-        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors duration-200 ${ isOnline ? 'bg-green-100 text-green-700' : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' } ${className}`}
+        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors duration-200 ${isOnline ? "bg-green-100 text-green-700" : "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400"} ${className}`}
         role="status"
         aria-live="polite"
       >
         <span
-          className={`w-2 h-2 rounded-full ${ isOnline ? 'bg-green-600' : 'bg-yellow-600 dark:bg-yellow-400' }`}
+          className={`w-2 h-2 rounded-full ${isOnline ? "bg-green-600" : "bg-yellow-600 dark:bg-yellow-400"}`}
           aria-hidden="true"
         />
         <span>
-          {isOnline ? 'Connected' : 'Offline'}
+          {isOnline ? "Connected" : "Offline"}
           {!isOnline && showCachedTimestamp && cachedAt && (
             <span className="ml-1 text-xs opacity-75">
               (cached {formatTimestamp(cachedAt)})
@@ -78,7 +78,7 @@ export function OfflineIndicator({
       aria-live="polite"
     >
       <div
-        className={`px-4 py-3 text-center text-sm font-medium transition-colors duration-200 ${ isOnline ? 'bg-green-600 text-white' : 'bg-yellow-500 dark:bg-yellow-600 text-gray-900 dark:text-white' }`}
+        className={`px-4 py-3 text-center text-sm font-medium transition-colors duration-200 ${isOnline ? "bg-green-600 text-white" : "bg-yellow-500 dark:bg-yellow-600 text-gray-900 dark:text-white"}`}
       >
         <div className="flex items-center justify-center gap-2">
           {isOnline ? (
@@ -140,11 +140,10 @@ function formatTimestamp(date: Date): string {
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMins < 1) return 'just now';
+  if (diffMins < 1) return "just now";
   if (diffMins < 60) return `${diffMins}m ago`;
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays < 7) return `${diffDays}d ago`;
-  
+
   return date.toLocaleDateString();
 }
-

@@ -1,14 +1,14 @@
 /**
  * Credit Bureau Analysis API
- * 
+ *
  * POST /api/credit-bureau/analyze - Analyze credit report and provide recommendations
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { rbac } from '@/lib/auth/rbac';
-import { CreditBureauService } from '@/lib/credit-bureau/credit-bureau-service';
-import { getSupabase } from '@/lib/supabase/client';
+import { NextRequest, NextResponse } from "next/server";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { rbac } from "@/lib/auth/rbac";
+import { CreditBureauService } from "@/lib/credit-bureau/credit-bureau-service";
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
 
@@ -17,19 +17,16 @@ export async function POST(request: NextRequest) {
     // 1. Authenticate user
     const validation = await jwtValidation.validateFromHeaders(request);
     if (!validation.valid || !validation.user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = validation.user;
 
     // 2. Check permission
-    if (!rbac.hasPermission(user, 'credit:analyze')) {
+    if (!rbac.hasPermission(user, "credit:analyze")) {
       return NextResponse.json(
-        { error: 'Forbidden - Insufficient permissions' },
-        { status: 403 }
+        { error: "Forbidden - Insufficient permissions" },
+        { status: 403 },
       );
     }
 
@@ -39,44 +36,46 @@ export async function POST(request: NextRequest) {
 
     if (!reportId) {
       return NextResponse.json(
-        { error: 'Report ID is required' },
-        { status: 400 }
+        { error: "Report ID is required" },
+        { status: 400 },
       );
     }
 
     // 4. Get credit report from database
     const { data: creditReport, error: dbError } = await supabase
-      .from('credit_reports')
-      .select('*')
-      .eq('id', reportId)
-      .eq('user_id', user.id)
+      .from("credit_reports")
+      .select("*")
+      .eq("id", reportId)
+      .eq("user_id", user.id)
       .single();
 
     if (dbError || !creditReport) {
       return NextResponse.json(
-        { error: 'Credit report not found' },
-        { status: 404 }
+        { error: "Credit report not found" },
+        { status: 404 },
       );
     }
 
     // 5. Analyze credit report
-    const analysis = await CreditBureauService.analyzeCreditReport(creditReport);
+    const analysis =
+      await CreditBureauService.analyzeCreditReport(creditReport);
 
     // 6. Return response
     return NextResponse.json({
       success: true,
-      data: analysis
+      data: analysis,
     });
-
   } catch (_error) {
     // Error logged
     return NextResponse.json(
       {
         success: false,
-        error: _error instanceof Error ? _error.message : 'Failed to analyze credit report'
+        error:
+          _error instanceof Error
+            ? _error.message
+            : "Failed to analyze credit report",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-

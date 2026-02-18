@@ -12,17 +12,17 @@ Our PCTT implementation covers the **core methodology** but has several gaps com
 
 ### Coverage Score by Component (Updated After Enhancements)
 
-| Component | Implemented | Spec Coverage | Status |
-|-----------|-------------|---------------|--------|
-| Pivot Extraction | ✅ | 95% | Complete |
-| Boundary Estimation | ✅ | 95% | ✅ RANSAC + Hysteresis added |
-| Q-Score | ✅ | 80% | Calibration via validator |
-| Regime Detection | ✅ | 85% | Complete |
-| State Machine | ✅ | 95% | ✅ Rejection score added |
-| Risk Management | ✅ | 95% | ✅ Portfolio heat + correlation added |
-| Execution | ✅ | 90% | ✅ Slippage model added |
-| Statistical Validation | ✅ | 95% | ✅ White's Reality Check added |
-| Trading Service | ✅ | 95% | ✅ Trailing stop phases added |
+| Component              | Implemented | Spec Coverage | Status                                |
+| ---------------------- | ----------- | ------------- | ------------------------------------- |
+| Pivot Extraction       | ✅          | 95%           | Complete                              |
+| Boundary Estimation    | ✅          | 95%           | ✅ RANSAC + Hysteresis added          |
+| Q-Score                | ✅          | 80%           | Calibration via validator             |
+| Regime Detection       | ✅          | 85%           | Complete                              |
+| State Machine          | ✅          | 95%           | ✅ Rejection score added              |
+| Risk Management        | ✅          | 95%           | ✅ Portfolio heat + correlation added |
+| Execution              | ✅          | 90%           | ✅ Slippage model added               |
+| Statistical Validation | ✅          | 95%           | ✅ White's Reality Check added        |
+| Trading Service        | ✅          | 95%           | ✅ Trailing stop phases added         |
 
 ---
 
@@ -40,6 +40,7 @@ Our PCTT implementation covers the **core methodology** but has several gaps com
 ### ❌ Gaps vs Specification
 
 #### GAP 1: RANSAC Consensus Validation (High Priority)
+
 **Spec Requirement:** "Require minimum inlier consensus: the line must be within tolerance for at least c pivots (e.g., 3)"
 
 **Current:** Simple pairwise enumeration without RANSAC
@@ -51,6 +52,7 @@ Our PCTT implementation covers the **core methodology** but has several gaps com
 ```
 
 #### GAP 2: Boundary Hysteresis (Medium Priority)
+
 **Spec Requirement:** "Only accept new best line if score exceeds current by delta_score"
 
 **Current:** No hysteresis - boundary can flip frequently
@@ -62,12 +64,14 @@ private readonly HYSTERESIS_DELTA = 0.3; // Only switch if score improves by thi
 ```
 
 #### GAP 3: Minimum Line Life (Medium Priority)
+
 **Spec Requirement:** "Line must persist M bars before being tradable"
 
 **Current:** Line is immediately tradable once detected
 **Impact:** False signals on newly formed structures
 
 #### GAP 4: Rejection Score (Medium Priority)
+
 **Spec Requirement:** "Retest acceptance is quantified by a Rejection Score that measures whether candles reject the line"
 
 **Current:** Simple binary check (close above/below action line)
@@ -83,6 +87,7 @@ if (rejectionScore >= this.config.minRejectionScore) { ... }
 ```
 
 #### GAP 5: Microstructure Proxies (Low Priority)
+
 **Spec Requirement:** "Approximate friction using high-low range vs close-to-close volatility"
 
 **Current:** Not implemented
@@ -103,6 +108,7 @@ if (rejectionScore >= this.config.minRejectionScore) { ... }
 ### ❌ Gaps vs Specification
 
 #### GAP 6: White's Reality Check (High Priority)
+
 **Spec Requirement:** "For multiple strategies/parameter sets, apply White-type reality checks to control for data snooping"
 
 **Current:** Not implemented
@@ -117,18 +123,21 @@ whitesRealityCheck(
 ```
 
 #### GAP 7: Block Bootstrap (Medium Priority)
+
 **Spec Requirement:** "Use blocks to preserve serial dependence"
 
 **Current:** Simple i.i.d. resampling
 **Impact:** Underestimates variance for autocorrelated returns
 
 #### GAP 8: Isotonic Regression Calibration (Medium Priority)
+
 **Spec Requirement:** "Use isotonic regression or Platt scaling to map Q to calibrated probability"
 
 **Current:** Simple bucket comparison
 **Impact:** Q-scores not properly calibrated to true probabilities
 
 #### GAP 9: Rolling Recalibration (Low Priority)
+
 **Spec Requirement:** "Recalibrate on a rolling basis (e.g., every 500 bars or monthly)"
 
 **Current:** One-shot calibration
@@ -149,6 +158,7 @@ whitesRealityCheck(
 ### ❌ Gaps vs Specification
 
 #### GAP 10: Portfolio Heat (Critical)
+
 **Spec Requirement:** "Define heat as sum of worst-case losses of open positions at stops / equity. Enforce max heat (e.g., 6%)"
 
 **Current:** Only max position count check
@@ -167,13 +177,16 @@ private calculatePortfolioHeat(): number {
 ```
 
 #### GAP 11: Correlation Controls (High Priority)
+
 **Spec Requirement:** "Block new entries if they increase exposure to highly correlated symbols"
 
 **Current:** Not implemented
 **Impact:** Can over-concentrate in correlated positions (e.g., multiple tech stocks)
 
 #### GAP 12: Hybrid Trailing Stop System (High Priority)
+
 **Spec Requirement:** 5-stage trailing system:
+
 - Stage A: Structural stop (safety line)
 - Stage B: Break-even lock at +0.8R
 - Stage C: Partial exit at 1R
@@ -184,24 +197,28 @@ private calculatePortfolioHeat(): number {
 **Impact:** Missing profit protection and advanced exit management
 
 #### GAP 13: Slippage Model (Medium Priority)
-**Spec Requirement:** "slippage = a + b * (volatility proxy) + c * (order size / ADV)"
+
+**Spec Requirement:** "slippage = a + b _ (volatility proxy) + c _ (order size / ADV)"
 
 **Current:** No slippage modeling
 **Impact:** Backtest results may not match live performance
 
 #### GAP 14: Partial Fill Handling (Medium Priority)
+
 **Spec Requirement:** "OMS tracks order state (submitted/partial/filled/cancelled). Reconcile positions to broker."
 
 **Current:** Assumes full fills
 **Impact:** Position mismatch on partial fills
 
 #### GAP 15: Drawdown-Based Scaling (Medium Priority)
+
 **Spec Requirement:** "Scale down risk when drawdown exceeds thresholds (halve at 5% DD, stop at 10% DD)"
 
 **Current:** Not implemented
 **Impact:** No automatic de-risking during drawdowns
 
 #### GAP 16: Kill Switch (Medium Priority)
+
 **Spec Requirement:** "Global kill switch for broker outages, abnormal slippage, or drift alarms"
 
 **Current:** Not implemented
@@ -212,6 +229,7 @@ private calculatePortfolioHeat(): number {
 ## 4. Performance Bottlenecks
 
 ### Bottleneck 1: O(n²) Pivot Pair Enumeration
+
 **Location:** `pctt-core.ts` line 322-356
 **Issue:** Enumerating all pivot pairs is O(n²)
 **Impact:** Slow with many pivots (> 50)
@@ -228,6 +246,7 @@ for (let i = 0; i < recentPivots.length - 1; i++) {
 ```
 
 ### Bottleneck 2: Full Data Reprocess on Each Bar
+
 **Location:** `pctt-trading-service.ts` line 217-224
 **Issue:** Resets engine and reprocesses all candles for each analysis
 
@@ -242,6 +261,7 @@ for (const candle of candles) {
 ```
 
 ### Bottleneck 3: No Memoization of ATR
+
 **Location:** `pctt-core.ts` line 500-521
 **Issue:** ATR recalculated from scratch each bar
 **Impact:** Redundant computation
@@ -252,32 +272,32 @@ for (const candle of candles) {
 
 ### Unit Tests Needed
 
-| Component | Test Cases | Priority |
-|-----------|------------|----------|
-| Pivot extraction | Non-repainting verification, edge cases | High |
-| Boundary scoring | Touch/violation counting, Huber loss | High |
-| Q-score calculation | Sigmoid mapping, score ranges | Medium |
-| Regime detection | ER thresholds, crossing count | Medium |
-| State machine | All state transitions | Critical |
-| Position sizing | Risk calculation accuracy | High |
+| Component           | Test Cases                              | Priority |
+| ------------------- | --------------------------------------- | -------- |
+| Pivot extraction    | Non-repainting verification, edge cases | High     |
+| Boundary scoring    | Touch/violation counting, Huber loss    | High     |
+| Q-score calculation | Sigmoid mapping, score ranges           | Medium   |
+| Regime detection    | ER thresholds, crossing count           | Medium   |
+| State machine       | All state transitions                   | Critical |
+| Position sizing     | Risk calculation accuracy               | High     |
 
 ### Integration Tests Needed
 
-| Test | Description | Priority |
-|------|-------------|----------|
-| Engine → Signal flow | Full pipeline from OHLCV to signal | Critical |
-| Signal → Execution | Signal validation to order placement | Critical |
-| Broker mock | Order lifecycle (submit, fill, cancel) | High |
-| Database persistence | Position save/load roundtrip | Medium |
+| Test                 | Description                            | Priority |
+| -------------------- | -------------------------------------- | -------- |
+| Engine → Signal flow | Full pipeline from OHLCV to signal     | Critical |
+| Signal → Execution   | Signal validation to order placement   | Critical |
+| Broker mock          | Order lifecycle (submit, fill, cancel) | High     |
+| Database persistence | Position save/load roundtrip           | Medium   |
 
 ### E2E Tests Needed
 
-| Test | Description | Priority |
-|------|-------------|----------|
-| Paper trade flow | Full signal to paper execution | Critical |
-| Multi-symbol | Concurrent analysis on multiple symbols | High |
-| Daily reset | Stats reset at market open | Medium |
-| Failure recovery | Reconnect after broker disconnect | Medium |
+| Test             | Description                             | Priority |
+| ---------------- | --------------------------------------- | -------- |
+| Paper trade flow | Full signal to paper execution          | Critical |
+| Multi-symbol     | Concurrent analysis on multiple symbols | High     |
+| Daily reset      | Stats reset at market open              | Medium   |
+| Failure recovery | Reconnect after broker disconnect       | Medium   |
 
 ### Test Data Requirements
 
@@ -322,12 +342,12 @@ for (const candle of candles) {
 
 ## 7. Summary of Priorities
 
-| Priority | Count | Examples |
-|----------|-------|----------|
-| Critical | 4 | Portfolio heat, trailing stops, state machine tests |
-| High | 6 | RANSAC, correlation, White's check, integration tests |
-| Medium | 6 | Slippage, drawdown scaling, rejection score |
-| Low | 3 | Microstructure, rolling recalibration |
+| Priority | Count | Examples                                              |
+| -------- | ----- | ----------------------------------------------------- |
+| Critical | 4     | Portfolio heat, trailing stops, state machine tests   |
+| High     | 6     | RANSAC, correlation, White's check, integration tests |
+| Medium   | 6     | Slippage, drawdown scaling, rejection score           |
+| Low      | 3     | Microstructure, rolling recalibration                 |
 
 **Estimated effort to reach production-ready:** 6-8 weeks with dedicated development.
 
@@ -336,6 +356,7 @@ for (const candle of candles) {
 ## 8. Files to Create/Modify
 
 ### New Files
+
 - `src/lib/trading/pctt/__tests__/pctt-core.test.ts`
 - `src/lib/trading/pctt/__tests__/pctt-validator.test.ts`
 - `src/lib/trading/pctt/__tests__/pctt-trading-service.test.ts`
@@ -343,10 +364,11 @@ for (const candle of candles) {
 - `src/lib/trading/pctt/portfolio-risk.ts`
 
 ### Files to Modify
+
 - `pctt-core.ts` - Add RANSAC, hysteresis, rejection score
 - `pctt-validator.ts` - Add White's check, block bootstrap
 - `pctt-trading-service.ts` - Add heat, correlation, trailing stops
 
 ---
 
-*Report generated by PCTT Implementation Audit*
+_Report generated by PCTT Implementation Audit_

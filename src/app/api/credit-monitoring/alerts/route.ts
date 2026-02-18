@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { creditMonitoringService } from '@/lib/credit-monitoring/credit-monitoring-service';
-import { jwtValidation } from '@/lib/auth/jwt-validation';
-import { rbac } from '@/lib/auth/rbac';
+import { NextRequest, NextResponse } from "next/server";
+import { creditMonitoringService } from "@/lib/credit-monitoring/credit-monitoring-service";
+import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { rbac } from "@/lib/auth/rbac";
 
 /**
  * GET /api/credit-monitoring/alerts
@@ -13,21 +13,29 @@ export async function GET(request: NextRequest) {
     const validation = await jwtValidation.validateFromHeaders(request);
 
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check permissions (premium feature)
-    if (!rbac.hasPermission(validation.user, 'credit:alerts')) {
-      return NextResponse.json({ error: 'Forbidden - Premium feature' }, { status: 403 });
+    if (!rbac.hasPermission(validation.user, "credit:alerts")) {
+      return NextResponse.json(
+        { error: "Forbidden - Premium feature" },
+        { status: 403 },
+      );
     }
 
     // Extract userId from validated token
     const userId = validation.user.id;
 
     const { searchParams } = new URL(request.url);
-    const unreadOnly = searchParams.get('unreadOnly') === 'true';
-    const limit = Number.parseInt(searchParams.get('limit') || '50');
-    const severity = searchParams.get('severity') as 'low' | 'medium' | 'high' | 'critical' | null;
+    const unreadOnly = searchParams.get("unreadOnly") === "true";
+    const limit = Number.parseInt(searchParams.get("limit") || "50");
+    const severity = searchParams.get("severity") as
+      | "low"
+      | "medium"
+      | "high"
+      | "critical"
+      | null;
 
     const alerts = await creditMonitoringService.getAlerts(userId, {
       unreadOnly,
@@ -42,8 +50,8 @@ export async function GET(request: NextRequest) {
   } catch (_error) {
     // Error silently caught
     return NextResponse.json(
-      { error: 'Failed to fetch alerts' },
-      { status: 500 }
+      { error: "Failed to fetch alerts" },
+      { status: 500 },
     );
   }
 }
@@ -58,12 +66,15 @@ export async function PATCH(request: NextRequest) {
     const validation = await jwtValidation.validateFromHeaders(request);
 
     if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check permissions (premium feature)
-    if (!rbac.hasPermission(validation.user, 'credit:alerts')) {
-      return NextResponse.json({ error: 'Forbidden - Premium feature' }, { status: 403 });
+    if (!rbac.hasPermission(validation.user, "credit:alerts")) {
+      return NextResponse.json(
+        { error: "Forbidden - Premium feature" },
+        { status: 403 },
+      );
     }
 
     // Extract userId from validated token
@@ -80,15 +91,15 @@ export async function PATCH(request: NextRequest) {
       success = await creditMonitoringService.markAlertAsRead(alertId);
     } else {
       return NextResponse.json(
-        { error: 'Either alertId or markAllAsRead must be provided' },
-        { status: 400 }
+        { error: "Either alertId or markAllAsRead must be provided" },
+        { status: 400 },
       );
     }
 
     if (!success) {
       return NextResponse.json(
-        { error: 'Failed to mark alert(s) as read' },
-        { status: 500 }
+        { error: "Failed to mark alert(s) as read" },
+        { status: 500 },
       );
     }
 
@@ -98,9 +109,8 @@ export async function PATCH(request: NextRequest) {
   } catch (_error) {
     // Error silently caught
     return NextResponse.json(
-      { error: 'Failed to mark alerts as read' },
-      { status: 500 }
+      { error: "Failed to mark alerts as read" },
+      { status: 500 },
     );
   }
 }
-

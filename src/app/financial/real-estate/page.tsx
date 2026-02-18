@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState } from "react";
+import { motion } from "framer-motion";
 import {
   Home,
   Building2,
@@ -14,9 +14,9 @@ import {
   ChevronRight,
   PiggyBank,
   Calculator,
-} from 'lucide-react';
+} from "lucide-react";
 
-type PropertyType = 'primary_residence' | 'rental' | 'vacation' | 'investment';
+type PropertyType = "primary_residence" | "rental" | "vacation" | "investment";
 
 interface Property {
   id: string;
@@ -46,13 +46,13 @@ interface PortfolioSummary {
 
 const MOCK_PROPERTIES: Property[] = [
   {
-    id: '1',
-    name: 'Primary Residence',
-    type: 'primary_residence',
-    address: '123 Main St, Austin, TX 78701',
+    id: "1",
+    name: "Primary Residence",
+    type: "primary_residence",
+    address: "123 Main St, Austin, TX 78701",
     currentValue: 485000,
     purchasePrice: 420000,
-    purchaseDate: new Date('2021-06-15'),
+    purchaseDate: new Date("2021-06-15"),
     mortgageBalance: 340000,
     monthlyPayment: 2150,
     equity: 145000,
@@ -60,13 +60,13 @@ const MOCK_PROPERTIES: Property[] = [
     appreciationPercent: 15.5,
   },
   {
-    id: '2',
-    name: 'Rental Property #1',
-    type: 'rental',
-    address: '456 Oak Ave, Austin, TX 78702',
+    id: "2",
+    name: "Rental Property #1",
+    type: "rental",
+    address: "456 Oak Ave, Austin, TX 78702",
     currentValue: 325000,
     purchasePrice: 280000,
-    purchaseDate: new Date('2022-03-20'),
+    purchaseDate: new Date("2022-03-20"),
     mortgageBalance: 225000,
     monthlyPayment: 1680,
     monthlyRent: 2400,
@@ -75,13 +75,13 @@ const MOCK_PROPERTIES: Property[] = [
     appreciationPercent: 16.1,
   },
   {
-    id: '3',
-    name: 'Vacation Condo',
-    type: 'vacation',
-    address: '789 Beach Blvd, Galveston, TX 77550',
+    id: "3",
+    name: "Vacation Condo",
+    type: "vacation",
+    address: "789 Beach Blvd, Galveston, TX 77550",
     currentValue: 195000,
     purchasePrice: 175000,
-    purchaseDate: new Date('2023-08-10'),
+    purchaseDate: new Date("2023-08-10"),
     mortgageBalance: 140000,
     monthlyPayment: 1050,
     monthlyRent: 1800,
@@ -103,13 +103,13 @@ const MOCK_SUMMARY: PortfolioSummary = {
 
 const getPropertyIcon = (type: PropertyType) => {
   switch (type) {
-    case 'primary_residence':
+    case "primary_residence":
       return Home;
-    case 'rental':
+    case "rental":
       return Building2;
-    case 'vacation':
+    case "vacation":
       return Home;
-    case 'investment':
+    case "investment":
       return Building2;
     default:
       return Home;
@@ -118,23 +118,23 @@ const getPropertyIcon = (type: PropertyType) => {
 
 const getPropertyColor = (type: PropertyType) => {
   switch (type) {
-    case 'primary_residence':
-      return 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400';
-    case 'rental':
-      return 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400';
-    case 'vacation':
-      return 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400';
-    case 'investment':
-      return 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400';
+    case "primary_residence":
+      return "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400";
+    case "rental":
+      return "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400";
+    case "vacation":
+      return "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400";
+    case "investment":
+      return "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400";
     default:
-      return 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300';
+      return "bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300";
   }
 };
 
 const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
     maximumFractionDigits: 0,
   }).format(value);
 };
@@ -242,12 +242,12 @@ export default function RealEstatePage() {
               </span>
             </div>
             <p
-              className={`text-2xl font-bold ${summary.netCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}
+              className={`text-2xl font-bold ${summary.netCashFlow >= 0 ? "text-green-600" : "text-red-600"}`}
             >
               {formatCurrency(summary.netCashFlow)}
             </p>
             <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
-              {formatCurrency(summary.monthlyIncome)} income /{' '}
+              {formatCurrency(summary.monthlyIncome)} income /{" "}
               {formatCurrency(summary.monthlyExpenses)} expenses
             </p>
           </motion.div>
@@ -283,7 +283,7 @@ export default function RealEstatePage() {
                           {property.name}
                         </h3>
                         <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 capitalize">
-                          {property.type.replace('_', ' ')}
+                          {property.type.replace("_", " ")}
                         </span>
                       </div>
                       <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-slate-400 mt-1">
@@ -300,21 +300,27 @@ export default function RealEstatePage() {
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm text-gray-500 dark:text-slate-400">Equity</p>
+                      <p className="text-sm text-gray-500 dark:text-slate-400">
+                        Equity
+                      </p>
                       <p className="font-semibold text-gray-900 dark:text-white">
                         {formatCurrency(property.equity)}
                       </p>
                     </div>
                     {property.monthlyRent && (
                       <div className="text-right">
-                        <p className="text-sm text-gray-500 dark:text-slate-400">Rent</p>
+                        <p className="text-sm text-gray-500 dark:text-slate-400">
+                          Rent
+                        </p>
                         <p className="font-semibold text-green-600">
                           {formatCurrency(property.monthlyRent)}/mo
                         </p>
                       </div>
                     )}
                     <div className="text-right">
-                      <p className="text-sm text-gray-500 dark:text-slate-400">Mortgage</p>
+                      <p className="text-sm text-gray-500 dark:text-slate-400">
+                        Mortgage
+                      </p>
                       <p className="font-semibold text-gray-900 dark:text-white">
                         {formatCurrency(property.monthlyPayment)}/mo
                       </p>

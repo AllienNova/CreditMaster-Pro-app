@@ -1,15 +1,14 @@
-'use client';
+"use client";
 
-
-import { Icon } from '@/components/ui/Icon';
+import { Icon } from "@/components/ui/Icon";
 /**
  * AI Insight Card Component
  * Displays AI-generated insights with actions
  */
 
-import React from 'react';
-import { cn } from '@/lib/utils';
-import type { CoachingInsight } from '@/lib/ai-personalization';
+import React from "react";
+import { cn } from "@/lib/utils";
+import type { CoachingInsight } from "@/lib/ai-personalization";
 
 interface InsightCardProps {
   insight: CoachingInsight;
@@ -20,28 +19,28 @@ interface InsightCardProps {
 
 const typeStyles = {
   observation: {
-    bg: 'bg-blue-50 dark:bg-blue-900/20',
-    border: 'border-blue-200 dark:border-blue-800',
+    bg: "bg-blue-50 dark:bg-blue-900/20",
+    border: "border-blue-200 dark:border-blue-800",
     icon: "sparkles",
-    iconBg: 'bg-blue-100 dark:bg-blue-800',
+    iconBg: "bg-blue-100 dark:bg-blue-800",
   },
   suggestion: {
-    bg: 'bg-green-50 dark:bg-green-900/20',
-    border: 'border-green-200 dark:border-green-800',
+    bg: "bg-green-50 dark:bg-green-900/20",
+    border: "border-green-200 dark:border-green-800",
     icon: "sparkles",
-    iconBg: 'bg-green-100 dark:bg-green-800',
+    iconBg: "bg-green-100 dark:bg-green-800",
   },
   warning: {
-    bg: 'bg-amber-50 dark:bg-amber-900/20',
-    border: 'border-amber-200 dark:border-amber-800',
+    bg: "bg-amber-50 dark:bg-amber-900/20",
+    border: "border-amber-200 dark:border-amber-800",
     icon: "sparkles",
-    iconBg: 'bg-amber-100 dark:bg-amber-800',
+    iconBg: "bg-amber-100 dark:bg-amber-800",
   },
   celebration: {
-    bg: 'bg-blue-50 dark:bg-blue-900/20',
-    border: 'border-blue-200 dark:border-blue-800',
+    bg: "bg-blue-50 dark:bg-blue-900/20",
+    border: "border-blue-200 dark:border-blue-800",
     icon: "sparkles",
-    iconBg: 'bg-blue-100 dark:bg-blue-800',
+    iconBg: "bg-blue-100 dark:bg-blue-800",
   },
 };
 
@@ -56,10 +55,10 @@ export function InsightCard({
   return (
     <div
       className={cn(
-        'relative rounded-xl border p-4 transition-all',
+        "relative rounded-xl border p-4 transition-all",
         style.bg,
         style.border,
-        className
+        className,
       )}
     >
       {/* Dismiss button */}
@@ -75,7 +74,7 @@ export function InsightCard({
 
       <div className="flex items-start gap-3">
         {/* Icon */}
-        <div className={cn('p-2 rounded-lg', style.iconBg)}>
+        <div className={cn("p-2 rounded-lg", style.iconBg)}>
           <span className="text-xl">{style.icon}</span>
         </div>
 

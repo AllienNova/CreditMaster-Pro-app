@@ -2,11 +2,11 @@
  * Fynvita Gamification System - Public API
  */
 
-export * from './types';
+export * from "./types";
 export {
   GamificationEngine,
   getGamificationEngine,
-} from './gamification-engine';
+} from "./gamification-engine";
 
 // Financial Journey Map
 export {
@@ -19,7 +19,7 @@ export {
   type WaypointType,
   type WaypointStatus,
   type JourneyTemplate,
-} from './financial-journey-service';
+} from "./financial-journey-service";
 
 // Community Challenges
 export {
@@ -33,7 +33,7 @@ export {
   type Leaderboard,
   type LeaderboardEntry,
   type ChallengeTemplate,
-} from './community-challenges-service';
+} from "./community-challenges-service";
 
 // Anonymous Leaderboards
 export {
@@ -43,7 +43,7 @@ export {
   type TimeFrame,
   type LeaderboardParticipation,
   type LeaderboardStats,
-} from './anonymous-leaderboard-service';
+} from "./anonymous-leaderboard-service";
 
 // Accountability Partners
 export {
@@ -57,7 +57,7 @@ export {
   type SharedProgress,
   type Nudge,
   type PartnerInvitation,
-} from './accountability-partners-service';
+} from "./accountability-partners-service";
 
 // Commitment Devices
 export {
@@ -70,7 +70,7 @@ export {
   type Charity,
   type CommitmentTemplate,
   type CommitmentStats,
-} from './commitment-device-service';
+} from "./commitment-device-service";
 
 // Shared Family/Friend Goals
 export {
@@ -86,4 +86,4 @@ export {
   type SharedGoalStatus,
   SHARED_GOAL_TEMPLATES,
   RELATIONSHIP_TYPES,
-} from './shared-goals-service';
+} from "./shared-goals-service";

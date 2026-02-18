@@ -5,18 +5,21 @@
  * SECURITY: Requires admin authentication
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { requireRole, createAuthResponse } from '@/lib/security/auth-middleware';
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+import {
+  requireRole,
+  createAuthResponse,
+} from "@/lib/security/auth-middleware";
 
 export async function GET(request: NextRequest) {
   // SECURITY: Require admin role for platform stats
-  const authResult = await requireRole(request, 'admin');
+  const authResult = await requireRole(request, "admin");
   if (!authResult.authenticated || !authResult.user) {
     return createAuthResponse(authResult);
   }
 
-  try{
+  try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -42,29 +45,36 @@ export async function GET(request: NextRequest) {
       disputesResult,
       resolvedDisputesResult,
     ] = await Promise.all([
-      supabase.from('profiles').select('id', { count: 'exact', head: true }),
-      supabase.from('subscriptions').select('id', { count: 'exact', head: true }).eq('status', 'active'),
-      supabase.from('disputes').select('id', { count: 'exact', head: true }),
-      supabase.from('disputes').select('id', { count: 'exact', head: true }).eq('status', 'resolved'),
+      supabase.from("profiles").select("id", { count: "exact", head: true }),
+      supabase
+        .from("subscriptions")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "active"),
+      supabase.from("disputes").select("id", { count: "exact", head: true }),
+      supabase
+        .from("disputes")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "resolved"),
     ]);
 
     // Calculate monthly revenue (simplified - in production, use Stripe API)
     const { data: subscriptions } = await supabase
-      .from('subscriptions')
-      .select('stripe_price_id')
-      .eq('status', 'active');
+      .from("subscriptions")
+      .select("stripe_price_id")
+      .eq("status", "active");
 
     // Price mapping (in production, fetch from Stripe)
     const priceMap: Record<string, number> = {
-      'price_basic': 29,
-      'price_premium': 79,
-      'price_enterprise': 199,
+      price_basic: 29,
+      price_premium: 79,
+      price_enterprise: 199,
     };
 
-    const monthlyRevenue = subscriptions?.reduce((total, sub) => {
-      const price = priceMap[sub.stripe_price_id] || 29;
-      return total + price;
-    }, 0) || 0;
+    const monthlyRevenue =
+      subscriptions?.reduce((total, sub) => {
+        const price = priceMap[sub.stripe_price_id] || 29;
+        return total + price;
+      }, 0) || 0;
 
     // Calculate user growth (last 30 days vs previous 30 days)
     const thirtyDaysAgo = new Date();
@@ -73,19 +83,20 @@ export async function GET(request: NextRequest) {
     sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
 
     const { count: recentUsers } = await supabase
-      .from('profiles')
-      .select('id', { count: 'exact', head: true })
-      .gte('created_at', thirtyDaysAgo.toISOString());
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", thirtyDaysAgo.toISOString());
 
     const { count: previousUsers } = await supabase
-      .from('profiles')
-      .select('id', { count: 'exact', head: true })
-      .gte('created_at', sixtyDaysAgo.toISOString())
-      .lt('created_at', thirtyDaysAgo.toISOString());
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", sixtyDaysAgo.toISOString())
+      .lt("created_at", thirtyDaysAgo.toISOString());
 
-    const userGrowth = previousUsers && previousUsers > 0
-      ? ((recentUsers || 0) - previousUsers) / previousUsers * 100
-      : 0;
+    const userGrowth =
+      previousUsers && previousUsers > 0
+        ? (((recentUsers || 0) - previousUsers) / previousUsers) * 100
+        : 0;
 
     return NextResponse.json({
       totalUsers: usersResult.count || 0,
@@ -107,4 +118,3 @@ export async function GET(request: NextRequest) {
     });
   }
 }
-

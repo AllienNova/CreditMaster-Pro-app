@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState } from "react";
+import { motion } from "framer-motion";
 import {
   BookOpen,
   TrendingUp,
@@ -15,10 +15,10 @@ import {
   Calendar,
   ChevronRight,
   X,
-} from 'lucide-react';
+} from "lucide-react";
 
-type TradeOutcome = 'win' | 'loss' | 'breakeven';
-type TradeDirection = 'long' | 'short';
+type TradeOutcome = "win" | "loss" | "breakeven";
+type TradeDirection = "long" | "short";
 
 interface Trade {
   id: string;
@@ -47,65 +47,65 @@ interface TradeStats {
 
 const MOCK_TRADES: Trade[] = [
   {
-    id: '1',
-    symbol: 'AAPL',
-    direction: 'long',
-    entryDate: new Date('2026-01-20'),
+    id: "1",
+    symbol: "AAPL",
+    direction: "long",
+    entryDate: new Date("2026-01-20"),
     entryPrice: 185.5,
     exitPrice: 192.3,
     quantity: 50,
     profitLoss: 340,
-    outcome: 'win',
-    strategy: 'Breakout',
-    notes: 'Clean breakout above resistance',
+    outcome: "win",
+    strategy: "Breakout",
+    notes: "Clean breakout above resistance",
   },
   {
-    id: '2',
-    symbol: 'TSLA',
-    direction: 'short',
-    entryDate: new Date('2026-01-19'),
+    id: "2",
+    symbol: "TSLA",
+    direction: "short",
+    entryDate: new Date("2026-01-19"),
     entryPrice: 245.0,
     exitPrice: 238.5,
     quantity: 20,
     profitLoss: 130,
-    outcome: 'win',
-    strategy: 'Mean Reversion',
+    outcome: "win",
+    strategy: "Mean Reversion",
   },
   {
-    id: '3',
-    symbol: 'NVDA',
-    direction: 'long',
-    entryDate: new Date('2026-01-18'),
+    id: "3",
+    symbol: "NVDA",
+    direction: "long",
+    entryDate: new Date("2026-01-18"),
     entryPrice: 520.0,
     exitPrice: 515.0,
     quantity: 10,
     profitLoss: -50,
-    outcome: 'loss',
-    strategy: 'Trend Follow',
+    outcome: "loss",
+    strategy: "Trend Follow",
   },
   {
-    id: '4',
-    symbol: 'SPY',
-    direction: 'long',
-    entryDate: new Date('2026-01-17'),
+    id: "4",
+    symbol: "SPY",
+    direction: "long",
+    entryDate: new Date("2026-01-17"),
     entryPrice: 475.0,
     exitPrice: 478.5,
     quantity: 30,
     profitLoss: 105,
-    outcome: 'win',
-    strategy: 'Momentum',
+    outcome: "win",
+    strategy: "Momentum",
   },
   {
-    id: '5',
-    symbol: 'AMD',
-    direction: 'long',
-    entryDate: new Date('2026-01-16'),
+    id: "5",
+    symbol: "AMD",
+    direction: "long",
+    entryDate: new Date("2026-01-16"),
     entryPrice: 142.0,
     exitPrice: 138.0,
     quantity: 25,
     profitLoss: -100,
-    outcome: 'loss',
-    strategy: 'Breakout',
+    outcome: "loss",
+    strategy: "Breakout",
   },
 ];
 
@@ -121,7 +121,7 @@ const MOCK_STATS: TradeStats = {
 };
 
 const formatCurrency = (amount: number) => {
-  const sign = amount >= 0 ? '+' : '';
+  const sign = amount >= 0 ? "+" : "";
   return `${sign}$${Math.abs(amount).toFixed(2)}`;
 };
 
@@ -129,12 +129,12 @@ export default function TradingJournalPage() {
   const [trades] = useState<Trade[]>(MOCK_TRADES);
   const [stats] = useState<TradeStats>(MOCK_STATS);
   const [showNewTradeModal, setShowNewTradeModal] = useState(false);
-  const [filterOutcome, setFilterOutcome] = useState<TradeOutcome | 'all'>(
-    'all'
+  const [filterOutcome, setFilterOutcome] = useState<TradeOutcome | "all">(
+    "all",
   );
 
   const filteredTrades =
-    filterOutcome === 'all'
+    filterOutcome === "all"
       ? trades
       : trades.filter((t) => t.outcome === filterOutcome);
 
@@ -189,7 +189,9 @@ export default function TradingJournalPage() {
           </motion.div>
 
           <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm">
-            <p className="text-sm text-gray-500 dark:text-slate-400">Win Rate</p>
+            <p className="text-sm text-gray-500 dark:text-slate-400">
+              Win Rate
+            </p>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">
               {stats.winRate.toFixed(1)}%
             </p>
@@ -206,11 +208,13 @@ export default function TradingJournalPage() {
               Profit Factor
             </p>
             <p
-              className={`text-2xl font-bold ${stats.profitFactor >= 1.5 ? 'text-green-600' : stats.profitFactor >= 1 ? 'text-yellow-600' : 'text-red-600'}`}
+              className={`text-2xl font-bold ${stats.profitFactor >= 1.5 ? "text-green-600" : stats.profitFactor >= 1 ? "text-yellow-600" : "text-red-600"}`}
             >
               {stats.profitFactor.toFixed(2)}
             </p>
-            <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Target: 2.0+</p>
+            <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
+              Target: 2.0+
+            </p>
           </div>
 
           <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm">
@@ -270,17 +274,19 @@ export default function TradingJournalPage() {
         <div className="flex items-center gap-4 mb-4">
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-gray-500 dark:text-slate-400" />
-            <span className="text-sm text-gray-500 dark:text-slate-400">Filter:</span>
+            <span className="text-sm text-gray-500 dark:text-slate-400">
+              Filter:
+            </span>
           </div>
           <div className="flex gap-2">
-            {(['all', 'win', 'loss', 'breakeven'] as const).map((outcome) => (
+            {(["all", "win", "loss", "breakeven"] as const).map((outcome) => (
               <button
                 key={outcome}
                 onClick={() => setFilterOutcome(outcome)}
-                className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${ filterOutcome === outcome ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600' }`}
+                className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${filterOutcome === outcome ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 dark:text-slate-300 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600"}`}
               >
-                {outcome === 'all'
-                  ? 'All'
+                {outcome === "all"
+                  ? "All"
                   : outcome.charAt(0).toUpperCase() + outcome.slice(1)}
               </button>
             ))}
@@ -320,12 +326,12 @@ export default function TradingJournalPage() {
                     <td className="px-6 py-4">
                       <span
                         className={`flex items-center gap-1 text-sm ${
-                          trade.direction === 'long'
-                            ? 'text-green-600'
-                            : 'text-red-600'
+                          trade.direction === "long"
+                            ? "text-green-600"
+                            : "text-red-600"
                         }`}
                       >
-                        {trade.direction === 'long' ? (
+                        {trade.direction === "long" ? (
                           <TrendingUp className="w-4 h-4" />
                         ) : (
                           <TrendingDown className="w-4 h-4" />
@@ -337,15 +343,15 @@ export default function TradingJournalPage() {
                       ${trade.entryPrice.toFixed(2)}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                      {trade.exitPrice ? `$${trade.exitPrice.toFixed(2)}` : '-'}
+                      {trade.exitPrice ? `$${trade.exitPrice.toFixed(2)}` : "-"}
                     </td>
                     <td className="px-6 py-4">
                       {trade.profitLoss !== undefined && (
                         <span
                           className={`font-semibold ${
                             trade.profitLoss >= 0
-                              ? 'text-green-600'
-                              : 'text-red-600'
+                              ? "text-green-600"
+                              : "text-red-600"
                           }`}
                         >
                           {formatCurrency(trade.profitLoss)}

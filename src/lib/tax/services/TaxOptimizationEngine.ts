@@ -18,33 +18,33 @@
  * @module TaxOptimizationEngine
  */
 
-import { getSupabase } from '@/lib/supabase/client';
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
 import {
   TaxBracketCalculator,
   TaxCalculationResult,
-} from './TaxBracketCalculator';
+} from "./TaxBracketCalculator";
 import {
   RetirementAccountOptimizer,
   RetirementOptimizationResult,
-} from './RetirementAccountOptimizer';
+} from "./RetirementAccountOptimizer";
 import {
   TaxProfile,
   FilingStatus,
   OptimizationGoal,
   TaxAccountType,
   CONTRIBUTION_LIMITS_2024,
-} from '../types/tax-profile.types';
+} from "../types/tax-profile.types";
 import {
   TaxRecommendation,
   RecommendationPriority,
   RecommendationStatus,
   TAX_STRATEGIES,
   StrategyCategory,
-} from '../types/tax-strategy.types';
-import { FICA_RATES_2024 } from '../types/tax-jurisdiction.types';
-import type { TaxOptimizationResult, TaxSavingsOpportunity } from '../types';
+} from "../types/tax-strategy.types";
+import { FICA_RATES_2024 } from "../types/tax-jurisdiction.types";
+import type { TaxOptimizationResult, TaxSavingsOpportunity } from "../types";
 
 // ============================================================================
 // QUARTERLY ESTIMATED TAX TYPES
@@ -98,7 +98,7 @@ export interface SafeHarborResult {
   /** The safe harbor amount to use (minimum required to avoid penalty) */
   safeHarborAmount: number;
   /** The method that produced the lowest safe harbor amount */
-  recommendedMethod: 'prior_year_100' | 'prior_year_110' | 'current_year_90';
+  recommendedMethod: "prior_year_100" | "prior_year_110" | "current_year_90";
   /** Required quarterly payment based on safe harbor */
   quarterlyPaymentRequired: number;
 }
@@ -162,18 +162,18 @@ export interface PaymentScheduleEntry {
 // ============================================================================
 
 const TAX_DISCLAIMERS = [
-  'Tax recommendations are for informational purposes only and do not constitute tax, legal, or financial advice.',
-  'Consult a qualified tax professional before making any tax-related decisions.',
-  'Tax laws change frequently. Recommendations are based on current law as of the analysis date.',
-  'Individual circumstances vary. Results may differ based on your specific situation.',
-  'Fynvita is not a registered tax advisor and does not provide professional tax preparation services.',
+  "Tax recommendations are for informational purposes only and do not constitute tax, legal, or financial advice.",
+  "Consult a qualified tax professional before making any tax-related decisions.",
+  "Tax laws change frequently. Recommendations are based on current law as of the analysis date.",
+  "Individual circumstances vary. Results may differ based on your specific situation.",
+  "Fynvita is not a registered tax advisor and does not provide professional tax preparation services.",
 ];
 
 const AUDIT_ACTION_TYPES = {
-  ANALYSIS_RUN: 'analysis_run',
-  RECOMMENDATION_GENERATED: 'recommendation_generated',
-  PROFILE_UPDATED: 'profile_updated',
-  QUARTERLY_ESTIMATE: 'quarterly_estimate',
+  ANALYSIS_RUN: "analysis_run",
+  RECOMMENDATION_GENERATED: "recommendation_generated",
+  PROFILE_UPDATED: "profile_updated",
+  QUARTERLY_ESTIMATE: "quarterly_estimate",
 } as const;
 
 // Self-employment tax rates
@@ -214,7 +214,7 @@ export class TaxOptimizationEngine {
    */
   async analyzeAndRecommend(
     userId: string,
-    profile: TaxProfile
+    profile: TaxProfile,
   ): Promise<TaxOptimizationResult> {
     const startTime = Date.now();
 
@@ -227,14 +227,14 @@ export class TaxOptimizationEngine {
     // Step 3: Identify all tax-saving opportunities
     const opportunities = this.identifyOpportunities(
       profile,
-      currentProjection
+      currentProjection,
     );
 
     // Step 4: Generate personalized recommendations
     const recommendations = await this.generateRecommendations(
       profile,
       opportunities,
-      retirementAnalysis
+      retirementAnalysis,
     );
 
     // Step 5: Calculate year-end actions
@@ -243,7 +243,7 @@ export class TaxOptimizationEngine {
     // Step 6: Calculate totals
     const totalPotentialSavings = opportunities.reduce(
       (sum, opp) => sum + opp.potentialTaxSavings,
-      0
+      0,
     );
 
     // Step 7: Asset location analysis
@@ -285,7 +285,7 @@ export class TaxOptimizationEngine {
    */
   private identifyOpportunities(
     profile: TaxProfile,
-    taxCalc: TaxCalculationResult
+    taxCalc: TaxCalculationResult,
   ): TaxSavingsOpportunity[] {
     const opportunities: TaxSavingsOpportunity[] = [];
     const marginalRate = taxCalc.marginalRate;
@@ -295,22 +295,22 @@ export class TaxOptimizationEngine {
       CONTRIBUTION_LIMITS_2024.traditional401k - profile.ytd401kContribution;
     if (remaining401k > 0) {
       opportunities.push({
-        strategyCode: 'MAX_401K',
-        strategyName: 'Maximize 401(k) Contributions',
-        category: 'retirement',
+        strategyCode: "MAX_401K",
+        strategyName: "Maximize 401(k) Contributions",
+        category: "retirement",
         currentContribution: profile.ytd401kContribution,
         maxContribution: CONTRIBUTION_LIMITS_2024.traditional401k,
         remainingCapacity: remaining401k,
         potentialTaxSavings: remaining401k * marginalRate,
         recommendedAction: `Increase 401(k) contributions by $${remaining401k.toLocaleString()}`,
         deadline: new Date(profile.taxYear, 11, 31),
-        priority: remaining401k > 10000 ? 'high' : 'medium',
+        priority: remaining401k > 10000 ? "high" : "medium",
         steps: [
-          'Log into your employer benefits portal',
-          'Increase your contribution percentage',
-          'Consider front-loading contributions if cash flow allows',
+          "Log into your employer benefits portal",
+          "Increase your contribution percentage",
+          "Consider front-loading contributions if cash flow allows",
         ],
-        complexity: 'easy',
+        complexity: "easy",
         requiresProfessional: false,
       });
     }
@@ -320,22 +320,22 @@ export class TaxOptimizationEngine {
       CONTRIBUTION_LIMITS_2024.traditionalIra - profile.ytdIraContribution;
     if (remainingIra > 0) {
       opportunities.push({
-        strategyCode: 'MAX_IRA',
-        strategyName: 'Maximize IRA Contributions',
-        category: 'retirement',
+        strategyCode: "MAX_IRA",
+        strategyName: "Maximize IRA Contributions",
+        category: "retirement",
         currentContribution: profile.ytdIraContribution,
         maxContribution: CONTRIBUTION_LIMITS_2024.traditionalIra,
         remainingCapacity: remainingIra,
         potentialTaxSavings: remainingIra * marginalRate,
         recommendedAction: `Contribute $${remainingIra.toLocaleString()} to your IRA`,
         deadline: new Date(profile.taxYear + 1, 3, 15), // April 15 of next year
-        priority: 'medium',
+        priority: "medium",
         steps: [
-          'Open or access your IRA account',
-          'Make a lump-sum or monthly contributions',
-          'Deadline is April 15 of the following year',
+          "Open or access your IRA account",
+          "Make a lump-sum or monthly contributions",
+          "Deadline is April 15 of the following year",
         ],
-        complexity: 'easy',
+        complexity: "easy",
         requiresProfessional: false,
       });
     }
@@ -351,22 +351,22 @@ export class TaxOptimizationEngine {
       if (remainingHsa > 0) {
         const hsaSavings = remainingHsa * (marginalRate + 0.0765); // Include FICA savings
         opportunities.push({
-          strategyCode: 'HSA_TRIPLE_TAX',
-          strategyName: 'HSA Triple Tax Advantage',
-          category: 'retirement',
+          strategyCode: "HSA_TRIPLE_TAX",
+          strategyName: "HSA Triple Tax Advantage",
+          category: "retirement",
           currentContribution: profile.ytdHsaContribution,
           maxContribution: hsaLimit,
           remainingCapacity: remainingHsa,
           potentialTaxSavings: hsaSavings,
           recommendedAction: `Contribute $${remainingHsa.toLocaleString()} to your HSA`,
           deadline: new Date(profile.taxYear + 1, 3, 15),
-          priority: 'high',
+          priority: "high",
           steps: [
-            'Contribute through payroll for FICA tax savings',
-            'Or make direct contributions and claim on tax return',
-            'Keep receipts for future tax-free reimbursement',
+            "Contribute through payroll for FICA tax savings",
+            "Or make direct contributions and claim on tax return",
+            "Keep receipts for future tax-free reimbursement",
           ],
-          complexity: 'easy',
+          complexity: "easy",
           requiresProfessional: false,
         });
       }
@@ -381,22 +381,22 @@ export class TaxOptimizationEngine {
       const savings = potentialDonation * marginalRate;
 
       opportunities.push({
-        strategyCode: 'CHARITABLE_BUNCHING',
-        strategyName: 'Charitable Contribution Bunching',
-        category: 'deduction',
+        strategyCode: "CHARITABLE_BUNCHING",
+        strategyName: "Charitable Contribution Bunching",
+        category: "deduction",
         currentContribution: profile.charitableDonations,
         maxContribution: profile.grossIncome * 0.6, // 60% AGI limit
         remainingCapacity: potentialDonation,
         potentialTaxSavings: savings,
-        recommendedAction: 'Consider charitable donations before year-end',
+        recommendedAction: "Consider charitable donations before year-end",
         deadline: new Date(profile.taxYear, 11, 31),
-        priority: 'low',
+        priority: "low",
         steps: [
-          'Identify charities you want to support',
-          'Consider bunching multiple years into one for itemization benefit',
-          'Use a Donor Advised Fund for flexibility',
+          "Identify charities you want to support",
+          "Consider bunching multiple years into one for itemization benefit",
+          "Use a Donor Advised Fund for flexibility",
         ],
-        complexity: 'easy',
+        complexity: "easy",
         requiresProfessional: false,
       });
     }
@@ -405,26 +405,26 @@ export class TaxOptimizationEngine {
     if (profile.isSelfEmployed && profile.selfEmploymentIncome > 0) {
       const sepLimit = Math.min(
         profile.selfEmploymentIncome * 0.25,
-        CONTRIBUTION_LIMITS_2024.sepIra
+        CONTRIBUTION_LIMITS_2024.sepIra,
       );
 
       opportunities.push({
-        strategyCode: 'SEP_IRA',
-        strategyName: 'SEP IRA for Self-Employed',
-        category: 'retirement',
+        strategyCode: "SEP_IRA",
+        strategyName: "SEP IRA for Self-Employed",
+        category: "retirement",
         currentContribution: 0,
         maxContribution: sepLimit,
         remainingCapacity: sepLimit,
         potentialTaxSavings: sepLimit * marginalRate,
         recommendedAction: `Contribute up to $${sepLimit.toLocaleString()} to a SEP IRA`,
         deadline: new Date(profile.taxYear + 1, 3, 15),
-        priority: 'high',
+        priority: "high",
         steps: [
           "Open a SEP IRA if you don't have one",
-          'Calculate 25% of net self-employment income',
-          'Contribute before tax filing deadline (including extensions)',
+          "Calculate 25% of net self-employment income",
+          "Contribute before tax filing deadline (including extensions)",
         ],
-        complexity: 'moderate',
+        complexity: "moderate",
         requiresProfessional: false,
       });
 
@@ -432,21 +432,21 @@ export class TaxOptimizationEngine {
       if (profile.homeOfficeSqft && profile.homeOfficeSqft > 0) {
         const homeOfficeDeduction = Math.min(profile.homeOfficeSqft * 5, 1500);
         opportunities.push({
-          strategyCode: 'HOME_OFFICE',
-          strategyName: 'Home Office Deduction',
-          category: 'business',
+          strategyCode: "HOME_OFFICE",
+          strategyName: "Home Office Deduction",
+          category: "business",
           currentContribution: 0,
           maxContribution: 1500,
           remainingCapacity: homeOfficeDeduction,
           potentialTaxSavings: homeOfficeDeduction * marginalRate,
-          recommendedAction: 'Claim home office deduction on Schedule C',
-          priority: 'medium',
+          recommendedAction: "Claim home office deduction on Schedule C",
+          priority: "medium",
           steps: [
-            'Measure your home office space',
-            'Use simplified method ($5/sq ft, max 300 sq ft)',
-            'Or calculate actual expenses proportionally',
+            "Measure your home office space",
+            "Use simplified method ($5/sq ft, max 300 sq ft)",
+            "Or calculate actual expenses proportionally",
           ],
-          complexity: 'moderate',
+          complexity: "moderate",
           requiresProfessional: false,
         });
       }
@@ -464,7 +464,7 @@ export class TaxOptimizationEngine {
   private async generateRecommendations(
     profile: TaxProfile,
     opportunities: TaxSavingsOpportunity[],
-    retirementAnalysis: RetirementOptimizationResult
+    retirementAnalysis: RetirementOptimizationResult,
   ): Promise<TaxRecommendation[]> {
     const recommendations: TaxRecommendation[] = [];
     const now = new Date();
@@ -498,14 +498,14 @@ export class TaxOptimizationEngine {
         deadline: opp.deadline,
         daysUntilDeadline: opp.deadline
           ? Math.ceil(
-              (opp.deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+              (opp.deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
             )
           : undefined,
 
         status: RecommendationStatus.PENDING,
 
         aiReasoning: this.generateAIReasoning(opp, profile),
-        aiModelVersion: 'tax-optimizer-v1.0',
+        aiModelVersion: "tax-optimizer-v1.0",
 
         createdAt: now,
         updatedAt: now,
@@ -519,30 +519,30 @@ export class TaxOptimizationEngine {
           id: crypto.randomUUID(),
           userId: profile.userId,
           taxYear: profile.taxYear,
-          strategyId: 'EMPLOYER_MATCH',
+          strategyId: "EMPLOYER_MATCH",
 
-          title: 'Missing Free Money: Employer Match',
+          title: "Missing Free Money: Employer Match",
           summary: `You're missing $${rec.employerMatchMissed.toLocaleString()} in employer 401(k) match!`,
           description:
             "Your employer offers matching contributions to your 401(k), but you're not contributing enough to get the full match. This is essentially free money with an immediate 50-100% return.",
           actionSteps: [
             {
               stepNumber: 1,
-              title: 'Check Match',
-              description: 'Verify your employer match percentage',
+              title: "Check Match",
+              description: "Verify your employer match percentage",
               isOptional: false,
             },
             {
               stepNumber: 2,
-              title: 'Increase Contribution',
+              title: "Increase Contribution",
               description:
-                'Increase your 401(k) contribution to at least the match threshold',
+                "Increase your 401(k) contribution to at least the match threshold",
               isOptional: false,
             },
             {
               stepNumber: 3,
-              title: 'Confirm',
-              description: 'Verify the change in your next paycheck',
+              title: "Confirm",
+              description: "Verify the change in your next paycheck",
               isOptional: false,
             },
           ],
@@ -557,8 +557,8 @@ export class TaxOptimizationEngine {
           status: RecommendationStatus.PENDING,
 
           aiReasoning:
-            'Employer match is guaranteed return. Not capturing it is leaving money on the table.',
-          aiModelVersion: 'tax-optimizer-v1.0',
+            "Employer match is guaranteed return. Not capturing it is leaving money on the table.",
+          aiModelVersion: "tax-optimizer-v1.0",
 
           createdAt: now,
           updatedAt: now,
@@ -584,9 +584,9 @@ export class TaxOptimizationEngine {
    */
   private getYearEndActions(
     profile: TaxProfile,
-    opportunities: TaxSavingsOpportunity[]
-  ): TaxOptimizationResult['yearEndActions'] {
-    const actions: TaxOptimizationResult['yearEndActions'] = [];
+    opportunities: TaxSavingsOpportunity[],
+  ): TaxOptimizationResult["yearEndActions"] {
+    const actions: TaxOptimizationResult["yearEndActions"] = [];
     const yearEnd = new Date(profile.taxYear, 11, 31);
 
     // Filter opportunities with year-end deadlines
@@ -604,17 +604,17 @@ export class TaxOptimizationEngine {
     // Add standard year-end reminders
     actions.push({
       action:
-        'Review and rebalance investment portfolio for tax-loss harvesting opportunities',
+        "Review and rebalance investment portfolio for tax-loss harvesting opportunities",
       deadline: yearEnd,
       estimatedSavings: 0,
-      priority: 'medium',
+      priority: "medium",
     });
 
     actions.push({
-      action: 'Gather charitable donation receipts and documentation',
+      action: "Gather charitable donation receipts and documentation",
       deadline: yearEnd,
       estimatedSavings: 0,
-      priority: 'low',
+      priority: "low",
     });
 
     return actions.sort((a, b) => a.deadline.getTime() - b.deadline.getTime());
@@ -640,29 +640,29 @@ export class TaxOptimizationEngine {
     ) {
       score += 10;
       suggestions.push(
-        'Good diversification across account types for tax-efficient asset location.'
+        "Good diversification across account types for tax-efficient asset location.",
       );
     } else {
       suggestions.push(
-        'Consider diversifying across Traditional, Roth, and taxable accounts for optimal tax efficiency.'
+        "Consider diversifying across Traditional, Roth, and taxable accounts for optimal tax efficiency.",
       );
     }
 
     if (accountTypes.has(TaxAccountType.HSA)) {
       score += 10;
       suggestions.push(
-        'HSA provides excellent asset location for long-term healthcare expenses.'
+        "HSA provides excellent asset location for long-term healthcare expenses.",
       );
     }
 
     // General suggestions
     suggestions.push(
-      'Place high-growth assets in Roth accounts for tax-free growth.'
+      "Place high-growth assets in Roth accounts for tax-free growth.",
     );
     suggestions.push(
-      'Keep bonds and REITs in tax-deferred accounts to avoid ordinary income taxes.'
+      "Keep bonds and REITs in tax-deferred accounts to avoid ordinary income taxes.",
     );
-    suggestions.push('Hold tax-efficient index funds in taxable accounts.');
+    suggestions.push("Hold tax-efficient index funds in taxable accounts.");
 
     return { score: Math.min(100, score), suggestions };
   }
@@ -716,7 +716,7 @@ export class TaxOptimizationEngine {
    * Calculate suggested monthly contribution
    */
   private calculateSuggestedMonthlyContribution(
-    retirementAnalysis: RetirementOptimizationResult
+    retirementAnalysis: RetirementOptimizationResult,
   ): number {
     const monthsRemaining = Math.max(1, 12 - new Date().getMonth());
     return Math.ceil(retirementAnalysis.totalUnusedCapacity / monthsRemaining);
@@ -727,13 +727,13 @@ export class TaxOptimizationEngine {
    */
   private mapPriority(priority: string): RecommendationPriority {
     switch (priority) {
-      case 'critical':
+      case "critical":
         return RecommendationPriority.CRITICAL;
-      case 'high':
+      case "high":
         return RecommendationPriority.HIGH;
-      case 'medium':
+      case "medium":
         return RecommendationPriority.MEDIUM;
-      case 'low':
+      case "low":
         return RecommendationPriority.LOW;
       default:
         return RecommendationPriority.MEDIUM;
@@ -745,17 +745,17 @@ export class TaxOptimizationEngine {
    */
   private generateAIReasoning(
     opp: TaxSavingsOpportunity,
-    profile: TaxProfile
+    profile: TaxProfile,
   ): string {
     const marginalRate = this.taxCalculator.getMarginalRate(
       profile.grossIncome,
-      profile.filingStatus
+      profile.filingStatus,
     );
 
     return (
-      `Based on your ${(marginalRate * 100).toFixed(0)}% marginal tax rate and ${profile.filingStatus.replace('_', ' ')} filing status, ` +
+      `Based on your ${(marginalRate * 100).toFixed(0)}% marginal tax rate and ${profile.filingStatus.replace("_", " ")} filing status, ` +
       `implementing this strategy could save you approximately $${opp.potentialTaxSavings.toLocaleString()} in taxes. ` +
-      `This recommendation is ${opp.complexity} to implement and ${opp.requiresProfessional ? 'may require' : 'does not require'} professional assistance.`
+      `This recommendation is ${opp.complexity} to implement and ${opp.requiresProfessional ? "may require" : "does not require"} professional assistance.`
     );
   }
 
@@ -765,13 +765,13 @@ export class TaxOptimizationEngine {
   private async logAuditEvent(
     userId: string,
     actionType: string,
-    details: Record<string, unknown>
+    details: Record<string, unknown>,
   ): Promise<void> {
     try {
-      await supabase.from('tax_audit_log').insert({
+      await supabase.from("tax_audit_log").insert({
         user_id: userId,
         action_type: actionType,
-        entity_type: 'tax_analysis',
+        entity_type: "tax_analysis",
         new_values: details,
         created_at: new Date().toISOString(),
       });
@@ -799,7 +799,7 @@ export class TaxOptimizationEngine {
    */
   calculateQuarterlyEstimatedTax(
     profile: TaxProfile,
-    priorYearTax: number = 0
+    priorYearTax: number = 0,
   ): QuarterlyEstimate[] {
     const taxCalc = this.taxCalculator.calculateTaxes(profile);
     const now = new Date();
@@ -807,17 +807,15 @@ export class TaxOptimizationEngine {
     // Total annual tax liability
     const federalTaxOwed = taxCalc.federalTax;
     const stateTaxOwed = taxCalc.stateTax;
-    const selfEmploymentTax = this.calculateSelfEmploymentTaxForEstimate(profile);
+    const selfEmploymentTax =
+      this.calculateSelfEmploymentTaxForEstimate(profile);
 
     // Subtract withholding already paid through W-2
     const remainingFederalTax = Math.max(
       0,
-      federalTaxOwed - profile.federalWithheld
+      federalTaxOwed - profile.federalWithheld,
     );
-    const remainingStateTax = Math.max(
-      0,
-      stateTaxOwed - profile.stateWithheld
-    );
+    const remainingStateTax = Math.max(0, stateTaxOwed - profile.stateWithheld);
 
     // Self-employment tax is not withheld, so full amount is owed via estimates
     const totalEstimatedTaxNeeded =
@@ -827,19 +825,21 @@ export class TaxOptimizationEngine {
     const safeHarbor = this.calculateSafeHarborAmount(
       profile,
       priorYearTax,
-      taxCalc
+      taxCalc,
     );
 
     // Use the higher of: estimated tax needed or safe harbor requirement
     // (minus withholding already applied to safe harbor)
     const safeHarborRemaining = Math.max(
       0,
-      safeHarbor.safeHarborAmount - profile.federalWithheld - profile.stateWithheld
+      safeHarbor.safeHarborAmount -
+        profile.federalWithheld -
+        profile.stateWithheld,
     );
 
     const annualEstimatedPayment = Math.max(
       totalEstimatedTaxNeeded,
-      safeHarborRemaining
+      safeHarborRemaining,
     );
 
     // Split into quarterly payments (equal installments)
@@ -919,13 +919,14 @@ export class TaxOptimizationEngine {
   calculateSafeHarborAmount(
     profile: TaxProfile,
     priorYearTax: number = 0,
-    currentCalc?: TaxCalculationResult
+    currentCalc?: TaxCalculationResult,
   ): SafeHarborResult {
     // Calculate current year tax if not provided
     const taxCalc = currentCalc ?? this.taxCalculator.calculateTaxes(profile);
 
     // Current year total tax including SE tax
-    const selfEmploymentTax = this.calculateSelfEmploymentTaxForEstimate(profile);
+    const selfEmploymentTax =
+      this.calculateSelfEmploymentTaxForEstimate(profile);
     const currentYearTotalTax = taxCalc.totalTax + selfEmploymentTax;
 
     // 90% of current year estimated tax
@@ -952,23 +953,24 @@ export class TaxOptimizationEngine {
     // Safe harbor is the SMALLER of: 90% current year OR applicable prior year amount
     // (taxpayer needs to meet only ONE of the two thresholds)
     let safeHarborAmount: number;
-    let recommendedMethod: SafeHarborResult['recommendedMethod'];
+    let recommendedMethod: SafeHarborResult["recommendedMethod"];
 
     if (priorYearTax <= 0) {
       // No prior year tax data available — use 90% of current year
       safeHarborAmount = currentYearNinetyPercent;
-      recommendedMethod = 'current_year_90';
+      recommendedMethod = "current_year_90";
     } else if (currentYearNinetyPercent <= applicablePriorYearAmount) {
       safeHarborAmount = currentYearNinetyPercent;
-      recommendedMethod = 'current_year_90';
+      recommendedMethod = "current_year_90";
     } else {
       safeHarborAmount = applicablePriorYearAmount;
-      recommendedMethod = isHighIncome ? 'prior_year_110' : 'prior_year_100';
+      recommendedMethod = isHighIncome ? "prior_year_110" : "prior_year_100";
     }
 
     return {
       priorYearTaxLiability,
-      currentYearNinetyPercent: Math.round(currentYearNinetyPercent * 100) / 100,
+      currentYearNinetyPercent:
+        Math.round(currentYearNinetyPercent * 100) / 100,
       priorYearOneHundredTenPercent:
         Math.round(priorYearOneHundredTenPercent * 100) / 100,
       isHighIncome,
@@ -998,10 +1000,11 @@ export class TaxOptimizationEngine {
     profile: TaxProfile,
     priorYearTax: number = 0,
     paymentsMade: number = 0,
-    penaltyRate: number = IRS_UNDERPAYMENT_PENALTY_RATE
+    penaltyRate: number = IRS_UNDERPAYMENT_PENALTY_RATE,
   ): UnderpaymentPenalty {
     const taxCalc = this.taxCalculator.calculateTaxes(profile);
-    const selfEmploymentTax = this.calculateSelfEmploymentTaxForEstimate(profile);
+    const selfEmploymentTax =
+      this.calculateSelfEmploymentTaxForEstimate(profile);
     const totalTaxOwed = taxCalc.totalTax + selfEmploymentTax;
 
     // Total payments = withholding + estimated payments made
@@ -1020,12 +1023,12 @@ export class TaxOptimizationEngine {
     // Exception 1: Total tax owed is less than $1,000
     const remainingTaxAfterWithholding = Math.max(
       0,
-      totalTaxOwed - profile.federalWithheld - profile.stateWithheld
+      totalTaxOwed - profile.federalWithheld - profile.stateWithheld,
     );
     if (remainingTaxAfterWithholding < 1000) {
       exceptionMayApply = true;
       exceptionReason =
-        'Tax owed after withholding is less than $1,000. No penalty applies.';
+        "Tax owed after withholding is less than $1,000. No penalty applies.";
     }
 
     // Exception 2: Safe harbor met
@@ -1033,12 +1036,12 @@ export class TaxOptimizationEngine {
       const safeHarbor = this.calculateSafeHarborAmount(
         profile,
         priorYearTax,
-        taxCalc
+        taxCalc,
       );
       if (totalPaymentsMade >= safeHarbor.safeHarborAmount) {
         exceptionMayApply = true;
         exceptionReason =
-          'Payments meet safe harbor threshold. No penalty applies.';
+          "Payments meet safe harbor threshold. No penalty applies.";
       }
     }
 
@@ -1048,7 +1051,7 @@ export class TaxOptimizationEngine {
     const estimatedPenalty = exceptionMayApply
       ? 0
       : Math.round(
-          underpaymentAmount * penaltyRate * (underpaymentDays / 365) * 100
+          underpaymentAmount * penaltyRate * (underpaymentDays / 365) * 100,
         ) / 100;
 
     return {
@@ -1074,35 +1077,38 @@ export class TaxOptimizationEngine {
    */
   getQuarterlyPaymentSchedule(
     profile: TaxProfile,
-    priorYearTax: number = 0
+    priorYearTax: number = 0,
   ): PaymentScheduleEntry[] {
-    const estimates = this.calculateQuarterlyEstimatedTax(profile, priorYearTax);
+    const estimates = this.calculateQuarterlyEstimatedTax(
+      profile,
+      priorYearTax,
+    );
     const now = new Date();
 
     const quarterLabels = [
-      'Q1 (Jan-Mar)',
-      'Q2 (Apr-May)',
-      'Q3 (Jun-Aug)',
-      'Q4 (Sep-Dec)',
+      "Q1 (Jan-Mar)",
+      "Q2 (Apr-May)",
+      "Q3 (Jun-Aug)",
+      "Q4 (Sep-Dec)",
     ];
 
     const incomePeriods = [
-      'January 1 – March 31',
-      'April 1 – May 31',
-      'June 1 – August 31',
-      'September 1 – December 31',
+      "January 1 – March 31",
+      "April 1 – May 31",
+      "June 1 – August 31",
+      "September 1 – December 31",
     ];
 
     const voucherForms = [
-      '1040-ES (Voucher 1)',
-      '1040-ES (Voucher 2)',
-      '1040-ES (Voucher 3)',
-      '1040-ES (Voucher 4)',
+      "1040-ES (Voucher 1)",
+      "1040-ES (Voucher 2)",
+      "1040-ES (Voucher 3)",
+      "1040-ES (Voucher 4)",
     ];
 
     return estimates.map((estimate, idx) => {
       const daysUntilDue = Math.ceil(
-        (estimate.dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+        (estimate.dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
       );
 
       return {
@@ -1141,7 +1147,7 @@ export class TaxOptimizationEngine {
     // Social Security: 12.4% up to wage base, accounting for W-2 wages already taxed
     const remainingSSWageBase = Math.max(
       0,
-      FICA_RATES_2024.socialSecurityWageBase - profile.w2Income
+      FICA_RATES_2024.socialSecurityWageBase - profile.w2Income,
     );
     const ssTaxableIncome = Math.min(netSE, remainingSSWageBase);
     const ssTax = ssTaxableIncome * SE_TAX.socialSecurityRate;
@@ -1166,9 +1172,9 @@ export class TaxOptimizationEngine {
    */
   private getQuarterlyDueDates(taxYear: number): Date[] {
     return [
-      new Date(taxYear, 3, 15),     // Q1: April 15
-      new Date(taxYear, 5, 15),     // Q2: June 15
-      new Date(taxYear, 8, 15),     // Q3: September 15
+      new Date(taxYear, 3, 15), // Q1: April 15
+      new Date(taxYear, 5, 15), // Q2: June 15
+      new Date(taxYear, 8, 15), // Q3: September 15
       new Date(taxYear + 1, 0, 15), // Q4: January 15 (next year)
     ];
   }

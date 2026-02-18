@@ -7,4 +7,4 @@ export {
   default,
   HapticFeedbackType,
   HapticContext,
-} from './hapticService';
+} from "./hapticService";

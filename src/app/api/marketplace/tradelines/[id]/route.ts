@@ -4,8 +4,8 @@
  * GET /api/marketplace/tradelines/[id] - Get tradeline by ID
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { tradelineService } from '@/lib/marketplace';
+import { NextRequest, NextResponse } from "next/server";
+import { tradelineService } from "@/lib/marketplace";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -19,9 +19,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Tradeline ID is required',
+          error: "Tradeline ID is required",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -31,9 +31,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Tradeline not found',
+          error: "Tradeline not found",
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -45,14 +45,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       },
     });
   } catch (error) {
-    console.error('Error fetching tradeline:', error);
+    console.error("Error fetching tradeline:", error);
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to fetch tradeline',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to fetch tradeline",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Bureau } from '@/lib/disputes/dispute-service';
-import { useAuth } from '@/hooks/useAuth';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Bureau } from "@/lib/disputes/dispute-service";
+import { useAuth } from "@/hooks/useAuth";
 
 interface FormData {
-  bureau: Bureau | '';
+  bureau: Bureau | "";
   itemType: string;
   itemDescription: string;
   reason: string;
@@ -22,14 +22,14 @@ export default function CreateDisputeForm() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<FormData>({
-    bureau: '',
-    itemType: '',
-    itemDescription: '',
-    reason: '',
-    letterContent: '',
+    bureau: "",
+    itemType: "",
+    itemDescription: "",
+    reason: "",
+    letterContent: "",
     userInfo: {
-      name: '',
-      address: '',
+      name: "",
+      address: "",
     },
   });
   const [loading, setLoading] = useState(false);
@@ -37,7 +37,10 @@ export default function CreateDisputeForm() {
 
   const totalSteps = 5;
 
-  const updateFormData = <K extends keyof FormData>(field: K, value: FormData[K]) => {
+  const updateFormData = <K extends keyof FormData>(
+    field: K,
+    value: FormData[K],
+  ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -64,33 +67,33 @@ export default function CreateDisputeForm() {
     switch (step) {
       case 1:
         if (!formData.bureau) {
-          setError('Please select a bureau');
+          setError("Please select a bureau");
           return false;
         }
         return true;
       case 2:
         if (!formData.itemType.trim()) {
-          setError('Please enter the item type');
+          setError("Please enter the item type");
           return false;
         }
         if (!formData.itemDescription.trim()) {
-          setError('Please enter the item description');
+          setError("Please enter the item description");
           return false;
         }
         return true;
       case 3:
         if (!formData.reason.trim()) {
-          setError('Please enter the dispute reason');
+          setError("Please enter the dispute reason");
           return false;
         }
         return true;
       case 4:
         if (!formData.userInfo.name.trim()) {
-          setError('Please enter your name');
+          setError("Please enter your name");
           return false;
         }
         if (!formData.userInfo.address.trim()) {
-          setError('Please enter your address');
+          setError("Please enter your address");
           return false;
         }
         return true;
@@ -104,9 +107,9 @@ export default function CreateDisputeForm() {
     setError(null);
 
     try {
-      const response = await fetch('/api/disputes/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/disputes/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           creditReport: {
             accounts: [],
@@ -120,13 +123,15 @@ export default function CreateDisputeForm() {
       const data = await response.json();
 
       if (!data.success) {
-        throw new Error(data.error || 'Failed to generate letter');
+        throw new Error(data.error || "Failed to generate letter");
       }
 
-      updateFormData('letterContent', data.data.disputeLetter);
+      updateFormData("letterContent", data.data.disputeLetter);
       nextStep();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate letter');
+      setError(
+        err instanceof Error ? err.message : "Failed to generate letter",
+      );
     } finally {
       setLoading(false);
     }
@@ -134,7 +139,7 @@ export default function CreateDisputeForm() {
 
   const saveDraft = async () => {
     if (!user) {
-      setError('You must be logged in to save a draft');
+      setError("You must be logged in to save a draft");
       return;
     }
 
@@ -142,26 +147,27 @@ export default function CreateDisputeForm() {
     setError(null);
 
     try {
-      const response = await fetch('/api/disputes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/disputes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           bureau: formData.bureau,
           itemType: formData.itemType,
           itemDescription: formData.itemDescription,
           reason: formData.reason,
-          letterContent: formData.letterContent || 'Draft - Letter not generated yet',
+          letterContent:
+            formData.letterContent || "Draft - Letter not generated yet",
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to save draft');
+        throw new Error("Failed to save draft");
       }
 
       const data = await response.json();
       router.push(`/disputes/${data.dispute.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save draft');
+      setError(err instanceof Error ? err.message : "Failed to save draft");
     } finally {
       setLoading(false);
     }
@@ -169,7 +175,7 @@ export default function CreateDisputeForm() {
 
   const submitDispute = async () => {
     if (!user) {
-      setError('You must be logged in to submit a dispute');
+      setError("You must be logged in to submit a dispute");
       return;
     }
 
@@ -177,9 +183,9 @@ export default function CreateDisputeForm() {
     setError(null);
 
     try {
-      const response = await fetch('/api/disputes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/disputes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           bureau: formData.bureau,
           itemType: formData.itemType,
@@ -190,13 +196,13 @@ export default function CreateDisputeForm() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create dispute');
+        throw new Error("Failed to create dispute");
       }
 
       const data = await response.json();
       router.push(`/disputes/${data.dispute.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create dispute');
+      setError(err instanceof Error ? err.message : "Failed to create dispute");
     } finally {
       setLoading(false);
     }
@@ -224,8 +230,8 @@ export default function CreateDisputeForm() {
               <div
                 className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
                   step <= currentStep
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-slate-300'
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-slate-300"
                 }`}
               >
                 {step}
@@ -233,7 +239,9 @@ export default function CreateDisputeForm() {
               {step < 5 && (
                 <div
                   className={`flex-1 h-1 mx-2 ${
-                    step < currentStep ? 'bg-blue-600' : 'bg-gray-200 dark:bg-slate-700'
+                    step < currentStep
+                      ? "bg-blue-600"
+                      : "bg-gray-200 dark:bg-slate-700"
                   }`}
                 />
               )}
@@ -261,29 +269,31 @@ export default function CreateDisputeForm() {
         {currentStep === 1 && (
           <Step1Bureau
             bureau={formData.bureau}
-            onChange={(value) => updateFormData('bureau', value)}
+            onChange={(value) => updateFormData("bureau", value)}
           />
         )}
         {currentStep === 2 && (
           <Step2ItemInfo
             itemType={formData.itemType}
             itemDescription={formData.itemDescription}
-            onChangeType={(value) => updateFormData('itemType', value)}
-            onChangeDescription={(value) => updateFormData('itemDescription', value)}
+            onChangeType={(value) => updateFormData("itemType", value)}
+            onChangeDescription={(value) =>
+              updateFormData("itemDescription", value)
+            }
           />
         )}
         {currentStep === 3 && (
           <Step3Reason
             reason={formData.reason}
-            onChange={(value) => updateFormData('reason', value)}
+            onChange={(value) => updateFormData("reason", value)}
           />
         )}
         {currentStep === 4 && (
           <Step4UserInfo
             name={formData.userInfo.name}
             address={formData.userInfo.address}
-            onChangeName={(value) => updateUserInfo('name', value)}
-            onChangeAddress={(value) => updateUserInfo('address', value)}
+            onChangeName={(value) => updateUserInfo("name", value)}
+            onChangeAddress={(value) => updateUserInfo("address", value)}
             loading={loading}
             onGenerate={generateLetter}
           />
@@ -292,7 +302,7 @@ export default function CreateDisputeForm() {
           <Step5Review
             formData={formData}
             letterContent={formData.letterContent}
-            onEdit={(value) => updateFormData('letterContent', value)}
+            onEdit={(value) => updateFormData("letterContent", value)}
           />
         )}
       </div>
@@ -335,7 +345,7 @@ export default function CreateDisputeForm() {
               disabled={loading}
               className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
             >
-              {loading ? 'Creating...' : 'Create Dispute'}
+              {loading ? "Creating..." : "Create Dispute"}
             </button>
           )}
         </div>
@@ -345,32 +355,47 @@ export default function CreateDisputeForm() {
 }
 
 // Step 1: Bureau Selection
-function Step1Bureau({ bureau, onChange }: { bureau: Bureau | ''; onChange: (value: Bureau) => void }) {
-  const bureaus: { value: Bureau; name: string; color: string; description: string }[] = [
+function Step1Bureau({
+  bureau,
+  onChange,
+}: {
+  bureau: Bureau | "";
+  onChange: (value: Bureau) => void;
+}) {
+  const bureaus: {
+    value: Bureau;
+    name: string;
+    color: string;
+    description: string;
+  }[] = [
     {
-      value: 'experian',
-      name: 'Experian',
-      color: 'border-red-500 hover:bg-red-50',
-      description: 'One of the three major credit bureaus',
+      value: "experian",
+      name: "Experian",
+      color: "border-red-500 hover:bg-red-50",
+      description: "One of the three major credit bureaus",
     },
     {
-      value: 'equifax',
-      name: 'Equifax',
-      color: 'border-blue-500 hover:bg-blue-50',
-      description: 'One of the three major credit bureaus',
+      value: "equifax",
+      name: "Equifax",
+      color: "border-blue-500 hover:bg-blue-50",
+      description: "One of the three major credit bureaus",
     },
     {
-      value: 'transunion',
-      name: 'TransUnion',
-      color: 'border-green-500 hover:bg-green-50',
-      description: 'One of the three major credit bureaus',
+      value: "transunion",
+      name: "TransUnion",
+      color: "border-green-500 hover:bg-green-50",
+      description: "One of the three major credit bureaus",
     },
   ];
 
   return (
     <div className="py-6">
-      <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">Select Credit Bureau</h2>
-      <p className="text-gray-600 dark:text-slate-300 mb-6">Choose which bureau you want to dispute with</p>
+      <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+        Select Credit Bureau
+      </h2>
+      <p className="text-gray-600 dark:text-slate-300 mb-6">
+        Choose which bureau you want to dispute with
+      </p>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {bureaus.map((b) => (
@@ -380,11 +405,13 @@ function Step1Bureau({ bureau, onChange }: { bureau: Bureau | ''; onChange: (val
             className={`p-6 border-2 rounded-lg text-left transition-all ${
               bureau === b.value
                 ? `${b.color} border-opacity-100 bg-opacity-10`
-                : 'border-gray-200 hover:border-gray-300 dark:border-slate-600'
+                : "border-gray-200 hover:border-gray-300 dark:border-slate-600"
             }`}
           >
             <h3 className="text-xl font-semibold mb-2">{b.name}</h3>
-            <p className="text-sm text-gray-600 dark:text-slate-300">{b.description}</p>
+            <p className="text-sm text-gray-600 dark:text-slate-300">
+              {b.description}
+            </p>
           </button>
         ))}
       </div>
@@ -405,22 +432,26 @@ function Step2ItemInfo({
   onChangeDescription: (value: string) => void;
 }) {
   const itemTypes = [
-    'Credit Card',
-    'Auto Loan',
-    'Mortgage',
-    'Student Loan',
-    'Personal Loan',
-    'Collection Account',
-    'Hard Inquiry',
-    'Public Record',
-    'Personal Information',
-    'Other',
+    "Credit Card",
+    "Auto Loan",
+    "Mortgage",
+    "Student Loan",
+    "Personal Loan",
+    "Collection Account",
+    "Hard Inquiry",
+    "Public Record",
+    "Personal Information",
+    "Other",
   ];
 
   return (
     <div className="py-6">
-      <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">Item Information</h2>
-      <p className="text-gray-600 dark:text-slate-300 mb-6">Provide details about the item you're disputing</p>
+      <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+        Item Information
+      </h2>
+      <p className="text-gray-600 dark:text-slate-300 mb-6">
+        Provide details about the item you're disputing
+      </p>
 
       <div className="space-y-6">
         <div>
@@ -459,24 +490,34 @@ function Step2ItemInfo({
 }
 
 // Step 3: Dispute Reason
-function Step3Reason({ reason, onChange }: { reason: string; onChange: (value: string) => void }) {
+function Step3Reason({
+  reason,
+  onChange,
+}: {
+  reason: string;
+  onChange: (value: string) => void;
+}) {
   const commonReasons = [
-    'Not my account',
-    'Incorrect balance',
-    'Incorrect payment history',
-    'Account closed but showing as open',
-    'Duplicate account',
-    'Fraudulent account',
-    'Paid in full but showing balance',
-    'Identity theft',
-    'Incorrect personal information',
-    'Other',
+    "Not my account",
+    "Incorrect balance",
+    "Incorrect payment history",
+    "Account closed but showing as open",
+    "Duplicate account",
+    "Fraudulent account",
+    "Paid in full but showing balance",
+    "Identity theft",
+    "Incorrect personal information",
+    "Other",
   ];
 
   return (
     <div className="py-6">
-      <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">Dispute Reason</h2>
-      <p className="text-gray-600 dark:text-slate-300 mb-6">Explain why you're disputing this item</p>
+      <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+        Dispute Reason
+      </h2>
+      <p className="text-gray-600 dark:text-slate-300 mb-6">
+        Explain why you're disputing this item
+      </p>
 
       <div className="space-y-6">
         <div>
@@ -512,7 +553,8 @@ function Step3Reason({ reason, onChange }: { reason: string; onChange: (value: s
             className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
           <p className="mt-2 text-sm text-gray-500 dark:text-slate-400">
-            Be specific and factual. Include dates, amounts, and any relevant details.
+            Be specific and factual. Include dates, amounts, and any relevant
+            details.
           </p>
         </div>
       </div>
@@ -538,8 +580,12 @@ function Step4UserInfo({
 }) {
   return (
     <div className="py-6">
-      <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">Your Information</h2>
-      <p className="text-gray-600 dark:text-slate-300 mb-6">Provide your information for the dispute letter</p>
+      <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+        Your Information
+      </h2>
+      <p className="text-gray-600 dark:text-slate-300 mb-6">
+        Provide your information for the dispute letter
+      </p>
 
       <div className="space-y-6">
         <div>
@@ -576,14 +622,30 @@ function Step4UserInfo({
           >
             {loading ? (
               <span className="flex items-center justify-center">
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <svg
+                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
                 </svg>
                 Generating Letter with AI...
               </span>
             ) : (
-              'Generate Dispute Letter with AI'
+              "Generate Dispute Letter with AI"
             )}
           </button>
         </div>
@@ -604,29 +666,51 @@ function Step5Review({
 }) {
   return (
     <div className="py-6">
-      <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">Review & Submit</h2>
-      <p className="text-gray-600 dark:text-slate-300 mb-6">Review your dispute letter before submitting</p>
+      <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+        Review & Submit
+      </h2>
+      <p className="text-gray-600 dark:text-slate-300 mb-6">
+        Review your dispute letter before submitting
+      </p>
 
       <div className="space-y-6">
         {/* Summary */}
         <div className="bg-gray-50 dark:bg-slate-900 rounded-lg p-6">
-          <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Dispute Summary</h3>
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
+            Dispute Summary
+          </h3>
           <dl className="space-y-2">
             <div className="flex">
-              <dt className="font-medium text-gray-700 dark:text-slate-200 w-32">Bureau:</dt>
-              <dd className="text-gray-900 dark:text-white capitalize">{formData.bureau}</dd>
+              <dt className="font-medium text-gray-700 dark:text-slate-200 w-32">
+                Bureau:
+              </dt>
+              <dd className="text-gray-900 dark:text-white capitalize">
+                {formData.bureau}
+              </dd>
             </div>
             <div className="flex">
-              <dt className="font-medium text-gray-700 dark:text-slate-200 w-32">Item Type:</dt>
-              <dd className="text-gray-900 dark:text-white">{formData.itemType}</dd>
+              <dt className="font-medium text-gray-700 dark:text-slate-200 w-32">
+                Item Type:
+              </dt>
+              <dd className="text-gray-900 dark:text-white">
+                {formData.itemType}
+              </dd>
             </div>
             <div className="flex">
-              <dt className="font-medium text-gray-700 dark:text-slate-200 w-32">Description:</dt>
-              <dd className="text-gray-900 dark:text-white">{formData.itemDescription}</dd>
+              <dt className="font-medium text-gray-700 dark:text-slate-200 w-32">
+                Description:
+              </dt>
+              <dd className="text-gray-900 dark:text-white">
+                {formData.itemDescription}
+              </dd>
             </div>
             <div className="flex">
-              <dt className="font-medium text-gray-700 dark:text-slate-200 w-32">Reason:</dt>
-              <dd className="text-gray-900 dark:text-white">{formData.reason}</dd>
+              <dt className="font-medium text-gray-700 dark:text-slate-200 w-32">
+                Reason:
+              </dt>
+              <dd className="text-gray-900 dark:text-white">
+                {formData.reason}
+              </dd>
             </div>
           </dl>
         </div>
@@ -643,7 +727,8 @@ function Step5Review({
             className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
           />
           <p className="mt-2 text-sm text-gray-500 dark:text-slate-400">
-            You can edit the letter before submitting. Make sure all information is accurate.
+            You can edit the letter before submitting. Make sure all information
+            is accurate.
           </p>
         </div>
       </div>

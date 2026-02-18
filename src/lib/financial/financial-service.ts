@@ -1,13 +1,13 @@
 /**
  * Financial Service
- * 
+ *
  * Core business logic for financial management features
  */
 
-import { getSupabase } from '@/lib/supabase/client';
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
-import { plaidService, PlaidAccount, PlaidTransaction } from './plaid-service';
+import { plaidService, PlaidAccount, PlaidTransaction } from "./plaid-service";
 
 // Types
 export interface FinancialDashboard {
@@ -45,7 +45,7 @@ export interface Budget {
   amount: number;
   spent: number;
   remaining: number;
-  period: 'monthly' | 'weekly' | 'yearly';
+  period: "monthly" | "weekly" | "yearly";
   startDate: Date;
   endDate: Date;
   createdAt: Date;
@@ -54,13 +54,13 @@ export interface Budget {
 export interface FinancialGoal {
   id: string;
   userId: string;
-  type: 'emergency_fund' | 'debt_payoff' | 'savings' | 'investment' | 'custom';
+  type: "emergency_fund" | "debt_payoff" | "savings" | "investment" | "custom";
   name: string;
   targetAmount: number;
   currentAmount: number;
   progress: number;
   targetDate: Date;
-  status: 'active' | 'completed' | 'paused';
+  status: "active" | "completed" | "paused";
   createdAt: Date;
 }
 
@@ -85,7 +85,7 @@ interface BudgetRow {
   category: string;
   amount: number;
   spent: number;
-  period: 'monthly' | 'weekly' | 'yearly';
+  period: "monthly" | "weekly" | "yearly";
   start_date: string;
   end_date: string;
   created_at: string;
@@ -94,12 +94,12 @@ interface BudgetRow {
 interface FinancialGoalRow {
   id: string;
   user_id: string;
-  type: FinancialGoal['type'];
+  type: FinancialGoal["type"];
   name: string;
   target_amount: number;
   current_amount: number;
   target_date: string;
-  status: FinancialGoal['status'];
+  status: FinancialGoal["status"];
   created_at: string;
 }
 
@@ -125,11 +125,14 @@ class FinancialService {
 
       // Calculate totals
       const totalAssets = accounts
-        .filter(a => a.accountType === 'depository' || a.accountType === 'investment')
+        .filter(
+          (a) =>
+            a.accountType === "depository" || a.accountType === "investment",
+        )
         .reduce((sum, a) => sum + a.currentBalance, 0);
 
       const totalLiabilities = accounts
-        .filter(a => a.accountType === 'credit' || a.accountType === 'loan')
+        .filter((a) => a.accountType === "credit" || a.accountType === "loan")
         .reduce((sum, a) => sum + Math.abs(a.currentBalance), 0);
 
       const netWorth = totalAssets - totalLiabilities;
@@ -137,32 +140,33 @@ class FinancialService {
       // Get recent transactions (last 30 days)
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      
+
       const allTransactions: PlaidTransaction[] = [];
       for (const account of accounts) {
         const transactions = await plaidService.getTransactions(
           account.accountId,
           thirtyDaysAgo,
-          new Date()
+          new Date(),
         );
         allTransactions.push(...transactions);
       }
 
       // Calculate income and expenses
       const monthlyIncome = allTransactions
-        .filter(t => t.amount < 0) // Negative amounts are income in Plaid
+        .filter((t) => t.amount < 0) // Negative amounts are income in Plaid
         .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
       const monthlyExpenses = allTransactions
-        .filter(t => t.amount > 0) // Positive amounts are expenses
+        .filter((t) => t.amount > 0) // Positive amounts are expenses
         .reduce((sum, t) => sum + t.amount, 0);
 
       const cashFlow = monthlyIncome - monthlyExpenses;
-      const savingsRate = monthlyIncome > 0 ? (cashFlow / monthlyIncome) * 100 : 0;
+      const savingsRate =
+        monthlyIncome > 0 ? (cashFlow / monthlyIncome) * 100 : 0;
 
       // Get spending by category
       const spendingByCategory = this.calculateSpendingByCategory(
-        allTransactions.filter(t => t.amount > 0)
+        allTransactions.filter((t) => t.amount > 0),
       );
 
       // Get monthly trend (last 6 months)
@@ -195,11 +199,13 @@ class FinancialService {
   /**
    * Calculate spending by category
    */
-  private calculateSpendingByCategory(transactions: PlaidTransaction[]): CategorySpending[] {
+  private calculateSpendingByCategory(
+    transactions: PlaidTransaction[],
+  ): CategorySpending[] {
     const categoryMap = new Map<string, { amount: number; count: number }>();
 
     for (const txn of transactions) {
-      const category = txn.category[0] || 'Uncategorized';
+      const category = txn.category[0] || "Uncategorized";
       const existing = categoryMap.get(category) || { amount: 0, count: 0 };
       categoryMap.set(category, {
         amount: existing.amount + txn.amount,
@@ -207,7 +213,10 @@ class FinancialService {
       });
     }
 
-    const total = Array.from(categoryMap.values()).reduce((sum, c) => sum + c.amount, 0);
+    const total = Array.from(categoryMap.values()).reduce(
+      (sum, c) => sum + c.amount,
+      0,
+    );
 
     return Array.from(categoryMap.entries())
       .map(([category, data]) => ({
@@ -222,7 +231,10 @@ class FinancialService {
   /**
    * Get monthly trend data
    */
-  private async getMonthlyTrend(userId: string, months: number): Promise<MonthlyTrend[]> {
+  private async getMonthlyTrend(
+    userId: string,
+    months: number,
+  ): Promise<MonthlyTrend[]> {
     const trends: MonthlyTrend[] = [];
     const accounts = await plaidService.getAccounts(userId);
 
@@ -242,20 +254,23 @@ class FinancialService {
         const transactions = await plaidService.getTransactions(
           account.accountId,
           startDate,
-          endDate
+          endDate,
         );
 
         income += transactions
-          .filter(t => t.amount < 0)
+          .filter((t) => t.amount < 0)
           .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
         expenses += transactions
-          .filter(t => t.amount > 0)
+          .filter((t) => t.amount > 0)
           .reduce((sum, t) => sum + t.amount, 0);
       }
 
       trends.push({
-        month: startDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+        month: startDate.toLocaleDateString("en-US", {
+          month: "short",
+          year: "numeric",
+        }),
         income,
         expenses,
         savings: income - expenses,
@@ -268,7 +283,10 @@ class FinancialService {
   /**
    * Get spending analysis
    */
-  async getSpendingAnalysis(userId: string, days: number = 30): Promise<SpendingAnalysis> {
+  async getSpendingAnalysis(
+    userId: string,
+    days: number = 30,
+  ): Promise<SpendingAnalysis> {
     try {
       const accounts = await plaidService.getAccounts(userId);
       const startDate = new Date();
@@ -279,15 +297,20 @@ class FinancialService {
         const transactions = await plaidService.getTransactions(
           account.accountId,
           startDate,
-          new Date()
+          new Date(),
         );
-        allTransactions.push(...transactions.filter(t => t.amount > 0));
+        allTransactions.push(...transactions.filter((t) => t.amount > 0));
       }
 
-      const totalSpending = allTransactions.reduce((sum, t) => sum + t.amount, 0);
+      const totalSpending = allTransactions.reduce(
+        (sum, t) => sum + t.amount,
+        0,
+      );
       const averageDaily = totalSpending / days;
 
-      const topCategories = this.calculateSpendingByCategory(allTransactions).slice(0, 5);
+      const topCategories = this.calculateSpendingByCategory(
+        allTransactions,
+      ).slice(0, 5);
 
       const merchantMap = new Map<string, { amount: number; count: number }>();
       for (const txn of allTransactions) {
@@ -311,33 +334,41 @@ class FinancialService {
       // Compare to previous month
       const previousMonthStart = new Date(startDate);
       previousMonthStart.setDate(previousMonthStart.getDate() - days);
-      
+
       let previousMonthSpending = 0;
       for (const account of accounts) {
         const transactions = await plaidService.getTransactions(
           account.accountId,
           previousMonthStart,
-          startDate
+          startDate,
         );
         previousMonthSpending += transactions
-          .filter(t => t.amount > 0)
+          .filter((t) => t.amount > 0)
           .reduce((sum, t) => sum + t.amount, 0);
       }
 
-      const comparisonToPreviousMonth = previousMonthSpending > 0
-        ? ((totalSpending - previousMonthSpending) / previousMonthSpending) * 100
-        : 0;
+      const comparisonToPreviousMonth =
+        previousMonthSpending > 0
+          ? ((totalSpending - previousMonthSpending) / previousMonthSpending) *
+            100
+          : 0;
 
       // Generate insights
       const insights: string[] = [];
       if (comparisonToPreviousMonth > 10) {
-        insights.push(`Your spending increased by ${comparisonToPreviousMonth.toFixed(1)}% compared to last month`);
+        insights.push(
+          `Your spending increased by ${comparisonToPreviousMonth.toFixed(1)}% compared to last month`,
+        );
       } else if (comparisonToPreviousMonth < -10) {
-        insights.push(`Great job! Your spending decreased by ${Math.abs(comparisonToPreviousMonth).toFixed(1)}% compared to last month`);
+        insights.push(
+          `Great job! Your spending decreased by ${Math.abs(comparisonToPreviousMonth).toFixed(1)}% compared to last month`,
+        );
       }
 
       if (topCategories.length > 0) {
-        insights.push(`Your top spending category is ${topCategories[0].category} at $${topCategories[0].amount.toFixed(2)}`);
+        insights.push(
+          `Your top spending category is ${topCategories[0].category} at $${topCategories[0].amount.toFixed(2)}`,
+        );
       }
 
       return {
@@ -359,13 +390,13 @@ class FinancialService {
    */
   async getBudgets(userId: string): Promise<Budget[]> {
     const { data, error } = await supabase
-      .from('budgets')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .from("budgets")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
     if (error) {
-      throw new Error('Failed to fetch budgets');
+      throw new Error("Failed to fetch budgets");
     }
 
     const rows = (data ?? []) as BudgetRow[];
@@ -379,21 +410,21 @@ class FinancialService {
     userId: string,
     category: string,
     amount: number,
-    period: 'monthly' | 'weekly' | 'yearly'
+    period: "monthly" | "weekly" | "yearly",
   ): Promise<Budget> {
     const startDate = new Date();
     const endDate = new Date();
 
-    if (period === 'monthly') {
+    if (period === "monthly") {
       endDate.setMonth(endDate.getMonth() + 1);
-    } else if (period === 'weekly') {
+    } else if (period === "weekly") {
       endDate.setDate(endDate.getDate() + 7);
     } else {
       endDate.setFullYear(endDate.getFullYear() + 1);
     }
 
     const { data, error } = await supabase
-      .from('budgets')
+      .from("budgets")
       .insert({
         user_id: userId,
         category,
@@ -408,7 +439,7 @@ class FinancialService {
       .single();
 
     if (error || !data) {
-      throw new Error('Failed to create budget');
+      throw new Error("Failed to create budget");
     }
 
     return this.mapDatabaseToBudget(data as BudgetRow);
@@ -419,13 +450,13 @@ class FinancialService {
    */
   async getFinancialGoals(userId: string): Promise<FinancialGoal[]> {
     const { data, error } = await supabase
-      .from('financial_goals')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .from("financial_goals")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
     if (error) {
-      throw new Error('Failed to fetch financial goals');
+      throw new Error("Failed to fetch financial goals");
     }
 
     const rows = (data ?? []) as FinancialGoalRow[];
@@ -440,10 +471,10 @@ class FinancialService {
     type: string,
     name: string,
     targetAmount: number,
-    targetDate: Date
+    targetDate: Date,
   ): Promise<FinancialGoal> {
     const { data, error } = await supabase
-      .from('financial_goals')
+      .from("financial_goals")
       .insert({
         user_id: userId,
         type,
@@ -451,14 +482,14 @@ class FinancialService {
         target_amount: targetAmount,
         current_amount: 0,
         target_date: targetDate.toISOString(),
-        status: 'active',
+        status: "active",
         created_at: new Date().toISOString(),
       })
       .select()
       .single();
 
     if (error || !data) {
-      throw new Error('Failed to create financial goal');
+      throw new Error("Failed to create financial goal");
     }
 
     return this.mapDatabaseToGoal(data as FinancialGoalRow);
@@ -486,9 +517,10 @@ class FinancialService {
    * Map database record to FinancialGoal
    */
   private mapDatabaseToGoal(data: FinancialGoalRow): FinancialGoal {
-    const progress = data.target_amount > 0
-      ? (data.current_amount / data.target_amount) * 100
-      : 0;
+    const progress =
+      data.target_amount > 0
+        ? (data.current_amount / data.target_amount) * 100
+        : 0;
 
     return {
       id: data.id,

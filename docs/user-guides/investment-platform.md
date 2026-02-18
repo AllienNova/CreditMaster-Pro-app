@@ -114,6 +114,7 @@ Click any period button to update the chart and metrics.
 The stock analysis includes four main sections:
 
 #### 1. Technical Analysis
+
 - **RSI (Relative Strength Index)**: Momentum indicator (0-100)
   - Below 30: Oversold (potential buy)
   - Above 70: Overbought (potential sell)
@@ -121,6 +122,7 @@ The stock analysis includes four main sections:
 - **Moving Averages**: Price trend indicators
 
 #### 2. Fundamental Analysis
+
 - **P/E Ratio**: Price-to-earnings ratio
 - **EPS**: Earnings per share
 - **Market Cap**: Total market value
@@ -128,11 +130,13 @@ The stock analysis includes four main sections:
 - **Revenue**: Company's total revenue
 
 #### 3. Sentiment Analysis
+
 - **Sentiment Score**: Overall market sentiment (-1 to +1)
 - **News Sources**: Number of analyzed news articles
 - **Social Media**: Sentiment from social platforms
 
 #### 4. AI Recommendation
+
 - **Recommendation**: Strong Buy, Buy, Hold, Sell, or Strong Sell
 - **Confidence Score**: AI's confidence in the recommendation (0-100%)
 - **Target Price**: Predicted price target
@@ -147,6 +151,7 @@ The stock analysis includes four main sections:
 ### How It Works
 
 Our AI Stock Analyst uses:
+
 - **Machine Learning Models**: Trained on historical market data
 - **Real-Time Data**: Current prices, volume, and market conditions
 - **News Sentiment**: Analysis of recent news and social media
@@ -231,6 +236,7 @@ A: Contact support to permanently delete your portfolio data.
 ## Support
 
 Need help? Contact us:
+
 - **Email**: support@creditmaster-pro.com
 - **Live Chat**: Available in the app
 - **Phone**: 1-800-CREDIT-PRO
@@ -238,4 +244,3 @@ Need help? Contact us:
 ---
 
 **Last Updated**: January 2024
-

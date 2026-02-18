@@ -5,8 +5,8 @@
  * based on region, currency, and payment type.
  */
 
-import { createClient } from '@supabase/supabase-js';
-import Stripe from 'stripe';
+import { createClient } from "@supabase/supabase-js";
+import Stripe from "stripe";
 import {
   TrueLayerPaymentsConnector,
   createTrueLayerPaymentsConnector,
@@ -14,7 +14,7 @@ import {
   Beneficiary,
   Payment as TrueLayerPayment,
   PaymentAuthLink,
-} from '../../connectors/payments';
+} from "../../connectors/payments";
 
 // =============================================================================
 // Configuration
@@ -26,16 +26,21 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-09-30.clover',
+  apiVersion: "2025-09-30.clover",
 });
 
 // =============================================================================
 // Types
 // =============================================================================
 
-export type PaymentProvider = 'stripe' | 'truelayer';
-export type PaymentType = 'one_time' | 'subscription' | 'payout' | 'transfer';
-export type PaymentMethodType = 'card' | 'bank_transfer' | 'sepa' | 'ach' | 'open_banking';
+export type PaymentProvider = "stripe" | "truelayer";
+export type PaymentType = "one_time" | "subscription" | "payout" | "transfer";
+export type PaymentMethodType =
+  | "card"
+  | "bank_transfer"
+  | "sepa"
+  | "ach"
+  | "open_banking";
 
 export interface UnifiedPaymentRequest {
   amount: number; // In minor units (cents)
@@ -65,7 +70,7 @@ export interface UnifiedPayment {
   id: string;
   provider: PaymentProvider;
   providerPaymentId: string;
-  status: 'pending' | 'processing' | 'succeeded' | 'failed' | 'canceled';
+  status: "pending" | "processing" | "succeeded" | "failed" | "canceled";
   amount: number;
   currency: string;
   type: PaymentType;
@@ -111,73 +116,73 @@ class PaymentRouter {
 
     // Open banking payments in EU/UK -> TrueLayer
     if (
-      (region === 'GB' || region === 'EU' || this.isEurozone(region)) &&
-      (method === 'open_banking' || method === 'bank_transfer')
+      (region === "GB" || region === "EU" || this.isEurozone(region)) &&
+      (method === "open_banking" || method === "bank_transfer")
     ) {
       return {
-        provider: 'truelayer',
-        reason: 'Open Banking payment in supported region',
+        provider: "truelayer",
+        reason: "Open Banking payment in supported region",
         fees: {
           fixed: 20, // 20 cents
           percentage: 0.2,
           estimatedTotal: 20 + (amount * 0.2) / 100,
         },
-        estimatedTime: 'Instant to 2 hours',
+        estimatedTime: "Instant to 2 hours",
       };
     }
 
     // Card payments -> Stripe
-    if (method === 'card' || !method) {
+    if (method === "card" || !method) {
       return {
-        provider: 'stripe',
-        reason: 'Card payment via Stripe',
+        provider: "stripe",
+        reason: "Card payment via Stripe",
         fees: {
           fixed: 30, // 30 cents
           percentage: 2.9,
           estimatedTotal: 30 + (amount * 2.9) / 100,
         },
-        estimatedTime: 'Instant',
+        estimatedTime: "Instant",
       };
     }
 
     // SEPA in EU -> TrueLayer or Stripe
-    if (method === 'sepa' && (region === 'EU' || this.isEurozone(region))) {
+    if (method === "sepa" && (region === "EU" || this.isEurozone(region))) {
       return {
-        provider: 'truelayer',
-        reason: 'SEPA transfer via Open Banking',
+        provider: "truelayer",
+        reason: "SEPA transfer via Open Banking",
         fees: {
           fixed: 20,
           percentage: 0.2,
           estimatedTotal: 20 + (amount * 0.2) / 100,
         },
-        estimatedTime: '1-2 business days',
+        estimatedTime: "1-2 business days",
       };
     }
 
     // ACH in US -> Stripe
-    if (method === 'ach' && region === 'US') {
+    if (method === "ach" && region === "US") {
       return {
-        provider: 'stripe',
-        reason: 'ACH transfer via Stripe',
+        provider: "stripe",
+        reason: "ACH transfer via Stripe",
         fees: {
           fixed: 0,
           percentage: 0.8,
           estimatedTotal: (amount * 0.8) / 100,
         },
-        estimatedTime: '3-5 business days',
+        estimatedTime: "3-5 business days",
       };
     }
 
     // Default to Stripe
     return {
-      provider: 'stripe',
-      reason: 'Default payment provider',
+      provider: "stripe",
+      reason: "Default payment provider",
       fees: {
         fixed: 30,
         percentage: 2.9,
         estimatedTotal: 30 + (amount * 2.9) / 100,
       },
-      estimatedTime: 'Instant',
+      estimatedTime: "Instant",
     };
   }
 
@@ -188,16 +193,21 @@ class PaymentRouter {
   /**
    * Process a payment using the best provider
    */
-  async processPayment(request: UnifiedPaymentRequest): Promise<UnifiedPayment> {
+  async processPayment(
+    request: UnifiedPaymentRequest,
+  ): Promise<UnifiedPayment> {
     const selection = this.selectProvider(request);
 
     // Record payment attempt
-    const paymentRecord = await this.createPaymentRecord(request, selection.provider);
+    const paymentRecord = await this.createPaymentRecord(
+      request,
+      selection.provider,
+    );
 
     try {
       let result: UnifiedPayment;
 
-      if (selection.provider === 'truelayer') {
+      if (selection.provider === "truelayer") {
         result = await this.processTrueLayerPayment(paymentRecord.id, request);
       } else {
         result = await this.processStripePayment(paymentRecord.id, request);
@@ -211,10 +221,10 @@ class PaymentRouter {
       // Update payment record with failure
       await this.updatePaymentRecord(paymentRecord.id, {
         ...paymentRecord,
-        status: 'failed',
+        status: "failed",
         metadata: {
           ...request.metadata,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: error instanceof Error ? error.message : "Unknown error",
         },
       });
 
@@ -227,9 +237,9 @@ class PaymentRouter {
    */
   private async processStripePayment(
     internalId: string,
-    request: UnifiedPaymentRequest
+    request: UnifiedPaymentRequest,
   ): Promise<UnifiedPayment> {
-    if (request.type === 'subscription' && request.priceId) {
+    if (request.type === "subscription" && request.priceId) {
       return this.processStripeSubscription(internalId, request);
     }
 
@@ -253,13 +263,13 @@ class PaymentRouter {
 
     return {
       id: internalId,
-      provider: 'stripe',
+      provider: "stripe",
       providerPaymentId: paymentIntent.id,
       status: this.mapStripeStatus(paymentIntent.status),
       amount: request.amount,
       currency: request.currency,
       type: request.type,
-      method: request.method || 'card',
+      method: request.method || "card",
       clientSecret: paymentIntent.client_secret || undefined,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -272,15 +282,15 @@ class PaymentRouter {
    */
   private async processStripeSubscription(
     internalId: string,
-    request: UnifiedPaymentRequest
+    request: UnifiedPaymentRequest,
   ): Promise<UnifiedPayment> {
     const customerId = await this.getOrCreateStripeCustomer(request.userId);
 
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
       items: [{ price: request.priceId }],
-      payment_behavior: 'default_incomplete',
-      expand: ['latest_invoice.payment_intent'],
+      payment_behavior: "default_incomplete",
+      expand: ["latest_invoice.payment_intent"],
       metadata: {
         internal_id: internalId,
         user_id: request.userId,
@@ -290,21 +300,21 @@ class PaymentRouter {
 
     const invoice = subscription.latest_invoice as Stripe.Invoice;
     const paymentIntent =
-      typeof (invoice as unknown as { payment_intent?: unknown }).payment_intent === 'object'
-        ? ((invoice as unknown as { payment_intent?: Stripe.PaymentIntent }).payment_intent as
-            | Stripe.PaymentIntent
-            | undefined)
+      typeof (invoice as unknown as { payment_intent?: unknown })
+        .payment_intent === "object"
+        ? ((invoice as unknown as { payment_intent?: Stripe.PaymentIntent })
+            .payment_intent as Stripe.PaymentIntent | undefined)
         : undefined;
 
     return {
       id: internalId,
-      provider: 'stripe',
+      provider: "stripe",
       providerPaymentId: subscription.id,
       status: this.mapStripeSubscriptionStatus(subscription.status),
       amount: request.amount,
       currency: request.currency,
-      type: 'subscription',
-      method: request.method || 'card',
+      type: "subscription",
+      method: request.method || "card",
       clientSecret: paymentIntent?.client_secret || undefined,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -317,22 +327,22 @@ class PaymentRouter {
    */
   private async processTrueLayerPayment(
     internalId: string,
-    request: UnifiedPaymentRequest
+    request: UnifiedPaymentRequest,
   ): Promise<UnifiedPayment> {
     const beneficiary: Beneficiary = request.beneficiary
       ? {
-          type: 'external_account',
+          type: "external_account",
           accountHolderName: request.beneficiary.name,
           accountIdentifier: request.beneficiary.iban
-            ? { type: 'iban', iban: request.beneficiary.iban }
+            ? { type: "iban", iban: request.beneficiary.iban }
             : {
-                type: 'sort_code_account_number',
+                type: "sort_code_account_number",
                 sortCode: request.beneficiary.sortCode,
                 accountNumber: request.beneficiary.accountNumber,
               },
         }
       : {
-          type: 'merchant_account',
+          type: "merchant_account",
           merchantAccountId: process.env.TRUELAYER_MERCHANT_ACCOUNT_ID,
         };
 
@@ -349,13 +359,13 @@ class PaymentRouter {
 
     return {
       id: internalId,
-      provider: 'truelayer',
+      provider: "truelayer",
       providerPaymentId: paymentAuth.paymentId,
-      status: 'pending',
+      status: "pending",
       amount: request.amount,
       currency: request.currency,
       type: request.type,
-      method: 'open_banking',
+      method: "open_banking",
       authUrl: paymentAuth.authUri,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -372,15 +382,15 @@ class PaymentRouter {
    */
   async getPaymentStatus(paymentId: string): Promise<UnifiedPayment | null> {
     const { data, error } = await supabase
-      .from('payments')
+      .from("payments")
       .select()
-      .eq('id', paymentId)
+      .eq("id", paymentId)
       .single();
 
     if (error || !data) return null;
 
     // Refresh status from provider
-    if (data.status === 'pending' || data.status === 'processing') {
+    if (data.status === "pending" || data.status === "processing") {
       const refreshedStatus = await this.refreshPaymentStatus(data);
       if (refreshedStatus !== data.status) {
         await this.updatePaymentRecord(paymentId, {
@@ -398,21 +408,21 @@ class PaymentRouter {
    * Refresh payment status from provider
    */
   private async refreshPaymentStatus(
-    payment: Record<string, unknown>
-  ): Promise<UnifiedPayment['status']> {
-    if (payment.provider === 'stripe') {
+    payment: Record<string, unknown>,
+  ): Promise<UnifiedPayment["status"]> {
+    if (payment.provider === "stripe") {
       const paymentIntent = await stripe.paymentIntents.retrieve(
-        payment.provider_payment_id as string
+        payment.provider_payment_id as string,
       );
       return this.mapStripeStatus(paymentIntent.status);
-    } else if (payment.provider === 'truelayer') {
+    } else if (payment.provider === "truelayer") {
       const tlPayment = await this.truelayerConnector.getPayment(
-        payment.provider_payment_id as string
+        payment.provider_payment_id as string,
       );
       return this.mapTrueLayerStatus(tlPayment.status);
     }
 
-    return payment.status as UnifiedPayment['status'];
+    return payment.status as UnifiedPayment["status"];
   }
 
   // ===========================================================================
@@ -425,10 +435,10 @@ class PaymentRouter {
   async createRefund(
     paymentId: string,
     amount?: number,
-    reason?: string
+    reason?: string,
   ): Promise<{
     id: string;
-    status: 'pending' | 'succeeded' | 'failed';
+    status: "pending" | "succeeded" | "failed";
     amount: number;
   }> {
     const payment = await this.getPaymentStatus(paymentId);
@@ -438,7 +448,7 @@ class PaymentRouter {
 
     const refundAmount = amount || payment.amount;
 
-    if (payment.provider === 'stripe') {
+    if (payment.provider === "stripe") {
       const refund = await stripe.refunds.create({
         payment_intent: payment.providerPaymentId,
         amount: refundAmount,
@@ -447,19 +457,19 @@ class PaymentRouter {
 
       return {
         id: refund.id,
-        status: refund.status === 'succeeded' ? 'succeeded' : 'pending',
+        status: refund.status === "succeeded" ? "succeeded" : "pending",
         amount: refund.amount,
       };
-    } else if (payment.provider === 'truelayer') {
+    } else if (payment.provider === "truelayer") {
       const refund = await this.truelayerConnector.createRefund(
         payment.providerPaymentId,
         { currency: payment.currency, value: refundAmount },
-        `Refund for ${paymentId}`
+        `Refund for ${paymentId}`,
       );
 
       return {
         id: refund.id,
-        status: refund.status === 'executed' ? 'succeeded' : 'pending',
+        status: refund.status === "executed" ? "succeeded" : "pending",
         amount: refundAmount,
       };
     }
@@ -476,17 +486,18 @@ class PaymentRouter {
    */
   async handleStripeWebhook(event: Stripe.Event): Promise<void> {
     switch (event.type) {
-      case 'payment_intent.succeeded':
+      case "payment_intent.succeeded":
         await this.handlePaymentSuccess(
-          'stripe',
-          (event.data.object as Stripe.PaymentIntent).id
+          "stripe",
+          (event.data.object as Stripe.PaymentIntent).id,
         );
         break;
-      case 'payment_intent.payment_failed':
+      case "payment_intent.payment_failed":
         await this.handlePaymentFailure(
-          'stripe',
+          "stripe",
           (event.data.object as Stripe.PaymentIntent).id,
-          (event.data.object as Stripe.PaymentIntent).last_payment_error?.message
+          (event.data.object as Stripe.PaymentIntent).last_payment_error
+            ?.message,
         );
         break;
     }
@@ -497,24 +508,24 @@ class PaymentRouter {
    */
   async handleTrueLayerWebhook(
     payload: string,
-    signature: string
+    signature: string,
   ): Promise<void> {
     if (!this.truelayerConnector.verifyWebhookSignature(payload, signature)) {
-      throw new Error('Invalid webhook signature');
+      throw new Error("Invalid webhook signature");
     }
 
     const event = this.truelayerConnector.parseWebhookEvent(payload);
 
     switch (event.type) {
-      case 'payment_executed':
-      case 'payment_settled':
+      case "payment_executed":
+      case "payment_settled":
         if (event.paymentId) {
-          await this.handlePaymentSuccess('truelayer', event.paymentId);
+          await this.handlePaymentSuccess("truelayer", event.paymentId);
         }
         break;
-      case 'payment_failed':
+      case "payment_failed":
         if (event.paymentId) {
-          await this.handlePaymentFailure('truelayer', event.paymentId);
+          await this.handlePaymentFailure("truelayer", event.paymentId);
         }
         break;
     }
@@ -522,29 +533,29 @@ class PaymentRouter {
 
   private async handlePaymentSuccess(
     provider: PaymentProvider,
-    providerPaymentId: string
+    providerPaymentId: string,
   ): Promise<void> {
     await supabase
-      .from('payments')
-      .update({ status: 'succeeded', updated_at: new Date().toISOString() })
-      .eq('provider', provider)
-      .eq('provider_payment_id', providerPaymentId);
+      .from("payments")
+      .update({ status: "succeeded", updated_at: new Date().toISOString() })
+      .eq("provider", provider)
+      .eq("provider_payment_id", providerPaymentId);
   }
 
   private async handlePaymentFailure(
     provider: PaymentProvider,
     providerPaymentId: string,
-    error?: string
+    error?: string,
   ): Promise<void> {
     await supabase
-      .from('payments')
+      .from("payments")
       .update({
-        status: 'failed',
+        status: "failed",
         updated_at: new Date().toISOString(),
         metadata: error ? { error } : undefined,
       })
-      .eq('provider', provider)
-      .eq('provider_payment_id', providerPaymentId);
+      .eq("provider", provider)
+      .eq("provider_payment_id", providerPaymentId);
   }
 
   // ===========================================================================
@@ -553,8 +564,25 @@ class PaymentRouter {
 
   private isEurozone(region: string): boolean {
     const eurozoneCountries = [
-      'AT', 'BE', 'CY', 'EE', 'FI', 'FR', 'DE', 'GR', 'IE', 'IT',
-      'LV', 'LT', 'LU', 'MT', 'NL', 'PT', 'SK', 'SI', 'ES',
+      "AT",
+      "BE",
+      "CY",
+      "EE",
+      "FI",
+      "FR",
+      "DE",
+      "GR",
+      "IE",
+      "IT",
+      "LV",
+      "LT",
+      "LU",
+      "MT",
+      "NL",
+      "PT",
+      "SK",
+      "SI",
+      "ES",
     ];
     return eurozoneCountries.includes(region);
   }
@@ -562,9 +590,9 @@ class PaymentRouter {
   private async getOrCreateStripeCustomer(userId: string): Promise<string> {
     // Check for existing customer in profiles table (canonical user data table)
     const { data: profile } = await supabase
-      .from('profiles')
-      .select('stripe_customer_id, full_name')
-      .eq('id', userId)
+      .from("profiles")
+      .select("stripe_customer_id, full_name")
+      .eq("id", userId)
       .single();
 
     if (profile?.stripe_customer_id) {
@@ -591,32 +619,32 @@ class PaymentRouter {
 
     // Save customer ID to profiles table
     await supabase
-      .from('profiles')
+      .from("profiles")
       .update({ stripe_customer_id: customer.id })
-      .eq('id', userId);
+      .eq("id", userId);
 
     return customer.id;
   }
 
   private async createPaymentRecord(
     request: UnifiedPaymentRequest,
-    provider: PaymentProvider
+    provider: PaymentProvider,
   ): Promise<{ id: string }> {
     const { data, error } = await supabase
-      .from('payments')
+      .from("payments")
       .insert({
         user_id: request.userId,
         provider,
         amount: request.amount,
         currency: request.currency,
         type: request.type,
-        method: request.method || 'card',
-        status: 'pending',
+        method: request.method || "card",
+        status: "pending",
         metadata: request.metadata,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
-      .select('id')
+      .select("id")
       .single();
 
     if (error) {
@@ -628,61 +656,63 @@ class PaymentRouter {
 
   private async updatePaymentRecord(
     id: string,
-    payment: Partial<UnifiedPayment>
+    payment: Partial<UnifiedPayment>,
   ): Promise<void> {
     await supabase
-      .from('payments')
+      .from("payments")
       .update({
         provider_payment_id: payment.providerPaymentId,
         status: payment.status,
         updated_at: new Date().toISOString(),
         metadata: payment.metadata,
       })
-      .eq('id', id);
+      .eq("id", id);
   }
 
-  private mapStripeStatus(status: string): UnifiedPayment['status'] {
+  private mapStripeStatus(status: string): UnifiedPayment["status"] {
     switch (status) {
-      case 'succeeded':
-        return 'succeeded';
-      case 'processing':
-        return 'processing';
-      case 'canceled':
-        return 'canceled';
-      case 'requires_payment_method':
-      case 'requires_confirmation':
-      case 'requires_action':
-        return 'pending';
+      case "succeeded":
+        return "succeeded";
+      case "processing":
+        return "processing";
+      case "canceled":
+        return "canceled";
+      case "requires_payment_method":
+      case "requires_confirmation":
+      case "requires_action":
+        return "pending";
       default:
-        return 'pending';
+        return "pending";
     }
   }
 
-  private mapStripeSubscriptionStatus(status: string): UnifiedPayment['status'] {
+  private mapStripeSubscriptionStatus(
+    status: string,
+  ): UnifiedPayment["status"] {
     switch (status) {
-      case 'active':
-        return 'succeeded';
-      case 'incomplete':
-        return 'pending';
-      case 'canceled':
-        return 'canceled';
+      case "active":
+        return "succeeded";
+      case "incomplete":
+        return "pending";
+      case "canceled":
+        return "canceled";
       default:
-        return 'pending';
+        return "pending";
     }
   }
 
-  private mapTrueLayerStatus(status: string): UnifiedPayment['status'] {
+  private mapTrueLayerStatus(status: string): UnifiedPayment["status"] {
     switch (status) {
-      case 'executed':
-      case 'settled':
-        return 'succeeded';
-      case 'authorizing':
-      case 'authorized':
-        return 'processing';
-      case 'failed':
-        return 'failed';
+      case "executed":
+      case "settled":
+        return "succeeded";
+      case "authorizing":
+      case "authorized":
+        return "processing";
+      case "failed":
+        return "failed";
       default:
-        return 'pending';
+        return "pending";
     }
   }
 
@@ -691,7 +721,7 @@ class PaymentRouter {
       id: row.id as string,
       provider: row.provider as PaymentProvider,
       providerPaymentId: row.provider_payment_id as string,
-      status: row.status as UnifiedPayment['status'],
+      status: row.status as UnifiedPayment["status"],
       amount: row.amount as number,
       currency: row.currency as string,
       type: row.type as PaymentType,

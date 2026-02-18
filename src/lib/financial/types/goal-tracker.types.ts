@@ -1,11 +1,16 @@
 /**
  * Goal Tracker Type Definitions
- * 
+ *
  * Comprehensive type definitions for financial goal tracking and progress monitoring.
  * Extends existing goal types with advanced analytics and monitoring capabilities.
  */
 
-import { GoalType, GoalStatus, FinancialGoalPlan, GoalMilestone } from './ai-coach.types';
+import {
+  GoalType,
+  GoalStatus,
+  FinancialGoalPlan,
+  GoalMilestone,
+} from "./ai-coach.types";
 
 // ============================================================================
 // GOAL PROGRESS TRACKING
@@ -20,25 +25,25 @@ export interface GoalProgress {
   currentAmount: number;
   targetAmount: number;
   progressPercentage: number;
-  
+
   // Velocity metrics
   velocity: VelocityMetrics;
-  
+
   // Timeline metrics
   daysElapsed: number;
   daysRemaining: number;
   timeElapsedPercentage: number;
-  
+
   // Performance
   performanceScore: PerformanceScore;
   status: GoalStatus;
-  
+
   // Predictions
   predictions: ProgressPredictions;
-  
+
   // Risks
   risks: RiskAssessment[];
-  
+
   lastUpdated: Date;
 }
 
@@ -52,7 +57,7 @@ export interface VelocityMetrics {
   averageContribution: number;
   requiredVelocity: number;
   velocityRatio: number; // actual / required
-  trend: 'accelerating' | 'steady' | 'decelerating';
+  trend: "accelerating" | "steady" | "decelerating";
 }
 
 /**
@@ -63,8 +68,8 @@ export interface PerformanceScore {
   timePerformance: number; // 0-100
   contributionConsistency: number; // 0-100
   milestoneAchievement: number; // 0-100
-  grade: 'A' | 'B' | 'C' | 'D' | 'F';
-  status: 'ahead' | 'on_track' | 'behind' | 'at_risk';
+  grade: "A" | "B" | "C" | "D" | "F";
+  status: "ahead" | "on_track" | "behind" | "at_risk";
 }
 
 /**
@@ -83,8 +88,8 @@ export interface ProgressPredictions {
  * Risk assessment for goals
  */
 export interface RiskAssessment {
-  type: 'timeline' | 'financial' | 'consistency' | 'external';
-  severity: 'low' | 'medium' | 'high' | 'critical';
+  type: "timeline" | "financial" | "consistency" | "external";
+  severity: "low" | "medium" | "high" | "critical";
   description: string;
   impact: string;
   mitigation: string;
@@ -101,13 +106,18 @@ export interface RiskAssessment {
 export interface GoalRecommendation {
   id: string;
   goalId: string;
-  type: 'increase_contribution' | 'extend_timeline' | 'reduce_target' | 'optimize_strategy' | 'celebrate';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
+  type:
+    | "increase_contribution"
+    | "extend_timeline"
+    | "reduce_target"
+    | "optimize_strategy"
+    | "celebrate";
+  priority: "low" | "medium" | "high" | "urgent";
   title: string;
   description: string;
   actionSteps: string[];
   expectedImpact: string;
-  estimatedEffort: 'easy' | 'moderate' | 'difficult';
+  estimatedEffort: "easy" | "moderate" | "difficult";
   potentialSavings?: number;
   timeToImplement?: number; // days
   createdAt: Date;
@@ -138,7 +148,7 @@ export interface GoalComparison {
   peerAverageProgress: number;
   peerMedianProgress: number;
   percentile: number; // User's percentile ranking
-  comparison: 'above_average' | 'average' | 'below_average';
+  comparison: "above_average" | "average" | "below_average";
   insights: string[];
 }
 
@@ -146,12 +156,12 @@ export interface GoalComparison {
  * Goal category for organization
  */
 export enum GoalCategory {
-  EMERGENCY_FUND = 'emergency_fund',
-  DEBT_PAYOFF = 'debt_payoff',
-  SAVINGS_TARGET = 'savings',
-  INVESTMENT_GOAL = 'investment',
-  CREDIT_IMPROVEMENT = 'credit_score',
-  BUDGET_ADHERENCE = 'budget',
+  EMERGENCY_FUND = "emergency_fund",
+  DEBT_PAYOFF = "debt_payoff",
+  SAVINGS_TARGET = "savings",
+  INVESTMENT_GOAL = "investment",
+  CREDIT_IMPROVEMENT = "credit_score",
+  BUDGET_ADHERENCE = "budget",
 }
 
 /**
@@ -169,4 +179,3 @@ export interface ProgressMetrics {
   aheadCount: number;
   averageVelocity: number;
 }
-

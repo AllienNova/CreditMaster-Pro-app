@@ -1,19 +1,19 @@
 /**
  * Experian API Client
- * 
+ *
  * Integration with Experian Connect API for credit reports and disputes
  */
 
-import type { 
-  BureauResponse, 
-  CreditReport, 
-  CreditReportRequest, 
+import type {
+  BureauResponse,
+  CreditReport,
+  CreditReportRequest,
   DisputeSubmission,
   UserPII,
   CreditAccount,
   CreditInquiry,
-  PublicRecord
-} from './types';
+  PublicRecord,
+} from "./types";
 
 export class ExperianClient {
   private clientId: string;
@@ -39,38 +39,39 @@ export class ExperianClient {
 
     try {
       const endpoint = this.sandbox
-        ? 'https://sandbox-us-api.experian.com/oauth2/v1/token'
-        : 'https://us-api.experian.com/oauth2/v1/token';
+        ? "https://sandbox-us-api.experian.com/oauth2/v1/token"
+        : "https://us-api.experian.com/oauth2/v1/token";
 
       const credentials = btoa(`${this.clientId}:${this.clientSecret}`);
 
       const response = await fetch(endpoint, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Basic ${credentials}`,
-          'Grant_type': 'client_credentials'
-        }
+          "Content-Type": "application/json",
+          Authorization: `Basic ${credentials}`,
+          Grant_type: "client_credentials",
+        },
       });
 
       if (!response.ok) {
-        throw new Error(`Token request failed: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `Token request failed: ${response.status} ${response.statusText}`,
+        );
       }
 
       const data = await response.json();
       this.accessToken = data.access_token;
       // Set expiry to 5 minutes before actual expiry for safety
-      this.tokenExpiry = Date.now() + ((data.expires_in - 300) * 1000);
+      this.tokenExpiry = Date.now() + (data.expires_in - 300) * 1000;
 
       if (!this.accessToken) {
-        throw new Error('No access token received from Experian');
+        throw new Error("No access token received from Experian");
       }
 
       return this.accessToken;
-
     } catch (_error) {
       // ExperianClient error: Experian token error
-      throw new Error('Failed to obtain Experian access token');
+      throw new Error("Failed to obtain Experian access token");
     }
   }
 
@@ -79,14 +80,14 @@ export class ExperianClient {
    */
   async getCreditReport(
     request: CreditReportRequest,
-    userPII: UserPII
+    userPII: UserPII,
   ): Promise<BureauResponse<CreditReport>> {
     try {
       // ExperianClient: Retrieving Experian credit report
 
-      const endpoint = this.sandbox 
-        ? 'https://sandbox-us-api.experian.com/consumerservices/credit-profile/v2/credit-report'
-        : 'https://us-api.experian.com/consumerservices/credit-profile/v2/credit-report';
+      const endpoint = this.sandbox
+        ? "https://sandbox-us-api.experian.com/consumerservices/credit-profile/v2/credit-report"
+        : "https://us-api.experian.com/consumerservices/credit-profile/v2/credit-report";
 
       const token = await this.getAccessToken();
 
@@ -95,39 +96,41 @@ export class ExperianClient {
           primaryApplicant: {
             name: {
               firstName: userPII.firstName,
-              lastName: userPII.lastName
+              lastName: userPII.lastName,
             },
             ssn: userPII.ssn,
             dob: {
-              dob: userPII.dateOfBirth
+              dob: userPII.dateOfBirth,
             },
-            currentAddress: userPII.addresses[0] ? {
-              line1: userPII.addresses[0].streetAddress,
-              city: userPII.addresses[0].city,
-              state: userPII.addresses[0].state,
-              zipCode: userPII.addresses[0].zipCode
-            } : undefined
-          }
+            currentAddress: userPII.addresses[0]
+              ? {
+                  line1: userPII.addresses[0].streetAddress,
+                  city: userPII.addresses[0].city,
+                  state: userPII.addresses[0].state,
+                  zipCode: userPII.addresses[0].zipCode,
+                }
+              : undefined,
+          },
         },
         requestor: {
           subscriberCode: this.clientId,
-          permissiblePurpose: request.permissible_purpose || 'ACCOUNT_REVIEW'
+          permissiblePurpose: request.permissible_purpose || "ACCOUNT_REVIEW",
         },
         addOns: {
-          directCheck: 'Y',
-          demographics: 'Y',
-          riskModels: 'Y'
-        }
+          directCheck: "Y",
+          demographics: "Y",
+          riskModels: "Y",
+        },
       };
 
       const response = await fetch(endpoint, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -136,27 +139,26 @@ export class ExperianClient {
       }
 
       const data = await response.json();
-      
+
       // Transform Experian response to our format
       const creditReport = this.transformResponse(data, request.user_id);
 
       // ExperianClient: Experian report retrieved successfully
-      
+
       return {
         success: true,
         data: creditReport,
-        bureau: 'experian',
+        bureau: "experian",
         timestamp: new Date().toISOString(),
-        reference_id: data.requestId
+        reference_id: data.requestId,
       };
-
     } catch (error) {
       // ExperianClient error: Experian API error
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        bureau: 'experian',
-        timestamp: new Date().toISOString()
+        error: error instanceof Error ? error.message : "Unknown error",
+        bureau: "experian",
+        timestamp: new Date().toISOString(),
       };
     }
   }
@@ -166,14 +168,14 @@ export class ExperianClient {
    */
   async submitDispute(
     dispute: DisputeSubmission,
-    userPII: UserPII
+    userPII: UserPII,
   ): Promise<BureauResponse> {
     try {
       // ExperianClient: Submitting dispute to Experian
 
       const endpoint = this.sandbox
-        ? 'https://sandbox-us-api.experian.com/consumerservices/dispute/v1/submit'
-        : 'https://us-api.experian.com/consumerservices/dispute/v1/submit';
+        ? "https://sandbox-us-api.experian.com/consumerservices/dispute/v1/submit"
+        : "https://us-api.experian.com/consumerservices/dispute/v1/submit";
 
       const token = await this.getAccessToken();
 
@@ -181,30 +183,32 @@ export class ExperianClient {
         consumerPii: {
           name: {
             firstName: userPII.firstName,
-            lastName: userPII.lastName
+            lastName: userPII.lastName,
           },
           ssn: userPII.ssn,
-          dob: userPII.dateOfBirth
+          dob: userPII.dateOfBirth,
         },
         dispute: {
           itemId: dispute.credit_item_id,
           reason: dispute.dispute_reason,
           statement: dispute.consumer_statement,
-          documents: dispute.supporting_documents || []
-        }
+          documents: dispute.supporting_documents || [],
+        },
       };
 
       const response = await fetch(endpoint, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
-        throw new Error(`Experian dispute submission failed: ${response.status}`);
+        throw new Error(
+          `Experian dispute submission failed: ${response.status}`,
+        );
       }
 
       const data = await response.json();
@@ -214,18 +218,17 @@ export class ExperianClient {
       return {
         success: true,
         data: data,
-        bureau: 'experian',
+        bureau: "experian",
         timestamp: new Date().toISOString(),
-        reference_id: data.disputeId
+        reference_id: data.disputeId,
       };
-
     } catch (error) {
       // ExperianClient error: Experian dispute error
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        bureau: 'experian',
-        timestamp: new Date().toISOString()
+        error: error instanceof Error ? error.message : "Unknown error",
+        bureau: "experian",
+        timestamp: new Date().toISOString(),
       };
     }
   }
@@ -233,33 +236,43 @@ export class ExperianClient {
   /**
    * Transform Experian response to our standard format
    */
-  private transformResponse(data: ExperianCreditReportResponse, userId: string): CreditReport {
+  private transformResponse(
+    data: ExperianCreditReportResponse,
+    userId: string,
+  ): CreditReport {
     return {
       id: `exp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       user_id: userId,
-      bureau: 'experian',
+      bureau: "experian",
       credit_score: data.riskModel?.score || data.creditScore?.score || 0,
       report_date: new Date().toISOString(),
       accounts: this.parseAccounts(data.tradelines || []),
       inquiries: this.parseInquiries(data.inquiries || []),
       public_records: this.parsePublicRecords(data.publicRecords || []),
       raw_data: data,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
     };
   }
 
   private parseAccounts(tradelines: ExperianTradeline[]): CreditAccount[] {
     return tradelines.map((tradeline) => ({
-      id: tradeline.accountNumber || `acc_${Math.random().toString(36).substr(2, 9)}`,
-      account_number: tradeline.accountNumber || `acc_${Math.random().toString(36).substr(2, 9)}`,
-      account_type: this.mapAccountType(tradeline.accountType ?? ''),
-      creditor_name: tradeline.creditorName || tradeline.subscriberName || 'Unknown Creditor',
+      id:
+        tradeline.accountNumber ||
+        `acc_${Math.random().toString(36).substr(2, 9)}`,
+      account_number:
+        tradeline.accountNumber ||
+        `acc_${Math.random().toString(36).substr(2, 9)}`,
+      account_type: this.mapAccountType(tradeline.accountType ?? ""),
+      creditor_name:
+        tradeline.creditorName ||
+        tradeline.subscriberName ||
+        "Unknown Creditor",
       balance: tradeline.balance || 0,
       credit_limit: tradeline.creditLimit || 0,
-      payment_status: this.mapPaymentStatus(tradeline.paymentStatus ?? ''),
+      payment_status: this.mapPaymentStatus(tradeline.paymentStatus ?? ""),
       opened_date: tradeline.dateOpened || new Date().toISOString(),
       last_payment_date: tradeline.lastPaymentDate || undefined,
-      payment_history: []
+      payment_history: [],
     }));
   }
 
@@ -267,62 +280,64 @@ export class ExperianClient {
     return inquiries.map((inquiry) => ({
       id: `inq_${Math.random().toString(36).substr(2, 9)}`,
       inquiry_date: inquiry.inquiryDate || new Date().toISOString(),
-      creditor_name: inquiry.subscriberName || 'Unknown Creditor',
-      inquiry_type: inquiry.inquiryType === 'hard' ? 'hard' : 'soft'
+      creditor_name: inquiry.subscriberName || "Unknown Creditor",
+      inquiry_type: inquiry.inquiryType === "hard" ? "hard" : "soft",
     }));
   }
 
-  private parsePublicRecords(records: ExperianPublicRecordPayload[]): PublicRecord[] {
+  private parsePublicRecords(
+    records: ExperianPublicRecordPayload[],
+  ): PublicRecord[] {
     return records.map((record) => ({
       id: `pr_${Math.random().toString(36).substr(2, 9)}`,
       record_type: this.mapRecordType(record.recordType),
       filing_date: record.filingDate || new Date().toISOString(),
       status: this.mapRecordStatus(record.status),
       amount: record.amount,
-      court_name: record.courtName
+      court_name: record.courtName,
     }));
   }
 
-  private mapAccountType(type: string): CreditAccount['account_type'] {
-    const mapping: Record<string, CreditAccount['account_type']> = {
-      'R': 'credit_card',
-      'I': 'mortgage',
-      'M': 'mortgage',
-      'O': 'auto_loan',
-      'C': 'credit_card'
+  private mapAccountType(type: string): CreditAccount["account_type"] {
+    const mapping: Record<string, CreditAccount["account_type"]> = {
+      R: "credit_card",
+      I: "mortgage",
+      M: "mortgage",
+      O: "auto_loan",
+      C: "credit_card",
     };
-    return mapping[type] || 'other';
+    return mapping[type] || "other";
   }
 
-  private mapPaymentStatus(status: string): CreditAccount['payment_status'] {
-    if (!status || status === 'C' || status === '0') return 'current';
-    if (status === 'L' || status === '1') return 'late';
-    if (status === 'CO') return 'charged_off';
-    if (status === 'CLS') return 'closed';
-    return 'current';
+  private mapPaymentStatus(status: string): CreditAccount["payment_status"] {
+    if (!status || status === "C" || status === "0") return "current";
+    if (status === "L" || status === "1") return "late";
+    if (status === "CO") return "charged_off";
+    if (status === "CLS") return "closed";
+    return "current";
   }
 
-  private mapRecordType(type?: string): PublicRecord['record_type'] {
-    const mapping: Record<string, PublicRecord['record_type']> = {
-      'BK': 'bankruptcy',
-      'TL': 'tax_lien',
-      'JD': 'judgment',
-      'FC': 'foreclosure'
+  private mapRecordType(type?: string): PublicRecord["record_type"] {
+    const mapping: Record<string, PublicRecord["record_type"]> = {
+      BK: "bankruptcy",
+      TL: "tax_lien",
+      JD: "judgment",
+      FC: "foreclosure",
     };
-    return type && mapping[type] ? mapping[type] : 'judgment';
+    return type && mapping[type] ? mapping[type] : "judgment";
   }
 
-  private mapRecordStatus(status?: string): PublicRecord['status'] {
+  private mapRecordStatus(status?: string): PublicRecord["status"] {
     const normalized = status?.toUpperCase();
     switch (normalized) {
-      case 'DISCHARGED':
-        return 'discharged';
-      case 'SATISFIED':
-        return 'satisfied';
-      case 'DISMISSED':
-        return 'dismissed';
+      case "DISCHARGED":
+        return "discharged";
+      case "SATISFIED":
+        return "satisfied";
+      case "DISMISSED":
+        return "dismissed";
       default:
-        return 'filed';
+        return "filed";
     }
   }
 }

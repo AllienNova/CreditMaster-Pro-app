@@ -3,7 +3,7 @@
  * Analyzes transaction patterns and detects emotional spending
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 import {
   SpendingPattern,
   SpendingAnalysis,
@@ -16,7 +16,7 @@ import {
   RISK_FACTOR_WEIGHTS,
   INTERVENTION_THRESHOLDS,
   SpendingPatternType,
-} from './types';
+} from "./types";
 
 // ============================================================================
 // SPENDING ANALYZER CLASS
@@ -35,7 +35,7 @@ export class SpendingAnalyzer {
 
   async analyzeSpendingPatterns(
     userId: string,
-    periodDays = 30
+    periodDays = 30,
   ): Promise<SpendingAnalysis> {
     const endDate = new Date();
     const startDate = new Date();
@@ -43,19 +43,19 @@ export class SpendingAnalyzer {
 
     // Get transactions for the period
     const { data: transactions } = await this.supabase
-      .from('transactions')
-      .select('*')
-      .eq('user_id', userId)
-      .gte('date', startDate.toISOString())
-      .lte('date', endDate.toISOString())
-      .eq('type', 'expense');
+      .from("transactions")
+      .select("*")
+      .eq("user_id", userId)
+      .gte("date", startDate.toISOString())
+      .lte("date", endDate.toISOString())
+      .eq("type", "expense");
 
     if (!transactions || transactions.length === 0) {
       return {
         patterns: { timeOfDay: {}, dayOfWeek: {}, categories: {} },
         triggers: [],
         recommendations: [
-          'Start tracking your spending to get personalized insights!',
+          "Start tracking your spending to get personalized insights!",
         ],
         riskAreas: [],
       };
@@ -70,7 +70,7 @@ export class SpendingAnalyzer {
     const triggers = this.detectTriggers(
       transactions,
       timeOfDayPattern,
-      dayOfWeekPattern
+      dayOfWeekPattern,
     );
 
     // Identify risk areas
@@ -88,7 +88,7 @@ export class SpendingAnalyzer {
         categories: categoryPattern,
       },
       startDate,
-      endDate
+      endDate,
     );
 
     return {
@@ -104,7 +104,7 @@ export class SpendingAnalyzer {
   }
 
   private analyzeTimeOfDay(
-    transactions: Transaction[]
+    transactions: Transaction[],
   ): Record<string, number> {
     const timeSlots: Record<string, number> = {
       morning: 0, // 6-12
@@ -127,7 +127,7 @@ export class SpendingAnalyzer {
   }
 
   private analyzeDayOfWeek(
-    transactions: Transaction[]
+    transactions: Transaction[],
   ): Record<string, number> {
     const days: Record<string, number> = {
       sunday: 0,
@@ -140,13 +140,13 @@ export class SpendingAnalyzer {
     };
 
     const dayNames = [
-      'sunday',
-      'monday',
-      'tuesday',
-      'wednesday',
-      'thursday',
-      'friday',
-      'saturday',
+      "sunday",
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
     ];
 
     for (const tx of transactions) {
@@ -158,12 +158,12 @@ export class SpendingAnalyzer {
   }
 
   private analyzeCategories(
-    transactions: Transaction[]
+    transactions: Transaction[],
   ): Record<string, number> {
     const categories: Record<string, number> = {};
 
     for (const tx of transactions) {
-      const category = tx.category || 'uncategorized';
+      const category = tx.category || "uncategorized";
       categories[category] = (categories[category] || 0) + Math.abs(tx.amount);
     }
 
@@ -173,7 +173,7 @@ export class SpendingAnalyzer {
   private detectTriggers(
     transactions: Transaction[],
     timeOfDay: Record<string, number>,
-    dayOfWeek: Record<string, number>
+    dayOfWeek: Record<string, number>,
   ): SpendingTrigger[] {
     const triggers: SpendingTrigger[] = [];
     const totalSpending = Object.values(timeOfDay).reduce((a, b) => a + b, 0);
@@ -181,8 +181,8 @@ export class SpendingAnalyzer {
     // Detect late night spending trigger
     if (timeOfDay.night > totalSpending * 0.2) {
       triggers.push({
-        trigger: 'Late Night Shopping',
-        timeOfDay: 'night',
+        trigger: "Late Night Shopping",
+        timeOfDay: "night",
         confidence: Math.min(1, timeOfDay.night / (totalSpending * 0.15)),
       });
     }
@@ -192,8 +192,8 @@ export class SpendingAnalyzer {
     const weekdayAvg = (totalSpending - weekendSpending) / 5;
     if (weekendSpending / 2 > weekdayAvg * 1.5) {
       triggers.push({
-        trigger: 'Weekend Splurge',
-        dayOfWeek: 'weekend',
+        trigger: "Weekend Splurge",
+        dayOfWeek: "weekend",
         confidence: Math.min(1, weekendSpending / 2 / (weekdayAvg * 1.5)),
       });
     }
@@ -203,8 +203,8 @@ export class SpendingAnalyzer {
     for (const [category, amount] of Object.entries(categoryTotals)) {
       if (
         amount > totalSpending * 0.3 &&
-        category !== 'housing' &&
-        category !== 'utilities'
+        category !== "housing" &&
+        category !== "utilities"
       ) {
         triggers.push({
           trigger: `High ${category} spending`,
@@ -219,18 +219,18 @@ export class SpendingAnalyzer {
 
   private async identifyRiskAreas(
     userId: string,
-    categoryPattern: Record<string, number>
+    categoryPattern: Record<string, number>,
   ): Promise<RiskArea[]> {
     const riskAreas: RiskArea[] = [];
 
     // Get budget limits
     const { data: budgets } = await this.supabase
-      .from('budgets')
-      .select('category, amount')
-      .eq('user_id', userId);
+      .from("budgets")
+      .select("category, amount")
+      .eq("user_id", userId);
 
     const budgetMap = new Map(
-      budgets?.map((b) => [b.category, b.amount]) ?? []
+      budgets?.map((b) => [b.category, b.amount]) ?? [],
     );
 
     for (const [category, spent] of Object.entries(categoryPattern)) {
@@ -241,10 +241,10 @@ export class SpendingAnalyzer {
           category,
           riskLevel:
             overspendPercent > 50
-              ? 'high'
+              ? "high"
               : overspendPercent > 25
-                ? 'medium'
-                : 'low',
+                ? "medium"
+                : "low",
           averageOverspend: spent - budget,
           frequency: 1, // Would calculate from historical data
           suggestion: `Consider reducing ${category} spending by $${Math.round(spent - budget)} to stay within budget.`,
@@ -257,36 +257,36 @@ export class SpendingAnalyzer {
 
   private generateRecommendations(
     triggers: SpendingTrigger[],
-    riskAreas: RiskArea[]
+    riskAreas: RiskArea[],
   ): string[] {
     const recommendations: string[] = [];
 
     for (const trigger of triggers) {
-      if (trigger.timeOfDay === 'night') {
+      if (trigger.timeOfDay === "night") {
         recommendations.push(
-          'Try setting a "shopping curfew" after 9 PM to reduce impulse purchases.'
+          'Try setting a "shopping curfew" after 9 PM to reduce impulse purchases.',
         );
       }
-      if (trigger.dayOfWeek === 'weekend') {
+      if (trigger.dayOfWeek === "weekend") {
         recommendations.push(
-          'Plan your weekend activities in advance to avoid overspending.'
+          "Plan your weekend activities in advance to avoid overspending.",
         );
       }
       if (trigger.category) {
         recommendations.push(
-          `Review your ${trigger.category} spending and identify areas to cut back.`
+          `Review your ${trigger.category} spending and identify areas to cut back.`,
         );
       }
     }
 
-    for (const risk of riskAreas.filter((r) => r.riskLevel === 'high')) {
+    for (const risk of riskAreas.filter((r) => r.riskLevel === "high")) {
       recommendations.push(
-        `Your ${risk.category} spending is significantly over budget. ${risk.suggestion}`
+        `Your ${risk.category} spending is significantly over budget. ${risk.suggestion}`,
       );
     }
 
     if (recommendations.length === 0) {
-      recommendations.push('Great job! Your spending patterns look healthy.');
+      recommendations.push("Great job! Your spending patterns look healthy.");
     }
 
     return recommendations.slice(0, 5); // Limit to top 5 recommendations
@@ -300,7 +300,7 @@ export class SpendingAnalyzer {
       categories: Record<string, number>;
     },
     startDate: Date,
-    endDate: Date
+    endDate: Date,
   ): Promise<void> {
     const patternRecords: Partial<SpendingPattern>[] = [];
 
@@ -308,12 +308,12 @@ export class SpendingAnalyzer {
     for (const [key, value] of Object.entries(patterns.timeOfDay)) {
       patternRecords.push({
         userId,
-        patternType: 'time_of_day' as SpendingPatternType,
+        patternType: "time_of_day" as SpendingPatternType,
         patternKey: key,
         averageAmount: value,
         transactionCount: 0,
-        periodStart: startDate.toISOString().split('T')[0],
-        periodEnd: endDate.toISOString().split('T')[0],
+        periodStart: startDate.toISOString().split("T")[0],
+        periodEnd: endDate.toISOString().split("T")[0],
       });
     }
 
@@ -321,12 +321,12 @@ export class SpendingAnalyzer {
     for (const [key, value] of Object.entries(patterns.dayOfWeek)) {
       patternRecords.push({
         userId,
-        patternType: 'day_of_week' as SpendingPatternType,
+        patternType: "day_of_week" as SpendingPatternType,
         patternKey: key,
         averageAmount: value,
         transactionCount: 0,
-        periodStart: startDate.toISOString().split('T')[0],
-        periodEnd: endDate.toISOString().split('T')[0],
+        periodStart: startDate.toISOString().split("T")[0],
+        periodEnd: endDate.toISOString().split("T")[0],
       });
     }
 
@@ -334,18 +334,18 @@ export class SpendingAnalyzer {
     for (const [key, value] of Object.entries(patterns.categories)) {
       patternRecords.push({
         userId,
-        patternType: 'category' as SpendingPatternType,
+        patternType: "category" as SpendingPatternType,
         patternKey: key,
         averageAmount: value,
         transactionCount: 0,
-        periodStart: startDate.toISOString().split('T')[0],
-        periodEnd: endDate.toISOString().split('T')[0],
+        periodStart: startDate.toISOString().split("T")[0],
+        periodEnd: endDate.toISOString().split("T")[0],
       });
     }
 
     // Upsert patterns
     for (const pattern of patternRecords) {
-      await this.supabase.from('spending_patterns').upsert(
+      await this.supabase.from("spending_patterns").upsert(
         {
           user_id: pattern.userId,
           pattern_type: pattern.patternType,
@@ -356,8 +356,8 @@ export class SpendingAnalyzer {
           period_end: pattern.periodEnd,
         },
         {
-          onConflict: 'user_id,pattern_type,pattern_key,period_start',
-        }
+          onConflict: "user_id,pattern_type,pattern_key,period_start",
+        },
       );
     }
   }
@@ -368,7 +368,7 @@ export class SpendingAnalyzer {
 
   async analyzeTransactionRisk(
     userId: string,
-    transaction: TransactionInput
+    transaction: TransactionInput,
   ): Promise<SpendingRiskAnalysis> {
     const riskFactors: RiskFactor[] = [];
     let totalWeightedScore = 0;
@@ -380,30 +380,30 @@ export class SpendingAnalyzer {
       const score = 0.8;
       const weight = RISK_FACTOR_WEIGHTS.late_night;
       riskFactors.push({
-        factor: 'late_night',
+        factor: "late_night",
         weight,
         score,
-        description: 'Transaction made during late night hours',
+        description: "Transaction made during late night hours",
       });
       totalWeightedScore += score * weight;
       totalWeight += weight;
     }
 
     // Factor 2: Repeat merchant same day
-    const today = new Date(transaction.timestamp).toISOString().split('T')[0];
+    const today = new Date(transaction.timestamp).toISOString().split("T")[0];
     const { count: samemerchantCount } = await this.supabase
-      .from('transactions')
-      .select('id', { count: 'exact' })
-      .eq('user_id', userId)
-      .eq('merchant_name', transaction.merchant)
-      .gte('date', today)
-      .lt('date', new Date(new Date(today).getTime() + 86400000).toISOString());
+      .from("transactions")
+      .select("id", { count: "exact" })
+      .eq("user_id", userId)
+      .eq("merchant_name", transaction.merchant)
+      .gte("date", today)
+      .lt("date", new Date(new Date(today).getTime() + 86400000).toISOString());
 
     if ((samemerchantCount ?? 0) > 1) {
       const score = Math.min(1, (samemerchantCount ?? 0) * 0.3);
       const weight = RISK_FACTOR_WEIGHTS.repeat_merchant_same_day;
       riskFactors.push({
-        factor: 'repeat_merchant_same_day',
+        factor: "repeat_merchant_same_day",
         weight,
         score,
         description: `${samemerchantCount} transactions at this merchant today`,
@@ -414,8 +414,8 @@ export class SpendingAnalyzer {
 
     // Factor 3: Exceeds daily average
     const { data: avgData } = await this.supabase.rpc(
-      'get_daily_average_spending',
-      { p_user_id: userId, p_days: 30 }
+      "get_daily_average_spending",
+      { p_user_id: userId, p_days: 30 },
     );
 
     const dailyAvg = avgData ?? 100;
@@ -423,7 +423,7 @@ export class SpendingAnalyzer {
       const score = Math.min(1, transaction.amount / dailyAvg);
       const weight = RISK_FACTOR_WEIGHTS.exceeds_daily_average;
       riskFactors.push({
-        factor: 'exceeds_daily_average',
+        factor: "exceeds_daily_average",
         weight,
         score,
         description: `Amount is ${Math.round((transaction.amount / dailyAvg) * 100)}% of daily average`,
@@ -434,10 +434,10 @@ export class SpendingAnalyzer {
 
     // Factor 4: Budget category overspent
     const { data: budgetData } = await this.supabase
-      .from('budgets')
-      .select('amount, spent')
-      .eq('user_id', userId)
-      .eq('category', transaction.category)
+      .from("budgets")
+      .select("amount, spent")
+      .eq("user_id", userId)
+      .eq("category", transaction.category)
       .single();
 
     if (
@@ -450,7 +450,7 @@ export class SpendingAnalyzer {
       const score = Math.min(1, overspendPercent);
       const weight = RISK_FACTOR_WEIGHTS.budget_category_overspent;
       riskFactors.push({
-        factor: 'budget_category_overspent',
+        factor: "budget_category_overspent",
         weight,
         score,
         description: `This would put you ${Math.round(overspendPercent * 100)}% over budget for ${transaction.category}`,
@@ -465,10 +465,10 @@ export class SpendingAnalyzer {
       const score = 0.5;
       const weight = RISK_FACTOR_WEIGHTS.weekend_splurge;
       riskFactors.push({
-        factor: 'weekend_splurge',
+        factor: "weekend_splurge",
         weight,
         score,
-        description: 'Weekend purchase (historically higher spending)',
+        description: "Weekend purchase (historically higher spending)",
       });
       totalWeightedScore += score * weight;
       totalWeight += weight;
@@ -478,17 +478,17 @@ export class SpendingAnalyzer {
     const riskScore = totalWeight > 0 ? totalWeightedScore / totalWeight : 0;
 
     // Determine intervention type
-    let recommendedIntervention: InterventionType = 'none';
+    let recommendedIntervention: InterventionType = "none";
     if (riskScore >= INTERVENTION_THRESHOLDS.strong_intervention) {
-      recommendedIntervention = 'strong_intervention';
+      recommendedIntervention = "strong_intervention";
     } else if (riskScore >= INTERVENTION_THRESHOLDS.reflection_prompt) {
-      recommendedIntervention = 'reflection_prompt';
+      recommendedIntervention = "reflection_prompt";
     } else if (riskScore >= INTERVENTION_THRESHOLDS.soft_nudge) {
-      recommendedIntervention = 'soft_nudge';
+      recommendedIntervention = "soft_nudge";
     }
 
     return {
-      transactionId: transaction.id ?? '',
+      transactionId: transaction.id ?? "",
       amount: transaction.amount,
       merchant: transaction.merchant,
       category: transaction.category,
@@ -501,10 +501,10 @@ export class SpendingAnalyzer {
 
   async createSpendingAlert(
     userId: string,
-    analysis: SpendingRiskAnalysis
+    analysis: SpendingRiskAnalysis,
   ): Promise<EmotionalSpendingAlert> {
     const { data, error } = await this.supabase
-      .from('emotional_spending_alerts')
+      .from("emotional_spending_alerts")
       .insert({
         user_id: userId,
         transaction_id: analysis.transactionId || null,
@@ -524,15 +524,15 @@ export class SpendingAnalyzer {
 
   async recordAlertResponse(
     alertId: string,
-    response: 'planned' | 'will_wait' | 'dismissed'
+    response: "planned" | "will_wait" | "dismissed",
   ): Promise<void> {
     await this.supabase
-      .from('emotional_spending_alerts')
+      .from("emotional_spending_alerts")
       .update({
         user_response: response,
         responded_at: new Date().toISOString(),
       })
-      .eq('id', alertId);
+      .eq("id", alertId);
   }
 
   // --------------------------------------------------------------------------
@@ -541,10 +541,10 @@ export class SpendingAnalyzer {
 
   async getStoredPatterns(userId: string): Promise<SpendingPattern[]> {
     const { data, error } = await this.supabase
-      .from('spending_patterns')
-      .select('*')
-      .eq('user_id', userId)
-      .order('period_end', { ascending: false })
+      .from("spending_patterns")
+      .select("*")
+      .eq("user_id", userId)
+      .order("period_end", { ascending: false })
       .limit(100);
 
     if (error) {
@@ -567,7 +567,7 @@ export class SpendingAnalyzer {
       averageAmount: data.average_amount as number | null,
       transactionCount: data.transaction_count as number,
       riskScore: data.risk_score as number | null,
-      metadata: data.metadata as SpendingPattern['metadata'],
+      metadata: data.metadata as SpendingPattern["metadata"],
       periodStart: data.period_start as string,
       periodEnd: data.period_end as string,
       createdAt: data.created_at as string,
@@ -575,7 +575,7 @@ export class SpendingAnalyzer {
   }
 
   private mapToEmotionalSpendingAlert(
-    data: Record<string, unknown>
+    data: Record<string, unknown>,
   ): EmotionalSpendingAlert {
     return {
       id: data.id as string,
@@ -585,7 +585,7 @@ export class SpendingAnalyzer {
       riskFactors: data.risk_factors as RiskFactor[],
       interventionType: data.intervention_type as InterventionType,
       userResponse:
-        data.user_response as EmotionalSpendingAlert['userResponse'],
+        data.user_response as EmotionalSpendingAlert["userResponse"],
       respondedAt: data.responded_at as string | null,
       createdAt: data.created_at as string,
     };
@@ -603,7 +603,7 @@ interface Transaction {
   date: string;
   category?: string;
   merchant_name?: string;
-  type: 'income' | 'expense';
+  type: "income" | "expense";
 }
 
 interface TransactionInput {
@@ -628,7 +628,7 @@ export function getSpendingAnalyzer(): SpendingAnalyzer {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Supabase credentials not configured');
+      throw new Error("Supabase credentials not configured");
     }
 
     spendingAnalyzerInstance = new SpendingAnalyzer(supabaseUrl, supabaseKey);

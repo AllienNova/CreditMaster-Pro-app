@@ -1,13 +1,18 @@
 /**
  * AI Investment Recommendations Type Definitions
- * 
+ *
  * Types for AI-powered investment analysis and recommendations
  */
 
-import { AssetClass, SignalStrength, RiskLevel, Timeframe } from './investment.types';
-import { TechnicalAnalysis } from './technical-analysis.types';
-import { FundamentalAnalysis } from './fundamental-analysis.types';
-import { SentimentAnalysis } from './sentiment-analysis.types';
+import {
+  AssetClass,
+  SignalStrength,
+  RiskLevel,
+  Timeframe,
+} from "./investment.types";
+import { TechnicalAnalysis } from "./technical-analysis.types";
+import { FundamentalAnalysis } from "./fundamental-analysis.types";
+import { SentimentAnalysis } from "./sentiment-analysis.types";
 
 // ============================================================================
 // AI ANALYSIS
@@ -47,11 +52,11 @@ export interface PricePrediction {
   symbol: string;
   currentPrice: number;
   predictions: {
-    timeframe: '1d' | '1w' | '1m' | '3m' | '6m' | '1y';
+    timeframe: "1d" | "1w" | "1m" | "3m" | "6m" | "1y";
     targetPrice: number;
     confidence: number;
     upside: number;
-    method: 'ml_ensemble' | 'technical' | 'fundamental' | 'hybrid';
+    method: "ml_ensemble" | "technical" | "fundamental" | "hybrid";
   }[];
   supportLevels: number[];
   resistanceLevels: number[];
@@ -64,8 +69,19 @@ export interface PricePrediction {
 // INVESTMENT RECOMMENDATIONS
 // ============================================================================
 
-export type RecommendationAction = 'strong_buy' | 'buy' | 'hold' | 'sell' | 'strong_sell' | 'avoid';
-export type PositionType = 'long' | 'short' | 'options_call' | 'options_put' | 'covered_call';
+export type RecommendationAction =
+  | "strong_buy"
+  | "buy"
+  | "hold"
+  | "sell"
+  | "strong_sell"
+  | "avoid";
+export type PositionType =
+  | "long"
+  | "short"
+  | "options_call"
+  | "options_put"
+  | "covered_call";
 
 export interface InvestmentRecommendation {
   id: string;
@@ -74,7 +90,12 @@ export interface InvestmentRecommendation {
   action: RecommendationAction;
   positionType: PositionType;
   confidence: number;
-  timeHorizon: 'day_trade' | 'swing' | 'short_term' | 'medium_term' | 'long_term';
+  timeHorizon:
+    | "day_trade"
+    | "swing"
+    | "short_term"
+    | "medium_term"
+    | "long_term";
   entryPrice: number;
   entryZone: { low: number; high: number };
   targetPrices: TargetPrice[];
@@ -91,7 +112,13 @@ export interface InvestmentRecommendation {
   similarSetups: SimilarSetup[];
   createdAt: Date;
   expiresAt: Date;
-  status: 'active' | 'triggered' | 'stopped' | 'target_hit' | 'expired' | 'cancelled';
+  status:
+    | "active"
+    | "triggered"
+    | "stopped"
+    | "target_hit"
+    | "expired"
+    | "cancelled";
 }
 
 export interface TargetPrice {
@@ -114,7 +141,7 @@ export interface PositionSizeRecommendation {
 export interface SimilarSetup {
   symbol: string;
   date: Date;
-  outcome: 'success' | 'failure' | 'partial';
+  outcome: "success" | "failure" | "partial";
   returnPercent: number;
   timeToTarget: number;
   similarity: number;
@@ -125,20 +152,35 @@ export interface SimilarSetup {
 // ============================================================================
 
 export interface RiskAssessment {
-  type: 'market' | 'company' | 'sector' | 'technical' | 'liquidity' | 'volatility' | 'regulatory' | 'macro';
+  type:
+    | "market"
+    | "company"
+    | "sector"
+    | "technical"
+    | "liquidity"
+    | "volatility"
+    | "regulatory"
+    | "macro";
   level: RiskLevel;
   description: string;
-  impact: 'low' | 'medium' | 'high';
+  impact: "low" | "medium" | "high";
   probability: number;
   mitigations: string[];
 }
 
 export interface Catalyst {
-  type: 'earnings' | 'product' | 'regulatory' | 'merger' | 'macro' | 'technical' | 'sentiment';
+  type:
+    | "earnings"
+    | "product"
+    | "regulatory"
+    | "merger"
+    | "macro"
+    | "technical"
+    | "sentiment";
   description: string;
   expectedDate?: Date;
-  impact: 'positive' | 'negative' | 'uncertain';
-  magnitude: 'low' | 'medium' | 'high';
+  impact: "positive" | "negative" | "uncertain";
+  magnitude: "low" | "medium" | "high";
   probability: number;
 }
 
@@ -170,24 +212,23 @@ export interface AllocationRecommendation {
   currentWeight: number;
   targetWeight: number;
   difference: number;
-  action: 'increase' | 'decrease' | 'maintain';
+  action: "increase" | "decrease" | "maintain";
 }
 
 export interface RebalanceTrade {
   symbol: string;
-  action: 'buy' | 'sell';
+  action: "buy" | "sell";
   quantity: number;
   estimatedPrice: number;
   estimatedValue: number;
   reason: string;
-  priority: 'high' | 'medium' | 'low';
+  priority: "high" | "medium" | "low";
 }
 
 export interface TaxImplication {
   symbol: string;
-  gainType: 'short_term' | 'long_term';
+  gainType: "short_term" | "long_term";
   gainAmount: number;
   estimatedTax: number;
   recommendation: string;
 }
-

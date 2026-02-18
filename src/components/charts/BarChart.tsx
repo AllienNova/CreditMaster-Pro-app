@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
 /**
  * Bar Chart Component
- * 
+ *
  * Displays data as a bar chart with support for multiple series.
  * Used for comparisons across categories.
  */
@@ -17,9 +17,15 @@ import {
   Legend,
   ResponsiveContainer,
   Cell,
-} from 'recharts';
-import { ChartTooltip } from './ChartHelpers';
-import { CHART_COLOR_ARRAY, formatCurrency, formatNumber, getCategoryColor, generateChartDescription } from './chartUtils';
+} from "recharts";
+import { ChartTooltip } from "./ChartHelpers";
+import {
+  CHART_COLOR_ARRAY,
+  formatCurrency,
+  formatNumber,
+  getCategoryColor,
+  generateChartDescription,
+} from "./chartUtils";
 
 export interface BarChartDataPoint {
   label: string;
@@ -63,12 +69,12 @@ export default function BarChartComponent({
   showTooltip = true,
   currency = false,
   horizontal = false,
-  xAxisKey = 'label',
+  xAxisKey = "label",
   useCategyColors = false,
   barSize = 40,
   animationDuration = 1000,
   onBarClick,
-  className = '',
+  className = "",
   ariaLabel,
 }: BarChartProps) {
   const formatAxis = (value: number): string => {
@@ -77,12 +83,9 @@ export default function BarChartComponent({
   };
 
   // Generate accessible description
-  const accessibleDescription = ariaLabel || generateChartDescription(
-    'Bar chart',
-    data.length,
-    undefined,
-    currency
-  );
+  const accessibleDescription =
+    ariaLabel ||
+    generateChartDescription("Bar chart", data.length, undefined, currency);
 
   const getBarColor = (item: BarChartDataPoint, index: number): string => {
     if (item.color) return item.color;
@@ -90,19 +93,34 @@ export default function BarChartComponent({
     return CHART_COLOR_ARRAY[index % CHART_COLOR_ARRAY.length];
   };
 
-  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) => {
+  const CustomTooltip = ({
+    active,
+    payload,
+    label,
+  }: {
+    active?: boolean;
+    payload?: Array<{ name: string; value: number; color: string }>;
+    label?: string;
+  }) => {
     if (!active || !payload || payload.length === 0) return null;
-    return <ChartTooltip active={active} payload={payload} label={label} currency={currency} />;
+    return (
+      <ChartTooltip
+        active={active}
+        payload={payload}
+        label={label}
+        currency={currency}
+      />
+    );
   };
 
   // Single bar mode (no bars config provided)
   const singleBarMode = !bars || bars.length === 0;
   const effectiveBars: BarConfig[] = singleBarMode
-    ? [{ dataKey: 'value', name: 'Value', color: CHART_COLOR_ARRAY[0] }]
+    ? [{ dataKey: "value", name: "Value", color: CHART_COLOR_ARRAY[0] }]
     : bars;
 
   const ChartComponent = horizontal ? BarChart : BarChart;
-  const layout = horizontal ? 'vertical' : 'horizontal';
+  const layout = horizontal ? "vertical" : "horizontal";
 
   return (
     <div
@@ -129,18 +147,18 @@ export default function BarChartComponent({
             <>
               <XAxis
                 type="number"
-                tick={{ fontSize: 11, fill: 'currentColor' }}
-                tickLine={{ stroke: 'currentColor', opacity: 0.3 }}
-                axisLine={{ stroke: 'currentColor', opacity: 0.3 }}
+                tick={{ fontSize: 11, fill: "currentColor" }}
+                tickLine={{ stroke: "currentColor", opacity: 0.3 }}
+                axisLine={{ stroke: "currentColor", opacity: 0.3 }}
                 className="text-gray-500 dark:text-slate-400"
                 tickFormatter={formatAxis}
               />
               <YAxis
                 type="category"
                 dataKey={xAxisKey}
-                tick={{ fontSize: 11, fill: 'currentColor' }}
-                tickLine={{ stroke: 'currentColor', opacity: 0.3 }}
-                axisLine={{ stroke: 'currentColor', opacity: 0.3 }}
+                tick={{ fontSize: 11, fill: "currentColor" }}
+                tickLine={{ stroke: "currentColor", opacity: 0.3 }}
+                axisLine={{ stroke: "currentColor", opacity: 0.3 }}
                 className="text-gray-500 dark:text-slate-400"
                 width={100}
               />
@@ -149,15 +167,15 @@ export default function BarChartComponent({
             <>
               <XAxis
                 dataKey={xAxisKey}
-                tick={{ fontSize: 11, fill: 'currentColor' }}
-                tickLine={{ stroke: 'currentColor', opacity: 0.3 }}
-                axisLine={{ stroke: 'currentColor', opacity: 0.3 }}
+                tick={{ fontSize: 11, fill: "currentColor" }}
+                tickLine={{ stroke: "currentColor", opacity: 0.3 }}
+                axisLine={{ stroke: "currentColor", opacity: 0.3 }}
                 className="text-gray-500 dark:text-slate-400"
               />
               <YAxis
-                tick={{ fontSize: 11, fill: 'currentColor' }}
-                tickLine={{ stroke: 'currentColor', opacity: 0.3 }}
-                axisLine={{ stroke: 'currentColor', opacity: 0.3 }}
+                tick={{ fontSize: 11, fill: "currentColor" }}
+                tickLine={{ stroke: "currentColor", opacity: 0.3 }}
+                axisLine={{ stroke: "currentColor", opacity: 0.3 }}
                 className="text-gray-500 dark:text-slate-400"
                 tickFormatter={formatAxis}
               />
@@ -175,11 +193,15 @@ export default function BarChartComponent({
               radius={bar.radius || [4, 4, 0, 0]}
               animationDuration={animationDuration}
               onClick={(_, index) => onBarClick?.(data[index])}
-              cursor={onBarClick ? 'pointer' : 'default'}
+              cursor={onBarClick ? "pointer" : "default"}
             >
-              {singleBarMode && data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={getBarColor(entry, index)} />
-              ))}
+              {singleBarMode &&
+                data.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={getBarColor(entry, index)}
+                  />
+                ))}
             </Bar>
           ))}
         </ChartComponent>
@@ -187,4 +209,3 @@ export default function BarChartComponent({
     </div>
   );
 }
-

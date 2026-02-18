@@ -1,9 +1,9 @@
 /**
  * Credit Repair Database Service
- * 
+ *
  * Provides database operations for credit repair scores, actions, and progress.
  * Includes full CRUD operations, error handling, and TypeScript types.
- * 
+ *
  * Features:
  * - Credit repair score management
  * - Action tracking (CRUD)
@@ -13,7 +13,7 @@
  * - Row Level Security (RLS) enforcement
  */
 
-import { getSupabase } from '@/lib/supabase/client';
+import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
 import type {
@@ -22,9 +22,15 @@ import type {
   CreditRepairProgress,
   ActionType,
   ActionStatus,
-} from './types';
+} from "./types";
 
-type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
 type JsonRecord = Record<string, JsonValue>;
 
 // ============================================================================
@@ -138,19 +144,19 @@ type CreditRepairActionUpdateRow = Partial<{
  * Get the latest credit repair score for a user
  */
 export async function getCreditRepairScore(
-  userId: string
+  userId: string,
 ): Promise<CreditRepairScore | null> {
   try {
     const { data, error } = await supabase
-      .from('credit_repair_scores')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
+      .from("credit_repair_scores")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
       .limit(1)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
+      if (error.code === "PGRST116") {
         // No rows returned
         return null;
       }
@@ -164,7 +170,9 @@ export async function getCreditRepairScore(
     return mapScoreFromDb(data as CreditRepairScoreRow);
   } catch (error) {
     // Credit repair DB error: getting credit repair score
-    throw new Error(`Failed to get credit repair score: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to get credit repair score: ${(error as Error).message}`,
+    );
   }
 }
 
@@ -172,11 +180,11 @@ export async function getCreditRepairScore(
  * Save a new credit repair score
  */
 export async function saveCreditRepairScore(
-  input: CreateScoreInput
+  input: CreateScoreInput,
 ): Promise<CreditRepairScore> {
   try {
     const { data, error } = await supabase
-      .from('credit_repair_scores')
+      .from("credit_repair_scores")
       .insert({
         user_id: input.userId,
         score: input.score,
@@ -193,7 +201,9 @@ export async function saveCreditRepairScore(
     return mapScoreFromDb(data as CreditRepairScoreRow);
   } catch (error) {
     // Credit repair DB error: saving credit repair score
-    throw new Error(`Failed to save credit repair score: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to save credit repair score: ${(error as Error).message}`,
+    );
   }
 }
 
@@ -202,14 +212,14 @@ export async function saveCreditRepairScore(
  */
 export async function getCreditRepairHistory(
   userId: string,
-  limit: number = 30
+  limit: number = 30,
 ): Promise<CreditRepairScore[]> {
   try {
     const { data, error } = await supabase
-      .from('credit_repair_scores')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
+      .from("credit_repair_scores")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
       .limit(limit);
 
     if (error) throw error;
@@ -218,7 +228,9 @@ export async function getCreditRepairHistory(
     return rows.map(mapScoreFromDb);
   } catch (error) {
     // Credit repair DB error: getting credit repair history
-    throw new Error(`Failed to get credit repair history: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to get credit repair history: ${(error as Error).message}`,
+    );
   }
 }
 
@@ -227,15 +239,15 @@ export async function getCreditRepairHistory(
  */
 export async function cleanupOldScores(
   userId: string,
-  keepLast: number = 100
+  keepLast: number = 100,
 ): Promise<number> {
   try {
     // Get IDs of records to keep
     const { data: keepRecords, error: selectError } = await supabase
-      .from('credit_repair_scores')
-      .select('id')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
+      .from("credit_repair_scores")
+      .select("id")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
       .limit(keepLast);
 
     if (selectError) throw selectError;
@@ -248,17 +260,19 @@ export async function cleanupOldScores(
 
     // Delete records not in keep list
     const { error: deleteError, count } = await supabase
-      .from('credit_repair_scores')
-      .delete({ count: 'exact' })
-      .eq('user_id', userId)
-      .not('id', 'in', `(${keepIds.join(',')})`);
+      .from("credit_repair_scores")
+      .delete({ count: "exact" })
+      .eq("user_id", userId)
+      .not("id", "in", `(${keepIds.join(",")})`);
 
     if (deleteError) throw deleteError;
 
     return count || 0;
   } catch (error) {
     // Credit repair DB error: cleaning up old scores
-    throw new Error(`Failed to cleanup old scores: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to cleanup old scores: ${(error as Error).message}`,
+    );
   }
 }
 
@@ -275,21 +289,21 @@ export async function getActions(
     status?: ActionStatus;
     actionType?: ActionType;
     limit?: number;
-  }
+  },
 ): Promise<CreditRepairAction[]> {
   try {
     let query = supabase
-      .from('credit_repair_actions')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .from("credit_repair_actions")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
     if (filters?.status) {
-      query = query.eq('status', filters.status);
+      query = query.eq("status", filters.status);
     }
 
     if (filters?.actionType) {
-      query = query.eq('action_type', filters.actionType);
+      query = query.eq("action_type", filters.actionType);
     }
 
     if (filters?.limit) {
@@ -313,18 +327,18 @@ export async function getActions(
  */
 export async function getAction(
   actionId: string,
-  userId: string
+  userId: string,
 ): Promise<CreditRepairAction | null> {
   try {
     const { data, error } = await supabase
-      .from('credit_repair_actions')
-      .select('*')
-      .eq('id', actionId)
-      .eq('user_id', userId)
+      .from("credit_repair_actions")
+      .select("*")
+      .eq("id", actionId)
+      .eq("user_id", userId)
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
+      if (error.code === "PGRST116") {
         return null;
       }
       throw error;
@@ -341,16 +355,16 @@ export async function getAction(
  * Create a new action
  */
 export async function createAction(
-  input: CreateActionInput
+  input: CreateActionInput,
 ): Promise<CreditRepairAction> {
   try {
     const { data, error } = await supabase
-      .from('credit_repair_actions')
+      .from("credit_repair_actions")
       .insert({
         user_id: input.userId,
         action_type: input.actionType,
         action_data: input.actionData,
-        status: input.status || 'pending',
+        status: input.status || "pending",
         impact: input.impact,
         success_rate: input.successRate,
         timeline: input.timeline,
@@ -373,22 +387,25 @@ export async function createAction(
 export async function updateAction(
   actionId: string,
   userId: string,
-  updates: UpdateActionInput
+  updates: UpdateActionInput,
 ): Promise<CreditRepairAction> {
   try {
     const updateData: CreditRepairActionUpdateRow = {};
 
     if (updates.status !== undefined) updateData.status = updates.status;
-    if (updates.actionData !== undefined) updateData.action_data = updates.actionData;
+    if (updates.actionData !== undefined)
+      updateData.action_data = updates.actionData;
     if (updates.impact !== undefined) updateData.impact = updates.impact;
-    if (updates.startedAt !== undefined) updateData.started_at = updates.startedAt.toISOString();
-    if (updates.completedAt !== undefined) updateData.completed_at = updates.completedAt.toISOString();
+    if (updates.startedAt !== undefined)
+      updateData.started_at = updates.startedAt.toISOString();
+    if (updates.completedAt !== undefined)
+      updateData.completed_at = updates.completedAt.toISOString();
 
     const { data, error } = await supabase
-      .from('credit_repair_actions')
+      .from("credit_repair_actions")
       .update(updateData)
-      .eq('id', actionId)
-      .eq('user_id', userId)
+      .eq("id", actionId)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -406,14 +423,14 @@ export async function updateAction(
  */
 export async function deleteAction(
   actionId: string,
-  userId: string
+  userId: string,
 ): Promise<boolean> {
   try {
     const { error } = await supabase
-      .from('credit_repair_actions')
+      .from("credit_repair_actions")
       .delete()
-      .eq('id', actionId)
-      .eq('user_id', userId);
+      .eq("id", actionId)
+      .eq("user_id", userId);
 
     if (error) throw error;
 
@@ -438,25 +455,25 @@ export async function getProgress(
     limit?: number;
     startDate?: Date;
     endDate?: Date;
-  }
+  },
 ): Promise<CreditRepairProgress[]> {
   try {
     let query = supabase
-      .from('credit_repair_progress')
-      .select('*')
-      .eq('user_id', userId)
-      .order('achieved_at', { ascending: false });
+      .from("credit_repair_progress")
+      .select("*")
+      .eq("user_id", userId)
+      .order("achieved_at", { ascending: false });
 
     if (filters?.milestoneType) {
-      query = query.eq('milestone_type', filters.milestoneType);
+      query = query.eq("milestone_type", filters.milestoneType);
     }
 
     if (filters?.startDate) {
-      query = query.gte('achieved_at', filters.startDate.toISOString());
+      query = query.gte("achieved_at", filters.startDate.toISOString());
     }
 
     if (filters?.endDate) {
-      query = query.lte('achieved_at', filters.endDate.toISOString());
+      query = query.lte("achieved_at", filters.endDate.toISOString());
     }
 
     if (filters?.limit) {
@@ -479,11 +496,11 @@ export async function getProgress(
  * Create a new progress milestone
  */
 export async function createProgress(
-  input: CreateProgressInput
+  input: CreateProgressInput,
 ): Promise<CreditRepairProgress> {
   try {
     const { data, error } = await supabase
-      .from('credit_repair_progress')
+      .from("credit_repair_progress")
       .insert({
         user_id: input.userId,
         milestone_type: input.milestoneType,
@@ -509,14 +526,14 @@ export async function createProgress(
  */
 export async function deleteProgress(
   progressId: string,
-  userId: string
+  userId: string,
 ): Promise<boolean> {
   try {
     const { error } = await supabase
-      .from('credit_repair_progress')
+      .from("credit_repair_progress")
       .delete()
-      .eq('id', progressId)
-      .eq('user_id', userId);
+      .eq("id", progressId)
+      .eq("user_id", userId);
 
     if (error) throw error;
 
@@ -533,7 +550,7 @@ export async function deleteProgress(
 export async function getProgressStats(
   userId: string,
   startDate?: Date,
-  endDate?: Date
+  endDate?: Date,
 ): Promise<{
   totalMilestones: number;
   totalImpact: number;
@@ -543,16 +560,16 @@ export async function getProgressStats(
 }> {
   try {
     let query = supabase
-      .from('credit_repair_progress')
-      .select('*')
-      .eq('user_id', userId);
+      .from("credit_repair_progress")
+      .select("*")
+      .eq("user_id", userId);
 
     if (startDate) {
-      query = query.gte('achieved_at', startDate.toISOString());
+      query = query.gte("achieved_at", startDate.toISOString());
     }
 
     if (endDate) {
-      query = query.lte('achieved_at', endDate.toISOString());
+      query = query.lte("achieved_at", endDate.toISOString());
     }
 
     const { data, error } = await query;
@@ -564,7 +581,8 @@ export async function getProgressStats(
 
     const totalMilestones = milestones.length;
     const totalImpact = milestones.reduce((sum, m) => sum + (m.impact || 0), 0);
-    const averageImpact = totalMilestones > 0 ? totalImpact / totalMilestones : 0;
+    const averageImpact =
+      totalMilestones > 0 ? totalImpact / totalMilestones : 0;
 
     // Calculate score improvement
     const firstScore = milestones[milestones.length - 1]?.scoreBefore || 0;
@@ -574,7 +592,8 @@ export async function getProgressStats(
     // Count milestones by type
     const milestonesByType: Record<string, number> = {};
     milestones.forEach((m) => {
-      milestonesByType[m.milestoneType] = (milestonesByType[m.milestoneType] || 0) + 1;
+      milestonesByType[m.milestoneType] =
+        (milestonesByType[m.milestoneType] || 0) + 1;
     });
 
     return {
@@ -586,7 +605,9 @@ export async function getProgressStats(
     };
   } catch (error) {
     // Credit repair DB error: getting progress stats
-    throw new Error(`Failed to get progress stats: ${(error as Error).message}`);
+    throw new Error(
+      `Failed to get progress stats: ${(error as Error).message}`,
+    );
   }
 }
 
@@ -631,7 +652,9 @@ function mapActionFromDb(data: CreditRepairActionRow): CreditRepairAction {
   };
 }
 
-function mapProgressFromDb(data: CreditRepairProgressRow): CreditRepairProgress {
+function mapProgressFromDb(
+  data: CreditRepairProgressRow,
+): CreditRepairProgress {
   return {
     id: data.id,
     userId: data.user_id,

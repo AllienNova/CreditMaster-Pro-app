@@ -1,12 +1,12 @@
 /**
  * Session Management Module
- * 
+ *
  * Provides server-side session utilities for Next.js 15 App Router
  * Compatible with Supabase SSR authentication
  */
 
-import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
+import { cookies } from "next/headers";
+import { createServerClient } from "@supabase/ssr";
 
 export interface User {
   id: string;
@@ -17,9 +17,9 @@ export interface User {
 
 /**
  * Get the current authenticated user from the session
- * 
+ *
  * @returns User object if authenticated, null otherwise
- * 
+ *
  * @example
  * ```typescript
  * const user = await getUser();
@@ -31,7 +31,7 @@ export interface User {
 export async function getUser(): Promise<User | null> {
   try {
     const cookieStore = await cookies();
-    
+
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -41,11 +41,14 @@ export async function getUser(): Promise<User | null> {
             return cookieStore.get(name)?.value;
           },
         },
-      }
+      },
     );
 
-    const { data: { user }, error } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+
     if (error || !user) {
       return null;
     }
@@ -65,7 +68,7 @@ export async function getUser(): Promise<User | null> {
 
 /**
  * Get user ID from session (convenience method)
- * 
+ *
  * @returns User ID if authenticated, null otherwise
  */
 export async function getUserId(): Promise<string | null> {
@@ -75,7 +78,7 @@ export async function getUserId(): Promise<string | null> {
 
 /**
  * Check if user is authenticated
- * 
+ *
  * @returns true if user is authenticated, false otherwise
  */
 export async function isAuthenticated(): Promise<boolean> {
@@ -85,7 +88,7 @@ export async function isAuthenticated(): Promise<boolean> {
 
 /**
  * Get user role from session
- * 
+ *
  * @returns User role if authenticated, null otherwise
  */
 export async function getUserRole(): Promise<string | null> {
@@ -95,7 +98,7 @@ export async function getUserRole(): Promise<string | null> {
 
 /**
  * Check if user has a specific role
- * 
+ *
  * @param role - Role to check
  * @returns true if user has the role, false otherwise
  */
@@ -106,12 +109,12 @@ export async function hasRole(role: string): Promise<boolean> {
 
 /**
  * Get Supabase server client with session cookies
- * 
+ *
  * @returns Supabase server client
  */
 export async function getSupabaseServerClient() {
   const cookieStore = await cookies();
-  
+
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -121,7 +124,6 @@ export async function getSupabaseServerClient() {
           return cookieStore.get(name)?.value;
         },
       },
-    }
+    },
   );
 }
-

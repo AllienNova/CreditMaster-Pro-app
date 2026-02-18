@@ -1,7 +1,7 @@
 /**
  * Chat Cache Service
  * Phase 6.5.2: Caching strategy for chat API responses
- * 
+ *
  * Implements in-memory caching with TTL for chat sessions and messages
  * Can be extended to use Redis for production
  */
@@ -32,7 +32,7 @@ export interface ChatSession {
 export interface ChatMessage {
   id: string;
   sessionId: string;
-  role: 'user' | 'assistant' | 'system';
+  role: "user" | "assistant" | "system";
   content: string;
   timestamp: string;
   metadata?: Record<string, unknown>;
@@ -222,4 +222,3 @@ export class ChatCache {
 
 // Singleton instance
 export const chatCache = new ChatCache();
-

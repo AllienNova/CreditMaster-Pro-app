@@ -1,6 +1,6 @@
 /**
  * Authentication Validation Utilities
- * 
+ *
  * Provides validation functions for email, password, and other auth-related inputs.
  */
 
@@ -16,26 +16,26 @@ export function validateEmail(email: string): ValidationResult {
   if (!email) {
     return {
       valid: false,
-      error: 'Email is required',
+      error: "Email is required",
     };
   }
 
   // Basic email regex pattern
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  
+
   if (!emailRegex.test(email)) {
     return {
       valid: false,
-      error: 'Please enter a valid email address',
+      error: "Please enter a valid email address",
     };
   }
 
-  const domain = email.split('@')[1]?.toLowerCase();
-  
-  if (domain && domain.includes('..')) {
+  const domain = email.split("@")[1]?.toLowerCase();
+
+  if (domain && domain.includes("..")) {
     return {
       valid: false,
-      error: 'Email address contains invalid characters',
+      error: "Email address contains invalid characters",
     };
   }
 
@@ -49,7 +49,7 @@ export function validatePassword(password: string): ValidationResult {
   if (!password) {
     return {
       valid: false,
-      error: 'Password is required',
+      error: "Password is required",
     };
   }
 
@@ -57,7 +57,7 @@ export function validatePassword(password: string): ValidationResult {
   if (password.length < 8) {
     return {
       valid: false,
-      error: 'Password must be at least 8 characters long',
+      error: "Password must be at least 8 characters long",
     };
   }
 
@@ -65,7 +65,7 @@ export function validatePassword(password: string): ValidationResult {
   if (password.length > 128) {
     return {
       valid: false,
-      error: 'Password must be less than 128 characters',
+      error: "Password must be less than 128 characters",
     };
   }
 
@@ -73,7 +73,7 @@ export function validatePassword(password: string): ValidationResult {
   if (!/[A-Z]/.test(password)) {
     return {
       valid: false,
-      error: 'Password must contain at least one uppercase letter',
+      error: "Password must contain at least one uppercase letter",
     };
   }
 
@@ -81,7 +81,7 @@ export function validatePassword(password: string): ValidationResult {
   if (!/[a-z]/.test(password)) {
     return {
       valid: false,
-      error: 'Password must contain at least one lowercase letter',
+      error: "Password must contain at least one lowercase letter",
     };
   }
 
@@ -89,7 +89,7 @@ export function validatePassword(password: string): ValidationResult {
   if (!/[0-9]/.test(password)) {
     return {
       valid: false,
-      error: 'Password must contain at least one number',
+      error: "Password must contain at least one number",
     };
   }
 
@@ -97,20 +97,28 @@ export function validatePassword(password: string): ValidationResult {
   if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
     return {
       valid: false,
-      error: 'Password must contain at least one special character (!@#$%^&*)',
+      error: "Password must contain at least one special character (!@#$%^&*)",
     };
   }
 
   // Check for common weak passwords
   const weakPasswords = [
-    'password', 'password1', 'password123', '12345678', 'qwerty123',
-    'abc123456', 'password!', 'welcome123', 'admin123', 'letmein123',
+    "password",
+    "password1",
+    "password123",
+    "12345678",
+    "qwerty123",
+    "abc123456",
+    "password!",
+    "welcome123",
+    "admin123",
+    "letmein123",
   ];
-  
+
   if (weakPasswords.includes(password.toLowerCase())) {
     return {
       valid: false,
-      error: 'This password is too common. Please choose a stronger password',
+      error: "This password is too common. Please choose a stronger password",
     };
   }
 
@@ -122,13 +130,13 @@ export function validatePassword(password: string): ValidationResult {
  */
 export function getPasswordStrength(password: string): {
   score: number;
-  label: 'Very Weak' | 'Weak' | 'Fair' | 'Strong' | 'Very Strong';
+  label: "Very Weak" | "Weak" | "Fair" | "Strong" | "Very Strong";
   color: string;
 } {
   let score = 0;
 
   if (!password) {
-    return { score: 0, label: 'Very Weak', color: 'red' };
+    return { score: 0, label: "Very Weak", color: "red" };
   }
 
   // Length
@@ -143,15 +151,11 @@ export function getPasswordStrength(password: string): {
   // Normalize to 0-4 scale
   score = Math.min(4, Math.floor(score / 1.25));
 
-  const labels: Array<'Very Weak' | 'Weak' | 'Fair' | 'Strong' | 'Very Strong'> = [
-    'Very Weak',
-    'Weak',
-    'Fair',
-    'Strong',
-    'Very Strong',
-  ];
+  const labels: Array<
+    "Very Weak" | "Weak" | "Fair" | "Strong" | "Very Strong"
+  > = ["Very Weak", "Weak", "Fair", "Strong", "Very Strong"];
 
-  const colors = ['red', 'orange', 'yellow', 'lime', 'green'];
+  const colors = ["red", "orange", "yellow", "lime", "green"];
 
   return {
     score,
@@ -167,21 +171,21 @@ export function validateName(name: string): ValidationResult {
   if (!name) {
     return {
       valid: false,
-      error: 'Name is required',
+      error: "Name is required",
     };
   }
 
   if (name.trim().length < 2) {
     return {
       valid: false,
-      error: 'Name must be at least 2 characters long',
+      error: "Name must be at least 2 characters long",
     };
   }
 
   if (name.length > 100) {
     return {
       valid: false,
-      error: 'Name must be less than 100 characters',
+      error: "Name must be less than 100 characters",
     };
   }
 
@@ -189,7 +193,7 @@ export function validateName(name: string): ValidationResult {
   if (!/^[a-zA-Z\s'-]+$/.test(name)) {
     return {
       valid: false,
-      error: 'Name can only contain letters, spaces, hyphens, and apostrophes',
+      error: "Name can only contain letters, spaces, hyphens, and apostrophes",
     };
   }
 
@@ -200,13 +204,13 @@ export function validateName(name: string): ValidationResult {
  * Sanitize input string
  */
 export function sanitizeInput(input: string): string {
-  if (!input) return '';
+  if (!input) return "";
 
   return input
     .trim()
-    .replace(/[<>]/g, '') // Remove potential HTML tags
-    .replace(/javascript:/gi, '') // Remove javascript: protocol
-    .replace(/on\w+=/gi, ''); // Remove event handlers
+    .replace(/[<>]/g, "") // Remove potential HTML tags
+    .replace(/javascript:/gi, "") // Remove javascript: protocol
+    .replace(/on\w+=/gi, ""); // Remove event handlers
 }
 
 /**
@@ -237,10 +241,13 @@ export function validateSignUpData(data: {
   }
 
   // Validate password confirmation
-  if (data.confirmPassword !== undefined && data.password !== data.confirmPassword) {
+  if (
+    data.confirmPassword !== undefined &&
+    data.password !== data.confirmPassword
+  ) {
     return {
       valid: false,
-      error: 'Passwords do not match',
+      error: "Passwords do not match",
     };
   }
 
@@ -264,7 +271,7 @@ export function validateSignInData(data: {
   if (!data.password) {
     return {
       valid: false,
-      error: 'Password is required',
+      error: "Password is required",
     };
   }
 

@@ -9,8 +9,8 @@ export interface StrategySummary {
   name: string;
   description: string;
   regulation: RegulationSummary;
-  priority?: 'low' | 'medium' | 'high';
-  complexity?: 'low' | 'medium' | 'high';
+  priority?: "low" | "medium" | "high";
+  complexity?: "low" | "medium" | "high";
 }
 
 export interface OnboardingAnalysis {
