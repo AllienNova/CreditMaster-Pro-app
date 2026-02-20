@@ -6,13 +6,14 @@
 
 AI-powered credit repair, financial wellness, and investment intelligence — unified in a single platform.
 
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/AllienNova/CreditMaster-Pro-app)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
-[![Next.js](https://img.shields.io/badge/Next.js-15.5-black)](https://nextjs.org/)
-[![Test Coverage](https://img.shields.io/badge/coverage-81%25-yellow)](https://github.com/AllienNova/CreditMaster-Pro-app)
-[![License](https://img.shields.io/badge/license-Proprietary-red)](LICENSE)
+[![Build](https://img.shields.io/badge/build-passing-brightgreen)](#)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-15.5-000?logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+[![Tests](https://img.shields.io/badge/tests-3%2C287%20passing-brightgreen)](#testing)
+[![License](https://img.shields.io/badge/license-Proprietary-red)](#license)
 
-[Live Demo](https://fynvita.vercel.app) · [Documentation](docs/) · [Report Bug](https://github.com/AllienNova/CreditMaster-Pro-app/issues)
+[Documentation](docs/) · [Project Status](PROJECT_STATUS.md) · [Roadmap](ROADMAP.md)
 
 </div>
 
@@ -20,68 +21,68 @@ AI-powered credit repair, financial wellness, and investment intelligence — un
 
 ## Overview
 
-Fynvita combines AI-powered credit repair, comprehensive financial management, and investment intelligence into a holistic financial health platform. With access to 300+ AI models, intelligent routing, and enterprise-grade security, Fynvita helps users take control of their complete financial picture.
+Fynvita is a holistic financial health platform combining AI-powered credit repair, comprehensive financial management, and investment intelligence. With intelligent model routing across 300+ AI models, enterprise-grade security, and GDPR/CCPA compliance, it helps users take full control of their financial picture.
 
 ### Key Capabilities
 
-- **Credit Repair** — AI-generated dispute letters, credit score analysis, goodwill letter generation, and automated bureau communication
-- **Financial Management** — Budget optimization, debt payoff strategies, bill negotiation, savings automation, and cash flow analysis
-- **Investment Intelligence** — Portfolio analysis, stock research with technical/fundamental/sentiment analysis, tax-loss harvesting, and price alerts
-- **Student Loan Optimization** — Repayment strategy comparison, PSLF eligibility analysis, federal program integration
+- **Credit Repair** — AI-generated dispute letters, credit score analysis, goodwill letter generation, automated bureau communication
+- **Financial Management** — Budget optimization, debt payoff strategies, bill negotiation, savings automation, cash flow analysis
+- **Investment Intelligence** — Portfolio analysis, technical/fundamental/sentiment research, tax-loss harvesting, price alerts
+- **Student Loan Optimization** — Repayment strategy comparison, PSLF eligibility, federal program integration
 - **Credit Building** — Score simulation, utilization optimization, credit mix analysis, authorized user strategies
+- **AI Financial Coaching** — Behavioral nudges, smart insights, personalized recommendations
 
 ## Tech Stack
 
-| Layer          | Technology                                                        |
-| -------------- | ----------------------------------------------------------------- |
-| **Frontend**   | Next.js 15.5 (App Router), React 19, TypeScript 5.7, Tailwind CSS |
-| **Backend**    | Next.js API Routes (serverless), Node.js 22                       |
-| **Database**   | Supabase (PostgreSQL) with Row-Level Security                     |
-| **Auth**       | Supabase Auth (email/password, OAuth, MFA)                        |
-| **AI/ML**      | AIML API (300+ models), intelligent model routing                 |
-| **Payments**   | Stripe (subscriptions, checkout, webhooks)                        |
-| **Email**      | Resend (transactional email)                                      |
-| **Storage**    | AWS S3 (document storage with presigned URLs)                     |
-| **Mobile**     | React Native / Expo                                               |
-| **Testing**    | Jest, React Testing Library, Cypress, Playwright                  |
-| **Deployment** | Vercel                                                            |
+| Layer | Technology |
+|-------|-----------|
+| **Frontend** | Next.js 15.5 (App Router), React 19, TypeScript 5.7, Tailwind CSS |
+| **Backend** | Next.js API Routes (serverless), Node.js 22 |
+| **Database** | Supabase (PostgreSQL) with Row-Level Security |
+| **Auth** | Supabase Auth + NextAuth (email/password, OAuth, MFA, WebAuthn) |
+| **AI/ML** | AIML API (300+ models), OpenAI, Anthropic — intelligent model routing |
+| **Payments** | Stripe (subscriptions, checkout, webhooks) |
+| **Email** | Resend (transactional email) |
+| **Storage** | AWS S3 (document storage with presigned URLs) |
+| **Mobile** | React Native / Expo |
+| **Testing** | Jest 30, Playwright 1.57, Cypress 15, React Testing Library |
+| **Deployment** | Vercel |
 
 ## Architecture
 
 ```
 Client (Browser / Mobile)
-    │
-    ▼
-Next.js App Router ──── API Routes (279 endpoints)
-    │                        │
-    ├── Security Layer       ├── AI Orchestrator ── AIML API (300+ models)
-    │   ├── Input validation │
-    │   ├── Rate limiting    ├── Business Logic
-    │   ├── Auth middleware   │   ├── Credit repair engine
-    │   └── PII protection   │   ├── Financial services
-    │                        │   ├── Investment analysis
-    ├── Monitoring           │   └── Student loan agent
-    │   ├── Structured logs  │
-    │   ├── Metrics          ├── Data Layer
-    │   └── Audit trail      │   ├── Supabase (PostgreSQL)
-    │                        │   ├── AWS S3 (documents)
-    └── Compliance           │   └── Stripe (payments)
-        ├── GDPR/CCPA        │
-        └── FCRA             └── Email (Resend)
+    |
+    v
+Next.js App Router ──── API Routes (248 endpoints)
+    |                        |
+    |-- Security Layer       |-- AI Orchestrator ── AIML API (300+ models)
+    |   |-- Input validation |
+    |   |-- Rate limiting    |-- Business Logic
+    |   |-- Auth middleware   |   |-- Credit repair engine
+    |   +-- PII protection   |   |-- Financial services
+    |                        |   |-- Investment analysis
+    |-- Monitoring           |   +-- Student loan agent
+    |   |-- Structured logs  |
+    |   |-- Metrics          |-- Data Layer
+    |   +-- Audit trail      |   |-- Supabase (PostgreSQL)
+    |                        |   |-- AWS S3 (documents)
+    +-- Compliance           |   +-- Stripe (payments)
+        |-- GDPR/CCPA       |
+        +-- FCRA             +-- Email (Resend)
 ```
 
 ## Project Metrics
 
-| Metric            | Value  |
-| ----------------- | ------ |
-| Web Pages         | 388    |
-| Mobile Screens    | 200+   |
-| API Routes        | 279    |
-| Components        | 272    |
-| Test Suites       | 143+   |
-| Test Coverage     | 81.42% |
-| TypeScript Errors | 0      |
-| Build Time        | ~11s   |
+| Metric | Value |
+|--------|-------|
+| API Endpoints | 248 |
+| Web Pages | 182 |
+| React Components | 228 |
+| Test Suites | 178 |
+| Tests Passing | 3,287 |
+| TypeScript Errors | 0 |
+| Dependencies | 63 (33 prod + 30 dev) |
 
 ## Getting Started
 
@@ -104,7 +105,11 @@ cp .env.example .env.local
 npm run dev
 ```
 
+Open [http://localhost:3000](http://localhost:3000) to view the app.
+
 ### Environment Variables
+
+Copy `.env.example` and fill in your credentials:
 
 ```env
 # Supabase
@@ -133,70 +138,91 @@ See `.env.example` for the complete list of configuration options.
 ## Development
 
 ```bash
-# Development server
-npm run dev
+npm run dev              # Development server
+npm run type-check       # TypeScript strict check
+npm run lint             # ESLint
+npm run build            # Production build
+```
 
-# Type checking
-npm run type-check
+## Testing
 
-# Run tests
-npm test
+```bash
+npm test                 # Run all unit/integration tests
+npm run test:watch       # Watch mode
+npm run test:coverage    # Coverage report
 
-# Test coverage
-npm run test:coverage
-
-# E2E tests
-npm run cypress:open    # Cypress
-npm run e2e             # Playwright
-
-# Production build
-npm run build
+npm run e2e              # Playwright E2E tests
+npm run e2e:ui           # Playwright interactive UI
+npm run cypress:open     # Cypress interactive runner
+npm run cypress:run      # Cypress headless
 ```
 
 ## Project Structure
 
 ```
 src/
-├── app/                    # Next.js App Router (pages + API routes)
-│   ├── api/                # 279 API endpoints
-│   │   ├── ai/             # AI chat, consensus, orchestration
-│   │   ├── credit-repair/  # Disputes, goodwill, negotiations
-│   │   ├── financial/      # Budgets, goals, bills, spending
-│   │   ├── investments/    # Portfolio, signals, analysis
-│   │   └── ...
-│   ├── dashboard/          # User dashboard
-│   ├── credit-builder/     # Credit building tools
-│   ├── financial/          # Financial management
-│   ├── investments/        # Investment portal
-│   └── ...
-├── components/             # 272 React components
-│   ├── aiml/               # AI-powered components
-│   ├── credit-repair/      # Credit repair UI
-│   ├── financial/          # Financial management UI
-│   ├── investments/        # Investment analysis UI
-│   └── ui/                 # Shared UI primitives
-├── lib/                    # Core business logic
-│   ├── ai/                 # AI engine, chat, entity extraction
-│   ├── auth/               # Authentication, RBAC, sessions
-│   ├── credit-repair/      # Credit repair services
-│   ├── financial/          # Financial services
-│   ├── investments/        # Investment services
-│   ├── security/           # Input/output validation, rate limiting
-│   └── compliance/         # GDPR, CCPA, PII protection
-└── hooks/                  # Custom React hooks
-mobile-app/                 # React Native / Expo mobile app
+|-- app/                     # Next.js App Router
+|   |-- api/                 # 248 API endpoints
+|   |   |-- ai/              # Chat, consensus, orchestration
+|   |   |-- credit-repair/   # Disputes, goodwill, negotiations
+|   |   |-- financial/       # Budgets, goals, bills, spending
+|   |   |-- investments/     # Portfolio, signals, analysis
+|   |   |-- admin/           # User management, analytics
+|   |   +-- ...
+|   |-- dashboard/           # User dashboard
+|   |-- credit-builder/      # Credit building tools (16 pages)
+|   |-- financial/           # Financial management
+|   |-- investments/         # Investment portal
+|   |-- marketplace/         # Financial product marketplace
+|   +-- ...
+|-- components/              # 228 React components
+|   |-- aiml/                # AI-powered components
+|   |-- credit-repair/       # Credit repair UI
+|   |-- financial/           # Financial management UI
+|   |-- investments/         # Investment analysis UI
+|   |-- trading/             # Trading tools UI
+|   +-- ui/                  # Shared UI primitives
+|-- lib/                     # Core business logic & services
+|   |-- ai/                  # AI engine, entity extraction
+|   |-- auth/                # Authentication, RBAC, sessions
+|   |-- credit-repair/       # Credit repair services
+|   |-- financial/           # Budget, spending, goals, savings
+|   |-- investments/         # Portfolio, signals, tax-loss harvesting
+|   |-- trading/             # Order management, PCTT, correlation
+|   |-- security/            # Input/output validation, rate limiting
+|   |-- compliance/          # GDPR, CCPA, PII protection
+|   +-- monitoring/          # Logging, metrics, error tracking
+|-- hooks/                   # Custom React hooks
++-- types/                   # Shared TypeScript types
+docs/                        # Documentation
+mobile-app/                  # React Native / Expo mobile app
 ```
+
+## API Overview
+
+| Domain | Endpoints | Description |
+|--------|-----------|-------------|
+| AI Services | ~40 | Chat, coaching, insights, orchestration |
+| Credit Repair | ~60 | Disputes, goodwill, negotiations, monitoring |
+| Financial | ~80 | Budgets, goals, bills, spending, savings |
+| Investments | ~30 | Portfolio, signals, research, crypto |
+| Admin | ~20 | Users, analytics, audit, monitoring |
+| Marketplace | ~12 | Products, providers, reviews |
+| Payments | ~6 | Checkout, webhooks, subscriptions |
+
+See [docs/](docs/) for detailed API documentation.
 
 ## Security
 
 - Input validation with prompt injection detection
 - Output validation with PII leak prevention
-- Rate limiting with cost tracking
-- Role-based access control (RBAC)
+- Rate limiting with per-user and per-IP quotas
+- Role-based access control (RBAC) with 4 tiers
 - Audit logging for all sensitive operations
-- GDPR and CCPA compliance
-- Encrypted PII storage
+- GDPR and CCPA compliance with data export/deletion
+- Encrypted PII storage with field-level encryption
 - HTTPS-only, secure cookies, CSP headers
+- FCRA compliance for credit-related operations
 
 ## Deployment
 
@@ -207,11 +233,20 @@ npm i -g vercel
 vercel --prod
 ```
 
-Add all environment variables from `.env.local` in Vercel project settings.
+Add all environment variables from `.env.example` in your Vercel project settings. The app auto-deploys on push to `main`.
 
-## Contributing
+See [docs/deployment/](docs/deployment/) for detailed deployment guides.
 
-This is a proprietary project. For inquiries, please contact the project owner.
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Project Status](PROJECT_STATUS.md) | Current status and recommendations |
+| [Roadmap](ROADMAP.md) | Implementation roadmap |
+| [Testing Status](TESTING_STATUS.md) | Test infrastructure and coverage |
+| [Quick Reference](QUICK_REFERENCE.md) | Developer quick-start commands |
+| [CLAUDE.md](CLAUDE.md) | Architecture deep-dive for AI pair programming |
+| [docs/](docs/) | Full documentation library |
 
 ## License
 

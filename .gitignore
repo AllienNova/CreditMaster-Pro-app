@@ -12,12 +12,13 @@ test-results*.txt
 test-results/
 savings-test-output.txt
 *.junit.xml
-playwright-report/
 
-# Cypress
+# E2E / Playwright / Cypress
+playwright-report/
 cypress/screenshots/
 cypress/videos/
 cypress/downloads/
+e2e/test-results/
 
 # Next.js
 .next/
@@ -28,11 +29,14 @@ dist/
 # TypeScript
 *.tsbuildinfo
 
-# Production
+# Build logs & artifacts
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+build_full.log
+debug.log
+lint*.log
 
 # Environment variables
 .env
