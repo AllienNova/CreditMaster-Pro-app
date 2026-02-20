@@ -2,7 +2,7 @@
 
 > **The authoritative reference for all platform facts, metrics, architecture, and status.**
 > Generated from full codebase analysis. If this document conflicts with any other doc, THIS document is correct.
-> Last Updated: 2026-02-16
+> Last Updated: 2026-02-20
 
 ---
 
@@ -76,26 +76,35 @@
 
 ---
 
-## 3. Codebase Metrics (Verified)
+## 3. Codebase Metrics (Verified 2026-02-20)
 
 | Metric                         | Value   | Source                                            |
 | ------------------------------ | ------- | ------------------------------------------------- |
-| Total source files (src/)      | 1,296   | `find src -name "*.ts" -o -name "*.tsx" \| wc -l` |
-| Total lines of code            | 79,612  | `wc -l` on all .ts/.tsx files                     |
+| Total source files (src/)      | 1,337   | `find src -name "*.ts" -o -name "*.tsx" \| wc -l` |
+| Total lines of code            | 135,900 | `wc -l` on all .ts/.tsx files in src/             |
 | API route files                | 248     | `find src/app/api -name "route.ts" \| wc -l`      |
-| Page files (page.tsx)          | 180     | `find src/app -name "page.tsx" \| wc -l`          |
-| Component files (.tsx)         | 225     | `find src/components -name "*.tsx" \| wc -l`      |
-| Layout files (layout.tsx)      | 7       | `find src/app -name "layout.tsx" \| wc -l`        |
-| Library directories (src/lib/) | 51      | `find src/lib -mindepth 1 -maxdepth 1 -type d`    |
-| Test files (Jest — web)        | 149     | .test.ts + .test.tsx under src/                   |
-| Test files (Jest — mobile)     | 12      | .test.ts + .test.tsx under mobile-app/src/        |
+| Page files (page.tsx)          | 182     | `find src/app -name "page.tsx" \| wc -l`          |
+| Component files (.tsx)         | 228     | `find src/components -name "*.tsx" \| wc -l`      |
+| Layout files (layout.tsx)      | 8       | `find src/app -name "layout.tsx" \| wc -l`        |
+| Error boundary files           | 33      | `find src/app -name "error.tsx" \| wc -l`         |
+| Loading state files            | 33      | `find src/app -name "loading.tsx" \| wc -l`       |
+| Library directories (src/lib/) | 53      | `find src/lib -mindepth 1 -maxdepth 1 -type d`    |
+| Root lib files (src/lib/*.ts)  | 14      | Standalone services not in subdirectories          |
+| Hook files (src/hooks/)        | 28      | 22 custom hooks + 6 tests                         |
+| Type files (src/types/)        | 4       | Shared TypeScript type definitions                |
+| Test files (Jest — web)        | 180     | .test.ts + .test.tsx under src/                   |
+| Test files (Jest — mobile)     | 17      | .test.ts + .test.tsx under mobile-app/src/        |
 | Test files (Cypress)           | 21      | .cy.ts under cypress/e2e/                         |
 | Test files (Playwright)        | 16      | .spec.ts under e2e/                               |
-| Total test files               | 198     | Sum of all test frameworks                        |
-| Estimated test cases           | ~1,300+ | Sum of it()/test() calls across all test files    |
-| Documentation files            | 95      | Markdown files in docs/ + root                    |
-| npm dependencies               | 28      | package.json dependencies                         |
-| npm devDependencies            | 22      | package.json devDependencies                      |
+| Total test files               | 234     | Sum of all test frameworks                        |
+| Test suites (Jest)             | 178     | npm test — all passing                            |
+| Test cases (Jest)              | 3,287   | npm test — all passing                            |
+| Documentation files            | 114     | Markdown files in docs/ + root                    |
+| npm dependencies               | 33      | package.json dependencies                         |
+| npm devDependencies            | 30      | package.json devDependencies                      |
+| Mobile app source files        | 138     | .ts/.tsx under mobile-app/src/                    |
+| Mobile app routes              | 248     | .tsx under mobile-app/app/                        |
+| Mobile app route groups        | 36      | Top-level directories in mobile-app/app/          |
 
 ---
 
@@ -106,7 +115,7 @@
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     CLIENT (Browser)                         │
-│  180 pages · 225 components · Tailwind CSS · Framer Motion  │
+│  182 pages · 228 components · Tailwind CSS · Framer Motion  │
 └──────────────────────────┬──────────────────────────────────┘
                            │ HTTPS
                            ▼
@@ -129,7 +138,7 @@
 ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
 │   SECURITY   │  │   BUSINESS   │  │  MONITORING  │
 │    LAYER     │  │    LOGIC     │  │    LAYER     │
-│              │  │   (51 lib    │  │              │
+│              │  │   (53 lib    │  │              │
 │ input-val.   │  │  directories)│  │ logger.ts    │
 │ output-val.  │  │              │  │ metrics.ts   │
 │ rate-limit   │  │ AI services  │  │ audit-log    │
@@ -287,55 +296,63 @@ Layer 3: AIOrchestrator (src/lib/ai-orchestrator.ts)
 
 ---
 
-## 8. Page Inventory (180 pages across ~30 domains)
+## 8. Page Inventory (182 pages across 47 domains)
 
-| Domain         | Pages | Key Screens                                                         |
-| -------------- | ----- | ------------------------------------------------------------------- |
-| Financial      | ~25   | Budgeting, calculators, goals, insights, transactions, bills        |
-| Dashboard      | ~14   | Main dashboard, widgets, overview, activity                         |
-| Credit Builder | ~16   | Plans, progress, accounts, recommendations                          |
-| Admin          | ~12   | User management, analytics, settings, moderation                    |
-| Marketplace    | ~12   | Browse, listings, product detail, reviews, categories               |
-| Investments    | ~10   | Portfolio, holdings, analysis, recommendations                      |
-| Auth           | ~8    | Login, signup, reset-password, callback, MFA                        |
-| Credit Repair  | ~8    | Disputes, timeline, letters, results                                |
-| Settings       | ~7    | Profile, preferences, notifications, security, billing              |
-| Onboarding     | ~5    | Welcome, profile setup, goals, quiz                                 |
-| Disputes       | ~5    | List, detail, create, status, history                               |
-| Analytics      | ~5    | Reports, trends, insights, export                                   |
-| Tax            | ~4    | Optimization, documents, estimates, planning                        |
-| Budgeting      | ~4    | Overview, categories, transactions, goals                           |
-| Trading        | ~3    | Dashboard, orders, positions                                        |
-| Billing        | ~3    | Subscription, invoices, payment methods                             |
-| Help           | ~3    | FAQ, support, contact                                               |
-| Other          | ~36   | Pricing, landing, credit factors, gamification, student loans, etc. |
-
----
-
-## 9. Component Inventory (225 components across ~40 directories)
-
-| Category      | Count | Key Components                                           |
-| ------------- | ----- | -------------------------------------------------------- |
-| Financial     | ~48   | Calculators, charts, transaction lists, budget views     |
-| UI (shared)   | ~20   | Buttons, cards, modals, forms, inputs, loading           |
-| Investments   | ~20   | Portfolio cards, holdings table, risk meter              |
-| Credit Repair | ~10   | Dispute forms, timeline, letter preview                  |
-| Charts        | ~9    | Line, bar, pie, area, sparkline, candlestick             |
-| Auth          | ~9    | Login form, signup form, MFA, social auth                |
-| Trading       | ~8    | Order form, position cards, market data                  |
-| Disputes      | ~8    | Dispute card, status badge, bureau selector              |
-| Documents     | ~6    | Upload form, file list, preview                          |
-| Notifications | ~6    | Bell icon, notification list, preferences                |
-| Gamification  | ~6    | Achievement badges, leaderboard, progress                |
-| AI/ML         | ~5    | AIChat, CreditAnalyzer, DisputeGenerator, LoanCalculator |
-| Chat          | ~5    | Message bubble, input, history, context                  |
-| Layout        | ~5    | Navbar, sidebar, footer, header                          |
-| Onboarding    | ~5    | Welcome wizard, profile form, goal selector              |
-| Other         | ~55   | Admin, marketplace, student loans, settings, etc.        |
+| Domain           | Pages | Key Screens                                                          |
+| ---------------- | ----- | -------------------------------------------------------------------- |
+| Financial        | 22    | Budgeting, calculators, goals, insights, transactions, bills         |
+| Credit Builder   | 18    | Plans, progress, accounts, recommendations                           |
+| Dashboard        | 14    | Main dashboard, widgets, overview, activity                          |
+| Marketplace      | 13    | Browse, listings, product detail, reviews, categories                |
+| Investments      | 12    | Portfolio, holdings, analysis, recommendations                       |
+| Admin            | 12    | User management, analytics, settings, moderation                     |
+| Credit Repair    | 8     | Disputes, timeline, letters, results                                 |
+| Settings         | 7     | Profile, preferences, notifications, security, billing               |
+| Onboarding       | 5     | Welcome, profile setup, goals, quiz                                  |
+| Disputes         | 5     | List, detail, create, status, history                                |
+| Credit           | 5     | Score, factors, reports, monitoring                                  |
+| Analytics        | 5     | Reports, trends, insights, export                                    |
+| Tax              | 4     | Optimization, documents, estimates, planning                         |
+| Help             | 4     | FAQ, support, contact, guides                                        |
+| Budgeting        | 4     | Overview, categories, transactions, goals                            |
+| Auth             | 4     | Login, signup, reset-password, callback                              |
+| Trading          | 3     | Dashboard, orders, positions                                         |
+| Insights         | 3     | Financial insights, trends, recommendations                         |
+| Billing          | 3     | Subscription, invoices, payment methods                              |
+| Payment          | 2     | Checkout, confirmation                                               |
+| Documents        | 2     | Upload, management                                                   |
+| Other (26 pages) | 26    | Pricing, landing, about, privacy, terms, student loans, rewards, etc |
 
 ---
 
-## 10. Library & Service Inventory (328 files across 51 directories)
+## 9. Component Inventory (228 components across 38 directories)
+
+| Category          | Count | Key Components                                            |
+| ----------------- | ----- | --------------------------------------------------------- |
+| Financial         | 50    | Calculators, charts, transaction lists, budget views      |
+| UI (shared)       | 21    | Buttons, cards, modals, forms, inputs, loading            |
+| Investments       | 21    | Portfolio cards, holdings table, risk meter               |
+| Credit Repair     | 11    | Dispute forms, timeline, letter preview                   |
+| Charts            | 9     | Line, bar, pie, area, sparkline, candlestick              |
+| Auth              | 9     | Login form, signup form, MFA, social auth                 |
+| Disputes          | 9     | Dispute card, status badge, bureau selector               |
+| Onboarding        | 8     | Welcome wizard, profile form, goal selector               |
+| Trading           | 7     | Order form, position cards, market data                   |
+| Credit Monitoring | 7     | Score alerts, report monitoring, trend charts             |
+| Documents         | 6     | Upload form, file list, preview                           |
+| Notifications     | 6     | Bell icon, notification list, preferences                 |
+| Gamification      | 6     | Achievement badges, leaderboard, progress                 |
+| Credit Bureau     | 5     | Report display, score factors, inquiry list               |
+| Chat              | 5     | Message bubble, input, history, context                   |
+| Student Loans     | 4     | Loan calculator, strategy dashboard, servicer info        |
+| AIML              | 4     | AIChat, CreditAnalyzer, DisputeGenerator, LoanCalculator  |
+| Persona           | 3     | Persona selector, profile card, AI strategies             |
+| AI Strategies     | 3     | Strategy cards, recommendations, model selector           |
+| Other (19 dirs)   | 34    | Admin, marketplace, goals, settings, voice, tax, etc.     |
+
+---
+
+## 10. Library & Service Inventory (477 files across 53 directories + 14 root files)
 
 ### 10.1 Core AI Services
 
@@ -351,51 +368,111 @@ Layer 3: AIOrchestrator (src/lib/ai-orchestrator.ts)
 
 | Module            | Directory                   | Files | Responsibility                               |
 | ----------------- | --------------------------- | ----- | -------------------------------------------- |
-| Financial         | src/lib/financial/          | ~35   | Budgeting, calculators, bills, insights      |
-| Investments       | src/lib/investments/        | ~27   | Portfolio analysis, risk, recommendations    |
-| Trading           | src/lib/trading/            | ~30   | Orders, positions, strategies, market data   |
-| Credit Repair     | src/lib/credit-repair/      | ~14   | Dispute lifecycle, bureau communication      |
-| Credit Bureau     | src/lib/credit-bureau/      | ~8    | Score factors, report parsing                |
-| Credit Builder    | src/lib/credit-builder/     | —     | Credit building plans and tracking           |
-| Credit Monitoring | src/lib/credit-monitoring/  | —     | Score alerts, report monitoring              |
-| Disputes          | src/lib/disputes/           | ~5    | Dispute tracking service (~653 lines)        |
-| Tax               | src/lib/tax/                | ~12   | Optimization, compliance, documents          |
-| Gamification      | src/lib/gamification/       | ~9    | Achievements, leaderboard, challenges        |
-| Marketplace       | src/lib/marketplace/        | —     | Product listings, transactions               |
-| Student Loans     | src/lib/student-loan-agent/ | ~5    | Loan analysis, federal regulations, strategy |
-| Commerce          | src/lib/commerce/           | ~12   | E-commerce, cart, orders                     |
+| Financial         | src/lib/financial/          | 76    | Budgeting, calculators, bills, insights      |
+| Trading           | src/lib/trading/            | 62    | Orders, positions, strategies, market data   |
+| Investments       | src/lib/investments/        | 62    | Portfolio analysis, risk, recommendations    |
+| Tax               | src/lib/tax/                | 25    | Optimization, compliance, documents          |
+| Commerce          | src/lib/commerce/           | 16    | E-commerce, cart, orders                     |
+| Credit Repair     | src/lib/credit-repair/      | 15    | Dispute lifecycle, bureau communication      |
+| Connectors        | src/lib/connectors/         | 13    | External service connectors, data rails      |
+| Credit Bureau     | src/lib/credit-bureau/      | 10    | Score factors, report parsing                |
+| Gamification      | src/lib/gamification/       | 9     | Achievements, leaderboard, challenges        |
+| Credit            | src/lib/credit/             | 6     | Core credit utilities and scoring            |
+| AI Personalization| src/lib/ai-personalization/ | 6     | Behavioral coaching, personalized insights   |
+| Marketplace       | src/lib/marketplace/        | 5     | Product listings, transactions               |
+| Goals             | src/lib/goals/              | 5     | Financial goal tracking and planning         |
+| Analytics         | src/lib/analytics/          | 5     | Event tracking, user analytics               |
+| Disputes          | src/lib/disputes/           | 3     | Dispute tracking service                     |
+| Credit Builder    | src/lib/credit-builder/     | 3     | Credit building plans and tracking           |
+| Strategies        | src/lib/strategies/         | 3     | Strategy engines and optimization            |
+| Student Loans     | src/lib/student-loan-agent/ | 2     | Loan analysis, federal regulations, strategy |
 
 ### 10.3 Infrastructure Services
 
 | Module        | Directory              | Files | Responsibility                                |
 | ------------- | ---------------------- | ----- | --------------------------------------------- |
-| Auth          | src/lib/auth/          | ~12   | Session management, JWT, MFA, RBAC            |
-| Security      | src/lib/security/      | ~11   | Input/output validation, rate limiting, audit |
-| Compliance    | src/lib/compliance/    | ~5    | GDPR/CCPA, PII protection                     |
-| Payment       | src/lib/payment/       | ~5    | Stripe service (~610 lines)                   |
-| Notifications | src/lib/notifications/ | ~5    | Email, push, in-app (~565 lines)              |
-| Documents     | src/lib/documents/     | ~5    | S3 upload/download (~456 lines)               |
-| Monitoring    | src/lib/monitoring/    | ~8    | Logger (~372 lines), metrics (~480 lines)     |
-| Email         | src/lib/email/         | —     | Email templates, delivery                     |
-| Supabase      | src/lib/supabase/      | ~5    | Client, server, middleware helpers            |
-| Database      | src/lib/database/      | —     | Query helpers, connection management          |
-| Cache         | src/lib/cache/         | —     | Caching utilities                             |
-| Realtime      | src/lib/realtime/      | —     | WebSocket/SSE helpers                         |
+| Auth          | src/lib/auth/          | 12    | Session management, JWT, MFA, RBAC            |
+| Security      | src/lib/security/      | 11    | Input/output validation, rate limiting, audit |
+| Monitoring    | src/lib/monitoring/    | 8     | Logger, metrics, health checks                |
+| Compliance    | src/lib/compliance/    | 2     | GDPR/CCPA, PII protection                     |
+| Notifications | src/lib/notifications/ | 4     | Email, push, in-app                           |
+| Performance   | src/lib/performance/   | 4     | Performance monitoring, profiling             |
+| Onboarding    | src/lib/onboarding/    | 4     | User onboarding flows                         |
+| Cache         | src/lib/cache/         | 4     | Caching utilities                             |
+| Automation    | src/lib/automation/    | 4     | Rules, triggers, workflows                    |
+| Payment       | src/lib/payment/       | 3     | Stripe service                                |
+| Supabase      | src/lib/supabase/      | 3     | Client, server, middleware helpers            |
+| Integrations  | src/lib/integrations/  | 3     | Third-party service integrations              |
+| Email         | src/lib/email/         | 3     | Email templates, delivery                     |
+| Documents     | src/lib/documents/     | 3     | S3 upload/download                            |
+| Database      | src/lib/database/      | 2     | Query helpers, connection management          |
+| Offline       | src/lib/offline/       | 2     | Offline-first support                         |
+| API           | src/lib/api/           | 3     | API utilities, response helpers               |
+| Realtime      | src/lib/realtime/      | 1     | WebSocket/SSE helpers                         |
 
 ### 10.4 Utility & Cross-Cutting
 
 | Module      | Directory            | Files | Responsibility                 |
 | ----------- | -------------------- | ----- | ------------------------------ |
-| Utils       | src/lib/utils/       | —     | General utilities              |
-| Validation  | src/lib/validation/  | —     | Schema validation helpers      |
-| Config      | src/lib/config/      | —     | Environment configuration      |
-| Analytics   | src/lib/analytics/   | —     | Event tracking, user analytics |
-| Experiments | src/lib/experiments/ | —     | Feature flags, A/B testing     |
-| I18n        | src/lib/i18n/        | —     | Internationalization           |
-| Offline     | src/lib/offline/     | —     | Offline-first support          |
-| PWA         | src/lib/pwa/         | —     | Progressive web app utilities  |
-| Performance | src/lib/performance/ | —     | Performance monitoring         |
-| Onboarding  | src/lib/onboarding/  | —     | User onboarding flows          |
+| Utils       | src/lib/utils/       | 3     | General utilities              |
+| Validation  | src/lib/validation/  | 2     | Schema validation helpers      |
+| I18n        | src/lib/i18n/        | 3     | Internationalization           |
+| Config      | src/lib/config/      | 1     | Environment configuration      |
+| Experiments | src/lib/experiments/ | 1     | Feature flags, A/B testing     |
+| PWA         | src/lib/pwa/         | 1     | Progressive web app utilities  |
+| React Query | src/lib/react-query/ | 1     | Query client configuration     |
+| Subscriptions | src/lib/subscriptions/ | 1 | Subscription management        |
+| Services    | src/lib/services/    | 1     | Shared service utilities       |
+| Test Utils  | src/lib/test-utils/  | 1     | Testing helpers                |
+| Audit       | src/lib/audit/       | 1     | Audit trail utilities          |
+| Credit Report | src/lib/credit-report/ | 1  | Credit report parsing          |
+| Credit Monitoring | src/lib/credit-monitoring/ | 1 | Score alerts, monitoring  |
+
+### 10.5 Root Library Files (src/lib/*.ts)
+
+| File                              | Responsibility                                 |
+| --------------------------------- | ---------------------------------------------- |
+| aiml-service.ts                   | Direct AIML API wrapper (chat, image, voice)   |
+| ai-orchestrator.ts                | High-level AI workflows, multi-model consensus |
+| model-router.ts                   | Intelligent model selection (13 task types)     |
+| federal-integration-service.ts    | Federal loan program integration               |
+| student-loan-ai-engine.ts        | AI-powered student loan analysis               |
+| student-loan-service.ts          | Student loan data management                   |
+| advanced-dispute-engine.ts       | Advanced dispute generation logic              |
+| servicer-intelligence-engine.ts  | Loan servicer intelligence                     |
+| ml-prediction-models.ts          | ML prediction model utilities                  |
+| pricing.ts                        | Subscription pricing tiers                     |
+| rate-limit.ts                     | Rate limiting utilities                        |
+| supabase.ts                       | Legacy Supabase client (deprecated)            |
+| utils.ts                          | General utility functions                      |
+| add.ts                            | Basic utility                                  |
+
+### 10.6 Custom Hooks (src/hooks/ — 22 hooks)
+
+| Hook                       | Purpose                                |
+| -------------------------- | -------------------------------------- |
+| useAuth                    | Authentication state and actions       |
+| useAIInsights              | AI-powered financial insights          |
+| useChatQueries             | Chat message queries and mutations     |
+| useFormValidation          | Form validation with Zod              |
+| useGamification            | Gamification state (XP, achievements)  |
+| useHoldings                | Investment holdings data               |
+| useMarketData              | Real-time market data                  |
+| useMarketDataWebSocket     | WebSocket market data streaming        |
+| useOfflineQueue            | Offline action queueing                |
+| useOnboardingProgress      | Onboarding flow progress tracking      |
+| useOnline                  | Online/offline status detection        |
+| usePortfolio               | Portfolio data and analysis            |
+| usePullToRefresh           | Pull-to-refresh gesture handling       |
+| useRealtimeEvents          | Real-time event subscriptions          |
+| useRealTimePrice           | Real-time price updates                |
+| useRealtimeUpdates         | Supabase real-time subscriptions       |
+| useStockAnalysis           | Stock analysis and research            |
+| useTranslation             | i18n translation strings               |
+| useWebPushNotifications    | Web push notification management       |
+| useOrderExecution          | Trading order execution (hooks/trading/) |
+| investments/index          | Investment hooks barrel export          |
+| trading/index              | Trading hooks barrel export             |
 
 ---
 
@@ -437,13 +514,13 @@ Layer 3: AIOrchestrator (src/lib/ai-orchestrator.ts)
 
 ### 13.1 Test Pyramid
 
-| Layer       | Framework  | Files   | Est. Cases  | Focus                                           |
-| ----------- | ---------- | ------- | ----------- | ----------------------------------------------- |
-| Unit        | Jest       | ~100    | ~800        | Pure functions, service methods, components     |
-| Integration | Jest       | ~49     | ~300        | API routes, service-to-service, DB              |
-| E2E (API)   | Cypress    | 21      | ~190        | Route access, auth enforcement, response format |
-| E2E (UI)    | Playwright | 16      | ~149        | Full browser journeys, multi-page flows         |
-| **Total**   |            | **186** | **~1,300+** |                                                 |
+| Layer            | Framework  | Files   | Cases     | Focus                                           |
+| ---------------- | ---------- | ------- | --------- | ----------------------------------------------- |
+| Unit (web)       | Jest       | 180     | ~2,800    | Pure functions, service methods, components     |
+| Unit (mobile)    | Jest       | 17      | ~200      | Mobile components, hooks, services              |
+| E2E (API)        | Cypress    | 21      | ~190      | Route access, auth enforcement, response format |
+| E2E (UI)         | Playwright | 16      | ~149      | Full browser journeys, multi-page flows         |
+| **Total**        |            | **234** | **3,287** | Verified via `npm test` (178 suites, all pass)  |
 
 ### 13.2 Coverage Thresholds (jest.config.ts)
 
@@ -503,20 +580,77 @@ Layer 3: AIOrchestrator (src/lib/ai-orchestrator.ts)
 
 ---
 
+## 14.5 Mobile App (React Native / Expo)
+
+| Setting          | Value                                        |
+| ---------------- | -------------------------------------------- |
+| **Framework**    | React Native + Expo SDK                      |
+| **Router**       | Expo Router (file-based, mirrors web)        |
+| **Source Files** | 138 (.ts/.tsx under mobile-app/src/)         |
+| **Route Files**  | 248 (.tsx under mobile-app/app/)             |
+| **Route Groups** | 36 top-level directories                     |
+| **Test Files**   | 17 (Jest)                                    |
+
+### Route Groups
+
+```
+mobile-app/app/
+├── (auth)/                # Authentication flow
+├── (tabs)/                # Tab navigation
+├── activity/              # Activity feed
+├── admin/                 # Admin panel
+├── analytics/             # Analytics views
+├── billing/               # Billing management
+├── chat/                  # Chat interface
+├── coach/                 # AI financial coach
+├── credit/                # Credit overview
+├── credit-builder/        # Credit building tools
+├── credit-repair/         # Credit repair tools
+├── dashboard/             # Main dashboard
+├── dispute/ & disputes/   # Dispute management
+├── document/ & documents/ # Document management
+├── financial/             # Financial tools
+├── financial-intelligence/# AI financial insights
+├── help/                  # Help & support
+├── identity/              # Identity verification
+├── insights/              # Financial insights
+├── investments/           # Investment portfolio
+├── loans/                 # Loan management
+├── marketplace/           # Financial marketplace
+├── monitoring/            # Credit monitoring
+├── notifications/         # Notifications
+├── onboarding/            # User onboarding
+├── profile/               # User profile
+├── recommendations/       # AI recommendations
+├── reports/               # Financial reports
+├── rewards/               # Gamification rewards
+├── search/                # Global search
+├── settings/              # App settings
+├── student-loans/         # Student loan tools
+├── tax/                   # Tax optimization
+└── trading/               # Trading interface
+```
+
+---
+
 ## 15. Known Issues & Technical Debt
 
-### 15.1 Critical Conflicts (Documentation vs. Code)
+### 15.1 Documentation Accuracy Status
 
-| What          | CLAUDE.md Claims         | Actual                                              |
+CLAUDE.md still contains historical metrics from early development phases. The authoritative metrics are in this SSOT (Section 3). Key divergences in CLAUDE.md:
+
+| What          | CLAUDE.md States         | SSOT (Authoritative)                                |
 | ------------- | ------------------------ | --------------------------------------------------- |
 | API Routes    | 21                       | **248**                                             |
-| Pages         | 6                        | **180**                                             |
-| Components    | 10+                      | **225**                                             |
-| Lines of Code | 15,000+                  | **79,612**                                          |
-| Source Files  | 60+                      | **1,296**                                           |
-| Test Cases    | 83                       | **~1,300+**                                         |
+| Pages         | 6                        | **182**                                             |
+| Components    | 10+                      | **228**                                             |
+| Lines of Code | 15,000+                  | **135,900**                                         |
+| Source Files  | 60+                      | **1,337**                                           |
+| Test Cases    | 83                       | **3,287**                                           |
 | Pricing Tiers | 3 ($29/$79/$199)         | **6 (Free/$29.99/$99.99/$159.99/$199.99/$399.99)**  |
 | Tier Names    | Basic/Premium/Enterprise | **Free/Standard/Pro/Family Duo/Family/Family Plus** |
+
+> **Note**: CLAUDE.md serves as a pair programming guide and retains the development journey narrative. This SSOT is the canonical reference for current metrics.
 
 ### 15.2 Technical Debt
 
@@ -527,7 +661,7 @@ Layer 3: AIOrchestrator (src/lib/ai-orchestrator.ts)
 | TD-03 | In-memory audit logs (10K cap)             | Logs lost on restart        | Persist to database                |
 | TD-04 | In-memory metrics                          | Data lost on restart        | Persist to metrics service         |
 | TD-05 | Mixed branding (CPFI/CreditMaster/Fynvita) | User confusion              | Systematic rename                  |
-| TD-06 | 95 doc files (many overlap/conflict)       | Developer confusion         | Consolidate                        |
+| TD-06 | 114 doc files (many overlap/conflict)      | Developer confusion         | Consolidate                        |
 | TD-07 | No database migrations                     | Unreproducible environments | Add migration tooling              |
 | TD-08 | No CI/CD pipeline config                   | Manual deployment risk      | Add GitHub Actions                 |
 | TD-09 | Large component files (300-600+ lines)     | Maintainability             | Extract sub-components             |
@@ -853,4 +987,4 @@ The following 26 documents were consolidated into this section. They can be move
 
 _Document generated from full codebase analysis on 2026-02-16._
 _Section 16 consolidated from 26 implementation plan documents on 2026-02-17._
-_Verified metrics: file counts via find/wc, LOC via wc -l, dependency versions via package.json._
+_Metrics verified and updated on 2026-02-20: file counts via find/wc, LOC via wc -l, test counts via npm test, dependency versions via package.json._
