@@ -1,6 +1,7 @@
 # Traceability Matrix — Fynvita Platform
 
 > **Maps every feature domain to its implementing code paths, screens, APIs, services, components, and tests.**
+> Summarized in [SSOT §17 — Traceability Matrix (Summary)](SSOT.md#17-traceability-matrix-summary). This document contains full per-file detail.
 > Last Updated: 2026-02-16
 
 ---

@@ -18,6 +18,8 @@
 | **Brand**       | Fynvita (formerly CPFI / CreditMaster Pro)                                         |
 | **Domain**      | fynvita.com                                                                        |
 
+> **See Also**: [§2 Technology Stack](#2-technology-stack) | [§3 Codebase Metrics](#3-codebase-metrics-verified-2026-02-20)
+
 ---
 
 ## 2. Technology Stack
@@ -74,6 +76,8 @@
 | PostCSS      | ^8.5.6   | CSS processing            |
 | Autoprefixer | ^10.4.23 | CSS compatibility         |
 
+> **See Also**: [§12 Environment Variables](#12-environment-variables-required) | [§14 Deployment](#14-deployment)
+
 ---
 
 ## 3. Codebase Metrics (Verified 2026-02-20)
@@ -105,6 +109,8 @@
 | Mobile app source files        | 138     | .ts/.tsx under mobile-app/src/                    |
 | Mobile app routes              | 248     | .tsx under mobile-app/app/                        |
 | Mobile app route groups        | 36      | Top-level directories in mobile-app/app/          |
+
+> **See Also**: [§13 Testing Summary](#13-testing-summary) | [§17 Traceability Matrix](#17-traceability-matrix-summary)
 
 ---
 
@@ -195,6 +201,8 @@ Layer 3: AIOrchestrator (src/lib/ai-orchestrator.ts)
   → Chain-of-thought and few-shot prompt strategies
 ```
 
+> **See Also**: [§5 API Routes](#5-api-route-inventory-248-routes-across-41-domains) | [§7 Security](#7-security-architecture) | [§10 Library & Services](#10-library--service-inventory-477-files-across-53-directories--14-root-files)
+
 ---
 
 ## 5. API Route Inventory (248 Routes across 41 Domains)
@@ -230,6 +238,8 @@ Layer 3: AIOrchestrator (src/lib/ai-orchestrator.ts)
 | automation         | 2      | Rules, triggers                                                                                                                        |
 | Other (14 domains) | 14     | ws, voice, user, test-db, strategies, settings, profile, performance, onboarding, health, federal-programs, email, csrf, credit-report |
 
+> **See Also**: [§4 Architecture](#4-architecture-overview) | [§8 Pages](#8-page-inventory-182-pages-across-47-domains) | [§17 Traceability Matrix](#17-traceability-matrix-summary)
+
 ---
 
 ## 6. Subscription & Pricing Model
@@ -245,6 +255,8 @@ Layer 3: AIOrchestrator (src/lib/ai-orchestrator.ts)
 
 **Payment Processor**: Stripe (checkout sessions, webhooks, subscription lifecycle)
 **Stripe Events Handled**: subscription.created/updated/deleted, invoice.paid/payment_failed, payment_intent.succeeded
+
+> **See Also**: [§11 External Services](#11-external-service-integration) | [§8 Pages](#8-page-inventory-182-pages-across-47-domains)
 
 ---
 
@@ -294,6 +306,8 @@ Layer 3: AIOrchestrator (src/lib/ai-orchestrator.ts)
 | SEC-06 | No secret rotation schedule                                 | LOW      | Open     |
 | SEC-07 | MFA WebAuthn placeholder (TOTP works)                       | LOW      | Open     |
 
+> **See Also**: [§4 Architecture](#4-architecture-overview) | [§12 Environment Variables](#12-environment-variables-required) | [§10 Library & Services](#10-library--service-inventory-477-files-across-53-directories--14-root-files)
+
 ---
 
 ## 8. Page Inventory (182 pages across 47 domains)
@@ -323,6 +337,8 @@ Layer 3: AIOrchestrator (src/lib/ai-orchestrator.ts)
 | Documents        | 2     | Upload, management                                                   |
 | Other (26 pages) | 26    | Pricing, landing, about, privacy, terms, student loans, rewards, etc |
 
+> **See Also**: [§9 Components](#9-component-inventory-228-components-across-38-directories) | [§5 API Routes](#5-api-route-inventory-248-routes-across-41-domains) | [§17 Traceability Matrix](#17-traceability-matrix-summary)
+
 ---
 
 ## 9. Component Inventory (228 components across 38 directories)
@@ -349,6 +365,8 @@ Layer 3: AIOrchestrator (src/lib/ai-orchestrator.ts)
 | Persona           | 3     | Persona selector, profile card, AI strategies             |
 | AI Strategies     | 3     | Strategy cards, recommendations, model selector           |
 | Other (19 dirs)   | 34    | Admin, marketplace, goals, settings, voice, tax, etc.     |
+
+> **See Also**: [§8 Pages](#8-page-inventory-182-pages-across-47-domains) | [§10 Library & Services](#10-library--service-inventory-477-files-across-53-directories--14-root-files)
 
 ---
 
@@ -474,6 +492,8 @@ Layer 3: AIOrchestrator (src/lib/ai-orchestrator.ts)
 | investments/index          | Investment hooks barrel export          |
 | trading/index              | Trading hooks barrel export             |
 
+> **See Also**: [§5 API Routes](#5-api-route-inventory-248-routes-across-41-domains) | [§9 Components](#9-component-inventory-228-components-across-38-directories) | [§17 Traceability Matrix](#17-traceability-matrix-summary)
+
 ---
 
 ## 11. External Service Integration
@@ -486,6 +506,8 @@ Layer 3: AIOrchestrator (src/lib/ai-orchestrator.ts)
 | AWS S3   | @aws-sdk/client-s3@^3.917.0   | `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_S3_BUCKET` | Document storage               | Upload fails, presigned URLs expire (7-day)     |
 | Resend   | resend@^6.2.2                 | `RESEND_API_KEY`, `EMAIL_FROM`                                              | Transactional email            | Silent fail, queued for retry                   |
 | Web Push | web-push@^3.6.7               | VAPID keys                                                                  | Push notifications             | Silent fail                                     |
+
+> **See Also**: [§6 Pricing](#6-subscription--pricing-model) | [§12 Environment Variables](#12-environment-variables-required)
 
 ---
 
@@ -507,6 +529,8 @@ Layer 3: AIOrchestrator (src/lib/ai-orchestrator.ts)
 | `RESEND_API_KEY`                | Server only     | Yes      | Resend email API key                                    |
 | `EMAIL_FROM`                    | Server only     | No       | Sender email address                                    |
 | `NODE_ENV`                      | Both            | Auto     | Environment (development/production/test)               |
+
+> **See Also**: [§11 External Services](#11-external-service-integration) | [§17.4 Config Dependencies](#174-config-dependencies)
 
 ---
 
@@ -555,6 +579,8 @@ Layer 3: AIOrchestrator (src/lib/ai-orchestrator.ts)
 | CP-09 | Rate limiting     | Jest           | Per-IP and per-user throttling         |
 | CP-10 | Document upload   | Jest           | S3 upload, validation, presigned URL   |
 
+> **See Also**: [§17.3 Coverage Gaps](#173-coverage-gaps) | [§15 Known Issues](#15-known-issues--technical-debt)
+
 ---
 
 ## 14. Deployment
@@ -577,6 +603,8 @@ Layer 3: AIOrchestrator (src/lib/ai-orchestrator.ts)
 - Webpack caching enabled
 - Image optimization: WebP/AVIF, remote patterns for Supabase
 - Environment variable validation at build time
+
+> **See Also**: [§2 Technology Stack](#2-technology-stack) | [§12 Environment Variables](#12-environment-variables-required)
 
 ---
 
@@ -631,6 +659,8 @@ mobile-app/app/
 └── trading/               # Trading interface
 ```
 
+> **See Also**: [§14 Deployment](#14-deployment) | [§16.4.1 Mobile App Parity](#164-feature-implementation-plans)
+
 ---
 
 ## 15. Known Issues & Technical Debt
@@ -683,6 +713,8 @@ CLAUDE.md still contains historical metrics from early development phases. The a
 | DEC-10 | Database migrations: Manual vs Prisma vs Supabase CLI        | Open                     |
 | DEC-11 | Outdated docs cleanup: Archive vs update vs delete           | Open                     |
 | DEC-12 | Brand consolidation: Full rename to Fynvita                  | **Decided: In progress** |
+
+> **See Also**: [§13 Testing](#13-testing-summary) | [§17.3 Coverage Gaps](#173-coverage-gaps) | [§16 Consolidated Plan](#16-consolidated-implementation-plan)
 
 ---
 
@@ -970,21 +1002,135 @@ The following 26 documents were consolidated into this section. They can be move
 | ONBOARDING_QUICK_START.md                          | —     | §16.4.5 (quick start)                |
 | ONBOARDING_RECOMMENDATIONS_SUMMARY.md              | —     | §16.4.5 (summary)                    |
 
+> **See Also**: [§17 Traceability Matrix](#17-traceability-matrix-summary) | [§15 Known Issues](#15-known-issues--technical-debt) | [§3 Metrics](#3-codebase-metrics-verified-2026-02-20)
+
+---
+
+## 17. Traceability Matrix (Summary)
+
+> **Full detail**: [`docs/Traceability_Matrix.md`](Traceability_Matrix.md) — per-file IDs (ScreenID, ApiID, CodeRef, CompID, TestID, ConfigRef) for every feature domain.
+
+### 17.1 Domain Coverage Summary
+
+| Domain                    | ReqID   | Pages | APIs | Services | Components | Tests | Coverage |
+| ------------------------- | ------- | ----- | ---- | -------- | ---------- | ----- | -------- |
+| Authentication            | FEAT-01 | 6     | 10   | 26       | 14         | 5     | High     |
+| Credit Repair             | FEAT-02 | 20    | 34   | 32       | 25         | 29    | High     |
+| Credit Monitoring/Builder | FEAT-03 | 22    | 12   | 6        | 11         | 8     | Medium   |
+| Financial Suite           | FEAT-04 | 29    | 47   | 36       | 45         | 30    | High     |
+| Investment Platform       | FEAT-05 | 15    | 28   | 29       | 18         | 25    | High     |
+| AI/ML Services            | FEAT-06 | 4     | 29   | 21       | 18         | 13    | High     |
+| Marketplace               | FEAT-07 | 14    | 12   | 9        | 0          | 7     | Medium   |
+| Payment/Subscriptions     | FEAT-08 | 7     | 5    | 6        | 1          | 9     | High     |
+| Student Loans             | FEAT-09 | 4     | 9    | 6        | 8          | 6     | Medium   |
+| Trading                   | FEAT-10 | 3     | 6    | 36       | 8          | 4     | Low      |
+| Notifications             | FEAT-11 | 3     | 7    | 7        | 7          | 1     | Low      |
+| Documents                 | FEAT-12 | 3     | 3    | 2        | 6          | 1     | Low      |
+| Admin                     | FEAT-13 | 13    | 16   | 9        | 2          | 2     | Low      |
+| Onboarding                | FEAT-14 | 6     | 1    | 2        | 7          | 2     | Low      |
+| Tax                       | FEAT-15 | 4     | 3    | 16       | 2          | 2     | Low      |
+| **Totals (domain-scoped)**| **15**  |**153**|**222**|**243**  | **172**    |**144**| —        |
+
+### 17.2 Domain → SSOT Section Map
+
+| Domain                    | ReqID   | Primary SSOT Section(s)                                                                             |
+| ------------------------- | ------- | --------------------------------------------------------------------------------------------------- |
+| Authentication            | FEAT-01 | [§7 Security](#7-security-architecture), [§10.3 Auth](#103-infrastructure-services)                 |
+| Credit Repair             | FEAT-02 | [§5 API Routes](#5-api-route-inventory-248-routes-across-41-domains), [§8 Pages](#8-page-inventory-182-pages-across-47-domains), [§10.2 Business Logic](#102-business-logic) |
+| Credit Monitoring/Builder | FEAT-03 | [§8 Pages](#8-page-inventory-182-pages-across-47-domains), [§9 Components](#9-component-inventory-228-components-across-38-directories) |
+| Financial Suite           | FEAT-04 | [§5 API Routes](#5-api-route-inventory-248-routes-across-41-domains), [§10.2 Business Logic](#102-business-logic) |
+| Investment Platform       | FEAT-05 | [§5 API Routes](#5-api-route-inventory-248-routes-across-41-domains), [§10.2 Business Logic](#102-business-logic) |
+| AI/ML Services            | FEAT-06 | [§5 API Routes](#5-api-route-inventory-248-routes-across-41-domains), [§10.1 Core AI](#101-core-ai-services) |
+| Marketplace               | FEAT-07 | [§8 Pages](#8-page-inventory-182-pages-across-47-domains), [§5 API Routes](#5-api-route-inventory-248-routes-across-41-domains) |
+| Payment/Subscriptions     | FEAT-08 | [§6 Pricing](#6-subscription--pricing-model), [§11 External Services](#11-external-service-integration) |
+| Student Loans             | FEAT-09 | [§10.2 Business Logic](#102-business-logic), [§10.5 Root Files](#105-root-library-files-srclibts)   |
+| Trading                   | FEAT-10 | [§10.2 Business Logic](#102-business-logic) (trading/ — 62 files)                                   |
+| Notifications             | FEAT-11 | [§10.3 Infrastructure](#103-infrastructure-services), [§11 External Services](#11-external-service-integration) |
+| Documents                 | FEAT-12 | [§10.3 Infrastructure](#103-infrastructure-services), [§11 External Services](#11-external-service-integration) |
+| Admin                     | FEAT-13 | [§5 API Routes](#5-api-route-inventory-248-routes-across-41-domains), [§8 Pages](#8-page-inventory-182-pages-across-47-domains) |
+| Onboarding                | FEAT-14 | [§8 Pages](#8-page-inventory-182-pages-across-47-domains)                                           |
+| Tax                       | FEAT-15 | [§10.2 Business Logic](#102-business-logic) (tax/ — 25 files)                                       |
+
+### 17.3 Coverage Gaps
+
+| Domain            | Services         | Test Files         | Gap Severity                             |
+| ----------------- | ---------------- | ------------------ | ---------------------------------------- |
+| Trading           | 36               | 4                  | **HIGH** — Most trading logic untested   |
+| Notifications     | 7                | 1                  | **HIGH** — Push notifications untested   |
+| Admin             | 9 + 16 APIs      | 2                  | **HIGH** — Most admin APIs untested      |
+| Documents         | 2                | 1 (2 cases)        | **MEDIUM** — Upload/share untested       |
+| Onboarding        | 2 + 7 components | 2                  | **MEDIUM** — Component tests missing     |
+| Tax               | 16               | 2                  | **MEDIUM** — Only calculator + doc tests |
+| Marketplace       | 9                | 5 + 2 E2E          | **LOW** — Reasonably covered             |
+| Credit Monitoring | 6                | 8                  | **LOW** — Well covered                   |
+
+### 17.4 Config Dependencies
+
+| Service/Feature    | Env Variables Required                                                      |
+| ------------------ | --------------------------------------------------------------------------- |
+| All pages/routes   | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`                 |
+| AI features        | `AIML_API_KEY`, `AIML_API_URL`                                              |
+| Payments           | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_*_PRICE_ID`           |
+| Email              | `RESEND_API_KEY`, `EMAIL_FROM`                                              |
+| Documents          | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_S3_BUCKET`, `AWS_REGION` |
+| Push notifications | `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`                         |
+| Market data        | Alpha Vantage, CoinGecko, Polygon API keys (via integrations)               |
+| Banking            | Plaid API keys (via `plaid-service.ts`)                                     |
+
+### 17.5 Counting Reconciliation
+
+| Metric     | SSOT Raw Count | Matrix Domain Total | Delta | Explanation                                           |
+| ---------- | -------------- | ------------------- | ----- | ----------------------------------------------------- |
+| Pages      | 182            | 153                 | +29   | Shared pages (layouts, error/loading), utility routes  |
+| API Routes | 248            | 222                 | +26   | Cross-cutting routes (cron, monitoring, health, CSRF)  |
+| Components | 228            | 172                 | +56   | Shared UI primitives, layout components, chart helpers |
+
+> SSOT §3 counts are raw file counts (`find ... | wc -l`). Matrix totals are domain-scoped and exclude shared/cross-cutting files. Both are correct for their purpose.
+
+> **See Also**: [§16 Consolidated Plan](#16-consolidated-implementation-plan) | [§13 Testing](#13-testing-summary) | [§15 Known Issues](#15-known-issues--technical-debt)
+
 ---
 
 ## Cross-Reference
 
-| Related Document                   | Purpose                               |
-| ---------------------------------- | ------------------------------------- |
-| `docs/Codebase_Index.md`           | Detailed module/service inventory     |
-| `docs/Plan_Index.md`               | Master documentation index (95 files) |
-| `docs/Traceability_Matrix.md`      | Requirements → Code → Test mapping    |
-| `docs/Gaps_Conflicts_Decisions.md` | Full conflict/gap/decision tracking   |
-| `docs/Testing/Test_Strategy.md`    | Test approach, environments, gates    |
-| `docs/Testing/Test_Catalog.md`     | Complete test inventory               |
+### External Documents
+
+| Related Document                       | Purpose                               |
+| -------------------------------------- | ------------------------------------- |
+| `docs/Codebase_Index.md`              | Detailed module/service inventory     |
+| `docs/Plan_Index.md`                  | Master documentation index (95 files) |
+| `docs/Traceability_Matrix.md`         | Requirements → Code → Test mapping    |
+| `docs/SSOT_Implementation_Plan.md`    | Task-level implementation tracker     |
+| `docs/Gaps_Conflicts_Decisions.md`    | Full conflict/gap/decision tracking   |
+| `docs/Testing/Test_Strategy.md`       | Test approach, environments, gates    |
+| `docs/Testing/Test_Catalog.md`        | Complete test inventory               |
+
+### Intra-Document Navigation
+
+| Section | Title                          | Anchor                                               |
+| ------- | ------------------------------ | ---------------------------------------------------- |
+| §1      | Project Identity               | `#1-project-identity`                                |
+| §2      | Technology Stack               | `#2-technology-stack`                                |
+| §3      | Codebase Metrics               | `#3-codebase-metrics-verified-2026-02-20`            |
+| §4      | Architecture Overview          | `#4-architecture-overview`                           |
+| §5      | API Route Inventory            | `#5-api-route-inventory-248-routes-across-41-domains`|
+| §6      | Subscription & Pricing         | `#6-subscription--pricing-model`                     |
+| §7      | Security Architecture          | `#7-security-architecture`                           |
+| §8      | Page Inventory                 | `#8-page-inventory-182-pages-across-47-domains`      |
+| §9      | Component Inventory            | `#9-component-inventory-228-components-across-38-directories` |
+| §10     | Library & Service Inventory    | `#10-library--service-inventory-477-files-across-53-directories--14-root-files` |
+| §11     | External Service Integration   | `#11-external-service-integration`                   |
+| §12     | Environment Variables          | `#12-environment-variables-required`                 |
+| §13     | Testing Summary                | `#13-testing-summary`                                |
+| §14     | Deployment                     | `#14-deployment`                                     |
+| §14.5   | Mobile App                     | `#145-mobile-app-react-native--expo`                 |
+| §15     | Known Issues & Technical Debt  | `#15-known-issues--technical-debt`                   |
+| §16     | Consolidated Implementation Plan | `#16-consolidated-implementation-plan`             |
+| §17     | Traceability Matrix (Summary)  | `#17-traceability-matrix-summary`                    |
 
 ---
 
 _Document generated from full codebase analysis on 2026-02-16._
 _Section 16 consolidated from 26 implementation plan documents on 2026-02-17._
+_Section 17 traceability matrix summary added on 2026-02-20._
 _Metrics verified and updated on 2026-02-20: file counts via find/wc, LOC via wc -l, test counts via npm test, dependency versions via package.json._
