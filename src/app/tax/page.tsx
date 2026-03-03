@@ -15,6 +15,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Footer from "@/components/ui/Footer";
 
 // Types
 interface TaxRecommendation {
@@ -476,15 +477,7 @@ export default function TaxOptimizationPage() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 mt-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <p className="text-center text-sm text-gray-500 dark:text-slate-400">
-            Tax optimization powered by AI. All recommendations are based on
-            current tax law as of {new Date().getFullYear()}. Consult a
-            qualified tax professional before making tax decisions.
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ReactNode } from "react";
+import Footer from "@/components/ui/Footer";
 
 interface HelpNavItem {
   href: string;
@@ -161,35 +162,7 @@ export default function HelpLayout({
       <main className="max-w-6xl mx-auto px-4 py-8">{children}</main>
 
       {/* Footer */}
-      <footer className="bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 mt-12">
-        <div className="max-w-6xl mx-auto px-4 py-8">
-          <div className="flex flex-wrap justify-between items-center gap-4">
-            <p className="text-gray-500 dark:text-slate-400 text-sm">
-              Can&apos;t find what you&apos;re looking for?{" "}
-              <Link
-                href="/help/contact"
-                className="text-emerald-500 hover:text-emerald-600"
-              >
-                Contact our support team
-              </Link>
-            </p>
-            <div className="flex gap-4">
-              <Link
-                href="/terms"
-                className="text-sm text-gray-500 hover:text-gray-700 dark:text-slate-200 dark:hover:text-slate-200"
-              >
-                Terms
-              </Link>
-              <Link
-                href="/privacy"
-                className="text-sm text-gray-500 hover:text-gray-700 dark:text-slate-200 dark:hover:text-slate-200"
-              >
-                Privacy
-              </Link>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

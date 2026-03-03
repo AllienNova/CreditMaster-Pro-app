@@ -11,6 +11,7 @@
 
 import type { Metadata } from "next";
 import Link from "next/link";
+import Footer from "@/components/ui/Footer";
 
 export const metadata: Metadata = {
   title: "Privacy Policy | Fynvita",
@@ -876,33 +877,7 @@ export default function PrivacyPolicyPage() {
       </main>
 
       {/* Footer */}
-      <footer className="py-8 px-6 bg-gray-100 dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700">
-        <div className="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-gray-500 dark:text-slate-400">
-            &copy; 2026 Fynvita. All rights reserved.
-          </p>
-          <div className="flex gap-6 text-sm text-gray-500 dark:text-slate-400">
-            <Link
-              href="/terms"
-              className="hover:text-emerald-600 dark:hover:text-emerald-400"
-            >
-              Terms
-            </Link>
-            <Link
-              href="/privacy-policy"
-              className="text-emerald-600 dark:text-emerald-400"
-            >
-              Privacy
-            </Link>
-            <Link
-              href="/help"
-              className="hover:text-emerald-600 dark:hover:text-emerald-400"
-            >
-              Help
-            </Link>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

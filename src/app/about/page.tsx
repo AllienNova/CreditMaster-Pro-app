@@ -15,6 +15,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import Header from "@/components/ui/Header";
+import Footer from "@/components/ui/Footer";
 
 export const metadata: Metadata = {
   title: "About Fynvita | Your Financial Vitality Platform",
@@ -590,48 +591,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-12 px-6 border-t border-gray-200 dark:border-slate-700">
-        <div className="max-w-[980px] mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl"></span>
-              <span className="text-xl font-semibold text-gray-900 dark:text-white">
-                Fynvita
-              </span>
-            </div>
-            <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-600 dark:text-slate-400">
-              <Link
-                href="/privacy"
-                className="hover:text-emerald-600 transition-colors"
-              >
-                Privacy Policy
-              </Link>
-              <Link
-                href="/terms"
-                className="hover:text-emerald-600 transition-colors"
-              >
-                Terms of Service
-              </Link>
-              <Link
-                href="/help"
-                className="hover:text-emerald-600 transition-colors"
-              >
-                Help Center
-              </Link>
-              <Link
-                href="/help/contact"
-                className="hover:text-emerald-600 transition-colors"
-              >
-                Contact Us
-              </Link>
-            </div>
-            <p className="text-sm text-gray-500 dark:text-slate-500">
-              &copy; {new Date().getFullYear()} Fynvita. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 # CLAUDE.md - Fynvita Pair Programming Guide
 
 > Canonical AI context for the Fynvita platform. All metrics sourced from `docs/ssot/`.
-> Last verified: 2026-03-01 | DICE v3.3 | VERSION-009
+> Last verified: 2026-03-01 | DICE v3.3 | VERSION-010
 
 ---
 
@@ -12,7 +12,7 @@
 | **Project** | Fynvita - Your Financial Vitality Platform |
 | **Repository** | `github.com/AllienNova/CreditMaster-Pro-app` |
 | **Brand** | Fynvita (formerly CPFI / CreditMaster Pro) |
-| **Phase** | Waves 0-5 DONE, Wave 6 planned (125 tasks total, 112 DONE) |
+| **Phase** | All 7 waves DONE (125/125 tasks complete, 100%) |
 | **Platform Score** | 102/102 modules complete (100%) — Wave 6 adds 3 new domains |
 | **Canonical Docs** | `docs/ssot/SSOT.md` (single source of truth) |
 
@@ -47,7 +47,7 @@
 
 | Tool | Purpose |
 |------|---------|
-| **Jest** | Unit + integration (473 suites, 12,468 cases) |
+| **Jest** | Unit + integration (501 suites, 13,558 cases) |
 | **Cypress** | E2E (21 specs) |
 | **Playwright** | E2E + visual (16 specs) |
 
@@ -198,8 +198,8 @@ cd mobile-app && npx expo start  # Start Expo dev server
 
 | Metric | Value |
 |--------|-------|
-| **Test Suites** | 473 passed, 2 skipped, 475 total |
-| **Test Cases** | 12,468 passed, 19 skipped, 12,487 total |
+| **Test Suites** | 501 passed, 2 skipped, 503 total |
+| **Test Cases** | 13,558 passed, 19 skipped, 13,577 total |
 | **Pass Rate** | 99.85% |
 | **Failures** | 0 |
 | **Execution Time** | ~15s |
@@ -231,7 +231,7 @@ Run in order after any code change:
 ```
 1. LINT     npm run lint              # 0 blocking errors (7 non-blocking, 841 warnings)
 2. TYPES    npx tsc --noEmit          # 0 errors (production + test)
-3. TEST     npm test                  # 12,468/12,468 passing, 0 failures
+3. TEST     npm test                  # 13,558/13,558 passing, 0 failures
 4. BUILD    npm run build             # SUCCESS, 538 kB first load JS
 5. SECURITY npm audit                 # 0 production vulns (2 low dev-only)
 ```
@@ -257,18 +257,18 @@ Run in order after any code change:
 
 | Tier | Price | Key Features |
 |------|-------|-------------|
-| Free | $0 | Basic credit monitoring, limited AI |
-| Starter | $29.99/mo | Credit repair tools, basic AI coach |
-| Growth | $99.99/mo | Full financial intelligence, bill negotiation |
-| Premium | $159.99/mo | Investment intelligence, advanced trading |
-| Enterprise | $199.99/mo | Multi-user, API access, dedicated support |
-| White Label | $399.99/mo | Full platform resale, custom branding |
+| Free | $0 | Credit score (1 bureau), basic budgeting, 10 AI chats/mo |
+| Standard | $29.99/mo | All 3 bureaus, 10 AI disputes/mo, smart budgeting, debt strategies |
+| Pro | $99.99/mo | Unlimited disputes, bill negotiation, investment suite, 24/7 AI coach |
+| Family Duo | $159.99/mo | 2 members, all Pro features, shared goals, joint account tracking |
+| Family | $199.99/mo | 3 members, all Pro features, kids education, college savings |
+| Family Plus | $399.99/mo | 5 members, all Pro features, estate planning, premium support |
 
 ---
 
 ## 11. Current Build Plan
 
-7 waves, 125 total tasks. 112 DONE (89.6%), 13 NOT_STARTED (Wave 6). Task IDs follow `TASK-{DOMAIN}-{NN}` pattern.
+7 waves, 125 total tasks. 125 DONE (100%), 0 NOT_STARTED. Task IDs follow `TASK-{DOMAIN}-{NN}` pattern.
 
 | Wave | Focus | Status | Tasks |
 |------|-------|--------|-------|
@@ -278,7 +278,7 @@ Run in order after any code change:
 | 3 | Trading + Commerce | DONE | PCTT, paper trading, marketplace |
 | 4 | Mobile + Platform | DONE | Gamification, onboarding, mobile parity |
 | 5 | Scale + Polish | DONE | Performance, monitoring, white-label |
-| 6 (next) | External Integrations | NOT_STARTED | Plaid SDK, DriveWealth, Affiliate (13 tasks) |
+| 6 | External Integrations | DONE | Plaid SDK, DriveWealth, Affiliate (13 tasks) |
 
 ### Wave 6 Breakdown (13 tasks)
 
@@ -292,8 +292,8 @@ Run in order after any code change:
 
 | Status | Count | % |
 |--------|-------|---|
-| **DONE** | 112 | 89.6% |
-| **NOT_STARTED** | 13 | 10.4% |
+| **DONE** | 125 | 100% |
+| **NOT_STARTED** | 0 | 0% |
 | **Total** | 125 | 100% |
 
 ---
@@ -347,10 +347,10 @@ All truth lives in `docs/ssot/`. When in doubt, these files win over CLAUDE.md.
 ### Common Gotchas
 - Supabase client uses `createClient` from `@supabase/supabase-js` (not a custom wrapper -- `src/lib/supabase.ts` was deleted)
 - Mobile stores are Zustand (not Redux) -- 8 stores in `mobile-app/src/store/`
-- Trading uses Alpaca broker (DriveWealth planned in Wave 6) -- API keys required for live tests (skipped in CI)
+- Trading uses Alpaca and DriveWealth brokers with multi-broker routing -- API keys required for live tests (skipped in CI)
 - AIML API key required for AI features -- tests mock the service layer
 - All 19 skipped tests are environment-dependent (live API keys), not flaky
 
 ---
 
-_Sourced from SSOT verified 2026-03-01 (VERSION-009). Update this file when SSOT changes._
+_Sourced from SSOT verified 2026-03-01 (VERSION-010). Update this file when SSOT changes._
