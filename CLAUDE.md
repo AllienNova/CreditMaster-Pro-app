@@ -1,7 +1,7 @@
 # CLAUDE.md - Fynvita Pair Programming Guide
 
 > Canonical AI context for the Fynvita platform. All metrics sourced from `docs/ssot/`.
-> Last verified: 2026-03-01 | DICE v3.3 | VERSION-010
+> Last verified: 2026-03-02 | DICE v3.3 | VERSION-012
 
 ---
 
@@ -47,7 +47,7 @@
 
 | Tool | Purpose |
 |------|---------|
-| **Jest** | Unit + integration (501 suites, 13,558 cases) |
+| **Jest** | Unit + integration (504 suites, 13,585 cases, 508 test files) |
 | **Cypress** | E2E (21 specs) |
 | **Playwright** | E2E + visual (16 specs) |
 
@@ -55,21 +55,25 @@
 
 ## 3. Codebase Metrics
 
-> Source: `docs/ssot/health_metrics.md` (2026-03-01, live verification)
+> Source: `docs/ssot/health_metrics.md` (2026-03-02, live verification)
 
 | Metric | Value |
 |--------|-------|
-| **Total Files** | 1,514 |
-| **Lines of Code** | 511,219 |
-| **Source Files** | 1,150 (excl. tests) |
-| **Test Files** | 475 |
-| **API Routes** | 248 (41 domains) |
-| **Pages** | 182 (47 domains) |
-| **Components** | 228 (38 directories) |
-| **Library Files** | 477 |
-| **Custom Hooks** | 22 |
-| **DB Migrations** | 29 |
-| **Mobile App Files** | 387 (139 src + 248 app) |
+| **Total Files (src/)** | 1,833 |
+| **Source Files (excl. tests)** | 1,325 |
+| **Lines of Code** | 846,417 |
+| **Test Files (Jest web)** | 508 |
+| **Test Files (all frameworks)** | 576 (Jest 508 + mobile 31 + Cypress 21 + Playwright 16) |
+| **API Routes** | 284 (42 domains) |
+| **Pages** | 199 |
+| **Components** | 309 |
+| **Layouts** | 11 |
+| **Library Dirs** | 55 |
+| **Custom Hooks** | 29 |
+| **DB Migrations** | 30 |
+| **Mobile App Source** | 141 |
+| **Mobile App Routes** | 257 (37 route groups) |
+| **Documentation Files** | 134 |
 
 ---
 
@@ -78,17 +82,17 @@
 ```
 src/
   app/                  # Next.js App Router
-    api/                # 248 API routes (41 domains)
+    api/                # 284 API routes (42 domains)
       admin/            # Admin CRUD, auth, metrics, analytics
       financial/        # Budgets, bills, credit, debt, goals, income, savings, spending, transactions
       documents/        # Upload, CRUD
       notifications/    # CRUD, push, preferences
       trading/          # Orders, positions, watchlist, paper trading
-    (pages)/            # 182 pages across 47 domains
-  components/           # 228 components (38 directories)
+    (pages)/            # 199 pages
+  components/           # 309 components
     financial/          # Dashboard, budgets, bills, goals, savings, spending, debt
     aiml/               # Chat, CreditAnalyzer, DisputeGenerator
-  lib/                  # 477 library files
+  lib/                  # 55 library directories
     financial/          # Core financial services
     trading/            # PCTT architecture (brokers, pipeline, ai-agents, paper, positions, realtime)
     security/           # Input/output validation, auth, audit, rate limiting
@@ -99,10 +103,10 @@ src/
     documents/          # Document services
     goals/              # Goal services
     email/              # Email services
-  hooks/                # 22 custom hooks
+  hooks/                # 29 custom hooks
   types/                # TypeScript type definitions
 mobile-app/             # Expo/React Native
-  app/                  # 248 routes (36 route groups)
+  app/                  # 257 routes (37 route groups)
     (auth)/             # Authentication screens
     (tabs)/             # Tab navigation (investments, etc.)
     coach/              # Financial coach
@@ -112,7 +116,7 @@ mobile-app/             # Expo/React Native
     store/              # 8 Zustand stores
     data/               # Static data
 supabase/
-  migrations/           # 29 migration files
+  migrations/           # 30 migration files
 ```
 
 ---
@@ -138,7 +142,7 @@ Singleton classes exported as default instances. Types co-located. Errors logged
 8 Zustand stores: auth, credit, dashboard, dispute, financial, gamification, investment, notification
 
 ### Database Pattern
-Supabase PostgreSQL with Row-Level Security (RLS). 29 migrations. All queries parameterized.
+Supabase PostgreSQL with Row-Level Security (RLS). 30 migrations. All queries parameterized.
 
 ---
 
@@ -194,13 +198,13 @@ cd mobile-app && npx expo start  # Start Expo dev server
 
 ## 8. Testing
 
-### Current State (2026-03-01)
+### Current State (2026-03-02)
 
 | Metric | Value |
 |--------|-------|
-| **Test Suites** | 501 passed, 2 skipped, 503 total |
-| **Test Cases** | 13,558 passed, 19 skipped, 13,577 total |
-| **Pass Rate** | 99.85% |
+| **Test Suites** | 504 passed, 2 skipped, 506 total |
+| **Test Cases** | 13,585 passed, 19 skipped, 13,604 total |
+| **Pass Rate** | 99.86% |
 | **Failures** | 0 |
 | **Execution Time** | ~15s |
 
@@ -231,8 +235,8 @@ Run in order after any code change:
 ```
 1. LINT     npm run lint              # 0 blocking errors (7 non-blocking, 841 warnings)
 2. TYPES    npx tsc --noEmit          # 0 errors (production + test)
-3. TEST     npm test                  # 13,558/13,558 passing, 0 failures
-4. BUILD    npm run build             # SUCCESS, 538 kB first load JS
+3. TEST     npm test                  # 13,585 passing, 0 failures
+4. BUILD    npm run build             # SUCCESS, 539 kB first load JS
 5. SECURITY npm audit                 # 0 production vulns (2 low dev-only)
 ```
 
@@ -353,4 +357,4 @@ All truth lives in `docs/ssot/`. When in doubt, these files win over CLAUDE.md.
 
 ---
 
-_Sourced from SSOT verified 2026-03-01 (VERSION-010). Update this file when SSOT changes._
+_Sourced from SSOT verified 2026-03-02 (VERSION-012). Update this file when SSOT changes._
