@@ -10,7 +10,7 @@ AI-powered credit repair, financial wellness, and investment intelligence — un
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-15.5-000?logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
-[![Tests](https://img.shields.io/badge/tests-3%2C287%20passing-brightgreen)](#testing)
+[![Tests](https://img.shields.io/badge/tests-13%2C585%20passing-brightgreen)](#testing)
 [![License](https://img.shields.io/badge/license-Proprietary-red)](#license)
 
 [Documentation](docs/) · [Project Status](PROJECT_STATUS.md) · [Roadmap](ROADMAP.md)
@@ -54,7 +54,7 @@ Fynvita is a holistic financial health platform combining AI-powered credit repa
 Client (Browser / Mobile)
     |
     v
-Next.js App Router ──── API Routes (248 endpoints)
+Next.js App Router ──── API Routes (284 endpoints)
     |                        |
     |-- Security Layer       |-- AI Orchestrator ── AIML API (300+ models)
     |   |-- Input validation |
@@ -76,13 +76,14 @@ Next.js App Router ──── API Routes (248 endpoints)
 
 | Metric | Value |
 |--------|-------|
-| API Endpoints | 248 |
-| Web Pages | 182 |
-| React Components | 228 |
-| Test Suites | 178 |
-| Tests Passing | 3,287 |
+| API Routes | 284 (42 domains) |
+| Web Pages | 199 |
+| React Components | 309 |
+| Test Suites | 504 |
+| Tests Passing | 13,585 |
+| Lines of Code | 846,417 |
 | TypeScript Errors | 0 |
-| Dependencies | 63 (33 prod + 30 dev) |
+| Mobile Routes | 257 (37 groups) |
 
 ## Getting Started
 
@@ -162,7 +163,7 @@ npm run cypress:run      # Cypress headless
 ```
 src/
 |-- app/                     # Next.js App Router
-|   |-- api/                 # 248 API endpoints
+|   |-- api/                 # 284 API routes (42 domains)
 |   |   |-- ai/              # Chat, consensus, orchestration
 |   |   |-- credit-repair/   # Disputes, goodwill, negotiations
 |   |   |-- financial/       # Budgets, goals, bills, spending
@@ -175,7 +176,7 @@ src/
 |   |-- investments/         # Investment portal
 |   |-- marketplace/         # Financial product marketplace
 |   +-- ...
-|-- components/              # 228 React components
+|-- components/              # 309 React components
 |   |-- aiml/                # AI-powered components
 |   |-- credit-repair/       # Credit repair UI
 |   |-- financial/           # Financial management UI

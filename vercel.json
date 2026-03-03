@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
-  "name": "CPFI-pro",
+  "name": "fynvita",
   "framework": "nextjs",
   "buildCommand": "npm run build",
   "devCommand": "npm run dev",
