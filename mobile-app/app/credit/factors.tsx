@@ -13,7 +13,7 @@ import {
   RefreshControl,
   Animated,
 } from "react-native";
-import { router } from "expo-router";
+import { router, Href } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
@@ -338,7 +338,7 @@ export default function FactorsScreen() {
           </TouchableOpacity>
           <Text style={styles.title}>Credit Factors</Text>
           <TouchableOpacity
-            onPress={() => router.push("/help/guides/credit-factors")}
+            onPress={() => router.push("/help/guides/credit-factors" as Href)}
           >
             <Ionicons
               name="help-circle-outline"
@@ -631,7 +631,7 @@ export default function FactorsScreen() {
                         style={styles.learnMoreButton}
                         onPress={() =>
                           router.push(
-                            `/credit-builder/${factor.id.replace("_", "-")}`,
+                            `/credit-builder/${factor.id.replace("_", "-")}` as Href,
                           )
                         }
                       >

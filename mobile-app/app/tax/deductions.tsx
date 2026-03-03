@@ -412,7 +412,7 @@ export default function DeductionsScreen() {
                     <Text
                       style={[
                         styles.categoryAmount,
-                        isCapped && styles.categoryAmountCapped,
+                        isCapped ? styles.categoryAmountCapped : undefined,
                       ]}
                     >
                       {formatCurrency(

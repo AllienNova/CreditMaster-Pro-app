@@ -87,3 +87,50 @@ export {
   SHARED_GOAL_TEMPLATES,
   RELATIONSHIP_TYPES,
 } from "./shared-goals-service";
+
+// Achievement System
+export {
+  AchievementService,
+  getAchievementService,
+  BUILT_IN_ACHIEVEMENTS,
+  TIER_CONFIG,
+  CATEGORY_CONFIG,
+  type AchievementCategory,
+  type BadgeTier,
+  type AchievementStatus,
+  type ConditionOperator,
+  type AchievementCondition,
+  type AchievementDefinition,
+  type UserAchievement,
+  type UserAchievementWithDefinition,
+  type AchievementCheckResult,
+  type AchievementAwardResult,
+  type AchievementProgressUpdate,
+  type AchievementStats,
+  type CategoryStats,
+  type TierStats,
+  type AchievementNotification,
+} from "./achievement-service";
+
+// Points & Rewards Engine
+export {
+  PointsRewardsService,
+  getPointsRewardsService,
+  TIER_CONFIGS,
+  DEFAULT_EARNING_RULES,
+  DEFAULT_REDEMPTION_OPTIONS,
+  STREAK_BONUSES,
+  DEFAULT_POINTS_TTL_DAYS,
+  type PointsTransactionType,
+  type RewardTier,
+  type EarningCategory,
+  type RedemptionCategory,
+  type PointsBalance,
+  type PointsTransaction,
+  type EarningRule,
+  type RedemptionOption,
+  type RedemptionRecord,
+  type StreakBonus,
+  type TierConfig,
+  type PointsStats,
+} from "./points-rewards-service";

@@ -313,9 +313,8 @@ export async function fetchInitialData(): Promise<void> {
     useGamificationStore.getState().fetchQuests(),
 
     // Tax data
-    useTaxStore.getState().fetchAnalysis(),
     useTaxStore.getState().fetchEvents(),
-    useTaxStore.getState().fetchDeductions(),
+    useTaxStore.getState().fetchDeductionCategories(),
     useTaxStore.getState().fetchTips(),
 
     // Notifications

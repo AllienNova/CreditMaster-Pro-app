@@ -13,7 +13,7 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from "react-native";
-import { router } from "expo-router";
+import { router, Href } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
@@ -233,7 +233,7 @@ export default function GoalsScreen() {
           </TouchableOpacity>
           <Text style={styles.title}>Financial Goals</Text>
           <TouchableOpacity
-            onPress={() => router.push("/financial/create-goal")}
+            onPress={() => router.push("/financial/create-goal" as Href)}
           >
             <Ionicons
               name="add-circle-outline"
@@ -324,7 +324,7 @@ export default function GoalsScreen() {
             <TouchableOpacity
               key={goal.id}
               onPress={() =>
-                router.push(`/financial/goal-detail?id=${goal.id}`)
+                router.push(`/financial/goal-detail?id=${goal.id}` as Href)
               }
             >
               <Card style={styles.goalCard}>

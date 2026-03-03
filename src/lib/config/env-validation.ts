@@ -3,8 +3,123 @@
  *
  * Validates all required environment variables at application startup
  * to prevent runtime errors and security misconfigurations.
+ *
+ * Uses Zod for declarative schema validation with fail-fast behavior
+ * that reports ALL validation errors at once.
  */
 
+import crypto from "crypto";
+import { z } from "zod";
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Zod preprocessor that coerces string env var values to booleans.
+ * - "true" (case-insensitive) -> true
+ * - anything else / undefined / empty -> falls through to default
+ */
+const booleanFromEnv = (defaultValue: boolean) =>
+  z.preprocess((val) => {
+    if (val === undefined || val === null || (typeof val === "string" && val.trim() === "")) {
+      return defaultValue;
+    }
+    if (typeof val === "string") {
+      return val.toLowerCase() === "true";
+    }
+    return val;
+  }, z.boolean());
+
+/**
+ * Zod preprocessor that treats empty strings as undefined,
+ * allowing `.default()` to kick in.
+ */
+const optionalStringWithDefault = (defaultValue: string) =>
+  z.preprocess(
+    (val) =>
+      typeof val === "string" && val.trim() === "" ? undefined : val,
+    z.string().default(defaultValue),
+  );
+
+/**
+ * Zod preprocessor for optional URL fields with a default value.
+ * Empty strings fall through to the default, then validated as URL.
+ */
+const optionalUrlWithDefault = (defaultValue: string) =>
+  z.preprocess(
+    (val) =>
+      typeof val === "string" && val.trim() === "" ? undefined : val,
+    z.string().url(`Must be a valid URL`).default(defaultValue),
+  );
+
+/**
+ * Encryption key: optional, but when present must be >= 32 characters (AES-256).
+ */
+const encryptionKeySchema = z.preprocess(
+  (val) => {
+    if (val === undefined || val === null || (typeof val === "string" && val.trim() === "")) {
+      return undefined;
+    }
+    return val;
+  },
+  z
+    .string()
+    .min(32, "Encryption key must be at least 32 characters long")
+    .optional(),
+);
+
+// ---------------------------------------------------------------------------
+// Schema
+// ---------------------------------------------------------------------------
+
+const envSchema = z.object({
+  // -- AIML API ---------------------------------------------------------------
+  AIML_API_KEY: z.string().min(1, "Missing required environment variable: AIML_API_KEY"),
+  AIML_BASE_URL: optionalUrlWithDefault("https://api.aimlapi.com/v1"),
+  AIML_DEFAULT_CHAT_MODEL: optionalStringWithDefault("anthropic/claude-4.5-sonnet"),
+  AIML_REASONING_MODEL: optionalStringWithDefault("deepseek/deepseek-r1"),
+  AIML_FAST_MODEL: optionalStringWithDefault("openai/gpt-4o-mini"),
+  AIML_IMAGE_MODEL: optionalStringWithDefault("flux-pro"),
+  AIML_VOICE_MODEL: optionalStringWithDefault("tts-1-hd"),
+
+  // -- Supabase ---------------------------------------------------------------
+  NEXT_PUBLIC_SUPABASE_URL: z
+    .string()
+    .min(1, "Missing required environment variable: NEXT_PUBLIC_SUPABASE_URL")
+    .url("Invalid URL for NEXT_PUBLIC_SUPABASE_URL"),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: z
+    .string()
+    .trim()
+    .min(1, "Missing required environment variable: NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
+
+  // -- Application ------------------------------------------------------------
+  NEXT_PUBLIC_APP_URL: optionalUrlWithDefault("http://localhost:3000"),
+  NODE_ENV: optionalStringWithDefault("development"),
+
+  // -- Feature Flags ----------------------------------------------------------
+  ENABLE_MULTI_MODEL: booleanFromEnv(true),
+  ENABLE_VOICE_ASSISTANT: booleanFromEnv(true),
+  ENABLE_IMAGE_GENERATION: booleanFromEnv(true),
+  ENABLE_SEMANTIC_SEARCH: booleanFromEnv(true),
+
+  // -- Encryption -------------------------------------------------------------
+  ENCRYPTION_KEY: encryptionKeySchema,
+});
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+/** Raw parsed environment (matches schema keys). */
+type ParsedEnv = z.infer<typeof envSchema>;
+
+/**
+ * Public-facing config interface.
+ * Uses camelCase field names for ergonomic access in application code.
+ * This preserves backward compatibility with the previous manual API.
+ */
 export interface EnvConfig {
   // AIML API
   aimlApiKey: string;
@@ -34,6 +149,74 @@ export interface EnvConfig {
   encryptionKey?: string;
 }
 
+// ---------------------------------------------------------------------------
+// Secret Rotation & Env Drift Types
+// ---------------------------------------------------------------------------
+
+/**
+ * Critical secrets that are tracked for rotation detection.
+ * When any of these change between validations, a rotation event is detected.
+ */
+export const CRITICAL_SECRETS = [
+  "AIML_API_KEY",
+  "SUPABASE_SERVICE_ROLE_KEY",
+  "ENCRYPTION_KEY",
+  "STRIPE_SECRET_KEY",
+] as const;
+
+export type CriticalSecretName = (typeof CRITICAL_SECRETS)[number];
+
+/** Result of a secret rotation check. */
+export interface SecretRotationResult {
+  /** Whether any secrets have changed since initialization. */
+  rotated: boolean;
+  /** Names of secrets that changed. */
+  changedSecrets: CriticalSecretName[];
+  /** Names of secrets that were added (absent at init, now present). */
+  addedSecrets: CriticalSecretName[];
+  /** Names of secrets that were removed (present at init, now absent). */
+  removedSecrets: CriticalSecretName[];
+}
+
+/** Result of an env drift check. */
+export interface EnvDriftResult {
+  /** Whether any drift was detected. */
+  drifted: boolean;
+  /** Environment variable names that are new since startup. */
+  added: string[];
+  /** Environment variable names whose values changed since startup. */
+  changed: string[];
+  /** Environment variable names that were removed since startup. */
+  removed: string[];
+}
+
+/** Result of the environment initialization. */
+export interface InitResult {
+  /** The validated environment config. */
+  config: EnvConfig;
+  /** Number of critical secrets that were hashed and recorded. */
+  trackedSecrets: number;
+  /** Number of environment variables captured in the snapshot. */
+  snapshotSize: number;
+}
+
+// ---------------------------------------------------------------------------
+// Internal State for Rotation & Drift Detection
+// ---------------------------------------------------------------------------
+
+/** SHA-256 hashes of critical secrets, recorded at initialization. */
+let secretHashes: Map<CriticalSecretName, string> | null = null;
+
+/** Snapshot of all env var keys and their SHA-256 hashes at initialization. */
+let envSnapshot: Map<string, string> | null = null;
+
+/** Whether initializeEnvironment() has been called. */
+let initialized = false;
+
+// ---------------------------------------------------------------------------
+// Error class
+// ---------------------------------------------------------------------------
+
 /**
  * Validation errors
  */
@@ -44,242 +227,115 @@ export class EnvValidationError extends Error {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Mapping
+// ---------------------------------------------------------------------------
+
 /**
- * Validate a required environment variable
+ * Map raw parsed env object to the public camelCase EnvConfig shape.
  */
-function validateRequired(name: string, value: string | undefined): string {
-  if (!value || value.trim() === "") {
-    throw new Error(`Missing required environment variable: ${name}`);
-  }
-  return value;
+function toEnvConfig(parsed: ParsedEnv): EnvConfig {
+  return {
+    aimlApiKey: parsed.AIML_API_KEY,
+    aimlBaseUrl: parsed.AIML_BASE_URL,
+    aimlDefaultChatModel: parsed.AIML_DEFAULT_CHAT_MODEL,
+    aimlReasoningModel: parsed.AIML_REASONING_MODEL,
+    aimlFastModel: parsed.AIML_FAST_MODEL,
+    aimlImageModel: parsed.AIML_IMAGE_MODEL,
+    aimlVoiceModel: parsed.AIML_VOICE_MODEL,
+    supabaseUrl: parsed.NEXT_PUBLIC_SUPABASE_URL,
+    supabaseAnonKey: parsed.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    supabaseServiceRoleKey: parsed.SUPABASE_SERVICE_ROLE_KEY,
+    appUrl: parsed.NEXT_PUBLIC_APP_URL,
+    nodeEnv: parsed.NODE_ENV,
+    enableMultiModel: parsed.ENABLE_MULTI_MODEL,
+    enableVoiceAssistant: parsed.ENABLE_VOICE_ASSISTANT,
+    enableImageGeneration: parsed.ENABLE_IMAGE_GENERATION,
+    enableSemanticSearch: parsed.ENABLE_SEMANTIC_SEARCH,
+    encryptionKey: parsed.ENCRYPTION_KEY,
+  };
 }
 
-/**
- * Validate an optional environment variable
- */
-function validateOptional(
-  name: string,
-  value: string | undefined,
-  defaultValue: string,
-): string {
-  return value && value.trim() !== "" ? value : defaultValue;
-}
+// ---------------------------------------------------------------------------
+// Production-specific refinements
+// ---------------------------------------------------------------------------
 
 /**
- * Validate a boolean environment variable
+ * Additional production-environment checks that go beyond simple field
+ * validation: cross-field constraints that only apply when NODE_ENV=production.
  */
-function validateBoolean(
-  name: string,
-  value: string | undefined,
-  defaultValue: boolean,
-): boolean {
-  if (!value || value.trim() === "") {
-    return defaultValue;
-  }
-  return value.toLowerCase() === "true";
-}
-
-/**
- * Validate a URL
- */
-function validateUrl(name: string, value: string): string {
-  try {
-    new URL(value);
-    return value;
-  } catch (error) {
-    const reason = error instanceof Error ? error.message : "unknown error";
-    throw new Error(`Invalid URL for ${name}: ${value} (${reason})`);
-  }
-}
-
-/**
- * Validate encryption key
- */
-function validateEncryptionKey(key: string | undefined): string | undefined {
-  if (!key) {
-    return undefined;
-  }
-
-  // Check key length (should be 32 bytes for AES-256)
-  if (key.length < 32) {
-    throw new Error("Encryption key must be at least 32 characters long");
-  }
-
-  return key;
-}
-
-/**
- * Validate all environment variables
- */
-export function validateEnv(): EnvConfig {
+function validateProductionConstraints(config: EnvConfig): string[] {
   const errors: string[] = [];
 
-  try {
-    // AIML API
-    const aimlApiKey = validateRequired(
-      "AIML_API_KEY",
-      process.env.AIML_API_KEY,
-    );
-    const aimlBaseUrl = validateUrl(
-      "AIML_BASE_URL",
-      validateOptional(
-        "AIML_BASE_URL",
-        process.env.AIML_BASE_URL,
-        "https://api.aimlapi.com/v1",
-      ),
-    );
-    const aimlDefaultChatModel = validateOptional(
-      "AIML_DEFAULT_CHAT_MODEL",
-      process.env.AIML_DEFAULT_CHAT_MODEL,
-      "anthropic/claude-4.5-sonnet",
-    );
-    const aimlReasoningModel = validateOptional(
-      "AIML_REASONING_MODEL",
-      process.env.AIML_REASONING_MODEL,
-      "deepseek/deepseek-r1",
-    );
-    const aimlFastModel = validateOptional(
-      "AIML_FAST_MODEL",
-      process.env.AIML_FAST_MODEL,
-      "openai/gpt-4o-mini",
-    );
-    const aimlImageModel = validateOptional(
-      "AIML_IMAGE_MODEL",
-      process.env.AIML_IMAGE_MODEL,
-      "flux-pro",
-    );
-    const aimlVoiceModel = validateOptional(
-      "AIML_VOICE_MODEL",
-      process.env.AIML_VOICE_MODEL,
-      "tts-1-hd",
-    );
+  if (config.nodeEnv !== "production") {
+    return errors;
+  }
 
-    // Supabase
-    const supabaseUrl = validateUrl(
-      "NEXT_PUBLIC_SUPABASE_URL",
-      validateRequired(
-        "NEXT_PUBLIC_SUPABASE_URL",
-        process.env.NEXT_PUBLIC_SUPABASE_URL,
-      ),
+  if (config.appUrl.includes("localhost")) {
+    errors.push("NEXT_PUBLIC_APP_URL must not be localhost in production");
+  }
+
+  if (!config.encryptionKey) {
+    errors.push("ENCRYPTION_KEY is required in production");
+  }
+
+  if (!config.supabaseServiceRoleKey) {
+    errors.push("SUPABASE_SERVICE_ROLE_KEY is required in production");
+  }
+
+  return errors;
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+/**
+ * Validate all environment variables.
+ *
+ * Uses Zod safeParse so ALL validation errors are collected and reported
+ * at once (fail-fast with complete diagnostics).
+ */
+export function validateEnv(): EnvConfig {
+  const result = envSchema.safeParse(process.env);
+
+  if (!result.success) {
+    const errors = result.error.issues.map(
+      (issue) => `  ${issue.path.join(".")}: ${issue.message}`,
     );
-    const supabaseAnonKey = validateRequired(
-      "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    );
-    const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    // Application
-    const appUrl = validateUrl(
-      "NEXT_PUBLIC_APP_URL",
-      validateOptional(
-        "NEXT_PUBLIC_APP_URL",
-        process.env.NEXT_PUBLIC_APP_URL,
-        "http://localhost:3000",
-      ),
-    );
-    const nodeEnv = validateOptional(
-      "NODE_ENV",
-      process.env.NODE_ENV,
-      "development",
-    );
-
-    // Feature Flags
-    const enableMultiModel = validateBoolean(
-      "ENABLE_MULTI_MODEL",
-      process.env.ENABLE_MULTI_MODEL,
-      true,
-    );
-    const enableVoiceAssistant = validateBoolean(
-      "ENABLE_VOICE_ASSISTANT",
-      process.env.ENABLE_VOICE_ASSISTANT,
-      true,
-    );
-    const enableImageGeneration = validateBoolean(
-      "ENABLE_IMAGE_GENERATION",
-      process.env.ENABLE_IMAGE_GENERATION,
-      true,
-    );
-    const enableSemanticSearch = validateBoolean(
-      "ENABLE_SEMANTIC_SEARCH",
-      process.env.ENABLE_SEMANTIC_SEARCH,
-      true,
-    );
-
-    // Encryption
-    const encryptionKey = validateEncryptionKey(process.env.ENCRYPTION_KEY);
-
-    // Warn about missing optional variables
-    if (!supabaseServiceRoleKey) {
-      // EnvValidation: SUPABASE_SERVICE_ROLE_KEY not set - admin operations will not work
-    }
-
-    if (!encryptionKey) {
-      // EnvValidation: ENCRYPTION_KEY not set - PII encryption will not work
-    }
-
-    // Production-specific validations
-    if (nodeEnv === "production") {
-      if (appUrl.includes("localhost")) {
-        errors.push("NEXT_PUBLIC_APP_URL must not be localhost in production");
-      }
-
-      if (!encryptionKey) {
-        errors.push("ENCRYPTION_KEY is required in production");
-      }
-
-      if (!supabaseServiceRoleKey) {
-        errors.push("SUPABASE_SERVICE_ROLE_KEY is required in production");
-      }
-    }
-
-    if (errors.length > 0) {
-      throw new EnvValidationError(errors);
-    }
-
-    return {
-      aimlApiKey,
-      aimlBaseUrl,
-      aimlDefaultChatModel,
-      aimlReasoningModel,
-      aimlFastModel,
-      aimlImageModel,
-      aimlVoiceModel,
-      supabaseUrl,
-      supabaseAnonKey,
-      supabaseServiceRoleKey,
-      appUrl,
-      nodeEnv,
-      enableMultiModel,
-      enableVoiceAssistant,
-      enableImageGeneration,
-      enableSemanticSearch,
-      encryptionKey,
-    };
-  } catch (error) {
-    if (error instanceof EnvValidationError) {
-      throw error;
-    }
-
-    if (error instanceof Error) {
-      errors.push(error.message);
-    }
-
     throw new EnvValidationError(errors);
   }
+
+  const config = toEnvConfig(result.data);
+
+  // Production cross-field constraints
+  const productionErrors = validateProductionConstraints(config);
+  if (productionErrors.length > 0) {
+    throw new EnvValidationError(productionErrors);
+  }
+
+  return config;
 }
 
 /**
- * Get validated environment configuration
- * Caches the result after first validation
+ * Get validated environment configuration.
+ * Caches the result after first validation.
  */
 let cachedConfig: EnvConfig | null = null;
 
 export function getEnvConfig(): EnvConfig {
   if (!cachedConfig) {
     cachedConfig = validateEnv();
-    // EnvValidation: Environment variables validated successfully
   }
   return cachedConfig;
+}
+
+/**
+ * Reset the cached config. Primarily for testing.
+ * @internal
+ */
+export function _resetConfigCache(): void {
+  cachedConfig = null;
 }
 
 /**
@@ -303,15 +359,190 @@ export function isTest(): boolean {
   return getEnvConfig().nodeEnv === "test";
 }
 
-// Validate on module load (but only in Node.js environment)
-if (typeof window === "undefined") {
-  try {
-    getEnvConfig();
-  } catch (error) {
-    if (error instanceof EnvValidationError) {
-      // EnvValidation error: Environment validation failed
-      process.exit(1);
-    }
-    throw error;
-  }
+// ---------------------------------------------------------------------------
+// Secret Hashing
+// ---------------------------------------------------------------------------
+
+/**
+ * Compute a SHA-256 hash of a string value.
+ * Used to track secret values without storing them in plaintext.
+ */
+function hashValue(value: string): string {
+  return crypto.createHash("sha256").update(value).digest("hex");
 }
+
+/**
+ * Record SHA-256 hashes of all critical secrets currently present in process.env.
+ * Secrets that are not set are simply omitted from the map.
+ */
+function captureSecretHashes(): Map<CriticalSecretName, string> {
+  const hashes = new Map<CriticalSecretName, string>();
+  for (const name of CRITICAL_SECRETS) {
+    const value = process.env[name];
+    if (value !== undefined && value !== "") {
+      hashes.set(name, hashValue(value));
+    }
+  }
+  return hashes;
+}
+
+/**
+ * Capture a snapshot of all current environment variable keys and hashed values.
+ * Values are hashed so the snapshot does not store secrets in plaintext.
+ */
+function captureEnvSnapshot(): Map<string, string> {
+  const snapshot = new Map<string, string>();
+  for (const [key, value] of Object.entries(process.env)) {
+    if (value !== undefined) {
+      snapshot.set(key, hashValue(value));
+    }
+  }
+  return snapshot;
+}
+
+// ---------------------------------------------------------------------------
+// Secret Rotation Detection
+// ---------------------------------------------------------------------------
+
+/**
+ * Detect whether any critical secrets have been rotated (changed, added, or
+ * removed) since `initializeEnvironment()` was called.
+ *
+ * Throws if the environment has not been initialized yet.
+ */
+export function detectSecretRotation(): SecretRotationResult {
+  if (!secretHashes) {
+    throw new Error(
+      "Environment not initialized. Call initializeEnvironment() first.",
+    );
+  }
+
+  const changedSecrets: CriticalSecretName[] = [];
+  const addedSecrets: CriticalSecretName[] = [];
+  const removedSecrets: CriticalSecretName[] = [];
+
+  for (const name of CRITICAL_SECRETS) {
+    const currentValue = process.env[name];
+    const previousHash = secretHashes.get(name);
+    const currentlyPresent = currentValue !== undefined && currentValue !== "";
+    const previouslyPresent = previousHash !== undefined;
+
+    if (currentlyPresent && !previouslyPresent) {
+      addedSecrets.push(name);
+    } else if (!currentlyPresent && previouslyPresent) {
+      removedSecrets.push(name);
+    } else if (currentlyPresent && previouslyPresent) {
+      const currentHash = hashValue(currentValue);
+      if (currentHash !== previousHash) {
+        changedSecrets.push(name);
+      }
+    }
+  }
+
+  const rotated =
+    changedSecrets.length > 0 ||
+    addedSecrets.length > 0 ||
+    removedSecrets.length > 0;
+
+  return { rotated, changedSecrets, addedSecrets, removedSecrets };
+}
+
+// ---------------------------------------------------------------------------
+// Env Drift Detection
+// ---------------------------------------------------------------------------
+
+/**
+ * Detect environment variable drift — variables that have been added, changed,
+ * or removed since `initializeEnvironment()` was called.
+ *
+ * Throws if the environment has not been initialized yet.
+ */
+export function detectEnvDrift(): EnvDriftResult {
+  if (!envSnapshot) {
+    throw new Error(
+      "Environment not initialized. Call initializeEnvironment() first.",
+    );
+  }
+
+  const added: string[] = [];
+  const changed: string[] = [];
+  const removed: string[] = [];
+
+  // Check for new or changed vars
+  for (const [key, value] of Object.entries(process.env)) {
+    if (value === undefined) continue;
+    const currentHash = hashValue(value);
+    const previousHash = envSnapshot.get(key);
+
+    if (previousHash === undefined) {
+      added.push(key);
+    } else if (currentHash !== previousHash) {
+      changed.push(key);
+    }
+  }
+
+  // Check for removed vars
+  for (const key of envSnapshot.keys()) {
+    if (process.env[key] === undefined) {
+      removed.push(key);
+    }
+  }
+
+  const drifted = added.length > 0 || changed.length > 0 || removed.length > 0;
+
+  return { drifted, added, changed, removed };
+}
+
+// ---------------------------------------------------------------------------
+// Startup Guard
+// ---------------------------------------------------------------------------
+
+/**
+ * Initialize the environment: validate all env vars, record secret hashes,
+ * and capture the env snapshot for drift detection.
+ *
+ * Should be called once at application startup. Subsequent calls re-initialize
+ * (useful after configuration changes or in tests).
+ */
+export function initializeEnvironment(): InitResult {
+  // 1. Validate (throws EnvValidationError on failure — fail-fast)
+  const config = validateEnv();
+
+  // 2. Record secret hashes for rotation detection
+  secretHashes = captureSecretHashes();
+
+  // 3. Capture full env snapshot for drift detection
+  envSnapshot = captureEnvSnapshot();
+
+  // 4. Cache the config
+  cachedConfig = config;
+  initialized = true;
+
+  return {
+    config,
+    trackedSecrets: secretHashes.size,
+    snapshotSize: envSnapshot.size,
+  };
+}
+
+/**
+ * Check whether the environment has been initialized.
+ */
+export function isInitialized(): boolean {
+  return initialized;
+}
+
+/**
+ * Reset all internal state (config cache, secret hashes, env snapshot).
+ * Primarily for testing.
+ * @internal
+ */
+export function _resetAll(): void {
+  cachedConfig = null;
+  secretHashes = null;
+  envSnapshot = null;
+  initialized = false;
+}
+
+// Export the schema for advanced use-cases (e.g., tooling, CI checks)
+export { envSchema };

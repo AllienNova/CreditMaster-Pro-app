@@ -26,7 +26,12 @@ export type WidgetSize = "small" | "medium" | "large";
 export interface WidgetData {
   type: WidgetType;
   lastUpdated: string;
-  data: Record<string, unknown>;
+  data:
+    | CreditScoreWidgetData
+    | BudgetWidgetData
+    | BillsWidgetData
+    | NetWorthWidgetData
+    | Record<string, unknown>;
 }
 
 export interface CreditScoreWidgetData {

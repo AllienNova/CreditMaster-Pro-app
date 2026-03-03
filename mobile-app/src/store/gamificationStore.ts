@@ -21,6 +21,7 @@ import {
   type StreakUpdateResponse,
   type BadgeCategory,
 } from "../services/api/gamification";
+import { seedGamificationProgress, seedBadgesResponse, seedQuestsResponse, seedLeaderboard } from "../data/dev-seed";
 
 // ============================================================================
 // STATE INTERFACE
@@ -153,6 +154,10 @@ export const useGamificationStore = create<GamificationState>()(
 
       fetchProgress: async () => {
         set({ isLoadingProgress: true, progressError: null });
+        if (__DEV__) {
+          set({ progress: seedGamificationProgress, lastProgressFetch: new Date().toISOString(), isLoadingProgress: false });
+          return;
+        }
         try {
           const response = await gamificationApi.getProgress();
           if (response.success && response.data) {
@@ -228,6 +233,17 @@ export const useGamificationStore = create<GamificationState>()(
 
       fetchBadges: async () => {
         set({ isLoadingBadges: true, badgesError: null });
+        if (__DEV__) {
+          set({
+            earnedBadges: seedBadgesResponse.earned,
+            inProgressBadges: seedBadgesResponse.inProgress,
+            lockedBadges: seedBadgesResponse.locked,
+            badgeStats: seedBadgesResponse.stats,
+            lastBadgesFetch: new Date().toISOString(),
+            isLoadingBadges: false,
+          });
+          return;
+        }
         try {
           const response = await gamificationApi.getBadges();
           if (response.success && response.data) {
@@ -275,6 +291,17 @@ export const useGamificationStore = create<GamificationState>()(
 
       fetchQuests: async () => {
         set({ isLoadingQuests: true, questsError: null });
+        if (__DEV__) {
+          set({
+            quests: seedQuestsResponse.today,
+            questsCompletedToday: seedQuestsResponse.completedToday,
+            totalQuestsToday: seedQuestsResponse.totalToday,
+            availableXp: seedQuestsResponse.availableXp,
+            lastQuestsFetch: new Date().toISOString(),
+            isLoadingQuests: false,
+          });
+          return;
+        }
         try {
           const response = await gamificationApi.getQuests();
           if (response.success && response.data) {
@@ -341,6 +368,18 @@ export const useGamificationStore = create<GamificationState>()(
 
       fetchLeaderboard: async (type: LeaderboardType = "weekly_xp") => {
         set({ isLoadingLeaderboard: true, leaderboardError: null });
+        if (__DEV__) {
+          set({
+            leaderboard: seedLeaderboard.entries,
+            leaderboardType: seedLeaderboard.type,
+            leaderboardPeriod: { start: seedLeaderboard.periodStart, end: seedLeaderboard.periodEnd },
+            userRank: seedLeaderboard.userRank ?? null,
+            userPercentile: seedLeaderboard.userPercentile ?? null,
+            lastLeaderboardFetch: new Date().toISOString(),
+            isLoadingLeaderboard: false,
+          });
+          return;
+        }
         try {
           const response = await gamificationApi.getLeaderboard(type);
           if (response.success && response.data) {

@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
 import { financialCoach } from "@/lib/ai/financial-coach";
-import { FocusArea } from "@/lib/ai/types/financial-coach.types";
+import type { FocusArea } from "@/lib/ai/financial-coach";
 
 // ============================================================================
 // VALIDATION SCHEMAS
@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
     // Analyze financial situation
     const analysis = await financialCoach.analyzeFinancialSituation(
       user.id,
-      focusArea as any,
+      focusArea as FocusArea,
     );
 
     return NextResponse.json({

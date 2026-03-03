@@ -214,7 +214,7 @@ describe("PushNotificationService", () => {
     });
 
     it("should use custom trigger when provided", async () => {
-      const trigger = { seconds: 60 };
+      const trigger = { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: 60, repeats: false };
 
       await pushNotificationService.scheduleLocalNotification(
         "Reminder",

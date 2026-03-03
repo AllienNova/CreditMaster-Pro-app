@@ -13,7 +13,7 @@ const { width } = Dimensions.get("window");
  * Shows statistics and trends for the user's disputes.
  */
 export default function DisputeAnalyticsScreen() {
-  const { disputes, stats } = useDisputeStore();
+  const { disputes } = useDisputeStore();
 
   // Calculate analytics
   const totalDisputes = disputes.length;
@@ -21,7 +21,7 @@ export default function DisputeAnalyticsScreen() {
     (d) => d.status === "resolved",
   ).length;
   const pendingDisputes = disputes.filter(
-    (d) => d.status === "pending" || d.status === "in_review",
+    (d) => d.status === "pending" || d.status === "under_review",
   ).length;
   const successRate =
     totalDisputes > 0
@@ -38,7 +38,7 @@ export default function DisputeAnalyticsScreen() {
 
   const typeBreakdown = disputes.reduce(
     (acc, d) => {
-      const type = d.item_type || "other";
+      const type = d.itemType || "other";
       acc[type] = (acc[type] || 0) + 1;
       return acc;
     },

@@ -422,7 +422,8 @@ describe("SmartBudgetEngine", () => {
       const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
       const expectedDays = Math.max(0, lastDay.getDate() - today.getDate());
 
-      expect(prediction.daysRemaining).toBe(expectedDays);
+      // Bitwise OR normalizes -0 to 0 (edge case on last day of month)
+      expect(prediction.daysRemaining | 0).toBe(expectedDays | 0);
     });
 
     it("should provide category predictions", async () => {

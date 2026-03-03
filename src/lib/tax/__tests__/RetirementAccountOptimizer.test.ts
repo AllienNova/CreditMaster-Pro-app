@@ -2,10 +2,16 @@
  * RetirementAccountOptimizer Test Suite
  *
  * Covers: analyze (401k, IRA, Roth IRA, HSA, SEP IRA),
- *         Roth vs Traditional, contribution priority ordering
+ *         Roth vs Traditional, contribution priority ordering,
+ *         catch-up contributions (age 50+), tax bracket optimization,
+ *         retirement readiness projection
  */
 
 import { RetirementAccountOptimizer } from "../services/RetirementAccountOptimizer";
+import type {
+  BracketOptimizationResult,
+  RetirementReadinessProjection,
+} from "../services/RetirementAccountOptimizer";
 import {
   FilingStatus,
   BusinessType,
@@ -542,6 +548,837 @@ describe("RetirementAccountOptimizer", () => {
           result.contributionPriorityOrder.length - 1
         ];
       expect(last).toMatch(/taxable|brokerage/i);
+    });
+  });
+
+  // =========================================================================
+  // Catch-Up Contributions (Age 50+)
+  // =========================================================================
+  describe("Catch-Up Contributions", () => {
+    it("should increase 401k limit by $7,500 for age 50+", () => {
+      const result = optimizer.analyze(createMockProfile({ age: 55 }));
+      const rec401k = result.recommendations.find(
+        (r) => r.accountType === TaxAccountType.TRADITIONAL_401K,
+      );
+      expect(rec401k).toBeDefined();
+      if (rec401k) {
+        expect(rec401k.catchUpEligible).toBe(true);
+        expect(rec401k.catchUpAmount).toBe(
+          CONTRIBUTION_LIMITS_2024.traditional401kCatchUp,
+        );
+        expect(rec401k.maxContribution).toBe(
+          CONTRIBUTION_LIMITS_2024.traditional401k +
+            CONTRIBUTION_LIMITS_2024.traditional401kCatchUp,
+        );
+      }
+    });
+
+    it("should NOT add catch-up for age below 50", () => {
+      const result = optimizer.analyze(createMockProfile({ age: 35 }));
+      const rec401k = result.recommendations.find(
+        (r) => r.accountType === TaxAccountType.TRADITIONAL_401K,
+      );
+      expect(rec401k).toBeDefined();
+      if (rec401k) {
+        expect(rec401k.catchUpEligible).toBe(false);
+        expect(rec401k.catchUpAmount).toBe(0);
+        expect(rec401k.maxContribution).toBe(
+          CONTRIBUTION_LIMITS_2024.traditional401k,
+        );
+      }
+    });
+
+    it("should NOT add catch-up when age is not provided", () => {
+      const result = optimizer.analyze(createMockProfile());
+      const rec401k = result.recommendations.find(
+        (r) => r.accountType === TaxAccountType.TRADITIONAL_401K,
+      );
+      if (rec401k) {
+        expect(rec401k.catchUpEligible).toBe(false);
+        expect(rec401k.catchUpAmount).toBe(0);
+      }
+    });
+
+    it("should increase IRA limit by $1,000 for age 50+", () => {
+      const result = optimizer.analyze(createMockProfile({ age: 52 }));
+      const iraRec = result.recommendations.find(
+        (r) => r.accountType === TaxAccountType.TRADITIONAL_IRA,
+      );
+      expect(iraRec).toBeDefined();
+      if (iraRec) {
+        expect(iraRec.catchUpEligible).toBe(true);
+        expect(iraRec.catchUpAmount).toBe(CONTRIBUTION_LIMITS_2024.iraCatchUp);
+        expect(iraRec.maxContribution).toBe(
+          CONTRIBUTION_LIMITS_2024.traditionalIra +
+            CONTRIBUTION_LIMITS_2024.iraCatchUp,
+        );
+      }
+    });
+
+    it("should increase Roth IRA limit by $1,000 for age 50+", () => {
+      const result = optimizer.analyze(
+        createMockProfile({ age: 60, grossIncome: 80000, w2Income: 80000 }),
+      );
+      const rothRec = result.recommendations.find(
+        (r) => r.accountType === TaxAccountType.ROTH_IRA,
+      );
+      expect(rothRec).toBeDefined();
+      if (rothRec) {
+        expect(rothRec.catchUpEligible).toBe(true);
+        expect(rothRec.catchUpAmount).toBe(CONTRIBUTION_LIMITS_2024.iraCatchUp);
+      }
+    });
+
+    it("should increase HSA limit by $1,000 for age 55+", () => {
+      const result = optimizer.analyze(
+        createMockProfile({ age: 57, hasHdhp: true }),
+      );
+      const hsaRec = result.recommendations.find(
+        (r) => r.accountType === TaxAccountType.HSA,
+      );
+      expect(hsaRec).toBeDefined();
+      if (hsaRec) {
+        expect(hsaRec.catchUpEligible).toBe(true);
+        expect(hsaRec.catchUpAmount).toBe(CONTRIBUTION_LIMITS_2024.hsaCatchUp);
+        expect(hsaRec.maxContribution).toBe(
+          CONTRIBUTION_LIMITS_2024.hsaIndividual +
+            CONTRIBUTION_LIMITS_2024.hsaCatchUp,
+        );
+      }
+    });
+
+    it("should NOT add HSA catch-up for age 50 (below 55)", () => {
+      const result = optimizer.analyze(
+        createMockProfile({ age: 50, hasHdhp: true }),
+      );
+      const hsaRec = result.recommendations.find(
+        (r) => r.accountType === TaxAccountType.HSA,
+      );
+      expect(hsaRec).toBeDefined();
+      if (hsaRec) {
+        expect(hsaRec.catchUpEligible).toBe(false);
+        expect(hsaRec.catchUpAmount).toBe(0);
+      }
+    });
+
+    it("should include catch-up warning in 401k recommendations for age 50+", () => {
+      const result = optimizer.analyze(createMockProfile({ age: 52 }));
+      const rec401k = result.recommendations.find(
+        (r) => r.accountType === TaxAccountType.TRADITIONAL_401K,
+      );
+      if (rec401k) {
+        const hasCatchUpWarning = rec401k.warnings.some((w) =>
+          w.includes("catch-up"),
+        );
+        expect(hasCatchUpWarning).toBe(true);
+      }
+    });
+
+    it("should report totalCatchUpCapacity in result for age 50+", () => {
+      const result = optimizer.analyze(
+        createMockProfile({ age: 55, hasHdhp: true }),
+      );
+      expect(result.catchUpEligible).toBe(true);
+      expect(result.totalCatchUpCapacity).toBeGreaterThan(0);
+    });
+
+    it("should report catchUpEligible=false in result for age <50", () => {
+      const result = optimizer.analyze(createMockProfile({ age: 30 }));
+      expect(result.catchUpEligible).toBe(false);
+      expect(result.totalCatchUpCapacity).toBe(0);
+    });
+
+    it("should NOT have catch-up for SEP IRA", () => {
+      const result = optimizer.analyze(
+        createMockProfile({
+          age: 55,
+          isSelfEmployed: true,
+          selfEmploymentIncome: 100000,
+          grossIncome: 100000,
+          w2Income: 0,
+          businessType: BusinessType.SOLE_PROPRIETORSHIP,
+        }),
+      );
+      const sepRec = result.recommendations.find(
+        (r) => r.accountType === TaxAccountType.SEP_IRA,
+      );
+      if (sepRec) {
+        expect(sepRec.catchUpEligible).toBe(false);
+        expect(sepRec.catchUpAmount).toBe(0);
+      }
+    });
+
+    it("should handle exactly age 50", () => {
+      const result = optimizer.analyze(createMockProfile({ age: 50 }));
+      const rec401k = result.recommendations.find(
+        (r) => r.accountType === TaxAccountType.TRADITIONAL_401K,
+      );
+      if (rec401k) {
+        expect(rec401k.catchUpEligible).toBe(true);
+        expect(rec401k.catchUpAmount).toBe(
+          CONTRIBUTION_LIMITS_2024.traditional401kCatchUp,
+        );
+      }
+    });
+  });
+
+  // =========================================================================
+  // Tax Bracket Optimization
+  // =========================================================================
+  describe("Tax Bracket Optimization", () => {
+    it("should include bracketOptimization in analyze result", () => {
+      const result = optimizer.analyze(createMockProfile());
+      expect(result.bracketOptimization).toBeDefined();
+      expect(result.bracketOptimization).toHaveProperty("currentBracket");
+      expect(result.bracketOptimization).toHaveProperty("nextLowerBracket");
+      expect(result.bracketOptimization).toHaveProperty(
+        "deductionToDropBracket",
+      );
+      expect(result.bracketOptimization).toHaveProperty(
+        "taxSavingsIfDropBracket",
+      );
+      expect(result.bracketOptimization).toHaveProperty("recommendedStrategy");
+    });
+
+    it("should identify current marginal bracket correctly", () => {
+      // $100k single -> 22% bracket ($47,150 - $100,525)
+      const result = optimizer.analyze(
+        createMockProfile({ grossIncome: 100000, w2Income: 100000 }),
+      );
+      expect(result.bracketOptimization.currentBracket).toBe(0.22);
+    });
+
+    it("should calculate deduction needed to drop one bracket", () => {
+      // $100k single is in 22% bracket (starts at $47,150)
+      // Income in current bracket = $100,000 - $47,150 = $52,850
+      const result = optimizer.analyze(
+        createMockProfile({ grossIncome: 100000 }),
+      );
+      expect(result.bracketOptimization.deductionToDropBracket).toBe(
+        100000 - 47150,
+      );
+      expect(result.bracketOptimization.nextLowerBracket).toBe(0.12);
+    });
+
+    it("should calculate tax savings from dropping a bracket", () => {
+      // $50,000 single -> 22% bracket, but barely in it
+      // Income in 22% bracket = $50,000 - $47,150 = $2,850
+      // Tax savings = $2,850 * (0.22 - 0.12) = $285
+      const result = optimizer.analyze(
+        createMockProfile({ grossIncome: 50000 }),
+      );
+      expect(result.bracketOptimization.currentBracket).toBe(0.22);
+      expect(result.bracketOptimization.deductionToDropBracket).toBe(
+        50000 - 47150,
+      );
+      expect(result.bracketOptimization.taxSavingsIfDropBracket).toBeCloseTo(
+        (50000 - 47150) * (0.22 - 0.12),
+        0,
+      );
+    });
+
+    it("should handle lowest bracket (no lower bracket available)", () => {
+      // $5,000 single -> 10% bracket
+      const result = optimizer.analyze(
+        createMockProfile({ grossIncome: 5000, w2Income: 5000 }),
+      );
+      expect(result.bracketOptimization.currentBracket).toBe(0.1);
+      expect(result.bracketOptimization.deductionToDropBracket).toBe(0);
+      expect(result.bracketOptimization.taxSavingsIfDropBracket).toBe(0);
+      expect(result.bracketOptimization.recommendedStrategy).toContain(
+        "lowest tax bracket",
+      );
+    });
+
+    it("should provide a strategy recommendation for small deduction needed", () => {
+      // Just above a bracket boundary
+      const result = optimizer.analyze(
+        createMockProfile({ grossIncome: 48000 }),
+      );
+      // $48k is just above 22% boundary at $47,150 (deduction = $850)
+      expect(
+        result.bracketOptimization.recommendedStrategy.length,
+      ).toBeGreaterThan(0);
+    });
+
+    it("should use married brackets for MFJ", () => {
+      // $200,000 MFJ -> 22% bracket ($94,300 - $201,050)
+      const result = optimizer.analyze(
+        createMockProfile({
+          filingStatus: FilingStatus.MARRIED_FILING_JOINTLY,
+          grossIncome: 200000,
+          w2Income: 200000,
+        }),
+      );
+      expect(result.bracketOptimization.currentBracket).toBe(0.22);
+      expect(result.bracketOptimization.nextLowerBracket).toBe(0.12);
+    });
+
+    it("should handle high earner in top bracket", () => {
+      // $700k single -> 37% bracket (>$609,350)
+      const result = optimizer.analyze(
+        createMockProfile({ grossIncome: 700000, w2Income: 700000 }),
+      );
+      expect(result.bracketOptimization.currentBracket).toBe(0.37);
+      expect(result.bracketOptimization.nextLowerBracket).toBe(0.35);
+      expect(result.bracketOptimization.deductionToDropBracket).toBe(
+        700000 - 609350,
+      );
+    });
+
+    it("should use analyzeBracketOptimization directly", () => {
+      const profile = createMockProfile({ grossIncome: 120000 });
+      const bo = optimizer.analyzeBracketOptimization(profile);
+      // $120k single -> 24% bracket
+      expect(bo.currentBracket).toBe(0.24);
+      expect(bo.nextLowerBracket).toBe(0.22);
+    });
+  });
+
+  // =========================================================================
+  // Retirement Readiness Projection
+  // =========================================================================
+  describe("Retirement Readiness Projection", () => {
+    it("should include retirementReadiness in analyze result when age is provided", () => {
+      const result = optimizer.analyze(
+        createMockProfile({
+          age: 35,
+          accounts: [
+            {
+              id: "acct-1",
+              userId: "test-user",
+              accountType: TaxAccountType.TRADITIONAL_401K,
+              institutionName: "Fidelity",
+              accountName: "401k",
+              currentBalance: 100000,
+              ytdContribution: 10000,
+              contributionLimit: CONTRIBUTION_LIMITS_2024.traditional401k,
+              isLinked: false,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ],
+        }),
+      );
+      expect(result.retirementReadiness).not.toBeNull();
+    });
+
+    it("should return null retirementReadiness when age is not provided", () => {
+      const result = optimizer.analyze(createMockProfile());
+      expect(result.retirementReadiness).toBeNull();
+    });
+
+    it("should calculate correct years to retirement", () => {
+      const result = optimizer.analyze(
+        createMockProfile({
+          age: 40,
+          targetRetirementAge: 65,
+          accounts: [
+            {
+              id: "acct-1",
+              userId: "test-user",
+              accountType: TaxAccountType.TRADITIONAL_401K,
+              institutionName: "Fidelity",
+              accountName: "401k",
+              currentBalance: 200000,
+              ytdContribution: 0,
+              contributionLimit: CONTRIBUTION_LIMITS_2024.traditional401k,
+              isLinked: false,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ],
+        }),
+      );
+      expect(result.retirementReadiness).not.toBeNull();
+      if (result.retirementReadiness) {
+        expect(result.retirementReadiness.currentAge).toBe(40);
+        expect(result.retirementReadiness.targetRetirementAge).toBe(65);
+        expect(result.retirementReadiness.yearsToRetirement).toBe(25);
+      }
+    });
+
+    it("should use default target retirement age of 65", () => {
+      const result = optimizer.analyze(createMockProfile({ age: 30 }));
+      if (result.retirementReadiness) {
+        expect(result.retirementReadiness.targetRetirementAge).toBe(65);
+        expect(result.retirementReadiness.yearsToRetirement).toBe(35);
+      }
+    });
+
+    it("should project balance growth over time", () => {
+      const result = optimizer.analyze(
+        createMockProfile({
+          age: 30,
+          ytd401kContribution: 10000,
+          accounts: [
+            {
+              id: "acct-1",
+              userId: "test-user",
+              accountType: TaxAccountType.TRADITIONAL_401K,
+              institutionName: "Fidelity",
+              accountName: "401k",
+              currentBalance: 50000,
+              ytdContribution: 10000,
+              contributionLimit: CONTRIBUTION_LIMITS_2024.traditional401k,
+              isLinked: false,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ],
+        }),
+      );
+      if (result.retirementReadiness) {
+        expect(
+          result.retirementReadiness.projectedBalanceAtRetirement,
+        ).toBeGreaterThan(50000);
+        expect(
+          result.retirementReadiness.projectedMonthlyIncomeInRetirement,
+        ).toBeGreaterThan(0);
+      }
+    });
+
+    it("should calculate income replacement rate", () => {
+      const result = optimizer.analyze(
+        createMockProfile({
+          age: 45,
+          grossIncome: 100000,
+          accounts: [
+            {
+              id: "acct-1",
+              userId: "test-user",
+              accountType: TaxAccountType.TRADITIONAL_401K,
+              institutionName: "Fidelity",
+              accountName: "401k",
+              currentBalance: 500000,
+              ytdContribution: 23000,
+              contributionLimit: CONTRIBUTION_LIMITS_2024.traditional401k,
+              isLinked: false,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ],
+          ytd401kContribution: 23000,
+        }),
+      );
+      if (result.retirementReadiness) {
+        expect(result.retirementReadiness.incomeReplacementRate).toBeGreaterThan(
+          0,
+        );
+      }
+    });
+
+    it("should calculate retirement gap (shortfall or surplus)", () => {
+      const result = optimizer.analyze(
+        createMockProfile({
+          age: 35,
+          grossIncome: 100000,
+          accounts: [
+            {
+              id: "acct-1",
+              userId: "test-user",
+              accountType: TaxAccountType.TRADITIONAL_401K,
+              institutionName: "Fidelity",
+              accountName: "401k",
+              currentBalance: 50000,
+              ytdContribution: 0,
+              contributionLimit: CONTRIBUTION_LIMITS_2024.traditional401k,
+              isLinked: false,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ],
+        }),
+      );
+      if (result.retirementReadiness) {
+        // Target is 80% income replacement via 4% rule = $100k * 0.8 / 0.04 = $2M
+        expect(result.retirementReadiness.targetRetirementBalance).toBe(
+          2000000,
+        );
+        // With only $50k and no ongoing contributions, there should be a gap
+        expect(typeof result.retirementReadiness.retirementGap).toBe("number");
+      }
+    });
+
+    it("should calculate additional monthly savings needed for shortfall", () => {
+      const result = optimizer.analyze(
+        createMockProfile({
+          age: 45,
+          grossIncome: 150000,
+          accounts: [
+            {
+              id: "acct-1",
+              userId: "test-user",
+              accountType: TaxAccountType.TRADITIONAL_401K,
+              institutionName: "Fidelity",
+              accountName: "401k",
+              currentBalance: 100000,
+              ytdContribution: 0,
+              contributionLimit: CONTRIBUTION_LIMITS_2024.traditional401k,
+              isLinked: false,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ],
+        }),
+      );
+      if (result.retirementReadiness) {
+        if (result.retirementReadiness.retirementGap < 0) {
+          expect(
+            result.retirementReadiness.additionalMonthlySavingsNeeded,
+          ).toBeGreaterThan(0);
+        }
+      }
+    });
+
+    it("should generate milestones every 5 years", () => {
+      const result = optimizer.analyze(
+        createMockProfile({
+          age: 30,
+          accounts: [
+            {
+              id: "acct-1",
+              userId: "test-user",
+              accountType: TaxAccountType.TRADITIONAL_401K,
+              institutionName: "Fidelity",
+              accountName: "401k",
+              currentBalance: 50000,
+              ytdContribution: 0,
+              contributionLimit: CONTRIBUTION_LIMITS_2024.traditional401k,
+              isLinked: false,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ],
+        }),
+      );
+      if (result.retirementReadiness) {
+        expect(result.retirementReadiness.milestones.length).toBeGreaterThan(0);
+        // First milestone should be at age 35
+        expect(result.retirementReadiness.milestones[0].age).toBe(35);
+        // Each milestone's projected balance should grow
+        for (let i = 1; i < result.retirementReadiness.milestones.length; i++) {
+          expect(
+            result.retirementReadiness.milestones[i].projectedBalance,
+          ).toBeGreaterThan(
+            result.retirementReadiness.milestones[i - 1].projectedBalance,
+          );
+        }
+      }
+    });
+
+    it("should always include retirement year as last milestone", () => {
+      const result = optimizer.analyze(
+        createMockProfile({
+          age: 33,
+          targetRetirementAge: 65,
+          accounts: [
+            {
+              id: "acct-1",
+              userId: "test-user",
+              accountType: TaxAccountType.TRADITIONAL_401K,
+              institutionName: "Fidelity",
+              accountName: "401k",
+              currentBalance: 50000,
+              ytdContribution: 0,
+              contributionLimit: CONTRIBUTION_LIMITS_2024.traditional401k,
+              isLinked: false,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ],
+        }),
+      );
+      if (result.retirementReadiness) {
+        const lastMilestone =
+          result.retirementReadiness.milestones[
+            result.retirementReadiness.milestones.length - 1
+          ];
+        expect(lastMilestone.age).toBe(65);
+      }
+    });
+
+    it("should assign readiness score based on projected vs target", () => {
+      // Well-funded scenario
+      const wellFunded = optimizer.analyze(
+        createMockProfile({
+          age: 35,
+          grossIncome: 80000,
+          ytd401kContribution: 23000,
+          accounts: [
+            {
+              id: "acct-1",
+              userId: "test-user",
+              accountType: TaxAccountType.TRADITIONAL_401K,
+              institutionName: "Fidelity",
+              accountName: "401k",
+              currentBalance: 500000,
+              ytdContribution: 23000,
+              contributionLimit: CONTRIBUTION_LIMITS_2024.traditional401k,
+              isLinked: false,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ],
+        }),
+      );
+      if (wellFunded.retirementReadiness) {
+        expect(wellFunded.retirementReadiness.readinessScore).toBe("on_track");
+        expect(
+          wellFunded.retirementReadiness.readinessPercentage,
+        ).toBeGreaterThanOrEqual(90);
+      }
+
+      // Underfunded scenario
+      const underfunded = optimizer.analyze(
+        createMockProfile({
+          age: 55,
+          grossIncome: 150000,
+          accounts: [
+            {
+              id: "acct-1",
+              userId: "test-user",
+              accountType: TaxAccountType.TRADITIONAL_401K,
+              institutionName: "Fidelity",
+              accountName: "401k",
+              currentBalance: 50000,
+              ytdContribution: 0,
+              contributionLimit: CONTRIBUTION_LIMITS_2024.traditional401k,
+              isLinked: false,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ],
+        }),
+      );
+      if (underfunded.retirementReadiness) {
+        expect(underfunded.retirementReadiness.readinessScore).not.toBe(
+          "on_track",
+        );
+      }
+    });
+
+    it("should use custom annual return rate when provided", () => {
+      const conservative = optimizer.analyze(
+        createMockProfile({
+          age: 35,
+          expectedAnnualReturnRate: 0.04,
+          accounts: [
+            {
+              id: "acct-1",
+              userId: "test-user",
+              accountType: TaxAccountType.TRADITIONAL_401K,
+              institutionName: "Fidelity",
+              accountName: "401k",
+              currentBalance: 100000,
+              ytdContribution: 0,
+              contributionLimit: CONTRIBUTION_LIMITS_2024.traditional401k,
+              isLinked: false,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ],
+        }),
+      );
+      const aggressive = optimizer.analyze(
+        createMockProfile({
+          age: 35,
+          expectedAnnualReturnRate: 0.1,
+          accounts: [
+            {
+              id: "acct-1",
+              userId: "test-user",
+              accountType: TaxAccountType.TRADITIONAL_401K,
+              institutionName: "Fidelity",
+              accountName: "401k",
+              currentBalance: 100000,
+              ytdContribution: 0,
+              contributionLimit: CONTRIBUTION_LIMITS_2024.traditional401k,
+              isLinked: false,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ],
+        }),
+      );
+      if (
+        conservative.retirementReadiness &&
+        aggressive.retirementReadiness
+      ) {
+        // Higher return rate should project higher balance
+        expect(
+          aggressive.retirementReadiness.projectedBalanceAtRetirement,
+        ).toBeGreaterThan(
+          conservative.retirementReadiness.projectedBalanceAtRetirement,
+        );
+      }
+    });
+
+    it("should handle 0 years to retirement", () => {
+      const result = optimizer.analyze(
+        createMockProfile({
+          age: 65,
+          targetRetirementAge: 65,
+          accounts: [
+            {
+              id: "acct-1",
+              userId: "test-user",
+              accountType: TaxAccountType.TRADITIONAL_401K,
+              institutionName: "Fidelity",
+              accountName: "401k",
+              currentBalance: 1000000,
+              ytdContribution: 0,
+              contributionLimit: CONTRIBUTION_LIMITS_2024.traditional401k,
+              isLinked: false,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ],
+        }),
+      );
+      if (result.retirementReadiness) {
+        expect(result.retirementReadiness.yearsToRetirement).toBe(0);
+        expect(
+          result.retirementReadiness.projectedBalanceAtRetirement,
+        ).toBe(1000000);
+        expect(
+          result.retirementReadiness.additionalMonthlySavingsNeeded,
+        ).toBe(0);
+      }
+    });
+
+    it("should use projectRetirementReadiness directly", () => {
+      const profile = createMockProfile({
+        age: 40,
+        accounts: [
+          {
+            id: "acct-1",
+            userId: "test-user",
+            accountType: TaxAccountType.TRADITIONAL_401K,
+            institutionName: "Fidelity",
+            accountName: "401k",
+            currentBalance: 200000,
+            ytdContribution: 0,
+            contributionLimit: CONTRIBUTION_LIMITS_2024.traditional401k,
+            isLinked: false,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        ],
+      });
+      const projection = optimizer.projectRetirementReadiness(profile);
+      expect(projection).not.toBeNull();
+      if (projection) {
+        expect(projection.currentAge).toBe(40);
+        expect(projection.projectedBalanceAtRetirement).toBeGreaterThan(200000);
+      }
+    });
+
+    it("should return null from projectRetirementReadiness when no age", () => {
+      const profile = createMockProfile();
+      const projection = optimizer.projectRetirementReadiness(profile);
+      expect(projection).toBeNull();
+    });
+
+    it("should cap readiness percentage at 100", () => {
+      // Massively over-funded
+      const result = optimizer.analyze(
+        createMockProfile({
+          age: 35,
+          grossIncome: 50000,
+          ytd401kContribution: 23000,
+          accounts: [
+            {
+              id: "acct-1",
+              userId: "test-user",
+              accountType: TaxAccountType.TRADITIONAL_401K,
+              institutionName: "Fidelity",
+              accountName: "401k",
+              currentBalance: 5000000,
+              ytdContribution: 23000,
+              contributionLimit: CONTRIBUTION_LIMITS_2024.traditional401k,
+              isLinked: false,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ],
+        }),
+      );
+      if (result.retirementReadiness) {
+        expect(result.retirementReadiness.readinessPercentage).toBeLessThanOrEqual(
+          100,
+        );
+      }
+    });
+  });
+
+  // =========================================================================
+  // analyze — Extended Result Properties
+  // =========================================================================
+  describe("Extended Result Properties", () => {
+    it("should include all new fields in analyze result", () => {
+      const result = optimizer.analyze(createMockProfile({ age: 50 }));
+      expect(result).toHaveProperty("catchUpEligible");
+      expect(result).toHaveProperty("totalCatchUpCapacity");
+      expect(result).toHaveProperty("bracketOptimization");
+      expect(result).toHaveProperty("retirementReadiness");
+    });
+
+    it("should have disclaimers in the result", () => {
+      const result = optimizer.analyze(createMockProfile());
+      expect(result.disclaimers.length).toBeGreaterThanOrEqual(3);
+    });
+
+    it("should include Backdoor Roth warning for high-income single filers", () => {
+      const result = optimizer.analyze(
+        createMockProfile({
+          filingStatus: FilingStatus.SINGLE,
+          grossIncome: 200000,
+          w2Income: 200000,
+        }),
+      );
+      const hasBackdoorWarning = result.warnings.some((w) =>
+        w.includes("Backdoor Roth"),
+      );
+      expect(hasBackdoorWarning).toBe(true);
+    });
+
+    it("should sort recommendations by priority and tax savings", () => {
+      const result = optimizer.analyze(
+        createMockProfile({
+          hasHdhp: true,
+          accounts: [
+            {
+              id: "acct-1",
+              userId: "test-user",
+              accountType: TaxAccountType.TRADITIONAL_401K,
+              institutionName: "Fidelity",
+              accountName: "401k",
+              currentBalance: 50000,
+              ytdContribution: 0,
+              contributionLimit: CONTRIBUTION_LIMITS_2024.traditional401k,
+              employerMatch: 5000,
+              employerMatchPercent: 50,
+              vestingPercent: 100,
+              isLinked: false,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ],
+        }),
+      );
+      // The first recommendation should be the highest priority
+      if (result.recommendations.length >= 2) {
+        const priorityOrder = {
+          critical: 0,
+          high: 1,
+          medium: 2,
+          low: 3,
+        };
+        const first = priorityOrder[result.recommendations[0].priority];
+        const second = priorityOrder[result.recommendations[1].priority];
+        expect(first).toBeLessThanOrEqual(second);
+      }
     });
   });
 });

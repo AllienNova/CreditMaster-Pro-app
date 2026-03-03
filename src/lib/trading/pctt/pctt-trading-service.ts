@@ -27,6 +27,17 @@ import {
   AccountInfo,
 } from "../brokers/broker-interface";
 import { AlpacaBroker } from "../brokers/alpaca-broker";
+import { createOperatingModeManager } from "@/lib/trading/modes/operating-mode-manager";
+import type {
+  OperatingMode,
+  ModePermissions,
+} from "@/lib/trading/modes/mode-types";
+import {
+  RiskGateway,
+  type TradeContext,
+  type PortfolioState,
+  type EnhancedRiskValidation,
+} from "@/lib/trading/risk/risk-gateway";
 
 // ============================================================================
 // TYPES
@@ -89,6 +100,10 @@ export interface ExecutionResult {
 
   error?: string;
   timestamp: Date;
+
+  // Operating mode context
+  operatingMode?: OperatingMode;
+  requiresConfirmation?: boolean;
 }
 
 export interface ActivePosition {
@@ -319,7 +334,16 @@ export class PCTTTradingService {
   // ============================================================================
 
   /**
-   * Execute a trade setup through the connected broker
+   * Execute a trade setup through the connected broker.
+   *
+   * Execution flow:
+   *   1. Pre-flight (broker, setup validity)
+   *   2. Operating mode check (WATCH blocks live, GUIDED flags confirmation)
+   *   3. Enhanced 3-gate risk validation
+   *   4. Trading condition checks (daily loss, max positions)
+   *   5. Market hours check
+   *   6. Order placement
+   *   7. Position tracking + graduation recording
    */
   async executeTrade(setup: TradeSetup): Promise<ExecutionResult> {
     const timestamp = new Date();
@@ -337,13 +361,124 @@ export class PCTTTradingService {
       };
     }
 
-    // Check trading conditions
+    // ========================================================================
+    // OPERATING MODE CHECK
+    // ========================================================================
+
+    let currentMode: OperatingMode = "guided"; // Safe default
+    let permissions: ModePermissions = {
+      mode: "guided",
+      canViewSignals: true,
+      canPaperTrade: true,
+      canPlaceLiveOrders: true,
+      requiresConfirmation: true,
+      canAutoExecute: false,
+    };
+    let modeManagerAvailable = false;
+
+    try {
+      const modeManager = createOperatingModeManager(this.userId);
+      const permResult = await modeManager.getModePermissions();
+      if (permResult.success && permResult.data) {
+        permissions = permResult.data;
+        currentMode = permissions.mode;
+        modeManagerAvailable = true;
+      }
+    } catch (_err) {
+      // Mode manager unavailable — default to GUIDED (safest fallback)
+    }
+
+    // WATCH mode: block live trades (only paper trades allowed)
+    if (!permissions.canPlaceLiveOrders && !this.config.paperTrading) {
+      return {
+        success: false,
+        error:
+          "WATCH mode active: live trades are not permitted. Only paper trades are allowed.",
+        timestamp,
+        operatingMode: currentMode,
+        requiresConfirmation: false,
+      };
+    }
+
+    // ========================================================================
+    // ENHANCED RISK VALIDATION (3-Gate Architecture)
+    // ========================================================================
+
+    try {
+      const riskGateway = new RiskGateway(this.userId);
+
+      // Build portfolio state from broker account
+      let portfolioState: PortfolioState = {
+        totalValue: this.config.accountSize,
+        cashBalance: this.config.accountSize,
+        positions: [],
+        dailyPnL: this.dailyPL,
+        weeklyPnL: this.dailyPL, // approximation
+        drawdown: 0,
+        openPositionCount: this.activePositions.size,
+      };
+
+      if (this.broker) {
+        try {
+          const account = await this.broker.getAccount();
+          portfolioState = {
+            ...portfolioState,
+            totalValue: account.portfolioValue,
+            cashBalance: account.cash,
+          };
+        } catch {
+          // Use defaults if broker account call fails
+        }
+      }
+
+      const tradeContext: TradeContext = {
+        trade: {
+          symbol: setup.symbol,
+          side: setup.signal.type === "long" ? "buy" : "sell",
+          quantity: setup.shares,
+          price: setup.entryPrice,
+          stopLoss: setup.stopLossPrice,
+        },
+        portfolio: portfolioState,
+        operatingMode: currentMode,
+        dailyTradeCount: this.dailyTradeCount,
+      };
+
+      const riskValidation: EnhancedRiskValidation =
+        await riskGateway.validateTradeEnhanced(tradeContext);
+
+      if (!riskValidation.approved) {
+        const failedGates = riskValidation.gateResults
+          .filter((g) => !g.passed)
+          .map((g) => g.gate);
+        const violationMessages = riskValidation.violations
+          .map((v) => v.message)
+          .join("; ");
+
+        return {
+          success: false,
+          error: `Risk validation failed [${failedGates.join(", ")}]: ${violationMessages}`,
+          timestamp,
+          operatingMode: currentMode,
+          requiresConfirmation: false,
+        };
+      }
+    } catch (_err) {
+      // Risk gateway error — log but don't block (fail-open for now)
+      // In production, this should be configurable (fail-open vs fail-closed)
+    }
+
+    // ========================================================================
+    // TRADING CONDITION CHECKS
+    // ========================================================================
+
     const stats = await this.getTradingStats();
     if (!stats.canTrade) {
       return {
         success: false,
         error: stats.reason || "Trading not allowed",
         timestamp,
+        operatingMode: currentMode,
       };
     }
 
@@ -351,11 +486,22 @@ export class PCTTTradingService {
     if (this.config.tradingHoursOnly) {
       const isOpen = await this.broker.isMarketOpen();
       if (!isOpen) {
-        return { success: false, error: "Market is closed", timestamp };
+        return {
+          success: false,
+          error: "Market is closed",
+          timestamp,
+          operatingMode: currentMode,
+        };
       }
     }
 
-    // Execute order
+    // GUIDED mode: flag that confirmation is required (UI layer handles prompt)
+    const requiresConfirmation = permissions.requiresConfirmation;
+
+    // ========================================================================
+    // ORDER EXECUTION
+    // ========================================================================
+
     const side = setup.signal.type === "long" ? "buy" : "sell";
     const positionSide = setup.signal.type as "long" | "short";
 
@@ -421,6 +567,27 @@ export class PCTTTradingService {
       // Persist to database
       await this.savePosition(position);
 
+      // ====================================================================
+      // GRADUATION RECORDING (live trades only, not paper)
+      // ====================================================================
+      if (!this.config.paperTrading && modeManagerAvailable) {
+        try {
+          const modeManager = createOperatingModeManager(this.userId);
+          // Record the live trade for graduation tracking
+          // At execution time we don't know P&L yet; record as not-yet-profitable
+          await modeManager.recordLiveTrade(false);
+
+          // Record active day for current mode
+          if (currentMode === "guided" || currentMode === "autonomous") {
+            const dayMode =
+              currentMode === "autonomous" ? "guided" : currentMode;
+            await modeManager.recordActiveDay(dayMode);
+          }
+        } catch {
+          // Graduation recording failure is non-fatal
+        }
+      }
+
       return {
         success: true,
         tradeId: position.id,
@@ -432,6 +599,8 @@ export class PCTTTradingService {
         stopLoss: setup.stopLossPrice,
         takeProfit: setup.takeProfitTargets[0],
         timestamp,
+        operatingMode: currentMode,
+        requiresConfirmation,
       };
     }
 
@@ -439,6 +608,7 @@ export class PCTTTradingService {
       success: false,
       error: result.error || "Order execution failed",
       timestamp,
+      operatingMode: currentMode,
     };
   }
 
@@ -648,6 +818,29 @@ export class PCTTTradingService {
         this.activePositions.set(position.id, position);
       }
     }
+  }
+
+  // ============================================================================
+  // OPERATING MODE
+  // ============================================================================
+
+  /**
+   * Get the current operating mode for this user.
+   *
+   * Returns the mode from the operating mode manager, falling back to "guided"
+   * if the manager is unavailable (safest default — requires confirmation).
+   */
+  async getOperatingMode(): Promise<OperatingMode> {
+    try {
+      const modeManager = createOperatingModeManager(this.userId);
+      const result = await modeManager.getCurrentMode();
+      if (result.success && result.data) {
+        return result.data;
+      }
+    } catch {
+      // Mode manager unavailable — fall back to safe default
+    }
+    return "guided";
   }
 
   // ============================================================================

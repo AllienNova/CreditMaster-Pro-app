@@ -1,0 +1,536 @@
+/**
+ * @jest-environment node
+ */
+
+// ── Mocks ────────────────────────────────────────────────────────────────────
+const mockRequireRole = jest.fn();
+const mockCreateAuthResponse = jest.fn();
+jest.mock("@/lib/security/auth-middleware", () => ({
+  requireRole: mockRequireRole,
+  createAuthResponse: mockCreateAuthResponse,
+}));
+
+// Mock @supabase/supabase-js – stats and disputes routes create their own client
+const mockFrom = jest.fn();
+const mockAuth = {
+  admin: {
+    listUsers: jest.fn(),
+  },
+};
+const mockCreateClient = jest.fn();
+jest.mock("@supabase/supabase-js", () => ({
+  createClient: mockCreateClient,
+}));
+
+// Import AFTER mocks
+import { GET as getStats } from "../stats/route";
+import { GET as getDisputes, PATCH as patchDispute } from "../disputes/route";
+import { NextRequest } from "next/server";
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function makeRequest(
+  url: string,
+  options?: { method?: string; body?: Record<string, unknown> },
+) {
+  const absoluteUrl = url.startsWith("http") ? url : `http://localhost:3000${url}`;
+  const init: RequestInit = { method: options?.method || "GET" };
+  if (options?.body) {
+    init.method = options.method || "PATCH";
+    init.body = JSON.stringify(options.body);
+    init.headers = { "Content-Type": "application/json" };
+  }
+  return new NextRequest(absoluteUrl, init as never);
+}
+
+function authenticatedAdmin() {
+  mockRequireRole.mockResolvedValue({
+    authenticated: true,
+    user: { id: "admin-1", email: "admin@fynvita.com", role: "admin" },
+  });
+}
+
+function unauthenticated(errorMsg = "Not authenticated") {
+  mockRequireRole.mockResolvedValue({
+    authenticated: false,
+    error: errorMsg,
+  });
+  mockCreateAuthResponse.mockReturnValue({
+    status: 401,
+    json: async () => ({ error: errorMsg }),
+  });
+}
+
+// ── Setup / Teardown ─────────────────────────────────────────────────────────
+beforeEach(() => {
+  jest.clearAllMocks();
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  STATS – GET /api/admin/stats
+// ═══════════════════════════════════════════════════════════════════════════════
+describe("Admin Stats API – GET /api/admin/stats", () => {
+  describe("Authentication", () => {
+    it("should return 401 when user is not authenticated", async () => {
+      unauthenticated();
+      const res = await getStats(
+        makeRequest("http://localhost:3000/api/admin/stats"),
+      );
+      expect(mockRequireRole).toHaveBeenCalled();
+      expect(mockCreateAuthResponse).toHaveBeenCalled();
+      expect(res.status).toBe(401);
+    });
+
+    it("should call requireRole with 'admin'", async () => {
+      unauthenticated();
+      const req = makeRequest("http://localhost:3000/api/admin/stats");
+      await getStats(req);
+      expect(mockRequireRole).toHaveBeenCalledWith(req, "admin");
+    });
+  });
+
+  describe("Mock data fallback (no env vars)", () => {
+    beforeEach(() => {
+      authenticatedAdmin();
+      // Remove env vars so route returns mock data
+      delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+      delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    });
+
+    afterEach(() => {
+      // Restore for other tests
+      process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
+      process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-key";
+    });
+
+    it("should return mock stats when Supabase is not configured", async () => {
+      const res = await getStats(
+        makeRequest("http://localhost:3000/api/admin/stats"),
+      );
+      const body = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(body.totalUsers).toBe(1247);
+      expect(body.activeSubscriptions).toBe(892);
+      expect(body.totalDisputes).toBe(3456);
+      expect(body.resolvedDisputes).toBe(2891);
+      expect(body.monthlyRevenue).toBe(45670);
+      expect(body.userGrowth).toBe(12.5);
+    });
+  });
+
+  describe("Live data (with Supabase)", () => {
+    beforeEach(() => {
+      authenticatedAdmin();
+      process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
+      process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-key";
+    });
+
+    it("should fetch and return stats from Supabase", async () => {
+      // Mock chainable query builders
+      // profiles select -> count
+      const profilesSelect = jest.fn().mockResolvedValue({ count: 500 });
+      // subscriptions active select -> count
+      const subsSelectEq = jest.fn().mockResolvedValue({ count: 300 });
+      const subsSelect = jest.fn().mockReturnValue({ eq: subsSelectEq });
+      // disputes total select -> count
+      const disputesSelect = jest.fn().mockResolvedValue({ count: 150 });
+      // disputes resolved select -> count
+      const resolvedEq = jest.fn().mockResolvedValue({ count: 120 });
+      const resolvedSelect = jest.fn().mockReturnValue({ eq: resolvedEq });
+
+      // subscriptions for revenue
+      const revenueSubsEq = jest.fn().mockResolvedValue({
+        data: [
+          { stripe_price_id: "price_basic" },
+          { stripe_price_id: "price_premium" },
+          { stripe_price_id: "price_enterprise" },
+        ],
+      });
+      const revenueSubsSelect = jest.fn().mockReturnValue({ eq: revenueSubsEq });
+
+      // profiles for recent users count
+      const recentUsersGte = jest.fn().mockResolvedValue({ count: 50 });
+      const recentUsersSelect = jest.fn().mockReturnValue({ gte: recentUsersGte });
+
+      // profiles for previous users count
+      const previousLt = jest.fn().mockResolvedValue({ count: 40 });
+      const previousGte = jest.fn().mockReturnValue({ lt: previousLt });
+      const previousSelect = jest.fn().mockReturnValue({ gte: previousGte });
+
+      let fromCallCount = 0;
+      mockFrom.mockImplementation((table: string) => {
+        fromCallCount++;
+        // The route calls tables in this order:
+        // 1) profiles (head count) — Promise.all #1
+        // 2) subscriptions active (head count) — Promise.all #2
+        // 3) disputes total (head count) — Promise.all #3
+        // 4) disputes resolved (head count) — Promise.all #4
+        // 5) subscriptions for revenue
+        // 6) profiles for recentUsers
+        // 7) profiles for previousUsers
+
+        if (table === "profiles") {
+          // Calls 1, 6, 7
+          if (fromCallCount === 1) return { select: profilesSelect };
+          if (fromCallCount === 6) return { select: recentUsersSelect };
+          return { select: previousSelect };
+        }
+        if (table === "subscriptions") {
+          // Calls 2, 5
+          if (fromCallCount === 2) return { select: subsSelect };
+          return { select: revenueSubsSelect };
+        }
+        if (table === "disputes") {
+          // Calls 3, 4
+          if (fromCallCount === 3) return { select: disputesSelect };
+          return { select: resolvedSelect };
+        }
+        return { select: jest.fn().mockResolvedValue({ data: [], count: 0 }) };
+      });
+
+      mockCreateClient.mockReturnValue({ from: mockFrom });
+
+      const res = await getStats(
+        makeRequest("http://localhost:3000/api/admin/stats"),
+      );
+      const body = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(body.totalUsers).toBe(500);
+      expect(body.activeSubscriptions).toBe(300);
+      expect(body.totalDisputes).toBe(150);
+      expect(body.resolvedDisputes).toBe(120);
+      // Revenue: 29 (basic) + 79 (premium) + 199 (enterprise) = 307
+      expect(body.monthlyRevenue).toBe(307);
+      // User growth: (50 - 40) / 40 * 100 = 25.0
+      expect(body.userGrowth).toBe(25);
+    });
+
+    it("should return mock data on exception from Supabase", async () => {
+      mockCreateClient.mockReturnValue({
+        from: jest.fn().mockImplementation(() => {
+          throw new Error("DB connection failed");
+        }),
+      });
+
+      const res = await getStats(
+        makeRequest("http://localhost:3000/api/admin/stats"),
+      );
+      const body = await res.json();
+
+      // Falls back to mock data on error
+      expect(res.status).toBe(200);
+      expect(body.totalUsers).toBe(1247);
+    });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  DISPUTES – GET /api/admin/disputes
+// ═══════════════════════════════════════════════════════════════════════════════
+describe("Admin Disputes API – GET /api/admin/disputes", () => {
+  describe("Authentication", () => {
+    it("should return 401 when user is not authenticated", async () => {
+      unauthenticated();
+      const res = await getDisputes(
+        makeRequest("http://localhost:3000/api/admin/disputes"),
+      );
+      expect(res.status).toBe(401);
+    });
+  });
+
+  describe("Mock data fallback (no env vars)", () => {
+    beforeEach(() => {
+      authenticatedAdmin();
+      delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+      delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    });
+
+    afterEach(() => {
+      process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
+      process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-key";
+    });
+
+    it("should return 6 mock disputes when Supabase is not configured", async () => {
+      const res = await getDisputes(
+        makeRequest("http://localhost:3000/api/admin/disputes"),
+      );
+      const body = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(body.disputes.length).toBe(6);
+      expect(body.total).toBe(6);
+    });
+
+    it("should include expected fields in mock disputes", async () => {
+      const res = await getDisputes(
+        makeRequest("http://localhost:3000/api/admin/disputes"),
+      );
+      const body = await res.json();
+
+      const first = body.disputes[0];
+      expect(first).toHaveProperty("id");
+      expect(first).toHaveProperty("user_id");
+      expect(first).toHaveProperty("user_email");
+      expect(first).toHaveProperty("bureau");
+      expect(first).toHaveProperty("status");
+      expect(first).toHaveProperty("item_type");
+      expect(first).toHaveProperty("item_description");
+    });
+
+    it("should have disputes with various statuses in mock data", async () => {
+      const res = await getDisputes(
+        makeRequest("http://localhost:3000/api/admin/disputes"),
+      );
+      const body = await res.json();
+      const statuses = body.disputes.map(
+        (d: { status: string }) => d.status,
+      );
+
+      expect(statuses).toContain("resolved");
+      expect(statuses).toContain("under_review");
+      expect(statuses).toContain("sent");
+      expect(statuses).toContain("draft");
+      expect(statuses).toContain("rejected");
+    });
+  });
+
+  describe("Live data (with Supabase)", () => {
+    const disputeRows = [
+      { id: "d1", user_id: "u1", status: "resolved", created_at: "2024-11-01" },
+      { id: "d2", user_id: "u2", status: "sent", created_at: "2024-11-10" },
+    ];
+
+    beforeEach(() => {
+      authenticatedAdmin();
+      process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
+      process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-key";
+
+      const orderMock = jest.fn().mockResolvedValue({
+        data: disputeRows,
+        error: null,
+      });
+      const selectMock = jest.fn().mockReturnValue({ order: orderMock });
+
+      mockAuth.admin.listUsers.mockResolvedValue({
+        data: {
+          users: [
+            { id: "u1", email: "user1@example.com" },
+            { id: "u2", email: "user2@example.com" },
+          ],
+        },
+      });
+
+      mockFrom.mockReturnValue({ select: selectMock });
+      mockCreateClient.mockReturnValue({
+        from: mockFrom,
+        auth: mockAuth,
+      });
+    });
+
+    afterEach(() => {
+      delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+      delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    });
+
+    it("should return enriched disputes from Supabase", async () => {
+      const res = await getDisputes(
+        makeRequest("http://localhost:3000/api/admin/disputes"),
+      );
+      const body = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(body.disputes.length).toBe(2);
+      expect(body.total).toBe(2);
+      expect(body.disputes[0].user_email).toBe("user1@example.com");
+      expect(body.disputes[1].user_email).toBe("user2@example.com");
+    });
+
+    it("should return 'Unknown' for users not found in auth", async () => {
+      mockAuth.admin.listUsers.mockResolvedValue({
+        data: { users: [] },
+      });
+
+      const res = await getDisputes(
+        makeRequest("http://localhost:3000/api/admin/disputes"),
+      );
+      const body = await res.json();
+
+      expect(body.disputes[0].user_email).toBe("Unknown");
+    });
+
+    it("should return 500 when Supabase returns an error", async () => {
+      const orderMock = jest.fn().mockResolvedValue({
+        data: null,
+        error: { message: "DB error" },
+      });
+      const selectMock = jest.fn().mockReturnValue({ order: orderMock });
+      mockFrom.mockReturnValue({ select: selectMock });
+      mockCreateClient.mockReturnValue({
+        from: mockFrom,
+        auth: mockAuth,
+      });
+
+      const res = await getDisputes(
+        makeRequest("http://localhost:3000/api/admin/disputes"),
+      );
+      const body = await res.json();
+
+      expect(res.status).toBe(500);
+      expect(body.error).toBe("Failed to fetch disputes");
+    });
+  });
+
+  describe("Exception handling", () => {
+    it("should return 500 on unexpected throw", async () => {
+      authenticatedAdmin();
+      process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
+      process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-key";
+
+      mockCreateClient.mockReturnValue({
+        from: jest.fn().mockImplementation(() => {
+          throw new Error("Unexpected");
+        }),
+      });
+
+      const res = await getDisputes(
+        makeRequest("http://localhost:3000/api/admin/disputes"),
+      );
+      const body = await res.json();
+
+      expect(res.status).toBe(500);
+      expect(body.error).toBe("Internal server error");
+
+      delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+      delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  DISPUTES – PATCH /api/admin/disputes
+// ═══════════════════════════════════════════════════════════════════════════════
+describe("Admin Disputes API – PATCH /api/admin/disputes", () => {
+  // PATCH does NOT use requireRole -- it uses plain Request, not NextRequest
+  // We need to provide a standard Request-like object with a json() method.
+
+  function makePatchRequest(body: Record<string, unknown>) {
+    return {
+      json: jest.fn().mockResolvedValue(body),
+    } as unknown as Request;
+  }
+
+  describe("Validation", () => {
+    it("should return 400 when disputeId is missing", async () => {
+      const req = makePatchRequest({ updates: { status: "resolved" } });
+      const res = await patchDispute(req);
+      const body = await res.json();
+
+      expect(res.status).toBe(400);
+      expect(body.error).toBe("Missing disputeId or updates");
+    });
+
+    it("should return 400 when updates is missing", async () => {
+      const req = makePatchRequest({ disputeId: "d1" });
+      const res = await patchDispute(req);
+      const body = await res.json();
+
+      expect(res.status).toBe(400);
+      expect(body.error).toBe("Missing disputeId or updates");
+    });
+
+    it("should return 400 when both fields are missing", async () => {
+      const req = makePatchRequest({});
+      const res = await patchDispute(req);
+
+      expect(res.status).toBe(400);
+    });
+  });
+
+  describe("Mock update (no env vars)", () => {
+    beforeEach(() => {
+      delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+      delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    });
+
+    afterEach(() => {
+      process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
+      process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-key";
+    });
+
+    it("should return mock success when Supabase is not configured", async () => {
+      const req = makePatchRequest({
+        disputeId: "d1",
+        updates: { status: "resolved" },
+      });
+      const res = await patchDispute(req);
+      const body = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(body.success).toBe(true);
+      expect(body.message).toBe("Mock update successful");
+    });
+  });
+
+  describe("Live update (with Supabase)", () => {
+    beforeEach(() => {
+      process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
+      process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-key";
+    });
+
+    afterEach(() => {
+      delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+      delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    });
+
+    it("should update dispute in Supabase and return success", async () => {
+      const eqMock = jest.fn().mockResolvedValue({ error: null });
+      const updateMock = jest.fn().mockReturnValue({ eq: eqMock });
+      mockFrom.mockReturnValue({ update: updateMock });
+      mockCreateClient.mockReturnValue({ from: mockFrom });
+
+      const req = makePatchRequest({
+        disputeId: "d1",
+        updates: { status: "resolved" },
+      });
+      const res = await patchDispute(req);
+      const body = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(body.success).toBe(true);
+    });
+
+    it("should return 500 when Supabase update fails", async () => {
+      const eqMock = jest.fn().mockResolvedValue({
+        error: { message: "Update failed" },
+      });
+      const updateMock = jest.fn().mockReturnValue({ eq: eqMock });
+      mockFrom.mockReturnValue({ update: updateMock });
+      mockCreateClient.mockReturnValue({ from: mockFrom });
+
+      const req = makePatchRequest({
+        disputeId: "d1",
+        updates: { status: "resolved" },
+      });
+      const res = await patchDispute(req);
+      const body = await res.json();
+
+      expect(res.status).toBe(500);
+      expect(body.error).toBe("Failed to update dispute");
+    });
+  });
+
+  describe("Exception handling", () => {
+    it("should return 500 when request.json() throws", async () => {
+      const req = {
+        json: jest.fn().mockRejectedValue(new Error("Parse error")),
+      } as unknown as Request;
+
+      const res = await patchDispute(req);
+      const body = await res.json();
+
+      expect(res.status).toBe(500);
+      expect(body.error).toBe("Internal server error");
+    });
+  });
+});

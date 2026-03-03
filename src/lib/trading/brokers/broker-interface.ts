@@ -285,7 +285,8 @@ export type SupportedBroker =
   | "alpaca"
   | "interactive_brokers"
   | "schwab"
-  | "paper";
+  | "paper"
+  | "drivewealth";
 
 export interface BrokerConfig {
   broker: SupportedBroker;

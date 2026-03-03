@@ -20,6 +20,7 @@ import type {
   Budget,
   FinancialGoal,
 } from "../services/api/types";
+import { seedFinancialDashboard, seedBankAccounts, seedTransactions, seedBudgets, seedGoals, seedDebtOverview } from "../data/dev-seed";
 
 interface FinancialDashboard {
   netWorth: number;
@@ -66,6 +67,11 @@ interface FinancialState {
 
   // Debt
   debtOverview: DebtOverview | null;
+
+  // Plaid Hosted Link
+  plaidLinkStatus: "idle" | "loading" | "linking" | "success" | "error";
+  plaidLinkError: string | null;
+  linkedInstitution: string | null;
 
   // Loading states
   isLoading: boolean; // General loading state
@@ -145,6 +151,11 @@ interface FinancialState {
     interestSaved: number;
   } | null>;
 
+  // Actions - Plaid Hosted Link
+  startPlaidLink: () => void;
+  completePlaidLink: (publicToken: string, institution: string) => void;
+  resetPlaidLink: () => void;
+
   // Actions - Utility
   clearError: () => void;
   resetStore: () => void;
@@ -161,6 +172,9 @@ const initialState = {
   budgetAlerts: [],
   goals: [],
   debtOverview: null,
+  plaidLinkStatus: "idle" as const,
+  plaidLinkError: null,
+  linkedInstitution: null,
   isLoading: false,
   isLoadingDashboard: false,
   isLoadingAccounts: false,
@@ -179,6 +193,10 @@ export const useFinancialStore = create<FinancialState>()(
 
       fetchDashboard: async () => {
         set({ isLoadingDashboard: true, error: null });
+        if (__DEV__) {
+          set({ dashboard: seedFinancialDashboard, isLoadingDashboard: false });
+          return;
+        }
         try {
           const response = await financialOverviewApi.getDashboard();
           if (response.success && response.data) {
@@ -199,6 +217,10 @@ export const useFinancialStore = create<FinancialState>()(
 
       fetchAccounts: async () => {
         set({ isLoadingAccounts: true, error: null });
+        if (__DEV__) {
+          set({ accounts: seedBankAccounts, isLoadingAccounts: false });
+          return;
+        }
         try {
           const response = await bankAccountApi.getAccounts();
           if (response.success && response.data) {
@@ -297,6 +319,10 @@ export const useFinancialStore = create<FinancialState>()(
 
       fetchTransactions: async (params) => {
         set({ isLoadingTransactions: true, error: null });
+        if (__DEV__) {
+          set({ transactions: seedTransactions, totalTransactions: seedTransactions.length, isLoadingTransactions: false });
+          return;
+        }
         try {
           const { selectedAccountId } = get();
           const response = await transactionApi.getAll({
@@ -359,6 +385,10 @@ export const useFinancialStore = create<FinancialState>()(
 
       fetchBudgets: async () => {
         set({ isLoadingBudgets: true, error: null });
+        if (__DEV__) {
+          set({ budgets: seedBudgets, isLoadingBudgets: false });
+          return;
+        }
         try {
           const response = await budgetApi.getAll();
           if (response.success && response.data) {
@@ -429,6 +459,10 @@ export const useFinancialStore = create<FinancialState>()(
 
       fetchGoals: async () => {
         set({ isLoadingGoals: true, error: null });
+        if (__DEV__) {
+          set({ goals: seedGoals, isLoadingGoals: false });
+          return;
+        }
         try {
           const response = await financialGoalsApi.getAll();
           if (response.success && response.data) {
@@ -512,6 +546,10 @@ export const useFinancialStore = create<FinancialState>()(
 
       fetchDebtOverview: async () => {
         set({ isLoadingDebt: true, error: null });
+        if (__DEV__) {
+          set({ debtOverview: seedDebtOverview, isLoadingDebt: false });
+          return;
+        }
         try {
           const response = await debtApi.getOverview();
           if (response.success && response.data) {
@@ -548,6 +586,30 @@ export const useFinancialStore = create<FinancialState>()(
           return null;
         }
       },
+
+      startPlaidLink: () =>
+        set({
+          plaidLinkStatus: "linking",
+          plaidLinkError: null,
+          linkedInstitution: null,
+        }),
+
+      completePlaidLink: (publicToken, institution) => {
+        set({
+          plaidLinkStatus: "success",
+          plaidLinkError: null,
+          linkedInstitution: institution,
+        });
+        // Refresh accounts after successful link
+        get().fetchAccounts();
+      },
+
+      resetPlaidLink: () =>
+        set({
+          plaidLinkStatus: "idle",
+          plaidLinkError: null,
+          linkedInstitution: null,
+        }),
 
       clearError: () => set({ error: null }),
 

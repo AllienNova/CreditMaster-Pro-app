@@ -7,7 +7,7 @@ import {
   Switch,
   Alert,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, Href } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../src/hooks/useTheme";
 import { withOpacity } from "../../src/constants/theme";
@@ -250,7 +250,7 @@ export default function SettingsScreen() {
 
     const route = routes[id];
     if (route) {
-      router.push(route);
+      router.push(route as Href);
     }
   };
 

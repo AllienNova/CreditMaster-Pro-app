@@ -12,7 +12,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
-import { router } from "expo-router";
+import { router, Href } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
@@ -233,7 +233,7 @@ export default function DarkWebScreen() {
             {MOCK_BREACHES.map((breach) => (
               <TouchableOpacity
                 key={breach.id}
-                onPress={() => router.push(`/identity/breach/${breach.id}`)}
+                onPress={() => router.push(`/identity/breach/${breach.id}` as Href)}
               >
                 <Card
                   style={[
@@ -339,7 +339,7 @@ export default function DarkWebScreen() {
             ))}
             <TouchableOpacity
               style={styles.addButton}
-              onPress={() => router.push("/identity/add-monitored")}
+              onPress={() => router.push("/identity/add-monitored" as Href)}
             >
               <Ionicons
                 name="add-circle"

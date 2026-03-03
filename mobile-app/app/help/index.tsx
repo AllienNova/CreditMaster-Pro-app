@@ -41,7 +41,7 @@ export default function HelpScreen() {
       icon: "chatbox",
       title: "AI Assistant",
       subtitle: "Chat with our AI",
-      route: "/chat",
+      route: "/financial-intelligence/chat",
     },
   ];
 
@@ -82,7 +82,7 @@ export default function HelpScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.contactButton}
-              onPress={() => router.push("/chat")}
+              onPress={() => router.push("/financial-intelligence/chat")}
             >
               <Ionicons name="chatbox" size={24} color={theme.colors.primary} />
               <Text style={styles.contactButtonText}>Chat</Text>

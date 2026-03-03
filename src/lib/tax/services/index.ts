@@ -17,6 +17,8 @@ export {
 export type {
   ContributionRecommendation,
   RetirementOptimizationResult,
+  BracketOptimizationResult,
+  RetirementReadinessProjection,
 } from "./RetirementAccountOptimizer";
 
 export {
@@ -29,3 +31,16 @@ export type {
   UnderpaymentPenalty,
   PaymentScheduleEntry,
 } from "./TaxOptimizationEngine";
+
+export { StateTaxEngine, stateTaxEngine, TOP_20_STATES } from "./StateTaxEngine";
+export type {
+  StateFilingStatus,
+  StateIncomeAllocation,
+  AllocationMethod,
+  SingleStateTaxResult,
+  BracketDetail,
+  StateCreditResult,
+  MultiStateTaxResult,
+  FilingRecommendation,
+  Top20StateCode,
+} from "./StateTaxEngine";

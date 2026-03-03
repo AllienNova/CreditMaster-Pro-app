@@ -13,7 +13,7 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from "react-native";
-import { router } from "expo-router";
+import { router, Href } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
@@ -195,7 +195,7 @@ export default function DebtScreen() {
             <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
           </TouchableOpacity>
           <Text style={styles.title}>Debt Payoff</Text>
-          <TouchableOpacity onPress={() => router.push("/financial/add-debt")}>
+          <TouchableOpacity onPress={() => router.push("/financial/add-debt" as Href)}>
             <Ionicons
               name="add-circle-outline"
               size={24}

@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Upsert progress (insert or update)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- onboarding_progress table not in generated Supabase types
     const { data, error } = await (supabase as any)
       .from("onboarding_progress")
       .upsert(

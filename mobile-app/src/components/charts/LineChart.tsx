@@ -29,6 +29,10 @@ export interface LineChartProps {
   yAxisLabels?: number[];
   formatValue?: (value: number) => string;
   formatLabel?: (label: string) => string;
+  currency?: boolean;
+  lineColor?: string;
+  gradientFrom?: string;
+  gradientTo?: string;
 }
 
 const { width: screenWidth } = Dimensions.get("window");

@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { documentService } from "@/lib/documents/document-service";
+import type { DocumentType } from "@/lib/documents/document-service";
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get("userId");
     const documentId = searchParams.get("documentId");
-    const type = searchParams.get("type") as any;
+    const type = searchParams.get("type") as DocumentType | null;
 
     if (!userId) {
       return NextResponse.json(
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ document });
     }
 
-    const documents = documentService.getUserDocuments(userId, type);
+    const documents = documentService.getUserDocuments(userId, type ?? undefined);
     const stats = documentService.getDocumentStats(userId);
 
     return NextResponse.json({ documents, stats });

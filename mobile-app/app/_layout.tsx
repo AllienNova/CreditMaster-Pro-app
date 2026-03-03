@@ -116,12 +116,57 @@ export default function RootLayout() {
         {/* Analytics Screens */}
         <Stack.Screen name="analytics" options={{ headerShown: false }} />
 
+        {/* Trading Screens */}
+        <Stack.Screen name="trading" options={{ headerShown: false }} />
+
+        {/* Investment Stack Screens */}
+        <Stack.Screen name="investments" options={{ headerShown: false }} />
+
+        {/* Coach Screens */}
+        <Stack.Screen name="coach" options={{ headerShown: false }} />
+
+        {/* Dashboard Screens */}
+        <Stack.Screen name="dashboard" options={{ headerShown: false }} />
+
+        {/* Financial Intelligence Screens */}
+        <Stack.Screen
+          name="financial-intelligence"
+          options={{ headerShown: false }}
+        />
+
         {/* Help & Support Screens */}
         <Stack.Screen name="help" options={{ headerShown: false }} />
 
+        {/* Admin Screens */}
+        <Stack.Screen name="admin" options={{ headerShown: false }} />
+
+        {/* Billing Screens */}
+        <Stack.Screen name="billing" options={{ headerShown: false }} />
+
+        {/* Credit Repair Screens */}
+        <Stack.Screen name="credit-repair" options={{ headerShown: false }} />
+
+        {/* Disputes Hub */}
+        <Stack.Screen name="disputes" options={{ headerShown: false }} />
+
+        {/* Documents Hub */}
+        <Stack.Screen name="documents" options={{ headerShown: false }} />
+
+        {/* Insights Screens */}
+        <Stack.Screen name="insights" options={{ headerShown: false }} />
+
+        {/* Rewards Screens */}
+        <Stack.Screen name="rewards" options={{ headerShown: false }} />
+
+        {/* Student Loans Screens */}
+        <Stack.Screen name="student-loans" options={{ headerShown: false }} />
+
+        {/* Tax Screens */}
+        <Stack.Screen name="tax" options={{ headerShown: false }} />
+
         {/* Utility Screens */}
         <Stack.Screen
-          name="notifications"
+          name="notifications/index"
           options={{
             headerShown: true,
             title: "Notifications",
@@ -129,11 +174,11 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
-          name="search"
+          name="search/index"
           options={{ headerShown: true, title: "Search", ...headerOptions }}
         />
         <Stack.Screen
-          name="chat"
+          name="chat/index"
           options={{
             headerShown: true,
             title: "AI Assistant",
@@ -141,7 +186,7 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
-          name="activity"
+          name="activity/index"
           options={{ headerShown: true, title: "Activity", ...headerOptions }}
         />
       </Stack>

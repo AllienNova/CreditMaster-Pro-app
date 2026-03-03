@@ -201,58 +201,85 @@ export class BacktestEngine {
   private precomputeIndicators(symbol: string, data: OHLCV[]): void {
     const indicators = new Map<string, number[]>();
 
-    // Moving averages
+    // Moving averages — skip periods that exceed data length
     [10, 20, 50, 100, 200].forEach((period) => {
-      const sma = calculateSMA(data, period);
-      const ema = calculateEMA(data, period);
-      indicators.set(`sma_${period}`, this.alignIndicator(data, sma, period));
-      indicators.set(`ema_${period}`, this.alignIndicator(data, ema, period));
+      if (data.length >= period) {
+        const sma = calculateSMA(data, period);
+        const ema = calculateEMA(data, period);
+        indicators.set(`sma_${period}`, this.alignIndicator(data, sma, period));
+        indicators.set(`ema_${period}`, this.alignIndicator(data, ema, period));
+      } else {
+        indicators.set(`sma_${period}`, new Array(data.length).fill(NaN));
+        indicators.set(`ema_${period}`, new Array(data.length).fill(NaN));
+      }
     });
 
-    // RSI
+    // RSI — skip periods that exceed data length
     [7, 14, 21].forEach((period) => {
-      const rsi = calculateRSI(data, period);
-      indicators.set(
-        `rsi_${period}`,
-        this.alignIndicator(data, rsi, period + 1),
-      );
+      if (data.length >= period + 1) {
+        const rsi = calculateRSI(data, period);
+        indicators.set(
+          `rsi_${period}`,
+          this.alignIndicator(data, rsi, period + 1),
+        );
+      } else {
+        indicators.set(`rsi_${period}`, new Array(data.length).fill(NaN));
+      }
     });
 
-    // MACD
-    const macd = calculateMACD(data, 12, 26, 9);
-    indicators.set("macd", this.alignMACDIndicator(data, macd, "macd"));
-    indicators.set(
-      "macd_signal",
-      this.alignMACDIndicator(data, macd, "signal"),
-    );
-    indicators.set(
-      "macd_histogram",
-      this.alignMACDIndicator(data, macd, "histogram"),
-    );
+    // MACD — needs at least 26 bars (slow period)
+    if (data.length >= 26) {
+      const macd = calculateMACD(data, 12, 26, 9);
+      indicators.set("macd", this.alignMACDIndicator(data, macd, "macd"));
+      indicators.set(
+        "macd_signal",
+        this.alignMACDIndicator(data, macd, "signal"),
+      );
+      indicators.set(
+        "macd_histogram",
+        this.alignMACDIndicator(data, macd, "histogram"),
+      );
+    } else {
+      const nanArr = new Array(data.length).fill(NaN);
+      indicators.set("macd", nanArr);
+      indicators.set("macd_signal", [...nanArr]);
+      indicators.set("macd_histogram", [...nanArr]);
+    }
 
-    // ATR
+    // ATR — skip periods that exceed data length
     [7, 14, 21].forEach((period) => {
-      const atr = calculateATR(data, period);
-      indicators.set(
-        `atr_${period}`,
-        this.alignIndicator(data, atr, period + 1),
-      );
+      if (data.length >= period + 1) {
+        const atr = calculateATR(data, period);
+        indicators.set(
+          `atr_${period}`,
+          this.alignIndicator(data, atr, period + 1),
+        );
+      } else {
+        indicators.set(`atr_${period}`, new Array(data.length).fill(NaN));
+      }
     });
 
-    // Bollinger Bands
-    const bb = calculateBollingerBands(data, 20, 2);
-    indicators.set(
-      "bb_upper",
-      bb.map((b) => b.upper),
-    );
-    indicators.set(
-      "bb_middle",
-      bb.map((b) => b.middle),
-    );
-    indicators.set(
-      "bb_lower",
-      bb.map((b) => b.lower),
-    );
+    // Bollinger Bands — needs at least 20 bars
+    if (data.length >= 20) {
+      const bb = calculateBollingerBands(data, 20, 2);
+      indicators.set(
+        "bb_upper",
+        bb.map((b) => b.upper),
+      );
+      indicators.set(
+        "bb_middle",
+        bb.map((b) => b.middle),
+      );
+      indicators.set(
+        "bb_lower",
+        bb.map((b) => b.lower),
+      );
+    } else {
+      const nanArr = new Array(data.length).fill(NaN);
+      indicators.set("bb_upper", nanArr);
+      indicators.set("bb_middle", [...nanArr]);
+      indicators.set("bb_lower", [...nanArr]);
+    }
 
     this.indicators.set(symbol, indicators);
   }
@@ -869,6 +896,269 @@ export class BacktestEngine {
     });
 
     return Math.round(maxDuration);
+  }
+
+  // ============================================================================
+  // WALK-FORWARD OPTIMIZATION
+  // ============================================================================
+
+  /**
+   * Run walk-forward analysis by splitting data into in-sample (training)
+   * and out-of-sample (validation) windows. Tests parameter stability
+   * across multiple time periods and computes a robustness score.
+   *
+   * @param symbol - The symbol to test
+   * @param strategy - Base strategy definition
+   * @param windows - Number of walk-forward windows (default 5)
+   * @param inSampleRatio - Fraction of each window used for in-sample (default 0.7)
+   * @param paramRanges - Optional parameter ranges to optimize over
+   */
+  async runWalkForward(
+    symbol: string,
+    strategy: BacktestStrategy,
+    windows: number = 5,
+    inSampleRatio: number = 0.7,
+    paramRanges?: Record<string, { min: number; max: number; step: number }>,
+  ): Promise<WalkForwardResult> {
+    const data = this.data.get(symbol);
+    if (!data || data.length === 0) {
+      throw new Error(`No data loaded for ${symbol}`);
+    }
+
+    const totalBars = data.length;
+    const windowSize = Math.floor(totalBars / windows);
+    const inSampleSize = Math.floor(windowSize * inSampleRatio);
+    const outOfSampleSize = windowSize - inSampleSize;
+
+    const MIN_WINDOW_SIZE = 100;
+    if (windowSize < MIN_WINDOW_SIZE) {
+      throw new Error(
+        `Insufficient data for ${windows} walk-forward windows (need at least ${windows * MIN_WINDOW_SIZE} bars, got ${totalBars})`,
+      );
+    }
+
+    const inSampleResults: BacktestResult[] = [];
+    const outOfSampleResults: BacktestResult[] = [];
+    let bestParams: Record<string, number> = {};
+
+    for (let w = 0; w < windows; w++) {
+      const windowStart = w * windowSize;
+      const inSampleEnd = windowStart + inSampleSize;
+      const outOfSampleEnd = Math.min(windowStart + windowSize, totalBars);
+
+      // Create in-sample engine with sliced data
+      const inSampleData = data.slice(windowStart, inSampleEnd);
+      const inSampleEngine = new BacktestEngine({
+        ...this.config,
+        startDate: new Date(inSampleData[0].timestamp),
+        endDate: new Date(inSampleData[inSampleData.length - 1].timestamp),
+      });
+      inSampleEngine.loadData(symbol, inSampleData);
+
+      // If paramRanges provided, find best params on in-sample data
+      let bestStrategy = strategy;
+      if (paramRanges && Object.keys(paramRanges).length > 0) {
+        const optimized = await this.optimizeParams(
+          inSampleEngine,
+          symbol,
+          strategy,
+          paramRanges,
+        );
+        bestStrategy = optimized.strategy;
+        bestParams = { ...bestParams, ...optimized.params };
+      }
+
+      // Run in-sample backtest
+      const inSampleResult = await inSampleEngine.runBacktest(
+        symbol,
+        bestStrategy,
+      );
+      inSampleResults.push(inSampleResult);
+
+      // Run out-of-sample backtest with the same params
+      const outOfSampleData = data.slice(inSampleEnd, outOfSampleEnd);
+      if (outOfSampleData.length >= 50) {
+        const outOfSampleEngine = new BacktestEngine({
+          ...this.config,
+          startDate: new Date(outOfSampleData[0].timestamp),
+          endDate: new Date(
+            outOfSampleData[outOfSampleData.length - 1].timestamp,
+          ),
+        });
+        outOfSampleEngine.loadData(symbol, outOfSampleData);
+        const outOfSampleResult = await outOfSampleEngine.runBacktest(
+          symbol,
+          bestStrategy,
+        );
+        outOfSampleResults.push(outOfSampleResult);
+      }
+    }
+
+    // Calculate robustness score: how well out-of-sample tracks in-sample
+    const robustnessScore = this.calculateRobustness(
+      inSampleResults,
+      outOfSampleResults,
+    );
+
+    return {
+      inSampleResults,
+      outOfSampleResults,
+      robustnessScore,
+      optimizedParams: bestParams,
+    };
+  }
+
+  /**
+   * Grid-search parameter optimization over in-sample data.
+   * Maximizes Sharpe ratio to balance return and risk.
+   */
+  private async optimizeParams(
+    engine: BacktestEngine,
+    symbol: string,
+    strategy: BacktestStrategy,
+    paramRanges: Record<string, { min: number; max: number; step: number }>,
+  ): Promise<{ strategy: BacktestStrategy; params: Record<string, number> }> {
+    let bestSharpe = -Infinity;
+    let bestStrategy = strategy;
+    let bestParams: Record<string, number> = {};
+
+    // Generate parameter combinations (limited to prevent combinatorial explosion)
+    const paramNames = Object.keys(paramRanges);
+    const paramValues: number[][] = paramNames.map((name) => {
+      const range = paramRanges[name];
+      const values: number[] = [];
+      for (let v = range.min; v <= range.max; v += range.step) {
+        values.push(v);
+      }
+      return values;
+    });
+
+    // Cap total combinations at 100 to keep runtime reasonable
+    const totalCombinations = paramValues.reduce(
+      (acc, vals) => acc * vals.length,
+      1,
+    );
+    const stride = Math.max(1, Math.floor(totalCombinations / 100));
+
+    const combos = this.generateCombinations(paramValues);
+    for (let i = 0; i < combos.length; i += stride) {
+      const combo = combos[i];
+      const params: Record<string, number> = {};
+      paramNames.forEach((name, idx) => {
+        params[name] = combo[idx];
+      });
+
+      // Apply params to strategy rules
+      const modifiedStrategy = this.applyParamsToStrategy(strategy, params);
+
+      try {
+        const result = await engine.runBacktest(symbol, modifiedStrategy);
+        if (
+          result.sharpeRatio > bestSharpe &&
+          result.totalTrades >= 5 // Minimum trade filter
+        ) {
+          bestSharpe = result.sharpeRatio;
+          bestStrategy = modifiedStrategy;
+          bestParams = params;
+        }
+      } catch {
+        // Skip invalid parameter combinations
+      }
+    }
+
+    return { strategy: bestStrategy, params: bestParams };
+  }
+
+  /** Generate cartesian product of parameter value arrays */
+  private generateCombinations(arrays: number[][]): number[][] {
+    if (arrays.length === 0) return [[]];
+    const [first, ...rest] = arrays;
+    const restCombos = this.generateCombinations(rest);
+    const result: number[][] = [];
+    for (const val of first) {
+      for (const combo of restCombos) {
+        result.push([val, ...combo]);
+      }
+    }
+    return result;
+  }
+
+  /** Apply numeric params to strategy rule params fields */
+  private applyParamsToStrategy(
+    strategy: BacktestStrategy,
+    params: Record<string, number>,
+  ): BacktestStrategy {
+    const applyToRules = (rules: StrategyRule[]): StrategyRule[] =>
+      rules.map((rule) => ({
+        ...rule,
+        params: { ...rule.params, ...params },
+        value:
+          typeof rule.value === "number" && params[rule.indicator] !== undefined
+            ? params[rule.indicator]
+            : rule.value,
+      }));
+
+    return {
+      ...strategy,
+      entryRules: applyToRules(strategy.entryRules),
+      exitRules: applyToRules(strategy.exitRules),
+    };
+  }
+
+  /**
+   * Calculate robustness score (0-100) measuring out-of-sample consistency.
+   * Considers return degradation, Sharpe degradation, and win rate stability.
+   */
+  private calculateRobustness(
+    inSample: BacktestResult[],
+    outOfSample: BacktestResult[],
+  ): number {
+    if (outOfSample.length === 0) return 0;
+
+    const count = Math.min(inSample.length, outOfSample.length);
+    let returnDegradation = 0;
+    let sharpeDegradation = 0;
+    let winRateStability = 0;
+
+    for (let i = 0; i < count; i++) {
+      const inR = inSample[i];
+      const outR = outOfSample[i];
+
+      // Return degradation: ratio of out-of-sample to in-sample return
+      const retRatio =
+        inR.annualizedReturn !== 0
+          ? outR.annualizedReturn / inR.annualizedReturn
+          : outR.annualizedReturn >= 0
+            ? 1
+            : 0;
+      returnDegradation += Math.min(retRatio, 1.5); // Cap at 1.5 to avoid outlier skew
+
+      // Sharpe degradation
+      const sharpeRatio =
+        inR.sharpeRatio !== 0
+          ? outR.sharpeRatio / inR.sharpeRatio
+          : outR.sharpeRatio >= 0
+            ? 1
+            : 0;
+      sharpeDegradation += Math.min(sharpeRatio, 1.5);
+
+      // Win rate stability (absolute difference)
+      winRateStability += 1 - Math.abs(inR.winRate - outR.winRate);
+    }
+
+    // Average across windows
+    returnDegradation /= count;
+    sharpeDegradation /= count;
+    winRateStability /= count;
+
+    // Weighted composite: 40% return, 40% Sharpe, 20% win rate
+    const rawScore =
+      returnDegradation * 0.4 +
+      sharpeDegradation * 0.4 +
+      winRateStability * 0.2;
+
+    // Scale to 0-100
+    return Math.max(0, Math.min(100, rawScore * 100));
   }
 
   // ============================================================================

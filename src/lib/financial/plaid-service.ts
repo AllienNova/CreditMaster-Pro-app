@@ -1,23 +1,14 @@
 /**
  * Plaid Service
  *
- * Handles bank account connection and transaction syncing via Plaid API
+ * Handles bank account connection and transaction syncing via Plaid SDK
  */
 
+import { CountryCode, Products } from "plaid";
+import { getPlaidClient } from "@/lib/financial/plaid-client";
 import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
-
-// Plaid API configuration
-const PLAID_CLIENT_ID = process.env.PLAID_CLIENT_ID || "";
-const PLAID_SECRET = process.env.PLAID_SECRET || "";
-const PLAID_ENV = process.env.PLAID_ENV || "sandbox"; // sandbox, development, production
-const PLAID_API_URL =
-  PLAID_ENV === "production"
-    ? "https://production.plaid.com"
-    : PLAID_ENV === "development"
-      ? "https://development.plaid.com"
-      : "https://sandbox.plaid.com";
 
 // Types
 export interface PlaidLinkToken {
@@ -117,35 +108,21 @@ class PlaidService {
    */
   async createLinkToken(userId: string): Promise<PlaidLinkToken> {
     try {
-      const response = await fetch(`${PLAID_API_URL}/link/token/create`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "PLAID-CLIENT-ID": PLAID_CLIENT_ID,
-          "PLAID-SECRET": PLAID_SECRET,
-        },
-        body: JSON.stringify({
-          user: { client_user_id: userId },
-          client_name: "Fynvita",
-          products: ["transactions", "auth", "identity"],
-          country_codes: ["US"],
-          language: "en",
-          webhook: `${process.env.NEXT_PUBLIC_APP_URL}/api/financial/plaid/webhook`,
-        }),
+      const client = getPlaidClient();
+      const response = await client.linkTokenCreate({
+        user: { client_user_id: userId },
+        client_name: "Fynvita",
+        products: [Products.Transactions, Products.Auth, Products.Identity],
+        country_codes: [CountryCode.Us],
+        language: "en",
+        webhook: `${process.env.NEXT_PUBLIC_APP_URL}/api/financial/plaid/webhook`,
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to create link token");
-      }
-
-      const data = await response.json();
-
       return {
-        linkToken: data.link_token,
-        expiration: new Date(data.expiration),
+        linkToken: response.data.link_token,
+        expiration: new Date(response.data.expiration),
       };
     } catch (error) {
-      // PlaidService error: Error creating link token
       throw error;
     }
   }
@@ -158,33 +135,19 @@ class PlaidService {
     userId: string,
   ): Promise<string> {
     try {
-      const response = await fetch(
-        `${PLAID_API_URL}/item/public_token/exchange`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "PLAID-CLIENT-ID": PLAID_CLIENT_ID,
-            "PLAID-SECRET": PLAID_SECRET,
-          },
-          body: JSON.stringify({ public_token: publicToken }),
-        },
-      );
+      const client = getPlaidClient();
+      const response = await client.itemPublicTokenExchange({
+        public_token: publicToken,
+      });
 
-      if (!response.ok) {
-        throw new Error("Failed to exchange public token");
-      }
-
-      const data = await response.json();
-      const accessToken = data.access_token;
-      const itemId = data.item_id;
+      const accessToken = response.data.access_token;
+      const itemId = response.data.item_id;
 
       // Store access token securely in database
       await this.storeAccessToken(userId, itemId, accessToken);
 
       return itemId;
     } catch (error) {
-      // PlaidService error: Error exchanging public token
       throw error;
     }
   }
@@ -250,38 +213,28 @@ class PlaidService {
   async syncAccounts(itemId: string, userId: string): Promise<PlaidAccount[]> {
     try {
       const accessToken = await this.getAccessToken(itemId);
+      const client = getPlaidClient();
 
-      const response = await fetch(`${PLAID_API_URL}/accounts/get`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "PLAID-CLIENT-ID": PLAID_CLIENT_ID,
-          "PLAID-SECRET": PLAID_SECRET,
-        },
-        body: JSON.stringify({ access_token: accessToken }),
+      const response = await client.accountsGet({
+        access_token: accessToken,
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch accounts from Plaid");
-      }
-
-      const data = await response.json();
       const accounts: PlaidAccount[] = [];
 
-      for (const account of data.accounts) {
+      for (const account of response.data.accounts) {
         const plaidAccount: PlaidAccount = {
           id: `${itemId}_${account.account_id}`,
           itemId,
           userId,
           accountId: account.account_id,
-          institutionId: data.item.institution_id || "",
+          institutionId: response.data.item.institution_id || "",
           institutionName: account.name,
           accountName: account.official_name || account.name,
-          accountType: account.type,
-          accountSubtype: account.subtype,
+          accountType: account.type as PlaidAccount["accountType"],
+          accountSubtype: account.subtype || "",
           mask: account.mask || "",
-          currentBalance: account.balances.current,
-          availableBalance: account.balances.available,
+          currentBalance: account.balances.current ?? 0,
+          availableBalance: account.balances.available ?? undefined,
           currency: account.balances.iso_currency_code || "USD",
           lastSynced: new Date(),
           createdAt: new Date(),
@@ -294,7 +247,6 @@ class PlaidService {
 
       return accounts;
     } catch (error) {
-      // PlaidService error: Error syncing accounts
       throw error;
     }
   }
@@ -360,32 +312,21 @@ class PlaidService {
   ): Promise<PlaidTransaction[]> {
     try {
       const accessToken = await this.getAccessToken(itemId);
+      const client = getPlaidClient();
+
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
       const endDate = new Date();
 
-      const response = await fetch(`${PLAID_API_URL}/transactions/get`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "PLAID-CLIENT-ID": PLAID_CLIENT_ID,
-          "PLAID-SECRET": PLAID_SECRET,
-        },
-        body: JSON.stringify({
-          access_token: accessToken,
-          start_date: startDate.toISOString().split("T")[0],
-          end_date: endDate.toISOString().split("T")[0],
-        }),
+      const response = await client.transactionsGet({
+        access_token: accessToken,
+        start_date: startDate.toISOString().split("T")[0],
+        end_date: endDate.toISOString().split("T")[0],
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch transactions from Plaid");
-      }
-
-      const data = await response.json();
       const transactions: PlaidTransaction[] = [];
 
-      for (const txn of data.transactions) {
+      for (const txn of response.data.transactions) {
         const transaction: PlaidTransaction = {
           id: `${itemId}_${txn.transaction_id}`,
           accountId: txn.account_id,
@@ -394,11 +335,19 @@ class PlaidService {
           date: new Date(txn.date),
           amount: txn.amount,
           name: txn.name,
-          merchantName: txn.merchant_name,
+          merchantName: txn.merchant_name ?? undefined,
           category: txn.category || [],
           pending: txn.pending,
           paymentChannel: txn.payment_channel,
-          location: txn.location,
+          location: txn.location
+            ? {
+                address: txn.location.address ?? undefined,
+                city: txn.location.city ?? undefined,
+                region: txn.location.region ?? undefined,
+                postalCode: txn.location.postal_code ?? undefined,
+                country: txn.location.country ?? undefined,
+              }
+            : undefined,
           createdAt: new Date(),
         };
 
@@ -409,7 +358,6 @@ class PlaidService {
 
       return transactions;
     } catch (error) {
-      // PlaidService error: Error syncing transactions
       throw error;
     }
   }

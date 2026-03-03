@@ -19,3 +19,11 @@ export type {
 export { TradingChartContainer } from "./TradingChartContainer";
 
 export { MiniChart } from "./MiniChart";
+
+export { ChartControls } from "./ChartControls";
+export type { ChartControlsProps } from "./ChartControls";
+export {
+  TIMEFRAMES,
+  CHART_TYPES,
+  INDICATOR_OPTIONS,
+} from "./ChartControls";

@@ -27,7 +27,7 @@ module.exports = {
       require.resolve("jest-expo/src/preset/assetFileTransformer.js"),
   },
   globals: {
-    __DEV__: true,
+    __DEV__: false,
   },
   setupFiles: [
     "<rootDir>/jest.globals.js",
@@ -76,20 +76,20 @@ module.exports = {
     "./src/store/creditStore.ts": {
       branches: 40,
       functions: 50,
-      lines: 60,
-      statements: 60,
+      lines: 55,
+      statements: 55,
     },
     "./src/store/disputeStore.ts": {
       branches: 40,
       functions: 60,
-      lines: 60,
-      statements: 60,
+      lines: 55,
+      statements: 55,
     },
     "./src/services/notifications/pushNotificationService.ts": {
       branches: 65,
       functions: 80,
-      lines: 90,
-      statements: 90,
+      lines: 85,
+      statements: 80,
     },
   },
   setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],

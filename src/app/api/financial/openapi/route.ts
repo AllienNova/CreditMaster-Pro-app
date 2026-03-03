@@ -1,18 +1,18 @@
 /**
  * OpenAPI Specification Endpoint
  *
- * Serves the OpenAPI 3.0 specification for the Financial API
- * Can be used with Swagger UI, Postman, or other API documentation tools
+ * Serves the auto-generated OpenAPI 3.0 specification for all 275 API routes.
+ * Regenerate with: npx tsx scripts/generate-openapi.ts
  */
 
 import { NextResponse } from "next/server";
-import { openAPISpec } from "@/lib/api/openapi-spec";
+import { generatedOpenAPISpec } from "@/lib/api/generated-openapi-spec";
 
 export async function GET() {
-  return NextResponse.json(openAPISpec, {
+  return NextResponse.json(generatedOpenAPISpec, {
     headers: {
       "Content-Type": "application/json",
-      "Cache-Control": "public, max-age=3600", // Cache for 1 hour
+      "Cache-Control": "public, max-age=3600",
     },
   });
 }

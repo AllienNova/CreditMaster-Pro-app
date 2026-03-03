@@ -12,6 +12,7 @@ import { chatDbService } from "@/lib/ai/chat-db-service";
 import type {
   CreateSessionRequest,
   ListSessionsRequest,
+  SessionStatus,
   SessionType,
 } from "@/lib/ai/types/chat.types";
 
@@ -40,13 +41,18 @@ export async function GET(request: NextRequest) {
     // Parse query parameters
     const { searchParams } = new URL(request.url);
     const listRequest: ListSessionsRequest = {
-      status: (searchParams.get("status") as any) || undefined,
+      status: (searchParams.get("status") as SessionStatus) || undefined,
       sessionType:
         (searchParams.get("sessionType") as SessionType) || undefined,
       limit: parseInt(searchParams.get("limit") || "20"),
       offset: parseInt(searchParams.get("offset") || "0"),
-      sortBy: (searchParams.get("sortBy") as any) || "updatedAt",
-      sortOrder: (searchParams.get("sortOrder") as any) || "desc",
+      sortBy:
+        (searchParams.get("sortBy") as
+          | "createdAt"
+          | "updatedAt"
+          | "lastMessageAt") || "updatedAt",
+      sortOrder:
+        (searchParams.get("sortOrder") as "asc" | "desc") || "desc",
     };
 
     // Get sessions

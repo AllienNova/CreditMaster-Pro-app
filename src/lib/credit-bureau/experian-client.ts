@@ -6,6 +6,7 @@
 
 import type {
   BureauResponse,
+  CreditBureauAdapter,
   CreditReport,
   CreditReportRequest,
   DisputeSubmission,
@@ -13,9 +14,11 @@ import type {
   CreditAccount,
   CreditInquiry,
   PublicRecord,
+  Bureau,
 } from "./types";
 
-export class ExperianClient {
+export class ExperianClient implements CreditBureauAdapter {
+  readonly bureau: Bureau = "experian";
   private clientId: string;
   private clientSecret: string;
   private sandbox: boolean;

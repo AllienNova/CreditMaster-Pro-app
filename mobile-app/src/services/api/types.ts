@@ -160,6 +160,7 @@ export interface DisputeTemplate {
   letterText: string;
   requiredDocuments: string[];
   placeholders: string[];
+  bestPractices?: string[];
 }
 
 export interface DisputeStrategy {
@@ -406,16 +407,3 @@ export interface RequestConfig {
   body?: string;
 }
 
-// Re-export investment types for convenience
-export type {
-  AssetType,
-  Holding,
-  PortfolioSummary,
-  AllocationItem,
-  PerformancePoint,
-  PortfolioResponse,
-  StockAnalysis,
-  StockAnalysisApiResponse,
-  CreateHoldingInput,
-  UpdateHoldingInput,
-} from "./investments";

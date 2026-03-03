@@ -1,4 +1,5 @@
 {
+  "root": true,
   "extends": ["expo", "plugin:@typescript-eslint/recommended"],
   "parser": "@typescript-eslint/parser",
   "plugins": ["@typescript-eslint"],
@@ -26,7 +27,6 @@
     ]
   },
   "env": {
-    "react-native/react-native": true,
     "jest": true
   },
   "settings": {
@@ -34,6 +34,14 @@
       "version": "detect"
     }
   },
+  "overrides": [
+    {
+      "files": ["*.js", "**/__tests__/**", "**/*.test.ts", "**/*.test.tsx"],
+      "rules": {
+        "@typescript-eslint/no-var-requires": "off"
+      }
+    }
+  ],
   "ignorePatterns": [
     "node_modules/",
     ".expo/",

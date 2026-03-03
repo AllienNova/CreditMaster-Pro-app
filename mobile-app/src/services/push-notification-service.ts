@@ -11,6 +11,7 @@
  */
 
 import * as Notifications from "expo-notifications";
+import { SchedulableTriggerInputTypes } from "expo-notifications";
 import * as Device from "expo-device";
 import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -320,11 +321,12 @@ class PushNotificationService {
     let notificationTrigger: Notifications.NotificationTriggerInput;
 
     if (trigger instanceof Date) {
-      notificationTrigger = { date: trigger };
+      notificationTrigger = { type: SchedulableTriggerInputTypes.DATE, date: trigger };
     } else if ("seconds" in trigger) {
-      notificationTrigger = { seconds: trigger.seconds };
+      notificationTrigger = { type: SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: trigger.seconds, repeats: false };
     } else {
       notificationTrigger = {
+        type: SchedulableTriggerInputTypes.CALENDAR,
         hour: trigger.hour,
         minute: trigger.minute,
         repeats: trigger.repeats,

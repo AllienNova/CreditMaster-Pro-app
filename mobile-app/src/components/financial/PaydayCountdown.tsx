@@ -5,7 +5,7 @@
 
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { router } from "expo-router";
+import { router, Href } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import Svg, { Circle, Defs, LinearGradient, Stop } from "react-native-svg";
 import { lightTheme as theme } from "../../constants/theme";
@@ -169,7 +169,7 @@ export function PaydayCountdown({
   return (
     <TouchableOpacity
       style={styles.container}
-      onPress={() => router.push("/dashboard/income")}
+      onPress={() => router.push("/dashboard/income" as Href)}
       activeOpacity={0.7}
     >
       <View style={styles.content}>

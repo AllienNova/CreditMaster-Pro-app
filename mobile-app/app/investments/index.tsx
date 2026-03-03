@@ -25,6 +25,8 @@ import {
   selectInvestmentLoading,
   selectInvestmentError,
 } from "../../src/store";
+import { AreaChart } from "../../src/components/charts/AreaChart";
+import { DonutChart } from "../../src/components/charts/DonutChart";
 
 const { width } = Dimensions.get("window");
 
@@ -36,7 +38,7 @@ export default function InvestmentPortfolioScreen() {
   const holdings = useInvestmentStore(selectHoldings);
   const isLoading = useInvestmentStore(selectInvestmentLoading);
   const error = useInvestmentStore(selectInvestmentError);
-  const { fetchPortfolio } = useInvestmentStore();
+  const fetchPortfolio = useInvestmentStore((state) => state.fetchPortfolio);
 
   useEffect(() => {
     fetchPortfolio(selectedPeriod);
@@ -210,47 +212,54 @@ export default function InvestmentPortfolioScreen() {
           ))}
         </View>
 
+        {/* Performance Chart */}
+        {portfolio?.performanceHistory && portfolio.performanceHistory.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Performance</Text>
+            <Card style={styles.chartCard}>
+              <AreaChart
+                data={portfolio.performanceHistory.map((p) => ({
+                  value: p.value,
+                  label: new Date(p.date).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  }),
+                }))}
+                height={180}
+                showGrid
+                showDots
+                formatValue={(v) =>
+                  `$${v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v.toFixed(0)}`
+                }
+                color={totalGain >= 0 ? "#10B981" : "#EF4444"}
+              />
+            </Card>
+          </View>
+        )}
+
         {/* Allocation Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Portfolio Allocation</Text>
           <Card style={styles.allocationCard}>
-            {/* Simple bar chart representation */}
-            <View style={styles.allocationBar}>
-              {Object.entries(allocation).map(([type, data], index) => (
-                <View
-                  key={type}
-                  style={[
-                    styles.allocationSegment,
-                    {
-                      width: `${data.percent}%`,
-                      backgroundColor: data.color,
-                      borderTopLeftRadius: index === 0 ? 4 : 0,
-                      borderBottomLeftRadius: index === 0 ? 4 : 0,
-                      borderTopRightRadius:
-                        index === Object.keys(allocation).length - 1 ? 4 : 0,
-                      borderBottomRightRadius:
-                        index === Object.keys(allocation).length - 1 ? 4 : 0,
-                    },
-                  ]}
-                />
-              ))}
-            </View>
-            <View style={styles.allocationLegend}>
-              {Object.entries(allocation).map(([type, data]) => (
-                <View key={type} style={styles.legendItem}>
-                  <View
-                    style={[styles.legendDot, { backgroundColor: data.color }]}
-                  />
-                  <Text style={styles.legendLabel}>
-                    {type.charAt(0).toUpperCase() +
-                      type.slice(1).replace("_", " ")}
-                  </Text>
-                  <Text style={styles.legendValue}>
-                    {data.percent.toFixed(1)}%
-                  </Text>
-                </View>
-              ))}
-            </View>
+            {Object.keys(allocation).length > 0 ? (
+              <DonutChart
+                data={Object.entries(allocation).map(([type, data]) => ({
+                  value: data.value,
+                  label:
+                    type.charAt(0).toUpperCase() +
+                    type.slice(1).replace("_", " "),
+                  color: data.color,
+                }))}
+                size={180}
+                centerLabel="Total"
+                centerValue={formatCurrency(totalValue)}
+                showLegend
+                showPercentages
+                currency
+              />
+            ) : (
+              <Text style={styles.emptySubtext}>No allocation data</Text>
+            )}
           </Card>
         </View>
 
@@ -497,42 +506,13 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
     fontWeight: "500",
   },
+  chartCard: {
+    padding: theme.spacing.md,
+    alignItems: "center",
+  },
   allocationCard: {
     padding: theme.spacing.md,
-  },
-  allocationBar: {
-    flexDirection: "row",
-    height: 12,
-    borderRadius: 6,
-    overflow: "hidden",
-    marginBottom: theme.spacing.md,
-  },
-  allocationSegment: {
-    height: "100%",
-  },
-  allocationLegend: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-  },
-  legendItem: {
-    flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-  },
-  legendDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  legendLabel: {
-    fontSize: 13,
-    color: theme.colors.textSecondary,
-  },
-  legendValue: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: theme.colors.text,
   },
   holdingCard: {
     flexDirection: "row",

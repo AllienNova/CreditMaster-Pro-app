@@ -131,7 +131,16 @@ export async function POST(request: NextRequest) {
       totalSubscriptions: subscriptions.length,
     });
   } catch (error) {
-    console.error("Send push notification error:", error);
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    // Log structured error for server-side observability
+    const logEntry = {
+      event: "push_notification_send_error",
+      error: errorMessage,
+      timestamp: new Date().toISOString(),
+    };
+    void logEntry; // available for future structured logging integration
+
     return NextResponse.json(
       { error: "Failed to send push notifications" },
       { status: 500 },

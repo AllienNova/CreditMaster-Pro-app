@@ -213,3 +213,65 @@ export interface CreditAnalysis {
   positive_factors: string[];
   recommendations: string[];
 }
+
+// ---------------------------------------------------------------------------
+// Credit Bureau Adapter Interface
+// ---------------------------------------------------------------------------
+
+/**
+ * Common interface that all credit bureau clients must implement.
+ * Enables polymorphic bureau access and MockCreditBureauAdapter for dev/test.
+ */
+export interface CreditBureauAdapter {
+  /** The bureau this adapter connects to (or "mock" for the mock adapter). */
+  readonly bureau: Bureau | "mock";
+
+  /**
+   * Retrieve a credit report for the given consumer.
+   */
+  getCreditReport(
+    request: CreditReportRequest,
+    userPII: UserPII,
+  ): Promise<BureauResponse<CreditReport>>;
+
+  /**
+   * Submit a dispute for a specific credit item.
+   */
+  submitDispute(
+    dispute: DisputeSubmission,
+    userPII: UserPII,
+  ): Promise<BureauResponse>;
+}
+
+// ---------------------------------------------------------------------------
+// Score History
+// ---------------------------------------------------------------------------
+
+export interface CreditScoreHistoryEntry {
+  id: string;
+  user_id: string;
+  bureau: Bureau;
+  score: number;
+  report_id: string;
+  recorded_at: string;
+}
+
+export interface ScoreHistoryQuery {
+  user_id: string;
+  bureau?: Bureau;
+  limit?: number;
+  from_date?: string;
+  to_date?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Bureau Connection Status
+// ---------------------------------------------------------------------------
+
+export interface BureauConnectionStatus {
+  bureau: Bureau;
+  connected: boolean;
+  last_pull_date: string | null;
+  last_score: number | null;
+  environment: BureauApiEnvironment;
+}

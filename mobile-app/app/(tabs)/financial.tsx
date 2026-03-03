@@ -95,6 +95,24 @@ export default function FinancialScreen() {
       subtitle: "Income vs expenses",
       route: "/financial/cashflow",
     },
+    {
+      icon: "receipt",
+      title: "Tax Center",
+      subtitle: "Tax optimization & filing",
+      route: "/tax",
+    },
+    {
+      icon: "school",
+      title: "AI Coach",
+      subtitle: "Personalized financial coaching",
+      route: "/coach",
+    },
+    {
+      icon: "school-outline",
+      title: "Student Loans",
+      subtitle: "Loan management & repayment",
+      route: "/student-loans",
+    },
   ];
 
   const styles = useMemo(

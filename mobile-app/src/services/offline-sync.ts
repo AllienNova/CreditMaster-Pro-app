@@ -195,7 +195,7 @@ class OfflineSyncService {
   async addToQueue(
     item: Omit<
       SyncQueueItem,
-      "id" | "createdAt" | "retryCount" | "lastRetryAt"
+      "id" | "createdAt" | "retryCount" | "lastRetryAt" | "priority" | "conflictStrategy"
     > & {
       priority?: SyncPriority;
       conflictStrategy?: ConflictStrategy;

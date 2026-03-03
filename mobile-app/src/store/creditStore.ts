@@ -16,6 +16,7 @@ import type {
   MonitoringStatus,
 } from "../services/api/types";
 import { pushNotificationService } from "../services/notifications/pushNotificationService";
+import { seedCreditScores, seedScoreHistory, seedCreditFactors, seedMonitoringStatus, seedAlerts } from "../data/dev-seed";
 
 interface CreditState {
   // Credit Scores
@@ -127,6 +128,12 @@ export const useCreditStore = create<CreditState>()(
 
       fetchScores: async () => {
         set({ isLoadingScores: true, scoreError: null });
+        if (__DEV__) {
+          const avgScore = seedCreditScores.length > 0 ? Math.round(seedCreditScores.reduce((sum, s) => sum + s.score, 0) / seedCreditScores.length) : null;
+          const now = new Date().toISOString();
+          set({ scores: seedCreditScores, currentScore: avgScore, lastScoreUpdate: now, lastScoreFetch: now, isLoadingScores: false });
+          return;
+        }
         try {
           const oldScores = get().scores;
           const response = await creditScoreApi.getScores();
@@ -172,6 +179,10 @@ export const useCreditStore = create<CreditState>()(
 
       fetchScoreHistory: async (months = 6) => {
         set({ isLoadingScores: true });
+        if (__DEV__) {
+          set({ scoreHistory: seedScoreHistory, isLoadingScores: false });
+          return;
+        }
         try {
           const response = await creditScoreApi.getHistory(months);
           if (response.success && response.data) {
@@ -203,6 +214,10 @@ export const useCreditStore = create<CreditState>()(
       },
 
       fetchFactors: async () => {
+        if (__DEV__) {
+          set({ factors: seedCreditFactors });
+          return;
+        }
         try {
           const response = await creditScoreApi.getFactors();
           if (response.success && response.data) {
@@ -261,6 +276,10 @@ export const useCreditStore = create<CreditState>()(
       },
 
       fetchMonitoringStatus: async () => {
+        if (__DEV__) {
+          set({ monitoringStatus: seedMonitoringStatus });
+          return;
+        }
         try {
           const response = await creditMonitoringApi.getStatus();
           if (response.success && response.data) {
@@ -274,6 +293,11 @@ export const useCreditStore = create<CreditState>()(
 
       fetchAlerts: async (params) => {
         set({ isLoadingAlerts: true, alertError: null });
+        if (__DEV__) {
+          const now = new Date().toISOString();
+          set({ alerts: seedAlerts, unreadAlertCount: seedAlerts.filter(a => !a.acknowledged).length, lastAlertFetch: now, isLoadingAlerts: false });
+          return;
+        }
         try {
           const oldAlerts = get().alerts;
           const response = await creditMonitoringApi.getAlerts(params);

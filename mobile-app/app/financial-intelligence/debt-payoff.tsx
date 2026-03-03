@@ -502,7 +502,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: theme.colors.text,
   },
-  section: {
+  comparisonSection: {
     padding: theme.spacing.md,
   },
   comparisonCard: {

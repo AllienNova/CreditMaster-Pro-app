@@ -131,6 +131,43 @@ export interface ConcentrationReport {
   warnings: RiskWarning[];
 }
 
+// 3-Gate Architecture Types
+
+export type OperatingMode = "watch" | "guided" | "autonomous";
+
+export interface RiskGateResult {
+  gate: "compliance" | "risk_limits" | "execution";
+  passed: boolean;
+  violations: RiskViolation[];
+  warnings: RiskWarning[];
+}
+
+export interface EnhancedRiskValidation extends RiskValidation {
+  gateResults: RiskGateResult[];
+  operatingMode?: OperatingMode;
+  confirmationRequired?: boolean;
+  circuitBreakerEvents?: CircuitBreakerEventInput[];
+}
+
+export interface CircuitBreakerEventInput {
+  breakerType: string;
+  severity: "info" | "warning" | "critical" | "emergency";
+  triggerValue: number;
+  thresholdValue: number;
+  actionTaken: string;
+  details: Record<string, unknown>;
+  symbol?: string;
+}
+
+export interface TradeContext {
+  trade: ProposedTrade;
+  portfolio: PortfolioState;
+  operatingMode?: OperatingMode;
+  complianceScore?: number;
+  dailyTradeCount?: number;
+  maxDailyTrades?: number;
+}
+
 // ============================================================================
 // DEFAULT RISK RULES
 // ============================================================================
@@ -467,6 +504,527 @@ export class RiskGateway {
       warnings,
       adjustedTrade,
     };
+  }
+
+  // ============================================================================
+  // 3-GATE ARCHITECTURE (Enhanced Validation)
+  // ============================================================================
+
+  /**
+   * Gate 1: Pre-Trade Compliance
+   *
+   * Checks kill switch, operating mode restrictions, and compliance score.
+   * This gate must pass before any risk limit evaluation.
+   */
+  async preTradeCompliance(context: TradeContext): Promise<RiskGateResult> {
+    const violations: RiskViolation[] = [];
+    const warnings: RiskWarning[] = [];
+
+    // Kill switch check
+    if (this.killSwitch.active) {
+      violations.push({
+        rule: "kill_switch",
+        message: `Trading halted: ${this.killSwitch.reason}`,
+        severity: "critical",
+        currentValue: 1,
+        limit: 0,
+      });
+    }
+
+    // Operating mode validation
+    if (context.operatingMode === "watch") {
+      violations.push({
+        rule: "watch_mode_restriction",
+        message:
+          "WATCH mode active: live trades are not permitted, paper trading only",
+        severity: "critical",
+        currentValue: 0,
+        limit: 0,
+      });
+    }
+
+    // Compliance score check
+    if (
+      context.complianceScore !== undefined &&
+      context.complianceScore < 50
+    ) {
+      violations.push({
+        rule: "low_compliance_score",
+        message: `Compliance score ${context.complianceScore} is below minimum threshold of 50`,
+        severity: "high",
+        currentValue: context.complianceScore,
+        limit: 50,
+      });
+    } else if (
+      context.complianceScore !== undefined &&
+      context.complianceScore < 70
+    ) {
+      warnings.push({
+        rule: "compliance_score_warning",
+        message: `Compliance score ${context.complianceScore} is below recommended threshold of 70`,
+        currentValue: context.complianceScore,
+        threshold: 70,
+      });
+    }
+
+    return {
+      gate: "compliance",
+      passed: violations.length === 0,
+      violations,
+      warnings,
+    };
+  }
+
+  /**
+   * Gate 2: Risk Limits
+   *
+   * Evaluates position size, cash reserves, open positions, daily/weekly loss,
+   * drawdown, sector exposure, single position hard cap, HHI concentration,
+   * and correlation spike checks.
+   */
+  async riskLimits(context: TradeContext): Promise<RiskGateResult> {
+    const { trade, portfolio } = context;
+    const violations: RiskViolation[] = [];
+    const warnings: RiskWarning[] = [];
+
+    const tradeValue = trade.quantity * trade.price;
+    const positionPercent = (tradeValue / portfolio.totalValue) * 100;
+
+    // Position size check
+    if (positionPercent > this.rules.maxPositionSize) {
+      violations.push({
+        rule: "max_position_size",
+        message: `Position size ${positionPercent.toFixed(1)}% exceeds limit of ${this.rules.maxPositionSize}%`,
+        severity: "high",
+        currentValue: positionPercent,
+        limit: this.rules.maxPositionSize,
+      });
+    }
+
+    // Cash reserve check
+    const cashAfterTrade = portfolio.cashBalance - tradeValue;
+    const cashPercent = (cashAfterTrade / portfolio.totalValue) * 100;
+
+    if (cashPercent < this.rules.minCashReserve) {
+      violations.push({
+        rule: "min_cash_reserve",
+        message: `Trade would leave only ${cashPercent.toFixed(1)}% cash, below ${this.rules.minCashReserve}% minimum`,
+        severity: "high",
+        currentValue: cashPercent,
+        limit: this.rules.minCashReserve,
+      });
+    }
+
+    // Open positions check
+    if (
+      trade.side === "buy" &&
+      portfolio.openPositionCount >= this.rules.maxOpenPositions
+    ) {
+      violations.push({
+        rule: "max_open_positions",
+        message: `Already at maximum ${this.rules.maxOpenPositions} open positions`,
+        severity: "medium",
+        currentValue: portfolio.openPositionCount,
+        limit: this.rules.maxOpenPositions,
+      });
+    }
+
+    // Daily loss check
+    const dailyLossPercent =
+      (Math.abs(Math.min(0, portfolio.dailyPnL)) / portfolio.totalValue) * 100;
+    if (dailyLossPercent >= this.rules.maxDailyLoss) {
+      violations.push({
+        rule: "max_daily_loss",
+        message: `Daily loss ${dailyLossPercent.toFixed(1)}% has reached limit of ${this.rules.maxDailyLoss}%`,
+        severity: "critical",
+        currentValue: dailyLossPercent,
+        limit: this.rules.maxDailyLoss,
+      });
+    }
+
+    // Drawdown check
+    if (portfolio.drawdown >= this.rules.maxDrawdown) {
+      violations.push({
+        rule: "max_drawdown",
+        message: `Drawdown ${portfolio.drawdown.toFixed(1)}% has reached limit of ${this.rules.maxDrawdown}%`,
+        severity: "critical",
+        currentValue: portfolio.drawdown,
+        limit: this.rules.maxDrawdown,
+      });
+
+      // Auto-trigger kill switch
+      await this.triggerKillSwitch(
+        `Max drawdown of ${this.rules.maxDrawdown}% reached`,
+        "max_drawdown",
+      );
+    }
+
+    // Sector exposure check
+    if (trade.sector) {
+      const sectorExposure = this.calculateSectorExposure(
+        portfolio,
+        trade.sector,
+      );
+      const newExposure = sectorExposure + positionPercent;
+      const sectorLimit =
+        this.rules.maxSectorWeights[trade.sector] ??
+        this.rules.maxSectorExposure;
+
+      if (newExposure > sectorLimit) {
+        violations.push({
+          rule: "max_sector_exposure",
+          message: `${trade.sector} exposure would be ${newExposure.toFixed(1)}%, exceeds ${sectorLimit}%`,
+          severity: "medium",
+          currentValue: newExposure,
+          limit: sectorLimit,
+        });
+      }
+    }
+
+    // RSK-006: Single position hard cap
+    if (positionPercent > this.rules.maxSinglePositionPct) {
+      violations.push({
+        rule: "max_single_position",
+        message: `Position ${positionPercent.toFixed(1)}% exceeds hard cap of ${this.rules.maxSinglePositionPct}%`,
+        severity: "critical",
+        currentValue: positionPercent,
+        limit: this.rules.maxSinglePositionPct,
+      });
+    }
+
+    // RSK-006: HHI concentration check (simulate adding this trade)
+    if (trade.side === "buy") {
+      const simulatedPositions = [...portfolio.positions];
+      const existing = simulatedPositions.find(
+        (p) => p.symbol === trade.symbol,
+      );
+      if (existing) {
+        existing.percent += positionPercent;
+      } else {
+        simulatedPositions.push({
+          symbol: trade.symbol,
+          value: tradeValue,
+          percent: positionPercent,
+          sector: trade.sector,
+        });
+      }
+      const hhi = this.calculateHHI(
+        simulatedPositions.map((p) => p.percent),
+      );
+      if (hhi > this.rules.maxHHI) {
+        violations.push({
+          rule: "max_hhi_concentration",
+          message: `Portfolio HHI would be ${hhi.toFixed(0)}, exceeds limit of ${this.rules.maxHHI}`,
+          severity: "high",
+          currentValue: hhi,
+          limit: this.rules.maxHHI,
+        });
+      } else if (hhi > this.rules.maxHHI * 0.8) {
+        warnings.push({
+          rule: "hhi_concentration_warning",
+          message: `Portfolio HHI ${hhi.toFixed(0)} approaching limit of ${this.rules.maxHHI}`,
+          currentValue: hhi,
+          threshold: this.rules.maxHHI,
+        });
+      }
+    }
+
+    // RSK-003: Correlation spike check
+    if (this.correlationMonitor) {
+      const regimeEvents = this.correlationMonitor.detectRegimeChange(
+        portfolio.positions.map((p) => p.symbol),
+      );
+      const criticalSpikes = regimeEvents.filter(
+        (e: RegimeChangeEvent) =>
+          e.severity === "critical" || e.severity === "high",
+      );
+      if (criticalSpikes.length > 0) {
+        const avgChange =
+          criticalSpikes.reduce((sum: number, e: RegimeChangeEvent) => {
+            const pairChanges = e.affectedPairs.map((p) =>
+              Math.abs(p.after - p.before),
+            );
+            return (
+              sum +
+              (pairChanges.length > 0
+                ? pairChanges.reduce((a, b) => a + b, 0) / pairChanges.length
+                : 0)
+            );
+          }, 0) / criticalSpikes.length;
+
+        if (avgChange >= this.rules.correlationSpikeThreshold) {
+          await this.triggerKillSwitch(
+            `Correlation spike detected: avg change ${avgChange.toFixed(2)} across ${criticalSpikes.length} events`,
+            "correlation_spike",
+          );
+          violations.push({
+            rule: "correlation_spike_halt",
+            message: `Trading halted: correlation spike (avg delta ${avgChange.toFixed(2)})`,
+            severity: "critical",
+            currentValue: avgChange,
+            limit: this.rules.correlationSpikeThreshold,
+          });
+        }
+      }
+    }
+
+    return {
+      gate: "risk_limits",
+      passed: violations.length === 0,
+      violations,
+      warnings,
+    };
+  }
+
+  /**
+   * Gate 3: Execution Gate
+   *
+   * Checks signal consensus, confidence, stop loss, mode-specific restrictions,
+   * weekly loss warning, and generates adjusted trade if possible.
+   */
+  async executionGate(context: TradeContext): Promise<RiskGateResult> {
+    const { trade, portfolio } = context;
+    const violations: RiskViolation[] = [];
+    const warnings: RiskWarning[] = [];
+
+    // Signal consensus check
+    if (
+      trade.signalConsensus !== undefined &&
+      trade.signalConsensus < this.rules.minSignalConsensus
+    ) {
+      violations.push({
+        rule: "min_signal_consensus",
+        message: `Signal consensus ${(trade.signalConsensus * 100).toFixed(0)}% below minimum ${(this.rules.minSignalConsensus * 100).toFixed(0)}%`,
+        severity: "medium",
+        currentValue: trade.signalConsensus,
+        limit: this.rules.minSignalConsensus,
+      });
+    }
+
+    // Signal confidence check
+    if (
+      trade.signalConfidence !== undefined &&
+      trade.signalConfidence < this.rules.minConfidence
+    ) {
+      violations.push({
+        rule: "min_confidence",
+        message: `Signal confidence ${(trade.signalConfidence * 100).toFixed(0)}% below minimum ${(this.rules.minConfidence * 100).toFixed(0)}%`,
+        severity: "medium",
+        currentValue: trade.signalConfidence,
+        limit: this.rules.minConfidence,
+      });
+    }
+
+    // Stop loss check
+    if (!trade.stopLoss) {
+      warnings.push({
+        rule: "missing_stop_loss",
+        message: "Trade has no stop loss defined",
+        currentValue: 0,
+        threshold: 1,
+      });
+    } else {
+      const riskPercent =
+        (Math.abs(trade.price - trade.stopLoss) / trade.price) * 100;
+      if (riskPercent > this.rules.maxLossPerTrade) {
+        violations.push({
+          rule: "max_loss_per_trade",
+          message: `Stop loss risk ${riskPercent.toFixed(1)}% exceeds limit of ${this.rules.maxLossPerTrade}%`,
+          severity: "high",
+          currentValue: riskPercent,
+          limit: this.rules.maxLossPerTrade,
+        });
+      }
+    }
+
+    // Mode-specific restrictions
+    if (context.operatingMode === "autonomous") {
+      // Autonomous mode: check compliance score >= 70 and daily trade limit
+      if (
+        context.complianceScore !== undefined &&
+        context.complianceScore < 70
+      ) {
+        violations.push({
+          rule: "autonomous_compliance_required",
+          message: `Autonomous mode requires compliance score >= 70, current: ${context.complianceScore}`,
+          severity: "high",
+          currentValue: context.complianceScore,
+          limit: 70,
+        });
+      }
+      if (
+        context.dailyTradeCount !== undefined &&
+        context.maxDailyTrades !== undefined &&
+        context.dailyTradeCount >= context.maxDailyTrades
+      ) {
+        violations.push({
+          rule: "autonomous_daily_trade_limit",
+          message: `Autonomous mode daily trade limit reached: ${context.dailyTradeCount}/${context.maxDailyTrades}`,
+          severity: "high",
+          currentValue: context.dailyTradeCount,
+          limit: context.maxDailyTrades,
+        });
+      }
+    }
+
+    // Weekly loss warning
+    const weeklyLossPercent =
+      (Math.abs(Math.min(0, portfolio.weeklyPnL)) / portfolio.totalValue) * 100;
+    if (weeklyLossPercent >= this.rules.maxWeeklyLoss * 0.8) {
+      warnings.push({
+        rule: "weekly_loss_warning",
+        message: `Weekly loss ${weeklyLossPercent.toFixed(1)}% approaching limit of ${this.rules.maxWeeklyLoss}%`,
+        currentValue: weeklyLossPercent,
+        threshold: this.rules.maxWeeklyLoss,
+      });
+    }
+
+    return {
+      gate: "execution",
+      passed: violations.length === 0,
+      violations,
+      warnings,
+    };
+  }
+
+  /**
+   * Enhanced trade validation using 3-gate architecture.
+   *
+   * Runs all 3 gates sequentially:
+   *   Gate 1: preTradeCompliance — stops on critical violations
+   *   Gate 2: riskLimits — evaluates all position/loss/concentration rules
+   *   Gate 3: executionGate — signal quality, mode restrictions, stop loss
+   *
+   * Returns gate-by-gate results, circuit breaker events for persistence,
+   * and confirmation requirements based on operating mode.
+   */
+  async validateTradeEnhanced(
+    context: TradeContext,
+  ): Promise<EnhancedRiskValidation> {
+    const gateResults: RiskGateResult[] = [];
+    const allViolations: RiskViolation[] = [];
+    const allWarnings: RiskWarning[] = [];
+    const circuitBreakerEvents: CircuitBreakerEventInput[] = [];
+
+    // Gate 1: Pre-Trade Compliance
+    const gate1 = await this.preTradeCompliance(context);
+    gateResults.push(gate1);
+    allViolations.push(...gate1.violations);
+    allWarnings.push(...gate1.warnings);
+
+    // Record circuit breaker events for critical Gate 1 violations
+    for (const v of gate1.violations) {
+      if (v.severity === "critical") {
+        circuitBreakerEvents.push({
+          breakerType: v.rule,
+          severity: "critical",
+          triggerValue: v.currentValue,
+          thresholdValue: v.limit,
+          actionTaken: "trade_blocked",
+          details: { gate: "compliance", message: v.message },
+          symbol: context.trade.symbol,
+        });
+      }
+    }
+
+    // If Gate 1 has critical violations, stop here
+    const hasCriticalGate1 = gate1.violations.some(
+      (v) => v.severity === "critical",
+    );
+    if (hasCriticalGate1) {
+      return {
+        approved: false,
+        violations: allViolations,
+        warnings: allWarnings,
+        gateResults,
+        operatingMode: context.operatingMode,
+        confirmationRequired: false,
+        circuitBreakerEvents,
+      };
+    }
+
+    // Gate 2: Risk Limits
+    const gate2 = await this.riskLimits(context);
+    gateResults.push(gate2);
+    allViolations.push(...gate2.violations);
+    allWarnings.push(...gate2.warnings);
+
+    // Record circuit breaker events for critical Gate 2 violations
+    for (const v of gate2.violations) {
+      if (v.severity === "critical") {
+        circuitBreakerEvents.push({
+          breakerType: v.rule,
+          severity: "critical",
+          triggerValue: v.currentValue,
+          thresholdValue: v.limit,
+          actionTaken: "trade_blocked",
+          details: { gate: "risk_limits", message: v.message },
+          symbol: context.trade.symbol,
+        });
+      }
+    }
+
+    // Gate 3: Execution Gate
+    const gate3 = await this.executionGate(context);
+    gateResults.push(gate3);
+    allViolations.push(...gate3.violations);
+    allWarnings.push(...gate3.warnings);
+
+    // Generate adjusted trade if possible
+    let adjustedTrade: ProposedTrade | undefined;
+    if (allViolations.some((v) => v.rule === "max_position_size")) {
+      const maxQuantity = Math.floor(
+        (context.portfolio.totalValue * this.rules.maxPositionSize) /
+          100 /
+          context.trade.price,
+      );
+      if (maxQuantity > 0) {
+        adjustedTrade = { ...context.trade, quantity: maxQuantity };
+      }
+    }
+
+    // Determine confirmation requirement based on mode
+    const approved = allViolations.length === 0;
+    let confirmationRequired = false;
+
+    if (context.operatingMode === "guided" && approved) {
+      confirmationRequired = true;
+    }
+
+    return {
+      approved,
+      violations: allViolations,
+      warnings: allWarnings,
+      adjustedTrade,
+      gateResults,
+      operatingMode: context.operatingMode,
+      confirmationRequired,
+      circuitBreakerEvents,
+    };
+  }
+
+  /**
+   * Persist a circuit breaker event to the database.
+   */
+  async recordCircuitBreakerEvent(
+    event: CircuitBreakerEventInput,
+  ): Promise<void> {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabaseAdmin.from as any)("circuit_breaker_events").upsert({
+        user_id: this.userId,
+        breaker_type: event.breakerType,
+        severity: event.severity,
+        trigger_value: event.triggerValue,
+        threshold_value: event.thresholdValue,
+        action_taken: event.actionTaken,
+        details: event.details,
+        symbol: event.symbol ?? null,
+        created_at: new Date().toISOString(),
+      });
+    } catch {
+      // DB unavailable — circuit breaker event not persisted
+    }
   }
 
   // ============================================================================

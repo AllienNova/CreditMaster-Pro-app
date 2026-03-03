@@ -350,7 +350,7 @@ export default function PaperTradingScreen() {
         {
           text: "Reset Account",
           style: "destructive",
-          onPress: resetPaperAccount,
+          onPress: () => resetPaperAccount(),
         },
       ],
     );

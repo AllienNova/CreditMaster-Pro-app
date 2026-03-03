@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { documentService } from "@/lib/documents/document-service";
+import type { DocumentType } from "@/lib/documents/document-service";
 
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const file = formData.get("file") as File;
     const userId = formData.get("userId") as string;
-    const documentType = formData.get("documentType") as any;
+    const documentType = formData.get("documentType") as string as DocumentType;
     const metadataStr = formData.get("metadata") as string;
 
     if (!file || !userId || !documentType) {
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest) {
     const userId = searchParams.get("userId");
     const fileName = searchParams.get("fileName");
     const mimeType = searchParams.get("mimeType");
-    const documentType = searchParams.get("documentType") as any;
+    const documentType = searchParams.get("documentType") as string as DocumentType;
 
     if (!userId || !fileName || !mimeType || !documentType) {
       return NextResponse.json(

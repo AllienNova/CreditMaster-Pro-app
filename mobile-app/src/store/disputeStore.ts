@@ -17,6 +17,7 @@ import type {
   DisputeStrategy,
   DisputeReason,
 } from "../services/api/types";
+import { seedDisputes, seedDisputeTemplates, seedDisputeStrategies, seedDisputeReasons } from "../data/dev-seed";
 
 interface DisputeState {
   // Disputes
@@ -109,6 +110,10 @@ export const useDisputeStore = create<DisputeState>()(
 
       fetchDisputes: async (params) => {
         set({ isLoading: true, error: null });
+        if (__DEV__) {
+          set({ disputes: seedDisputes, totalDisputes: seedDisputes.length, isLoading: false });
+          return;
+        }
         try {
           const { statusFilter, bureauFilter } = get();
           const response = await disputeApi.getAll({
@@ -303,6 +308,7 @@ export const useDisputeStore = create<DisputeState>()(
       clearGeneratedLetter: () => set({ generatedLetter: null }),
 
       fetchTemplates: async () => {
+        if (__DEV__) { set({ templates: seedDisputeTemplates }); return; }
         try {
           const response = await disputeResourcesApi.getTemplates();
           if (response.success && response.data) {
@@ -314,6 +320,7 @@ export const useDisputeStore = create<DisputeState>()(
       },
 
       fetchStrategies: async () => {
+        if (__DEV__) { set({ strategies: seedDisputeStrategies }); return; }
         try {
           const response = await disputeResourcesApi.getStrategies();
           if (response.success && response.data) {
@@ -325,6 +332,7 @@ export const useDisputeStore = create<DisputeState>()(
       },
 
       fetchReasons: async () => {
+        if (__DEV__) { set({ reasons: seedDisputeReasons }); return; }
         try {
           const response = await disputeResourcesApi.getReasons();
           if (response.success && response.data) {

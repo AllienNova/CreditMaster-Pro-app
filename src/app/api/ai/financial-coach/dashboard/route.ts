@@ -9,7 +9,11 @@ import { createClient } from "@/lib/supabase/server";
 import { financialContextEngine } from "@/lib/financial/financial-context-engine";
 import { recommendationEngine } from "@/lib/financial/recommendation-engine";
 import { goalPlanner } from "@/lib/financial/goal-planner";
-import { CoachDashboard } from "@/lib/financial/types/ai-coach.types";
+import {
+  CoachDashboard,
+  Recommendation,
+} from "@/lib/financial/types/ai-coach.types";
+import type { FinancialContext } from "@/lib/financial/types/financial-context.types";
 
 async function getUser() {
   const supabase = await createClient();
@@ -138,7 +142,7 @@ export async function GET(request: NextRequest) {
 }
 
 function generateCoachMessage(
-  context: any,
+  context: FinancialContext,
   recCount: number,
   goalCount: number,
 ): string {
@@ -157,7 +161,7 @@ function generateCoachMessage(
   return "You're making progress! Keep up the good work and check out your personalized recommendations.";
 }
 
-function determineFocusArea(context: any, recommendations: any[]): string {
+function determineFocusArea(context: FinancialContext, recommendations: Recommendation[]): string {
   if (context.debts.debtToIncomeRatio > 40) return "debt_payoff";
   if (context.accounts.totalSavings < context.transactions.totalExpenses * 3)
     return "emergency_fund";

@@ -2,9 +2,18 @@
  * Fynvita Mobile App Jest Setup
  */
 
-// Define __DEV__ global (normally set by React Native bundler)
-if (typeof globalThis.__DEV__ === "undefined") {
-  globalThis.__DEV__ = true;
+// Force __DEV__ to false in tests so stores use mocked APIs instead of dev seed data.
+// react-native/jest/setup.js (a setupFile) sets __DEV__ = true; we override it here
+// in setupFilesAfterEnv which runs after all setupFiles.
+globalThis.__DEV__ = false;
+
+// Polyfill Headers for test environment (used in fetch mock)
+if (typeof globalThis.Headers === "undefined") {
+  globalThis.Headers = class Headers {
+    constructor() { this._headers = {}; }
+    append(k, v) { this._headers[k.toLowerCase()] = v; }
+    get(k) { return this._headers[k.toLowerCase()] || null; }
+  };
 }
 
 // Mock AsyncStorage
@@ -112,6 +121,15 @@ jest.mock("expo-notifications", () => ({
   setNotificationChannelAsync: jest.fn(() => Promise.resolve(undefined)),
   removeNotificationSubscription: jest.fn(),
   AndroidImportance: { MAX: 5, HIGH: 4, DEFAULT: 3, LOW: 2, MIN: 1 },
+  SchedulableTriggerInputTypes: {
+    DATE: "date",
+    TIME_INTERVAL: "timeInterval",
+    CALENDAR: "calendar",
+    DAILY: "daily",
+    WEEKLY: "weekly",
+    MONTHLY: "monthly",
+    YEARLY: "yearly",
+  },
 }));
 
 // Mock expo-device — use a mutable object so tests can override isDevice
@@ -192,7 +210,7 @@ global.fetch = jest.fn(() =>
     status: 200,
     json: () => Promise.resolve({}),
     text: () => Promise.resolve(""),
-    headers: new Headers(),
+    headers: new globalThis.Headers(),
   }),
 );
 

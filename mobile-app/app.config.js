@@ -108,6 +108,7 @@ export default {
             "Allow Fynvita to access your camera to scan documents",
         },
       ],
+      "expo-font",
       "expo-localization",
       "expo-background-fetch",
       "expo-task-manager",
@@ -119,22 +120,14 @@ export default {
       router: {
         origin: false,
       },
-      eas: {
-        projectId: process.env.EAS_PROJECT_ID || "fynvita-app",
-      },
+      // eas: {
+      //   projectId: process.env.EAS_PROJECT_ID || "fynvita-app",
+      // },
       // Runtime environment variables
       apiUrl: process.env.EXPO_PUBLIC_API_URL || "https://api.fynvita.com",
       supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
       supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
     },
-    owner: "fynvita",
-    updates: {
-      url: `https://u.expo.dev/${process.env.EAS_PROJECT_ID || "fynvita-app"}`,
-      fallbackToCacheTimeout: 30000,
-      checkAutomatically: "ON_LOAD",
-    },
-    runtimeVersion: {
-      policy: "appVersion",
-    },
+    owner: "kimhons",
   },
 };

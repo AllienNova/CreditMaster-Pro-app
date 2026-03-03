@@ -3,26 +3,18 @@
  * AI-powered budget creation and optimization with Phase 2.1 integration
  */
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
   ActivityIndicator,
-  RefreshControl,
-  TextInput,
-  Modal,
-  Dimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
-import { BarChart } from "react-native-chart-kit";
-
-const { width } = Dimensions.get("window");
 
 interface BudgetCategory {
   category: string;
@@ -44,17 +36,6 @@ interface BudgetAnalysis {
     severity: "high" | "medium" | "low";
     message: string;
   }>;
-}
-
-interface Recommendation {
-  id: string;
-  type: "increase" | "decrease" | "reallocate";
-  category: string;
-  currentAmount: number;
-  suggestedAmount: number;
-  reason: string;
-  impact: "high" | "medium" | "low";
-  confidence: number;
 }
 
 /**
@@ -162,4 +143,61 @@ const BudgetOverview: React.FC<BudgetOverviewProps> = ({ analysis }) => {
   );
 };
 
-// Component will be continued in next edit
+const styles = StyleSheet.create({
+  overviewCard: { padding: 16, marginBottom: 16 },
+  cardTitle: { fontSize: 18, fontWeight: "600", marginBottom: 12, color: theme.colors.text },
+  metricsGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", marginBottom: 16 },
+  metricBox: { width: "48%", alignItems: "center", paddingVertical: 12, marginBottom: 8, backgroundColor: theme.colors.background, borderRadius: 8 },
+  metricLabel: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 4 },
+  metricValue: { fontSize: 18, fontWeight: "700", color: theme.colors.text, marginTop: 2 },
+  progressSection: { marginTop: 8 },
+  progressBar: { height: 8, backgroundColor: theme.colors.border, borderRadius: 4, overflow: "hidden" },
+  progressFill: { height: "100%", borderRadius: 4 },
+  progressText: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 4, textAlign: "center" },
+  alertsSection: { marginTop: 12, padding: 12, backgroundColor: "#FFF3CD", borderRadius: 8 },
+  alertsTitle: { fontSize: 14, fontWeight: "600", marginBottom: 4 },
+  alertItem: { paddingVertical: 2 },
+  alertText: { fontSize: 13, color: theme.colors.text },
+  container: { flex: 1, backgroundColor: theme.colors.background },
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+});
+
+export default function SmartBudgetEnhancedScreen() {
+  const [loading, setLoading] = useState(true);
+  const [analysis, setAnalysis] = useState<BudgetAnalysis | null>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setAnalysis({
+        totalBudgeted: 5000,
+        totalSpent: 3200,
+        totalRemaining: 1800,
+        percentUsed: 64,
+        daysRemaining: 12,
+        categories: [],
+        alerts: [],
+      });
+      setLoading(false);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading || !analysis) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={{ marginTop: 12, color: theme.colors.textSecondary }}>Loading budget data...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={{ padding: 16 }}>
+        <BudgetOverview analysis={analysis} />
+      </ScrollView>
+    </SafeAreaView>
+  );
+}

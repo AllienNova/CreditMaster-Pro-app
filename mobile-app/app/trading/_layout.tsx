@@ -63,6 +63,24 @@ export default function TradingLayout() {
         }}
       />
       <Stack.Screen
+        name="mode-status"
+        options={{
+          title: "Trading Mode",
+        }}
+      />
+      <Stack.Screen
+        name="signal-detail"
+        options={{
+          title: "Signal Detail",
+        }}
+      />
+      <Stack.Screen
+        name="agents"
+        options={{
+          title: "AI Agents",
+        }}
+      />
+      <Stack.Screen
         name="chart"
         options={{
           title: "Chart",

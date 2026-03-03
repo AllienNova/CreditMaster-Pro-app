@@ -11,7 +11,7 @@ import {
   ScrollView,
   TouchableOpacity,
 } from "react-native";
-import { router } from "expo-router";
+import { router, Href } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
@@ -252,7 +252,7 @@ export default function FinancialOverviewScreen() {
           <TouchableOpacity
             key={account.id}
             onPress={() =>
-              router.push(`/financial/account-detail?id=${account.id}`)
+              router.push(`/financial/account-detail?id=${account.id}` as Href)
             }
           >
             <Card style={styles.accountCard}>

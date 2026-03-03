@@ -23,6 +23,8 @@ import {
   OrderFilter,
   OrderValidationResult,
 } from "../orders/order-types";
+import { createOperatingModeManager } from "@/lib/trading/modes/operating-mode-manager";
+import type { ModeStatus } from "@/lib/trading/modes/mode-types";
 
 // ============================================================================
 // TYPES
@@ -549,6 +551,30 @@ export class PaperTradingEngine {
   }
 
   // ==========================================================================
+  // GRADUATION TRACKING
+  // ==========================================================================
+
+  /**
+   * Get graduation status for a user from the operating mode manager.
+   * Returns the full mode status including graduation progress.
+   */
+  async getGraduationStatus(
+    userId: string,
+  ): Promise<{ success: boolean; data?: ModeStatus; error?: string }> {
+    try {
+      const modeManager = createOperatingModeManager(userId);
+      const result = await modeManager.getModeStatus();
+      return result;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return {
+        success: false,
+        error: `Failed to get graduation status: ${message}`,
+      };
+    }
+  }
+
+  // ==========================================================================
   // PRIVATE METHODS
   // ==========================================================================
 
@@ -676,6 +702,15 @@ export class PaperTradingEngine {
 
     await this.supabase.from("paper_fills").insert(fill);
 
+    // Compute realized P&L for graduation tracking before position update
+    const realizedPL = await this.computeRealizedPL(
+      order.accountId,
+      order.symbol,
+      order.side,
+      fillQuantity,
+      executionPrice,
+    );
+
     // Update position
     await this.updatePosition(
       order.accountId,
@@ -704,10 +739,31 @@ export class PaperTradingEngine {
       totalValue,
       commission,
       fees: 0,
+      realizedPL: realizedPL !== 0 ? realizedPL : undefined,
       executedAt: new Date(),
     };
 
     await this.supabase.from("paper_trades").insert(trade);
+
+    // Track trade for graduation (fire-and-forget — never blocks execution)
+    const userId = await this.getUserIdForAccount(order.accountId);
+    if (userId) {
+      this.trackTradeForGraduation(userId, trade).catch(() => {
+        // Swallowed intentionally: graduation tracking must not affect trade execution
+      });
+
+      // Track strategy performance if the trade closes a position (has realized P&L)
+      if (realizedPL !== 0) {
+        this.recordStrategyPerformance(
+          userId,
+          order.symbol,
+          realizedPL,
+          realizedPL > 0,
+        ).catch(() => {
+          // Swallowed intentionally
+        });
+      }
+    }
 
     // Update order status
     const { data: updatedOrder, error } = await this.supabase
@@ -990,8 +1046,154 @@ export class PaperTradingEngine {
     return days;
   }
 
+  /**
+   * Compute the realized P&L that will result from this trade.
+   * This mirrors the logic in updatePosition but only computes the P&L,
+   * without mutating any state.
+   */
+  private async computeRealizedPL(
+    accountId: string,
+    symbol: string,
+    side: OrderSide,
+    quantity: number,
+    price: number,
+  ): Promise<number> {
+    try {
+      const existing = await this.getPosition(accountId, symbol);
+      if (!existing) return 0;
+
+      if (side === "buy" && existing.quantity < 0) {
+        // Covering short position
+        const coveredQty = Math.min(quantity, Math.abs(existing.quantity));
+        return coveredQty * (existing.avgEntryPrice - price);
+      } else if (side === "sell" && existing.quantity > 0) {
+        // Selling long position
+        const soldQty = Math.min(quantity, existing.quantity);
+        return soldQty * (price - existing.avgEntryPrice);
+      }
+
+      return 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  /**
+   * Get the userId for a given paper trading account.
+   */
+  private async getUserIdForAccount(
+    accountId: string,
+  ): Promise<string | null> {
+    try {
+      const { data, error } = await this.supabase
+        .from("paper_accounts")
+        .select("userId")
+        .eq("id", accountId)
+        .single();
+
+      if (error || !data) return null;
+      return data.userId;
+    } catch {
+      return null;
+    }
+  }
+
   private delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Track a completed trade for graduation purposes.
+   * This is a fire-and-forget side-effect: errors are logged but never thrown.
+   */
+  private async trackTradeForGraduation(
+    userId: string,
+    trade: Omit<PaperTrade, "id">,
+  ): Promise<void> {
+    try {
+      const modeManager = createOperatingModeManager(userId);
+
+      // Determine if the trade is profitable based on realizedPL
+      const profitable = (trade.realizedPL ?? 0) > 0;
+
+      // Record the paper trade for graduation counter
+      await modeManager.recordPaperTrade(profitable);
+
+      // Record an active day for the watch mode
+      await modeManager.recordActiveDay("watch");
+    } catch (err) {
+      // Graduation tracking must never break trade execution
+      console.error(
+        "[PaperTradingEngine] Graduation tracking failed:",
+        err instanceof Error ? err.message : err,
+      );
+    }
+  }
+
+  /**
+   * Record per-strategy performance metrics.
+   * Updates the strategy_performance JSONB field on the trading_accounts table.
+   * Fire-and-forget: errors are logged but never thrown.
+   */
+  private async recordStrategyPerformance(
+    userId: string,
+    strategyName: string,
+    pnl: number,
+    profitable: boolean,
+  ): Promise<void> {
+    try {
+      const modeManager = createOperatingModeManager(userId);
+      const accountResult = await modeManager.getAccount();
+
+      if (!accountResult.success || !accountResult.data) {
+        console.error(
+          "[PaperTradingEngine] Cannot record strategy performance: account not found",
+        );
+        return;
+      }
+
+      const account = accountResult.data;
+      const currentPerformance = (account.strategyPerformance ?? {}) as Record<
+        string,
+        { wins: number; losses: number; totalPnl: number }
+      >;
+
+      const existing = currentPerformance[strategyName] ?? {
+        wins: 0,
+        losses: 0,
+        totalPnl: 0,
+      };
+
+      const updated = {
+        ...currentPerformance,
+        [strategyName]: {
+          wins: existing.wins + (profitable ? 1 : 0),
+          losses: existing.losses + (profitable ? 0 : 1),
+          totalPnl: existing.totalPnl + pnl,
+        },
+      };
+
+      // Update the strategy_performance JSONB field directly via our own Supabase client
+      const { error } = await this.supabase
+        .from("trading_accounts")
+        .update({
+          strategy_performance: updated,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", userId);
+
+      if (error) {
+        console.error(
+          "[PaperTradingEngine] Failed to update strategy performance:",
+          error.message,
+        );
+      }
+    } catch (err) {
+      console.error(
+        "[PaperTradingEngine] Strategy performance tracking failed:",
+        err instanceof Error ? err.message : err,
+      );
+    }
   }
 }
 

@@ -27,7 +27,6 @@ export default function CoachLayout() {
         name="index"
         options={{
           title: "AI Financial Coach",
-          headerLargeTitle: true,
         }}
       />
       <Stack.Screen

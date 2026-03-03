@@ -45,51 +45,51 @@ const DEFAULT_OPTIONS: OutputValidationOptions = {
  */
 const HARMFUL_PATTERNS = [
   // Violence
-  /\b(kill|murder|assault|attack|harm|hurt|injure|weapon|gun|knife|bomb)\b/gi,
+  /\b(kill|murder|assault|attack|harm|hurt|injure|weapon|gun|knife|bomb)\b/i,
 
   // Hate speech
-  /\b(hate|racist|sexist|homophobic|xenophobic|bigot|discrimination)\b/gi,
+  /\b(hate|racist|sexist|homophobic|xenophobic|bigot|discrimination)\b/i,
 
   // Self-harm
-  /\b(suicide|self-harm|cut|overdose|end\s+it\s+all)\b/gi,
+  /\b(suicide|self-harm|cut|overdose|end\s+it\s+all)\b/i,
 
   // Illegal activities
-  /\b(illegal|fraud|scam|steal|theft|hack|crack|pirate)\b/gi,
+  /\b(illegal|fraud|scam|steal|theft|hack|crack|pirate)\b/i,
 
   // Explicit content
-  /\b(porn|xxx|explicit|nsfw|sexual)\b/gi,
+  /\b(porn|xxx|explicit|nsfw|sexual)\b/i,
 ];
 
 /**
  * Unprofessional patterns
  */
 const UNPROFESSIONAL_PATTERNS = [
-  /\b(damn|hell|crap|suck|stupid|idiot|moron|dumb)\b/gi,
-  /\b(wtf|omg|lol|lmao|rofl)\b/gi,
-  /!!+/g, // Multiple exclamation marks
-  /\?\?+/g, // Multiple question marks
+  /\b(damn|hell|crap|suck|stupid|idiot|moron|dumb)\b/i,
+  /\b(wtf|omg|lol|lmao|rofl)\b/i,
+  /!!+/, // Multiple exclamation marks
+  /\?\?+/, // Multiple question marks
 ];
 
 /**
  * Disclaimer patterns that might indicate hallucination
  */
 const HALLUCINATION_INDICATORS = [
-  /I\s+(don't|do\s+not)\s+have\s+access/gi,
-  /I\s+cannot\s+(verify|confirm)/gi,
-  /I\s+(don't|do\s+not)\s+know/gi,
-  /I'm\s+not\s+sure/gi,
-  /This\s+might\s+(not\s+)?be\s+accurate/gi,
-  /Please\s+verify/gi,
-  /I\s+may\s+be\s+wrong/gi,
+  /I\s+(don't|do\s+not)\s+have\s+access/i,
+  /I\s+cannot\s+(verify|confirm)/i,
+  /I\s+(don't|do\s+not)\s+know/i,
+  /I'm\s+not\s+sure/i,
+  /This\s+might\s+(not\s+)?be\s+accurate/i,
+  /Please\s+verify/i,
+  /I\s+may\s+be\s+wrong/i,
 ];
 
 /**
  * Bias indicators
  */
 const BIAS_PATTERNS = [
-  /\b(always|never|everyone|no\s+one|all|none)\b/gi, // Absolute statements
-  /\b(obviously|clearly|undoubtedly|certainly)\b/gi, // Overconfident language
-  /\b(should|must|need\s+to)\b/gi, // Prescriptive language
+  /\b(always|never|everyone|no\s+one|all|none)\b/i, // Absolute statements
+  /\b(obviously|clearly|undoubtedly|certainly)\b/i, // Overconfident language
+  /\b(should|must|need\s+to)\b/i, // Prescriptive language
 ];
 
 /**
@@ -281,8 +281,12 @@ export function sanitizeOutput(output: string, redactPIIFlag = true): string {
   let sanitized = output;
 
   // Remove harmful content (replace with [CONTENT REMOVED])
+  // Use new RegExp with /g flag for replaceAll behavior (source patterns omit /g to avoid stateful .test())
   for (const pattern of HARMFUL_PATTERNS) {
-    sanitized = sanitized.replace(pattern, "[CONTENT REMOVED]");
+    sanitized = sanitized.replace(
+      new RegExp(pattern.source, pattern.flags + "g"),
+      "[CONTENT REMOVED]",
+    );
   }
 
   // Redact PII if requested
@@ -292,7 +296,10 @@ export function sanitizeOutput(output: string, redactPIIFlag = true): string {
 
   // Remove unprofessional language
   for (const pattern of UNPROFESSIONAL_PATTERNS) {
-    sanitized = sanitized.replace(pattern, "***");
+    sanitized = sanitized.replace(
+      new RegExp(pattern.source, pattern.flags + "g"),
+      "***",
+    );
   }
 
   return sanitized;

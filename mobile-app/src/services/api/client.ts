@@ -80,7 +80,7 @@ async function isOnline(): Promise<boolean> {
     return typeof navigator !== "undefined" ? navigator.onLine : true;
   }
   try {
-    const NetInfo = require("@react-native-community/netinfo").default;
+    const { default: NetInfo } = await import("@react-native-community/netinfo");
     const state = await NetInfo.fetch();
     return state.isConnected ?? false;
   } catch {

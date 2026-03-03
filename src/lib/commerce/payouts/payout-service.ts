@@ -140,7 +140,7 @@ export interface PayoutSchedule {
 // Payout Service
 // =============================================================================
 
-class PayoutService {
+export class PayoutService {
   private truelayerConnector: TrueLayerPaymentsConnector;
 
   constructor() {

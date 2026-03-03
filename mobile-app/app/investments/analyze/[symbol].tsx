@@ -32,7 +32,8 @@ export default function StockAnalysisScreen() {
   const recommendation = useInvestmentStore(selectCurrentRecommendation);
   const isLoading = useInvestmentStore(selectInvestmentLoading);
   const error = useInvestmentStore(selectInvestmentError);
-  const { getRecommendation, addToWatchlist } = useInvestmentStore();
+  const getRecommendation = useInvestmentStore((s) => s.getRecommendation);
+  const addToWatchlist = useInvestmentStore((s) => s.addToWatchlist);
 
   useEffect(() => {
     if (paramSymbol) {

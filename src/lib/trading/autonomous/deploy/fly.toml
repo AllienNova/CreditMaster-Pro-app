@@ -1,0 +1,46 @@
+# Fynvita Autonomous Trading Service — Fly.io Configuration
+#
+# Deploy: fly deploy --config src/lib/trading/autonomous/deploy/fly.toml
+# Logs:   fly logs --config src/lib/trading/autonomous/deploy/fly.toml
+
+app = "fynvita-autonomous-trading"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+  # Build context is the monorepo root (4 levels up from this file)
+  # When deploying, run from the repo root:
+  #   fly deploy --config src/lib/trading/autonomous/deploy/fly.toml --dockerfile src/lib/trading/autonomous/deploy/Dockerfile
+
+[env]
+  PORT = "8080"
+  STANDALONE_MODE = "true"
+  POLL_INTERVAL_MS = "60000"
+  NODE_ENV = "production"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+[[http_service.checks]]
+  grace_period = "15s"
+  interval = "30s"
+  method = "GET"
+  path = "/health"
+  timeout = "5s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
+
+# Secrets (set via `fly secrets set`):
+#   NEXT_PUBLIC_SUPABASE_URL
+#   SUPABASE_SERVICE_ROLE_KEY
+#   NEXT_PUBLIC_SUPABASE_ANON_KEY
+#   AIML_API_KEY (for AI agent providers)
+#   ALPACA_API_KEY (for broker execution)
+#   ALPACA_API_SECRET

@@ -12,7 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../src/hooks/useTheme";
 import { withOpacity } from "../../src/constants/theme";
 import { useAuthStore } from "../../src/store/authStore";
-import { userApi } from "../../src/services/api/user";
+import userApi from "../../src/services/api/user";
 
 const PLANS = [
   {

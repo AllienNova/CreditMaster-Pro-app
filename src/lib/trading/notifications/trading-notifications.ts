@@ -24,7 +24,19 @@ export type TradingNotificationType =
   | "risk_warning"
   | "risk_critical"
   | "ise_rotation"
-  | "kill_switch";
+  | "kill_switch"
+  // Mode notifications (D3)
+  | "mode_graduated"
+  | "mode_blocked"
+  // Compliance notifications (D3)
+  | "compliance_violation"
+  | "compliance_warning"
+  // Agent notifications (D3)
+  | "agent_signal"
+  | "agent_error"
+  // Wellness gate notifications (D3)
+  | "wellness_blocked"
+  | "wellness_warning";
 
 export interface TradingNotification {
   id: string;
@@ -44,6 +56,10 @@ export interface NotificationPreferences {
   enableOrderAlerts: boolean;
   enableRiskAlerts: boolean;
   enableISEAlerts: boolean;
+  enableModeAlerts: boolean;
+  enableComplianceAlerts: boolean;
+  enableAgentAlerts: boolean;
+  enableWellnessAlerts: boolean;
   minSignalConfidence: number;
   pushEnabled: boolean;
   emailEnabled: boolean;
@@ -55,6 +71,10 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   enableOrderAlerts: true,
   enableRiskAlerts: true,
   enableISEAlerts: true,
+  enableModeAlerts: true,
+  enableComplianceAlerts: true,
+  enableAgentAlerts: true,
+  enableWellnessAlerts: true,
   minSignalConfidence: 0.7,
   pushEnabled: true,
   emailEnabled: false,
@@ -134,6 +154,58 @@ const NOTIFICATION_TEMPLATES: Record<
     title: () => "Kill Switch Activated",
     message: (d) => `Trading halted: ${d.reason || "Manual activation"}`,
     priority: "critical",
+  },
+  // Mode notifications
+  mode_graduated: {
+    title: (d) => `Mode Upgraded: ${d.toMode}`,
+    message: (d) =>
+      `Congratulations! You graduated from ${d.fromMode} to ${d.toMode} mode.`,
+    priority: "high",
+  },
+  mode_blocked: {
+    title: (d) => `Mode Change Blocked`,
+    message: (d) =>
+      `Cannot transition to ${d.targetMode}: ${d.reason || "Requirements not met"}`,
+    priority: "medium",
+  },
+  // Compliance notifications
+  compliance_violation: {
+    title: () => "Compliance Violation",
+    message: (d) =>
+      `Law ${d.lawId || "unknown"}: ${d.message || "Compliance rule violated"}`,
+    priority: "critical",
+  },
+  compliance_warning: {
+    title: () => "Compliance Warning",
+    message: (d) =>
+      `${d.message || "Compliance score approaching threshold"}`,
+    priority: "medium",
+  },
+  // Agent notifications
+  agent_signal: {
+    title: (d) => `Agent Signal: ${d.agentName}`,
+    message: (d) =>
+      `${d.agentName} detected ${d.signal || "a trading opportunity"} for ${d.symbol || "unknown"}`,
+    priority: "medium",
+  },
+  agent_error: {
+    title: (d) => `Agent Error: ${d.agentName}`,
+    message: (d) =>
+      `${d.agentName} encountered an error: ${d.error || "Unknown error"}`,
+    priority: "high",
+  },
+  // Wellness gate notifications
+  wellness_blocked: {
+    title: () => "Trading Blocked: Financial Wellness",
+    message: (d) =>
+      `Live trading blocked: ${d.reason || "DTI ratio too high"}. DTI: ${d.dtiRatio ? `${(d.dtiRatio as number).toFixed(1)}%` : "N/A"}`,
+    priority: "critical",
+  },
+  wellness_warning: {
+    title: () => "Financial Wellness Warning",
+    message: (d) =>
+      `${d.message || "Financial metrics approaching trading limits"}`,
+    priority: "medium",
   },
 };
 
@@ -227,6 +299,32 @@ export class TradingNotificationService {
       return false;
     }
 
+    // Mode alerts
+    if (type.startsWith("mode_") && !this.preferences.enableModeAlerts) {
+      return false;
+    }
+
+    // Compliance alerts
+    if (
+      type.startsWith("compliance_") &&
+      !this.preferences.enableComplianceAlerts
+    ) {
+      return false;
+    }
+
+    // Agent alerts
+    if (type.startsWith("agent_") && !this.preferences.enableAgentAlerts) {
+      return false;
+    }
+
+    // Wellness alerts
+    if (
+      type.startsWith("wellness_") &&
+      !this.preferences.enableWellnessAlerts
+    ) {
+      return false;
+    }
+
     return true;
   }
 
@@ -252,6 +350,18 @@ export class TradingNotificationService {
         return "/trading?tab=risk";
       case "ise_rotation":
         return "/trading/radar";
+      case "mode_graduated":
+      case "mode_blocked":
+        return "/trading?tab=mode";
+      case "compliance_violation":
+      case "compliance_warning":
+        return "/trading?tab=compliance";
+      case "agent_signal":
+      case "agent_error":
+        return "/trading?tab=agents";
+      case "wellness_blocked":
+      case "wellness_warning":
+        return "/trading?tab=risk";
       default:
         return "/trading";
     }
@@ -411,6 +521,58 @@ export class TradingNotificationService {
       added: added?.join(", "),
       removed: removed?.join(", "),
     });
+  }
+
+  notifyModeGraduated(
+    fromMode: string,
+    toMode: string,
+  ): TradingNotification | null {
+    return this.createNotification("mode_graduated", { fromMode, toMode });
+  }
+
+  notifyModeBlocked(
+    targetMode: string,
+    reason?: string,
+  ): TradingNotification | null {
+    return this.createNotification("mode_blocked", { targetMode, reason });
+  }
+
+  notifyComplianceViolation(
+    lawId: string,
+    message: string,
+  ): TradingNotification | null {
+    return this.createNotification("compliance_violation", { lawId, message });
+  }
+
+  notifyComplianceWarning(message: string): TradingNotification | null {
+    return this.createNotification("compliance_warning", { message });
+  }
+
+  notifyAgentSignal(
+    agentName: string,
+    symbol: string,
+    signal?: string,
+  ): TradingNotification | null {
+    return this.createNotification("agent_signal", {
+      agentName,
+      symbol,
+      signal,
+    });
+  }
+
+  notifyAgentError(agentName: string, error: string): TradingNotification | null {
+    return this.createNotification("agent_error", { agentName, error });
+  }
+
+  notifyWellnessBlocked(
+    reason: string,
+    dtiRatio?: number,
+  ): TradingNotification | null {
+    return this.createNotification("wellness_blocked", { reason, dtiRatio });
+  }
+
+  notifyWellnessWarning(message: string): TradingNotification | null {
+    return this.createNotification("wellness_warning", { message });
   }
 }
 

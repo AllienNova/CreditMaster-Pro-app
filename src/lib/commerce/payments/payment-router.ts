@@ -97,7 +97,7 @@ export interface ProviderSelection {
 // Payment Router
 // =============================================================================
 
-class PaymentRouter {
+export class PaymentRouter {
   private truelayerConnector: TrueLayerPaymentsConnector;
 
   constructor() {

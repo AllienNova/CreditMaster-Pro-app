@@ -12,7 +12,7 @@ import {
   TouchableOpacity,
   Linking,
 } from "react-native";
-import { router } from "expo-router";
+import { router, Href } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
@@ -230,7 +230,7 @@ export default function ConsolidationScreen() {
         {/* Calculator Link */}
         <TouchableOpacity
           style={styles.calculatorLink}
-          onPress={() => router.push("/financial/debt-payoff")}
+          onPress={() => router.push("/financial/debt-payoff" as Href)}
         >
           <Ionicons name="calculator" size={20} color={theme.colors.primary} />
           <Text style={styles.calculatorText}>

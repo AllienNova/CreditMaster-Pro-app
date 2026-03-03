@@ -43,53 +43,53 @@ const DEFAULT_OPTIONS: ValidationOptions = {
  * Prompt injection patterns to detect
  */
 const PROMPT_INJECTION_PATTERNS = [
-  /ignore\s+(previous|above|all)\s+instructions?/gi,
-  /disregard\s+(previous|above|all)\s+(instructions?|prompts?)/gi,
-  /forget\s+(everything|all|previous)/gi,
-  /you\s+are\s+now/gi,
-  /new\s+instructions?:/gi,
-  /system\s*:\s*/gi,
-  /\[SYSTEM\]/gi,
-  /\<\|im_start\|\>/gi,
-  /\<\|im_end\|\>/gi,
-  /\{\{.*system.*\}\}/gi,
-  /act\s+as\s+(if|though)/gi,
-  /pretend\s+(you|to\s+be)/gi,
-  /roleplay/gi,
-  /sudo\s+mode/gi,
-  /developer\s+mode/gi,
-  /jailbreak/gi,
-  /DAN\s+mode/gi,
+  /ignore\s+(previous|above|all)\s+instructions?/i,
+  /disregard\s+(previous|above|all)\s+(instructions?|prompts?)/i,
+  /forget\s+(everything|all|previous)/i,
+  /you\s+are\s+now/i,
+  /new\s+instructions?:/i,
+  /system\s*:\s*/i,
+  /\[SYSTEM\]/i,
+  /\<\|im_start\|\>/i,
+  /\<\|im_end\|\>/i,
+  /\{\{.*system.*\}\}/i,
+  /act\s+as\s+(if|though)/i,
+  /pretend\s+(you|to\s+be)/i,
+  /roleplay/i,
+  /sudo\s+mode/i,
+  /developer\s+mode/i,
+  /jailbreak/i,
+  /DAN\s+mode/i,
 ];
 
 /**
  * PII patterns to detect
  */
 const PII_PATTERNS = {
-  ssn: /\b\d{3}-?\d{2}-?\d{4}\b/g,
-  creditCard: /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g,
-  email: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
-  phone: /\b(\+?1[-.]?)?\(?\d{3}\)?[-.]?\d{3}[-.]?\d{4}\b/g,
-  ipAddress: /\b(?:\d{1,3}\.){3}\d{1,3}\b/g,
+  ssn: /\b\d{3}-?\d{2}-?\d{4}\b/,
+  creditCard: /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/,
+  email: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/,
+  phone: /\b(\+?1[-.]?)?\(?\d{3}\)?[-.]?\d{3}[-.]?\d{4}\b/,
+  ipAddress: /\b(?:\d{1,3}\.){3}\d{1,3}\b/,
 };
 
 /**
  * Malicious patterns to detect
  */
 const MALICIOUS_PATTERNS = [
-  /<script[^>]*>.*?<\/script>/gi,
-  /javascript:/gi,
-  /on\w+\s*=/gi, // Event handlers
-  /eval\s*\(/gi,
-  /exec\s*\(/gi,
-  /system\s*\(/gi,
-  /\$\{.*\}/g, // Template injection
-  /\{\{.*\}\}/g, // Template injection
-  /\.\.\//g, // Path traversal
-  /\/etc\/passwd/gi,
-  /\/bin\/(bash|sh)/gi,
-  /cmd\.exe/gi,
-  /powershell/gi,
+  /<script[^>]*>.*?<\/script>/i,
+  /javascript:/i,
+  /on\w+\s*=/i, // Event handlers
+  /eval\s*\(/i,
+  /exec\s*\(/i,
+  /system\s*\(/i,
+  /\$\{.*\}/, // Template injection
+  /\{\{.*\}\}/, // Template injection
+  /\.\.\//, // Path traversal
+  /\/etc\/passwd/i,
+  /\/bin\/(bash|sh)/i,
+  /cmd\.exe/i,
+  /powershell/i,
 ];
 
 /**
@@ -287,20 +287,36 @@ export function hasMaliciousContent(input: string): boolean {
 export function redactPII(input: string): string {
   let redacted = input;
 
+  // Use new RegExp with /g flag for replaceAll behavior (source patterns omit /g to avoid stateful .test())
   // Redact SSN
-  redacted = redacted.replace(PII_PATTERNS.ssn, "XXX-XX-XXXX");
+  redacted = redacted.replace(
+    new RegExp(PII_PATTERNS.ssn.source, "g"),
+    "XXX-XX-XXXX",
+  );
 
   // Redact credit card
-  redacted = redacted.replace(PII_PATTERNS.creditCard, "XXXX-XXXX-XXXX-XXXX");
+  redacted = redacted.replace(
+    new RegExp(PII_PATTERNS.creditCard.source, "g"),
+    "XXXX-XXXX-XXXX-XXXX",
+  );
 
   // Redact email
-  redacted = redacted.replace(PII_PATTERNS.email, "[EMAIL REDACTED]");
+  redacted = redacted.replace(
+    new RegExp(PII_PATTERNS.email.source, "g"),
+    "[EMAIL REDACTED]",
+  );
 
   // Redact phone
-  redacted = redacted.replace(PII_PATTERNS.phone, "[PHONE REDACTED]");
+  redacted = redacted.replace(
+    new RegExp(PII_PATTERNS.phone.source, "g"),
+    "[PHONE REDACTED]",
+  );
 
   // Redact IP address
-  redacted = redacted.replace(PII_PATTERNS.ipAddress, "[IP REDACTED]");
+  redacted = redacted.replace(
+    new RegExp(PII_PATTERNS.ipAddress.source, "g"),
+    "[IP REDACTED]",
+  );
 
   return redacted;
 }

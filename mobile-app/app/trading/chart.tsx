@@ -266,7 +266,6 @@ function ChartPlaceholder({
         color={isPositive ? "#10B981" : "#EF4444"}
         showDots={false}
         showGrid={true}
-        animated={true}
       />
     </View>
   );

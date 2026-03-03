@@ -11,6 +11,7 @@ import { getSupabase } from "@/lib/supabase/client";
 import { ExperianClient } from "./experian-client";
 import { EquifaxClient } from "./equifax-client";
 import { TransUnionClient } from "./transunion-client";
+import { MockCreditBureauAdapter } from "./mock-credit-bureau-adapter";
 import type {
   BureauCredentials,
   BureauApiEnvironment,
@@ -27,6 +28,9 @@ import type {
   CreditAnalysis,
   CreditUtilization,
   CreditAccount,
+  CreditScoreHistoryEntry,
+  ScoreHistoryQuery,
+  BureauConnectionStatus,
 } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -537,12 +541,17 @@ export class CreditBureauService {
   // =========================================================================
 
   /**
-   * Get credit report from a specific bureau
+   * Get credit report from a specific bureau.
+   *
+   * When `enableFallback` is true (default) and the live bureau API call
+   * fails, a `MockCreditBureauAdapter` is used to return realistic mock
+   * data so the UX remains functional during development or outages.
    */
   static async getCreditReport(
     userId: string,
     bureau: Bureau,
     reportType: "full" | "monitoring" | "score_only" = "full",
+    enableFallback = true,
   ): Promise<BureauResponse<CreditReport>> {
     this.ensureInitialized();
 
@@ -585,13 +594,62 @@ export class CreditBureauService {
           throw new Error(`Unknown bureau: ${bureau}`);
       }
 
+      // Graceful fallback: if the live call failed and fallback is enabled,
+      // use MockCreditBureauAdapter to return realistic data
+      if (!response.success && enableFallback) {
+        const mockAdapter = new MockCreditBureauAdapter({
+          simulatedBureau: bureau,
+        });
+        response = await mockAdapter.getCreditReport(request, userPII);
+        // Tag the response so callers know it came from mock
+        response.reference_id = `fallback_${response.reference_id ?? "unknown"}`;
+      }
+
       // Save to database if successful
       if (response.success && response.data) {
         await this.saveCreditReport(response.data);
+        // Also save score to history
+        await this.saveScoreHistory(
+          userId,
+          bureau,
+          response.data.credit_score,
+          response.data.id,
+        );
       }
 
       return response;
     } catch (error) {
+      // If the entire call chain threw and fallback is enabled, try mock
+      if (enableFallback) {
+        try {
+          const request: CreditReportRequest = {
+            user_id: userId,
+            bureau,
+            report_type: reportType,
+            consumer_consent: true,
+            permissible_purpose: "ACCOUNT_REVIEW",
+          };
+          const mockPII: UserPII = {
+            firstName: "User",
+            lastName: userId,
+            ssn: "",
+            dateOfBirth: "",
+            addresses: [],
+          };
+          const mockAdapter = new MockCreditBureauAdapter({
+            simulatedBureau: bureau,
+          });
+          const fallbackResponse = await mockAdapter.getCreditReport(
+            request,
+            mockPII,
+          );
+          fallbackResponse.reference_id = `fallback_${fallbackResponse.reference_id ?? "unknown"}`;
+          return fallbackResponse;
+        } catch {
+          // Fallback also failed — fall through to error response
+        }
+      }
+
       // CreditBureauService error: Error getting credit report
       return {
         success: false,
@@ -788,6 +846,199 @@ export class CreditBureauService {
       positive_factors: positiveFactors,
       recommendations: this.generateRecommendations(negativeItems),
     };
+  }
+
+  // =========================================================================
+  // Score history
+  // =========================================================================
+
+  /**
+   * Save a score history entry to the `credit_score_history` table.
+   */
+  static async saveScoreHistory(
+    userId: string,
+    bureau: Bureau,
+    score: number,
+    reportId: string,
+  ): Promise<void> {
+    const { error } = await getSupabase()
+      .from("credit_score_history")
+      .insert({
+        user_id: userId,
+        bureau,
+        score,
+        report_id: reportId,
+      });
+
+    if (error) {
+      // CreditBureauService: Failed to save score history — non-fatal
+      // We log but do not throw to avoid breaking the main credit report flow
+    }
+  }
+
+  /**
+   * Retrieve score history for a user, optionally filtered by bureau and
+   * date range. Results are ordered by `recorded_at` descending.
+   */
+  static async getScoreHistory(
+    query: ScoreHistoryQuery,
+  ): Promise<CreditScoreHistoryEntry[]> {
+    let dbQuery = getSupabase()
+      .from("credit_score_history")
+      .select("*")
+      .eq("user_id", query.user_id)
+      .order("recorded_at", { ascending: false });
+
+    if (query.bureau) {
+      dbQuery = dbQuery.eq("bureau", query.bureau);
+    }
+    if (query.from_date) {
+      dbQuery = dbQuery.gte("recorded_at", query.from_date);
+    }
+    if (query.to_date) {
+      dbQuery = dbQuery.lte("recorded_at", query.to_date);
+    }
+    if (query.limit) {
+      dbQuery = dbQuery.limit(query.limit);
+    }
+
+    const { data, error } = await dbQuery;
+
+    if (error) {
+      throw new Error(`Failed to retrieve score history: ${error.message}`);
+    }
+
+    return (data ?? []) as CreditScoreHistoryEntry[];
+  }
+
+  // =========================================================================
+  // Bureau connection management
+  // =========================================================================
+
+  /**
+   * Get the connection status for all bureaus for a given user.
+   */
+  static async getBureauConnectionStatuses(
+    userId: string,
+  ): Promise<BureauConnectionStatus[]> {
+    const { data, error } = await getSupabase()
+      .from("bureau_connections")
+      .select("*")
+      .eq("user_id", userId);
+
+    if (error) {
+      throw new Error(
+        `Failed to retrieve bureau connections: ${error.message}`,
+      );
+    }
+
+    const environment = readBureauApiEnvironment();
+    const connectedBureaus = new Map<
+      string,
+      { connected: boolean; last_pull_date: string | null; last_score: number | null }
+    >();
+
+    for (const row of data ?? []) {
+      connectedBureaus.set(row.bureau, {
+        connected: row.connected,
+        last_pull_date: row.last_pull_date,
+        last_score: row.last_score,
+      });
+    }
+
+    return BUREAUS.map((bureau) => {
+      const conn = connectedBureaus.get(bureau);
+      return {
+        bureau,
+        connected: conn?.connected ?? false,
+        last_pull_date: conn?.last_pull_date ?? null,
+        last_score: conn?.last_score ?? null,
+        environment,
+      };
+    });
+  }
+
+  /**
+   * Connect (or reconnect) a bureau for a user. Creates the row if it does
+   * not exist, otherwise updates the `connected` flag.
+   */
+  static async connectBureau(
+    userId: string,
+    bureau: Bureau,
+  ): Promise<BureauConnectionStatus> {
+    const now = new Date().toISOString();
+    const environment = readBureauApiEnvironment();
+
+    const { error } = await getSupabase()
+      .from("bureau_connections")
+      .upsert(
+        {
+          user_id: userId,
+          bureau,
+          connected: true,
+          verified_at: now,
+          updated_at: now,
+        },
+        { onConflict: "user_id,bureau" },
+      );
+
+    if (error) {
+      throw new Error(`Failed to connect bureau ${bureau}: ${error.message}`);
+    }
+
+    return {
+      bureau,
+      connected: true,
+      last_pull_date: null,
+      last_score: null,
+      environment,
+    };
+  }
+
+  /**
+   * Disconnect a bureau for a user.
+   */
+  static async disconnectBureau(
+    userId: string,
+    bureau: Bureau,
+  ): Promise<void> {
+    const { error } = await getSupabase()
+      .from("bureau_connections")
+      .update({ connected: false, updated_at: new Date().toISOString() })
+      .eq("user_id", userId)
+      .eq("bureau", bureau);
+
+    if (error) {
+      throw new Error(
+        `Failed to disconnect bureau ${bureau}: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Update bureau connection after a successful pull — records the last
+   * pull date and the score retrieved.
+   */
+  static async updateBureauLastPull(
+    userId: string,
+    bureau: Bureau,
+    score: number,
+  ): Promise<void> {
+    const now = new Date().toISOString();
+
+    const { error } = await getSupabase()
+      .from("bureau_connections")
+      .update({
+        last_pull_date: now,
+        last_score: score,
+        updated_at: now,
+      })
+      .eq("user_id", userId)
+      .eq("bureau", bureau);
+
+    if (error) {
+      // Non-fatal: log but do not throw
+    }
   }
 
   // =========================================================================

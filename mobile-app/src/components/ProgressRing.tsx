@@ -18,6 +18,7 @@ interface ProgressRingProps {
   label?: string;
   value?: string;
   animated?: boolean;
+  children?: React.ReactNode;
 }
 
 export function ProgressRing({
@@ -29,6 +30,7 @@ export function ProgressRing({
   showPercentage = true,
   label,
   value,
+  children,
 }: ProgressRingProps) {
   const { colors } = useTheme();
 
@@ -67,7 +69,9 @@ export function ProgressRing({
         </G>
       </Svg>
       <View style={styles.content}>
-        {value ? (
+        {children ? (
+          children
+        ) : value ? (
           <>
             <Text
               style={[

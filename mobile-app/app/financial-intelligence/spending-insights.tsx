@@ -184,7 +184,7 @@ const SpendingChart: React.FC<SpendingChartProps> = ({ trends, timeRange }) => {
             strokeWidth: "2",
             stroke: theme.colors.error,
           },
-          formatYLabel: formatCurrency,
+          formatYLabel: (label: string) => formatCurrency(Number(label)),
         }}
         bezier
         style={styles.chart}

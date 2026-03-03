@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { jwtValidation } from "@/lib/auth/jwt-validation";
+import type { TechnicalAnalysis } from "@/lib/investments/types/technical-analysis.types";
 
 // ============================================================================
 // POST - Generate Recommendation
@@ -80,7 +81,8 @@ export async function POST(request: NextRequest) {
     const recommendation = await recommendationEngine.generateRecommendation(
       symbol,
       currentPrice,
-      technicalData as any,
+      // Simplified technical data — the engine accesses fields loosely
+      technicalData as unknown as TechnicalAnalysis,
       undefined, // Fundamental data
       undefined, // Sentiment data
       userProfile,
@@ -92,7 +94,8 @@ export async function POST(request: NextRequest) {
       pricePrediction = await recommendationEngine.predictPrice(
         symbol,
         currentPrice,
-        technicalData as any,
+        // Simplified technical data — the engine accesses fields loosely
+      technicalData as unknown as TechnicalAnalysis,
       );
     }
 

@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../src/hooks/useTheme";
 
 export default function TabLayout() {
-  const { colors, fontWeight, fontSize } = useTheme();
+  const { colors, fontWeight } = useTheme();
 
   return (
     <Tabs

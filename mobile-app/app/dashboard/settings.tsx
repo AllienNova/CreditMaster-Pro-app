@@ -15,7 +15,7 @@ import {
   Alert,
   Linking,
 } from "react-native";
-import { router } from "expo-router";
+import { router, Href } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
@@ -349,7 +349,7 @@ export default function SettingsScreen() {
             <View style={styles.billingActions}>
               <TouchableOpacity
                 style={styles.primaryButton}
-                onPress={() => router.push("/pricing")}
+                onPress={() => router.push("/pricing" as Href)}
               >
                 <Text style={styles.primaryButtonText}>Upgrade Plan</Text>
               </TouchableOpacity>

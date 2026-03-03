@@ -26,8 +26,9 @@ export default function WatchlistScreen() {
   const [newSymbol, setNewSymbol] = useState("");
 
   const watchlist = useInvestmentStore(selectWatchlist);
-  const { addToWatchlist, removeFromWatchlist, getRecommendation } =
-    useInvestmentStore();
+  const addToWatchlist = useInvestmentStore((s) => s.addToWatchlist);
+  const removeFromWatchlist = useInvestmentStore((s) => s.removeFromWatchlist);
+  const getRecommendation = useInvestmentStore((s) => s.getRecommendation);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {

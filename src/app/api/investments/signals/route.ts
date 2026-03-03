@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
         .split(",") as SignalStatus[];
     }
     if (searchParams.get("assetTypes")) {
-      filters.assetTypes = searchParams.get("assetTypes")!.split(",") as any[];
+      filters.assetTypes = searchParams.get("assetTypes")!.split(",") as ("stock" | "etf" | "crypto" | "option")[];
     }
 
     // Parse numeric parameters

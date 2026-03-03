@@ -29,6 +29,19 @@ type FilterPeriod = "1D" | "1W" | "1M" | "3M" | "ALL";
 // HELPER FUNCTIONS
 // ============================================================================
 
+const periodToDateRange = (period: FilterPeriod): { startDate?: string; endDate?: string } | undefined => {
+  if (period === "ALL") return undefined;
+  const now = new Date();
+  const start = new Date();
+  switch (period) {
+    case "1D": start.setDate(now.getDate() - 1); break;
+    case "1W": start.setDate(now.getDate() - 7); break;
+    case "1M": start.setMonth(now.getMonth() - 1); break;
+    case "3M": start.setMonth(now.getMonth() - 3); break;
+  }
+  return { startDate: start.toISOString(), endDate: now.toISOString() };
+};
+
 const formatCurrency = (amount: number, showSign = false): string => {
   const sign = showSign && amount >= 0 ? "+" : "";
   return `${sign}$${Math.abs(amount).toLocaleString("en-US", {
@@ -345,11 +358,13 @@ export default function TradeHistoryScreen() {
     useTradingStore();
 
   useEffect(() => {
-    fetchTradeHistory(activePeriod);
+    const params = periodToDateRange(activePeriod);
+    fetchTradeHistory(params);
   }, [activePeriod]);
 
   const onRefresh = useCallback(() => {
-    fetchTradeHistory(activePeriod);
+    const params = periodToDateRange(activePeriod);
+    fetchTradeHistory(params);
   }, [fetchTradeHistory, activePeriod]);
 
   // Calculate performance metrics

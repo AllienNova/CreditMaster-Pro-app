@@ -15,3 +15,9 @@ export * from "./pctt";
 
 // Order Components
 export * from "./order";
+
+// Mode (Operating Mode Status & Graduation)
+export * from "./mode";
+
+// Risk Dashboard (Portfolio Risk, VaR, Drawdown, Heatmap, Circuit Breakers)
+export * from "./risk";

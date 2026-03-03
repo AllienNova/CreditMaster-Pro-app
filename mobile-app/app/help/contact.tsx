@@ -59,7 +59,7 @@ export default function ContactSupportScreen() {
 
   const handleContactOption = (action: string) => {
     if (action === "chat") {
-      router.push("/chat");
+      router.push("/financial-intelligence/chat");
     } else {
       Linking.openURL(action);
     }

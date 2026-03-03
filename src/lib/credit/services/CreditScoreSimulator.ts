@@ -637,6 +637,471 @@ export class CreditScoreSimulator {
       "Focus on paying down balances before the statement closing date",
     ];
   }
+
+  // ============================================================================
+  // SECURED CARD RECOMMENDATIONS
+  // ============================================================================
+
+  /**
+   * Recommend secured credit cards based on profile
+   * Secured cards require a cash deposit and are ideal for building/rebuilding credit
+   */
+  getSecuredCardRecommendations(profile: CreditProfile): SecuredCardRecommendation[] {
+    const recommendations: SecuredCardRecommendation[] = [];
+
+    // Low score or thin file: recommend basic secured card
+    if (profile.currentScore < 580 || profile.numberOfAccounts < 2) {
+      recommendations.push({
+        cardType: "basic_secured",
+        reason: "Build credit history with a low-risk secured card",
+        suggestedDeposit: 200,
+        expectedScoreImpact: this.simulateAction(profile, {
+          type: "open_new_card",
+          creditLimit: 200,
+        }).scoreChange,
+        timeToGraduation: "12-18 months",
+        features: [
+          "Reports to all 3 bureaus",
+          "Low minimum deposit ($200)",
+          "Path to unsecured card after 6-12 months of on-time payments",
+        ],
+        priority: "high",
+      });
+    }
+
+    // Moderate score: recommend rewards secured card
+    if (profile.currentScore >= 500 && profile.currentScore < 670) {
+      recommendations.push({
+        cardType: "rewards_secured",
+        reason: "Earn rewards while building credit",
+        suggestedDeposit: 500,
+        expectedScoreImpact: this.simulateAction(profile, {
+          type: "open_new_card",
+          creditLimit: 500,
+        }).scoreChange,
+        timeToGraduation: "8-12 months",
+        features: [
+          "1-2% cash back on purchases",
+          "Automatic graduation reviews",
+          "Reports to all 3 bureaus",
+          "No annual fee after graduation",
+        ],
+        priority: profile.currentScore < 580 ? "medium" : "high",
+      });
+    }
+
+    // High utilization: recommend secured card for limit boost
+    if (profile.utilizationPercentage > 50) {
+      const suggestedDeposit = Math.min(
+        2000,
+        Math.max(300, Math.ceil(profile.totalBalance * 0.2)),
+      );
+      recommendations.push({
+        cardType: "limit_boost_secured",
+        reason: "Increase total credit limit to reduce utilization",
+        suggestedDeposit,
+        expectedScoreImpact: this.simulateAction(profile, {
+          type: "open_new_card",
+          creditLimit: suggestedDeposit,
+        }).scoreChange,
+        timeToGraduation: "6-12 months",
+        features: [
+          "Higher deposit for higher limit",
+          "Immediate utilization improvement",
+          "Reports to all 3 bureaus",
+        ],
+        priority: "high",
+      });
+    }
+
+    // Bankruptcy on record: recommend post-bankruptcy secured card
+    if (profile.bankruptcyOnRecord) {
+      recommendations.push({
+        cardType: "post_bankruptcy_secured",
+        reason: "Start rebuilding credit after bankruptcy",
+        suggestedDeposit: 300,
+        expectedScoreImpact: this.simulateAction(profile, {
+          type: "open_new_card",
+          creditLimit: 300,
+        }).scoreChange,
+        timeToGraduation: "18-24 months",
+        features: [
+          "Accepts applicants with bankruptcy",
+          "Reports to all 3 bureaus",
+          "No credit check required",
+          "Deposit fully refundable",
+        ],
+        priority: "high",
+      });
+    }
+
+    // Sort by priority
+    const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
+    recommendations.sort(
+      (a, b) => priorityOrder[a.priority] - priorityOrder[b.priority],
+    );
+
+    return recommendations;
+  }
+
+  // ============================================================================
+  // CREDIT MIX OPTIMIZATION
+  // ============================================================================
+
+  /**
+   * Analyze credit mix and suggest optimizations
+   * FICO considers: revolving (credit cards), installment (loans),
+   * mortgage, and open accounts
+   */
+  analyzeCreditMix(profile: CreditProfile & CreditMixDetails): CreditMixAnalysis {
+    const accountTypes = profile.accountTypes;
+    const hasRevolving = accountTypes.revolving > 0;
+    const hasInstallment = accountTypes.installment > 0;
+    const hasMortgage = accountTypes.mortgage > 0;
+
+    const totalTypes =
+      (hasRevolving ? 1 : 0) +
+      (hasInstallment ? 1 : 0) +
+      (hasMortgage ? 1 : 0);
+
+    let mixRating: "excellent" | "good" | "fair" | "poor";
+    let scoreImpact: number;
+
+    if (totalTypes >= 3) {
+      mixRating = "excellent";
+      scoreImpact = 10;
+    } else if (totalTypes === 2) {
+      mixRating = "good";
+      scoreImpact = 5;
+    } else if (totalTypes === 1) {
+      mixRating = "fair";
+      scoreImpact = 0;
+    } else {
+      mixRating = "poor";
+      scoreImpact = -10;
+    }
+
+    const suggestions: string[] = [];
+
+    if (!hasRevolving) {
+      suggestions.push(
+        "Add a revolving account (credit card) to diversify your credit mix",
+      );
+    }
+
+    if (!hasInstallment) {
+      suggestions.push(
+        "Consider a credit builder loan or small personal loan to add an installment account",
+      );
+    }
+
+    if (hasRevolving && accountTypes.revolving > 5) {
+      suggestions.push(
+        "You have many revolving accounts. Avoid opening more credit cards.",
+      );
+    }
+
+    if (suggestions.length === 0) {
+      suggestions.push("Your credit mix is well-diversified. Maintain your current accounts.");
+    }
+
+    return {
+      currentMix: accountTypes,
+      mixRating,
+      scoreImpact,
+      suggestions,
+      optimalMix: {
+        revolving: Math.max(2, Math.min(5, accountTypes.revolving)),
+        installment: Math.max(1, accountTypes.installment),
+        mortgage: accountTypes.mortgage,
+      },
+    };
+  }
+
+  // ============================================================================
+  // STUDENT LOAN OPTIMIZATION
+  // ============================================================================
+
+  /**
+   * Analyze student loan optimization: consolidation vs. forgiveness programs
+   */
+  analyzeStudentLoanOptimization(
+    loans: StudentLoanDetails[],
+    profile: CreditProfile,
+    income: number,
+  ): StudentLoanOptimizationResult {
+    const totalBalance = loans.reduce((sum, loan) => sum + loan.balance, 0);
+    const weightedAvgRate =
+      totalBalance > 0
+        ? loans.reduce((sum, loan) => sum + loan.interestRate * loan.balance, 0) /
+          totalBalance
+        : 0;
+    const totalMonthlyPayment = loans.reduce(
+      (sum, loan) => sum + loan.monthlyPayment,
+      0,
+    );
+
+    // Consolidation analysis
+    const consolidationRate = Math.max(
+      weightedAvgRate - 0.25,
+      Math.min(weightedAvgRate, 5.0),
+    ); // Estimate slightly lower rate
+    const consolidationMonthlyPayment =
+      totalBalance > 0
+        ? this.calculateMonthlyPayment(totalBalance, consolidationRate, 120)
+        : 0;
+    const consolidationSavings = totalBalance > 0
+      ? (totalMonthlyPayment - consolidationMonthlyPayment) * 120
+      : 0;
+
+    const consolidationAnalysis: ConsolidationAnalysis = {
+      recommended:
+        loans.length > 1 &&
+        consolidationSavings > 0 &&
+        consolidationRate < weightedAvgRate,
+      currentTotalPayment: totalMonthlyPayment,
+      consolidatedPayment: consolidationMonthlyPayment,
+      estimatedRate: consolidationRate,
+      totalSavings: Math.max(0, consolidationSavings),
+      termMonths: 120,
+      pros: [
+        "Single monthly payment instead of multiple",
+        "Potentially lower interest rate",
+        "Simplified repayment tracking",
+      ],
+      cons: [
+        "May lose access to income-driven repayment plans",
+        "May lose progress toward forgiveness programs",
+        "Could extend repayment period",
+      ],
+    };
+
+    // Forgiveness analysis
+    const qualifiesForPSLF = loans.some(
+      (loan) => loan.type === "federal" && loan.employerType === "public_service",
+    );
+    const qualifiesForIDR = loans.some((loan) => loan.type === "federal");
+    const debtToIncomeRatio = income > 0 ? totalBalance / income : 0;
+
+    const forgivenessOptions: ForgivenessOption[] = [];
+
+    if (qualifiesForPSLF) {
+      forgivenessOptions.push({
+        program: "Public Service Loan Forgiveness (PSLF)",
+        eligible: true,
+        requirementsRemaining: 120 - (loans[0].qualifyingPaymentsMade ?? 0),
+        potentialSavings: totalBalance * 0.6,
+        timeframe: `${Math.max(0, 120 - (loans[0].qualifyingPaymentsMade ?? 0))} qualifying payments remaining`,
+        requirements: [
+          "Work for qualifying public service employer",
+          "Make 120 qualifying monthly payments",
+          "Enroll in income-driven repayment plan",
+        ],
+      });
+    }
+
+    if (qualifiesForIDR && debtToIncomeRatio > 1.5) {
+      forgivenessOptions.push({
+        program: "Income-Driven Repayment Forgiveness",
+        eligible: true,
+        requirementsRemaining: 240,
+        potentialSavings: totalBalance * 0.3,
+        timeframe: "20-25 years of qualifying payments",
+        requirements: [
+          "Enroll in SAVE, PAYE, IBR, or ICR plan",
+          "Make 240-300 qualifying monthly payments",
+          "Recertify income annually",
+        ],
+      });
+    }
+
+    // Credit score impact analysis
+    const consolidationScoreImpact = loans.length > 1 ? -5 : 0; // Hard inquiry + new account
+    const statusQuoScoreImpact = 0;
+
+    const recommendation =
+      qualifiesForPSLF && (loans[0].qualifyingPaymentsMade ?? 0) > 60
+        ? "forgiveness"
+        : consolidationAnalysis.recommended &&
+            consolidationSavings > totalBalance * 0.1
+          ? "consolidation"
+          : "maintain_current";
+
+    return {
+      currentLoans: loans.map((loan) => ({
+        ...loan,
+        remainingMonths: loan.balance > 0
+          ? Math.ceil(loan.balance / loan.monthlyPayment)
+          : 0,
+      })),
+      totalBalance,
+      weightedAverageRate: weightedAvgRate,
+      monthlyPayment: totalMonthlyPayment,
+      consolidation: consolidationAnalysis,
+      forgivenessOptions,
+      recommendation,
+      creditScoreImpact: {
+        consolidation: consolidationScoreImpact,
+        forgiveness: statusQuoScoreImpact,
+        maintaining: statusQuoScoreImpact,
+      },
+    };
+  }
+
+  // ============================================================================
+  // WHAT-IF SCENARIO ANALYSIS
+  // ============================================================================
+
+  /**
+   * Run multiple what-if scenarios and compare outcomes
+   */
+  compareScenarios(
+    profile: CreditProfile,
+    scenarios: { name: string; actions: SimulationAction[] }[],
+  ): ScenarioComparison {
+    const results = scenarios.map((scenario) => {
+      const result = this.simulateActions(profile, scenario.actions);
+      return {
+        name: scenario.name,
+        actions: scenario.actions,
+        result,
+      };
+    });
+
+    // Sort by projected score (highest first)
+    const ranked = [...results].sort(
+      (a, b) => b.result.projectedScore - a.result.projectedScore,
+    );
+
+    const bestScenario = ranked[0];
+    const worstScenario = ranked[ranked.length - 1];
+
+    return {
+      baselineScore: profile.currentScore,
+      scenarios: results,
+      bestScenario: bestScenario
+        ? { name: bestScenario.name, projectedScore: bestScenario.result.projectedScore }
+        : { name: "none", projectedScore: profile.currentScore },
+      worstScenario: worstScenario
+        ? { name: worstScenario.name, projectedScore: worstScenario.result.projectedScore }
+        : { name: "none", projectedScore: profile.currentScore },
+      scoreRange: {
+        min: worstScenario?.result.projectedScore ?? profile.currentScore,
+        max: bestScenario?.result.projectedScore ?? profile.currentScore,
+      },
+    };
+  }
+
+  // ============================================================================
+  // ADDITIONAL PRIVATE HELPERS
+  // ============================================================================
+
+  /**
+   * Calculate monthly payment for a loan using standard amortization formula
+   */
+  private calculateMonthlyPayment(
+    principal: number,
+    annualRate: number,
+    termMonths: number,
+  ): number {
+    if (annualRate === 0) return principal / termMonths;
+    const monthlyRate = annualRate / 100 / 12;
+    const factor = Math.pow(1 + monthlyRate, termMonths);
+    return (principal * monthlyRate * factor) / (factor - 1);
+  }
+}
+
+// ============================================================================
+// ADDITIONAL TYPES
+// ============================================================================
+
+export interface SecuredCardRecommendation {
+  cardType: "basic_secured" | "rewards_secured" | "limit_boost_secured" | "post_bankruptcy_secured";
+  reason: string;
+  suggestedDeposit: number;
+  expectedScoreImpact: number;
+  timeToGraduation: string;
+  features: string[];
+  priority: "high" | "medium" | "low";
+}
+
+export interface CreditMixDetails {
+  accountTypes: {
+    revolving: number;
+    installment: number;
+    mortgage: number;
+  };
+}
+
+export interface CreditMixAnalysis {
+  currentMix: CreditMixDetails["accountTypes"];
+  mixRating: "excellent" | "good" | "fair" | "poor";
+  scoreImpact: number;
+  suggestions: string[];
+  optimalMix: {
+    revolving: number;
+    installment: number;
+    mortgage: number;
+  };
+}
+
+export interface StudentLoanDetails {
+  id: string;
+  name: string;
+  balance: number;
+  interestRate: number;
+  monthlyPayment: number;
+  type: "federal" | "private";
+  servicer: string;
+  employerType?: "public_service" | "private_sector" | "nonprofit";
+  qualifyingPaymentsMade?: number;
+}
+
+export interface ConsolidationAnalysis {
+  recommended: boolean;
+  currentTotalPayment: number;
+  consolidatedPayment: number;
+  estimatedRate: number;
+  totalSavings: number;
+  termMonths: number;
+  pros: string[];
+  cons: string[];
+}
+
+export interface ForgivenessOption {
+  program: string;
+  eligible: boolean;
+  requirementsRemaining: number;
+  potentialSavings: number;
+  timeframe: string;
+  requirements: string[];
+}
+
+export interface StudentLoanOptimizationResult {
+  currentLoans: (StudentLoanDetails & { remainingMonths: number })[];
+  totalBalance: number;
+  weightedAverageRate: number;
+  monthlyPayment: number;
+  consolidation: ConsolidationAnalysis;
+  forgivenessOptions: ForgivenessOption[];
+  recommendation: "consolidation" | "forgiveness" | "maintain_current";
+  creditScoreImpact: {
+    consolidation: number;
+    forgiveness: number;
+    maintaining: number;
+  };
+}
+
+export interface ScenarioComparison {
+  baselineScore: number;
+  scenarios: {
+    name: string;
+    actions: SimulationAction[];
+    result: SimulationResult;
+  }[];
+  bestScenario: { name: string; projectedScore: number };
+  worstScenario: { name: string; projectedScore: number };
+  scoreRange: { min: number; max: number };
 }
 
 // Export singleton instance

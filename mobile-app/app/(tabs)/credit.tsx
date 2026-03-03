@@ -99,6 +99,12 @@ export default function CreditScreen() {
       subtitle: "18 tools to improve your score",
       route: "/credit-builder",
     },
+    {
+      icon: "construct",
+      title: "Credit Repair",
+      subtitle: "Dispute & repair strategies",
+      route: "/credit-repair",
+    },
   ];
 
   const styles = useMemo(

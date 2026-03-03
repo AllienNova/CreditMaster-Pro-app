@@ -436,7 +436,7 @@ export default function FinancialInsightsScreen() {
           <View style={styles.coachingSection}>
             <View style={styles.coachingSectionHeader}>
               <Text style={styles.coachingSectionTitle}>Coaching for You</Text>
-              <TouchableOpacity onPress={() => router.push("/chat" as never)}>
+              <TouchableOpacity onPress={() => router.push("/financial-intelligence/chat" as never)}>
                 <Text style={styles.viewAllLink}>View All</Text>
               </TouchableOpacity>
             </View>
@@ -447,7 +447,7 @@ export default function FinancialInsightsScreen() {
                 compact
                 onStart={() => {
                   startSession(session.id);
-                  router.push("/chat" as never);
+                  router.push("/financial-intelligence/chat" as never);
                 }}
               />
             ))}

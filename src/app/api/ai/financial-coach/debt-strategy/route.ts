@@ -15,7 +15,8 @@ import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
 import { debtStrategyOptimizer } from "@/lib/financial/debt-strategy-optimizer";
 import { financialContextEngine } from "@/lib/financial/financial-context-engine";
-import { DebtComparison } from "@/lib/financial/types/debt-strategy.types";
+import type { DebtComparison } from "@/lib/financial/types/debt-strategy.types";
+import type { Debt } from "@/lib/financial/types/debt-payoff.types";
 
 // ============================================================================
 // VALIDATION SCHEMAS
@@ -239,12 +240,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate strategies
+    // Zod-validated debts lack some Debt fields (userId, originalBalance, etc.)
+    // but the optimizer only reads id, name, balance, interestRate, minimumPayment
+    const typedDebts = debts as unknown as Debt[];
     const snowball = debtStrategyOptimizer.calculateSnowball(
-      debts as any,
+      typedDebts,
       extraPayment,
     );
     const avalanche = debtStrategyOptimizer.calculateAvalanche(
-      debts as any,
+      typedDebts,
       extraPayment,
     );
 
@@ -252,7 +256,7 @@ export async function POST(request: NextRequest) {
     if (includeAIOptimization && financialContext) {
       // Full comparison with AI optimization
       comparison = await debtStrategyOptimizer.compareStrategies(
-        debts as any,
+        typedDebts,
         extraPayment,
         financialContext,
       );

@@ -163,6 +163,11 @@ export interface TaxProfile {
   ytdHsaContribution: number;
   ytdCharitableGiving: number;
 
+  // Age & Retirement
+  age?: number; // Current age (for catch-up contribution eligibility)
+  targetRetirementAge?: number; // Target retirement age (default: 65)
+  expectedAnnualReturnRate?: number; // Expected annual investment return (default: 0.07)
+
   // Preferences
   optimizationGoal: OptimizationGoal;
   riskTolerance: "conservative" | "moderate" | "aggressive";

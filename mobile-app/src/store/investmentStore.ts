@@ -13,6 +13,7 @@ import investmentsApi, {
   PortfolioAnalysisResponse,
   PortfolioHoldingInput,
 } from "../services/api/investments";
+import { seedPortfolio } from "../data/dev-seed";
 
 // ============================================================================
 // TYPES
@@ -104,6 +105,16 @@ export const useInvestmentStore = create<InvestmentState & InvestmentActions>(
 
     // Portfolio Actions
     fetchPortfolio: async (period?: string) => {
+      if (__DEV__) {
+        set({
+          portfolio: seedPortfolio,
+          holdings: seedPortfolio.holdings,
+          lastUpdated: new Date().toISOString(),
+          isLoading: false,
+          error: null,
+        });
+        return;
+      }
       set({ isLoading: true, error: null });
       try {
         const response = await investmentsApi.getPortfolio(period);

@@ -64,22 +64,47 @@ export default function ProfileScreen() {
         {
           icon: "help-circle-outline",
           label: "Help Center",
-          route: "/support/help",
+          route: "/help",
         },
         {
           icon: "chatbubble-outline",
           label: "Contact Us",
-          route: "/support/contact",
+          route: "/help/contact",
         },
         {
           icon: "document-text-outline",
           label: "Terms of Service",
-          route: "/support/terms",
+          route: "/settings/terms",
         },
         {
           icon: "shield-outline",
           label: "Privacy Policy",
-          route: "/support/privacy",
+          route: "/settings/privacy",
+        },
+      ],
+    },
+    {
+      title: "Services",
+      items: [
+        {
+          icon: "card-outline",
+          label: "Billing",
+          route: "/billing",
+        },
+        {
+          icon: "folder-outline",
+          label: "Documents",
+          route: "/documents",
+        },
+        {
+          icon: "chatbox-outline",
+          label: "AI Assistant",
+          route: "/financial-intelligence/chat",
+        },
+        {
+          icon: "storefront-outline",
+          label: "Marketplace",
+          route: "/marketplace",
         },
       ],
     },

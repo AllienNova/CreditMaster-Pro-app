@@ -31,6 +31,11 @@ export const supabaseAdmin = createSupabaseClient<Database>(
  * This properly handles authentication state from cookies
  */
 export async function createClient() {
+  // Standalone mode (Fly.io autonomous service) — no cookies available
+  if (process.env.STANDALONE_MODE === "true") {
+    return supabaseAdmin;
+  }
+
   const cookieStore = await cookies();
 
   return createServerClient<Database>(

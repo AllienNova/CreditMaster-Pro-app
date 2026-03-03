@@ -181,7 +181,7 @@ export default function HomeScreen() {
     {
       icon: "chatbox",
       label: "AI Assistant",
-      route: "/chat",
+      route: "/financial-intelligence/chat",
       color: "#06B6D4",
     },
   ];
@@ -521,6 +521,41 @@ export default function HomeScreen() {
       fontWeight: "500",
       marginRight: 2,
     };
+    const exploreSection: ViewStyle = {
+      paddingHorizontal: spacing.lg,
+      marginTop: spacing.lg,
+      marginBottom: spacing.md,
+    };
+    const exploreGrid: ViewStyle = {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      justifyContent: "space-between",
+    };
+    const exploreCard: ViewStyle = {
+      width: "48%",
+      backgroundColor: colors.surface,
+      borderRadius: borderRadius.lg,
+      padding: spacing.md,
+      marginBottom: spacing.sm,
+    };
+    const exploreCardIcon: ViewStyle = {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      justifyContent: "center",
+      alignItems: "center",
+      marginBottom: 8,
+    };
+    const exploreCardTitle: TextStyle = {
+      fontSize: 14,
+      fontWeight: "600",
+      color: colors.text,
+    };
+    const exploreCardSubtitle: TextStyle = {
+      fontSize: 11,
+      color: colors.textSecondary,
+      marginTop: 2,
+    };
 
     return {
       container,
@@ -590,6 +625,12 @@ export default function HomeScreen() {
       xpProgressText,
       viewRewardsLink,
       viewRewardsText,
+      exploreSection,
+      exploreGrid,
+      exploreCard,
+      exploreCardIcon,
+      exploreCardTitle,
+      exploreCardSubtitle,
     };
   }, [colors, spacing, borderRadius, withOpacity]);
 
@@ -941,6 +982,92 @@ export default function HomeScreen() {
           </View>
           <Ionicons name="chevron-forward" size={24} color={colors.white} />
         </TouchableOpacity>
+
+        {/* Explore Features */}
+        <View style={styles.exploreSection}>
+          <Text style={[styles.sectionTitle, { marginLeft: 0 }]}>Explore</Text>
+          <View style={styles.exploreGrid}>
+            {[
+              {
+                icon: "trending-up",
+                label: "Trading",
+                subtitle: "Stocks & crypto",
+                route: "/trading",
+                color: "#10B981",
+              },
+              {
+                icon: "chatbox-ellipses",
+                label: "AI Assistant",
+                subtitle: "Financial chat",
+                route: "/financial-intelligence/chat",
+                color: "#06B6D4",
+              },
+              {
+                icon: "receipt",
+                label: "Tax Center",
+                subtitle: "Optimize & file",
+                route: "/tax",
+                color: "#8B5CF6",
+              },
+              {
+                icon: "storefront",
+                label: "Marketplace",
+                subtitle: "Financial products",
+                route: "/marketplace",
+                color: "#F59E0B",
+              },
+              {
+                icon: "school",
+                label: "AI Coach",
+                subtitle: "Personal coaching",
+                route: "/coach",
+                color: "#EC4899",
+              },
+              {
+                icon: "bar-chart",
+                label: "Analytics",
+                subtitle: "Spending insights",
+                route: "/insights",
+                color: "#3B82F6",
+              },
+              {
+                icon: "folder",
+                label: "Documents",
+                subtitle: "Upload & manage",
+                route: "/documents",
+                color: "#6366F1",
+              },
+              {
+                icon: "construct",
+                label: "Credit Repair",
+                subtitle: "Dispute strategies",
+                route: "/credit-repair",
+                color: "#EF4444",
+              },
+            ].map((item, i) => (
+              <TouchableOpacity
+                key={i}
+                style={styles.exploreCard}
+                onPress={() => router.push(item.route as never)}
+              >
+                <View
+                  style={[
+                    styles.exploreCardIcon,
+                    { backgroundColor: `${item.color}15` },
+                  ]}
+                >
+                  <Ionicons
+                    name={item.icon as keyof typeof Ionicons.glyphMap}
+                    size={22}
+                    color={item.color}
+                  />
+                </View>
+                <Text style={styles.exploreCardTitle}>{item.label}</Text>
+                <Text style={styles.exploreCardSubtitle}>{item.subtitle}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
 
         <View style={{ height: 40 }} />
       </ScrollView>

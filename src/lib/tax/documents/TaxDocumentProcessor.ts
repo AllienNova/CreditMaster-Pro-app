@@ -502,6 +502,12 @@ export class TaxDocumentProcessor {
       case "1099_div":
         this.validate1099DIV(fields, errors);
         break;
+      case "1099_int":
+        this.validate1099INT(fields, errors);
+        break;
+      case "1099_misc":
+        this.validate1099MISC(fields, errors);
+        break;
       case "1099_nec":
         this.validate1099NEC(fields, errors);
         break;
@@ -546,6 +552,16 @@ export class TaxDocumentProcessor {
         severity: "warning",
       });
     }
+
+    // SSN format
+    const ssn = fields.employeeSSN as string;
+    if (ssn && !/^\d{3}-?\d{2}-?\d{4}$/.test(ssn) && !/^XXX-XX-\d{4}$/.test(ssn)) {
+      errors.push({
+        field: "employeeSSN",
+        error: "Invalid SSN format",
+        severity: "warning",
+      });
+    }
   }
 
   private validate1099DIV(
@@ -563,6 +579,81 @@ export class TaxDocumentProcessor {
       errors.push({
         field: "qualifiedDividends",
         error: "Qualified dividends cannot exceed ordinary dividends",
+        severity: "warning",
+      });
+    }
+  }
+
+  private validate1099INT(
+    fields: Record<string, unknown>,
+    errors: ConsolidatedExtractionResult["validationErrors"],
+  ): void {
+    const interestIncome = fields.interestIncome as number;
+    if (interestIncome !== undefined && interestIncome < 0) {
+      errors.push({
+        field: "interestIncome",
+        error: "Interest income cannot be negative",
+        severity: "error",
+      });
+    }
+
+    const taxExemptInterest = fields.taxExemptInterest as number;
+    if (taxExemptInterest !== undefined && taxExemptInterest < 0) {
+      errors.push({
+        field: "taxExemptInterest",
+        error: "Tax-exempt interest cannot be negative",
+        severity: "error",
+      });
+    }
+
+    // Payer TIN format
+    const payerTIN = fields.payerTIN as string;
+    if (payerTIN && !/^\d{2}-?\d{7}$/.test(payerTIN)) {
+      errors.push({
+        field: "payerTIN",
+        error: "Invalid payer TIN format",
+        severity: "warning",
+      });
+    }
+  }
+
+  private validate1099MISC(
+    fields: Record<string, unknown>,
+    errors: ConsolidatedExtractionResult["validationErrors"],
+  ): void {
+    const rents = fields.rents as number;
+    if (rents !== undefined && rents < 0) {
+      errors.push({
+        field: "rents",
+        error: "Rents cannot be negative",
+        severity: "error",
+      });
+    }
+
+    const royalties = fields.royalties as number;
+    if (royalties !== undefined && royalties < 0) {
+      errors.push({
+        field: "royalties",
+        error: "Royalties cannot be negative",
+        severity: "error",
+      });
+    }
+
+    const otherIncome = fields.otherIncome as number;
+    if (otherIncome !== undefined && otherIncome < 0) {
+      errors.push({
+        field: "otherIncome",
+        error: "Other income cannot be negative",
+        severity: "error",
+      });
+    }
+
+    // Payer TIN format
+    const payerTIN = fields.payerTIN as string;
+    if (payerTIN && !/^\d{2}-?\d{7}$/.test(payerTIN)) {
+      errors.push({
+        field: "payerTIN",
+        error: "Invalid payer TIN format",
         severity: "warning",
       });
     }

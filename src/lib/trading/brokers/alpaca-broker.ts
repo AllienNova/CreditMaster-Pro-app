@@ -195,7 +195,7 @@ export class AlpacaBroker implements BrokerInterface {
 
     return {
       id: response.id,
-      status: response.status as "active" | "restricted" | "disabled",
+      status: response.status.toLowerCase() as "active" | "restricted" | "disabled",
       currency: response.currency,
       cash: parseFloat(response.cash),
       portfolioValue: parseFloat(response.portfolio_value),
@@ -213,7 +213,7 @@ export class AlpacaBroker implements BrokerInterface {
 
   async getPositions(): Promise<Position[]> {
     const response = await this.request<AlpacaPosition[]>("/v2/positions");
-    return response.map(this.mapPosition);
+    return response.map((p) => this.mapPosition(p));
   }
 
   async getPosition(symbol: string): Promise<Position | null> {
@@ -241,7 +241,7 @@ export class AlpacaBroker implements BrokerInterface {
     if (filters?.until) params.set("until", filters.until.toISOString());
 
     const response = await this.request<AlpacaOrder[]>(`/v2/orders?${params}`);
-    return response.map(this.mapOrder);
+    return response.map((o) => this.mapOrder(o));
   }
 
   async getOrder(orderId: string): Promise<Order | null> {
@@ -375,7 +375,7 @@ export class AlpacaBroker implements BrokerInterface {
       );
       const orders = [this.mapOrder(response)];
       if (response.legs) {
-        orders.push(...response.legs.map(this.mapOrder));
+        orders.push(...response.legs.map((leg) => this.mapOrder(leg)));
       }
 
       return {

@@ -38,7 +38,7 @@ export default function HoldingsScreen() {
 
   const holdings = useInvestmentStore(selectHoldings);
   const isLoading = useInvestmentStore(selectInvestmentLoading);
-  const { fetchPortfolio } = useInvestmentStore();
+  const fetchPortfolio = useInvestmentStore((s) => s.fetchPortfolio);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);

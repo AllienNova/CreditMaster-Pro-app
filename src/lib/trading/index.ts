@@ -294,3 +294,34 @@ export type {
   TrackedOrder,
   OrderTrackerConfig,
 } from "./realtime";
+
+// Fractional Trading (Dollar-based orders, Auto-Invest, DRIP)
+export {
+  FractionalOrderService,
+  FractionalOrderError,
+  createFractionalOrderService,
+  AutoInvestScheduler,
+  AutoInvestError,
+  createAutoInvestScheduler,
+  DripService,
+  DripError,
+  createDripService,
+} from "./fractional";
+
+export type {
+  DollarOrderParams,
+  ShareOrderParams,
+  LotSplit,
+  FractionalOrderResult,
+  FractionalValidation,
+  InvestmentFrequency,
+  PortfolioAllocation,
+  AutoInvestScheduleParams,
+  AutoInvestSchedule,
+  ScheduleExecutionResult,
+  ScheduleUpdate,
+  DripEnrollmentParams,
+  DripEnrollment,
+  DividendEvent,
+  DripReinvestment,
+} from "./fractional";

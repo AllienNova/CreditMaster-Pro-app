@@ -7,22 +7,35 @@
  * All external HTTP calls and Supabase interactions are mocked.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from "@jest/globals";
-
 // ---------------------------------------------------------------------------
 // Mocks — must be declared before importing the module under test
 // ---------------------------------------------------------------------------
 
 // Chainable Supabase mock — define inside factory to avoid TDZ with jest.mock hoisting
 jest.mock("@/lib/supabase/client", () => {
+  // Default resolution for non-.single() query chains (thenable)
+  let defaultResolution: { data: unknown; error: unknown } = { data: [], error: null };
+
   const mock: Record<string, any> = {
     from: jest.fn(),
     select: jest.fn(),
     insert: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
+    upsert: jest.fn(),
     eq: jest.fn(),
     single: jest.fn(),
+    order: jest.fn(),
+    gte: jest.fn(),
+    lte: jest.fn(),
+    limit: jest.fn(),
+    // Make the mock thenable so `await supabase.from(...).select(...)...` resolves
+    then: jest.fn((resolve: (v: unknown) => void) => resolve(defaultResolution)),
+    // Allow tests to override what the chain resolves to
+    __setDefaultResolution(val: { data: unknown; error: unknown }) {
+      defaultResolution = val;
+      mock.then.mockImplementation((resolve: (v: unknown) => void) => resolve(val));
+    },
   };
 
   mock.from.mockReturnValue(mock);
@@ -30,7 +43,12 @@ jest.mock("@/lib/supabase/client", () => {
   mock.insert.mockReturnValue(mock);
   mock.update.mockReturnValue(mock);
   mock.delete.mockReturnValue(mock);
+  mock.upsert.mockReturnValue(mock);
   mock.eq.mockReturnValue(mock);
+  mock.order.mockReturnValue(mock);
+  mock.gte.mockReturnValue(mock);
+  mock.lte.mockReturnValue(mock);
+  mock.limit.mockReturnValue(mock);
   mock.single.mockResolvedValue({
     data: {
       id: "user-1",
@@ -236,7 +254,16 @@ describe("CreditBureauService", () => {
     queryMock.insert.mockReturnValue(mockSupabase);
     queryMock.update.mockReturnValue(mockSupabase);
     queryMock.delete.mockReturnValue(mockSupabase);
+    queryMock.upsert.mockReturnValue(mockSupabase);
     queryMock.eq.mockReturnValue(mockSupabase);
+    queryMock.order.mockReturnValue(mockSupabase);
+    queryMock.gte.mockReturnValue(mockSupabase);
+    queryMock.lte.mockReturnValue(mockSupabase);
+    queryMock.limit.mockReturnValue(mockSupabase);
+    // Re-wire thenable so await on non-.single() chains resolves
+    queryMock.then.mockImplementation(
+      (resolve: (v: unknown) => void) => resolve({ data: [], error: null }),
+    );
     queryMock.single.mockResolvedValue({
       data: {
         id: "user-1",
@@ -713,6 +740,8 @@ describe("CreditBureauService", () => {
       const result = await CreditBureauService.getCreditReport(
         "user-1",
         "unknown_bureau" as Bureau,
+        "full",
+        false, // disable fallback to test error path
       );
       expect(result.success).toBe(false);
       expect(result.error).toContain("Unknown bureau");
@@ -728,6 +757,8 @@ describe("CreditBureauService", () => {
       const result = await CreditBureauService.getCreditReport(
         "nonexistent-user",
         "experian",
+        "full",
+        false, // disable fallback to test error path
       );
       expect(result.success).toBe(false);
       expect(result.error).toContain("User profile not found");
@@ -1108,6 +1139,427 @@ describe("CreditBureauService", () => {
       process.env.EQUIFAX_API_KEY = "val-b";
       const cred = CreditBureauService.getBureauCredentials("equifax");
       expect(cred.apiKey).toBe("val-b"); // immediate expiry means it re-reads
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Score history
+  // -----------------------------------------------------------------------
+
+  describe("saveScoreHistory", () => {
+    it("should insert a record into credit_score_history", async () => {
+      (mockSupabase.insert as jest.Mock).mockResolvedValueOnce({ error: null });
+
+      await CreditBureauService.saveScoreHistory(
+        "user-1",
+        "experian",
+        720,
+        "rpt-1",
+      );
+
+      expect(mockSupabase.from).toHaveBeenCalledWith("credit_score_history");
+      expect(mockSupabase.insert).toHaveBeenCalledWith({
+        user_id: "user-1",
+        bureau: "experian",
+        score: 720,
+        report_id: "rpt-1",
+      });
+    });
+
+    it("should not throw when insert fails (non-fatal)", async () => {
+      (mockSupabase.insert as jest.Mock).mockResolvedValueOnce({
+        error: { message: "DB error" },
+      });
+
+      // Should NOT throw
+      await expect(
+        CreditBureauService.saveScoreHistory("user-1", "equifax", 680, "rpt-2"),
+      ).resolves.toBeUndefined();
+    });
+  });
+
+  describe("getScoreHistory", () => {
+    it("should return score history entries for a user", async () => {
+      const mockEntries = [
+        {
+          id: "sh-1",
+          user_id: "user-1",
+          bureau: "experian",
+          score: 720,
+          report_id: "rpt-1",
+          recorded_at: "2026-03-01T00:00:00Z",
+        },
+        {
+          id: "sh-2",
+          user_id: "user-1",
+          bureau: "equifax",
+          score: 710,
+          report_id: "rpt-2",
+          recorded_at: "2026-02-15T00:00:00Z",
+        },
+      ];
+
+      (mockSupabase as any).__setDefaultResolution({
+        data: mockEntries,
+        error: null,
+      });
+
+      const result = await CreditBureauService.getScoreHistory({
+        user_id: "user-1",
+      });
+
+      expect(result).toEqual(mockEntries);
+      expect(mockSupabase.from).toHaveBeenCalledWith("credit_score_history");
+      expect(mockSupabase.select).toHaveBeenCalledWith("*");
+      expect(mockSupabase.eq).toHaveBeenCalledWith("user_id", "user-1");
+      expect(mockSupabase.order).toHaveBeenCalledWith("recorded_at", {
+        ascending: false,
+      });
+    });
+
+    it("should filter by bureau when provided", async () => {
+      (mockSupabase as any).__setDefaultResolution({ data: [], error: null });
+
+      await CreditBureauService.getScoreHistory({
+        user_id: "user-1",
+        bureau: "transunion",
+      });
+
+      // eq is called once for user_id and once for bureau
+      expect(mockSupabase.eq).toHaveBeenCalledWith("bureau", "transunion");
+    });
+
+    it("should apply from_date filter", async () => {
+      (mockSupabase as any).__setDefaultResolution({ data: [], error: null });
+
+      await CreditBureauService.getScoreHistory({
+        user_id: "user-1",
+        from_date: "2026-01-01",
+      });
+
+      expect(mockSupabase.gte).toHaveBeenCalledWith(
+        "recorded_at",
+        "2026-01-01",
+      );
+    });
+
+    it("should apply to_date filter", async () => {
+      (mockSupabase as any).__setDefaultResolution({ data: [], error: null });
+
+      await CreditBureauService.getScoreHistory({
+        user_id: "user-1",
+        to_date: "2026-03-01",
+      });
+
+      expect(mockSupabase.lte).toHaveBeenCalledWith(
+        "recorded_at",
+        "2026-03-01",
+      );
+    });
+
+    it("should apply limit when provided", async () => {
+      (mockSupabase as any).__setDefaultResolution({ data: [], error: null });
+
+      await CreditBureauService.getScoreHistory({
+        user_id: "user-1",
+        limit: 10,
+      });
+
+      expect(mockSupabase.limit).toHaveBeenCalledWith(10);
+    });
+
+    it("should return empty array when data is null", async () => {
+      (mockSupabase as any).__setDefaultResolution({
+        data: null,
+        error: null,
+      });
+
+      const result = await CreditBureauService.getScoreHistory({
+        user_id: "user-1",
+      });
+
+      expect(result).toEqual([]);
+    });
+
+    it("should throw when query returns an error", async () => {
+      (mockSupabase as any).__setDefaultResolution({
+        data: null,
+        error: { message: "Database unavailable" },
+      });
+
+      await expect(
+        CreditBureauService.getScoreHistory({ user_id: "user-1" }),
+      ).rejects.toThrow("Failed to retrieve score history");
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Bureau connection management
+  // -----------------------------------------------------------------------
+
+  describe("getBureauConnectionStatuses", () => {
+    it("should return statuses for all three bureaus", async () => {
+      (mockSupabase as any).__setDefaultResolution({
+        data: [
+          {
+            bureau: "experian",
+            connected: true,
+            last_pull_date: "2026-02-20",
+            last_score: 730,
+          },
+          {
+            bureau: "equifax",
+            connected: false,
+            last_pull_date: null,
+            last_score: null,
+          },
+        ],
+        error: null,
+      });
+
+      const statuses =
+        await CreditBureauService.getBureauConnectionStatuses("user-1");
+
+      expect(statuses).toHaveLength(3);
+      const exp = statuses.find((s) => s.bureau === "experian");
+      expect(exp?.connected).toBe(true);
+      expect(exp?.last_score).toBe(730);
+
+      const eqf = statuses.find((s) => s.bureau === "equifax");
+      expect(eqf?.connected).toBe(false);
+
+      // TransUnion not in DB — should default to disconnected
+      const tu = statuses.find((s) => s.bureau === "transunion");
+      expect(tu?.connected).toBe(false);
+      expect(tu?.last_pull_date).toBeNull();
+      expect(tu?.last_score).toBeNull();
+    });
+
+    it("should include environment in all statuses", async () => {
+      (mockSupabase as any).__setDefaultResolution({ data: [], error: null });
+
+      const statuses =
+        await CreditBureauService.getBureauConnectionStatuses("user-1");
+
+      for (const status of statuses) {
+        expect(status.environment).toBe("sandbox");
+      }
+    });
+
+    it("should throw when query returns an error", async () => {
+      (mockSupabase as any).__setDefaultResolution({
+        data: null,
+        error: { message: "Connection refused" },
+      });
+
+      await expect(
+        CreditBureauService.getBureauConnectionStatuses("user-1"),
+      ).rejects.toThrow("Failed to retrieve bureau connections");
+    });
+  });
+
+  describe("connectBureau", () => {
+    it("should upsert a bureau connection and return connected status", async () => {
+      (mockSupabase.upsert as jest.Mock).mockResolvedValueOnce({
+        error: null,
+      });
+
+      const status = await CreditBureauService.connectBureau(
+        "user-1",
+        "experian",
+      );
+
+      expect(status.bureau).toBe("experian");
+      expect(status.connected).toBe(true);
+      expect(status.environment).toBe("sandbox");
+      expect(mockSupabase.from).toHaveBeenCalledWith("bureau_connections");
+      expect(mockSupabase.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user_id: "user-1",
+          bureau: "experian",
+          connected: true,
+        }),
+        { onConflict: "user_id,bureau" },
+      );
+    });
+
+    it("should throw when upsert fails", async () => {
+      (mockSupabase.upsert as jest.Mock).mockResolvedValueOnce({
+        error: { message: "Constraint violation" },
+      });
+
+      await expect(
+        CreditBureauService.connectBureau("user-1", "equifax"),
+      ).rejects.toThrow("Failed to connect bureau equifax");
+    });
+  });
+
+  describe("disconnectBureau", () => {
+    it("should update the connection to disconnected", async () => {
+      (mockSupabase.update as jest.Mock).mockReturnValueOnce(mockSupabase);
+
+      await CreditBureauService.disconnectBureau("user-1", "transunion");
+
+      expect(mockSupabase.from).toHaveBeenCalledWith("bureau_connections");
+      expect(mockSupabase.update).toHaveBeenCalledWith(
+        expect.objectContaining({ connected: false }),
+      );
+    });
+
+    it("should throw when update fails", async () => {
+      (mockSupabase as any).__setDefaultResolution({
+        data: null,
+        error: { message: "Not found" },
+      });
+
+      await expect(
+        CreditBureauService.disconnectBureau("user-1", "experian"),
+      ).rejects.toThrow("Failed to disconnect bureau experian");
+    });
+  });
+
+  describe("updateBureauLastPull", () => {
+    it("should update last_pull_date and last_score", async () => {
+      (mockSupabase.update as jest.Mock).mockReturnValueOnce(mockSupabase);
+
+      await CreditBureauService.updateBureauLastPull("user-1", "equifax", 740);
+
+      expect(mockSupabase.from).toHaveBeenCalledWith("bureau_connections");
+      expect(mockSupabase.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          last_score: 740,
+        }),
+      );
+    });
+
+    it("should not throw when update fails (non-fatal)", async () => {
+      (mockSupabase as any).__setDefaultResolution({
+        data: null,
+        error: { message: "DB error" },
+      });
+
+      // Should NOT throw
+      await expect(
+        CreditBureauService.updateBureauLastPull("user-1", "experian", 700),
+      ).resolves.toBeUndefined();
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Graceful fallback in getCreditReport
+  // -----------------------------------------------------------------------
+
+  describe("getCreditReport — fallback", () => {
+    beforeEach(() => {
+      const config = makeSandboxConfig();
+      CreditBureauService.initializeFromConfig(config);
+    });
+
+    it("should fallback to mock when live bureau call fails and fallback is enabled", async () => {
+      // Make the live client return failure
+      const clientInstance = (ExperianClient as jest.Mock).mock.results.slice(
+        -1,
+      )[0]?.value;
+      if (clientInstance) {
+        clientInstance.getCreditReport.mockResolvedValueOnce({
+          success: false,
+          error: "Bureau API down",
+          bureau: "experian",
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      // Mock the saveScoreHistory insert (called by mock fallback path)
+      (mockSupabase.insert as jest.Mock)
+        .mockResolvedValueOnce({ error: null }) // saveCreditReport
+        .mockResolvedValueOnce({ error: null }); // saveScoreHistory
+
+      const result = await CreditBureauService.getCreditReport(
+        "user-1",
+        "experian",
+        "full",
+        true, // enableFallback
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.reference_id).toMatch(/^fallback_/);
+      expect(result.data).toBeDefined();
+      expect(result.data?.bureau).toBe("experian");
+    });
+
+    it("should NOT fallback when enableFallback is false", async () => {
+      const clientInstance = (ExperianClient as jest.Mock).mock.results.slice(
+        -1,
+      )[0]?.value;
+      if (clientInstance) {
+        clientInstance.getCreditReport.mockResolvedValueOnce({
+          success: false,
+          error: "Bureau API down",
+          bureau: "experian",
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      const result = await CreditBureauService.getCreditReport(
+        "user-1",
+        "experian",
+        "full",
+        false, // enableFallback disabled
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Bureau API down");
+    });
+
+    it("should fallback when the entire call chain throws", async () => {
+      // Make getUserPII throw
+      (mockSupabase.single as jest.Mock).mockResolvedValueOnce({
+        data: null,
+        error: { message: "Profile DB down" },
+      });
+
+      const result = await CreditBureauService.getCreditReport(
+        "unknown-user",
+        "equifax",
+        "full",
+        true, // enableFallback
+      );
+
+      // The catch block fallback should kick in
+      expect(result.success).toBe(true);
+      expect(result.reference_id).toMatch(/^fallback_/);
+    });
+
+    it("should save score history on successful report", async () => {
+      const mockReport = makeMockCreditReport("experian");
+      const clientInstance = (ExperianClient as jest.Mock).mock.results.slice(
+        -1,
+      )[0]?.value;
+      if (clientInstance) {
+        clientInstance.getCreditReport.mockResolvedValueOnce({
+          success: true,
+          data: mockReport,
+          bureau: "experian",
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      // saveCreditReport insert
+      (mockSupabase.insert as jest.Mock)
+        .mockResolvedValueOnce({ error: null }) // saveCreditReport
+        .mockResolvedValueOnce({ error: null }); // saveScoreHistory
+
+      await CreditBureauService.getCreditReport("user-1", "experian");
+
+      // Verify saveScoreHistory was called via insert
+      const insertCalls = (mockSupabase.insert as jest.Mock).mock.calls;
+      const scoreHistoryCall = insertCalls.find(
+        (call: unknown[]) =>
+          typeof call[0] === "object" &&
+          call[0] !== null &&
+          "score" in (call[0] as Record<string, unknown>),
+      );
+      expect(scoreHistoryCall).toBeDefined();
     });
   });
 });

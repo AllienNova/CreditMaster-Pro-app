@@ -11,7 +11,7 @@ import {
   ScrollView,
   TouchableOpacity,
 } from "react-native";
-import { router } from "expo-router";
+import { router, Href } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
@@ -178,7 +178,7 @@ export default function IdentityScreen() {
           <Text style={styles.title}>Identity Protection</Text>
           <TouchableOpacity
             style={styles.settingsButton}
-            onPress={() => router.push("/settings/identity")}
+            onPress={() => router.push("/settings/identity" as Href)}
           >
             <Ionicons
               name="settings-outline"
@@ -244,7 +244,7 @@ export default function IdentityScreen() {
           <>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Active Alerts</Text>
-              <TouchableOpacity onPress={() => router.push("/identity/alerts")}>
+              <TouchableOpacity onPress={() => router.push("/identity/alerts" as Href)}>
                 <Text style={styles.seeAllText}>See All</Text>
               </TouchableOpacity>
             </View>
@@ -253,7 +253,7 @@ export default function IdentityScreen() {
               return (
                 <TouchableOpacity
                   key={alert.id}
-                  onPress={() => router.push(`/identity/alerts/${alert.id}`)}
+                  onPress={() => router.push(`/identity/alerts/${alert.id}` as Href)}
                 >
                   <Card style={styles.alertCard}>
                     <View

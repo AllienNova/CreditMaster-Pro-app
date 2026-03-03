@@ -142,6 +142,38 @@ export {
   type RiskAdjustedReturnResult,
 } from "./investment-calculators";
 
+// ESG Scoring and Screening
+export {
+  ESGScoringService,
+  esgScoringService,
+  createESGScoringService,
+  MockESGDataProvider,
+  type ESGGrade,
+  type ESGPillar,
+  type RiskSeverity,
+  type ESGTrend,
+  type RecommendationPriority,
+  type ESGPillarScore,
+  type ESGScore,
+  type EnvironmentalMetrics,
+  type SocialMetrics,
+  type GovernanceMetrics,
+  type ESGProfile,
+  type ESGDataProvider,
+  type PortfolioHolding,
+  type HoldingESGResult,
+  type ESGScreeningResult,
+  type ESGScreeningThresholds,
+  type ESGHistoryEntry,
+  type ESGTrendAnalysis,
+  type SectorBenchmark,
+  type SectorComparison,
+  type ESGRiskFlag,
+  type ESGRecommendation,
+  type ESGComplianceReport,
+  type SectorBreakdownEntry,
+} from "./esg-scoring-service";
+
 // Crypto Wallet Tracking
 export {
   CryptoWalletService,

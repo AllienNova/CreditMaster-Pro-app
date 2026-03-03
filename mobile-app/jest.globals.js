@@ -3,10 +3,10 @@
  * Defines globals that React Native expects.
  */
 
-// __DEV__ is set by the RN bundler; needed before any RN module loads
-if (typeof globalThis.__DEV__ === "undefined") {
-  globalThis.__DEV__ = true;
-}
+// __DEV__ is set by the RN bundler; needed before any RN module loads.
+// Note: react-native/jest/setup.js will override this to true; the real
+// override to false happens in jest.setup.js (setupFilesAfterEnv).
+globalThis.__DEV__ = false;
 
 // ErrorUtils is expected by some RN internals
 if (typeof globalThis.ErrorUtils === "undefined") {

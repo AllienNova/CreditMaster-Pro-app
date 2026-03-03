@@ -43,7 +43,7 @@ export default function AddHoldingScreen() {
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { fetchPortfolio } = useInvestmentStore();
+  const fetchPortfolio = useInvestmentStore((s) => s.fetchPortfolio);
 
   const validateForm = (): boolean => {
     if (!symbol.trim()) {

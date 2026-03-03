@@ -98,7 +98,7 @@ export default function ChartContainer({
     <View
       style={[styles.container, style]}
       accessible
-      accessibilityRole="figure"
+      accessibilityRole="summary"
       accessibilityLabel={
         accessibilityLabel || `${title || "Chart"} visualization`
       }

@@ -6,6 +6,9 @@
  * - Push subscription handling
  * - Service worker registration
  * - Notification delivery via VAPID
+ * - Retry logic with exponential backoff
+ * - Subscription validation
+ * - Batch sending with concurrency control
  */
 
 import * as webPush from "web-push";
@@ -30,6 +33,10 @@ export type PushNotificationType =
   | "security_alert"
   | "new_account"
   | "document_uploaded"
+  | "bill_reminder"
+  | "score_change"
+  | "goal_milestone"
+  | "subscription_renewal"
   | "general";
 
 export interface PushNotificationPayload {
@@ -69,6 +76,140 @@ export interface WebPushResult {
   success: boolean;
   subscriptionId: string;
   error?: string;
+  retryCount?: number;
+}
+
+export interface RetryConfig {
+  maxRetries: number;
+  baseDelayMs: number;
+  maxDelayMs: number;
+}
+
+export interface BatchConfig {
+  concurrency: number;
+  delayBetweenBatchesMs: number;
+}
+
+export interface SubscriptionValidationResult {
+  valid: boolean;
+  errors: string[];
+}
+
+/** Default retry configuration: 3 retries, 1s base delay, 10s max delay */
+const DEFAULT_RETRY_CONFIG: RetryConfig = {
+  maxRetries: 3,
+  baseDelayMs: 1000,
+  maxDelayMs: 10000,
+};
+
+/** Default batch configuration: 10 concurrent sends, 100ms between batches */
+const DEFAULT_BATCH_CONFIG: BatchConfig = {
+  concurrency: 10,
+  delayBetweenBatchesMs: 100,
+};
+
+/**
+ * Calculate exponential backoff delay with jitter
+ */
+export function calculateBackoffDelay(
+  attempt: number,
+  baseDelayMs: number,
+  maxDelayMs: number,
+): number {
+  const exponentialDelay = baseDelayMs * Math.pow(2, attempt);
+  const jitter = Math.random() * baseDelayMs * 0.5;
+  return Math.min(exponentialDelay + jitter, maxDelayMs);
+}
+
+/**
+ * Determine whether an error is retryable
+ * - 410 Gone (subscription expired) is NOT retryable
+ * - 429 Too Many Requests IS retryable
+ * - 5xx server errors ARE retryable
+ * - Network errors ARE retryable
+ */
+export function isRetryableError(error: unknown): boolean {
+  if (error instanceof Error) {
+    const statusCode = (error as { statusCode?: number }).statusCode;
+
+    // 410 Gone — subscription is permanently gone
+    if (statusCode === 410) return false;
+
+    // Expired/unsubscribed — not retryable
+    if (
+      error.message.includes("expired") ||
+      error.message.includes("unsubscribed")
+    ) {
+      return false;
+    }
+
+    // 429 or 5xx — retryable
+    if (statusCode === 429 || (statusCode !== undefined && statusCode >= 500)) {
+      return true;
+    }
+
+    // Network errors — retryable
+    if (
+      error.message.includes("ETIMEDOUT") ||
+      error.message.includes("ECONNRESET") ||
+      error.message.includes("ECONNREFUSED") ||
+      error.message.includes("network")
+    ) {
+      return true;
+    }
+  }
+
+  // Default: retryable for unknown errors
+  return true;
+}
+
+/**
+ * Validate a push subscription object
+ */
+export function validateSubscription(
+  subscription: Partial<PushSubscription>,
+): SubscriptionValidationResult {
+  const errors: string[] = [];
+
+  if (!subscription.id) {
+    errors.push("Missing subscription id");
+  }
+
+  if (!subscription.userId) {
+    errors.push("Missing userId");
+  }
+
+  if (!subscription.endpoint) {
+    errors.push("Missing endpoint");
+  } else if (
+    !subscription.endpoint.startsWith("https://") &&
+    !subscription.endpoint.startsWith("http://localhost")
+  ) {
+    errors.push("Endpoint must use HTTPS");
+  }
+
+  if (!subscription.keys) {
+    errors.push("Missing keys object");
+  } else {
+    if (!subscription.keys.p256dh) {
+      errors.push("Missing p256dh key");
+    }
+    if (!subscription.keys.auth) {
+      errors.push("Missing auth key");
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}
+
+/**
+ * Sleep utility for retry delays
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -153,6 +294,103 @@ class WebPushService {
   }
 
   /**
+   * Send a push notification with retry logic (exponential backoff)
+   *
+   * Retries on transient errors (network, 429, 5xx) up to maxRetries.
+   * Does NOT retry on permanent errors (410 Gone, subscription expired).
+   */
+  async sendNotificationWithRetry(
+    subscription: PushSubscription,
+    payload: PushNotificationPayload,
+    retryConfig: RetryConfig = DEFAULT_RETRY_CONFIG,
+  ): Promise<WebPushResult> {
+    if (!this.isConfigured) {
+      return {
+        success: false,
+        subscriptionId: subscription.id,
+        error: "Web Push not configured",
+        retryCount: 0,
+      };
+    }
+
+    // Validate subscription before attempting send
+    const validation = validateSubscription(subscription);
+    if (!validation.valid) {
+      return {
+        success: false,
+        subscriptionId: subscription.id || "unknown",
+        error: `Invalid subscription: ${validation.errors.join(", ")}`,
+        retryCount: 0,
+      };
+    }
+
+    let lastError: unknown = null;
+
+    for (let attempt = 0; attempt <= retryConfig.maxRetries; attempt++) {
+      try {
+        const pushSubscription = {
+          endpoint: subscription.endpoint,
+          keys: subscription.keys,
+        };
+
+        const notificationPayload = JSON.stringify({
+          ...payload,
+          icon: payload.icon || "/icons/icon-192x192.png",
+          badge: payload.badge || "/icons/badge-72x72.png",
+          timestamp: Date.now(),
+        });
+
+        await webPush.sendNotification(pushSubscription, notificationPayload);
+
+        return {
+          success: true,
+          subscriptionId: subscription.id,
+          retryCount: attempt,
+        };
+      } catch (error) {
+        lastError = error;
+
+        // If error is not retryable, stop immediately
+        if (!isRetryableError(error)) {
+          const errorMessage =
+            error instanceof Error ? error.message : "Unknown error";
+          const isExpired =
+            errorMessage.includes("expired") ||
+            errorMessage.includes("unsubscribed") ||
+            (error as { statusCode?: number }).statusCode === 410;
+
+          return {
+            success: false,
+            subscriptionId: subscription.id,
+            error: isExpired ? "subscription_expired" : errorMessage,
+            retryCount: attempt,
+          };
+        }
+
+        // If we have retries left, wait with exponential backoff
+        if (attempt < retryConfig.maxRetries) {
+          const delay = calculateBackoffDelay(
+            attempt,
+            retryConfig.baseDelayMs,
+            retryConfig.maxDelayMs,
+          );
+          await sleep(delay);
+        }
+      }
+    }
+
+    // All retries exhausted
+    const errorMessage =
+      lastError instanceof Error ? lastError.message : "Unknown error";
+    return {
+      success: false,
+      subscriptionId: subscription.id,
+      error: errorMessage,
+      retryCount: retryConfig.maxRetries,
+    };
+  }
+
+  /**
    * Send push notifications to multiple subscriptions
    */
   async sendToMultiple(
@@ -163,6 +401,86 @@ class WebPushService {
       subscriptions.map((sub) => this.sendNotification(sub, payload)),
     );
     return results;
+  }
+
+  /**
+   * Send push notifications to multiple subscriptions with retry logic
+   */
+  async sendToMultipleWithRetry(
+    subscriptions: PushSubscription[],
+    payload: PushNotificationPayload,
+    retryConfig: RetryConfig = DEFAULT_RETRY_CONFIG,
+  ): Promise<WebPushResult[]> {
+    const results = await Promise.all(
+      subscriptions.map((sub) =>
+        this.sendNotificationWithRetry(sub, payload, retryConfig),
+      ),
+    );
+    return results;
+  }
+
+  /**
+   * Send push notifications in batches with concurrency control
+   *
+   * Processes subscriptions in batches to avoid overwhelming push services.
+   * Supports retry logic per notification.
+   */
+  async sendBatch(
+    subscriptions: PushSubscription[],
+    payload: PushNotificationPayload,
+    options?: {
+      retryConfig?: RetryConfig;
+      batchConfig?: BatchConfig;
+    },
+  ): Promise<{
+    results: WebPushResult[];
+    sent: number;
+    failed: number;
+    expiredSubscriptions: string[];
+    totalRetries: number;
+  }> {
+    const retryConfig = options?.retryConfig ?? DEFAULT_RETRY_CONFIG;
+    const batchConfig = options?.batchConfig ?? DEFAULT_BATCH_CONFIG;
+    const allResults: WebPushResult[] = [];
+
+    // Process in batches
+    for (let i = 0; i < subscriptions.length; i += batchConfig.concurrency) {
+      const batch = subscriptions.slice(i, i + batchConfig.concurrency);
+
+      const batchResults = await Promise.all(
+        batch.map((sub) =>
+          this.sendNotificationWithRetry(sub, payload, retryConfig),
+        ),
+      );
+
+      allResults.push(...batchResults);
+
+      // Delay between batches (skip after last batch)
+      if (
+        i + batchConfig.concurrency < subscriptions.length &&
+        batchConfig.delayBetweenBatchesMs > 0
+      ) {
+        await sleep(batchConfig.delayBetweenBatchesMs);
+      }
+    }
+
+    const sent = allResults.filter((r) => r.success).length;
+    const failed = allResults.filter((r) => !r.success).length;
+    const expiredSubscriptions = allResults
+      .filter((r) => r.error === "subscription_expired")
+      .map((r) => r.subscriptionId);
+    const totalRetries = allResults.reduce(
+      (sum, r) => sum + (r.retryCount ?? 0),
+      0,
+    );
+
+    return {
+      results: allResults,
+      sent,
+      failed,
+      expiredSubscriptions,
+      totalRetries,
+    };
   }
 
   /**

@@ -49,7 +49,7 @@ export default function SearchScreen() {
     {
       icon: "chatbubbles",
       label: "AI Assistant",
-      route: "/chat",
+      route: "/financial-intelligence/chat",
       color: "#9C27B0",
     },
   ];

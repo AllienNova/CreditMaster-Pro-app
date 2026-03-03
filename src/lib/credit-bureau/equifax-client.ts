@@ -6,6 +6,7 @@
 
 import type {
   BureauResponse,
+  CreditBureauAdapter,
   CreditReport,
   CreditReportRequest,
   DisputeSubmission,
@@ -13,9 +14,11 @@ import type {
   CreditAccount,
   CreditInquiry,
   PublicRecord,
+  Bureau,
 } from "./types";
 
-export class EquifaxClient {
+export class EquifaxClient implements CreditBureauAdapter {
+  readonly bureau: Bureau = "equifax";
   private apiKey: string;
   private clientId: string;
   private environment: "sandbox" | "production";

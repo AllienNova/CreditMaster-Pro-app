@@ -6,6 +6,7 @@
 
 import type {
   BureauResponse,
+  CreditBureauAdapter,
   CreditReport,
   CreditReportRequest,
   DisputeSubmission,
@@ -13,9 +14,11 @@ import type {
   CreditAccount,
   CreditInquiry,
   PublicRecord,
+  Bureau,
 } from "./types";
 
-export class TransUnionClient {
+export class TransUnionClient implements CreditBureauAdapter {
+  readonly bureau: Bureau = "transunion";
   private subscriberId: string;
   private apiKey: string;
   private environment: "test" | "production";
