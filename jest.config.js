@@ -47,12 +47,13 @@ module.exports = {
     "^.+\\.jsx?$": ["ts-jest", { tsconfig: "tsconfig.jest.json" }],
   },
   transformIgnorePatterns: [
-    "node_modules/(?!(msw|@mswjs|@bundled-es-modules|@open-draft|strict-event-emitter|outvariant|@testing-library|until-async|undici)/)",
+    "node_modules/(?!(msw|@mswjs|@bundled-es-modules|@open-draft|strict-event-emitter|outvariant|@testing-library|until-async|undici|lightweight-charts)/)",
   ],
   modulePaths: [],
   moduleNameMapper: {
     "^react-native$": "react-native-web",
     "^@/(.*)$": "<rootDir>/src/$1",
+    "^lightweight-charts$": "<rootDir>/src/__mocks__/lightweight-charts.ts",
     "\\.(css|less|scss|sass)$": "identity-obj-proxy",
   },
   moduleFileExtensions: [
