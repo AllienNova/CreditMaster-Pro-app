@@ -10,11 +10,11 @@
 
 | Metric | Value |
 |--------|-------|
-| **Test Suites** | 473 passed, 2 skipped, 475 total |
-| **Test Cases** | 12,468 passed, 19 skipped, 12,487 total |
+| **Test Suites** | 504 passed, 2 skipped, 506 total |
+| **Test Cases** | 13,585 passed, 19 skipped, 13,604 total |
 | **Execution Time** | ~15s |
-| **Pass Rate** | 99.85% (12,468 / 12,487) |
-| **Suite Pass Rate** | 99.58% (473 / 475) |
+| **Pass Rate** | 99.86% (13,558 / 13,577) |
+| **Suite Pass Rate** | 99.60% (501 / 503) |
 | **Failures** | 0 |
 
 ### Growth Since VERSION-001
@@ -111,21 +111,27 @@ All skips are intentional — environment-dependent tests that require live API 
 
 ---
 
-## 6. Codebase Metrics
+## 6. Codebase Metrics (Verified 2026-03-02)
 
 | Metric | Value | Source |
 |--------|-------|--------|
-| Total Files | 1,514 | `find src/ mobile-app/ -type f` |
-| Source Files | 1,150 | `find src/ -type f` (excl. tests) |
-| Test Files | 358 | `find src/ -path '*__tests__*' -type f` |
-| Lines of Code | 511,219 | `wc -l` across all source + test + mobile |
-| API Routes | 248 | `find src/app/api/ -name route.ts` |
-| Pages | 182 | `find src/app/ -name page.tsx` |
-| Components | 228 | `find src/components/ -type f` |
-| Library Files | 477 | `find src/lib/ -type f` |
-| Custom Hooks | 22 | `find src/hooks/ -type f` |
-| DB Migrations | 29 | `ls supabase/migrations/` |
-| Mobile App Files | 387 | `find mobile-app/ -type f` (139 src + 248 app) |
+| Total Files (src/) | 1,833 | `find src/ -name "*.ts" -o -name "*.tsx"` |
+| Source Files (excl. tests) | 1,325 | src/ total minus test files |
+| Test Files (Jest web) | 508 | `find src/ -name "*.test.ts" -o -name "*.test.tsx"` |
+| Test Files (all frameworks) | 576 | Jest web 508 + mobile 31 + Cypress 21 + Playwright 16 |
+| Lines of Code | 846,417 | `wc -l` across all src/ + mobile-app/ .ts/.tsx |
+| API Routes | 284 | `find src/app/api/ -name route.ts` |
+| API Domains | 42 | `find src/app/api/ -mindepth 1 -maxdepth 1 -type d` |
+| Pages | 199 | `find src/app/ -name page.tsx` |
+| Components | 309 | `find src/components/ -name "*.tsx"` |
+| Layouts | 11 | `find src/app/ -name layout.tsx` |
+| Library Dirs | 55 | `find src/lib/ -mindepth 1 -maxdepth 1 -type d` |
+| Custom Hooks | 29 | `find src/hooks/ -type f` |
+| DB Migrations | 30 | `ls supabase/migrations/` |
+| Mobile App Source | 141 | .ts/.tsx under mobile-app/src/ |
+| Mobile App Routes | 257 | .tsx under mobile-app/app/ |
+| Mobile Route Groups | 37 | Top-level dirs in mobile-app/app/ |
+| Documentation Files | 134 | `find docs/ -name "*.md"` |
 
 ---
 
@@ -164,7 +170,7 @@ Based on test suite distribution and DICE v3.3 gap analysis:
 
 | Gate | Check | Result | Status |
 |------|-------|--------|--------|
-| 1 | Tests Pass | 12,468/12,468 (0 failures) | PASS |
+| 1 | Tests Pass | 13,558/13,558 (0 failures) | PASS |
 | 2 | Type Safety | 0 errors (production + test) | PASS |
 | 3 | Build Succeeds | Next.js build complete | PASS |
 | 4 | Lint Clean | 0 blocking errors | PASS |
@@ -185,9 +191,9 @@ Full audit of all 125 tasks in MASTER-IMPLEMENTATION-PLAN.md (112 original + 13 
 
 | Status | Count | % |
 |--------|-------|---|
-| **DONE** | 112 | 89.6% |
+| **DONE** | 125 | 100% |
 | **IN_PROGRESS** | 0 | 0.0% |
-| **NOT_STARTED** | 13 | 10.4% |
+| **NOT_STARTED** | 0 | 0.0% |
 | **Total** | 125 | 100% |
 
 ### Batch Completion Log
@@ -204,15 +210,15 @@ Full audit of all 125 tasks in MASTER-IMPLEMENTATION-PLAN.md (112 original + 13 
 | Batch 8 | NTF-05, TAX-06, FIN-13, MOB-02, PLT-03 | DONE | 2026-03-01 |
 | Final | CRD-04, AIM-01, AIM-02, AIM-03, GMF-03, INV-04 | DONE | 2026-03-01 |
 
-### Wave 6 Tasks (13 — NOT_STARTED)
+### Wave 6 Tasks (13 — DONE)
 
 | Stream | Tasks | Status | Target |
 |--------|-------|--------|--------|
-| Plaid | PLD-01, PLD-02, PLD-03, PLD-04, PLD-05 | NOT_STARTED | Wave 6 |
-| Broker | TRD-15, TRD-16, TRD-17, TRD-18 | NOT_STARTED | Wave 6 |
-| Affiliate | AFF-01, AFF-02, AFF-03, AFF-04 | NOT_STARTED | Wave 6 |
+| Plaid | PLD-01, PLD-02, PLD-03, PLD-04, PLD-05 | DONE | Wave 6 |
+| Broker | TRD-15, TRD-16, TRD-17, TRD-18 | DONE | Wave 6 |
+| Affiliate | AFF-01, AFF-02, AFF-03, AFF-04 | DONE | Wave 6 |
 
-### Test Growth: 7,279 → 12,468 (+5,189 tests, +71%)
+### Test Growth: 7,279 → 13,558 (+6,279 tests, +86%)
 
 ### IN_PROGRESS Tasks (0)
 
@@ -226,14 +232,17 @@ All tasks complete. ADM-04, ADM-05 have no task cards (covered by EXT mapping on
 
 ## 9. Trend (VERSION-001 → Current)
 
-| Metric | VERSION-001 | Current | Trend |
-|--------|-------------|---------|-------|
-| Test Cases | 3,287 | 12,468 | +279% |
-| Test Suites | ~100 | 473 | +373% |
-| Type Errors | 0 | 0 | Stable (3 test-only TS2556 fixed 2026-02-25) |
-| Build | Passing | Passing | Stable |
-| Security Vulns (prod) | 0 | 0 | Stable |
-| LOC | 135,900 | 511,219 | +276% (improved counting methodology) |
+| Metric | VERSION-001 | VERSION-011 | VERSION-012 | Trend |
+|--------|-------------|-------------|-------------|-------|
+| Test Cases | 3,287 | 13,585 | 13,585 | +313% total |
+| Test Suites | ~100 | 504 | 504 | +404% total |
+| Type Errors | 0 | 0 | 0 | Stable |
+| Build | Passing | Passing | Passing | Stable |
+| Security Vulns (prod) | 0 | 0 | 0 | Stable |
+| LOC | 135,900 | 511,219 | 846,417 | +523% total |
+| Pages | 182 | 182 | 199 | +17 (parity) |
+| API Routes | 248 | 251 | 284 | +36 total |
+| Mobile Routes | 248 | 248 | 257 | +9 (parity) |
 
 ---
 
@@ -269,3 +278,4 @@ _Updated 2026-03-01: All 8 batches complete. 105 DONE (93.8%), 7 IN_PROGRESS (6.
 _Updated 2026-03-01: TASK-DOC-03 (Developer Documentation Portal) completed. OpenAPI auto-generator: 275 paths, 444 operations, 65 tags. 82 new tests (79 generator + 3 route). Total: 106 DONE (94.6%), 6 IN_PROGRESS (5.4%). Test suite: 12,468 tests, 473 suites, 0 failures._
 _Updated 2026-03-01: VERSION-008 — Final reconciliation. All 112 tasks confirmed DONE (100%). 6 previously listed IN_PROGRESS tasks (CRD-04, AIM-01, AIM-02, AIM-03, GMF-03, INV-04) verified complete — individual task cards already showed DONE with all acceptance criteria met; summary tables were stale. Quality gates: 12,468 tests (0 failures), 0 type errors, build SUCCESS, 0 high/critical vulns._
 _Updated 2026-03-01: VERSION-009 — Added 13 Wave 6 tasks (Plaid, DriveWealth, Affiliate). Total tasks: 112 → 125 (112 DONE + 13 NOT_STARTED). Quality gates unchanged (12,468 tests, 0 type errors, build SUCCESS). New domains: PLD (Plaid, 5 tasks), AFF (Affiliate, 4 tasks), TRD extended (+4 tasks)._
+_Updated 2026-03-01: VERSION-010 — Wave 6 complete. All 125 tasks DONE (100%). 13 Wave 6 tasks (PLD-01–05, TRD-15–18, AFF-01–04) completed. Test suite: 13,558 tests (+1,090), 501 suites (+28), 0 failures. Quality gates: all PASS._

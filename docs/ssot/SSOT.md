@@ -90,35 +90,36 @@
 
 ---
 
-## 3. Codebase Metrics (Verified 2026-02-20)
+## 3. Codebase Metrics (Verified 2026-03-02)
 
 | Metric                         | Value   | Source                                            |
 | ------------------------------ | ------- | ------------------------------------------------- |
-| Total source files (src/)      | 1,337   | `find src -name "*.ts" -o -name "*.tsx" \| wc -l` |
-| Total lines of code            | 135,900 | `wc -l` on all .ts/.tsx files in src/             |
-| API route files                | 248     | `find src/app/api -name "route.ts" \| wc -l`      |
-| Page files (page.tsx)          | 182     | `find src/app -name "page.tsx" \| wc -l`          |
-| Component files (.tsx)         | 228     | `find src/components -name "*.tsx" \| wc -l`      |
-| Layout files (layout.tsx)      | 8       | `find src/app -name "layout.tsx" \| wc -l`        |
+| Total source files (src/)      | 1,833   | `find src -name "*.ts" -o -name "*.tsx" \| wc -l` |
+| Total lines of code            | 846,417 | `wc -l` on all .ts/.tsx in src/ + mobile-app/     |
+| API route files                | 284     | `find src/app/api -name "route.ts" \| wc -l`      |
+| API domains                    | 42      | `find src/app/api -mindepth 1 -maxdepth 1 -type d`|
+| Page files (page.tsx)          | 199     | `find src/app -name "page.tsx" \| wc -l`          |
+| Component files (.tsx)         | 309     | `find src/components -name "*.tsx" \| wc -l`      |
+| Layout files (layout.tsx)      | 11      | `find src/app -name "layout.tsx" \| wc -l`        |
 | Error boundary files           | 33      | `find src/app -name "error.tsx" \| wc -l`         |
 | Loading state files            | 33      | `find src/app -name "loading.tsx" \| wc -l`       |
-| Library directories (src/lib/) | 53      | `find src/lib -mindepth 1 -maxdepth 1 -type d`    |
-| Root lib files (src/lib/*.ts)  | 14      | Standalone services not in subdirectories          |
-| Hook files (src/hooks/)        | 28      | 22 custom hooks + 6 tests                         |
+| Library directories (src/lib/) | 55      | `find src/lib -mindepth 1 -maxdepth 1 -type d`    |
+| Root lib files (src/lib/*.ts)  | 13      | Standalone services not in subdirectories          |
+| Hook files (src/hooks/)        | 29      | Custom hooks + tests                               |
 | Type files (src/types/)        | 4       | Shared TypeScript type definitions                |
-| Test files (Jest — web)        | 180     | .test.ts + .test.tsx under src/                   |
-| Test files (Jest — mobile)     | 17      | .test.ts + .test.tsx under mobile-app/src/        |
+| Test files (Jest — web)        | 508     | .test.ts + .test.tsx under src/                   |
+| Test files (Jest — mobile)     | 31      | .test.ts + .test.tsx under mobile-app/            |
 | Test files (Cypress)           | 21      | .cy.ts under cypress/e2e/                         |
 | Test files (Playwright)        | 16      | .spec.ts under e2e/                               |
-| Total test files               | 234     | Sum of all test frameworks                        |
-| Test suites (Jest)             | 178     | npm test — all passing                            |
-| Test cases (Jest)              | 3,287   | npm test — all passing                            |
-| Documentation files            | 114     | Markdown files in docs/ + root                    |
+| Total test files               | 576     | Sum of all test frameworks                        |
+| Test suites (Jest)             | 504     | npm test — all passing (506 total, 2 skipped)     |
+| Test cases (Jest)              | 13,585  | npm test — all passing (13,604 total, 19 skipped) |
+| Documentation files            | 134     | Markdown files in docs/ + root                    |
 | npm dependencies               | 33      | package.json dependencies                         |
 | npm devDependencies            | 30      | package.json devDependencies                      |
-| Mobile app source files        | 138     | .ts/.tsx under mobile-app/src/                    |
-| Mobile app routes              | 248     | .tsx under mobile-app/app/                        |
-| Mobile app route groups        | 36      | Top-level directories in mobile-app/app/          |
+| Mobile app source files        | 141     | .ts/.tsx under mobile-app/src/                    |
+| Mobile app routes              | 257     | .tsx under mobile-app/app/                        |
+| Mobile app route groups        | 37      | Top-level directories in mobile-app/app/          |
 
 > **See Also**: [§13 Testing Summary](#13-testing-summary) | [§17 Traceability Matrix](#17-traceability-matrix-summary)
 

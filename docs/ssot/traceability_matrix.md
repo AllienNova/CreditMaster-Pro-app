@@ -176,29 +176,29 @@ Maps each identified requirement/gap from the SSOT to the task(s) that will reso
 
 | Requirement | Source (SSOT §) | Task ID(s) | Wave | Priority | Status |
 |-------------|----------------|------------|------|----------|--------|
-| Plaid SDK migration from HTTP to official package | §16.4.8 | TASK-PLD-01 | 6 | P1 | NOT_STARTED |
-| Plaid webhook infrastructure (item, transaction, income events) | §16.4.8 | TASK-PLD-02 | 6 | P1 | NOT_STARTED |
-| Plaid mobile Hosted Link via Expo WebView | §16.4.8 | TASK-PLD-03 | 6 | P2 | NOT_STARTED |
-| Plaid Investments & Liabilities product integration | §16.4.8 | TASK-PLD-04 | 6 | P2 | NOT_STARTED |
-| Plaid Income verification & Enrich product | §16.4.8 | TASK-PLD-05 | 6 | P2 | NOT_STARTED |
+| Plaid SDK migration from HTTP to official package | §16.4.8 | TASK-PLD-01 | 6 | P1 | DONE |
+| Plaid webhook infrastructure (item, transaction, income events) | §16.4.8 | TASK-PLD-02 | 6 | P1 | DONE |
+| Plaid mobile Hosted Link via Expo WebView | §16.4.8 | TASK-PLD-03 | 6 | P2 | DONE |
+| Plaid Investments & Liabilities product integration | §16.4.8 | TASK-PLD-04 | 6 | P2 | DONE |
+| Plaid Income verification & Enrich product | §16.4.8 | TASK-PLD-05 | 6 | P2 | DONE |
 
 ### 1.18 Broker Integration
 
 | Requirement | Source (SSOT §) | Task ID(s) | Wave | Priority | Status |
 |-------------|----------------|------------|------|----------|--------|
-| DriveWealth BaaS adapter with fractional share support | §16.4.9, §16.4.10 | TASK-TRD-15 | 6 | P1 | NOT_STARTED |
-| Multi-broker router with dynamic selection & portfolio aggregation | §16.4.9, §16.4.10 | TASK-TRD-16 | 6 | P1 | NOT_STARTED |
-| Fractional trading engine (dollar-based orders, DRIP, auto-invest) | §16.4.9 | TASK-TRD-17 | 6 | P2 | NOT_STARTED |
-| Unified broker onboarding & KYC flow | §16.4.10 | TASK-TRD-18 | 6 | P2 | NOT_STARTED |
+| DriveWealth BaaS adapter with fractional share support | §16.4.9, §16.4.10 | TASK-TRD-15 | 6 | P1 | DONE |
+| Multi-broker router with dynamic selection & portfolio aggregation | §16.4.9, §16.4.10 | TASK-TRD-16 | 6 | P1 | DONE |
+| Fractional trading engine (dollar-based orders, DRIP, auto-invest) | §16.4.9 | TASK-TRD-17 | 6 | P2 | DONE |
+| Unified broker onboarding & KYC flow | §16.4.10 | TASK-TRD-18 | 6 | P2 | DONE |
 
 ### 1.19 Affiliate Platform
 
 | Requirement | Source (SSOT §) | Task ID(s) | Wave | Priority | Status |
 |-------------|----------------|------------|------|----------|--------|
-| Engine by MoneyLion marketplace API integration | §16.4.11 | TASK-AFF-01 | 6 | P1 | NOT_STARTED |
-| Credit card recommendation engine with revenue tracking | §16.4.11 | TASK-AFF-02 | 6 | P1 | NOT_STARTED |
-| Insurance & loan recommendation engine | §16.4.11 | TASK-AFF-03 | 6 | P2 | NOT_STARTED |
-| Affiliate compliance framework (FTC, CFPB, state licensing) | §16.4.11 | TASK-AFF-04 | 6 | P1 | NOT_STARTED |
+| Engine by MoneyLion marketplace API integration | §16.4.11 | TASK-AFF-01 | 6 | P1 | DONE |
+| Credit card recommendation engine with revenue tracking | §16.4.11 | TASK-AFF-02 | 6 | P1 | DONE |
+| Insurance & loan recommendation engine | §16.4.11 | TASK-AFF-03 | 6 | P2 | DONE |
+| Affiliate compliance framework (FTC, CFPB, state licensing) | §16.4.11 | TASK-AFF-04 | 6 | P1 | DONE |
 
 ---
 
@@ -288,19 +288,19 @@ Maps each task back to its originating requirement(s) in the SSOT.
 | TASK-MKT-01 | Marketplace Test Verification | GAP-TEST-MKT, §17.3 Marketplace test gap (MEDIUM) | P2 | 3 |
 | TASK-INF-12 | CI/CD Pipeline Documentation | GAP-DOC-CICD, §17.3 CI/CD docs gap (HIGH) | P1 | 0 |
 | TASK-GLC-01 | Global Connector MVP | GAP-05, §16.4.3 3-Rails Architecture | P3 | 5 |
-| TASK-PLD-01 | Plaid SDK Migration | §16.4.8 (Plaid Full SDK Integration) | REQ-PLD-0001 | 6 | NOT_STARTED |
-| TASK-PLD-02 | Plaid Webhook Infrastructure | §16.4.8 | REQ-PLD-0002 | 6 | NOT_STARTED |
-| TASK-PLD-03 | Plaid Mobile Hosted Link | §16.4.8 | REQ-PLD-0003 | 6 | NOT_STARTED |
-| TASK-PLD-04 | Plaid Investments & Liabilities | §16.4.8 | REQ-PLD-0004 | 6 | NOT_STARTED |
-| TASK-PLD-05 | Plaid Income & Enrich | §16.4.8 | REQ-PLD-0005 | 6 | NOT_STARTED |
-| TASK-TRD-15 | DriveWealth Broker Integration | §16.4.9, §16.4.10 | REQ-TRD-0015 | 6 | NOT_STARTED |
-| TASK-TRD-16 | Multi-Broker Router & Selection | §16.4.9, §16.4.10 | REQ-TRD-0016 | 6 | NOT_STARTED |
-| TASK-TRD-17 | Fractional Trading Engine | §16.4.9 | REQ-TRD-0017 | 6 | NOT_STARTED |
-| TASK-TRD-18 | Broker Onboarding & KYC | §16.4.10 | REQ-TRD-0018 | 6 | NOT_STARTED |
-| TASK-AFF-01 | Engine by MoneyLion Integration | §16.4.11 | REQ-AFF-0001 | 6 | NOT_STARTED |
-| TASK-AFF-02 | Credit Card Recommendation Engine | §16.4.11 | REQ-AFF-0002 | 6 | NOT_STARTED |
-| TASK-AFF-03 | Insurance & Loan Recommendations | §16.4.11 | REQ-AFF-0003 | 6 | NOT_STARTED |
-| TASK-AFF-04 | Affiliate Compliance & Disclosure | §16.4.11 | REQ-AFF-0004 | 6 | NOT_STARTED |
+| TASK-PLD-01 | Plaid SDK Migration | §16.4.8 (Plaid Full SDK Integration) | REQ-PLD-0001 | 6 | DONE |
+| TASK-PLD-02 | Plaid Webhook Infrastructure | §16.4.8 | REQ-PLD-0002 | 6 | DONE |
+| TASK-PLD-03 | Plaid Mobile Hosted Link | §16.4.8 | REQ-PLD-0003 | 6 | DONE |
+| TASK-PLD-04 | Plaid Investments & Liabilities | §16.4.8 | REQ-PLD-0004 | 6 | DONE |
+| TASK-PLD-05 | Plaid Income & Enrich | §16.4.8 | REQ-PLD-0005 | 6 | DONE |
+| TASK-TRD-15 | DriveWealth Broker Integration | §16.4.9, §16.4.10 | REQ-TRD-0015 | 6 | DONE |
+| TASK-TRD-16 | Multi-Broker Router & Selection | §16.4.9, §16.4.10 | REQ-TRD-0016 | 6 | DONE |
+| TASK-TRD-17 | Fractional Trading Engine | §16.4.9 | REQ-TRD-0017 | 6 | DONE |
+| TASK-TRD-18 | Broker Onboarding & KYC | §16.4.10 | REQ-TRD-0018 | 6 | DONE |
+| TASK-AFF-01 | Engine by MoneyLion Integration | §16.4.11 | REQ-AFF-0001 | 6 | DONE |
+| TASK-AFF-02 | Credit Card Recommendation Engine | §16.4.11 | REQ-AFF-0002 | 6 | DONE |
+| TASK-AFF-03 | Insurance & Loan Recommendations | §16.4.11 | REQ-AFF-0003 | 6 | DONE |
+| TASK-AFF-04 | Affiliate Compliance & Disclosure | §16.4.11 | REQ-AFF-0004 | 6 | DONE |
 
 ---
 
@@ -549,9 +549,9 @@ Maps SSOT §17.1 FEAT-IDs to task domains:
 | FEAT-13 | Admin | Low | TASK-ADM-01 through ADM-03 (dashboard + tests) |
 | FEAT-14 | Onboarding | Low | TASK-ONB-01 (Phase 3) |
 | FEAT-15 | Tax | Low | TASK-FIN-07, TAX-01 (export gap + test coverage) |
-| FEAT-16 | Plaid Integration | Planned | TASK-PLD-01 through PLD-05 (full SDK migration + all products) |
-| FEAT-17 | Broker Integration | Planned | TASK-TRD-15 through TRD-18 (DriveWealth, multi-broker, fractional) |
-| FEAT-18 | Affiliate Platform | Planned | TASK-AFF-01 through AFF-04 (MoneyLion engine, recommendations, compliance) |
+| FEAT-16 | Plaid Integration | High | TASK-PLD-01 through PLD-05 (full SDK migration + all products) |
+| FEAT-17 | Broker Integration | High | TASK-TRD-15 through TRD-18 (DriveWealth, multi-broker, fractional) |
+| FEAT-18 | Affiliate Platform | High | TASK-AFF-01 through AFF-04 (MoneyLion engine, recommendations, compliance) |
 
 ---
 
