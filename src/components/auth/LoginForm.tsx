@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { createClient } from "@/lib/supabase/client";
 import PasskeyLoginButton from "./PasskeyLoginButton";
+import { BrandMark } from "@/components/brand";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -78,13 +79,8 @@ export default function LoginForm() {
     <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-8 w-full max-w-md border border-gray-100 dark:border-slate-700">
       {/* Logo */}
       <div className="text-center mb-8">
-        <div className="flex items-center justify-center gap-2 mb-3">
-          <div className="w-9 h-9 rounded-md bg-gradient-to-br from-emerald-500 to-blue-500 flex items-center justify-center">
-            <span className="text-white font-bold text-lg">F</span>
-          </div>
-          <div className="text-3xl font-bold text-gray-900 dark:text-white">
-            Fynvita
-          </div>
+        <div className="flex items-center justify-center mb-3">
+          <BrandMark variant="vertical" height={80} priority />
         </div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
           Welcome Back

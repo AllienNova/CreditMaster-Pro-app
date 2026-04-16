@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { authService } from "@/lib/auth/auth-service";
+import { BrandMark } from "@/components/brand";
 
 export default function ResetPasswordForm() {
   const router = useRouter();
@@ -108,8 +109,8 @@ export default function ResetPasswordForm() {
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-8 w-full max-w-md">
       {/* Logo */}
       <div className="text-center mb-8">
-        <div className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-600 mb-2">
-          Fynvita
+        <div className="flex items-center justify-center mb-3">
+          <BrandMark variant="vertical" height={80} priority />
         </div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
           {isResetMode ? "Set New Password" : "Reset Password"}

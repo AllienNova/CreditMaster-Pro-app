@@ -3,7 +3,10 @@ import { Providers } from "./providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Fynvita - Your Financial Vitality",
+  title: {
+    default: "Fynvita — Your Financial Vitality",
+    template: "%s | Fynvita",
+  },
   description:
     "Your complete financial health platform. AI-powered credit health, financial wellness, and investment intelligence all in one place.",
   metadataBase: new URL(
@@ -21,6 +24,16 @@ export const metadata: Metadata = {
     "portfolio management",
   ],
   authors: [{ name: "Fynvita" }],
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/brand/favicon-16.png", sizes: "16x16", type: "image/png" },
+      { url: "/brand/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/brand/favicon-48.png", sizes: "48x48", type: "image/png" },
+      { url: "/favicon.ico" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
   openGraph: {
     title: "Fynvita - Your Financial Vitality",
     description:
