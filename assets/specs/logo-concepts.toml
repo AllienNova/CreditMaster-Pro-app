@@ -1,0 +1,64 @@
+name = "logo-concepts"
+wave = 1
+model = "gemini-3-pro-image-preview"
+resolution = "2K"
+out_dir = "assets/raw/logo-concepts"
+count = 8
+preamble = true
+
+shared_prompt = """
+Logo design exploration for 'Fynvita', a holistic financial health platform.
+
+STRICT BRAND CONSTRAINTS (do not deviate):
+- Mark concept: heart symbol fused with an upward growth arrow / heartbeat pulse line. The arrow should feel like it IS the heartbeat, not a separate element stuck onto the heart.
+- Mark color: Vital Green #10B981 (solid, single color — NO gradients, NO shadows, NO 3D, NO outlines)
+- Wordmark: 'Fynvita' in Inter Bold, Deep Navy #1E40AF
+- Background: pure white #FFFFFF
+- Presentation: logo centered on a clean white card, print-ready, flat vector-style design
+
+QUALITY REQUIREMENTS:
+- Must be vectorizable (flat shapes, hard edges, no raster-only effects)
+- Must be legible at 32x32 favicon size AND at large print
+- The wordmark 'Fynvita' must be crisp, properly spelled, uppercase F only
+- No decorative flourishes, no serifs, no tagline text
+
+AVOID:
+- Photography, 3D rendering, gradients, shadows, glows, textures
+- Thin strokes that disappear at small sizes
+- Text other than 'Fynvita' itself
+- Competitor-like marks (don't resemble Apple Health, Calm, Headspace, Mint, Credit Karma)
+"""
+
+negative = ["gradients", "shadows", "3D", "photography", "textures", "tagline", "outlines"]
+
+[[variants]]
+id = "v01-mark-only-tight"
+prompt = "MARK ONLY (no wordmark). Tight symmetric composition of a rounded-organic heart silhouette in Vital Green, with an upward-pointing heartbeat line that starts as a pulse inside the heart and emerges as an arrow tip above. Arrow stroke same Vital Green. Single continuous-feeling shape. Icon-ready: must work as a 32x32 favicon."
+
+[[variants]]
+id = "v02-vertical-lockup"
+prompt = "VERTICAL LOCKUP: the tight organic heart+heartbeat-arrow mark centered on top (Vital Green), with the wordmark 'Fynvita' directly below in Inter Bold, Deep Navy. Clean generous clear space. Symmetric balance."
+
+[[variants]]
+id = "v03-horizontal-lockup"
+prompt = "HORIZONTAL LOCKUP: the heart+heartbeat-arrow mark on the LEFT (Vital Green), the wordmark 'Fynvita' on the RIGHT in Inter Bold Deep Navy, vertically center-aligned. Optical kerning between mark and wordmark."
+
+[[variants]]
+id = "v04-pulse-to-arrow"
+prompt = "MARK ONLY. Emphasize the heartbeat-to-growth-arrow transformation: the pulse line starts flat-left, spikes up like an ECG reading, and resolves into an upward arrowhead. The heart silhouette wraps the pulse line from behind. Vital Green solid fill, single shape feel."
+
+[[variants]]
+id = "v05-heart-encloses-arrow"
+prompt = "MARK ONLY. The heart silhouette ENCLOSES the growth arrow — the arrow shaft is the heart's vertical axis, the arrowhead emerges through the top notch of the heart. Heart body in Vital Green, arrow subtly revealed by white negative space inside the heart. Strong single-icon composition."
+
+[[variants]]
+id = "v06-ribbon-continuous"
+prompt = "MARK ONLY. A single ribbon-like continuous stroke that traces a heart shape on the way up, then curls into an arrowhead at the peak. One unbroken line. Vital Green, medium-bold stroke weight, rounded line caps. Feels alive, breathing, unified."
+
+[[variants]]
+id = "v07-geometric-friendly"
+prompt = "MARK ONLY. A more geometric interpretation — rounded-corner isosceles shapes forming a heart, with a chevron arrow rising from the center notch. Still organic-feeling via corner radii. Vital Green. Modern, friendly, ownable."
+
+[[variants]]
+id = "v08-minimal-single-weight"
+prompt = "MARK ONLY. The absolute simplest version — one single-weight stroke (not filled) that draws both a heart outline and a small up-arrow within it, with a heartbeat spike on the heart's baseline. Vital Green stroke, consistent 8pt-equivalent weight, perfect for embroidery or single-color print."
