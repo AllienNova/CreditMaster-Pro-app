@@ -213,7 +213,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         {
           success: false,
           error: "Validation failed",
-          details: validationResult.error.errors.map((err) => ({
+          details: validationResult.error.issues.map((err) => ({
             field: err.path.join("."),
             message: err.message,
           })),

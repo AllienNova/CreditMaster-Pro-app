@@ -106,7 +106,7 @@ export const TradingSignalSchema = z.object({
   // Metadata
   modelVersion: z.string(),
   consensusScore: z.number().min(0).max(1).optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 export type TradingSignal = z.infer<typeof TradingSignalSchema>;
@@ -254,9 +254,9 @@ export const SignalPerformanceSchema = z.object({
     strong_sell: PerformanceBreakdownSchema.optional(),
   }),
 
-  byStrength: z.record(PerformanceBreakdownSchema),
+  byStrength: z.record(z.string(), PerformanceBreakdownSchema),
 
-  byAssetType: z.record(PerformanceBreakdownSchema),
+  byAssetType: z.record(z.string(), PerformanceBreakdownSchema),
 
   // Recent activity
   recentSignals: z.array(TradingSignalSchema).optional(),

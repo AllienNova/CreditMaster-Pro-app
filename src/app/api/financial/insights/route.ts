@@ -21,9 +21,7 @@ import {
 // Zod validation schema for bulk operations
 const bulkOperationSchema = z.object({
   insightIds: z.array(z.string()).min(1, "At least one insight ID is required"),
-  action: z.enum(["mark_read", "dismiss"], {
-    errorMap: () => ({ message: "Action must be either mark_read or dismiss" }),
-  }),
+  action: z.enum(["mark_read", "dismiss"], "Action must be either mark_read or dismiss"),
 });
 
 /**
@@ -339,7 +337,7 @@ export async function PATCH(request: NextRequest) {
         {
           success: false,
           error: "Validation failed",
-          details: validationResult.error.errors.map((err) => ({
+          details: validationResult.error.issues.map((err) => ({
             field: err.path.join("."),
             message: err.message,
           })),

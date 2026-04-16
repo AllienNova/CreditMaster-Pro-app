@@ -128,7 +128,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json(
         {
           error: "Invalid settings data",
-          details: validationResult.error.errors.map((e) => ({
+          details: validationResult.error.issues.map((e) => ({
             field: e.path.join("."),
             message: e.message,
           })),

@@ -68,7 +68,7 @@ export async function GET(
       return NextResponse.json(
         {
           error: "Invalid query parameters",
-          details: validationResult.error.errors,
+          details: validationResult.error.issues,
         },
         { status: 400 },
       );
