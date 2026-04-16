@@ -32,27 +32,44 @@ export interface GenerateImageResult {
   bytes: number;
   model: string;
   prompt: string;
+  resolution?: string;
+  ms?: number;
 }
 
 export async function generateImage(params: {
   prompt: string;
   model: string;
   outPath: string;
+  resolution?: string;
 }): Promise<GenerateImageResult> {
   const ai = getClient();
+  const start = Date.now();
+
+  const imageConfig =
+    params.resolution !== undefined
+      ? { imageSize: params.resolution }
+      : undefined;
 
   const response = await ai.models.generateContent({
     model: params.model,
     contents: params.prompt,
-    config: { responseModalities: ["IMAGE"] },
+    config: {
+      responseModalities: ["IMAGE"],
+      ...(imageConfig ? { imageConfig } : {}),
+    },
   });
 
   const parts = response.candidates?.[0]?.content?.parts ?? [];
   const imagePart = parts.find((p) => p.inlineData?.data);
 
   if (!imagePart?.inlineData?.data) {
+    const candidateText = parts
+      .filter((p) => p.text)
+      .map((p) => p.text)
+      .join(" ");
     throw new Error(
-      `No image part in response. Parts: ${JSON.stringify(parts.map((p) => ({ hasText: !!p.text, hasBlobData: !!p.inlineData?.data })))}`
+      `No image part in response. Candidate text: "${candidateText}". ` +
+        `Parts: ${JSON.stringify(parts.map((p) => ({ hasText: !!p.text, hasBlobData: !!p.inlineData?.data })))}`
     );
   }
 
@@ -65,5 +82,7 @@ export async function generateImage(params: {
     bytes: imageData.length,
     model: params.model,
     prompt: params.prompt,
+    resolution: params.resolution,
+    ms: Date.now() - start,
   };
 }

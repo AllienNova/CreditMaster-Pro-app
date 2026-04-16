@@ -1,0 +1,50 @@
+# Fynvita asset spec — canonical example
+# Files prefixed with _ are excluded from generation (reference only).
+
+name = "logo-concepts"
+wave = 1
+model = "gemini-3-pro-image-preview"  # Nano Banana Pro
+resolution = "2K"                     # 2K or 4K (pro only) or 1024x1024 (flash)
+out_dir = "assets/raw/logo-concepts"
+count = 8                             # how many variants (used when no variants[] defined)
+
+# Optional: per-variant overrides (if omitted, all variants use the shared prompt)
+[[variants]]
+id = "v01"
+prompt = """
+Geometric mark variant: precise vector shapes, the arrow formed by stacked triangles
+passing through the heart silhouette. Ultra-clean construction lines visible.
+"""
+
+[[variants]]
+id = "v02"
+prompt = """
+Organic mark variant: soft, flowing pulse-line strokes, the arrow emerging as a
+heartbeat arc curving upward out of the heart. Breathing, wellness-forward energy.
+"""
+
+# Shared prompt prepended to each variant's prompt when preamble = true
+shared_prompt = """
+Fynvita logo mark, heart symbol merged with an upward growth arrow.
+Brand constraints (do not deviate):
+- Vital Green #10B981 for the heart element
+- Deep Navy #1E40AF for the growth arrow and wordmark
+- 'Fynvita' wordmark in Inter Bold
+- White background, clean, print-ready, vector-quality
+- NO gradients, NO drop shadows, NO 3D effects, NO photography, NO people
+"""
+
+# If true, shared_prompt is prepended to each variant's prompt above
+preamble = true
+
+# Negative hints baked into generation
+negative = [
+  "gradients",
+  "drop shadows",
+  "3D effects",
+  "photography",
+  "people",
+  "clipart",
+  "stock icons",
+  "busy backgrounds",
+]
