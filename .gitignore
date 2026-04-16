@@ -69,3 +69,6 @@ tmpclaude-*
 *.pem
 .vercel
 .github/instructions/codacy.instructions.md
+
+# Generated asset raw outputs (regenerable; don't bloat the repo)
+assets/raw/
