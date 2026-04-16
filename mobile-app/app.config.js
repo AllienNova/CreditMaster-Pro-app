@@ -28,7 +28,7 @@ export default {
     splash: {
       image: "./assets/splash.png",
       resizeMode: "contain",
-      backgroundColor: "#3B82F6",
+      backgroundColor: "#10B981",
     },
     assetBundlePatterns: ["**/*"],
     ios: {
@@ -58,7 +58,7 @@ export default {
     android: {
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
-        backgroundColor: "#3B82F6",
+        backgroundColor: "#10B981",
       },
       package: getUniqueIdentifier(),
       versionCode: 1,
@@ -98,7 +98,7 @@ export default {
         "expo-notifications",
         {
           icon: "./assets/notification-icon.png",
-          color: "#3B82F6",
+          color: "#10B981",
         },
       ],
       [

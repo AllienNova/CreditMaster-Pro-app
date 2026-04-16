@@ -9,6 +9,7 @@
     "assets:optimize": "tsx scripts/assets/generate.ts optimize",
     "assets:vectorize": "tsx scripts/assets/vectorize.ts",
     "assets:derive-icons": "tsx scripts/assets/derive-app-icons.ts",
+    "assets:derive-splash": "tsx scripts/assets/derive-splash.ts",
     "assets:wave": "tsx scripts/assets/generate.ts wave",
     "build": "next build",
     "check-env": "node scripts/check-env.js",
