@@ -40,8 +40,6 @@ export default function PlaidLinkButton({
       const { data: linkTokenData } = await linkTokenResponse.json();
 
       // Step 2: Open Plaid Link (in production, use Plaid Link SDK)
-      // For now, we'll simulate the flow
-      console.log("Link Token:", linkTokenData.linkToken);
 
       // In production, you would use:
       // const plaid = Plaid.create({

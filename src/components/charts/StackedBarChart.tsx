@@ -24,6 +24,7 @@ import {
   formatNumber,
   generateChartDescription,
 } from "./chartUtils";
+import { CHART_COLORS } from "@/lib/design-tokens/chart-colors";
 
 export interface StackedBarChartDataPoint {
   label: string;
@@ -99,7 +100,7 @@ export default function StackedBarChartComponent({
     const total = payload.reduce((sum, entry) => sum + entry.value, 0);
     const payloadWithTotal = [
       ...payload,
-      { name: "Total", value: total, color: "#374151" },
+      { name: "Total", value: total, color: CHART_COLORS.darkGray },
     ];
 
     return (

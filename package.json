@@ -40,7 +40,7 @@
     "jsonwebtoken": "^9.0.3",
     "lightweight-charts": "^5.1.0",
     "lucide-react": "^0.563.0",
-    "next": "^15.5.6",
+    "next": "^15.5.15",
     "next-auth": "^4.24.13",
     "nodemailer": "^7.0.10",
     "openai": "^4.77.3",
@@ -84,7 +84,13 @@
     "tailwindcss": "^3.4.19",
     "ts-jest": "^29.4.5",
     "typescript": "^5.7.2",
-    "undici": "^7.16.0",
+    "undici": "^7.24.0",
     "wait-on": "^9.0.1"
+  },
+  "overrides": {
+    "axios": "^1.15.0",
+    "handlebars": ">=4.7.9",
+    "lodash": "^4.17.24",
+    "picomatch": "^4.0.4"
   }
 }

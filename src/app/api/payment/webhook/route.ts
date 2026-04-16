@@ -15,7 +15,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || "";
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      console.error("STRIPE_WEBHOOK_SECRET environment variable is not set");
+      return NextResponse.json(
+        { error: "Webhook configuration error" },
+        { status: 500 },
+      );
+    }
 
     // Verify webhook signature
     const event = stripeService.verifyWebhookSignature(

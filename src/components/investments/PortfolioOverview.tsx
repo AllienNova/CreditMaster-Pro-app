@@ -12,6 +12,7 @@ import type {
   Portfolio,
   Holding,
 } from "@/lib/investments/types/portfolio.types";
+import { CHART_COLORS } from "@/lib/design-tokens/chart-colors";
 
 type DateRange = "1M" | "3M" | "6M" | "1Y" | "ALL";
 
@@ -181,7 +182,7 @@ export default function PortfolioOverview() {
                 value: p.value,
               }))}
               areas={[
-                { dataKey: "value", name: "Portfolio Value", color: "#3B82F6" },
+                { dataKey: "value", name: "Portfolio Value", color: CHART_COLORS.blue },
               ]}
               height={280}
               currency

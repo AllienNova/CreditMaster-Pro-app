@@ -586,9 +586,9 @@ export default function DashboardPage() {
                 />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
               Quick Actions
-            </h3>
+            </h2>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -742,9 +742,9 @@ export default function DashboardPage() {
         <div className="bg-gradient-to-r from-emerald-600 to-blue-600 rounded-xl p-6 text-white">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between">
             <div className="mb-4 sm:mb-0">
-              <h3 className="text-xl font-bold mb-2">
+              <h2 className="text-xl font-bold mb-2">
                 Improve Your Financial Vitality
-              </h3>
+              </h2>
               <p className="text-emerald-100 text-sm sm:text-base">
                 Complete your financial profile to get personalized
                 recommendations and boost your score

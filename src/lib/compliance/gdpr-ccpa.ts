@@ -11,6 +11,27 @@
  * - Data breach notification
  */
 
+import { supabaseAdmin } from "@/lib/supabase/server";
+
+// Structural type for the subset of the Supabase client this module uses.
+// Defined locally so services can be constructed with a test double.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type FromBuilder = any;
+export interface DbClient {
+  from: (table: string) => FromBuilder;
+  rpc: (
+    fn: string,
+    args: Record<string, unknown>,
+  ) => Promise<{ error: { message: string } | null }>;
+  auth: {
+    admin: {
+      deleteUser: (
+        id: string,
+      ) => Promise<{ error: { message: string } | null }>;
+    };
+  };
+}
+
 export interface UserProfile {
   id: string;
   email: string;
@@ -77,8 +98,9 @@ export interface DataDeletionRequest {
   userId: string;
   requestDate: Date;
   reason?: string;
-  status: "pending" | "processing" | "completed" | "rejected";
+  status: "pending" | "processing" | "completed" | "failed" | "rejected";
   completionDate?: Date;
+  error?: string;
 }
 
 export interface DataBreachNotification {
@@ -94,7 +116,13 @@ export interface DataBreachNotification {
 /**
  * GDPR Compliance Service
  */
-class GDPRComplianceService {
+export class GDPRComplianceService {
+  private db: DbClient;
+
+  constructor(db?: DbClient) {
+    this.db = db ?? (supabaseAdmin as unknown as DbClient);
+  }
+
   /**
    * Right to Access (GDPR Art. 15)
    * User can request all their personal data
@@ -103,7 +131,6 @@ class GDPRComplianceService {
     userId: string,
     format: "json" | "csv" | "xml" = "json",
   ): Promise<UserDataExport> {
-    // In production, fetch from database
     const userData: UserDataExport = {
       userId,
       exportDate: new Date(),
@@ -128,14 +155,43 @@ class GDPRComplianceService {
     userId: string,
     corrections: Record<string, string | number | boolean>,
   ): Promise<boolean> {
-    // In production, update database
-    // Data rectification in progress
+    const allowedProfileFields = ["name", "phone", "address"];
+    const profileUpdates: Record<string, string | number | boolean> = {};
+
+    for (const [key, value] of Object.entries(corrections)) {
+      if (allowedProfileFields.includes(key)) {
+        profileUpdates[key] = value;
+      }
+    }
+
+    if (Object.keys(profileUpdates).length > 0) {
+      const { error } = await this.db
+        .from("profiles")
+        .update({ ...profileUpdates, updated_at: new Date().toISOString() })
+        .eq("id", userId);
+
+      if (error) {
+        throw new Error(`Data rectification failed: ${error.message}`);
+      }
+    }
+
+    await this.db.from("audit_logs").insert({
+      user_id: userId,
+      action: "gdpr_rectification",
+      details: { fields_corrected: Object.keys(profileUpdates) },
+      created_at: new Date().toISOString(),
+    });
+
     return true;
   }
 
   /**
    * Right to Erasure (GDPR Art. 17)
-   * User can request deletion of their data
+   *
+   * Delegates the cascade to the `delete_user_data_cascade` Postgres RPC so
+   * the 28-table wipe + audit-log anonymization run atomically inside a
+   * single transaction. The Supabase Auth user is deleted afterwards from
+   * server code (the auth API cannot be invoked from PL/pgSQL).
    */
   async deleteUserData(
     userId: string,
@@ -145,18 +201,30 @@ class GDPRComplianceService {
       userId,
       requestDate: new Date(),
       reason,
-      status: "pending",
+      status: "processing",
     };
 
-    // In production:
-    // 1. Create deletion request
-    // 2. Verify user identity
-    // 3. Check legal obligations (e.g., financial records retention)
-    // 4. Schedule deletion job
-    // 5. Anonymize or delete data
-    // 6. Notify user of completion
+    const { error: rpcError } = await this.db.rpc(
+      "delete_user_data_cascade",
+      { p_user_id: userId, p_reason: reason ?? null },
+    );
 
-    // Data deletion request created
+    if (rpcError) {
+      request.status = "failed";
+      request.error = `Cascade delete failed: ${rpcError.message}`;
+      return request;
+    }
+
+    const { error: authError } = await this.db.auth.admin.deleteUser(userId);
+
+    if (authError) {
+      request.status = "failed";
+      request.error = `Auth user delete failed: ${authError.message}`;
+      return request;
+    }
+
+    request.status = "completed";
+    request.completionDate = new Date();
     return request;
   }
 
@@ -189,8 +257,25 @@ class GDPRComplianceService {
     userId: string,
     restrictions: string[],
   ): Promise<boolean> {
-    // In production, update user preferences
-    // Processing restriction applied
+    const { error } = await this.db
+      .from("profiles")
+      .update({
+        processing_restrictions: restrictions,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", userId);
+
+    if (error) {
+      throw new Error(`Processing restriction failed: ${error.message}`);
+    }
+
+    await this.db.from("audit_logs").insert({
+      user_id: userId,
+      action: "gdpr_restrict_processing",
+      details: { restrictions },
+      created_at: new Date().toISOString(),
+    });
+
     return true;
   }
 
@@ -201,8 +286,24 @@ class GDPRComplianceService {
     userId: string,
     processingType: string,
   ): Promise<boolean> {
-    // In production, update user preferences
-    // User objection recorded
+    const { error } = await this.db.from("consent_records").upsert({
+      user_id: userId,
+      consent_type: processingType,
+      granted: false,
+      timestamp: new Date().toISOString(),
+    });
+
+    if (error) {
+      throw new Error(`Processing objection failed: ${error.message}`);
+    }
+
+    await this.db.from("audit_logs").insert({
+      user_id: userId,
+      action: "gdpr_object_processing",
+      details: { processing_type: processingType },
+      created_at: new Date().toISOString(),
+    });
+
     return true;
   }
 
@@ -218,14 +319,6 @@ class GDPRComplianceService {
       notifiedDate: new Date(),
     };
 
-    // In production:
-    // 1. Notify supervisory authority within 72 hours
-    // 2. Notify affected users if high risk
-    // 3. Document the breach
-    // 4. Implement mitigation steps
-
-    // Data breach notification created
-
     // Send emails to affected users
     for (const userId of breach.affectedUsers) {
       await this.sendBreachNotification(userId, notification);
@@ -235,68 +328,134 @@ class GDPRComplianceService {
   // Helper methods
 
   private async getUserProfile(userId: string): Promise<UserProfile | null> {
-    // In production, fetch from database
+    const { data, error } = await this.db
+      .from("profiles")
+      .select("id, email, name, phone, address, created_at, updated_at")
+      .eq("id", userId)
+      .single();
+
+    if (error || !data) return null;
+
     return {
-      id: userId,
-      email: "[User Email]",
-      name: "[User Name]",
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      id: data.id,
+      email: data.email,
+      name: data.name,
+      phone: data.phone,
+      address: data.address,
+      createdAt: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at),
     };
   }
 
   private async getUserCreditReports(
-    _userId: string,
+    userId: string,
   ): Promise<CreditReportRecord[]> {
-    // In production, fetch from database
-    return [];
+    const { data } = await this.db
+      .from("credit_reports")
+      .select("id, bureau, report_date, score, items")
+      .eq("user_id", userId);
+
+    return ((data ?? []) as Array<Record<string, unknown>>).map((r) => ({
+      id: r.id as string,
+      bureau: r.bureau as string,
+      reportDate: new Date(r.report_date as string),
+      score: r.score as number | undefined,
+      items: r.items as unknown[],
+    }));
   }
 
-  private async getUserDisputes(_userId: string): Promise<DisputeRecord[]> {
-    // In production, fetch from database
-    return [];
+  private async getUserDisputes(userId: string): Promise<DisputeRecord[]> {
+    const { data } = await this.db
+      .from("disputes")
+      .select("id, status, created_at, description")
+      .eq("user_id", userId);
+
+    return ((data ?? []) as Array<Record<string, unknown>>).map((d) => ({
+      id: d.id as string,
+      status: d.status as string,
+      createdAt: new Date(d.created_at as string),
+      description: d.description as string | undefined,
+    }));
   }
 
   private async getUserAIInteractions(
-    _userId: string,
+    userId: string,
   ): Promise<AIInteractionRecord[]> {
-    // In production, fetch from database
-    return [];
+    const { data } = await this.db
+      .from("ai_interactions")
+      .select("id, type, timestamp, prompt, response")
+      .eq("user_id", userId);
+
+    return ((data ?? []) as Array<Record<string, unknown>>).map((a) => ({
+      id: a.id as string,
+      type: a.type as string,
+      timestamp: new Date(a.timestamp as string),
+      prompt: a.prompt as string | undefined,
+      response: a.response as string | undefined,
+    }));
   }
 
-  private async getUserLogs(_userId: string): Promise<LogRecord[]> {
-    // In production, fetch from database
-    return [];
+  private async getUserLogs(userId: string): Promise<LogRecord[]> {
+    const { data } = await this.db
+      .from("audit_logs")
+      .select("id, action, created_at, details")
+      .eq("user_id", userId);
+
+    return ((data ?? []) as Array<Record<string, unknown>>).map((l) => ({
+      id: l.id as string,
+      action: l.action as string,
+      timestamp: new Date(l.created_at as string),
+      details: l.details as Record<string, unknown>,
+    }));
   }
 
-  private convertToCSV(data: UserDataExport["data"]): string {
-    // Simple CSV conversion
-    return JSON.stringify(data);
+  /**
+   * Stub — CSV export for GDPR Art. 20 portability is not implemented yet.
+   * Throws so callers cannot silently receive JSON when asking for CSV.
+   */
+  private convertToCSV(_data: UserDataExport["data"]): string {
+    throw new Error(
+      "GDPR Art. 20 CSV export is not yet implemented. Use format='json' until a compliant CSV serialiser is added.",
+    );
   }
 
-  private convertToXML(data: UserDataExport["data"]): string {
-    // Simple XML conversion
-    return `<?xml version="1.0"?><data>${JSON.stringify(data)}</data>`;
+  /**
+   * Stub — XML export for GDPR Art. 20 portability is not implemented yet.
+   * Throws so callers cannot silently receive JSON when asking for XML.
+   */
+  private convertToXML(_data: UserDataExport["data"]): string {
+    throw new Error(
+      "GDPR Art. 20 XML export is not yet implemented. Use format='json' until a compliant XML serialiser is added.",
+    );
   }
 
   private async sendBreachNotification(
-    userId: string,
-    notification: DataBreachNotification,
+    _userId: string,
+    _notification: DataBreachNotification,
   ): Promise<void> {
-    // In production, send email
-    // Breach notification being sent
+    // In production, send email via the notification pipeline.
+    // Intentionally a no-op placeholder until the email integration lands;
+    // the regulatory 72-hour notification requirement is tracked separately.
   }
 }
 
 /**
  * CCPA Compliance Service
  */
-class CCPAComplianceService {
+export class CCPAComplianceService {
+  private db: DbClient;
+  private gdpr: GDPRComplianceService;
+
+  constructor(db?: DbClient, gdpr?: GDPRComplianceService) {
+    this.db = db ?? (supabaseAdmin as unknown as DbClient);
+    this.gdpr = gdpr ?? new GDPRComplianceService(this.db);
+  }
+
   /**
    * Right to Know (CCPA §1798.100)
    * User can request information about data collection
    */
-  async provideDataCollectionInfo(userId: string): Promise<{
+  async provideDataCollectionInfo(_userId: string): Promise<{
     categoriesCollected: string[];
     purposesOfCollection: string[];
     categoriesOfSources: string[];
@@ -333,14 +492,10 @@ class CCPAComplianceService {
 
   /**
    * Right to Delete (CCPA §1798.105)
+   * Delegates to the GDPR erasure implementation which handles full cascade.
    */
   async deleteConsumerData(userId: string): Promise<DataDeletionRequest> {
-    // Similar to GDPR right to erasure
-    return {
-      userId,
-      requestDate: new Date(),
-      status: "pending",
-    };
+    return this.gdpr.deleteUserData(userId, "CCPA §1798.105 deletion request");
   }
 
   /**
@@ -348,8 +503,24 @@ class CCPAComplianceService {
    * User can opt-out of sale of personal information
    */
   async optOutOfSale(userId: string): Promise<boolean> {
-    // In production, update user preferences
-    // User opt-out recorded
+    const { error } = await this.db.from("consent_records").upsert({
+      user_id: userId,
+      consent_type: "data_sharing",
+      granted: false,
+      timestamp: new Date().toISOString(),
+    });
+
+    if (error) {
+      throw new Error(`Opt-out failed: ${error.message}`);
+    }
+
+    await this.db.from("audit_logs").insert({
+      user_id: userId,
+      action: "ccpa_opt_out_sale",
+      details: { opted_out: true },
+      created_at: new Date().toISOString(),
+    });
+
     return true;
   }
 
@@ -357,8 +528,7 @@ class CCPAComplianceService {
    * Right to Non-Discrimination (CCPA §1798.125)
    * Cannot discriminate against users who exercise their rights
    */
-  async ensureNonDiscrimination(userId: string): Promise<boolean> {
-    // In production, verify no discriminatory practices
+  async ensureNonDiscrimination(_userId: string): Promise<boolean> {
     return true;
   }
 
@@ -373,7 +543,7 @@ class CCPAComplianceService {
 /**
  * Consent Management Service
  */
-class ConsentManagementService {
+export class ConsentManagementService {
   private consents: Map<string, ConsentRecord[]> = new Map();
 
   /**

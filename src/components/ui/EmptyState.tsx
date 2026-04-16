@@ -287,7 +287,9 @@ export function EmptyState({
               onClick={primaryAction.onClick}
               className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
             >
-              {primaryAction.icon}
+              {primaryAction.icon && (
+                <span aria-hidden="true">{primaryAction.icon}</span>
+              )}
               {primaryAction.label}
             </button>
           )}
@@ -296,7 +298,9 @@ export function EmptyState({
               onClick={secondaryAction.onClick}
               className="px-4 py-2 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
             >
-              {secondaryAction.icon}
+              {secondaryAction.icon && (
+                <span aria-hidden="true">{secondaryAction.icon}</span>
+              )}
               {secondaryAction.label}
             </button>
           )}

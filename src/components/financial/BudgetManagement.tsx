@@ -16,6 +16,7 @@ import {
   ChartContainer,
 } from "@/components/charts";
 import AIBudgetOptimizer from "./AIBudgetOptimizer";
+import { CHART_COLORS } from "@/lib/design-tokens/chart-colors";
 
 // Types
 interface Budget {
@@ -372,8 +373,8 @@ export default function BudgetManagement() {
             <BarChartComponent
               data={barChartData}
               bars={[
-                { dataKey: "budgeted", name: "Budgeted", color: "#3B82F6" },
-                { dataKey: "spent", name: "Spent", color: "#10B981" },
+                { dataKey: "budgeted", name: "Budgeted", color: CHART_COLORS.blue },
+                { dataKey: "spent", name: "Spent", color: CHART_COLORS.emerald },
               ]}
               height={250}
               currency
@@ -422,6 +423,7 @@ export default function BudgetManagement() {
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
+                aria-hidden="true"
               >
                 <path
                   strokeLinecap="round"

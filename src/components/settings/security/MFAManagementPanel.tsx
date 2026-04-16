@@ -327,8 +327,9 @@ export function MFAManagementPanel({
                         onClick={() => handleSaveRename(method.id)}
                         disabled={processingId === method.id}
                         className="p-1 text-emerald-400 hover:text-emerald-300"
+                        aria-label="Save rename"
                       >
-                        <Check className="w-4 h-4" />
+                        <Check className="w-4 h-4" aria-hidden="true" />
                       </button>
                       <button
                         onClick={() => {
@@ -336,8 +337,9 @@ export function MFAManagementPanel({
                           setEditName("");
                         }}
                         className="p-1 text-gray-400 dark:text-slate-500 hover:text-white"
+                        aria-label="Cancel rename"
                       >
-                        <X className="w-4 h-4" />
+                        <X className="w-4 h-4" aria-hidden="true" />
                       </button>
                     </div>
                   ) : (
@@ -368,18 +370,20 @@ export function MFAManagementPanel({
                         setEditName(method.name);
                       }}
                       className="p-2 text-gray-400 dark:text-slate-500 hover:text-white rounded-lg hover:bg-gray-800 transition-colors"
+                      aria-label="Rename method"
                     >
-                      <Edit2 className="w-4 h-4" />
+                      <Edit2 className="w-4 h-4" aria-hidden="true" />
                     </button>
                     <button
                       onClick={() => handleRemoveMethod(method.id)}
                       disabled={processingId === method.id}
                       className="p-2 text-gray-400 dark:text-slate-500 hover:text-red-400 rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
+                      aria-label="Remove method"
                     >
                       {processingId === method.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                       ) : (
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4" aria-hidden="true" />
                       )}
                     </button>
                   </>
@@ -727,9 +731,9 @@ export function MFAManagementPanel({
                   className="flex items-center gap-2 text-sm text-gray-400 dark:text-slate-500 hover:text-white transition-colors"
                 >
                   {showBackupCodes ? (
-                    <EyeOff className="w-4 h-4" />
+                    <EyeOff className="w-4 h-4" aria-hidden="true" />
                   ) : (
-                    <Eye className="w-4 h-4" />
+                    <Eye className="w-4 h-4" aria-hidden="true" />
                   )}
                   {showBackupCodes ? "Hide" : "Show"}
                 </button>
@@ -737,14 +741,14 @@ export function MFAManagementPanel({
                   onClick={copyBackupCodes}
                   className="flex items-center gap-2 text-sm text-gray-400 dark:text-slate-500 hover:text-white transition-colors"
                 >
-                  <Copy className="w-4 h-4" />
+                  <Copy className="w-4 h-4" aria-hidden="true" />
                   Copy
                 </button>
                 <button
                   onClick={downloadBackupCodes}
                   className="flex items-center gap-2 text-sm text-gray-400 dark:text-slate-500 hover:text-white transition-colors"
                 >
-                  <Download className="w-4 h-4" />
+                  <Download className="w-4 h-4" aria-hidden="true" />
                   Download
                 </button>
               </div>

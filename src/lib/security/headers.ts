@@ -46,8 +46,9 @@ export const cspHeader = {
   key: "Content-Security-Policy",
   value: `
     default-src 'self';
-    script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com https://www.googletagmanager.com;
+    script-src 'self' 'strict-dynamic' https://js.stripe.com https://www.googletagmanager.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    script-src-elem 'self' https://js.stripe.com https://www.googletagmanager.com;
     img-src 'self' data: https: blob:;
     font-src 'self' https://fonts.gstatic.com;
     connect-src 'self' https://api.stripe.com https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com;

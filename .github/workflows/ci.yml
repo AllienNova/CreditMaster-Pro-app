@@ -195,6 +195,30 @@ jobs:
             cypress/screenshots/
             cypress/videos/
 
+  mobile-test:
+    name: Mobile Tests
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: mobile-app/package-lock.json
+
+      - name: Install mobile dependencies
+        run: cd mobile-app && npm ci
+
+      - name: TypeScript type check
+        run: cd mobile-app && npm run type-check
+
+      - name: Run mobile tests with coverage
+        run: cd mobile-app && npm test -- --coverage --ci
+        env:
+          CI: true
+
   deploy-staging:
     name: Deploy Staging
     runs-on: ubuntu-latest

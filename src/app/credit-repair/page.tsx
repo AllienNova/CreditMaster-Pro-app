@@ -278,9 +278,9 @@ export default function CreditRepairPage() {
 
         {/* Info Section */}
         <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <h3 className="text-lg font-bold text-blue-900 mb-2">
+          <h2 className="text-lg font-bold text-blue-900 mb-2">
             AI-Powered Credit Repair
-          </h3>
+          </h2>
           <p className="text-sm text-blue-800 mb-4">
             Our system uses advanced AI to analyze your credit report and
             provide personalized strategies that are 3-5x faster than

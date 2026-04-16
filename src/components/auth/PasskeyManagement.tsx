@@ -426,6 +426,7 @@ export default function PasskeyManagement({
                       disabled={deleting === cred.credentialId}
                       className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                       title="Remove"
+                      aria-label="Remove passkey"
                     >
                       {deleting === cred.credentialId ? (
                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-500"></div>

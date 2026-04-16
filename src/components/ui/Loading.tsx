@@ -126,7 +126,13 @@ export function LoadingOverlay({
   );
 }
 
-export function LoadingPage({ message = "Loading..." }: { message?: string }) {
+export function LoadingPage({
+  message = "Loading...",
+  submessage,
+}: {
+  message?: string;
+  submessage?: string;
+}) {
   return (
     <div
       className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900"
@@ -139,6 +145,11 @@ export function LoadingPage({ message = "Loading..." }: { message?: string }) {
         <p className="text-gray-600 dark:text-slate-300 font-medium">
           {message}
         </p>
+        {submessage ? (
+          <p className="text-sm text-gray-500 dark:text-slate-400">
+            {submessage}
+          </p>
+        ) : null}
       </div>
     </div>
   );

@@ -146,6 +146,7 @@ export function RebalancePreviewModal({
               onClick={onCancel}
               disabled={isExecuting}
               className="p-2 text-gray-400 dark:text-slate-500 hover:text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
+              aria-label="Close rebalance preview"
             >
               <X className="w-5 h-5" />
             </button>

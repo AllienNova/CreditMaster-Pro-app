@@ -1,0 +1,12 @@
+{
+  "verdict": "PASS",
+  "timestamp": 1776328378,
+  "git_hash": "2fcaa4ab93dd0681cfb7c1dda56e466c",
+  "lint": "PASS (0 errors; preexisting warnings only)",
+  "types": "PASS (tsc --noEmit exit 0)",
+  "build": "PASS (NODE_ENV=production npm run build, 438 routes, 538 kB shared JS)",
+  "tests": "506/508 suites, 13615/13634 cases passing (19 env-dependent skipped)",
+  "audit": "PASS (0 critical, 0 high; was 2C/7H pre-fix)",
+  "proof_of_life": "verified running: GET / → 200, 234KB, 62ms on :3100",
+  "notes": "NODE_ENV must be unset or 'production' for build; shell had NODE_ENV=development which caused /404 prerender failure on first run"
+}

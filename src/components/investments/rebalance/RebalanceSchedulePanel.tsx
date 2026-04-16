@@ -382,6 +382,7 @@ export function RebalanceSchedulePanel({
                           : handleEditSchedule(schedule)
                       }
                       className="p-2 text-gray-400 dark:text-slate-500 hover:text-white rounded-lg hover:bg-gray-800 transition-colors"
+                      aria-label="Schedule settings"
                     >
                       <Settings className="w-4 h-4" />
                     </button>

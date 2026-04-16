@@ -1,4 +1,6 @@
 import * as React from "react";
+import { EMAIL_COLORS } from "./email-colors";
+import { EmailFooter } from "./components/EmailFooter";
 
 interface WelcomeEmailProps {
   name: string;
@@ -16,7 +18,7 @@ export default function WelcomeEmail({ name, loginUrl }: WelcomeEmailProps) {
     >
       <div
         style={{
-          background: "linear-gradient(135deg, #10b981, #3b82f6)",
+          background: EMAIL_COLORS.brandGradient,
           padding: "40px 20px",
           textAlign: "center" as const,
         }}
@@ -26,28 +28,28 @@ export default function WelcomeEmail({ name, loginUrl }: WelcomeEmailProps) {
         </h1>
       </div>
 
-      <div style={{ padding: "40px 20px", backgroundColor: "#ffffff" }}>
-        <p style={{ fontSize: "18px", color: "#374151", marginBottom: "20px" }}>
+      <div style={{ padding: "40px 20px", backgroundColor: EMAIL_COLORS.bgWhite }}>
+        <p style={{ fontSize: "18px", color: EMAIL_COLORS.textPrimary, marginBottom: "20px" }}>
           Hi {name},
         </p>
 
-        <p style={{ fontSize: "16px", color: "#6b7280", lineHeight: "1.6" }}>
+        <p style={{ fontSize: "16px", color: EMAIL_COLORS.textSecondary, lineHeight: "1.6" }}>
           Thank you for joining Fynvita! We're excited to help you on your
           financial vitality journey.
         </p>
 
         <div
           style={{
-            background: "#f3f4f6",
+            background: EMAIL_COLORS.borderLight,
             borderRadius: "8px",
             padding: "20px",
             margin: "30px 0",
           }}
         >
-          <h3 style={{ color: "#374151", marginTop: 0 }}>
+          <h3 style={{ color: EMAIL_COLORS.textPrimary, marginTop: 0 }}>
             Here's what you can do:
           </h3>
-          <ul style={{ color: "#6b7280", paddingLeft: "20px" }}>
+          <ul style={{ color: EMAIL_COLORS.textSecondary, paddingLeft: "20px" }}>
             <li style={{ marginBottom: "10px" }}>
               Upload your credit report for AI analysis
             </li>
@@ -66,7 +68,7 @@ export default function WelcomeEmail({ name, loginUrl }: WelcomeEmailProps) {
             href={loginUrl}
             style={{
               display: "inline-block",
-              background: "linear-gradient(135deg, #10b981, #3b82f6)",
+              background: EMAIL_COLORS.brandGradient,
               color: "white",
               padding: "14px 40px",
               borderRadius: "8px",
@@ -79,27 +81,13 @@ export default function WelcomeEmail({ name, loginUrl }: WelcomeEmailProps) {
           </a>
         </div>
 
-        <p style={{ fontSize: "14px", color: "#9ca3af", marginTop: "30px" }}>
+        <p style={{ fontSize: "14px", color: EMAIL_COLORS.textTertiary, marginTop: "30px" }}>
           If you have any questions, our support team is here to help. Just
           reply to this email!
         </p>
       </div>
 
-      <div
-        style={{
-          background: "#f9fafb",
-          padding: "20px",
-          textAlign: "center" as const,
-          borderTop: "1px solid #e5e7eb",
-        }}
-      >
-        <p style={{ color: "#6b7280", fontSize: "12px", margin: 0 }}>
-          © {new Date().getFullYear()} Fynvita. All rights reserved.
-        </p>
-        <p style={{ color: "#9ca3af", fontSize: "11px", marginTop: "10px" }}>
-          You're receiving this email because you signed up for Fynvita.
-        </p>
-      </div>
+      <EmailFooter emailType="transactional" />
     </div>
   );
 }

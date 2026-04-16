@@ -1,4 +1,6 @@
 import * as React from "react";
+import { EMAIL_COLORS } from "./email-colors";
+import { EmailFooter } from "./components/EmailFooter";
 
 interface PaymentReceiptEmailProps {
   name: string;
@@ -36,7 +38,7 @@ export default function PaymentReceiptEmail({
     >
       <div
         style={{
-          background: "linear-gradient(135deg, #10b981, #3b82f6)",
+          background: EMAIL_COLORS.brandGradient,
           padding: "30px 20px",
           textAlign: "center" as const,
         }}
@@ -46,22 +48,22 @@ export default function PaymentReceiptEmail({
         </h1>
       </div>
 
-      <div style={{ padding: "40px 20px", backgroundColor: "#ffffff" }}>
-        <p style={{ fontSize: "18px", color: "#374151", marginBottom: "20px" }}>
+      <div style={{ padding: "40px 20px", backgroundColor: EMAIL_COLORS.bgWhite }}>
+        <p style={{ fontSize: "18px", color: EMAIL_COLORS.textPrimary, marginBottom: "20px" }}>
           Hi {name},
         </p>
 
-        <p style={{ fontSize: "16px", color: "#6b7280", lineHeight: "1.6" }}>
+        <p style={{ fontSize: "16px", color: EMAIL_COLORS.textSecondary, lineHeight: "1.6" }}>
           Thank you for your payment! Here's your receipt:
         </p>
 
         <div
           style={{
-            background: "#f9fafb",
+            background: EMAIL_COLORS.bgLight,
             borderRadius: "12px",
             padding: "24px",
             margin: "24px 0",
-            border: "1px solid #e5e7eb",
+            border: `1px solid ${EMAIL_COLORS.border}`,
           }}
         >
           <div
@@ -69,17 +71,17 @@ export default function PaymentReceiptEmail({
               textAlign: "center" as const,
               marginBottom: "24px",
               paddingBottom: "24px",
-              borderBottom: "1px solid #e5e7eb",
+              borderBottom: `1px solid ${EMAIL_COLORS.border}`,
             }}
           >
-            <span style={{ fontSize: "14px", color: "#6b7280" }}>
+            <span style={{ fontSize: "14px", color: EMAIL_COLORS.textSecondary }}>
               Amount Paid
             </span>
             <p
               style={{
                 fontSize: "36px",
                 fontWeight: "bold",
-                color: "#10b981",
+                color: EMAIL_COLORS.brand,
                 margin: "8px 0",
               }}
             >
@@ -93,9 +95,9 @@ export default function PaymentReceiptEmail({
                 <td
                   style={{
                     padding: "12px 0",
-                    color: "#6b7280",
+                    color: EMAIL_COLORS.textSecondary,
                     fontSize: "14px",
-                    borderBottom: "1px solid #e5e7eb",
+                    borderBottom: `1px solid ${EMAIL_COLORS.border}`,
                   }}
                 >
                   Plan:
@@ -103,11 +105,11 @@ export default function PaymentReceiptEmail({
                 <td
                   style={{
                     padding: "12px 0",
-                    color: "#374151",
+                    color: EMAIL_COLORS.textPrimary,
                     fontWeight: "bold",
                     fontSize: "14px",
                     textAlign: "right" as const,
-                    borderBottom: "1px solid #e5e7eb",
+                    borderBottom: `1px solid ${EMAIL_COLORS.border}`,
                   }}
                 >
                   {plan}
@@ -117,9 +119,9 @@ export default function PaymentReceiptEmail({
                 <td
                   style={{
                     padding: "12px 0",
-                    color: "#6b7280",
+                    color: EMAIL_COLORS.textSecondary,
                     fontSize: "14px",
-                    borderBottom: "1px solid #e5e7eb",
+                    borderBottom: `1px solid ${EMAIL_COLORS.border}`,
                   }}
                 >
                   Invoice #:
@@ -127,11 +129,11 @@ export default function PaymentReceiptEmail({
                 <td
                   style={{
                     padding: "12px 0",
-                    color: "#374151",
+                    color: EMAIL_COLORS.textPrimary,
                     fontWeight: "bold",
                     fontSize: "14px",
                     textAlign: "right" as const,
-                    borderBottom: "1px solid #e5e7eb",
+                    borderBottom: `1px solid ${EMAIL_COLORS.border}`,
                   }}
                 >
                   {invoiceNumber}
@@ -141,9 +143,9 @@ export default function PaymentReceiptEmail({
                 <td
                   style={{
                     padding: "12px 0",
-                    color: "#6b7280",
+                    color: EMAIL_COLORS.textSecondary,
                     fontSize: "14px",
-                    borderBottom: "1px solid #e5e7eb",
+                    borderBottom: `1px solid ${EMAIL_COLORS.border}`,
                   }}
                 >
                   Payment Date:
@@ -151,11 +153,11 @@ export default function PaymentReceiptEmail({
                 <td
                   style={{
                     padding: "12px 0",
-                    color: "#374151",
+                    color: EMAIL_COLORS.textPrimary,
                     fontWeight: "bold",
                     fontSize: "14px",
                     textAlign: "right" as const,
-                    borderBottom: "1px solid #e5e7eb",
+                    borderBottom: `1px solid ${EMAIL_COLORS.border}`,
                   }}
                 >
                   {paymentDate}
@@ -165,7 +167,7 @@ export default function PaymentReceiptEmail({
                 <td
                   style={{
                     padding: "12px 0",
-                    color: "#6b7280",
+                    color: EMAIL_COLORS.textSecondary,
                     fontSize: "14px",
                   }}
                 >
@@ -174,7 +176,7 @@ export default function PaymentReceiptEmail({
                 <td
                   style={{
                     padding: "12px 0",
-                    color: "#374151",
+                    color: EMAIL_COLORS.textPrimary,
                     fontWeight: "bold",
                     fontSize: "14px",
                     textAlign: "right" as const,
@@ -189,14 +191,14 @@ export default function PaymentReceiptEmail({
 
         <div
           style={{
-            background: "#ecfdf5",
-            border: "1px solid #10b981",
+            background: EMAIL_COLORS.successBg,
+            border: `1px solid ${EMAIL_COLORS.brand}`,
             borderRadius: "8px",
             padding: "16px",
             marginBottom: "20px",
           }}
         >
-          <p style={{ color: "#065f46", margin: 0, fontSize: "14px" }}>
+          <p style={{ color: EMAIL_COLORS.success, margin: 0, fontSize: "14px" }}>
             Payment successful! Your subscription is active and all features are
             available.
           </p>
@@ -207,7 +209,7 @@ export default function PaymentReceiptEmail({
             href={dashboardUrl}
             style={{
               display: "inline-block",
-              background: "linear-gradient(135deg, #10b981, #3b82f6)",
+              background: EMAIL_COLORS.brandGradient,
               color: "white",
               padding: "14px 40px",
               borderRadius: "8px",
@@ -223,32 +225,21 @@ export default function PaymentReceiptEmail({
         <p
           style={{
             fontSize: "12px",
-            color: "#9ca3af",
+            color: EMAIL_COLORS.textTertiary,
             textAlign: "center" as const,
           }}
         >
           Need to update your billing information?{" "}
           <a
             href={`${dashboardUrl}/settings/billing`}
-            style={{ color: "#3b82f6" }}
+            style={{ color: EMAIL_COLORS.link }}
           >
             Manage billing
           </a>
         </p>
       </div>
 
-      <div
-        style={{
-          background: "#f9fafb",
-          padding: "20px",
-          textAlign: "center" as const,
-          borderTop: "1px solid #e5e7eb",
-        }}
-      >
-        <p style={{ color: "#6b7280", fontSize: "12px", margin: 0 }}>
-          © {new Date().getFullYear()} Fynvita. All rights reserved.
-        </p>
-      </div>
+      <EmailFooter emailType="payments" />
     </div>
   );
 }

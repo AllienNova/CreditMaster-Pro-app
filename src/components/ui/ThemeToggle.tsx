@@ -113,7 +113,7 @@ export function ThemeToggle({
         className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors duration-200 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
         aria-label={`Switch to ${resolvedTheme === "dark" ? "light" : "dark"} mode`}
       >
-        {getIcon()}
+        <span aria-hidden="true">{getIcon()}</span>
         {showLabel && <span className="text-sm font-medium">{getLabel()}</span>}
       </button>
     );
@@ -134,13 +134,14 @@ export function ThemeToggle({
         aria-expanded={isOpen}
         aria-haspopup="listbox"
       >
-        {getIcon()}
+        <span aria-hidden="true">{getIcon()}</span>
         <span className="text-sm font-medium">{getLabel()}</span>
         <svg
           className={`w-4 h-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
+          aria-hidden="true"
         >
           <path
             strokeLinecap="round"
@@ -167,13 +168,14 @@ export function ThemeToggle({
                 }}
                 className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors ${theme === value ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-100 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"}`}
               >
-                {icon}
+                <span aria-hidden="true">{icon}</span>
                 <span>{label}</span>
                 {theme === value && (
                   <svg
                     className="w-4 h-4 ml-auto"
                     fill="currentColor"
                     viewBox="0 0 20 20"
+                    aria-hidden="true"
                   >
                     <path
                       fillRule="evenodd"

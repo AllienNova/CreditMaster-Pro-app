@@ -237,7 +237,7 @@ export function GoalInvestmentDashboard({
               onClick={onAddGoal}
               className="px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-500 rounded-lg flex items-center gap-2 transition-colors"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4" aria-hidden="true" />
               Add Goal
             </button>
           </div>
@@ -254,7 +254,7 @@ export function GoalInvestmentDashboard({
               onClick={onAddGoal}
               className="mt-4 px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-500 rounded-lg inline-flex items-center gap-2 transition-colors"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4" aria-hidden="true" />
               Create Goal
             </button>
           </div>
@@ -558,6 +558,7 @@ function GoalCard({
               onEdit();
             }}
             className="p-1.5 text-gray-500 dark:text-slate-400 hover:text-white rounded-lg hover:bg-gray-700 transition-colors"
+            aria-label="Edit goal settings"
           >
             <Settings className="w-4 h-4" />
           </button>
@@ -688,6 +689,7 @@ function GoalListItem({
               onViewDetails();
             }}
             className="p-2 text-gray-400 dark:text-slate-500 hover:text-white rounded-lg hover:bg-gray-700 transition-colors"
+            aria-label="View details"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
