@@ -1,0 +1,37 @@
+name = "error-states"
+wave = 2
+model = "gemini-2.5-flash-image"
+resolution = "1024x1024"
+out_dir = "assets/raw/error-states"
+count = 6
+preamble = true
+
+shared_prompt = """
+Fynvita Tier A illustration: rounded blob shapes, flat vector, NO gradients, NO shadows, NO 3D, NO photorealism, NO thin lines. Palette: Vital Green #10B981, Trust Blue #3B82F6, Deep Navy #1E40AF, Emerald #059669, Energy Gold #F59E0B, cream #F3F4F6 bg. Blob chars have dot eyes + tiny smile. ERROR/OFFLINE STATE — mood is gentle, kind, reassuring (NOT scary, NOT angry, NOT alarming). 1024x1024 square, centered.
+"""
+
+negative = ["gradients", "shadows", "3D", "photography", "thin lines", "realistic", "scary", "angry", "alarming", "dark", "ominous"]
+
+[[variants]]
+id = "error-404"
+prompt = "A green blob holds a large folded map, looking at it curiously with a tilted head. The map has a gold question mark on it. A small broken path on the ground. Lost but calm — page not found."
+
+[[variants]]
+id = "error-500"
+prompt = "A friendly Trust Blue blob wearing a tiny hard hat holds a wrench. A small cream gear with a crack sits nearby. The blob gives a reassuring wave. Under repair — something went wrong."
+
+[[variants]]
+id = "error-offline"
+prompt = "A grey cloud (not dark — light grey #9CA3AF) with a small disconnected wifi symbol. A green blob sits below the cloud, reading a small book peacefully. Offline but okay — no connection."
+
+[[variants]]
+id = "error-session-expired"
+prompt = "A green blob sits next to an emerald clock. The clock hands are at 12:00. Small gold sand grains float down like an hourglass. The blob looks sleepy (closed eyes, peaceful). Session timed out."
+
+[[variants]]
+id = "error-maintenance"
+prompt = "A green blob in a tiny hard hat paints a cream wall with a roller (emerald paint roller, Vital Green paint). Paint dripping gently. Improving things — be back soon."
+
+[[variants]]
+id = "error-waitlist"
+prompt = "A line of three small blobs (green, blue, emerald) wait happily in a queue. A gold velvet rope marks the line. The front blob waves excitedly. You're on the list — almost there."
