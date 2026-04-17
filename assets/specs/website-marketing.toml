@@ -1,0 +1,61 @@
+name = "website-marketing"
+wave = 4
+model = "gemini-3-pro-image-preview"
+resolution = "2K"
+out_dir = "assets/raw/website-marketing"
+count = 12
+preamble = true
+
+shared_prompt = """
+Fynvita Tier D flat editorial: bold geometric shapes, full-bleed brand color blocks, NO characters, NO blob people, NO faces, NO photography. Abstract compositions using Vital Green #10B981, Trust Blue #3B82F6, Deep Navy #1E40AF, Emerald #059669, Energy Gold #F59E0B. Stripe/Linear marketing aesthetic — large confident shapes, sophisticated negative space. NO gradients, NO shadows, NO 3D. 2048x2048.
+"""
+
+negative = ["characters", "people", "faces", "gradients", "shadows", "3D", "photography", "thin lines", "text", "typography"]
+
+[[variants]]
+id = "hero-homepage"
+prompt = "Landing page hero. Sweeping Vital Green arc occupies the left third edge-to-edge, curving from bottom-left toward the top-center. Angular Deep Navy triangles intersect the arc at the center, overlapping boldly. Energy Gold accent circles (3–4 solid filled circles of varying sizes) float at the intersection points. A clean cream/off-white zone in the right third provides uncluttered space for headline text (no text rendered). Confident, modern, full-bleed. Large shapes dominate — nothing small or decorative."
+
+[[variants]]
+id = "hero-credit-health"
+prompt = "Feature section hero: Credit Health. A large upward-curving arc in Vital Green dominates the upper two-thirds, sweeping from the bottom-left corner to the top-right. A flat pulse/heartbeat line rendered in Deep Navy runs horizontally along the arc — angular zigzag geometry, not organic. Energy Gold sparkle shapes (solid diamond/star polygons) appear at the arc's peak. A clean cream background zone below the arc is left empty for headline text. Bold, impactful, no characters."
+
+[[variants]]
+id = "hero-financial-wellness"
+prompt = "Feature section hero: Financial Wellness. Three large overlapping filled circles arranged as a Venn diagram — Vital Green left, Trust Blue right, Energy Gold center-bottom — creating overlapping intersection zones. A Deep Navy background quarter-panel fills the top-right corner. A clean cream zone in the lower-left is empty for headline text. Shapes are oversized, edges bleed off the canvas. Confident color block composition."
+
+[[variants]]
+id = "hero-investment-intelligence"
+prompt = "Feature section hero: Investment Intelligence. A rising staircase of five Deep Navy solid rectangles ascending from the bottom-left corner to the top-right, each step taller than the last. A bold Vital Green diagonal arrow overlaid on top of the staircase, pointing up-right. Small Energy Gold filled circles sit at the top-right corner of each step. A clean cream text zone occupies the upper-left quadrant. No characters, no charts, pure geometric abstraction."
+
+[[variants]]
+id = "hero-tax-optimization"
+prompt = "Feature section hero: Tax Optimization. A large Emerald shield shape dominates the center — flat geometric hexagonal shield, no rounded corners. Inside the shield: three clean Deep Navy rectangles (representing form fields) and two Deep Navy checkmark shapes, all flat and geometric. An Energy Gold highlight bar runs along the top edge of the shield peak. The surrounding background is clean cream. Bold, trustworthy, structured."
+
+[[variants]]
+id = "about-page"
+prompt = "About page header. Large overlapping geometric shapes on a warm cream background. A large Vital Green half-circle rises from the bottom edge, centered. A Trust Blue quarter-circle arc enters from the top-right corner. Three small Deep Navy accent triangles are scattered asymmetrically at the overlapping boundary. The center of the canvas is left open cream for team content placement. Premium, architectural feel."
+
+[[variants]]
+id = "pricing-header"
+prompt = "Pricing page header. Three solid rectangular columns of ascending height arranged left to right on a clean cream background — leftmost column in Vital Green (shortest), center column in Trust Blue (medium), rightmost column in Deep Navy (tallest). A small Energy Gold five-pointed star shape sits atop the tallest Deep Navy column. Columns are aligned to the bottom edge, with large cream negative space above. Tier comparison visual metaphor. No labels, no text."
+
+[[variants]]
+id = "faq-header"
+prompt = "FAQ page header. A large geometric question mark shape constructed entirely from flat rectangles and a circle — the hook formed from three angled Deep Navy rectangles, the dot a filled Trust Blue circle below. A single Vital Green filled circle accent floats to the upper-right. Four small radiating line segments (short, thick, Deep Navy) surround the dot. Clean cream background. Bold, simple, single focal shape."
+
+[[variants]]
+id = "contact-header"
+prompt = "Contact page header. A large Vital Green rounded-rectangle speech bubble shape dominates the center-left of the canvas. Inside the speech bubble: a geometric envelope outline drawn in Deep Navy — flat rectangle body with two angled lines forming a V-flap, no rounded corners. An Energy Gold filled square accent sits at the bottom-right corner of the envelope. Background is clean cream. Friendly, approachable, single-subject."
+
+[[variants]]
+id = "blog-hero-template"
+prompt = "Blog post hero template. Horizontal tripartite composition. Left third: a solid Deep Navy rectangle fills edge-to-edge. Center third: a bold Vital Green diagonal cut panel — a parallelogram shape — creates a dynamic transition. Right third: clean cream background for text placement. At the intersection of the Deep Navy and Vital Green panels: three Energy Gold filled circles of varying sizes cluster at the boundary. Compositionally balanced, text-integration ready."
+
+[[variants]]
+id = "trust-security-page"
+prompt = "Security page. A large Deep Navy shield shape — flat geometric, straight edges, pointed bottom — fills the center of a clean white background. Inside the shield: a bold Vital Green checkmark shape, thick strokes rendered as solid geometry. Three concentric Emerald circle outlines (rings, not filled) radiate outward from the shield's center, extending beyond the shield edges. Small Energy Gold filled diamond shapes sit at the north, south, east, west points of the outermost ring. Authoritative, trustworthy."
+
+[[variants]]
+id = "404-web"
+prompt = "Web 404 error page. Three oversized numeral shapes on a clean cream background — a bold Deep Navy '4' on the left, a large Vital Green circle-compass shape in the center (filled circle with four directional tick marks forming compass points, representing the zero), and another bold Deep Navy '4' on the right. An Energy Gold geometric question mark (small, angular) floats above the composition, slightly right of center. Shapes are large, confident, the canvas is mostly negative space. Friendly, not alarming."
