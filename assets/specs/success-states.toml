@@ -1,0 +1,37 @@
+name = "success-states"
+wave = 2
+model = "gemini-2.5-flash-image"
+resolution = "1024x1024"
+out_dir = "assets/raw/success-states"
+count = 6
+preamble = true
+
+shared_prompt = """
+Fynvita Tier A illustration: rounded blob shapes, flat vector, NO gradients, NO shadows, NO 3D, NO photorealism, NO thin lines. Palette: Vital Green #10B981, Trust Blue #3B82F6, Deep Navy #1E40AF, Emerald #059669, Energy Gold #F59E0B, cream #F3F4F6 bg. Blob chars have dot eyes + tiny smile. SUCCESS STATE — mood is celebratory, triumphant, rewarding. 1024x1024 square, centered.
+"""
+
+negative = ["gradients", "shadows", "3D", "photography", "thin lines", "realistic", "sad", "negative", "dark"]
+
+[[variants]]
+id = "success-goal-achieved"
+prompt = "Green blob on a podium raising a gold trophy. Confetti in blue + gold drifts down. A flag on the podium reads nothing (no text). Triumphant, proud."
+
+[[variants]]
+id = "success-dispute-won"
+prompt = "A green blob holds up a paper with a gold star stamp. Balance scales (emerald) sit beside, tilted in the blob's favor. Justice served. Satisfied."
+
+[[variants]]
+id = "success-payment-complete"
+prompt = "A large green checkmark circle. A happy green blob peeks from behind it giving a thumbs-up. Small gold sparkles. Clean, confirmed."
+
+[[variants]]
+id = "success-account-connected"
+prompt = "Two blob characters (green + blue) high-five. A gold spark at the contact point. A chain link icon (emerald) floats above. Connected, celebratory."
+
+[[variants]]
+id = "success-milestone"
+prompt = "A green blob plants a small flag on top of a rounded mountain. The flag has a star (gold). Clouds below, sun (gold circle) above. NO TEXT anywhere in the image — no labels, no words, no captions."
+
+[[variants]]
+id = "success-verified"
+prompt = "A Deep Navy shield with a large green checkmark. A green blob stands proudly next to it. Small gold radiating lines. Secure, verified, confident."
