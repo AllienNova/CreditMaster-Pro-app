@@ -1,0 +1,61 @@
+name = "crm-lifecycle"
+wave = 6
+model = "gemini-2.5-flash-image"
+resolution = "1024x1024"
+out_dir = "assets/raw/crm-lifecycle"
+count = 12
+preamble = true
+
+shared_prompt = """
+Fynvita illustration, Tier A/B: rounded blob shapes/scenes, flat vector, NO gradients, NO shadows, NO 3D, NO photorealism. Palette: Vital Green #10B981, Trust Blue #3B82F6, Deep Navy #1E40AF, Emerald #059669, Energy Gold #F59E0B, cream #F3F4F6 bg. Blob characters are simple rounded shapes with small dot eyes. 1024x1024 square, subject centered, generous breathing room.
+"""
+
+negative = ["gradients", "shadows", "3D", "photography", "thin lines", "realistic", "text"]
+
+[[variants]]
+id = "email-welcome"
+prompt = "A green blob opens a cream envelope with a gold star seal. Small confetti pieces in blue and gold float around it. Welcome email — warm first impression."
+
+[[variants]]
+id = "email-password-reset"
+prompt = "A green blob holds a gold key next to a large Trust Blue lock. A small shield icon floats above. Password reset — secure, reassuring."
+
+[[variants]]
+id = "email-verification"
+prompt = "A green blob gives a thumbs-up next to a large green checkmark inside a circle. Email verified — confirmed, clean."
+
+[[variants]]
+id = "email-billing"
+prompt = "A green blob character reviews a cream receipt/invoice. Strict flat 2D, top-down view, NO isometric tilt, NO perspective. A small gold coin stack sits beside the receipt. Billing notification — clear, transparent."
+
+[[variants]]
+id = "email-security-alert"
+prompt = "A Trust Blue shield with an exclamation mark in Energy Gold at its center. A concerned but calm green blob stands beside the shield. Security alert — attention needed, not panic."
+
+[[variants]]
+id = "email-milestone"
+prompt = "A green blob character stands on a flat 2D rounded podium shape (NOT 3D, NO cylinder, NO perspective). The blob holds a gold badge. Confetti in Vital Green, Trust Blue, and Energy Gold drifts down. Milestone celebration — flat vector only."
+
+[[variants]]
+id = "push-score-change"
+prompt = "A circular credit score arc in Vital Green with an upward arrow pointing to an improved score. Compact, icon-like but illustrated. Score changed notification — positive momentum."
+
+[[variants]]
+id = "push-bill-due"
+prompt = "A small calendar icon in Trust Blue with a gold star on today's date square. Compact illustration. Bill due reminder — timely, calm."
+
+[[variants]]
+id = "inapp-banner-new-feature"
+prompt = "A wide banner composition: a small green blob points excitedly at a sparkling new tool in Energy Gold with a star burst. A 'New!' badge floats above. In-app announcement — something exciting arrived."
+
+[[variants]]
+id = "inapp-upgrade-prompt"
+prompt = "A split scene: left half shows a small simple green blob on cream background with minimal tools. Right half shows the same green blob on a Vital Green background surrounded by coins and charts. A gold arrow points from left to right. Flat 2D vector, blob characters (NOT robots, NOT humanoids). Upgrade prompt."
+
+[[variants]]
+id = "campaign-reengagement"
+prompt = "A green blob waves from behind a slightly open cream door, peeking out warmly. A small gold heart floats nearby. Re-engagement email — we miss you, come back."
+
+[[variants]]
+id = "campaign-referral"
+prompt = "Two blob characters — one Vital Green, one Trust Blue — high-five with gold sparkles bursting from the contact point. An emerald gift box sits between them. Refer a friend campaign — sharing the benefit."
