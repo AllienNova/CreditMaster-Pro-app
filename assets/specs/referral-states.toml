@@ -1,0 +1,28 @@
+name = "referral-states"
+wave = 2
+model = "gemini-2.5-flash-image"
+resolution = "1024x1024"
+out_dir = "assets/raw/referral-states"
+count = 4
+preamble = true
+
+shared_prompt = """
+Fynvita Tier B scene illustration: rounded blob characters in environments, flat vector, NO gradients/shadows/3D. Palette: Vital Green #10B981, Trust Blue #3B82F6, Deep Navy #1E40AF, Emerald #059669, Energy Gold #F59E0B, cream #F3F4F6 bg. REFERRAL/REWARD context — mood is social, generous, celebratory. 1024x1024.
+"""
+negative = ["gradients", "shadows", "3D", "photography", "realistic"]
+
+[[variants]]
+id = "referral-invite"
+prompt = "A green blob and a blue blob stand on opposite sides, connected by a gold chain of hearts. Small envelope icons float between them. The green blob waves invitingly. Invite a friend — share the vitality."
+
+[[variants]]
+id = "referral-waitlist"
+prompt = "A queue of small blobs (green, blue, emerald) wait happily on fluffy cream clouds. A gold rope marks the queue. Stars twinkle above. You're on the waitlist — exciting things coming."
+
+[[variants]]
+id = "referral-reward-unlocked"
+prompt = "A green blob opens a treasure chest (cream with gold trim). Gold coins and emerald gems spill out. Small stars and sparkles burst upward. Reward unlocked — you earned this. Celebratory."
+
+[[variants]]
+id = "referral-streak"
+prompt = "A green blob proudly displays a row of gold stars on a cream banner. The number 7 (Trust Blue) floats above. Small flame icons (Energy Gold) suggest a streak. 7-day streak — keep it going."
