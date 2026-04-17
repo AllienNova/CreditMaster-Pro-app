@@ -1,0 +1,21 @@
+name = "tier-d-pilot"
+wave = 2
+model = "gemini-3-pro-image-preview"
+resolution = "2K"
+out_dir = "assets/raw/tier-d-pilot"
+count = 2
+preamble = true
+
+shared_prompt = """
+Fynvita flat editorial illustration: bold geometric shapes, full-bleed brand color blocks, NO characters, NO blob people, NO faces, NO photography. Abstract compositions using Vital Green #10B981, Trust Blue #3B82F6, Deep Navy #1E40AF, Emerald #059669, Energy Gold #F59E0B as dominant fills. Stripe/Linear marketing aesthetic — large confident shapes, sophisticated negative space. NO gradients, NO shadows, NO 3D, NO thin lines. 2048x2048.
+"""
+
+negative = ["characters", "people", "faces", "gradients", "shadows", "3D", "photography", "thin lines"]
+
+[[variants]]
+id = "editorial-hero"
+prompt = "A bold abstract composition for a landing page hero. Large overlapping geometric shapes: a sweeping Vital Green arc occupying the left third, intersected by angular Deep Navy triangles. Energy Gold accent circles float at the intersection points. A clean cream/white zone in the right third provides space for headline text (but no text rendered). Confident, modern, premium. Full-bleed edge-to-edge."
+
+[[variants]]
+id = "editorial-feature"
+prompt = "A feature card composition for 'Credit Health'. Abstract: a large upward-curving arc in Vital Green dominates the center. Small geometric health icons (pulse line, shield, checkmark) rendered as flat shapes in Deep Navy sit along the arc. Energy Gold sparkle shapes at the peak. Clean cream background below the arc provides text space. Bold, impactful, no characters."
