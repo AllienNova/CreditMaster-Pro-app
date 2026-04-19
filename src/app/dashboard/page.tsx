@@ -9,6 +9,7 @@ import { SpendingOverview } from "@/components/financial/SpendingOverview";
 import { PaydayCountdown } from "@/components/financial/PaydayCountdown";
 import { XpBar, StreakDisplay, ProgressRing } from "@/components/gamification";
 import { useGamification } from "@/hooks/useGamification";
+import { FadeIn, StaggerList, ScrollReveal } from "@/components/ui/animations";
 
 interface User {
   id: string;
@@ -286,7 +287,7 @@ export default function DashboardPage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section with Vitality Score */}
-        <div className="mb-8">
+        <FadeIn className="mb-8">
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
             Welcome back, {user?.user_metadata?.full_name || "there"}!
           </h2>
@@ -294,7 +295,7 @@ export default function DashboardPage() {
             Your complete financial health dashboard - track credit, spending,
             and reach your goals.
           </p>
-        </div>
+        </FadeIn>
 
         {/* Financial Vitality Score - Hero Widget */}
         <div className="mb-8">
@@ -368,7 +369,7 @@ export default function DashboardPage() {
         )}
 
         {/* Top Row - Key Widgets */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <StaggerList stagger={0.1} className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* Payday Countdown */}
           <PaydayCountdown
             daysUntilPayday={mockPaydayData.daysUntilPayday}
@@ -442,10 +443,10 @@ export default function DashboardPage() {
               Manage subscriptions →
             </Link>
           </div>
-        </div>
+        </StaggerList>
 
         {/* Key Metrics Row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        <StaggerList stagger={0.1} className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
           <div className="bg-white dark:bg-slate-800/80 backdrop-blur-sm border border-gray-200 dark:border-slate-700/50 shadow-sm rounded-lg p-4 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-xs font-medium text-gray-600 dark:text-slate-400">
@@ -566,9 +567,10 @@ export default function DashboardPage() {
               active rules
             </p>
           </div>
-        </div>
+        </StaggerList>
 
         {/* Quick Actions */}
+        <ScrollReveal>
         <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm rounded-xl p-4 sm:p-6 mb-8">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-7 h-7 rounded-md bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center">
@@ -737,8 +739,10 @@ export default function DashboardPage() {
             </Link>
           </div>
         </div>
+        </ScrollReveal>
 
         {/* Student Loan CTA */}
+        <ScrollReveal delay={0.15}>
         <div className="bg-gradient-to-r from-emerald-600 to-blue-600 rounded-xl p-6 text-white">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between">
             <div className="mb-4 sm:mb-0">
@@ -758,6 +762,7 @@ export default function DashboardPage() {
             </Link>
           </div>
         </div>
+        </ScrollReveal>
       </main>
     </div>
   );

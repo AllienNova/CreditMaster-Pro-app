@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { FadeIn, StaggerList, ScrollReveal } from "@/components/ui/animations";
 import {
   ArrowTrendingUpIcon as TrendingUp,
   ArrowTrendingDownIcon as TrendingDown,
@@ -203,7 +204,7 @@ export default function TradingDashboardPage() {
         )}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <StaggerList className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {/* Portfolio Value */}
           <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-gray-200 dark:border-slate-700">
             <div className="flex items-center justify-between mb-3">
@@ -308,12 +309,12 @@ export default function TradingDashboardPage() {
               {signals.filter((s) => s.confidence > 0.8).length} high confidence
             </p>
           </div>
-        </div>
+        </StaggerList>
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Positions/Orders/Signals */}
-          <div className="lg:col-span-2 space-y-6">
+          <FadeIn className="lg:col-span-2 space-y-6">
             {/* Tab Header */}
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700">
               <div className="flex items-center justify-between border-b border-gray-200 dark:border-slate-700 px-4">
@@ -355,12 +356,14 @@ export default function TradingDashboardPage() {
                 {activeTab === "signals" && <SignalsTable signals={signals} />}
               </div>
             </div>
-          </div>
+          </FadeIn>
 
           {/* Right Column - Risk & Quick Actions */}
-          <div className="space-y-6">
+          <FadeIn direction="right" delay={0.1} className="space-y-6">
             {/* Risk Monitor */}
-            <RiskMonitor metrics={riskMetrics} />
+            <ScrollReveal>
+              <RiskMonitor metrics={riskMetrics} />
+            </ScrollReveal>
 
             {/* Quick Actions */}
             <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-gray-200 dark:border-slate-700">
@@ -434,7 +437,7 @@ export default function TradingDashboardPage() {
                 </button>
               </div>
             )}
-          </div>
+          </FadeIn>
         </div>
       </div>
 

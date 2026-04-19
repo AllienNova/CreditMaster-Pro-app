@@ -469,4 +469,98 @@ export function ChartSkeleton({
   );
 }
 
+/**
+ * Chart Loading Skeleton
+ *
+ * Animated sine-wave SVG that mimics a loading chart line.
+ * The line "draws" left to right using stroke-dasharray animation.
+ */
+export function ChartLoadingSkeleton({
+  height = 300,
+  className = "",
+}: {
+  height?: number;
+  className?: string;
+}) {
+  // A simple sine wave path across the full width (200 viewBox units wide)
+  const wavePath =
+    "M0,60 C10,60 15,20 25,20 C35,20 40,100 50,100 C60,100 65,40 75,40 C85,40 90,80 100,80 C110,80 115,30 125,30 C135,30 140,90 150,90 C160,90 165,50 175,50 C185,50 190,70 200,70";
+
+  // Approximate path length for dasharray
+  const pathLength = 320;
+
+  return (
+    <div
+      className={`bg-gray-900 rounded-lg p-4 sm:p-6 ${className}`}
+      role="status"
+      aria-label="Loading chart"
+    >
+      {/* Axis label skeletons */}
+      <div className="flex justify-between mb-3">
+        <Skeleton variant="text" height={14} width={80} className="bg-gray-700" />
+        <Skeleton variant="text" height={14} width={60} className="bg-gray-700" />
+      </div>
+
+      {/* Animated wave chart */}
+      <div style={{ height }} className="relative overflow-hidden rounded-lg bg-gray-800">
+        <svg
+          viewBox="0 0 200 120"
+          preserveAspectRatio="none"
+          width="100%"
+          height="100%"
+          aria-hidden="true"
+        >
+          <style>{`
+            @keyframes chart-draw {
+              0% { stroke-dashoffset: ${pathLength}; }
+              50% { stroke-dashoffset: 0; }
+              100% { stroke-dashoffset: -${pathLength}; }
+            }
+            .chart-wave-line {
+              animation: chart-draw 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            }
+            @media (prefers-reduced-motion: reduce) {
+              .chart-wave-line { animation: none; }
+            }
+          `}</style>
+          {/* Grid lines */}
+          <line x1="0" y1="30" x2="200" y2="30" stroke="#374151" strokeWidth="0.5" />
+          <line x1="0" y1="60" x2="200" y2="60" stroke="#374151" strokeWidth="0.5" />
+          <line x1="0" y1="90" x2="200" y2="90" stroke="#374151" strokeWidth="0.5" />
+          {/* Animated wave line */}
+          <path
+            d={wavePath}
+            fill="none"
+            stroke="#10b981"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeDasharray={pathLength}
+            className="chart-wave-line"
+          />
+          {/* Gradient fill beneath */}
+          <defs>
+            <linearGradient id="chart-fill-grad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#10b981" stopOpacity="0.15" />
+              <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <path
+            d={`${wavePath} L200,120 L0,120 Z`}
+            fill="url(#chart-fill-grad)"
+            opacity="0.6"
+          />
+        </svg>
+      </div>
+
+      {/* X-axis label skeletons */}
+      <div className="flex justify-between mt-3">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <Skeleton key={i} variant="text" height={12} width={32} className="bg-gray-700" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default Skeleton;

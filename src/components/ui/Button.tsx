@@ -1,7 +1,9 @@
 "use client";
 
-import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { forwardRef, type ReactNode } from "react";
+import { motion, type HTMLMotionProps } from "framer-motion";
 import { Spinner } from "./Loading";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 const variantStyles = {
   primary:
@@ -27,11 +29,12 @@ const baseStyles =
 export type ButtonVariant = keyof typeof variantStyles;
 export type ButtonSize = keyof typeof sizeStyles;
 
-interface ButtonBaseProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonBaseProps extends Omit<HTMLMotionProps<"button">, "children"> {
   variant?: ButtonVariant;
   isLoading?: boolean;
   leftIcon?: ReactNode;
   rightIcon?: ReactNode;
+  children?: ReactNode;
 }
 
 interface IconButtonProps extends ButtonBaseProps {
@@ -60,11 +63,17 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref,
   ) => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const reduced = useReducedMotion();
+    const tapProps =
+      reduced || disabled || isLoading ? {} : { whileTap: { scale: 0.97 } };
+
     return (
-      <button
+      <motion.button
         ref={ref}
         className={`${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
         disabled={disabled || isLoading}
+        {...tapProps}
         {...props}
       >
         {isLoading ? (
@@ -76,7 +85,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {rightIcon && !isLoading ? (
           <span aria-hidden="true">{rightIcon}</span>
         ) : null}
-      </button>
+      </motion.button>
     );
   },
 );

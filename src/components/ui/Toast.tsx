@@ -16,6 +16,7 @@ import {
   ReactNode,
   ReactElement,
 } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 
 export type ToastType = "success" | "error" | "warning" | "info";
 
@@ -124,24 +125,26 @@ function ToastItem({
   toast: Toast;
   onRemove: (id: string) => void;
 }) {
-  const [isExiting, setIsExiting] = useState(false);
-
   useEffect(() => {
     const duration = toast.duration || 5000;
     const timer = setTimeout(() => {
-      setIsExiting(true);
       setTimeout(() => onRemove(toast.id), 300);
     }, duration);
     return () => clearTimeout(timer);
   }, [toast.id, toast.duration, onRemove]);
 
+  function handleClose() {
+    setTimeout(() => onRemove(toast.id), 300);
+  }
+
   return (
-    <div
+    <motion.div
+      layout
+      initial={{ x: 300, opacity: 0 }}
+      animate={{ x: 0, opacity: 1, transition: { type: "spring", stiffness: 300, damping: 25 } }}
       className={`
         flex items-start gap-3 p-4 rounded-lg border shadow-lg max-w-sm w-full
-        transform transition-all duration-300 ease-out
         ${bgColors[toast.type]}
-        ${isExiting ? "translate-x-full opacity-0" : "translate-x-0 opacity-100"}
       `}
     >
       <span className="flex-shrink-0 mt-0.5">{icons[toast.type]}</span>
@@ -156,10 +159,7 @@ function ToastItem({
         )}
       </div>
       <button
-        onClick={() => {
-          setIsExiting(true);
-          setTimeout(() => onRemove(toast.id), 300);
-        }}
+        onClick={handleClose}
         className="flex-shrink-0 text-gray-400 hover:text-gray-600 dark:text-slate-300 transition-colors"
       >
         <svg
@@ -176,7 +176,7 @@ function ToastItem({
           />
         </svg>
       </button>
-    </div>
+    </motion.div>
   );
 }
 
@@ -226,9 +226,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     >
       {children}
       <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
-        {toasts.map((toast) => (
-          <ToastItem key={toast.id} toast={toast} onRemove={removeToast} />
-        ))}
+        <AnimatePresence>
+          {toasts.map((toast) => (
+            <ToastItem key={toast.id} toast={toast} onRemove={removeToast} />
+          ))}
+        </AnimatePresence>
       </div>
     </ToastContext.Provider>
   );

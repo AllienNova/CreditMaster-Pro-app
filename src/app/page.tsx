@@ -17,6 +17,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
+import { FadeIn, StaggerList, ScrollReveal, AnimatedNumber } from "@/components/ui/animations";
 
 export const metadata: Metadata = {
   title:
@@ -210,6 +211,7 @@ export default function LandingPage() {
               <span className="text-lg"></span>
               <span>The Premier Financial Wellness Platform</span>
             </div>
+            <FadeIn>
             <h1 className="text-4xl sm:text-5xl lg:text-5xl font-bold text-gray-900 dark:text-white tracking-tight leading-[1.08] mb-6">
               The Only Platform That
               <br />
@@ -217,6 +219,8 @@ export default function LandingPage() {
                 Unifies Your Financial Life.
               </span>
             </h1>
+            </FadeIn>
+            <FadeIn delay={0.1}>
             <p className="mt-6 text-xl sm:text-2xl text-gray-600 dark:text-slate-300 max-w-3xl mx-auto leading-relaxed">
               Industry-leading AI combines{" "}
               <strong className="text-emerald-600 dark:text-emerald-400">
@@ -232,6 +236,8 @@ export default function LandingPage() {
               </strong>{" "}
               into one holistic platform that competitors can&apos;t match.
             </p>
+            </FadeIn>
+            <FadeIn delay={0.2}>
             <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/auth/signup"
@@ -246,6 +252,7 @@ export default function LandingPage() {
                 See How It Works
               </Link>
             </div>
+            </FadeIn>
 
             {/* Trust Indicators - Enhanced */}
             <div className="mt-16 flex flex-wrap justify-center items-center gap-x-12 gap-y-6 text-sm">
@@ -338,11 +345,12 @@ export default function LandingPage() {
           </div>
 
           {/* Performance Metrics Banner */}
+          <ScrollReveal>
           <div className="mt-16 bg-gradient-to-br from-gray-900 to-slate-800 rounded-xl p-8 sm:p-12 shadow-lg">
             <div className="grid sm:grid-cols-4 gap-8 text-center">
               <div>
                 <p className="text-4xl sm:text-5xl font-bold text-emerald-400">
-                  +127
+                  <AnimatedNumber value={127} prefix="+" className="text-4xl sm:text-5xl font-bold text-emerald-400" />
                 </p>
                 <p className="text-gray-300 text-sm mt-2 font-medium">
                   Avg. Credit Score Increase
@@ -364,7 +372,7 @@ export default function LandingPage() {
               </div>
               <div>
                 <p className="text-4xl sm:text-5xl font-bold text-emerald-400">
-                  94%
+                  <AnimatedNumber value={94} suffix="%" className="text-4xl sm:text-5xl font-bold text-emerald-400" />
                 </p>
                 <p className="text-gray-300 text-sm mt-2 font-medium">
                   Success Rate
@@ -386,6 +394,7 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
+          </ScrollReveal>
         </div>
       </section>
 
@@ -411,7 +420,7 @@ export default function LandingPage() {
           </div>
 
           {/* Feature Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+          <StaggerList stagger={0.08} className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
             {/* Credit Optimization */}
             <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-xl p-8 border border-emerald-100 dark:border-emerald-800/40 hover:shadow-lg transition-shadow">
               <div className="w-12 h-12 rounded-xl bg-emerald-500 flex items-center justify-center mb-4">
@@ -831,7 +840,7 @@ export default function LandingPage() {
                 </li>
               </ul>
             </div>
-          </div>
+          </StaggerList>
         </div>
       </section>
 
@@ -895,7 +904,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StaggerList stagger={0.1} className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.credit.map((feature) => (
               <div key={feature.title} className="text-center p-6">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
@@ -906,7 +915,7 @@ export default function LandingPage() {
                 </p>
               </div>
             ))}
-          </div>
+          </StaggerList>
 
           {/* Score Display Mock */}
           <div className="mt-16 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-xl p-8 sm:p-12 border border-emerald-100 dark:border-emerald-800/40">
@@ -987,7 +996,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StaggerList stagger={0.1} className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.financial.map((feature) => (
               <div key={feature.title} className="text-center p-6">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
@@ -998,7 +1007,7 @@ export default function LandingPage() {
                 </p>
               </div>
             ))}
-          </div>
+          </StaggerList>
 
           {/* Budget Display Mock */}
           <div className="mt-16 bg-gradient-to-br from-blue-50 to-blue-50 dark:from-blue-950/30 dark:to-blue-950/30 rounded-xl p-8 sm:p-12 border border-blue-100 dark:border-blue-800/40">
@@ -1145,7 +1154,7 @@ export default function LandingPage() {
           </div>
 
           {/* Before/After Showcase */}
-          <div className="grid md:grid-cols-3 gap-8 mb-16">
+          <StaggerList stagger={0.1} className="grid md:grid-cols-3 gap-8 mb-16">
             <div className="bg-white dark:bg-slate-800 rounded-xl p-8 shadow-lg border border-gray-100 dark:border-slate-700">
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-white font-bold text-2xl">
@@ -1289,9 +1298,10 @@ export default function LandingPage() {
                 ))}
               </div>
             </div>
-          </div>
+          </StaggerList>
 
           {/* Testimonials Grid */}
+          <ScrollReveal>
           <div className="grid md:grid-cols-2 gap-6">
             <div className="bg-gradient-to-br from-emerald-50 to-blue-50 dark:from-emerald-950/30 dark:to-blue-950/30 rounded-xl p-8 border border-emerald-100 dark:border-emerald-800/40">
               <div className="flex gap-1 mb-4">
@@ -1425,6 +1435,7 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
+          </ScrollReveal>
         </div>
       </section>
 
@@ -2026,7 +2037,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          <StaggerList stagger={0.07} className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
             {pricing.map((plan) => (
               <div
                 key={plan.name}
@@ -2105,7 +2116,7 @@ export default function LandingPage() {
                 </Link>
               </div>
             ))}
-          </div>
+          </StaggerList>
         </div>
       </section>
 

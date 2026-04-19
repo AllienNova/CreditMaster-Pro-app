@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import Footer from "@/components/ui/Footer";
+import { FadeIn, StaggerList, ScrollReveal } from "@/components/ui/animations";
 
 export const metadata: Metadata = {
   title: "Credit Intelligence | Fynvita",
@@ -111,7 +112,7 @@ export default function CreditPage() {
         <div className="max-w-[980px] mx-auto px-6">
           <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-12 text-center relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-blue-500/20"></div>
-            <div className="relative">
+            <FadeIn direction="up" className="relative">
               <div className="inline-flex items-center justify-center w-48 h-48 rounded-full bg-gradient-to-br from-blue-500 to-blue-400 mb-8">
                 <div className="text-center">
                   <span className="text-6xl font-bold text-white">742</span>
@@ -125,7 +126,7 @@ export default function CreditPage() {
                 Watch your credit score improve as our AI identifies and
                 resolves negative items on your report.
               </p>
-            </div>
+            </FadeIn>
           </div>
         </div>
       </section>
@@ -142,7 +143,7 @@ export default function CreditPage() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8">
+          <StaggerList stagger={0.1} className="grid md:grid-cols-2 gap-8">
             {/* Feature 1 */}
             <div className="bg-white dark:bg-slate-800 rounded-xl p-8 shadow-sm border border-gray-100 dark:border-slate-700">
               <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-6">
@@ -246,13 +247,14 @@ export default function CreditPage() {
                 exactly what actions led to score changes.
               </p>
             </div>
-          </div>
+          </StaggerList>
         </div>
       </section>
 
       {/* Stats Section */}
       <section className="py-20 bg-white dark:bg-slate-800">
         <div className="max-w-[980px] mx-auto px-6">
+          <ScrollReveal>
           <div className="grid grid-cols-3 gap-8 text-center">
             <div>
               <div className="text-5xl font-semibold text-gray-900 dark:text-white mb-2">
@@ -277,6 +279,7 @@ export default function CreditPage() {
               </p>
             </div>
           </div>
+          </ScrollReveal>
         </div>
       </section>
 
@@ -292,7 +295,7 @@ export default function CreditPage() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-12">
+          <StaggerList stagger={0.12} className="grid md:grid-cols-3 gap-12">
             <div className="text-center">
               <div className="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center mx-auto mb-6">
                 <span className="text-2xl font-bold text-white">1</span>
@@ -326,13 +329,14 @@ export default function CreditPage() {
                 Watch your score climb as we handle the dispute process.
               </p>
             </div>
-          </div>
+          </StaggerList>
         </div>
       </section>
 
       {/* CTA Section */}
       <section className="py-20 bg-gray-900">
         <div className="max-w-[980px] mx-auto px-6 text-center">
+          <ScrollReveal>
           <h2 className="text-4xl font-semibold text-white tracking-tight mb-4">
             Ready to transform your credit?
           </h2>
@@ -346,6 +350,7 @@ export default function CreditPage() {
           >
             Get Started Free
           </Link>
+          </ScrollReveal>
         </div>
       </section>
 
