@@ -4,8 +4,13 @@ import { useState, useEffect } from "react";
 
 const QUERY = "(prefers-reduced-motion: reduce)";
 
+function getInitialValue(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia(QUERY).matches;
+}
+
 export function useReducedMotion(): boolean {
-  const [reduced, setReduced] = useState(false);
+  const [reduced, setReduced] = useState(getInitialValue);
 
   useEffect(() => {
     const mql = window.matchMedia(QUERY);
