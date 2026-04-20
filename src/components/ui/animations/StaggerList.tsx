@@ -7,7 +7,7 @@ import {
   staggerItem,
   reducedMotion,
 } from "@/lib/animations/variants";
-import { Children, type ReactNode } from "react";
+import { Children, useMemo, type ReactNode } from "react";
 
 interface StaggerListProps {
   children: ReactNode;
@@ -23,7 +23,7 @@ export function StaggerList({
   as: Tag = "div",
 }: StaggerListProps) {
   const reduced = useReducedMotion();
-  const MotionTag = motion.create(Tag);
+  const MotionTag = useMemo(() => motion.create(Tag), [Tag]);
 
   return (
     <MotionTag

@@ -72,7 +72,6 @@ export function AnimatedSwitch({
       </div>
       {label && (
         <label
-          htmlFor={switchId}
           className={[
             "text-sm font-medium text-gray-700 dark:text-slate-300",
             disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer",

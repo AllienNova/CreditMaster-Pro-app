@@ -10,7 +10,6 @@ interface AnimatedNumberProps {
   suffix?: string;
   decimals?: number;
   className?: string;
-  duration?: number;
 }
 
 export function AnimatedNumber({
@@ -19,41 +18,41 @@ export function AnimatedNumber({
   suffix = "",
   decimals = 0,
   className,
-  duration = 0.8,
 }: AnimatedNumberProps) {
   const reduced = useReducedMotion();
-  const motionValue = useMotionValue(0);
+  const motionValue = useMotionValue(reduced ? value : 0);
   const springValue = useSpring(motionValue, {
     stiffness: 100,
     damping: 30,
-    duration: reduced ? 0 : duration,
   });
   const ref = useRef<HTMLSpanElement>(null);
-  const prevValue = useRef(0);
 
   useEffect(() => {
     if (reduced) {
-      motionValue.set(value);
+      // Skip spring — set value directly and update DOM immediately
+      motionValue.jump(value);
+      if (ref.current) {
+        ref.current.textContent = `${prefix}${formatNumber(value, decimals)}${suffix}`;
+      }
     } else {
       motionValue.set(value);
     }
-    prevValue.current = value;
-  }, [value, motionValue, reduced]);
+  }, [value, motionValue, reduced, prefix, suffix, decimals]);
 
   useEffect(() => {
+    if (reduced) return;
     const unsubscribe = springValue.on("change", (latest) => {
       if (ref.current) {
-        const formatted = formatNumber(latest, decimals);
-        ref.current.textContent = `${prefix}${formatted}${suffix}`;
+        ref.current.textContent = `${prefix}${formatNumber(latest, decimals)}${suffix}`;
       }
     });
     return unsubscribe;
-  }, [springValue, prefix, suffix, decimals]);
+  }, [springValue, prefix, suffix, decimals, reduced]);
 
   return (
     <motion.span ref={ref} className={className}>
       {prefix}
-      {formatNumber(reduced ? value : 0, decimals)}
+      {formatNumber(value, decimals)}
       {suffix}
     </motion.span>
   );
