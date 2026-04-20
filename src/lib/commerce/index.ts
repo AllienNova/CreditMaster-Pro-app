@@ -10,6 +10,9 @@ export * from "./affiliate";
 // Offers and disclosures
 export * from "./offers";
 
+// Financial calculators
+export * from "./calculators";
+
 // Product matching
 export * from "./matching";
 
