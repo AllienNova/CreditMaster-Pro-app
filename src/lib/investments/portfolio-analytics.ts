@@ -220,8 +220,13 @@ export class PortfolioAnalytics {
       totalValue,
     );
 
-    // Asset class diversification (simplified - assume all stocks for now)
-    const assetClassScore = 50; // Simplified
+    // Asset class diversification
+    const assetClassSet = new Set<string>();
+    for (const h of holdings) {
+      assetClassSet.add((h.assetClass as string | undefined) || "stock");
+    }
+    const numberOfAssetClasses = assetClassSet.size;
+    const assetClassScore = Math.min(100, 20 + (numberOfAssetClasses - 1) * 30);
 
     // Overall diversification score (weighted average)
     const overallScore =
@@ -243,6 +248,36 @@ export class PortfolioAnalytics {
         totalValue) *
       100;
 
+    // Geographic breakdown
+    const countrySet = new Set<string>();
+    for (const h of holdings) {
+      countrySet.add(
+        h.country && h.country.length > 0 ? h.country.toUpperCase() : "US",
+      );
+    }
+    const numberOfCountries = countrySet.size;
+
+    const domesticValue = holdings
+      .filter(
+        (h) => !h.country || h.country === "" || h.country.toUpperCase() === "US",
+      )
+      .reduce((sum, h) => sum + h.currentValue, 0);
+    const domesticAllocation =
+      totalValue > 0 ? (domesticValue / totalValue) * 100 : 100;
+    const internationalAllocation = 100 - domesticAllocation;
+
+    const assetClassList = Array.from(assetClassSet).map((cls) => ({
+      assetClass: cls as "stock",
+      allocation:
+        (holdings
+          .filter(
+            (h) => ((h.assetClass as string | undefined) || "stock") === cls,
+          )
+          .reduce((sum, h) => sum + h.currentValue, 0) /
+          totalValue) *
+        100,
+    }));
+
     const diversificationScore: DiversificationScore = {
       portfolioId,
       calculatedAt: new Date(),
@@ -256,15 +291,15 @@ export class PortfolioAnalytics {
       },
       geographicDiversification: {
         score: geographicScore,
-        numberOfCountries: 1,
-        domesticAllocation: 100,
-        internationalAllocation: 0,
-        regions: [], // Simplified
+        numberOfCountries,
+        domesticAllocation,
+        internationalAllocation,
+        regions: [],
       },
       assetClassDiversification: {
         score: assetClassScore,
-        numberOfAssetClasses: 1,
-        assetClasses: [{ assetClass: "stock" as const, allocation: 100 }], // Simplified
+        numberOfAssetClasses,
+        assetClasses: assetClassList,
       },
       concentrationRisk: {
         topHoldingAllocation: maxSectorAllocation,
@@ -1121,32 +1156,133 @@ export class PortfolioAnalytics {
    * Get sector for a symbol (simplified - in production, use market data API)
    */
   private async getSectorForSymbol(symbol: string): Promise<SectorType> {
-    // Simplified sector mapping - in production, fetch from market data API
     const sectorMap: Record<string, SectorType> = {
+      // Technology
       AAPL: SectorType.TECHNOLOGY,
       MSFT: SectorType.TECHNOLOGY,
+      NVDA: SectorType.TECHNOLOGY,
+      AMD: SectorType.TECHNOLOGY,
+      INTC: SectorType.TECHNOLOGY,
+      ORCL: SectorType.TECHNOLOGY,
+      CRM: SectorType.TECHNOLOGY,
+      ADBE: SectorType.TECHNOLOGY,
+      QCOM: SectorType.TECHNOLOGY,
+      TXN: SectorType.TECHNOLOGY,
+      // Communication Services
       GOOGL: SectorType.COMMUNICATION_SERVICES,
+      GOOG: SectorType.COMMUNICATION_SERVICES,
+      META: SectorType.COMMUNICATION_SERVICES,
+      NFLX: SectorType.COMMUNICATION_SERVICES,
+      DIS: SectorType.COMMUNICATION_SERVICES,
+      T: SectorType.COMMUNICATION_SERVICES,
+      VZ: SectorType.COMMUNICATION_SERVICES,
+      CMCSA: SectorType.COMMUNICATION_SERVICES,
+      // Consumer Discretionary
       AMZN: SectorType.CONSUMER_DISCRETIONARY,
       TSLA: SectorType.CONSUMER_DISCRETIONARY,
-      JNJ: SectorType.HEALTHCARE,
-      JPM: SectorType.FINANCIALS,
-      XOM: SectorType.ENERGY,
+      HD: SectorType.CONSUMER_DISCRETIONARY,
+      MCD: SectorType.CONSUMER_DISCRETIONARY,
+      NKE: SectorType.CONSUMER_DISCRETIONARY,
+      SBUX: SectorType.CONSUMER_DISCRETIONARY,
+      TGT: SectorType.CONSUMER_DISCRETIONARY,
+      // Consumer Staples
       PG: SectorType.CONSUMER_STAPLES,
+      KO: SectorType.CONSUMER_STAPLES,
+      PEP: SectorType.CONSUMER_STAPLES,
+      WMT: SectorType.CONSUMER_STAPLES,
+      COST: SectorType.CONSUMER_STAPLES,
+      PM: SectorType.CONSUMER_STAPLES,
+      // Healthcare
+      JNJ: SectorType.HEALTHCARE,
+      UNH: SectorType.HEALTHCARE,
+      PFE: SectorType.HEALTHCARE,
+      ABBV: SectorType.HEALTHCARE,
+      MRK: SectorType.HEALTHCARE,
+      TMO: SectorType.HEALTHCARE,
+      ABT: SectorType.HEALTHCARE,
+      // Financials
+      JPM: SectorType.FINANCIALS,
+      BAC: SectorType.FINANCIALS,
+      WFC: SectorType.FINANCIALS,
+      GS: SectorType.FINANCIALS,
+      MS: SectorType.FINANCIALS,
+      BRK: SectorType.FINANCIALS,
+      V: SectorType.FINANCIALS,
+      MA: SectorType.FINANCIALS,
+      // Energy
+      XOM: SectorType.ENERGY,
+      CVX: SectorType.ENERGY,
+      COP: SectorType.ENERGY,
+      SLB: SectorType.ENERGY,
+      // Industrials
       BA: SectorType.INDUSTRIALS,
+      CAT: SectorType.INDUSTRIALS,
+      GE: SectorType.INDUSTRIALS,
+      HON: SectorType.INDUSTRIALS,
+      UPS: SectorType.INDUSTRIALS,
+      RTX: SectorType.INDUSTRIALS,
+      // Materials
+      LIN: SectorType.MATERIALS,
+      APD: SectorType.MATERIALS,
+      NEM: SectorType.MATERIALS,
+      // Real Estate
+      AMT: SectorType.REAL_ESTATE,
+      PLD: SectorType.REAL_ESTATE,
+      // Utilities
+      NEE: SectorType.UTILITIES,
+      DUK: SectorType.UTILITIES,
+      SO: SectorType.UTILITIES,
     };
 
-    return sectorMap[symbol] || SectorType.TECHNOLOGY; // Default to technology
+    return sectorMap[symbol] ?? SectorType.TECHNOLOGY;
   }
 
   /**
-   * Calculate geographic diversification (simplified)
+   * Calculate geographic diversification score (0-100).
+   * Uses Herfindahl-Hirschman Index across countries and rewards
+   * international exposure above a US-only baseline.
    */
   private async calculateGeographicDiversification(
     holdings: any[],
     totalValue: number,
   ): Promise<number> {
-    // Simplified - assume 70% domestic, 30% international
-    // In production, fetch actual geographic exposure from market data API
-    return 65; // Return a score of 65/100
+    if (holdings.length === 0 || totalValue === 0) return 0;
+
+    // Build country → value map
+    const countryValues = new Map<string, number>();
+    for (const h of holdings) {
+      const country =
+        typeof h.country === "string" && h.country.length > 0
+          ? h.country.toUpperCase()
+          : "US";
+      countryValues.set(
+        country,
+        (countryValues.get(country) ?? 0) + (h.currentValue as number),
+      );
+    }
+
+    // HHI across countries (0 = perfectly diversified, 1 = all one country)
+    let hhi = 0;
+    for (const value of countryValues.values()) {
+      const weight = value / totalValue;
+      hhi += weight * weight;
+    }
+
+    const numberOfCountries = countryValues.size;
+
+    // Base score from diversification: inverse of HHI scaled to 0-80
+    const baseScore = (1 - hhi) * 80;
+
+    // Bonus for international exposure (up to 20 points)
+    const intlValue = Array.from(countryValues.entries())
+      .filter(([c]) => c !== "US")
+      .reduce((sum, [, v]) => sum + v, 0);
+    const intlWeight = intlValue / totalValue;
+    const intlBonus = Math.min(20, intlWeight * 40);
+
+    // Small bonus for each additional country beyond the first
+    const countryBonus = Math.min(10, (numberOfCountries - 1) * 2);
+
+    return Math.min(100, baseScore + intlBonus + countryBonus);
   }
 }

@@ -16,6 +16,7 @@ import {
   createSignalExplainerAgent,
   createRiskNarrativeAgent,
   createConsensusArbiterAgent,
+  createNewsImpactAgent,
 } from "@/lib/trading/agents";
 import type { OperatingMode } from "@/lib/trading/modes/mode-types";
 
@@ -26,6 +27,7 @@ import type { OperatingMode } from "@/lib/trading/modes/mode-types";
 const VALID_AGENT_TYPES = new Set<AgentType>([
   "sentiment",
   "regime_confirmation",
+  "news_impact",
   "earnings_analysis",
   "signal_explainer",
   "risk_narrative",
@@ -48,6 +50,8 @@ function createAgentByType(agentType: AgentType) {
       return createSignalExplainerAgent();
     case "risk_narrative":
       return createRiskNarrativeAgent();
+    case "news_impact":
+      return createNewsImpactAgent();
     case "consensus_arbiter":
       return createConsensusArbiterAgent();
     default:

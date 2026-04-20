@@ -11,8 +11,32 @@ import { withAuth } from "@/lib/auth/api-guard";
 import type { JWTUser } from "@/lib/auth/jwt-validation";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- strategy_library not in generated types yet
-const strategyLib = (): any => supabaseAdmin.from("strategy_library");
+// ============================================================================
+// TYPES
+// ============================================================================
+
+interface StrategyLibraryRow {
+  id: string;
+  user_id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  category: string;
+  config: Record<string, unknown>;
+  risk_params: Record<string, unknown> | null;
+  is_system: boolean;
+  is_public: boolean;
+  is_active: boolean;
+  usage_count?: number;
+  backtest_results?: Record<string, unknown> | null;
+  degradation_factor?: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// strategy_library is not in the generated Database types yet.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const strategyLib = () => supabaseAdmin.from("strategy_library") as any;
 
 // ============================================================================
 // GET — Fetch single strategy
