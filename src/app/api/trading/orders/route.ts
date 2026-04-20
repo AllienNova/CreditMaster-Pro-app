@@ -9,13 +9,20 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, supabaseAdmin } from "@/lib/supabase/server";
 import {
   getOrderManager,
   OrderRequest,
   OrderFilter,
   OrderStatus,
+  type BrokerClient,
+  type BrokerOrderParams,
+  type BrokerOrderResponse,
+  type BrokerOrder,
 } from "@/lib/trading/orders";
+import { getBrokerFactory } from "@/lib/trading/brokers/broker-factory";
+import type { BrokerCredentials } from "@/lib/trading/brokers/broker-interface";
+import { PaperTradingEngine } from "@/lib/trading/paper/PaperTradingEngine";
 
 // ============================================================================
 // GET - Retrieve Orders
@@ -204,22 +211,155 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // In production, get broker client from user's configuration
-        // For now, return the order in submitted state (mock)
-        const order = orderManager.getOrder(orderId);
-        if (!order) {
+        const pendingOrder = orderManager.getOrder(orderId);
+        if (!pendingOrder) {
           return NextResponse.json(
             { error: "Order not found" },
             { status: 404 },
           );
         }
 
-        return NextResponse.json({
-          success: true,
-          data: {
-            order,
-            message: "Order ready for submission. Connect broker to execute.",
+        // Determine paper vs live from the user's broker connection row
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: brokerConn } = await (supabaseAdmin as any)
+          .from("broker_connections")
+          .select("broker, paper_trading, account_id")
+          .eq("user_id", user.id)
+          .eq("status", "active")
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .single();
+
+        const isPaper = brokerConn ? Boolean(brokerConn.paper_trading) : true;
+
+        if (isPaper) {
+          // Paper trading path
+          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+          const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+          if (!supabaseUrl || !supabaseKey) {
+            return NextResponse.json(
+              { error: "Supabase configuration missing" },
+              { status: 500 },
+            );
+          }
+
+          const paperEngine = new PaperTradingEngine(supabaseUrl, supabaseKey);
+          const accountId = brokerConn?.account_id || pendingOrder.accountId || user.id;
+
+          try {
+            const paperOrder = await paperEngine.placeOrder(accountId, {
+              symbol: pendingOrder.symbol,
+              side: pendingOrder.side,
+              quantity: pendingOrder.quantity,
+              type: pendingOrder.type,
+              limitPrice: pendingOrder.limitPrice,
+              stopPrice: pendingOrder.stopPrice,
+              timeInForce: pendingOrder.timeInForce,
+              extendedHours: pendingOrder.extendedHours,
+              takeProfitPrice: pendingOrder.takeProfitPrice,
+              stopLossPrice: pendingOrder.stopLossPrice,
+              clientOrderId: pendingOrder.id,
+            });
+
+            return NextResponse.json({
+              success: true,
+              data: { order: paperOrder, mode: "paper" },
+            });
+          } catch (err) {
+            return NextResponse.json(
+              {
+                success: false,
+                error: err instanceof Error ? err.message : "Paper order failed",
+              },
+              { status: 400 },
+            );
+          }
+        }
+
+        // Live trading path — use Alpaca via broker factory
+        const alpacaKey = process.env.ALPACA_API_KEY;
+        const alpacaSecret = process.env.ALPACA_API_SECRET;
+
+        if (!alpacaKey || !alpacaSecret) {
+          return NextResponse.json(
+            { error: "Connect a broker to execute trades" },
+            { status: 400 },
+          );
+        }
+
+        const broker = getBrokerFactory().create("alpaca");
+        const credentials: BrokerCredentials = {
+          apiKey: alpacaKey,
+          apiSecret: alpacaSecret,
+          paperTrading: false,
+        };
+
+        await broker.connect(credentials);
+
+        // Adapt BrokerInterface.placeOrder result to BrokerClient interface
+        const brokerClientAdapter: BrokerClient = {
+          async submitOrder(params: BrokerOrderParams): Promise<BrokerOrderResponse> {
+            const result = await broker.placeOrder({
+              symbol: params.symbol,
+              side: params.side as "buy" | "sell",
+              quantity: params.qty,
+              type: params.type as "market" | "limit" | "stop" | "stop_limit" | "trailing_stop",
+              limitPrice: params.limit_price,
+              stopPrice: params.stop_price,
+              timeInForce: (params.time_in_force || "day") as "day" | "gtc" | "ioc" | "fok" | "opg" | "cls",
+              clientOrderId: params.client_order_id,
+            });
+
+            if (!result.success || !result.order) {
+              throw new Error(result.error || "Broker rejected order");
+            }
+
+            return {
+              id: result.order.id,
+              client_order_id: result.order.clientOrderId ?? params.client_order_id ?? "",
+              status: result.order.status,
+            };
           },
+          async cancelOrder(cancelOrderId: string): Promise<void> {
+            await broker.cancelOrder(cancelOrderId);
+          },
+          async getOrders(): Promise<BrokerOrder[]> {
+            const orders = await broker.getOrders();
+            return orders.map((o) => ({
+              id: o.id,
+              client_order_id: o.clientOrderId ?? "",
+              status: o.status,
+              filled_qty: o.filledQuantity,
+              filled_avg_price: o.filledAvgPrice,
+            }));
+          },
+          async getOrder(getOrderId: string): Promise<BrokerOrder> {
+            const o = await broker.getOrder(getOrderId);
+            if (!o) throw new Error(`Order ${getOrderId} not found`);
+            return {
+              id: o.id,
+              client_order_id: o.clientOrderId ?? "",
+              status: o.status,
+              filled_qty: o.filledQuantity,
+              filled_avg_price: o.filledAvgPrice,
+            };
+          },
+        };
+
+        const submitted = await orderManager.submitOrder(orderId, brokerClientAdapter);
+
+        if (!submitted) {
+          return NextResponse.json(
+            { error: "Order submission failed" },
+            { status: 400 },
+          );
+        }
+
+        return NextResponse.json({
+          success: submitted.status !== "error",
+          data: { order: submitted, mode: "live" },
+          ...(submitted.status === "error" && { error: submitted.errorMessage }),
         });
       }
 
