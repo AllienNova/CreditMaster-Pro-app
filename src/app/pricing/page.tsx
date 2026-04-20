@@ -450,6 +450,28 @@ export default function PricingPage() {
                   </td>
                 </tr>
                 <tr className="border-b border-gray-700/50">
+                  <td className="py-4 pr-4 text-gray-300">Subscription Cancellation</td>
+                  <td className="py-4 px-6 text-center">
+                    <span className="text-emerald-400 font-bold">
+                      AI-Assisted
+                    </span>
+                  </td>
+                  <td className="py-4 px-6 text-center text-red-400">None</td>
+                  <td className="py-4 px-6 text-center text-amber-400">
+                    Manual assist
+                  </td>
+                </tr>
+                <tr className="border-b border-gray-700/50">
+                  <td className="py-4 pr-4 text-gray-300">Auto Loan Comparison</td>
+                  <td className="py-4 px-6 text-center">
+                    <span className="text-emerald-400 font-bold">
+                      Pre-Approval Odds
+                    </span>
+                  </td>
+                  <td className="py-4 px-6 text-center text-emerald-400">Basic offers</td>
+                  <td className="py-4 px-6 text-center text-red-400">None</td>
+                </tr>
+                <tr className="border-b border-gray-700/50">
                   <td className="py-4 pr-4 text-gray-300">Investment Tools</td>
                   <td className="py-4 px-6 text-center">
                     <span className="text-emerald-400 font-bold">

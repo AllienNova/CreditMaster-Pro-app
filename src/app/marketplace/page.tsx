@@ -101,6 +101,21 @@ const categories = [
     icon: "users",
     color: "from-emerald-500 to-green-500",
   },
+  {
+    name: "Auto Loans",
+    description: "Compare rates from top auto lenders",
+    href: "/marketplace/auto-loans",
+    icon: "banknotes",
+    color: "from-sky-500 to-blue-500",
+    featured: true,
+  },
+  {
+    name: "Auto Insurance",
+    description: "Compare quotes and save on coverage",
+    href: "/marketplace/auto-insurance",
+    icon: "shield",
+    color: "from-violet-500 to-purple-500",
+  },
 ];
 
 export default function MarketplacePage() {
