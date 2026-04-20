@@ -986,9 +986,19 @@ Format as a JSON array of strings.`;
     const ema26 = this.calculateEMA(closes, 26);
     const macdLine = ema12 - ema26;
 
-    // For simplicity, using SMA for signal line (should be EMA of MACD)
-    const macdValues = [macdLine]; // In production, calculate for multiple periods
-    const signalLine = macdLine; // Simplified
+    // Build MACD history for each bar starting at index 26, then compute
+    // the 9-period EMA of that history to get the signal line.
+    const macdHistory: number[] = [];
+    for (let i = 26; i < closes.length; i++) {
+      const e12 = this.calculateEMA(closes.slice(0, i + 1), 12);
+      const e26 = this.calculateEMA(closes.slice(0, i + 1), 26);
+      macdHistory.push(e12 - e26);
+    }
+
+    const signalLine =
+      macdHistory.length >= 9
+        ? this.calculateEMA(macdHistory, 9)
+        : macdLine;
 
     return {
       value: macdLine,
@@ -1060,9 +1070,68 @@ Format as a JSON array of strings.`;
     closes: number[],
     period: number,
   ): number {
-    // Simplified ADX calculation
-    // In production, implement full +DI, -DI, and ADX calculation
-    return 25; // Placeholder
+    if (highs.length < period + 1) return 25;
+
+    // Step 1: Compute raw +DM, -DM, and TR for each bar
+    const rawPlusDM: number[] = [];
+    const rawMinusDM: number[] = [];
+    const rawTR: number[] = [];
+
+    for (let i = 1; i < highs.length; i++) {
+      const upMove = highs[i] - highs[i - 1];
+      const downMove = lows[i - 1] - lows[i];
+      rawPlusDM.push(upMove > downMove && upMove > 0 ? upMove : 0);
+      rawMinusDM.push(downMove > upMove && downMove > 0 ? downMove : 0);
+      rawTR.push(
+        Math.max(
+          highs[i] - lows[i],
+          Math.abs(highs[i] - closes[i - 1]),
+          Math.abs(lows[i] - closes[i - 1]),
+        ),
+      );
+    }
+
+    if (rawTR.length < period) return 25;
+
+    // Step 2: Wilder's smoothing — seed with simple sum of first `period` values
+    let smoothTR = rawTR.slice(0, period).reduce((s, v) => s + v, 0);
+    let smoothPlusDM = rawPlusDM.slice(0, period).reduce((s, v) => s + v, 0);
+    let smoothMinusDM = rawMinusDM.slice(0, period).reduce((s, v) => s + v, 0);
+
+    // Step 3: Build DX series using Wilder's rolling smoothing
+    const dxValues: number[] = [];
+
+    const addDX = (tr: number, plusDM: number, minusDM: number): void => {
+      if (tr === 0) return;
+      const plusDI = (100 * plusDM) / tr;
+      const minusDI = (100 * minusDM) / tr;
+      const diSum = plusDI + minusDI;
+      if (diSum === 0) return;
+      dxValues.push((100 * Math.abs(plusDI - minusDI)) / diSum);
+    };
+
+    addDX(smoothTR, smoothPlusDM, smoothMinusDM);
+
+    for (let i = period; i < rawTR.length; i++) {
+      smoothTR = smoothTR - smoothTR / period + rawTR[i];
+      smoothPlusDM = smoothPlusDM - smoothPlusDM / period + rawPlusDM[i];
+      smoothMinusDM = smoothMinusDM - smoothMinusDM / period + rawMinusDM[i];
+      addDX(smoothTR, smoothPlusDM, smoothMinusDM);
+    }
+
+    if (dxValues.length === 0) return 25;
+
+    // Step 4: ADX = Wilder's smoothing of DX over `period`
+    if (dxValues.length < period) {
+      return dxValues.reduce((s, v) => s + v, 0) / dxValues.length;
+    }
+
+    let adx = dxValues.slice(0, period).reduce((s, v) => s + v, 0) / period;
+    for (let i = period; i < dxValues.length; i++) {
+      adx = (adx * (period - 1) + dxValues[i]) / period;
+    }
+
+    return adx;
   }
 
   private calculateStochastic(

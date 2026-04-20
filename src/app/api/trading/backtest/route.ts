@@ -15,6 +15,8 @@ import {
   type BacktestStrategy,
 } from "@/lib/trading/backtesting/backtest-engine";
 import { validateStrategy } from "@/lib/trading/strategies/strategy-validator";
+import { marketDataService } from "@/lib/investments/market-data-service";
+import { AssetType, TimeInterval } from "@/lib/investments/types/market-data.types";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- tables not in generated types yet
 const strategyLib = (): any => supabaseAdmin.from("strategy_library");
@@ -199,13 +201,14 @@ async function handleRunBacktest(
 
   // Run backtest for each symbol
   const results = [];
+  let dataSource: "live" | "synthetic" = "live";
   for (const symbol of symbols) {
-    // Generate synthetic data for now — in production this would fetch from market data provider
-    const data = generateSyntheticOHLCV(
+    const { data, source } = await fetchMarketData(
+      symbol,
       365,
-      100,
       startDate ? new Date(startDate) : undefined,
     );
+    if (source === "synthetic") dataSource = "synthetic";
     engine.loadData(symbol, data);
     const result = await engine.runBacktest(symbol, strategyConfig);
     results.push(result);
@@ -239,6 +242,7 @@ async function handleRunBacktest(
     success: true,
     data: {
       results,
+      dataSource,
       summary: {
         symbols,
         strategyName: strategyConfig.name,
@@ -340,14 +344,14 @@ async function handleWalkForward(
     endDate: endDate ? new Date(endDate) : undefined,
   });
 
-  // Generate enough data for walk-forward (need at least windows * ~200 bars)
+  // Fetch enough data for walk-forward (need at least windows * ~200 bars)
   const barsNeeded = Math.max(numWindows * 200, 1000);
-  const data = generateSyntheticOHLCV(
+  const { data: wfData, source: wfSource } = await fetchMarketData(
+    symbol,
     barsNeeded,
-    100,
     startDate ? new Date(startDate) : undefined,
   );
-  engine.loadData(symbol, data);
+  engine.loadData(symbol, wfData);
 
   const result = await engine.runWalkForward(
     symbol,
@@ -399,6 +403,7 @@ async function handleWalkForward(
       windows: numWindows,
       inSampleRatio: ratio,
       symbol,
+      dataSource: wfSource,
     },
   });
 }
@@ -414,6 +419,51 @@ interface OHLCV {
   low: number;
   close: number;
   volume: number;
+}
+
+/**
+ * Fetch real OHLCV data from market data providers.
+ * Falls back to synthetic data (tagged) if all providers fail.
+ */
+async function fetchMarketData(
+  symbol: string,
+  days: number,
+  baseDate?: Date,
+): Promise<{ data: OHLCV[]; source: "live" | "synthetic" }> {
+  try {
+    const history = await marketDataService.getHistory(
+      symbol,
+      AssetType.STOCK,
+      TimeInterval.ONE_DAY,
+      days,
+    );
+
+    // Map from StockHistory (OHLCVData with Date timestamps) to backtest OHLCV
+    const data: OHLCV[] = history.data
+      .slice(0, days)
+      .map((bar) => ({
+        timestamp: bar.timestamp instanceof Date
+          ? bar.timestamp.getTime()
+          : new Date(bar.timestamp).getTime(),
+        open: bar.open,
+        high: bar.high,
+        low: bar.low,
+        close: bar.close,
+        volume: bar.volume,
+      }))
+      .sort((a, b) => a.timestamp - b.timestamp);
+
+    if (data.length === 0) {
+      throw new Error("Empty history returned from market data service");
+    }
+
+    return { data, source: "live" };
+  } catch {
+    return {
+      data: generateSyntheticOHLCV(days, 100, baseDate),
+      source: "synthetic",
+    };
+  }
 }
 
 function generateSyntheticOHLCV(

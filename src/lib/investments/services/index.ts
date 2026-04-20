@@ -7,7 +7,6 @@
 // Market Data
 export {
   MarketDataService,
-  type MarketDataProvider,
   type RealtimeUpdate,
 } from "./MarketDataService";
 

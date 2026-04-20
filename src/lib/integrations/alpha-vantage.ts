@@ -210,6 +210,56 @@ export class AlphaVantageClient {
   }
 
   /**
+   * Get company overview (raw object so callers can access any field)
+   * Returns the raw API response keyed by Alpha Vantage field names.
+   */
+  async getOverviewRaw(symbol: string): Promise<Record<string, string>> {
+    const cacheKey = `overview_raw:${symbol}`;
+    const cached = this.getFromCache<Record<string, string>>(cacheKey);
+    if (cached) return cached;
+
+    const data = await this.makeRequest({ function: "OVERVIEW", symbol });
+    if (!data.Symbol) {
+      throw new MarketDataAPIError(
+        `No overview data found for symbol: ${symbol}`,
+        "NO_DATA",
+        "AlphaVantage",
+        false,
+      );
+    }
+
+    this.setCache(cacheKey, data as Record<string, string>, CACHE_TTL.company);
+    return data as Record<string, string>;
+  }
+
+  /**
+   * Get news sentiment for a ticker symbol
+   * Returns the raw feed array from the NEWS_SENTIMENT endpoint.
+   */
+  async getNewsSentimentRaw(
+    symbol: string,
+  ): Promise<{ feed: unknown[] } | null> {
+    const cacheKey = `news_sentiment:${symbol}`;
+    const cached = this.getFromCache<{ feed: unknown[] }>(cacheKey);
+    if (cached) return cached;
+
+    try {
+      const data = await this.makeRequest({
+        function: "NEWS_SENTIMENT",
+        tickers: symbol,
+        limit: "20",
+      });
+
+      if (!data.feed) return null;
+      const result = { feed: data.feed as unknown[] };
+      this.setCache(cacheKey, result, CACHE_TTL.quote); // 1-minute TTL for news
+      return result;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * Search for symbols
    */
   async searchSymbol(query: string): Promise<SearchResult[]> {
@@ -247,6 +297,15 @@ export class AlphaVantageClient {
   // ============================================================================
 
   private async makeRequest(params: Record<string, string>): Promise<any> {
+    if (!this.apiKey) {
+      throw new MarketDataAPIError(
+        "Alpha Vantage API key not configured",
+        "API_ERROR",
+        "AlphaVantage",
+        false,
+      );
+    }
+
     await this.checkRateLimit();
 
     const url = new URL(this.baseUrl);

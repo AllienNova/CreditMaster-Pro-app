@@ -49,6 +49,7 @@ export interface NewsSentiment {
   recentNews: NewsArticle[];
   sentimentTrend: "improving" | "stable" | "declining";
   signal: SignalStrength;
+  source?: "live" | "estimated";
 }
 
 // ============================================================================
@@ -132,6 +133,7 @@ export interface AnalystConsensus {
   recentChanges: AnalystRecommendation[];
   ratingTrend: "upgrading" | "stable" | "downgrading";
   signal: SignalStrength;
+  source?: "live" | "estimated";
 }
 
 // ============================================================================
