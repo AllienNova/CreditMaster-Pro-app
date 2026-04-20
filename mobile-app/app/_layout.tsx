@@ -137,6 +137,9 @@ export default function RootLayout() {
         {/* Help & Support Screens */}
         <Stack.Screen name="help" options={{ headerShown: false }} />
 
+        {/* Web Handoff Screen */}
+        <Stack.Screen name="handoff" options={{ headerShown: false }} />
+
         {/* Admin Screens */}
         <Stack.Screen name="admin" options={{ headerShown: false }} />
 

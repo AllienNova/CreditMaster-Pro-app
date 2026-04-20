@@ -47,6 +47,10 @@ export default function SettingsLayout() {
         name="data-export"
         options={{ title: "Export Data", headerShown: false }}
       />
+      <Stack.Screen
+        name="transaction-rules"
+        options={{ title: "Transaction Rules", headerShown: false }}
+      />
     </Stack>
   );
 }
