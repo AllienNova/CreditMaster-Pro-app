@@ -1,515 +1,183 @@
 /**
  * Fynvita Credit Education Marketplace Screen
- * Courses and educational resources
+ * Courses and educational resources from marketplace API
  */
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Linking,
+  ActivityIndicator,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
-
-interface Course {
-  id: string;
-  title: string;
-  description: string;
-  duration: string;
-  lessons: number;
-  level: "Beginner" | "Intermediate" | "Advanced";
-  icon: keyof typeof Ionicons.glyphMap;
-  progress?: number;
-  free: boolean;
-  category: string;
-}
-
-interface Article {
-  id: string;
-  title: string;
-  excerpt: string;
-  category: string;
-  readTime: string;
-  date: string;
-}
-
-const COURSES: Course[] = [
-  {
-    id: "1",
-    title: "Credit Score Fundamentals",
-    description: "Learn how credit scores work and what factors affect them",
-    duration: "2h 30m",
-    lessons: 12,
-    level: "Beginner",
-    icon: "speedometer",
-    progress: 75,
-    free: true,
-    category: "Basics",
-  },
-  {
-    id: "2",
-    title: "Dispute Letter Mastery",
-    description: "Write effective dispute letters that get results",
-    duration: "3h 15m",
-    lessons: 18,
-    level: "Intermediate",
-    icon: "document-text",
-    progress: 30,
-    free: false,
-    category: "Disputes",
-  },
-  {
-    id: "3",
-    title: "Advanced Credit Strategies",
-    description: "Expert techniques for rapid credit improvement",
-    duration: "4h",
-    lessons: 24,
-    level: "Advanced",
-    icon: "rocket",
-    progress: 0,
-    free: false,
-    category: "Advanced",
-  },
-  {
-    id: "4",
-    title: "Debt Management 101",
-    description: "Strategies for paying off debt efficiently",
-    duration: "2h",
-    lessons: 10,
-    level: "Beginner",
-    icon: "cash",
-    progress: 100,
-    free: true,
-    category: "Debt",
-  },
-  {
-    id: "5",
-    title: "Identity Theft Protection",
-    description: "Protect yourself from fraud and identity theft",
-    duration: "1h 45m",
-    lessons: 8,
-    level: "Beginner",
-    icon: "shield-checkmark",
-    progress: 50,
-    free: true,
-    category: "Security",
-  },
-  {
-    id: "6",
-    title: "Building Credit Fast",
-    description: "Proven strategies to build credit quickly",
-    duration: "1h 30m",
-    lessons: 9,
-    level: "Beginner",
-    icon: "trending-up",
-    free: true,
-    category: "Basics",
-  },
-];
-
-const ARTICLES: Article[] = [
-  {
-    id: "1",
-    title: "Understanding Your Credit Report",
-    excerpt:
-      "A comprehensive guide to reading and interpreting your credit report from all three bureaus...",
-    category: "Basics",
-    readTime: "8 min",
-    date: "2024-01-15",
-  },
-  {
-    id: "2",
-    title: "5 Myths About Credit Scores",
-    excerpt:
-      "Common misconceptions that could be hurting your credit and what you should do instead...",
-    category: "Tips",
-    readTime: "5 min",
-    date: "2024-01-12",
-  },
-  {
-    id: "3",
-    title: "How to Negotiate with Creditors",
-    excerpt:
-      "Effective strategies for settling debts and removing negative items from your report...",
-    category: "Advanced",
-    readTime: "12 min",
-    date: "2024-01-10",
-  },
-  {
-    id: "4",
-    title: "FCRA Rights You Need to Know",
-    excerpt:
-      "Your legal rights under the Fair Credit Reporting Act and how to use them...",
-    category: "Legal",
-    readTime: "10 min",
-    date: "2024-01-08",
-  },
-  {
-    id: "5",
-    title: "Secured vs Unsecured Credit Cards",
-    excerpt:
-      "Which type of credit card is right for your credit building journey...",
-    category: "Products",
-    readTime: "6 min",
-    date: "2024-01-05",
-  },
-];
-
-const getLevelColor = (level: Course["level"]): string => {
-  const colors = {
-    Beginner: "#22C55E",
-    Intermediate: "#F59E0B",
-    Advanced: "#EF4444",
-  };
-  return colors[level];
-};
+import { useMarketplaceStore } from "../../src/store/marketplaceStore";
+import type { MarketplaceProduct } from "../../src/services/api/marketplace";
 
 export default function EducationScreen() {
-  const [activeTab, setActiveTab] = useState<"courses" | "articles">("courses");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const { products, isLoadingProducts, error, fetchProducts, clearError } =
+    useMarketplaceStore();
 
-  const categories = [
-    "all",
-    ...Array.from(new Set(COURSES.map((c) => c.category))),
-  ];
+  useEffect(() => {
+    fetchProducts("education");
+  }, []);
 
-  const filteredCourses =
-    categoryFilter === "all"
-      ? COURSES
-      : COURSES.filter((c) => c.category === categoryFilter);
+  const renderFeatures = (features: Record<string, unknown>): string[] => {
+    if (Array.isArray(features)) return features as string[];
+    if (features && typeof features === "object" && "list" in features) {
+      return features.list as string[];
+    }
+    return Object.values(features).filter(
+      (v) => typeof v === "string",
+    ) as string[];
+  };
 
-  const completedCourses = COURSES.filter((c) => c.progress === 100).length;
-  const inProgressCourses = COURSES.filter(
-    (c) => c.progress && c.progress > 0 && c.progress < 100,
-  ).length;
+  const handleSelectCourse = (product: MarketplaceProduct) => {
+    if (product.provider?.website) {
+      Linking.openURL(product.provider.website);
+    }
+  };
+
+  if (isLoadingProducts) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={[styles.header, { padding: theme.spacing.lg }]}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+          </TouchableOpacity>
+          <Text style={styles.title}>Education Library</Text>
+          <View style={{ width: 24 }} />
+        </View>
+        <View style={styles.centerContent}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={styles.loadingText}>Loading education resources...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={[styles.header, { padding: theme.spacing.lg }]}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+          </TouchableOpacity>
+          <Text style={styles.title}>Education Library</Text>
+          <View style={{ width: 24 }} />
+        </View>
+        <View style={styles.centerContent}>
+          <Ionicons name="cloud-offline" size={48} color={theme.colors.textSecondary} />
+          <Text style={styles.errorTitle}>Unable to load resources</Text>
+          <Text style={styles.errorSubtitle}>{error}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => { clearError(); fetchProducts("education"); }}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <ScrollView
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.backButton}
-          >
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
           </TouchableOpacity>
           <Text style={styles.title}>Education Library</Text>
           <View style={{ width: 24 }} />
         </View>
 
-        {/* Progress Card */}
-        <Card style={styles.progressCard}>
-          <View style={styles.progressHeader}>
-            <View style={styles.progressIconContainer}>
-              <Ionicons name="ribbon" size={28} color={theme.colors.primary} />
-            </View>
-            <View style={styles.progressInfo}>
-              <Text style={styles.progressTitle}>Your Learning Progress</Text>
-              <Text style={styles.progressSubtitle}>
-                {completedCourses} completed • {inProgressCourses} in progress
-              </Text>
-            </View>
+        {/* Hero */}
+        <Card style={styles.heroCard}>
+          <View style={styles.heroIconContainer}>
+            <Ionicons name="school" size={28} color={theme.colors.primary} />
           </View>
-          <View style={styles.progressBar}>
-            <View
-              style={[
-                styles.progressFill,
-                { width: `${(completedCourses / COURSES.length) * 100}%` },
-              ]}
-            />
-          </View>
-          <View style={styles.progressStats}>
-            <View style={styles.progressStatItem}>
-              <Ionicons name="checkmark-circle" size={16} color="#22C55E" />
-              <Text style={styles.progressStatText}>
-                {completedCourses} Completed
-              </Text>
-            </View>
-            <View style={styles.progressStatItem}>
-              <Ionicons name="play-circle" size={16} color="#F59E0B" />
-              <Text style={styles.progressStatText}>
-                {inProgressCourses} In Progress
-              </Text>
-            </View>
-            <View style={styles.progressStatItem}>
-              <Ionicons
-                name="time"
-                size={16}
-                color={theme.colors.textSecondary}
-              />
-              <Text style={styles.progressStatText}>
-                {COURSES.length - completedCourses - inProgressCourses} Not
-                Started
-              </Text>
-            </View>
-          </View>
+          <Text style={styles.heroTitle}>Learn to Master Your Credit</Text>
+          <Text style={styles.heroSubtitle}>
+            Courses and guides to help you understand and improve your credit
+          </Text>
         </Card>
 
-        {/* Tabs */}
-        <View style={styles.tabsRow}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === "courses" && styles.tabActive]}
-            onPress={() => setActiveTab("courses")}
-          >
-            <Ionicons
-              name="school"
-              size={16}
-              color={
-                activeTab === "courses"
-                  ? theme.colors.primary
-                  : theme.colors.textSecondary
-              }
-              style={{ marginRight: 6 }}
-            />
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "courses" && styles.tabTextActive,
-              ]}
-            >
-              Courses
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === "articles" && styles.tabActive]}
-            onPress={() => setActiveTab("articles")}
-          >
-            <Ionicons
-              name="newspaper"
-              size={16}
-              color={
-                activeTab === "articles"
-                  ? theme.colors.primary
-                  : theme.colors.textSecondary
-              }
-              style={{ marginRight: 6 }}
-            />
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === "articles" && styles.tabTextActive,
-              ]}
-            >
-              Articles
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {activeTab === "courses" ? (
-          <>
-            {/* Category Filter */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.categoryScroll}
-            >
-              {categories.map((cat) => (
-                <TouchableOpacity
-                  key={cat}
-                  style={[
-                    styles.categoryChip,
-                    categoryFilter === cat && styles.categoryChipActive,
-                  ]}
-                  onPress={() => setCategoryFilter(cat)}
-                >
-                  <Text
-                    style={[
-                      styles.categoryChipText,
-                      categoryFilter === cat && styles.categoryChipTextActive,
-                    ]}
-                  >
-                    {cat === "all" ? "All Courses" : cat}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            {/* Courses List */}
-            {filteredCourses.map((course) => (
-              <TouchableOpacity
-                key={course.id}
-                onPress={() => router.push("/help/guides")}
-              >
-                <Card style={styles.courseCard}>
-                  <View style={styles.courseHeader}>
-                    <View
-                      style={[
-                        styles.courseIcon,
-                        course.progress === 100 && styles.courseIconCompleted,
-                      ]}
-                    >
-                      <Ionicons
-                        name={
-                          course.progress === 100 ? "checkmark" : course.icon
-                        }
-                        size={24}
-                        color={
-                          course.progress === 100
-                            ? "#22C55E"
-                            : theme.colors.primary
-                        }
-                      />
-                    </View>
-                    <View style={styles.courseInfo}>
-                      <View style={styles.courseTitleRow}>
-                        <Text style={styles.courseTitle} numberOfLines={1}>
-                          {course.title}
-                        </Text>
-                        {!course.free && (
-                          <View style={styles.premiumBadge}>
-                            <Text style={styles.premiumText}>Premium</Text>
-                          </View>
-                        )}
-                      </View>
-                      <Text style={styles.courseDescription} numberOfLines={2}>
-                        {course.description}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.courseMeta}>
-                    <View style={styles.metaItem}>
-                      <Ionicons
-                        name="time"
-                        size={14}
-                        color={theme.colors.textSecondary}
-                      />
-                      <Text style={styles.metaText}>{course.duration}</Text>
-                    </View>
-                    <View style={styles.metaItem}>
-                      <Ionicons
-                        name="book"
-                        size={14}
-                        color={theme.colors.textSecondary}
-                      />
-                      <Text style={styles.metaText}>
-                        {course.lessons} lessons
-                      </Text>
-                    </View>
-                    <View
-                      style={[
-                        styles.levelBadge,
-                        { backgroundColor: `${getLevelColor(course.level)}15` },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.levelText,
-                          { color: getLevelColor(course.level) },
-                        ]}
-                      >
-                        {course.level}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {course.progress !== undefined && course.progress > 0 && (
-                    <View style={styles.courseProgress}>
-                      <View style={styles.courseProgressBar}>
-                        <View
-                          style={[
-                            styles.courseProgressFill,
-                            {
-                              width: `${course.progress}%`,
-                              backgroundColor:
-                                course.progress === 100
-                                  ? "#22C55E"
-                                  : theme.colors.primary,
-                            },
-                          ]}
-                        />
-                      </View>
-                      <Text
-                        style={[
-                          styles.courseProgressText,
-                          course.progress === 100 && { color: "#22C55E" },
-                        ]}
-                      >
-                        {course.progress === 100
-                          ? "Completed"
-                          : `${course.progress}%`}
-                      </Text>
-                    </View>
-                  )}
-
-                  {/* Action Button */}
-                  <TouchableOpacity
-                    style={[
-                      styles.courseButton,
-                      course.progress === 100 && styles.courseButtonReview,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.courseButtonText,
-                        course.progress === 100 &&
-                          styles.courseButtonTextReview,
-                      ]}
-                    >
-                      {course.progress === 0 || course.progress === undefined
-                        ? "Start Course"
-                        : course.progress === 100
-                          ? "Review"
-                          : "Continue"}
-                    </Text>
-                  </TouchableOpacity>
-                </Card>
-              </TouchableOpacity>
-            ))}
-          </>
-        ) : (
-          <>
-            {/* Articles List */}
-            {ARTICLES.map((article) => (
-              <TouchableOpacity key={article.id}>
-                <Card style={styles.articleCard}>
-                  <View style={styles.articleHeader}>
-                    <View style={styles.articleCategoryBadge}>
-                      <Text style={styles.articleCategoryText}>
-                        {article.category}
-                      </Text>
-                    </View>
-                    <Text style={styles.articleDate}>{article.date}</Text>
-                  </View>
-                  <Text style={styles.articleTitle}>{article.title}</Text>
-                  <Text style={styles.articleExcerpt} numberOfLines={2}>
-                    {article.excerpt}
-                  </Text>
-                  <View style={styles.articleFooter}>
-                    <View style={styles.readTimeRow}>
-                      <Ionicons
-                        name="time"
-                        size={14}
-                        color={theme.colors.textSecondary}
-                      />
-                      <Text style={styles.readTimeText}>
-                        {article.readTime} read
-                      </Text>
-                    </View>
-                    <TouchableOpacity style={styles.readButton}>
-                      <Text style={styles.readButtonText}>Read Article</Text>
-                      <Ionicons
-                        name="arrow-forward"
-                        size={14}
-                        color={theme.colors.primary}
-                      />
-                    </TouchableOpacity>
-                  </View>
-                </Card>
-              </TouchableOpacity>
-            ))}
-          </>
+        {/* Empty State */}
+        {products.length === 0 && (
+          <View style={styles.emptyState}>
+            <Ionicons name="school-outline" size={48} color={theme.colors.textSecondary} />
+            <Text style={styles.emptyTitle}>No education resources available yet</Text>
+            <Text style={styles.emptySubtitle}>Check back later for courses and guides</Text>
+          </View>
         )}
+
+        {/* Courses List */}
+        {products.map((product) => {
+          const features = renderFeatures(product.features);
+          const priceLabel = product.price === 0
+            ? "Free"
+            : `$${product.price}${product.priceType === "monthly" ? "/mo" : product.priceType === "yearly" ? "/yr" : ""}`;
+
+          return (
+            <TouchableOpacity key={product.id} onPress={() => handleSelectCourse(product)}>
+              <Card style={styles.courseCard}>
+                <View style={styles.courseHeader}>
+                  <View style={styles.courseIcon}>
+                    <Ionicons name="book" size={24} color={theme.colors.primary} />
+                  </View>
+                  <View style={styles.courseInfo}>
+                    <View style={styles.courseTitleRow}>
+                      <Text style={styles.courseTitle} numberOfLines={1}>{product.name}</Text>
+                      {product.price === 0 ? (
+                        <View style={styles.freeBadge}>
+                          <Text style={styles.freeText}>Free</Text>
+                        </View>
+                      ) : (
+                        <View style={styles.priceBadge}>
+                          <Text style={styles.priceText}>{priceLabel}</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.courseDescription} numberOfLines={2}>
+                      {product.description || ""}
+                    </Text>
+                  </View>
+                </View>
+
+                {features.length > 0 && (
+                  <View style={styles.courseMeta}>
+                    {features.slice(0, 3).map((feature, idx) => (
+                      <View key={idx} style={styles.featureRow}>
+                        <Ionicons name="checkmark" size={14} color="#22C55E" />
+                        <Text style={styles.featureText}>{feature}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                <View style={styles.courseFooter}>
+                  <View style={styles.ratingRow}>
+                    <Ionicons name="star" size={14} color="#F59E0B" />
+                    <Text style={styles.ratingText}>{product.rating.toFixed(1)}</Text>
+                    <Text style={styles.reviewsText}>({product.reviewCount})</Text>
+                  </View>
+                  <TouchableOpacity style={styles.courseButton}>
+                    <Text style={styles.courseButtonText}>View Course</Text>
+                  </TouchableOpacity>
+                </View>
+              </Card>
+            </TouchableOpacity>
+          );
+        })}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -521,253 +189,60 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   scrollView: { flex: 1, padding: theme.spacing.lg },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     marginBottom: theme.spacing.lg,
   },
   backButton: { padding: 4 },
   title: { fontSize: 20, fontWeight: "700", color: theme.colors.text },
-
-  // Progress Card
-  progressCard: { marginBottom: theme.spacing.lg },
-  progressHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: theme.spacing.md,
+  heroCard: { alignItems: "center", paddingVertical: theme.spacing.xl, marginBottom: theme.spacing.lg },
+  heroIconContainer: {
+    width: 56, height: 56, borderRadius: 28,
+    backgroundColor: `${theme.colors.primary}15`, justifyContent: "center", alignItems: "center",
   },
-  progressIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: `${theme.colors.primary}15`,
-    justifyContent: "center",
-    alignItems: "center",
+  heroTitle: { fontSize: 18, fontWeight: "700", color: theme.colors.text, marginTop: theme.spacing.md },
+  heroSubtitle: {
+    fontSize: 13, color: theme.colors.textSecondary, textAlign: "center",
+    marginTop: 8, lineHeight: 18, paddingHorizontal: theme.spacing.md,
   },
-  progressInfo: { marginLeft: 12, flex: 1 },
-  progressTitle: { fontSize: 15, fontWeight: "600", color: theme.colors.text },
-  progressSubtitle: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-    marginTop: 2,
-  },
-  progressBar: {
-    height: 8,
-    backgroundColor: theme.colors.border,
-    borderRadius: 4,
-    marginBottom: theme.spacing.sm,
-  },
-  progressFill: {
-    height: "100%",
-    backgroundColor: theme.colors.primary,
-    borderRadius: 4,
-  },
-  progressStats: { flexDirection: "row", justifyContent: "space-between" },
-  progressStatItem: { flexDirection: "row", alignItems: "center" },
-  progressStatText: {
-    fontSize: 11,
-    color: theme.colors.textSecondary,
-    marginLeft: 4,
-  },
-
-  // Tabs
-  tabsRow: {
-    flexDirection: "row",
-    marginBottom: theme.spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
-  },
-  tab: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 2,
-    borderBottomColor: "transparent",
-  },
-  tabActive: { borderBottomColor: theme.colors.primary },
-  tabText: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: theme.colors.textSecondary,
-  },
-  tabTextActive: { color: theme.colors.primary },
-
-  // Category Filter
-  categoryScroll: { marginBottom: theme.spacing.md },
-  categoryChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    backgroundColor: theme.colors.surface,
-    borderRadius: 20,
-    marginRight: 8,
-  },
-  categoryChipActive: { backgroundColor: theme.colors.primary },
-  categoryChipText: {
-    fontSize: 12,
-    fontWeight: "500",
-    color: theme.colors.textSecondary,
-  },
-  categoryChipTextActive: { color: "#fff" },
-
-  // Course Card
   courseCard: { marginBottom: theme.spacing.md },
   courseHeader: { flexDirection: "row", marginBottom: theme.spacing.sm },
   courseIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: `${theme.colors.primary}15`,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
+    width: 48, height: 48, borderRadius: 12,
+    backgroundColor: `${theme.colors.primary}15`, justifyContent: "center", alignItems: "center", marginRight: 12,
   },
-  courseIconCompleted: { backgroundColor: "#D1FAE5" },
   courseInfo: { flex: 1 },
   courseTitleRow: { flexDirection: "row", alignItems: "center" },
-  courseTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: theme.colors.text,
-    flex: 1,
-    marginRight: 8,
-  },
-  premiumBadge: {
-    backgroundColor: "#F59E0B",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  premiumText: { fontSize: 10, fontWeight: "600", color: "#fff" },
-  courseDescription: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-    marginTop: 4,
-    lineHeight: 16,
-  },
+  courseTitle: { fontSize: 15, fontWeight: "600", color: theme.colors.text, flex: 1, marginRight: 8 },
+  freeBadge: { backgroundColor: "#22C55E", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
+  freeText: { fontSize: 10, fontWeight: "600", color: "#fff" },
+  priceBadge: { backgroundColor: "#F59E0B", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
+  priceText: { fontSize: 10, fontWeight: "600", color: "#fff" },
+  courseDescription: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 4, lineHeight: 16 },
   courseMeta: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingTop: theme.spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
+    paddingTop: theme.spacing.sm, borderTopWidth: 1, borderTopColor: theme.colors.border,
   },
-  metaItem: { flexDirection: "row", alignItems: "center", marginRight: 16 },
-  metaText: { fontSize: 12, color: theme.colors.textSecondary, marginLeft: 4 },
-  levelBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-    marginLeft: "auto",
+  featureRow: { flexDirection: "row", alignItems: "center", marginBottom: 4 },
+  featureText: { fontSize: 12, color: theme.colors.textSecondary, marginLeft: 6 },
+  courseFooter: {
+    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
+    marginTop: theme.spacing.sm, paddingTop: theme.spacing.sm,
+    borderTopWidth: 1, borderTopColor: theme.colors.border,
   },
-  levelText: { fontSize: 11, fontWeight: "500" },
-  courseProgress: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: theme.spacing.sm,
-  },
-  courseProgressBar: {
-    flex: 1,
-    height: 4,
-    backgroundColor: theme.colors.border,
-    borderRadius: 2,
-    marginRight: 8,
-  },
-  courseProgressFill: {
-    height: "100%",
-    backgroundColor: theme.colors.primary,
-    borderRadius: 2,
-  },
-  courseProgressText: {
-    fontSize: 11,
-    fontWeight: "500",
-    color: theme.colors.primary,
-  },
+  ratingRow: { flexDirection: "row", alignItems: "center" },
+  ratingText: { fontSize: 13, fontWeight: "600", color: theme.colors.text, marginLeft: 4 },
+  reviewsText: { fontSize: 12, color: theme.colors.textSecondary, marginLeft: 2 },
   courseButton: {
-    marginTop: theme.spacing.sm,
-    paddingVertical: 10,
-    backgroundColor: theme.colors.primary,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  courseButtonReview: {
-    backgroundColor: "transparent",
-    borderWidth: 1,
-    borderColor: theme.colors.primary,
+    paddingHorizontal: 16, paddingVertical: 8,
+    backgroundColor: theme.colors.primary, borderRadius: 8,
   },
   courseButtonText: { fontSize: 13, fontWeight: "600", color: "#fff" },
-  courseButtonTextReview: { color: theme.colors.primary },
-
-  // Article Card
-  articleCard: { marginBottom: theme.spacing.md },
-  articleHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: theme.spacing.sm,
-  },
-  articleCategoryBadge: {
-    backgroundColor: `${theme.colors.primary}15`,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  articleCategoryText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: theme.colors.primary,
-  },
-  articleDate: { fontSize: 11, color: theme.colors.textSecondary },
-  articleTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: theme.colors.text,
-    marginBottom: 6,
-  },
-  articleExcerpt: {
-    fontSize: 13,
-    color: theme.colors.textSecondary,
-    lineHeight: 20,
-    marginBottom: theme.spacing.sm,
-  },
-  articleFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingTop: theme.spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
-  },
-  readTimeRow: { flexDirection: "row", alignItems: "center" },
-  readTimeText: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-    marginLeft: 4,
-  },
-  readButton: { flexDirection: "row", alignItems: "center" },
-  readButtonText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: theme.colors.primary,
-    marginRight: 4,
-  },
-
-  // Legacy filter styles (keeping for reference)
-  filterRow: { flexDirection: "row", marginBottom: theme.spacing.md },
-  filterTab: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: "center",
-    backgroundColor: theme.colors.surface,
-    marginHorizontal: 4,
-    borderRadius: 8,
-  },
-  filterTabActive: { backgroundColor: theme.colors.primary },
-  filterText: {
-    fontSize: 13,
-    fontWeight: "500",
-    color: theme.colors.textSecondary,
-  },
-  filterTextActive: { color: "#fff" },
+  centerContent: { flex: 1, justifyContent: "center", alignItems: "center", padding: theme.spacing.xl },
+  loadingText: { fontSize: 14, color: theme.colors.textSecondary, marginTop: theme.spacing.md },
+  errorTitle: { fontSize: 16, fontWeight: "600", color: theme.colors.text, marginTop: theme.spacing.md },
+  errorSubtitle: { fontSize: 13, color: theme.colors.textSecondary, marginTop: theme.spacing.sm, textAlign: "center" },
+  retryButton: { backgroundColor: theme.colors.primary, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8, marginTop: theme.spacing.lg },
+  retryButtonText: { fontSize: 14, fontWeight: "600", color: "#fff" },
+  emptyState: { alignItems: "center", paddingVertical: 60 },
+  emptyTitle: { fontSize: 16, fontWeight: "600", color: theme.colors.text, marginTop: 12 },
+  emptySubtitle: { fontSize: 13, color: theme.colors.textSecondary, marginTop: 4 },
 });

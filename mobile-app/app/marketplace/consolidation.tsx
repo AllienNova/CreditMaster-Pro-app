@@ -1,9 +1,9 @@
 /**
  * Fynvita Debt Consolidation Marketplace Screen
- * Debt consolidation options
+ * Debt consolidation options from marketplace API
  */
 
-import React, { useState } from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -11,90 +11,95 @@ import {
   ScrollView,
   TouchableOpacity,
   Linking,
+  ActivityIndicator,
 } from "react-native";
 import { router, Href } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
-
-interface ConsolidationOption {
-  id: string;
-  name: string;
-  type: string;
-  apr: string;
-  minAmount: string;
-  maxAmount: string;
-  term: string;
-  features: string[];
-  rating: number;
-}
-
-const OPTIONS: ConsolidationOption[] = [
-  {
-    id: "1",
-    name: "SoFi Personal Loan",
-    type: "Personal Loan",
-    apr: "8.99% - 25.81%",
-    minAmount: "$5,000",
-    maxAmount: "$100,000",
-    term: "2-7 years",
-    features: [
-      "No fees",
-      "Unemployment protection",
-      "Rate discount with autopay",
-    ],
-    rating: 4.8,
-  },
-  {
-    id: "2",
-    name: "LightStream",
-    type: "Personal Loan",
-    apr: "7.49% - 25.49%",
-    minAmount: "$5,000",
-    maxAmount: "$100,000",
-    term: "2-12 years",
-    features: ["Same-day funding", "No fees", "Rate beat program"],
-    rating: 4.7,
-  },
-  {
-    id: "3",
-    name: "Prosper",
-    type: "Peer-to-Peer",
-    apr: "8.99% - 35.99%",
-    minAmount: "$2,000",
-    maxAmount: "$50,000",
-    term: "3-5 years",
-    features: ["Fixed rates", "No prepayment penalty", "Joint applications"],
-    rating: 4.5,
-  },
-  {
-    id: "4",
-    name: "Upstart",
-    type: "AI-Based",
-    apr: "6.70% - 35.99%",
-    minAmount: "$1,000",
-    maxAmount: "$50,000",
-    term: "3-5 years",
-    features: ["AI underwriting", "Fast approval", "Education considered"],
-    rating: 4.6,
-  },
-];
+import { useMarketplaceStore } from "../../src/store/marketplaceStore";
+import type { MarketplaceProduct } from "../../src/services/api/marketplace";
 
 export default function ConsolidationScreen() {
-  const [selectedType, setSelectedType] = useState<string>("all");
-  const types = ["all", "Personal Loan", "Peer-to-Peer", "AI-Based"];
+  const { products, isLoadingProducts, error, fetchProducts, clearError } =
+    useMarketplaceStore();
 
-  const filteredOptions =
-    selectedType === "all"
-      ? OPTIONS
-      : OPTIONS.filter((o) => o.type === selectedType);
+  useEffect(() => {
+    fetchProducts("loans");
+  }, []);
 
-  const handleApply = (option: ConsolidationOption) => {
-    Linking.openURL(
-      `https://www.google.com/search?q=${encodeURIComponent(option.name)}`,
-    );
+  const handleApply = (product: MarketplaceProduct) => {
+    if (product.provider?.website) {
+      Linking.openURL(product.provider.website);
+    }
   };
+
+  const renderFeatures = (features: Record<string, unknown>): string[] => {
+    if (Array.isArray(features)) return features as string[];
+    if (features && typeof features === "object" && "list" in features) {
+      return features.list as string[];
+    }
+    return Object.values(features).filter(
+      (v) => typeof v === "string",
+    ) as string[];
+  };
+
+  if (isLoadingProducts) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={[styles.header, { padding: theme.spacing.lg }]}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+          </TouchableOpacity>
+          <Text style={styles.title}>Debt Consolidation</Text>
+          <View style={{ width: 24 }} />
+        </View>
+        <View style={styles.centerContent}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={styles.loadingText}>Loading consolidation options...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={[styles.header, { padding: theme.spacing.lg }]}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+          </TouchableOpacity>
+          <Text style={styles.title}>Debt Consolidation</Text>
+          <View style={{ width: 24 }} />
+        </View>
+        <View style={styles.centerContent}>
+          <Ionicons
+            name="cloud-offline"
+            size={48}
+            color={theme.colors.textSecondary}
+          />
+          <Text style={styles.errorTitle}>Unable to load options</Text>
+          <Text style={styles.errorSubtitle}>{error}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => {
+              clearError();
+              fetchProducts("loans");
+            }}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -150,82 +155,88 @@ export default function ConsolidationScreen() {
           ))}
         </View>
 
-        {/* Filter */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filterScroll}
-        >
-          {types.map((type) => (
-            <TouchableOpacity
-              key={type}
-              style={[
-                styles.filterChip,
-                selectedType === type && styles.filterChipActive,
-              ]}
-              onPress={() => setSelectedType(type)}
-            >
-              <Text
-                style={[
-                  styles.filterText,
-                  selectedType === type && styles.filterTextActive,
-                ]}
-              >
-                {type === "all" ? "All Types" : type}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        {/* Empty State */}
+        {products.length === 0 && (
+          <View style={styles.emptyState}>
+            <Ionicons
+              name="git-merge-outline"
+              size={48}
+              color={theme.colors.textSecondary}
+            />
+            <Text style={styles.emptyTitle}>
+              No consolidation options available yet
+            </Text>
+            <Text style={styles.emptySubtitle}>
+              Check back later for new offerings
+            </Text>
+          </View>
+        )}
 
         {/* Options List */}
-        {filteredOptions.map((option) => (
-          <Card key={option.id} style={styles.optionCard}>
-            <View style={styles.optionHeader}>
-              <View>
-                <Text style={styles.optionName}>{option.name}</Text>
-                <Text style={styles.optionType}>{option.type}</Text>
-              </View>
-              <View style={styles.ratingBadge}>
-                <Ionicons name="star" size={12} color="#F59E0B" />
-                <Text style={styles.ratingText}>{option.rating}</Text>
-              </View>
-            </View>
-
-            <View style={styles.optionStats}>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>APR</Text>
-                <Text style={styles.statValue}>{option.apr}</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>Amount</Text>
-                <Text style={styles.statValue}>
-                  {option.minAmount} - {option.maxAmount}
-                </Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>Term</Text>
-                <Text style={styles.statValue}>{option.term}</Text>
-              </View>
-            </View>
-
-            <View style={styles.featuresSection}>
-              {option.features.map((feature, idx) => (
-                <View key={idx} style={styles.featureRow}>
-                  <Ionicons name="checkmark-circle" size={14} color="#22C55E" />
-                  <Text style={styles.featureText}>{feature}</Text>
+        {products.map((product) => {
+          const features = renderFeatures(product.features);
+          return (
+            <Card key={product.id} style={styles.optionCard}>
+              <View style={styles.optionHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.optionName}>{product.name}</Text>
+                  <Text style={styles.optionType}>
+                    {product.description || product.provider?.name || ""}
+                  </Text>
                 </View>
-              ))}
-            </View>
+                <View style={styles.ratingBadge}>
+                  <Ionicons name="star" size={12} color="#F59E0B" />
+                  <Text style={styles.ratingText}>
+                    {product.rating.toFixed(1)}
+                  </Text>
+                </View>
+              </View>
 
-            <TouchableOpacity
-              style={styles.applyButton}
-              onPress={() => handleApply(option)}
-            >
-              <Text style={styles.applyButtonText}>Check Your Rate</Text>
-              <Ionicons name="open-outline" size={16} color="#fff" />
-            </TouchableOpacity>
-          </Card>
-        ))}
+              <View style={styles.optionStats}>
+                <View style={styles.statItem}>
+                  <Text style={styles.statLabel}>Price</Text>
+                  <Text style={styles.statValue}>
+                    ${product.price}
+                    {product.priceType === "monthly" ? "/mo" : product.priceType === "yearly" ? "/yr" : ""}
+                  </Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statLabel}>Rating</Text>
+                  <Text style={styles.statValue}>
+                    {product.rating.toFixed(1)}
+                  </Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statLabel}>Reviews</Text>
+                  <Text style={styles.statValue}>{product.reviewCount}</Text>
+                </View>
+              </View>
+
+              {features.length > 0 && (
+                <View style={styles.featuresSection}>
+                  {features.slice(0, 3).map((feature, idx) => (
+                    <View key={idx} style={styles.featureRow}>
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={14}
+                        color="#22C55E"
+                      />
+                      <Text style={styles.featureText}>{feature}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              <TouchableOpacity
+                style={styles.applyButton}
+                onPress={() => handleApply(product)}
+              >
+                <Text style={styles.applyButtonText}>Check Your Rate</Text>
+                <Ionicons name="open-outline" size={16} color="#fff" />
+              </TouchableOpacity>
+            </Card>
+          );
+        })}
 
         {/* Calculator Link */}
         <TouchableOpacity
@@ -285,21 +296,6 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   benefitText: { fontSize: 12, fontWeight: "500", color: theme.colors.text },
-  filterScroll: { marginBottom: theme.spacing.md },
-  filterChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    backgroundColor: theme.colors.surface,
-    borderRadius: 20,
-    marginRight: 8,
-  },
-  filterChipActive: { backgroundColor: theme.colors.primary },
-  filterText: {
-    fontSize: 13,
-    fontWeight: "500",
-    color: theme.colors.textSecondary,
-  },
-  filterTextActive: { color: "#fff" },
   optionCard: { marginBottom: theme.spacing.md },
   optionHeader: {
     flexDirection: "row",
@@ -308,7 +304,11 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.sm,
   },
   optionName: { fontSize: 16, fontWeight: "600", color: theme.colors.text },
-  optionType: { fontSize: 12, color: theme.colors.textSecondary, marginTop: 2 },
+  optionType: {
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    marginTop: 2,
+  },
   ratingBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -375,5 +375,48 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: theme.colors.primary,
     marginHorizontal: 8,
+  },
+  centerContent: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: theme.spacing.xl,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.md,
+  },
+  errorTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: theme.colors.text,
+    marginTop: theme.spacing.md,
+  },
+  errorSubtitle: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.sm,
+    textAlign: "center",
+  },
+  retryButton: {
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: theme.spacing.lg,
+  },
+  retryButtonText: { fontSize: 14, fontWeight: "600", color: "#fff" },
+  emptyState: { alignItems: "center", paddingVertical: 60 },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: theme.colors.text,
+    marginTop: 12,
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    marginTop: 4,
   },
 });
