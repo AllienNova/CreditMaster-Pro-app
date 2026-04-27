@@ -18,20 +18,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
-import { useFinancialStore } from "../../src/store/financialStore";
-
-interface Goal {
-  id: string;
-  name: string;
-  icon: string;
-  color: string;
-  targetAmount: number;
-  currentAmount: number;
-  targetDate: string;
-  monthlyContribution: number;
-  milestones: { percent: number; reached: boolean }[];
-  category: "savings" | "debt" | "investment" | "purchase";
-}
+import { useGoalStore } from "../../src/store/goalStore";
 
 const GOAL_COLORS: Record<string, string> = {
   emergency_fund: "#22C55E",
@@ -40,6 +27,9 @@ const GOAL_COLORS: Record<string, string> = {
   investment: "#8B5CF6",
   purchase: "#F59E0B",
   retirement: "#06B6D4",
+  vacation: "#3B82F6",
+  education: "#8B5CF6",
+  home: "#F59E0B",
   other: "#6B7280",
 };
 
@@ -50,161 +40,81 @@ const GOAL_ICONS: Record<string, string> = {
   investment: "trending-up",
   purchase: "cart",
   retirement: "home",
+  vacation: "airplane",
+  education: "school",
+  home: "home",
   other: "flag",
 };
 
-const MOCK_GOALS: Goal[] = [
-  {
-    id: "1",
-    name: "Emergency Fund",
-    icon: "shield-checkmark",
-    color: "#22C55E",
-    targetAmount: 15000,
-    currentAmount: 8500,
-    targetDate: "Jun 2025",
-    monthlyContribution: 500,
-    milestones: [
-      { percent: 25, reached: true },
-      { percent: 50, reached: true },
-      { percent: 75, reached: false },
-      { percent: 100, reached: false },
-    ],
-    category: "savings",
-  },
-  {
-    id: "2",
-    name: "Vacation Fund",
-    icon: "airplane",
-    color: "#3B82F6",
-    targetAmount: 5000,
-    currentAmount: 2200,
-    targetDate: "Aug 2025",
-    monthlyContribution: 300,
-    milestones: [
-      { percent: 25, reached: true },
-      { percent: 50, reached: false },
-      { percent: 75, reached: false },
-      { percent: 100, reached: false },
-    ],
-    category: "savings",
-  },
-  {
-    id: "3",
-    name: "Pay Off Credit Card",
-    icon: "card",
-    color: "#EF4444",
-    targetAmount: 4500,
-    currentAmount: 3200,
-    targetDate: "Mar 2025",
-    monthlyContribution: 400,
-    milestones: [
-      { percent: 25, reached: true },
-      { percent: 50, reached: true },
-      { percent: 75, reached: false },
-      { percent: 100, reached: false },
-    ],
-    category: "debt",
-  },
-  {
-    id: "4",
-    name: "New Car Down Payment",
-    icon: "car",
-    color: "#8B5CF6",
-    targetAmount: 8000,
-    currentAmount: 1500,
-    targetDate: "Dec 2025",
-    monthlyContribution: 250,
-    milestones: [
-      { percent: 25, reached: false },
-      { percent: 50, reached: false },
-      { percent: 75, reached: false },
-      { percent: 100, reached: false },
-    ],
-    category: "purchase",
-  },
-];
-
 const CATEGORIES = ["all", "savings", "debt", "investment", "purchase"];
+
+function mapGoalTypeToCategory(
+  type: string | undefined,
+): "savings" | "debt" | "investment" | "purchase" {
+  if (type === "debt_payoff") return "debt";
+  if (type === "investment") return "investment";
+  if (type === "purchase") return "purchase";
+  return "savings";
+}
 
 export default function GoalsScreen() {
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [goals, setGoals] = useState<Goal[]>([]);
 
-  const { goals: storeGoals, fetchGoals, isLoadingGoals } = useFinancialStore();
-
-  const loadGoals = useCallback(async () => {
-    try {
-      await fetchGoals();
-      if (storeGoals.length > 0) {
-        const transformedGoals = storeGoals.map((g) => {
-          const progress = (g.currentAmount / g.targetAmount) * 100;
-          const goalType = g.type || "other";
-          const targetDateStr =
-            g.targetDate || g.deadline || new Date().toISOString();
-          return {
-            id: g.id,
-            name: g.name,
-            icon: GOAL_ICONS[goalType] || "flag",
-            color: GOAL_COLORS[goalType] || "#6B7280",
-            targetAmount: g.targetAmount,
-            currentAmount: g.currentAmount,
-            targetDate: new Date(targetDateStr).toLocaleDateString("en-US", {
-              month: "short",
-              year: "numeric",
-            }),
-            monthlyContribution: g.monthlyContribution || 0,
-            milestones: [
-              { percent: 25, reached: progress >= 25 },
-              { percent: 50, reached: progress >= 50 },
-              { percent: 75, reached: progress >= 75 },
-              { percent: 100, reached: progress >= 100 },
-            ],
-            category: (g.type === "debt_payoff"
-              ? "debt"
-              : g.type === "emergency_fund"
-                ? "savings"
-                : g.type) as Goal["category"],
-          };
-        });
-        setGoals(transformedGoals);
-      } else {
-        setGoals(MOCK_GOALS);
-      }
-    } catch (err) {
-      // Fallback to mock data silently in production
-      setGoals(MOCK_GOALS);
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchGoals, storeGoals]);
+  const { goals, isLoadingGoals, error, fetchGoals, clearError } =
+    useGoalStore();
 
   useEffect(() => {
-    loadGoals();
-  }, [loadGoals]);
+    fetchGoals();
+  }, [fetchGoals]);
 
-  const onRefresh = async () => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadGoals();
+    await fetchGoals();
     setRefreshing(false);
-  };
+  }, [fetchGoals]);
 
   const filteredGoals =
     selectedCategory === "all"
       ? goals
-      : goals.filter((g) => g.category === selectedCategory);
+      : goals.filter(
+          (g) => mapGoalTypeToCategory(g.type) === selectedCategory,
+        );
   const totalTarget = goals.reduce((sum, g) => sum + g.targetAmount, 0);
   const totalSaved = goals.reduce((sum, g) => sum + g.currentAmount, 0);
   const overallProgress =
     totalTarget > 0 ? Math.round((totalSaved / totalTarget) * 100) : 0;
 
-  if (loading || isLoadingGoals) {
+  if (isLoadingGoals && goals.length === 0) {
     return (
       <SafeAreaView style={styles.container} edges={["top"]}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={styles.loadingText}>Loading goals...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error && goals.length === 0) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.loadingContainer}>
+          <Ionicons
+            name="alert-circle-outline"
+            size={48}
+            color={theme.colors.error ?? "#EF4444"}
+          />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => {
+              clearError();
+              fetchGoals();
+            }}
+          >
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -243,161 +153,240 @@ export default function GoalsScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Overview Card */}
-        <Card style={styles.overviewCard}>
-          <View style={styles.overviewHeader}>
-            <View>
-              <Text style={styles.overviewLabel}>Total Progress</Text>
-              <Text style={styles.overviewValue}>
-                ${totalSaved.toLocaleString()}{" "}
-                <Text style={styles.overviewTarget}>
-                  / ${totalTarget.toLocaleString()}
-                </Text>
-              </Text>
-            </View>
-            <View style={styles.progressCircle}>
-              <Text style={styles.progressPercent}>{overallProgress}%</Text>
-            </View>
-          </View>
-          <View style={styles.progressContainer}>
-            <View
-              style={[styles.progressBar, { width: `${overallProgress}%` }]}
+        {goals.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Ionicons
+              name="flag-outline"
+              size={64}
+              color={theme.colors.textSecondary}
             />
-          </View>
-          <View style={styles.overviewStats}>
-            <View style={styles.overviewStat}>
-              <Ionicons name="flag" size={16} color={theme.colors.primary} />
-              <Text style={styles.statValue}>{goals.length}</Text>
-              <Text style={styles.statLabel}>Goals</Text>
-            </View>
-            <View style={styles.overviewStat}>
-              <Ionicons name="checkmark-circle" size={16} color="#22C55E" />
-              <Text style={styles.statValue}>
-                {goals.filter((g) => g.currentAmount >= g.targetAmount).length}
-              </Text>
-              <Text style={styles.statLabel}>Completed</Text>
-            </View>
-            <View style={styles.overviewStat}>
-              <Ionicons name="trending-up" size={16} color="#3B82F6" />
-              <Text style={styles.statValue}>
-                ${goals.reduce((sum, g) => sum + g.monthlyContribution, 0)}
-              </Text>
-              <Text style={styles.statLabel}>Monthly</Text>
-            </View>
-          </View>
-        </Card>
-
-        {/* Category Filter */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filterScroll}
-        >
-          {CATEGORIES.map((cat) => (
+            <Text style={styles.emptyTitle}>No goals yet</Text>
+            <Text style={styles.emptyText}>
+              Tap + to create your first financial goal
+            </Text>
             <TouchableOpacity
-              key={cat}
-              style={[
-                styles.filterChip,
-                selectedCategory === cat && styles.filterChipActive,
-              ]}
-              onPress={() => setSelectedCategory(cat)}
+              style={styles.emptyButton}
+              onPress={() => router.push("/financial/create-goal" as Href)}
             >
-              <Text
-                style={[
-                  styles.filterChipText,
-                  selectedCategory === cat && styles.filterChipTextActive,
-                ]}
-              >
-                {cat.charAt(0).toUpperCase() + cat.slice(1)}
-              </Text>
+              <Ionicons name="add" size={20} color="#fff" />
+              <Text style={styles.emptyButtonText}>Create Goal</Text>
             </TouchableOpacity>
-          ))}
-        </ScrollView>
+          </View>
+        ) : (
+          <>
+            {/* Overview Card */}
+            <Card style={styles.overviewCard}>
+              <View style={styles.overviewHeader}>
+                <View>
+                  <Text style={styles.overviewLabel}>Total Progress</Text>
+                  <Text style={styles.overviewValue}>
+                    ${totalSaved.toLocaleString()}{" "}
+                    <Text style={styles.overviewTarget}>
+                      / ${totalTarget.toLocaleString()}
+                    </Text>
+                  </Text>
+                </View>
+                <View style={styles.progressCircle}>
+                  <Text style={styles.progressPercent}>
+                    {overallProgress}%
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.progressContainer}>
+                <View
+                  style={[
+                    styles.progressBar,
+                    { width: `${overallProgress}%` },
+                  ]}
+                />
+              </View>
+              <View style={styles.overviewStats}>
+                <View style={styles.overviewStat}>
+                  <Ionicons
+                    name="flag"
+                    size={16}
+                    color={theme.colors.primary}
+                  />
+                  <Text style={styles.statValue}>{goals.length}</Text>
+                  <Text style={styles.statLabel}>Goals</Text>
+                </View>
+                <View style={styles.overviewStat}>
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={16}
+                    color="#22C55E"
+                  />
+                  <Text style={styles.statValue}>
+                    {goals.filter((g) => g.status === "completed").length}
+                  </Text>
+                  <Text style={styles.statLabel}>Completed</Text>
+                </View>
+                <View style={styles.overviewStat}>
+                  <Ionicons name="trending-up" size={16} color="#3B82F6" />
+                  <Text style={styles.statValue}>
+                    $
+                    {goals.reduce(
+                      (sum, g) => sum + (g.monthlyContribution || 0),
+                      0,
+                    )}
+                  </Text>
+                  <Text style={styles.statLabel}>Monthly</Text>
+                </View>
+              </View>
+            </Card>
 
-        {/* Goals List */}
-        <Text style={styles.sectionTitle}>{filteredGoals.length} Goals</Text>
-        {filteredGoals.map((goal) => {
-          const progress = Math.round(
-            (goal.currentAmount / goal.targetAmount) * 100,
-          );
-          return (
-            <TouchableOpacity
-              key={goal.id}
-              onPress={() =>
-                router.push(`/financial/goal-detail?id=${goal.id}` as Href)
-              }
+            {/* Category Filter */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.filterScroll}
             >
-              <Card style={styles.goalCard}>
-                <View style={styles.goalHeader}>
-                  <View
+              {CATEGORIES.map((cat) => (
+                <TouchableOpacity
+                  key={cat}
+                  style={[
+                    styles.filterChip,
+                    selectedCategory === cat && styles.filterChipActive,
+                  ]}
+                  onPress={() => setSelectedCategory(cat)}
+                >
+                  <Text
                     style={[
-                      styles.goalIcon,
-                      { backgroundColor: `${goal.color}15` },
+                      styles.filterChipText,
+                      selectedCategory === cat && styles.filterChipTextActive,
                     ]}
                   >
-                    <Ionicons
-                      name={goal.icon as keyof typeof Ionicons.glyphMap}
-                      size={24}
-                      color={goal.color}
-                    />
-                  </View>
-                  <View style={styles.goalInfo}>
-                    <Text style={styles.goalName}>{goal.name}</Text>
-                    <Text style={styles.goalTarget}>
-                      Target: {goal.targetDate}
-                    </Text>
-                  </View>
-                  <View style={styles.goalAmounts}>
-                    <Text style={styles.goalCurrent}>
-                      ${goal.currentAmount.toLocaleString()}
-                    </Text>
-                    <Text style={styles.goalTargetAmount}>
-                      / ${goal.targetAmount.toLocaleString()}
-                    </Text>
-                  </View>
-                </View>
-                <View style={styles.goalProgressContainer}>
-                  <View
-                    style={[
-                      styles.goalProgress,
-                      { width: `${progress}%`, backgroundColor: goal.color },
-                    ]}
-                  />
-                </View>
-                <View style={styles.milestonesRow}>
-                  {goal.milestones.map((m, idx) => (
-                    <View key={idx} style={styles.milestone}>
+                    {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {/* Goals List */}
+            <Text style={styles.sectionTitle}>
+              {filteredGoals.length} Goals
+            </Text>
+            {filteredGoals.map((goal) => {
+              const progress =
+                goal.targetAmount > 0
+                  ? Math.round(
+                      (goal.currentAmount / goal.targetAmount) * 100,
+                    )
+                  : 0;
+              const goalType = goal.type || "other";
+              const goalColor = GOAL_COLORS[goalType] || "#6B7280";
+              const goalIcon = GOAL_ICONS[goalType] || "flag";
+              const targetDateStr =
+                goal.targetDate || goal.deadline || "";
+              const formattedDate = targetDateStr
+                ? new Date(targetDateStr).toLocaleDateString("en-US", {
+                    month: "short",
+                    year: "numeric",
+                  })
+                : "No deadline";
+              const milestones = [
+                { percent: 25, reached: progress >= 25 },
+                { percent: 50, reached: progress >= 50 },
+                { percent: 75, reached: progress >= 75 },
+                { percent: 100, reached: progress >= 100 },
+              ];
+              return (
+                <TouchableOpacity
+                  key={goal.id}
+                  onPress={() =>
+                    router.push(
+                      `/financial/goal-detail?id=${goal.id}` as Href,
+                    )
+                  }
+                >
+                  <Card style={styles.goalCard}>
+                    <View style={styles.goalHeader}>
                       <View
                         style={[
-                          styles.milestoneIcon,
-                          m.reached && { backgroundColor: goal.color },
+                          styles.goalIcon,
+                          { backgroundColor: `${goalColor}15` },
                         ]}
                       >
-                        {m.reached && (
-                          <Ionicons name="checkmark" size={10} color="#fff" />
-                        )}
+                        <Ionicons
+                          name={
+                            goalIcon as keyof typeof Ionicons.glyphMap
+                          }
+                          size={24}
+                          color={goalColor}
+                        />
                       </View>
-                      <Text style={styles.milestoneText}>{m.percent}%</Text>
+                      <View style={styles.goalInfo}>
+                        <Text style={styles.goalName}>{goal.name}</Text>
+                        <Text style={styles.goalTarget}>
+                          Target: {formattedDate}
+                        </Text>
+                      </View>
+                      <View style={styles.goalAmounts}>
+                        <Text style={styles.goalCurrent}>
+                          ${goal.currentAmount.toLocaleString()}
+                        </Text>
+                        <Text style={styles.goalTargetAmount}>
+                          / ${goal.targetAmount.toLocaleString()}
+                        </Text>
+                      </View>
                     </View>
-                  ))}
-                </View>
-                <View style={styles.goalFooter}>
-                  <View style={styles.contributionBadge}>
-                    <Ionicons
-                      name="repeat"
-                      size={12}
-                      color={theme.colors.primary}
-                    />
-                    <Text style={styles.contributionText}>
-                      ${goal.monthlyContribution}/mo
-                    </Text>
-                  </View>
-                  <Text style={styles.progressText}>{progress}% complete</Text>
-                </View>
-              </Card>
-            </TouchableOpacity>
-          );
-        })}
+                    <View style={styles.goalProgressContainer}>
+                      <View
+                        style={[
+                          styles.goalProgress,
+                          {
+                            width: `${Math.min(progress, 100)}%`,
+                            backgroundColor: goalColor,
+                          },
+                        ]}
+                      />
+                    </View>
+                    <View style={styles.milestonesRow}>
+                      {milestones.map((m, idx) => (
+                        <View key={idx} style={styles.milestone}>
+                          <View
+                            style={[
+                              styles.milestoneIcon,
+                              m.reached && {
+                                backgroundColor: goalColor,
+                              },
+                            ]}
+                          >
+                            {m.reached && (
+                              <Ionicons
+                                name="checkmark"
+                                size={10}
+                                color="#fff"
+                              />
+                            )}
+                          </View>
+                          <Text style={styles.milestoneText}>
+                            {m.percent}%
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                    <View style={styles.goalFooter}>
+                      <View style={styles.contributionBadge}>
+                        <Ionicons
+                          name="repeat"
+                          size={12}
+                          color={theme.colors.primary}
+                        />
+                        <Text style={styles.contributionText}>
+                          ${goal.monthlyContribution || 0}/mo
+                        </Text>
+                      </View>
+                      <Text style={styles.progressText}>
+                        {progress}% complete
+                      </Text>
+                    </View>
+                  </Card>
+                </TouchableOpacity>
+              );
+            })}
+          </>
+        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -411,6 +400,52 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: theme.spacing.md,
     color: theme.colors.textSecondary,
+  },
+  errorText: {
+    marginTop: theme.spacing.md,
+    color: theme.colors.textSecondary,
+    fontSize: 16,
+    textAlign: "center",
+  },
+  retryButton: {
+    marginTop: theme.spacing.lg,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: theme.colors.primary,
+  },
+  retryText: { color: "#fff", fontWeight: "600", fontSize: 16 },
+  emptyContainer: {
+    alignItems: "center",
+    marginTop: 60,
+    paddingHorizontal: 32,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: theme.colors.text,
+    marginTop: 16,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    textAlign: "center",
+    marginTop: 8,
+  },
+  emptyButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: theme.colors.primary,
+  },
+  emptyButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
+    marginLeft: 8,
   },
   scrollView: { flex: 1, padding: theme.spacing.lg },
   header: {

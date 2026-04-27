@@ -11,10 +11,12 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../src/hooks/useTheme";
 import { useCoachStore } from "../../src/store";
+import { useGoalStore } from "../../src/store/goalStore";
 
 export default function GoalDetailScreen() {
   const { colors } = useTheme();
@@ -25,7 +27,9 @@ export default function GoalDetailScreen() {
     simulateGoal,
     goalsLoading,
   } = useCoachStore();
+  const { contributeToGoal, isContributing } = useGoalStore();
   const [newAmount, setNewAmount] = useState("");
+  const [contributeAmount, setContributeAmount] = useState("");
   const [showSimulator, setShowSimulator] = useState(false);
   const [simContribution, setSimContribution] = useState("");
 
@@ -58,6 +62,20 @@ export default function GoalDetailScreen() {
     if (!newAmount) return;
     await updateGoalProgress(goal.id, parseFloat(newAmount));
     setNewAmount("");
+  };
+
+  const handleContribute = async () => {
+    const amount = parseFloat(contributeAmount);
+    if (!contributeAmount || isNaN(amount) || amount <= 0) return;
+    const success = await contributeToGoal(goal.id, amount);
+    if (success) {
+      setContributeAmount("");
+    } else {
+      Alert.alert(
+        "Error",
+        useGoalStore.getState().error || "Failed to contribute to goal",
+      );
+    }
   };
 
   const handleSimulate = async () => {
@@ -158,6 +176,41 @@ export default function GoalDetailScreen() {
             onPress={handleUpdateProgress}
           >
             <Text style={styles.updateButtonText}>Update</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Contribute */}
+      <View style={[styles.card, { backgroundColor: colors.card }]}>
+        <Text style={[styles.cardTitle, { color: colors.text }]}>
+          Contribute
+        </Text>
+        <View style={styles.inputRow}>
+          <TextInput
+            style={[
+              styles.input,
+              { backgroundColor: colors.background, color: colors.text },
+            ]}
+            placeholder="Amount to contribute"
+            placeholderTextColor={colors.textSecondary}
+            keyboardType="numeric"
+            value={contributeAmount}
+            onChangeText={setContributeAmount}
+          />
+          <TouchableOpacity
+            style={[
+              styles.updateButton,
+              { backgroundColor: "#22c55e" },
+              isContributing && { opacity: 0.6 },
+            ]}
+            onPress={handleContribute}
+            disabled={isContributing}
+          >
+            {isContributing ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={styles.updateButtonText}>Add</Text>
+            )}
           </TouchableOpacity>
         </View>
       </View>

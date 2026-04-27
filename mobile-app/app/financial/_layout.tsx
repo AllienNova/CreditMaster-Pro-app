@@ -52,6 +52,10 @@ export default function FinancialLayout() {
         options={{ title: "Goal Details", headerShown: false }}
       />
       <Stack.Screen
+        name="create-goal"
+        options={{ title: "Create Goal", headerShown: false }}
+      />
+      <Stack.Screen
         name="debt"
         options={{ title: "Debt Payoff", headerShown: false }}
       />
