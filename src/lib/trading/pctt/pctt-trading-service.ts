@@ -28,6 +28,7 @@ import {
 } from "../brokers/broker-interface";
 import { AlpacaBroker } from "../brokers/alpaca-broker";
 import { createOperatingModeManager } from "@/lib/trading/modes/operating-mode-manager";
+import { validateCurrentPolicy } from "@/lib/trading/config";
 import type {
   OperatingMode,
   ModePermissions,
@@ -185,6 +186,16 @@ export class PCTTTradingService {
     this.userId = userId;
     this.config = { ...DEFAULT_TRADING_CONFIG, ...config };
     this.pcttEngine = createPCTTEngine(this.config.pcttConfig);
+
+    // Boot-time policy validation — log errors but don't block startup
+    try {
+      const validation = validateCurrentPolicy();
+      if (!validation.valid) {
+        console.error("[PCTTTradingService] Policy validation failed:", validation.errors);
+      }
+    } catch (err) {
+      console.error("[PCTTTradingService] Policy validation error:", err);
+    }
   }
 
   // ============================================================================
