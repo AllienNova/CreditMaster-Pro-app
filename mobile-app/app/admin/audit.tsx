@@ -39,7 +39,7 @@ const AUDIT_EVENTS: AuditEvent[] = [
   {
     id: "2",
     action: "Data Export",
-    user: "admin@cpfi.com",
+    user: "support@fynvita.com",
     timestamp: "2024-12-07 14:28:00",
     type: "data",
     details: "Exported user report (500 records)",
@@ -47,7 +47,7 @@ const AUDIT_EVENTS: AuditEvent[] = [
   {
     id: "3",
     action: "Role Change",
-    user: "admin@cpfi.com",
+    user: "support@fynvita.com",
     timestamp: "2024-12-07 14:15:30",
     type: "admin",
     details: "Changed user role: sarah@example.com → Admin",
@@ -63,7 +63,7 @@ const AUDIT_EVENTS: AuditEvent[] = [
   {
     id: "5",
     action: "Settings Update",
-    user: "admin@cpfi.com",
+    user: "support@fynvita.com",
     timestamp: "2024-12-07 13:45:00",
     type: "admin",
     details: "Updated rate limit: 100 → 200 req/min",

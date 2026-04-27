@@ -236,7 +236,7 @@ export const creditReportApi = {
     } as unknown as Blob);
 
     const response = await fetch(
-      `${process.env.EXPO_PUBLIC_API_URL || "https://cpfi.com/api"}/credit/reports/upload`,
+      `${process.env.EXPO_PUBLIC_API_URL || "https://api.fynvita.com"}/credit/reports/upload`,
       {
         method: "POST",
         headers: {

@@ -1,55 +1,35 @@
-# Context Recovery — Compaction #151
-> Auto-generated at 2026-04-27T03:55:29Z by pre-compact hook. Read this to restore session state.
+# Context Recovery — Compaction #154
+> Auto-generated at 2026-04-27T12:43:29Z by pre-compact hook. Read this to restore session state.
 
 ## Working Directory
 `/Users/kimalhonourdjam/Documents/Projects/Github Projects/Fynvita`
 
 ## Git State
 - **Branch:** feat/asset-system-regen
-- **Last commit:** 1282ea5 feat(trading): Sprint 10 — multi-tenant budget ceilings, narrow-only overrides, tenant isolation
+- **Last commit:** cbf46a3 fix(build): decouple SubscriptionCancellationWizard from server-side supabase import
 
 ### Recent Commits
 ```
-1282ea5 feat(trading): Sprint 10 — multi-tenant budget ceilings, narrow-only overrides, tenant isolation
-0a23591 feat(trading): Sprint 9C — bar consolidation, pre-market checklist, HTF alignment gate
-13cea15 feat(trading): Sprint 9B — edge decay detection, regime ensemble, trailing stop phases, boundary re-estimation
-e1440fa feat(trading): Sprint 9A — transaction cost model, Q-Score calibration, adaptive risk, overnight stress
-1e15e94 feat(trading): Sprint 6 — VaR portfolio heat model with regime-aware ceilings
+cbf46a3 fix(build): decouple SubscriptionCancellationWizard from server-side supabase import
+b1bad1f fix(security): make compliance gates fail-closed on error
+17af301 feat(goals): wire investment dashboard into goals flow, add mobile investment section
+bdedba8 feat(web): add voice assistant with speech recognition and text-to-speech
+3205db5 feat(mobile): add report generation with credit, financial, trading, tax reports
 ```
 
 ### Uncommitted Changes
 ```
- M .claude/last-verification.json
- M mobile-app/.expo/types/router.d.ts
-?? .!4366!TASK_TRACKER.md
-?? .claude/KNOWN_ISSUES.md
-?? .claude/agent-memory/
-?? .claude/commands/
-?? .claude/context-recovery.md
-?? .claude/hookify.block-credit-card-in-code.local.md
-?? .claude/hookify.block-pii-in-code.local.md
-?? .claude/hookify.require-stripe-webhook-verify.local.md
-?? .claude/hookify.warn-pii-logging.local.md
-?? .playwright-mcp/
-?? TASK_TRACKER.md
-?? assets/production/logo/favicon.ico
-?? assets/production/logo/horizontal-mono.svg
-?? assets/production/logo/horizontal-reversed.svg
-?? assets/production/logo/horizontal.svg
-?? assets/production/logo/horizontal@2x.png
-?? assets/production/logo/horizontal@3x.png
-?? assets/production/logo/mark-mono.svg
+?? REVIEW_BASELINE.md
 ```
 
 ### Modified Files
 ```
-.claude/last-verification.json
-mobile-app/.expo/types/router.d.ts
+TASK_TRACKER.md
 ```
 
 ## Task State
 # Task Tracker
-> Auto-maintained by Claude Code hooks. Last updated: 2026-04-27T03:55:29Z
+> Auto-maintained by Claude Code hooks. Last updated: 2026-04-27T12:43:29Z
 
 ## In Progress
 

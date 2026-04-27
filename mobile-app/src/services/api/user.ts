@@ -84,7 +84,7 @@ export const userProfileApi = {
     } as unknown as Blob);
 
     const response = await fetch(
-      `${process.env.EXPO_PUBLIC_API_URL || "https://cpfi.com/api"}/user/avatar`,
+      `${process.env.EXPO_PUBLIC_API_URL || "https://api.fynvita.com"}/user/avatar`,
       {
         method: "POST",
         headers: {
@@ -401,7 +401,7 @@ export const documentApi = {
     formData.append("type", docType);
 
     const response = await fetch(
-      `${process.env.EXPO_PUBLIC_API_URL || "https://cpfi.com/api"}/documents/upload`,
+      `${process.env.EXPO_PUBLIC_API_URL || "https://api.fynvita.com"}/documents/upload`,
       {
         method: "POST",
         headers: {

@@ -69,7 +69,7 @@ interface CancellationScript {
 }
 
 // Client-side helper: fetch cancellation info via API instead of direct service import
-async function fetchCancellationInfo(merchantName: string): Promise<CancellationInfo | null> {
+export async function fetchCancellationInfo(merchantName: string): Promise<CancellationInfo | null> {
   try {
     const res = await fetch(`/api/financial/subscriptions/cancellation-info?merchant=${encodeURIComponent(merchantName)}`);
     if (!res.ok) return null;

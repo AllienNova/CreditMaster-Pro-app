@@ -10,13 +10,25 @@
 
 import Stripe from "stripe";
 
-// Initialize Stripe with API key
-const stripe = new Stripe(
-  process.env.STRIPE_SECRET_KEY || "sk_test_dummy_key_for_build",
-  {
-    apiVersion: "2025-09-30.clover",
+// Initialize Stripe with API key — lazy to allow graceful degradation
+let _stripe: Stripe | null = null;
+function getStripe(): Stripe {
+  if (!_stripe) {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error("STRIPE_SECRET_KEY is not configured. Payment services unavailable.");
+    }
+    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: "2025-09-30.clover",
+    });
+  }
+  return _stripe;
+}
+// Backwards-compatible alias for existing code that references `stripe` directly
+const stripe = new Proxy({} as Stripe, {
+  get(_, prop) {
+    return (getStripe() as unknown as Record<string | symbol, unknown>)[prop];
   },
-);
+});
 
 export interface SubscriptionPlan {
   id: string;
