@@ -209,9 +209,15 @@ export async function POST(request: NextRequest) {
             );
           }
         } catch (gateErr) {
-          // Compliance gate error is non-fatal — log and continue
-          // In production, consider fail-closed for compliance
+          // Compliance gates MUST fail-closed — block trade if gates error
           console.error("[ComplianceGate] Error running gates:", gateErr);
+          return NextResponse.json(
+            {
+              success: false,
+              error: "Compliance check unavailable — order blocked for safety",
+            },
+            { status: 503 },
+          );
         }
 
         // Get account ID (in production, fetch from user's linked broker account)
