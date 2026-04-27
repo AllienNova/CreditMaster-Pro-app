@@ -486,73 +486,13 @@ export const useTradingStore = create<TradingState & TradingActions>(
           });
         }
       } catch (error) {
-        // Mock data for now since backend route may not exist
-        const mockTrades: TradeHistoryItem[] = [
-          {
-            id: "1",
-            symbol: "AAPL",
-            direction: "long",
-            entryDate: "2026-01-20",
-            entryPrice: 185.5,
-            exitDate: "2026-01-25",
-            exitPrice: 192.3,
-            quantity: 50,
-            profitLoss: 340,
-            profitLossPercent: 3.67,
-            outcome: "win",
-            strategy: "Breakout",
-            holdingPeriodDays: 5,
-          },
-          {
-            id: "2",
-            symbol: "TSLA",
-            direction: "short",
-            entryDate: "2026-01-19",
-            entryPrice: 245.0,
-            exitDate: "2026-01-22",
-            exitPrice: 238.5,
-            quantity: 20,
-            profitLoss: 130,
-            profitLossPercent: 2.65,
-            outcome: "win",
-            strategy: "Mean Reversion",
-            holdingPeriodDays: 3,
-          },
-          {
-            id: "3",
-            symbol: "NVDA",
-            direction: "long",
-            entryDate: "2026-01-18",
-            entryPrice: 520.0,
-            exitDate: "2026-01-19",
-            exitPrice: 515.0,
-            quantity: 10,
-            profitLoss: -50,
-            profitLossPercent: -0.96,
-            outcome: "loss",
-            strategy: "Trend Follow",
-            holdingPeriodDays: 1,
-          },
-        ];
-
-        const mockStats: TradeStats = {
-          totalTrades: 47,
-          winRate: 58.5,
-          profitFactor: 1.85,
-          totalPL: 2847.5,
-          averageWin: 185.3,
-          averageLoss: 95.2,
-          bestTrade: 1250.0,
-          worstTrade: -450.0,
-          avgHoldingPeriod: 3.5,
-          largestDrawdown: 8.2,
-          expectancy: 42.5,
-        };
-
         set({
-          tradeHistory: mockTrades,
-          tradeStats: mockStats,
-          lastUpdated: new Date().toISOString(),
+          tradeHistory: [],
+          tradeStats: null,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to fetch trade history",
         });
       } finally {
         set({ isLoading: false });
@@ -567,7 +507,12 @@ export const useTradingStore = create<TradingState & TradingActions>(
           set({ tradeStats: response.data });
         }
       } catch (error) {
-        // Stats already set in fetchTradeHistory mock
+        set({
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to fetch trade stats",
+        });
       } finally {
         set({ isLoading: false });
       }
