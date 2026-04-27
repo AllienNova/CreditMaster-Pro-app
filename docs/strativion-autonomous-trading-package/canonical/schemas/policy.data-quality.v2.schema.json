@@ -1,0 +1,771 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://strativion.io/schemas/policy.data-quality.v2.schema.json",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "meta"
+  ],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "document_role",
+        "schema_version",
+        "canonical_package_version"
+      ],
+      "properties": {
+        "document_role": {
+          "type": "string",
+          "enum": [
+            "policy",
+            "workflow"
+          ]
+        },
+        "schema_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[A-Za-z0-9\\.-]+)?$"
+        },
+        "file_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[A-Za-z0-9\\.-]+)?$"
+        },
+        "canonical_package_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[A-Za-z0-9\\.-]+)?$"
+        }
+      }
+    },
+    "staleness": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "equities_max_ms": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "regular_session": {
+              "type": "integer"
+            },
+            "pre_post_market": {
+              "type": "integer"
+            },
+            "action_on_stale": {
+              "type": "string"
+            },
+            "incident_code_prefix": {
+              "type": "string"
+            },
+            "override_class": {
+              "type": "string"
+            }
+          }
+        },
+        "futures_max_ms": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "regular_session": {
+              "type": "integer"
+            },
+            "electronic_session": {
+              "type": "integer"
+            },
+            "action_on_stale": {
+              "type": "string"
+            },
+            "incident_code_prefix": {
+              "type": "string"
+            },
+            "override_class": {
+              "type": "string"
+            }
+          }
+        },
+        "fx_max_ms": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "regular_session": {
+              "type": "integer"
+            },
+            "thin_session": {
+              "type": "integer"
+            },
+            "action_on_stale": {
+              "type": "string"
+            },
+            "incident_code_prefix": {
+              "type": "string"
+            },
+            "override_class": {
+              "type": "string"
+            }
+          }
+        },
+        "crypto_max_ms": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "regular_session": {
+              "type": "integer"
+            },
+            "weekend_thin_window": {
+              "type": "integer"
+            },
+            "action_on_stale": {
+              "type": "string"
+            },
+            "incident_code_prefix": {
+              "type": "string"
+            },
+            "override_class": {
+              "type": "string"
+            }
+          }
+        },
+        "options_max_ms": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "regular_session": {
+              "type": "integer"
+            },
+            "action_on_stale": {
+              "type": "string"
+            },
+            "incident_code_prefix": {
+              "type": "string"
+            },
+            "override_class": {
+              "type": "string"
+            }
+          }
+        },
+        "staleness_measurement": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "reference_clock": {
+              "type": "string"
+            },
+            "ntp_max_offset_ms": {
+              "type": "integer"
+            },
+            "measurement_field": {
+              "type": "string"
+            },
+            "method": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "cross_venue": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "max_disagreement_bps": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "equities": {
+              "type": "integer"
+            },
+            "fx": {
+              "type": "integer"
+            },
+            "futures": {
+              "type": "integer"
+            },
+            "crypto": {
+              "type": "integer"
+            },
+            "options": {
+              "type": "integer"
+            }
+          }
+        },
+        "action_on_exceed": {
+          "type": "string"
+        },
+        "incident_code": {
+          "type": "string"
+        },
+        "measurement": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "method": {
+              "type": "string"
+            },
+            "reference_mid": {
+              "type": "string"
+            },
+            "min_feeds_required": {
+              "type": "integer"
+            },
+            "insufficient_feeds_action": {
+              "type": "string"
+            }
+          }
+        },
+        "override_class": {
+          "type": "string"
+        }
+      }
+    },
+    "nbbo": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "applies_to": {
+          "type": "array"
+        },
+        "fallback_if_nbbo_unavailable": {
+          "type": "string"
+        },
+        "never_proceed_on_single_venue_quote": {
+          "type": "boolean"
+        },
+        "incident_on_nbbo_unavailable": {
+          "type": "string"
+        },
+        "nbbo_locked_crossed": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "locked_nbbo_action": {
+              "type": "string"
+            },
+            "crossed_nbbo_action": {
+              "type": "string"
+            },
+            "incident": {
+              "type": "string"
+            }
+          }
+        },
+        "override_class": {
+          "type": "string"
+        }
+      }
+    },
+    "bad_print": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "filter_rule": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "drop_finra_sale_condition_codes": {
+              "type": "array"
+            },
+            "drop_exchange_condition_codes": {
+              "type": "array"
+            },
+            "action_on_bad_print": {
+              "type": "string"
+            },
+            "incident_on_bad_print_rate_exceeded": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "threshold_pct_of_ticks": {
+                  "type": "number"
+                },
+                "window": {
+                  "type": "string"
+                },
+                "incident": {
+                  "type": "string"
+                }
+              }
+            },
+            "retain_for_audit": {
+              "type": "boolean"
+            }
+          }
+        },
+        "override_class": {
+          "type": "string"
+        }
+      }
+    },
+    "tick_size": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "enforce": {
+          "type": "boolean"
+        },
+        "source": {
+          "type": "string"
+        },
+        "reference_data_refresh": {
+          "type": "string"
+        },
+        "reference_data_refresh_time_utc": {
+          "type": "string"
+        },
+        "action_on_violation": {
+          "type": "string"
+        },
+        "incident_on_violation": {
+          "type": "string"
+        },
+        "stale_reference_data_action": {
+          "type": "string"
+        },
+        "stale_reference_data_threshold_hours": {
+          "type": "integer"
+        },
+        "price_rounding_rule": {
+          "type": "string"
+        },
+        "price_rounding_direction": {
+          "type": "string"
+        },
+        "override_class": {
+          "type": "string"
+        }
+      }
+    },
+    "gap": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "max_sigma": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "equities": {
+              "type": "number"
+            },
+            "futures": {
+              "type": "number"
+            },
+            "fx": {
+              "type": "number"
+            },
+            "crypto": {
+              "type": "number"
+            },
+            "options": {
+              "type": "number"
+            }
+          }
+        },
+        "vol_window": {
+          "type": "string"
+        },
+        "vol_method": {
+          "type": "string"
+        },
+        "action": {
+          "type": "string"
+        },
+        "incident_code_prefix": {
+          "type": "string"
+        },
+        "incident_fields": {
+          "type": "array"
+        },
+        "auto_resume_after": {},
+        "resume_requires": {
+          "type": "string"
+        },
+        "override_class": {
+          "type": "string"
+        }
+      }
+    },
+    "book_depth": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "min_levels": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "liquid": {
+              "type": "integer"
+            },
+            "illiquid": {
+              "type": "integer"
+            }
+          }
+        },
+        "liquidity_classification_source": {
+          "type": "string"
+        },
+        "fallback_on_insufficient_depth": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "action": {
+              "type": "string"
+            },
+            "spread_multiplier": {
+              "type": "number"
+            },
+            "description": {
+              "type": "string"
+            }
+          }
+        },
+        "incident_on_depth_zero": {
+          "type": "string"
+        }
+      }
+    },
+    "latency": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "max_hop_ms": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "exchange_to_feed_handler": {
+              "type": "integer"
+            },
+            "feed_handler_to_normalizer": {
+              "type": "integer"
+            },
+            "normalizer_to_strategy": {
+              "type": "integer"
+            },
+            "strategy_to_order_router": {
+              "type": "integer"
+            },
+            "total_exchange_to_order_submission": {
+              "type": "integer"
+            }
+          }
+        },
+        "measurement_method": {
+          "type": "string"
+        },
+        "on_threshold_exceeded": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "action": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "incident": {
+              "type": "string"
+            }
+          }
+        },
+        "quote_wait_mode": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "definition": {
+              "type": "string"
+            },
+            "exits_when": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "latency_p99_ms_below_threshold_for": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "feed_redundancy": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "require_independent_feeds": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "equities": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "count": {
+                  "type": "integer"
+                },
+                "feeds": {
+                  "type": "array"
+                },
+                "description": {
+                  "type": "string"
+                }
+              }
+            },
+            "futures": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "count": {
+                  "type": "integer"
+                },
+                "feeds": {
+                  "type": "array"
+                }
+              }
+            },
+            "fx": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "count": {
+                  "type": "integer"
+                },
+                "feeds": {
+                  "type": "array"
+                }
+              }
+            },
+            "crypto": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "count": {
+                  "type": "integer"
+                },
+                "feeds": {
+                  "type": "array"
+                }
+              }
+            },
+            "options": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "count": {
+                  "type": "integer"
+                },
+                "feeds": {
+                  "type": "array"
+                }
+              }
+            }
+          }
+        },
+        "mismatch_threshold_bps": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "reference": {
+              "type": "string"
+            }
+          }
+        },
+        "action_on_mismatch": {
+          "type": "string"
+        },
+        "incident_on_mismatch": {
+          "type": "string"
+        },
+        "fallback_on_single_feed": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "risk_budget_multiplier": {
+              "type": "number"
+            },
+            "incident": {
+              "type": "string"
+            },
+            "max_duration_on_single_feed": {
+              "type": "string"
+            },
+            "action_after_max_duration": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "corporate_actions_completeness": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "daily_check": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "time_utc": {
+              "type": "string"
+            },
+            "check": {
+              "type": "string"
+            }
+          }
+        },
+        "gap_definition": {
+          "type": "string"
+        },
+        "action_on_gap": {
+          "type": "string"
+        },
+        "incident_code": {
+          "type": "string"
+        },
+        "incident_fields": {
+          "type": "array"
+        },
+        "data_source": {
+          "type": "string"
+        },
+        "covered_events": {
+          "type": "array"
+        },
+        "missing_coverage_blocks_new_orders_for_symbol": {
+          "type": "boolean"
+        },
+        "auto_resolve": {
+          "type": "boolean"
+        }
+      }
+    },
+    "sequence_gaps": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "applies_to": {
+          "type": "array"
+        },
+        "method": {
+          "type": "string"
+        },
+        "max_tolerated_gap": {
+          "type": "integer"
+        },
+        "action_on_gap": {
+          "type": "string"
+        },
+        "on_retransmit_failure": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "action": {
+              "type": "string"
+            },
+            "incident": {
+              "type": "string"
+            }
+          }
+        },
+        "timeout_for_retransmit_ms": {
+          "type": "integer"
+        }
+      }
+    },
+    "duplicate_detection": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "duplicate_tick": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "method": {
+              "type": "string"
+            },
+            "window": {
+              "type": "string"
+            },
+            "action": {
+              "type": "string"
+            }
+          }
+        },
+        "duplicate_fill": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "method": {
+              "type": "string"
+            },
+            "reference": {
+              "type": "string"
+            },
+            "action_on_duplicate_fill": {
+              "type": "string"
+            },
+            "incident": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "clock_skew": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "max_offset_ms": {
+          "type": "integer"
+        },
+        "measurement_samples": {
+          "type": "integer"
+        },
+        "action_on_exceed": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "action": {
+              "type": "string"
+            },
+            "incident": {
+              "type": "string"
+            }
+          }
+        },
+        "hard_halt_offset_ms": {
+          "type": "integer"
+        },
+        "action_on_hard_halt": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "action": {
+              "type": "string"
+            },
+            "incident": {
+              "type": "string"
+            }
+          }
+        },
+        "time_authority": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "primary": {
+              "type": "string"
+            },
+            "secondary": {
+              "type": "string"
+            },
+            "ntp_servers": {
+              "type": "array"
+            }
+          }
+        }
+      }
+    }
+  }
+}

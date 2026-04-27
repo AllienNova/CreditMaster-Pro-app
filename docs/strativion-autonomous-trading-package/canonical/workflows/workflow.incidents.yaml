@@ -1,0 +1,48 @@
+meta:
+  document_role: workflow
+  workflow_id: workflow.incidents
+  schema_version: "1.0.0"
+  file_version: "1.0.0"
+  canonical_package_version: "2.5.0"
+  purpose: "Operational runbooks for infrastructure incidents (broker, exchange, data integrity). Incident codes and actions are referenced from policy.incidents.yaml; this file never defines codes or numerics."
+  notes:
+    - "Autonomous actions here do NOT include flatten_if_state_untrusted. Flattening on untrusted state requires operator authorization per policy.dr.yaml#kill_switch LEVEL_4 with named incident."
+
+incidents:
+  broker_outage:
+    triggers:
+      - "order_submission_unavailable"
+      - "position_reconciliation_unavailable"
+    actions:
+      - "escalate_to_manual_only"
+      - "freeze_new_entries"
+      - "record_incident"
+
+  exchange_halt:
+    triggers:
+      - "instrument_halt_detected"
+      - "marketwide_halt_detected"
+    actions:
+      - "freeze_new_entries"
+      - "preserve_existing_risk_state"
+      - "reassess_after_halt"
+
+  data_integrity_failure:
+    triggers:
+      - "cross_source_disagreement"
+      - "missing_primary_inputs"
+      - "account_state_inconsistent"
+    actions:
+      - "freeze_execution"
+      - "escalate_mode"
+      - "record_incident"
+
+  unexpected_position_state:
+    triggers:
+      - "phantom_fill_detected"
+      - "unexpected_open_position"
+      - "stale_order_state"
+    actions:
+      - "manual_only_mode"
+      - "reconcile_with_broker"
+      - "block_new_entries"

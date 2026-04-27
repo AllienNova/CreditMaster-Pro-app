@@ -1,0 +1,232 @@
+# Strativion Market Playbook: Bonds and Fixed Income
+# Source: Chapter 38 - The 30 Indisputable Laws of Trading
+
+market: "Bonds and Fixed Income"
+description: "$130 trillion global market. Sets the price of money. The early warning system equity traders ignore."
+
+instruments:
+  futures:
+    - symbol: "ZN"
+      name: "10-Year Treasury Note"
+      type: "future"
+      exchange: "CME"
+      duration: 7
+      point_value: 1000
+      typical_daily_range: [0.5, 1.0]
+      best_for: "Yield curve trades, macro bets"
+
+    - symbol: "ZB"
+      name: "30-Year Treasury Bond"
+      type: "future"
+      exchange: "CME"
+      duration: 17
+      point_value: 1000
+      typical_daily_range: [1.0, 2.0]
+      best_for: "Directional rate trades"
+
+    - symbol: "ZT"
+      name: "2-Year Treasury Note"
+      type: "future"
+      exchange: "CME"
+      duration: 2
+      point_value: 2000
+      typical_daily_range: [0.1, 0.3]
+      best_for: "Short-end curve trades, Fed policy bets"
+
+  etfs:
+    - symbol: "TLT"
+      name: "iShares 20+ Year Treasury Bond ETF"
+      type: "etf"
+      duration: 17
+      avg_daily_volume: 30_000_000
+      typical_daily_range: [1.50, 3.00]
+      expense_ratio: 0.0015
+      options: "Highly liquid, weekly and monthly, $1 strikes"
+      best_for: "Retail bond exposure, options strategies"
+      duration_math: "1% yield change = ~17% price change"
+
+    - symbol: "IEF"
+      name: "iShares 7-10 Year Treasury Bond ETF"
+      duration: 7
+      typical_daily_range: [0.30, 0.80]
+      best_for: "Intermediate duration exposure"
+
+    - symbol: "SHY"
+      name: "iShares 1-3 Year Treasury Bond ETF"
+      duration: 2
+      typical_daily_range: [0.05, 0.15]
+      best_for: "Cash equivalent, short-end curve trades"
+
+    - symbol: "TIP"
+      name: "iShares TIPS Bond ETF"
+      duration: 7
+      best_for: "Inflation protection, real yield trades"
+
+    - symbol: "HYG"
+      name: "iShares High Yield Corporate Bond ETF"
+      duration: 4
+      typical_daily_range: [0.30, 0.80]
+      best_for: "Credit spread proxy, risk appetite gauge"
+
+    - symbol: "LQD"
+      name: "iShares Investment Grade Corporate Bond ETF"
+      duration: 9
+      typical_daily_range: [0.30, 0.70]
+
+    - symbol: "TMF"
+      name: "Direxion Daily 20+ Year Treasury Bull 3x ETF"
+      duration: "17 (3x leveraged)"
+      typical_daily_range: [3.00, 8.00]
+      warning: "Short-term trades ONLY. Fell from $30 to $5.50 (81.7%) 2022-2023."
+
+yield_curve:
+  description: "Most important chart in finance. Predicts recessions better than any economist."
+  recession_track_record:
+    - {inversion_date: "Aug 1978", recession_start: "Jan 1980", lead_months: 17}
+    - {inversion_date: "Sep 1980", recession_start: "Jul 1981", lead_months: 10}
+    - {inversion_date: "Jan 1989", recession_start: "Jul 1990", lead_months: 18}
+    - {inversion_date: "Feb 2000", recession_start: "Mar 2001", lead_months: 13}
+    - {inversion_date: "Aug 2006", recession_start: "Dec 2007", lead_months: 16}
+    - {inversion_date: "Mar 2022", recession_start: "TBD"}
+  false_positives: 0
+  average_lead_time_months: 14.8
+
+  four_phase_system:
+    phase_1_inversion:
+      signal: "2Y yield rises above 10Y yield"
+      action: "Reduce equity exposure. Increase cash to 20-30%. Do NOT buy long bonds yet."
+      warning: "Stocks often rally months after inversion. S&P gained 14.5% in 12 months after Aug 2006 inversion."
+
+    phase_2_maximum_inversion:
+      signal: "Spread reaches deepest negative level"
+      action: "Preparation phase. Build bond watchlist. Set alerts on TLT, ZN, ZB."
+      example: "Jul 2023: 2Y-10Y reached -1.08%, deepest since 1981."
+
+    phase_3_steepening:
+      signal: "Curve moves back toward zero (2Y falls faster than 10Y)"
+      action: "BUY signal for long-duration bonds. Recession starting. Fed will cut."
+      example: "Dec 2007: Spread steepened -0.04% to +0.50%. TLT gained 22% Oct 2007-Mar 2008."
+
+    phase_4_rally:
+      signal: "Recession deepens. Fed cuts aggressively."
+      action: "Hold long bond positions. Can last 12-24 months."
+      example_2008: "10Y yield: 4.72% to 2.21%. TLT: $87 to $122 (+40%)."
+      example_2020: "10Y yield: 1.88% to 0.52%. TLT: $137 to $170 (+24%)."
+      take_profit: "When 2Y-10Y spread above +1.50% and Fed signals cuts complete."
+
+duration_math:
+  formula: "Expected TLT price change = Duration x Yield change"
+  example_1: "Duration 17, yield falls 0.50% -> TLT rises 8.5%"
+  example_2: "10Y yield rose 82 bps (Jan-Apr 2024). Predicted TLT loss: 13.9%. Actual: 13.5%."
+  accuracy: "Within 0.4 percentage points on major moves"
+  convexity_note: "Bond prices rise MORE than duration predicts on large yield drops (bonus for bulls)"
+
+bond_equity_correlation:
+  description: "Single most important cross-asset relationship in finance"
+  normal_regime:
+    correlation: "Below -0.30"
+    driver: "Growth/deflation fears"
+    behavior: "Bonds hedge stocks. 60/40 works."
+    example: "COVID 2020: SPY -33.9%, TLT +21.7%"
+  inflation_regime:
+    correlation: "Above +0.30"
+    driver: "Inflation"
+    behavior: "Bonds do NOT hedge stocks. 60/40 broken."
+    example: "2022: SPY -19.4%, AGG -13.0%. Both fell together."
+  monitoring:
+    metric: "60-day rolling SPY-TLT correlation"
+    frequency: "Weekly"
+    threshold: "+0.30 sustained = bond hedge has failed"
+  correlation_levels:
+    below_neg_030: "Normal. Bonds hedge stocks."
+    neg_030_to_pos_030: "Transitional. Reduce reliance on bond hedge."
+    above_pos_030: "Inflationary. 60/40 broken. Consider gold, commodities, cash, TIPS."
+
+primary_setups:
+  - name: "Fed Pivot Long (Phase 3 Entry)"
+    conditions:
+      - "Yield curve steepening from max inversion"
+      - "Inflation data cooling"
+      - "Fed signaling end of hikes or beginning of cuts"
+    instrument: "TLT or ZB"
+    example: "Oct 2023: TLT $83.50, 10Y at 4.99%. Target $98. Hit Dec 14. +17.4%, 3.2R."
+    laws_applied: [1, 8]
+
+  - name: "Hot CPI Short"
+    conditions:
+      - "Bond rally has overshot (rate cut pricing too aggressive)"
+      - "CPI data comes in hot"
+    example: "Jan 2024: Short TLT $97, target $90. Hit Feb 22. +7.2%, 1.75R."
+    laws_applied: [2, 9]
+
+  - name: "Yield Curve Steepener"
+    structure: "Long ZT (2Y), Short ZN (10Y). Ratio ~2:1 (duration adjusted)."
+    conditions:
+      - "Fed approaching end of hiking cycle"
+      - "2Y expected to fall faster than 10Y"
+    example: "Oct 2023: 2Y-10Y steepened from -0.45% to -0.17%. Net gain ~$1,875/unit."
+    laws_applied: [8]
+
+  - name: "Credit Stress Short (HYG)"
+    conditions:
+      - "Bank failure or systemic stress event"
+      - "Credit spreads widening rapidly"
+    example: "Mar 2023 SVB: Short HYG $74.50, target $72. Hit in 1 day. 1.15R."
+    laws_applied: [24]
+
+  - name: "TLT Call Options on Volatility Compression"
+    conditions:
+      - "TLT ATR compressing after extended downtrend"
+      - "Fed nearing policy pivot"
+    example: "Nov 2023: Bought $90 calls at $2.50, TLT at $85. Sold at $10.50. Return: 320%."
+    laws_applied: [3]
+
+risk_rules:
+  max_risk_per_trade: 0.01
+  duration_based_sizing: "TLT ~2.4x more volatile than IEF, ~8.5x more volatile than SHY"
+  equivalent_risk_example: "100 shares IEF = ~41 shares TLT"
+  leveraged_etf_warning: "TMF fell 81.7% (2022-2023). Not a buy-and-hold instrument."
+  yield_assumption: "Assume yields can move 50 bps in a single week"
+
+key_reports:
+  - name: "CPI (Consumer Price Index)"
+    impact: "extreme"
+    frequency: "Monthly (~12th-14th)"
+    typical_move: "1-3% TLT"
+    note: "Biggest bond mover"
+
+  - name: "Non-Farm Payrolls"
+    impact: "high"
+    frequency: "First Friday monthly"
+    time: "08:30 ET"
+
+  - name: "FOMC Rate Decision"
+    impact: "extreme"
+    frequency: "8x per year"
+    time: "14:00 ET"
+    note: "Dot plot (quarterly) more important than rate decision itself"
+
+  - name: "Treasury Auction Results"
+    impact: "medium-high"
+    note: "Weak auction (low bid-to-cover) pushes yields higher"
+
+  - name: "PCE (Personal Consumption Expenditures)"
+    impact: "high"
+    frequency: "Monthly (last Friday)"
+    note: "Fed's preferred inflation measure"
+
+daily_checklist:
+  - "Check 2Y and 10Y yields. Note the spread direction."
+  - "Check 60-day SPY-TLT correlation"
+  - "Check MOVE Index (bond volatility)"
+  - "Review upcoming data releases"
+  - "TLT dropping 1%+ on non-event day = something happening in rates"
+
+key_correlations:
+  TLT_10Y_yield: -0.95
+  SPY_TLT_normal: -0.40
+  SPY_TLT_inflation: 0.50
+  GLD_TLT: 0.30
+  HYG_SPY: 0.65
+
+laws_most_relevant: [1, 2, 3, 5, 7, 8, 9, 12, 24, 29]

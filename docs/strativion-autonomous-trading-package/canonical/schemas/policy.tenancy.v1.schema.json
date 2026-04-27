@@ -1,0 +1,350 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://strativion.io/schemas/policy.tenancy.v1.schema.json",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "meta"
+  ],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "document_role",
+        "schema_version",
+        "canonical_package_version"
+      ],
+      "properties": {
+        "document_role": {
+          "type": "string",
+          "enum": [
+            "policy",
+            "workflow"
+          ]
+        },
+        "schema_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[A-Za-z0-9\\.-]+)?$"
+        },
+        "file_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[A-Za-z0-9\\.-]+)?$"
+        },
+        "canonical_package_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[A-Za-z0-9\\.-]+)?$"
+        }
+      }
+    },
+    "isolation": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "level": {
+          "type": "string"
+        },
+        "cross_tenant_data_access": {
+          "type": "string"
+        },
+        "shared_infra_tenancy_model": {
+          "type": "string"
+        },
+        "namespace_format": {
+          "type": "string"
+        },
+        "isolation_enforcement": {
+          "type": "array"
+        },
+        "physical_isolation_upgrade_path": {
+          "type": "string"
+        }
+      }
+    },
+    "platform_ceiling": {
+      "type": "number"
+    },
+    "tenants": {
+      "type": "array"
+    },
+    "allowed_enums": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "status": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "values": {
+              "type": "array"
+            },
+            "tenant_selectable": {
+              "type": "boolean"
+            }
+          }
+        },
+        "custody_model": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "values": {
+              "type": "array"
+            },
+            "tenant_selectable": {
+              "type": "boolean"
+            }
+          }
+        },
+        "regulatory_jurisdiction": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "values": {
+              "type": "array"
+            },
+            "tenant_selectable": {
+              "type": "boolean"
+            }
+          }
+        },
+        "kyc_aml_status": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "values": {
+              "type": "array"
+            },
+            "tenant_selectable": {
+              "type": "boolean"
+            }
+          }
+        },
+        "mode_allowlist_options": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "values": {
+              "type": "array"
+            },
+            "tenant_selectable": {
+              "type": "boolean"
+            },
+            "autonomous_live_requires_signoff": {
+              "type": "boolean"
+            }
+          }
+        },
+        "instrument_class_options": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "values": {
+              "type": "array"
+            },
+            "tenant_selectable": {
+              "type": "boolean"
+            }
+          }
+        },
+        "billing_tier": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "values": {
+              "type": "array"
+            },
+            "tenant_selectable": {
+              "type": "boolean"
+            }
+          }
+        },
+        "dual_control_fields": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "values": {
+              "type": "array"
+            },
+            "tenant_may_add_fields": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "platform_venue_allowlist": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "equities_and_options": {
+          "type": "array"
+        },
+        "futures": {
+          "type": "array"
+        },
+        "fx": {
+          "type": "array"
+        },
+        "crypto": {
+          "type": "array"
+        },
+        "international_equities_and_futures": {
+          "type": "array"
+        }
+      }
+    },
+    "tenant_budget_reconciliation": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "schedule": {
+          "type": "string"
+        },
+        "timezone": {
+          "type": "string"
+        },
+        "scope": {
+          "type": "string"
+        },
+        "formula": {
+          "type": "string"
+        },
+        "ceiling_ref": {
+          "type": "string"
+        },
+        "breach_action": {
+          "type": "string"
+        },
+        "breach_response": {
+          "type": "string"
+        },
+        "breach_scope": {
+          "type": "string"
+        },
+        "tolerance": {
+          "type": "number"
+        },
+        "alert_at_utilization": {
+          "type": "number"
+        },
+        "alert_code": {
+          "type": "string"
+        },
+        "report_sink": {
+          "type": "string"
+        }
+      }
+    },
+    "data_retention": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "us_regulated_days": {
+          "type": "integer"
+        },
+        "default_days": {
+          "type": "integer"
+        },
+        "retention_scope": {
+          "type": "array"
+        },
+        "immutability": {
+          "type": "string"
+        },
+        "geographic_replication": {
+          "type": "integer"
+        }
+      }
+    },
+    "billing": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "metered_on": {
+          "type": "array"
+        },
+        "not_metered_on": {
+          "type": "array"
+        },
+        "billing_currency": {
+          "type": "string"
+        },
+        "invoice_frequency": {
+          "type": "string"
+        },
+        "billing_data_source": {
+          "type": "string"
+        }
+      }
+    },
+    "tenant_lifecycle": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "active_to_suspended": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "requires": {
+              "type": "string"
+            },
+            "dual_control": {
+              "type": "boolean"
+            },
+            "preserves_data": {
+              "type": "boolean"
+            },
+            "effect": {
+              "type": "string"
+            }
+          }
+        },
+        "suspended_to_active": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "requires": {
+              "type": "string"
+            },
+            "dual_control": {
+              "type": "boolean"
+            },
+            "conditions": {
+              "type": "array"
+            }
+          }
+        },
+        "active_to_terminated": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "requires": {
+              "type": "string"
+            },
+            "dual_control": {
+              "type": "boolean"
+            },
+            "conditions": {
+              "type": "array"
+            },
+            "preserves_data": {
+              "type": "boolean"
+            }
+          }
+        },
+        "terminated_reinstatement": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "allowed": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "invariants": {
+      "type": "array"
+    }
+  }
+}

@@ -1,0 +1,59 @@
+meta:
+  document_role: workflow
+  workflow_id: workflow.checklists
+  schema_version: "1.0.0"
+  file_version: "1.0.0"
+  canonical_package_version: "2.5.0"
+  purpose: "Operating checklists (pre-trade, pre-market, active, EOD, weekly). Automation class per item follows law.automation-map.yaml conventions."
+
+checklists:
+  pre_trade:
+    automation_class: "machine_enforceable_with_supervisory_extensions"
+    required:
+      - "regime_confirmed"
+      - "invalidation_defined"
+      - "expected_r_multiple_meets_minimum"
+      - "risk_budget_available"
+      - "data_quality_passed"
+      - "execution_window_open"
+    supervisory_only:
+      - "operator_state_confirmed"
+
+  pre_market:
+    automation_class: "machine_assisted"
+    required:
+      - "futures_context_checked"
+      - "vix_checked"
+      - "rates_checked"
+      - "dxy_checked"
+      - "commodity_context_checked"
+      - "tier_1_events_checked"
+      - "earnings_calendar_checked"
+
+  active_trade_management:
+    automation_class: "machine_enforceable_with_supervisory_extensions"
+    required:
+      - "hard_stop_active"
+      - "stop_only_tightens"
+      - "heat_recomputed"
+      - "regime_change_checked"
+    supervisory_only:
+      - "discretionary_crisis_interpretation"
+
+  end_of_day:
+    automation_class: "machine_assisted"
+    required:
+      - "positions_reconciled"
+      - "orders_reconciled"
+      - "daily_pnl_recorded"
+      - "risk_report_recorded"
+      - "journal_entries_recorded"
+
+  weekly_review:
+    automation_class: "machine_assisted"
+    required:
+      - "expectancy_reviewed"
+      - "drawdown_reviewed"
+      - "regime_performance_reviewed"
+      - "execution_quality_reviewed"
+      - "parameter_change_proposals_logged"

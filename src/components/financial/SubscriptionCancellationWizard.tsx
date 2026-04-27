@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, type ReactElement } from "react";
+import React, { useState, useCallback, useEffect, type ReactElement } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   CheckCircle,
@@ -20,13 +20,122 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui";
 import { useToast } from "@/components/ui/Toast";
-import { subscriptionCancellationService } from "@/lib/financial/subscription-cancellation-service";
-import type {
-  Subscription,
-  CancellationOutcome,
-  CancellationInfo,
-  CancellationScript,
-} from "@/lib/financial/subscription-cancellation-service";
+// Types imported directly to avoid pulling in server-side supabaseAdmin
+// The service uses supabase/server which requires next/headers (server-only)
+type SubscriptionStatus = "active" | "cancelled" | "pending_cancellation" | "paused";
+type CancellationOutcome = "cancelled" | "retained" | "pending" | "failed";
+
+// Matches the service's Subscription type but keeps nextBillingDate flexible
+interface Subscription {
+  id: string;
+  userId: string;
+  name: string;
+  merchantName: string;
+  amount: number;
+  frequency: "weekly" | "monthly" | "quarterly" | "yearly";
+  category: string;
+  status: SubscriptionStatus;
+  nextBillingDate: Date;
+  detectedFromBillId?: string;
+  logoUrl?: string;
+  annualCost: number;
+  cancellationStatus?: CancellationOutcome;
+  cancelledAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+type CancellationMethod = "phone" | "email" | "website" | "chat" | "in_app" | "mail";
+
+interface CancellationInfo {
+  companyName: string;
+  cancellationMethods: CancellationMethod[];
+  phoneNumber?: string;
+  email?: string;
+  websiteUrl?: string;
+  chatUrl?: string;
+  difficulty: "easy" | "medium" | "hard";
+  averageTime: string;
+  tips: string[];
+  retentionOffers: string[];
+}
+
+interface CancellationScript {
+  opening: string;
+  reason: string;
+  rebuttals: { offer: string; response: string }[];
+  closing: string;
+  tips: string[];
+}
+
+// Client-side helper: fetch cancellation info via API instead of direct service import
+async function fetchCancellationInfo(merchantName: string): Promise<CancellationInfo | null> {
+  try {
+    const res = await fetch(`/api/financial/subscriptions/cancellation-info?merchant=${encodeURIComponent(merchantName)}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.info ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// Client-side pure function equivalents (no server dependency)
+function generateCancellationScript(serviceName: string, reason?: string): CancellationScript {
+  const customReason = reason || "I no longer need this service and would like to cancel my subscription.";
+  return {
+    opening: `Hello, I'm calling to cancel my ${serviceName} subscription.`,
+    reason: customReason,
+    rebuttals: [
+      { offer: "We can offer you a discount", response: "I appreciate the offer, but I've already made my decision to cancel." },
+      { offer: "Would you like to pause instead?", response: "No thank you, I'd like to fully cancel my subscription." },
+      { offer: "Can I transfer you to our retention team?", response: "I'd prefer to process the cancellation now. Could you help me with that?" },
+    ],
+    closing: "Could you please confirm the cancellation and send me a confirmation email? What is my cancellation reference number?",
+    tips: [
+      "Stay polite but firm",
+      "Ask for a cancellation confirmation number",
+      "Request email confirmation",
+      "Note the date, time, and representative's name",
+    ],
+  };
+}
+
+function generateCancellationInstructions(subscription: Subscription, info: CancellationInfo | null): { steps: string[]; warnings: string[]; tips: string[] } {
+  if (!info) {
+    return {
+      steps: [
+        `Search for "${subscription.merchantName} cancel subscription" to find instructions`,
+        'Log into your account and look for "Account Settings" or "Subscription"',
+        'Look for a "Cancel" or "Manage Subscription" option',
+        "Follow the prompts to complete cancellation",
+        "Request and save a confirmation email or number",
+      ],
+      warnings: [
+        "Make sure to cancel before your next billing date",
+        "Some services may try to offer discounts to keep you",
+      ],
+      tips: [
+        "Take screenshots of your cancellation confirmation",
+        "Check your bank statement to verify no future charges",
+      ],
+    };
+  }
+
+  const steps: string[] = [];
+  if (info.cancellationMethods.includes("in_app")) steps.push(`Log into your ${subscription.merchantName} account and go to Settings > Subscription`);
+  if (info.phoneNumber) steps.push(`Call ${info.phoneNumber} during business hours`);
+  if (info.email) steps.push(`Send a cancellation request to ${info.email}`);
+  if (info.chatUrl) steps.push(`Use live chat at ${info.chatUrl}`);
+  if (info.websiteUrl) steps.push(`Visit ${info.websiteUrl} for cancellation options`);
+  steps.push("Request a confirmation email and reference number");
+
+  return {
+    steps: steps.length > 1 ? steps : [`Contact ${subscription.merchantName} to cancel`, "Request confirmation"],
+    warnings: info.retentionOffers.length > 0 ? ["This service is known for retention offers — stay firm if you want to cancel"] : [],
+    tips: info.tips.length > 0 ? info.tips : ["Save your cancellation confirmation"],
+  };
+}
 
 // ============================================================================
 // Types
@@ -179,7 +288,10 @@ function DifficultyBadge({ difficulty }: { difficulty: CancellationInfo["difficu
 // ============================================================================
 
 function StepReview({ subscription }: { subscription: Subscription }) {
-  const info = subscriptionCancellationService.getCancellationInfo(subscription.merchantName);
+  const [info, setInfo] = useState<CancellationInfo | null>(null);
+  React.useEffect(() => {
+    fetchCancellationInfo(subscription.merchantName).then(setInfo);
+  }, [subscription.merchantName]);
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
@@ -219,7 +331,7 @@ function StepReview({ subscription }: { subscription: Subscription }) {
           <div className="rounded-lg bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-3">
             <p className="text-xs text-gray-500 dark:text-slate-400">Annual cost</p>
             <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
-              {formatCurrency(subscription.annualCost)}
+              {formatCurrency(subscription.annualCost ?? subscription.amount * 12)}
             </p>
           </div>
         </div>
@@ -261,7 +373,7 @@ function StepReview({ subscription }: { subscription: Subscription }) {
           <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
           <p className="text-sm text-amber-700 dark:text-amber-400">
             Cancelling will save you{" "}
-            <strong>{formatCurrency(subscription.annualCost)}/year</strong>. Your access
+            <strong>{formatCurrency(subscription.annualCost ?? subscription.amount * 12)}/year</strong>. Your access
             continues until the end of the current billing period.
           </p>
         </div>
@@ -290,7 +402,7 @@ function StepAlternatives({ subscription }: { subscription: Subscription }) {
         </h3>
         <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
           Consider these alternatives to{" "}
-          <strong>{formatCurrency(subscription.annualCost)}/year</strong>
+          <strong>{formatCurrency(subscription.annualCost ?? subscription.amount * 12)}/year</strong>
         </p>
       </div>
 
@@ -329,11 +441,12 @@ function StepCancel({ subscription }: { subscription: Subscription }) {
   const toast = useToast();
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
 
-  const info = subscriptionCancellationService.getCancellationInfo(subscription.merchantName);
-  const script: CancellationScript = subscriptionCancellationService.generateCancellationScript(
-    subscription.name,
-  );
-  const instructions = subscriptionCancellationService.generateCancellationInstructions(subscription);
+  const [info, setInfo] = useState<CancellationInfo | null>(null);
+  useEffect(() => {
+    fetchCancellationInfo(subscription.merchantName).then(setInfo);
+  }, [subscription.merchantName]);
+  const script: CancellationScript = generateCancellationScript(subscription.name);
+  const instructions = generateCancellationInstructions(subscription, info);
 
   const copyText = useCallback(
     async (text: string, section: string) => {
@@ -553,7 +666,7 @@ function StepConfirm({
             You&apos;re saving
           </p>
           <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">
-            {formatCurrency(subscription.annualCost)}/year
+            {formatCurrency(subscription.annualCost ?? subscription.amount * 12)}/year
           </p>
         </motion.div>
       )}

@@ -1,0 +1,174 @@
+meta:
+  document_role: policy
+  schema_version: "1.0.0"
+  file_version: "1.0.0"
+  canonical_package_version: "2.5.0"
+  binding_precedence: canonical
+  purpose: "Normalized catalog of the 30 Laws of Trading. Automation eligibility lives in law.automation-map.yaml."
+  index_authority: governance/CANONICAL-FIELD-INDEX.md
+  override_rights:
+    tiers: locked
+    laws: locked
+
+tiers:
+  tier_1:
+    name: "Physics of Price"
+    law_range: "01-10"
+  tier_2:
+    name: "Scientific Method"
+    law_range: "11-20"
+  tier_3:
+    name: "Survival and Execution"
+    law_range: "21-30"
+
+laws:
+  - id: "law_01"
+    name: "Market Inertia"
+    tier: "tier_1"
+    summary: "Trends persist until a meaningful structural break occurs."
+    primary_domains: ["regime", "signal"]
+  - id: "law_02"
+    name: "Feedback Loops"
+    tier: "tier_1"
+    summary: "Markets alternate between self-reinforcing and self-correcting behavior."
+    primary_domains: ["regime", "signal", "crisis"]
+  - id: "law_03"
+    name: "Volatility Compression"
+    tier: "tier_1"
+    summary: "Low volatility compressions tend to precede higher volatility expansions."
+    primary_domains: ["regime", "signal", "execution"]
+  - id: "law_04"
+    name: "Liquidity Gravity"
+    tier: "tier_1"
+    summary: "Price is attracted to liquidity pools and moves violently through liquidity voids."
+    primary_domains: ["execution", "microstructure"]
+  - id: "law_05"
+    name: "Mean Reversion"
+    tier: "tier_1"
+    summary: "Prices oscillate around equilibrium when trend force is weak."
+    primary_domains: ["signal", "regime"]
+  - id: "law_06"
+    name: "Fractal Structure"
+    tier: "tier_1"
+    summary: "Market patterns repeat across timeframes with scale-dependent noise."
+    primary_domains: ["signal", "structure"]
+  - id: "law_07"
+    name: "Fat Tails"
+    tier: "tier_1"
+    summary: "Extreme outcomes occur more often than normal-distribution models suggest."
+    primary_domains: ["risk", "crisis"]
+  - id: "law_08"
+    name: "Market Regimes"
+    tier: "tier_1"
+    summary: "Markets operate in distinct states that require different strategies and risk budgets."
+    primary_domains: ["regime", "allocation", "risk"]
+  - id: "law_09"
+    name: "Information Decay"
+    tier: "tier_1"
+    summary: "Signal freshness matters; the value of information decays over time."
+    primary_domains: ["execution", "signal"]
+  - id: "law_10"
+    name: "Time Delays"
+    tier: "tier_1"
+    summary: "All indicators, agents, and execution processes operate with lag."
+    primary_domains: ["execution", "systems"]
+  - id: "law_11"
+    name: "Structural Levels"
+    tier: "tier_2"
+    summary: "Support, resistance, pivots, and other structural levels matter because market participants anchor to them."
+    primary_domains: ["signal", "structure"]
+  - id: "law_12"
+    name: "Multi-Timeframe Alignment"
+    tier: "tier_2"
+    summary: "Signals aligned across timeframes are more robust than single-timeframe signals."
+    primary_domains: ["signal", "regime"]
+  - id: "law_13"
+    name: "Momentum"
+    tier: "tier_2"
+    summary: "Momentum tends to persist before it exhausts."
+    primary_domains: ["signal", "regime"]
+  - id: "law_14"
+    name: "Path Dependency"
+    tier: "tier_2"
+    summary: "How price arrived matters as much as where it is."
+    primary_domains: ["signal", "trade_management"]
+  - id: "law_15"
+    name: "Signal Filtration"
+    tier: "tier_2"
+    summary: "Raw markets contain more noise than signal and require filtering."
+    primary_domains: ["signal", "validation"]
+  - id: "law_16"
+    name: "Expectancy"
+    tier: "tier_2"
+    summary: "A trading system is only worthwhile if its long-run expectancy is positive."
+    primary_domains: ["journal", "validation", "governance"]
+  - id: "law_17"
+    name: "Statistical Significance"
+    tier: "tier_2"
+    summary: "A perceived edge is meaningless without sufficient sample quality and size."
+    primary_domains: ["journal", "research", "governance"]
+  - id: "law_18"
+    name: "Confirmation and Confluence"
+    tier: "tier_2"
+    summary: "Independent confirmations improve trade quality."
+    primary_domains: ["signal", "validation"]
+  - id: "law_19"
+    name: "Edge and Pattern Decay"
+    tier: "tier_2"
+    summary: "Edges degrade as market structure changes or the edge becomes crowded."
+    primary_domains: ["regime", "learning", "governance"]
+  - id: "law_20"
+    name: "Backtest Illusion"
+    tier: "tier_2"
+    summary: "Backtests systematically overstate live performance unless realism is enforced."
+    primary_domains: ["research", "governance"]
+  - id: "law_21"
+    name: "Position Sizing"
+    tier: "tier_3"
+    summary: "Sizing drives survival more reliably than entry precision."
+    primary_domains: ["risk", "allocation", "execution"]
+  - id: "law_22"
+    name: "Invalidation"
+    tier: "tier_3"
+    summary: "Every trade requires a predefined point at which the thesis is wrong."
+    primary_domains: ["risk", "execution", "trade_management"]
+  - id: "law_23"
+    name: "Asymmetric Damage"
+    tier: "tier_3"
+    summary: "Losses compound nonlinearly and become progressively harder to recover from."
+    primary_domains: ["risk", "drawdown"]
+  - id: "law_24"
+    name: "Systemic Correlation"
+    tier: "tier_3"
+    summary: "Diversification weakens when correlations spike in stress."
+    primary_domains: ["risk", "portfolio", "crisis"]
+  - id: "law_25"
+    name: "Transaction Costs"
+    tier: "tier_3"
+    summary: "Costs are certain and must be modeled explicitly in every system."
+    primary_domains: ["execution", "research"]
+  - id: "law_26"
+    name: "Complexity Decay"
+    tier: "tier_3"
+    summary: "Unnecessary complexity makes systems fragile and harder to govern."
+    primary_domains: ["architecture", "governance"]
+  - id: "law_27"
+    name: "Emotional Gravity"
+    tier: "tier_3"
+    summary: "Human emotional state distorts trading decisions and must be managed explicitly."
+    primary_domains: ["operations", "supervision"]
+  - id: "law_28"
+    name: "Adaptation"
+    tier: "tier_3"
+    summary: "Systems must adapt to changing markets, but adaptation must be governed."
+    primary_domains: ["learning", "governance", "regime"]
+  - id: "law_29"
+    name: "Probability of Ruin"
+    tier: "tier_3"
+    summary: "Excessive risk ensures eventual ruin regardless of edge."
+    primary_domains: ["risk", "capital_preservation"]
+  - id: "law_30"
+    name: "Survival"
+    tier: "tier_3"
+    summary: "Survival is the meta-rule that overrides all other optimization goals."
+    primary_domains: ["risk", "governance", "operations"]

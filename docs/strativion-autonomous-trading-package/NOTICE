@@ -1,0 +1,83 @@
+Strativion Autonomous Trading Package
+Copyright (c) 2026 Kimal Honour Djam / AlienNova. All rights reserved.
+
+Licensed under the terms in LICENSE.
+
+====================================================================
+Third-Party Content and Provenance
+====================================================================
+
+This Package absorbed substantial policy and schema content from an
+external principal-level review and remediation pack delivered on
+2026-04-22 (the "Unified Principal Review Fix Pack").
+
+The following canonical files incorporate material from that pack,
+integrated under the same copyright as the Package:
+
+  canonical/policy/policy.compliance.yaml
+  canonical/policy/policy.order-lifecycle.yaml
+  canonical/policy/policy.execution-errors.yaml
+  canonical/policy/policy.data-quality.yaml
+  canonical/policy/policy.incidents.yaml
+  canonical/policy/policy.dr.yaml
+  canonical/policy/policy.tenancy.yaml
+  canonical/policy/policy.promotion.yaml
+  canonical/policy/policy.calendar.yaml
+  canonical/workflows/workflow.crisis.yaml
+  canonical/workflows/workflow.confluence.yaml
+  canonical/workflows/workflow.order-lifecycle.yaml
+  canonical/schemas/*.v1.schema.json
+  canonical/schemas/policy.runtime.v2.schema.json
+  canonical/schemas/audit-entry.v1.schema.json
+  canonical/schemas/tenant-override.v1.schema.json
+  governance/CANONICAL-FIELD-INDEX.md
+  governance/VERSIONING.md
+  governance/OVERRIDE-SCHEMA.md
+
+The source review document (`PRINCIPAL-REVIEW.md`) and original pack
+layout have been retained for historical audit outside the shipped
+package.
+
+====================================================================
+Trading Law Reference Content
+====================================================================
+
+The narrative law catalog and the 30 Laws reference markdown under
+
+  reference/knowledge/law.NN-*.md
+  reference/manuscript/section-2-laws/law-NN-*.md
+
+are derived from "The 30 Indisputable Laws of Trading" by Kimal
+Honour Djam. This material is non-binding reference content and is
+included for provenance only; runtime systems never read from it.
+
+====================================================================
+JSON Schema
+====================================================================
+
+Schemas under canonical/schemas/ declare $id values under the
+strativion.io namespace and conform to JSON Schema 2020-12. The JSON
+Schema specification itself is licensed under its own terms and is
+not redistributed by this Package.
+
+====================================================================
+Python Dependencies (reference validator)
+====================================================================
+
+tooling/validate/validate_package.py depends at runtime on:
+
+  pyyaml     — MIT License
+  jsonschema — MIT License
+
+Neither is redistributed. Consumers install them separately per
+tooling/validate/README.md.
+
+====================================================================
+Acknowledgements
+====================================================================
+
+Gratitude to the two independent principal-level reviewers whose
+unified output became the fix pack, and to the editorial review of
+the 30 Laws manuscript whose reference content grounds the Package.
+
+For licensing and attribution questions: president@aliennova.com

@@ -1,0 +1,64 @@
+meta:
+  document_role: workflow
+  workflow_id: workflow.lifecycle
+  schema_version: "1.0.0"
+  file_version: "1.0.0"
+  canonical_package_version: "2.5.0"
+  purpose: "Operational lifecycle from research to autonomous_live. All numeric promotion gates are owned by policy.promotion.yaml and policy.runtime.yaml; this workflow references them only by path."
+
+stages:
+  research:
+    required:
+      - hypothesis_defined
+      - data_scope_defined
+      - cost_assumptions_defined
+    stage_definition_ref: policy.promotion.yaml#stages.research
+
+  replay:
+    required:
+      - historical_replay_complete
+      - walk_forward_review_complete
+    gates_ref: policy.promotion.yaml#gates.replay_to_shadow
+    stage_definition_ref: policy.promotion.yaml#stages.replay
+
+  shadow:
+    required:
+      - shadow_signals_logged
+      - operator_review_complete
+    gates_ref: policy.promotion.yaml#gates.shadow_to_paper
+    stage_definition_ref: policy.promotion.yaml#stages.shadow
+
+  paper:
+    required:
+      - paper_trading_window_complete
+      - risk_controls_verified
+    gates_ref: policy.promotion.yaml#gates.paper_to_supervised_live
+    stage_definition_ref: policy.promotion.yaml#stages.paper
+
+  supervised_live:
+    required:
+      - human_approval_recorded
+      - rollback_plan_recorded
+    gates_ref: policy.promotion.yaml#gates.supervised_live_to_autonomous_live
+    stage_definition_ref: policy.promotion.yaml#stages.supervised_live
+
+  autonomous_live:
+    required:
+      - supervised_live_stability_confirmed
+      - final_approval_recorded
+      - canonical_revision_and_hash_logged
+    stage_definition_ref: policy.promotion.yaml#stages.autonomous_live
+    risk_budget_ref: policy.runtime.yaml#risk
+    drawdown_ceiling_ref: policy.runtime.yaml#risk.kill_switch.drawdown_pct
+
+promotion_rules:
+  require_all_required_items_true: true
+  require_all_gates_pass: true
+  gate_evaluation_window_days_ref: policy.promotion.yaml#gates
+  promotion_requires_audit_record: true
+  demotion_triggers_ref: policy.promotion.yaml#demotion_triggers
+  demotion_triggers:
+    - drawdown_exceeds_stage_max_ref: policy.runtime.yaml#risk.kill_switch.drawdown_pct
+    - incident_recorded_ref: policy.incidents.yaml#codes
+    - canonical_hash_mismatch_ref: governance/VERSIONING.md
+    - operator_emergency_stop_ref: policy.dr.yaml#kill_switch

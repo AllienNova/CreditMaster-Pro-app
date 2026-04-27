@@ -1,0 +1,191 @@
+# Strativion Market Playbook: Cryptocurrency
+# Source: Chapter 36 - The 30 Indisputable Laws of Trading
+
+market: "Cryptocurrency"
+description: "24/7 laboratory. Highest volatility, highest opportunity, highest risk."
+
+instruments:
+  tier_1:
+    - symbol: "BTC"
+      name: "Bitcoin"
+      market_cap: "$1.4T (Mar 2024)"
+      daily_volatility: "3-5%"
+      liquidity: "Highest in crypto"
+      role: "Reserve asset. First to receive inflows, last to be sold."
+      dominance_behavior: "Rises during bear markets, falls during bull markets."
+
+  tier_2:
+    - symbol: "ETH"
+      name: "Ethereum"
+      market_cap: "$50B-$400B"
+      daily_volatility: "4-8%"
+      volatility_multiple_vs_btc: 1.3
+      position_size_adjustment: "~75% of BTC position"
+    - symbol: "SOL"
+      name: "Solana"
+      daily_volatility: "6-12%"
+      volatility_multiple_vs_btc: 2.0
+      position_size_adjustment: "~50% of BTC position"
+
+  tier_3:
+    description: "Mid-cap altcoins ($1B-$50B). Daily vol 8-15%. Narrative trades."
+    position_size_adjustment: "25-50% of BTC position"
+
+  tier_4:
+    description: "Small-cap tokens (<$1B). Daily vol 15-50%+. Most go to zero."
+    warning: "Speculation with explicit loss limits. Not investing."
+    position_size_adjustment: "Minimal or avoid"
+
+market_structure:
+  trading_hours: "24/7/365"
+  circuit_breakers: "None. Price can fall 50% in a day."
+  leverage_available: "Up to 125x on some exchanges"
+  settlement: "Instant (spot), T+0"
+  regulation: "Minimal, evolving, jurisdiction-dependent"
+  custody_risk: "High. FTX: $8.7B missing. Mt Gox: $460M. Not your keys, not your coins."
+  typical_daily_volatility_btc: "3-5%"
+  typical_daily_volatility_altcoins: "5-30%"
+
+sessions:
+  - name: "US Market Hours"
+    hours: "09:30-16:00 ET"
+    description: "Highest volume and tightest spreads for BTC/ETH"
+  - name: "24/7 Nature"
+    description: "Cascades and major moves can occur at 03:00 on a Sunday. Stops are oxygen."
+
+funding_rate_mechanism:
+  description: "Perpetual futures pay/receive fees every 8 hours based on perp vs spot price."
+  positive_rate: "Longs pay shorts. Market bullish, too many longs."
+  negative_rate: "Shorts pay longs. Market bearish, too many shorts."
+  typical_range: "0.01-0.03% per 8 hours (10-30% annualized)"
+  extreme_range: "0.1%+ per 8 hours (100%+ annualized)"
+
+  arbitrage:
+    description: "Delta-neutral funding rate collection"
+    steps:
+      - "Buy spot BTC"
+      - "Short equivalent BTC perps"
+      - "Collect funding every 8 hours"
+      - "Net directional exposure: zero"
+    example: "Mar 13 2024: Funding 0.08%/8hrs = 0.24%/day = ~88% annualized. $100K position = $240/day."
+    risks: ["Basis risk", "Exchange insolvency", "Margin requirement changes", "Funding rate flipping"]
+
+  as_sentiment_indicator:
+    high_positive_sustained: "Excessive bullish leverage. Cascade risk elevated."
+    deep_negative_sustained: "Excessive bearish positioning. Short squeeze probable."
+
+liquidation_cascades:
+  mechanics:
+    - "Price drops 3% from local high"
+    - "25x-50x leveraged longs liquidated (forced market sell orders)"
+    - "Forced selling pushes price down another 2%"
+    - "10x-20x longs now liquidated"
+    - "Cascade continues until leverage flushed"
+    - "Open interest drops 30%+, funding goes negative"
+    - "Bounce follows as opportunistic buyers step in"
+  example_aug_17_2023:
+    start_price: 29300
+    low_price: 25166
+    decline: "14.1%"
+    liquidations: "$1B+ in long positions"
+    largest_hour: "$245M at 21:00 UTC"
+  trading_approach:
+    before: "Monitor open interest and funding. High OI + elevated funding = loaded spring."
+    during: "Stay out. Each pause looks like a bottom but another wave may come."
+    after: "When OI drops 30%+ and funding goes negative, cascade is complete. Bounce trade."
+
+on_chain_metrics:
+  - name: "Exchange Inflows/Outflows"
+    source: "Glassnode, CryptoQuant"
+    signal: "Outflows = bullish (coins to cold storage). Inflows = bearish (preparing to sell)."
+    example: "Oct 15 2023: 25,000 BTC outflow. BTC at $27K. Two months later: $42K (+55.6%)."
+
+  - name: "Whale Wallet Tracking"
+    source: "Arkham Intelligence, Whale Alert"
+    signal: "Wallets with 1000+ BTC. Accumulation precedes rallies by months."
+    example: "Jan-Mar 2023: Whales added 120K BTC ($16.5K-$25K). Six months before $73,750."
+
+  - name: "MVRV Ratio (Market Value / Realized Value)"
+    signal_top: "Above 3.5 = market top signal. Average holder +250% unrealized profit."
+    signal_bottom: "Below 1.0 = market bottom signal. Average holder underwater."
+    historical_bottoms:
+      - {date: "Jan 2015", mvrv: 0.76, btc_price: 200}
+      - {date: "Dec 2018", mvrv: 0.69, btc_price: 3200}
+      - {date: "Mar 2020", mvrv: 0.85, btc_price: 4800}
+      - {date: "Nov 2022", mvrv: 0.85, btc_price: 15700}
+
+  - name: "Aggregate Funding Rates"
+    sources: ["Binance", "Bybit", "OKX", "dYdX"]
+    extreme_positive: ">0.05% for 1+ week = overheated"
+    extreme_negative: "<-0.05% for 1+ week = oversold"
+
+bitcoin_halving_cycle:
+  mechanism: "Every 210,000 blocks (~4 years), mining reward halved."
+  history:
+    - {date: "Nov 28 2012", reward_before: 50, reward_after: 25, price_at_halving: 12.35, cycle_peak: 1177, return: "9430%", months_to_peak: 12}
+    - {date: "Jul 9 2016", reward_before: 25, reward_after: 12.5, price_at_halving: 650, cycle_peak: 19783, return: "2943%", months_to_peak: 17}
+    - {date: "May 11 2020", reward_before: 12.5, reward_after: 6.25, price_at_halving: 8572, cycle_peak: 69000, return: "705%", months_to_peak: 18}
+    - {date: "Apr 19 2024", reward_before: 6.25, reward_after: 3.125, price_at_halving: 63500, cycle_peak: "TBD"}
+  diminishing_returns: true
+  floor_behavior: "After each halving, BTC never returns below pre-halving cycle low."
+  trading_approach:
+    accumulate: "6-12 months before halving (compression phase)"
+    hold: "Through post-halving expansion"
+    take_profit_signals:
+      - "MVRV above 3.0"
+      - "Funding rates above 0.06% for 2+ weeks"
+      - "Exchange inflows double 30-day average"
+
+primary_setups:
+  - name: "Post-Capitulation Bottom (FTX/Luna Type)"
+    conditions:
+      - "MVRV below 1.0"
+      - "Exchange outflows spiking"
+      - "Funding deeply negative"
+      - "Open interest collapsed 40%+"
+    laws_applied: [5, 7]
+
+  - name: "Liquidation Cascade Bounce"
+    conditions:
+      - "OI dropped 30%+ from peak"
+      - "Funding rates flipped negative"
+      - "Selling pressure exhausted"
+    laws_applied: [2, 5]
+
+  - name: "Halving Cycle Accumulation"
+    conditions:
+      - "6-12 months before halving"
+      - "Volatility compressing"
+    hold_period: "12-18 months"
+    laws_applied: [3, 14]
+
+  - name: "Narrative Rotation (Altcoin)"
+    conditions:
+      - "Developer activity surge on specific chain"
+      - "Transaction volume new highs"
+      - "Media narrative shifting"
+    laws_applied: [1, 2]
+
+risk_rules:
+  max_portfolio_allocation_to_crypto: 0.05
+  max_risk_per_trade_within_crypto: 0.02
+  max_leverage: "3x (ignore 100x offerings)"
+  stop_losses: "MANDATORY. Hardware stops on exchange. Always."
+  custody: "Only active trading capital on exchanges. Long-term holdings on hardware wallet."
+  position_sizing: "Scale inversely to volatility. SOL 2x BTC vol = half the position."
+
+key_metrics_daily:
+  - "Funding rates (Coinglass)"
+  - "Open interest (Coinglass)"
+  - "Exchange flows (Glassnode, CryptoQuant)"
+  - "MVRV ratio (Glassnode)"
+  - "BTC dominance (TradingView)"
+
+exchange_failure_history:
+  - {name: "Mt. Gox", year: 2014, loss: "$460M"}
+  - {name: "QuadrigaCX", year: 2019, loss: "$190M"}
+  - {name: "FTX", year: 2022, loss: "$8.7B"}
+  - {name: "Terra/Luna", year: 2022, loss: "$40B+ ecosystem"}
+  - {name: "Three Arrows Capital", year: 2022, loss: "$3.5B"}
+
+laws_most_relevant: [2, 3, 4, 7, 9, 19, 21, 24, 27, 29, 30]

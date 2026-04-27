@@ -1,0 +1,216 @@
+# Strativion Market Playbook: Forex (Currency Pairs)
+# Source: Chapter 34 - The 30 Indisputable Laws of Trading
+
+market: "Forex"
+description: "Currency pair trading playbook. $7.5 trillion daily turnover (BIS 2022)."
+
+instruments:
+  majors:
+    - symbol: "EUR/USD"
+      nickname: "Fiber"
+      avg_spread_pips: [0.1, 0.3]
+      avg_daily_range_pips: [70, 90]
+      character: "Most liquid instrument on Earth"
+      dxy_correlation: -0.97
+
+    - symbol: "USD/JPY"
+      nickname: "Gopher"
+      avg_spread_pips: [0.1, 0.3]
+      avg_daily_range_pips: [80, 100]
+      character: "Carry trade barometer, BOJ intervention risk"
+      dxy_correlation: 0.88
+
+    - symbol: "GBP/USD"
+      nickname: "Cable"
+      avg_spread_pips: [0.3, 0.8]
+      avg_daily_range_pips: [100, 130]
+      character: "Volatile, news-driven, wider stops needed"
+      dxy_correlation: -0.82
+
+    - symbol: "USD/CHF"
+      nickname: "Swissy"
+      avg_spread_pips: [0.5, 1.5]
+      avg_daily_range_pips: [60, 80]
+      character: "Safe-haven flows, SNB intervention history"
+
+    - symbol: "AUD/USD"
+      nickname: "Aussie"
+      avg_spread_pips: [0.3, 0.8]
+      avg_daily_range_pips: [60, 80]
+      character: "Commodity-linked, China proxy"
+      dxy_correlation: -0.75
+      china_correlation: 0.65
+
+    - symbol: "USD/CAD"
+      nickname: "Loonie"
+      avg_spread_pips: [0.5, 1.5]
+      avg_daily_range_pips: [60, 80]
+      character: "Oil-linked, correlated with WTI crude"
+      dxy_correlation: 0.72
+
+    - symbol: "NZD/USD"
+      nickname: "Kiwi"
+      avg_spread_pips: [0.5, 1.5]
+      avg_daily_range_pips: [50, 70]
+      character: "Dairy prices, carry trade candidate"
+
+  crosses:
+    - symbol: "EUR/GBP"
+      avg_daily_range_pips: [40, 60]
+      character: "Pure European relative-value. Slow trends."
+    - symbol: "GBP/JPY"
+      nickname: "Beast/Dragon"
+      avg_daily_range_pips: [150, 200]
+      character: "Extreme volatility. Size at 50% of major pair position."
+      warning: "Traders who size GBP/JPY like EUR/USD blow up."
+    - symbol: "AUD/NZD"
+      avg_daily_range_pips: [30, 50]
+      character: "Low volatility. Mean-reversion pair. Range 1.0400-1.1200."
+
+  exotics:
+    warning: "Spreads 10-30 pips. Swap costs can be $15/lot/day. For specialists only."
+    examples: ["USD/TRY", "USD/ZAR", "USD/MXN"]
+
+sessions:
+  - name: "Sydney"
+    hours: "17:00-02:00 ET"
+    volume_pct: 0.06
+    key_pairs: ["AUD/USD", "NZD/USD"]
+    character: "Quiet, narrow ranges, low liquidity"
+
+  - name: "Tokyo"
+    hours: "19:00-04:00 ET"
+    volume_pct: 0.10
+    key_pairs: ["USD/JPY", "AUD/JPY"]
+    character: "Moderate volume, JPY dominant, range-bound"
+    note: "BOJ interventions occur during Tokyo hours"
+
+  - name: "London"
+    hours: "03:00-12:00 ET"
+    volume_pct: 0.38
+    key_pairs: ["EUR/USD", "GBP/USD", "EUR/GBP"]
+    character: "Highest volume, trend-setting, breakouts"
+    london_fakeout: "First 30-60 min often false breakout of Asian range. Occurs 3-4x/week on EUR/USD."
+
+  - name: "New York"
+    hours: "08:00-17:00 ET"
+    volume_pct: 0.28
+    key_pairs: ["EUR/USD", "USD/CAD", "all majors"]
+    character: "Strong directional moves, data-driven"
+
+  - name: "London-NY Overlap"
+    hours: "08:00-12:00 ET"
+    volume_pct: 0.35
+    character: "Peak volatility, tightest spreads. THE window to trade."
+    spread_compression: "EUR/USD spread compresses from 0.8 pips (Sydney) to 0.1 pips"
+
+best_hours: ["08:00-12:00"]
+secondary_hours: ["03:00-04:00"]
+dead_zones: ["12:00-14:00"]
+
+dxy_correlation_framework:
+  description: "US Dollar Index drives correlated moves across all pairs. Check DXY first."
+  correlations:
+    EUR_USD: -0.97
+    GBP_USD: -0.82
+    USD_JPY: 0.88
+    AUD_USD: -0.75
+    USD_CAD: 0.72
+    XAU_USD: -0.80
+  rule: "If your trade conflicts with DXY direction, probability drops. Sit on hands."
+
+carry_trade:
+  formula: "Total Return = Price Change + (Interest Rate Differential x Holding Period)"
+  mechanism: "Borrow low-yield, invest high-yield. Creates persistent buying pressure on high-yield currency."
+  example_usd_jpy_2022_2024:
+    rate_differential_start: "0.35%"
+    rate_differential_peak: "5.60%"
+    price_move: "115.00 to 161.95"
+    daily_swap: "$12-15 per standard lot"
+  unwind_warning: "Slow escalator up, fast elevator down. August 5 2024: USD/JPY crashed 1200 pips in 3 weeks."
+
+central_bank_intervention:
+  types:
+    verbal:
+      description: "Jawboning. Escalating statements. Costs nothing. 100-200 pip reversals."
+      diminishing_returns: true
+    direct:
+      description: "Selling reserves. Sledgehammer. 300-1000 pip moves. Often fully retraced in weeks."
+      example: "BOJ Sep 22 2022: $19.7B sold, USD/JPY 145.90 to 140.35 (555 pips). Retraced within 3 weeks."
+    policy:
+      description: "Rate change or framework change. Most powerful. Changes the fundamental equation."
+      example: "BOJ Jul 31 2024 rate hike: USD/JPY 161.95 to 141.68. Entire carry trade unwound."
+
+  trading_rules:
+    - "Never fight a central bank on day of intervention"
+    - "Wait 3-5 days after intervention"
+    - "If direct intervention opposes fundamental trend, fade it after 3-5 days"
+    - "If policy intervention changes fundamentals, respect the new direction"
+    - "The distinction between Type 2 (direct) and Type 3 (policy) is the most important judgment call in forex"
+
+primary_setups:
+  - name: "Carry Trade Trend Following"
+    conditions:
+      - "Rate differential > 2%"
+      - "DXY direction supports the trade"
+    hold_period: "weeks to months"
+    laws_applied: [1]
+
+  - name: "Mean Reversion on News Overreaction"
+    conditions:
+      - "Price hits lower Bollinger Band on daily"
+      - "RSI below 30"
+      - "At structural support level"
+    typical_retracement: "40-60% of initial move within 24-48 hours"
+    laws_applied: [5]
+
+  - name: "London Fakeout Reversal"
+    conditions:
+      - "First 30-60 min of London breaks Asian high/low"
+      - "Reverses back into range"
+    frequency: "3-4x per week on EUR/USD"
+
+  - name: "Central Bank Fade (Direct Intervention Only)"
+    conditions:
+      - "Direct market intervention (Type 2)"
+      - "Fundamental trend (carry) still intact"
+      - "Wait 3-5 days"
+    laws_applied: [1, 5]
+
+risk_rules:
+  max_risk_per_trade: 0.01
+  max_leverage: "10:1 (ignore broker offers of 50:1 or 100:1)"
+  position_sizing_method: "atr_based"
+  typical_stop_majors_pips: [50, 100]
+  typical_stop_gbp_jpy_pips: [100, 200]
+
+key_reports:
+  - name: "Non-Farm Payrolls"
+    frequency: "First Friday monthly"
+    impact: "high"
+    typical_move: "50-150 pips EUR/USD"
+  - name: "CPI (US, UK, Eurozone)"
+    impact: "high"
+    typical_move: "50-100 pips"
+  - name: "Central Bank Rate Decisions"
+    impact: "extreme"
+    typical_move: "100-300 pips"
+  - name: "GDP"
+    impact: "medium"
+    typical_move: "30-80 pips"
+
+leverage_reality_check:
+  warning: >
+    Higher leverage does not increase profit potential. It increases ruin probability.
+    At 100:1, a $50,000 account can open 50 lots. 100 pips against = $50,000 = entire account.
+    100 pips is a normal day. Law 29 is unforgiving.
+
+key_correlations:
+  EUR_USD_DXY: -0.97
+  GBP_USD_DXY: -0.82
+  USD_JPY_DXY: 0.88
+  AUD_USD_China: 0.65
+  USD_CAD_WTI: -0.60
+  XAU_USD_DXY: -0.80
+
+laws_most_relevant: [1, 3, 4, 5, 7, 8, 9, 24, 25, 29]

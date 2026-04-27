@@ -1,0 +1,357 @@
+meta:
+  document_role: policy
+  schema_version: 1.0.0
+  file_version: 1.0.0
+  canonical_package_version: 2.2.0
+  unit_convention: decimal_fraction
+  binding_precedence: canonical
+  owned_controls:
+    - M-02  # policy.promotion.yaml#stages
+    - M-03  # policy.promotion.yaml#gates
+    - M-04  # policy.promotion.yaml#demotion_triggers
+    - M-05  # policy.promotion.yaml#min_dwell
+    - M-06  # policy.promotion.yaml#shadow.traffic_mix
+  index_authority: governance/CANONICAL-FIELD-INDEX.md
+  override_schema: governance/OVERRIDE-SCHEMA.md
+
+# ---------------------------------------------------------------------------
+# M-02  PROMOTION STAGE GRAPH
+# DAG: research → replay → shadow → paper → supervised_live → autonomous_live
+# Each stage is a node. Edges (transitions) are defined in `transitions:`.
+# ---------------------------------------------------------------------------
+stages:
+  research:
+    description: "Offline ideation, hypothesis formation, and literature review; no data replay."
+    allows_real_orders: false
+    requires_human_in_loop: true
+    risk_budget_pct: 0.0
+    max_position_count: 0
+    max_notional_usd: 0
+    mode_enum_value: research
+
+  replay:
+    description: "Historical data replay with vectorized backtest; all signals synthetic."
+    allows_real_orders: false
+    requires_human_in_loop: true
+    risk_budget_pct: 0.0
+    max_position_count: 0
+    max_notional_usd: 0
+    mode_enum_value: replay
+
+  shadow:
+    description: "Live market data consumed; signals generated at full rate but zero orders sent; fills simulated post-hoc."
+    allows_real_orders: false
+    requires_human_in_loop: false
+    risk_budget_pct: 0.0
+    max_position_count: 0
+    max_notional_usd: 0
+    mode_enum_value: shadow
+    traffic_mix:
+      # M-06 canonical owner: policy.promotion.yaml#shadow.traffic_mix
+      signal_generation_pct: 1.0          # 100% of live signals generated
+      order_submission_pct: 0.0           # 0% of orders sent to broker
+      order_book_capture: true            # full L1/L2 snapshots at signal time
+      fill_simulation: post_hoc           # fill model applied offline after each session
+      fill_sim_method: nbbo_mid_plus_half_spread
+      latency_model: empirical_p95        # apply measured p95 latency to simulated fill timestamps
+      capture_store: reports/shadow/
+
+  paper:
+    description: "Live orders routed to paper-trading environment; full order lifecycle, zero real capital."
+    allows_real_orders: false             # paper orders only; no real capital
+    requires_human_in_loop: true
+    risk_budget_pct: 0.005               # 0.5% notional cap as fraction of target live AUM
+    max_position_count: 10
+    max_notional_usd: 50000
+    mode_enum_value: paper
+
+  supervised_live:
+    description: "Real orders with real capital; every order requires human review before submission."
+    allows_real_orders: true
+    requires_human_in_loop: true
+    risk_budget_pct: 0.25               # 25% of full autonomous budget
+    max_position_count: 5
+    max_notional_usd: 100000
+    mode_enum_value: supervised_live
+
+  autonomous_live:
+    description: "Full autonomous operation; real orders without per-order human review."
+    allows_real_orders: true
+    requires_human_in_loop: false
+    risk_budget_pct: 1.0                # 100% of authorized risk budget
+    max_position_count: null            # governed by policy.runtime.yaml
+    max_notional_usd: null              # governed by policy.runtime.yaml
+    mode_enum_value: autonomous_live
+
+# ---------------------------------------------------------------------------
+# M-03  PROMOTION GATES
+# Each gate set is keyed by "from_stage→to_stage".
+# Numeric thresholds are authoritative; agents and workflows carry no literals.
+# Gate certification: only ci/tooling/validate/ may mark a gate passed.
+# Human operators may NOT mark a gate passed without attached numerical evidence
+# pointing to reports/ artifacts.
+# ---------------------------------------------------------------------------
+gates:
+  replay_to_shadow:
+    transition_id: replay→shadow
+    gate_validator:
+      authority: ci/tooling/validate/
+      evidence_required: true
+      evidence_pointer_prefix: reports/gates/replay_to_shadow/
+      human_attestation_without_evidence: forbidden
+    conditions:
+      min_signals:
+        field: min_signals
+        operator: ">="
+        threshold: 500
+        unit: count
+      out_of_sample_sharpe:
+        field: out_of_sample_sharpe
+        operator: ">="
+        threshold: 0.8
+        unit: ratio
+        window_description: "out-of-sample period defined in backtest manifest"
+      max_drawdown:
+        field: max_dd
+        operator: "<="
+        threshold: 0.15
+        unit: decimal_fraction
+      paper_backtest_hit_rate:
+        field: paper_backtest_hit_rate
+        operator: ">="
+        threshold: 0.45
+        unit: decimal_fraction
+        description: "Hit rate on backtest trades classified as paper-equivalent"
+    all_conditions_must_pass: true
+
+  shadow_to_paper:
+    transition_id: shadow→paper
+    gate_validator:
+      authority: ci/tooling/validate/
+      evidence_required: true
+      evidence_pointer_prefix: reports/gates/shadow_to_paper/
+      human_attestation_without_evidence: forbidden
+    conditions:
+      shadow_vs_backtest_correlation:
+        field: shadow_vs_backtest_correlation
+        operator: ">="
+        threshold: 0.7
+        unit: correlation_coefficient
+        window_trading_days: 20
+        description: "Pearson r between shadow simulated PnL and backtest PnL over 20 trading days"
+      no_sev1_incidents_30d:
+        field: sev1_incident_count_30d
+        operator: "=="
+        threshold: 0
+        unit: count
+        incident_severity: SEV1
+        lookback: P30D
+      shadow_fill_sim_error_bps:
+        field: shadow_fill_sim_error_bps
+        operator: "<="
+        threshold: 3
+        unit: basis_points
+        description: "Mean absolute error between simulated fill price and observed NBBO mid at fill time"
+    all_conditions_must_pass: true
+
+  paper_to_supervised_live:
+    transition_id: paper→supervised_live
+    gate_validator:
+      authority: ci/tooling/validate/
+      evidence_required: true
+      evidence_pointer_prefix: reports/gates/paper_to_supervised_live/
+      human_attestation_without_evidence: forbidden
+    conditions:
+      paper_live_sharpe:
+        field: paper_live_sharpe
+        operator: ">="
+        threshold: 0.6
+        unit: ratio
+        min_trades_required: 500
+        description: "Sharpe ratio on paper-trading account over at least 500 completed trades"
+      max_slippage_vs_model:
+        field: max_slippage_bps_vs_modeled
+        operator: "<="
+        threshold: 8
+        unit: basis_points
+        description: "Maximum observed paper slippage versus the fill-model estimate"
+      zero_compliance_violations:
+        field: compliance_violation_count
+        operator: "=="
+        threshold: 0
+        unit: count
+      operator_signoff:
+        type: dual_control
+        required_approvers: 2
+        approver_roles: [compliance_officer, risk_officer]
+        description: "Both compliance_officer and risk_officer must sign the gate report"
+        evidence_pointer: reports/gates/paper_to_supervised_live/dual_control_signoff.json
+    all_conditions_must_pass: true
+
+  supervised_live_to_autonomous_live:
+    transition_id: supervised_live→autonomous_live
+    gate_validator:
+      authority: ci/tooling/validate/
+      evidence_required: true
+      evidence_pointer_prefix: reports/gates/supervised_to_autonomous/
+      human_attestation_without_evidence: forbidden
+    conditions:
+      min_supervised_live_trades:
+        field: supervised_live_trade_count
+        operator: ">="
+        threshold: 2000
+        unit: count
+      no_overrides_last_30d:
+        field: human_override_count_30d
+        operator: "=="
+        threshold: 0
+        unit: count
+        lookback: P30D
+        description: "Zero human order-level overrides in the last 30 calendar days"
+      live_vs_paper_sharpe_ratio:
+        field: live_vs_paper_sharpe_ratio
+        operator: ">="
+        threshold: 0.8
+        unit: ratio
+        description: "Ratio of supervised_live Sharpe to paper Sharpe; must be ≥ 0.8"
+      dual_control_signoff:
+        type: dual_control
+        required_approvers: 2
+        approver_roles: [compliance_officer, risk_officer]
+        description: "Both compliance_officer and risk_officer must sign; ⛔ field per OVERRIDE-SCHEMA.md"
+        evidence_pointer: reports/gates/supervised_to_autonomous/dual_control_signoff.json
+      min_dwell_satisfied:
+        type: duration_check
+        field_reference: policy.promotion.yaml#min_dwell.supervised_live
+        description: "Minimum dwell period must have elapsed before this gate evaluates"
+    all_conditions_must_pass: true
+
+# ---------------------------------------------------------------------------
+# M-03 (continued)  TRANSITIONS — forward edge list
+# ---------------------------------------------------------------------------
+transitions:
+  - from: research
+    to: replay
+    required_gates: []
+    notes: "No numeric gates; human decision to begin replay."
+
+  - from: replay
+    to: shadow
+    required_gates: [replay_to_shadow]
+
+  - from: shadow
+    to: paper
+    required_gates: [shadow_to_paper]
+
+  - from: paper
+    to: supervised_live
+    required_gates: [paper_to_supervised_live]
+
+  - from: supervised_live
+    to: autonomous_live
+    required_gates: [supervised_live_to_autonomous_live]
+
+# ---------------------------------------------------------------------------
+# M-04  DEMOTION TRIGGERS
+# Incident codes reference policy.incidents.yaml#codes.
+# Demotion is automatic except where human_acknowledgment_required: true.
+# ---------------------------------------------------------------------------
+demotion_triggers:
+  - trigger_id: DT-01
+    incident_code: INC_RISK_VETO
+    condition:
+      count_operator: ">="
+      count_threshold: 3
+      window: PT24H
+    action: demote_one_stage
+    description: "3 or more INC_RISK_VETO incidents within any rolling 24-hour window → demote one stage immediately."
+    human_acknowledgment_required: false
+    audit_required: true
+
+  - trigger_id: DT-02
+    incident_code: INC_RECON_BREAK
+    condition:
+      count_operator: ">="
+      count_threshold: 1
+    action: demote_to_stage
+    target_stage: paper
+    description: "Any INC_RECON_BREAK → demote directly to paper stage regardless of current stage."
+    human_acknowledgment_required: false
+    audit_required: true
+
+  - trigger_id: DT-03
+    incident_code: INC_COMPLIANCE_VIOLATION
+    condition:
+      count_operator: ">="
+      count_threshold: 1
+    action: demote_to_stage
+    target_stage: shadow
+    description: "Any INC_COMPLIANCE_VIOLATION → demote directly to shadow stage."
+    human_acknowledgment_required: false
+    audit_required: true
+
+  - trigger_id: DT-04
+    condition:
+      type: drawdown_vs_modeled
+      operator: ">"
+      multiplier: 2.0
+      reference_field: policy.promotion.yaml#stages[current_stage].modeled_max_drawdown
+    action: demote_one_stage
+    description: "Live drawdown exceeds 2× the modeled maximum drawdown for current stage → demote one stage."
+    human_acknowledgment_required: false
+    audit_required: true
+
+  - trigger_id: DT-05
+    incident_code: INC_DATA_STALE_EQUITIES
+    condition:
+      count_operator: ">="
+      count_threshold: 5
+      window: PT1H
+    action: demote_one_stage
+    description: "5 or more INC_DATA_STALE_EQUITIES in 1 hour while in autonomous_live → demote one stage."
+    applies_to_stages: [autonomous_live]
+    human_acknowledgment_required: false
+    audit_required: true
+
+# ---------------------------------------------------------------------------
+# M-05  MINIMUM DWELL TIMES (ISO 8601 durations)
+# Minimum elapsed calendar time before a promotion gate may be evaluated.
+# Tenant may extend but not shorten (⬇ override per OVERRIDE-SCHEMA.md §3).
+# ---------------------------------------------------------------------------
+min_dwell:
+  research: P1D
+  replay: P3D
+  shadow: P10D
+  paper: P20D
+  supervised_live: P30D
+  autonomous_live: null    # no cap; stage is the terminal operating mode
+
+# ---------------------------------------------------------------------------
+# ROLLBACK PROCEDURE
+# Emergency stage demotion; referenced by policy.dr.yaml#rollback.
+# ---------------------------------------------------------------------------
+rollback:
+  operator_kill_switch:
+    trigger: "operator sets OVERRIDE-SCHEMA.md#operator_kill_switch.flattening_mode to cancel_working OR flatten_to_cash"
+    immediate_effect:
+      - cancel_all_working_orders
+      - demote_stage_to: supervised_live    # minimum safe mode; further demotion is operator decision
+      - emit_incident: INC_OPERATOR_KILL_SWITCH_TRIGGERED
+      - block_new_order_submission: true
+    resume_condition: "operator explicitly re-enables via dual-control signoff per policy.dr.yaml#kill_switch.authority"
+    reference_dr_policy: policy.dr.yaml
+    notes: "operator_kill_switch cannot modify risk numerics. Only stage demotion and order cancellation are permitted."
+
+  emergency_demotion:
+    trigger: "any demotion_triggers[*].action fires"
+    procedure:
+      - step: 1
+        action: "evaluate target stage per demotion_triggers entry"
+      - step: 2
+        action: "cancel all working orders before stage transition completes"
+      - step: 3
+        action: "write audit record: {trigger_id, from_stage, to_stage, timestamp_utc, canonical_hash}"
+      - step: 4
+        action: "notify escalation roster per policy.incidents.yaml#escalation.rosters"
+      - step: 5
+        action: "block promotion back to previous stage for minimum P1D unless dual-control approves earlier"

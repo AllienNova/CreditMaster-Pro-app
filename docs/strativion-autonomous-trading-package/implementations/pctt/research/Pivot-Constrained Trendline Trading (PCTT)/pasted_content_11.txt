@@ -1,0 +1,79 @@
+
+plotshape(bearReject, title="Bear Reject", style=shape.xcross, location=location.abovebar, color=color.red, size=size.tiny, text="RJ")
+plotshape(bullReject, title="Bull Reject", style=shape.xcross, location=location.belowbar, color=color.green, size=size.tiny, text="RJ")
+
+// Debug values in Data Window
+plot(er, "ER", display=display.data_window)
+plot(crosses, "Crossings", display=display.data_window)
+plot(slopeNorm, "|slope|/ATR", display=display.data_window)
+plot(qSup, "Q support (0..1)", display=display.data_window)
+plot(qRes, "Q resist (0..1)", display=display.data_window)
+plot(dSafety, "dSafety = |close-safety|/ATR", display=display.data_window)
+```
+
+### What this code implements (mapped to the corrected methodology)
+
+* **Past-only break testing:** uses predicted boundaries at bar *t* computed from a fit ending at *t−1*.
+* **Frozen Action/Safety lines:** stored at break and extended linearly; retests are against the *same* line.
+* **One-sided touches/violations:** counted properly for support vs resistance.
+* **Regime context:** ER + crossing count + slope/ATR.
+* **HTF gating:** non-repainting pattern for HTF requests (1-bar delayed).
+
+---
+
+# Appendix B — Minimal “Embedding” Examples (How to Plug into Other Strategies)
+
+Below are **patterns**, not full trading systems.
+
+## B1) Momentum breakout filter
+
+Use break + regime + quality:
+
+```pine
+// Example usage logic (inside your strategy):
+takeBreakDown = breakDown and (regime != 2) and (qSup > 0.7) and (dSafety < 2.5)
+takeBreakUp   = breakUp   and (regime != 2) and (qRes > 0.7) and (dSafety < 2.5)
+```
+
+## B2) Mean reversion inside range regime
+
+Fade boundary touches only when range regime is detected:
+
+```pine
+fadeUpper = (regime == 2) and (high >= upperPred - 0.1*atr) and (qRes > 0.6)
+fadeLower = (regime == 2) and (low  <= lowerPred + 0.1*atr) and (qSup > 0.6)
+```
+
+## B3) Break + retest entry trigger
+
+Wait for retest + rejection:
+
+```pine
+shortSignal = retestDown and bearReject and (qSup > 0.6) and (dSafety < 2.5)
+longSignal  = retestUp   and bullReject and (qRes > 0.6) and (dSafety < 2.5)
+```
+
+---
+
+# Appendix C — If You Want This as a **strategy()** Script
+
+I can convert Appendix A into a full `strategy()` with:
+
+* entry on `bearReject/bullReject` (or micro-structure break)
+* stop beyond `safetyLine ± buffer`
+* partial exits at 1R/2R
+* optional cooldown and “one-break-one-attempt” enforcement
+
+But I didn’t include it here because:
+
+* you said you want to **embed trendlines into other strategies**, so a module that outputs clean features/events is the most reusable foundation.
+
+---
+
+## What I’d improve next (if you’re going for “research-grade robustness”)
+
+1. **Pivot-touch scoring option:** count touches only on confirmed pivots to match classic “3 touchpoints” thinking (fewer false touches, more interpretability).
+2. **Candidate-line selection (Level 2):** generate several support/resistance candidates from pivot pairs and choose the best by (Q).
+3. **Multi-horizon stack:** run the module at multiple windows (e.g., 50/150/300) and gate behavior hierarchically rather than summing scores.
+
+If you tell me the markets/timeframes you trade most (e.g., crypto 1H/4H vs futures 5m/1H), I’ll propose **default parameter sets** and a **multi-horizon gating design** that’s stable and not curve-fit.

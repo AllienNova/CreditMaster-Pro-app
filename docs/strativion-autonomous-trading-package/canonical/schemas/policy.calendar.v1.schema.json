@@ -1,0 +1,919 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://strativion.io/schemas/policy.calendar.v1.schema.json",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "meta"
+  ],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "document_role",
+        "schema_version",
+        "canonical_package_version"
+      ],
+      "properties": {
+        "document_role": {
+          "type": "string",
+          "enum": [
+            "policy",
+            "workflow"
+          ]
+        },
+        "schema_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[A-Za-z0-9\\.-]+)?$"
+        },
+        "file_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[A-Za-z0-9\\.-]+)?$"
+        },
+        "canonical_package_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[A-Za-z0-9\\.-]+)?$"
+        }
+      }
+    },
+    "sessions": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "XNYS": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "tz_local": {
+              "type": "string"
+            },
+            "regular_hours": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "open_utc": {
+                  "type": "string"
+                },
+                "close_utc": {
+                  "type": "string"
+                }
+              }
+            },
+            "pre_market": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "open_utc": {
+                  "type": "string"
+                },
+                "close_utc": {
+                  "type": "string"
+                },
+                "allows_new_orders": {
+                  "type": "boolean"
+                },
+                "risk_multiplier": {
+                  "type": "number"
+                }
+              }
+            },
+            "post_market": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "open_utc": {
+                  "type": "string"
+                },
+                "close_utc": {
+                  "type": "string"
+                },
+                "allows_new_orders": {
+                  "type": "boolean"
+                },
+                "risk_multiplier": {
+                  "type": "number"
+                }
+              }
+            },
+            "half_day_schedule": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "close_utc": {
+                  "type": "string"
+                },
+                "reference": {
+                  "type": "string"
+                }
+              }
+            },
+            "order_admission_modes": {
+              "type": "array"
+            }
+          }
+        },
+        "XNAS": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "tz_local": {
+              "type": "string"
+            },
+            "regular_hours": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "open_utc": {
+                  "type": "string"
+                },
+                "close_utc": {
+                  "type": "string"
+                }
+              }
+            },
+            "pre_market": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "open_utc": {
+                  "type": "string"
+                },
+                "close_utc": {
+                  "type": "string"
+                },
+                "allows_new_orders": {
+                  "type": "boolean"
+                },
+                "risk_multiplier": {
+                  "type": "number"
+                }
+              }
+            },
+            "post_market": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "open_utc": {
+                  "type": "string"
+                },
+                "close_utc": {
+                  "type": "string"
+                },
+                "allows_new_orders": {
+                  "type": "boolean"
+                },
+                "risk_multiplier": {
+                  "type": "number"
+                }
+              }
+            },
+            "half_day_schedule": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "close_utc": {
+                  "type": "string"
+                },
+                "reference": {
+                  "type": "string"
+                }
+              }
+            },
+            "order_admission_modes": {
+              "type": "array"
+            }
+          }
+        },
+        "XCBT": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "mic": {
+              "type": "string"
+            },
+            "tz_local": {
+              "type": "string"
+            },
+            "regular_hours": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "open_utc": {
+                  "type": "string"
+                },
+                "close_utc": {
+                  "type": "string"
+                }
+              }
+            },
+            "electronic_session": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "open_utc": {
+                  "type": "string"
+                },
+                "close_utc": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                }
+              }
+            },
+            "maintenance_window": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "start_utc": {
+                  "type": "string"
+                },
+                "end_utc": {
+                  "type": "string"
+                },
+                "action": {
+                  "type": "string"
+                }
+              }
+            },
+            "half_day_schedule": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "close_utc": {
+                  "type": "string"
+                }
+              }
+            },
+            "order_admission_modes": {
+              "type": "array"
+            }
+          }
+        },
+        "XCME": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "mic": {
+              "type": "string"
+            },
+            "tz_local": {
+              "type": "string"
+            },
+            "regular_hours": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "open_utc": {
+                  "type": "string"
+                },
+                "close_utc": {
+                  "type": "string"
+                }
+              }
+            },
+            "electronic_session": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "open_utc": {
+                  "type": "string"
+                },
+                "close_utc": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                }
+              }
+            },
+            "maintenance_window": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "start_utc": {
+                  "type": "string"
+                },
+                "end_utc": {
+                  "type": "string"
+                },
+                "action": {
+                  "type": "string"
+                }
+              }
+            },
+            "half_day_schedule": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "close_utc": {
+                  "type": "string"
+                }
+              }
+            },
+            "order_admission_modes": {
+              "type": "array"
+            }
+          }
+        },
+        "XNFE": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "mic": {
+              "type": "string"
+            },
+            "tz_local": {
+              "type": "string"
+            },
+            "regular_hours": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "open_utc": {
+                  "type": "string"
+                },
+                "close_utc": {
+                  "type": "string"
+                }
+              }
+            },
+            "pre_market": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "open_utc": {
+                  "type": "string"
+                },
+                "close_utc": {
+                  "type": "string"
+                },
+                "allows_new_orders": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "post_market": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "open_utc": {
+                  "type": "string"
+                },
+                "close_utc": {
+                  "type": "string"
+                },
+                "allows_new_orders": {
+                  "type": "boolean"
+                },
+                "risk_multiplier": {
+                  "type": "number"
+                }
+              }
+            },
+            "order_admission_modes": {
+              "type": "array"
+            }
+          }
+        },
+        "XIFE": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "mic": {
+              "type": "string"
+            },
+            "tz_local": {
+              "type": "string"
+            },
+            "regular_hours": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "open_utc": {
+                  "type": "string"
+                },
+                "close_utc": {
+                  "type": "string"
+                }
+              }
+            },
+            "pre_market": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "open_utc": {
+                  "type": "string"
+                },
+                "close_utc": {
+                  "type": "string"
+                },
+                "allows_new_orders": {
+                  "type": "boolean"
+                },
+                "risk_multiplier": {
+                  "type": "number"
+                }
+              }
+            },
+            "order_admission_modes": {
+              "type": "array"
+            }
+          }
+        },
+        "BINANCE": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "mic": {},
+            "tz_local": {},
+            "regular_hours": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "open_utc": {
+                  "type": "string"
+                },
+                "close_utc": {
+                  "type": "string"
+                },
+                "continuous": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "thin_liquidity_windows": {
+              "type": "array"
+            },
+            "maintenance_windows": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "schedule": {
+                  "type": "string"
+                },
+                "action": {
+                  "type": "string"
+                },
+                "status_api": {
+                  "type": "string"
+                }
+              }
+            },
+            "order_admission_modes": {
+              "type": "array"
+            }
+          }
+        },
+        "COINBASE": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "mic": {},
+            "tz_local": {},
+            "regular_hours": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "open_utc": {
+                  "type": "string"
+                },
+                "close_utc": {
+                  "type": "string"
+                },
+                "continuous": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "thin_liquidity_windows": {
+              "type": "array"
+            },
+            "maintenance_windows": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "schedule": {
+                  "type": "string"
+                },
+                "action": {
+                  "type": "string"
+                },
+                "status_api": {
+                  "type": "string"
+                }
+              }
+            },
+            "order_admission_modes": {
+              "type": "array"
+            }
+          }
+        }
+      }
+    },
+    "holidays": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "source": {
+          "type": "string"
+        },
+        "secondary_sources": {
+          "type": "array"
+        },
+        "refresh": {
+          "type": "string"
+        },
+        "refresh_time_utc": {
+          "type": "string"
+        },
+        "cache_ttl_hours": {
+          "type": "integer"
+        },
+        "fallback_on_fetch_failure": {
+          "type": "string"
+        },
+        "stale_after_days": {
+          "type": "integer"
+        },
+        "action_if_stale": {
+          "type": "string"
+        },
+        "action_incident": {
+          "type": "string"
+        }
+      }
+    },
+    "macro": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "tier1": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "windows": {
+              "type": "array"
+            }
+          }
+        },
+        "tier2": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "windows": {
+              "type": "array"
+            }
+          }
+        }
+      }
+    },
+    "earnings": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "blackout": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "hours_before": {
+              "type": "integer"
+            },
+            "hours_after_regular": {
+              "type": "integer"
+            },
+            "hours_after_pre_announced_guidance": {
+              "type": "integer"
+            },
+            "symbols_source": {
+              "type": "array"
+            },
+            "unknown_schedule_action": {
+              "type": "string"
+            },
+            "unknown_schedule_hours_before": {
+              "type": "integer"
+            },
+            "action": {
+              "type": "string"
+            },
+            "override_class": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "dividends": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "ex_date": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "default_action": {
+              "type": "string"
+            },
+            "new_entry_requires_flag": {
+              "type": "string"
+            },
+            "short_position_liability": {
+              "type": "boolean"
+            },
+            "option_adjusted_behavior": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "american_calls_itm": {
+                  "type": "string"
+                },
+                "dividend_threshold_for_early_exercise_usd": {
+                  "type": "number"
+                },
+                "action_if_early_exercise_risk": {
+                  "type": "string"
+                }
+              }
+            },
+            "override_class": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "options": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "quad_witching": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "schedule": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "months": {
+                  "type": "array"
+                },
+                "day_rule": {
+                  "type": "string"
+                }
+              }
+            },
+            "behavior": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "reduce_size_by": {
+                  "type": "number"
+                },
+                "widen_stop_multiple": {
+                  "type": "number"
+                },
+                "require_liquid_only": {
+                  "type": "boolean"
+                },
+                "no_new_options_expiring_that_day": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "override_class": {
+              "type": "string"
+            }
+          }
+        },
+        "opex": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "schedule": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "day_rule": {
+                  "type": "string"
+                },
+                "excludes_quad_witching_months": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "behavior": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "expiring_week_position_cap_pct": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "reduce_size_by": {
+                  "type": "number"
+                },
+                "require_liquid_only": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "override_class": {
+              "type": "string"
+            }
+          }
+        },
+        "zero_dte": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "requires_strategy_flag": {
+              "type": "string"
+            },
+            "separate_risk_budget": {
+              "type": "boolean"
+            },
+            "risk_budget_pct": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "max_notional_per_expiry_usd": {
+              "type": "integer"
+            },
+            "no_new_entries_after": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "time_before_close_utc": {
+                  "type": "string"
+                }
+              }
+            },
+            "action_at_close_minus_15m": {
+              "type": "string"
+            },
+            "override_class": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "halts": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "wake_rule": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "on_halt_detected": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "action_working_orders": {
+                  "type": "string"
+                },
+                "action_new_orders": {
+                  "type": "string"
+                },
+                "incident": {
+                  "type": "string"
+                }
+              }
+            },
+            "on_reopen": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "warmup_before_new_orders": {
+                  "type": "string"
+                },
+                "max_spread_multiplier": {
+                  "type": "number"
+                }
+              }
+            },
+            "on_halt_duration_exceeds": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "threshold": {
+                  "type": "string"
+                },
+                "action": {
+                  "type": "string"
+                },
+                "incident": {
+                  "type": "string"
+                },
+                "resume_requires": {
+                  "type": "string"
+                }
+              }
+            },
+            "auction_states": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "handled_by": {
+                  "type": "string"
+                }
+              }
+            },
+            "override_class": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "early_close_days": {
+      "type": "array"
+    },
+    "weather_and_ops_disruptions": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "precedent": {
+          "type": "string"
+        },
+        "detection_source": {
+          "type": "string"
+        },
+        "fallback_on_unplanned_closure": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "action": {
+              "type": "string"
+            },
+            "working_orders": {
+              "type": "string"
+            },
+            "incident": {
+              "type": "string"
+            },
+            "human_acknowledgment_required": {
+              "type": "boolean"
+            },
+            "resume_requires": {
+              "type": "string"
+            }
+          }
+        },
+        "partial_session_detected": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "action": {
+              "type": "string"
+            },
+            "risk_multiplier": {
+              "type": "number"
+            }
+          }
+        },
+        "ambiguous_session_status": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "action": {
+              "type": "string"
+            },
+            "incident": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}

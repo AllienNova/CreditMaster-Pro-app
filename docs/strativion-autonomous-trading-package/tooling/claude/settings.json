@@ -1,0 +1,41 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "command": "echo 'SSOT-CHECK: Verify SSOT tag references in all new classes and functions'"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "command": "python -c \"import sys; f=sys.argv[1]; print('VALIDATE: Run /validate on new Python files') if f.endswith('.py') else None\" \"$TOOL_ARG_FILE_PATH\""
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(pytest *)",
+      "Bash(python -m mypy *)",
+      "Bash(npx vitest *)",
+      "Bash(python tools/validate_*.py *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git add *)",
+      "Bash(npx prettier *)",
+      "Bash(python -m black *)",
+      "Bash(python -m ruff *)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(git push --force *)",
+      "Bash(git reset --hard *)",
+      "Bash(* --no-verify *)",
+      "Bash(pip install *)",
+      "Bash(npm install *)",
+      "Bash(pip uninstall *)",
+      "Bash(npm uninstall *)"
+    ]
+  }
+}

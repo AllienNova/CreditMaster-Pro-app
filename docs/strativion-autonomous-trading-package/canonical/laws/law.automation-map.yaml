@@ -1,0 +1,72 @@
+meta:
+  document_role: policy
+  schema_version: "1.0.0"
+  file_version: "1.0.0"
+  canonical_package_version: "2.5.0"
+  binding_precedence: canonical
+  purpose: "Classifies each law by automation eligibility. Consumers must obey these classes when deciding whether a law's rule may run autonomously."
+  index_authority: governance/CANONICAL-FIELD-INDEX.md
+  override_rights:
+    classes: locked
+    laws: locked
+    consumer_rules: locked
+
+classes:
+  machine_enforceable:
+    description: "May be enforced directly by runtime systems."
+  machine_assisted:
+    description: "May inform scoring, gating, or review, but requires explicit implementation logic."
+  autonomous_supervisory_signal:
+    description: "Agent may detect a condition and alert Risk or Meta, but may not mutate live policy or enforce a block on its own. Requires separate approved control design."
+  human_supervisory:
+    description: "Must not be applied as autonomous runtime logic without separate approved control design."
+
+laws:
+  law_01: { class: "machine_assisted" }
+  law_02: { class: "machine_assisted" }
+  law_03: { class: "machine_assisted" }
+  law_04: { class: "machine_assisted" }
+  law_05: { class: "machine_assisted" }
+  law_06: { class: "machine_assisted" }
+  law_07: { class: "machine_assisted" }
+  law_08: { class: "machine_assisted" }
+  law_09: { class: "machine_assisted" }
+  law_10: { class: "machine_assisted" }
+  law_11: { class: "machine_assisted" }
+  law_12: { class: "machine_assisted" }
+  law_13: { class: "machine_assisted" }
+  law_14: { class: "machine_assisted" }
+  law_15: { class: "machine_assisted" }
+  law_16: { class: "machine_enforceable" }
+  law_17: { class: "machine_assisted" }
+  law_18: { class: "machine_assisted" }
+  law_19: { class: "machine_assisted" }
+  law_20:
+    class: "human_supervisory"
+    note: "Backtest realism and deployment judgement require human governance."
+  law_21: { class: "machine_enforceable" }
+  law_22: { class: "machine_enforceable" }
+  law_23: { class: "machine_enforceable" }
+  law_24: { class: "machine_enforceable" }
+  law_25: { class: "machine_enforceable" }
+  law_26:
+    class: "human_supervisory"
+    note: "Complexity governance is an architecture and product decision."
+  law_27:
+    class: "autonomous_supervisory_signal"
+    note: "Behavioral patterns (tilt, revenge, disposition) may be detected and raised as alerts; they may not mutate policy or block autonomously."
+  law_28:
+    class: "autonomous_supervisory_signal"
+    note: "Adaptation may generate proposals that enter the change-control queue; never live mutation."
+  law_29: { class: "machine_enforceable" }
+  law_30: { class: "machine_enforceable" }
+
+consumer_rules:
+  machine_enforceable:
+    action: "May be enforced directly by runtime systems."
+  machine_assisted:
+    action: "May inform scoring, gating, or review, but requires explicit implementation logic."
+  autonomous_supervisory_signal:
+    action: "Agent may alert; may not autonomously block or mutate policy."
+  human_supervisory:
+    action: "Must not be applied as autonomous runtime logic without separate approved control design."

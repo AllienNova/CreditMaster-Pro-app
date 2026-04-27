@@ -1,0 +1,130 @@
+
+At each bar, export:
+
+1. `slope` (b) and `slopeSign`
+2. `trendStrength` (ER, |t-stat|, or both)
+3. `upper`, `lower` boundaries
+4. `qualityUpper`, `qualityLower` (touch/violation based)
+5. `distToUpper`, `distToLower` (normalized)
+6. `regime` ∈ {trend, range, transition}
+7. events: `breakUp`, `breakDown`, `retest`, `fail`
+
+These features can be embedded into:
+
+* momentum systems (only trade breakouts in trend regime)
+* mean-reversion systems (fade boundaries in range regime)
+* volatility overlays (transition regime implies expansion risk)
+* risk management (size down when quality is low)
+
+---
+
+## 14. Implementation Considerations in TradingView (Pine)
+
+Pine Script is real-time and resource constrained. Full constrained optimization (Method C) is heavy; quantile regression (Method B) is nontrivial.
+
+**Recommended Pine-friendly approach (robust, implementable):**
+
+* central trend: `ta.linreg()`
+* residual width: `ta.stdev(residuals)` or ATR-based envelopes
+* pivots: `ta.pivothigh/low()` for touch counting
+* regime: efficiency ratio computed manually + slope proxy
+* multi-timeframe: `request.security()`
+
+This yields a production-grade approximation that is:
+
+* backtestable
+* stable
+* close to the human “trendline” concept
+
+---
+
+## 15. Evaluation Design (How to Test Without Fooling Yourself)
+
+This paper proposes methodology, not performance claims. Proper evaluation should include:
+
+### 15.1 Metrics
+
+* break success rate conditional on regime and quality
+* expectancy (E[R]), profit factor, max drawdown
+* MAE/MFE distributions
+* calibration: does higher (Q) correspond to higher win rate or larger R?
+
+### 15.2 Robustness
+
+* walk-forward testing
+* parameter sensitivity (small changes shouldn’t collapse results)
+* slippage + spread models
+* cross-asset validation
+
+### 15.3 Avoiding look-ahead bias
+
+* pivot points must be confirmed only after future bars
+* higher timeframe values must use correct bar alignment
+
+---
+
+## 16. Discussion and Extensions
+
+### 16.1 Benefits
+
+* converts subjective trendlines into measurable objects
+* provides deep context via regime + multi-scale confluence
+* produces an embeddable feature set for other strategies
+* retains interpretability and trader intuition
+
+### 16.2 Limitations
+
+* markets are nonstationary; any fixed parameter set needs adaptation
+* linear channels miss curved trends (parabolic runs)
+* constrained boundaries can be computationally expensive
+
+### 16.3 Extensions
+
+* piecewise linear spines (multiple segments)
+* robust state models (e.g., regime switching / HMM-like logic)
+* dynamic window selection based on ER or volatility
+* nonlinear trend models (splines) for strong curvature
+
+---
+
+## 17. Conclusion
+
+Trendlines can be elevated from discretionary drawings to a rigorous market-structure layer by defining: (i) a central trend model, (ii) boundary estimation, (iii) touchpoints and violations with volatility-scaled tolerance, (iv) quality scoring, (v) regime context, and (vi) formal break–retest–failure events. The resulting framework provides deep context and stable signals that can be embedded into a wide range of strategies on TradingView and beyond.
+
+---
+
+## References (Foundational)
+
+* Koenker, R., & Bassett, G. (1978). *Regression Quantiles*. Econometrica.
+* Huber, P. J. (1964). *Robust Estimation of a Location Parameter*. Annals of Mathematical Statistics.
+* Theil, H. (1950). *A rank-invariant method of linear and polynomial regression analysis*.
+* Sen, P. K. (1968). *Estimates of the regression coefficient based on Kendall’s tau*.
+* Kaufman, P. J. (1995). *Smarter Trading* (Efficiency Ratio concept popularized in KAMA context).
+
+---
+
+## Appendix A: High-Level Pseudocode (Module)
+
+**Input:** OHLC, ATR, window lengths (N_k)
+**Output:** features + events
+
+1. compute log prices (x_t)
+2. for each horizon (k):
+
+   * estimate spine slope (b_k) and (\hat{x}_k(t))
+   * compute residual scale (\sigma_{r,k})
+   * boundaries (U_k, L_k)
+   * compute touch/violation counts vs tolerance
+   * compute quality (Q_k)
+   * compute ER(_k) and regime indicators
+3. aggregate multi-scale context (TS score)
+4. define Action/Safety lines for current context
+5. detect break/retest/fail events
+6. export feature vector
+
+---
+
+If you want, I can also:
+
+* format this as a **proper PDF “paper”** (IEEE-ish layout), with figure blocks and equation numbering, and give you a downloadable file; or
+* write a second section that specifies **exact Pine v5 implementations** for Method A + touch/quality + regime stack, so the paper and the code stay consistent.

@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://strativion.io/schemas/law.automation-map.v1.schema.json",
+  "title": "law.automation-map.yaml",
+  "type": "object",
+  "required": [
+    "meta",
+    "classes",
+    "laws",
+    "consumer_rules"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": [
+        "document_role",
+        "schema_version"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "document_role": {
+          "type": "string",
+          "enum": [
+            "policy"
+          ]
+        },
+        "schema_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        }
+      }
+    },
+    "classes": {
+      "type": "object",
+      "required": [
+        "machine_enforceable",
+        "machine_assisted",
+        "autonomous_supervisory_signal",
+        "human_supervisory"
+      ],
+      "additionalProperties": true
+    },
+    "laws": {
+      "type": "object",
+      "minProperties": 30,
+      "patternProperties": {
+        "^law_(0[1-9]|[12][0-9]|30)$": {
+          "type": "object",
+          "required": [
+            "class"
+          ],
+          "additionalProperties": true,
+          "properties": {
+            "class": {
+              "type": "string",
+              "enum": [
+                "machine_enforceable",
+                "machine_assisted",
+                "autonomous_supervisory_signal",
+                "human_supervisory"
+              ]
+            }
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "consumer_rules": {
+      "type": "object",
+      "required": [
+        "machine_enforceable",
+        "machine_assisted",
+        "autonomous_supervisory_signal",
+        "human_supervisory"
+      ],
+      "additionalProperties": true
+    }
+  }
+}

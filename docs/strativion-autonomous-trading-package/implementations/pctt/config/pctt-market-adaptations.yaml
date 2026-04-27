@@ -1,0 +1,156 @@
+# =============================================================================
+# Strativion Trading Agent - PCTT Market-Specific Parameter Adaptations
+# Base parameters defined in pctt-parameters.yaml; these are OVERRIDES only.
+# Source: PCTT v3.0 Section 15 (Asset-Specific Deployment Guide)
+#         PCTT v4.0 (Production-Grade Framework)
+# Author: Kimal Honour Djam
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Equities: Individual stocks (US large cap)
+# Key concerns: overnight gaps, earnings gaps, session-only trading
+# ---------------------------------------------------------------------------
+equities:
+  description: "Individual stocks (US large cap)"
+  pivot_detection:
+    left_bars: 3                       # Wider confirmation for gap-prone instruments
+    right_bars: 3
+  candidate_lines:
+    touch_tolerance_atr: 0.25          # Slightly wider for gap noise
+  break_detection:
+    confirmation_buffer_atr: 0.20      # Higher confirmation bar for gaps
+    min_break_volume_ratio: 1.5        # Stocks require stronger volume confirmation
+  risk_geometry:
+    max_dgeom_atr: 2.0                 # Tighter max stop (gaps can blow past wide stops)
+  failure_detection:
+    failure_buffer_atr: 0.20           # Wider failure tolerance for gap-through
+  trailing_stop:
+    phase_5_time_stop_bars: 15         # Faster time stop (stocks move or they don't)
+  trade_limits:
+    max_concurrent_pctt_trades: 3
+  notes: "Tighter stops, higher volume confirmation required. Use session filters to avoid pre/post market noise. Increase failure_buffer around earnings dates."
+
+# ---------------------------------------------------------------------------
+# Index Futures: ES, NQ, RTY, YM
+# Key concerns: high liquidity, tight spreads, roll dates, overnight gaps
+# ---------------------------------------------------------------------------
+index_futures:
+  description: "ES, NQ, RTY, YM"
+  pivot_detection:
+    lookback_bars: 250                 # Longer lookback: more structural history available
+  candidate_lines:
+    touch_tolerance_atr: 0.15          # Tighter tolerance: cleaner price action
+  break_detection:
+    confirmation_buffer_atr: 0.12      # Tighter: high liquidity = less noise on breaks
+  regime_detection:
+    er_trending_threshold: 0.35        # Slightly lower bar for trend detection
+  execution_realism:
+    commission_pct: 0.02               # Lower commissions on futures
+    base_slippage_pct: 0.02            # Tighter slippage in liquid markets
+  notes: "Most liquid instruments. Tighter tolerances across the board. Account for contract rolls. Use continuous contracts for backtesting."
+
+# ---------------------------------------------------------------------------
+# Forex: Major and minor currency pairs
+# Key concerns: 24/5 market, spread widening at session changes, volume unreliable
+# ---------------------------------------------------------------------------
+forex:
+  description: "Major and minor currency pairs"
+  pivot_detection:
+    left_bars: 2                       # Standard: 24hr market has smoother pivots
+    right_bars: 2
+  candidate_lines:
+    touch_tolerance_atr: 0.20          # Standard tolerance
+  break_detection:
+    min_break_volume_ratio: 1.0        # Volume less reliable in decentralized FX market
+  retest:
+    max_window_bars: 15                # Forex retests can take longer (24hr cycles)
+  trailing_stop:
+    phase_5_time_stop_bars: 25         # Wider time window for 24hr market
+  execution_realism:
+    commission_pct: 0.03               # Spread-based cost model
+  notes: "24hr market, volume less meaningful for confirmation. Wider retest window. Tighten spreads during London/NY overlap session. Widen buffers during Asia session and session rollovers."
+
+# ---------------------------------------------------------------------------
+# Cryptocurrency: BTC, ETH, major alts
+# Key concerns: 24/7 market, extreme volatility, funding rates, thin liquidity
+# ---------------------------------------------------------------------------
+cryptocurrency:
+  description: "BTC, ETH, major alts"
+  pivot_detection:
+    lookback_bars: 150                 # Shorter: faster market cycles
+    left_bars: 2
+    right_bars: 2
+  candidate_lines:
+    touch_tolerance_atr: 0.30          # Wider: higher baseline volatility
+  break_detection:
+    penetration_buffer_atr: 0.15       # Wider wick buffer for volatile wicks
+    confirmation_buffer_atr: 0.20      # Wider close buffer
+    min_break_volume_ratio: 1.3        # Moderate volume confirmation
+  risk_geometry:
+    max_dgeom_atr: 3.0                 # Wider stops necessary for crypto volatility
+  position_sizing:
+    a_grade_risk_pct: 0.008            # 0.8%: slightly reduced risk per trade
+    b_grade_risk_pct: 0.004            # 0.4%: reduced for higher vol
+  trailing_stop:
+    phase_2_breakeven_trigger_r: 0.6   # Move to BE faster (volatility can erase gains)
+    phase_5_time_stop_bars: 30         # Longer time window (24/7, slower weekend action)
+  execution_realism:
+    commission_pct: 0.06               # Exchange fees (maker/taker)
+    base_slippage_pct: 0.08            # Higher slippage, especially on alts
+  notes: "24/7 market, higher vol, faster cycles, reduce risk%. Account for funding rates on perpetual futures. Major alts (SOL, AVAX etc.) need even wider tolerances than BTC/ETH."
+
+# ---------------------------------------------------------------------------
+# Commodities: Oil, Gold, Natural Gas, Agricultural
+# Key concerns: seasonal patterns, inventory reports, limit moves, contango/backwardation
+# ---------------------------------------------------------------------------
+commodities:
+  description: "Oil, Gold, Natural Gas, Agricultural"
+  pivot_detection:
+    left_bars: 3                       # Wider: commodities have noisier pivots
+    right_bars: 3
+  candidate_lines:
+    touch_tolerance_atr: 0.25          # Moderate widening for volatility
+  break_detection:
+    confirmation_buffer_atr: 0.18      # Slightly wider than default
+  retest:
+    max_window_bars: 10                # Commodities retest faster (inventory/report driven)
+  execution_realism:
+    commission_pct: 0.04               # Futures commission
+  notes: "Seasonal patterns affect regime detection. Be aware of inventory report dates (EIA for oil, USDA for ags). Natural gas requires even wider tolerances (2-3x normal ATR buffers). Gold behaves more like forex."
+
+# ---------------------------------------------------------------------------
+# Options: Equity and index options
+# Key concerns: theta decay, gamma risk, defined risk, IV surface
+# ---------------------------------------------------------------------------
+options:
+  description: "Equity and index options"
+  risk_geometry:
+    max_dgeom_atr: 2.0                 # Tighter: defined risk via options structure
+  position_sizing:
+    a_grade_risk_pct: 0.015            # 1.5%: can risk more with defined risk
+    b_grade_risk_pct: 0.008            # 0.8%: still conservative
+  trailing_stop:
+    phase_3_partial_close_pct: 0.50    # Close less on partial (options have defined max loss)
+    phase_5_time_stop_bars: 10         # Shorter: theta decay creates urgency
+  notes: "Run PCTT analysis on the underlying instrument, execute via options for defined risk. Theta decay means time stops are critical. Prefer options with >= 30 DTE for swing trades. Use structure for directional bias only."
+
+# ---------------------------------------------------------------------------
+# Bonds: Treasury futures, corporate bonds
+# Key concerns: macro-driven, slower cycles, strong sustained trends, Fed announcements
+# ---------------------------------------------------------------------------
+bonds:
+  description: "Treasury futures (ZB, ZN, ZF), corporate bonds"
+  pivot_detection:
+    lookback_bars: 300                 # Much longer: bonds have slower structural cycles
+    left_bars: 5                       # Wider confirmation for slow-moving markets
+    right_bars: 5
+  candidate_lines:
+    min_span_bars: 30                  # Require longer time span for structural lines
+    touch_tolerance_atr: 0.15          # Tighter: bonds move more cleanly
+  regime_detection:
+    er_trending_threshold: 0.45        # Higher bar: bonds trend strongly when they trend
+  trailing_stop:
+    phase_5_time_stop_bars: 30         # Longer time window for slower cycles
+  execution_realism:
+    commission_pct: 0.02               # Low commissions on treasury futures
+  notes: "Slower cycles, strong macro-driven trends, longer lookback periods. Fed announcement dates are regime-change catalysts. Consider pausing new entries 48hrs before FOMC. Corporate bonds have lower liquidity than treasuries."

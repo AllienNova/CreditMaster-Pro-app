@@ -1,0 +1,170 @@
+meta:
+  document_role: workflow
+  workflow_id: workflow.order-lifecycle
+  schema_version: 1.0.0
+  file_version: 1.0.0
+  canonical_package_version: 2.0.0
+  description: >
+    Order lifecycle state machine workflow. All states and transitions are references
+    to policy.order-lifecycle.yaml — no state literals are defined here. All guards
+    are references to canonical fields; NO numeric literals are present. Numeric values
+    live exclusively in their canonical owner files per CANONICAL-FIELD-INDEX.md.
+
+# ---------------------------------------------------------------------------
+# State and transition definitions: references only, no literals
+# ---------------------------------------------------------------------------
+
+states:
+  # Reference to the authoritative state set. This workflow carries no state
+  # definitions of its own; the canonical owner is policy.order-lifecycle.yaml.
+  source_ref: "policy.order-lifecycle.yaml#states"
+  description: >
+    All valid order state codes and their terminal flags are defined in
+    policy.order-lifecycle.yaml#states. This workflow references that structure
+    and must not duplicate or re-define any state.
+
+transitions:
+  # Reference to the authoritative transition set.
+  source_ref: "policy.order-lifecycle.yaml#transitions"
+  description: >
+    All valid from/to/trigger transitions are defined in
+    policy.order-lifecycle.yaml#transitions. Referential integrity (every from/to
+    code exists in states) is enforced by the CI validator.
+
+# ---------------------------------------------------------------------------
+# Guards: all by reference to canonical fields — NO numeric literals
+# ---------------------------------------------------------------------------
+
+guards:
+  - guard_id: guard_spread_liquid
+    description: Order is blocked if bid-ask spread exceeds the liquid spread filter.
+    guard_type: reference
+    source: "policy.execution.yaml#spread_filter.liquid_max_bps"
+    operator: lte
+    comment: E-03. Applies to instruments classified as liquid tier.
+
+  - guard_id: guard_spread_illiquid
+    description: Order is blocked if bid-ask spread exceeds the illiquid spread filter.
+    guard_type: reference
+    source: "policy.execution.yaml#spread_filter.illiquid_max_bps"
+    operator: lte
+    comment: E-04. Applies to instruments classified as illiquid tier.
+
+  - guard_id: guard_slippage_budget
+    description: Order route is rejected if projected slippage exceeds per-trade budget.
+    guard_type: reference
+    source: "policy.execution.yaml#slippage.per_trade_bps"
+    operator: lte
+    comment: E-05.
+
+  - guard_id: guard_tif_allowed
+    description: TIF value must be in the allowed default_tif set.
+    guard_type: reference
+    source: "policy.execution.yaml#default_tif"
+    operator: member_of_enum
+    comment: E-01.
+
+  - guard_id: guard_idempotency
+    description: Order submission is blocked if cl_ord_id was seen within the dedup window.
+    guard_type: reference
+    source: "policy.order-lifecycle.yaml#idempotency.dedup_window_ms"
+    operator: not_duplicate_within
+    comment: E-07.
+
+  - guard_id: guard_cancel_replace_fields
+    description: Cancel/replace request fields must be in the allowed_fields set.
+    guard_type: reference
+    source: "policy.order-lifecycle.yaml#cancel_replace.allowed_fields"
+    operator: subset_of
+    comment: E-08.
+
+  - guard_id: guard_max_replace_attempts
+    description: Cancel/replace is blocked if max_replace_attempts has been reached.
+    guard_type: reference
+    source: "policy.order-lifecycle.yaml#cancel_replace.max_replace_attempts"
+    operator: lt
+    comment: E-08.
+
+  - guard_id: guard_clock_skew
+    description: Message is rejected if timestamp skew exceeds clock_skew.max_ms.
+    guard_type: reference
+    source: "policy.execution-errors.yaml#clock_skew.max_ms"
+    operator: lte
+    comment: E-12. Locked (🔒).
+
+  - guard_id: guard_fix_reject_retryable
+    description: Retry is permitted only if the FIX reject code's retryable flag is true.
+    guard_type: reference
+    source: "policy.execution-errors.yaml#fix_reject_codes[].retryable"
+    operator: eq_true
+    comment: E-10.
+
+  - guard_id: guard_circuit_breaker_closed
+    description: Order submission requires broker circuit breaker to be in CLOSED state.
+    guard_type: reference
+    source: "policy.execution-errors.yaml#broker_circuit_breaker.failure_threshold"
+    operator: not_exceeded
+    comment: E-11.
+
+# ---------------------------------------------------------------------------
+# Step dependencies (ordering)
+# ---------------------------------------------------------------------------
+
+step_ordering:
+  description: >
+    The order lifecycle moves through steps in this dependency order. Each step
+    references its guards by guard_id; all guard thresholds resolve to canonical fields.
+  steps:
+    - step_id: receive_signal
+      description: Signal received from strategy. Timestamp recorded.
+      depends_on: []
+      guards: []
+
+    - step_id: idempotency_check
+      description: Check cl_ord_id against dedup store.
+      depends_on: [receive_signal]
+      guards: [guard_idempotency, guard_clock_skew]
+      on_fail:
+        action: reject
+        incident_code_ref: "policy.incidents.yaml#codes[code=INC_EXECUTION_DUPLICATE_ORDER]"
+
+    - step_id: validate_order_fields
+      description: Validate TIF, ord_type, and cancel/replace field constraints.
+      depends_on: [idempotency_check]
+      guards: [guard_tif_allowed]
+      on_fail:
+        action: reject
+        incident_code_ref: "policy.incidents.yaml#codes[code=INC_EXECUTION_INVALID_FIELDS]"
+
+    - step_id: route_to_venue
+      description: Route order to venue. Apply spread and slippage guards.
+      depends_on: [validate_order_fields]
+      guards: [guard_spread_liquid, guard_spread_illiquid, guard_slippage_budget, guard_circuit_breaker_closed]
+      on_fail:
+        action: reject
+        incident_code_ref: "policy.incidents.yaml#codes[code=INC_EXECUTION_ROUTING_FAILURE]"
+
+    - step_id: await_ack
+      description: Await broker acknowledgement (PENDING_NEW → NEW transition).
+      depends_on: [route_to_venue]
+      guards: [guard_clock_skew]
+      transition_ref: "policy.order-lifecycle.yaml#transitions[from=PENDING_NEW,to=NEW]"
+      on_fail:
+        action: freeze_and_alert
+        incident_code_ref: "policy.incidents.yaml#codes[code=INC_EXECUTION_ACK_TIMEOUT]"
+
+    - step_id: track_fills
+      description: Track partial and complete fills. Update position tracker on each fill.
+      depends_on: [await_ack]
+      guards: []
+      transition_ref: "policy.order-lifecycle.yaml#transitions[from=NEW,to=PARTIALLY_FILLED]"
+      partial_fill_ref: "policy.order-lifecycle.yaml#partial_fill"
+
+    - step_id: handle_terminal
+      description: Handle terminal state. Emit audit entry. Release idempotency key.
+      depends_on: [track_fills]
+      guards: []
+      terminal_states_ref: "policy.order-lifecycle.yaml#states[terminal=true]"
+      on_complete:
+        action: write_audit_entry
+        schema_ref: "https://strativion.io/schemas/audit-entry.v1.schema.json"

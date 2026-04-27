@@ -1,0 +1,767 @@
+//@version=6
+// ============================================================================
+// RG STRUCTURE BREAK-RETEST STRATEGY v2.0 (VISUAL EDITION)
+// ============================================================================
+// Author: Manus AI
+// Version: 2.0.0
+// Date: January 15, 2026
+//
+// MAJOR ENHANCEMENTS IN V2:
+// - Full visual trendline drawing with dynamic updates
+// - Pivot markers (triangles) on chart
+// - Break/Retest zone visualization
+// - Trailing stop level plotting
+// - Regime background coloring
+// - Non-repainting guaranteed (estimation on t-1, evaluation on t)
+// - Removed lookahead_on hazard
+// - Robust multi-feature rejection scoring
+// - Risk geometry filter
+// - One-break-one-trade state machine
+//
+// ============================================================================
+
+strategy("RG Structure v2.0 [Visual Edition]", overlay=true,
+     initial_capital=10000,
+     commission_type=strategy.commission.percent,
+     commission_value=0.05,
+     slippage=2,
+     calc_on_every_tick=false,
+     pyramiding=0,
+     default_qty_type=strategy.percent_of_equity,
+     default_qty_value=100,
+     max_lines_count=500,
+     max_labels_count=500,
+     max_boxes_count=500)
+
+// ============================================================================
+// SECTION 1: INPUT PARAMETERS
+// ============================================================================
+
+// --- Structure Module Inputs ---
+grpStruct = "═══ Structure Module ═══"
+N           = input.int(200, "Lookback Window (N)", minval=80, maxval=600, group=grpStruct)
+left        = input.int(2, "Pivot Left Bars", minval=1, maxval=10, group=grpStruct)
+right       = input.int(2, "Pivot Right Bars", minval=1, maxval=10, group=grpStruct)
+maxPivots   = input.int(12, "Max Pivots for Line Fitting", minval=4, maxval=30, group=grpStruct)
+evalStep    = input.int(4, "Violation Eval Step", minval=1, maxval=20, group=grpStruct)
+minTouches  = input.int(2, "Min Pivot Touches", minval=2, maxval=6, group=grpStruct)
+
+// --- Scoring Weights ---
+grpScore = "═══ Line Scoring ═══"
+tauMult     = input.float(0.10, "Touch Tolerance (α × ATR)", step=0.01, group=grpScore)
+wSpan       = input.float(0.20, "Span Reward Weight (ωs)", step=0.05, group=grpScore)
+lamViol     = input.float(1.50, "Violation Penalty (λ)", step=0.10, group=grpScore)
+
+// --- Break/Retest Parameters ---
+grpBreak = "═══ Break & Retest Logic ═══"
+breakPenATR  = input.float(0.10, "Break Penetration (βp × ATR)", step=0.01, group=grpBreak)
+breakConfATR = input.float(0.15, "Break Confirmation (βc × ATR)", step=0.01, group=grpBreak)
+retestATR    = input.float(0.20, "Retest Buffer (γ × ATR)", step=0.01, group=grpBreak)
+failATR      = input.float(0.20, "Fail Buffer (δ × ATR)", step=0.01, group=grpBreak)
+retestMaxBars= input.int(12, "Retest Window (M bars)", minval=1, maxval=50, group=grpBreak)
+
+// --- Regime Module Inputs ---
+grpRegime = "═══ Regime Context ═══"
+erLen        = input.int(150, "Regime Window (ER/Cross)", minval=50, maxval=600, group=grpRegime)
+erTrendThr   = input.float(0.35, "ER Trend Threshold", step=0.01, group=grpRegime)
+erRangeThr   = input.float(0.20, "ER Range Threshold", step=0.01, group=grpRegime)
+crossTrendMx = input.int(8, "Max Crossings for Trend", minval=0, maxval=200, group=grpRegime)
+crossRangeMn = input.int(20, "Min Crossings for Range", minval=0, maxval=200, group=grpRegime)
+
+// --- Risk Management Inputs ---
+grpRisk = "═══ Risk Management ═══"
+riskPctA    = input.float(1.0, "Risk % (A Setup)", step=0.1, group=grpRisk)
+riskPctB    = input.float(0.5, "Risk % (B Setup)", step=0.1, group=grpRisk)
+qA          = input.float(0.70, "A Setup Q Threshold", step=0.01, group=grpRisk)
+qB          = input.float(0.60, "B Setup Q Threshold", step=0.01, group=grpRisk)
+dSafetyMax  = input.float(2.5, "Max dGeom (ATR units)", step=0.1, group=grpRisk)
+stopBufATR  = input.float(0.20, "Stop Buffer (× ATR)", step=0.01, group=grpRisk)
+
+// --- Trade Management Inputs ---
+grpTrade = "═══ Trade Management ═══"
+beTrigR     = input.float(0.8, "BE Trigger (R)", step=0.1, group=grpTrade)
+partialR    = input.float(1.0, "Partial Take Profit (R)", step=0.1, group=grpTrade)
+partialPct  = input.int(60, "Partial Qty %", minval=1, maxval=99, group=grpTrade)
+trailStartR = input.float(1.0, "Trail Start (R)", step=0.1, group=grpTrade)
+trailBufATR = input.float(0.20, "Trail Buffer (× ATR)", step=0.01, group=grpTrade)
+timeStopBars= input.int(20, "Time Stop Bars", minval=5, maxval=200, group=grpTrade)
+
+// --- Visual Settings ---
+grpVisual = "═══ Visual Settings ═══"
+showPivots      = input.bool(true, "Show Pivot Markers", group=grpVisual)
+showTrendlines  = input.bool(true, "Show Trendlines", group=grpVisual)
+showZones       = input.bool(true, "Show Break/Retest Zones", group=grpVisual)
+showTrailStop   = input.bool(true, "Show Trailing Stop", group=grpVisual)
+showRegimeBG    = input.bool(true, "Show Regime Background", group=grpVisual)
+showLabels      = input.bool(true, "Show Event Labels", group=grpVisual)
+supColor        = input.color(color.new(color.green, 20), "Support Color", group=grpVisual)
+resColor        = input.color(color.new(color.red, 20), "Resistance Color", group=grpVisual)
+actionColor     = input.color(color.new(color.orange, 0), "Action Line Color", group=grpVisual)
+safetyColor     = input.color(color.new(color.blue, 0), "Safety Line Color", group=grpVisual)
+
+// --- ATR ---
+atrLen      = input.int(14, "ATR Length", minval=1)
+atr         = ta.atr(atrLen)
+
+// ============================================================================
+// SECTION 2: HELPER FUNCTIONS
+// ============================================================================
+
+// --- Sigmoid function for Q-Score normalization ---
+f_sigmoid(float x) =>
+    1.0 / (1.0 + math.exp(-x))
+
+// --- Efficiency Ratio (ER) ---
+f_er(float _s, int _n) =>
+    float netMove = math.abs(_s - _s[_n])
+    float sumMove = ta.sum(math.abs(_s - _s[1]), _n)
+    sumMove > 0 ? netMove / sumMove : 0.0
+
+// --- Midline Crossing Count ---
+f_crossCount(float _s, float _mid, int _n) =>
+    bool cross = ((_s > _mid) and (_s[1] < _mid[1])) or ((_s < _mid) and (_s[1] > _mid[1]))
+    int(ta.sum(cross ? 1 : 0, _n))
+
+// --- Close Location Value (CLV) for rejection scoring ---
+f_clv(float h, float l, float c) =>
+    float range = h - l
+    range > 0 ? ((c - l) - (h - c)) / range : 0.0
+
+// --- Wick to Body Ratio ---
+f_wickBodyRatio(float o, float h, float l, float c) =>
+    float body = math.abs(c - o)
+    float upperWick = h - math.max(o, c)
+    float lowerWick = math.min(o, c) - l
+    body > 0 ? (upperWick + lowerWick) / body : 10.0
+
+// --- Position sizing based on risk ---
+f_qtyForRisk(float entryPrice, float stopPrice, float riskPercent) =>
+    float riskCash = strategy.equity * (riskPercent / 100.0)
+    float perUnit  = math.abs(entryPrice - stopPrice)
+    perUnit > 0 ? (riskCash / perUnit) : 0.0
+
+// ============================================================================
+// SECTION 3: PIVOT STORAGE AND DETECTION
+// ============================================================================
+
+// Persistent arrays for pivot storage
+var pivLowIdx  = array.new_int()
+var pivLowVal  = array.new_float()
+var pivLowAtr  = array.new_float()
+
+var pivHighIdx = array.new_int()
+var pivHighVal = array.new_float()
+var pivHighAtr = array.new_float()
+
+// Function to push pivot to storage
+f_pushPivot(array<int> _idxArr, array<float> _valArr, array<float> _atrArr, 
+            int idx, float val, float atrAt, int maxK) =>
+    array.unshift(_idxArr, idx)
+    array.unshift(_valArr, val)
+    array.unshift(_atrArr, atrAt)
+    while array.size(_idxArr) > maxK
+        array.pop(_idxArr)
+        array.pop(_valArr)
+        array.pop(_atrArr)
+
+// Detect pivots (confirmed with right-bar delay)
+pl = ta.pivotlow(low, left, right)
+ph = ta.pivothigh(high, left, right)
+
+var bool newPivotLow = false
+var bool newPivotHigh = false
+
+newPivotLow := false
+newPivotHigh := false
+
+if not na(pl)
+    int idx = bar_index - right
+    float atrAt = nz(atr[right], atr)
+    f_pushPivot(pivLowIdx, pivLowVal, pivLowAtr, idx, pl, atrAt, maxPivots)
+    newPivotLow := true
+
+if not na(ph)
+    int idx = bar_index - right
+    float atrAt = nz(atr[right], atr)
+    f_pushPivot(pivHighIdx, pivHighVal, pivHighAtr, idx, ph, atrAt, maxPivots)
+    newPivotHigh := true
+
+// ============================================================================
+// SECTION 4: BOUNDARY ESTIMATION (NON-REPAINTING)
+// ============================================================================
+
+// Score a candidate line
+f_scoreLine(bool isSupport, float lineNow, float m,
+            array<int> _pivIdx, array<float> _pivVal, array<float> _pivAtr,
+            int lookbackN, int stepBars,
+            float tauMult_, float wSpan_, float lamViol_, float currentATR) =>
+    float touchW = 0.0
+    int touches  = 0
+    int pivCount = array.size(_pivIdx)
+    
+    // Touch reward using pivots
+    for k = 0 to pivCount - 1
+        int   pi = array.get(_pivIdx, k)
+        float pv = array.get(_pivVal, k)
+        float pa = array.get(_pivAtr, k)
+        int age = bar_index - pi
+        if age > 0 and age <= lookbackN
+            float lineAtPivot = lineNow - m * age
+            float tau = tauMult_ * pa
+            float d = isSupport ? (pv - lineAtPivot) : (lineAtPivot - pv)
+            bool isTouch = (d >= 0) and (d <= tau)
+            if isTouch
+                touches += 1
+                touchW  += 1.0 - (d / tau)
+
+    // Violation penalty by sampling bars
+    float violSev = 0.0
+    for off = 1 to lookbackN by stepBars
+        float lineAt = lineNow - m * off
+        float tauB   = tauMult_ * nz(currentATR[off], currentATR)
+        if isSupport
+            if low[off] < lineAt - tauB
+                violSev += (lineAt - low[off]) / nz(currentATR[off], currentATR)
+        else
+            if high[off] > lineAt + tauB
+                violSev += (high[off] - lineAt) / nz(currentATR[off], currentATR)
+
+    [touchW, touches, violSev]
+
+// Find best boundary from pivot pairs
+f_bestBoundary(bool isSupport, array<int> _pivIdx, array<float> _pivVal, array<float> _pivAtr,
+               int lookbackN, int stepBars, int minTouches_,
+               float tauMult_, float wSpan_, float lamViol_, float currentATR) =>
+    int pivCount = array.size(_pivIdx)
+    float bestScore = na
+    float bestLine  = na
+    float bestM     = na
+    int   bestT     = 0
+    float bestV     = na
+    int   bestIdx1  = na
+    int   bestIdx2  = na
+
+    if pivCount >= 2
+        for i = 0 to pivCount - 2
+            int   idx1 = array.get(_pivIdx, i)
+            float p1   = array.get(_pivVal, i)
+            for j = i + 1 to pivCount - 1
+                int   idx2 = array.get(_pivIdx, j)
+                float p2   = array.get(_pivVal, j)
+                int dx = idx2 - idx1
+                if dx != 0
+                    float m = (p2 - p1) / dx
+                    float lineNow = p1 + m * (bar_index - idx1)
+                    [touchW, touches, violSev] = f_scoreLine(isSupport, lineNow, m,
+                                                             _pivIdx, _pivVal, _pivAtr,
+                                                             lookbackN, stepBars,
+                                                             tauMult_, wSpan_, lamViol_, currentATR)
+                    if touches >= minTouches_
+                        float span = math.abs(dx)
+                        float score = touchW + wSpan_ * math.log(1 + span) - lamViol_ * violSev
+                        if na(bestScore) or score > bestScore
+                            bestScore := score
+                            bestLine  := lineNow
+                            bestM     := m
+                            bestT     := touches
+                            bestV     := violSev
+                            bestIdx1  := idx1
+                            bestIdx2  := idx2
+
+    float Q = na(bestScore) ? na : f_sigmoid(bestScore)
+    [bestLine, bestM, Q, bestT, bestV, bestIdx1, bestIdx2]
+
+// Calculate boundaries (using data up to current bar, evaluated at current bar)
+[supNow, supM, supQ, supT, supV, supIdx1, supIdx2] = f_bestBoundary(true, pivLowIdx, pivLowVal, pivLowAtr,
+                                                  N, evalStep, minTouches,
+                                                  tauMult, wSpan, lamViol, atr)
+[resNow, resM, resQ, resT, resV, resIdx1, resIdx2] = f_bestBoundary(false, pivHighIdx, pivHighVal, pivHighAtr,
+                                                  N, evalStep, minTouches,
+                                                  tauMult, wSpan, lamViol, atr)
+
+sup = supNow
+res = resNow
+
+// ============================================================================
+// SECTION 5: VISUAL TRENDLINE DRAWING
+// ============================================================================
+
+// Persistent line objects
+var line supLine = na
+var line resLine = na
+var line actionLine_vis = na
+var line safetyLine_vis = na
+var box retestZone = na
+
+// Update support line
+if showTrendlines and not na(sup) and not na(supIdx1) and not na(supIdx2)
+    // Delete old line
+    if not na(supLine)
+        line.delete(supLine)
+    
+    // Calculate line endpoints
+    float p1 = array.get(pivLowVal, 0)
+    int idx1 = array.get(pivLowIdx, 0)
+    float lineStart = p1 + supM * (bar_index - N - idx1)
+    float lineEnd = sup
+    
+    // Draw new line
+    supLine := line.new(bar_index - N, lineStart, bar_index, lineEnd, 
+                        color=supColor, width=2, style=line.style_solid)
+
+// Update resistance line
+if showTrendlines and not na(res) and not na(resIdx1) and not na(resIdx2)
+    if not na(resLine)
+        line.delete(resLine)
+    
+    float p1 = array.get(pivHighVal, 0)
+    int idx1 = array.get(pivHighIdx, 0)
+    float lineStart = p1 + resM * (bar_index - N - idx1)
+    float lineEnd = res
+    
+    resLine := line.new(bar_index - N, lineStart, bar_index, lineEnd,
+                        color=resColor, width=2, style=line.style_solid)
+
+// ============================================================================
+// SECTION 6: PIVOT MARKERS
+// ============================================================================
+
+if showPivots
+    if not na(pl)
+        label.new(bar_index - right, pl, "▲", 
+                  color=color.new(color.green, 100), 
+                  textcolor=color.green, 
+                  style=label.style_label_up, 
+                  size=size.small)
+    
+    if not na(ph)
+        label.new(bar_index - right, ph, "▼", 
+                  color=color.new(color.red, 100), 
+                  textcolor=color.red, 
+                  style=label.style_label_down, 
+                  size=size.small)
+
+// ============================================================================
+// SECTION 7: REGIME CONTEXT
+// ============================================================================
+
+mid = (not na(sup) and not na(res)) ? (sup + res) / 2.0 : ta.linreg(close, erLen, 0)
+
+er = f_er(close, erLen)
+crosses = f_crossCount(close, mid, erLen)
+
+bool isTrend = (er >= erTrendThr) and (crosses <= crossTrendMx)
+bool isRange = (er <= erRangeThr) or (crosses >= crossRangeMn)
+
+int regime = isTrend ? 1 : isRange ? 2 : 0  // 1=trend, 2=range, 0=transition
+
+// Regime background
+regimeBgColor = showRegimeBG ? (regime == 1 ? color.new(color.green, 94) : 
+                                regime == 2 ? color.new(color.red, 94) : 
+                                color.new(color.yellow, 96)) : na
+bgcolor(regimeBgColor, title="Regime Background")
+
+// ============================================================================
+// SECTION 8: BREAK / RETEST / FAILURE STATE MACHINE
+// ============================================================================
+
+// State: 0=idle, 1=waitRetestDown, 2=waitRetestUp, 3=postTrade
+var int   state    = 0
+var int   breakBar = na
+
+var float action0  = na
+var float actionM  = na
+var float safety0  = na
+var float safetyM  = na
+
+// Calculate projected frozen lines
+float actionLine = na
+float safetyLine = na
+
+if state == 1 or state == 2
+    if not na(breakBar)
+        int k = bar_index - breakBar
+        actionLine := action0 + actionM * k
+        safetyLine := safety0 + safetyM * k
+
+// Break conditions (two-stage: penetration + confirmation)
+// Using boundaries from previous bar to avoid lookahead
+float supPrev = sup[1]
+float resPrev = res[1]
+
+breakDown = (regime != 2) and not na(supPrev) and (low < supPrev - breakPenATR*atr) and (close < supPrev - breakConfATR*atr)
+breakUp   = (regime != 2) and not na(resPrev) and (high > resPrev + breakPenATR*atr) and (close > resPrev + breakConfATR*atr)
+
+// Enter break state and freeze lines
+if state == 0
+    if breakDown and not na(resPrev)
+        state    := 1
+        breakBar := bar_index
+        action0  := supPrev
+        actionM  := nz(supM[1], 0)
+        safety0  := resPrev
+        safetyM  := nz(resM[1], 0)
+        
+        // Visual: Draw frozen action line
+        if showZones and not na(actionLine_vis)
+            line.delete(actionLine_vis)
+        if showZones and not na(safetyLine_vis)
+            line.delete(safetyLine_vis)
+        
+        if showZones
+            actionLine_vis := line.new(bar_index, supPrev, bar_index + retestMaxBars, 
+                                       supPrev + nz(supM[1], 0) * retestMaxBars,
+                                       color=actionColor, width=3, style=line.style_dashed)
+            safetyLine_vis := line.new(bar_index, resPrev, bar_index + retestMaxBars,
+                                       resPrev + nz(resM[1], 0) * retestMaxBars,
+                                       color=safetyColor, width=3, style=line.style_dashed)
+        
+        if showLabels
+            label.new(bar_index, high + atr, "BREAK ↓", 
+                      color=color.red, textcolor=color.white, 
+                      style=label.style_label_down, size=size.normal)
+    
+    else if breakUp and not na(supPrev)
+        state    := 2
+        breakBar := bar_index
+        action0  := resPrev
+        actionM  := nz(resM[1], 0)
+        safety0  := supPrev
+        safetyM  := nz(supM[1], 0)
+        
+        if showZones and not na(actionLine_vis)
+            line.delete(actionLine_vis)
+        if showZones and not na(safetyLine_vis)
+            line.delete(safetyLine_vis)
+        
+        if showZones
+            actionLine_vis := line.new(bar_index, resPrev, bar_index + retestMaxBars,
+                                       resPrev + nz(resM[1], 0) * retestMaxBars,
+                                       color=actionColor, width=3, style=line.style_dashed)
+            safetyLine_vis := line.new(bar_index, supPrev, bar_index + retestMaxBars,
+                                       supPrev + nz(supM[1], 0) * retestMaxBars,
+                                       color=safetyColor, width=3, style=line.style_dashed)
+        
+        if showLabels
+            label.new(bar_index, low - atr, "BREAK ↑",
+                      color=color.green, textcolor=color.white,
+                      style=label.style_label_up, size=size.normal)
+
+// Retest / fail detection
+retestDown = false
+retestUp   = false
+failDown   = false
+failUp     = false
+
+if state == 1 and not na(actionLine)
+    if (bar_index - breakBar) > retestMaxBars
+        state := 0  // Timeout
+        if showLabels
+            label.new(bar_index, high, "TIMEOUT", color=color.gray, textcolor=color.white, size=size.tiny)
+    else
+        failDown := close > actionLine + failATR*atr
+        if failDown
+            state := 0
+            if showLabels
+                label.new(bar_index, high, "FAIL", color=color.purple, textcolor=color.white, size=size.tiny)
+        else
+            float buf = retestATR * atr
+            retestDown := (high >= actionLine - buf) and (low <= actionLine + buf)
+
+if state == 2 and not na(actionLine)
+    if (bar_index - breakBar) > retestMaxBars
+        state := 0  // Timeout
+        if showLabels
+            label.new(bar_index, low, "TIMEOUT", color=color.gray, textcolor=color.white, size=size.tiny)
+    else
+        failUp := close < actionLine - failATR*atr
+        if failUp
+            state := 0
+            if showLabels
+                label.new(bar_index, low, "FAIL", color=color.purple, textcolor=color.white, size=size.tiny)
+        else
+            float buf = retestATR * atr
+            retestUp := (low <= actionLine + buf) and (high >= actionLine - buf)
+
+// ============================================================================
+// SECTION 9: ROBUST REJECTION SCORING
+// ============================================================================
+
+// Calculate rejection features
+clv = f_clv(high, low, close)
+wbr = f_wickBodyRatio(open, high, low, close)
+
+// Bearish rejection score (for short entry)
+float bearRejectScore = 0.0
+if retestDown
+    // CLV should be negative (close near low)
+    if clv < -0.3
+        bearRejectScore += 1.0
+    // Wick-to-body ratio should be high (rejection wick)
+    if wbr > 1.5
+        bearRejectScore += 1.0
+    // Close below open (bearish candle)
+    if close < open
+        bearRejectScore += 1.0
+    // Close below action line
+    if close < actionLine
+        bearRejectScore += 1.0
+
+// Bullish rejection score (for long entry)
+float bullRejectScore = 0.0
+if retestUp
+    // CLV should be positive (close near high)
+    if clv > 0.3
+        bullRejectScore += 1.0
+    // Wick-to-body ratio should be high
+    if wbr > 1.5
+        bullRejectScore += 1.0
+    // Close above open (bullish candle)
+    if close > open
+        bullRejectScore += 1.0
+    // Close above action line
+    if close > actionLine
+        bullRejectScore += 1.0
+
+// Require at least 3 out of 4 conditions
+bearReject = retestDown and (bearRejectScore >= 3.0)
+bullReject = retestUp and (bullRejectScore >= 3.0)
+
+// Draw retest zone
+if showZones and (retestDown or retestUp) and not na(actionLine)
+    if not na(retestZone)
+        box.delete(retestZone)
+    float zoneBuf = retestATR * atr
+    retestZone := box.new(bar_index - 3, actionLine + zoneBuf, bar_index, actionLine - zoneBuf,
+                          border_color=color.orange, bgcolor=color.new(color.orange, 85))
+
+// ============================================================================
+// SECTION 10: QUALITY GATES AND TRADE FILTERING
+// ============================================================================
+
+// Risk geometry: distance to safety line
+dGeom = (not na(safetyLine) and atr > 0) ? math.abs(close - safetyLine) / atr : na
+
+// Quality gates
+qAction = state == 1 ? supQ[1] : state == 2 ? resQ[1] : na
+isA = (not na(qAction)) and (qAction >= qA)
+isB = (not na(qAction)) and (qAction >= qB) and (qAction < qA)
+
+// Final trade filter
+allowTrade = (regime != 2) and (not na(dGeom)) and (dGeom <= dSafetyMax) and (isA or isB)
+
+// Determine risk percentage
+riskPct = isA ? riskPctA : riskPctB
+
+// ============================================================================
+// SECTION 11: ENTRIES
+// ============================================================================
+
+stopBuf = stopBufATR * atr
+
+// Long entry on bullish rejection
+if allowTrade and bullReject and strategy.position_size == 0
+    float entryP = close
+    float stopP  = safetyLine - stopBuf
+    float qty    = f_qtyForRisk(entryP, stopP, riskPct)
+    strategy.entry("L", strategy.long, qty=qty)
+    state := 3  // Post-trade state (one-break-one-trade)
+    
+    if showLabels
+        label.new(bar_index, low - atr * 0.5, "LONG\nQ:" + str.tostring(qAction, "#.##"),
+                  color=color.green, textcolor=color.white, style=label.style_label_up, size=size.normal)
+
+// Short entry on bearish rejection
+if allowTrade and bearReject and strategy.position_size == 0
+    float entryP = close
+    float stopP  = safetyLine + stopBuf
+    float qty    = f_qtyForRisk(entryP, stopP, riskPct)
+    strategy.entry("S", strategy.short, qty=qty)
+    state := 3  // Post-trade state
+    
+    if showLabels
+        label.new(bar_index, high + atr * 0.5, "SHORT\nQ:" + str.tostring(qAction, "#.##"),
+                  color=color.red, textcolor=color.white, style=label.style_label_down, size=size.normal)
+
+// Reset state after trade closes
+if state == 3 and strategy.position_size == 0
+    state := 0
+
+// ============================================================================
+// SECTION 12: TRADE MANAGEMENT (BE, PARTIAL, TRAIL, TIME STOP)
+// ============================================================================
+
+var float entry = na
+var float initStop = na
+var int   entryBar = na
+var float trailStop = na
+var bool  partialTaken = false
+var bool  beLocked = false
+
+// Track pivots for trailing
+trailPL = ta.pivotlow(low, left, right)
+trailPH = ta.pivothigh(high, left, right)
+trailBuf = trailBufATR * atr
+
+// Initialize trade tracking on new position
+if strategy.position_size != 0 and na(entry)
+    entry := strategy.position_avg_price
+    entryBar := bar_index
+    initStop := strategy.position_size > 0 ? (safetyLine - stopBuf) : (safetyLine + stopBuf)
+    trailStop := initStop
+    partialTaken := false
+    beLocked := false
+
+// Reset on flat
+if strategy.position_size == 0
+    entry := na
+    initStop := na
+    entryBar := na
+    trailStop := na
+    partialTaken := false
+    beLocked := false
+
+// Compute R multiple
+risk = (not na(entry) and not na(initStop)) ? math.abs(entry - initStop) : na
+rNow = (not na(risk) and risk > 0) ? (strategy.position_size > 0 ? (close - entry)/risk : (entry - close)/risk) : na
+
+// --- Break-Even Lock ---
+if strategy.position_size > 0 and not na(rNow) and rNow >= beTrigR and not beLocked
+    trailStop := math.max(trailStop, entry + syminfo.mintick)
+    beLocked := true
+    if showLabels
+        label.new(bar_index, low, "BE", color=color.blue, textcolor=color.white, size=size.tiny)
+
+if strategy.position_size < 0 and not na(rNow) and rNow >= beTrigR and not beLocked
+    trailStop := math.min(trailStop, entry - syminfo.mintick)
+    beLocked := true
+    if showLabels
+        label.new(bar_index, high, "BE", color=color.blue, textcolor=color.white, size=size.tiny)
+
+// --- Partial Take Profit ---
+if strategy.position_size > 0 and not na(rNow) and rNow >= partialR and not partialTaken
+    tp1Price = entry + partialR * risk
+    strategy.exit("TP1L", "L", qty_percent=partialPct, limit=tp1Price)
+    partialTaken := true
+    if showLabels
+        label.new(bar_index, high, "TP1", color=color.teal, textcolor=color.white, size=size.tiny)
+
+if strategy.position_size < 0 and not na(rNow) and rNow >= partialR and not partialTaken
+    tp1Price = entry - partialR * risk
+    strategy.exit("TP1S", "S", qty_percent=partialPct, limit=tp1Price)
+    partialTaken := true
+    if showLabels
+        label.new(bar_index, low, "TP1", color=color.teal, textcolor=color.white, size=size.tiny)
+
+// --- Time Stop ---
+if strategy.position_size != 0 and not na(entryBar)
+    if (bar_index - entryBar) >= timeStopBars and (na(rNow) or rNow < 0.5)
+        strategy.close(strategy.position_size > 0 ? "L" : "S", comment="TimeStop")
+        if showLabels
+            label.new(bar_index, close, "TIME", color=color.gray, textcolor=color.white, size=size.tiny)
+
+// --- Hybrid Trailing Stop ---
+if strategy.position_size > 0 and not na(entry)
+    float volStop = entry - 1.5 * atr
+    float structStop = not na(trailPL) ? (trailPL - trailBuf) : na
+
+    float cand = nz(trailStop, initStop)
+    cand := math.max(cand, volStop)
+    if not na(rNow) and rNow >= trailStartR and not na(structStop)
+        cand := math.max(cand, structStop)
+
+    trailStop := math.max(nz(trailStop, cand), cand)
+    strategy.exit("XL", "L", stop=trailStop)
+
+if strategy.position_size < 0 and not na(entry)
+    float volStop = entry + 1.5 * atr
+    float structStop = not na(trailPH) ? (trailPH + trailBuf) : na
+
+    float cand = nz(trailStop, initStop)
+    cand := math.min(cand, volStop)
+    if not na(rNow) and rNow >= trailStartR and not na(structStop)
+        cand := math.min(cand, structStop)
+
+    trailStop := math.min(nz(trailStop, cand), cand)
+    strategy.exit("XS", "S", stop=trailStop)
+
+// ============================================================================
+// SECTION 13: TRAILING STOP VISUALIZATION
+// ============================================================================
+
+plot(showTrailStop and strategy.position_size != 0 ? trailStop : na, 
+     "Trailing Stop", color=color.fuchsia, linewidth=2, style=plot.style_stepline)
+
+// ============================================================================
+// SECTION 14: MAIN PLOTS
+// ============================================================================
+
+// Plot boundaries (as reference, main visuals are lines)
+plot(sup, "Support Level", color=color.new(supColor, 60), linewidth=1, style=plot.style_circles)
+plot(res, "Resistance Level", color=color.new(resColor, 60), linewidth=1, style=plot.style_circles)
+
+// Plot frozen Action/Safety lines (as backup to line objects)
+plot(actionLine, "Action Line", color=actionColor, linewidth=2, style=plot.style_linebr)
+plot(safetyLine, "Safety Line", color=safetyColor, linewidth=2, style=plot.style_linebr)
+
+// ============================================================================
+// SECTION 15: DATA WINDOW / INDICATOR PANEL
+// ============================================================================
+
+// Create a separate indicator panel for metrics
+plot(er * 100, "Efficiency Ratio %", display=display.data_window + display.status_line)
+plot(crosses, "Midline Crossings", display=display.data_window)
+plot(supQ, "Q_Support", display=display.data_window + display.status_line)
+plot(resQ, "Q_Resistance", display=display.data_window + display.status_line)
+plot(dGeom, "dGeom (ATR)", display=display.data_window)
+plot(rNow, "Current R-Multiple", display=display.data_window + display.status_line)
+plot(regime, "Regime (1=Trend, 2=Range, 0=Trans)", display=display.data_window)
+plot(bearRejectScore, "Bear Reject Score", display=display.data_window)
+plot(bullRejectScore, "Bull Reject Score", display=display.data_window)
+
+// ============================================================================
+// SECTION 16: ALERTS
+// ============================================================================
+
+alertcondition(breakDown and state == 1, "Break Down", "Support break detected")
+alertcondition(breakUp and state == 2, "Break Up", "Resistance break detected")
+alertcondition(bearReject, "Bearish Rejection", "Bearish rejection at retest - potential short entry")
+alertcondition(bullReject, "Bullish Rejection", "Bullish rejection at retest - potential long entry")
+
+// ============================================================================
+// SECTION 17: INFO TABLE
+// ============================================================================
+
+var table infoTable = table.new(position.top_right, 2, 8, bgcolor=color.new(color.black, 80), border_width=1)
+
+if barstate.islast
+    table.cell(infoTable, 0, 0, "RG Structure v2.0", text_color=color.white, text_size=size.small)
+    table.cell(infoTable, 1, 0, "", text_color=color.white)
+    
+    table.cell(infoTable, 0, 1, "Regime:", text_color=color.gray, text_size=size.tiny)
+    regimeText = regime == 1 ? "TREND" : regime == 2 ? "RANGE" : "TRANSITION"
+    regimeCol = regime == 1 ? color.green : regime == 2 ? color.red : color.yellow
+    table.cell(infoTable, 1, 1, regimeText, text_color=regimeCol, text_size=size.tiny)
+    
+    table.cell(infoTable, 0, 2, "ER:", text_color=color.gray, text_size=size.tiny)
+    table.cell(infoTable, 1, 2, str.tostring(er * 100, "#.#") + "%", text_color=color.white, text_size=size.tiny)
+    
+    table.cell(infoTable, 0, 3, "Q-Sup:", text_color=color.gray, text_size=size.tiny)
+    table.cell(infoTable, 1, 3, str.tostring(supQ, "#.##"), text_color=supQ >= qA ? color.green : supQ >= qB ? color.yellow : color.red, text_size=size.tiny)
+    
+    table.cell(infoTable, 0, 4, "Q-Res:", text_color=color.gray, text_size=size.tiny)
+    table.cell(infoTable, 1, 4, str.tostring(resQ, "#.##"), text_color=resQ >= qA ? color.green : resQ >= qB ? color.yellow : color.red, text_size=size.tiny)
+    
+    table.cell(infoTable, 0, 5, "State:", text_color=color.gray, text_size=size.tiny)
+    stateText = state == 0 ? "IDLE" : state == 1 ? "WAIT RT↓" : state == 2 ? "WAIT RT↑" : "POST-TRADE"
+    table.cell(infoTable, 1, 5, stateText, text_color=color.white, text_size=size.tiny)
+    
+    table.cell(infoTable, 0, 6, "dGeom:", text_color=color.gray, text_size=size.tiny)
+    table.cell(infoTable, 1, 6, str.tostring(dGeom, "#.##"), text_color=dGeom <= dSafetyMax ? color.green : color.red, text_size=size.tiny)
+    
+    table.cell(infoTable, 0, 7, "R-Now:", text_color=color.gray, text_size=size.tiny)
+    table.cell(infoTable, 1, 7, str.tostring(rNow, "#.##"), text_color=rNow > 0 ? color.green : color.red, text_size=size.tiny)
+
+// ============================================================================
+// END OF SCRIPT
+// ============================================================================

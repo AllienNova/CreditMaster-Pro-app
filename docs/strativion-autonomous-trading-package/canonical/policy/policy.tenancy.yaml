@@ -1,0 +1,453 @@
+meta:
+  document_role: policy
+  canonical_owner: policy.tenancy.yaml
+  schema_version: 1.0.0
+  file_version: 1.0.0
+  canonical_package_version: 2.2.0
+  controls_owned: [T-01, T-02, T-03, T-04, T-05]
+  index_ref: governance/CANONICAL-FIELD-INDEX.md#section-10
+  override_rights: >
+    T-01 (tenant registry): 🔒 locked.
+    T-02 (per-tenant risk budget): ⬇ narrow-only; tenant override must be ≤ platform value.
+    T-03 (per-tenant venue allowlist): ⬇ narrow-only; subset of platform_venue_allowlist.
+    T-04 (override precedence rules): 🔒 governed by governance/OVERRIDE-SCHEMA.md.
+    T-05 (data isolation level): 🔒 locked.
+  unit_convention: "All percentages are decimal fractions (0.01 = 1%). No percent-floats.
+    Per governance/VERSIONING.md §8."
+  override_validator_reference: governance/OVERRIDE-SCHEMA.md
+  override_merge_runtime: at_boot_and_on_change
+
+# ===========================================================================
+# T-05  DATA ISOLATION
+# canonical owner: policy.tenancy.yaml#isolation
+# Override rights: 🔒 locked
+# ===========================================================================
+
+isolation:
+  level: logical
+  cross_tenant_data_access: forbidden
+  shared_infra_tenancy_model: namespace-per-tenant
+  namespace_format: "tenant-{tenant_id}"
+  isolation_enforcement:
+    - All order records are namespaced by tenant_id at write time
+    - All query paths include tenant_id predicate enforced at the data layer, not application layer
+    - Audit log rows carry tenant_id and are unmodifiable after write
+    - Feed subscriptions are scoped per tenant venue_allowlist; no cross-tenant feed bleed
+  physical_isolation_upgrade_path: >
+    Tenants requiring physical isolation (separate compute, separate broker accounts,
+    separate data stores) must be provisioned via infrastructure-level segregation.
+    The custody_model field drives broker-side segregation requirements.
+
+# ===========================================================================
+# PLATFORM CEILING
+# canonical owner: policy.tenancy.yaml#platform_ceiling
+# The aggregate risk budget available across ALL active tenants.
+# Sum of tenants[].risk_budget_pct for status=active must be <= this value.
+# Decimal fraction: 0.15 = 15% aggregate open risk.
+# ===========================================================================
+
+platform_ceiling: 0.15
+
+# ===========================================================================
+# T-01  TENANT REGISTRY
+# canonical owner: policy.tenancy.yaml#tenants
+# Override rights: 🔒 locked (platform operator only via dual-control)
+# ===========================================================================
+
+tenants:
+
+  - tenant_id: alpha-systematic
+    display_name: Alpha Systematic Capital
+    status: active
+    risk_budget_pct: 0.06
+    # ⬇ narrow-only; tenant override must be <= 0.06
+    venue_allowlist:
+      - NYSE
+      - NASDAQ
+      - CBOE
+      - CME
+      - ICE_US
+    # Subset of platform_venue_allowlist; ⬇ narrow-only
+    instrument_class_allowlist:
+      - equities
+      - options
+      - futures
+    mode_allowlist:
+      - paper
+      - supervised_live
+      - autonomous_live
+    # Tenant cannot run autonomous_live without platform signoff documented in dual_control_required_for
+    custody_model: segregated
+    regulatory_jurisdiction:
+      - US
+    kyc_aml_status: verified
+    contract_start_date: "2024-01-15"
+    contract_end_date: "2026-01-14"
+    dual_control_required_for:
+      - promotion_stage_change
+      - kill_switch_override
+      - risk_budget_increase
+    signers:
+      - id: ops-lead@alpha-systematic
+        role: operations_lead
+      - id: risk@alpha-systematic
+        role: risk_officer
+    data_retention_days: 2555
+    # 7-year retention for US regulated activity
+    billing_tier: institutional
+
+  - tenant_id: beta-quant
+    display_name: Beta Quant Research LLC
+    status: active
+    risk_budget_pct: 0.04
+    venue_allowlist:
+      - NYSE
+      - NASDAQ
+      - CME
+    instrument_class_allowlist:
+      - equities
+      - futures
+    mode_allowlist:
+      - paper
+      - supervised_live
+    # beta-quant is not authorized for autonomous_live until platform signoff
+    custody_model: omnibus
+    regulatory_jurisdiction:
+      - US
+    kyc_aml_status: verified
+    contract_start_date: "2024-06-01"
+    contract_end_date: "2025-12-31"
+    dual_control_required_for:
+      - promotion_stage_change
+      - kill_switch_override
+      - risk_budget_increase
+    signers:
+      - id: pm@beta-quant
+        role: portfolio_manager
+      - id: compliance@beta-quant
+        role: compliance_officer
+    data_retention_days: 2555
+    billing_tier: professional
+
+  - tenant_id: gamma-fx
+    display_name: Gamma FX Partners
+    status: active
+    risk_budget_pct: 0.03
+    venue_allowlist:
+      - EBS
+      - REUTERS_DEALING
+      - FXCM_PRIME
+    instrument_class_allowlist:
+      - fx
+    mode_allowlist:
+      - paper
+      - supervised_live
+      - autonomous_live
+    custody_model: segregated
+    regulatory_jurisdiction:
+      - US
+      - UK
+    kyc_aml_status: verified
+    contract_start_date: "2023-09-01"
+    contract_end_date: "2025-08-31"
+    dual_control_required_for:
+      - promotion_stage_change
+      - kill_switch_override
+      - risk_budget_increase
+    signers:
+      - id: head-trader@gamma-fx
+        role: head_trader
+      - id: risk@gamma-fx
+        role: risk_officer
+    data_retention_days: 1825
+    # 5-year default for non-US-primary jurisdiction; UK FCA requires minimum 5 years
+    billing_tier: professional
+
+  - tenant_id: delta-crypto-test
+    display_name: Delta Crypto Strategies (Sandbox)
+    status: suspended
+    # Suspended: no order submission allowed; config retained for potential reinstatement
+    risk_budget_pct: 0.0
+    # Zero budget while suspended; budget reconciliation will not count suspended tenants
+    venue_allowlist: []
+    instrument_class_allowlist:
+      - crypto
+    mode_allowlist:
+      - paper
+    custody_model: omnibus
+    regulatory_jurisdiction:
+      - US
+    kyc_aml_status: pending
+    contract_start_date: "2024-11-01"
+    contract_end_date: "2025-04-30"
+    dual_control_required_for:
+      - promotion_stage_change
+      - kill_switch_override
+      - risk_budget_increase
+    signers:
+      - id: ops@delta-crypto
+        role: operations
+      - id: legal@delta-crypto
+        role: legal_counsel
+    data_retention_days: 1825
+    billing_tier: startup
+    suspension_reason: INC_TENANT_OVERRIDE_INVALID
+    suspension_date: "2025-03-10"
+
+  - tenant_id: epsilon-eu
+    display_name: Epsilon European Markets SARL
+    status: active
+    risk_budget_pct: 0.02
+    venue_allowlist:
+      - EUREX
+      - EURONEXT
+      - LSE
+    instrument_class_allowlist:
+      - equities
+      - futures
+      - options
+    mode_allowlist:
+      - paper
+      - supervised_live
+    custody_model: segregated
+    regulatory_jurisdiction:
+      - EU
+      - UK
+    kyc_aml_status: verified
+    contract_start_date: "2024-03-01"
+    contract_end_date: "2026-02-28"
+    dual_control_required_for:
+      - promotion_stage_change
+      - kill_switch_override
+      - risk_budget_increase
+    signers:
+      - id: pm@epsilon-eu
+        role: portfolio_manager
+      - id: compliance@epsilon-eu
+        role: compliance_officer
+    data_retention_days: 1825
+    billing_tier: institutional
+
+# platform_ceiling validation note:
+# sum(active tenants risk_budget_pct) = 0.06 + 0.04 + 0.03 + 0.00 + 0.02 = 0.15
+# This exactly meets the platform_ceiling. Any new active tenant requires a
+# corresponding reduction in existing allocations or an explicit platform_ceiling
+# increase (MAJOR version bump per VERSIONING.md; dual-control required).
+
+# ===========================================================================
+# T-02 / T-03  ALLOWED ENUMS
+# Defines the enum subsets available to tenants for per-field overrides.
+# Tenant may only select from these subsets; any value outside is rejected
+# by the override validator per governance/OVERRIDE-SCHEMA.md#3.
+# Override rights: per-field as noted in CANONICAL-FIELD-INDEX.md
+# ===========================================================================
+
+allowed_enums:
+  status:
+    values: [active, suspended, terminated]
+    tenant_selectable: false
+    # Platform operator only; not tenant-selectable
+  custody_model:
+    values: [omnibus, segregated]
+    tenant_selectable: false
+    # Custody model is set at contract time; requires platform operator action to change
+  regulatory_jurisdiction:
+    values: [US, EU, UK, JP, SG]
+    tenant_selectable: false
+    # Jurisdiction is determined by legal entity; not a runtime choice
+  kyc_aml_status:
+    values: [verified, pending, expired]
+    tenant_selectable: false
+    # Set by compliance function only
+  mode_allowlist_options:
+    values: [research, replay, shadow, paper, supervised_live, autonomous_live]
+    tenant_selectable: false
+    # Mode allowlist is set at contract time; autonomous_live requires explicit platform signoff
+    autonomous_live_requires_signoff: true
+  instrument_class_options:
+    values: [equities, options, futures, fx, crypto]
+    tenant_selectable: false
+  billing_tier:
+    values: [startup, professional, institutional]
+    tenant_selectable: false
+  dual_control_fields:
+    values: [promotion_stage_change, kill_switch_override, risk_budget_increase]
+    tenant_may_add_fields: true
+    # Tenants may require dual-control on additional fields; may not remove these three
+
+# ===========================================================================
+# PLATFORM VENUE ALLOWLIST
+# Master list of venues the platform supports. Tenant venue_allowlist must be
+# a subset of this list. New venues require platform operator addition here
+# (MINOR version bump) before any tenant can be granted access.
+# ===========================================================================
+
+platform_venue_allowlist:
+  equities_and_options:
+    - NYSE
+    - NASDAQ
+    - CBOE
+    - BATS
+    - IEX
+    - ARCA
+    - EDGX
+    - PHLX
+  futures:
+    - CME
+    - ICE_US
+    - CBOT
+    - NYMEX
+    - COMEX
+  fx:
+    - EBS
+    - REUTERS_DEALING
+    - FXCM_PRIME
+    - CURRENEX
+    - HOTSPOT
+  crypto:
+    - COINBASE_PRIME
+    - COINBASE_ADVANCED
+    - KRAKEN_PRO
+    - COINBASE_CUSTODY
+  international_equities_and_futures:
+    - EUREX
+    - EURONEXT
+    - LSE
+    - XETRA
+    - OSE
+    - SGX
+
+# ===========================================================================
+# TENANT BUDGET RECONCILIATION
+# canonical owner: policy.tenancy.yaml#tenant_budget_reconciliation
+# Job: daily reconciliation verifying sum(active tenants risk_budget_pct) <= platform_ceiling
+# Breach emits: INC_TENANT_BUDGET_EXCEEDED → PAUSE_TENANT
+# ===========================================================================
+
+tenant_budget_reconciliation:
+  schedule: "0 18 * * 1-5"
+  # Daily at 18:00 UTC on trading days (after US market close)
+  timezone: UTC
+  scope: status==active
+  formula: "sum(tenants[?status=='active'].risk_budget_pct)"
+  ceiling_ref: policy.tenancy.yaml#platform_ceiling
+  breach_action: INC_TENANT_BUDGET_EXCEEDED
+  breach_response: PAUSE_TENANT
+  breach_scope: all_active_tenants
+  # On breach, all active tenants are paused pending operator review and reallocation
+  tolerance: 0.0
+  # Zero tolerance: sum must be strictly <= platform_ceiling; equality is acceptable
+  alert_at_utilization: 0.9
+  # Alert (not breach) when sum / platform_ceiling >= 0.9 (90% utilized)
+  alert_code: SIG_BUDGET_UTILIZATION_HIGH
+  report_sink: policy.incidents.yaml#sinks.audit_log
+
+# ===========================================================================
+# DATA RETENTION PER TENANT
+# Driven by regulatory_jurisdiction. Minimum 5 years (1825 days) everywhere;
+# US-regulated activity requires 7 years (2555 days).
+# ===========================================================================
+
+data_retention:
+  us_regulated_days: 2555
+  # 7 years: SEC Rule 17a-4 and FINRA Rule 4370 minimum
+  default_days: 1825
+  # 5 years: ESMA, FCA, and MAS minimum
+  retention_scope:
+    - order_records
+    - fill_records
+    - position_snapshots
+    - risk_state_snapshots
+    - audit_log_entries
+    - tenant_override_versions
+    - canonical_package_hashes
+  immutability: write_once_read_many
+  geographic_replication: 2
+  # Minimum 2 geographic regions; see policy.dr.yaml#data_backup
+
+# ===========================================================================
+# BILLING
+# ===========================================================================
+
+billing:
+  metered_on:
+    - metric: trades_executed
+      unit: count
+      description: Each fill event (partial or full) at a live venue
+    - metric: notional_traded_usd
+      unit: usd
+      description: Gross notional of each fill; FX and crypto converted to USD at fill time
+    - metric: api_calls
+      unit: count
+      description: All authenticated API calls to the platform management and query APIs
+  not_metered_on:
+    - metric: signals_generated
+      reason: Signal generation is a research function and should not create billing disincentives for analysis
+    - metric: shadow_trades
+      reason: Shadow trades execute no real capital; billing on shadow would penalize safe-promotion practices
+    - metric: paper_trades
+      reason: Same rationale as shadow_trades
+    - metric: risk_veto_events
+      reason: Vetoed orders were never submitted; billing on vetos would penalize conservative risk limits
+  billing_currency: USD
+  invoice_frequency: monthly
+  billing_data_source: audit_log
+  # Billing derives from immutable audit log only; no external billing database
+
+# ===========================================================================
+# TENANT LIFECYCLE TRANSITIONS
+# ===========================================================================
+
+tenant_lifecycle:
+  active_to_suspended:
+    requires: operator_action
+    dual_control: true
+    preserves_data: true
+    effect: >
+      All order entry halted. Active positions preserved. Data retained per
+      data_retention policy. Reactivation requires operator dual-control review.
+  suspended_to_active:
+    requires: operator_action
+    dual_control: true
+    conditions:
+      - kyc_aml_status must be verified
+      - All override files must pass governance/OVERRIDE-SCHEMA.md validation
+      - risk_budget_pct must be <= available platform headroom
+  active_to_terminated:
+    requires: operator_action
+    dual_control: true
+    conditions:
+      - All open positions must be zero or transferred
+      - All open orders must be cancelled
+      - Data retention clock starts at termination_date
+    preserves_data: true
+    # Data retained per data_retention policy even after termination; no deletion at termination
+  terminated_reinstatement:
+    allowed: false
+    # A terminated tenant must be onboarded as a new tenant_id; terminated IDs are tombstoned
+
+# ===========================================================================
+# CROSS-TENANT INVARIANTS (enforced by CI and runtime validator)
+# ===========================================================================
+
+invariants:
+  - id: INV-T-01
+    rule: "sum(tenants[?status=='active'].risk_budget_pct) <= platform_ceiling"
+    violation_incident: INC_TENANT_BUDGET_EXCEEDED
+    enforcement: at_boot, daily_reconciliation, on_tenant_status_change
+  - id: INV-T-02
+    rule: "every tenant.venue_allowlist is a subset of platform_venue_allowlist (all classes)"
+    violation_incident: INC_TENANT_OVERRIDE_INVALID
+    enforcement: at_tenant_config_load
+  - id: INV-T-03
+    rule: "every active tenant with mode autonomous_live in mode_allowlist must have custody_model=segregated or explicit platform signoff recorded"
+    violation_incident: INC_TENANT_LIMIT_BREACH
+    enforcement: at_promotion_stage_change
+  - id: INV-T-04
+    rule: "every tenant risk_budget_pct is in [0.0, platform_ceiling]"
+    violation_incident: INC_TENANT_OVERRIDE_INVALID
+    enforcement: at_tenant_config_load
+  - id: INV-T-05
+    rule: "all fields marked dual_control_required_for have >= 2 distinct signers from approved roster"
+    violation_incident: INC_TENANT_OVERRIDE_INVALID
+    enforcement: at_tenant_config_load, at_override_apply

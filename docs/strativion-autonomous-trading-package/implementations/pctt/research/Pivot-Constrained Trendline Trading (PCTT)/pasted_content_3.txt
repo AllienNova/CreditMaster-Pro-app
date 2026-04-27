@@ -1,0 +1,316 @@
+Alright — here’s a **financial-programmer-grade rewrite** of that strategy: precise rules, unambiguous logic, and a few upgrades that make it more robust for automation + backtesting. (Still: not financial advice; just a clean systematic spec.)
+
+---
+
+# Enhanced Strategy Spec: Top-Down Trendline Break + Retest System (TDBR)
+
+## 0) Goal
+
+Exploit moments when **market structure transitions**:
+
+* from **trend continuation** (respecting a trendline/channel)
+* to **trend change or acceleration** (breaking it)
+  …while enforcing **tight, pre-defined risk** and **repeatable entries/exits**.
+
+---
+
+# 1) Inputs and Data Requirements
+
+### Market data
+
+* OHLCV candles
+* Spreads/fees assumptions (for realistic backtests)
+* Optional: session markers (NY/London) for FX/indices
+
+### Primary timeframes (recommended)
+
+* **HTF (structure):** 1D or 4H
+* **LTF (entry):** 1H or 15m
+  (You can parameterize these.)
+
+### Parameters (tunable)
+
+* `min_touchpoints = 3` (trendline validity)
+* `lookback_htf = 200` candles (to “see enough history”)
+* `break_confirm = close` (close beyond line, not wick-only)
+* `break_buffer_atr = 0.15` (extra confirmation margin)
+* `retest_window = 3..15` candles after break (how long we wait)
+* `risk_per_trade = 0.5% .. 1%` account
+* `min_RR = 2.0` minimum reward:risk
+* `atr_period = 14` for volatility normalization
+* `cooldown = N candles` (avoid rapid re-entries)
+
+---
+
+# 2) Top-Down Context Filter (Upgrade #1)
+
+Before any entry is allowed, confirm the HTF context:
+
+### 2.1 HTF trend regime (simple)
+
+Define trend direction using one of:
+
+* **Structure:** Higher Highs/Higher Lows vs Lower Highs/Lower Lows
+* or **MA filter:** e.g., 50 EMA slope + price above/below
+* or **Donchian filter:** price near upper/lower band
+
+**Rule:**
+
+* If HTF is strongly bullish → prefer long setups
+* If HTF is strongly bearish → prefer short setups
+* If HTF is range/chop → only take “clean breakout + retest” setups with stricter rules
+
+This prevents taking trendline breaks that are just noise inside a bigger range.
+
+---
+
+# 3) Trendline/Channel Construction (Programmatic Rules)
+
+The original strategy says “draw two lines.” For programming, we must define how.
+
+## 3.1 Identify swing points (deterministic)
+
+Compute pivot highs/lows using a pivot window:
+
+* pivot high if `High[i]` is max of `[i-k … i+k]`
+* pivot low if `Low[i]` is min of `[i-k … i+k]`
+  Typical: `k = 2..5` depending on timeframe.
+
+## 3.2 Build candidate lines
+
+Two types:
+
+### A) Support line (upward line)
+
+Fit a line through **pivot lows**:
+
+* Choose the most recent low pivot as anchor
+* Find earlier low pivots that align (within tolerance)
+* Use linear regression or “two-point line + validation”
+
+### B) Resistance line (downward line)
+
+Fit a line through **pivot highs** using same logic.
+
+## 3.3 Validate a line (what “no cutting through candles” means)
+
+Define “violations”:
+
+* For support line: count candles where `Low < line_value - tolerance`
+* For resistance line: count candles where `High > line_value + tolerance`
+
+Tolerance should scale with volatility:
+
+* `tolerance = ATR * 0.1` (example)
+
+**Valid if:**
+
+* touchpoints ≥ `min_touchpoints`
+* violation count ≤ threshold (e.g., 1 small violation allowed)
+* line spans ≥ minimum length (e.g., 30+ candles)
+
+This replaces subjective chart drawing.
+
+---
+
+# 4) Break Detection (Upgrade #2: Robust Break Definition)
+
+A “break” is not a wick. Use a multi-condition break.
+
+## 4.1 Break conditions
+
+For a **support break (bearish):**
+
+* `Close < support_line - ATR*break_buffer_atr`
+  AND at least one of:
+* candle body size > median body (momentum)
+* volume spike (if volume reliable)
+* close also below recent swing low (structure confirmation)
+
+For a **resistance break (bullish):**
+
+* `Close > resistance_line + ATR*break_buffer_atr`
+  AND one momentum confirm.
+
+## 4.2 Optional: “2-candle confirmation”
+
+* Require 2 consecutive closes beyond the line.
+  This reduces false breaks at the cost of later entries.
+
+---
+
+# 5) Entry Logic (Upgrade #3: Retest Entry + Trigger)
+
+Original version: “take trade in direction of break.”
+Enhanced version: **enter on retest** with a precise trigger.
+
+## 5.1 Define retest zone
+
+After a break, create a zone around the broken line:
+
+* `zone = line_value ± ATR * retest_buffer`
+  Example: `retest_buffer = 0.2`
+
+## 5.2 Entry trigger choices (parameterize)
+
+Pick one:
+
+### Trigger A: Limit entry on retest
+
+* Place limit order at line (or zone midpoint)
+* Enter when price tags the zone
+
+### Trigger B: Retest + rejection candle
+
+Enter only if you get a rejection signal inside zone:
+
+* bullish rejection: long lower wick + close up
+* bearish rejection: long upper wick + close down
+* or engulfing candle pattern
+
+### Trigger C: Break of micro-structure (best for automation)
+
+After retest touches zone:
+
+* For long: enter on break above last LTF swing high
+* For short: enter on break below last LTF swing low
+
+This avoids catching a falling knife.
+
+## 5.3 Time constraint
+
+If retest doesn’t happen within `retest_window`, skip trade.
+(No chasing.)
+
+---
+
+# 6) Risk Management (Upgrade #4: Clean Stops + Position Sizing)
+
+## 6.1 Stop placement (deterministic)
+
+For long:
+
+* stop = below retest low or below zone minus `ATR*0.2`
+
+For short:
+
+* stop = above retest high or above zone plus `ATR*0.2`
+
+## 6.2 Position sizing
+
+Let:
+
+* `risk_$ = equity * risk_per_trade`
+* `stop_distance = |entry - stop|`
+* `position_size = risk_$ / stop_distance` (adjust for contract specs)
+
+This makes the system scalable across assets.
+
+---
+
+# 7) Profit Taking and Exit System (Upgrade #5: Better than “opposite line breaks”)
+
+Original exit: “stay until opposite line breaks.”
+Good for runners, but can give back too much.
+
+Use a hybrid exit:
+
+## 7.1 Minimum target rule
+
+Require trade has at least `min_RR` available to the next logical level.
+
+Targets can be:
+
+* prior HTF swing high/low
+* measured move: channel height projected
+* ATR multiples: 2–4 ATR
+
+## 7.2 Multi-stage exits (recommended)
+
+* Take partial at **1R** (e.g., 25–50%)
+* Move stop to **break-even** at 1R
+* Trail remainder using:
+
+  * swing lows/highs, or
+  * ATR trailing stop, or
+  * “opposite trendline break” as final exit
+
+## 7.3 Hard exit conditions
+
+Exit immediately if:
+
+* price closes back inside the broken channel (failed breakout)
+* opposite break signal triggers (regime reversal)
+* max bars-in-trade exceeded (timeout exit)
+
+---
+
+# 8) Trade Filters (Upgrades that reduce garbage trades)
+
+Add these as optional on/off filters:
+
+### Filter 1: Volatility filter
+
+Skip if ATR is too low (chop) or too high (news spike).
+
+### Filter 2: Range filter
+
+Skip if HTF is inside a tight range and break is small.
+
+### Filter 3: “Space to target”
+
+Only trade if there’s room:
+
+* `distance_to_target >= stop_distance * min_RR`
+
+### Filter 4: Cooldown
+
+After a loss, require `cooldown` candles before next trade on same symbol.
+
+---
+
+# 9) Backtest/Engineering Notes (What a programmer cares about)
+
+### Avoid lookahead bias
+
+* pivots confirmed only after k candles
+* use candle close confirmations properly
+
+### Slippage/fees
+
+* incorporate realistic slippage model
+* spread widening during low liquidity
+
+### Logging
+
+Store per trade:
+
+* regime, line stats, break strength
+* entry trigger type
+* R-multiple outcome
+* excursion metrics: MFE/MAE
+
+This helps you optimize logically (not curve-fit blindly).
+
+---
+
+# 10) Strategy Summary (Algorithm Flow)
+
+1. **HTF scan:** determine market regime + key swings
+2. **Build/validate trendlines:** support/resistance lines with 3+ touches, low violations
+3. **Detect break:** close beyond line with ATR buffer + momentum confirm
+4. **Wait for retest:** price returns to retest zone within window
+5. **Trigger entry:** rejection candle or micro-structure break
+6. **Risk:** ATR-based stop + fixed % position sizing
+7. **Manage:** partials + trailing + failure conditions
+8. **Exit:** targets or invalidation/timeout/opposite signal
+
+---
+
+## If you want, I can take this one step further in whichever direction you prefer:
+
+1. **Build a full backtestable pseudocode blueprint** (functions + data structures + state machine)
+2. **Convert to Python (pandas) or TradingView Pine Script**
+3. Add **statistics-driven enhancements** (walk-forward, parameter constraints, Monte Carlo for robustness)
+
+Tell me what platform you want to run it on (TradingView / Python / MT5 / NinjaTrader), and what markets (forex, crypto, futures, stocks).

@@ -1,0 +1,63 @@
+meta:
+  document_role: policy
+  schema_version: "1.0.0"
+  file_version: "1.0.0"
+  canonical_package_version: "2.5.0"
+  unit_convention: decimal_fraction
+  binding_precedence: canonical
+  purpose: "Execution quality measurement, alert thresholds, and mode-transition bindings for venue/broker degradation."
+  index_authority: governance/CANONICAL-FIELD-INDEX.md
+  override_rights:
+    required_metrics: locked
+    alerts: narrow_only
+    venue_degradation_triggers: narrow_only
+    mode_transitions_bound: locked
+
+required_metrics:
+  - "decision_price"
+  - "submitted_price"
+  - "fill_price"
+  - "spread_at_submission"
+  - "slippage"
+  - "latency_ms"
+  - "time_to_fill_ms"
+  - "partial_fill_ratio"
+  - "venue"
+
+alerts:
+  single_fill_slippage_gt_spread_multiple: 1.0
+  rolling_average_slippage_gt_spread_multiple: 0.5
+  fill_distance_gt_atr_multiple: 1.0
+  excessive_cancel_replace_rate: 0.25
+  repeated_partial_fill_degradation_count: 3
+
+venue_degradation_triggers:
+  route_reject_rate_threshold: 0.05
+  evaluation_window_minutes: 5
+  repeated_trigger_count: 3
+
+degradation_response:
+  on_alert:
+    - "persist_execution_quality_event"
+    - "route_degraded_execution_to_review"
+  on_venue_degradation_trigger:
+    - "disable_venue_for_remainder_of_session"
+    - "escalate_to_supervised_crisis"
+  on_repeated_degradation:
+    - "reduce_mode_one_step_tighter"
+
+mode_transitions_bound:
+  # Explicit binding from execution-quality state to policy.modes.yaml transitions.
+  on_single_fill_slippage_alert: "no_transition"
+  on_rolling_slippage_alert: "to_autonomous_restricted"
+  on_fill_distance_alert: "to_autonomous_restricted"
+  on_venue_degradation_trigger: "to_supervised_crisis"
+  on_broker_session_circuit_breaker_trip: "to_manual_only"
+
+required_actions:
+  persist_execution_quality_event: true
+  route_degraded_execution_to_review: true
+  reduce_autonomy_on_broker_or_venue_degradation: true
+
+audit:
+  retention_days_min: 365

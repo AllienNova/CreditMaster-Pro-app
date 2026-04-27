@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://strativion.io/schemas/policy.sizing.v1.schema.json",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "meta"
+  ],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "document_role",
+        "schema_version",
+        "canonical_package_version"
+      ],
+      "properties": {
+        "document_role": {
+          "type": "string",
+          "enum": [
+            "policy",
+            "workflow"
+          ]
+        },
+        "schema_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[A-Za-z0-9\\.-]+)?$"
+        },
+        "file_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[A-Za-z0-9\\.-]+)?$"
+        },
+        "canonical_package_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[A-Za-z0-9\\.-]+)?$"
+        }
+      }
+    },
+    "method": {
+      "type": "string"
+    },
+    "kelly": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "cap": {
+          "type": "number"
+        },
+        "min_trades_for_use": {
+          "type": "integer"
+        },
+        "require_analytical_only": {
+          "type": "boolean"
+        }
+      }
+    },
+    "atr": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "lookback_periods": {
+          "type": "integer"
+        },
+        "stop_multiple": {
+          "type": "number"
+        },
+        "multiplier_bounds": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    },
+    "stops": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "min_distance_bps": {
+          "type": "integer"
+        },
+        "max_distance_pct": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "quantization": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "rule": {
+          "type": "string"
+        }
+      }
+    },
+    "formulas": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "position_size": {
+          "type": "string"
+        },
+        "heat": {
+          "type": "string"
+        }
+      }
+    },
+    "drawdown_scaling": {
+      "type": "array"
+    }
+  }
+}

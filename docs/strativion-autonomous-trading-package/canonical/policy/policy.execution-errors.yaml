@@ -1,0 +1,583 @@
+meta:
+  document_role: policy
+  schema_version: 1.0.0
+  file_version: 1.0.0
+  canonical_package_version: 2.5.0
+  unit_convention: decimal_fraction
+  binding_precedence: canonical
+  override_rights:
+    # FIX reject code table and clock skew tolerance are locked platform controls.
+    # Broker circuit breaker parameters and TIF defaults are narrow_only.
+    fix_reject_codes: locked
+    broker_circuit_breaker: narrow_only
+    clock_skew.max_ms: locked
+    tif_defaults: narrow_only
+    retry_policy: narrow_only
+    dead_letter: locked
+    market_data_errors: locked
+
+# ---------------------------------------------------------------------------
+# E-10 — FIX Reject Codes
+# Ref: FIX Protocol 4.4; CANONICAL-FIELD-INDEX#E-10
+# OrdRejReason (tag 103) and SessionRejectReason (tag 373) action table.
+# ---------------------------------------------------------------------------
+fix_reject_codes:
+  # Each entry defines the canonical machine action for a given FIX reject code.
+  # machine_action enum: retry_with_backoff | hard_fail | escalate | disable_symbol
+  # requires_human: true means a human must act before the order is retried.
+  # incident_code maps to policy.incidents.yaml#codes.
+
+  ord_rej_reason:
+    # FIX tag 103 — OrdRejReason values
+
+    - code: 0
+      name: broker_or_exchange_option
+      machine_action: escalate
+      requires_human: true
+      incident_code: INC_BROKER_REJECT_GENERIC
+      notes: Generic broker reject. Inspect ExecutionReport text field for detail.
+
+    - code: 1
+      name: unknown_symbol
+      machine_action: disable_symbol
+      requires_human: true
+      incident_code: INC_BROKER_REJECT_UNKNOWN_SYMBOL
+      notes: Symbol not recognized by venue. Block further orders on this symbol.
+
+    - code: 2
+      name: exchange_closed
+      machine_action: retry_with_backoff
+      requires_human: false
+      incident_code: INC_BROKER_REJECT_EXCHANGE_CLOSED
+      backoff_profile: session_reopen
+
+    - code: 3
+      name: order_exceeds_limit
+      machine_action: hard_fail
+      requires_human: true
+      incident_code: INC_FAT_FINGER
+      notes: Order size or notional breaches venue limit. Pre-trade check failed.
+
+    - code: 4
+      name: too_late_to_enter
+      machine_action: hard_fail
+      requires_human: false
+      incident_code: INC_BROKER_REJECT_TOO_LATE
+
+    - code: 5
+      name: unknown_order
+      machine_action: escalate
+      requires_human: true
+      incident_code: INC_RECON_BREAK
+      notes: Venue does not recognize the order. Trigger reconciliation immediately.
+
+    - code: 6
+      name: duplicate_order
+      machine_action: hard_fail
+      requires_human: false
+      incident_code: INC_DUPLICATE_ORDER
+      notes: Idempotency check passed internally but venue sees a duplicate. Investigate.
+
+    - code: 7
+      name: duplicate_verbal_order
+      machine_action: hard_fail
+      requires_human: false
+      incident_code: INC_DUPLICATE_ORDER
+
+    - code: 8
+      name: stale_order
+      machine_action: hard_fail
+      requires_human: false
+      incident_code: INC_BROKER_REJECT_STALE
+      notes: Order timestamp too old relative to venue clock. Check clock_skew.
+
+    - code: 9
+      name: trade_along_required
+      machine_action: hard_fail
+      requires_human: true
+      incident_code: INC_BROKER_REJECT_COMPLIANCE
+
+    - code: 10
+      name: invalid_investor_id
+      machine_action: hard_fail
+      requires_human: true
+      incident_code: INC_BROKER_REJECT_COMPLIANCE
+
+    - code: 11
+      name: unsupported_order_characteristics
+      machine_action: hard_fail
+      requires_human: false
+      incident_code: INC_BROKER_REJECT_UNSUPPORTED
+      notes: TIF or order type not supported by venue. Review tif_defaults.
+
+    - code: 13
+      name: incorrect_quantity
+      machine_action: hard_fail
+      requires_human: true
+      incident_code: INC_FAT_FINGER
+
+    - code: 14
+      name: incorrect_allocated_quantity
+      machine_action: hard_fail
+      requires_human: true
+      incident_code: INC_BROKER_REJECT_COMPLIANCE
+
+    - code: 15
+      name: unknown_account
+      machine_action: hard_fail
+      requires_human: true
+      incident_code: INC_BROKER_REJECT_ACCOUNT
+
+    - code: 16
+      name: price_exceeds_current_price_band
+      machine_action: hard_fail
+      requires_human: false
+      incident_code: INC_LULD_PAUSE
+      notes: Order price is outside LULD band. LULD check should have blocked this pre-trade.
+
+    - code: 18
+      name: invalid_price_increment
+      machine_action: hard_fail
+      requires_human: false
+      incident_code: INC_BROKER_REJECT_TICK_SIZE
+      notes: Price does not conform to minimum tick size. Enforce tick-size validation.
+
+    - code: 19
+      name: other
+      machine_action: escalate
+      requires_human: true
+      incident_code: INC_BROKER_REJECT_GENERIC
+
+    - code: 99
+      name: other_numeric_overflow
+      # Code 99 is commonly used by brokers for non-standard conditions.
+      machine_action: escalate
+      requires_human: true
+      incident_code: INC_BROKER_REJECT_GENERIC
+
+  session_reject_reason:
+    # FIX tag 373 — SessionRejectReason values (administrative/session layer)
+
+    - code: 0
+      name: invalid_tag_number
+      machine_action: hard_fail
+      requires_human: true
+      incident_code: INC_FIX_SESSION_ERROR
+      notes: FIX message construction error. Investigate message builder.
+
+    - code: 1
+      name: required_tag_missing
+      machine_action: hard_fail
+      requires_human: true
+      incident_code: INC_FIX_SESSION_ERROR
+
+    - code: 2
+      name: tag_not_defined_for_this_message_type
+      machine_action: hard_fail
+      requires_human: true
+      incident_code: INC_FIX_SESSION_ERROR
+
+    - code: 3
+      name: undefined_tag
+      machine_action: hard_fail
+      requires_human: true
+      incident_code: INC_FIX_SESSION_ERROR
+
+    - code: 4
+      name: tag_specified_without_a_value
+      machine_action: hard_fail
+      requires_human: true
+      incident_code: INC_FIX_SESSION_ERROR
+
+    - code: 5
+      name: value_is_incorrect_out_of_range_for_this_tag
+      machine_action: hard_fail
+      requires_human: true
+      incident_code: INC_FIX_SESSION_ERROR
+
+    - code: 6
+      name: incorrect_data_format_for_value
+      machine_action: hard_fail
+      requires_human: true
+      incident_code: INC_FIX_SESSION_ERROR
+
+    - code: 7
+      name: decryption_problem
+      machine_action: escalate
+      requires_human: true
+      incident_code: INC_FIX_SESSION_SECURITY
+
+    - code: 8
+      name: signature_problem
+      machine_action: escalate
+      requires_human: true
+      incident_code: INC_FIX_SESSION_SECURITY
+
+    - code: 9
+      name: compid_problem
+      machine_action: escalate
+      requires_human: true
+      incident_code: INC_FIX_SESSION_SECURITY
+
+    - code: 10
+      name: sendingtime_accuracy_problem
+      machine_action: hard_fail
+      requires_human: false
+      incident_code: INC_CLOCK_SKEW
+      notes: Venue rejected message due to clock skew. Enforce clock_skew.max_ms check.
+
+    - code: 11
+      name: invalid_msgtype
+      machine_action: hard_fail
+      requires_human: true
+      incident_code: INC_FIX_SESSION_ERROR
+
+    - code: 12
+      name: xml_validation_error
+      machine_action: hard_fail
+      requires_human: true
+      incident_code: INC_FIX_SESSION_ERROR
+
+    - code: 13
+      name: tag_appears_more_than_once
+      machine_action: hard_fail
+      requires_human: true
+      incident_code: INC_FIX_SESSION_ERROR
+
+    - code: 14
+      name: tag_specified_out_of_required_order
+      machine_action: hard_fail
+      requires_human: true
+      incident_code: INC_FIX_SESSION_ERROR
+
+    - code: 15
+      name: repeating_group_fields_out_of_order
+      machine_action: hard_fail
+      requires_human: true
+      incident_code: INC_FIX_SESSION_ERROR
+
+    - code: 16
+      name: incorrect_numingroup_count_for_repeating_group
+      machine_action: hard_fail
+      requires_human: true
+      incident_code: INC_FIX_SESSION_ERROR
+
+    - code: 17
+      name: non_data_value_includes_field_delimiter
+      machine_action: hard_fail
+      requires_human: true
+      incident_code: INC_FIX_SESSION_ERROR
+
+    - code: 18
+      name: other
+      machine_action: escalate
+      requires_human: true
+      incident_code: INC_FIX_SESSION_ERROR
+
+  # Default action for any code not enumerated above.
+  unrecognized_code_action:
+    machine_action: escalate
+    requires_human: true
+    incident_code: INC_BROKER_REJECT_GENERIC
+
+# ---------------------------------------------------------------------------
+# E-11 — Broker Circuit Breaker
+# Ref: CANONICAL-FIELD-INDEX#E-11
+# ---------------------------------------------------------------------------
+broker_circuit_breaker:
+  # Circuit breakers operate at two granularities: per-broker and per-symbol.
+  # A breaker may open due to consecutive rejects within a rolling window.
+
+  per_broker:
+    consecutive_reject_threshold: 5
+    window_seconds: 60
+    # If N consecutive rejects occur within the window, the broker circuit opens.
+    action_on_open: halt_all_new_orders_to_broker_and_emit_incident
+    incident_code: INC_BROKER_CIRCUIT_OPEN
+
+    half_open:
+      # After the circuit opens, probe with one test order every 30 seconds.
+      probe_interval_seconds: 30
+      probe_order_type: limit
+      probe_order_notional_usd: 100  # Minimal notional probe order
+      # Full close requires N consecutive successful probes.
+      consecutive_successes_to_close: 3
+      # If a probe fails, reset the half-open probe interval.
+      probe_failure_action: reset_probe_interval
+
+    full_close:
+      consecutive_successes_required: 3
+      incident_code: INC_BROKER_CIRCUIT_CLOSED
+
+  per_symbol:
+    consecutive_reject_threshold: 3
+    window_seconds: 60
+    action_on_open: disable_new_orders_on_symbol_and_emit_incident
+    incident_code: INC_BROKER_REJECT_SYMBOL_DISABLED
+
+    half_open:
+      probe_interval_seconds: 60
+      consecutive_successes_to_close: 2
+      probe_failure_action: reset_probe_interval
+
+    full_close:
+      consecutive_successes_required: 2
+      incident_code: INC_BROKER_CIRCUIT_CLOSED
+
+  # State is tracked per (broker_id, session_id) for per-broker and
+  # per (broker_id, symbol) for per-symbol breakers.
+  state_scope:
+    per_broker_key: [broker_id, fix_session_id]
+    per_symbol_key: [broker_id, symbol]
+
+  # Circuit breaker state must survive process restart.
+  state_persistence: durable
+  state_ttl_hours: 24
+
+# ---------------------------------------------------------------------------
+# E-12 — Clock Skew
+# Ref: CANONICAL-FIELD-INDEX#E-12
+# ---------------------------------------------------------------------------
+clock_skew:
+  # Maximum acceptable difference between system clock and authoritative
+  # time source. Hard limit. Locked; no tenant override.
+  max_ms: 500
+
+  source:
+    # System clock must be synchronized to at least a stratum-2 NTP server.
+    ntp_stratum_max: 2
+    primary_ntp_server: time.aws.com
+    fallback_ntp_server: pool.ntp.org
+    # NTP sync check interval.
+    sync_check_interval_seconds: 60
+    # If NTP offset exceeds max_ms, the action below is triggered.
+    sync_failure_action: pause_new_orders_and_emit_incident
+    sync_failure_incident: INC_CLOCK_SKEW
+
+  measurement:
+    # Clock skew is measured as |system_time - ntp_reference_time| in milliseconds.
+    # Measured continuously; breach triggers action immediately (not on next check).
+    measurement_interval_seconds: 10
+    # Number of consecutive measurements exceeding threshold before action is taken.
+    consecutive_breach_count_to_act: 3
+    # On breach:
+    breach_action:
+      - pause_new_order_submission
+      - emit_incident: INC_CLOCK_SKEW
+      - alert_on_call
+    # System resumes order submission automatically when skew returns below threshold
+    # for at least N consecutive measurements.
+    resume_on_consecutive_ok_count: 5
+
+  # Exchange heartbeat comparison: if available, also compare system time against
+  # last exchange-sourced SendingTime field (FIX tag 52).
+  exchange_heartbeat_comparison:
+    enabled: true
+    max_divergence_from_exchange_time_ms: 500
+    divergence_incident: INC_CLOCK_SKEW
+
+# ---------------------------------------------------------------------------
+# TIF Defaults — Per-Venue and Per-Instrument-Class
+# ---------------------------------------------------------------------------
+tif_defaults:
+  # Default TIF values applied when a signal does not specify a TIF.
+  # Constraints:
+  #   - Never default to GTC for options (expiry risk).
+  #   - Never default to DAY for crypto (24/7 sessions with no EOD expiry).
+  # Cross-reference: policy.execution.yaml#default_tif owns the global default;
+  # this table overrides per instrument class and venue.
+
+  equities:
+    default: DAY
+    permitted: [DAY, GTC, IOC, FOK, GTD, MOO, MOC, LOO, LOC]
+    # GTC permitted for equities but must be explicitly set by the signal.
+    gtc_requires_explicit_signal_field: true
+
+  options:
+    default: DAY
+    permitted: [DAY, IOC, FOK, GTD]
+    # GTC is explicitly prohibited for options to prevent stale open positions
+    # across expiration boundaries.
+    gtc_permitted: false
+    gtc_violation_action: reject_order_and_emit_incident
+    gtc_violation_incident: INC_TIF_INVALID
+
+  futures:
+    default: DAY
+    permitted: [DAY, GTC, IOC, FOK, GTD]
+    # GTC permitted but must survive first-notice-date checks (see policy.compliance.yaml).
+    gtc_requires_explicit_signal_field: true
+
+  crypto:
+    # Crypto venues operate 24/7; DAY TIF would expire at midnight UTC arbitrarily.
+    # Do not default to DAY.
+    default: GTC
+    permitted: [GTC, IOC, FOK, GTD]
+    day_permitted: false
+    day_violation_action: reject_order_and_emit_incident
+    day_violation_incident: INC_TIF_INVALID
+
+  fx:
+    default: IOC
+    permitted: [IOC, FOK, DAY, GTC]
+
+  per_venue_overrides:
+    # Some venues do not support all TIF codes.
+    # Format: venue_id -> instrument_class -> permitted TIFs.
+    # This table narrows the instrument-class defaults above.
+    # Tenants may further narrow per policy OVERRIDE-SCHEMA.md rules.
+    examples:
+      - venue_id: venue_x_equities
+        equities_permitted: [DAY, IOC, FOK]
+        # GTC not supported — override narrows the default set.
+      - venue_id: venue_y_crypto
+        crypto_permitted: [IOC, FOK]
+        # GTC not supported on this venue.
+
+# ---------------------------------------------------------------------------
+# Retry Policy — Backoff Table per Reject Category
+# ---------------------------------------------------------------------------
+retry_policy:
+  # Retry logic applies only to transient errors. Hard failures never retry.
+  # All retry counts reset after a successful order acknowledgment.
+
+  categories:
+    transient_network:
+      # FIX session-level connectivity errors, TCP resets, heartbeat timeouts.
+      description: Network-layer transient failures not caused by order content.
+      max_retries: 3
+      backoff_schedule_ms: [100, 500, 2000]
+      after_max_retries: escalate_to_dead_letter
+      incident_code: INC_BROKER_NO_ACK
+
+    rate_limit:
+      # Venue returns HTTP 429 or FIX BusinessMessageReject with rate-limit reason.
+      description: Venue throttling / rate limit rejection.
+      max_retries: 5
+      backoff_rule: respect_retry_after_header
+      # If Retry-After header is absent, use the default_retry_after_ms value.
+      default_retry_after_ms: 1000
+      after_max_retries: escalate_to_dead_letter
+      incident_code: INC_BROKER_RATE_LIMIT
+
+    venue_down:
+      # Venue is not accepting connections or FIX session is down.
+      description: Venue or FIX session unavailable.
+      max_retries: 0
+      backoff_rule: none
+      after_max_retries: circuit_break_immediately
+      incident_code: INC_BROKER_CIRCUIT_OPEN
+      # Venue-down triggers the broker circuit breaker immediately.
+      # Do not retry individual orders; wait for circuit breaker probe logic.
+
+    order_content_error:
+      # Reject is caused by invalid order content (fat finger, bad symbol, etc.).
+      description: Venue rejected due to order parameters.
+      max_retries: 0
+      backoff_rule: none
+      after_max_retries: hard_fail_to_dead_letter
+      incident_code: INC_BROKER_REJECT_GENERIC
+      # Content errors are never retried — the same content will be rejected again.
+
+    compliance_reject:
+      # Venue compliance or risk check rejected the order.
+      description: Venue-side compliance or risk gate.
+      max_retries: 0
+      backoff_rule: none
+      after_max_retries: hard_fail_requires_human
+      incident_code: INC_BROKER_REJECT_COMPLIANCE
+      requires_human: true
+
+  # If a reject code falls outside all defined categories, treat as order_content_error.
+  unclassified_reject_category: order_content_error
+
+# ---------------------------------------------------------------------------
+# Dead Letter Queue
+# ---------------------------------------------------------------------------
+dead_letter:
+  # Orders that exhaust all retries or receive a hard-fail action are routed
+  # to the dead-letter queue. They must never be silently dropped.
+  enabled: true
+  # The dead-letter queue is durable and persists across process restarts.
+  persistence: durable
+
+  required_fields_per_entry:
+    - account_id
+    - client_order_id
+    - tenant_id
+    - strategy_id
+    - symbol
+    - side
+    - quantity
+    - order_type
+    - tif
+    - fail_reason
+    - fail_timestamp_iso8601
+    - last_venue_response  # full FIX execution report or REST response body
+    - incident_code
+    - canonical_hash
+    - retry_count
+    - disposition  # enum: pending_human | resolved_cancel | resolved_resubmit | resolved_ignore
+
+  # Human disposition is required before any dead-letter entry is cleared.
+  # Entries in pending_human state for longer than this SLA trigger an escalation.
+  human_disposition_sla_hours: 4
+  sla_breach_incident: INC_DEAD_LETTER_SLA_BREACH
+
+  # Audit: every dead-letter entry must be written to the immutable audit log
+  # with the same fields, regardless of subsequent disposition.
+  audit_log_required: true
+
+  # Automated actions on dead-letter entries:
+  # 1. Emit incident immediately.
+  # 2. Set disposition = pending_human.
+  # 3. Alert on-call.
+  # Systems must never autonomously resolve a dead-letter entry by resubmitting.
+  auto_resubmit_permitted: false
+
+# ---------------------------------------------------------------------------
+# Market Data Errors
+# ---------------------------------------------------------------------------
+market_data_errors:
+  stale_tick:
+    # Stale tick handling delegates to the data-quality policy for thresholds.
+    # Cross-reference: policy.data-quality.yaml#staleness
+    staleness_thresholds_source: "policy.data-quality.yaml#staleness"
+    # Action when stale tick is detected:
+    action: block_new_orders_on_affected_symbol_and_emit_incident
+    incident_code: INC_DATA_STALE_T1
+    # If staleness is resolved within this window, auto-unblock.
+    auto_unblock_on_resolution_ms: 500
+    # If not resolved within this window, escalate.
+    escalation_threshold_seconds: 30
+    escalation_incident: INC_DATA_STALE_T2
+
+  venue_disconnect:
+    # Market data feed disconnect from a single venue.
+    action: failover_to_backup_feed_and_emit_incident
+    incident_code: INC_MD_VENUE_DISCONNECT
+    backup_feed_required: true
+    # If backup feed is also unavailable, block all orders for affected symbols.
+    backup_feed_unavailable_action: block_orders_on_affected_symbols_and_escalate
+    backup_feed_unavailable_incident: INC_MD_ALL_FEEDS_DOWN
+    requires_human: true
+
+  gap_in_sequence:
+    # A gap in the market data sequence number implies lost messages.
+    # The system must not trade on potentially incomplete data.
+    action: request_retransmission_and_block_orders_during_gap
+    incident_code: INC_MD_SEQ_GAP
+    # If retransmission is not received within this window, escalate.
+    retransmission_timeout_seconds: 5
+    retransmission_timeout_incident: INC_DATA_STALE_T2
+    # Gap detection applies to all consolidated feeds (CTA/UTP for equities,
+    # CME/ICE for futures, exchange WebSocket streams for crypto).
+    feed_types_covered: [consolidated_tape, futures_direct, crypto_exchange_ws]
+
+  nbbo_stale:
+    # NBBO is required for pre-trade fat-finger check and order admission.
+    # Cross-reference: policy.data-quality.yaml#nbbo.required
+    nbbo_required_source: "policy.data-quality.yaml#nbbo.required"
+    stale_threshold_ms: 500
+    stale_action: block_new_orders_requiring_nbbo_and_emit_incident
+    incident_code: INC_DATA_STALE_T1

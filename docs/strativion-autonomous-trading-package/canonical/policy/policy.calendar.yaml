@@ -1,0 +1,467 @@
+meta:
+  document_role: policy
+  schema_version: 1.0.0
+  file_version: 1.0.0
+  canonical_package_version: 2.2.0
+  unit_convention: decimal_fraction
+  binding_precedence: canonical
+  timezone_policy: "All times UTC. Any local-time field carries IANA TZID. Bare offset strings (ET, EST, EDT) are forbidden."
+  supersedes: policy.seasonality.yaml
+  supersession_note: >
+    policy.seasonality.yaml is downgraded to reference/contextual only.
+    policy.calendar.yaml owns all enforceable windows per CANONICAL-FIELD-INDEX.md §6.
+  owned_controls:
+    - K-01  # policy.calendar.yaml#macro.tier1.windows
+    - K-02  # policy.calendar.yaml#macro.tier2.windows
+    - K-03  # policy.calendar.yaml#earnings.blackout
+    - K-04  # policy.calendar.yaml#dividends.ex_date
+    - K-05  # policy.calendar.yaml#options.quad_witching
+    - K-06  # policy.calendar.yaml#options.opex
+    - K-07  # policy.calendar.yaml#sessions
+    - K-08  # policy.calendar.yaml#holidays.source
+    - K-09  # policy.calendar.yaml#halts.wake_rule
+  index_authority: governance/CANONICAL-FIELD-INDEX.md
+  override_schema: governance/OVERRIDE-SCHEMA.md
+
+# ---------------------------------------------------------------------------
+# K-07  TRADING SESSIONS PER VENUE
+# open_utc / close_utc are wall-clock times expressed as HH:MM UTC.
+# tz_local carries IANA TZID for human reference only; enforcement uses UTC.
+# ---------------------------------------------------------------------------
+sessions:
+  XNYS:
+    name: "New York Stock Exchange"
+    tz_local: "America/New_York"
+    regular_hours:
+      open_utc: "14:30"
+      close_utc: "21:00"
+    pre_market:
+      open_utc: "09:00"
+      close_utc: "14:30"
+      allows_new_orders: true
+      risk_multiplier: 0.5              # half normal position size during pre-market
+    post_market:
+      open_utc: "21:00"
+      close_utc: "01:00"               # next calendar day UTC
+      allows_new_orders: true
+      risk_multiplier: 0.5
+    half_day_schedule:
+      close_utc: "18:00"               # 1:00 PM America/New_York
+      reference: policy.calendar.yaml#early_close_days
+    order_admission_modes: [regular, pre_market, post_market]
+
+  XNAS:
+    name: "NASDAQ"
+    tz_local: "America/New_York"
+    regular_hours:
+      open_utc: "14:30"
+      close_utc: "21:00"
+    pre_market:
+      open_utc: "09:00"
+      close_utc: "14:30"
+      allows_new_orders: true
+      risk_multiplier: 0.5
+    post_market:
+      open_utc: "21:00"
+      close_utc: "01:00"
+      allows_new_orders: true
+      risk_multiplier: 0.5
+    half_day_schedule:
+      close_utc: "18:00"
+      reference: policy.calendar.yaml#early_close_days
+    order_admission_modes: [regular, pre_market, post_market]
+
+  XCBT:
+    name: "CBOT (Chicago Board of Trade)"
+    mic: XCBT
+    tz_local: "America/Chicago"
+    regular_hours:
+      open_utc: "13:30"
+      close_utc: "20:00"
+    electronic_session:
+      open_utc: "22:00"               # Sunday open for Mon; weekday open follows prior close
+      close_utc: "21:00"              # next calendar day UTC
+      description: "CME Globex electronic session; 60-minute maintenance window 21:00–22:00 UTC"
+    maintenance_window:
+      start_utc: "21:00"
+      end_utc: "22:00"
+      action: no_new_orders
+    half_day_schedule:
+      close_utc: "19:00"
+    order_admission_modes: [regular, electronic_session]
+
+  XCME:
+    name: "CME (Chicago Mercantile Exchange)"
+    mic: XCME
+    tz_local: "America/Chicago"
+    regular_hours:
+      open_utc: "13:30"
+      close_utc: "20:00"
+    electronic_session:
+      open_utc: "22:00"
+      close_utc: "21:00"
+      description: "CME Globex; 60-minute maintenance 21:00–22:00 UTC"
+    maintenance_window:
+      start_utc: "21:00"
+      end_utc: "22:00"
+      action: no_new_orders
+    half_day_schedule:
+      close_utc: "19:00"
+    order_admission_modes: [regular, electronic_session]
+
+  XNFE:
+    name: "NFE / Euronext"
+    mic: XNFE
+    tz_local: "Europe/Paris"
+    regular_hours:
+      open_utc: "08:00"
+      close_utc: "16:30"
+    pre_market:
+      open_utc: "07:15"
+      close_utc: "08:00"
+      allows_new_orders: false         # order entry not permitted pre-open
+    post_market:
+      open_utc: "16:30"
+      close_utc: "17:30"
+      allows_new_orders: true
+      risk_multiplier: 0.5
+    order_admission_modes: [regular, post_market]
+
+  XIFE:
+    name: "ICE Futures Europe"
+    mic: XIFE
+    tz_local: "Europe/London"
+    regular_hours:
+      open_utc: "08:00"
+      close_utc: "18:00"
+    pre_market:
+      open_utc: "01:00"
+      close_utc: "08:00"
+      allows_new_orders: true
+      risk_multiplier: 0.5
+    order_admission_modes: [regular, pre_market]
+
+  BINANCE:
+    name: "Binance (spot + perps)"
+    mic: null
+    tz_local: null                     # 24/7; no local tz applicable
+    regular_hours:
+      open_utc: "00:00"
+      close_utc: "23:59"
+      continuous: true
+    thin_liquidity_windows:
+      - start_utc: "22:00"
+        end_utc: "03:00"               # weekend-overnight thin; Saturday 22:00 UTC through Sunday 03:00 UTC
+        risk_multiplier: 0.5
+        applies_on: [Saturday, Sunday]
+    maintenance_windows:
+      schedule: "irregular; monitor exchange status API"
+      action: no_new_orders
+      status_api: "https://www.binancezh.io/en/support/announcement"
+    order_admission_modes: [continuous]
+
+  COINBASE:
+    name: "Coinbase Advanced Trade"
+    mic: null
+    tz_local: null
+    regular_hours:
+      open_utc: "00:00"
+      close_utc: "23:59"
+      continuous: true
+    thin_liquidity_windows:
+      - start_utc: "22:00"
+        end_utc: "03:00"
+        risk_multiplier: 0.5
+        applies_on: [Saturday, Sunday]
+    maintenance_windows:
+      schedule: "irregular; monitor status page"
+      action: no_new_orders
+      status_api: "https://status.coinbase.com"
+    order_admission_modes: [continuous]
+
+# ---------------------------------------------------------------------------
+# K-08  HOLIDAY CALENDAR SOURCE
+# ---------------------------------------------------------------------------
+holidays:
+  source: "https://www.nyse.com/markets/hours-calendars"
+  secondary_sources:
+    - venue: XCBT
+      uri: "https://www.cmegroup.com/tools-information/holiday-calendar.html"
+    - venue: XCME
+      uri: "https://www.cmegroup.com/tools-information/holiday-calendar.html"
+    - venue: XNFE
+      uri: "https://www.euronext.com/en/trade/trading-hours-phases"
+    - venue: XIFE
+      uri: "https://www.theice.com/publicdocs/futures_us/ICE_Futures_Europe_Holiday_Schedule.pdf"
+  refresh: daily
+  refresh_time_utc: "05:00"
+  cache_ttl_hours: 24
+  fallback_on_fetch_failure: "use_most_recent_successful_fetch"
+  stale_after_days: 7
+  action_if_stale: pause_new_orders
+  action_incident: INC_CALENDAR_FEED_STALE
+
+# ---------------------------------------------------------------------------
+# K-01  TIER-1 MACRO BLACKOUT WINDOWS  (🔒 locked; no tenant override permitted)
+# All times America/New_York for release_tz.
+# blackout_before and blackout_after are ISO 8601 durations.
+# ---------------------------------------------------------------------------
+macro:
+  tier1:
+    windows:
+      - event_code: FOMC_DECISION
+        release_tz: "America/New_York"
+        typical_release_time_local: "14:00"
+        blackout_before: PT30M
+        blackout_after: PT60M
+        action: no_new_orders_and_tighten_stops
+        stop_tighten_multiplier: 0.5    # stops tightened to 50% of normal distance
+        applies_to_instrument_classes: [equities, fx, futures, options]
+        override_class: locked          # 🔒
+
+      - event_code: CPI_HEADLINE
+        release_tz: "America/New_York"
+        typical_release_time_local: "08:30"
+        blackout_before: PT15M
+        blackout_after: PT15M
+        action: no_new_orders
+        applies_to_instrument_classes: [equities, fx, futures, options]
+        override_class: locked
+
+      - event_code: NFP
+        full_name: "Non-Farm Payrolls"
+        release_tz: "America/New_York"
+        typical_release_time_local: "08:30"
+        release_day: "first_friday_of_month"
+        blackout_before: PT15M
+        blackout_after: PT15M
+        action: no_new_orders
+        applies_to_instrument_classes: [equities, fx, futures, options]
+        override_class: locked
+
+      - event_code: PPI
+        full_name: "Producer Price Index"
+        release_tz: "America/New_York"
+        typical_release_time_local: "08:30"
+        blackout_before: PT10M
+        blackout_after: PT15M
+        action: no_new_orders
+        applies_to_instrument_classes: [equities, fx, futures, options]
+        override_class: locked
+
+      - event_code: RETAIL_SALES
+        release_tz: "America/New_York"
+        typical_release_time_local: "08:30"
+        blackout_before: PT10M
+        blackout_after: PT15M
+        action: no_new_orders
+        applies_to_instrument_classes: [equities, fx, futures]
+        override_class: locked
+
+      - event_code: FOMC_MINUTES
+        release_tz: "America/New_York"
+        typical_release_time_local: "14:00"
+        blackout_before: PT15M
+        blackout_after: PT30M
+        action: no_new_orders
+        applies_to_instrument_classes: [equities, fx, futures, options]
+        override_class: locked
+
+  # K-02  TIER-2 MACRO CAUTION WINDOWS  (⬇ tenant may widen; may not remove)
+  tier2:
+    windows:
+      - event_code: INITIAL_JOBLESS_CLAIMS
+        release_tz: "America/New_York"
+        typical_release_time_local: "08:30"
+        release_day: "thursday"
+        blackout_before: PT5M
+        blackout_after: PT10M
+        action: no_new_orders
+        applies_to_instrument_classes: [equities, fx, futures]
+        override_class: narrow_only     # ⬇
+
+      - event_code: ISM_MANUFACTURING
+        release_tz: "America/New_York"
+        typical_release_time_local: "10:00"
+        release_day: "first_business_day_of_month"
+        blackout_before: PT5M
+        blackout_after: PT10M
+        action: no_new_orders
+        applies_to_instrument_classes: [equities, futures]
+        override_class: narrow_only
+
+      - event_code: CONSUMER_CONFIDENCE
+        release_tz: "America/New_York"
+        typical_release_time_local: "10:00"
+        blackout_before: PT5M
+        blackout_after: PT10M
+        action: no_new_orders
+        applies_to_instrument_classes: [equities, futures]
+        override_class: narrow_only
+
+      - event_code: EXISTING_HOME_SALES
+        release_tz: "America/New_York"
+        typical_release_time_local: "10:00"
+        blackout_before: PT5M
+        blackout_after: PT5M
+        action: no_new_orders
+        applies_to_instrument_classes: [equities, futures]
+        override_class: narrow_only
+
+      - event_code: ECB_RATE_DECISION
+        release_tz: "Europe/Frankfurt"
+        typical_release_time_local: "13:45"
+        blackout_before: PT15M
+        blackout_after: PT30M
+        action: no_new_orders
+        applies_to_instrument_classes: [fx, futures]
+        override_class: narrow_only
+
+      - event_code: BOE_RATE_DECISION
+        release_tz: "Europe/London"
+        typical_release_time_local: "12:00"
+        blackout_before: PT15M
+        blackout_after: PT30M
+        action: no_new_orders
+        applies_to_instrument_classes: [fx, futures]
+        override_class: narrow_only
+
+# ---------------------------------------------------------------------------
+# K-03  EARNINGS BLACKOUT  (⬇ tenant may extend; may not shorten)
+# ---------------------------------------------------------------------------
+earnings:
+  blackout:
+    hours_before: 24
+    hours_after_regular: 2
+    hours_after_pre_announced_guidance: 0
+    symbols_source:
+      - restricted_list
+      - earnings_calendar_api
+      - description: "union of restricted_list.yaml entries and live earnings_calendar_api feed"
+    unknown_schedule_action: apply_default_blackout
+    unknown_schedule_hours_before: 24
+    action: no_new_orders
+    override_class: narrow_only       # ⬇
+
+# ---------------------------------------------------------------------------
+# K-04  DIVIDEND / EX-DATE HANDLING  (⬇)
+# ---------------------------------------------------------------------------
+dividends:
+  ex_date:
+    default_action: hold_only_if_intentional
+    new_entry_requires_flag: intends_dividend_capture   # strategy must set this flag explicitly
+    short_position_liability: true    # short positions on ex-date owe dividend; system must flag
+    option_adjusted_behavior:
+      american_calls_itm: evaluate_early_exercise_risk
+      dividend_threshold_for_early_exercise_usd: 0.10   # dollars; not a pct field
+      action_if_early_exercise_risk: alert_and_require_human_review
+    override_class: narrow_only
+
+# ---------------------------------------------------------------------------
+# K-05  QUAD-WITCHING  (🔒)
+# Occurs on third Friday of March, June, September, December.
+# ---------------------------------------------------------------------------
+options:
+  quad_witching:
+    schedule:
+      months: [3, 6, 9, 12]
+      day_rule: third_friday
+    behavior:
+      reduce_size_by: 0.5             # multiply position size target by 0.5
+      widen_stop_multiple: 1.5        # multiply stop distance by 1.5×
+      require_liquid_only: true       # only instruments meeting spread_filter.liquid_max_bps
+      no_new_options_expiring_that_day: true
+    override_class: locked            # 🔒
+
+  # K-06  OPEX — MONTHLY EXPIRATION  (⬇)
+  opex:
+    schedule:
+      day_rule: third_friday_of_month
+      excludes_quad_witching_months: false   # quad-witching rule supersedes on overlap
+    behavior:
+      expiring_week_position_cap_pct: 0.5    # max 50% of normal max_position_count for positions expiring this week
+      reduce_size_by: 0.25                   # 25% size reduction for new entries in expiring contracts
+      require_liquid_only: true
+    override_class: narrow_only       # ⬇
+
+  # 0-DTE OPTIONS
+  zero_dte:
+    requires_strategy_flag: allows_0dte
+    separate_risk_budget: true
+    risk_budget_pct: 0.005            # 0.5% of AUM; separate from main risk budget
+    max_notional_per_expiry_usd: 5000
+    no_new_entries_after:
+      time_before_close_utc: PT30M    # no new 0-DTE entries in the last 30 minutes
+    action_at_close_minus_15m: close_all_0dte_positions
+    override_class: narrow_only
+
+# ---------------------------------------------------------------------------
+# K-09  HALT / AUCTION WAKE RULE  (🔒)
+# ---------------------------------------------------------------------------
+halts:
+  wake_rule:
+    on_halt_detected:
+      action_working_orders: cancel_working   # cancel all working orders in the halted symbol
+      action_new_orders: block
+      incident: INC_HALT_DETECTED
+    on_reopen:
+      warmup_before_new_orders: PT1M         # 60-second warmup
+      max_spread_multiplier: 2.0             # reject entries if spread > 2× normal filter
+    on_halt_duration_exceeds:
+      threshold: PT30M
+      action: require_human_acknowledge
+      incident: INC_HALT_EXTENDED
+      resume_requires: human_acknowledgment_in_audit_log
+    auction_states:
+      handled_by: policy.compliance.yaml#auction_states
+    override_class: locked            # 🔒
+
+# ---------------------------------------------------------------------------
+# EARLY CLOSE DAYS
+# close_utc is the early close time in UTC (equivalent to 1:00 PM America/New_York = 18:00 UTC).
+# ---------------------------------------------------------------------------
+early_close_days:
+  - name: "Day before Thanksgiving (US)"
+    rule: "wednesday_before_fourth_thursday_of_november"
+    applies_to_venues: [XNYS, XNAS]
+    close_utc: "18:00"
+    tz_local_note: "1:00 PM America/New_York"
+
+  - name: "Black Friday (day after Thanksgiving)"
+    rule: "day_after_fourth_thursday_of_november"
+    applies_to_venues: [XNYS, XNAS]
+    close_utc: "18:00"
+    tz_local_note: "1:00 PM America/New_York"
+
+  - name: "July 3 (day before Independence Day)"
+    rule: "july_3_unless_on_weekend"
+    weekend_adjustment: nearest_prior_business_day
+    applies_to_venues: [XNYS, XNAS]
+    close_utc: "18:00"
+    tz_local_note: "1:00 PM America/New_York"
+
+  - name: "Christmas Eve"
+    rule: "december_24_unless_on_weekend"
+    weekend_adjustment: nearest_prior_business_day
+    applies_to_venues: [XNYS, XNAS]
+    close_utc: "18:00"
+    tz_local_note: "1:00 PM America/New_York"
+
+# ---------------------------------------------------------------------------
+# WEATHER AND OPS DISRUPTIONS
+# ---------------------------------------------------------------------------
+weather_and_ops_disruptions:
+  precedent: "NYSE has closed for weather (Hurricane Sandy 2012, Hurricane Irene 2011)"
+  detection_source: "exchange official announcements; monitor exchange status APIs per sessions[*].status_api"
+  fallback_on_unplanned_closure:
+    action: no_new_orders
+    working_orders: cancel_working
+    incident: INC_EXCHANGE_UNPLANNED_CLOSURE
+    human_acknowledgment_required: true
+    resume_requires: exchange_official_reopen_announcement AND human_acknowledgment_in_audit_log
+  partial_session_detected:
+    action: apply_half_day_risk_multiplier
+    risk_multiplier: 0.5
+  ambiguous_session_status:
+    action: pause_new_orders
+    incident: INC_SESSION_STATUS_AMBIGUOUS

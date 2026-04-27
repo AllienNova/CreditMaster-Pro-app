@@ -6,7 +6,26 @@
 
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { SubscriptionCancellationWizard } from "../SubscriptionCancellationWizard";
-import type { Subscription } from "@/lib/financial/subscription-cancellation-service";
+// Use inline type matching the component's local Subscription interface
+// (component no longer imports from subscription-cancellation-service to avoid server-side dep)
+interface Subscription {
+  id: string;
+  userId: string;
+  name: string;
+  merchantName: string;
+  amount: number;
+  frequency: "weekly" | "monthly" | "quarterly" | "yearly";
+  category: string;
+  status: "active" | "cancelled" | "pending_cancellation" | "paused";
+  nextBillingDate: Date;
+  detectedFromBillId?: string;
+  logoUrl?: string;
+  annualCost: number;
+  cancellationStatus?: "cancelled" | "retained" | "pending" | "failed";
+  cancelledAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 // ---------------------------------------------------------------------------
 // Mocks

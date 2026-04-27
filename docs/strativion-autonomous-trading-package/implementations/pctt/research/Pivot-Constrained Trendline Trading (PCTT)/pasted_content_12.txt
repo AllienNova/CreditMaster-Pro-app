@@ -1,0 +1,155 @@
+        action0  := sup
+        actionM  := supM
+        safety0  := res
+        safetyM  := resM
+    else if breakUp and not na(sup)
+        state    := 2
+        breakBar := bar_index
+        action0  := res
+        actionM  := resM
+        safety0  := sup
+        safetyM  := supM
+
+// Retest + fail (time bounded)
+retestDown = false
+retestUp   = false
+failDown   = false
+failUp     = false
+
+if state == 1 and not na(actionLine)
+    if (bar_index - breakBar) > retestMaxBars
+        state := 0
+    else
+        failDown := close > actionLine + failATR*atr
+        if failDown
+            state := 0
+        else
+            float buf = retestATR * atr
+            retestDown := (high >= actionLine - buf) and (low <= actionLine + buf)
+
+if state == 2 and not na(actionLine)
+    if (bar_index - breakBar) > retestMaxBars
+        state := 0
+    else
+        failUp := close < actionLine - failATR*atr
+        if failUp
+            state := 0
+        else
+            float buf = retestATR * atr
+            retestUp := (low <= actionLine + buf) and (high >= actionLine - buf)
+
+// Example rejection confirmations (you’ll likely replace with your own trigger)
+bearReject = retestDown and (close < open) and (close < actionLine)
+bullReject = retestUp   and (close > open) and (close > actionLine)
+
+// Portable risk geometry feature
+dSafety = (not na(safetyLine) and atr > 0) ? math.abs(close - safetyLine) / atr : na
+
+//====================================================
+// Plots
+//====================================================
+plot(res, "Resistance (pivot-constrained)", color=color.new(color.red, 0))
+plot(sup, "Support (pivot-constrained)", color=color.new(color.green, 0))
+
+plot(actionLine, "Action (frozen)", color=color.new(color.orange, 0), linewidth=2)
+plot(safetyLine, "Safety (frozen)", color=color.new(color.blue, 0), linewidth=2)
+
+bgcolor(regime == 1 ? color.new(color.green, 92) : regime == 2 ? color.new(color.red, 92) : na)
+
+plotshape(breakDown, "BreakDown", style=shape.triangledown, location=location.abovebar, color=color.red, size=size.tiny, text="BD")
+plotshape(breakUp,   "BreakUp",   style=shape.triangleup,   location=location.belowbar, color=color.green, size=size.tiny, text="BU")
+
+plotshape(retestDown, "RetestDown", style=shape.circle, location=location.abovebar, color=color.orange, size=size.tiny, text="RT")
+plotshape(retestUp,   "RetestUp",   style=shape.circle, location=location.belowbar, color=color.orange, size=size.tiny, text="RT")
+
+plotshape(bearReject, "BearReject", style=shape.xcross, location=location.abovebar, color=color.red, size=size.tiny, text="RJ")
+plotshape(bullReject, "BullReject", style=shape.xcross, location=location.belowbar, color=color.green, size=size.tiny, text="RJ")
+
+// Data-window outputs (the “API”)
+plot(er, "ER", display=display.data_window)
+plot(crosses, "Crossings", display=display.data_window)
+plot(supQ, "Q_support (0..1)", display=display.data_window)
+plot(resQ, "Q_resist (0..1)", display=display.data_window)
+plot(supT, "Touches_support", display=display.data_window)
+plot(resT, "Touches_resist", display=display.data_window)
+plot(dSafety, "dSafety=|close-safety|/ATR", display=display.data_window)
+```
+
+---
+
+# How to Embed This Module into Other Strategies (Research‑grade usage patterns)
+
+## 1) Use structure as **context**, not as the entire alpha
+
+Examples:
+
+### Momentum breakout strategy
+
+* only take breakouts if:
+
+  * `regime != range`
+  * quality high (`Q > 0.65`)
+  * geometry sane (`dSafety < 2.5`)
+  * optional HTF gate aligned
+
+### Mean reversion strategy
+
+* only fade touches when:
+
+  * `regime == range`
+  * `Q` is high (stable boundary)
+  * price is close to boundary (normalized distance threshold)
+
+### Pullback-in-trend strategy
+
+* direction from regime + boundary slope
+* entries on pullbacks to support in trend regime
+* stops beyond safety line
+
+## 2) Research protocol (what makes it “grade”)
+
+Do this **before** you trust any results:
+
+1. **Ablations**
+   Test with/without each component: pivots, violation penalty, ER, crossing, HTF gate, freeze logic.
+
+2. **Sensitivity maps**
+   Sweep (\alpha), (\beta), (M), pivot widths, `evalStep`, `recalcEvery`.
+   The system should degrade smoothly, not collapse.
+
+3. **Cross‑asset replication**
+   At minimum: one crypto, one FX pair, one index future/ETF, one large-cap equity.
+
+4. **Temporal validation**
+   Split by time: train/tune on one regime, validate on another.
+
+5. **Execution realism**
+   Pine constraints matter (and are documented): heavy loops can break or silently time out. ([TradingView][1])
+   Keep the module computationally bounded.
+
+---
+
+# What I’d do next (to reach “publication-quality”)
+
+If you want the *next* step beyond the above (still TradingView‑deployable):
+
+1. **Dual boundary modes** (already possible):
+
+   * pivot‑constrained boundaries (structural)
+   * regression envelope (statistical)
+     Then build a **consensus boundary** or disagreement metric.
+
+2. **Multi‑horizon structure stack**
+   Compute boundaries at (N_1, N_2) (e.g., 120 and 300), and gate signals hierarchically (macro decides direction, mid decides structure, short decides timing).
+
+3. **Failure taxonomy**
+   Label failures: immediate snapback vs slow grindback vs “no retest.”
+   These failures often become alphas for other strategies.
+
+---
+
+If you tell me your main trading universe (crypto? indices? FX?) and your primary timeframes, I’ll propose **a parameter prior** (not curve-fit), plus a **multi-horizon gating design** that stays within TradingView runtime limits and is stable across regimes.
+
+[1]: https://www.tradingview.com/pine-script-docs/writing/limitations/ "Writing / Limitations"
+[2]: https://www.tradingview.com/blog/en/pine-script-v6-has-landed-48830/ "Pine Script® v6 has landed — TradingView Blog"
+[3]: https://www.tradingview.com/pine-script-docs/concepts/other-timeframes-and-data/ "Concepts / Other timeframes and data"

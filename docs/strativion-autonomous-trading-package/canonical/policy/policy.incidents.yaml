@@ -1,0 +1,889 @@
+meta:
+  document_role: policy
+  canonical_owner: policy.incidents.yaml
+  schema_version: 1.0.0
+  file_version: 1.0.0
+  canonical_package_version: 2.2.0
+  controls_owned: [I-01, I-02, I-03, I-04, I-05, I-06]
+  index_ref: governance/CANONICAL-FIELD-INDEX.md#section-8
+  override_rights: "🔒 All incident taxonomy, severity, and action fields are locked. Escalation
+    rosters (I-05) and alert sinks (I-06) are bidirectional (↔) per index."
+  unit_convention: "All percentages are decimal fractions (0.01 = 1%). No percent-floats.
+    Per governance/VERSIONING.md §8."
+
+# ---------------------------------------------------------------------------
+# DESIGN RATIONALE — FLATTEN PROHIBITION (P0-10)
+# ---------------------------------------------------------------------------
+# PRINCIPAL-REVIEW.md#P0-10 identifies flatten_if_state_untrusted as the
+# single most dangerous autonomous action in the prior crisis workflow. Under
+# ambiguous state the system does NOT know what it owns. An autonomous flatten
+# under data degradation or partial connectivity loss may: (a) issue duplicate
+# closes for already-closed positions, (b) fail to close real positions whose
+# state record is missing, (c) interact with a broker that has already moved
+# on, producing unintended net-short or net-long residuals.
+#
+# SAFE DEFAULT: FREEZE_AND_ALERT — pause all new order entry, cancel working
+# orders idempotently, preserve existing positions unchanged, page humans
+# immediately. Flattening is ONLY authorized under LEVEL_4 kill-switch with
+# explicit dual-control and a named incident justification.
+# See also: policy.dr.yaml#ambiguous_state.action
+# ---------------------------------------------------------------------------
+
+# ===========================================================================
+# I-01  INCIDENT TAXONOMY
+# canonical owner: policy.incidents.yaml#codes
+# ===========================================================================
+
+codes:
+
+  # -------------------------------------------------------------------------
+  # CATEGORY: DATA
+  # -------------------------------------------------------------------------
+
+  - code: INC_DATA_STALE_EQUITIES
+    category: DATA
+    severity: SEV2
+    description: Equities market-data feed exceeds staleness threshold defined in policy.data-quality.yaml#staleness.equities_max_ms
+    typical_cause: Feed vendor outage, network partition, or exchange dissemination delay
+    detection_source: policy.data-quality.yaml#staleness.equities_max_ms
+    default_action: PAUSE_SYMBOL
+    auto_recoverable: true
+    requires_human_ack_to_clear: false
+
+  - code: INC_DATA_STALE_FUTURES
+    category: DATA
+    severity: SEV2
+    description: Futures market-data feed exceeds staleness threshold defined in policy.data-quality.yaml#staleness.futures_max_ms
+    typical_cause: CME or ICE feed disruption, session gap overflow
+    detection_source: policy.data-quality.yaml#staleness.futures_max_ms
+    default_action: PAUSE_SYMBOL
+    auto_recoverable: true
+    requires_human_ack_to_clear: false
+
+  - code: INC_DATA_STALE_FX
+    category: DATA
+    severity: SEV2
+    description: FX spot/forward feed exceeds staleness threshold defined in policy.data-quality.yaml#staleness.fx_max_ms
+    typical_cause: Liquidity provider disconnect, interbank session close
+    detection_source: policy.data-quality.yaml#staleness.fx_max_ms
+    default_action: PAUSE_SYMBOL
+    auto_recoverable: true
+    requires_human_ack_to_clear: false
+
+  - code: INC_DATA_STALE_CRYPTO
+    category: DATA
+    severity: SEV2
+    description: Crypto feed exceeds staleness threshold defined in policy.data-quality.yaml#staleness.crypto_max_ms
+    typical_cause: Venue maintenance window, websocket dropout, rate-limit backpressure
+    detection_source: policy.data-quality.yaml#staleness.crypto_max_ms
+    default_action: PAUSE_SYMBOL
+    auto_recoverable: true
+    requires_human_ack_to_clear: false
+
+  - code: INC_DATA_STALE_OPTIONS
+    category: DATA
+    severity: SEV1
+    description: Options chain feed stale; greeks and IV surfaces cannot be recomputed reliably
+    typical_cause: OPRA dissemination lag, expiry-day load spike, feed vendor throttle
+    detection_source: policy.data-quality.yaml#staleness.options_max_ms
+    default_action: PAUSE_STRATEGY
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_DATA_CROSS_VENUE_DISAGREE
+    category: DATA
+    severity: SEV2
+    description: Two or more venues for the same instrument report prices exceeding policy.data-quality.yaml#cross_venue.max_disagreement_bps
+    typical_cause: Stale primary feed, venue-specific halt, fat-finger print on one venue
+    detection_source: policy.data-quality.yaml#cross_venue.max_disagreement_bps
+    default_action: PAUSE_SYMBOL
+    auto_recoverable: true
+    requires_human_ack_to_clear: false
+
+  - code: INC_DATA_FEED_DISAGREE
+    category: DATA
+    severity: SEV2
+    description: Two independent data vendors for the same symbol disagree beyond acceptable threshold
+    typical_cause: Vendor-specific adjustment error, delayed corporate-action application
+    detection_source: policy.data-quality.yaml#feed_comparison.max_disagree_bps
+    default_action: PAUSE_SYMBOL
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_DATA_GAP_SIGMA
+    category: DATA
+    severity: SEV2
+    description: Price movement between consecutive bars exceeds policy.data-quality.yaml#gap.max_sigma standard deviations
+    typical_cause: Bad print not yet busted, circuit-breaker halt reopening, futures limit-up gap
+    detection_source: policy.data-quality.yaml#gap.max_sigma
+    default_action: PAUSE_SYMBOL
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_DATA_BAD_PRINT_SPIKE
+    category: DATA
+    severity: SEV2
+    description: Last-sale record flagged as erroneous by exchange cancel/bust message or bad-print filter
+    typical_cause: Exchange error, erroneous trade report, fat-finger crossing
+    detection_source: policy.data-quality.yaml#bad_print.filter_rule
+    default_action: PAUSE_SYMBOL
+    auto_recoverable: true
+    requires_human_ack_to_clear: false
+
+  - code: INC_DATA_CORP_ACTIONS_MISSING
+    category: DATA
+    severity: SEV1
+    description: A pending or same-day corporate action (split, merger, spin-off, special dividend) lacks confirmed handling record
+    typical_cause: Late vendor delivery, unhandled event type, calendar source stale
+    detection_source: policy.compliance.yaml#corporate_actions
+    default_action: PAUSE_SYMBOL
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_DATA_NBBO_UNAVAILABLE
+    category: DATA
+    severity: SEV1
+    description: National Best Bid/Offer required per policy.data-quality.yaml#nbbo.required is not available for a US equity
+    typical_cause: SIP outage, consolidated-tape disruption, exchange-specific reporting failure
+    detection_source: policy.data-quality.yaml#nbbo.required
+    default_action: PAUSE_SYMBOL
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_DATA_TICK_SIZE_INVALID
+    category: DATA
+    severity: SEV2
+    description: Quoted or computed price is not a valid multiple of the instrument's tick size
+    typical_cause: Stale reference data, post-adjustment rounding error, venue tick-table mismatch
+    detection_source: policy.data-quality.yaml#tick_size.enforce
+    default_action: PAUSE_SYMBOL
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  # -------------------------------------------------------------------------
+  # CATEGORY: COMPLIANCE
+  # -------------------------------------------------------------------------
+
+  - code: INC_PDT_TRIP
+    category: COMPLIANCE
+    severity: SEV1
+    description: Pattern Day Trader day-trade count limit tripped or equity threshold breached per policy.compliance.yaml#pdt
+    typical_cause: Day-trade count exceeded in rolling 5-session window with equity below $25,000
+    detection_source: policy.compliance.yaml#pdt
+    default_action: PAUSE_STRATEGY
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_MWCB_LEVEL1
+    category: COMPLIANCE
+    severity: SEV1
+    description: Market-Wide Circuit Breaker Level 1 triggered (S&P 500 -7%); 15-minute trading halt
+    typical_cause: Systemic market decline per policy.compliance.yaml#mwcb
+    detection_source: policy.compliance.yaml#mwcb
+    default_action: PAUSE_PLATFORM
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_MWCB_LEVEL2
+    category: COMPLIANCE
+    severity: SEV1
+    description: Market-Wide Circuit Breaker Level 2 triggered (S&P 500 -13%); 15-minute halt if before 15:25 ET
+    typical_cause: Escalating systemic market decline per policy.compliance.yaml#mwcb
+    detection_source: policy.compliance.yaml#mwcb
+    default_action: PAUSE_PLATFORM
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_MWCB_LEVEL3
+    category: COMPLIANCE
+    severity: SEV1
+    description: Market-Wide Circuit Breaker Level 3 triggered (S&P 500 -20%); halt for remainder of session
+    typical_cause: Catastrophic systemic market decline per policy.compliance.yaml#mwcb
+    detection_source: policy.compliance.yaml#mwcb
+    default_action: PAUSE_PLATFORM
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_LULD_PAUSE
+    category: COMPLIANCE
+    severity: SEV2
+    description: Limit Up–Limit Down trading pause triggered for a specific symbol
+    typical_cause: Price exceeds LULD band; Tier 1 ±5%, Tier 2 ±10%, per policy.compliance.yaml#luld
+    detection_source: policy.compliance.yaml#luld
+    default_action: PAUSE_SYMBOL
+    auto_recoverable: true
+    requires_human_ack_to_clear: false
+
+  - code: INC_REG_SHO_LOCATE_FAIL
+    category: COMPLIANCE
+    severity: SEV1
+    description: Short-sale locate requirement cannot be confirmed per policy.compliance.yaml#reg_sho
+    typical_cause: HTB security, broker locate system failure, intraday recall
+    detection_source: policy.compliance.yaml#reg_sho
+    default_action: PAUSE_SYMBOL
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_RESTRICTED_LIST_HIT
+    category: COMPLIANCE
+    severity: SEV1
+    description: Order target symbol appears on compliance restricted list per policy.compliance.yaml#restricted_list
+    typical_cause: Material non-public information event, legal hold, regulatory sanction
+    detection_source: policy.compliance.yaml#restricted_list.source
+    default_action: PAUSE_SYMBOL
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_CORPORATE_ACTION_UNHANDLED
+    category: COMPLIANCE
+    severity: SEV1
+    description: A corporate action record exists for the symbol but no handling procedure has been confirmed
+    typical_cause: New event type, delayed notification, handler not yet deployed
+    detection_source: policy.compliance.yaml#corporate_actions
+    default_action: PAUSE_SYMBOL
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_COMPLIANCE_VIOLATION
+    category: COMPLIANCE
+    severity: SEV1
+    description: A pre-trade compliance check per policy.compliance.yaml#pre_trade_checks returned FAIL
+    typical_cause: Order exceeds 15c3-5 fat-finger threshold, duplicate-order throttle, or capital threshold
+    detection_source: policy.compliance.yaml#pre_trade_checks
+    default_action: PAUSE_STRATEGY
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_15c3_5_VIOLATION
+    category: COMPLIANCE
+    severity: SEV1
+    description: SEC Rule 15c3-5 pre-trade risk check violated; order would have been submitted without passing required gate
+    typical_cause: Risk engine bypass attempt, race condition in order routing, config defect
+    detection_source: policy.compliance.yaml#pre_trade_checks
+    default_action: PAUSE_PLATFORM
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  # -------------------------------------------------------------------------
+  # CATEGORY: EXECUTION
+  # -------------------------------------------------------------------------
+
+  - code: INC_BROKER_REJECT
+    category: EXECUTION
+    severity: SEV2
+    description: Broker returned a FIX order rejection; see policy.execution-errors.yaml#fix_reject_codes for action table
+    typical_cause: Invalid order parameters, account restriction, fat-finger rule trip
+    detection_source: policy.execution-errors.yaml#fix_reject_codes
+    default_action: ALERT_ONLY
+    auto_recoverable: true
+    requires_human_ack_to_clear: false
+
+  - code: INC_BROKER_NO_ACK
+    category: EXECUTION
+    severity: SEV2
+    description: Order submitted to broker but no acknowledgement received within timeout per policy.execution-errors.yaml#broker_circuit_breaker
+    typical_cause: Network latency, broker system latency, FIX session state mismatch
+    detection_source: policy.execution-errors.yaml#broker_circuit_breaker
+    default_action: FREEZE_AND_ALERT
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_BROKER_CIRCUIT_OPEN
+    category: EXECUTION
+    severity: SEV1
+    description: Broker circuit breaker opened per policy.execution-errors.yaml#broker_circuit_breaker; venue submissions halted
+    typical_cause: Repeated NACK or timeout threshold exceeded
+    detection_source: policy.execution-errors.yaml#broker_circuit_breaker
+    default_action: FREEZE_AND_ALERT
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_FIX_SESSION_DOWN
+    category: EXECUTION
+    severity: SEV1
+    description: FIX session dropped and reconnect attempts exhausted per policy.execution-errors.yaml#fix_session
+    typical_cause: TCP disconnect, sequence-number reset, broker maintenance
+    detection_source: policy.execution-errors.yaml#fix_session
+    default_action: FREEZE_AND_ALERT
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_CLOCK_SKEW
+    category: EXECUTION
+    severity: SEV2
+    description: System clock diverges from authoritative NTP/exchange-heartbeat beyond policy.execution-errors.yaml#clock_skew.max_ms
+    typical_cause: NTP failure, VM live migration, leap-second mishandling
+    detection_source: policy.execution-errors.yaml#clock_skew.max_ms
+    default_action: PAUSE_STRATEGY
+    auto_recoverable: true
+    requires_human_ack_to_clear: false
+
+  - code: INC_ORDER_ORPHANED
+    category: EXECUTION
+    severity: SEV1
+    description: An open order exists at the broker that is not present in local order state
+    typical_cause: Crash/restart with incomplete state recovery, duplicate submission on reconnect
+    detection_source: policy.order-lifecycle.yaml#states
+    default_action: FREEZE_AND_ALERT
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_RECON_BREAK
+    category: EXECUTION
+    severity: SEV1
+    description: End-of-day position reconciliation between local records and broker statement reports a break
+    typical_cause: Missed fill acknowledgement, partial-fill residual unaccounted, broker data lag
+    detection_source: policy.order-lifecycle.yaml#idempotency.key_strategy
+    default_action: FREEZE_AND_ALERT
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_DUP_EXEC_ID
+    category: EXECUTION
+    severity: SEV1
+    description: Two distinct fills share the same ExecID; likely broker-side deduplication failure
+    typical_cause: Broker replay on reconnect, session reset without sequence synchronization
+    detection_source: policy.order-lifecycle.yaml#idempotency.key_strategy
+    default_action: FREEZE_AND_ALERT
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_DEAD_LETTER
+    category: EXECUTION
+    severity: SEV2
+    description: An order message could not be routed or processed and has been moved to the dead-letter queue
+    typical_cause: Schema mismatch, unknown symbol, routing table error
+    detection_source: policy.execution-errors.yaml#fix_reject_codes
+    default_action: ALERT_ONLY
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  # -------------------------------------------------------------------------
+  # CATEGORY: RISK
+  # -------------------------------------------------------------------------
+
+  - code: INC_RISK_VETO
+    category: RISK
+    severity: SEV2
+    description: Risk engine vetoed an order that would breach a limit in policy.runtime.yaml#risk
+    typical_cause: Position would exceed per_trade, cluster, heat, or leverage cap
+    detection_source: policy.runtime.yaml#risk
+    default_action: ALERT_ONLY
+    auto_recoverable: true
+    requires_human_ack_to_clear: false
+
+  - code: INC_DAILY_LOSS_KILL
+    category: RISK
+    severity: SEV1
+    description: Daily P&L loss reached or exceeded policy.runtime.yaml#risk.kill_switch.daily_loss_pct
+    typical_cause: Adverse market move, strategy overfitting, data-driven over-trading
+    detection_source: policy.runtime.yaml#risk.kill_switch.daily_loss_pct
+    default_action: PAUSE_PLATFORM
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_WEEKLY_LOSS_KILL
+    category: RISK
+    severity: SEV1
+    description: Weekly P&L loss reached or exceeded policy.runtime.yaml#risk.kill_switch.weekly_loss_pct
+    typical_cause: Sustained adverse market regime, correlation cluster drawdown
+    detection_source: policy.runtime.yaml#risk.kill_switch.weekly_loss_pct
+    default_action: PAUSE_PLATFORM
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_DRAWDOWN_KILL
+    category: RISK
+    severity: SEV1
+    description: Peak-to-trough equity drawdown reached policy.runtime.yaml#risk.kill_switch.drawdown_pct
+    typical_cause: Extended losing streak, correlation blowup, regime shift
+    detection_source: policy.runtime.yaml#risk.kill_switch.drawdown_pct
+    default_action: PAUSE_PLATFORM
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_HEAT_EXCEEDED
+    category: RISK
+    severity: SEV1
+    description: Portfolio heat (aggregate open risk) exceeded threshold for active regime per policy.runtime.yaml#risk.portfolio
+    typical_cause: Correlated entries near max, regime mis-classification, sizing bug
+    detection_source: policy.runtime.yaml#risk.portfolio
+    default_action: PAUSE_STRATEGY
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_CLUSTER_EXCEEDED
+    category: RISK
+    severity: SEV2
+    description: Per-symbol or per-sector cluster cap breached per policy.runtime.yaml#risk.cluster
+    typical_cause: Correlated entries accumulated across strategies, index rebalance forcing concentration
+    detection_source: policy.runtime.yaml#risk.cluster
+    default_action: PAUSE_STRATEGY
+    auto_recoverable: false
+    requires_human_ack_to_clear: false
+
+  - code: INC_MARGIN_CRITICAL
+    category: RISK
+    severity: SEV1
+    description: Broker-reported margin utilization approaching or exceeding policy.runtime.yaml#risk.margin.utilization_max_pct
+    typical_cause: Adverse intraday mark, portfolio concentration, volatility expansion
+    detection_source: policy.runtime.yaml#risk.margin.utilization_max_pct
+    default_action: PAUSE_STRATEGY
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_CORR_SPIKE
+    category: RISK
+    severity: SEV2
+    description: Realized correlation across portfolio instruments spiked above policy.correlations.yaml#crisis_override_rho
+    typical_cause: Risk-off macro event, sector shock, liquidity withdrawal
+    detection_source: policy.correlations.yaml#crisis_override_rho
+    default_action: PAUSE_STRATEGY
+    auto_recoverable: true
+    requires_human_ack_to_clear: false
+
+  - code: INC_LEVERAGE_BREACH
+    category: RISK
+    severity: SEV1
+    description: Gross exposure / equity ratio breached policy.runtime.yaml#risk.margin.leverage_max
+    typical_cause: Adverse mark on short side, new positions pushed gross over ceiling
+    detection_source: policy.runtime.yaml#risk.margin.leverage_max
+    default_action: PAUSE_STRATEGY
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  # -------------------------------------------------------------------------
+  # CATEGORY: OPS
+  # -------------------------------------------------------------------------
+
+  - code: INC_HALT_UNKNOWN
+    category: OPS
+    severity: SEV1
+    description: Exchange or venue halt detected but halt reason code is unrecognized or absent
+    typical_cause: New halt code not yet in reference table, feed truncation, exchange error message
+    detection_source: policy.execution-errors.yaml#broker_circuit_breaker
+    default_action: FREEZE_AND_ALERT
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_SPREAD_BLOWOUT
+    category: OPS
+    severity: SEV2
+    description: Bid/ask spread for an instrument exceeded policy.execution.yaml#spread_filter thresholds
+    typical_cause: Illiquidity event, market maker withdrawal, near-halt conditions
+    detection_source: policy.execution.yaml#spread_filter.liquid_max_bps
+    default_action: PAUSE_SYMBOL
+    auto_recoverable: true
+    requires_human_ack_to_clear: false
+
+  - code: INC_STATE_UNTRUSTED
+    category: OPS
+    severity: SEV1
+    description: >
+      Internal position/order state cannot be verified against broker records.
+      SAFE DEFAULT IS FREEZE_AND_ALERT — NOT flatten.
+      See PRINCIPAL-REVIEW.md#P0-10 and policy.dr.yaml#ambiguous_state.action.
+    typical_cause: Crash recovery with incomplete journal replay, FIX session reset, broker-side reconciliation pending
+    detection_source: policy.dr.yaml#ambiguous_state.action
+    default_action: FREEZE_AND_ALERT
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_CLOCK_UNSYNCED
+    category: OPS
+    severity: SEV1
+    description: NTP or PTP clock synchronization lost; authoritative time source unavailable
+    typical_cause: NTP server unreachable, GPS disciplined oscillator failure, VM host drift
+    detection_source: policy.execution-errors.yaml#clock_skew.max_ms
+    default_action: FREEZE_AND_ALERT
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_FEED_OUTAGE
+    category: OPS
+    severity: SEV1
+    description: One or more market-data feeds are completely unavailable (no heartbeat within timeout)
+    typical_cause: Vendor infrastructure failure, BGP routing loss, exchange dissemination outage
+    detection_source: policy.data-quality.yaml#staleness.equities_max_ms
+    default_action: PAUSE_SYMBOL
+    auto_recoverable: false
+    requires_human_ack_to_clear: false
+
+  - code: INC_DEPLOY_HASH_MISMATCH
+    category: OPS
+    severity: SEV1
+    description: Runtime canonical_hash does not match the published manifest hash per governance/VERSIONING.md#2.3
+    typical_cause: File tampered after deploy, incomplete deployment, manifest regeneration failure
+    detection_source: governance/VERSIONING.md
+    default_action: PAUSE_PLATFORM
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_CANONICAL_LOAD_FAIL
+    category: OPS
+    severity: SEV1
+    description: Canonical policy YAML failed to load or schema validation failed at boot
+    typical_cause: Schema violation, file corruption, missing required field, version incompatibility
+    detection_source: governance/VERSIONING.md
+    default_action: PAUSE_PLATFORM
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  # -------------------------------------------------------------------------
+  # CATEGORY: SEC
+  # -------------------------------------------------------------------------
+
+  - code: INC_AUTH_FAIL
+    category: SEC
+    severity: SEV1
+    description: Authentication failure for a platform API, broker connection, or operator console access
+    typical_cause: Expired credential, key rotation not propagated, brute-force attempt
+    detection_source: governance/OVERRIDE-SCHEMA.md#audit
+    default_action: PAUSE_PLATFORM
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_KEY_ROTATION_DUE
+    category: SEC
+    severity: SEV3
+    description: API key or signing certificate is within rotation warning window and has not been rotated
+    typical_cause: Rotation schedule not followed, automated rotation job failed
+    detection_source: governance/OVERRIDE-SCHEMA.md
+    default_action: ALERT_ONLY
+    auto_recoverable: false
+    requires_human_ack_to_clear: false
+
+  - code: INC_ANOMALOUS_API_CALL
+    category: SEC
+    severity: SEV2
+    description: An API call pattern deviates significantly from historical baseline (volume, endpoint, time-of-day)
+    typical_cause: Compromised credential, runaway process, probing by unauthorized actor
+    detection_source: governance/OVERRIDE-SCHEMA.md#audit
+    default_action: PAUSE_STRATEGY
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_CONFIG_TAMPER
+    category: SEC
+    severity: SEV1
+    description: A canonical configuration file hash does not match the artifact manifest; possible unauthorized modification
+    typical_cause: File system access by unauthorized process, supply-chain compromise, operator error
+    detection_source: governance/VERSIONING.md#2.3
+    default_action: PAUSE_PLATFORM
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  # -------------------------------------------------------------------------
+  # CATEGORY: TENANCY
+  # -------------------------------------------------------------------------
+
+  - code: INC_TENANT_OVERRIDE_INVALID
+    category: TENANCY
+    severity: SEV1
+    description: A tenant override file failed the override validator per governance/OVERRIDE-SCHEMA.md; tenant defaults to platform canon
+    typical_cause: Override attempts to widen a ceiling, introduces disallowed enum, or is missing dual-control signer
+    detection_source: governance/OVERRIDE-SCHEMA.md#4
+    default_action: PAUSE_TENANT
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_TENANT_BUDGET_EXCEEDED
+    category: TENANCY
+    severity: SEV1
+    description: Sum of active tenant risk_budget_pct values exceeds policy.tenancy.yaml#platform_ceiling
+    typical_cause: New tenant onboarded without reducing existing allocations, daily reconciliation failure
+    detection_source: policy.tenancy.yaml#tenant_budget_reconciliation
+    default_action: PAUSE_TENANT
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_TENANT_LIMIT_BREACH
+    category: TENANCY
+    severity: SEV1
+    description: A tenant has traded beyond its risk_budget_pct allocation or breached a venue/instrument restriction
+    typical_cause: Position sizing defect, strategy routing to disallowed venue, mode escalation without signoff
+    detection_source: policy.tenancy.yaml#tenants
+    default_action: PAUSE_TENANT
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  # -------------------------------------------------------------------------
+  # CATEGORY: CALENDAR
+  # -------------------------------------------------------------------------
+
+  - code: INC_MACRO_BLACKOUT_OVERRIDE_ATTEMPT
+    category: CALENDAR
+    severity: SEV1
+    description: A signal or order was attempted during a Tier-1 macro blackout window per policy.calendar.yaml#macro.tier1.windows
+    typical_cause: Clock skew placing system outside perceived blackout, agent context not consulting calendar, config defect
+    detection_source: policy.calendar.yaml#macro.tier1.windows
+    default_action: PAUSE_STRATEGY
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_HALT_WAKE_EARLY
+    category: CALENDAR
+    severity: SEV2
+    description: System attempted to resume trading from a halt before the halt wake-rule criteria were met per policy.calendar.yaml#halts.wake_rule
+    typical_cause: Timer-based wake ignoring halt reopen confirmation, stale halt state
+    detection_source: policy.calendar.yaml#halts.wake_rule
+    default_action: PAUSE_SYMBOL
+    auto_recoverable: false
+    requires_human_ack_to_clear: true
+
+  - code: INC_EARNINGS_CALENDAR_STALE
+    category: CALENDAR
+    severity: SEV2
+    description: Earnings calendar data has not been refreshed within required interval; blackout windows may be inaccurate
+    typical_cause: Calendar data vendor outage, scheduled refresh job failed
+    detection_source: policy.calendar.yaml#earnings.blackout
+    default_action: PAUSE_STRATEGY
+    auto_recoverable: false
+    requires_human_ack_to_clear: false
+
+# ===========================================================================
+# I-02  SEVERITY MAP
+# canonical owner: policy.incidents.yaml#severity_map
+# ===========================================================================
+
+severity_map:
+  SEV1:
+    label: Critical
+    response: Page on-call immediately; pause affected scope (platform, tenant, strategy, or symbol as indicated by default_action); require human acknowledgement before clearing
+    page_delay: PT0S
+    scope_action: pause_affected_scope
+  SEV2:
+    label: High
+    response: Page on-call within PT5M; alert-only unless default_action specifies otherwise
+    page_delay: PT5M
+    scope_action: alert_and_monitor
+  SEV3:
+    label: Medium
+    response: Alert to Slack/email DL; log for daily review; no automated scope change
+    page_delay: null
+    scope_action: alert_only
+  SEV4:
+    label: Low
+    response: Log only; surfaced in daily operational dashboard
+    page_delay: null
+    scope_action: log_only
+
+# ===========================================================================
+# I-03  ACTION MAP
+# canonical owner: policy.incidents.yaml#action_map
+# ===========================================================================
+
+# DESIGN NOTE (PRINCIPAL-REVIEW.md#P0-10):
+# FLATTEN is deliberately absent from all default_action assignments below.
+# No incident code has a default_action of FLATTEN. Flattening under
+# ambiguous or degraded state compounds loss; the safe default under any
+# form of state uncertainty is FREEZE_AND_ALERT.
+# FLATTEN is only authorized under policy.dr.yaml#kill_switch LEVEL_4
+# with explicit dual-control and a named incident reference.
+
+action_map:
+
+  ALERT_ONLY:
+    description: Emit alert to configured sinks. No automated trading-state change.
+    trading_impact: none
+    examples: [INC_RISK_VETO, INC_BROKER_REJECT, INC_DEAD_LETTER, INC_KEY_ROTATION_DUE]
+
+  PAUSE_SYMBOL:
+    description: Halt new order entry for the specific affected symbol. Working orders on other symbols continue.
+    trading_impact: per_symbol
+    cancel_working_orders_for_symbol: true
+    examples: [INC_DATA_STALE_EQUITIES, INC_LULD_PAUSE, INC_DATA_NBBO_UNAVAILABLE]
+
+  PAUSE_STRATEGY:
+    description: Halt new order entry for all symbols in the affected strategy. Working orders on other strategies continue.
+    trading_impact: per_strategy
+    cancel_working_orders_for_strategy: true
+    examples: [INC_PDT_TRIP, INC_HEAT_EXCEEDED, INC_CLOCK_SKEW, INC_MACRO_BLACKOUT_OVERRIDE_ATTEMPT]
+
+  PAUSE_TENANT:
+    description: Halt new order entry for all strategies and symbols of the affected tenant.
+    trading_impact: per_tenant
+    cancel_working_orders_for_tenant: true
+    examples: [INC_TENANT_OVERRIDE_INVALID, INC_TENANT_BUDGET_EXCEEDED, INC_TENANT_LIMIT_BREACH]
+
+  PAUSE_PLATFORM:
+    description: Halt new order entry platform-wide. Equivalent to kill-switch LEVEL_1 without dual-control requirement.
+    trading_impact: platform_wide
+    cancel_working_orders_platform: false
+    note: Working orders are NOT automatically cancelled on PAUSE_PLATFORM alone; use CANCEL_WORKING_ORDERS or FREEZE_AND_ALERT for that.
+    examples: [INC_MWCB_LEVEL1, INC_DAILY_LOSS_KILL, INC_CANONICAL_LOAD_FAIL, INC_AUTH_FAIL]
+
+  CANCEL_WORKING_ORDERS:
+    description: Cancel all outstanding working orders for the affected scope (symbol, strategy, or platform) using idempotent client-order-id tracking.
+    trading_impact: working_orders_cancelled
+    new_orders_also_paused: true
+    examples: []
+
+  FREEZE_AND_ALERT:
+    description: >
+      Pause all new order entry, cancel all working orders (idempotent), preserve existing
+      positions unchanged, and page on-call immediately. Do NOT flatten.
+      This is the canonical safe-state for any condition where system state cannot be verified.
+      Reference: PRINCIPAL-REVIEW.md#P0-10, policy.dr.yaml#ambiguous_state.action
+    trading_impact: full_freeze_preserve_positions
+    cancel_working_orders: true
+    flatten_positions: false
+    examples: [INC_STATE_UNTRUSTED, INC_BROKER_NO_ACK, INC_BROKER_CIRCUIT_OPEN, INC_FIX_SESSION_DOWN, INC_ORDER_ORPHANED, INC_RECON_BREAK, INC_DUP_EXEC_ID, INC_HALT_UNKNOWN, INC_CLOCK_UNSYNCED]
+
+  DEGRADE_TO_PAPER:
+    description: Route all subsequent signals to paper-trading engine only; no live order submission.
+    trading_impact: live_orders_suspended
+    paper_mode_active: true
+    examples: []
+
+  DEMOTE_PROMOTION_STAGE:
+    description: Trigger an automatic backwards promotion-stage transition per policy.promotion.yaml#demotion_triggers.
+    trading_impact: mode_regression
+    requires_human_review_before_repromotion: true
+    examples: []
+
+# ===========================================================================
+# I-04  AUTONOMOUS SUPERVISORY SIGNALS
+# canonical owner: policy.incidents.yaml#supervisory_signals
+# Automation class: autonomous_supervisory_signal
+# Rule: may DETECT and ALERT only. May NEVER mutate policy, NEVER auto-execute
+# trades, NEVER auto-cancel orders. Per PRINCIPAL-REVIEW.md#P0-9.
+# ===========================================================================
+
+supervisory_signals:
+
+  - signal_code: SIG_REGIME_SHIFT
+    description: Detects statistical shift in market regime (trend, mean-reversion, volatility) using regime classifier
+    detection_logic_reference: policy.runtime.yaml#mode.active
+    output_action: ALERT_AND_SUGGEST
+    suggested_human_action: "Review active strategies for regime compatibility; consider manual mode review"
+    autonomy_constraint: "DETECT and ALERT only — no policy mutation, no order action"
+
+  - signal_code: SIG_LIQUIDITY_DEGRADATION
+    description: Detects degradation in market microstructure (widening spread, depth withdrawal, increased impact cost)
+    detection_logic_reference: policy.execution.yaml#spread_filter
+    output_action: ALERT_AND_SUGGEST
+    suggested_human_action: "Reduce size targets; review venue routing; consider suspending illiquid symbols"
+    autonomy_constraint: "DETECT and ALERT only — no policy mutation, no order action"
+
+  - signal_code: SIG_CORRELATION_REGIME_CHANGE
+    description: Detects structural change in realized correlation matrix that may invalidate cluster definitions
+    detection_logic_reference: policy.correlations.yaml#cluster_threshold
+    output_action: ALERT_AND_SUGGEST
+    suggested_human_action: "Re-run correlation clustering; review cluster cap adequacy; operator to decide on cluster redefinition"
+    autonomy_constraint: "DETECT and ALERT only — no policy mutation, no order action"
+
+  - signal_code: SIG_DRIFT_FROM_PAPER
+    description: Detects material divergence between live P&L and concurrent paper-trading P&L, indicating possible execution slippage or signal degradation
+    detection_logic_reference: policy.promotion.yaml#stages
+    output_action: ALERT_AND_SUGGEST
+    suggested_human_action: "Investigate execution quality; compare fill prices to paper; consider demotion to supervised_live"
+    autonomy_constraint: "DETECT and ALERT only — no policy mutation, no order action"
+
+  - signal_code: SIG_DRAWDOWN_TRAJECTORY
+    description: Detects accelerating drawdown trajectory that has not yet crossed the kill-switch threshold but is trending toward it
+    detection_logic_reference: policy.runtime.yaml#risk.kill_switch.drawdown_pct
+    output_action: ALERT_AND_SUGGEST
+    suggested_human_action: "Evaluate whether to pre-emptively reduce heat; review open positions for regime fit"
+    autonomy_constraint: "DETECT and ALERT only — no policy mutation, no order action"
+
+  - signal_code: SIG_HEAT_TRAJECTORY
+    description: Detects portfolio heat approaching the active-regime heat ceiling with momentum suggesting overshoot
+    detection_logic_reference: policy.runtime.yaml#risk.portfolio
+    output_action: ALERT_AND_SUGGEST
+    suggested_human_action: "Review pending signals queue; consider manual size reduction for open positions"
+    autonomy_constraint: "DETECT and ALERT only — no policy mutation, no order action"
+
+# ===========================================================================
+# I-05  ESCALATION ROSTERS
+# canonical owner: policy.incidents.yaml#escalation.rosters
+# Override rights: ↔ (bidirectional) per CANONICAL-FIELD-INDEX.md#section-8
+# ===========================================================================
+
+escalation:
+  rosters:
+    on_call_primary:
+      description: First responder for all SEV1 and SEV2 incidents
+      contact_source: pagerduty://schedules/P_ONCALL_PRIMARY
+      rotation_frequency: P7D
+    on_call_secondary:
+      description: Backup responder paged if primary does not acknowledge within PT15M
+      contact_source: pagerduty://schedules/P_ONCALL_SECONDARY
+      escalation_delay: PT15M
+    compliance_on_call:
+      description: Compliance officer paged for all COMPLIANCE and TENANCY category SEV1 incidents
+      contact_source: pagerduty://schedules/P_COMPLIANCE
+      categories_requiring_page: [COMPLIANCE, TENANCY, SEC]
+      minimum_severity_for_page: SEV1
+    executive_escalation:
+      description: Executive notification for any unacknowledged SEV1 older than PT30M, any MWCB, any 15c3-5 violation, or any INC_DAILY_LOSS_KILL
+      contact_source: pagerduty://escalation-policies/P_EXEC
+      escalation_trigger_delay: PT30M
+      mandatory_codes: [INC_MWCB_LEVEL1, INC_MWCB_LEVEL2, INC_MWCB_LEVEL3, INC_15c3_5_VIOLATION, INC_DAILY_LOSS_KILL, INC_DRAWDOWN_KILL]
+
+# ===========================================================================
+# I-06  ALERT SINKS
+# canonical owner: policy.incidents.yaml#sinks
+# Override rights: ↔ (bidirectional) per CANONICAL-FIELD-INDEX.md#section-8
+# ===========================================================================
+
+sinks:
+  pagerduty:
+    enabled: true
+    integration_key_ref: secrets://pagerduty/integration_key
+    minimum_severity: SEV2
+    categories: all
+    description: Pages on-call for SEV1 and SEV2 incidents
+
+  slack_webhook:
+    enabled: true
+    webhook_ref: secrets://slack/webhook_alerts_channel
+    minimum_severity: SEV2
+    categories: all
+    include_supervisory_signals: true
+    description: Posts structured incident notification to ops alerts channel
+
+  email_dl:
+    enabled: true
+    distribution_list_ref: secrets://email/ops_dl
+    minimum_severity: SEV3
+    categories: all
+    description: Emails distribution list for SEV2-SEV3 incidents and daily digest of SEV4
+
+  sms:
+    enabled: true
+    recipients_ref: secrets://sms/oncall_roster
+    minimum_severity: SEV1
+    categories: [COMPLIANCE, RISK, OPS, SEC, TENANCY]
+    description: SMS to on-call roster for highest-severity compliance and risk incidents
+
+  audit_log:
+    enabled: true
+    sink_type: append_only_structured_log
+    minimum_severity: SEV4
+    categories: all
+    include_supervisory_signals: true
+    description: All incidents and supervisory signals written to immutable audit log regardless of severity
+
+# ===========================================================================
+# DEDUPLICATION (flap suppression)
+# ===========================================================================
+
+deduplication:
+  enabled: true
+  rule: >
+    Multiple firings of the same incident_code for the same scope
+    (symbol, strategy, tenant, or platform) within the suppression_window
+    are collapsed into a single alert with a repeat_count field incremented.
+    The first firing always pages. Subsequent firings within the window update
+    repeat_count only. A new alert is issued when the window expires and the
+    condition is still active.
+  suppression_window: PT5M
+  scope_keys: [incident_code, scope_type, scope_id]
+  exemptions:
+    - incident_code: INC_15c3_5_VIOLATION
+      reason: Every 15c3-5 violation is a distinct compliance event; suppression prohibited
+    - incident_code: INC_RECON_BREAK
+      reason: Each recon break may represent a distinct position discrepancy
+    - incident_code: INC_DUP_EXEC_ID
+      reason: Each duplicate ExecID is a distinct broker-side event

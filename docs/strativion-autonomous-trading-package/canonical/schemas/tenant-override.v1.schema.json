@@ -1,0 +1,475 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://strativion.io/schemas/tenant-override.v1.schema.json",
+  "title": "tenant-override",
+  "description": "Schema for tenant override files per governance/OVERRIDE-SCHEMA.md. The overrides object is keyed by canonical policy file path; values are partial objects containing only the fields being overridden. NARROW-ONLY INVARIANT: tenant override values must be at least as strict as platform canon (smaller budget, shorter window, subset list, disable-only flags). This structural constraint is documented here; the actual narrow-only enforcement is the validator's responsibility (see OVERRIDE-SCHEMA.md \u00a73-\u00a77) since JSON Schema 2020-12 cannot compare tenant values against loaded canonical values. Locked (\ud83d\udd12) fields may not appear in overrides.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "meta",
+    "overrides"
+  ],
+  "properties": {
+    "meta": {
+      "description": "Override file identity and authorization block.",
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "document_role",
+        "tenant_id",
+        "schema_version",
+        "canonical_package_version",
+        "signed_by"
+      ],
+      "properties": {
+        "document_role": {
+          "type": "string",
+          "const": "tenant_override"
+        },
+        "tenant_id": {
+          "description": "Must match a tenant_id in policy.tenancy.yaml#tenants.",
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$"
+        },
+        "schema_version": {
+          "description": "Version of the tenant-override schema this file conforms to.",
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "canonical_package_version": {
+          "description": "SemVer range of the canonical package this override targets. Format: ^X.Y.Z or X.Y.Z.",
+          "type": "string",
+          "pattern": "^\\^?\\d+\\.\\d+\\.\\d+$"
+        },
+        "signed_by": {
+          "description": "List of approver identifiers who have authorized this override. For \u26d4 fields, must contain >= 2 distinct signers from the approved roster.",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "override_reason": {
+          "description": "Human-readable rationale for this override file.",
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "overrides": {
+      "description": "Override values keyed by canonical policy file path. Each value is a partial object whose fields must: (1) be present in the named canonical file's schema, (2) NOT be Locked (\ud83d\udd12), (3) satisfy the narrow-only rule (OVERRIDE-SCHEMA.md \u00a73). The validator checks these constraints at load time.",
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "policy.runtime.yaml": {
+          "description": "Partial override for policy.runtime.yaml. Only \u2b07 fields permitted. Locked fields (mode.active, etc.) must not appear. INVARIANT: all cross-field invariants from policy.runtime.v2.schema.json must still hold after merge.",
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "risk": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "per_trade": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "hard_max_pct": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1,
+                      "exclusiveMinimum": 0
+                    },
+                    "default_pct": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1,
+                      "exclusiveMinimum": 0
+                    }
+                  }
+                },
+                "cluster": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "per_symbol_max_pct": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1,
+                      "exclusiveMinimum": 0
+                    },
+                    "per_sector_max_pct": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1,
+                      "exclusiveMinimum": 0
+                    },
+                    "per_corr_cluster_max_pct": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1,
+                      "exclusiveMinimum": 0
+                    }
+                  }
+                },
+                "portfolio": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "heat_normal_max_pct": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1,
+                      "exclusiveMinimum": 0
+                    },
+                    "heat_shock_max_pct": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1,
+                      "exclusiveMinimum": 0
+                    },
+                    "heat_crisis_max_pct": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1,
+                      "exclusiveMinimum": 0
+                    }
+                  }
+                },
+                "kill_switch": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "daily_loss_pct": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1,
+                      "exclusiveMinimum": 0
+                    },
+                    "weekly_loss_pct": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1,
+                      "exclusiveMinimum": 0
+                    },
+                    "drawdown_pct": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1,
+                      "exclusiveMinimum": 0
+                    }
+                  }
+                },
+                "margin": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "utilization_max_pct": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1,
+                      "exclusiveMinimum": 0
+                    },
+                    "leverage_max": {
+                      "type": "number",
+                      "minimum": 1,
+                      "maximum": 20
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "policy.sizing.yaml": {
+          "description": "Partial override for policy.sizing.yaml. Only \u2b07 fields permitted. quantization.rule is Locked (\ud83d\udd12).",
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "method": {
+              "type": "string",
+              "enum": [
+                "fixed_fractional",
+                "atr_vol",
+                "kelly_fractional"
+              ]
+            },
+            "kelly": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "cap": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 0.5,
+                  "exclusiveMinimum": 0
+                }
+              }
+            },
+            "atr": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "lookback_periods": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "stop_multiple": {
+                  "type": "number",
+                  "minimum": 0.1
+                }
+              }
+            },
+            "stops": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "min_distance_bps": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10000
+                },
+                "max_distance_pct": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "exclusiveMinimum": 0
+                }
+              }
+            }
+          }
+        },
+        "policy.execution.yaml": {
+          "description": "Partial override for policy.execution.yaml. Only \u2b07 fields permitted.",
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "default_tif": {
+              "type": "string",
+              "enum": [
+                "DAY",
+                "GTC",
+                "IOC",
+                "FOK"
+              ]
+            },
+            "marketable_limit": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "offset_bps": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10000
+                }
+              }
+            },
+            "spread_filter": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "liquid_max_bps": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10000
+                },
+                "illiquid_max_bps": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10000
+                }
+              }
+            },
+            "slippage": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "per_trade_bps": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10000
+                }
+              }
+            }
+          }
+        },
+        "policy.compliance.yaml": {
+          "description": "Partial override for policy.compliance.yaml. Only \u2b07 fields permitted. Most C fields are Locked (\ud83d\udd12). Only crypto.venue_allowlist (C-09), futures.rollover (C-08), restricted_list.source (C-11) may be overridden.",
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "crypto": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "venue_allowlist": {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            },
+            "futures": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "rollover": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "days_before_expiry": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 30
+                    },
+                    "action": {
+                      "type": "string",
+                      "enum": [
+                        "auto_roll",
+                        "alert_and_block",
+                        "close_only"
+                      ]
+                    },
+                    "roll_to": {
+                      "type": "string",
+                      "enum": [
+                        "front_month",
+                        "next_quarterly",
+                        "most_liquid"
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "restricted_list": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          }
+        },
+        "policy.calendar.yaml": {
+          "description": "Partial override for policy.calendar.yaml. Tenant may add blackouts (tier2.windows) but may not remove platform blackouts. tier1.windows and sessions are Locked (\ud83d\udd12).",
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "earnings": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "blackout": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "hours_before": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "hours_after": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "action": {
+                      "type": "string",
+                      "enum": [
+                        "block_new_orders",
+                        "close_positions",
+                        "alert_only"
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "dividends": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "ex_date": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "days_before": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "action": {
+                      "type": "string",
+                      "enum": [
+                        "close_long_positions",
+                        "alert_only",
+                        "block_new_long"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "policy.data-quality.yaml": {
+          "description": "Partial override for policy.data-quality.yaml. Only \u2b07 fields permitted. nbbo.required is Locked (\ud83d\udd12) and must not appear.",
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "staleness": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "equities_max_ms": {
+                  "type": "integer",
+                  "minimum": 100
+                },
+                "futures_max_ms": {
+                  "type": "integer",
+                  "minimum": 100
+                },
+                "fx_max_ms": {
+                  "type": "integer",
+                  "minimum": 100
+                },
+                "crypto_max_ms": {
+                  "type": "integer",
+                  "minimum": 100
+                }
+              }
+            },
+            "cross_venue": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "max_disagreement_bps": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10000
+                }
+              }
+            },
+            "gap": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "max_sigma": {
+                  "type": "number",
+                  "minimum": 0,
+                  "exclusiveMinimum": 0
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,127 @@
+meta:
+  document_role: policy
+  schema_version: "1.0.0"
+  file_version: "1.0.0"
+  canonical_package_version: "2.5.0"
+  unit_convention: decimal_fraction
+  binding_precedence: canonical
+  purpose: "System-wide invariants every consumer must uphold. Strategy-specific engineering invariants live in implementations/<strategy>/."
+  index_authority: governance/CANONICAL-FIELD-INDEX.md
+  override_rights:
+    invariants: locked
+    runtime_checks: locked
+  notes:
+    - "Every invariant is machine-checkable; each violation maps to an incident code in policy.incidents.yaml#codes."
+    - "Runtime check cadence is split into boot, per-decision, and continuous."
+
+invariants:
+
+  I-01:
+    id: canonical_precedence
+    statement: "Canonical policy overrides all other layers. Context, reference, and implementation layers never mutate or override canonical values."
+    enforced_by: policy_resolver
+    violation_incident: INC_CONFIG_TAMPER
+
+  I-02:
+    id: unit_convention_decimal_fraction
+    statement: "All _pct fields are decimal fractions in [0,1]. Percent-floats (e.g. 1.5 meaning 1.5%) are banned."
+    enforced_by: schema_validator
+    violation_incident: INC_CANONICAL_LOAD_FAIL
+
+  I-03:
+    id: timezone_iana_nyc
+    statement: "All session-time fields use IANA zone America/New_York."
+    enforced_by: schema_validator
+    violation_incident: INC_CANONICAL_LOAD_FAIL
+
+  I-04:
+    id: canonical_hash_on_every_decision
+    statement: "Every runtime decision persists canonical_package_version and canonical_hash."
+    enforced_by: audit_middleware
+    violation_incident: INC_DEPLOY_HASH_MISMATCH
+
+  I-05:
+    id: audit_entry_per_state_mutation
+    statement: "Every state mutation produces an AuditEntry conforming to audit-entry.v1.schema.json."
+    enforced_by: audit_middleware
+    violation_incident: INC_RECON_BREAK
+
+  I-06:
+    id: no_autonomous_flatten_on_untrusted_state
+    statement: "When position, account, or order state is untrusted, the system freezes and escalates for operator reconciliation. It does not flatten. See policy.dr.yaml#ambiguous_state.action."
+    enforced_by: crisis_workflow
+    violation_incident: INC_STATE_UNTRUSTED
+
+  I-07:
+    id: admission_gates_run_in_order
+    statement: "Every order passes all admission gates in workflow.confluence.yaml pipeline order; no gate may be skipped."
+    enforced_by: admission_pipeline
+    violation_incident: INC_COMPLIANCE_VIOLATION
+
+  I-08:
+    id: learning_proposes_not_mutates
+    statement: "Learning systems produce proposals; they never mutate live parameters. Autonomous supervisory signals may detect and alert but not mutate."
+    enforced_by: policy.governance_and_supervisory_signal_class
+    violation_incident: INC_CONFIG_TAMPER
+
+  I-09:
+    id: overrides_tighten_only
+    statement: "Tenant and account overrides may only tighten canonical values. Widening overrides are rejected at load."
+    enforced_by: override_validator
+    violation_incident: INC_TENANT_OVERRIDE_INVALID
+
+  I-10:
+    id: mode_transitions_audited
+    statement: "Every mode transition records actor, reason, canonical version, canonical hash, and timestamp."
+    enforced_by: mode_controller
+    violation_incident: INC_ANOMALOUS_API_CALL
+
+  I-11:
+    id: risk_veto_is_final
+    statement: "A Risk Agent rejection cannot be overridden by downstream services. Override requires operator authorization via mode transition."
+    enforced_by: admission_pipeline
+    violation_incident: INC_COMPLIANCE_VIOLATION
+
+  I-12:
+    id: idempotent_order_submission
+    statement: "Every order carries a unique cl_ord_id. Retries return the existing order per policy.order-lifecycle.yaml#idempotency."
+    enforced_by: order_service
+    violation_incident: INC_DUP_EXEC_ID
+
+  I-13:
+    id: drawdown_full_stop_forces_manual_only
+    statement: "On breach of risk.kill_switch.drawdown_pct, the system transitions to manual_only and blocks autonomous submissions."
+    enforced_by: mode_controller
+    violation_incident: INC_DRAWDOWN_KILL
+
+  I-14:
+    id: compliance_gates_are_hard
+    statement: "PDT, Reg SHO/SSR, MWCB, LULD, auction-state, options/futures lifecycle, crypto venue and stablecoin gates cannot be bypassed autonomously."
+    enforced_by: compliance_gate
+    violation_incident: INC_COMPLIANCE_VIOLATION
+
+  I-15:
+    id: platform_tenant_budget_ceiling
+    statement: "Sum of active tenant risk_budget_pct must not exceed policy.tenancy.yaml#platform_ceiling."
+    enforced_by: tenant_budget_reconciliation
+    violation_incident: INC_TENANT_BUDGET_EXCEEDED
+
+runtime_checks:
+  perform_on_boot:
+    - I-01
+    - I-02
+    - I-03
+    - I-09
+    - I-15
+  perform_per_decision:
+    - I-04
+    - I-05
+    - I-07
+    - I-11
+    - I-12
+  perform_continuously:
+    - I-06
+    - I-08
+    - I-10
+    - I-13
+    - I-14

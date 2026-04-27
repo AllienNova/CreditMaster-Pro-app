@@ -1,0 +1,77 @@
+Strativion Autonomous Trading Package — Commercial License
+
+Copyright (c) 2026 Kimal Honour Djam / AlienNova. All rights reserved.
+
+This package, including the `canonical/`, `governance/`, `tooling/`, and
+strategy-specific `implementations/` directories, together with all
+accompanying schemas, workflows, and policy documents (the "Package"),
+is proprietary and confidential.
+
+1. GRANT OF EVALUATION LICENSE
+
+Subject to the terms below, the copyright holder grants a limited,
+non-exclusive, non-transferable, revocable license to use the Package
+solely for the purpose of internal evaluation and integration testing by
+the licensee.
+
+2. COMMERCIAL USE
+
+Commercial use — including but not limited to use in a production trading
+system, use as part of a software product licensed or sold to third
+parties, use in a hosted or SaaS offering, or use to operate trading on
+live capital — requires a separate, written commercial license executed
+with the copyright holder.
+
+3. REDISTRIBUTION
+
+Redistribution of the Package, in whole or in part, in source or binary
+form, is prohibited without a written commercial license.
+
+4. DERIVATIVE WORKS
+
+Derivative works created from the Package — including tenant overrides
+under `governance/OVERRIDE-SCHEMA.md`, custom compliance modules,
+strategy implementations under `implementations/`, and any translation
+or adaptation — are permitted under the evaluation license but may not
+be redistributed outside the licensee's organization without a written
+commercial license.
+
+5. NO WARRANTY
+
+THE PACKAGE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT.
+
+TRADING IN FINANCIAL INSTRUMENTS CARRIES SIGNIFICANT RISK OF LOSS.
+NOTHING IN THIS PACKAGE CONSTITUTES INVESTMENT, LEGAL, OR REGULATORY
+ADVICE. THE LICENSEE BEARS FULL RESPONSIBILITY FOR VALIDATING THE
+PACKAGE'S SUITABILITY FOR ITS INTENDED USE, FOR COMPLIANCE WITH ALL
+APPLICABLE LAWS AND REGULATIONS IN ITS JURISDICTION, AND FOR OBTAINING
+APPROPRIATE REGULATORY AUTHORIZATION BEFORE DEPLOYING ANY AUTONOMOUS
+TRADING SYSTEM.
+
+6. LIMITATION OF LIABILITY
+
+IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES,
+OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR
+OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE PACKAGE OR
+THE USE OR OTHER DEALINGS IN THE PACKAGE, INCLUDING WITHOUT LIMITATION
+ANY TRADING LOSSES, LOST PROFITS, LOST DATA, OR BUSINESS INTERRUPTION.
+
+7. JURISDICTION-AWARE USE
+
+The Package's compliance surface (`canonical/policy/policy.compliance.yaml`)
+declares `jurisdiction_scope: [US]`. Licensees deploying in any other
+jurisdiction MUST supply a tenant override layer covering that
+jurisdiction's rules before deployment. The copyright holder makes no
+representation that the Package as shipped is compliant with any
+non-US regulatory regime.
+
+8. CONTACT
+
+For commercial licensing inquiries, please contact:
+    president@aliennova.com
+
+The copyright holder reserves the right to revise this license for
+future releases. The license applicable to a particular release is the
+one shipped with that release.

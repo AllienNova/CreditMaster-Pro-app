@@ -1,0 +1,233 @@
+# Strativion Market Playbook: Equity Index Futures
+# Source: Chapter 33 - The 30 Indisputable Laws of Trading
+
+market: "Equity Index Futures"
+description: "Complete playbook for ES, NQ, RTY, and micro futures"
+
+instruments:
+  - symbol: "ES"
+    name: "E-mini S&P 500"
+    exchange: "CME Globex"
+    tick_size: 0.25
+    tick_value: 12.50
+    point_value: 50
+    typical_spread: 0.25
+    typical_daily_range_points: [40, 60]
+    avg_daily_volume: 1_500_000
+    intraday_margin: [500, 1000]
+    overnight_margin: 12650
+    contract_months: ["H", "M", "U", "Z"]
+    rollover: "2nd Thursday of contract month"
+    best_hours: ["09:30-11:30", "14:00-16:00"]
+    dead_zones: ["11:30-14:00"]
+    tax_treatment: "Section 1256 (60/40)"
+
+  - symbol: "NQ"
+    name: "E-mini Nasdaq 100"
+    exchange: "CME Globex"
+    tick_size: 0.25
+    tick_value: 5.00
+    point_value: 20
+    typical_spread: 0.25
+    typical_daily_range_points: [150, 250]
+    avg_daily_volume: 600_000
+    intraday_margin: [500, 1000]
+    overnight_margin: 17600
+    contract_months: ["H", "M", "U", "Z"]
+    rollover: "2nd Thursday of contract month"
+    best_hours: ["09:30-11:30", "14:00-16:00"]
+    dead_zones: ["11:30-14:00"]
+    tax_treatment: "Section 1256 (60/40)"
+    notes: "3-4x point range of ES, but $20/pt vs $50/pt. Dollar range comparable."
+
+  - symbol: "RTY"
+    name: "E-mini Russell 2000"
+    exchange: "CME Globex"
+    tick_size: 0.10
+    tick_value: 5.00
+    point_value: 50
+    typical_spread: 0.10
+    typical_daily_range_points: [25, 40]
+    avg_daily_volume: 150_000
+    intraday_margin: 500
+    overnight_margin: 7150
+    contract_months: ["H", "M", "U", "Z"]
+    rollover: "2nd Thursday of contract month"
+    notes: "Least liquid major. Trends more persistently. Responds to domestic data."
+
+  - symbol: "MES"
+    name: "Micro E-mini S&P 500"
+    exchange: "CME Globex"
+    tick_size: 0.25
+    tick_value: 1.25
+    point_value: 5
+    typical_spread: 0.25
+    typical_daily_range_points: [40, 60]
+    avg_daily_volume: 1_200_000
+    intraday_margin: [50, 100]
+    overnight_margin: 1265
+    contract_months: ["H", "M", "U", "Z"]
+    notes: "1/10th of ES. Use for accounts under $50,000."
+
+  - symbol: "MNQ"
+    name: "Micro E-mini Nasdaq 100"
+    exchange: "CME Globex"
+    tick_size: 0.25
+    tick_value: 0.50
+    point_value: 2
+    typical_spread: 0.25
+    typical_daily_range_points: [150, 250]
+    avg_daily_volume: 800_000
+    intraday_margin: [50, 100]
+    overnight_margin: 1760
+
+sessions:
+  - name: "Overnight"
+    hours: "18:00-09:30 ET"
+    volume_pct: 0.30
+    description: "Lower liquidity. Driven by international markets, geopolitical events. Overnight range ~55-65% of regular session."
+    key_events:
+      - "Asian open: 19:00-20:00 ET"
+      - "European open: 02:00-03:00 ET"
+      - "Pre-market data: 07:00-09:00 ET (GDP, CPI, claims at 08:30)"
+
+  - name: "Morning Drive"
+    hours: "09:30-11:30 ET"
+    volume_pct: 0.35
+    description: "Highest volume. Most directional moves begin. Trend declares by 10:30."
+
+  - name: "Midday Chop"
+    hours: "11:30-14:00 ET"
+    volume_pct: 0.15
+    description: "Volume drops 40-50%. Consolidation, chop. Most dangerous for overtrading."
+
+  - name: "Afternoon Drive"
+    hours: "14:00-16:00 ET"
+    volume_pct: 0.20
+    description: "Volume picks up. FOMC days produce largest moves. MOC rebalancing."
+
+  - name: "Settlement"
+    hours: "16:00-17:00 ET"
+    description: "Trickle volume. Official settlement at 16:00."
+
+  - name: "Maintenance Break"
+    hours: "17:00-18:00 ET"
+    description: "No trading."
+
+best_hours: ["09:30-11:30", "14:00-16:00"]
+dead_zones: ["11:30-14:00"]
+
+volume_profile:
+  vpoc:
+    description: "Volume Point of Control. Price where most volume traded."
+    behavior: "Price spends ~70% of time within 1 std dev of developing VPOC on range days."
+    law: 4
+  value_area:
+    description: "VAH/VAL bracket 70% of session volume."
+    eighty_pct_rule: "If price opens outside value area and re-enters, 80% probability it travels to opposite side."
+  hvn:
+    description: "High Volume Nodes. Areas of price acceptance. Act as support/resistance and magnets."
+  lvn:
+    description: "Low Volume Nodes. Areas of price rejection. Price accelerates through them."
+
+primary_setups:
+  - name: "Opening Range Breakout with VWAP Confirmation"
+    description: "Mark ORH/ORL after 15 minutes. Wait for breakout with VWAP alignment."
+    conditions:
+      - "Mark opening range high (ORH) and low (ORL) at 09:45"
+      - "Long: price breaks above ORH AND price is above VWAP"
+      - "Short: price breaks below ORL AND price is below VWAP"
+    stop: "VWAP or opposite side of opening range, whichever is closer"
+    target: "1.5x opening range width from breakout level"
+    win_rate_raw: 0.55
+    win_rate_with_vwap_filter: 0.63
+    laws_applied: [1, 3, 12]
+
+  - name: "VWAP Mean Reversion"
+    conditions:
+      - "Range day (no trend declaration by 10:30)"
+      - "Price stretched 8-12 points from VWAP"
+      - "Declining volume on push away from VWAP"
+    target: "Return to VWAP"
+    laws_applied: [4, 5]
+
+  - name: "FOMC Reaction Trade"
+    conditions:
+      - "Flatten all positions by 13:45"
+      - "Wait for initial spike and first pullback"
+      - "Enter on breakout of pullback"
+    stop: "Pre-announcement price level"
+    management: "Trail stop at developing VWAP"
+    laws_applied: [2, 3]
+
+  - name: "Trend Day Recognition"
+    conditions:
+      - "Price stays on one side of VWAP from 10:00 onward"
+      - "Narrow overnight range (<40% of 10-day avg regular session range)"
+    probability_trend_day_narrow_overnight: 0.35
+    baseline_trend_day_probability: 0.175
+    management: "Trail stop at developing VWAP all day"
+    laws_applied: [1, 8]
+
+risk_rules:
+  max_risk_per_trade: 0.01
+  max_daily_loss: 0.02
+  max_weekly_loss: 0.04
+  max_correlated_positions: 3
+  position_sizing_method: "atr_based"
+  account_under_50k: "Trade MES/MNQ only, not ES/NQ"
+  fomc_protocol:
+    flatten_by: "13:45 ET"
+    stop_width: "2x normal"
+    pre_fomc_overnight: "Do not trade"
+
+key_levels_daily:
+  - "Prior session high, low, close"
+  - "Prior session VPOC, VAH, VAL"
+  - "Session VWAP"
+  - "Opening range high (ORH) and low (ORL) after 09:45"
+  - "Major round numbers (every 50 or 100 points)"
+
+key_reports:
+  - name: "FOMC Rate Decision"
+    time: "14:00 ET"
+    frequency: "8x per year"
+    impact: "extreme"
+    typical_move: "30-80 points ES"
+  - name: "CPI"
+    time: "08:30 ET"
+    frequency: "Monthly"
+    impact: "high"
+    typical_move: "30-60 points ES"
+  - name: "Non-Farm Payrolls"
+    time: "08:30 ET"
+    frequency: "First Friday monthly"
+    impact: "high"
+    typical_move: "20-50 points ES"
+  - name: "ISM Manufacturing"
+    time: "10:00 ET"
+    frequency: "Monthly"
+    impact: "medium"
+  - name: "GDP"
+    time: "08:30 ET"
+    frequency: "Quarterly"
+    impact: "medium"
+
+key_correlations:
+  ES_NQ: 0.90
+  ES_RTY: 0.85
+  ES_TLT: -0.40
+  ES_DXY: -0.35
+
+transaction_cost_warning: >
+  ES one-tick spread ($12.50) plus commissions ($4-5 round trip) is minimal.
+  MES commissions ($2.50 round trip) on 10-point winner ($50) = 5% drag.
+  Scalping strategies targeting 2-4 ticks lose 25-35% of gross profit to costs.
+  Minimum average winner should be 8+ ticks on ES.
+
+tax_advantage: >
+  Section 1256: 60% long-term / 40% short-term capital gains regardless of hold period.
+  Blended rate ~26.8% vs 37% for stock day trades at top bracket.
+  Saves ~$10,200 per year on $100,000 profit.
+
+laws_most_relevant: [1, 2, 3, 4, 5, 7, 8, 9, 21, 25]

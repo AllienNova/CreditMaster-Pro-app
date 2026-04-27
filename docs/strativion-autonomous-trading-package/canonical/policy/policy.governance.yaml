@@ -1,0 +1,60 @@
+meta:
+  document_role: policy
+  schema_version: "1.0.0"
+  file_version: "1.0.0"
+  canonical_package_version: "2.5.0"
+  unit_convention: decimal_fraction
+  binding_precedence: canonical
+  purpose: "Research-to-live governance, change control, and override governance. Numeric promotion gates live in policy.promotion.yaml; override mechanics live in governance/OVERRIDE-SCHEMA.md."
+  index_authority: governance/CANONICAL-FIELD-INDEX.md
+  override_rights:
+    promotion_path: locked
+    change_control: locked
+    operational_governance: locked
+    tenancy: locked
+
+promotion_path:
+  - "research"
+  - "replay"
+  - "shadow"
+  - "paper"
+  - "supervised_live"
+  - "autonomous_live"
+
+requirements:
+  before_supervised_live:
+    - "replay_validation_complete"
+    - "paper_window_complete"
+    - "drawdown_review_complete"
+    - "execution_cost_review_complete"
+    - "data_quality_review_complete"
+    - "compliance_review_complete"
+  before_autonomous_live:
+    - "supervised_live_window_complete"
+    - "approval_recorded"
+    - "rollback_plan_recorded"
+    - "canonical_revision_and_hash_recorded"
+
+change_control:
+  learning_may_propose_changes: true
+  learning_may_directly_change_live_params: false
+  live_parameter_change_requires_approval: true
+  live_parameter_change_requires_audit_record: true
+  strategy_versioning_required: true
+  rollback_metadata_required: true
+  proposal_queue_required: true
+  proposal_sla_days_max: 14
+
+operational_governance:
+  incident_record_required_for_manual_override: true
+  mode_change_reason_required: true
+  flatten_all_reason_required: true
+  flatten_dual_control_required_in_autonomous_live: true
+  package_revision_logging_required: true
+  canonical_hash_logging_required_in_autonomous_live: true
+
+tenancy:
+  overrides_mechanism: "governance/OVERRIDE-SCHEMA.md"
+  overrides_may_loosen_clamped_fields: false
+  overrides_audit_record_required: true
+  overrides_must_record_canonical_version_and_hash: true

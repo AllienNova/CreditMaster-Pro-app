@@ -1,0 +1,28 @@
+meta:
+  document_role: workflow
+  workflow_id: workflow.correlation
+  schema_version: "1.0.0"
+  file_version: "1.0.0"
+  canonical_package_version: "2.5.0"
+  purpose: "Portfolio correlation framework. Thresholds live in policy.correlations.yaml; this workflow references them by path, never by value."
+
+rules:
+  cluster_threshold_source: "policy.correlations.yaml#cluster_threshold"
+  crisis_override_rho_source: "policy.correlations.yaml#crisis_override_rho"
+  treat_correlated_positions_as_one: true
+
+guidance:
+  normal:
+    target_average_correlation_below: 0.30
+  crisis:
+    assume_correlation_floor_source: "policy.runtime.yaml#correlation.crisis_correlation_threshold"
+    action: "reduce gross exposure and count crisis-linked positions as one bet"
+
+illustrative_examples:
+  # Non-binding. Consumers MUST NOT hardcode these lists into production.
+  # Tenants should supply their own correlation groups.
+  note: "Reference-only example groupings."
+  mega_cap_tech: ["AAPL", "MSFT", "GOOGL", "AMZN", "META"]
+  semiconductors: ["NVDA", "AMD", "AVGO", "INTC"]
+  banks: ["JPM", "BAC", "GS", "MS"]
+  equity_indices: ["ES", "NQ", "YM", "RTY"]

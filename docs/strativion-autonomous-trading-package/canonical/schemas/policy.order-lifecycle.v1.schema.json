@@ -1,0 +1,860 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://strativion.io/schemas/policy.order-lifecycle.v1.schema.json",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "meta"
+  ],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "document_role",
+        "schema_version",
+        "canonical_package_version"
+      ],
+      "properties": {
+        "document_role": {
+          "type": "string",
+          "enum": [
+            "policy",
+            "workflow"
+          ]
+        },
+        "schema_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[A-Za-z0-9\\.-]+)?$"
+        },
+        "file_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[A-Za-z0-9\\.-]+)?$"
+        },
+        "canonical_package_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[A-Za-z0-9\\.-]+)?$"
+        }
+      }
+    },
+    "states": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "NEW": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "terminal": {
+              "type": "boolean"
+            },
+            "ordstatus_fix": {
+              "type": "string"
+            },
+            "permitted_transitions": {
+              "type": "array"
+            }
+          }
+        },
+        "PENDING_NEW": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "terminal": {
+              "type": "boolean"
+            },
+            "ordstatus_fix": {
+              "type": "string"
+            },
+            "permitted_transitions": {
+              "type": "array"
+            }
+          }
+        },
+        "ACK": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "terminal": {
+              "type": "boolean"
+            },
+            "ordstatus_fix": {
+              "type": "string"
+            },
+            "permitted_transitions": {
+              "type": "array"
+            }
+          }
+        },
+        "PARTIAL": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "terminal": {
+              "type": "boolean"
+            },
+            "ordstatus_fix": {
+              "type": "string"
+            },
+            "permitted_transitions": {
+              "type": "array"
+            }
+          }
+        },
+        "FILLED": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "terminal": {
+              "type": "boolean"
+            },
+            "ordstatus_fix": {
+              "type": "string"
+            },
+            "permitted_transitions": {
+              "type": "array"
+            }
+          }
+        },
+        "PENDING_CANCEL": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "terminal": {
+              "type": "boolean"
+            },
+            "ordstatus_fix": {
+              "type": "string"
+            },
+            "permitted_transitions": {
+              "type": "array"
+            }
+          }
+        },
+        "CANCELED": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "terminal": {
+              "type": "boolean"
+            },
+            "ordstatus_fix": {
+              "type": "string"
+            },
+            "permitted_transitions": {
+              "type": "array"
+            }
+          }
+        },
+        "PENDING_REPLACE": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "terminal": {
+              "type": "boolean"
+            },
+            "ordstatus_fix": {
+              "type": "string"
+            },
+            "permitted_transitions": {
+              "type": "array"
+            }
+          }
+        },
+        "REPLACED": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "terminal": {
+              "type": "boolean"
+            },
+            "ordstatus_fix": {
+              "type": "string"
+            },
+            "permitted_transitions": {
+              "type": "array"
+            }
+          }
+        },
+        "REJECTED": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "terminal": {
+              "type": "boolean"
+            },
+            "ordstatus_fix": {
+              "type": "string"
+            },
+            "permitted_transitions": {
+              "type": "array"
+            }
+          }
+        },
+        "EXPIRED": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "terminal": {
+              "type": "boolean"
+            },
+            "ordstatus_fix": {
+              "type": "string"
+            },
+            "permitted_transitions": {
+              "type": "array"
+            }
+          }
+        },
+        "DONE_FOR_DAY": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "terminal": {
+              "type": "boolean"
+            },
+            "ordstatus_fix": {
+              "type": "string"
+            },
+            "permitted_transitions": {
+              "type": "array"
+            }
+          }
+        }
+      }
+    },
+    "transitions": {
+      "type": "array"
+    },
+    "idempotency": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "key_strategy": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "algorithm": {
+              "type": "string"
+            },
+            "input_fields": {
+              "type": "array"
+            },
+            "encoding": {
+              "type": "string"
+            }
+          }
+        },
+        "submission_semantics": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "new_order_retry_policy": {
+              "type": "string"
+            },
+            "new_order_timeout_escalation_incident": {
+              "type": "string"
+            }
+          }
+        },
+        "fill_dedup": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "dedup_key": {
+              "type": "string"
+            },
+            "dedup_field_source": {
+              "type": "string"
+            },
+            "duplicate_fill_action": {
+              "type": "string"
+            },
+            "duplicate_fill_incident": {
+              "type": "string"
+            }
+          }
+        },
+        "cache": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "ttl_hours": {
+              "type": "integer"
+            },
+            "persistence_required": {
+              "type": "boolean"
+            },
+            "cache_miss_on_fill_action": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "cancel_replace": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "atomic_cancel_replace": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "supported_venues": {
+              "type": "array"
+            },
+            "original_cl_ord_id_chain_required": {
+              "type": "boolean"
+            },
+            "orig_cl_ord_id_field": {
+              "type": "string"
+            }
+          }
+        },
+        "cancel_then_new": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "supported_venues": {
+              "type": "array"
+            },
+            "max_gap_ms_between_cancel_ack_and_new_order": {
+              "type": "integer"
+            },
+            "gap_breach_incident": {
+              "type": "string"
+            }
+          }
+        },
+        "race_conditions": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "fill_while_canceling": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "action": {
+                  "type": "string"
+                },
+                "incident_code": {
+                  "type": "string"
+                },
+                "log_required": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "fill_while_replacing": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "action": {
+                  "type": "string"
+                },
+                "incident_code": {
+                  "type": "string"
+                },
+                "log_required": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        },
+        "chain_preservation": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "chain_root_field": {
+              "type": "string"
+            },
+            "max_chain_depth": {
+              "type": "integer"
+            },
+            "chain_overflow_action": {
+              "type": "string"
+            },
+            "chain_overflow_incident": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "partial_fill": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "default_remainder_behavior": {
+          "type": "string"
+        },
+        "behaviors": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "leave_remainder_working": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                }
+              }
+            },
+            "cancel_remainder": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                }
+              }
+            },
+            "adjust_per_signal": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "stop_loss_adjustment": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "recalc_on_partial_fill": {
+              "type": "boolean"
+            },
+            "recalc_base": {
+              "type": "string"
+            },
+            "max_stop_adjustment_pct": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "avg_fill_price": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "method": {
+              "type": "string"
+            },
+            "update_timing": {
+              "type": "string"
+            },
+            "precision_decimal_places": {
+              "type": "integer"
+            }
+          }
+        },
+        "risk_on_partial_fill": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "re_evaluate_after_fill": {
+              "type": "boolean"
+            },
+            "breach_on_remainder_action": {
+              "type": "string"
+            },
+            "breach_incident": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "timeouts": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "PENDING_NEW": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "threshold_seconds": {
+              "type": "integer"
+            },
+            "action": {
+              "type": "string"
+            },
+            "incident_code": {
+              "type": "string"
+            },
+            "escalation": {
+              "type": "string"
+            }
+          }
+        },
+        "PENDING_CANCEL": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "threshold_seconds": {
+              "type": "integer"
+            },
+            "action": {
+              "type": "string"
+            },
+            "incident_code": {
+              "type": "string"
+            },
+            "escalation": {
+              "type": "string"
+            }
+          }
+        },
+        "PENDING_REPLACE": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "threshold_seconds": {
+              "type": "integer"
+            },
+            "action": {
+              "type": "string"
+            },
+            "incident_code": {
+              "type": "string"
+            },
+            "escalation": {
+              "type": "string"
+            }
+          }
+        },
+        "ACK": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "threshold_seconds": {},
+            "action": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "race_conditions": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "fill_while_replacing": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "resolution": {
+              "type": "string"
+            },
+            "incident_code": {
+              "type": "string"
+            },
+            "log_level": {
+              "type": "string"
+            }
+          }
+        },
+        "fill_while_canceling": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "resolution": {
+              "type": "string"
+            },
+            "incident_code": {
+              "type": "string"
+            },
+            "log_level": {
+              "type": "string"
+            }
+          }
+        },
+        "reject_after_partial": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "resolution": {
+              "type": "string"
+            },
+            "incident_code": {
+              "type": "string"
+            },
+            "log_level": {
+              "type": "string"
+            },
+            "requires_human_reconciliation": {
+              "type": "boolean"
+            }
+          }
+        },
+        "duplicate_exec_id": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "resolution": {
+              "type": "string"
+            },
+            "incident_code": {
+              "type": "string"
+            },
+            "log_level": {
+              "type": "string"
+            }
+          }
+        },
+        "out_of_order_fill": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "resolution": {
+              "type": "string"
+            },
+            "ordering_field": {
+              "type": "string"
+            },
+            "log_level": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "ordering_guarantees": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "sequence_numbers": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "scope": {
+              "type": "string"
+            },
+            "monotonic": {
+              "type": "boolean"
+            },
+            "gap_on_reject": {
+              "type": "boolean"
+            },
+            "overflow_action": {
+              "type": "string"
+            },
+            "overflow_incident": {
+              "type": "string"
+            }
+          }
+        },
+        "out_of_order_events": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "detection": {
+              "type": "string"
+            },
+            "action_on_out_of_order": {
+              "type": "string"
+            },
+            "reorder_buffer_timeout_ms": {
+              "type": "integer"
+            },
+            "buffer_timeout_action": {
+              "type": "string"
+            },
+            "buffer_timeout_incident": {
+              "type": "string"
+            }
+          }
+        },
+        "event_log": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "persistence": {
+              "type": "string"
+            },
+            "log_fields": {
+              "type": "array"
+            }
+          }
+        }
+      }
+    },
+    "reconciliation": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "eod": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "trigger": {
+              "type": "string"
+            },
+            "step_1_broker_position_request": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "method": {
+                  "type": "string"
+                },
+                "timeout_seconds": {
+                  "type": "integer"
+                },
+                "timeout_incident": {
+                  "type": "string"
+                }
+              }
+            },
+            "step_2_compare": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "tolerance_units": {
+                  "type": "integer"
+                },
+                "tolerance_notional_usd": {
+                  "type": "integer"
+                }
+              }
+            },
+            "step_3_on_break": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "incident_code": {
+                  "type": "string"
+                },
+                "action": {
+                  "type": "string"
+                },
+                "requires_human": {
+                  "type": "boolean"
+                },
+                "auto_resolve_by_trading": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "step_4_audit_record": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "fields": {
+                  "type": "array"
+                }
+              }
+            },
+            "max_completion_minutes_after_session_close": {
+              "type": "integer"
+            },
+            "completion_timeout_incident": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}

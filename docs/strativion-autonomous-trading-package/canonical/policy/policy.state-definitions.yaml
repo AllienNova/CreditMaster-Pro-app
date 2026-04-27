@@ -1,0 +1,50 @@
+meta:
+  document_role: policy
+  schema_version: "1.0.0"
+  file_version: "1.0.0"
+  canonical_package_version: "2.5.0"
+  unit_convention: decimal_fraction
+  binding_precedence: canonical
+  purpose: "Defines the exact mathematical formulations for calculating critical state variables (Drawdown, Equity, Heat, Correlation) to ensure backend consistency."
+  index_authority: governance/CANONICAL-FIELD-INDEX.md
+  override_rights:
+    state_definitions: locked
+
+state_definitions:
+  equity:
+    definition: "Total Account Equity (Net Liquidation Value)"
+    formula: "Cash + Unrealized_PnL_of_Open_Positions"
+    update_frequency: "tick_level"
+    notes: "Used as the denominator for all sizing and heat calculations."
+
+  drawdown:
+    definition: "High-Water Mark Drawdown"
+    formula: "(Peak_Equity - Current_Equity) / Peak_Equity"
+    peak_equity_reset: "never"
+    update_frequency: "tick_level"
+    notes: "Calculated on Net Liquidation Value, not just closed equity. Intraday dips count."
+
+  portfolio_heat:
+    definition: "Total Portfolio Value at Risk (VaR) / Equity"
+    formula: "sqrt(w^T * Cov * w) / Equity"
+    variables:
+      w: "Vector of position dollar risks"
+      Cov: "Covariance matrix of position returns"
+    update_frequency: "post_trade_and_eod"
+    notes: "Replaces simple additive heat. Accounts for diversification benefits and correlation penalties."
+
+  correlation:
+    definition: "Dynamic Conditional Correlation (DCC-GARCH)"
+    formula: "R_t = diag(Q_t)^{-1/2} * Q_t * diag(Q_t)^{-1/2}"
+    update_frequency: "eod"
+    notes: "Replaces static 30-day rolling correlation. More responsive to volatility clustering."
+
+  edge_decay:
+    definition: "Cumulative Sum (CUSUM) of Expectancy Residuals"
+    formula: "S_t = max(0, S_{t-1} + (mu_0 - x_t - k))"
+    variables:
+      mu_0: "Baseline expected R-multiple"
+      x_t: "Observed R-multiple of trade t"
+      k: "Allowance value (sensitivity)"
+    update_frequency: "post_trade"
+    notes: "Proactive detection of edge degradation before hard thresholds are breached."

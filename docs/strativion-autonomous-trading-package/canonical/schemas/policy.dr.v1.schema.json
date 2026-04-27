@@ -1,0 +1,988 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://strativion.io/schemas/policy.dr.v1.schema.json",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "meta"
+  ],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "document_role",
+        "schema_version",
+        "canonical_package_version"
+      ],
+      "properties": {
+        "document_role": {
+          "type": "string",
+          "enum": [
+            "policy",
+            "workflow"
+          ]
+        },
+        "schema_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[A-Za-z0-9\\.-]+)?$"
+        },
+        "file_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[A-Za-z0-9\\.-]+)?$"
+        },
+        "canonical_package_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[A-Za-z0-9\\.-]+)?$"
+        }
+      }
+    },
+    "rto_minutes": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "signal_engine": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "value": {
+              "type": "integer"
+            },
+            "description": {
+              "type": "string"
+            },
+            "recovery_path": {
+              "type": "string"
+            }
+          }
+        },
+        "risk_engine": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "value": {
+              "type": "integer"
+            },
+            "description": {
+              "type": "string"
+            },
+            "recovery_path": {
+              "type": "string"
+            },
+            "standby_required": {
+              "type": "boolean"
+            }
+          }
+        },
+        "execution_engine": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "value": {
+              "type": "integer"
+            },
+            "description": {
+              "type": "string"
+            },
+            "recovery_path": {
+              "type": "string"
+            },
+            "standby_required": {
+              "type": "boolean"
+            }
+          }
+        },
+        "market_data_feed": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "value": {
+              "type": "integer"
+            },
+            "description": {
+              "type": "string"
+            },
+            "recovery_path": {
+              "type": "string"
+            },
+            "backup_feed_required": {
+              "type": "boolean"
+            }
+          }
+        },
+        "audit_log": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "value": {
+              "type": "integer"
+            },
+            "description": {
+              "type": "string"
+            },
+            "recovery_path": {
+              "type": "string"
+            },
+            "trading_without_audit_log": {
+              "type": "string"
+            }
+          }
+        },
+        "canonical_loader": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "value": {
+              "type": "integer"
+            },
+            "description": {
+              "type": "string"
+            },
+            "recovery_path": {
+              "type": "string"
+            },
+            "running_processes_on_failure": {
+              "type": "string"
+            },
+            "new_boots_on_failure": {
+              "type": "string"
+            }
+          }
+        },
+        "ops_console": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "value": {
+              "type": "integer"
+            },
+            "description": {
+              "type": "string"
+            },
+            "recovery_path": {
+              "type": "string"
+            },
+            "trading_blocked_if_down": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "rpo_minutes": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "market_data": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "value": {
+              "type": "integer"
+            },
+            "note": {
+              "type": "string"
+            },
+            "replay_source": {
+              "type": "string"
+            }
+          }
+        },
+        "orders": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "value": {
+              "type": "integer"
+            },
+            "note": {
+              "type": "string"
+            },
+            "durability_mechanism": {
+              "type": "string"
+            }
+          }
+        },
+        "audit": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "value": {
+              "type": "integer"
+            },
+            "note": {
+              "type": "string"
+            },
+            "durability_mechanism": {
+              "type": "string"
+            }
+          }
+        },
+        "positions": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "value": {
+              "type": "integer"
+            },
+            "note": {
+              "type": "string"
+            },
+            "rebuild_from": {
+              "type": "string"
+            }
+          }
+        },
+        "risk_state": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "value": {
+              "type": "integer"
+            },
+            "note": {
+              "type": "string"
+            },
+            "rebuild_from": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "degraded_defaults": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "risk_engine_down": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "action": {
+              "type": "string"
+            },
+            "new_orders": {
+              "type": "string"
+            },
+            "cancel_working_orders": {
+              "type": "boolean"
+            },
+            "flatten_positions": {
+              "type": "boolean"
+            },
+            "preserve_existing_positions": {
+              "type": "boolean"
+            },
+            "incident_emitted": {
+              "type": "string"
+            },
+            "rationale": {
+              "type": "string"
+            }
+          }
+        },
+        "execution_engine_down": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "action": {
+              "type": "string"
+            },
+            "new_orders": {
+              "type": "string"
+            },
+            "cancel_working_orders": {
+              "type": "string"
+            },
+            "cancel_working_orders_condition": {
+              "type": "string"
+            },
+            "flatten_positions": {
+              "type": "boolean"
+            },
+            "backup_venue_failover": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "criteria": {
+                  "type": "string"
+                },
+                "action_if_backup_available": {
+                  "type": "string"
+                },
+                "action_if_backup_unavailable": {
+                  "type": "string"
+                }
+              }
+            },
+            "incident_emitted": {
+              "type": "string"
+            }
+          }
+        },
+        "market_data_down": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "per_feed_action": {
+              "type": "string"
+            },
+            "aggregate_threshold_pct": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "aggregate_action": {
+              "type": "string"
+            },
+            "incident_emitted_per_feed": {
+              "type": "string"
+            },
+            "incident_emitted_aggregate": {
+              "type": "string"
+            },
+            "rationale": {
+              "type": "string"
+            }
+          }
+        },
+        "canonical_loader_down": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "boot_action": {
+              "type": "string"
+            },
+            "running_process_action": {
+              "type": "string"
+            },
+            "hash_verification": {
+              "type": "string"
+            },
+            "config_change_action": {
+              "type": "string"
+            },
+            "incident_emitted": {
+              "type": "string"
+            },
+            "rationale": {
+              "type": "string"
+            }
+          }
+        },
+        "audit_log_down": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "action": {
+              "type": "string"
+            },
+            "new_orders": {
+              "type": "string"
+            },
+            "working_orders": {
+              "type": "string"
+            },
+            "severity": {
+              "type": "string"
+            },
+            "incident_emitted": {
+              "type": "string"
+            },
+            "pagerduty_page": {
+              "type": "string"
+            },
+            "rationale": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "kill_switch": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "authority": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "model": {
+              "type": "string"
+            },
+            "minimum_approvers": {
+              "type": "integer"
+            },
+            "approver_pool_ref": {
+              "type": "string"
+            },
+            "key_storage": {
+              "type": "string"
+            },
+            "single_person_trigger": {
+              "type": "string"
+            },
+            "audit_requirement": {
+              "type": "string"
+            }
+          }
+        },
+        "levels": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "LEVEL_1_PAUSE_NEW": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "description": {
+                  "type": "string"
+                },
+                "new_orders": {
+                  "type": "string"
+                },
+                "cancel_working_orders": {
+                  "type": "boolean"
+                },
+                "cancel_open_positions": {
+                  "type": "boolean"
+                },
+                "signal_generation": {
+                  "type": "string"
+                },
+                "dual_control_required": {
+                  "type": "boolean"
+                },
+                "reversible_by": {
+                  "type": "string"
+                },
+                "audit_required": {
+                  "type": "boolean"
+                },
+                "use_case": {
+                  "type": "string"
+                }
+              }
+            },
+            "LEVEL_2_CANCEL_WORKING": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "description": {
+                  "type": "string"
+                },
+                "includes": {
+                  "type": "string"
+                },
+                "new_orders": {
+                  "type": "string"
+                },
+                "cancel_working_orders": {
+                  "type": "boolean"
+                },
+                "cancel_method": {
+                  "type": "string"
+                },
+                "cancel_open_positions": {
+                  "type": "boolean"
+                },
+                "signal_generation": {
+                  "type": "string"
+                },
+                "dual_control_required": {
+                  "type": "boolean"
+                },
+                "reversible_by": {
+                  "type": "string"
+                },
+                "audit_required": {
+                  "type": "boolean"
+                },
+                "use_case": {
+                  "type": "string"
+                }
+              }
+            },
+            "LEVEL_3_FREEZE": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "description": {
+                  "type": "string"
+                },
+                "includes": {
+                  "type": "string"
+                },
+                "new_orders": {
+                  "type": "string"
+                },
+                "cancel_working_orders": {
+                  "type": "boolean"
+                },
+                "signal_generation": {
+                  "type": "string"
+                },
+                "cancel_open_positions": {
+                  "type": "boolean"
+                },
+                "dual_control_required": {
+                  "type": "boolean"
+                },
+                "reversible_by": {
+                  "type": "string"
+                },
+                "audit_required": {
+                  "type": "boolean"
+                },
+                "use_case": {
+                  "type": "string"
+                }
+              }
+            },
+            "LEVEL_4_FLATTEN": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "description": {
+                  "type": "string"
+                },
+                "includes": {
+                  "type": "string"
+                },
+                "new_orders": {
+                  "type": "string"
+                },
+                "cancel_working_orders": {
+                  "type": "boolean"
+                },
+                "signal_generation": {
+                  "type": "string"
+                },
+                "cancel_open_positions": {
+                  "type": "boolean"
+                },
+                "flatten_procedure_ref": {
+                  "type": "string"
+                },
+                "dual_control_required_at_time_of_use": {
+                  "type": "boolean"
+                },
+                "named_incident_required": {
+                  "type": "boolean"
+                },
+                "automated_trigger": {
+                  "type": "string"
+                },
+                "reversible_by": {
+                  "type": "string"
+                },
+                "audit_required": {
+                  "type": "boolean"
+                },
+                "use_case": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "ambiguous_state": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "action": {
+          "type": "string"
+        },
+        "definition_of_ambiguous_state": {
+          "type": "array"
+        },
+        "actions_on_ambiguous_state": {
+          "type": "array"
+        }
+      }
+    },
+    "flatten_to_cash": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "triggers": {
+          "type": "array"
+        },
+        "explicitly_excluded_triggers": {
+          "type": "array"
+        },
+        "procedure": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "preconditions": {
+              "type": "array"
+            },
+            "execution": {
+              "type": "array"
+            },
+            "postconditions": {
+              "type": "array"
+            }
+          }
+        }
+      }
+    },
+    "backup_venues": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "equities": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "primary": {
+              "type": "string"
+            },
+            "secondary": {
+              "type": "string"
+            },
+            "tertiary": {
+              "type": "string"
+            },
+            "failover_criteria": {
+              "type": "string"
+            },
+            "failback_criteria": {
+              "type": "string"
+            },
+            "failover_automated": {
+              "type": "boolean"
+            },
+            "failback_automated": {
+              "type": "boolean"
+            },
+            "failback_requires_human_review": {
+              "type": "boolean"
+            }
+          }
+        },
+        "options": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "primary": {
+              "type": "string"
+            },
+            "secondary": {
+              "type": "string"
+            },
+            "failover_criteria": {
+              "type": "string"
+            },
+            "failback_criteria": {
+              "type": "string"
+            },
+            "failover_automated": {
+              "type": "boolean"
+            },
+            "failback_automated": {
+              "type": "boolean"
+            },
+            "failback_requires_human_review": {
+              "type": "boolean"
+            }
+          }
+        },
+        "futures": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "primary": {
+              "type": "string"
+            },
+            "secondary": {
+              "type": "string"
+            },
+            "failover_criteria": {
+              "type": "string"
+            },
+            "failback_criteria": {
+              "type": "string"
+            },
+            "failover_automated": {
+              "type": "boolean"
+            },
+            "failback_automated": {
+              "type": "boolean"
+            },
+            "failback_requires_human_review": {
+              "type": "boolean"
+            }
+          }
+        },
+        "fx": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "primary": {
+              "type": "string"
+            },
+            "secondary": {
+              "type": "string"
+            },
+            "failover_criteria": {
+              "type": "string"
+            },
+            "failback_criteria": {
+              "type": "string"
+            },
+            "failover_automated": {
+              "type": "boolean"
+            },
+            "failback_automated": {
+              "type": "boolean"
+            },
+            "failback_requires_human_review": {
+              "type": "boolean"
+            }
+          }
+        },
+        "crypto": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "primary": {
+              "type": "string"
+            },
+            "secondary": {
+              "type": "string"
+            },
+            "failover_criteria": {
+              "type": "string"
+            },
+            "failback_criteria": {
+              "type": "string"
+            },
+            "failover_automated": {
+              "type": "boolean"
+            },
+            "failback_automated": {
+              "type": "boolean"
+            },
+            "failback_requires_human_review": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "backup_venue_policy": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "failover_requires_data_sanity_check": {
+          "type": "boolean"
+        },
+        "data_quality_ref": {
+          "type": "string"
+        },
+        "failover_incident": {
+          "type": "string"
+        },
+        "failback_incident": {
+          "type": "string"
+        }
+      }
+    },
+    "chaos_testing": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "schedule": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "frequency": {
+              "type": "string"
+            },
+            "coordination_required_with": {
+              "type": "array"
+            },
+            "advance_notice_days": {
+              "type": "integer"
+            },
+            "execution_window": {
+              "type": "string"
+            },
+            "timezone": {
+              "type": "string"
+            }
+          }
+        },
+        "drills": {
+          "type": "array"
+        }
+      }
+    },
+    "postmortem": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "requirement": {
+          "type": "string"
+        },
+        "format": {
+          "type": "string"
+        },
+        "required_sections": {
+          "type": "array"
+        },
+        "action_item_tracking": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "tracking_system": {
+              "type": "string"
+            },
+            "escalation_if_not_closed_by_due_date": {
+              "type": "string"
+            }
+          }
+        },
+        "exemptions": {
+          "type": "string"
+        },
+        "blameless_posture": {
+          "type": "boolean"
+        },
+        "postmortem_review_audience": {
+          "type": "array"
+        },
+        "aggregate_review_frequency": {
+          "type": "string"
+        }
+      }
+    },
+    "data_backup": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "audit_log": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "frequency": {
+              "type": "string"
+            },
+            "replication": {
+              "type": "string"
+            },
+            "geographic_regions": {
+              "type": "integer"
+            },
+            "retention_ref": {
+              "type": "string"
+            },
+            "restore_test_frequency": {
+              "type": "string"
+            }
+          }
+        },
+        "positions": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "frequency": {
+              "type": "string"
+            },
+            "replication": {
+              "type": "string"
+            },
+            "geographic_regions": {
+              "type": "integer"
+            },
+            "restore_test_frequency": {
+              "type": "string"
+            }
+          }
+        },
+        "risk_state": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "frequency": {
+              "type": "string"
+            },
+            "replication": {
+              "type": "string"
+            },
+            "geographic_regions": {
+              "type": "integer"
+            },
+            "restore_test_frequency": {
+              "type": "string"
+            }
+          }
+        },
+        "canonical_policy": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "frequency": {
+              "type": "string"
+            },
+            "replication": {
+              "type": "string"
+            },
+            "geographic_regions": {
+              "type": "integer"
+            },
+            "restore_test_frequency": {
+              "type": "string"
+            },
+            "backup_includes": {
+              "type": "array"
+            }
+          }
+        },
+        "geographic_replication": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "minimum_regions": {
+              "type": "integer"
+            },
+            "region_selection": {
+              "type": "string"
+            },
+            "active_active": {
+              "type": "boolean"
+            },
+            "failover_tested_by": {
+              "type": "string"
+            }
+          }
+        },
+        "restore_testing": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "frequency": {
+              "type": "string"
+            },
+            "scope": {
+              "type": "string"
+            },
+            "pass_criteria": {
+              "type": "array"
+            },
+            "failure_action": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}

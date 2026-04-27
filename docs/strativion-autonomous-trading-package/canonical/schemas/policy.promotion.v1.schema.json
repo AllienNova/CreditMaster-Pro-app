@@ -1,0 +1,795 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://strativion.io/schemas/policy.promotion.v1.schema.json",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "meta"
+  ],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "document_role",
+        "schema_version",
+        "canonical_package_version"
+      ],
+      "properties": {
+        "document_role": {
+          "type": "string",
+          "enum": [
+            "policy",
+            "workflow"
+          ]
+        },
+        "schema_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[A-Za-z0-9\\.-]+)?$"
+        },
+        "file_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[A-Za-z0-9\\.-]+)?$"
+        },
+        "canonical_package_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[A-Za-z0-9\\.-]+)?$"
+        }
+      }
+    },
+    "stages": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "research": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "allows_real_orders": {
+              "type": "boolean"
+            },
+            "requires_human_in_loop": {
+              "type": "boolean"
+            },
+            "risk_budget_pct": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "max_position_count": {
+              "type": "integer"
+            },
+            "max_notional_usd": {
+              "type": "integer"
+            },
+            "mode_enum_value": {
+              "type": "string"
+            }
+          }
+        },
+        "replay": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "allows_real_orders": {
+              "type": "boolean"
+            },
+            "requires_human_in_loop": {
+              "type": "boolean"
+            },
+            "risk_budget_pct": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "max_position_count": {
+              "type": "integer"
+            },
+            "max_notional_usd": {
+              "type": "integer"
+            },
+            "mode_enum_value": {
+              "type": "string"
+            }
+          }
+        },
+        "shadow": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "allows_real_orders": {
+              "type": "boolean"
+            },
+            "requires_human_in_loop": {
+              "type": "boolean"
+            },
+            "risk_budget_pct": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "max_position_count": {
+              "type": "integer"
+            },
+            "max_notional_usd": {
+              "type": "integer"
+            },
+            "mode_enum_value": {
+              "type": "string"
+            },
+            "traffic_mix": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "signal_generation_pct": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "order_submission_pct": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "order_book_capture": {
+                  "type": "boolean"
+                },
+                "fill_simulation": {
+                  "type": "string"
+                },
+                "fill_sim_method": {
+                  "type": "string"
+                },
+                "latency_model": {
+                  "type": "string"
+                },
+                "capture_store": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "paper": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "allows_real_orders": {
+              "type": "boolean"
+            },
+            "requires_human_in_loop": {
+              "type": "boolean"
+            },
+            "risk_budget_pct": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "max_position_count": {
+              "type": "integer"
+            },
+            "max_notional_usd": {
+              "type": "integer"
+            },
+            "mode_enum_value": {
+              "type": "string"
+            }
+          }
+        },
+        "supervised_live": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "allows_real_orders": {
+              "type": "boolean"
+            },
+            "requires_human_in_loop": {
+              "type": "boolean"
+            },
+            "risk_budget_pct": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "max_position_count": {
+              "type": "integer"
+            },
+            "max_notional_usd": {
+              "type": "integer"
+            },
+            "mode_enum_value": {
+              "type": "string"
+            }
+          }
+        },
+        "autonomous_live": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "allows_real_orders": {
+              "type": "boolean"
+            },
+            "requires_human_in_loop": {
+              "type": "boolean"
+            },
+            "risk_budget_pct": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "max_position_count": {},
+            "max_notional_usd": {},
+            "mode_enum_value": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "gates": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "replay_to_shadow": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "transition_id": {
+              "type": "string"
+            },
+            "gate_validator": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "authority": {
+                  "type": "string"
+                },
+                "evidence_required": {
+                  "type": "boolean"
+                },
+                "evidence_pointer_prefix": {
+                  "type": "string"
+                },
+                "human_attestation_without_evidence": {
+                  "type": "string"
+                }
+              }
+            },
+            "conditions": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "min_signals": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "field": {
+                      "type": "string"
+                    },
+                    "operator": {
+                      "type": "string"
+                    },
+                    "threshold": {
+                      "type": "integer"
+                    },
+                    "unit": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "out_of_sample_sharpe": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "field": {
+                      "type": "string"
+                    },
+                    "operator": {
+                      "type": "string"
+                    },
+                    "threshold": {
+                      "type": "number"
+                    },
+                    "unit": {
+                      "type": "string"
+                    },
+                    "window_description": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "max_drawdown": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "field": {
+                      "type": "string"
+                    },
+                    "operator": {
+                      "type": "string"
+                    },
+                    "threshold": {
+                      "type": "number"
+                    },
+                    "unit": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "paper_backtest_hit_rate": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "field": {
+                      "type": "string"
+                    },
+                    "operator": {
+                      "type": "string"
+                    },
+                    "threshold": {
+                      "type": "number"
+                    },
+                    "unit": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "all_conditions_must_pass": {
+              "type": "boolean"
+            }
+          }
+        },
+        "shadow_to_paper": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "transition_id": {
+              "type": "string"
+            },
+            "gate_validator": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "authority": {
+                  "type": "string"
+                },
+                "evidence_required": {
+                  "type": "boolean"
+                },
+                "evidence_pointer_prefix": {
+                  "type": "string"
+                },
+                "human_attestation_without_evidence": {
+                  "type": "string"
+                }
+              }
+            },
+            "conditions": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "shadow_vs_backtest_correlation": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "field": {
+                      "type": "string"
+                    },
+                    "operator": {
+                      "type": "string"
+                    },
+                    "threshold": {
+                      "type": "number"
+                    },
+                    "unit": {
+                      "type": "string"
+                    },
+                    "window_trading_days": {
+                      "type": "integer"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "no_sev1_incidents_30d": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "field": {
+                      "type": "string"
+                    },
+                    "operator": {
+                      "type": "string"
+                    },
+                    "threshold": {
+                      "type": "integer"
+                    },
+                    "unit": {
+                      "type": "string"
+                    },
+                    "incident_severity": {
+                      "type": "string"
+                    },
+                    "lookback": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "shadow_fill_sim_error_bps": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "field": {
+                      "type": "string"
+                    },
+                    "operator": {
+                      "type": "string"
+                    },
+                    "threshold": {
+                      "type": "integer"
+                    },
+                    "unit": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "all_conditions_must_pass": {
+              "type": "boolean"
+            }
+          }
+        },
+        "paper_to_supervised_live": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "transition_id": {
+              "type": "string"
+            },
+            "gate_validator": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "authority": {
+                  "type": "string"
+                },
+                "evidence_required": {
+                  "type": "boolean"
+                },
+                "evidence_pointer_prefix": {
+                  "type": "string"
+                },
+                "human_attestation_without_evidence": {
+                  "type": "string"
+                }
+              }
+            },
+            "conditions": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "paper_live_sharpe": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "field": {
+                      "type": "string"
+                    },
+                    "operator": {
+                      "type": "string"
+                    },
+                    "threshold": {
+                      "type": "number"
+                    },
+                    "unit": {
+                      "type": "string"
+                    },
+                    "min_trades_required": {
+                      "type": "integer"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "max_slippage_vs_model": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "field": {
+                      "type": "string"
+                    },
+                    "operator": {
+                      "type": "string"
+                    },
+                    "threshold": {
+                      "type": "integer"
+                    },
+                    "unit": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "zero_compliance_violations": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "field": {
+                      "type": "string"
+                    },
+                    "operator": {
+                      "type": "string"
+                    },
+                    "threshold": {
+                      "type": "integer"
+                    },
+                    "unit": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "operator_signoff": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "required_approvers": {
+                      "type": "integer"
+                    },
+                    "approver_roles": {
+                      "type": "array"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "evidence_pointer": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "all_conditions_must_pass": {
+              "type": "boolean"
+            }
+          }
+        },
+        "supervised_live_to_autonomous_live": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "transition_id": {
+              "type": "string"
+            },
+            "gate_validator": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "authority": {
+                  "type": "string"
+                },
+                "evidence_required": {
+                  "type": "boolean"
+                },
+                "evidence_pointer_prefix": {
+                  "type": "string"
+                },
+                "human_attestation_without_evidence": {
+                  "type": "string"
+                }
+              }
+            },
+            "conditions": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "min_supervised_live_trades": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "field": {
+                      "type": "string"
+                    },
+                    "operator": {
+                      "type": "string"
+                    },
+                    "threshold": {
+                      "type": "integer"
+                    },
+                    "unit": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "no_overrides_last_30d": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "field": {
+                      "type": "string"
+                    },
+                    "operator": {
+                      "type": "string"
+                    },
+                    "threshold": {
+                      "type": "integer"
+                    },
+                    "unit": {
+                      "type": "string"
+                    },
+                    "lookback": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "live_vs_paper_sharpe_ratio": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "field": {
+                      "type": "string"
+                    },
+                    "operator": {
+                      "type": "string"
+                    },
+                    "threshold": {
+                      "type": "number"
+                    },
+                    "unit": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "dual_control_signoff": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "required_approvers": {
+                      "type": "integer"
+                    },
+                    "approver_roles": {
+                      "type": "array"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "evidence_pointer": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "min_dwell_satisfied": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "field_reference": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "all_conditions_must_pass": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "transitions": {
+      "type": "array"
+    },
+    "demotion_triggers": {
+      "type": "array"
+    },
+    "min_dwell": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "research": {
+          "type": "string"
+        },
+        "replay": {
+          "type": "string"
+        },
+        "shadow": {
+          "type": "string"
+        },
+        "paper": {
+          "type": "string"
+        },
+        "supervised_live": {
+          "type": "string"
+        },
+        "autonomous_live": {}
+      }
+    },
+    "rollback": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "operator_kill_switch": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "trigger": {
+              "type": "string"
+            },
+            "immediate_effect": {
+              "type": "array"
+            },
+            "resume_condition": {
+              "type": "string"
+            },
+            "reference_dr_policy": {
+              "type": "string"
+            },
+            "notes": {
+              "type": "string"
+            }
+          }
+        },
+        "emergency_demotion": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "trigger": {
+              "type": "string"
+            },
+            "procedure": {
+              "type": "array"
+            }
+          }
+        }
+      }
+    }
+  }
+}

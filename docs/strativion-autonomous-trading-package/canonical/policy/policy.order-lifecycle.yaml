@@ -1,0 +1,589 @@
+meta:
+  document_role: policy
+  schema_version: 1.0.0
+  file_version: 1.0.0
+  canonical_package_version: 2.5.0
+  unit_convention: decimal_fraction
+  binding_precedence: canonical
+  override_rights:
+    # All order-lifecycle fields are locked. No tenant may override the state machine,
+    # idempotency strategy, or cancel/replace semantics.
+    states: locked
+    transitions: locked
+    idempotency: locked
+    cancel_replace: locked
+    partial_fill: narrow_only
+    timeouts: narrow_only
+    race_conditions: locked
+    ordering_guarantees: locked
+    reconciliation: locked
+
+# ---------------------------------------------------------------------------
+# E-06 — Order State Machine
+# Ref: FIX Protocol 4.4 OrdStatus codes; CANONICAL-FIELD-INDEX#E-06
+# ---------------------------------------------------------------------------
+states:
+  # Each state has a stable code, terminal flag, and permitted successor states.
+  # terminal: true means no further transitions are possible from this state.
+  # Downstream consumers must treat terminal states as immutable once set.
+
+  NEW:
+    code: ORD_NEW
+    description: Order constructed internally; not yet submitted to venue.
+    terminal: false
+    ordstatus_fix: "0"  # FIX OrdStatus = New (pre-ack)
+    permitted_transitions:
+      - PENDING_NEW
+      - REJECTED  # Local rejection before submission
+
+  PENDING_NEW:
+    code: ORD_PENDING_NEW
+    description: Order submitted to venue; awaiting broker/venue acknowledgment.
+    terminal: false
+    ordstatus_fix: "A"
+    permitted_transitions:
+      - ACK
+      - REJECTED
+      - EXPIRED
+
+  ACK:
+    code: ORD_ACK
+    description: Broker/venue confirmed receipt and acceptance of order.
+    terminal: false
+    ordstatus_fix: "0"
+    permitted_transitions:
+      - PARTIAL
+      - FILLED
+      - PENDING_CANCEL
+      - PENDING_REPLACE
+      - EXPIRED
+      - REJECTED  # Late reject (e.g., compliance reject post-ACK)
+
+  PARTIAL:
+    code: ORD_PARTIAL
+    description: Order has one or more fills; remainder is working.
+    terminal: false
+    ordstatus_fix: "1"
+    permitted_transitions:
+      - PARTIAL      # Additional fills
+      - FILLED
+      - PENDING_CANCEL
+      - PENDING_REPLACE
+      - EXPIRED
+      - DONE_FOR_DAY
+
+  FILLED:
+    code: ORD_FILLED
+    description: Order fully filled. All quantity executed.
+    terminal: true
+    ordstatus_fix: "2"
+    permitted_transitions: []
+
+  PENDING_CANCEL:
+    code: ORD_PENDING_CANCEL
+    description: Cancel request sent to venue; awaiting cancel acknowledgment.
+    terminal: false
+    ordstatus_fix: "6"
+    permitted_transitions:
+      - CANCELED
+      - FILLED         # Fill-while-canceling race — see race_conditions
+      - PARTIAL        # Partial fill during cancel window — see race_conditions
+      - REJECTED       # Cancel rejected by venue (order already terminal)
+
+  CANCELED:
+    code: ORD_CANCELED
+    description: Order canceled. Confirmed by venue.
+    terminal: true
+    ordstatus_fix: "4"
+    permitted_transitions: []
+
+  PENDING_REPLACE:
+    code: ORD_PENDING_REPLACE
+    description: Cancel/replace (amend) request sent to venue; awaiting ACK.
+    terminal: false
+    ordstatus_fix: "E"
+    permitted_transitions:
+      - REPLACED
+      - FILLED         # Fill-while-replacing race — see race_conditions
+      - PARTIAL        # Partial fill during replace window — see race_conditions
+      - REJECTED       # Replace rejected by venue
+
+  REPLACED:
+    code: ORD_REPLACED
+    description: Cancel/replace accepted. Original order superseded by new parameters.
+    terminal: false
+    ordstatus_fix: "5"
+    permitted_transitions:
+      - PARTIAL
+      - FILLED
+      - PENDING_CANCEL
+      - PENDING_REPLACE
+      - EXPIRED
+      - DONE_FOR_DAY
+
+  REJECTED:
+    code: ORD_REJECTED
+    description: Order rejected by venue or internal compliance gate.
+    terminal: true
+    ordstatus_fix: "8"
+    permitted_transitions: []
+
+  EXPIRED:
+    code: ORD_EXPIRED
+    description: Order expired per its TIF without fill.
+    terminal: true
+    ordstatus_fix: "C"
+    permitted_transitions: []
+
+  DONE_FOR_DAY:
+    code: ORD_DONE_FOR_DAY
+    description: Order exhausted its trading session (GTC/GTD resting across sessions).
+    terminal: false
+    ordstatus_fix: "3"
+    permitted_transitions:
+      - PENDING_CANCEL
+      - EXPIRED
+
+# ---------------------------------------------------------------------------
+# State Transitions — explicit trigger-event mapping
+# ---------------------------------------------------------------------------
+transitions:
+  # Format: from_state -> to_state; trigger; notes
+  - from: NEW
+    to: PENDING_NEW
+    trigger: order_submitted_to_venue
+
+  - from: NEW
+    to: REJECTED
+    trigger: local_compliance_gate_failed
+    # Local rejection does not reach the venue. Incident is emitted at admission.
+    incident_code: INC_RISK_VETO
+
+  - from: PENDING_NEW
+    to: ACK
+    trigger: broker_ack_received
+
+  - from: PENDING_NEW
+    to: REJECTED
+    trigger: broker_reject_received
+    # FIX OrdRejReason drives action per policy.execution-errors.yaml#fix_reject_codes
+
+  - from: PENDING_NEW
+    to: EXPIRED
+    trigger: tif_expiry_with_no_fill
+    # e.g., IOC/FOK that receives no acknowledgment from venue within timeout.
+
+  - from: ACK
+    to: PARTIAL
+    trigger: fill_report_partial_qty
+
+  - from: ACK
+    to: FILLED
+    trigger: fill_report_full_qty
+
+  - from: ACK
+    to: PENDING_CANCEL
+    trigger: cancel_request_issued
+
+  - from: ACK
+    to: PENDING_REPLACE
+    trigger: cancel_replace_request_issued
+
+  - from: ACK
+    to: EXPIRED
+    trigger: tif_expiry_with_no_fill
+    # DAY orders expire at session close; GTD at specified date.
+
+  - from: ACK
+    to: REJECTED
+    trigger: late_broker_reject_received
+
+  - from: PARTIAL
+    to: PARTIAL
+    trigger: fill_report_additional_partial_qty
+
+  - from: PARTIAL
+    to: FILLED
+    trigger: fill_report_completes_qty
+
+  - from: PARTIAL
+    to: PENDING_CANCEL
+    trigger: cancel_request_issued
+
+  - from: PARTIAL
+    to: PENDING_REPLACE
+    trigger: cancel_replace_request_issued
+
+  - from: PARTIAL
+    to: EXPIRED
+    trigger: tif_expiry
+
+  - from: PARTIAL
+    to: DONE_FOR_DAY
+    trigger: eod_session_close_with_remainder_working
+
+  - from: PENDING_CANCEL
+    to: CANCELED
+    trigger: cancel_ack_received_from_venue
+
+  - from: PENDING_CANCEL
+    to: FILLED
+    trigger: fill_while_canceling_race
+    # Resolution: accept fill; emit INC_RACE_FILL_WHILE_CANCEL. See race_conditions.
+
+  - from: PENDING_CANCEL
+    to: PARTIAL
+    trigger: partial_fill_while_canceling_race
+    # Resolution: accept partial fill; remainder is still working; see race_conditions.
+
+  - from: PENDING_CANCEL
+    to: REJECTED
+    trigger: cancel_rejected_order_already_terminal
+
+  - from: PENDING_REPLACE
+    to: REPLACED
+    trigger: cancel_replace_ack_received
+
+  - from: PENDING_REPLACE
+    to: FILLED
+    trigger: fill_while_replacing_race
+    # Resolution: accept fill; replace is void. See race_conditions.
+
+  - from: PENDING_REPLACE
+    to: PARTIAL
+    trigger: partial_fill_while_replacing_race
+
+  - from: PENDING_REPLACE
+    to: REJECTED
+    trigger: replace_rejected_by_venue
+
+  - from: REPLACED
+    to: PARTIAL
+    trigger: fill_report_on_replaced_order
+
+  - from: REPLACED
+    to: FILLED
+    trigger: fill_report_completes_replaced_qty
+
+  - from: REPLACED
+    to: PENDING_CANCEL
+    trigger: cancel_request_on_replaced_order
+
+  - from: REPLACED
+    to: PENDING_REPLACE
+    trigger: further_replace_request
+
+  - from: REPLACED
+    to: EXPIRED
+    trigger: tif_expiry_on_replaced_order
+
+  - from: REPLACED
+    to: DONE_FOR_DAY
+    trigger: eod_session_close_replaced_order
+
+  - from: DONE_FOR_DAY
+    to: PENDING_CANCEL
+    trigger: cancel_request_issued
+
+  - from: DONE_FOR_DAY
+    to: EXPIRED
+    trigger: gtd_date_reached
+
+# ---------------------------------------------------------------------------
+# E-07 — Idempotency
+# Ref: CANONICAL-FIELD-INDEX#E-07
+# ---------------------------------------------------------------------------
+idempotency:
+  key_strategy:
+    # The client_order_id (ClOrdID) is the idempotency key for all order events.
+    # It is a deterministic hash derived from the fields below to prevent
+    # duplicates even across retries, process restarts, or failover.
+    algorithm: sha256
+    input_fields:
+      - tenant_id
+      - strategy_id
+      - signal_timestamp_ns   # nanosecond-precision signal origination timestamp
+      - symbol
+      - side
+      - quantity
+      - canonical_hash        # sha256 of the canonical package in effect at signal time
+    encoding: hex_lowercase_64_char
+    # The canonical_hash binds each order to the exact policy version that authorized it.
+
+  submission_semantics:
+    # NEW state submission: at-most-once. Do not retry a NEW submission if no
+    # ACK is received within the PENDING_NEW timeout. Escalate to incident instead.
+    new_order_retry_policy: at_most_once
+    new_order_timeout_escalation_incident: INC_BROKER_NO_ACK
+
+  fill_dedup:
+    # Fill deduplication: exactly-once. Dedup key is exec_id from the venue.
+    # If two fill reports arrive with the same exec_id, the second is discarded.
+    dedup_key: exec_id
+    dedup_field_source: fix_field_17  # ExecID field in FIX 4.4
+    duplicate_fill_action: discard_and_log
+    duplicate_fill_incident: INC_DUPLICATE_EXEC_ID
+
+  cache:
+    # Idempotency cache retains client_order_id -> terminal_state mappings.
+    ttl_hours: 24
+    # Cache must survive process restart (persistent, not in-memory only).
+    persistence_required: true
+    # On cache miss for an incoming fill, treat as a potential duplicate and
+    # reconcile against the broker before crediting the fill.
+    cache_miss_on_fill_action: reconcile_before_credit
+
+# ---------------------------------------------------------------------------
+# E-08 — Cancel/Replace Semantics
+# Ref: CANONICAL-FIELD-INDEX#E-08
+# ---------------------------------------------------------------------------
+cancel_replace:
+  # Two models exist: atomic (single message) and cancel-then-new (two messages).
+  # Model is selected per venue capability.
+
+  atomic_cancel_replace:
+    # Venues that support FIX CancelReplaceRequest (msg type G).
+    supported_venues: [primary_broker_fix_session]
+    # The original client_order_id chain must be preserved.
+    original_cl_ord_id_chain_required: true
+    # ClOrdID of the replace order must reference OrigClOrdID of the order being replaced.
+    orig_cl_ord_id_field: fix_field_41
+
+  cancel_then_new:
+    # Venues that do not support atomic amend require a cancel + new order sequence.
+    # Risk: fill may occur between cancel confirmation and new order submission.
+    supported_venues: [secondary_broker_rest_api]
+    # Gap protection: new order is submitted immediately upon cancel ACK.
+    max_gap_ms_between_cancel_ack_and_new_order: 100
+    gap_breach_incident: INC_CANCEL_NEW_GAP
+
+  race_conditions:
+    # Fill-while-canceling: if a fill report arrives on a PENDING_CANCEL order,
+    # the fill is accepted as authoritative. Cancel is treated as void.
+    fill_while_canceling:
+      action: accept_fill_cancel_void
+      incident_code: INC_RACE_FILL_WHILE_CANCEL
+      log_required: true
+
+    # Fill-while-replacing: if a fill report arrives on a PENDING_REPLACE order,
+    # the fill is accepted on the original order parameters. Replace is treated as void.
+    fill_while_replacing:
+      action: accept_fill_on_original_replace_void
+      incident_code: INC_RACE_FILL_WHILE_REPLACE
+      log_required: true
+
+  chain_preservation:
+    # Every cancel/replace preserves the original_cl_ord_id from the chain root.
+    # The chain root is the first NEW state client_order_id.
+    chain_root_field: original_cl_ord_id
+    max_chain_depth: 10
+    # If chain depth exceeds max, cancel the working order entirely and
+    # submit a fresh order with a new idempotency key.
+    chain_overflow_action: cancel_and_new
+    chain_overflow_incident: INC_CANCEL_CHAIN_OVERFLOW
+
+# ---------------------------------------------------------------------------
+# E-09 — Partial Fill Handling
+# Ref: CANONICAL-FIELD-INDEX#E-09
+# ---------------------------------------------------------------------------
+partial_fill:
+  default_remainder_behavior: leave_remainder_working
+  # Tenants may override to cancel_remainder or adjust_per_signal (narrow only).
+
+  behaviors:
+    leave_remainder_working:
+      code: PF_LEAVE
+      description: Remainder of order stays active at the working venue.
+
+    cancel_remainder:
+      code: PF_CANCEL
+      description: Cancel the unfilled remainder after the first partial fill.
+      # Use when full-fill is required (e.g., unit-based position sizing).
+
+    adjust_per_signal:
+      code: PF_ADJUST
+      description: >-
+        Signal-level rule determines remainder behavior. Requires signal to
+        carry `partial_fill_behavior` field. Falls back to leave_remainder_working
+        if field is absent.
+
+  stop_loss_adjustment:
+    # When a partial fill is received, the stop-loss price is recalculated
+    # based on average fill price to date, not the original signal price.
+    recalc_on_partial_fill: true
+    recalc_base: avg_fill_price_to_date
+    # Stop-loss adjustment is bounded — cannot move the stop more than this
+    # percentage away from the pre-fill stop.
+    max_stop_adjustment_pct: 0.02
+
+  avg_fill_price:
+    # Rolling average fill price accounting rule.
+    method: vwap_of_fills
+    # The average is updated on every fill report before any downstream
+    # risk check reads the position value.
+    update_timing: before_downstream_risk_check
+    # Precision: 6 decimal places to avoid rounding drift on large fills.
+    precision_decimal_places: 6
+
+  risk_on_partial_fill:
+    # After each partial fill, re-evaluate whether remaining open risk is
+    # within the per-trade hard max from policy.runtime.yaml.
+    # Cross-reference: policy.runtime.yaml#risk.per_trade.hard_max_pct
+    re_evaluate_after_fill: true
+    breach_on_remainder_action: cancel_remainder
+    breach_incident: INC_RISK_VETO
+
+# ---------------------------------------------------------------------------
+# Timeouts — Per-State Escalation Thresholds
+# ---------------------------------------------------------------------------
+timeouts:
+  # Each threshold defines the maximum allowed dwell time in that state.
+  # Breach triggers the listed incident code and escalation.
+  PENDING_NEW:
+    threshold_seconds: 2
+    action: cancel_and_emit_incident
+    incident_code: INC_BROKER_NO_ACK
+    escalation: alert_on_call
+
+  PENDING_CANCEL:
+    threshold_seconds: 5
+    action: emit_incident_and_await
+    incident_code: INC_BROKER_NO_ACK
+    # Do not auto-cancel a cancel — that may result in duplicate cancels.
+    # Escalate to human reconciliation.
+    escalation: human_reconciliation
+
+  PENDING_REPLACE:
+    threshold_seconds: 5
+    action: emit_incident_and_await
+    incident_code: INC_BROKER_NO_ACK
+    escalation: human_reconciliation
+
+  ACK:
+    # An acknowledged order should receive a fill or expire within the session.
+    # No autonomous timeout action; monitored for EOD reconciliation.
+    threshold_seconds: null
+    action: eod_reconciliation
+
+  # All timeouts are measured in wall-clock seconds from state entry.
+  # Clock source: policy.execution-errors.yaml#clock_skew
+
+# ---------------------------------------------------------------------------
+# Race Conditions — Documented Resolutions
+# ---------------------------------------------------------------------------
+race_conditions:
+  fill_while_replacing:
+    description: Fill report arrives after PENDING_REPLACE is sent but before REPLACED ACK.
+    resolution: accept_fill_on_original_params_void_replace
+    incident_code: INC_RACE_FILL_WHILE_REPLACE
+    log_level: warn
+
+  fill_while_canceling:
+    description: Fill report arrives after PENDING_CANCEL is sent but before CANCELED ACK.
+    resolution: accept_fill_void_cancel
+    incident_code: INC_RACE_FILL_WHILE_CANCEL
+    log_level: warn
+
+  reject_after_partial:
+    description: >-
+      Venue rejects the order after one or more partial fills have been credited.
+      The fills are accepted; only the remainder is treated as rejected.
+    resolution: accept_fills_reject_remainder
+    incident_code: INC_RACE_REJECT_AFTER_PARTIAL
+    log_level: error
+    requires_human_reconciliation: true
+
+  duplicate_exec_id:
+    description: Two fill reports carry the same exec_id.
+    resolution: discard_second_report
+    incident_code: INC_DUPLICATE_EXEC_ID
+    log_level: error
+
+  out_of_order_fill:
+    description: Fill reports arrive in non-chronological order.
+    resolution: reorder_by_transact_time_field
+    # FIX TransactTime (field 60) is authoritative for fill sequencing.
+    ordering_field: fix_field_60
+    log_level: warn
+
+# ---------------------------------------------------------------------------
+# Ordering Guarantees
+# ---------------------------------------------------------------------------
+ordering_guarantees:
+  sequence_numbers:
+    # Monotonic, per-account sequence numbers are assigned at order submission.
+    scope: per_account
+    monotonic: true
+    gap_on_reject: false  # Sequence numbers are not returned on local rejections.
+    # Sequence number overflow at 2^63-1 triggers a graceful rollover with operator alert.
+    overflow_action: graceful_rollover_with_alert
+    overflow_incident: INC_SEQ_NUM_OVERFLOW
+
+  out_of_order_events:
+    # If an event arrives with a sequence number lower than the last accepted
+    # event for that account, it is treated as a duplicate or out-of-order arrival.
+    detection: compare_incoming_seq_to_last_accepted
+    action_on_out_of_order: reorder_buffer_with_timeout
+    # If the missing sequence is not received within this window, escalate.
+    reorder_buffer_timeout_ms: 500
+    buffer_timeout_action: emit_incident_and_reconcile
+    buffer_timeout_incident: INC_RECON_BREAK
+
+  event_log:
+    # All state transitions are written to an append-only event log.
+    persistence: append_only_durable_log
+    log_fields:
+      - account_id
+      - client_order_id
+      - from_state
+      - to_state
+      - trigger_event
+      - exec_id        # null if no fill
+      - fill_qty       # null if no fill
+      - fill_price     # null if no fill
+      - transact_time  # ISO 8601 with nanoseconds
+      - canonical_hash # policy version in effect at event time
+      - sequence_number
+
+# ---------------------------------------------------------------------------
+# Reconciliation — EOD Procedure
+# ---------------------------------------------------------------------------
+reconciliation:
+  eod:
+    # EOD reconciliation runs at session close for every account.
+    trigger: session_close_per_policy_calendar_yaml_sessions
+    # Step 1: Request position snapshot from broker.
+    step_1_broker_position_request:
+      method: fix_position_report_request
+      timeout_seconds: 30
+      timeout_incident: INC_RECON_BROKER_TIMEOUT
+
+    # Step 2: Compare broker positions to internal ledger.
+    step_2_compare:
+      tolerance_units: 0   # Zero tolerance — any break is a hard incident.
+      tolerance_notional_usd: 0
+
+    # Step 3: On any break, emit incident and suspend new order submission
+    # until the break is resolved.
+    step_3_on_break:
+      incident_code: INC_RECON_BREAK
+      action: suspend_new_orders_and_alert
+      requires_human: true
+      # System must not attempt to auto-resolve position breaks by trading.
+      auto_resolve_by_trading: false
+
+    # Step 4: Record reconciliation result in audit log with timestamp and hash.
+    step_4_audit_record:
+      fields:
+        - account_id
+        - session_date
+        - broker_position_snapshot_hash
+        - internal_ledger_snapshot_hash
+        - break_count
+        - reconciliation_outcome  # enum: clean | break_detected | timeout
+        - canonical_hash
+        - operator_attestation  # required if break_detected
+
+    # Reconciliation must complete within this window after session close.
+    max_completion_minutes_after_session_close: 30
+    completion_timeout_incident: INC_RECON_TIMEOUT

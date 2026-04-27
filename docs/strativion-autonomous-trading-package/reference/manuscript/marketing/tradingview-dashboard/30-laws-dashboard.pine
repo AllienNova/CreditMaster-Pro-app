@@ -1,0 +1,154 @@
+//@version=5
+// =============================================================================
+// The 30 Laws of Trading — Regime & Risk Dashboard
+// Companion to "The 30 Indisputable Laws of Trading" by Kimal Honour Djam
+//
+// Operationalizes Chapter 69 (The 30-Law Dashboard).
+// Displays: ADX, ATR ratio, VIX proxy, regime state, R-size reference, heat gauge.
+//
+// How to use:
+//   1. Open TradingView on any chart (SPY, QQQ, ES1!, NQ1! all work well)
+//   2. Pine Editor -> paste this script -> Save -> Add to chart
+//   3. Settings allow you to enter your account equity, risk %, and VIX symbol
+//   4. Dashboard table appears in the top-right; indicator plots on the price pane
+//
+// Regime classification (per Law 8):
+//   SHOCK      : ATR > 2.0 * ATR_200_avg  OR  VIX > 30
+//   TRENDING   : ADX > 25
+//   RANGING    : ADX < 20
+//   TRANSITION : ADX in [20, 25]
+//
+// License: Free to use alongside the book. Credit the book in any derivative.
+// =============================================================================
+
+indicator("30 Laws Dashboard", overlay=true, max_labels_count=10)
+
+// ---------- Inputs ----------
+grpAccount = "Account & Risk"
+accountEquity = input.float(10000.0, "Account equity ($)", minval=100, group=grpAccount)
+riskPerTrade  = input.float(1.0,    "Default risk per trade (% of equity)", minval=0.1, maxval=2.0, step=0.1, group=grpAccount)
+maxHeatPct    = input.float(10.0,   "Max account heat (% of equity)", minval=1.0, maxval=10.0, step=0.5, group=grpAccount)
+
+grpVIX = "VIX Source"
+vixSymbol = input.symbol("CBOE:VIX", "VIX symbol", group=grpVIX)
+
+grpRegime = "Regime Thresholds (Law 8)"
+adxPeriod        = input.int(14, "ADX period", minval=5, maxval=50, group=grpRegime)
+adxTrendMin      = input.float(25.0, "ADX trending threshold (>)", group=grpRegime)
+adxRangeMax      = input.float(20.0, "ADX ranging threshold (<)", group=grpRegime)
+atrPeriod        = input.int(14, "ATR period", group=grpRegime)
+atrAvgPeriod     = input.int(200, "ATR average period", group=grpRegime)
+atrShockMult     = input.float(2.0, "ATR ratio shock threshold", group=grpRegime)
+vixShockLevel    = input.float(30.0, "VIX shock threshold", group=grpRegime)
+
+grpDisplay = "Display"
+showTable = input.bool(true, "Show dashboard table", group=grpDisplay)
+tablePosition = input.string("top_right", "Table position", options=["top_right","top_left","bottom_right","bottom_left"], group=grpDisplay)
+
+// ---------- Indicators ----------
+// ADX via built-in DMI
+[diPlus, diMinus, adxValue] = ta.dmi(adxPeriod, adxPeriod)
+
+// ATR and its long-period average
+atrValue = ta.atr(atrPeriod)
+atrAvg   = ta.sma(atrValue, atrAvgPeriod)
+atrRatio = atrAvg > 0 ? atrValue / atrAvg : na
+
+// VIX (falls back to NA if unavailable on free data plan)
+vixClose = request.security(vixSymbol, "D", close, ignore_invalid_symbol=true)
+
+// ---------- Regime Classification (Law 8) ----------
+// Shock check takes priority
+isShock      = (not na(atrRatio) and atrRatio > atrShockMult) or (not na(vixClose) and vixClose > vixShockLevel)
+isTrending   = not isShock and adxValue > adxTrendMin
+isRanging    = not isShock and adxValue < adxRangeMax
+isTransition = not isShock and not isTrending and not isRanging
+
+regimeLabel = isShock ? "SHOCK" : isTrending ? "TRENDING" : isRanging ? "RANGING" : isTransition ? "TRANSITION" : "UNKNOWN"
+regimeColor = isShock ? color.red : isTrending ? color.green : isRanging ? color.blue : isTransition ? color.orange : color.gray
+
+// ---------- Regime-Aware Risk Caps ----------
+// Per AGENT_CONSTITUTION Article II (The 30 Laws of Trading)
+regimeRiskPct  = isShock ? 0.25 : isTrending ? riskPerTrade : isRanging ? 0.75 : 0.5
+regimeMaxPos   = isShock ? 2 : isTrending ? 6 : isRanging ? 3 : 3
+regimeHeatCap  = isShock ? 2.0 : isTrending ? math.min(10.0, maxHeatPct) : isRanging ? 5.0 : 3.0
+regimeMinR     = isShock ? 3.0 : 2.0
+
+// Risk dollars at regime default
+riskDollars = accountEquity * regimeRiskPct / 100.0
+
+// ATR-based position-size reference (using 1.5× ATR stop as a reasonable default)
+stopAtrMult = 1.5
+perShareRisk = atrValue * stopAtrMult
+refShares = perShareRisk > 0 ? math.floor(riskDollars / perShareRisk) : 0
+refNotional = refShares * close
+
+// ---------- Dashboard Table ----------
+var table dash = table.new(
+     tablePosition == "top_right"    ? position.top_right
+   : tablePosition == "top_left"     ? position.top_left
+   : tablePosition == "bottom_right" ? position.bottom_right
+   : position.bottom_left,
+   2, 14, border_width=1, frame_color=color.gray, frame_width=1)
+
+if showTable and barstate.islast
+    table.cell(dash, 0, 0,  "30 LAWS DASHBOARD", bgcolor=color.new(color.black, 0), text_color=color.white, text_size=size.small)
+    table.merge_cells(dash, 0, 0, 1, 0)
+
+    table.cell(dash, 0, 1, "Regime",     bgcolor=color.new(color.gray, 70), text_color=color.black)
+    table.cell(dash, 1, 1, regimeLabel,  bgcolor=regimeColor, text_color=color.white)
+
+    table.cell(dash, 0, 2, "ADX(" + str.tostring(adxPeriod) + ")", bgcolor=color.new(color.gray, 90))
+    table.cell(dash, 1, 2, str.tostring(adxValue, "#.##"))
+
+    table.cell(dash, 0, 3, "ATR ratio (ATR / ATR200)", bgcolor=color.new(color.gray, 90))
+    table.cell(dash, 1, 3, na(atrRatio) ? "n/a" : str.tostring(atrRatio, "#.##"))
+
+    table.cell(dash, 0, 4, "VIX",        bgcolor=color.new(color.gray, 90))
+    table.cell(dash, 1, 4, na(vixClose) ? "n/a" : str.tostring(vixClose, "#.##"))
+
+    table.cell(dash, 0, 5, "Equity",                  bgcolor=color.new(color.gray, 90))
+    table.cell(dash, 1, 5, "$" + str.tostring(accountEquity, "#"))
+
+    table.cell(dash, 0, 6, "Risk/trade (regime)",     bgcolor=color.new(color.gray, 90))
+    table.cell(dash, 1, 6, str.tostring(regimeRiskPct, "#.##") + "%  ($" + str.tostring(riskDollars, "#") + ")")
+
+    table.cell(dash, 0, 7, "Max positions (regime)",  bgcolor=color.new(color.gray, 90))
+    table.cell(dash, 1, 7, str.tostring(regimeMaxPos))
+
+    table.cell(dash, 0, 8, "Max heat (regime)",       bgcolor=color.new(color.gray, 90))
+    table.cell(dash, 1, 8, str.tostring(regimeHeatCap, "#.#") + "%")
+
+    table.cell(dash, 0, 9, "Min R-multiple",          bgcolor=color.new(color.gray, 90))
+    table.cell(dash, 1, 9, str.tostring(regimeMinR, "#.#"))
+
+    table.cell(dash, 0, 10, "Stop = 1.5×ATR (ref)",   bgcolor=color.new(color.gray, 90))
+    table.cell(dash, 1, 10, str.tostring(perShareRisk, "#.##"))
+
+    table.cell(dash, 0, 11, "Reference size (shares)",bgcolor=color.new(color.gray, 90))
+    table.cell(dash, 1, 11, str.tostring(refShares))
+
+    table.cell(dash, 0, 12, "Reference notional",     bgcolor=color.new(color.gray, 90))
+    table.cell(dash, 1, 12, "$" + str.tostring(refNotional, "#"))
+
+    table.cell(dash, 0, 13, "Law 29 ceiling",         bgcolor=color.new(color.red, 80), text_color=color.white)
+    table.cell(dash, 1, 13, "2% trade | 10% heat | 1% ruin", bgcolor=color.new(color.red, 80), text_color=color.white)
+
+// ---------- Regime Transition Alerts ----------
+var string lastRegime = na
+regimeChanged = na(lastRegime) ? false : lastRegime != regimeLabel
+if barstate.isconfirmed
+    lastRegime := regimeLabel
+
+alertcondition(regimeChanged, title="Regime transition", message="Regime changed. Halt new entries 15 min and re-classify.")
+alertcondition(isShock,       title="Shock regime",      message="SHOCK regime active. Reduce to shock caps (0.25% risk, 2 positions, 2% heat).")
+
+// ---------- Plot VIX-based background tint ----------
+bgcolor(isShock      ? color.new(color.red, 92)    : na, title="Shock regime tint")
+bgcolor(isTransition ? color.new(color.orange, 92) : na, title="Transition regime tint")
+
+// ---------- Plot regime label on chart ----------
+var label regimeLbl = na
+if barstate.islast
+    label.delete(regimeLbl)
+    regimeLbl := label.new(bar_index, high, text=regimeLabel, color=regimeColor, textcolor=color.white, style=label.style_label_down, size=size.small)

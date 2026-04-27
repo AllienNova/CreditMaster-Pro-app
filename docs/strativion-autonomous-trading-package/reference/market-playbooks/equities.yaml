@@ -1,0 +1,223 @@
+# Strativion Market Playbook: Equities (Individual Stocks)
+# Source: Chapter 32 - The 30 Indisputable Laws of Trading
+
+market: "Equities"
+description: "Individual stock trading playbook based on the 30 Laws of Trading"
+
+instruments:
+  - symbol: "AAPL"
+    name: "Apple Inc."
+    tier: "mega_cap"
+    market_cap_tier: "$200B+"
+    typical_daily_volume_shares: 50_000_000
+    typical_spread: 0.01
+    max_position_pct_account: 0.10
+    max_shares_pct_daily_volume: 0.005
+    expected_slippage: 0.0005
+
+  - symbol: "NVDA"
+    name: "NVIDIA Corporation"
+    tier: "mega_cap"
+    market_cap_tier: "$200B+"
+    typical_daily_volume_shares: 40_000_000
+    typical_spread: 0.01
+    max_position_pct_account: 0.10
+    max_shares_pct_daily_volume: 0.005
+    expected_slippage: 0.0005
+
+  - symbol: "TSLA"
+    name: "Tesla Inc."
+    tier: "mega_cap"
+    market_cap_tier: "$200B+"
+    typical_daily_volume_shares: 80_000_000
+    typical_spread: 0.01
+    max_position_pct_account: 0.10
+    max_shares_pct_daily_volume: 0.005
+    expected_slippage: 0.0005
+
+  - symbol: "META"
+    name: "Meta Platforms Inc."
+    tier: "mega_cap"
+    market_cap_tier: "$200B+"
+    typical_daily_volume_shares: 30_000_000
+    typical_spread: 0.01
+    max_position_pct_account: 0.10
+    max_shares_pct_daily_volume: 0.005
+    expected_slippage: 0.0005
+
+  - symbol: "JPM"
+    name: "JPMorgan Chase"
+    tier: "mega_cap"
+    market_cap_tier: "$200B+"
+    typical_daily_volume_shares: 10_000_000
+    typical_spread: 0.01
+    max_position_pct_account: 0.08
+    max_shares_pct_daily_volume: 0.003
+    expected_slippage: 0.001
+
+market_cap_tiers:
+  mega_cap:
+    range: "$200B+"
+    max_position_pct: 0.10
+    max_shares_pct_daily_volume: 0.005
+    expected_slippage: 0.0005
+  large_cap:
+    range: "$10B-$200B"
+    max_position_pct: 0.08
+    max_shares_pct_daily_volume: 0.003
+    expected_slippage: 0.001
+  mid_cap:
+    range: "$2B-$10B"
+    max_position_pct: 0.05
+    max_shares_pct_daily_volume: 0.001
+    expected_slippage: 0.003
+  small_cap:
+    range: "$300M-$2B"
+    max_position_pct: 0.03
+    max_shares_pct_daily_volume: 0.0005
+    expected_slippage: 0.01
+  micro_cap:
+    range: "<$300M"
+    max_position_pct: 0.01
+    max_shares_pct_daily_volume: 0.0
+    expected_slippage: "unpredictable"
+    warning: "Avoid. 74% of penny stock traders lose money (SEC 2023)."
+
+sessions:
+  - name: "Pre-Market"
+    hours: "08:00-09:30 ET"
+    activity: "Scan earnings calendar, overnight gaps, sector ETFs, VIX level"
+  - name: "Morning Drive"
+    hours: "09:30-11:30 ET"
+    volume_pct: 0.35
+    description: "Highest volume, tightest spreads, best execution. 65% of daily volume in first and last hours."
+  - name: "Lunch Dead Zone"
+    hours: "11:30-13:30 ET"
+    volume_pct: 0.15
+    description: "Volume drops 40-60%. Spreads widen. False breakouts increase. Avoid new positions."
+  - name: "Afternoon Transition"
+    hours: "13:30-15:00 ET"
+    volume_pct: 0.15
+    description: "Moderate volume. Manage existing positions."
+  - name: "Power Hour"
+    hours: "15:00-16:00 ET"
+    volume_pct: 0.20
+    description: "Second-highest volume. MOC orders execute. Trend moves accelerate."
+  - name: "Post-Market"
+    hours: "16:00-18:00 ET"
+    activity: "Review trades, check after-hours earnings, prepare tomorrow's watchlist."
+
+best_hours: ["09:30-11:30", "15:00-16:00"]
+dead_zones: ["11:30-13:30"]
+
+sector_rotation:
+  early_expansion:
+    leading: ["XLY", "XLK", "XLI"]
+    lagging: ["XLU", "XLV"]
+    indicators: "ISM rising above 50, yield curve steepening, unemployment declining"
+  late_expansion:
+    leading: ["XLE", "XLB", "XLF"]
+    lagging: ["XLK", "XLP"]
+    indicators: "ISM above 55, inflation rising, Fed tightening, commodity prices climbing"
+  early_contraction:
+    leading: ["XLU", "XLV", "XLP"]
+    lagging: ["XLI", "XLB", "XLF"]
+    indicators: "ISM falling below 50, yield curve inverting, credit spreads widening"
+  late_contraction:
+    leading: ["XLF", "XLK", "XLY"]
+    lagging: ["XLE"]
+    indicators: "ISM bottoming, Fed pivoting to easing, yield curve re-steepening"
+
+cycle_identification_indicators:
+  - name: "ISM Manufacturing PMI"
+    source: "Institute for Supply Management"
+    frequency: "First business day of month"
+    signal: "Above 50 = expansion, below 50 = contraction"
+  - name: "Yield Curve (10Y-2Y)"
+    source: "US Treasury / NY Fed"
+    signal: "Steepening = early expansion, inverting = late expansion"
+  - name: "Credit Spreads (ICE BofA HY OAS)"
+    signal: "Widening = contraction, narrowing = recovery"
+
+primary_setups:
+  - name: "Post-Earnings Drift (Strong Surprise)"
+    conditions:
+      - "Actual move exceeds expected move by >30%"
+      - "Direction confirmed by sector trend"
+    hold_period: "3-15 trading days"
+    win_rate: 0.68
+    source: "Backtested across 500 S&P 500 earnings events 2020-2024"
+    laws_applied: [1, 3, 9, 17]
+
+  - name: "Sector Rotation Trade"
+    conditions:
+      - "All three cycle indicators align"
+      - "Daily, weekly, monthly charts confirm direction"
+    hold_period: "weeks to months"
+    laws_applied: [1, 8, 12]
+
+  - name: "IV Crush / Earnings Premium Sell"
+    conditions:
+      - "Actual move < expected move (ratio < 1.0)"
+      - "Sell premium after earnings resolve"
+    laws_applied: [3, 5]
+
+iv_crush_decision_matrix:
+  - scenario: "Strong drift setup"
+    expected_move_example: "8%"
+    actual_move_example: "12%+"
+    ratio: ">1.3x"
+    action: "Trade the direction for 3-15 days"
+  - scenario: "Moderate drift"
+    actual_move_example: "9-10%"
+    ratio: "1.0-1.3x"
+    action: "Smaller position, tighter stop, shorter hold"
+  - scenario: "IV crush / no drift"
+    actual_move_example: "4-7%"
+    ratio: "<1.0x"
+    action: "Avoid directional trades. Sell premium."
+  - scenario: "Minimal reaction"
+    actual_move_example: "0-3%"
+    ratio: "<0.4x"
+    action: "Fully priced in. Wait for next catalyst."
+
+risk_rules:
+  max_risk_per_trade: 0.01
+  max_daily_loss: 0.03
+  max_single_stock_exposure_small_cap: 0.05
+  max_single_stock_exposure_mega_cap: 0.10
+  max_sector_exposure: 0.25
+  max_correlated_positions: 5
+  position_sizing_method: "atr_based"
+  stop_multiplier: 2.0
+  earnings_rule: "Define risk before announcement or stay out entirely"
+  circuit_breaker: "Lose 3% in a day, stop trading for the session"
+
+vix_adjustment:
+  low: {vix_range: "0-15", action: "Tighten stops"}
+  normal: {vix_range: "15-20", action: "Standard stops"}
+  elevated: {vix_range: "20-25", action: "Widen stops"}
+  high: {vix_range: "25+", action: "Reduce position sizes, widen stops significantly"}
+
+key_reports:
+  - name: "Earnings Reports"
+    impact: "high"
+    typical_move: "3-25% per stock"
+    frequency: "Quarterly per company"
+  - name: "CPI"
+    impact: "high"
+    typical_move: "1-3% broad market"
+  - name: "Non-Farm Payrolls"
+    impact: "high"
+    typical_move: "0.5-2% broad market"
+  - name: "FOMC Rate Decision"
+    impact: "high"
+    typical_move: "1-3% broad market"
+
+key_correlations:
+  SPY_QQQ: 0.92
+  SPY_TLT: -0.40
+  sector_within_sector: 0.70
+  mega_cap_tech_cluster: 0.85
+
+laws_most_relevant: [1, 2, 3, 5, 7, 9, 12, 13, 19, 21, 25]

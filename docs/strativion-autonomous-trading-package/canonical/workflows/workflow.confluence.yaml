@@ -1,0 +1,397 @@
+meta:
+  document_role: workflow
+  workflow_id: workflow.confluence
+  schema_version: 1.0.0
+  file_version: 1.0.0
+  canonical_package_version: 2.0.0
+  description: >
+    Pre-trade confluence workflow. Orchestrates the full sequence from signal
+    ingestion through order emission and lifecycle handoff. Every step's guards
+    are references to canonical policy fields — NO numeric literals appear in
+    this file. All thresholds resolve through the named canonical owner paths.
+    Per CANONICAL-FIELD-INDEX §1 consumer class 'workflow': numeric literals
+    in workflows are banned.
+
+# ---------------------------------------------------------------------------
+# Confluence pipeline: signal → emit → lifecycle_handoff
+# ---------------------------------------------------------------------------
+
+pipeline:
+  - step_id: signal_ingestion
+    name: Signal Ingestion
+    description: >
+      Receive trading signal from strategy engine. Record timestamp_ns,
+      strategy_id, tenant_id, account_id, and rationale_ref.
+    input_refs:
+      - description: Incoming signal payload
+        schema_ref: "https://strativion.io/schemas/audit-entry.v1.schema.json#/properties/signal"
+    output_refs:
+      - description: Validated signal object with timestamp
+        field: signal
+    guards: []
+    fail_action:
+      action: reject
+      incident_code_ref: "policy.incidents.yaml#codes[code=INC_EXECUTION_INVALID_FIELDS]"
+
+  - step_id: data_quality_check
+    name: Data Quality Check
+    description: >
+      Verify that all market data inputs pass staleness, cross-venue disagreement,
+      NBBO availability, bad-print, and gap-detection thresholds. All threshold
+      values are resolved from policy.data-quality.yaml at check time.
+    input_refs:
+      - description: Feed timestamp for staleness calculation
+        field: data_quality_snapshot.feed_age_ms
+      - description: Cross-venue spread measurement
+        field: data_quality_snapshot.cross_venue_spread_bps
+      - description: NBBO availability flag
+        field: data_quality_snapshot.nbbo_available
+    output_refs:
+      - description: Data quality verdict (pass/fail) with snapshot
+        field: data_quality_snapshot
+    guards:
+      - guard_id: guard_equities_staleness
+        guard_type: reference
+        source: "policy.data-quality.yaml#staleness.equities_max_ms"
+        operator: lte
+        comment: D-01. Reject if feed_age_ms exceeds this threshold.
+      - guard_id: guard_futures_staleness
+        guard_type: reference
+        source: "policy.data-quality.yaml#staleness.futures_max_ms"
+        operator: lte
+        comment: D-02.
+      - guard_id: guard_fx_staleness
+        guard_type: reference
+        source: "policy.data-quality.yaml#staleness.fx_max_ms"
+        operator: lte
+        comment: D-03.
+      - guard_id: guard_crypto_staleness
+        guard_type: reference
+        source: "policy.data-quality.yaml#staleness.crypto_max_ms"
+        operator: lte
+        comment: D-04.
+      - guard_id: guard_cross_venue_disagreement
+        guard_type: reference
+        source: "policy.data-quality.yaml#cross_venue.max_disagreement_bps"
+        operator: lte
+        comment: D-05.
+      - guard_id: guard_nbbo_required
+        guard_type: reference
+        source: "policy.data-quality.yaml#nbbo.required"
+        operator: eq_true
+        comment: D-06. Locked (🔒). NBBO must be available.
+      - guard_id: guard_gap_max_sigma
+        guard_type: reference
+        source: "policy.data-quality.yaml#gap.max_sigma"
+        operator: lte
+        comment: D-09.
+    fail_action:
+      action: freeze_and_alert
+      incident_code_ref: "policy.incidents.yaml#codes[code=INC_DATA_QUALITY_FAILURE]"
+
+  - step_id: compliance_check
+    name: Compliance Check
+    description: >
+      Run all pre-trade compliance checks in priority order: MWCB state,
+      LULD bands, auction state, PDT rule, Reg SHO locate, and restricted-list
+      lookup. All rules and thresholds resolve from policy.compliance.yaml.
+    input_refs:
+      - description: Symbol for restricted-list and LULD lookup
+        field: signal.symbol
+      - description: Side for Reg SHO check
+        field: signal.side
+      - description: Current market state snapshot
+        field: compliance_check
+    output_refs:
+      - description: Compliance check verdict object
+        field: compliance_check
+    guards:
+      - guard_id: guard_mwcb_state
+        guard_type: reference
+        source: "policy.compliance.yaml#mwcb.levels"
+        operator: not_in_halt
+        comment: C-04. Block if MWCB halt is active.
+      - guard_id: guard_luld_bands
+        guard_type: reference
+        source: "policy.compliance.yaml#luld.bands"
+        operator: within_bands
+        comment: C-05. Block if price is outside LULD bands.
+      - guard_id: guard_auction_state
+        guard_type: reference
+        source: "policy.compliance.yaml#auction_states.default_action"
+        operator: check_state
+        comment: C-06. Apply per-state action.
+      - guard_id: guard_pdt
+        guard_type: reference
+        source: "policy.compliance.yaml#pdt"
+        operator: check_pdt_rule
+        comment: C-01. Locked (🔒).
+      - guard_id: guard_reg_sho
+        guard_type: reference
+        source: "policy.compliance.yaml#reg_sho"
+        operator: check_locate
+        comment: C-03. Locked (🔒).
+      - guard_id: guard_restricted_list
+        guard_type: reference
+        source: "policy.compliance.yaml#restricted_list.source"
+        operator: not_restricted
+        comment: C-11.
+      - guard_id: guard_pre_trade_15c35
+        guard_type: reference
+        source: "policy.compliance.yaml#pre_trade_checks.checks"
+        operator: all_pass
+        comment: C-02. SEC Rule 15c3-5 checks. Locked (🔒).
+    fail_action:
+      action: reject
+      incident_code_ref: "policy.incidents.yaml#codes[code=INC_COMPLIANCE_PRE_TRADE_FAIL]"
+
+  - step_id: risk_check
+    name: Risk Check
+    description: >
+      Compute projected portfolio heat and symbol/sector/correlation cluster
+      concentrations after hypothetical fill. Compare against regime-appropriate
+      thresholds from policy.runtime.yaml. All thresholds are resolved at
+      check time from canonical owner; never embedded here.
+    input_refs:
+      - description: Current portfolio positions
+        field: risk_check.heat_before_pct
+      - description: Symbol cluster concentration before
+        field: risk_check.cluster_before_pct
+      - description: Order quantity and price for projection
+        field: order
+      - description: Active mode for regime lookup
+        field: mode
+    output_refs:
+      - description: Risk check result with before/after heat and verdict
+        field: risk_check
+    guards:
+      - guard_id: guard_per_trade_hard_max
+        guard_type: reference
+        source: "policy.runtime.yaml#risk.per_trade.hard_max_pct"
+        operator: lte
+        comment: "R-01. Absolute ceiling. Override: ⬇."
+      - guard_id: guard_per_trade_default
+        guard_type: reference
+        source: "policy.runtime.yaml#risk.per_trade.default_pct"
+        operator: lte
+        comment: R-02. Used when setup has no explicit bucket.
+      - guard_id: guard_cluster_per_symbol
+        guard_type: reference
+        source: "policy.runtime.yaml#risk.cluster.per_symbol_max_pct"
+        operator: lte
+        comment: R-03.
+      - guard_id: guard_cluster_per_sector
+        guard_type: reference
+        source: "policy.runtime.yaml#risk.cluster.per_sector_max_pct"
+        operator: lte
+        comment: R-04.
+      - guard_id: guard_cluster_per_corr
+        guard_type: reference
+        source: "policy.runtime.yaml#risk.cluster.per_corr_cluster_max_pct"
+        operator: lte
+        comment: R-05.
+      - guard_id: guard_heat_normal
+        guard_type: reference
+        source: "policy.runtime.yaml#risk.portfolio.heat_normal_max_pct"
+        operator: lte
+        comment: R-06. Applied when mode is not shock or crisis regime.
+      - guard_id: guard_heat_shock
+        guard_type: reference
+        source: "policy.runtime.yaml#risk.portfolio.heat_shock_max_pct"
+        operator: lte
+        comment: R-07. Applied in shock regime.
+      - guard_id: guard_heat_crisis
+        guard_type: reference
+        source: "policy.runtime.yaml#risk.portfolio.heat_crisis_max_pct"
+        operator: lte
+        comment: R-08. Applied in crisis regime.
+      - guard_id: guard_margin_utilization
+        guard_type: reference
+        source: "policy.runtime.yaml#risk.margin.utilization_max_pct"
+        operator: lte
+        comment: R-12.
+      - guard_id: guard_leverage_ceiling
+        guard_type: reference
+        source: "policy.runtime.yaml#risk.margin.leverage_max"
+        operator: lte
+        comment: R-13.
+    fail_action:
+      action: reject
+      incident_code_ref: "policy.incidents.yaml#codes[code=INC_RISK_HEAT_BREACH]"
+
+  - step_id: sizing
+    name: Position Sizing
+    description: >
+      Compute final order quantity using the configured sizing method
+      (policy.sizing.yaml#method). Apply stop distance constraints and
+      round-lot quantization. All parameters resolve from canonical owner.
+    input_refs:
+      - description: Signal intent_quantity and intent_price
+        field: signal
+      - description: Sizing method
+        source_ref: "policy.sizing.yaml#method"
+      - description: Kelly cap (if method=kelly_fractional)
+        source_ref: "policy.sizing.yaml#kelly.cap"
+      - description: ATR parameters (if method=atr_vol)
+        source_ref: "policy.sizing.yaml#atr"
+      - description: Stop distance constraints
+        source_ref: "policy.sizing.yaml#stops"
+    output_refs:
+      - description: Sized order with quantity conforming to all stop constraints
+        field: order.quantity
+    guards:
+      - guard_id: guard_sizing_method
+        guard_type: reference
+        source: "policy.sizing.yaml#method"
+        operator: valid_enum
+        comment: S-01.
+      - guard_id: guard_kelly_cap
+        guard_type: reference
+        source: "policy.sizing.yaml#kelly.cap"
+        operator: lte_when_kelly
+        comment: S-02. Applied only when method=kelly_fractional.
+      - guard_id: guard_min_stop_distance
+        guard_type: reference
+        source: "policy.sizing.yaml#stops.min_distance_bps"
+        operator: gte
+        comment: S-05. Reject sub-tick stops.
+      - guard_id: guard_max_stop_distance
+        guard_type: reference
+        source: "policy.sizing.yaml#stops.max_distance_pct"
+        operator: lte
+        comment: S-06.
+      - guard_id: guard_quantization_rule
+        guard_type: reference
+        source: "policy.sizing.yaml#quantization.rule"
+        operator: apply_rule
+        comment: S-07. Locked (🔒).
+    fail_action:
+      action: reject
+      incident_code_ref: "policy.incidents.yaml#codes[code=INC_EXECUTION_INVALID_FIELDS]"
+
+  - step_id: order_construction
+    name: Order Construction
+    description: >
+      Construct the final order object: apply marketable_limit offset if needed,
+      attach TIF from policy.execution.yaml#default_tif, generate cl_ord_id.
+    input_refs:
+      - description: Sized quantity from sizing step
+        field: order.quantity
+      - description: Marketable limit offset
+        source_ref: "policy.execution.yaml#marketable_limit.offset_bps"
+      - description: Default TIF
+        source_ref: "policy.execution.yaml#default_tif"
+    output_refs:
+      - description: Fully constructed order object
+        field: order
+    guards:
+      - guard_id: guard_tif_allowed
+        guard_type: reference
+        source: "policy.execution.yaml#default_tif"
+        operator: member_of_enum
+        comment: E-01.
+      - guard_id: guard_marketable_offset
+        guard_type: reference
+        source: "policy.execution.yaml#marketable_limit.offset_bps"
+        operator: apply_offset
+        comment: E-02.
+    fail_action:
+      action: reject
+      incident_code_ref: "policy.incidents.yaml#codes[code=INC_EXECUTION_INVALID_FIELDS]"
+
+  - step_id: idempotency_check
+    name: Idempotency Check
+    description: >
+      Verify cl_ord_id has not been seen within the dedup window.
+      Dedup window size resolved from policy.order-lifecycle.yaml#idempotency.dedup_window_ms.
+    input_refs:
+      - description: Constructed order's cl_ord_id
+        field: order.cl_ord_id
+      - description: Dedup window
+        source_ref: "policy.order-lifecycle.yaml#idempotency.dedup_window_ms"
+    output_refs:
+      - description: Idempotency check result (pass/fail)
+        field: idempotency_result
+    guards:
+      - guard_id: guard_idempotency_key
+        guard_type: reference
+        source: "policy.order-lifecycle.yaml#idempotency.key_strategy"
+        operator: not_duplicate
+        comment: E-07. Locked (🔒).
+      - guard_id: guard_clock_skew_at_emit
+        guard_type: reference
+        source: "policy.execution-errors.yaml#clock_skew.max_ms"
+        operator: lte
+        comment: E-12. Locked (🔒).
+    fail_action:
+      action: reject
+      incident_code_ref: "policy.incidents.yaml#codes[code=INC_EXECUTION_DUPLICATE_ORDER]"
+
+  - step_id: emit
+    name: Order Emission
+    description: >
+      Submit order to venue via FIX or native protocol. Apply spread guard and
+      circuit-breaker check immediately before submission.
+    input_refs:
+      - description: Constructed and validated order
+        field: order
+      - description: Circuit breaker state
+        source_ref: "policy.execution-errors.yaml#broker_circuit_breaker"
+      - description: Spread filter thresholds
+        source_ref: "policy.execution.yaml#spread_filter"
+    output_refs:
+      - description: Submission acknowledgement (venue-side)
+        field: lifecycle[0]
+    guards:
+      - guard_id: guard_spread_at_emit_liquid
+        guard_type: reference
+        source: "policy.execution.yaml#spread_filter.liquid_max_bps"
+        operator: lte
+        comment: E-03.
+      - guard_id: guard_spread_at_emit_illiquid
+        guard_type: reference
+        source: "policy.execution.yaml#spread_filter.illiquid_max_bps"
+        operator: lte
+        comment: E-04.
+      - guard_id: guard_slippage_at_emit
+        guard_type: reference
+        source: "policy.execution.yaml#slippage.per_trade_bps"
+        operator: lte
+        comment: E-05.
+      - guard_id: guard_circuit_breaker_at_emit
+        guard_type: reference
+        source: "policy.execution-errors.yaml#broker_circuit_breaker.failure_threshold"
+        operator: not_exceeded
+        comment: E-11.
+    fail_action:
+      action: freeze_and_alert
+      incident_code_ref: "policy.incidents.yaml#codes[code=INC_EXECUTION_ROUTING_FAILURE]"
+
+  - step_id: lifecycle_handoff
+    name: Lifecycle Handoff
+    description: >
+      Hand the submitted order to the order lifecycle tracker (workflow.order-lifecycle).
+      Write the initial audit entry. The audit entry must include all hash fields
+      (canonical_hash, tenant_override_hash, account_override_hash) and the
+      operator_kill_state_snapshot.
+    input_refs:
+      - description: Submitted order
+        field: order
+      - description: All upstream step outputs
+        field: risk_check
+      - description: Compliance check results
+        field: compliance_check
+      - description: Data quality snapshot
+        field: data_quality_snapshot
+      - description: Canonical package hash
+        source_ref: "canonical/MANIFEST.json#canonical_hash"
+    output_refs:
+      - description: Audit entry conforming to audit-entry.v1.schema.json
+        field: audit_entry
+      - description: Order handed to lifecycle tracker
+        field: lifecycle
+    guards: []
+    on_complete:
+      action: write_audit_entry
+      schema_ref: "https://strativion.io/schemas/audit-entry.v1.schema.json"
+      handoff_to_workflow: "workflow.order-lifecycle"

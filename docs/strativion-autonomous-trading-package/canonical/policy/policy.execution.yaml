@@ -1,0 +1,151 @@
+meta:
+  document_role: policy
+  schema_version: "1.0.0"
+  file_version: "1.0.0"
+  canonical_package_version: "2.5.0"
+  unit_convention: decimal_fraction
+  timezone_convention: IANA_America_New_York
+  binding_precedence: canonical
+  owned_controls:
+    - E-01   # default_tif
+    - E-02   # marketable_limit.offset_bps
+    - E-03   # spread_filter.liquid_max_bps
+    - E-04   # spread_filter.illiquid_max_bps
+    - E-05   # slippage.per_trade_bps
+  index_authority: governance/CANONICAL-FIELD-INDEX.md
+  override_rights:
+    default_tif: narrow_only
+    marketable_limit: narrow_only
+    spread_filter: narrow_only
+    slippage: narrow_only
+    tier_1_events: locked
+    short_sale_controls: locked
+    auction_handling: locked
+
+# ---------------------------------------------------------------------------
+# E-01  DEFAULT TIME IN FORCE
+# ---------------------------------------------------------------------------
+
+default_tif: DAY
+allowed_tif:
+  - DAY
+  - GTC
+  - IOC
+  - FOK
+
+# ---------------------------------------------------------------------------
+# E-02  MARKETABLE-LIMIT OFFSET
+# ---------------------------------------------------------------------------
+
+marketable_limit:
+  offset_bps: 10
+
+# ---------------------------------------------------------------------------
+# E-03, E-04  SPREAD FILTER
+# ---------------------------------------------------------------------------
+
+spread_filter:
+  liquid_max_bps: 20       # E-03
+  illiquid_max_bps: 50     # E-04
+
+# ---------------------------------------------------------------------------
+# E-05  SLIPPAGE BUDGET
+# ---------------------------------------------------------------------------
+
+slippage:
+  per_trade_bps: 15
+
+# ---------------------------------------------------------------------------
+# US EQUITIES — session structure
+# ---------------------------------------------------------------------------
+
+us_equity:
+  regular_session:
+    open: "09:30"
+    close: "16:00"
+    timezone: "America/New_York"
+  holidays_and_half_days:
+    require_exchange_calendar_source: true
+    reject_if_calendar_unavailable: true
+  autonomous_windows:
+    block_new_entries_first_minutes: 5
+    lunch_no_trade_window:
+      start: "11:30"
+      end: "13:30"
+      timezone: "America/New_York"
+    block_new_entries_last_minutes: 30
+  session_phases:
+    opening_rotation:
+      start: "09:30"
+      end: "09:45"
+      timezone: "America/New_York"
+      guidance: "Observe or use limit-only execution."
+    primary_entry_window:
+      start: "10:00"
+      end: "11:30"
+      timezone: "America/New_York"
+      guidance: "Best intraday liquidity and trend persistence."
+    midday_lull:
+      start: "11:30"
+      end: "14:00"
+      timezone: "America/New_York"
+      guidance: "Manage existing positions; autonomous no-trade 11:30-13:30."
+    secondary_entry_window:
+      start: "14:00"
+      end: "15:30"
+      timezone: "America/New_York"
+      guidance: "Reduced but still acceptable liquidity."
+
+# ---------------------------------------------------------------------------
+# TIER-1 EVENTS (governance + default blackouts)
+# Detailed window model lives in policy.calendar.yaml.
+# ---------------------------------------------------------------------------
+
+tier_1_events:
+  default_block_before_minutes: 5
+  default_block_after_minutes: 5
+  examples:
+    - "FOMC"
+    - "CPI"
+    - "NFP"
+    - "Fed emergency statement"
+    - "major exchange or clearing disruption"
+
+# ---------------------------------------------------------------------------
+# ORDER SAFETY GATES
+# ---------------------------------------------------------------------------
+
+order_safety:
+  reject_during_regulatory_halt: true
+  reject_during_luld_pause: true
+  reject_during_auction_only_state_if_consumer_cannot_price_auction: true
+  reject_if_time_sync_untrusted: true
+  require_cancel_replace_idempotency: true
+
+# ---------------------------------------------------------------------------
+# SHORT SALE
+# ---------------------------------------------------------------------------
+
+short_sale_controls:
+  require_borrow_or_locate_validation: true
+  reject_if_short_sale_restriction_unknown: true
+  honor_reg_sho_ssr: true
+
+# ---------------------------------------------------------------------------
+# OVERNIGHT CONTROLS
+# ---------------------------------------------------------------------------
+
+overnight_controls:
+  equities:
+    require_explicit_overnight_permission: true
+    reject_before_known_binary_events_if_not_supervised: true
+  crypto:
+    require_weekend_and_low_liquidity_review: true
+
+# ---------------------------------------------------------------------------
+# FILL CONTROLS
+# ---------------------------------------------------------------------------
+
+fill_controls:
+  reject_if_expected_slippage_gt_initial_r_multiple: 0.25
+  reject_if_partial_fill_creates_invalid_residual_risk: true

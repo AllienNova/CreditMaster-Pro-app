@@ -1,0 +1,439 @@
+# ============================================================================
+# PCTT EXIT RULES: Complete Exit Decision Pipeline
+# Phase-based trailing stop system with hard stops and invalidation
+# Source: PCTT Mathematical Framework v4.0 + Strategy Paper v3.0
+# Mapped to: The 30 Indisputable Laws of Trading - 30 Laws of Trading
+# Generated: 2026-02-22
+# ============================================================================
+
+pipeline_version: "4.0"
+source_documents:
+  - "A Production-Grade Mathematical Framework for Pivot-Constrained Trendline Trading (v4.0)"
+  - "A Robust Mathematical Framework for Pivot-Constrained Trendline Trading Across Asset Classes (v3.0)"
+  - "RG_Structure_Strategy_v4.pine (reference implementation)"
+
+core_principle: >
+  Stops must be MONOTONIC: they can only move in the direction of profit,
+  never loosen. The trailing system progresses through phases as the trade
+  moves in favor, locking in increasingly larger portions of the gain.
+
+# ============================================================================
+# PHASE-BASED TRAILING STOP SYSTEM
+# Each phase activates at a specific R-multiple threshold.
+# ============================================================================
+
+trailing_stop_phases:
+
+  phase_1_structural:
+    name: "Structural Stop (Initial)"
+    phase: 1
+    trigger: "trade_entry"
+    description: >
+      The initial stop is placed at the Safety Line (the opposing frozen
+      boundary) plus a buffer. The Safety Line continues at its frozen
+      slope from the break bar, projected forward in time.
+    stop_location:
+      long: "Safety(t_entry) - stop_buffer * ATR"
+      short: "Safety(t_entry) + stop_buffer * ATR"
+      stop_buffer_atr: 0.20
+    safety_line_projection: "Safety(t) = S_0 + m_S * (t - t_0)"
+    notes: >
+      The Safety Line is frozen at break time and extrapolated forward.
+      It represents the structural invalidation of the entire setup.
+      If price closes beyond this line, the thesis is dead.
+    law_references:
+      - law: 22
+        name: "Invalidation"
+        application: "Safety Line is the falsification level for the trade thesis"
+
+  phase_2_breakeven:
+    name: "Break-Even Protection"
+    phase: 2
+    trigger:
+      condition: "unrealized_profit >= 0.8R"
+      r_threshold: 0.8
+    description: >
+      Once the trade moves 0.8R in favor, the stop is moved to the entry
+      price (plus a tiny buffer to ensure net-zero after commissions).
+      This eliminates downside risk and converts the position into a
+      free trade.
+    action:
+      long: "move_stop_to entry_price + 0.05 * ATR"
+      short: "move_stop_to entry_price - 0.05 * ATR"
+      buffer_atr: 0.05
+    monotonic_rule: "New stop = max(current_stop, breakeven_level) for longs"
+    notes: >
+      The 0.8R trigger (not 1.0R) gives the trade room to breathe. Moving
+      to breakeven at exactly 1.0R causes excessive premature stop-outs
+      because price often retests the 1R level before continuing.
+    law_references:
+      - law: 23
+        name: "Asymmetric Damage"
+        application: "Eliminating downside risk after 0.8R prevents asymmetric loss"
+      - law: 30
+        name: "Survival"
+        application: "Free trade status means the worst outcome is scratch"
+
+  phase_3_partial_profit:
+    name: "Partial Profit Taking"
+    phase: 3
+    trigger:
+      condition: "unrealized_profit >= 1.0R"
+      r_threshold: 1.0
+    description: >
+      At 1.0R, realize the majority of the position to lock in profit.
+      Let the remainder run to capture potential extended moves. This
+      raises the realized win rate and reduces the emotional burden of
+      watching open profit fluctuate.
+    action:
+      close_percent: 60
+      close_range: "50-70% depending on conviction and regime"
+      trail_remainder: "Proceed to Phase 4 (pivot trailing)"
+    notes: >
+      Closing 60% at 1R means that even if the remaining 40% is stopped
+      at breakeven, the trade nets +0.6R. This mathematically guarantees
+      a positive outcome once Phase 3 triggers.
+    law_references:
+      - law: 16
+        name: "Expectancy"
+        application: "Partial profit + trailing maximizes system expectancy"
+      - law: 27
+        name: "Emotional Gravity"
+        application: "Realized profit reduces emotional attachment to the position"
+
+  phase_4_pivot_trailing:
+    name: "Pivot Trailing"
+    phase: 4
+    trigger:
+      condition: "after_partial_profit AND unrealized_profit >= 1.2R"
+      r_threshold: 1.2
+    description: >
+      After partial profit is taken, trail the stop behind each new
+      confirmed structural pivot. This captures extended trends while
+      protecting accumulated profit using actual market structure.
+    action:
+      long: "stop = most_recent_higher_low_pivot - trail_buffer * ATR"
+      short: "stop = most_recent_lower_high_pivot + trail_buffer * ATR"
+      trail_buffer_atr: 0.25
+      pivot_confirmation_bars: 2
+    monotonic_rule: >
+      New pivot stop is accepted only if it improves (ratchets toward
+      profit). For longs: new_stop = max(current_stop, pivot_stop).
+      For shorts: new_stop = min(current_stop, pivot_stop).
+    pine_reference: >
+      trailStop := math.max(nz(trailStop, stopLoss), recentPL - trailBufferATR * atr)
+    notes: >
+      Pivot-based trailing adapts to the actual pace of the market.
+      Fast trends produce frequent pivots with tightening stops. Slow
+      trends give the trade more room. The market itself determines
+      the trailing speed.
+    law_references:
+      - law: 14
+        name: "Path Dependency"
+        application: "Trail adapts to the specific path the market takes"
+      - law: 11
+        name: "Structural Levels"
+        application: "Pivots are natural structural levels for stop placement"
+
+  phase_5_time_stop:
+    name: "Time-Based Exit"
+    phase: 5
+    trigger:
+      condition: "bars_in_trade >= max_bars_threshold"
+      max_bars: 40
+      min_r_to_keep: 0.3
+    description: >
+      If the trade has been open for 40 bars and has not reached
+      minimum R-multiple progress, exit at market. The edge embedded
+      in the original setup has decayed with time. Capital tied up
+      in dead trades cannot be deployed in live opportunities.
+    conditions:
+      profitable_above_min_r:
+        action: "Continue holding with tighter trailing"
+        description: "If above 0.3R at 40 bars, allow pivot trailing to continue"
+      below_min_r:
+        action: "exit_at_market"
+        description: "Below 0.3R after 40 bars. Edge has decayed. Exit."
+    pine_reference: >
+      if barsInTrade >= maxBarsInTrade and currentR < timeStopMinR:
+          strategy.close_all(comment="TIME")
+    notes: >
+      The 40-bar default is calibrated to typical momentum persistence.
+      This is adjustable per timeframe. On a daily chart, 40 bars is
+      roughly two months. On a 4H chart, roughly one week.
+    law_references:
+      - law: 9
+        name: "Information Decay"
+        application: "Original break signal's edge decays over time"
+      - law: 10
+        name: "Time Delays"
+        application: "Delayed moves after 40 bars likely represent new information, not original setup"
+      - law: 25
+        name: "Transaction Costs"
+        application: "Dead money has an opportunity cost even when unrealized"
+
+# ============================================================================
+# HARD STOP RULES (Override trailing stops)
+# These rules supersede the phase-based system when triggered.
+# ============================================================================
+
+hard_stops:
+
+  max_loss_per_trade:
+    description: "Absolute maximum loss is the initial Safety Line stop"
+    value: "Phase 1 structural stop (Safety Line + buffer)"
+    rule: "NEVER move stop away from entry (against the trade direction)"
+    override: "No phase or condition permits widening the stop"
+    law_references:
+      - law: 30
+        name: "Survival"
+        application: "Absolute loss limit is the foundation of survival"
+      - law: 22
+        name: "Invalidation"
+        application: "The Safety Line is the thesis invalidation. Beyond it, thesis is wrong."
+
+  gap_protection:
+    description: "Protocol for when price gaps through the stop level"
+    action: "exit_at_first_available_price"
+    max_acceptable_gap_loss: "2x initial risk (2R)"
+    if_gap_exceeds_2r:
+      action: "reduce_subsequent_position_sizes_by_50pct"
+      duration: "Next 5 trades"
+      description: >
+        Outsized gap loss indicates market conditions incompatible with
+        the assumed volatility model. Reduce risk until conditions normalize.
+    gap_risk_model: "Student's t-distribution for overnight gap sizes (v4.0)"
+    law_references:
+      - law: 7
+        name: "Fat Tails"
+        application: "Gap risk represents tail events that exceed normal distributions"
+
+  regime_change:
+    description: "Exit or tighten when the market regime changes unfavorably"
+    actions:
+      from_trending_to_transition:
+        action: "tighten_stops"
+        new_stop_distance: "0.5R from current price"
+        description: "Regime uncertainty demands tighter risk management"
+      from_any_to_choppy:
+        action: "exit_all_pctt_positions"
+        description: >
+          Choppy regimes destroy break-retest edge. Exit all PCTT positions
+          at market. Re-enter only when regime resolves to Trend or Range.
+    monitoring: >
+      Regime is evaluated on every bar using the same ER + Crossing Count
+      classifier from the entry pipeline. A regime change during a trade
+      triggers this hard stop override.
+    law_references:
+      - law: 8
+        name: "Market Regimes"
+        application: "Regime changes invalidate the conditions under which the trade was taken"
+      - law: 28
+        name: "Adaptation"
+        application: "System must adapt to regime changes, not ignore them"
+
+# ============================================================================
+# INVALIDATION CONDITIONS (Immediate exit, no exceptions)
+# ============================================================================
+
+invalidation:
+
+  safety_line_broken:
+    description: "Price closes beyond the Safety Line"
+    condition:
+      long: "close < Safety(t) - stop_buffer * ATR"
+      short: "close > Safety(t) + stop_buffer * ATR"
+    action: "immediate_exit"
+    notes: >
+      This is the trade's falsification condition. The structural thesis
+      that justified entry is provably wrong. No discretion. Exit.
+    law_references:
+      - law: 22
+        name: "Invalidation"
+        application: "The thesis is falsified. Stop is data, not failure."
+
+  q_score_degradation:
+    description: "The original trendline's Q-Score drops below critical level"
+    threshold: 0.40
+    action: "tighten_trailing_stop_to_current_bar_range"
+    notes: >
+      If the structural quality of the line that generated the setup
+      deteriorates significantly, the foundation of the trade is weakening.
+      Tighten stops to protect any remaining profit.
+    law_references:
+      - law: 26
+        name: "Complexity Decay"
+        application: "Structural degradation signals the setup's edge is decaying"
+
+  volume_collapse:
+    description: "Volume drops below 50% of 20-bar average"
+    threshold_vs_avg: 0.50
+    volume_avg_period: 20
+    action: "flag_for_review"
+    if_also_stalling:
+      condition: "volume_collapse AND price_move < 0.2 ATR over last 5 bars"
+      action: "exit_at_market"
+      description: >
+        Volume collapse combined with price stalling indicates the move
+        has exhausted its energy. Exit before the reversal.
+    law_references:
+      - law: 4
+        name: "Liquidity Gravity"
+        application: "Volume collapse indicates liquidity withdrawal"
+
+  correlation_spike:
+    description: "Correlation with other active PCTT positions exceeds threshold"
+    correlation_threshold: 0.80
+    lookback_period: 20
+    action: "reduce_newest_position_by_50pct"
+    notes: >
+      If multiple PCTT positions become highly correlated, the portfolio
+      is effectively holding one concentrated bet disguised as diversification.
+      Cut the newest position to restore genuine diversification.
+    law_references:
+      - law: 24
+        name: "Systemic Correlation"
+        application: "Correlated positions create hidden portfolio concentration risk"
+
+# ============================================================================
+# PROFIT TARGETS (Optional, trailing stops are primary)
+# ============================================================================
+
+profit_targets:
+  use_fixed_targets: false
+  primary_exit_method: "Phase-based trailing stop system"
+  suggested_r_multiples:
+    conservative:
+      target: 2.0
+      use_case: "Range-bound regimes, lower Q-Score setups (Grade B)"
+    normal:
+      target: 3.0
+      use_case: "Trending regimes, standard volatility"
+    aggressive:
+      target: "no_fixed_target"
+      use_case: "Strong trend with macro alignment. Trail only."
+  notes: >
+    Fixed targets are optional and secondary to the trailing stop system.
+    The trailing system is preferred because it adapts to the actual move
+    magnitude. Fixed targets cap upside and miss the 5R+ outlier wins
+    that transform system profitability.
+  law_references:
+    - law: 16
+      name: "Expectancy"
+      application: "Trailing > fixed targets for positive expectancy systems"
+
+# ============================================================================
+# END OF DAY / SESSION RULES
+# ============================================================================
+
+end_of_day:
+
+  day_trading:
+    action: "flatten_all_positions_before_session_close"
+    latest_exit: "15 minutes before session end"
+    notes: >
+      Day trade PCTT positions must be closed before the bell.
+      Overnight gap risk on intraday timeframes is unacceptable.
+
+  swing_trading:
+    default: "maintain_overnight_if_profitable"
+    conditions:
+      profitable_above_1r:
+        action: "hold_overnight"
+        stop_adjustment: "widen_stop_by_0.5_ATR_for_gap_risk"
+        description: "Account for potential overnight gap with wider stop"
+      profitable_below_1r:
+        action: "hold_overnight_with_caution"
+        stop_adjustment: "maintain_current_stop"
+        description: "Normal stop. Accept gap risk as part of swing trading."
+      at_breakeven_or_losing:
+        action: "consider_closing"
+        description: >
+          If the trade has not proven itself by end of day, the overnight
+          gap risk is asymmetric. Serious consideration of closing.
+    weekend_rules:
+      flatten_when:
+        - "VIX above 25"
+        - "Geopolitical risk elevated"
+        - "Earnings Monday pre-market for held names"
+        - "Portfolio at max heat (all positions active)"
+      hold_when:
+        - "VIX below 18"
+        - "All PCTT positions in profit with stops at breakeven or better"
+        - "No known catalysts over weekend"
+      default: "When in doubt, flatten. Re-entry cost is trivial vs. gap risk."
+
+  position_trading:
+    action: "use_daily_timeframe_stops_only"
+    notes: >
+      Position-level PCTT trades on the daily chart ignore intraday
+      noise entirely. Only daily closes trigger stop evaluations.
+      Intrabar violations are ignored unless they close the day
+      beyond the Safety Line.
+
+# ============================================================================
+# DRAWDOWN-BASED DYNAMIC SCALING (v4.0)
+# Applies to all active and new positions during drawdowns.
+# ============================================================================
+
+drawdown_scaling:
+  enabled: true
+  description: >
+    When equity drawdown exceeds defined thresholds, all position sizing
+    (both new entries and existing position management) is scaled down.
+    This preserves capital during losing periods and reduces the
+    probability of ruin.
+  thresholds:
+    - drawdown_pct: 5.0
+      scale_factor: 0.75
+      action: "Reduce all new position sizes to 75% of normal"
+    - drawdown_pct: 10.0
+      scale_factor: 0.50
+      action: "Reduce all new position sizes to 50% of normal"
+    - drawdown_pct: 15.0
+      scale_factor: 0.25
+      action: "Reduce all new position sizes to 25% of normal"
+    - drawdown_pct: 20.0
+      scale_factor: 0.00
+      action: "HALT all new trading. Review system and regime."
+  recovery: >
+    Scaling reverts as equity recovers. No hysteresis is applied.
+    If equity drops to -12% and then recovers to -4%, sizing returns
+    to 100% immediately.
+  law_references:
+    - law: 29
+      name: "Probability of Ruin"
+      application: "Drawdown scaling geometrically reduces ruin probability"
+    - law: 30
+      name: "Survival"
+      application: "Capital preservation during adversity is the first law of trading"
+
+# ============================================================================
+# EXECUTION REALISM (v4.0 Enhancements)
+# ============================================================================
+
+execution_realism:
+  description: >
+    All exit calculations must account for real-world execution friction.
+    Clean backtests with zero slippage and perfect fills do not exist.
+  slippage_model:
+    type: "dynamic"
+    formula: "Slippage = S_base + beta_v * sigma_t + beta_u * U"
+    components:
+      base_slippage: "Commission rate (default 0.05%)"
+      volatility_component: "Increases with current ATR/volatility"
+      urgency_component: "Increases for market orders vs. limit orders"
+  partial_fill_model:
+    description: "Large limit orders may not fill completely"
+    action: "Model fill probability based on price proximity and microstructure"
+  gap_risk_model:
+    description: "Overnight gaps can execute stops at worse-than-expected prices"
+    distribution: "Student's t (fat-tailed, not Gaussian)"
+    action: "Gap-adjusted stop execution price used in backtests"
+  law_references:
+    - law: 25
+      name: "Transaction Costs"
+      application: "Realistic execution costs are subtracted from every trade"
+    - law: 7
+      name: "Fat Tails"
+      application: "Gap risk follows fat-tailed distributions, not normal"

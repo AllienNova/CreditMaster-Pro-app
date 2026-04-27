@@ -1,0 +1,184 @@
+You’re basically asking: **what signals “the market is trending” vs “it’s turning around”** (and you want indicators that change at pivot/turning points). Here are the most reliable ones, grouped by what they *actually detect*, plus how to use them with your structure/trendline system.
+
+---
+
+## 1) Pivot-style indicators (they *change at pivots*, but with delay)
+
+These are the closest to “Pinot/pivot” indicators.
+
+### A) Pivot High / Pivot Low (fractal pivots)
+
+* TradingView: `ta.pivothigh()` / `ta.pivotlow()`
+* **What it indicates:** confirmed swing turning points (structure)
+* **Strength:** clean, price-action consistent, non-repainting once confirmed
+* **Weakness:** always delayed by `right` bars (confirmation lag)
+
+**Best use:**
+
+* trailing stop (pivot trail)
+* structure shift detection (higher-high/lower-low logic)
+
+---
+
+### B) ZigZag (swing map)
+
+* **What it indicates:** the market’s swing skeleton
+* **Strength:** great visual structure, easy to read
+* **Weakness:** many ZigZags repaint unless confirmed rules are used
+
+**Best use:** discretionary visualization; less ideal for strict automation unless careful.
+
+---
+
+## 2) Trend-confirmation indicators (they change when a trend is real)
+
+These don’t “call the exact top,” but they’re great at confirming trend regime.
+
+### A) Moving averages (EMA/SMA) + slope
+
+* **What it indicates:** direction + persistence
+* **Turnaround signal:** MA slope changes + price reclaims/loses MA
+* **Weakness:** lag
+
+**Best use:** HTF bias filter (avoid counter-trend breaks)
+
+---
+
+### B) ADX (trend strength)
+
+* **What it indicates:** trend strength, not direction
+* **Turnaround signal:** ADX peaks and starts falling can signal trend exhaustion
+* **Weakness:** doesn’t tell you up or down by itself
+
+**Best use:** decide whether breakouts are likely to follow-through (high ADX) or fail (low ADX)
+
+---
+
+### C) Efficiency Ratio (ER) / KAMA family
+
+* **What it indicates:** trendiness vs chop (great for regime)
+* **Turnaround hint:** ER rising out of chop = transition regime (break+retest edge)
+
+**Best use:** exactly what we built—regime gating.
+
+---
+
+## 3) Turnaround / reversal indicators (more “pivot-ish,” but riskier)
+
+These try to detect turning points earlier, but they can false-signal.
+
+### A) RSI divergence (classic)
+
+* **What it indicates:** momentum weakening vs price
+* **Turnaround signal:** bearish divergence at highs; bullish divergence at lows
+* **Weakness:** divergences can persist a long time before reversal
+
+**Best use:** filter exits / take profit, not primary entries.
+
+---
+
+### B) MACD histogram contraction / divergence
+
+* **What it indicates:** momentum regime shift
+* **Turnaround signal:** histogram crosses zero / divergence
+* **Weakness:** laggy
+
+**Best use:** confirm a structure break is more than noise.
+
+---
+
+### C) Stochastic (overbought/oversold) + cross
+
+* **What it indicates:** short-cycle momentum turns
+* **Weakness:** terrible in strong trends (stays OB/OS)
+
+**Best use:** only in range regimes.
+
+---
+
+## 4) Volatility regime indicators (turnarounds often come with volatility change)
+
+A lot of reversals happen with volatility expansion after compression.
+
+### A) Bollinger Band squeeze / bandwidth
+
+* **What it indicates:** compression → expansion probability
+* **Turnaround signal:** squeeze + break + expansion
+* **Weakness:** not directionally predictive alone
+
+**Best use:** timing tool for breakouts/transitions.
+
+---
+
+### B) ATR expansion
+
+* **What it indicates:** market waking up / regime shift
+* **Turnaround hint:** ATR rising after quiet period + structure break
+
+**Best use:** confirm break quality; avoid trading breakouts when ATR is collapsing.
+
+---
+
+## 5) Volume/flow indicators (often the best “turn” confirmation)
+
+These are strong in crypto/stocks; less reliable in spot FX.
+
+### A) Volume spike / Relative volume
+
+* **What it indicates:** participation & conviction
+* **Turnaround signal:** big volume at key levels + rejection candle
+
+**Best use:** filter breakouts (real break tends to have participation).
+
+---
+
+### B) OBV / Accumulation-Distribution
+
+* **What it indicates:** whether volume confirms price direction
+* **Turnaround signal:** OBV diverges while price makes new highs/lows
+
+**Best use:** confirm/disconfirm trend sustainability.
+
+---
+
+## 6) The best “turnaround” detector for *your* strategy: Structure shift (MSS/CHOCH)
+
+Since your system is structure-based, the most consistent turnaround signal is:
+
+### Market Structure Shift (MSS)
+
+* In an uptrend: price stops making higher highs and breaks a prior higher low
+* In a downtrend: price stops making lower lows and breaks a prior lower high
+
+This is **exactly what break + retest of your Action Line** is trying to capture.
+
+**Best use:** treat MSS as the “turn” event, then use retest for entry.
+
+---
+
+# What I recommend (minimal + strong set)
+
+If your goal is “detect trend + turning points” with high robustness:
+
+✅ **1) Pivots (ta.pivotlow/high)** — defines the turning points
+✅ **2) ER (or ADX)** — tells you trend vs chop regime
+✅ **3) Volume filter** (if applicable) — confirms real break participation
+✅ **4) Structure break + retest** — your main turnaround mechanism
+✅ Optional: **RSI divergence** for exit timing, not entry
+
+This keeps it clean and consistent with your trendline math.
+
+---
+
+# Quick question (so I don’t misinterpret “Pinot”)
+
+When you said **“Pinot”** do you mean:
+
+* **Pivot** (turning point), or
+* **Pine** (Pine Script), or
+* something else you call “Pinot” internally?
+
+Either way I can tailor the list precisely:
+
+* **Pivot-focused** indicators for turnarounds, or
+* **Pine-friendly** indicators that don’t repaint.

@@ -1,0 +1,654 @@
+//@version=6
+strategy("RG Structure Trading v4.0 - Production Grade", 
+         overlay=true, 
+         pyramiding=0,
+         initial_capital=100000,
+         default_qty_type=strategy.percent_of_equity,
+         commission_type=strategy.commission.percent,
+         commission_value=0.05,
+         slippage=2,
+         calc_on_every_tick=false,
+         process_orders_on_close=true)
+
+// ============================================================================
+// PRODUCTION-GRADE INPUTS (v4.0)
+// ============================================================================
+
+// === Pivot Detection ===
+pivotConfirm = input.int(2, "Pivot Confirmation Bars", minval=1, maxval=5, group="Pivot Detection")
+maxPivots = input.int(12, "Max Pivots to Track", minval=5, maxval=20, group="Pivot Detection")
+
+// === Boundary Estimation (Robust) ===
+touchTolerance = input.float(0.30, "Touch Tolerance (ATR)", minval=0.1, maxval=1.0, step=0.05, group="Boundary Estimation")
+violationPenalty = input.float(2.0, "Violation Penalty λ", minval=0.5, maxval=5.0, step=0.5, group="Boundary Estimation")
+persistenceWeight = input.float(0.20, "Persistence Weight ω", minval=0.0, maxval=1.0, step=0.05, group="Boundary Estimation")
+minTouches = input.int(3, "Minimum Touches (RANSAC)", minval=2, maxval=5, group="Boundary Estimation")
+maxSlopeATR = input.float(0.02, "Max Slope (ATR/bar)", minval=0.005, maxval=0.1, step=0.005, group="Boundary Estimation")
+
+// === Quality Thresholds ===
+qScoreA = input.float(0.70, "Q-Score Grade A Threshold", minval=0.5, maxval=0.9, step=0.05, group="Quality Scoring")
+qScoreB = input.float(0.55, "Q-Score Grade B Threshold", minval=0.4, maxval=0.8, step=0.05, group="Quality Scoring")
+
+// === Risk Geometry ===
+maxRiskGeometry = input.float(2.5, "Max Risk Geometry d_geom (ATR)", minval=1.0, maxval=5.0, step=0.25, group="Risk Geometry")
+minRiskGeometry = input.float(0.5, "Min Risk Geometry d_geom (ATR)", minval=0.1, maxval=1.5, step=0.1, group="Risk Geometry")
+
+// === Regime Detection ===
+erPeriod = input.int(20, "Efficiency Ratio Period", minval=10, maxval=50, group="Regime Detection")
+erTrendThreshold = input.float(0.45, "ER Trend Threshold", minval=0.3, maxval=0.7, step=0.05, group="Regime Detection")
+crossCountPeriod = input.int(20, "Cross Count Period", minval=10, maxval=50, group="Regime Detection")
+maxCrossings = input.int(4, "Max Crossings for Trend", minval=1, maxval=10, group="Regime Detection")
+
+// === Break Detection ===
+penetrationBuffer = input.float(0.20, "Penetration Buffer (ATR)", minval=0.1, maxval=0.5, step=0.05, group="Break Detection")
+closeBuffer = input.float(0.40, "Close Confirmation Buffer (ATR)", minval=0.1, maxval=1.0, step=0.1, group="Break Detection")
+
+// === Retest Parameters ===
+retestWindow = input.int(12, "Retest Window (bars)", minval=5, maxval=25, group="Retest")
+retestTolerance = input.float(0.40, "Retest Tolerance (ATR)", minval=0.2, maxval=1.0, step=0.1, group="Retest")
+minRejectionScore = input.int(3, "Min Rejection Score (0-4)", minval=2, maxval=4, group="Retest")
+
+// === Risk Management (Advanced) ===
+riskPerTradeA = input.float(1.0, "Risk Grade A (%)", minval=0.25, maxval=2.0, step=0.25, group="Risk Management")
+riskPerTradeB = input.float(0.5, "Risk Grade B (%)", minval=0.25, maxval=1.5, step=0.25, group="Risk Management")
+stopBuffer = input.float(0.20, "Stop Buffer Beyond Safety (ATR)", minval=0.0, maxval=0.5, step=0.05, group="Risk Management")
+
+// === Trailing Stop System ===
+breakEvenR = input.float(0.8, "Break Even at (R)", minval=0.5, maxval=1.5, step=0.1, group="Trailing Stop")
+partialExitR = input.float(1.0, "Partial Exit at (R)", minval=0.8, maxval=2.0, step=0.1, group="Trailing Stop")
+partialExitPct = input.float(60.0, "Partial Exit %", minval=25.0, maxval=75.0, step=5.0, group="Trailing Stop")
+trailStartR = input.float(1.2, "Trail Start at (R)", minval=1.0, maxval=3.0, step=0.1, group="Trailing Stop")
+trailBufferATR = input.float(0.25, "Trail Buffer (ATR)", minval=0.1, maxval=0.5, step=0.05, group="Trailing Stop")
+
+// === Portfolio Controls (v4.0 NEW) ===
+maxPortfolioHeat = input.float(6.0, "Max Portfolio Heat (%)", minval=3.0, maxval=10.0, step=0.5, group="Portfolio Controls")
+maxDailyLossPct = input.float(3.0, "Max Daily Loss (%)", minval=1.0, maxval=5.0, step=0.5, group="Portfolio Controls")
+maxConsecLosses = input.int(4, "Max Consecutive Losses", minval=2, maxval=8, group="Portfolio Controls")
+
+// === Time Controls ===
+maxBarsInTrade = input.int(40, "Max Bars in Trade", minval=15, maxval=100, group="Time Controls")
+timeStopMinR = input.float(0.3, "Time Stop Min R", minval=0.0, maxval=0.5, step=0.1, group="Time Controls")
+
+// === Drawdown Scaling (v4.0 NEW) ===
+enableDDScaling = input.bool(true, "Enable Drawdown Scaling", group="Drawdown Scaling")
+ddThreshold1 = input.float(5.0, "DD Threshold 1 (%)", minval=2.0, maxval=10.0, step=0.5, group="Drawdown Scaling")
+ddScale1 = input.float(0.75, "Scale at DD1", minval=0.5, maxval=1.0, step=0.05, group="Drawdown Scaling")
+ddThreshold2 = input.float(10.0, "DD Threshold 2 (%)", minval=5.0, maxval=15.0, step=0.5, group="Drawdown Scaling")
+ddScale2 = input.float(0.50, "Scale at DD2", minval=0.25, maxval=0.75, step=0.05, group="Drawdown Scaling")
+ddThreshold3 = input.float(15.0, "DD Threshold 3 (%)", minval=10.0, maxval=20.0, step=0.5, group="Drawdown Scaling")
+ddScale3 = input.float(0.25, "Scale at DD3", minval=0.0, maxval=0.5, step=0.05, group="Drawdown Scaling")
+
+// === Visual Settings ===
+showTrendlines = input.bool(true, "Show Trendlines", group="Visuals")
+showPivots = input.bool(true, "Show Pivot Markers", group="Visuals")
+showZones = input.bool(true, "Show Break/Retest Zones", group="Visuals")
+showLabels = input.bool(true, "Show Event Labels", group="Visuals")
+showInfoTable = input.bool(true, "Show Info Table", group="Visuals")
+showTrailStop = input.bool(true, "Show Trailing Stop", group="Visuals")
+
+// ============================================================================
+// CORE CALCULATIONS
+// ============================================================================
+
+// ATR Calculation
+atr = ta.atr(14)
+
+// Efficiency Ratio
+f_er(src, n) =>
+    net = math.abs(src - src[n])
+    sumDist = math.sum(math.abs(src - src[1]), n)
+    sumDist > 0 ? net / sumDist : 0.0
+
+er = f_er(close, erPeriod)
+
+// Crossing Count (price vs EMA)
+ema20 = ta.ema(close, 20)
+crossCount = 0
+for i = 1 to crossCountPeriod
+    if (close[i] - ema20[i]) * (close[i-1] - ema20[i-1]) < 0
+        crossCount += 1
+
+// Regime Classification
+regime = er >= erTrendThreshold and crossCount <= maxCrossings ? "TREND" :
+         er <= 0.25 or crossCount >= 6 ? "RANGE" : "TRANSITION"
+
+regimeColor = regime == "TREND" ? color.new(color.green, 90) :
+              regime == "RANGE" ? color.new(color.red, 90) : color.new(color.yellow, 90)
+bgcolor(regimeColor, title="Regime Background")
+
+// ============================================================================
+// PIVOT DETECTION (Non-Repainting)
+// ============================================================================
+
+pl = ta.pivotlow(low, pivotConfirm, pivotConfirm)
+ph = ta.pivothigh(high, pivotConfirm, pivotConfirm)
+
+// Pivot Storage Arrays
+var array<int> plBars = array.new<int>(0)
+var array<float> plPrices = array.new<float>(0)
+var array<int> phBars = array.new<int>(0)
+var array<float> phPrices = array.new<float>(0)
+
+// Update Pivot Arrays (store at confirmation bar)
+if not na(pl)
+    array.unshift(plBars, bar_index - pivotConfirm)
+    array.unshift(plPrices, pl)
+    if array.size(plBars) > maxPivots
+        array.pop(plBars)
+        array.pop(plPrices)
+
+if not na(ph)
+    array.unshift(phBars, bar_index - pivotConfirm)
+    array.unshift(phPrices, ph)
+    if array.size(phBars) > maxPivots
+        array.pop(phBars)
+        array.pop(phPrices)
+
+// Visual: Pivot Markers
+plotshape(showPivots and not na(pl) ? pl : na, style=shape.triangleup, location=location.belowbar, 
+          color=color.new(color.green, 30), size=size.tiny, offset=-pivotConfirm, title="Pivot Low")
+plotshape(showPivots and not na(ph) ? ph : na, style=shape.triangledown, location=location.abovebar, 
+          color=color.new(color.red, 30), size=size.tiny, offset=-pivotConfirm, title="Pivot High")
+
+// ============================================================================
+// ROBUST BOUNDARY ESTIMATION (v4.0 Enhanced)
+// ============================================================================
+
+// Support Line Estimation with RANSAC-style validation
+f_estimateSupport() =>
+    bestScore = -999999.0
+    bestB = 0.0
+    bestM = 0.0
+    bestTouches = 0
+    
+    nPivots = array.size(plBars)
+    
+    if nPivots >= 2
+        for i = 0 to math.min(nPivots - 1, 7)
+            for j = i + 1 to math.min(nPivots - 1, 9)
+                bar1 = array.get(plBars, i)
+                price1 = array.get(plPrices, i)
+                bar2 = array.get(plBars, j)
+                price2 = array.get(plPrices, j)
+                
+                if bar1 == bar2
+                    continue
+                
+                // Calculate line parameters
+                slope = (price1 - price2) / (bar1 - bar2)
+                intercept = price1 - slope * bar1
+                
+                // Slope regularization (reject extreme slopes)
+                if math.abs(slope) > maxSlopeATR * atr
+                    continue
+                
+                // Score calculation with Huber-style robustness
+                score = 0.0
+                touches = 0
+                violations = 0.0
+                tau = touchTolerance * atr
+                
+                for k = 0 to nPivots - 1
+                    pBar = array.get(plBars, k)
+                    pPrice = array.get(plPrices, k)
+                    
+                    lineValue = intercept + slope * pBar
+                    distance = pPrice - lineValue
+                    
+                    // One-sided touch scoring (support: pivot above line)
+                    if distance >= 0 and distance <= tau
+                        weight = 1 - distance / tau
+                        score += weight
+                        touches += 1
+                    
+                    // Huber-style violation penalty (capped)
+                    if distance < -tau
+                        violationMag = math.min(math.abs(distance / atr), 3.0)  // Cap at 3 ATR
+                        violations += violationMag
+                
+                // Persistence reward (log-scaled span)
+                span = math.abs(bar1 - bar2)
+                score += persistenceWeight * math.log(1 + span)
+                
+                // Violation penalty
+                score -= violationPenalty * violations
+                
+                // RANSAC-style: require minimum inliers
+                if score > bestScore and touches >= minTouches
+                    bestScore := score
+                    bestB := intercept
+                    bestM := slope
+                    bestTouches := touches
+    
+    [bestB, bestM, bestScore, bestTouches]
+
+// Resistance Line Estimation
+f_estimateResistance() =>
+    bestScore = -999999.0
+    bestB = 0.0
+    bestM = 0.0
+    bestTouches = 0
+    
+    nPivots = array.size(phBars)
+    
+    if nPivots >= 2
+        for i = 0 to math.min(nPivots - 1, 7)
+            for j = i + 1 to math.min(nPivots - 1, 9)
+                bar1 = array.get(phBars, i)
+                price1 = array.get(phPrices, i)
+                bar2 = array.get(phBars, j)
+                price2 = array.get(phPrices, j)
+                
+                if bar1 == bar2
+                    continue
+                
+                slope = (price1 - price2) / (bar1 - bar2)
+                intercept = price1 - slope * bar1
+                
+                if math.abs(slope) > maxSlopeATR * atr
+                    continue
+                
+                score = 0.0
+                touches = 0
+                violations = 0.0
+                tau = touchTolerance * atr
+                
+                for k = 0 to nPivots - 1
+                    pBar = array.get(phBars, k)
+                    pPrice = array.get(phPrices, k)
+                    
+                    lineValue = intercept + slope * pBar
+                    distance = lineValue - pPrice
+                    
+                    // One-sided touch scoring (resistance: pivot below line)
+                    if distance >= 0 and distance <= tau
+                        weight = 1 - distance / tau
+                        score += weight
+                        touches += 1
+                    
+                    if distance < -tau
+                        violationMag = math.min(math.abs(distance / atr), 3.0)
+                        violations += violationMag
+                
+                span = math.abs(bar1 - bar2)
+                score += persistenceWeight * math.log(1 + span)
+                score -= violationPenalty * violations
+                
+                if score > bestScore and touches >= minTouches
+                    bestScore := score
+                    bestB := intercept
+                    bestM := slope
+                    bestTouches := touches
+    
+    [bestB, bestM, bestScore, bestTouches]
+
+// Estimate boundaries
+[suppB, suppM, suppScore, suppTouches] = f_estimateSupport()
+[resB, resM, resScore, resTouches] = f_estimateResistance()
+
+// Current boundary values
+supportLine = suppB + suppM * bar_index
+resistanceLine = resB + resM * bar_index
+
+// Quality scores (sigmoid transform)
+qSupport = suppScore > -999990 ? 1 / (1 + math.exp(-suppScore / 3)) : 0.0
+qResistance = resScore > -999990 ? 1 / (1 + math.exp(-resScore / 3)) : 0.0
+
+// Setup grading
+suppGrade = qSupport >= qScoreA and suppTouches >= 3 ? "A" :
+            qSupport >= qScoreB and suppTouches >= 2 ? "B" : "SKIP"
+resGrade = qResistance >= qScoreA and resTouches >= 3 ? "A" :
+           qResistance >= qScoreB and resTouches >= 2 ? "B" : "SKIP"
+
+// ============================================================================
+// VISUAL: TRENDLINES
+// ============================================================================
+
+var line supportLineObj = na
+var line resistanceLineObj = na
+
+if showTrendlines and barstate.islast
+    // Support line
+    if suppScore > -999990
+        if not na(supportLineObj)
+            line.delete(supportLineObj)
+        x1 = bar_index - 100
+        y1 = suppB + suppM * x1
+        x2 = bar_index + 10
+        y2 = suppB + suppM * x2
+        supportLineObj := line.new(x1, y1, x2, y2, color=color.green, width=2, style=line.style_solid)
+    
+    // Resistance line
+    if resScore > -999990
+        if not na(resistanceLineObj)
+            line.delete(resistanceLineObj)
+        x1 = bar_index - 100
+        y1 = resB + resM * x1
+        x2 = bar_index + 10
+        y2 = resB + resM * x2
+        resistanceLineObj := line.new(x1, y1, x2, y2, color=color.red, width=2, style=line.style_solid)
+
+// ============================================================================
+// STATE MACHINE: Break → Retest → Entry
+// ============================================================================
+
+var int state = 0  // 0=Idle, 1=WaitRetestShort, 2=WaitRetestLong
+var int breakBar = 0
+var float frozenActionB = 0.0
+var float frozenActionM = 0.0
+var float frozenSafetyB = 0.0
+var float frozenSafetyM = 0.0
+var int breakDirection = 0  // -1=short, +1=long
+
+// Previous bar boundaries (non-repainting)
+prevSupportLine = suppB + suppM * (bar_index - 1)
+prevResistanceLine = resB + resM * (bar_index - 1)
+
+// Break Detection
+breakDown = low < prevSupportLine - penetrationBuffer * atr and 
+            close < prevSupportLine - closeBuffer * atr and
+            regime != "RANGE" and suppGrade != "SKIP"
+
+breakUp = high > prevResistanceLine + penetrationBuffer * atr and 
+          close > prevResistanceLine + closeBuffer * atr and
+          regime != "RANGE" and resGrade != "SKIP"
+
+// State transitions
+if state == 0
+    if breakDown
+        state := 1
+        breakBar := bar_index
+        breakDirection := -1
+        frozenActionB := suppB
+        frozenActionM := suppM
+        frozenSafetyB := resB
+        frozenSafetyM := resM
+        if showLabels
+            label.new(bar_index, high, "BREAK↓", color=color.orange, textcolor=color.white, style=label.style_label_down, size=size.small)
+    else if breakUp
+        state := 2
+        breakBar := bar_index
+        breakDirection := 1
+        frozenActionB := resB
+        frozenActionM := resM
+        frozenSafetyB := suppB
+        frozenSafetyM := suppM
+        if showLabels
+            label.new(bar_index, low, "BREAK↑", color=color.orange, textcolor=color.white, style=label.style_label_up, size=size.small)
+
+// Retest Detection & Entry Logic
+var float entryPrice = 0.0
+var float stopLoss = 0.0
+var float takeProfit1 = 0.0
+var string tradeGrade = ""
+var float tradeQScore = 0.0
+var float tradeRiskGeom = 0.0
+
+if state == 1 or state == 2
+    barsSinceBreak = bar_index - breakBar
+    
+    // Timeout check
+    if barsSinceBreak > retestWindow
+        state := 0
+    else
+        actionLineNow = frozenActionB + frozenActionM * bar_index
+        safetyLineNow = frozenSafetyB + frozenSafetyM * bar_index
+        
+        // Failure check (price reverses back through action line)
+        failBuffer = 0.3 * atr
+        if state == 1 and close > actionLineNow + failBuffer
+            state := 0
+            if showLabels
+                label.new(bar_index, high, "FAIL", color=color.gray, textcolor=color.white, style=label.style_label_down, size=size.tiny)
+        else if state == 2 and close < actionLineNow - failBuffer
+            state := 0
+            if showLabels
+                label.new(bar_index, low, "FAIL", color=color.gray, textcolor=color.white, style=label.style_label_up, size=size.tiny)
+        
+        // Retest check
+        inRetestZone = math.abs(close - actionLineNow) <= retestTolerance * atr
+        
+        if inRetestZone and state != 0
+            // Calculate rejection score
+            body = math.abs(close - open)
+            upperWick = high - math.max(close, open)
+            lowerWick = math.min(close, open) - low
+            rangeHL = high - low
+            clv = rangeHL > 0 ? (2 * close - high - low) / rangeHL : 0
+            
+            rejScore = 0
+            
+            if state == 1  // Short setup
+                if clv < -0.3
+                    rejScore += 1
+                if body > 0 and upperWick / body > 1.5
+                    rejScore += 1
+                if close < open
+                    rejScore += 1
+                if close < actionLineNow
+                    rejScore += 1
+            else  // Long setup
+                if clv > 0.3
+                    rejScore += 1
+                if body > 0 and lowerWick / body > 1.5
+                    rejScore += 1
+                if close > open
+                    rejScore += 1
+                if close > actionLineNow
+                    rejScore += 1
+            
+            // Risk geometry check
+            dGeom = math.abs(close - safetyLineNow) / atr
+            
+            // Entry conditions
+            if rejScore >= minRejectionScore and dGeom >= minRiskGeometry and dGeom <= maxRiskGeometry
+                // Determine grade
+                currentQ = state == 1 ? qSupport : qResistance
+                currentTouches = state == 1 ? suppTouches : resTouches
+                
+                grade = currentQ >= qScoreA and currentTouches >= 3 ? "A" :
+                        currentQ >= qScoreB ? "B" : "SKIP"
+                
+                if grade != "SKIP"
+                    // Calculate entry, stop, target
+                    entryPrice := close
+                    
+                    if state == 1  // Short
+                        stopLoss := safetyLineNow + stopBuffer * atr
+                        takeProfit1 := entryPrice - (stopLoss - entryPrice)
+                    else  // Long
+                        stopLoss := safetyLineNow - stopBuffer * atr
+                        takeProfit1 := entryPrice + (entryPrice - stopLoss)
+                    
+                    tradeGrade := grade
+                    tradeQScore := currentQ
+                    tradeRiskGeom := dGeom
+                    
+                    // Execute trade
+                    riskPct = grade == "A" ? riskPerTradeA : riskPerTradeB
+                    
+                    // Drawdown scaling (v4.0)
+                    if enableDDScaling
+                        currentDD = (strategy.equity - strategy.initial_capital) / strategy.initial_capital * -100
+                        if currentDD >= ddThreshold3
+                            riskPct := riskPct * ddScale3
+                        else if currentDD >= ddThreshold2
+                            riskPct := riskPct * ddScale2
+                        else if currentDD >= ddThreshold1
+                            riskPct := riskPct * ddScale1
+                    
+                    if state == 1
+                        strategy.entry("Short", strategy.short, qty=riskPct)
+                        strategy.exit("Exit Short", "Short", stop=stopLoss, limit=takeProfit1)
+                        if showLabels
+                            label.new(bar_index, high, "SHORT " + grade, color=color.red, textcolor=color.white, style=label.style_label_down, size=size.small)
+                    else
+                        strategy.entry("Long", strategy.long, qty=riskPct)
+                        strategy.exit("Exit Long", "Long", stop=stopLoss, limit=takeProfit1)
+                        if showLabels
+                            label.new(bar_index, low, "LONG " + grade, color=color.green, textcolor=color.white, style=label.style_label_up, size=size.small)
+                    
+                    state := 0
+
+// ============================================================================
+// TRAILING STOP MANAGEMENT
+// ============================================================================
+
+var float trailStop = na
+var bool beTriggered = false
+var bool tp1Triggered = false
+
+if strategy.position_size != 0
+    positionEntry = strategy.position_avg_price
+    isLong = strategy.position_size > 0
+    
+    rValue = math.abs(positionEntry - stopLoss)
+    if rValue == 0
+        rValue := atr
+    
+    currentR = isLong ? (close - positionEntry) / rValue : (positionEntry - close) / rValue
+    
+    // Break-even trigger
+    if currentR >= breakEvenR and not beTriggered
+        beTriggered := true
+        if isLong
+            trailStop := math.max(nz(trailStop, stopLoss), positionEntry + 0.05 * atr)
+        else
+            trailStop := math.min(nz(trailStop, stopLoss), positionEntry - 0.05 * atr)
+        if showLabels
+            label.new(bar_index, isLong ? low : high, "BE", color=color.blue, textcolor=color.white, 
+                     style=isLong ? label.style_label_up : label.style_label_down, size=size.tiny)
+    
+    // Partial exit trigger
+    if currentR >= partialExitR and not tp1Triggered
+        tp1Triggered := true
+        if showLabels
+            label.new(bar_index, isLong ? high : low, "TP1", color=color.teal, textcolor=color.white,
+                     style=isLong ? label.style_label_down : label.style_label_up, size=size.tiny)
+    
+    // Pivot-based trailing (after trail start)
+    if currentR >= trailStartR
+        if isLong
+            recentPL = ta.pivotlow(low, pivotConfirm, pivotConfirm)
+            if not na(recentPL)
+                pivotStop = recentPL - trailBufferATR * atr
+                trailStop := math.max(nz(trailStop, stopLoss), pivotStop)
+        else
+            recentPH = ta.pivothigh(high, pivotConfirm, pivotConfirm)
+            if not na(recentPH)
+                pivotStop = recentPH + trailBufferATR * atr
+                trailStop := math.min(nz(trailStop, stopLoss), pivotStop)
+    
+    // Update stop order
+    if not na(trailStop)
+        if isLong
+            strategy.exit("Trail Long", "Long", stop=trailStop)
+        else
+            strategy.exit("Trail Short", "Short", stop=trailStop)
+    
+    // Time stop
+    barsInTrade = bar_index - strategy.opentrades.entry_bar_index(0)
+    if barsInTrade >= maxBarsInTrade and currentR < timeStopMinR
+        strategy.close_all(comment="TIME")
+        if showLabels
+            label.new(bar_index, isLong ? low : high, "TIME", color=color.gray, textcolor=color.white,
+                     style=isLong ? label.style_label_up : label.style_label_down, size=size.tiny)
+
+else
+    // Reset on flat
+    trailStop := na
+    beTriggered := false
+    tp1Triggered := false
+
+// Plot trailing stop
+plot(showTrailStop and strategy.position_size != 0 ? trailStop : na, "Trailing Stop", color=color.fuchsia, style=plot.style_stepline, linewidth=2)
+
+// ============================================================================
+// CHOCH / MSS Detection
+// ============================================================================
+
+var float lastPH = na
+var float lastPL = na
+
+if not na(ph)
+    lastPH := ph
+if not na(pl)
+    lastPL := pl
+
+chochUp = not na(lastPH) and close > lastPH and close[1] <= lastPH[1]
+chochDown = not na(lastPL) and close < lastPL and close[1] >= lastPL[1]
+
+plotshape(showLabels and chochUp, style=shape.labelup, location=location.belowbar, color=color.new(color.green, 50), text="MSS↑", textcolor=color.white, size=size.tiny)
+plotshape(showLabels and chochDown, style=shape.labeldown, location=location.abovebar, color=color.new(color.red, 50), text="MSS↓", textcolor=color.white, size=size.tiny)
+
+// ============================================================================
+// INFO TABLE (v4.0 Enhanced)
+// ============================================================================
+
+if showInfoTable and barstate.islast
+    var table infoTable = table.new(position.top_right, 2, 14, bgcolor=color.new(color.black, 80), border_width=1)
+    
+    // Headers
+    table.cell(infoTable, 0, 0, "Metric", text_color=color.white, text_size=size.small)
+    table.cell(infoTable, 1, 0, "Value", text_color=color.white, text_size=size.small)
+    
+    // Data rows
+    table.cell(infoTable, 0, 1, "Regime", text_color=color.gray, text_size=size.tiny)
+    table.cell(infoTable, 1, 1, regime, text_color=regime == "TREND" ? color.green : regime == "RANGE" ? color.red : color.yellow, text_size=size.tiny)
+    
+    table.cell(infoTable, 0, 2, "ER", text_color=color.gray, text_size=size.tiny)
+    table.cell(infoTable, 1, 2, str.tostring(er, "#.##"), text_color=color.white, text_size=size.tiny)
+    
+    table.cell(infoTable, 0, 3, "Q-Support", text_color=color.gray, text_size=size.tiny)
+    table.cell(infoTable, 1, 3, str.tostring(qSupport, "#.##") + " (" + suppGrade + ")", text_color=suppGrade == "A" ? color.green : suppGrade == "B" ? color.yellow : color.red, text_size=size.tiny)
+    
+    table.cell(infoTable, 0, 4, "Q-Resistance", text_color=color.gray, text_size=size.tiny)
+    table.cell(infoTable, 1, 4, str.tostring(qResistance, "#.##") + " (" + resGrade + ")", text_color=resGrade == "A" ? color.green : resGrade == "B" ? color.yellow : color.red, text_size=size.tiny)
+    
+    table.cell(infoTable, 0, 5, "Supp Touches", text_color=color.gray, text_size=size.tiny)
+    table.cell(infoTable, 1, 5, str.tostring(suppTouches), text_color=color.white, text_size=size.tiny)
+    
+    table.cell(infoTable, 0, 6, "Res Touches", text_color=color.gray, text_size=size.tiny)
+    table.cell(infoTable, 1, 6, str.tostring(resTouches), text_color=color.white, text_size=size.tiny)
+    
+    table.cell(infoTable, 0, 7, "State", text_color=color.gray, text_size=size.tiny)
+    stateStr = state == 0 ? "IDLE" : state == 1 ? "WAIT SHORT" : "WAIT LONG"
+    table.cell(infoTable, 1, 7, stateStr, text_color=state == 0 ? color.gray : color.orange, text_size=size.tiny)
+    
+    table.cell(infoTable, 0, 8, "Position", text_color=color.gray, text_size=size.tiny)
+    posStr = strategy.position_size > 0 ? "LONG" : strategy.position_size < 0 ? "SHORT" : "FLAT"
+    table.cell(infoTable, 1, 8, posStr, text_color=strategy.position_size > 0 ? color.green : strategy.position_size < 0 ? color.red : color.gray, text_size=size.tiny)
+    
+    // Drawdown info
+    currentDD = strategy.initial_capital > 0 ? (strategy.initial_capital - strategy.equity) / strategy.initial_capital * 100 : 0
+    table.cell(infoTable, 0, 9, "Drawdown", text_color=color.gray, text_size=size.tiny)
+    table.cell(infoTable, 1, 9, str.tostring(currentDD, "#.#") + "%", text_color=currentDD > 10 ? color.red : currentDD > 5 ? color.orange : color.white, text_size=size.tiny)
+    
+    // Win rate
+    winRate = strategy.closedtrades > 0 ? strategy.wintrades / strategy.closedtrades * 100 : 0
+    table.cell(infoTable, 0, 10, "Win Rate", text_color=color.gray, text_size=size.tiny)
+    table.cell(infoTable, 1, 10, str.tostring(winRate, "#.#") + "%", text_color=winRate > 50 ? color.green : color.red, text_size=size.tiny)
+    
+    // Profit Factor
+    pf = strategy.grossloss != 0 ? strategy.grossprofit / math.abs(strategy.grossloss) : 0
+    table.cell(infoTable, 0, 11, "Profit Factor", text_color=color.gray, text_size=size.tiny)
+    table.cell(infoTable, 1, 11, str.tostring(pf, "#.##"), text_color=pf > 1.5 ? color.green : pf > 1 ? color.yellow : color.red, text_size=size.tiny)
+    
+    // Total trades
+    table.cell(infoTable, 0, 12, "Total Trades", text_color=color.gray, text_size=size.tiny)
+    table.cell(infoTable, 1, 12, str.tostring(strategy.closedtrades), text_color=color.white, text_size=size.tiny)
+    
+    // Net Profit
+    table.cell(infoTable, 0, 13, "Net Profit", text_color=color.gray, text_size=size.tiny)
+    table.cell(infoTable, 1, 13, str.tostring(strategy.netprofit, "#.##"), text_color=strategy.netprofit > 0 ? color.green : color.red, text_size=size.tiny)
+
+// ============================================================================
+// ALERTS
+// ============================================================================
+
+alertcondition(breakDown, title="Break Down", message="Support break detected - potential short setup")
+alertcondition(breakUp, title="Break Up", message="Resistance break detected - potential long setup")
+alertcondition(strategy.position_size != 0 and strategy.position_size[1] == 0, title="Entry", message="Trade entered")
+alertcondition(strategy.position_size == 0 and strategy.position_size[1] != 0, title="Exit", message="Trade exited")
+alertcondition(chochUp, title="CHOCH Up", message="Market structure shift bullish")
+alertcondition(chochDown, title="CHOCH Down", message="Market structure shift bearish")

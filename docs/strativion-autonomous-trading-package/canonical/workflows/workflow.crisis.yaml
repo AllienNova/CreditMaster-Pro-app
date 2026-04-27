@@ -1,0 +1,309 @@
+meta:
+  document_role: workflow
+  workflow_id: workflow.crisis
+  schema_version: 1.0.0
+  file_version: 1.0.0
+  canonical_package_version: 2.0.0
+  description: >
+    SEV1 crisis incident workflow. Handles detection, classification, action
+    dispatch, escalation, and postmortem triggering for the highest-severity
+    incidents. All thresholds and actions are references to canonical policy
+    fields — NO numeric literals appear in this file.
+
+    CRITICAL SAFETY ANNOTATION (see PRINCIPAL-REVIEW.md#P0-10):
+    The trigger "state_untrusted" MUST route to FREEZE_AND_ALERT, NOT to
+    flatten_to_cash or any position-modifying action. Flattening on untrusted
+    state is catastrophically unsafe: when system state is untrusted, the
+    position inventory cannot be verified. An autonomous flatten on unverified
+    inventory risks duplicate closures, missed positions, and compounding
+    broker-side errors. The safe default is defined at:
+    policy.dr.yaml#ambiguous_state.action = FREEZE_AND_ALERT (const-enforced
+    in policy.dr.v1.schema.json). This workflow references that field
+    explicitly and must never substitute a different action for state_untrusted.
+
+# ---------------------------------------------------------------------------
+# Incident detection triggers
+# ---------------------------------------------------------------------------
+
+triggers:
+  description: >
+    Events that initiate the crisis workflow. All quantitative thresholds
+    (e.g., loss percentages, drawdown levels) resolve from canonical owners;
+    workflow carries references only.
+  trigger_list:
+    - trigger_id: daily_loss_breach
+      description: Daily P&L loss has exceeded the kill-switch threshold.
+      threshold_ref: "policy.runtime.yaml#risk.kill_switch.daily_loss_pct"
+      comment: R-09. Override ⬇.
+      severity_ref: "policy.incidents.yaml#severity_map[code=INC_RISK_DAILY_LOSS_BREACH]"
+
+    - trigger_id: weekly_loss_breach
+      description: Weekly P&L loss has exceeded the kill-switch threshold.
+      threshold_ref: "policy.runtime.yaml#risk.kill_switch.weekly_loss_pct"
+      comment: R-10.
+      severity_ref: "policy.incidents.yaml#severity_map[code=INC_RISK_WEEKLY_LOSS_BREACH]"
+
+    - trigger_id: drawdown_breach
+      description: Peak-to-trough equity drawdown has exceeded the threshold.
+      threshold_ref: "policy.runtime.yaml#risk.kill_switch.drawdown_pct"
+      comment: R-11.
+      severity_ref: "policy.incidents.yaml#severity_map[code=INC_RISK_DRAWDOWN_BREACH]"
+
+    - trigger_id: mwcb_l3
+      description: Market-Wide Circuit Breaker Level 3 halt has been declared.
+      threshold_ref: "policy.compliance.yaml#mwcb.levels[level=L3]"
+      comment: C-04. Locked (🔒).
+      severity_ref: "policy.incidents.yaml#severity_map[code=INC_COMPLIANCE_MWCB_L3]"
+
+    - trigger_id: state_untrusted
+      description: >
+        System state is ambiguous or cannot be verified (e.g., broker
+        connectivity lost, position reconciliation failure, split-brain
+        detected). ACTION MUST BE FREEZE_AND_ALERT — see P0-10 annotation
+        in meta.description and policy.dr.yaml#ambiguous_state.action.
+        Flatten is explicitly prohibited for this trigger.
+      action_ref: "policy.dr.yaml#ambiguous_state.action"
+      action_const: "FREEZE_AND_ALERT"
+      flatten_prohibited: true
+      flatten_prohibition_rationale: >
+        Per PRINCIPAL-REVIEW.md#P0-10: flattening on untrusted state may
+        close positions that do not exist, leave positions that do, generate
+        duplicate broker-side orders, or interact with a broker that has
+        already moved on. Operator reconciliation is required before any
+        position-modifying action. See also policy.dr.v1.schema.json
+        where ambiguous_state.action is schema-enforced as a const.
+      severity_ref: "policy.incidents.yaml#severity_map[code=INC_SYSTEM_STATE_UNTRUSTED]"
+
+    - trigger_id: data_quality_systemic_failure
+      description: >
+        Multiple data feeds have simultaneously failed staleness or
+        cross-venue disagreement checks. Quantitative thresholds resolve
+        from policy.data-quality.yaml — not repeated here.
+      threshold_ref: "policy.data-quality.yaml#cross_venue.max_disagreement_bps"
+      staleness_refs:
+        - "policy.data-quality.yaml#staleness.equities_max_ms"
+        - "policy.data-quality.yaml#staleness.futures_max_ms"
+      comment: D-01 through D-05.
+      severity_ref: "policy.incidents.yaml#severity_map[code=INC_DATA_QUALITY_SYSTEMIC]"
+
+    - trigger_id: compliance_halt
+      description: LULD or auction halt has persisted beyond recovery wake-up rule threshold.
+      threshold_ref: "policy.calendar.yaml#halts.wake_rule"
+      comment: K-09. Locked (🔒).
+      severity_ref: "policy.incidents.yaml#severity_map[code=INC_COMPLIANCE_HALT_EXTENDED]"
+
+# ---------------------------------------------------------------------------
+# Step 1: Detect
+# ---------------------------------------------------------------------------
+
+steps:
+  - step_id: detect
+    name: Detect
+    description: >
+      Identify which trigger(s) have fired. Validate trigger conditions against
+      canonical thresholds. Emit the appropriate incident code.
+    input_refs:
+      - description: Live P&L and drawdown metrics
+        source_ref: "policy.runtime.yaml#risk.kill_switch"
+      - description: Market data quality metrics
+        source_ref: "policy.data-quality.yaml#staleness"
+      - description: Compliance halt state
+        source_ref: "policy.compliance.yaml#mwcb"
+      - description: System health signals
+        source_ref: "policy.dr.yaml#degraded_defaults"
+    output_refs:
+      - description: Active incident code(s)
+        field: active_incidents
+      - description: Trigger context for classify step
+        field: trigger_context
+    guards: []
+    on_fail:
+      action: freeze_and_alert
+      rationale: >
+        Detection itself failing implies system health is degraded; default to
+        FREEZE_AND_ALERT per policy.dr.yaml#ambiguous_state.action.
+      action_ref: "policy.dr.yaml#ambiguous_state.action"
+
+# ---------------------------------------------------------------------------
+# Step 2: Classify
+# ---------------------------------------------------------------------------
+
+  - step_id: classify
+    name: Classify
+    description: >
+      Map each detected incident code to its severity level.
+      Severity mapping is the canonical owner at policy.incidents.yaml#severity_map.
+      This step carries no severity literals.
+    depends_on: [detect]
+    input_refs:
+      - description: Active incident codes from detect step
+        field: active_incidents
+      - description: Severity mapping table
+        source_ref: "policy.incidents.yaml#severity_map"
+    output_refs:
+      - description: Classified incidents with severity assignments
+        field: classified_incidents
+    guards:
+      - guard_id: guard_severity_lookup
+        guard_type: reference
+        source: "policy.incidents.yaml#severity_map"
+        operator: lookup_by_code
+        comment: I-02. Locked (🔒).
+    fail_action:
+      action: freeze_and_alert
+      incident_code_ref: "policy.incidents.yaml#codes[code=INC_SYSTEM_CLASSIFICATION_FAILURE]"
+
+# ---------------------------------------------------------------------------
+# Step 3: Action
+# ---------------------------------------------------------------------------
+
+  - step_id: action
+    name: Action Dispatch
+    description: >
+      Dispatch the appropriate automated response for each classified incident.
+      Actions are resolved from policy.incidents.yaml#action_map. The special
+      case of state_untrusted is routed EXCLUSIVELY to FREEZE_AND_ALERT via
+      policy.dr.yaml#ambiguous_state.action — see P0-10 annotation.
+    depends_on: [classify]
+    input_refs:
+      - description: Classified incidents with severity
+        field: classified_incidents
+      - description: Action map
+        source_ref: "policy.incidents.yaml#action_map"
+      - description: Ambiguous-state safe action (state_untrusted route)
+        source_ref: "policy.dr.yaml#ambiguous_state.action"
+      - description: Flatten procedure (only invoked for authorized triggers)
+        source_ref: "policy.dr.yaml#flatten.procedure"
+    output_refs:
+      - description: Actions dispatched per incident
+        field: dispatched_actions
+    guards:
+      - guard_id: guard_action_lookup
+        guard_type: reference
+        source: "policy.incidents.yaml#action_map"
+        operator: lookup_by_code
+        comment: I-03. Locked (🔒).
+      - guard_id: guard_state_untrusted_action
+        guard_type: reference
+        source: "policy.dr.yaml#ambiguous_state.action"
+        operator: const_eq
+        expected_const: "FREEZE_AND_ALERT"
+        comment: >
+          DR-06. Locked (🔒). Validates that state_untrusted trigger resolves
+          to FREEZE_AND_ALERT. Any deviation is a schema violation and must
+          be rejected by both this guard and the schema const in
+          policy.dr.v1.schema.json. See PRINCIPAL-REVIEW.md#P0-10.
+      - guard_id: guard_flatten_trigger_conditions
+        guard_type: reference
+        source: "policy.dr.yaml#flatten.procedure.trigger_conditions"
+        operator: subset_check
+        comment: >
+          DR-05. Flatten is only permissible for the authorized trigger conditions
+          listed in policy.dr.yaml#flatten.procedure.trigger_conditions.
+          state_untrusted is explicitly excluded from that list.
+    fail_action:
+      action: freeze_and_alert
+      incident_code_ref: "policy.incidents.yaml#codes[code=INC_SYSTEM_ACTION_DISPATCH_FAILURE]"
+
+    action_routing_table:
+      description: >
+        Routes triggers to their canonical actions. No action values are
+        defined here — all resolve from policy.incidents.yaml#action_map
+        or policy.dr.yaml. This table is a reference map, not a value map.
+      routes:
+        - trigger_id: state_untrusted
+          action_ref: "policy.dr.yaml#ambiguous_state.action"
+          note: "MUST be FREEZE_AND_ALERT. Flatten is PROHIBITED. See P0-10."
+        - trigger_id: daily_loss_breach
+          action_ref: "policy.incidents.yaml#action_map[code=INC_RISK_DAILY_LOSS_BREACH]"
+        - trigger_id: weekly_loss_breach
+          action_ref: "policy.incidents.yaml#action_map[code=INC_RISK_WEEKLY_LOSS_BREACH]"
+        - trigger_id: drawdown_breach
+          action_ref: "policy.incidents.yaml#action_map[code=INC_RISK_DRAWDOWN_BREACH]"
+        - trigger_id: mwcb_l3
+          action_ref: "policy.incidents.yaml#action_map[code=INC_COMPLIANCE_MWCB_L3]"
+        - trigger_id: data_quality_systemic_failure
+          action_ref: "policy.incidents.yaml#action_map[code=INC_DATA_QUALITY_SYSTEMIC]"
+        - trigger_id: compliance_halt
+          action_ref: "policy.incidents.yaml#action_map[code=INC_COMPLIANCE_HALT_EXTENDED]"
+
+# ---------------------------------------------------------------------------
+# Step 4: Escalate
+# ---------------------------------------------------------------------------
+
+  - step_id: escalate
+    name: Escalate
+    description: >
+      Notify escalation roster for the active severity level.
+      Roster and delay thresholds resolve from policy.incidents.yaml#escalation.
+      Alert sinks resolve from policy.incidents.yaml#sinks.
+    depends_on: [action]
+    input_refs:
+      - description: Classified incident severity
+        field: classified_incidents[].severity
+      - description: Escalation roster table
+        source_ref: "policy.incidents.yaml#escalation.rosters"
+      - description: Alert sink configuration
+        source_ref: "policy.incidents.yaml#sinks"
+    output_refs:
+      - description: Escalation notifications sent
+        field: escalation_record
+    guards:
+      - guard_id: guard_escalation_delay
+        guard_type: reference
+        source: "policy.incidents.yaml#escalation.rosters[].escalation_delay_ms"
+        operator: apply_delay
+        comment: I-05.
+      - guard_id: guard_min_severity_for_sink
+        guard_type: reference
+        source: "policy.incidents.yaml#sinks[].min_severity"
+        operator: severity_gte
+        comment: I-06.
+    fail_action:
+      action: log_and_retry
+      incident_code_ref: "policy.incidents.yaml#codes[code=INC_SYSTEM_ESCALATION_FAILURE]"
+
+# ---------------------------------------------------------------------------
+# Step 5: Postmortem Trigger
+# ---------------------------------------------------------------------------
+
+  - step_id: postmortem_trigger
+    name: Postmortem Trigger
+    description: >
+      For SEV1 incidents, automatically open a postmortem record with:
+      - canonical_hash at incident time
+      - tenant_override_hash at incident time
+      - all dispatched actions taken
+      - timeline from detect through escalate
+      Postmortem is a supervisory signal only (class: autonomous_supervisory_signal);
+      it does not modify positions or policy.
+    depends_on: [escalate]
+    input_refs:
+      - description: Canonical package hash at incident time
+        source_ref: "canonical/MANIFEST.json#canonical_hash"
+      - description: All incident and action records
+        field: classified_incidents
+      - description: Supervisory signal definitions
+        source_ref: "policy.incidents.yaml#supervisory_signals"
+    output_refs:
+      - description: Postmortem record identifier
+        field: postmortem_id
+    guards:
+      - guard_id: guard_postmortem_severity
+        guard_type: reference
+        source: "policy.incidents.yaml#severity_map"
+        operator: is_sev1
+        comment: I-02. Postmortem is mandatory for all SEV1 incidents.
+      - guard_id: guard_supervisory_signal_class
+        guard_type: reference
+        source: "policy.incidents.yaml#supervisory_signals[].permitted_actions"
+        operator: allowed_only
+        comment: I-04. Postmortem action must be in permitted_actions (detect+alert only).
+    fail_action:
+      action: alert_only
+      incident_code_ref: "policy.incidents.yaml#codes[code=INC_SYSTEM_POSTMORTEM_FAILURE]"
+    permitted_actions_constraint:
+      description: >
+        This step may only emit ESCALATE_TO_OPERATOR and TRIGGER_POSTMORTEM.
+        It must not mutate positions, risk parameters, or any canonical value.
+        Constraint source: policy.incidents.yaml#supervisory_signals[].permitted_actions.

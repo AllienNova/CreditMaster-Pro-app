@@ -1,0 +1,28 @@
+meta:
+  document_role: policy
+  schema_version: "2.0.0"
+  file_version: "2.0.0"
+  canonical_package_version: "2.5.0"
+
+mode:
+  active: supervised_live
+
+risk:
+  per_trade:
+    hard_max_pct: 0.01
+    default_pct: 0.0075
+  cluster:
+    per_symbol_max_pct: 0.02
+    per_sector_max_pct: 0.04
+    per_corr_cluster_max_pct: 0.05
+  portfolio:
+    heat_normal_max_pct: 0.06
+    heat_shock_max_pct: 0.03
+    heat_crisis_max_pct: 0.01
+  kill_switch:
+    daily_loss_pct: 0.02
+    weekly_loss_pct: 0.03
+    drawdown_pct: 0.15
+  margin:
+    utilization_max_pct: 0.75
+    leverage_max: 2.0

@@ -1,0 +1,191 @@
+Perfect — these slides are all explaining **how to build the setup BEFORE you ever think about entries**. This is the *foundation* that makes the trendline break + retest strategy work consistently.
+
+I’ll explain this as a **clear, step-by-step workflow** you can repeat every single time.
+
+---
+
+## 1️⃣ What “Top-Down Analysis” Really Means
+
+**Top-down analysis = context first, execution last.**
+
+You always:
+
+1. Start on the **highest timeframe**
+2. Work **downward**
+3. Carry your levels and trendlines with you
+
+You are answering one question at each level:
+
+| Timeframe        | Question                                |
+| ---------------- | --------------------------------------- |
+| Monthly / Weekly | Where is price in the big picture?      |
+| Daily / 4H       | What is the dominant trend & structure? |
+| 1H / 15m         | Where is the *low-risk entry*?          |
+
+This prevents random trades and emotional entries.
+
+---
+
+## 2️⃣ “We Look at As Much Price Action As Possible”
+
+This is **critical** and most traders mess this up.
+
+### What she means:
+
+* Zoom **all the way out**
+* Include **years of data**, not weeks
+* Let price tell the story
+
+Why?
+
+* Major trendlines often start **years ago**
+* Old levels still matter
+* Institutions trade long memory, not short charts
+
+📌 *If you don’t zoom out, you are trading blind.*
+
+---
+
+## 3️⃣ Drawing Trendlines the RIGHT Way (From the Very Top)
+
+![Image](https://forexbee.co/wp-content/uploads/2025/09/top-down-analysis-in-trading.png)
+
+![Image](https://www.tradingsetupsreview.com/swing-trading-trend-lines/img/Drawing-a-Bullish-Trend-Line.png)
+
+### Rules for drawing trendlines:
+
+* Start from the **earliest clear swing**
+* Connect **major highs or major lows**
+* Extend the line forward
+* **Do not adjust it to fit price**
+
+👉 The line must:
+
+* Touch price multiple times
+* **Not cut through candles**
+* Act as a *boundary*, not a decoration
+
+If price cuts through it → **it’s invalid**
+
+---
+
+## 4️⃣ “Tracking As Much Movement As Possible With Our Lines”
+
+This means:
+
+* One trendline can capture **an entire market phase**
+* You are not redrawing constantly
+* You let the market invalidate it naturally
+
+Good trendlines:
+
+* Last months or years
+* Get respected multiple times
+* Eventually break decisively
+
+That break is **information**, not noise.
+
+---
+
+## 5️⃣ “Without Price Intersecting or Cutting Through”
+
+This is a **hard rule**.
+
+### If price:
+
+❌ Crosses the line repeatedly
+❌ Chops through it
+❌ Ignores it
+
+→ **Delete it**
+
+A valid trendline:
+
+* Price respects it
+* Bounces cleanly
+* Treats it like a wall or floor
+
+---
+
+## 6️⃣ Connecting Higher Timeframe Lines to Lower Timeframes
+
+This is where most traders level up.
+
+As you go down:
+
+* **Weekly → Daily**
+* **Daily → 4H**
+* **4H → 1H**
+
+You **do not redraw from scratch**.
+
+Instead:
+
+* You *refine*
+* You add **secondary trendlines**
+* You keep the main structure intact
+
+Higher timeframe levels = **boss levels**
+Lower timeframe entries = **execution**
+
+---
+
+## 7️⃣ The Full Picture (What You’re Actually Doing)
+
+You are building a **map**.
+
+By the time you’re on the execution timeframe, you already know:
+
+* Where price came from
+* What structure it’s respecting
+* Where it should NOT go
+* Where risk is smallest
+
+That’s why the later **trendline break + retest** works:
+
+* It happens at meaningful structure
+* Not random lines
+* Not emotional guesses
+
+---
+
+## 8️⃣ Simple Repeatable Workflow (Save This)
+
+**Every chart, every time:**
+
+1️⃣ Zoom out completely
+2️⃣ Start on highest timeframe
+3️⃣ Draw clean trendlines (no candle cuts)
+4️⃣ Extend lines forward
+5️⃣ Move down one timeframe
+6️⃣ Refine, don’t redraw
+7️⃣ Wait for a **clean break**
+8️⃣ Wait for **retest near safety line**
+9️⃣ Enter only when risk is tight
+
+---
+
+## Final Insight (This Is the Edge)
+
+This strategy works **not because of entries**
+but because of **context + patience**.
+
+Most traders:
+
+* Start low
+* Draw messy lines
+* Chase price
+
+This approach:
+
+* Starts high
+* Builds structure
+* Lets price come to you
+
+If you want, next I can:
+
+* Turn this into a **one-page checklist**
+* Show **exact stop/target placement**
+* Explain how to spot **fake vs real breaks**
+
+Just say the word 👊
