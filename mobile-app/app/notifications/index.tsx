@@ -149,11 +149,23 @@ export default function NotificationsScreen() {
           />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notifications</Text>
-        {unreadCount > 0 && (
-          <TouchableOpacity onPress={markAllAsRead}>
-            <Text style={styles.markAllText}>Mark all read</Text>
+        <View style={styles.headerActions}>
+          {unreadCount > 0 && (
+            <TouchableOpacity onPress={markAllAsRead}>
+              <Text style={styles.markAllText}>Mark all read</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            onPress={() => router.push("/settings/notification-preferences" as never)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons
+              name="settings-outline"
+              size={24}
+              color={lightTheme.colors.textSecondary}
+            />
           </TouchableOpacity>
-        )}
+        </View>
       </View>
 
       <View style={styles.filterBar}>
@@ -277,6 +289,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     color: lightTheme.colors.text,
+  },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
   },
   markAllText: {
     fontSize: 14,

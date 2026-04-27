@@ -51,6 +51,10 @@ export default function SettingsLayout() {
         name="transaction-rules"
         options={{ title: "Transaction Rules", headerShown: false }}
       />
+      <Stack.Screen
+        name="notification-preferences"
+        options={{ title: "Notification Preferences", headerShown: false }}
+      />
     </Stack>
   );
 }

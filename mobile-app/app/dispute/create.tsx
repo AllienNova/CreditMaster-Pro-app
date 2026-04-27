@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,10 +7,12 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { lightTheme } from "../../src/constants/theme";
+import { useDisputeStore } from "../../src/store/disputeStore";
 
 const DISPUTE_TYPES = [
   { id: "late_payment", label: "Late Payment", icon: "time-outline" },
@@ -35,51 +37,203 @@ const BUREAUS = [
   { id: "transunion", label: "TransUnion", color: "#00AA00" },
 ];
 
+interface DisputeItem {
+  id: string;
+  accountName: string;
+  status: string;
+  balance: string;
+  selected: boolean;
+}
+
+const MOCK_CREDIT_ITEMS: DisputeItem[] = [
+  {
+    id: "item-1",
+    accountName: "Capital One Platinum",
+    status: "Late 30 days",
+    balance: "$2,450",
+    selected: false,
+  },
+  {
+    id: "item-2",
+    accountName: "ABC Collections",
+    status: "In Collections",
+    balance: "$890",
+    selected: false,
+  },
+  {
+    id: "item-3",
+    accountName: "Chase Freedom",
+    status: "Incorrect Balance",
+    balance: "$5,200",
+    selected: false,
+  },
+  {
+    id: "item-4",
+    accountName: "Discover It",
+    status: "Unauthorized Inquiry",
+    balance: "$0",
+    selected: false,
+  },
+  {
+    id: "item-5",
+    accountName: "Bank of America",
+    status: "Account Not Mine",
+    balance: "$1,100",
+    selected: false,
+  },
+];
+
+const TOTAL_STEPS = 6;
+const MAX_MESSAGE_LENGTH = 2000;
+
+function getTemplateMessage(disputeType: string): string {
+  const templates: Record<string, string> = {
+    late_payment:
+      "I am writing to dispute a late payment reported on my credit report. I believe this information is inaccurate. My records show that payment was made on time and I request that this item be investigated and corrected.",
+    collection:
+      "I am writing to dispute a collection account on my credit report. I do not recognize this debt and request validation under the Fair Debt Collection Practices Act. Please provide documentation verifying this account belongs to me.",
+    inquiry:
+      "I am writing to dispute a hard inquiry on my credit report. I did not authorize this credit check and request it be removed immediately per the Fair Credit Reporting Act.",
+    account_error:
+      "I am writing to dispute inaccurate information on my credit report. The account details reported are incorrect and I request a thorough investigation and correction of this entry.",
+    identity_theft:
+      "I am a victim of identity theft and this account was opened fraudulently without my knowledge or consent. I have filed an identity theft report and request immediate removal of this account from my credit report.",
+    other:
+      "I am writing to dispute an item on my credit report that I believe is inaccurate or incomplete. I request that you investigate this matter and correct any errors found.",
+  };
+  return templates[disputeType] ?? templates.other;
+}
+
 export default function CreateDisputeScreen() {
   const router = useRouter();
+  const { generateAILetter, isGeneratingLetter, createDispute, isCreating } =
+    useDisputeStore();
+
   const [step, setStep] = useState(1);
+  const [selectedBureau, setSelectedBureau] = useState("");
   const [disputeType, setDisputeType] = useState("");
-  const [selectedBureaus, setSelectedBureaus] = useState<string[]>([]);
-  const [accountName, setAccountName] = useState("");
-  const [reason, setReason] = useState("");
+  const [items, setItems] = useState<DisputeItem[]>(MOCK_CREDIT_ITEMS);
+  const [disputeMessage, setDisputeMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const toggleBureau = (bureauId: string) => {
-    setSelectedBureaus((prev) =>
-      prev.includes(bureauId)
-        ? prev.filter((b) => b !== bureauId)
-        : [...prev, bureauId],
+  const selectedItems = items.filter((i) => i.selected);
+
+  const toggleItem = (id: string) => {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, selected: !item.selected } : item,
+      ),
     );
   };
 
+  const toggleSelectAll = () => {
+    const allSelected = items.every((i) => i.selected);
+    setItems((prev) => prev.map((item) => ({ ...item, selected: !allSelected })));
+  };
+
   const handleNext = () => {
-    if (step === 1 && !disputeType) {
+    if (step === 1 && !selectedBureau) {
+      Alert.alert("Required", "Please select a credit bureau");
+      return;
+    }
+    if (step === 2 && !disputeType) {
       Alert.alert("Required", "Please select a dispute type");
       return;
     }
-    if (step === 2 && selectedBureaus.length === 0) {
-      Alert.alert("Required", "Please select at least one bureau");
+    if (step === 3 && selectedItems.length === 0) {
+      Alert.alert("Required", "Please select at least one item to dispute");
       return;
     }
-    if (step === 3 && !accountName.trim()) {
-      Alert.alert("Required", "Please enter the account name");
+    if (step === 4 && !disputeMessage.trim()) {
+      Alert.alert("Required", "Please enter a dispute message");
       return;
     }
-    if (step < 4) setStep(step + 1);
-    else handleSubmit();
+
+    if (step === 2 && !disputeMessage) {
+      setDisputeMessage(getTemplateMessage(disputeType));
+    }
+
+    if (step < TOTAL_STEPS) {
+      setStep(step + 1);
+    } else {
+      handleSubmit();
+    }
   };
+
+  const handleBack = () => {
+    if (step > 1) setStep(step - 1);
+  };
+
+  const goToStep = (targetStep: number) => {
+    if (targetStep >= 1 && targetStep <= TOTAL_STEPS) {
+      setStep(targetStep);
+    }
+  };
+
+  const handleAIImprove = useCallback(async () => {
+    const result = await generateAILetter({
+      disputeType,
+      bureau: selectedBureau,
+      accountInfo: {
+        items: selectedItems.map((i) => i.accountName).join(", "),
+        originalMessage: disputeMessage,
+      },
+      tone: "professional",
+      includeStatutes: true,
+    });
+    if (result) {
+      setDisputeMessage(result);
+    } else {
+      Alert.alert("Error", "Failed to generate AI letter. Please try again.");
+    }
+  }, [disputeType, selectedBureau, selectedItems, disputeMessage, generateAILetter]);
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    const dispute = await createDispute({
+      bureau: selectedBureau as "experian" | "equifax" | "transunion",
+      status: "pending",
+      itemType: disputeType,
+      creditorName: selectedItems.map((i) => i.accountName).join(", "),
+      disputeReason: disputeMessage,
+      letterContent: disputeMessage,
+    });
     setIsSubmitting(false);
-    Alert.alert("Success", "Your dispute has been submitted!", [
-      { text: "OK", onPress: () => router.back() },
-    ]);
+    if (dispute) {
+      Alert.alert("Success", "Your dispute has been submitted!", [
+        { text: "OK", onPress: () => router.back() },
+      ]);
+    } else {
+      Alert.alert("Error", "Failed to submit dispute. Please try again.");
+    }
   };
 
-  const renderStep1 = () => (
+  const renderStep1Bureau = () => (
+    <View style={styles.stepContent}>
+      <Text style={styles.stepTitle}>Select Credit Bureau</Text>
+      <Text style={styles.stepDescription}>
+        Choose which bureau to send your dispute to
+      </Text>
+      {BUREAUS.map((bureau) => (
+        <TouchableOpacity
+          key={bureau.id}
+          style={[
+            styles.optionCard,
+            selectedBureau === bureau.id && { borderColor: bureau.color },
+          ]}
+          onPress={() => setSelectedBureau(bureau.id)}
+        >
+          <View style={[styles.bureauDot, { backgroundColor: bureau.color }]} />
+          <Text style={styles.optionLabel}>{bureau.label}</Text>
+          {selectedBureau === bureau.id && (
+            <Ionicons name="checkmark-circle" size={24} color={bureau.color} />
+          )}
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+
+  const renderStep2Type = () => (
     <View style={styles.stepContent}>
       <Text style={styles.stepTitle}>What type of dispute?</Text>
       <Text style={styles.stepDescription}>
@@ -95,7 +249,7 @@ export default function CreateDisputeScreen() {
           onPress={() => setDisputeType(type.id)}
         >
           <Ionicons
-            name={type.icon as any}
+            name={type.icon as keyof typeof Ionicons.glyphMap}
             size={24}
             color={
               disputeType === type.id
@@ -123,79 +277,214 @@ export default function CreateDisputeScreen() {
     </View>
   );
 
-  const renderStep2 = () => (
-    <View style={styles.stepContent}>
-      <Text style={styles.stepTitle}>Which bureaus?</Text>
-      <Text style={styles.stepDescription}>
-        Select the bureaus reporting this item
-      </Text>
-      {BUREAUS.map((bureau) => (
+  const renderStep3Items = () => {
+    const allSelected = items.every((i) => i.selected);
+
+    return (
+      <View style={styles.stepContent}>
+        <Text style={styles.stepTitle}>Select Items to Dispute</Text>
+        <Text style={styles.stepDescription}>
+          Choose which items from your credit report to include
+        </Text>
+
         <TouchableOpacity
-          key={bureau.id}
-          style={[
-            styles.optionCard,
-            selectedBureaus.includes(bureau.id) && {
-              borderColor: bureau.color,
-            },
-          ]}
-          onPress={() => toggleBureau(bureau.id)}
+          style={[styles.selectAllRow]}
+          onPress={toggleSelectAll}
         >
-          <View style={[styles.bureauDot, { backgroundColor: bureau.color }]} />
-          <Text style={styles.optionLabel}>{bureau.label}</Text>
-          {selectedBureaus.includes(bureau.id) && (
-            <Ionicons name="checkmark-circle" size={24} color={bureau.color} />
-          )}
+          <Ionicons
+            name={allSelected ? "checkbox" : "square-outline"}
+            size={24}
+            color={
+              allSelected
+                ? lightTheme.colors.primary
+                : lightTheme.colors.textSecondary
+            }
+          />
+          <Text style={styles.selectAllText}>
+            {allSelected ? "Deselect All" : "Select All"}
+          </Text>
+          <Text style={styles.selectedCount}>
+            {selectedItems.length} of {items.length} selected
+          </Text>
         </TouchableOpacity>
-      ))}
-    </View>
-  );
 
-  const renderStep3 = () => (
-    <View style={styles.stepContent}>
-      <Text style={styles.stepTitle}>Account Details</Text>
-      <Text style={styles.stepDescription}>Enter the account information</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Account/Creditor Name"
-        value={accountName}
-        onChangeText={setAccountName}
-      />
-      <TextInput
-        style={[styles.input, styles.textArea]}
-        placeholder="Describe the issue..."
-        value={reason}
-        onChangeText={setReason}
-        multiline
-        numberOfLines={4}
-      />
-    </View>
-  );
+        {items.map((item) => (
+          <TouchableOpacity
+            key={item.id}
+            style={[
+              styles.itemCard,
+              item.selected && styles.itemCardSelected,
+            ]}
+            onPress={() => toggleItem(item.id)}
+          >
+            <View style={styles.itemCheckbox}>
+              <Ionicons
+                name={item.selected ? "checkbox" : "square-outline"}
+                size={24}
+                color={
+                  item.selected
+                    ? lightTheme.colors.primary
+                    : lightTheme.colors.textSecondary
+                }
+              />
+            </View>
+            <View style={styles.itemInfo}>
+              <Text style={styles.itemName}>{item.accountName}</Text>
+              <Text style={styles.itemStatus}>{item.status}</Text>
+            </View>
+            <Text style={styles.itemBalance}>{item.balance}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
+  };
 
-  const renderStep4 = () => (
+  const renderStep4Message = () => (
     <View style={styles.stepContent}>
-      <Text style={styles.stepTitle}>Review & Submit</Text>
-      <View style={styles.reviewCard}>
-        <Text style={styles.reviewLabel}>Type:</Text>
-        <Text style={styles.reviewValue}>
-          {DISPUTE_TYPES.find((t) => t.id === disputeType)?.label}
-        </Text>
-        <Text style={styles.reviewLabel}>Bureaus:</Text>
-        <Text style={styles.reviewValue}>
-          {selectedBureaus
-            .map((b) => BUREAUS.find((bu) => bu.id === b)?.label)
-            .join(", ")}
-        </Text>
-        <Text style={styles.reviewLabel}>Account:</Text>
-        <Text style={styles.reviewValue}>{accountName}</Text>
-        {reason && (
-          <>
-            <Text style={styles.reviewLabel}>Reason:</Text>
-            <Text style={styles.reviewValue}>{reason}</Text>
-          </>
+      <Text style={styles.stepTitle}>Customize Your Message</Text>
+      <Text style={styles.stepDescription}>
+        Edit the dispute letter or use AI to improve it
+      </Text>
+
+      <TouchableOpacity
+        style={[
+          styles.aiButton,
+          isGeneratingLetter && styles.buttonDisabled,
+        ]}
+        onPress={handleAIImprove}
+        disabled={isGeneratingLetter}
+      >
+        {isGeneratingLetter ? (
+          <ActivityIndicator size="small" color={lightTheme.colors.primary} />
+        ) : (
+          <Ionicons
+            name="sparkles"
+            size={20}
+            color={lightTheme.colors.primary}
+          />
         )}
+        <Text style={styles.aiButtonText}>
+          {isGeneratingLetter ? "Generating..." : "Use AI to improve"}
+        </Text>
+      </TouchableOpacity>
+
+      <TextInput
+        style={styles.messageInput}
+        value={disputeMessage}
+        onChangeText={(text) => {
+          if (text.length <= MAX_MESSAGE_LENGTH) {
+            setDisputeMessage(text);
+          }
+        }}
+        placeholder="Write your dispute message..."
+        multiline
+        textAlignVertical="top"
+      />
+      <Text style={styles.charCount}>
+        {disputeMessage.length}/{MAX_MESSAGE_LENGTH}
+      </Text>
+    </View>
+  );
+
+  const renderStep5Review = () => {
+    const bureauLabel =
+      BUREAUS.find((b) => b.id === selectedBureau)?.label ?? selectedBureau;
+    const typeLabel =
+      DISPUTE_TYPES.find((t) => t.id === disputeType)?.label ?? disputeType;
+
+    return (
+      <View style={styles.stepContent}>
+        <Text style={styles.stepTitle}>Review Your Dispute</Text>
+        <Text style={styles.stepDescription}>
+          Confirm the details before submitting
+        </Text>
+
+        <View style={styles.reviewCard}>
+          <View style={styles.reviewRow}>
+            <Text style={styles.reviewLabel}>Bureau</Text>
+            <View style={styles.reviewValueRow}>
+              <Text style={styles.reviewValue}>{bureauLabel}</Text>
+              <TouchableOpacity onPress={() => goToStep(1)}>
+                <Text style={styles.editLink}>Edit</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.reviewDivider} />
+
+          <View style={styles.reviewRow}>
+            <Text style={styles.reviewLabel}>Dispute Type</Text>
+            <View style={styles.reviewValueRow}>
+              <Text style={styles.reviewValue}>{typeLabel}</Text>
+              <TouchableOpacity onPress={() => goToStep(2)}>
+                <Text style={styles.editLink}>Edit</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.reviewDivider} />
+
+          <View style={styles.reviewRow}>
+            <Text style={styles.reviewLabel}>Items to Dispute</Text>
+            <View style={styles.reviewValueRow}>
+              <Text style={styles.reviewValue}>
+                {selectedItems.length} item{selectedItems.length !== 1 ? "s" : ""}
+              </Text>
+              <TouchableOpacity onPress={() => goToStep(3)}>
+                <Text style={styles.editLink}>Edit</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {selectedItems.map((item) => (
+            <Text key={item.id} style={styles.reviewItemDetail}>
+              {item.accountName} - {item.status}
+            </Text>
+          ))}
+
+          <View style={styles.reviewDivider} />
+
+          <View style={styles.reviewRow}>
+            <Text style={styles.reviewLabel}>Message</Text>
+            <TouchableOpacity onPress={() => goToStep(4)}>
+              <Text style={styles.editLink}>Edit</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.reviewMessagePreview} numberOfLines={4}>
+            {disputeMessage}
+          </Text>
+        </View>
+      </View>
+    );
+  };
+
+  const renderStep6Complete = () => (
+    <View style={styles.stepContent}>
+      <View style={styles.completeContainer}>
+        <View style={styles.completeIcon}>
+          <Ionicons
+            name="checkmark-circle"
+            size={80}
+            color={lightTheme.colors.success}
+          />
+        </View>
+        <Text style={styles.completeTitle}>Dispute Submitted</Text>
+        <Text style={styles.completeDescription}>
+          Your dispute has been submitted successfully. You will be notified when
+          there are updates on your dispute status.
+        </Text>
+        <TouchableOpacity
+          style={styles.completeButton}
+          onPress={() => router.back()}
+        >
+          <Text style={styles.completeButtonText}>Done</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
+
+  const isLastStep = step === 5;
+  const submitting = isSubmitting || isCreating;
 
   return (
     <View style={styles.container}>
@@ -204,44 +493,56 @@ export default function CreateDisputeScreen() {
           <Ionicons name="close" size={28} color={lightTheme.colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>New Dispute</Text>
-        <View style={{ width: 28 }} />
+        <Text style={styles.stepIndicator}>
+          {step <= 5 ? `${step} of 5` : ""}
+        </Text>
       </View>
-      <View style={styles.progressBar}>
-        {[1, 2, 3, 4].map((s) => (
-          <View
-            key={s}
-            style={[
-              styles.progressStep,
-              s <= step && styles.progressStepActive,
-            ]}
-          />
-        ))}
-      </View>
-      <ScrollView style={styles.content}>
-        {step === 1 && renderStep1()}
-        {step === 2 && renderStep2()}
-        {step === 3 && renderStep3()}
-        {step === 4 && renderStep4()}
+
+      {step <= 5 && (
+        <View style={styles.progressBar}>
+          {Array.from({ length: 5 }, (_, i) => i + 1).map((s) => (
+            <View
+              key={s}
+              style={[
+                styles.progressStep,
+                s <= step && styles.progressStepActive,
+              ]}
+            />
+          ))}
+        </View>
+      )}
+
+      <ScrollView style={styles.content} keyboardShouldPersistTaps="handled">
+        {step === 1 && renderStep1Bureau()}
+        {step === 2 && renderStep2Type()}
+        {step === 3 && renderStep3Items()}
+        {step === 4 && renderStep4Message()}
+        {step === 5 && renderStep5Review()}
+        {step === 6 && renderStep6Complete()}
       </ScrollView>
-      <View style={styles.footer}>
-        {step > 1 && (
+
+      {step <= 5 && (
+        <View style={styles.footer}>
+          {step > 1 && (
+            <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+              <Text style={styles.backButtonText}>Back</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => setStep(step - 1)}
+            style={[styles.nextButton, submitting && styles.buttonDisabled]}
+            onPress={handleNext}
+            disabled={submitting}
           >
-            <Text style={styles.backButtonText}>Back</Text>
+            <Text style={styles.nextButtonText}>
+              {isLastStep
+                ? submitting
+                  ? "Submitting..."
+                  : "Submit Dispute"
+                : "Next"}
+            </Text>
           </TouchableOpacity>
-        )}
-        <TouchableOpacity
-          style={[styles.nextButton, isSubmitting && styles.buttonDisabled]}
-          onPress={handleNext}
-          disabled={isSubmitting}
-        >
-          <Text style={styles.nextButtonText}>
-            {step === 4 ? (isSubmitting ? "Submitting..." : "Submit") : "Next"}
-          </Text>
-        </TouchableOpacity>
-      </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -260,6 +561,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     color: lightTheme.colors.text,
+  },
+  stepIndicator: {
+    fontSize: 14,
+    color: lightTheme.colors.textSecondary,
+    minWidth: 28,
+    textAlign: "right",
   },
   progressBar: { flexDirection: "row", padding: 16, gap: 8 },
   progressStep: {
@@ -297,31 +604,175 @@ const styles = StyleSheet.create({
   optionLabel: { flex: 1, fontSize: 16, color: lightTheme.colors.text },
   optionLabelSelected: { color: lightTheme.colors.primary, fontWeight: "600" },
   bureauDot: { width: 12, height: 12, borderRadius: 6 },
-  input: {
+
+  // Step 3 - Item Selection
+  selectAllRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    marginBottom: 8,
+    gap: 8,
+  },
+  selectAllText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "600",
+    color: lightTheme.colors.text,
+  },
+  selectedCount: {
+    fontSize: 14,
+    color: lightTheme.colors.textSecondary,
+  },
+  itemCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    backgroundColor: lightTheme.colors.surface,
+    borderRadius: 12,
+    marginBottom: 10,
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+  itemCardSelected: { borderColor: lightTheme.colors.primary },
+  itemCheckbox: { marginRight: 12 },
+  itemInfo: { flex: 1 },
+  itemName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: lightTheme.colors.text,
+  },
+  itemStatus: {
+    fontSize: 14,
+    color: lightTheme.colors.textSecondary,
+    marginTop: 2,
+  },
+  itemBalance: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: lightTheme.colors.text,
+  },
+
+  // Step 4 - Message Customization
+  aiButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: lightTheme.colors.primary,
+    marginBottom: 16,
+    gap: 8,
+  },
+  aiButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: lightTheme.colors.primary,
+  },
+  messageInput: {
     backgroundColor: lightTheme.colors.surface,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    marginBottom: 16,
+    lineHeight: 24,
+    minHeight: 200,
     borderWidth: 1,
     borderColor: lightTheme.colors.border,
+    color: lightTheme.colors.text,
   },
-  textArea: { height: 120, textAlignVertical: "top" },
+  charCount: {
+    fontSize: 12,
+    color: lightTheme.colors.textSecondary,
+    textAlign: "right",
+    marginTop: 8,
+  },
+
+  // Step 5 - Review
   reviewCard: {
     backgroundColor: lightTheme.colors.surface,
     borderRadius: 12,
     padding: 16,
   },
+  reviewRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 4,
+  },
+  reviewValueRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
   reviewLabel: {
     fontSize: 14,
     color: lightTheme.colors.textSecondary,
-    marginTop: 12,
   },
   reviewValue: {
     fontSize: 16,
     color: lightTheme.colors.text,
     fontWeight: "500",
   },
+  editLink: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: lightTheme.colors.primary,
+  },
+  reviewDivider: {
+    height: 1,
+    backgroundColor: lightTheme.colors.border,
+    marginVertical: 12,
+  },
+  reviewItemDetail: {
+    fontSize: 14,
+    color: lightTheme.colors.textSecondary,
+    paddingLeft: 8,
+    paddingVertical: 2,
+  },
+  reviewMessagePreview: {
+    fontSize: 14,
+    color: lightTheme.colors.text,
+    lineHeight: 20,
+    marginTop: 8,
+  },
+
+  // Step 6 - Complete
+  completeContainer: {
+    alignItems: "center",
+    paddingVertical: 48,
+  },
+  completeIcon: {
+    marginBottom: 24,
+  },
+  completeTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: lightTheme.colors.text,
+    marginBottom: 12,
+  },
+  completeDescription: {
+    fontSize: 16,
+    color: lightTheme.colors.textSecondary,
+    textAlign: "center",
+    lineHeight: 24,
+    paddingHorizontal: 16,
+    marginBottom: 32,
+  },
+  completeButton: {
+    paddingHorizontal: 48,
+    paddingVertical: 16,
+    borderRadius: 12,
+    backgroundColor: lightTheme.colors.primary,
+  },
+  completeButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#FFFFFF",
+  },
+
+  // Footer
   footer: {
     flexDirection: "row",
     padding: 16,
