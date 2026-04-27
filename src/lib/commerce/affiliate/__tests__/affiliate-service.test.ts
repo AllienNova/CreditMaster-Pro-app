@@ -66,7 +66,7 @@ import { affiliateService } from "../affiliate-service";
 // ---------------------------------------------------------------------------
 
 const now = new Date("2026-02-23T12:00:00Z");
-const future = new Date("2026-04-23T12:00:00Z");
+const future = new Date("2027-12-31T12:00:00Z");
 const past = new Date("2025-12-01T12:00:00Z");
 
 function makePartnerRow(overrides: Record<string, unknown> = {}) {
@@ -145,7 +145,6 @@ beforeEach(() => {
   });
 
   // Make mockBuilder properly thenable: await resolves with {data, error}
-  // This is NOT a jest.fn — we define it directly so it behaves like a real thenable
   (mockBuilder as any).then = (
     onFulfilled?: (v: any) => any,
     onRejected?: (e: any) => any,
@@ -646,7 +645,7 @@ describe("AffiliateService", () => {
   describe("validateReferralCode", () => {
     it("should return valid for an active, non-expired code with uses remaining", async () => {
       const row = makeReferralCodeRow();
-      mockBuilder.single.mockResolvedValue({ data: row, error: null });
+      mockBuilder.data = row;
 
       const result = await affiliateService.validateReferralCode("abcd1234");
 
@@ -713,7 +712,8 @@ describe("AffiliateService", () => {
 
     it("should return invalid when max uses reached", async () => {
       const row = makeReferralCodeRow({ uses_count: 100, max_uses: 100 });
-      mockBuilder.single.mockResolvedValue({ data: row, error: null });
+      mockBuilder.data = row;
+      mockBuilder.error = null;
 
       const result = await affiliateService.validateReferralCode("ABCD1234");
 
@@ -723,7 +723,8 @@ describe("AffiliateService", () => {
 
     it("should be valid when max_uses is null (unlimited)", async () => {
       const row = makeReferralCodeRow({ max_uses: null, uses_count: 999 });
-      mockBuilder.single.mockResolvedValue({ data: row, error: null });
+      mockBuilder.data = row;
+      mockBuilder.error = null;
 
       const result = await affiliateService.validateReferralCode("ABCD1234");
 
@@ -732,7 +733,8 @@ describe("AffiliateService", () => {
 
     it("should be valid when expires_at is null (no expiration)", async () => {
       const row = makeReferralCodeRow({ expires_at: null });
-      mockBuilder.single.mockResolvedValue({ data: row, error: null });
+      mockBuilder.data = row;
+      mockBuilder.error = null;
 
       const result = await affiliateService.validateReferralCode("ABCD1234");
 
@@ -746,21 +748,25 @@ describe("AffiliateService", () => {
 
   describe("applyReferralCode", () => {
     it("should increment uses and create attribution for valid code", async () => {
-      // validateReferralCode: from("referral_codes").select().eq().single()
       const codeRow = makeReferralCodeRow({ uses_count: 5 });
-      mockBuilder.single
-        .mockResolvedValueOnce({ data: codeRow, error: null })
-        // createAttribution: from("user_attributions").upsert().select().single()
-        .mockResolvedValueOnce({
-          data: makeAttributionRow({ user_id: "new-user" }),
-          error: null,
-        });
-
-      // update uses_count: from("referral_codes").update().eq()
-      // await resolves to mockBuilder since eq() returns mockBuilder (no then)
-      // The destructured {data, error} comes from mockBuilder.data / mockBuilder.error
+      // First call (validate): returns code row
+      // Second call (create attribution): returns attribution row
+      let callCount = 0;
+      const origThen = (mockBuilder as any).then;
+      (mockBuilder as any).then = (onFulfilled?: (v: any) => any) => {
+        callCount++;
+        if (callCount === 1) {
+          return Promise.resolve(onFulfilled?.({ data: codeRow, error: null }));
+        } else if (callCount === 3) {
+          return Promise.resolve(onFulfilled?.({ data: makeAttributionRow({ user_id: "new-user" }), error: null }));
+        }
+        return Promise.resolve(onFulfilled?.({ data: null, error: null }));
+      };
 
       await affiliateService.applyReferralCode("new-user", "abcd1234");
+
+      // Restore original then
+      (mockBuilder as any).then = origThen;
 
       // Verify update was called with incremented count
       expect(mockBuilder.update).toHaveBeenCalledWith({ uses_count: 6 });
@@ -950,7 +956,8 @@ describe("AffiliateService", () => {
   describe("getUserAttribution", () => {
     it("should return a mapped attribution", async () => {
       const row = makeAttributionRow();
-      mockBuilder.single.mockResolvedValue({ data: row, error: null });
+      mockBuilder.data = row;
+      mockBuilder.error = null;
 
       const result = await affiliateService.getUserAttribution("user-2");
 
@@ -1039,7 +1046,8 @@ describe("AffiliateService", () => {
   describe("getReferrer", () => {
     it("should return the referrerId from user attribution", async () => {
       const row = makeAttributionRow({ referrer_id: "referrer-abc" });
-      mockBuilder.single.mockResolvedValue({ data: row, error: null });
+      mockBuilder.data = row;
+      mockBuilder.error = null;
 
       const result = await affiliateService.getReferrer("user-2");
 
