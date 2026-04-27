@@ -12,6 +12,7 @@ import { createPCTTEngine, type OHLCV } from "@/lib/trading/pctt/pctt-core";
 import { classifyRegime, type RegimeClassification } from "@/lib/trading/regime";
 import { checkHTFAlignment, type HTFResult } from "@/lib/trading/signals";
 import type { Bar } from "@/lib/trading/data/bar-consolidator";
+import { creditService, CREDIT_COSTS } from "@/lib/credits";
 
 // ============================================================================
 // TYPES
@@ -376,6 +377,22 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: "symbol required" }, { status: 400 });
         }
 
+        // Credit check before expensive signal analysis
+        const signalCost = CREDIT_COSTS.signal_analysis;
+        const hasSignalCredits = await creditService.checkSufficientCredits(user.id, signalCost);
+        if (!hasSignalCredits) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: "Insufficient credits",
+              code: "INSUFFICIENT_CREDITS",
+              required: signalCost,
+              action: "signal_analysis",
+            },
+            { status: 402 },
+          );
+        }
+
         // Run PCTT engine
         const pcttResult =
           includeEngines?.pctt !== false ? await runPCTTEngine(symbol) : null;
@@ -559,6 +576,16 @@ export async function POST(request: NextRequest) {
               }
             : null,
         };
+
+        // Deduct credits after successful analysis
+        try {
+          await creditService.deductCredits(user.id, "signal_analysis", {
+            symbol,
+            timeframe: timeframe || "1D",
+          });
+        } catch (deductErr) {
+          console.error("[Credits] Failed to deduct for signal_analysis:", deductErr);
+        }
 
         return NextResponse.json({ success: true, data: analysisResult });
       }

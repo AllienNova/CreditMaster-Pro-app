@@ -49,6 +49,29 @@ jest.mock("@/lib/trading/strategies/strategy-validator", () => ({
   validateStrategy: mockValidateStrategy,
 }));
 
+const mockCheckSufficientCredits = jest.fn().mockResolvedValue(true);
+const mockDeductCredits = jest.fn().mockResolvedValue({ success: true, remaining: 100 });
+
+jest.mock("@/lib/credits", () => ({
+  creditService: {
+    checkSufficientCredits: (...args: unknown[]) => mockCheckSufficientCredits(...args),
+    deductCredits: (...args: unknown[]) => mockDeductCredits(...args),
+  },
+  CREDIT_COSTS: {
+    signal_analysis: 50,
+    trade_execution: 2,
+    backtest_standard: 60,
+    backtest_ai: 500,
+    chat_message: 15,
+    dispute_letter_single: 50,
+    dispute_letter_all: 150,
+    credit_analysis: 12,
+    monthly_reset: 0,
+    credit_purchase: 0,
+    addon_credit: 0,
+  },
+}));
+
 import { createBacktestEngine } from "@/lib/trading/backtesting/backtest-engine";
 import { GET, POST } from "../route";
 
@@ -279,6 +302,8 @@ describe("POST /api/trading/backtest action=run", () => {
     });
     mockRunBacktest.mockReturnValue(mockBacktestResult);
     mockValidateStrategy.mockReturnValue({ valid: true, errors: [], warnings: [] });
+    mockCheckSufficientCredits.mockResolvedValue(true);
+    mockDeductCredits.mockResolvedValue({ success: true, remaining: 100 });
   });
 
   it("returns 401 when not authenticated", async () => {
@@ -512,6 +537,8 @@ describe("POST /api/trading/backtest action=walk-forward", () => {
     });
     mockRunWalkForward.mockResolvedValue(mockWalkForwardResult);
     mockValidateStrategy.mockReturnValue({ valid: true, errors: [], warnings: [] });
+    mockCheckSufficientCredits.mockResolvedValue(true);
+    mockDeductCredits.mockResolvedValue({ success: true, remaining: 100 });
   });
 
   it("returns 400 when symbol is missing", async () => {

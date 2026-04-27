@@ -17,6 +17,7 @@ import {
 import { validateStrategy } from "@/lib/trading/strategies/strategy-validator";
 import { marketDataService } from "@/lib/investments/market-data-service";
 import { AssetType, TimeInterval } from "@/lib/investments/types/market-data.types";
+import { creditService, CREDIT_COSTS } from "@/lib/credits";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- tables not in generated types yet
 const strategyLib = (): any => supabaseAdmin.from("strategy_library");
@@ -192,6 +193,24 @@ async function handleRunBacktest(
     );
   }
 
+  // Credit check before expensive backtest execution
+  const aiEnhanced = Boolean(body.aiEnhanced);
+  const backtestAction = aiEnhanced ? "backtest_ai" as const : "backtest_standard" as const;
+  const backtestCost = CREDIT_COSTS[backtestAction];
+  const hasBacktestCredits = await creditService.checkSufficientCredits(user.id, backtestCost);
+  if (!hasBacktestCredits) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Insufficient credits",
+        code: "INSUFFICIENT_CREDITS",
+        required: backtestCost,
+        action: backtestAction,
+      },
+      { status: 402 },
+    );
+  }
+
   // Create backtest engine
   const engine = createBacktestEngine({
     initialCapital: capital,
@@ -236,6 +255,17 @@ async function handleRunBacktest(
       trades: result.trades,
       monthly_returns: result.monthlyReturns ?? null,
     });
+  }
+
+  // Deduct credits after successful backtest
+  try {
+    await creditService.deductCredits(user.id, backtestAction, {
+      symbols,
+      strategyName: strategyConfig.name,
+      aiEnhanced,
+    });
+  } catch (deductErr) {
+    console.error("[Credits] Failed to deduct for backtest:", deductErr);
   }
 
   return NextResponse.json({
@@ -338,6 +368,24 @@ async function handleWalkForward(
     );
   }
 
+  // Credit check before expensive walk-forward execution
+  const wfAiEnhanced = Boolean(body.aiEnhanced);
+  const wfAction = wfAiEnhanced ? "backtest_ai" as const : "backtest_standard" as const;
+  const wfCost = CREDIT_COSTS[wfAction];
+  const hasWfCredits = await creditService.checkSufficientCredits(user.id, wfCost);
+  if (!hasWfCredits) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Insufficient credits",
+        code: "INSUFFICIENT_CREDITS",
+        required: wfCost,
+        action: wfAction,
+      },
+      { status: 402 },
+    );
+  }
+
   const engine = createBacktestEngine({
     initialCapital: capital,
     startDate: startDate ? new Date(startDate) : undefined,
@@ -392,6 +440,18 @@ async function handleWalkForward(
       0,
     ),
   });
+
+  // Deduct credits after successful walk-forward
+  try {
+    await creditService.deductCredits(user.id, wfAction, {
+      symbol,
+      strategyName: strategyConfig.name,
+      windows: numWindows,
+      aiEnhanced: wfAiEnhanced,
+    });
+  } catch (deductErr) {
+    console.error("[Credits] Failed to deduct for walk-forward:", deductErr);
+  }
 
   return NextResponse.json({
     success: true,

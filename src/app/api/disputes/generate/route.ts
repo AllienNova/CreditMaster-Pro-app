@@ -23,6 +23,8 @@ import {
   getStrategyById,
   recommendStrategy,
 } from "@/lib/disputes/dispute-service";
+import { createClient } from "@/lib/supabase/server";
+import { creditService, CREDIT_COSTS } from "@/lib/credits";
 
 // ============================================================================
 // MAIN POST HANDLER
@@ -30,8 +32,45 @@ import {
 
 export async function POST(request: NextRequest) {
   try {
+    // Authentication check
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized - Authentication required" },
+        { status: 401 },
+      );
+    }
+
     const body = await request.json();
     const { mode = "ai" } = body;
+
+    // Credit check for AI-powered modes (template mode is free — no AI call)
+    if (mode === "ai" || mode === "strategy") {
+      const allBureaus = Boolean(body.allBureaus);
+      const disputeAction = allBureaus ? "dispute_letter_all" as const : "dispute_letter_single" as const;
+      const disputeCost = CREDIT_COSTS[disputeAction];
+      const hasDisputeCredits = await creditService.checkSufficientCredits(user.id, disputeCost);
+      if (!hasDisputeCredits) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Insufficient credits",
+            code: "INSUFFICIENT_CREDITS",
+            required: disputeCost,
+            action: disputeAction,
+          },
+          { status: 402 },
+        );
+      }
+
+      // Store credit context for deduction after success
+      body._creditContext = { userId: user.id, action: disputeAction };
+    }
 
     // Route to appropriate handler based on mode
     switch (mode) {
@@ -121,6 +160,19 @@ async function handleAIGeneration(body: Record<string, unknown>) {
       disputeLetter,
       "dispute_letter",
     );
+  }
+
+  // Deduct credits after successful AI dispute generation
+  const creditCtx = body._creditContext as { userId: string; action: "dispute_letter_single" | "dispute_letter_all" } | undefined;
+  if (creditCtx) {
+    try {
+      await creditService.deductCredits(creditCtx.userId, creditCtx.action, {
+        mode: "ai",
+        disputeReason: body.disputeReason,
+      });
+    } catch (deductErr) {
+      console.error("[Credits] Failed to deduct for dispute generation:", deductErr);
+    }
   }
 
   return NextResponse.json({
@@ -298,6 +350,20 @@ async function handleStrategyGeneration(body: Record<string, unknown>) {
     },
     additionalContext: aiPrompt,
   });
+
+  // Deduct credits after successful strategy-based dispute generation
+  const stratCreditCtx = body._creditContext as { userId: string; action: "dispute_letter_single" | "dispute_letter_all" } | undefined;
+  if (stratCreditCtx) {
+    try {
+      await creditService.deductCredits(stratCreditCtx.userId, stratCreditCtx.action, {
+        mode: "strategy",
+        strategyId: body.strategyId,
+        strategyName: strategy.name,
+      });
+    } catch (deductErr) {
+      console.error("[Credits] Failed to deduct for strategy dispute generation:", deductErr);
+    }
+  }
 
   return NextResponse.json({
     success: true,

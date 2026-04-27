@@ -24,6 +24,7 @@ import { getBrokerFactory } from "@/lib/trading/brokers/broker-factory";
 import type { BrokerCredentials } from "@/lib/trading/brokers/broker-interface";
 import { PaperTradingEngine } from "@/lib/trading/paper/PaperTradingEngine";
 import { runAllGates, type GateRunnerInput } from "@/lib/trading/compliance/gate-runner";
+import { creditService, CREDIT_COSTS } from "@/lib/credits";
 
 // ============================================================================
 // GET - Retrieve Orders
@@ -220,6 +221,22 @@ export async function POST(request: NextRequest) {
           );
         }
 
+        // Credit check before order creation
+        const orderCost = CREDIT_COSTS.trade_execution;
+        const hasOrderCredits = await creditService.checkSufficientCredits(user.id, orderCost);
+        if (!hasOrderCredits) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: "Insufficient credits",
+              code: "INSUFFICIENT_CREDITS",
+              required: orderCost,
+              action: "trade_execution",
+            },
+            { status: 402 },
+          );
+        }
+
         // Get account ID (in production, fetch from user's linked broker account)
         const accountId = body.accountId || "default";
 
@@ -237,6 +254,18 @@ export async function POST(request: NextRequest) {
             },
             { status: 400 },
           );
+        }
+
+        // Deduct credits after successful order creation
+        try {
+          await creditService.deductCredits(user.id, "trade_execution", {
+            symbol: body.symbol,
+            side: body.side,
+            quantity: body.quantity,
+            orderId: order.id,
+          });
+        } catch (deductErr) {
+          console.error("[Credits] Failed to deduct for trade_execution:", deductErr);
         }
 
         return NextResponse.json({
