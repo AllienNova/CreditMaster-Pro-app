@@ -891,6 +891,205 @@ export interface Database {
           updated_at?: string;
         };
       };
+      user_risk_settings: {
+        Row: {
+          id: string;
+          user_id: string;
+          settings: Json;
+          kill_switch: Json;
+          equity: number;
+          peak_equity: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          settings?: Json;
+          kill_switch?: Json;
+          equity?: number;
+          peak_equity?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          settings?: Json;
+          kill_switch?: Json;
+          equity?: number;
+          peak_equity?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      kill_switch_events: {
+        Row: {
+          id: string;
+          level: string;
+          previous_level: string;
+          reason: string;
+          actor_id: string;
+          dual_control_request_id: string | null;
+          canonical_package_version: string;
+          canonical_hash: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          level: string;
+          previous_level: string;
+          reason: string;
+          actor_id: string;
+          dual_control_request_id?: string | null;
+          canonical_package_version: string;
+          canonical_hash: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          level?: string;
+          previous_level?: string;
+          reason?: string;
+          actor_id?: string;
+          dual_control_request_id?: string | null;
+          canonical_package_version?: string;
+          canonical_hash?: string;
+          created_at?: string;
+        };
+      };
+      dual_control_requests: {
+        Row: {
+          id: string;
+          target_level: string;
+          requestor_id: string;
+          approver_id: string | null;
+          denier_id: string | null;
+          reason: string;
+          denial_reason: string | null;
+          status: string;
+          created_at: string;
+          resolved_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          target_level: string;
+          requestor_id: string;
+          approver_id?: string | null;
+          denier_id?: string | null;
+          reason: string;
+          denial_reason?: string | null;
+          status?: string;
+          created_at?: string;
+          resolved_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          target_level?: string;
+          requestor_id?: string;
+          approver_id?: string | null;
+          denier_id?: string | null;
+          reason?: string;
+          denial_reason?: string | null;
+          status?: string;
+          created_at?: string;
+          resolved_at?: string | null;
+        };
+      };
+      incidents: {
+        Row: {
+          id: string;
+          code: string;
+          category: string;
+          severity: string;
+          default_action: string;
+          auto_recoverable: boolean;
+          status: string;
+          raised_by: string;
+          resolved_by: string | null;
+          resolution_note: string | null;
+          details: Json;
+          canonical_package_version: string;
+          canonical_hash: string;
+          raised_at: string;
+          resolved_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          code: string;
+          category: string;
+          severity: string;
+          default_action: string;
+          auto_recoverable?: boolean;
+          status?: string;
+          raised_by: string;
+          resolved_by?: string | null;
+          resolution_note?: string | null;
+          details?: Json;
+          canonical_package_version: string;
+          canonical_hash: string;
+          raised_at?: string;
+          resolved_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          code?: string;
+          category?: string;
+          severity?: string;
+          default_action?: string;
+          auto_recoverable?: boolean;
+          status?: string;
+          raised_by?: string;
+          resolved_by?: string | null;
+          resolution_note?: string | null;
+          details?: Json;
+          canonical_package_version?: string;
+          canonical_hash?: string;
+          raised_at?: string;
+          resolved_at?: string | null;
+        };
+      };
+      trading_audit_trail: {
+        Row: {
+          id: string;
+          actor: string;
+          action: string;
+          resource_type: string;
+          resource_id: string | null;
+          reason: string;
+          success: boolean;
+          details: Json;
+          canonical_package_version: string;
+          canonical_hash: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          actor: string;
+          action: string;
+          resource_type: string;
+          resource_id?: string | null;
+          reason: string;
+          success: boolean;
+          details?: Json;
+          canonical_package_version?: string;
+          canonical_hash?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          actor?: string;
+          action?: string;
+          resource_type?: string;
+          resource_id?: string | null;
+          reason?: string;
+          success?: boolean;
+          details?: Json;
+          canonical_package_version?: string;
+          canonical_hash?: string;
+          created_at?: string;
+        };
+      };
     };
     Views: {
       [_ in never]: never;

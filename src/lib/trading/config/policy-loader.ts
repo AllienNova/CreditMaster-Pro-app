@@ -237,19 +237,37 @@ function extractRegimes(parsed: Map<string, Record<string, unknown>>): RegimePol
   const defaults = getDefaultPolicy().regimes;
   if (!doc) return defaults;
 
-  const budgets = (doc.capital_allocation as Record<string, unknown>)?.regime_budgets as
-    | Record<string, number>
+  const rawBudgets = (doc.capital_allocation as Record<string, unknown>)?.regime_budgets as
+    | Record<string, unknown>
     | undefined;
 
-  if (!budgets) return defaults;
+  if (!rawBudgets) return defaults;
+
+  // Narrowed reference for use inside the closure below
+  const budgets: Record<string, unknown> = rawBudgets;
+
+  /**
+   * The canonical YAML stores each regime as an object with
+   * `gross_exposure_max_pct`. Extract the numeric multiplier from either form.
+   */
+  function extractMultiplier(key: string, fallback: number): number {
+    const entry = budgets[key];
+    if (typeof entry === "number") return entry;
+    if (entry && typeof entry === "object") {
+      const nested = (entry as Record<string, unknown>).gross_exposure_max_pct;
+      if (typeof nested === "number") return nested;
+    }
+    return fallback;
+  }
 
   const regimeKeys: MarketRegime[] = ["trending", "ranging", "transition", "shock", "crisis"];
   const result: RegimePolicy = { regimes: {} as RegimePolicy["regimes"] };
 
   for (const key of regimeKeys) {
+    const multiplier = extractMultiplier(key, defaults.regimes[key].exposure_budget_multiplier);
     result.regimes[key] = {
-      exposure_budget_multiplier: budgets[key] ?? defaults.regimes[key].exposure_budget_multiplier,
-      sizing_multiplier: budgets[key] ?? defaults.regimes[key].sizing_multiplier,
+      exposure_budget_multiplier: multiplier,
+      sizing_multiplier: multiplier,
     };
   }
 
@@ -266,9 +284,24 @@ function extractPortfolio(parsed: Map<string, Record<string, unknown>>): Portfol
   if (!doc) return defaults;
 
   const conc = doc.concentration_limits as Record<string, number> | undefined;
-  const budgets = (doc.capital_allocation as Record<string, unknown>)?.regime_budgets as
-    | Record<string, number>
+  const rawBudgets = (doc.capital_allocation as Record<string, unknown>)?.regime_budgets as
+    | Record<string, unknown>
     | undefined;
+
+  /**
+   * The canonical YAML stores each regime budget as an object with
+   * `gross_exposure_max_pct` (and other fields), not as a bare number.
+   * This helper extracts the numeric budget regardless of form.
+   */
+  function extractBudget(key: string, fallback: number): number {
+    const entry = rawBudgets?.[key];
+    if (typeof entry === "number") return entry;
+    if (entry && typeof entry === "object") {
+      const nested = (entry as Record<string, unknown>).gross_exposure_max_pct;
+      if (typeof nested === "number") return nested;
+    }
+    return fallback;
+  }
 
   return {
     concentration: {
@@ -277,11 +310,11 @@ function extractPortfolio(parsed: Map<string, Record<string, unknown>>): Portfol
       max_corr_cluster_pct: conc?.max_correlated_cluster_exposure_pct ?? defaults.concentration.max_corr_cluster_pct,
     },
     regime_budgets: {
-      trending: budgets?.trending ?? 1.0,
-      ranging: budgets?.ranging ?? 0.6,
-      transition: budgets?.transition ?? 0.4,
-      shock: budgets?.shock ?? 0.25,
-      crisis: budgets?.crisis ?? 0.1,
+      trending: extractBudget("trending", 1.0),
+      ranging: extractBudget("ranging", 0.6),
+      transition: extractBudget("transition", 0.4),
+      shock: extractBudget("shock", 0.25),
+      crisis: extractBudget("crisis", 0.1),
     },
   };
 }
