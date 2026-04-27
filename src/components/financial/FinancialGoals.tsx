@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { EmptyState } from "@/components/ui/EmptyState";
 import AIGoalsOptimizer from "./AIGoalsOptimizer";
 import GoalInvestmentDashboard, {
   type GoalSummary,
@@ -331,23 +332,16 @@ export default function FinancialGoals() {
 
       {/* Goals List */}
       {goals.length === 0 ? (
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-12">
-          <div className="text-center max-w-md mx-auto">
-            <div className="text-6xl mb-6"></div>
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-              No Goals Yet
-            </h3>
-            <p className="text-gray-600 dark:text-slate-300 mb-8">
-              Set your first financial goal and start working towards it.
-            </p>
-            <button
-              type="button"
-              onClick={() => setShowCreateModal(true)}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
-            >
-              Create Your First Goal
-            </button>
-          </div>
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow">
+          <EmptyState
+            type="no-goals"
+            title="No goals yet"
+            description="Set your first financial goal and start working towards it"
+            primaryAction={{
+              label: "Create Your First Goal",
+              onClick: () => setShowCreateModal(true),
+            }}
+          />
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

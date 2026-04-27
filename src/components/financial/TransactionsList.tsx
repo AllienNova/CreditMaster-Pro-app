@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { PlaidTransaction, PlaidAccount } from "@/lib/financial/plaid-service";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function TransactionsList() {
@@ -170,16 +171,12 @@ export default function TransactionsList() {
 
   if (transactions.length === 0) {
     return (
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-12">
-        <div className="text-center max-w-md mx-auto">
-          <div className="text-6xl mb-6"></div>
-          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-            No Transactions Found
-          </h3>
-          <p className="text-gray-600 dark:text-slate-300 mb-8">
-            Connect your bank accounts to start tracking transactions.
-          </p>
-        </div>
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow">
+        <EmptyState
+          type="no-transactions"
+          title="No transactions found"
+          description="Connect your bank accounts to start tracking transactions"
+        />
       </div>
     );
   }

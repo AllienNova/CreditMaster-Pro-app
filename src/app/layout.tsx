@@ -40,12 +40,21 @@ export const metadata: Metadata = {
       "Complete financial vitality through credit health, financial wellness, and investment intelligence.",
     type: "website",
     siteName: "Fynvita",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Fynvita - Your Financial Vitality Platform",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Fynvita - Your Financial Vitality",
     description:
       "Complete financial vitality through credit health, financial wellness, and investment intelligence.",
+    images: ["/og-image.png"],
   },
 };
 
