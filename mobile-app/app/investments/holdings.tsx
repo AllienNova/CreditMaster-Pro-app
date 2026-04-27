@@ -19,6 +19,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import { EmptyState } from "../../src/components/EmptyState";
 import {
   useInvestmentStore,
   selectHoldings,
@@ -351,19 +352,17 @@ export default function HoldingsScreen() {
           />
         }
         ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Ionicons
-              name="briefcase-outline"
-              size={48}
-              color={theme.colors.textSecondary}
-            />
-            <Text style={styles.emptyText}>No holdings found</Text>
-            <Text style={styles.emptySubtext}>
-              {searchQuery
+          <EmptyState
+            icon="briefcase-outline"
+            title="No holdings found"
+            description={
+              searchQuery
                 ? "Try adjusting your search"
-                : "Add your first investment"}
-            </Text>
-          </View>
+                : "Add your first investment to get started"
+            }
+            actionLabel={searchQuery ? undefined : "Add Holding"}
+            onAction={searchQuery ? undefined : () => router.push("/investments/add-holding")}
+          />
         }
       />
 

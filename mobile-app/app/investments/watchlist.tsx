@@ -19,6 +19,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import { EmptyState } from "../../src/components/EmptyState";
 import { useInvestmentStore, selectWatchlist } from "../../src/store";
 
 export default function WatchlistScreen() {
@@ -188,17 +189,13 @@ export default function WatchlistScreen() {
         renderItem={renderWatchlistItem}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Ionicons
-              name="star-outline"
-              size={64}
-              color={theme.colors.textSecondary}
-            />
-            <Text style={styles.emptyTitle}>Your Watchlist is Empty</Text>
-            <Text style={styles.emptySubtitle}>
-              Add stocks to track their performance
-            </Text>
-          </View>
+          <EmptyState
+            icon="star-outline"
+            title="Watchlist is empty"
+            description="Add stocks to track their performance and get alerts"
+            actionLabel="Add Stocks"
+            onAction={() => setShowAddModal(true)}
+          />
         }
       />
 

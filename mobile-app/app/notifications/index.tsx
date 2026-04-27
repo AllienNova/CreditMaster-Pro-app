@@ -10,6 +10,7 @@ import {
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { lightTheme } from "../../src/constants/theme";
+import { EmptyState } from "../../src/components/EmptyState";
 
 interface Notification {
   id: string;
@@ -210,19 +211,15 @@ export default function NotificationsScreen() {
         }
       >
         {filteredNotifications.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons
-              name="notifications-off-outline"
-              size={64}
-              color={lightTheme.colors.textSecondary}
-            />
-            <Text style={styles.emptyTitle}>No notifications</Text>
-            <Text style={styles.emptyText}>
-              {filter === "unread"
-                ? "You're all caught up!"
-                : "Notifications will appear here"}
-            </Text>
-          </View>
+          <EmptyState
+            icon="checkmark-circle-outline"
+            title="All caught up!"
+            description={
+              filter === "unread"
+                ? "You have no unread notifications"
+                : "Notifications will appear here"
+            }
+          />
         ) : (
           filteredNotifications.map((notification) => {
             const icon = getNotificationIcon(notification.type);

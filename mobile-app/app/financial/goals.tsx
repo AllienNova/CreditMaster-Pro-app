@@ -18,6 +18,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { lightTheme as theme } from "../../src/constants/theme";
 import { Card } from "../../src/components/Card";
+import { EmptyState } from "../../src/components/EmptyState";
 import { useGoalStore } from "../../src/store/goalStore";
 
 const GOAL_COLORS: Record<string, string> = {
@@ -154,24 +155,14 @@ export default function GoalsScreen() {
         </View>
 
         {goals.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Ionicons
-              name="flag-outline"
-              size={64}
-              color={theme.colors.textSecondary}
-            />
-            <Text style={styles.emptyTitle}>No goals yet</Text>
-            <Text style={styles.emptyText}>
-              Tap + to create your first financial goal
-            </Text>
-            <TouchableOpacity
-              style={styles.emptyButton}
-              onPress={() => router.push("/financial/create-goal" as Href)}
-            >
-              <Ionicons name="add" size={20} color="#fff" />
-              <Text style={styles.emptyButtonText}>Create Goal</Text>
-            </TouchableOpacity>
-          </View>
+          <EmptyState
+            type="no-goals"
+            icon="flag-outline"
+            title="No goals yet"
+            description="Set financial goals to track your progress and stay motivated"
+            actionLabel="Create Goal"
+            onAction={() => router.push("/financial/create-goal" as Href)}
+          />
         ) : (
           <>
             {/* Overview Card */}

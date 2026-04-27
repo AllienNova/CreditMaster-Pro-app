@@ -12,6 +12,7 @@ import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../src/hooks/useTheme";
 import { colors } from "../../src/constants/theme";
+import { EmptyState } from "../../src/components/EmptyState";
 import { useDisputeStore } from "../../src/store/disputeStore";
 import type { Dispute } from "../../src/services/api/types";
 
@@ -407,20 +408,13 @@ export default function DisputesScreen() {
             />
           }
           ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Ionicons
-                name="document-text-outline"
-                size={64}
-                color={themeColors.border}
-              />
-              <Text style={styles.emptyText}>No disputes found</Text>
-              <TouchableOpacity
-                style={styles.emptyButton}
-                onPress={() => router.push("/dispute/create" as never)}
-              >
-                <Text style={styles.emptyButtonText}>Create New Dispute</Text>
-              </TouchableOpacity>
-            </View>
+            <EmptyState
+              icon="document-text-outline"
+              title="No disputes yet"
+              description="Dispute inaccurate items on your credit report to improve your score"
+              actionLabel="Start Dispute"
+              onAction={() => router.push("/dispute/create" as never)}
+            />
           }
         />
       )}
