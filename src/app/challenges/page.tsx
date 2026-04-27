@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   Trophy,
@@ -14,6 +14,8 @@ import {
   Flame,
   Medal,
   Zap,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 
 type ChallengeType =
@@ -22,7 +24,9 @@ type ChallengeType =
   | "budget"
   | "debt_payoff"
   | "investment"
-  | "streak";
+  | "streak"
+  | "credit_improvement"
+  | "custom";
 type ChallengeStatus = "upcoming" | "active" | "completed";
 
 interface Challenge {
@@ -31,8 +35,8 @@ interface Challenge {
   description: string;
   type: ChallengeType;
   status: ChallengeStatus;
-  startDate: Date;
-  endDate: Date;
+  startDate: string;
+  endDate: string;
   goalValue: number;
   goalUnit: string;
   participants: number;
@@ -48,89 +52,6 @@ interface LeaderboardEntry {
   isCurrentUser: boolean;
 }
 
-const MOCK_CHALLENGES: Challenge[] = [
-  {
-    id: "1",
-    name: "No-Spend Week",
-    description: "Go 7 days without any non-essential spending",
-    type: "no_spend",
-    status: "active",
-    startDate: new Date("2026-01-18"),
-    endDate: new Date("2026-01-25"),
-    goalValue: 7,
-    goalUnit: "days",
-    participants: 1247,
-    xpReward: 500,
-    userProgress: 4,
-    userJoined: true,
-  },
-  {
-    id: "2",
-    name: "Save $500 Challenge",
-    description: "Save $500 in one month",
-    type: "savings",
-    status: "active",
-    startDate: new Date("2026-01-01"),
-    endDate: new Date("2026-01-31"),
-    goalValue: 500,
-    goalUnit: "dollars",
-    participants: 3892,
-    xpReward: 750,
-    userProgress: 320,
-    userJoined: true,
-  },
-  {
-    id: "3",
-    name: "21-Day Budget Streak",
-    description: "Stay within budget for 21 consecutive days",
-    type: "streak",
-    status: "active",
-    startDate: new Date("2026-01-10"),
-    endDate: new Date("2026-01-31"),
-    goalValue: 21,
-    goalUnit: "days",
-    participants: 2156,
-    xpReward: 600,
-    userJoined: false,
-  },
-  {
-    id: "4",
-    name: "30-Day Debt Blitz",
-    description: "Pay off as much debt as possible in 30 days",
-    type: "debt_payoff",
-    status: "upcoming",
-    startDate: new Date("2026-02-01"),
-    endDate: new Date("2026-03-01"),
-    goalValue: 1000,
-    goalUnit: "dollars",
-    participants: 892,
-    xpReward: 1000,
-    userJoined: false,
-  },
-  {
-    id: "5",
-    name: "First Investment Challenge",
-    description: "Make your first investment of at least $100",
-    type: "investment",
-    status: "upcoming",
-    startDate: new Date("2026-02-01"),
-    endDate: new Date("2026-02-28"),
-    goalValue: 100,
-    goalUnit: "dollars",
-    participants: 567,
-    xpReward: 800,
-    userJoined: false,
-  },
-];
-
-const MOCK_LEADERBOARD: LeaderboardEntry[] = [
-  { rank: 1, displayName: "SavingsChamp", progress: 100, isCurrentUser: false },
-  { rank: 2, displayName: "BudgetBoss", progress: 95, isCurrentUser: false },
-  { rank: 3, displayName: "DebtSlayer", progress: 88, isCurrentUser: false },
-  { rank: 4, displayName: "You", progress: 64, isCurrentUser: true },
-  { rank: 5, displayName: "MoneyMaven", progress: 60, isCurrentUser: false },
-];
-
 const getChallengeIcon = (type: ChallengeType) => {
   switch (type) {
     case "savings":
@@ -145,6 +66,8 @@ const getChallengeIcon = (type: ChallengeType) => {
       return TrendingUp;
     case "streak":
       return Flame;
+    case "credit_improvement":
+      return Star;
     default:
       return Trophy;
   }
@@ -164,14 +87,18 @@ const getChallengeColor = (type: ChallengeType) => {
       return "from-blue-500 to-blue-600";
     case "streak":
       return "from-amber-500 to-orange-600";
+    case "credit_improvement":
+      return "from-purple-500 to-purple-600";
     default:
       return "from-gray-500 to-gray-600";
   }
 };
 
-const formatTimeRemaining = (endDate: Date) => {
+const formatTimeRemaining = (endDate: string) => {
   const now = new Date();
-  const diff = endDate.getTime() - now.getTime();
+  const end = new Date(endDate);
+  const diff = end.getTime() - now.getTime();
+  if (diff <= 0) return "Ended";
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
   if (days > 0) return `${days} days left`;
   const hours = Math.floor(diff / (1000 * 60 * 60));
@@ -180,13 +107,103 @@ const formatTimeRemaining = (endDate: Date) => {
 };
 
 export default function ChallengesPage() {
-  const [challenges] = useState<Challenge[]>(MOCK_CHALLENGES);
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<
     "active" | "upcoming" | "completed"
   >("active");
 
+  const fetchChallenges = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [activeRes, upcomingRes, leaderboardRes] = await Promise.all([
+        fetch("/api/gamification/challenges?status=active"),
+        fetch("/api/gamification/challenges?status=upcoming"),
+        fetch("/api/gamification/leaderboard?type=challenge"),
+      ]);
+
+      if (!activeRes.ok && !upcomingRes.ok) {
+        throw new Error("Failed to fetch challenges");
+      }
+
+      const activeData = activeRes.ok ? await activeRes.json() : { challenges: [] };
+      const upcomingData = upcomingRes.ok ? await upcomingRes.json() : { challenges: [] };
+
+      const active = (activeData.challenges ?? []).map((c: Challenge) => ({
+        ...c,
+        status: "active" as ChallengeStatus,
+      }));
+      const upcoming = (upcomingData.challenges ?? []).map((c: Challenge) => ({
+        ...c,
+        status: "upcoming" as ChallengeStatus,
+      }));
+
+      setChallenges([...active, ...upcoming]);
+
+      if (leaderboardRes.ok) {
+        const lbData = await leaderboardRes.json();
+        const entries = (lbData.entries ?? []).map(
+          (e: { rank: number; displayName: string; value: number; isCurrentUser?: boolean }) => ({
+            rank: e.rank,
+            displayName: e.displayName,
+            progress: e.value,
+            isCurrentUser: e.isCurrentUser ?? false,
+          }),
+        );
+        setLeaderboard(entries);
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to load challenges",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchChallenges();
+  }, [fetchChallenges]);
+
   const filteredChallenges = challenges.filter((c) => c.status === activeTab);
   const userChallenges = challenges.filter((c) => c.userJoined);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-center py-24">
+            <Loader2 className="w-8 h-8 animate-spin text-amber-600" />
+            <span className="ml-3 text-gray-600 dark:text-slate-400">
+              Loading challenges...
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col items-center justify-center py-24 gap-4">
+            <AlertCircle className="w-12 h-12 text-red-500" />
+            <p className="text-gray-600 dark:text-slate-400">{error}</p>
+            <button
+              onClick={fetchChallenges}
+              className="px-4 py-2 bg-amber-600 text-white rounded-lg font-medium hover:bg-amber-700 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8">
@@ -247,7 +264,7 @@ export default function ChallengesPage() {
                     <div className="mb-2">
                       <div className="flex justify-between text-sm mb-1">
                         <span>
-                          {challenge.userProgress} / {challenge.goalValue}{" "}
+                          {challenge.userProgress ?? 0} / {challenge.goalValue}{" "}
                           {challenge.goalUnit}
                         </span>
                         <span>{progress.toFixed(0)}%</span>
@@ -345,7 +362,7 @@ export default function ChallengesPage() {
                           <div className="flex items-center gap-1">
                             <Calendar className="w-4 h-4" />
                             {challenge.status === "upcoming"
-                              ? `Starts ${challenge.startDate.toLocaleDateString()}`
+                              ? `Starts ${new Date(challenge.startDate).toLocaleDateString()}`
                               : formatTimeRemaining(challenge.endDate)}
                           </div>
                           <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-medium">
@@ -361,8 +378,14 @@ export default function ChallengesPage() {
               })}
 
               {filteredChallenges.length === 0 && (
-                <div className="text-center py-12 text-gray-500 dark:text-slate-400">
-                  No {activeTab} challenges at the moment
+                <div className="text-center py-12">
+                  <Trophy className="w-12 h-12 text-gray-300 dark:text-slate-600 mx-auto mb-3" />
+                  <p className="text-gray-500 dark:text-slate-400 font-medium">
+                    No {activeTab} challenges at the moment
+                  </p>
+                  <p className="text-sm text-gray-400 dark:text-slate-500 mt-1">
+                    Check back soon for new community challenges
+                  </p>
                 </div>
               )}
             </div>
@@ -374,73 +397,85 @@ export default function ChallengesPage() {
               <Medal className="w-5 h-5 text-amber-500" />
               Leaderboard
             </h3>
-            <div className="space-y-3">
-              {MOCK_LEADERBOARD.map((entry) => (
-                <div
-                  key={entry.rank}
-                  className={`flex items-center gap-3 p-2 rounded-lg ${
-                    entry.isCurrentUser
-                      ? "bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800"
-                      : ""
-                  }`}
-                >
+            {leaderboard.length > 0 ? (
+              <div className="space-y-3">
+                {leaderboard.map((entry) => (
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${entry.rank === 1 ? "bg-amber-400 text-white" : entry.rank === 2 ? "bg-gray-300 text-gray-700" : entry.rank === 3 ? "bg-amber-600 text-white" : "bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300"}`}
+                    key={entry.rank}
+                    className={`flex items-center gap-3 p-2 rounded-lg ${
+                      entry.isCurrentUser
+                        ? "bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800"
+                        : ""
+                    }`}
                   >
-                    {entry.rank}
-                  </div>
-                  <div className="flex-1">
-                    <p
-                      className={`font-medium ${entry.isCurrentUser ? "text-amber-700" : "text-gray-900 dark:text-white"}`}
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${entry.rank === 1 ? "bg-amber-400 text-white" : entry.rank === 2 ? "bg-gray-300 text-gray-700" : entry.rank === 3 ? "bg-amber-600 text-white" : "bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300"}`}
                     >
-                      {entry.displayName}
-                    </p>
-                    <div className="h-1.5 bg-gray-100 dark:bg-slate-700 rounded-full mt-1">
-                      <div
-                        className={`h-full rounded-full ${entry.isCurrentUser ? "bg-amber-500" : "bg-gray-400 dark:bg-slate-500"}`}
-                        style={{ width: `${entry.progress}%` }}
-                      />
+                      {entry.rank}
                     </div>
+                    <div className="flex-1">
+                      <p
+                        className={`font-medium ${entry.isCurrentUser ? "text-amber-700" : "text-gray-900 dark:text-white"}`}
+                      >
+                        {entry.displayName}
+                      </p>
+                      <div className="h-1.5 bg-gray-100 dark:bg-slate-700 rounded-full mt-1">
+                        <div
+                          className={`h-full rounded-full ${entry.isCurrentUser ? "bg-amber-500" : "bg-gray-400 dark:bg-slate-500"}`}
+                          style={{ width: `${Math.min(entry.progress, 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                    <span className="text-sm font-medium text-gray-500 dark:text-slate-400">
+                      {entry.progress}%
+                    </span>
                   </div>
-                  <span className="text-sm font-medium text-gray-500 dark:text-slate-400">
-                    {entry.progress}%
-                  </span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500 dark:text-slate-400 text-center py-4">
+                No leaderboard data available yet
+              </p>
+            )}
             <button className="w-full mt-4 text-center text-amber-600 dark:text-amber-400 text-sm font-medium hover:underline">
               View Full Leaderboard
             </button>
           </div>
         </div>
 
-        {/* Stats */}
+        {/* Stats -- populated from challenges data */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm">
             <p className="text-sm text-gray-500 dark:text-slate-400">
-              Challenges Completed
+              Active Challenges
             </p>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              12
+              {challenges.filter((c) => c.status === "active").length}
             </p>
           </div>
           <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm">
             <p className="text-sm text-gray-500 dark:text-slate-400">
-              Total XP Earned
+              Joined
             </p>
-            <p className="text-2xl font-bold text-amber-600">8,450</p>
+            <p className="text-2xl font-bold text-amber-600">
+              {userChallenges.length}
+            </p>
           </div>
           <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm">
             <p className="text-sm text-gray-500 dark:text-slate-400">
-              Current Streak
+              Available XP
             </p>
-            <p className="text-2xl font-bold text-orange-600">14 days</p>
+            <p className="text-2xl font-bold text-orange-600">
+              {challenges.reduce((sum, c) => sum + c.xpReward, 0).toLocaleString()}
+            </p>
           </div>
           <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm">
             <p className="text-sm text-gray-500 dark:text-slate-400">
-              Best Ranking
+              Upcoming
             </p>
-            <p className="text-2xl font-bold text-blue-600">#4</p>
+            <p className="text-2xl font-bold text-blue-600">
+              {challenges.filter((c) => c.status === "upcoming").length}
+            </p>
           </div>
         </div>
       </div>
