@@ -1,159 +1,42 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   DollarSign,
-  TrendingUp,
   Calendar,
   PieChart,
-  BarChart3,
-  ArrowUp,
-  ArrowDown,
-  Filter,
   Download,
   RefreshCw,
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
 
-interface DividendStock {
-  symbol: string;
-  companyName: string;
-  sharesHeld: number;
-  annualDividend: number;
-  dividendYield: number;
-  frequency: string;
-  nextPayDate?: Date;
-  annualIncome: number;
-}
+type DividendFrequency =
+  | "monthly"
+  | "quarterly"
+  | "semi-annual"
+  | "annual"
+  | "irregular";
 
-interface DividendPayment {
-  id: string;
+interface DividendHolding {
   symbol: string;
-  payDate: Date;
-  amount: number;
+  name: string;
   shares: number;
-  totalAmount: number;
-  reinvested: boolean;
+  dividendPerShare: number;
+  annualDividend: number;
+  yield: number;
+  frequency: DividendFrequency;
+  nextPayDate: string | null;
+  lastPayDate: string | null;
 }
 
-interface DividendSummary {
+interface DividendData {
+  holdings: DividendHolding[];
   totalAnnualIncome: number;
-  totalMonthlyIncome: number;
-  ytdIncome: number;
-  lastMonthIncome: number;
-  portfolioYield: number;
-  totalDividendStocks: number;
+  averageYield: number;
+  nextPaymentDate: string | null;
 }
-
-const MOCK_STOCKS: DividendStock[] = [
-  {
-    symbol: "VYM",
-    companyName: "Vanguard High Dividend Yield ETF",
-    sharesHeld: 50,
-    annualDividend: 3.12,
-    dividendYield: 3.1,
-    frequency: "Quarterly",
-    nextPayDate: new Date("2026-03-15"),
-    annualIncome: 156,
-  },
-  {
-    symbol: "SCHD",
-    companyName: "Schwab US Dividend Equity ETF",
-    sharesHeld: 40,
-    annualDividend: 2.85,
-    dividendYield: 3.5,
-    frequency: "Quarterly",
-    nextPayDate: new Date("2026-03-20"),
-    annualIncome: 114,
-  },
-  {
-    symbol: "JNJ",
-    companyName: "Johnson & Johnson",
-    sharesHeld: 15,
-    annualDividend: 4.76,
-    dividendYield: 3.0,
-    frequency: "Quarterly",
-    nextPayDate: new Date("2026-03-10"),
-    annualIncome: 71.4,
-  },
-  {
-    symbol: "PG",
-    companyName: "Procter & Gamble",
-    sharesHeld: 20,
-    annualDividend: 3.76,
-    dividendYield: 2.5,
-    frequency: "Quarterly",
-    nextPayDate: new Date("2026-02-15"),
-    annualIncome: 75.2,
-  },
-  {
-    symbol: "KO",
-    companyName: "Coca-Cola",
-    sharesHeld: 30,
-    annualDividend: 1.84,
-    dividendYield: 3.1,
-    frequency: "Quarterly",
-    nextPayDate: new Date("2026-04-01"),
-    annualIncome: 55.2,
-  },
-];
-
-const MOCK_PAYMENTS: DividendPayment[] = [
-  {
-    id: "1",
-    symbol: "VYM",
-    payDate: new Date("2026-01-15"),
-    amount: 0.78,
-    shares: 50,
-    totalAmount: 39,
-    reinvested: true,
-  },
-  {
-    id: "2",
-    symbol: "SCHD",
-    payDate: new Date("2026-01-20"),
-    amount: 0.71,
-    shares: 40,
-    totalAmount: 28.4,
-    reinvested: false,
-  },
-  {
-    id: "3",
-    symbol: "JNJ",
-    payDate: new Date("2025-12-10"),
-    amount: 1.19,
-    shares: 15,
-    totalAmount: 17.85,
-    reinvested: true,
-  },
-  {
-    id: "4",
-    symbol: "PG",
-    payDate: new Date("2025-12-15"),
-    amount: 0.94,
-    shares: 20,
-    totalAmount: 18.8,
-    reinvested: false,
-  },
-  {
-    id: "5",
-    symbol: "KO",
-    payDate: new Date("2025-12-01"),
-    amount: 0.46,
-    shares: 30,
-    totalAmount: 13.8,
-    reinvested: true,
-  },
-];
-
-const MOCK_SUMMARY: DividendSummary = {
-  totalAnnualIncome: 471.8,
-  totalMonthlyIncome: 39.32,
-  ytdIncome: 67.4,
-  lastMonthIncome: 50.45,
-  portfolioYield: 3.05,
-  totalDividendStocks: 5,
-};
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("en-US", {
@@ -162,20 +45,127 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
+const formatDate = (dateStr: string | null) => {
+  if (!dateStr) return "N/A";
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
+const capitalizeFrequency = (freq: DividendFrequency) => {
+  switch (freq) {
+    case "semi-annual":
+      return "Semi-Annual";
+    default:
+      return freq.charAt(0).toUpperCase() + freq.slice(1);
+  }
+};
+
 export default function DividendTrackingPage() {
-  const [stocks] = useState<DividendStock[]>(MOCK_STOCKS);
-  const [payments] = useState<DividendPayment[]>(MOCK_PAYMENTS);
-  const [summary] = useState<DividendSummary>(MOCK_SUMMARY);
+  const [data, setData] = useState<DividendData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<
-    "holdings" | "history" | "calendar"
+    "holdings" | "calendar"
   >("holdings");
 
-  const upcomingPayments = stocks
-    .filter((s) => s.nextPayDate && s.nextPayDate > new Date())
+  const fetchDividends = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/investments/dividends");
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "Failed to fetch dividends");
+      }
+      setData(result.data);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to load dividend data",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDividends();
+  }, [fetchDividends]);
+
+  const upcomingPayments = data?.holdings
+    .filter((h) => h.nextPayDate && new Date(h.nextPayDate) > new Date())
     .sort(
       (a, b) =>
-        (a.nextPayDate?.getTime() || 0) - (b.nextPayDate?.getTime() || 0),
+        new Date(a.nextPayDate!).getTime() - new Date(b.nextPayDate!).getTime(),
+    ) ?? [];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-center py-24">
+            <Loader2 className="w-8 h-8 text-green-600 animate-spin" />
+            <span className="ml-3 text-gray-600 dark:text-slate-400">
+              Loading dividend data...
+            </span>
+          </div>
+        </div>
+      </div>
     );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col items-center justify-center py-24">
+            <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              Failed to load dividends
+            </h2>
+            <p className="text-gray-500 dark:text-slate-400 mb-4">{error}</p>
+            <button
+              onClick={fetchDividends}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!data || data.holdings.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+              <DollarSign className="w-6 h-6 text-green-600 dark:text-green-400" />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              Dividend Tracker
+            </h1>
+          </div>
+          <div className="flex flex-col items-center justify-center py-24 bg-white dark:bg-slate-800 rounded-xl shadow-sm">
+            <DollarSign className="w-12 h-12 text-gray-400 dark:text-slate-500 mb-4" />
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              No dividend-paying holdings
+            </h2>
+            <p className="text-gray-500 dark:text-slate-400 text-center max-w-md">
+              Add dividend-paying stocks or ETFs to your portfolio to start
+              tracking your dividend income.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const monthlyIncome = data.totalAnnualIncome / 12;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-8">
@@ -201,7 +191,10 @@ export default function DividendTrackingPage() {
               <Download className="w-4 h-4" />
               Export
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors">
+            <button
+              onClick={fetchDividends}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
+            >
               <RefreshCw className="w-4 h-4" />
               Refresh
             </button>
@@ -217,97 +210,96 @@ export default function DividendTrackingPage() {
           >
             <p className="text-green-100 text-sm">Annual Income</p>
             <p className="text-2xl font-bold">
-              {formatCurrency(summary.totalAnnualIncome)}
+              {formatCurrency(data.totalAnnualIncome)}
             </p>
             <p className="text-green-200 text-sm mt-1">
-              {formatCurrency(summary.totalMonthlyIncome)}/month
+              {formatCurrency(monthlyIncome)}/month
             </p>
           </motion.div>
 
           <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm">
             <p className="text-sm text-gray-500 dark:text-slate-400">
-              YTD Income
+              Average Yield
             </p>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {formatCurrency(summary.ytdIncome)}
-            </p>
-            <div className="flex items-center gap-1 text-sm mt-1 text-green-600">
-              <ArrowUp className="w-3 h-3" />
-              +12.5% vs last year
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm">
-            <p className="text-sm text-gray-500 dark:text-slate-400">
-              Portfolio Yield
-            </p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {summary.portfolioYield.toFixed(2)}%
+              {data.averageYield.toFixed(2)}%
             </p>
             <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
-              {summary.totalDividendStocks} stocks
+              {data.holdings.length} dividend stocks
             </p>
           </div>
 
           <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm">
             <p className="text-sm text-gray-500 dark:text-slate-400">
-              Last Month
+              Monthly Income
             </p>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {formatCurrency(summary.lastMonthIncome)}
+              {formatCurrency(monthlyIncome)}
             </p>
             <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
-              5 payments
+              Estimated average
+            </p>
+          </div>
+
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm">
+            <p className="text-sm text-gray-500 dark:text-slate-400">
+              Next Payment
+            </p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {data.nextPaymentDate
+                ? formatDate(data.nextPaymentDate)
+                : "N/A"}
+            </p>
+            <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
+              {upcomingPayments.length} upcoming
             </p>
           </div>
         </div>
 
         {/* Upcoming Payments */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-blue-500" />
-            Upcoming Payments
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {upcomingPayments.slice(0, 3).map((stock) => (
-              <div
-                key={stock.symbol}
-                className="p-4 bg-gray-50 dark:bg-slate-700/50 rounded-lg"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold text-gray-900 dark:text-white">
-                    {stock.symbol}
-                  </span>
-                  <span className="text-sm text-gray-500 dark:text-slate-400">
-                    {stock.nextPayDate?.toLocaleDateString()}
-                  </span>
+        {upcomingPayments.length > 0 && (
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-blue-500" />
+              Upcoming Payments
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {upcomingPayments.slice(0, 3).map((holding) => (
+                <div
+                  key={holding.symbol}
+                  className="p-4 bg-gray-50 dark:bg-slate-700/50 rounded-lg"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      {holding.symbol}
+                    </span>
+                    <span className="text-sm text-gray-500 dark:text-slate-400">
+                      {formatDate(holding.nextPayDate)}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-slate-400 mb-2">
+                    {holding.name}
+                  </p>
+                  <p className="text-lg font-semibold text-green-600">
+                    ~{formatCurrency(holding.dividendPerShare * holding.shares / (holding.frequency === "monthly" ? 12 : holding.frequency === "quarterly" ? 4 : holding.frequency === "semi-annual" ? 2 : 1))}
+                  </p>
                 </div>
-                <p className="text-sm text-gray-600 dark:text-slate-400 mb-2">
-                  {stock.companyName}
-                </p>
-                <p className="text-lg font-semibold text-green-600">
-                  ~
-                  {formatCurrency(
-                    (stock.annualDividend / 4) * stock.sharesHeld,
-                  )}
-                </p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Tabs */}
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm">
           <div className="border-b border-gray-200 dark:border-slate-700">
             <div className="flex">
               {[
-                { id: "holdings", label: "Holdings", icon: PieChart },
-                { id: "history", label: "Payment History", icon: BarChart3 },
-                { id: "calendar", label: "Calendar", icon: Calendar },
+                { id: "holdings" as const, label: "Holdings", icon: PieChart },
+                { id: "calendar" as const, label: "Calendar", icon: Calendar },
               ].map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                  onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors border-b-2 ${activeTab === tab.id ? "border-green-500 text-green-600" : "border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-200 dark:hover:text-gray-300"}`}
                 >
                   <tab.icon className="w-4 h-4" />
@@ -332,37 +324,37 @@ export default function DividendTrackingPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {stocks.map((stock) => (
+                    {data.holdings.map((holding) => (
                       <tr
-                        key={stock.symbol}
+                        key={holding.symbol}
                         className="border-b border-gray-100 dark:border-slate-700/50 last:border-0"
                       >
                         <td className="py-4">
                           <div>
                             <span className="font-semibold text-gray-900 dark:text-white">
-                              {stock.symbol}
+                              {holding.symbol}
                             </span>
                             <p className="text-sm text-gray-500 dark:text-slate-400 truncate max-w-[200px]">
-                              {stock.companyName}
+                              {holding.name}
                             </p>
                           </div>
                         </td>
                         <td className="py-4 text-gray-900 dark:text-white">
-                          {stock.sharesHeld}
+                          {holding.shares}
                         </td>
                         <td className="py-4 text-gray-900 dark:text-white">
-                          {formatCurrency(stock.annualDividend)}
+                          {formatCurrency(holding.dividendPerShare)}
                         </td>
                         <td className="py-4">
                           <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded text-sm font-medium">
-                            {stock.dividendYield.toFixed(1)}%
+                            {holding.yield.toFixed(1)}%
                           </span>
                         </td>
                         <td className="py-4 text-gray-600 dark:text-slate-400">
-                          {stock.frequency}
+                          {capitalizeFrequency(holding.frequency)}
                         </td>
                         <td className="py-4 font-semibold text-green-600">
-                          {formatCurrency(stock.annualIncome)}
+                          {formatCurrency(holding.annualDividend)}
                         </td>
                       </tr>
                     ))}
@@ -376,52 +368,11 @@ export default function DividendTrackingPage() {
                         Total Annual Dividend Income
                       </td>
                       <td className="py-4 font-bold text-green-600 text-lg">
-                        {formatCurrency(summary.totalAnnualIncome)}
+                        {formatCurrency(data.totalAnnualIncome)}
                       </td>
                     </tr>
                   </tfoot>
                 </table>
-              </div>
-            )}
-
-            {activeTab === "history" && (
-              <div className="space-y-3">
-                {payments.map((payment) => (
-                  <div
-                    key={payment.id}
-                    className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700/50 rounded-lg"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
-                        <DollarSign className="w-5 h-5 text-green-600" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-gray-900 dark:text-white">
-                            {payment.symbol}
-                          </span>
-                          {payment.reinvested && (
-                            <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded text-xs">
-                              DRIP
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-500 dark:text-slate-400">
-                          {payment.shares} shares ×{" "}
-                          {formatCurrency(payment.amount)}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-green-600">
-                        +{formatCurrency(payment.totalAmount)}
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-slate-400">
-                        {payment.payDate.toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
               </div>
             )}
 

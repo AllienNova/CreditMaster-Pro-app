@@ -90,6 +90,12 @@ export default function InvestmentLayout() {
           title: "Performance",
         }}
       />
+      <Stack.Screen
+        name="dividends"
+        options={{
+          title: "Dividends",
+        }}
+      />
     </Stack>
   );
 }
