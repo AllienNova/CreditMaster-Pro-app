@@ -122,7 +122,7 @@ describe("FinancialGoals", () => {
     render(<FinancialGoals />);
 
     await waitFor(() => {
-      expect(screen.getByText("No Goals Yet")).toBeInTheDocument();
+      expect(screen.getByText("No goals yet")).toBeInTheDocument();
     });
 
     expect(

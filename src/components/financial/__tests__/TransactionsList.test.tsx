@@ -206,7 +206,7 @@ describe("TransactionsList", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText("No Transactions Found"),
+        screen.getByText("No transactions found"),
       ).toBeInTheDocument();
     });
   });
