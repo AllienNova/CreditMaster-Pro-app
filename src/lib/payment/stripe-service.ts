@@ -564,8 +564,43 @@ class StripePaymentService {
           amount: invoice.amount_paid,
           currency: invoice.currency,
         });
+
+        // Reset monthly credit allowance on subscription renewal
+        const subDetails = invoice.parent?.subscription_details;
+        if (subDetails?.subscription) {
+          const stripeSubId =
+            typeof subDetails.subscription === "string"
+              ? subDetails.subscription
+              : subDetails.subscription.id;
+
+          const { supabaseAdmin } = await import("../supabase/server");
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const db = supabaseAdmin as any;
+
+          // Look up the user from the subscription record
+          const { data: subRecord } = await db
+            .from("subscriptions")
+            .select("user_id, stripe_price_id")
+            .eq("stripe_subscription_id", stripeSubId)
+            .single();
+
+          if (subRecord) {
+            const { resetCreditsForTier } = await import(
+              "../credits/credit-reset"
+            );
+
+            // Determine tier from price ID
+            const plan = SUBSCRIPTION_PLANS.find(
+              (p) => p.priceId === subRecord.stripe_price_id,
+            );
+            const tier = plan?.id ?? "free";
+
+            await resetCreditsForTier(subRecord.user_id, tier);
+          }
+        }
       } catch (error) {
         // Stripe error: Failed to process invoice paid event
+        void error;
       }
     }
   }
@@ -615,7 +650,6 @@ class StripePaymentService {
   ): Promise<void> {
     // Stripe: Payment intent succeeded
 
-    // Log successful payment for analytics
     try {
       const { logger } = await import("../monitoring/logger");
       logger.info("Payment intent succeeded", {
@@ -627,8 +661,37 @@ class StripePaymentService {
             ? paymentIntent.customer
             : paymentIntent.customer?.id,
       });
+
+      // Handle credit purchase fulfillment
+      if (paymentIntent.metadata?.type === "credit_purchase") {
+        const { creditService } = await import("../credits/credit-service");
+        const { supabaseAdmin } = await import("../supabase/server");
+
+        const userId = paymentIntent.metadata.userId;
+        const credits = parseInt(paymentIntent.metadata.credits, 10);
+        const packType = paymentIntent.metadata.packType;
+
+        if (userId && credits > 0) {
+          await creditService.addCredits(userId, credits, "credit_purchase", {
+            paymentIntentId: paymentIntent.id,
+            packType,
+            amountCents: paymentIntent.amount,
+          });
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabaseAdmin as any).from("credit_purchases").insert({
+            user_id: userId,
+            pack_type: packType,
+            credits_purchased: credits,
+            amount_cents: paymentIntent.amount,
+            stripe_payment_intent_id: paymentIntent.id,
+            status: "completed",
+          });
+        }
+      }
     } catch (error) {
-      // Stripe error: Failed to log payment intent success
+      // Stripe error: Failed to process payment intent success
+      void error;
     }
   }
 

@@ -18,3 +18,5 @@ export {
 } from "./credit-costs";
 
 export { CreditService, creditService } from "./credit-service";
+
+export { resetCreditsForTier } from "./credit-reset";
