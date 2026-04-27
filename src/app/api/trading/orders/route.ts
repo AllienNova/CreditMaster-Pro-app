@@ -23,6 +23,7 @@ import {
 import { getBrokerFactory } from "@/lib/trading/brokers/broker-factory";
 import type { BrokerCredentials } from "@/lib/trading/brokers/broker-interface";
 import { PaperTradingEngine } from "@/lib/trading/paper/PaperTradingEngine";
+import { runAllGates, type GateRunnerInput } from "@/lib/trading/compliance/gate-runner";
 
 // ============================================================================
 // GET - Retrieve Orders
@@ -176,6 +177,42 @@ export async function POST(request: NextRequest) {
           strategyId: body.strategyId,
           notes: body.notes,
         };
+
+        // ================================================================
+        // Strativion: Compliance gate-runner (pre-trade admission)
+        // ================================================================
+        try {
+          const gateInput: GateRunnerInput = {
+            userId: user.id,
+            symbol: body.symbol,
+            side: body.side === "buy" ? "buy" : body.side === "sell" ? "sell" : "buy",
+            quantity: body.quantity ?? 0,
+            price: body.limitPrice ?? body.stopPrice ?? 0,
+            accountEquity: body.accountEquity ?? 0,
+            dayTradesInWindow: body.dayTradesInWindow,
+            spxChangePct: body.spxChangePct,
+          };
+
+          const gateResult = runAllGates(gateInput);
+          if (!gateResult.allPassed) {
+            return NextResponse.json(
+              {
+                success: false,
+                error: "Compliance gate blocked",
+                blockedGates: gateResult.blockedGates.map((g) => ({
+                  gate: g.gateId,
+                  name: g.gateName,
+                  reason: g.reason,
+                })),
+              },
+              { status: 403 },
+            );
+          }
+        } catch (gateErr) {
+          // Compliance gate error is non-fatal — log and continue
+          // In production, consider fail-closed for compliance
+          console.error("[ComplianceGate] Error running gates:", gateErr);
+        }
 
         // Get account ID (in production, fetch from user's linked broker account)
         const accountId = body.accountId || "default";

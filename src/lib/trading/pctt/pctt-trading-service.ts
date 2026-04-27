@@ -38,6 +38,10 @@ import {
   type PortfolioState,
   type EnhancedRiskValidation,
 } from "@/lib/trading/risk/risk-gateway";
+import {
+  runPreMarketChecklist,
+  type PreMarketContext,
+} from "@/lib/trading/calendar/pre-market-checklist";
 
 // ============================================================================
 // TYPES
@@ -175,6 +179,7 @@ export class PCTTTradingService {
   private activePositions: Map<string, ActivePosition> = new Map();
   private dailyPL: number = 0;
   private dailyTradeCount: number = 0;
+  private preMarketCheckDone: boolean = false;
 
   constructor(userId: string, config: Partial<PCTTTradingConfig> = {}) {
     this.userId = userId;
@@ -398,6 +403,56 @@ export class PCTTTradingService {
         operatingMode: currentMode,
         requiresConfirmation: false,
       };
+    }
+
+    // ========================================================================
+    // Strativion: Pre-market checklist (runs once per trading day)
+    // ========================================================================
+    if (!this.preMarketCheckDone) {
+      try {
+        const brokerConnected = this.broker?.getConnectionStatus().connected ?? false;
+        let accountEquity = this.config.accountSize;
+        let killSwitchActive = false;
+
+        if (this.broker) {
+          try {
+            const account = await this.broker.getAccount();
+            accountEquity = account.portfolioValue;
+          } catch {
+            // Use default account size
+          }
+        }
+
+        try {
+          const riskGw = new RiskGateway(this.userId);
+          killSwitchActive = riskGw.getKillSwitchStatus().active;
+        } catch {
+          // Risk gateway unavailable
+        }
+
+        const preMarketCtx: PreMarketContext = {
+          brokerConnected,
+          killSwitchActive,
+          accountEquityUsd: accountEquity,
+          isDayTrading: true,
+        };
+
+        const checklistResult = runPreMarketChecklist(preMarketCtx);
+        if (!checklistResult.passed) {
+          return {
+            success: false,
+            error: `Pre-market checklist failed: ${checklistResult.blockers.join("; ")}`,
+            timestamp,
+            operatingMode: currentMode,
+          };
+        }
+
+        this.preMarketCheckDone = true;
+      } catch (preMarketErr) {
+        // Pre-market checklist error is non-fatal — log and continue
+        console.error("[PreMarketChecklist] Error:", preMarketErr);
+        this.preMarketCheckDone = true; // Don't block retries on error
+      }
     }
 
     // ========================================================================
@@ -870,6 +925,7 @@ export class PCTTTradingService {
   resetDailyStats(): void {
     this.dailyPL = 0;
     this.dailyTradeCount = 0;
+    this.preMarketCheckDone = false;
   }
 }
 

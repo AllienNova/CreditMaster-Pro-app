@@ -9,6 +9,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, supabaseAdmin } from "@/lib/supabase/server";
 import { createPCTTEngine, type OHLCV } from "@/lib/trading/pctt/pctt-core";
+import { classifyRegime, type RegimeClassification } from "@/lib/trading/regime";
+import { checkHTFAlignment, type HTFResult } from "@/lib/trading/signals";
+import type { Bar } from "@/lib/trading/data/bar-consolidator";
 
 // ============================================================================
 // TYPES
@@ -455,6 +458,66 @@ export async function POST(request: NextRequest) {
           ? fusedVotes.length / availableSignals.length
           : 0;
 
+        // ==============================================================
+        // Strativion: Regime detection — filter aggressive signals in
+        // CRISIS or SHOCK regimes
+        // ==============================================================
+        let regimeInfo: RegimeClassification | null = null;
+        let regimeFiltered = false;
+
+        try {
+          const candles = await fetchCandles(symbol, 200);
+          if (candles.length >= 52) {
+            const closes = candles.map((c) => c.close);
+            const highs = candles.map((c) => c.high);
+            const lows = candles.map((c) => c.low);
+            const volumes = candles.map((c) => c.volume);
+
+            regimeInfo = classifyRegime(closes, highs, lows, volumes);
+
+            if (
+              (regimeInfo.regime === "crisis" || regimeInfo.regime === "shock") &&
+              fusedConfidence < 0.8
+            ) {
+              regimeFiltered = true;
+            }
+          }
+        } catch (regimeErr) {
+          // Regime detection error — log and continue without filtering
+          console.error("[RegimeDetector] Error classifying regime:", regimeErr);
+        }
+
+        // ==============================================================
+        // Strativion: HTF alignment — filter signals that don't align
+        // with higher timeframe trend
+        // ==============================================================
+        let htfInfo: HTFResult | null = null;
+
+        try {
+          const candles = await fetchCandles(symbol, 200);
+          if (candles.length >= 23) {
+            // Convert OHLCV candles to Bar format for HTF alignment
+            const htfBars: Bar[] = candles.map((c) => ({
+              timestamp: c.time,
+              open: c.open,
+              high: c.high,
+              low: c.low,
+              close: c.close,
+              volume: c.volume,
+            }));
+
+            htfInfo = checkHTFAlignment({
+              signalTimeframe: "1d",
+              signalDirection: fusedSide as "long" | "short",
+              htfBars,
+              method: "ema_slope",
+            });
+          }
+        } catch (htfErr) {
+          // HTF alignment error — log and continue without filtering
+          console.error("[HTFAlignment] Error checking alignment:", htfErr);
+        }
+
         const analysisResult = {
           symbol,
           timeframe: timeframe || "1D",
@@ -479,6 +542,22 @@ export async function POST(request: NextRequest) {
             confidence: fusedConfidence,
             consensus,
           },
+          regime: regimeInfo
+            ? {
+                regime: regimeInfo.regime,
+                confidence: regimeInfo.confidence,
+                efficiencyRatio: regimeInfo.efficiencyRatio,
+                filtered: regimeFiltered,
+              }
+            : null,
+          htfAlignment: htfInfo
+            ? {
+                aligned: htfInfo.aligned,
+                htfTrend: htfInfo.htfTrend,
+                method: htfInfo.method,
+                details: htfInfo.details,
+              }
+            : null,
         };
 
         return NextResponse.json({ success: true, data: analysisResult });
