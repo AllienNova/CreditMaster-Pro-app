@@ -166,6 +166,16 @@ export {
   selectError as selectStudentLoanError,
 } from "./studentLoanStore";
 
+// Credit Balance Store (credits system, not credit scores)
+export {
+  useCreditBalanceStore,
+  selectBalance as selectCreditBalance,
+  selectTransactions as selectCreditTransactions,
+  selectCreditLoading as selectCreditBalanceLoading,
+  selectCreditError as selectCreditBalanceError,
+  selectIsLow as selectCreditIsLow,
+} from "./creditBalanceStore";
+
 // Gamification Store
 export { useGamificationStore } from "./gamificationStore";
 

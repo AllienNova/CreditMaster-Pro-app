@@ -55,6 +55,10 @@ export default function SettingsLayout() {
         name="notification-preferences"
         options={{ title: "Notification Preferences", headerShown: false }}
       />
+      <Stack.Screen
+        name="credits"
+        options={{ title: "Credits", headerShown: false }}
+      />
     </Stack>
   );
 }
