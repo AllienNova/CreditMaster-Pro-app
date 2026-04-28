@@ -72,8 +72,8 @@ export function PhoneFrame({
       <div className="absolute -right-[7px] top-24 w-[3px] h-8 bg-gray-800 rounded-r" />
       {/* Notch */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-5 bg-gray-900 rounded-b-xl z-10" />
-      {/* Screen */}
-      <div className="relative overflow-hidden rounded-[2rem]">
+      {/* Screen — fixed iPhone 15 aspect ratio */}
+      <div className="relative overflow-hidden rounded-[2rem]" style={{ aspectRatio: "9 / 19.5" }}>
         {children}
         {/* Glass glare */}
         <div
