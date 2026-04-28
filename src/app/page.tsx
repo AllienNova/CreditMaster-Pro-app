@@ -14,11 +14,11 @@
  */
 
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
 import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
 import { FadeIn, StaggerList, ScrollReveal, AnimatedNumber } from "@/components/ui/animations";
-import { LaptopFrame, PhoneFrame, DashboardMockup, MobileMockup } from "@/components/ui/DeviceMockup";
 
 export const metadata: Metadata = {
   title:
@@ -261,22 +261,17 @@ export default function LandingPage() {
             </FadeIn>
             </div>
 
-            {/* Right: Floating device mockups */}
+            {/* Right: Photorealistic device mockups */}
             <div className="relative hidden lg:block">
-              <div className="relative w-full min-h-[500px]">
-                {/* Laptop mockup - main */}
-                <div className="absolute top-8 right-0 w-[500px] animate-float-slow">
-                  <LaptopFrame>
-                    <DashboardMockup />
-                  </LaptopFrame>
-                </div>
-
-                {/* Phone mockup - overlapping, in front */}
-                <div className="absolute -bottom-8 left-0 w-[200px] z-10 animate-float">
-                  <PhoneFrame>
-                    <MobileMockup />
-                  </PhoneFrame>
-                </div>
+              <div className="relative w-full min-h-[500px] animate-float-slow">
+                <Image
+                  src="/mockups/hero-devices.png"
+                  alt="Fynvita dashboard on MacBook Pro and iPhone"
+                  width={1024}
+                  height={576}
+                  className="w-full h-auto drop-shadow-2xl"
+                  priority
+                />
               </div>
             </div>
           </div>
@@ -436,20 +431,14 @@ export default function LandingPage() {
           </p>
           </ScrollReveal>
 
-          <div className="relative flex items-end justify-center gap-8">
-            {/* Laptop — larger, centered */}
-            <div className="w-full max-w-[700px] animate-float-slow">
-              <LaptopFrame>
-                <DashboardMockup expanded />
-              </LaptopFrame>
-            </div>
-
-            {/* Phone — overlapping right side */}
-            <div className="absolute right-[5%] sm:right-[10%] -bottom-4 w-[140px] sm:w-[180px] z-10 animate-float">
-              <PhoneFrame>
-                <MobileMockup />
-              </PhoneFrame>
-            </div>
+          <div className="relative max-w-[900px] mx-auto">
+            <Image
+              src="/mockups/showcase-laptop.png"
+              alt="Fynvita financial dashboard on MacBook Pro"
+              width={1024}
+              height={576}
+              className="w-full h-auto drop-shadow-2xl rounded-lg"
+            />
           </div>
         </div>
       </section>
@@ -1698,67 +1687,15 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Phone Mockup */}
+            {/* Phone Mockup — photorealistic */}
             <div className="flex justify-center">
-              <div className="relative w-64 h-[520px] bg-gray-900 rounded-[3rem] p-3 shadow-xl">
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-gray-900 rounded-b-2xl"></div>
-                <div className="w-full h-full bg-gradient-to-b from-emerald-500 to-blue-600 rounded-[2.25rem] overflow-hidden">
-                  <div className="p-6 pt-10">
-                    <p className="text-white/80 text-xs">Good morning </p>
-                    <p className="text-white text-xl font-semibold mt-1">
-                      Your Financial Health
-                    </p>
-                    <p className="text-white text-6xl font-bold mt-4">742</p>
-                    <p className="text-emerald-200 text-sm mt-2 flex items-center gap-1">
-                      <svg
-                        className="w-3 h-3"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      12 pts this month
-                    </p>
-
-                    <div className="mt-8 space-y-3">
-                      <div className="bg-white/15 backdrop-blur rounded-xl p-4">
-                        <div className="flex justify-between items-center">
-                          <span className="text-white/80 text-xs">
-                            Net Worth
-                          </span>
-                          <span className="text-white text-sm font-bold">
-                            $124,350
-                          </span>
-                        </div>
-                      </div>
-                      <div className="bg-white/15 backdrop-blur rounded-xl p-4">
-                        <div className="flex justify-between items-center">
-                          <span className="text-white/80 text-xs">
-                            This Month
-                          </span>
-                          <span className="text-emerald-200 text-sm font-bold">
-                            +$2,430
-                          </span>
-                        </div>
-                      </div>
-                      <div className="bg-white/15 backdrop-blur rounded-xl p-4">
-                        <div className="flex justify-between items-center">
-                          <span className="text-white/80 text-xs">
-                            Credit Score
-                          </span>
-                          <span className="text-white text-sm font-bold">
-                            742 / 850
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <Image
+                src="/mockups/mobile-phone.png"
+                alt="Fynvita mobile app on iPhone"
+                width={360}
+                height={640}
+                className="w-64 h-auto drop-shadow-2xl"
+              />
             </div>
           </div>
         </div>
