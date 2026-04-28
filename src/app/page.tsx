@@ -14,11 +14,11 @@
  */
 
 import Link from "next/link";
-import Image from "next/image";
 import type { Metadata } from "next";
 import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
 import { FadeIn, StaggerList, ScrollReveal, AnimatedNumber } from "@/components/ui/animations";
+import { LaptopFrame, PhoneFrame, LaptopScreenMockup, MobileScreenMockup } from "@/components/ui/DeviceMockup";
 
 export const metadata: Metadata = {
   title:
@@ -261,17 +261,15 @@ export default function LandingPage() {
             </FadeIn>
             </div>
 
-            {/* Right: Photorealistic device mockups */}
+            {/* Right: Device mockups */}
             <div className="relative hidden lg:block">
-              <div className="relative w-full min-h-[500px] animate-float-slow">
-                <Image
-                  src="/mockups/hero-devices.png"
-                  alt="Fynvita dashboard on MacBook Pro and iPhone"
-                  width={1024}
-                  height={576}
-                  className="w-full h-auto drop-shadow-2xl"
-                  priority
-                />
+              <div className="flex items-end gap-3 animate-float-slow">
+                <LaptopFrame className="flex-1">
+                  <LaptopScreenMockup />
+                </LaptopFrame>
+                <PhoneFrame className="w-[120px] flex-shrink-0 mb-4">
+                  <MobileScreenMockup />
+                </PhoneFrame>
               </div>
             </div>
           </div>
@@ -432,13 +430,9 @@ export default function LandingPage() {
           </ScrollReveal>
 
           <div className="relative max-w-[900px] mx-auto">
-            <Image
-              src="/mockups/showcase-laptop.png"
-              alt="Fynvita financial dashboard on MacBook Pro"
-              width={1024}
-              height={576}
-              className="w-full h-auto drop-shadow-2xl rounded-lg"
-            />
+            <LaptopFrame>
+              <LaptopScreenMockup />
+            </LaptopFrame>
           </div>
         </div>
       </section>
@@ -1687,15 +1681,11 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Phone Mockup — photorealistic */}
+            {/* Phone Mockup */}
             <div className="flex justify-center">
-              <Image
-                src="/mockups/mobile-phone.png"
-                alt="Fynvita mobile app on iPhone"
-                width={360}
-                height={640}
-                className="w-64 h-auto drop-shadow-2xl"
-              />
+              <PhoneFrame className="w-64">
+                <MobileScreenMockup />
+              </PhoneFrame>
             </div>
           </div>
         </div>
