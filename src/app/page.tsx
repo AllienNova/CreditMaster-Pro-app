@@ -218,7 +218,7 @@ export default function LandingPage() {
               <span>The Premier Financial Wellness Platform</span>
             </div>
             <FadeIn>
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 dark:text-white tracking-tight leading-[1.08] mb-6">
+            <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 dark:text-white tracking-tight leading-[1.08] mb-6">
               The Only Platform That
               <br />
               <span className="bg-gradient-to-r from-emerald-500 to-blue-500 bg-clip-text text-transparent">

@@ -11,7 +11,7 @@
     "assets:derive-icons": "tsx scripts/assets/derive-app-icons.ts",
     "assets:derive-splash": "tsx scripts/assets/derive-splash.ts",
     "assets:wave": "tsx scripts/assets/generate.ts wave",
-    "build": "next build",
+    "build": "NODE_ENV=production next build",
     "check-env": "node scripts/check-env.js",
     "cypress:open": "cypress open",
     "cypress:run": "wait-on http://localhost:3000 && cypress run",
