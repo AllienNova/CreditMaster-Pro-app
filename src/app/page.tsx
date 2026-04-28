@@ -14,6 +14,7 @@
  */
 
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
 import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
@@ -262,15 +263,15 @@ export default function LandingPage() {
             </div>
 
             {/* Right: Device mockups */}
-            <div className="relative hidden lg:block">
-              <div className="flex items-end gap-3 animate-float-slow">
-                <LaptopFrame className="flex-1">
-                  <LaptopScreenMockup />
-                </LaptopFrame>
-                <PhoneFrame className="w-[120px] flex-shrink-0 mb-4">
-                  <MobileScreenMockup />
-                </PhoneFrame>
-              </div>
+            <div className="relative hidden lg:block animate-float-slow">
+              <Image
+                src="/mockups/hero-devices.png"
+                alt="Fynvita dashboard on MacBook Pro and iPhone showing credit score analytics, AI recommendations, and financial insights"
+                width={1536}
+                height={1024}
+                className="w-full h-auto rounded-lg"
+                priority
+              />
             </div>
           </div>
 
