@@ -142,7 +142,7 @@ export default function PricingPage() {
               return (
                 <div
                   key={tier.id}
-                  className={`relative rounded-xl p-6 xl:p-5 2xl:p-8 flex flex-col min-w-0 overflow-hidden ${
+                  className={`relative rounded-xl p-6 xl:p-4 2xl:p-8 flex flex-col min-w-0 ${
                     isPopular
                       ? "bg-gradient-to-br from-gray-900 to-slate-800 text-white scale-[1.02] shadow-xl ring-2 ring-emerald-500/30 lg:-mt-4 lg:mb-4"
                       : "bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all hover:border-emerald-200 dark:hover:border-emerald-700"
@@ -164,7 +164,7 @@ export default function PricingPage() {
 
                   <div className="mb-6">
                     <h3
-                      className={`text-2xl xl:text-xl 2xl:text-2xl font-bold mb-1 ${isPopular ? "text-white" : "text-gray-900 dark:text-white"}`}
+                      className={`text-2xl xl:text-lg 2xl:text-2xl font-bold mb-1 ${isPopular ? "text-white" : "text-gray-900 dark:text-white"}`}
                     >
                       {tier.name}
                     </h3>
@@ -179,14 +179,14 @@ export default function PricingPage() {
                     <div className="flex items-baseline mb-1 min-w-0">
                       {isFree ? (
                         <span
-                          className={`text-4xl xl:text-3xl 2xl:text-4xl font-bold tracking-tight ${isPopular ? "text-white" : "text-gray-900 dark:text-white"}`}
+                          className={`text-4xl xl:text-2xl 2xl:text-4xl font-bold tracking-tight ${isPopular ? "text-white" : "text-gray-900 dark:text-white"}`}
                         >
                           $0
                         </span>
                       ) : (
                         <>
                           <span
-                            className={`text-4xl xl:text-3xl 2xl:text-4xl font-bold tracking-tight ${isPopular ? "text-white" : "text-gray-900 dark:text-white"}`}
+                            className={`text-4xl xl:text-2xl 2xl:text-4xl font-bold tracking-tight ${isPopular ? "text-white" : "text-gray-900 dark:text-white"}`}
                           >
                             $
                             {billingCycle === "monthly"

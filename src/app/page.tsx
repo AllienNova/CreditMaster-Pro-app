@@ -1218,7 +1218,7 @@ export default function LandingPage() {
                 </div>
                 <div>
                   <p className="font-bold text-gray-900 dark:text-white">
-                    Sarah Johnson
+                    Sarah
                   </p>
                   <p className="text-sm text-gray-500 dark:text-slate-400">
                     Small Business Owner
@@ -1266,7 +1266,7 @@ export default function LandingPage() {
                 </div>
                 <div>
                   <p className="font-bold text-gray-900 dark:text-white">
-                    Michael Chen
+                    Michael
                   </p>
                   <p className="text-sm text-gray-500 dark:text-slate-400">
                     Software Engineer
@@ -1314,7 +1314,7 @@ export default function LandingPage() {
                 </div>
                 <div>
                   <p className="font-bold text-gray-900 dark:text-white">
-                    Emily Rodriguez
+                    Emily
                   </p>
                   <p className="text-sm text-gray-500 dark:text-slate-400">
                     Teacher
@@ -1383,7 +1383,7 @@ export default function LandingPage() {
                 </div>
                 <div>
                   <p className="font-bold text-gray-900 dark:text-white">
-                    David Martinez
+                    David
                   </p>
                   <p className="text-sm text-gray-600 dark:text-slate-400">
                     Real Estate Investor
@@ -1416,7 +1416,7 @@ export default function LandingPage() {
                 </div>
                 <div>
                   <p className="font-bold text-gray-900 dark:text-white">
-                    Lisa Thompson
+                    Lisa
                   </p>
                   <p className="text-sm text-gray-600 dark:text-slate-400">
                     Marketing Director
@@ -1449,7 +1449,7 @@ export default function LandingPage() {
                 </div>
                 <div>
                   <p className="font-bold text-gray-900 dark:text-white">
-                    James Kim
+                    James
                   </p>
                   <p className="text-sm text-gray-600 dark:text-slate-400">
                     Financial Analyst
@@ -1482,7 +1482,7 @@ export default function LandingPage() {
                 </div>
                 <div>
                   <p className="font-bold text-gray-900 dark:text-white">
-                    Amanda Patel
+                    Amanda
                   </p>
                   <p className="text-sm text-gray-600 dark:text-slate-400">
                     CFP®, Financial Advisor
@@ -1525,7 +1525,7 @@ export default function LandingPage() {
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-            <div className="bg-white backdrop-blur-md rounded-xl p-8 border border-white/20 hover:bg-white dark:bg-slate-800/15 transition-all">
+            <div className="bg-white/10 backdrop-blur-md rounded-xl p-8 border border-white/20 hover:bg-white/15 transition-all">
               <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-400 to-blue-400 flex items-center justify-center mb-4">
                 <svg
                   className="w-7 h-7 text-white"
@@ -1545,7 +1545,7 @@ export default function LandingPage() {
               <p className="text-white/80 font-medium">AI Models</p>
               <p className="text-white/60 text-sm mt-2">Intelligent routing</p>
             </div>
-            <div className="bg-white backdrop-blur-md rounded-xl p-8 border border-white/20 hover:bg-white dark:bg-slate-800/15 transition-all">
+            <div className="bg-white/10 backdrop-blur-md rounded-xl p-8 border border-white/20 hover:bg-white/15 transition-all">
               <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center mb-4">
                 <svg
                   className="w-7 h-7 text-white"
@@ -1565,7 +1565,7 @@ export default function LandingPage() {
               <p className="text-white/80 font-medium">AI Coach</p>
               <p className="text-white/60 text-sm mt-2">Always available</p>
             </div>
-            <div className="bg-white backdrop-blur-md rounded-xl p-8 border border-white/20 hover:bg-white dark:bg-slate-800/15 transition-all">
+            <div className="bg-white/10 backdrop-blur-md rounded-xl p-8 border border-white/20 hover:bg-white/15 transition-all">
               <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center mb-4">
                 <svg
                   className="w-7 h-7 text-white"
@@ -1585,7 +1585,7 @@ export default function LandingPage() {
               <p className="text-white/80 font-medium">Response Time</p>
               <p className="text-white/60 text-sm mt-2">Real-time insights</p>
             </div>
-            <div className="bg-white backdrop-blur-md rounded-xl p-8 border border-white/20 hover:bg-white dark:bg-slate-800/15 transition-all">
+            <div className="bg-white/10 backdrop-blur-md rounded-xl p-8 border border-white/20 hover:bg-white/15 transition-all">
               <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-400 to-emerald-400 flex items-center justify-center mb-4">
                 <svg
                   className="w-7 h-7 text-white"
@@ -1609,7 +1609,7 @@ export default function LandingPage() {
 
           {/* AI Capabilities */}
           <div className="grid md:grid-cols-3 gap-6">
-            <div className="bg-white dark:bg-slate-800/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/10">
               <h3 className="text-lg font-bold text-white mb-3">
                 Predictive Analytics
               </h3>
@@ -1619,7 +1619,7 @@ export default function LandingPage() {
                 outcomes with unprecedented accuracy.
               </p>
             </div>
-            <div className="bg-white dark:bg-slate-800/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/10">
               <h3 className="text-lg font-bold text-white mb-3">
                 Natural Language Processing
               </h3>
@@ -1629,7 +1629,7 @@ export default function LandingPage() {
                 jargon required.
               </p>
             </div>
-            <div className="bg-white dark:bg-slate-800/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/10">
               <h3 className="text-lg font-bold text-white mb-3">
                 Continuous Learning
               </h3>
@@ -1725,23 +1725,33 @@ export default function LandingPage() {
                     </p>
 
                     <div className="mt-8 space-y-3">
-                      <div className="bg-white dark:bg-slate-800/10 backdrop-blur rounded-xl p-4">
-                        <div className="flex justify-between">
+                      <div className="bg-white/15 backdrop-blur rounded-xl p-4">
+                        <div className="flex justify-between items-center">
                           <span className="text-white/80 text-xs">
-                            Wellness Score
+                            Net Worth
                           </span>
-                          <span className="text-white text-sm font-medium">
+                          <span className="text-white text-sm font-bold">
                             $124,350
                           </span>
                         </div>
                       </div>
-                      <div className="bg-white dark:bg-slate-800/10 backdrop-blur rounded-xl p-4">
-                        <div className="flex justify-between">
+                      <div className="bg-white/15 backdrop-blur rounded-xl p-4">
+                        <div className="flex justify-between items-center">
                           <span className="text-white/80 text-xs">
                             This Month
                           </span>
-                          <span className="text-emerald-200 text-sm font-medium">
+                          <span className="text-emerald-200 text-sm font-bold">
                             +$2,430
+                          </span>
+                        </div>
+                      </div>
+                      <div className="bg-white/15 backdrop-blur rounded-xl p-4">
+                        <div className="flex justify-between items-center">
+                          <span className="text-white/80 text-xs">
+                            Credit Score
+                          </span>
+                          <span className="text-white text-sm font-bold">
+                            742 / 850
                           </span>
                         </div>
                       </div>
