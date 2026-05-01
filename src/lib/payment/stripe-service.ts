@@ -328,6 +328,49 @@ class StripePaymentService {
   }
 
   /**
+   * Create a one-time Checkout Session for a credit pack purchase. Stripe
+   * hosts the card form and emits payment_intent.succeeded after capture, at
+   * which point fulfillCreditPurchase grants the credits idempotently.
+   */
+  async createCreditPackCheckoutSession(params: {
+    customerId: string;
+    userId: string;
+    packType: string;
+    credits: number;
+    priceCents: number;
+    successUrl: string;
+    cancelUrl: string;
+  }): Promise<Stripe.Checkout.Session> {
+    return stripe.checkout.sessions.create({
+      customer: params.customerId,
+      mode: "payment",
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: "usd",
+            unit_amount: params.priceCents,
+            product_data: {
+              name: `Fynvita ${params.credits.toLocaleString()} credits (${params.packType})`,
+            },
+          },
+        },
+      ],
+      payment_intent_data: {
+        metadata: {
+          type: "credit_purchase",
+          userId: params.userId,
+          packType: params.packType,
+          credits: String(params.credits),
+        },
+      },
+      success_url: params.successUrl,
+      cancel_url: params.cancelUrl,
+    });
+  }
+
+  /**
    * Create a billing portal session
    */
   async createBillingPortalSession(
@@ -662,37 +705,87 @@ class StripePaymentService {
             : paymentIntent.customer?.id,
       });
 
-      // Handle credit purchase fulfillment
+      // Handle credit purchase fulfillment. Errors propagate so the webhook
+      // route returns non-2xx and Stripe retries — the underlying RPC is
+      // idempotent, so retries are safe.
       if (paymentIntent.metadata?.type === "credit_purchase") {
-        const { creditService } = await import("../credits/credit-service");
-        const { supabaseAdmin } = await import("../supabase/server");
-
-        const userId = paymentIntent.metadata.userId;
-        const credits = parseInt(paymentIntent.metadata.credits, 10);
-        const packType = paymentIntent.metadata.packType;
-
-        if (userId && credits > 0) {
-          await creditService.addCredits(userId, credits, "credit_purchase", {
-            paymentIntentId: paymentIntent.id,
-            packType,
-            amountCents: paymentIntent.amount,
-          });
-
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await (supabaseAdmin as any).from("credit_purchases").insert({
-            user_id: userId,
-            pack_type: packType,
-            credits_purchased: credits,
-            amount_cents: paymentIntent.amount,
-            stripe_payment_intent_id: paymentIntent.id,
-            status: "completed",
-          });
-        }
+        await this.fulfillCreditPurchase(paymentIntent);
       }
     } catch (error) {
-      // Stripe error: Failed to process payment intent success
-      void error;
+      const { logger } = await import("../monitoring/logger");
+      logger.error(
+        "Failed to process payment intent success",
+        error instanceof Error ? error : new Error(String(error)),
+        { paymentIntentId: paymentIntent.id },
+      );
+      throw error;
     }
+  }
+
+  /**
+   * Fulfill a credit pack purchase. The underlying add_credits RPC is atomic:
+   * the credit_purchases sentinel insert and the user_credits update happen in
+   * the same Postgres transaction. A duplicate Stripe delivery is detected
+   * inside the RPC by stripe_payment_intent_id and short-circuits cleanly,
+   * returning already_fulfilled=true with no double-grant and no stranded row.
+   */
+  private async fulfillCreditPurchase(
+    paymentIntent: Stripe.PaymentIntent,
+  ): Promise<void> {
+    const { creditService } = await import("../credits/credit-service");
+    const { logger } = await import("../monitoring/logger");
+
+    const userId = paymentIntent.metadata.userId;
+    const credits = parseInt(paymentIntent.metadata.credits, 10);
+    const packType = paymentIntent.metadata.packType;
+
+    if (
+      !userId ||
+      !packType ||
+      !Number.isFinite(credits) ||
+      credits <= 0 ||
+      paymentIntent.amount <= 0
+    ) {
+      logger.warn("Credit purchase webhook missing required metadata", {
+        paymentIntentId: paymentIntent.id,
+        userId,
+        credits,
+        packType,
+        amount: paymentIntent.amount,
+      });
+      return;
+    }
+
+    const result = await creditService.addCredits(
+      userId,
+      credits,
+      "credit_purchase",
+      {
+        paymentIntentId: paymentIntent.id,
+        packType,
+        amountCents: paymentIntent.amount,
+      },
+      {
+        paymentIntentId: paymentIntent.id,
+        packType,
+        amountPaidCents: paymentIntent.amount,
+      },
+    );
+
+    if (result.alreadyFulfilled) {
+      logger.info("Credit purchase webhook duplicate suppressed", {
+        paymentIntentId: paymentIntent.id,
+        userId,
+      });
+      return;
+    }
+
+    logger.info("Credit purchase fulfilled", {
+      paymentIntentId: paymentIntent.id,
+      userId,
+      credits,
+      packType,
+    });
   }
 
   private async handlePaymentIntentFailed(

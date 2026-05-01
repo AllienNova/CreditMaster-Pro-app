@@ -94,48 +94,39 @@ export class CreditService {
     amount: number,
     source: CreditAction,
     metadata: Record<string, unknown> = {},
-  ): Promise<number> {
-    // Ensure user row exists
-    await this.getBalance(userId);
-
-    const { data: current, error: readErr } = await userCredits()
-      .select("credit_balance, purchased_credits")
-      .eq("user_id", userId)
-      .single();
-
-    if (readErr) {
-      throw new Error(`Failed to read credit balance: ${readErr.message}`);
+    fulfillment?: {
+      paymentIntentId: string;
+      packType: string;
+      amountPaidCents: number;
+    },
+  ): Promise<{ newBalance: number; alreadyFulfilled: boolean }> {
+    if (amount <= 0) {
+      throw new Error(`addCredits requires amount > 0, got ${amount}`);
     }
 
-    const newBalance = (current.credit_balance as number) + amount;
-    const updateFields: Record<string, unknown> = {
-      credit_balance: newBalance,
-      updated_at: new Date().toISOString(),
-    };
-
-    if (source === "credit_purchase") {
-      updateFields.purchased_credits =
-        (current.purchased_credits as number) + amount;
-    }
-
-    const { error: setErr } = await userCredits()
-      .update(updateFields)
-      .eq("user_id", userId);
-
-    if (setErr) {
-      throw new Error(`Failed to add credits: ${setErr.message}`);
-    }
-
-    await creditTransactions().insert({
-      user_id: userId,
-      action_type: source,
-      credits_added: amount,
-      credits_consumed: 0,
-      balance_after: newBalance,
-      metadata,
+    const { data, error } = await db.rpc("add_credits", {
+      p_user_id: userId,
+      p_amount: amount,
+      p_source: source,
+      p_metadata: metadata,
+      p_payment_intent_id: fulfillment?.paymentIntentId ?? null,
+      p_pack_type: fulfillment?.packType ?? null,
+      p_amount_paid_cents: fulfillment?.amountPaidCents ?? null,
     });
 
-    return newBalance;
+    if (error) {
+      throw new Error(`Failed to add credits: ${error.message}`);
+    }
+
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row || row.new_balance == null) {
+      throw new Error("add_credits RPC returned no balance");
+    }
+
+    return {
+      newBalance: row.new_balance as number,
+      alreadyFulfilled: Boolean(row.already_fulfilled),
+    };
   }
 
   async resetMonthlyAllowance(

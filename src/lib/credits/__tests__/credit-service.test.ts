@@ -221,115 +221,128 @@ describe("CreditService", () => {
   });
 
   describe("addCredits", () => {
-    it("increments balance and records transaction", async () => {
-      const ch = holder.chainable as unknown as Record<string, jest.Mock>;
-
-      h().single
-        .mockResolvedValueOnce({
-          data: {
-            user_id: "user-1",
-            credit_balance: 1000,
-            subscription_allowance: 5000,
-            purchased_credits: 0,
-            period_start: new Date().toISOString(),
-            period_end: new Date().toISOString(),
-          },
-          error: null,
-        })
-        .mockResolvedValueOnce({
-          data: { period_start: new Date().toISOString() },
-          error: null,
-        });
-
-      h().gt.mockResolvedValueOnce({ data: [], error: null });
-
-      h().single.mockResolvedValueOnce({
-        data: { credit_balance: 1000, purchased_credits: 0 },
+    it("calls the atomic add_credits RPC and returns the new balance", async () => {
+      h().rpc.mockResolvedValueOnce({
+        data: [{ new_balance: 2000, already_fulfilled: false }],
         error: null,
       });
 
-      h().update.mockReturnValueOnce({
-        ...ch,
-        eq: jest.fn().mockResolvedValueOnce({ error: null }),
-      });
-
-      h().insert.mockResolvedValueOnce({ error: null });
-
-      const newBalance = await service.addCredits(
+      const result = await service.addCredits(
         "user-1",
         1000,
-        "credit_purchase",
+        "addon_credit",
         { pack: "starter" },
       );
 
-      expect(newBalance).toBe(2000);
+      expect(result.newBalance).toBe(2000);
+      expect(result.alreadyFulfilled).toBe(false);
+      expect(h().rpc).toHaveBeenCalledWith("add_credits", {
+        p_user_id: "user-1",
+        p_amount: 1000,
+        p_source: "addon_credit",
+        p_metadata: { pack: "starter" },
+        p_payment_intent_id: null,
+        p_pack_type: null,
+        p_amount_paid_cents: null,
+      });
     });
 
-    it("updates purchased_credits for credit_purchase source", async () => {
-      const ch = holder.chainable as unknown as Record<string, jest.Mock>;
-
-      h().single
-        .mockResolvedValueOnce({
-          data: {
-            user_id: "user-1",
-            credit_balance: 500,
-            subscription_allowance: 500,
-            purchased_credits: 200,
-            period_start: new Date().toISOString(),
-            period_end: new Date().toISOString(),
-          },
-          error: null,
-        })
-        .mockResolvedValueOnce({
-          data: { period_start: new Date().toISOString() },
-          error: null,
-        });
-
-      h().gt.mockResolvedValueOnce({ data: [], error: null });
-
-      h().single.mockResolvedValueOnce({
-        data: { credit_balance: 500, purchased_credits: 200 },
+    it("forwards fulfillment fields for credit_purchase source", async () => {
+      h().rpc.mockResolvedValueOnce({
+        data: [{ new_balance: 5500, already_fulfilled: false }],
         error: null,
       });
 
-      const updateEq = jest.fn().mockResolvedValueOnce({ error: null });
-      h().update.mockReturnValueOnce({ ...ch, eq: updateEq });
+      await service.addCredits(
+        "user-1",
+        5000,
+        "credit_purchase",
+        { pack: "value" },
+        {
+          paymentIntentId: "pi_123",
+          packType: "value",
+          amountPaidCents: 1999,
+        },
+      );
 
-      h().insert.mockResolvedValueOnce({ error: null });
-
-      await service.addCredits("user-1", 5000, "credit_purchase");
-
-      expect(h().update).toHaveBeenCalled();
+      expect(h().rpc).toHaveBeenCalledWith(
+        "add_credits",
+        expect.objectContaining({
+          p_source: "credit_purchase",
+          p_amount: 5000,
+          p_payment_intent_id: "pi_123",
+          p_pack_type: "value",
+          p_amount_paid_cents: 1999,
+        }),
+      );
     });
 
-    it("throws on read error", async () => {
-      h().single
-        .mockResolvedValueOnce({
-          data: {
-            user_id: "user-1",
-            credit_balance: 500,
-            subscription_allowance: 500,
-            purchased_credits: 0,
-            period_start: new Date().toISOString(),
-            period_end: new Date().toISOString(),
-          },
-          error: null,
-        })
-        .mockResolvedValueOnce({
-          data: { period_start: new Date().toISOString() },
-          error: null,
-        });
+    it("returns alreadyFulfilled=true when RPC reports a duplicate", async () => {
+      h().rpc.mockResolvedValueOnce({
+        data: [{ new_balance: 6000, already_fulfilled: true }],
+        error: null,
+      });
 
-      h().gt.mockResolvedValueOnce({ data: [], error: null });
+      const result = await service.addCredits(
+        "user-1",
+        1000,
+        "credit_purchase",
+        {},
+        {
+          paymentIntentId: "pi_dup",
+          packType: "starter",
+          amountPaidCents: 499,
+        },
+      );
 
-      h().single.mockResolvedValueOnce({
+      expect(result.alreadyFulfilled).toBe(true);
+      expect(result.newBalance).toBe(6000);
+    });
+
+    it("handles non-array RPC response", async () => {
+      h().rpc.mockResolvedValueOnce({
+        data: { new_balance: 750, already_fulfilled: false },
+        error: null,
+      });
+
+      const result = await service.addCredits(
+        "user-1",
+        250,
+        "addon_credit",
+      );
+
+      expect(result.newBalance).toBe(750);
+    });
+
+    it("rejects non-positive amounts before touching the database", async () => {
+      await expect(
+        service.addCredits("user-1", 0, "addon_credit"),
+      ).rejects.toThrow("addCredits requires amount > 0");
+
+      await expect(
+        service.addCredits("user-1", -50, "addon_credit"),
+      ).rejects.toThrow("addCredits requires amount > 0");
+
+      expect(h().rpc).not.toHaveBeenCalled();
+    });
+
+    it("throws on RPC error", async () => {
+      h().rpc.mockResolvedValueOnce({
         data: null,
-        error: { message: "Read failed" },
+        error: { message: "RPC failed" },
       });
 
       await expect(
         service.addCredits("user-1", 1000, "addon_credit"),
-      ).rejects.toThrow("Failed to read credit balance: Read failed");
+      ).rejects.toThrow("Failed to add credits: RPC failed");
+    });
+
+    it("throws when RPC returns a row without new_balance", async () => {
+      h().rpc.mockResolvedValueOnce({ data: [], error: null });
+
+      await expect(
+        service.addCredits("user-1", 1000, "addon_credit"),
+      ).rejects.toThrow("add_credits RPC returned no balance");
     });
   });
 

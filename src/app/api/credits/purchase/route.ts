@@ -41,7 +41,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get or create Stripe customer ID from profile
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: profile } = await (supabaseAdmin as any)
       .from("profiles")
@@ -66,24 +65,35 @@ export async function POST(request: NextRequest) {
         .eq("id", user.id);
     }
 
-    const paymentIntent = await stripeService.createPaymentIntent(
-      pack.priceUsd,
-      "usd",
-      stripeCustomerId,
-      {
-        type: "credit_purchase",
-        packType: pack.type,
-        credits: String(pack.credits),
-        userId: user.id,
-      },
-    );
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
+
+    const session = await stripeService.createCreditPackCheckoutSession({
+      customerId: stripeCustomerId,
+      userId: user.id,
+      packType: pack.type,
+      credits: pack.credits,
+      priceCents: pack.priceCents,
+      successUrl: `${appUrl}/settings/credits?purchase=success`,
+      cancelUrl: `${appUrl}/settings/credits?purchase=cancelled`,
+    });
+
+    if (!session.url) {
+      return NextResponse.json(
+        { error: "Stripe did not return a checkout URL" },
+        { status: 502 },
+      );
+    }
 
     return NextResponse.json({
-      clientSecret: paymentIntent.client_secret,
-      amount: pack.priceCents,
+      checkoutUrl: session.url,
+      sessionId: session.id,
     });
-  } catch (_error) {
-    void _error;
+  } catch (error) {
+    const { logger } = await import("@/lib/monitoring/logger");
+    logger.error(
+      "Failed to create credit purchase",
+      error instanceof Error ? error : new Error(String(error)),
+    );
     return NextResponse.json(
       { error: "Failed to create credit purchase" },
       { status: 500 },

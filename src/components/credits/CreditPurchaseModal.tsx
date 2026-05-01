@@ -7,19 +7,13 @@ import type { CreditPackType } from "@/lib/credits/types";
 interface CreditPurchaseModalProps {
   open: boolean;
   onClose: () => void;
-  onPurchaseComplete?: (newBalance: number) => void;
 }
 
 export default function CreditPurchaseModal({
   open,
   onClose,
-  onPurchaseComplete,
 }: CreditPurchaseModalProps) {
   const [purchasing, setPurchasing] = useState<CreditPackType | null>(null);
-  const [success, setSuccess] = useState<{
-    pack: CreditPackType;
-    newBalance: number;
-  } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   if (!open) return null;
@@ -40,24 +34,20 @@ export default function CreditPurchaseModal({
         throw new Error(body.error || "Purchase failed");
       }
 
-      const data = await res.json();
+      const data = (await res.json()) as { checkoutUrl?: string };
 
-      if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
-        return;
+      if (!data.checkoutUrl) {
+        throw new Error("Checkout session was not created");
       }
 
-      setSuccess({ pack: packType, newBalance: data.newBalance });
-      onPurchaseComplete?.(data.newBalance);
+      window.location.href = data.checkoutUrl;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Purchase failed");
-    } finally {
       setPurchasing(null);
     }
   };
 
   const handleClose = () => {
-    setSuccess(null);
     setError(null);
     onClose();
   };
@@ -85,15 +75,6 @@ export default function CreditPurchaseModal({
           Credits never expire. Use them for AI analysis, trading signals, and
           more.
         </p>
-
-        {success && (
-          <div className="mb-6 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg p-4">
-            <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">
-              Purchase successful! Your new balance is{" "}
-              {success.newBalance.toLocaleString()} credits.
-            </p>
-          </div>
-        )}
 
         {error && (
           <div className="mb-6 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-4">
