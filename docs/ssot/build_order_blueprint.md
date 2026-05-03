@@ -305,6 +305,32 @@ Each gate requires explicit sign-off before proceeding:
 | GATE-4 | All GATE-3 + Mobile ≥ 80% parity + SOC 2 docs + Admin live | Cannot start platform features |
 | GATE-5 | All GATE-4 + White-label working + Global Connector MVP | Production release candidate |
 | GATE-6 | All GATE-5 + Plaid SDK live + DriveWealth sandbox verified + Affiliate flow functional | Revenue-ready platform |
+| **GATE-7** (NEW, VERSION-013) | **All Wave 7 phases pass.** 0 open CRITICAL findings (FND-001..FND-068 critical-tagged). CI gates active for route-auth, IDOR, mock-data, money-type, npm audit. SEC sign-off on `PUBLIC_ROUTES.ts`, webhook signatures, PII redaction, IDOR audit script. ≥80% coverage on remediated modules. | **No Wave 8+ feature work may begin until GATE-7 passes.** |
+
+---
+
+## 9.5 Wave 7 — Security & Correctness Remediation (VERSION-013, opened 2026-05-03)
+
+| Wave | Focus | Streams | Duration | Tasks |
+|------|-------|---------|---------:|------:|
+| 7 | Remediate 33 CRITICAL + ~50 HIGH findings from 9-domain audit | SEC + BE + MOB + DEVOPS (parallel) | 4 weeks | ~55 |
+
+**Wave 7 phases (see `MASTER-IMPLEMENTATION-PLAN.md` § Wave 7 for task cards)**:
+
+1. Phase 0 — Prereqs (Week 0): re-baseline, branch policy, feature flags, lint guards, branch hygiene on `feat/asset-system-regen`
+2. Phase 1 — Auth/RBAC rebuild (Weeks 1-2): TASK-AUTH-01..12
+3. Phase 2 — Webhooks + tier mapping (Weeks 2-3): TASK-WBH-01..07
+4. Phase 3 — Money correctness (Week 3): TASK-MNY-01..07
+5. Phase 4 — Mock-data sweep (Weeks 3-4): TASK-MOK-01..06
+6. Phase 5 — Compliance + AI hygiene (Week 4): TASK-CMP-01..05
+7. Phase 6 — Mobile hardening (Week 4): TASK-MOB-01..07
+8. Phase 7 — IDOR sweep (parallelizable Weeks 2-4): TASK-IDR-01..05
+
+**Hard rules**:
+- **No Wave 8+ task may begin** until at least Streams 1 (Auth) and 3 (Money) close — GATE-7 partial.
+- **Full GATE-7** requires all phases plus the audit-detection lint rules (mock-data, money-type, route-auth, IDOR).
+- **Branch policy (per user direction 2026-05-03)**: keep `feat/asset-system-regen` as base; do NOT abandon. Branch hygiene tracked under TASK-PRE-06.
+- **Reference fix template**: commit `d64e8d5` (atomic Postgres RPC + UNIQUE + REVOKE/GRANT) is the model for webhook idempotency, atomic referral increment, and any read-modify-write replacements.
 
 ---
 
@@ -325,3 +351,4 @@ Each gate requires explicit sign-off before proceeding:
 
 _Generated as DICE v3.3 Step 3b output on 2026-02-25._
 _Updated 2026-03-01: VERSION-009 — Added Wave 6 (External Integrations & Monetization, 13 tasks). GATE-6 added. 3 new risk register entries._
+_Updated 2026-05-03: VERSION-013 — Added Wave 7 (Security & Correctness Remediation, ~55 tasks). GATE-7 added as hard gate before any Wave 8+ feature work. See `gap_analysis.md`._

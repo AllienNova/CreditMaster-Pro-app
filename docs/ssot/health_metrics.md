@@ -1,8 +1,39 @@
 # Health Metrics — Quality Scorecard
 
-> DICE v3.3 Step 9 Output
-> Generated: 2026-02-25
+> **VERSION-013 — STATUS FLIPPED TO RED 2026-05-03**
+>
+> A 9-domain comprehensive code review (27 reviewer agents) opened **33 CRITICAL** + ~50 HIGH findings. Web overall + mobile both **FAIL**. The metrics below remain accurate as static measurements (test pass count, type check, build, lint, audit), but **test pass rate did not catch any of the 33 criticals** — the gate is necessary, not sufficient. Per-domain audit results are the authoritative quality signal until Wave 7 closes.
+>
+> See `docs/ssot/gap_analysis.md` for the 71-finding register and `MASTER-IMPLEMENTATION-PLAN.md` § Wave 7 for the remediation roadmap.
+
+---
+
+## 0. Per-Domain Audit Scorecard (VERSION-013, 2026-05-03)
+
+| Domain | Security | Architecture | Code Quality | Worst Severity |
+|--------|---------|--------------|--------------|---------------:|
+| Auth + middleware | **FAIL** (4 H) | COND. PASS (2 C, 3 H) | **FAIL** (4 H) | 2 CRITICAL |
+| Payments + Subs | **FAIL** (3 H) | **FAIL** (2 C, 2 H) | **FAIL** (2 C, 5 H) | 4 CRITICAL |
+| Commerce | **FAIL** (2 H) | **FAIL** (2 C, 4 H) | **FAIL** (1 C, 3 H) | 3 CRITICAL |
+| Financial services | **FAIL** (3 H) | **FAIL** (1 C, 3 H) | **FAIL** (2 H) | 1 CRITICAL |
+| Investments | **FAIL** (1 C, 2 H) | **FAIL** (1 C, 2 H) | **FAIL** (4 H) | 2 CRITICAL |
+| Notifications | **FAIL** (4 C, 4 H) | **FAIL** (2 C, 3 H) | **FAIL** (2 C, 4 H) | **8 CRITICAL** |
+| Admin | **FAIL** (2 C, 5 H) | **FAIL** (2 C, 3 H) | **FAIL** (3 C, 5 H) | **7 CRITICAL** |
+| AI + Compliance | **FAIL** (3 H) | **FAIL** (2 C, 3 H) | CHANGES (2 H) | 2 CRITICAL |
+| Mobile app | **FAIL** (2 C, 3 H) | **FAIL** (2 C, 3 H) | CHANGES (5 H) | 2 CRITICAL |
+| Credit repair (already remediated where possible — see commit `d64e8d5`) | PASS (post-fix) | COND. PASS | PASS | (closed) |
+| Trading (separate review session) | FAIL (3 C, 4 H) | FAIL (3 C, 4 H) | FAIL (3 C, 4 H) | 3 CRITICAL |
+| **TOTALS** | — | — | — | **33 CRITICAL across 9 domains** |
+
+**Overall verdict**: **RED (web + mobile)**. **Ship: BLOCKED until Wave 7 exit gates pass.**
+
+---
+
+> DICE v3.3 Step 9 Output (original)
+> Generated: 2026-02-25 | **Re-baselined: 2026-05-03**
 > Source: Live codebase verification (`npm test`, `tsc --noEmit`, `next lint`, `next build`, `npm audit`)
+>
+> The numerical metrics in §1-§5 below remain as last verified (2026-03-02). Re-verification is TASK-PRE-01 (Wave 7 Phase 0). Test pass count is **necessary but not sufficient** — the audit found 33 CRITICAL bugs that test suite passes through.
 
 ---
 

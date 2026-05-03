@@ -1,7 +1,19 @@
 # CLAUDE.md - Fynvita Pair Programming Guide
 
 > Canonical AI context for the Fynvita platform. All metrics sourced from `docs/ssot/`.
-> Last verified: 2026-03-02 | DICE v3.3 | VERSION-012
+> Last verified: 2026-05-03 | DICE v3.3 | **VERSION-013 — AUDIT-DRIVEN RE-BASELINE**
+
+---
+
+> ## ⚠ STATUS BANNER (2026-05-03)
+>
+> **The prior "All 7 waves DONE / 125-of-125 / 100%" claim (VERSION-010..012) is invalidated.** A 9-domain comprehensive code review (27 reviewer agents) opened **33 CRITICAL** + ~50 HIGH findings. **Ship: BLOCKED** until Wave 7 (Security & Correctness Remediation) closes.
+>
+> Pre-launch context: no live users yet, so no GDPR Art. 33 / CCPA disclosure obligation triggered today. Re-evaluate before public launch.
+>
+> See `docs/ssot/gap_analysis.md` (71-finding register) and `docs/ssot/MASTER-IMPLEMENTATION-PLAN.md` § Wave 7 (~55 tasks across 7 phases).
+>
+> **First-fix template** (already shipped): commit `d64e8d5` — atomic Postgres RPC + `UNIQUE` constraint + `REVOKE EXECUTE FROM PUBLIC; GRANT TO service_role`. Reuse for invoice.paid idempotency, atomic referral-code increment, and other read-modify-write replacements.
 
 ---
 
@@ -11,10 +23,10 @@
 |-------|-------|
 | **Project** | Fynvita - Your Financial Vitality Platform |
 | **Repository** | `github.com/AllienNova/CreditMaster-Pro-app` |
-| **Brand** | Fynvita (formerly CPFI / CreditMaster Pro) |
-| **Phase** | All 7 waves DONE (125/125 tasks complete, 100%) |
-| **Platform Score** | 102/102 modules complete (100%) — Wave 6 adds 3 new domains |
-| **Canonical Docs** | `docs/ssot/SSOT.md` (single source of truth) |
+| **Brand** | Fynvita (formerly CPFI / CreditMaster Pro) — pre-launch, branded as financial-education company |
+| **Phase** | **Wave 7 (Remediation) opened 2026-05-03**. Waves 0-6 prior tasks marked NEEDS_VERIFICATION pending re-audit. |
+| **Quality** | **9/9 domains FAIL audit** (33 CRITICAL + ~50 HIGH open) — see `docs/ssot/gap_analysis.md` |
+| **Canonical Docs** | `docs/ssot/SSOT.md` (single source of truth); `docs/ssot/gap_analysis.md` (audit findings) |
 
 ---
 
@@ -238,22 +250,25 @@ Run in order after any code change:
 3. TEST     npm test                  # 13,585 passing, 0 failures
 4. BUILD    npm run build             # SUCCESS, 539 kB first load JS
 5. SECURITY npm audit                 # 0 production vulns (2 low dev-only)
+6. AUDIT    9-domain code review      # FAIL — 33 CRITICAL + ~50 HIGH (Wave 7)
 ```
 
-### Quality Scorecard
+### Quality Scorecard (VERSION-013, 2026-05-03)
 
-| Gate | Status |
-|------|--------|
-| Tests Pass (0 failures) | PASS |
-| Type Safety (0 prod errors) | PASS |
-| Build Succeeds | PASS |
-| Lint Clean (0 blocking) | PASS |
-| Security (0 prod vulns) | PASS |
-| Coverage >=80% (overall) | PASS |
-| Coverage >=80% (per-domain) | PASS (all web domains) |
-| Mobile Coverage | FAIL (0%) |
+| Gate | Status | Notes |
+|------|--------|-------|
+| Tests Pass (0 failures) | PASS | But did not catch any of the 33 CRITICAL audit findings |
+| Type Safety (0 prod errors) | PASS | |
+| Build Succeeds | PASS | |
+| Lint Clean (0 blocking) | PASS | |
+| Security (0 prod vulns) | PASS | npm audit clean; audit-driven CRITICALs are code-level not deps |
+| Coverage >=80% (overall) | PASS | Coverage measures presence of tests, not negative-auth tests |
+| Coverage >=80% (per-domain) | PASS (web domains) | |
+| Mobile Coverage | FAIL (0%) | TASK-MOB-01..07 in Wave 7 |
+| **Per-domain audit (NEW)** | **FAIL (9/9)** | **Auth, Payments, Commerce, Financial, Investments, Notifications, Admin, AI+Compliance, Mobile** |
+| **33 CRITICAL findings open** | **FAIL** | **See `docs/ssot/gap_analysis.md`** |
 
-**Overall: GREEN (web) / RED (mobile)**
+**Overall: RED (web + mobile)**. Ship: BLOCKED until Wave 7 closes.
 
 ---
 
@@ -272,17 +287,46 @@ Run in order after any code change:
 
 ## 11. Current Build Plan
 
-7 waves, 125 total tasks. 125 DONE (100%), 0 NOT_STARTED. Task IDs follow `TASK-{DOMAIN}-{NN}` pattern.
+8 waves now (Wave 7 opened 2026-05-03 in response to comprehensive audit). Task IDs follow `TASK-{DOMAIN}-{NN}` pattern.
 
 | Wave | Focus | Status | Tasks |
 |------|-------|--------|-------|
-| 0 | Foundation fixes | DONE | INF-01 through INF-10, SEC-01 |
-| 1 | Core gaps | DONE | TRD-07, NTF-03, ADM-03, coverage gates |
-| 2 | Financial depth | DONE | Bill negotiation, savings, debt |
-| 3 | Trading + Commerce | DONE | PCTT, paper trading, marketplace |
-| 4 | Mobile + Platform | DONE | Gamification, onboarding, mobile parity |
-| 5 | Scale + Polish | DONE | Performance, monitoring, white-label |
+| 0 | Foundation fixes | DONE (NEEDS_VERIFICATION) | INF-01 through INF-10, SEC-01 |
+| 1 | Core gaps | DONE (NEEDS_VERIFICATION — TRD-07, NTF-03, ADM-03 reopened) | TRD-07, NTF-03, ADM-03, coverage gates |
+| 2 | Financial depth | DONE (NEEDS_VERIFICATION) | Bill negotiation, savings, debt |
+| 3 | Trading + Commerce | DONE (NEEDS_VERIFICATION — commerce reopened) | PCTT, paper trading, marketplace |
+| 4 | Mobile + Platform | DONE (NEEDS_VERIFICATION — mobile reopened) | Gamification, onboarding, mobile parity |
+| 5 | Scale + Polish | DONE (NEEDS_VERIFICATION) | Performance, monitoring, white-label |
 | 6 | External Integrations | DONE | Plaid SDK, DriveWealth, Affiliate (13 tasks) |
+| **7** | **Security & Correctness Remediation** | **NOT_STARTED** | **~55 tasks across 7 phases — see MASTER-IMPLEMENTATION-PLAN.md** |
+
+### Wave 7 — Security & Correctness Remediation
+
+| Phase | Focus | Task IDs |
+|-------|-------|----------|
+| 0 | Prereqs (re-baseline, branch policy, feature flags, lint guards, branch hygiene on `feat/asset-system-regen`) | TASK-PRE-01..06 |
+| 1 | Auth/RBAC rebuild (remove `user_metadata` role, remove admin email whitelist, wire 284 routes through existing `withAuth`, middleware deny-by-default with `PUBLIC_ROUTES.ts`, kill AIML key reuse, single rate limiter) | TASK-AUTH-01..12 |
+| 2 | Webhook idempotency + tier mapping (`processed_webhook_events` UNIQUE table; fix `getTierFromPriceId`; remove `billing-profile-store` mock; rethrow swallowed errors; server-authoritative checkout fields) | TASK-WBH-01..07 |
+| 3 | Money correctness (Stripe payout cents conversion, atomic `increment_referral_use` RPC, self-referral guard, `Idempotency-Key` on transfers, `Money` branded type) | TASK-MNY-01..07 |
+| 4 | Mock-data sweep (admin analytics, billing profile, debt API, AI insights, mobile dispute screen; lint rule escalation) | TASK-MOK-01..06 |
+| 5 | Compliance + AI hygiene (consent persistence, breach notification wiring, GDPR cascade table expansion, ModelRouter enforcement, PII redaction) | TASK-CMP-01..05 |
+| 6 | Mobile hardening (SecureStore migration, `Linking.openURL` allowlist, `npm audit fix`, delete deprecated `financialStore`, remove `__DEV__` auth bypass) | TASK-MOB-01..07 |
+| 7 | IDOR sweep (audit script + portfolio/plaid/notification/admin fixes) | TASK-IDR-01..05 |
+
+### Critical findings to know about (full list: `docs/ssot/gap_analysis.md`)
+
+- **FND-001** middleware whitelists ALL `/api/*`; only 4 of 118 routes use `withAuth`
+- **FND-005** `getUserRole` reads `user_metadata.role` → user can self-grant admin
+- **FND-003/004** hardcoded admin emails + enterprise tier = admin
+- **FND-024** Stripe payout sends dollars as cents → 1% of intended payout (live financial loss before launch)
+- **FND-018** `getTierFromPriceId` references nonexistent env vars → every paid sub silently lands on `free`
+- **FND-014/015** `handleInvoicePaid` swallows errors silently → no Stripe retry on transient failures
+- **FND-016/017** `billing-profile-store` returns fake Visa 4242 to every new user; `updatePlan` activates without calling Stripe
+- **FND-030** `portfolio-service` deliberately omits `user_id` filter → IDOR on holdings/P&L for any authenticated user
+- **FND-041..044** all 4 `/api/notifications/*` routes accept `userId` from body/query with no auth
+- **FND-049..053** admin endpoints unauth'd; `analytics` returns `Math.random()`; mock data on DB error
+- **FND-056..058** GDPR breach notification is a no-op; consent stored in process-local Map; cascade-delete missing ~34 tables
+- **FND-064** mobile `__DEV__` auth bypass — one bad EAS flag from shipping fully-authenticated mock user
 
 ### Wave 6 Breakdown (13 tasks)
 

@@ -761,3 +761,57 @@ Implemented mobile-web parity pages to bring platform coverage from ~75% to near
 | Lint warnings | Tracked | Incremental cleanup |
 | Mobile test coverage (0%) | Tracked | Tracked as separate initiative |
 | All 125 tasks DONE (100%) | Complete | Full platform build complete |
+
+---
+
+## VERSION-013 — Audit-Driven Re-Baseline
+
+| Field | Value |
+|-------|-------|
+| **Date** | 2026-05-03 |
+| **Phase** | REMEDIATION (Wave 7 opened) |
+| **Trigger** | 9-domain comprehensive code review (security + architecture + code quality), 27 reviewer agents, 2026-05-01 to 2026-05-03 |
+| **Operator** | Claude Code (Opus 4.7) |
+| **Mode** | Re-baseline + canon doc updates |
+
+### What changed
+
+VERSION-010 through VERSION-012 reported **125/125 tasks DONE / 100% complete / All quality gates PASS**. The audit invalidates that claim. Per-domain audit results: **9 of 9 domains FAIL** (Auth, Payments, Commerce, Financial, Investments, Notifications, Admin, AI+Compliance, Mobile). Test pass rate (13,585 / 99.86%) did not catch any of the 33 CRITICAL findings — the test suite is not a security-correctness oracle.
+
+### Findings
+
+- **CRITICAL**: 33 across 9 domains (FND-001 through FND-068 critical-tagged). Examples: admin endpoints unauth'd; `user_metadata` self-promotion to admin; Stripe payouts pass dollars as cents (1% of intended); webhook tier mapping silently lands every paid sub on `free`; admin analytics returns `Math.random()`; mobile auth `__DEV__` bypass; notifications domain entirely unauth'd.
+- **HIGH**: ~50 across the same domains (full register: `docs/ssot/gap_analysis.md`).
+- **MEDIUM/LOW**: ~42 (in reviewer transcripts, not enumerated in canonical register).
+
+### Pre-launch context
+
+No live users yet. Fynvita is positioned as a financial-education company in pre-launch. **No current GDPR Art. 33 / CCPA disclosure obligation triggered**. Re-evaluate before public launch.
+
+### Canon doc updates landed in this version
+
+| Document | Change |
+|----------|--------|
+| `docs/ssot/SSOT.md` | Re-baseline banner at top; new §19 Audit Findings; footer updated with VERSION-013 entry |
+| `docs/ssot/MASTER-IMPLEMENTATION-PLAN.md` | Wave 7 section appended with ~55 tasks across 7 phases |
+| `docs/ssot/gap_analysis.md` | **CREATED** — 71-finding register with severity, file:line, and linked task IDs |
+| `docs/ssot/health_metrics.md` | New §0 per-domain audit scorecard; web overall flipped to RED; disclaimer that pass-rate ≠ security |
+| `docs/ssot/build_order_blueprint.md` | Wave 7 inserted with explicit gate (no Wave 8+ until critical themes close) |
+| `docs/ssot/system_blueprint.md` | Known Deviations subsection (5-layer security model: actual vs claimed) |
+| `docs/ssot/traceability_matrix.md` | Audit Finding column note; reopened tasks marked |
+| `docs/ssot/version_history.md` | This entry |
+| `CLAUDE.md` | Project-level: re-baseline banner; Wave 7 status; specific finding examples surfaced |
+
+### Wave 7 plan summary
+
+Estimated 4 weeks, ~55 tasks, 7 phases (Prereqs → Auth/RBAC → Webhooks+tier → Money/Commerce → Mock-data sweep → Compliance+AI → Mobile hardening), with parallel IDOR-sweep stream across weeks 2-4. Reference fix template: commit `d64e8d5` (atomic Postgres RPC + UNIQUE constraint + REVOKE/GRANT). Branch policy: keep `feat/asset-system-regen` as base per user direction; branch hygiene tracked under TASK-PRE-06.
+
+### Outstanding items rolled forward
+
+| Item | Status | Notes |
+|------|--------|-------|
+| `cookie` in `msw` (low vulns) | Deferred | Carried from VERSION-004 |
+| Lint warnings | Tracked | Incremental cleanup |
+| Mobile test coverage (0%) | Active in Wave 7 | TASK-MOB-01..07 |
+| 24 MB `strativion-autonomous-trading-package.zip` in tree | Active in Wave 7 | TASK-PRE-06 |
+| Prior "100% DONE" claim | **Invalidated** | Wave 7 must close before re-asserting |

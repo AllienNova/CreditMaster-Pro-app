@@ -1,18 +1,29 @@
 # Fynvita — Single Source of Truth (SSOT)
 
-> **DICE v3.3 Canonical Artifact** — Generated 2026-02-25
+> **VERSION-013 — AUDIT-DRIVEN RE-BASELINE** (2026-05-03)
+>
+> **The prior "All 7 waves DONE / 125-of-125 / 100%" claim (VERSION-010 to VERSION-012) is invalidated.** A 9-domain comprehensive code review (27 reviewer agents, 2026-05-01 to 2026-05-03) opened **33 CRITICAL** + ~50 HIGH findings. Wave 7 (Security & Correctness Remediation) has been opened to close them. No new feature work begins until Wave 7 closes per `build_order_blueprint.md`.
+>
+> Pre-launch status (no live users yet) means there is **no current GDPR Art. 33 / CCPA disclosure obligation**, but every finding must close before public launch.
+>
+> Audit detail: see `docs/ssot/gap_analysis.md` (FND-001 through FND-071). Roadmap: see `MASTER-IMPLEMENTATION-PLAN.md` § Wave 7.
+
+---
+
+> **DICE v3.3 Canonical Artifact** — Originally generated 2026-02-25, re-baselined 2026-05-03
 > This is the ONE authoritative reference for the Fynvita platform.
 > All other documents defer to this file. When in conflict, this file wins.
 >
 > **Companion artifacts** (all in `docs/ssot/`):
+> - `gap_analysis.md` — **NEW (VERSION-013)** — 71-finding audit register
 > - `task_extraction.md` — 80 normalized tasks with stable IDs
 > - `dependency_graph.md` — Module and task-level dependencies
-> - `build_order_blueprint.md` — 6-wave build plan with merge gates
+> - `build_order_blueprint.md` — 7-wave build plan with merge gates (Wave 7 opened 2026-05-03)
 > - `repo_inventory.md` — Complete repository inventory
 > - `MASTER-IMPLEMENTATION-PLAN.md` — Executable Task Cards (Step 5)
 > - `traceability_matrix.md` — REQ→Build target proof (Step 6)
 > - `system_blueprint.md` — UI/UX, agents, security, API/data, DevOps (Step 7)
-> - `health_metrics.md` — Quality scorecard (Step 9)
+> - `health_metrics.md` — Quality scorecard (Step 9) — **flipped to RED 2026-05-03**
 
 ---
 
@@ -1472,7 +1483,31 @@ See `docs/archive/ARCHIVE-INDEX.md` for the full list with archival status.
 
 ---
 
+## §19. Audit Findings — Wave 7 Remediation (VERSION-013)
+
+> Added 2026-05-03 in response to comprehensive 9-domain code review.
+> Full register: `docs/ssot/gap_analysis.md` (FND-001 through FND-071).
+> Roadmap: `MASTER-IMPLEMENTATION-PLAN.md` § Wave 7.
+
+**Headline numbers**:
+- Findings opened: **33 CRITICAL** + ~50 HIGH (across 9 domains)
+- Domains FAIL on audit: Auth+middleware, Payments+Subs, Commerce, Financial services, Investments, Notifications, Admin, AI+Compliance, Mobile (all 9)
+- User exposure today: **None** (no live users — Fynvita is pre-launch, branded as financial-education company)
+- Pre-launch disclosure obligations: not currently triggered; re-evaluate before public launch
+- Tests passed (13,585) but did not catch any of the 33 criticals — detection-gap remediation is part of Wave 7
+
+**Themes**:
+1. Auth/RBAC structurally broken (admin endpoints unauth'd, `user_metadata` self-promotion to admin, AIML key reused as inbound auth, middleware whitelists `/api/*`, hardcoded admin emails, enterprise-tier=admin)
+2. Webhook idempotency + tier mapping (every paid sub silently lands on `free`, `billing-profile-store` seeds fake Visa 4242, `handleInvoicePaid` swallows errors)
+3. Money correctness (Stripe payouts pass dollars to cents-only API → 1% of intended; no idempotency on commerce payouts; affiliate self-referral fraud; non-atomic referral-code increment)
+4. Mock-data-as-production (admin analytics returns `Math.random()`, debt API returns hardcoded mock debts, 5 AI-insight routes return static mocks, mobile dispute screen uses `setTimeout` mock data)
+
+**Wave 7 status**: Phase 0 (Prereqs) opens 2026-05-03. Estimated 4 weeks, ~60 tasks, parallel SEC/BE/MOB/DEVOPS streams. Exit gates: every CRITICAL has linked closed task; CI gates active for route-auth, IDOR, mock-data, money-type, npm audit; SEC sign-off on `PUBLIC_ROUTES.ts`, webhook signatures, PII redaction, IDOR audit script.
+
+---
+
 _Single Source of Truth for the Fynvita platform._
 _Original: 2026-02-16 | Last verified: 2026-02-23 | DICE v3.3 canonical: 2026-02-25_
-_Updated: 2026-03-01 — VERSION-009: Added §16.4.8-§16.4.11 (Plaid, DriveWealth, Multi-Broker, Affiliate). 13 new tasks (Wave 6). Total: 125 tasks (112 DONE + 13 planned)._
+_VERSION-009 (2026-03-01): Added §16.4.8-§16.4.11 (Plaid, DriveWealth, Multi-Broker, Affiliate). 13 new tasks (Wave 6). Total: 125 tasks (112 DONE + 13 planned)._
+_VERSION-013 (2026-05-03): **AUDIT-DRIVEN RE-BASELINE.** Invalidates "100% done" claim. Opens Wave 7 (Security & Correctness Remediation) with 33 CRITICAL + ~50 HIGH findings. See `gap_analysis.md`._
 _DICE v3.3 Step 4 output — companion artifacts in `docs/ssot/`._

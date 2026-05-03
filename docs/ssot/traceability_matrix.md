@@ -1,11 +1,30 @@
 # Traceability Matrix
 
 > DICE v3.3 Step 6 Output
-> Generated: 2026-02-25
+> Generated: 2026-02-25 | **VERSION-013 audit overlay added 2026-05-03**
 > Source: `docs/ssot/SSOT.md` §15-§17, `docs/ssot/task_extraction.md`, `docs/ssot/dependency_graph.md`, `docs/ssot/build_order_blueprint.md`
 >
 > This matrix maps every requirement to its build target and vice versa.
 > Coverage gaps are explicitly documented with resolution status.
+
+---
+
+## 0. VERSION-013 Audit Overlay (2026-05-03)
+
+The 9-domain code review opened 33 CRITICAL + ~50 HIGH findings (FND-001..FND-071) — see `docs/ssot/gap_analysis.md`. Each finding is mapped to a Wave 7 task in `MASTER-IMPLEMENTATION-PLAN.md`. The following Wave 0-6 tasks are **REOPENED** (status flipped from DONE to NEEDS_VERIFICATION) because the audit found their acceptance criteria were not actually met:
+
+| Reopened Task | Original Wave | Reason | Linked findings |
+|---------------|---------------|--------|-----------------|
+| TASK-NTF-03 | Wave 1 | Notifications domain entirely unauth'd; in-memory store; XSS in templates | FND-041..048 |
+| TASK-ADM-03 | Wave 1 | 3 admin endpoints unauth'd; analytics returns `Math.random()`; mock fallbacks | FND-049..055 |
+| TASK-SEC-01 | Wave 0 | Auth middleware whitelists all `/api/*`; only 4 of 118 routes use `withAuth` | FND-001, FND-002, FND-005, FND-006 |
+| TASK-PAY-* | Wave 1+ | `getTierFromPriceId` broken; webhook idempotency missing; `billing-profile-store` mock | FND-014..017, FND-022 |
+| TASK-COMM-* | Wave 3 | Stripe payout dollars-vs-cents; self-referral fraud; revenue-tracker in-memory | FND-024..028 |
+| TASK-MOB-* | Wave 4 | Mobile `__DEV__` auth bypass; 0 test coverage; deprecated stores still depended on | FND-064..068 |
+
+The remaining 119 of 125 prior-wave tasks are flagged **NEEDS_VERIFICATION** pending re-audit during Wave 7 Phase 0 (TASK-PRE-01).
+
+When adding new traceability rows for Wave 7 tasks, include an **Audit Finding** column linking to the FND-### IDs from `gap_analysis.md`.
 
 ---
 
