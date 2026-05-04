@@ -11,7 +11,7 @@
 
 ## 0. VERSION-013 Audit Overlay (2026-05-03)
 
-The 9-domain code review opened 33 CRITICAL + ~50 HIGH findings (FND-001..FND-071) — see `docs/ssot/gap_analysis.md`. Each finding is mapped to a Wave 7 task in `MASTER-IMPLEMENTATION-PLAN.md`. The following Wave 0-6 tasks are **REOPENED** (status flipped from DONE to NEEDS_VERIFICATION) because the audit found their acceptance criteria were not actually met:
+The 9-domain code review opened 33 CRITICAL + 38 HIGH findings (FND-001..FND-071) — see `docs/ssot/gap_analysis.md`. Each finding is mapped to a Wave 7 task in `MASTER-IMPLEMENTATION-PLAN.md`. The following Wave 0-6 tasks are **REOPENED** (status flipped from DONE to NEEDS_VERIFICATION) because the audit found their acceptance criteria were not actually met:
 
 | Reopened Task | Original Wave | Reason | Linked findings |
 |---------------|---------------|--------|-----------------|

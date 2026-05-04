@@ -14,7 +14,7 @@
 | Methodology | 9 domains × 3 reviewer specialties (Security / Architecture / Code Quality) = 27 parallel reviews |
 | Domains covered | Auth + middleware, Payments + Subscriptions, Commerce, Financial services, Investments (non-trading), Notifications, Admin, AI + Compliance, Mobile app |
 | Domains previously reviewed (this session) | Credit repair, Trading (already remediated where possible — see commit `d64e8d5`) |
-| Findings opened | **33 CRITICAL**, ~50 HIGH, ~21 MEDIUM, ~21 LOW |
+| Findings opened | **33 CRITICAL**, **38 HIGH**, ~21 MEDIUM, ~21 LOW (71 enumerated in §2; banner count corrected from "~50 HIGH" 2026-05-03 post-QA) |
 | User exposure today | **None** (no live users yet — Fynvita branded as financial-education company in pre-launch) |
 | Disclosure obligations | Not currently triggered (no user data exposure to disclose). Re-evaluate before public launch. |
 | Ship decision | **BLOCKED** — Wave 7 must complete before launch |

@@ -61,14 +61,15 @@ Each card contains:
 | 6 | External Integrations & Monetization | 0 | 13 | 13 |
 | **Total** | | **80** | **45** | **125** |
 
-### Task Status Summary (Verified 2026-03-01, VERSION-010)
+### Task Status Summary (Re-baselined 2026-05-03, VERSION-013)
 
-| Status | Count | % |
-|--------|-------|---|
-| **DONE** | 125 | 100% |
-| **IN_PROGRESS** | 0 | 0.0% |
-| **NOT_STARTED** | 0 | 0.0% |
-| **Total** | 125 | 100% |
+> The prior "125/125 DONE / 100%" status (VERSION-010 through VERSION-012) was invalidated by the 9-domain audit. All 125 tasks are now NEEDS_VERIFICATION pending TASK-PRE-01 re-run; some are explicitly REOPENED based on audit findings (see `docs/ssot/traceability_matrix.md` § 0). Wave 7 adds 59 new remediation tasks.
+
+| Wave | Status | Count | Notes |
+|------|--------|------:|-------|
+| 0-6 (originals) | NEEDS_VERIFICATION | 125 | Re-verified per task during Wave 7; some explicitly REOPENED |
+| 7 (Security & Correctness) | NOT_STARTED | 59 | See Wave 7 section below |
+| **Total** | **mixed** | **184** | Wave 7 must close before any Wave 8+ feature work |
 
 | Wave | DONE | IN_PROGRESS | NOT_STARTED | Total |
 |------|------|-------------|-------------|-------|
@@ -5608,7 +5609,28 @@ AFF-04 (compliance) ── independent, runs parallel
 | 5 — Compliance + AI hygiene | Week 4 | BE + SEC | 5 |
 | 6 — Mobile hardening | Week 4 | MOB | 7 |
 | 7 — IDOR sweep (parallelizable) | Weeks 2-4 | SEC + BE | 5 |
-| **TOTAL** | **4 weeks** | mixed | **~55** |
+| **TOTAL** | **4 weeks** | mixed | **59** |
+
+> **Task count revised 2026-05-03 post-QA**: was "~55"; now **59** after adding TASK-PRE-07, TASK-AUTH-04-staging, TASK-INV-W7-01, TASK-INV-W7-02. Mobile IDs renamed `TASK-MOB-W7-01..07` to avoid collision with Wave 4 `TASK-MOB-01..07`.
+
+---
+
+## Wave 7 Test-Class Requirements (regression-prevention spec)
+
+> Added 2026-05-03 in response to QA finding: the existing 13,585 Jest tests did not catch any of the 33 CRITICAL findings because the suite is structurally happy-path against mocked dependencies. Each phase below MUST land its named test class — a phase without its test class is NOT_STARTED regardless of code-change completeness. These 723 tests are the new regression floor.
+
+| Phase | Required test class | Min new tests | npm script | CI audit script |
+|-------|---------------------|--------------:|------------|-----------------|
+| 1 AUTH | negative-auth (anonymous → 401, wrong-role → 403) per route | 568 | `test:auth-negative` | `audit:auth` |
+| 2 WBH  | webhook event-id replay × 100 + tier-map exhaustion over `SUBSCRIPTION_PLANS` | 13 | `test:webhook-idempotency` | `audit:tier-map` |
+| 3 MNY  | Stripe SDK call asserts integer cents = `Math.round(input * 100)`; referral concurrency (50 calls vs `max_uses=10` → exactly 10 succeed) | 13 | `test:money` | `audit:money` |
+| 4 MOK  | DB-was-called assertion per admin/billing/analytics route (Supabase mock throws on unexpected query; no silent fallback) | 40 | `test:no-mock-fallback` | `audit:mocks` |
+| 5 CMP  | PII corpus (≥30 SSN/card/DOB strings) + prompt-injection corpus (≥15 jailbreak payloads) + cold-start consent persistence + cascade across all FK tables | 47 | `test:compliance` | `audit:cascade` |
+| 6 MOB  | production-bundle grep asserts `seedUser`/`__DEV__`-auth absent; `Linking.openURL` rejects `javascript:`/`file:`/`data:` payloads | 12 | `test:mobile-security` | `audit:bundle` |
+| 7 IDR  | cross-user 403 per service method that takes a resource ID | 30 | `test:idor` | `audit:idor` |
+| **Total new tests** | | **723** | | |
+
+**Each `audit:*` script is a CI-required check.** PRs that introduce a new API route, money math, webhook handler, or mobile auth touch without the corresponding test class fail merge. PR template adds checkboxes: "[ ] Added negative-auth test for new route. [ ] Asserted integer cents at Stripe boundary. [ ] Added replay×N idempotency test for new webhook handler. [ ] Added cross-user 403 test for new service method."
 
 ---
 
@@ -5645,7 +5667,13 @@ AFF-04 (compliance) ── independent, runs parallel
 - **Acceptance**: `du -sh strativion-autonomous-trading-package.zip` returns "No such file"; remediation PRs pass review without reviewer-context overflow on the diff.
 - **Notes**: User chose to keep this branch as base rather than cut from main. This task ensures it's reviewable.
 
-**Phase 0 gate**: re-baseline numbers published; freeze active; flags + lint guards live; branch hygiene addressed.
+### TASK-PRE-07 — Security-scoped re-review of 92 prior commits on `feat/asset-system-regen`
+- **Size**: M | **Owner**: SEC + ARCH | **Depends on**: TASK-PRE-02
+- **Output**: `git log feat/asset-system-regen ^main --stat --since=<branch-cut>` reviewed; every commit touching `src/lib/auth/`, `src/lib/security/`, `src/lib/payment/`, `src/lib/commerce/`, `src/middleware.ts`, `supabase/migrations/` re-read; findings filed as new FND-### in `gap_analysis.md` if any latent issues surface.
+- **Acceptance**: SEC sign-off comment on a tracking issue listing each scoped commit hash + verdict (CLEAN / FOLLOWUP / RE-FIX); zero unreviewed commits remain on the branch in those paths. The 9-domain audit covered current `src/` state, not the deltas of these 92 commits — this task closes that gap.
+- **Notes**: Added 2026-05-03 in response to QA finding (HIGH #1). Without this, an issue introduced and later masked on this branch could ship undetected even after Wave 7 closes.
+
+**Phase 0 gate**: re-baseline numbers published; freeze active; flags + lint guards live; branch hygiene addressed; 92-commit re-review signed off.
 
 ---
 
@@ -5655,8 +5683,9 @@ AFF-04 (compliance) ── independent, runs parallel
 |----|-------|------|-------|------------|--------|
 | TASK-AUTH-01 | Remove `user_metadata` role read in `src/lib/auth/rbac.ts` | S | SEC | PRE-01 | FND-005 |
 | TASK-AUTH-02 | Remove admin email whitelist + enterprise=admin grant | S | SEC | AUTH-01 | FND-003, FND-004 |
-| TASK-AUTH-03 | Audit all 284 API routes → wrap in existing `withAuth` (sub-batched by domain) | L | SEC + BE | AUTH-01, AUTH-02 | FND-006 + 100+ unauth routes |
-| TASK-AUTH-04 | Middleware `/api/*` deny-by-default with explicit `PUBLIC_ROUTES.ts` allowlist | M | SEC | AUTH-03 | FND-001 |
+| TASK-AUTH-03 | Audit all 284 API routes → wrap in existing `withAuth` (sub-batched by domain) | L | SEC + BE | AUTH-01, AUTH-02 | FND-006, FND-041, FND-042, FND-043, FND-044, FND-049, FND-050, FND-051 (per-domain sub-batches below) |
+| TASK-AUTH-04 | Middleware `/api/*` deny-by-default with explicit `PUBLIC_ROUTES.ts` allowlist | M | SEC | AUTH-03, AUTH-04-staging | FND-001 |
+| TASK-AUTH-04-staging | Synthetic monitoring on staging covering all webhooks (Stripe, Plaid, Affiliate) + signup + login + OAuth callbacks before deny-by-default flips to prod | M | DEVOPS + SEC | AUTH-04 prep | (preventive — protects AUTH-04 rollout) |
 | TASK-AUTH-05 | Remove `AIML_API_KEY` reuse as inbound auth | S | SEC | AUTH-03 | FND-002 |
 | TASK-AUTH-06 | Consolidate to single `redis-rate-limiting.ts`; delete the other three | M | BE | PRE-03 | FND-013 |
 | TASK-AUTH-07 | Replace in-memory session `Map` with Redis-backed store (or remove) | M | BE | AUTH-06 | FND-007 |
@@ -5666,7 +5695,15 @@ AFF-04 (compliance) ── independent, runs parallel
 | TASK-AUTH-11 | Atomic signup: profile insert in DB trigger or rollback on failure | M | BE | AUTH-03 | FND-009 |
 | TASK-AUTH-12 | Reconcile two role enumerations (`api-guard.ts` vs `rbac.ts`) — single source of role types | S | SEC | none | FND-012 |
 
-**Phase 1 gate**: AUTH-03 audit script in CI; lint rule blocks new routes lacking `withAuth`; SEC review sign-off on `PUBLIC_ROUTES.ts`; integration test enumerates all routes asserting 401 unauthenticated + 403 wrong-permission.
+**TASK-AUTH-03 sub-batches** (parallelizable, each PR-sized so the L-task does not deadlock downstream phases):
+- **AUTH-03a — `src/app/api/admin/**`** (closes **FND-049, FND-050, FND-051**) — admin audit POST, subscriptions DELETE, disputes PATCH; ~25 routes; SEC review required
+- **AUTH-03b — `src/app/api/notifications/**`** (closes **FND-041, FND-042, FND-043, FND-044**) — GET/POST/PATCH/DELETE preferences/push subscribe + send; ~12 routes
+- **AUTH-03c — `src/app/api/financial/**`, `src/app/api/credit/**`, `src/app/api/documents/**`** — bulk wrap; ~80 routes
+- **AUTH-03d — `src/app/api/strategies/**`** (closes **FND-006**) — strategies/recommend route + siblings; ~6 routes
+- **AUTH-03e — `src/app/api/trading/**`, `src/app/api/investments/**`** — broker-touching routes; SEC review required; ~35 routes
+- **AUTH-03f — remaining `src/app/api/**`** — sweep; ~120 routes
+
+**Phase 1 gate**: AUTH-03 audit script (`scripts/verify-auth-coverage.ts`) in CI exits 0 (every route either `withAuth`-wrapped or in `PUBLIC_ROUTES.ts` with justification comment); lint rule blocks new routes lacking `withAuth`; SEC review sign-off on `PUBLIC_ROUTES.ts`; **`npm run test:auth-negative` reports ≥568 passing tests** (one anonymous + one wrong-role assertion per route); TASK-AUTH-04-staging synthetic monitoring green for 24h before AUTH-04 ships to prod.
 
 ---
 
@@ -5682,7 +5719,7 @@ AFF-04 (compliance) ── independent, runs parallel
 | TASK-WBH-06 | Server-authoritative `successUrl`/`cancelUrl`/`priceId`/`trialDays` in checkout route | S | BE | WBH-02 | FND-019, FND-020, FND-021 |
 | TASK-WBH-07 | Subscription tier backfill (per user direction — no live users yet, but lock down for launch) | M | BE | WBH-02 | (defensive) |
 
-**Phase 2 gate**: Stripe replay test passes; price-tier map covers 100% of env-listed price IDs (validator at boot); chaos test (force DB error) → Stripe gets 500 → retries.
+**Phase 2 gate**: Stripe replay test passes (same `event.id` × 100 → exactly one side-effect); price-tier map covers 100% of env-listed price IDs (validator at boot AND `npm run audit:tier-map` exits 0 in CI); chaos test (force DB error) → Stripe gets 500 → retries; **`npm run test:webhook-idempotency` reports ≥13 passing**.
 
 ---
 
@@ -5697,8 +5734,10 @@ AFF-04 (compliance) ── independent, runs parallel
 | TASK-MNY-05 | In-memory `revenueTracker` → `revenue_events` table; service writes through | M | BE | PRE-01 | FND-025 |
 | TASK-MNY-06 | `Money` branded type (`Cents` integer-only) + ESLint rule on `*amount*\|*price*\|*payout*` field names | M | ARCH + BE | MNY-01 | (preventive) |
 | TASK-MNY-07 | Server-side commission recalculation in affiliate webhook (ignore inbound `commission`) | S | BE | WBH-01 | FND-028 |
+| TASK-INV-W7-01 | Fix div-by-zero in `calculateCalmarRatio`/`calculateInformationRatio` (guard `maxDrawdown=0`, `trackingError=0`); regression test with three boundary cases | S | BE | PRE-01 | FND-031 |
+| TASK-INV-W7-02 | Replace fabricated portfolio analytics constants (`beta=1.0`, `correlation=0.85`, `S&P=10%`) with real computed values OR explicit `null + "data unavailable"` UI state; lint rule blocks magic-constant returns from analytics services | M | BE + ARCH | PRE-05 | FND-032 |
 
-**Phase 3 gate**: Money lint rule active; revenue numbers match Stripe dashboard within $0; Stripe replay tests green.
+**Phase 3 gate**: Money lint rule active (`Cents` branded type enforced); revenue numbers match Stripe dashboard within $0; Stripe replay tests green; **`npm run test:money` reports ≥13 passing** (every Stripe SDK mock asserts `amount` is integer cents = `Math.round(input * 100)`; referral concurrency test: 50 parallel calls vs `max_uses=10` → exactly 10 succeed); investments boundary tests pass.
 
 ---
 
@@ -5713,7 +5752,7 @@ AFF-04 (compliance) ── independent, runs parallel
 | TASK-MOK-05 | Mobile dispute screen real wiring (consume `useDisputeStore`); collapse `dispute/`+`disputes/` segments | M | MOB | AUTH-03 | FND-068 |
 | TASK-MOK-06 | Lint rule escalation (PRE-05 warnings → errors); CI blocks new violations | S | DEVOPS | MOK-01..05 | (preventive) |
 
-**Phase 4 gate**: mock-data lint rules at error level; grep audit produces 0 hits in `src/app/api/**` and `mobile-app/app/**`.
+**Phase 4 gate**: mock-data lint rules at error level; `npm run audit:mocks` greps for `Math.random|faker\.|Visa.*4242|cus_test|MOCK_` outside test paths and returns zero matches; **`npm run test:no-mock-fallback` reports ≥40 passing** (each admin/billing/analytics route has a `*.db-required.test.ts` asserting Supabase mock was called — no silent fallback to fixtures).
 
 ---
 
@@ -5727,7 +5766,7 @@ AFF-04 (compliance) ── independent, runs parallel
 | TASK-CMP-04 | `ModelRouter` enforcement: 14 callers migrated; lint rule blocks direct `AIMLService` usage; client-supplied `model` removed; voice TTS auth + model whitelist | M | BE | AUTH-05 | FND-059, FND-060, FND-061 |
 | TASK-CMP-05 | `src/lib/aiml/sanitizer.ts` strips PII (SSN, account numbers, DOB) before outbound; wraps `ModelRouter`; prompt-injection guards on user-controlled fields | M | SEC | CMP-04 | FND-062, FND-063 |
 
-**Phase 5 gate**: cascade test green (create user with rows in all FK tables, run cascade, assert 0 remaining); PII redaction unit tests at 100% on SSN/card/account-number patterns; lint rule blocks bypass.
+**Phase 5 gate**: cascade test green (create user with rows in all FK tables, run cascade, assert 0 remaining); `npm run audit:cascade` introspects `information_schema.referential_constraints` and finds zero user-FK tables missing from the cascade RPC's known list; **`npm run test:compliance` reports ≥47 passing** (PII corpus ≥30 patterns; prompt-injection corpus ≥15 jailbreak payloads asserts system-prompt unchanged; cold-start consent persistence test: write → recreate service instance → read same value); breach-notification end-to-end smoke test on staging fires real Resend email before launch.
 
 ---
 
@@ -5735,15 +5774,17 @@ AFF-04 (compliance) ── independent, runs parallel
 
 | ID | Title | Size | Owner | Depends on | Closes |
 |----|-------|------|-------|------------|--------|
-| TASK-MOB-01 | `expo-secure-store` migration for biometric flag, push token, and any auth-related AsyncStorage keys | M | MOB | none | FND-069 |
-| TASK-MOB-02 | `Linking.openURL` scheme allowlist wrapper (https only, allowlist) | S | MOB | none | FND-070 |
-| TASK-MOB-03 | `npm audit fix` in `mobile-app/` (handlebars/node-forge/lodash CVEs) | S | MOB | none | FND-065 |
-| TASK-MOB-04 | Delete deprecated `financialStore`; migrate 5 callers to modular stores | S | MOB | none | FND-066, FND-067 |
-| TASK-MOB-05 | Normalize AsyncStorage key prefixes to `@fynvita/<domain>/<key>`; lint rule warns on bare keys | S | MOB | MOB-01 | (brand migration cleanup) |
-| TASK-MOB-06 | Remove `__DEV__` auth bypass in `authStore.ts`; replace with separate `DevAuthProvider` excluded from production bundle | S | MOB | none | FND-064 |
-| TASK-MOB-07 | Replace bare `fetch()` in mobile API clients with `api.get/post()` from `client.ts` (auto-attaches Bearer) | S | MOB | AUTH-03 | FND-071 |
+| TASK-MOB-W7-01 | `expo-secure-store` migration for biometric flag, push token, and any auth-related AsyncStorage keys | M | MOB | none | FND-069 |
+| TASK-MOB-W7-02 | `Linking.openURL` scheme allowlist wrapper (https only, allowlist) | S | MOB | none | FND-070 |
+| TASK-MOB-W7-03 | `npm audit fix` in `mobile-app/` (handlebars/node-forge/lodash CVEs) | S | MOB | none | FND-065 |
+| TASK-MOB-W7-04 | Delete deprecated `financialStore`; migrate 5 callers to modular stores | S | MOB | none | FND-066, FND-067 |
+| TASK-MOB-W7-05 | Normalize AsyncStorage key prefixes to `@fynvita/<domain>/<key>`; lint rule warns on bare keys | S | MOB | MOB-W7-01 | (brand migration cleanup) |
+| TASK-MOB-W7-06 | Remove `__DEV__` auth bypass in `authStore.ts`; replace with separate `DevAuthProvider` excluded from production bundle | S | MOB | none | FND-064 |
+| TASK-MOB-W7-07 | Replace bare `fetch()` in mobile API clients with `api.get/post()` from `client.ts` (auto-attaches Bearer) | S | MOB | AUTH-03 | FND-071 |
 
-**Phase 6 gate**: mobile `npm audit --audit-level=high` exits 0; SecureStore audit script in CI; integration smoke test confirms `__DEV__` bypass cannot reach production bundle.
+> **ID rename note**: these were originally `TASK-MOB-01..07` but collided with Wave 4 mobile tasks of the same IDs (Mobile Test Coverage Foundation, Mobile Trading Screens, Mobile Biometric Auth, Mobile Deep Linking, Mobile-Web Parity, Mobile UX Polish, App Store Submission). Renamed `TASK-MOB-W7-01..07` 2026-05-03 post-QA to disambiguate.
+
+**Phase 6 gate**: mobile `npm audit --audit-level=high` exits 0; SecureStore audit script in CI; **`npm run test:mobile-security` reports ≥12 passing** (production-bundle grep asserts `seedUser`/`__DEV__`-auth absent via `mobile-app/scripts/audit-bundle.sh` running `npx expo export --dev=false` then grepping `dist/`; Linking allowlist rejects `javascript:`/`file:`/`data:` payloads).
 
 ---
 
@@ -5757,18 +5798,19 @@ AFF-04 (compliance) ── independent, runs parallel
 | TASK-IDR-04 | `notification-service-db` IDOR fixes (`markAsRead`, `deleteNotification` filter by user_id) | M | BE | IDR-01 | FND-046 |
 | TASK-IDR-05 | `admin/disputes` PATCH whitelist updatable fields with Zod schema | S | SEC | AUTH-03 | FND-054 |
 
-**Phase 7 gate**: IDOR audit script in CI; 0 violations; per-service integration tests assert cross-user 403.
+**Phase 7 gate**: IDOR audit script in CI (parses `src/lib/**` for Supabase query chains lacking `.eq('user_id', ...)` or a `// RLS-enforced: <table>` comment referencing a verified RLS policy); 0 violations; **`npm run test:idor` reports ≥30 passing** (every service method that takes a resource ID has a `*.idor.test.ts` invoking it as user A with user B's resource ID and asserting throw or empty result). Note: TASK-IDR-02..05 may begin against the manual list (FND-030, FND-034, FND-036, FND-037, FND-038, FND-046, FND-054) without waiting on IDR-01 productionization, to avoid IDR-01 slippage blocking the whole phase.
 
 ---
 
 ## Wave 7 Exit Criteria (gate to allow Wave 8+ feature work)
 
-1. All 33 CRITICAL findings (FND-001..FND-068 critical-tagged) have linked closed task IDs in this plan.
-2. CI gates active: route-auth audit, IDOR audit, mock-data lint, money-type lint, npm audit (web + mobile), webhook idempotency replay test.
-3. SEC sign-off on TASK-AUTH-03, TASK-WBH-05, TASK-CMP-05, TASK-IDR-01.
-4. Coverage re-baseline ≥80% on remediated modules (per global CLAUDE.md gate); mobile parity tracked separately under TASK-MOB-01..07.
-5. `SSOT.md`, `health_metrics.md`, `gap_analysis.md` updated to reflect new state; "All 7 waves DONE" status restored only after gate passes.
-6. Negative-auth test coverage exists for every route in `PUBLIC_ROUTES.ts` and a sample of authenticated routes (anonymous + wrong-user assertions).
+1. **All 33 CRITICAL findings have linked closed task IDs.** Explicit list (not a range): FND-001/002/003/004/005/006 (Phase 1 + AUTH-03 sub-batches); FND-014/015/016/017/018 (Phase 2); FND-024/025/026 (Phase 3); FND-027 (Phase 3); FND-030 (Phase 7); FND-031/032 (Phase 3 INV-W7); FND-041/042/043/044 (AUTH-03b); FND-049/050/051 (AUTH-03a); FND-052/053 (Phase 4); FND-056/057/058 (Phase 5); FND-064 (Phase 6 MOB-W7-06); FND-068 (Phase 4 MOK-05). Total = 33.
+2. CI gates active: `audit:auth`, `audit:idor`, `audit:mocks`, `audit:money`, `audit:tier-map`, `audit:cascade`, `audit:bundle`, `npm audit` (web + mobile), webhook idempotency replay test, `audit:no-seedUser-in-prod-bundle`.
+3. SEC sign-off on TASK-AUTH-03 (each of a-f sub-batches), TASK-AUTH-04 + TASK-AUTH-04-staging rollout, TASK-WBH-05, TASK-CMP-05, TASK-IDR-01, TASK-PRE-07 (92-commit re-review).
+4. Coverage re-baseline ≥80% on remediated modules (per global CLAUDE.md gate); mobile parity tracked separately under TASK-MOB-W7-01..07.
+5. `SSOT.md`, `health_metrics.md`, `gap_analysis.md` updated to reflect new state; "All waves DONE" status restored only after gate passes — never via test pass count alone.
+6. **≥723 new tests across the 7 phase-aligned test classes are green** (per "Wave 7 Test-Class Requirements" table); each `audit:*` script is a CI-required check; PR template's "FND-### addressed" field + 4 test-class checkboxes block merge.
+7. PR template additions are live: "[ ] If this PR adds a new API route, I added a `*.auth.test.ts`. [ ] If this PR touches money math, I asserted integer cents at the SDK boundary. [ ] If this PR adds a webhook handler, I added a replay×N idempotency test. [ ] If this PR adds a service method that takes a resource ID, I added a cross-user 403 test." Reviewer must reject PRs without checked boxes.
 
 ---
 

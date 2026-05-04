@@ -2,7 +2,7 @@
 
 > **VERSION-013 — STATUS FLIPPED TO RED 2026-05-03**
 >
-> A 9-domain comprehensive code review (27 reviewer agents) opened **33 CRITICAL** + ~50 HIGH findings. Web overall + mobile both **FAIL**. The metrics below remain accurate as static measurements (test pass count, type check, build, lint, audit), but **test pass rate did not catch any of the 33 criticals** — the gate is necessary, not sufficient. Per-domain audit results are the authoritative quality signal until Wave 7 closes.
+> A 9-domain comprehensive code review (27 reviewer agents) opened **33 CRITICAL** + 38 HIGH findings. Web overall + mobile both **FAIL**. The metrics below remain accurate as static measurements (test pass count, type check, build, lint, audit), but **test pass rate did not catch any of the 33 criticals** — the gate is necessary, not sufficient. Per-domain audit results are the authoritative quality signal until Wave 7 closes.
 >
 > See `docs/ssot/gap_analysis.md` for the 71-finding register and `MASTER-IMPLEMENTATION-PLAN.md` § Wave 7 for the remediation roadmap.
 
@@ -216,16 +216,15 @@ The web application passes all quality gates. The mobile app (Expo/React Native)
 
 ---
 
-## 8.5. Task Completion Status (Updated 2026-03-01)
+## 8.5. Task Completion Status (Re-baselined 2026-05-03, VERSION-013)
 
-Full audit of all 125 tasks in MASTER-IMPLEMENTATION-PLAN.md (112 original + 13 Wave 6):
+> The 9-domain audit invalidated the prior "125 DONE / 100%" claim. All 125 originals are NEEDS_VERIFICATION pending TASK-PRE-01; some explicitly REOPENED. Wave 7 adds 59 remediation tasks.
 
-| Status | Count | % |
-|--------|-------|---|
-| **DONE** | 125 | 100% |
-| **IN_PROGRESS** | 0 | 0.0% |
-| **NOT_STARTED** | 0 | 0.0% |
-| **Total** | 125 | 100% |
+| Wave | Status | Count |
+|------|--------|------:|
+| 0-6 (originals) | NEEDS_VERIFICATION (some REOPENED) | 125 |
+| 7 (Security & Correctness Remediation) | NOT_STARTED | 59 |
+| **Total** | **mixed** | **184** |
 
 ### Batch Completion Log
 

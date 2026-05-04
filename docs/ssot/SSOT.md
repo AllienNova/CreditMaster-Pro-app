@@ -2,7 +2,7 @@
 
 > **VERSION-013 — AUDIT-DRIVEN RE-BASELINE** (2026-05-03)
 >
-> **The prior "All 7 waves DONE / 125-of-125 / 100%" claim (VERSION-010 to VERSION-012) is invalidated.** A 9-domain comprehensive code review (27 reviewer agents, 2026-05-01 to 2026-05-03) opened **33 CRITICAL** + ~50 HIGH findings. Wave 7 (Security & Correctness Remediation) has been opened to close them. No new feature work begins until Wave 7 closes per `build_order_blueprint.md`.
+> **The prior "All 7 waves DONE / 125-of-125 / 100%" claim (VERSION-010 to VERSION-012) is invalidated.** A 9-domain comprehensive code review (27 reviewer agents, 2026-05-01 to 2026-05-03) opened **33 CRITICAL** + 38 HIGH findings. Wave 7 (Security & Correctness Remediation) has been opened to close them. No new feature work begins until Wave 7 closes per `build_order_blueprint.md`.
 >
 > Pre-launch status (no live users yet) means there is **no current GDPR Art. 33 / CCPA disclosure obligation**, but every finding must close before public launch.
 >
@@ -1490,7 +1490,7 @@ See `docs/archive/ARCHIVE-INDEX.md` for the full list with archival status.
 > Roadmap: `MASTER-IMPLEMENTATION-PLAN.md` § Wave 7.
 
 **Headline numbers**:
-- Findings opened: **33 CRITICAL** + ~50 HIGH (across 9 domains)
+- Findings opened: **33 CRITICAL** + 38 HIGH (across 9 domains)
 - Domains FAIL on audit: Auth+middleware, Payments+Subs, Commerce, Financial services, Investments, Notifications, Admin, AI+Compliance, Mobile (all 9)
 - User exposure today: **None** (no live users — Fynvita is pre-launch, branded as financial-education company)
 - Pre-launch disclosure obligations: not currently triggered; re-evaluate before public launch
@@ -1509,5 +1509,5 @@ See `docs/archive/ARCHIVE-INDEX.md` for the full list with archival status.
 _Single Source of Truth for the Fynvita platform._
 _Original: 2026-02-16 | Last verified: 2026-02-23 | DICE v3.3 canonical: 2026-02-25_
 _VERSION-009 (2026-03-01): Added §16.4.8-§16.4.11 (Plaid, DriveWealth, Multi-Broker, Affiliate). 13 new tasks (Wave 6). Total: 125 tasks (112 DONE + 13 planned)._
-_VERSION-013 (2026-05-03): **AUDIT-DRIVEN RE-BASELINE.** Invalidates "100% done" claim. Opens Wave 7 (Security & Correctness Remediation) with 33 CRITICAL + ~50 HIGH findings. See `gap_analysis.md`._
+_VERSION-013 (2026-05-03): **AUDIT-DRIVEN RE-BASELINE.** Invalidates "100% done" claim. Opens Wave 7 (Security & Correctness Remediation) with 33 CRITICAL + 38 HIGH findings. See `gap_analysis.md`._
 _DICE v3.3 Step 4 output — companion artifacts in `docs/ssot/`._

@@ -793,7 +793,7 @@ No live users yet. Fynvita is positioned as a financial-education company in pre
 | Document | Change |
 |----------|--------|
 | `docs/ssot/SSOT.md` | Re-baseline banner at top; new §19 Audit Findings; footer updated with VERSION-013 entry |
-| `docs/ssot/MASTER-IMPLEMENTATION-PLAN.md` | Wave 7 section appended with ~55 tasks across 7 phases |
+| `docs/ssot/MASTER-IMPLEMENTATION-PLAN.md` | Wave 7 section appended (initially ~55 tasks; revised to **59** post-QA after adding TASK-PRE-07, TASK-AUTH-04-staging, TASK-INV-W7-01, TASK-INV-W7-02). Test-Class Requirements table added (723 regression-prevention tests). Mobile IDs renamed to `TASK-MOB-W7-01..07` to fix Wave 4 collision. AUTH-03 explicit per-domain sub-batches added |
 | `docs/ssot/gap_analysis.md` | **CREATED** — 71-finding register with severity, file:line, and linked task IDs |
 | `docs/ssot/health_metrics.md` | New §0 per-domain audit scorecard; web overall flipped to RED; disclaimer that pass-rate ≠ security |
 | `docs/ssot/build_order_blueprint.md` | Wave 7 inserted with explicit gate (no Wave 8+ until critical themes close) |
@@ -804,7 +804,7 @@ No live users yet. Fynvita is positioned as a financial-education company in pre
 
 ### Wave 7 plan summary
 
-Estimated 4 weeks, ~55 tasks, 7 phases (Prereqs → Auth/RBAC → Webhooks+tier → Money/Commerce → Mock-data sweep → Compliance+AI → Mobile hardening), with parallel IDOR-sweep stream across weeks 2-4. Reference fix template: commit `d64e8d5` (atomic Postgres RPC + UNIQUE constraint + REVOKE/GRANT). Branch policy: keep `feat/asset-system-regen` as base per user direction; branch hygiene tracked under TASK-PRE-06.
+Estimated 4 weeks, **59 tasks**, 8 phases (Phase 0 Prereqs through Phase 7 IDOR), with parallel IDOR-sweep stream across weeks 2-4. Reference fix template: commit `d64e8d5` (atomic Postgres RPC + UNIQUE constraint + REVOKE/GRANT). Branch policy: keep `feat/asset-system-regen` as base per user direction; branch hygiene tracked under TASK-PRE-06; security-scoped re-review of 92 prior commits under TASK-PRE-07. Each phase exit gate now requires its named test class from the Wave 7 Test-Class Requirements table (723 new regression-prevention tests total: negative-auth, idempotency, money-cents, DB-required, compliance corpus, mobile-prod-bundle, IDOR).
 
 ### Outstanding items rolled forward
 

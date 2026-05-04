@@ -7,11 +7,11 @@
 
 > ## ⚠ STATUS BANNER (2026-05-03)
 >
-> **The prior "All 7 waves DONE / 125-of-125 / 100%" claim (VERSION-010..012) is invalidated.** A 9-domain comprehensive code review (27 reviewer agents) opened **33 CRITICAL** + ~50 HIGH findings. **Ship: BLOCKED** until Wave 7 (Security & Correctness Remediation) closes.
+> **The prior "All 7 waves DONE / 125-of-125 / 100%" claim (VERSION-010..012) is invalidated.** A 9-domain comprehensive code review (27 reviewer agents) opened **33 CRITICAL** + 38 HIGH findings. **Ship: BLOCKED** until Wave 7 (Security & Correctness Remediation) closes.
 >
 > Pre-launch context: no live users yet, so no GDPR Art. 33 / CCPA disclosure obligation triggered today. Re-evaluate before public launch.
 >
-> See `docs/ssot/gap_analysis.md` (71-finding register) and `docs/ssot/MASTER-IMPLEMENTATION-PLAN.md` § Wave 7 (~55 tasks across 7 phases).
+> See `docs/ssot/gap_analysis.md` (71-finding register) and `docs/ssot/MASTER-IMPLEMENTATION-PLAN.md` § Wave 7 (59 tasks across 8 phases).
 >
 > **First-fix template** (already shipped): commit `d64e8d5` — atomic Postgres RPC + `UNIQUE` constraint + `REVOKE EXECUTE FROM PUBLIC; GRANT TO service_role`. Reuse for invoice.paid idempotency, atomic referral-code increment, and other read-modify-write replacements.
 
@@ -25,7 +25,7 @@
 | **Repository** | `github.com/AllienNova/CreditMaster-Pro-app` |
 | **Brand** | Fynvita (formerly CPFI / CreditMaster Pro) — pre-launch, branded as financial-education company |
 | **Phase** | **Wave 7 (Remediation) opened 2026-05-03**. Waves 0-6 prior tasks marked NEEDS_VERIFICATION pending re-audit. |
-| **Quality** | **9/9 domains FAIL audit** (33 CRITICAL + ~50 HIGH open) — see `docs/ssot/gap_analysis.md` |
+| **Quality** | **9/9 domains FAIL audit** (33 CRITICAL + 38 HIGH open) — see `docs/ssot/gap_analysis.md` |
 | **Canonical Docs** | `docs/ssot/SSOT.md` (single source of truth); `docs/ssot/gap_analysis.md` (audit findings) |
 
 ---
@@ -250,7 +250,7 @@ Run in order after any code change:
 3. TEST     npm test                  # 13,585 passing, 0 failures
 4. BUILD    npm run build             # SUCCESS, 539 kB first load JS
 5. SECURITY npm audit                 # 0 production vulns (2 low dev-only)
-6. AUDIT    9-domain code review      # FAIL — 33 CRITICAL + ~50 HIGH (Wave 7)
+6. AUDIT    9-domain code review      # FAIL — 33 CRITICAL + 38 HIGH (Wave 7)
 ```
 
 ### Quality Scorecard (VERSION-013, 2026-05-03)
@@ -298,7 +298,7 @@ Run in order after any code change:
 | 4 | Mobile + Platform | DONE (NEEDS_VERIFICATION — mobile reopened) | Gamification, onboarding, mobile parity |
 | 5 | Scale + Polish | DONE (NEEDS_VERIFICATION) | Performance, monitoring, white-label |
 | 6 | External Integrations | DONE | Plaid SDK, DriveWealth, Affiliate (13 tasks) |
-| **7** | **Security & Correctness Remediation** | **NOT_STARTED** | **~55 tasks across 7 phases — see MASTER-IMPLEMENTATION-PLAN.md** |
+| **7** | **Security & Correctness Remediation** | **NOT_STARTED** | **59 tasks across 8 phases — see MASTER-IMPLEMENTATION-PLAN.md** |
 
 ### Wave 7 — Security & Correctness Remediation
 
@@ -336,13 +336,15 @@ Run in order after any code change:
 | Broker Expansion | TRD-15 through TRD-18 | DriveWealth, multi-broker router, fractional, KYC |
 | Affiliate Monetization | AFF-01 through AFF-04 | Engine by MoneyLion, credit cards, insurance, compliance |
 
-### Task Completion Status
+### Task Completion Status (Re-baselined 2026-05-03, VERSION-013)
 
-| Status | Count | % |
-|--------|-------|---|
-| **DONE** | 125 | 100% |
-| **NOT_STARTED** | 0 | 0% |
-| **Total** | 125 | 100% |
+> Prior "125/125 DONE / 100%" status was invalidated by the 9-domain audit. All 125 originals are NEEDS_VERIFICATION pending TASK-PRE-01 re-run; Wave 7 adds 59 new remediation tasks.
+
+| Wave | Status | Count |
+|------|--------|------:|
+| 0-6 (originals) | NEEDS_VERIFICATION (some REOPENED) | 125 |
+| 7 (Security & Correctness Remediation) | NOT_STARTED | 59 |
+| **Total** | **mixed** | **184** |
 
 ---
 

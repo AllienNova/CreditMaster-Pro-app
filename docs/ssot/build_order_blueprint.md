@@ -313,7 +313,7 @@ Each gate requires explicit sign-off before proceeding:
 
 | Wave | Focus | Streams | Duration | Tasks |
 |------|-------|---------|---------:|------:|
-| 7 | Remediate 33 CRITICAL + ~50 HIGH findings from 9-domain audit | SEC + BE + MOB + DEVOPS (parallel) | 4 weeks | ~55 |
+| 7 | Remediate 33 CRITICAL + 38 HIGH findings from 9-domain audit | SEC + BE + MOB + DEVOPS (parallel) | 4 weeks | 59 |
 
 **Wave 7 phases (see `MASTER-IMPLEMENTATION-PLAN.md` § Wave 7 for task cards)**:
 
@@ -351,4 +351,4 @@ Each gate requires explicit sign-off before proceeding:
 
 _Generated as DICE v3.3 Step 3b output on 2026-02-25._
 _Updated 2026-03-01: VERSION-009 — Added Wave 6 (External Integrations & Monetization, 13 tasks). GATE-6 added. 3 new risk register entries._
-_Updated 2026-05-03: VERSION-013 — Added Wave 7 (Security & Correctness Remediation, ~55 tasks). GATE-7 added as hard gate before any Wave 8+ feature work. See `gap_analysis.md`._
+_Updated 2026-05-03: VERSION-013 — Added Wave 7 (Security & Correctness Remediation, 59 tasks). GATE-7 added as hard gate before any Wave 8+ feature work. See `gap_analysis.md`._
