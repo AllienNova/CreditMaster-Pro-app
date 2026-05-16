@@ -11,6 +11,7 @@
 
 import { getSupabase } from "@/lib/supabase/client";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { logger } from "@/lib/monitoring/logger";
 
 const supabase = getSupabase();
 import {
@@ -121,7 +122,17 @@ class AuthService {
         // left an orphaned auth user (an account with no profile row). Roll
         // back by deleting the just-created auth user and fail the signup so
         // the caller can retry cleanly.
-        await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+        const { error: deleteError } =
+          await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+        if (deleteError) {
+          // Cleanup itself failed — the orphan persists. Surface it loudly
+          // so it can be reconciled rather than silently lost.
+          logger.error(
+            "Failed to roll back orphaned auth user after profile insert failure",
+            deleteError,
+            { userId: authData.user.id },
+          );
+        }
         return {
           success: false,
           error: "Failed to create user profile. Please try again.",

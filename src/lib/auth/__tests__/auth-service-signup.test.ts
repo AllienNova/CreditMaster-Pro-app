@@ -6,6 +6,7 @@ const mockSignUp = jest.fn();
 const mockProfilesInsert = jest.fn();
 const mockFrom = jest.fn();
 const mockDeleteUser = jest.fn();
+const mockLoggerError = jest.fn();
 
 jest.mock("@/lib/supabase/client", () => ({
   getSupabase: () => ({
@@ -17,6 +18,15 @@ jest.mock("@/lib/supabase/client", () => ({
 jest.mock("@/lib/supabase/server", () => ({
   supabaseAdmin: {
     auth: { admin: { deleteUser: mockDeleteUser } },
+  },
+}));
+
+jest.mock("@/lib/monitoring/logger", () => ({
+  logger: {
+    error: (...args: unknown[]) => mockLoggerError(...args),
+    warn: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn(),
   },
 }));
 
@@ -62,5 +72,27 @@ describe("AuthService.signUp atomicity (FND-009)", () => {
 
     expect(result.success).toBe(true);
     expect(mockDeleteUser).not.toHaveBeenCalled();
+  });
+
+  it("logs an error when the orphan-cleanup deleteUser itself fails", async () => {
+    mockSignUp.mockResolvedValue({
+      data: { user: { id: "user-3" }, session: { access_token: "tok" } },
+      error: null,
+    });
+    mockProfilesInsert.mockResolvedValue({
+      error: { message: "profiles insert failed" },
+    });
+    mockDeleteUser.mockResolvedValue({
+      error: new Error("admin deleteUser failed"),
+    });
+
+    const result = await authService.signUp(VALID_SIGNUP);
+
+    expect(result.success).toBe(false);
+    expect(mockLoggerError).toHaveBeenCalledWith(
+      expect.stringContaining("roll back orphaned auth user"),
+      expect.any(Error),
+      { userId: "user-3" },
+    );
   });
 });
