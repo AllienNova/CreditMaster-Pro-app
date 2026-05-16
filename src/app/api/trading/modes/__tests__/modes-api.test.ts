@@ -18,15 +18,23 @@ import { NextRequest } from "next/server";
 // MOCKS
 // ============================================================================
 
-jest.mock("@/lib/supabase/server", () => ({
-  createClient: jest.fn(),
+const mockValidateFromHeaders = jest.fn();
+const mockResolveRoleFromDb = jest.fn();
+
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: unknown[]) =>
+      mockValidateFromHeaders(...args),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: (...args: unknown[]) => mockResolveRoleFromDb(...args),
 }));
 
 jest.mock("@/lib/trading/modes/operating-mode-manager", () => ({
   createOperatingModeManager: jest.fn(),
 }));
 
-import { createClient } from "@/lib/supabase/server";
 import { createOperatingModeManager } from "@/lib/trading/modes/operating-mode-manager";
 
 import { GET as getStatus } from "../route";
@@ -126,21 +134,25 @@ function createMockRequest(
   } as unknown as NextRequest;
 }
 
-const mockGetUser = jest.fn();
-
 function setupAuth(authenticated: boolean) {
   if (authenticated) {
-    mockGetUser.mockResolvedValue({ data: { user: mockUser }, error: null });
+    mockValidateFromHeaders.mockResolvedValue({
+      valid: true,
+      user: mockUser,
+    });
+    mockResolveRoleFromDb.mockResolvedValue("user");
   } else {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "Invalid token" },
+    mockValidateFromHeaders.mockResolvedValue({
+      valid: false,
+      user: null,
+      error: "Invalid token",
     });
   }
-  (createClient as jest.Mock).mockResolvedValue({
-    auth: { getUser: mockGetUser },
-  });
 }
+
+// withAuth-wrapped handlers always receive a request argument.
+const modesRequest = () =>
+  createMockRequest("http://localhost:3000/api/trading/modes");
 
 function createMockManager(overrides: Record<string, jest.Mock> = {}) {
   const manager = {
@@ -174,41 +186,41 @@ describe("Trading Modes API", () => {
   describe("Authentication", () => {
     it("GET /modes returns 401 when not authenticated", async () => {
       setupAuth(false);
-      const response = await getStatus();
+      const response = await getStatus(modesRequest());
       const data = await response.json();
 
       expect(response.status).toBe(401);
-      expect(data.success).toBe(false);
+      // withAuth guard 401 body is { error: "Unauthorized" } (no success field)
       expect(data.error).toBe("Unauthorized");
     });
 
     it("POST /modes/graduate returns 401 when not authenticated", async () => {
       setupAuth(false);
-      const response = await postGraduate();
+      const response = await postGraduate(modesRequest());
       const data = await response.json();
 
       expect(response.status).toBe(401);
-      expect(data.success).toBe(false);
+      // withAuth guard 401 body is { error: "Unauthorized" } (no success field)
       expect(data.error).toBe("Unauthorized");
     });
 
     it("GET /modes/progress returns 401 when not authenticated", async () => {
       setupAuth(false);
-      const response = await getProgress();
+      const response = await getProgress(modesRequest());
       const data = await response.json();
 
       expect(response.status).toBe(401);
-      expect(data.success).toBe(false);
+      // withAuth guard 401 body is { error: "Unauthorized" } (no success field)
       expect(data.error).toBe("Unauthorized");
     });
 
     it("GET /modes/permissions returns 401 when not authenticated", async () => {
       setupAuth(false);
-      const response = await getPermissions();
+      const response = await getPermissions(modesRequest());
       const data = await response.json();
 
       expect(response.status).toBe(401);
-      expect(data.success).toBe(false);
+      // withAuth guard 401 body is { error: "Unauthorized" } (no success field)
       expect(data.error).toBe("Unauthorized");
     });
 
@@ -221,7 +233,7 @@ describe("Trading Modes API", () => {
       const data = await response.json();
 
       expect(response.status).toBe(401);
-      expect(data.success).toBe(false);
+      // withAuth guard 401 body is { error: "Unauthorized" } (no success field)
       expect(data.error).toBe("Unauthorized");
     });
 
@@ -235,7 +247,7 @@ describe("Trading Modes API", () => {
       const data = await response.json();
 
       expect(response.status).toBe(401);
-      expect(data.success).toBe(false);
+      // withAuth guard 401 body is { error: "Unauthorized" } (no success field)
       expect(data.error).toBe("Unauthorized");
     });
   });
@@ -252,7 +264,7 @@ describe("Trading Modes API", () => {
         data: mockModeStatus,
       });
 
-      const response = await getStatus();
+      const response = await getStatus(modesRequest());
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -269,7 +281,7 @@ describe("Trading Modes API", () => {
         error: "Database connection failed",
       });
 
-      const response = await getStatus();
+      const response = await getStatus(modesRequest());
       const data = await response.json();
 
       expect(response.status).toBe(500);
@@ -281,7 +293,7 @@ describe("Trading Modes API", () => {
       const manager = createMockManager();
       manager.getModeStatus.mockRejectedValue(new Error("Unexpected crash"));
 
-      const response = await getStatus();
+      const response = await getStatus(modesRequest());
       const data = await response.json();
 
       expect(response.status).toBe(500);
@@ -307,7 +319,7 @@ describe("Trading Modes API", () => {
         data: { ...mockModeStatus, currentMode: "guided" },
       });
 
-      const response = await postGraduate();
+      const response = await postGraduate(modesRequest());
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -331,7 +343,7 @@ describe("Trading Modes API", () => {
         },
       });
 
-      const response = await postGraduate();
+      const response = await postGraduate(modesRequest());
       const data = await response.json();
 
       expect(response.status).toBe(400);
@@ -348,7 +360,7 @@ describe("Trading Modes API", () => {
         error: "Failed to load",
       });
 
-      const response = await postGraduate();
+      const response = await postGraduate(modesRequest());
       const data = await response.json();
 
       expect(response.status).toBe(400);
@@ -364,7 +376,7 @@ describe("Trading Modes API", () => {
         error: "Account not found",
       });
 
-      const response = await postGraduate();
+      const response = await postGraduate(modesRequest());
       const data = await response.json();
 
       expect(response.status).toBe(500);
@@ -380,7 +392,7 @@ describe("Trading Modes API", () => {
         error: "Already at maximum mode (autonomous)",
       });
 
-      const response = await postGraduate();
+      const response = await postGraduate(modesRequest());
       const data = await response.json();
 
       expect(response.status).toBe(500);
@@ -392,7 +404,7 @@ describe("Trading Modes API", () => {
       const manager = createMockManager();
       manager.canGraduate.mockRejectedValue(new Error("Unexpected"));
 
-      const response = await postGraduate();
+      const response = await postGraduate(modesRequest());
       const data = await response.json();
 
       expect(response.status).toBe(500);
@@ -413,7 +425,7 @@ describe("Trading Modes API", () => {
         data: mockGraduationProgress,
       });
 
-      const response = await getProgress();
+      const response = await getProgress(modesRequest());
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -429,7 +441,7 @@ describe("Trading Modes API", () => {
         error: "Account not found",
       });
 
-      const response = await getProgress();
+      const response = await getProgress(modesRequest());
       const data = await response.json();
 
       expect(response.status).toBe(500);
@@ -443,7 +455,7 @@ describe("Trading Modes API", () => {
         new Error("DB timeout"),
       );
 
-      const response = await getProgress();
+      const response = await getProgress(modesRequest());
       const data = await response.json();
 
       expect(response.status).toBe(500);
@@ -464,7 +476,7 @@ describe("Trading Modes API", () => {
         data: mockPermissions,
       });
 
-      const response = await getPermissions();
+      const response = await getPermissions(modesRequest());
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -480,7 +492,7 @@ describe("Trading Modes API", () => {
         error: "Account is inactive",
       });
 
-      const response = await getPermissions();
+      const response = await getPermissions(modesRequest());
       const data = await response.json();
 
       expect(response.status).toBe(500);
@@ -492,7 +504,7 @@ describe("Trading Modes API", () => {
       const manager = createMockManager();
       manager.getModePermissions.mockRejectedValue(new Error("Crash"));
 
-      const response = await getPermissions();
+      const response = await getPermissions(modesRequest());
       const data = await response.json();
 
       expect(response.status).toBe(500);
@@ -768,7 +780,7 @@ describe("Trading Modes API", () => {
         data: mockModeStatus,
       });
 
-      await getStatus();
+      await getStatus(modesRequest());
 
       expect(createOperatingModeManager).toHaveBeenCalledWith("user-123");
     });
