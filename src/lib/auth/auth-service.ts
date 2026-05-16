@@ -10,6 +10,7 @@
  */
 
 import { getSupabase } from "@/lib/supabase/client";
+import { supabaseAdmin } from "@/lib/supabase/server";
 
 const supabase = getSupabase();
 import {
@@ -116,7 +117,15 @@ class AuthService {
       });
 
       if (profileError) {
-        // Profile creation failed - error captured in profileError variable
+        // FND-009: signup must be atomic. A failed profile insert previously
+        // left an orphaned auth user (an account with no profile row). Roll
+        // back by deleting the just-created auth user and fail the signup so
+        // the caller can retry cleanly.
+        await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+        return {
+          success: false,
+          error: "Failed to create user profile. Please try again.",
+        };
       }
 
       const user: User = {
