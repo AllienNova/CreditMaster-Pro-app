@@ -1,17 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { documentService } from "@/lib/documents/document-service";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withAuth, withPermission } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import { notificationService } from "@/lib/notifications/notification-service";
 import auditLogger from "@/lib/security/audit-logging";
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { searchParams } = new URL(request.url);
     const documentId = searchParams.get("documentId");
     if (!documentId) {
@@ -22,17 +17,14 @@ export async function GET(request: NextRequest) {
     }
 
     const document = await documentService.getDocument(documentId);
-    if (!document || document.userId !== validation.user.id) {
+    if (!document || document.userId !== user.id) {
       return NextResponse.json(
         { error: "Document not found" },
         { status: 404 },
       );
     }
 
-    const links = documentService.listShareLinks(
-      documentId,
-      validation.user.id,
-    );
+    const links = documentService.listShareLinks(documentId, user.id);
     return NextResponse.json({ links });
   } catch (_error) {
     // DocumentShareRoute error: Failed to list share links
@@ -42,19 +34,12 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = withPermission(
+  "documents:share",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    if (!rbac.hasPermission(validation.user, "documents:share")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
     const { documentId, recipients, permissions, expiresInHours } =
       await request.json();
     if (!documentId || !Array.isArray(recipients) || recipients.length === 0) {
@@ -65,7 +50,7 @@ export async function POST(request: NextRequest) {
     }
 
     const document = await documentService.getDocument(documentId);
-    if (!document || document.userId !== validation.user.id) {
+    if (!document || document.userId !== user.id) {
       return NextResponse.json(
         { error: "Document not found" },
         { status: 404 },
@@ -78,7 +63,7 @@ export async function POST(request: NextRequest) {
 
     const link = documentService.createShareLink(
       documentId,
-      validation.user.id,
+      user.id,
       normalizedRecipients,
       permissions === "download" ? "download" : "view",
       expiresInHours && Number.isFinite(expiresInHours)
@@ -86,10 +71,9 @@ export async function POST(request: NextRequest) {
         : 24,
     );
 
-    const ownerEmail = (validation.user as { email?: string }).email;
     await notificationService.notifyDocumentShareLink({
-      ownerUserId: validation.user.id,
-      ownerEmail,
+      ownerUserId: user.id,
+      ownerEmail: user.email,
       documentName: document.originalName,
       recipients: normalizedRecipients,
       shareUrl: link.url,
@@ -99,7 +83,7 @@ export async function POST(request: NextRequest) {
     await auditLogger.logAPIRequest(
       "POST",
       "/api/documents/share",
-      validation.user.id,
+      user.id,
       200,
     );
 
@@ -111,15 +95,11 @@ export async function POST(request: NextRequest) {
     const status = message === "Document not found" ? 404 : 500;
     return NextResponse.json({ error: message }, { status });
   }
-}
+});
 
-export async function DELETE(request: NextRequest) {
+export const DELETE = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { searchParams } = new URL(request.url);
     const shareId = searchParams.get("shareId");
     if (!shareId) {
@@ -129,10 +109,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const revoked = documentService.revokeShareLink(
-      shareId,
-      validation.user.id,
-    );
+    const revoked = documentService.revokeShareLink(shareId, user.id);
     if (!revoked) {
       return NextResponse.json(
         { error: "Share link not found" },
@@ -143,7 +120,7 @@ export async function DELETE(request: NextRequest) {
     await auditLogger.logAPIRequest(
       "DELETE",
       "/api/documents/share",
-      validation.user.id,
+      user.id,
       200,
     );
     return NextResponse.json({ success: true });
@@ -155,4 +132,4 @@ export async function DELETE(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

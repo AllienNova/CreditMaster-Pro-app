@@ -1,20 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { documentService } from "@/lib/documents/document-service";
 import type { DocumentType } from "@/lib/documents/document-service";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
+    // userId is the authenticated user — never trust a client-supplied id (IDOR).
+    const userId = user.id;
     const documentId = searchParams.get("documentId");
     const type = searchParams.get("type") as DocumentType | null;
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: "Missing userId parameter" },
-        { status: 400 },
-      );
-    }
 
     if (documentId) {
       const document = await documentService.getDocument(documentId);
@@ -39,9 +35,10 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
-export async function DELETE(request: NextRequest) {
+export const DELETE = withAuth(
+  async (request: NextRequest, _user: AuthedUser) => {
   try {
     const { searchParams } = new URL(request.url);
     const documentId = searchParams.get("documentId");
@@ -63,9 +60,10 @@ export async function DELETE(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
-export async function PATCH(request: NextRequest) {
+export const PATCH = withAuth(
+  async (request: NextRequest, _user: AuthedUser) => {
   try {
     const body = await request.json();
     const { documentId, action, metadata, tags } = body;
@@ -118,4 +116,4 @@ export async function PATCH(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

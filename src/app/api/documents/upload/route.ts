@@ -1,18 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { documentService } from "@/lib/documents/document-service";
 import type { DocumentType } from "@/lib/documents/document-service";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
     const formData = await request.formData();
     const file = formData.get("file") as File;
-    const userId = formData.get("userId") as string;
+    // userId is the authenticated user — never trust a client-supplied id (IDOR).
+    const userId = user.id;
     const documentType = formData.get("documentType") as string as DocumentType;
     const metadataStr = formData.get("metadata") as string;
 
-    if (!file || !userId || !documentType) {
+    if (!file || !documentType) {
       return NextResponse.json(
-        { error: "Missing required fields: file, userId, documentType" },
+        { error: "Missing required fields: file, documentType" },
         { status: 400 },
       );
     }
@@ -57,18 +60,19 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 // Generate presigned upload URL
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
+    // userId is the authenticated user — never trust a client-supplied id (IDOR).
+    const userId = user.id;
     const fileName = searchParams.get("fileName");
     const mimeType = searchParams.get("mimeType");
     const documentType = searchParams.get("documentType") as string as DocumentType;
 
-    if (!userId || !fileName || !mimeType || !documentType) {
+    if (!fileName || !mimeType || !documentType) {
       return NextResponse.json(
         { error: "Missing required parameters" },
         { status: 400 },
@@ -91,4 +95,4 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

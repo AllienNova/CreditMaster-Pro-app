@@ -10,6 +10,8 @@ const mockGetDocumentStats = jest.fn();
 const mockDeleteDocument = jest.fn();
 const mockUpdateDocumentMetadata = jest.fn();
 const mockAddTags = jest.fn();
+const mockValidate = jest.fn();
+const mockResolveRole = jest.fn();
 
 jest.mock("@/lib/documents/document-service", () => ({
   documentService: {
@@ -20,6 +22,14 @@ jest.mock("@/lib/documents/document-service", () => ({
     updateDocumentMetadata: mockUpdateDocumentMetadata,
     addTags: mockAddTags,
   },
+}));
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: unknown[]) => mockValidate(...args),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: (...args: unknown[]) => mockResolveRole(...args),
 }));
 
 // Import AFTER mocks
@@ -74,19 +84,29 @@ const sampleStats = {
 // ── Setup ────────────────────────────────────────────────────────────────────
 beforeEach(() => {
   jest.clearAllMocks();
+  // Default: authenticated as user-1 (the routes are now wrapped in withAuth).
+  mockValidate.mockResolvedValue({
+    valid: true,
+    user: { id: "user-1", email: "user-1@example.com" },
+  });
+  mockResolveRole.mockResolvedValue("user");
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  GET /api/documents
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Documents API – GET /api/documents", () => {
-  it("should return 400 when userId is missing", async () => {
+  // TASK-AUTH-03c: the route is now wrapped in withAuth and derives the
+  // userId from the authenticated session — a client-supplied `userId` query
+  // param is no longer trusted (IDOR fix). The former
+  // "400 when userId is missing" test encoded the insecure query-param
+  // behavior and is replaced by the negative-auth coverage below.
+  it("returns 401 when the request is not authenticated (TASK-AUTH-03c)", async () => {
+    mockValidate.mockResolvedValue({ valid: false, user: null });
     const req = makeRequest("http://localhost:3000/api/documents");
     const res = await GET(req);
-    const body = await res.json();
 
-    expect(res.status).toBe(400);
-    expect(body.error).toBe("Missing userId parameter");
+    expect(res.status).toBe(401);
   });
 
   it("should return a single document when documentId is provided", async () => {
@@ -438,5 +458,29 @@ describe("Documents API – PATCH /api/documents", () => {
       expect(res.status).toBe(500);
       expect(body.error).toBe("Failed to update document");
     });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  negative-auth – /api/documents (withAuth on GET, DELETE, PATCH)
+// ═══════════════════════════════════════════════════════════════════════════════
+describe("negative-auth – /api/documents", () => {
+  it("DELETE returns 401 when the request is not authenticated (TASK-AUTH-03c)", async () => {
+    mockValidate.mockResolvedValue({ valid: false, user: null });
+    const req = makeRequest("http://localhost:3000/api/documents?documentId=d1", {
+      method: "DELETE",
+    });
+    const res = await DELETE(req);
+    expect(res.status).toBe(401);
+  });
+
+  it("PATCH returns 401 when the request is not authenticated (TASK-AUTH-03c)", async () => {
+    mockValidate.mockResolvedValue({ valid: false, user: null });
+    const req = makeRequest("http://localhost:3000/api/documents", {
+      method: "PATCH",
+      body: { documentId: "d1", action: "add_tags", tags: ["x"] },
+    });
+    const res = await PATCH(req);
+    expect(res.status).toBe(401);
   });
 });
