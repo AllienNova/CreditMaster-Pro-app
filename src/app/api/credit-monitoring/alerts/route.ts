@@ -1,31 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { creditMonitoringService } from "@/lib/credit-monitoring/credit-monitoring-service";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { withPermission } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
 /**
  * GET /api/credit-monitoring/alerts
  * Get credit monitoring alerts
  */
-export async function GET(request: NextRequest) {
+export const GET = withPermission(
+  "credit:alerts",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
-
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check permissions (premium feature)
-    if (!rbac.hasPermission(validation.user, "credit:alerts")) {
-      return NextResponse.json(
-        { error: "Forbidden - Premium feature" },
-        { status: 403 },
-      );
-    }
-
-    // Extract userId from validated token
-    const userId = validation.user.id;
+    const userId = user.id;
 
     const { searchParams } = new URL(request.url);
     const unreadOnly = searchParams.get("unreadOnly") === "true";
@@ -54,31 +40,18 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+  },
+);
 
 /**
  * PATCH /api/credit-monitoring/alerts
  * Mark alert(s) as read
  */
-export async function PATCH(request: NextRequest) {
+export const PATCH = withPermission(
+  "credit:alerts",
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
-
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check permissions (premium feature)
-    if (!rbac.hasPermission(validation.user, "credit:alerts")) {
-      return NextResponse.json(
-        { error: "Forbidden - Premium feature" },
-        { status: 403 },
-      );
-    }
-
-    // Extract userId from validated token
-    const userId = validation.user.id;
+    const userId = user.id;
 
     const body = await request.json();
     const { alertId, markAllAsRead } = body;
@@ -113,4 +86,5 @@ export async function PATCH(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+  },
+);

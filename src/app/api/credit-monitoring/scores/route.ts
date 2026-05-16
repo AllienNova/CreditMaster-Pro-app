@@ -1,21 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { creditMonitoringService } from "@/lib/credit-monitoring/credit-monitoring-service";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
 /**
  * GET /api/credit-monitoring/scores
  * Get current credit scores for all bureaus
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(
+  async (_request: NextRequest, user: AuthedUser) => {
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: "User ID is required" },
-        { status: 400 },
-      );
-    }
+    // userId is the authenticated user — never trust a client-supplied id (IDOR).
+    const userId = user.id;
 
     const scores = await creditMonitoringService.getCurrentScores(userId);
 
@@ -30,4 +26,5 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+  },
+);

@@ -1,21 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { creditMonitoringService } from "@/lib/credit-monitoring/credit-monitoring-service";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
 /**
  * GET /api/credit-monitoring
  * Get monitoring dashboard data
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(
+  async (_request: NextRequest, user: AuthedUser) => {
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get("userId");
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: "User ID is required" },
-        { status: 400 },
-      );
-    }
+    // userId is the authenticated user — never trust a client-supplied id (IDOR).
+    const userId = user.id;
 
     const dashboard =
       await creditMonitoringService.getMonitoringDashboard(userId);
@@ -31,18 +27,22 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+  },
+);
 
 /**
  * POST /api/credit-monitoring
  * Add new credit score
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
   try {
     const body = await request.json();
-    const { userId, bureau, score, factors } = body;
+    const { bureau, score, factors } = body;
+    // userId is the authenticated user — never trust a client-supplied id (IDOR).
+    const userId = user.id;
 
-    if (!userId || !bureau || !score) {
+    if (!bureau || !score) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 },
@@ -74,4 +74,5 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+  },
+);
