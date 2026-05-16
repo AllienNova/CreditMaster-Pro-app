@@ -31,27 +31,54 @@ import { creditService, CREDIT_COSTS } from "@/lib/credits";
 // GET - Retrieve Orders
 // ============================================================================
 
-export const GET = withAuth(async (request: NextRequest, _user: AuthedUser) => {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
     const searchParams = request.nextUrl.searchParams;
     const action = searchParams.get("action");
 
     const orderManager = getOrderManager();
 
+    // The in-memory order-manager singleton holds every user's orders; the
+    // route is responsible for scoping every response to the caller. Orders
+    // carry `userId` (set on create) — filter on it for all in-memory reads.
+    const ownsOrder = (o: { userId: string }) => o.userId === user.id;
+
     // Handle specific actions
     if (action === "blotter") {
       const blotter = orderManager.getBlotter();
-      return NextResponse.json({ success: true, data: blotter });
+      const scoped = {
+        ...blotter,
+        openOrders: blotter.openOrders.filter(ownsOrder),
+        filledOrders: blotter.filledOrders.filter(ownsOrder),
+        cancelledOrders: blotter.cancelledOrders.filter(ownsOrder),
+      };
+      return NextResponse.json({ success: true, data: scoped });
     }
 
     if (action === "events") {
       const orderId = searchParams.get("orderId");
-      const events = orderManager.getOrderEvents(orderId || undefined);
+      // Only expose events for an order the caller owns.
+      if (orderId) {
+        const order = orderManager.getOrder(orderId);
+        if (!order || !ownsOrder(order)) {
+          return NextResponse.json({ error: "Order not found" }, { status: 404 });
+        }
+        const events = orderManager.getOrderEvents(orderId);
+        return NextResponse.json({ success: true, data: events });
+      }
+      // No orderId: restrict events to the caller's own orders.
+      const ownedOrderIds = new Set(
+        orderManager.getOpenOrders().filter(ownsOrder).map((o) => o.id),
+      );
+      const events = orderManager
+        .getOrderEvents()
+        .filter((e) => ownedOrderIds.has(e.orderId));
       return NextResponse.json({ success: true, data: events });
     }
 
-    // Build filter from query params
-    const filter: OrderFilter = {};
+    // Build filter from query params. `userId` is set from the authenticated
+    // caller (never from client input) so getOrders() returns only their rows.
+    const filter: OrderFilter = { userId: user.id };
 
     const status = searchParams.get("status");
     if (status) {
@@ -93,19 +120,20 @@ export const GET = withAuth(async (request: NextRequest, _user: AuthedUser) => {
       filter.offset = parseInt(offset, 10);
     }
 
-    // Get single order by ID
+    // Get single order by ID — only if it belongs to the caller.
     const orderId = searchParams.get("id");
     if (orderId) {
       const order = orderManager.getOrder(orderId);
-      if (!order) {
+      if (!order || !ownsOrder(order)) {
         return NextResponse.json({ error: "Order not found" }, { status: 404 });
       }
       return NextResponse.json({ success: true, data: order });
     }
 
-    // Get filtered orders
+    // Get filtered orders — getOrders() is user-scoped via filter.userId;
+    // getOpenOrders() is in-memory and is filtered to the caller here.
     const orders = await orderManager.getOrders(filter);
-    const openOrders = orderManager.getOpenOrders();
+    const openOrders = orderManager.getOpenOrders().filter(ownsOrder);
 
     return NextResponse.json({
       success: true,
@@ -458,17 +486,18 @@ export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
 // ============================================================================
 
 export const DELETE = withAuth(
-  async (request: NextRequest, _user: AuthedUser) => {
+  async (request: NextRequest, user: AuthedUser) => {
   try {
     const searchParams = request.nextUrl.searchParams;
     const orderId = searchParams.get("id");
     const cancelAll = searchParams.get("all") === "true";
 
     const orderManager = getOrderManager();
+    const ownsOrder = (o: { userId: string }) => o.userId === user.id;
 
     if (cancelAll) {
-      // Cancel all open orders (requires broker client in production)
-      const openOrders = orderManager.getOpenOrders();
+      // "Cancel all" is scoped to the caller's own open orders only.
+      const openOrders = orderManager.getOpenOrders().filter(ownsOrder);
       return NextResponse.json({
         success: true,
         data: {
@@ -485,6 +514,11 @@ export const DELETE = withAuth(
     const order = orderManager.getOrder(orderId);
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+
+    // Authorization: a user may only cancel their own order.
+    if (!ownsOrder(order)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // In production, would call brokerClient.cancelOrder

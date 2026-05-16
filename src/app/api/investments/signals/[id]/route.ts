@@ -121,6 +121,13 @@ export const PATCH = withAuth(async (request: NextRequest, user: AuthedUser) => 
     // Validate request body with Zod
     const validatedData = TrackOutcomeSchema.parse(body);
 
+    // Authorization: a user may only mutate their own signal. Confirm the
+    // signal belongs to the caller before tracking its outcome — mirrors GET.
+    const ownedSignals = await signalGenerator.getSignalHistory(user.id);
+    if (!ownedSignals.some((s) => s.id === id)) {
+      return NextResponse.json({ error: "Signal not found" }, { status: 404 });
+    }
+
     const outcome = await signalGenerator.trackSignalOutcome(id, validatedData);
 
     return NextResponse.json({

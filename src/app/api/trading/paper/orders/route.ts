@@ -108,7 +108,7 @@ export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
 // ============================================================================
 
 export const DELETE = withAuth(
-  async (request: NextRequest, _user: AuthedUser) => {
+  async (request: NextRequest, user: AuthedUser) => {
   try {
     const searchParams = request.nextUrl.searchParams;
     const orderId = searchParams.get("id");
@@ -121,6 +121,27 @@ export const DELETE = withAuth(
     }
 
     const engine = getPaperTradingEngine();
+
+    // Authorization: the order must belong to the caller's own paper account.
+    // engine.cancelOrder() takes only an orderId, so ownership is verified
+    // here against the account's order list before the cancel is issued.
+    const account = await engine.getAccount(user.id);
+    if (!account) {
+      return NextResponse.json(
+        { error: "No paper trading account found" },
+        { status: 404 },
+      );
+    }
+
+    const accountOrders = await engine.getOrders(account.id);
+    const owned = accountOrders.some((o) => o.id === orderId);
+    if (!owned) {
+      return NextResponse.json(
+        { error: "Order not found" },
+        { status: 404 },
+      );
+    }
+
     const cancelled = await engine.cancelOrder(orderId);
 
     return NextResponse.json({ success: true, data: cancelled });

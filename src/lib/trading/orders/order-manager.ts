@@ -424,6 +424,10 @@ export class OrderManager {
       .select("*")
       .order("created_at", { ascending: false });
 
+    if (filter.userId) {
+      query = query.eq("user_id", filter.userId);
+    }
+
     if (filter.status && filter.status.length > 0) {
       query = query.in("status", filter.status);
     }

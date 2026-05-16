@@ -49,21 +49,6 @@ export const PATCH = withAuth(async (request: NextRequest, user: AuthedUser) => 
     const id = request.nextUrl.pathname.split("/").pop() ?? "";
     const body: HoldingUpdateInput = await request.json();
 
-    // Verify ownership
-    const { data: existing, error: fetchError } = await supabase
-      .from("investment_holdings")
-      .select("id")
-      .eq("id", id)
-      .eq("user_id", user.id)
-      .single();
-
-    if (fetchError || !existing) {
-      return NextResponse.json(
-        { success: false, error: "Holding not found" },
-        { status: 404 },
-      );
-    }
-
     // Build update object
     const updates: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
@@ -76,14 +61,25 @@ export const PATCH = withAuth(async (request: NextRequest, user: AuthedUser) => 
       updates.average_cost_basis = body.averageCostBasis;
     }
 
+    // The mutation itself is scoped to the caller (id AND user_id): a holding
+    // owned by another user matches 0 rows and surfaces as 404. There is no
+    // separate ownership pre-check — the WHERE clause is the authorization.
     const { data, error } = await supabase
       .from("investment_holdings")
       .update(updates)
       .eq("id", id)
+      .eq("user_id", user.id)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
+
+    if (!data) {
+      return NextResponse.json(
+        { success: false, error: "Holding not found" },
+        { status: 404 },
+      );
+    }
 
     return NextResponse.json({ success: true, data: transformHolding(data) });
   } catch (_error) {
@@ -101,27 +97,24 @@ export const DELETE = withAuth(
   try {
     const id = request.nextUrl.pathname.split("/").pop() ?? "";
 
-    // Verify ownership before delete
-    const { data: existing, error: fetchError } = await supabase
+    // The delete is scoped to the caller (id AND user_id): a holding owned by
+    // another user matches 0 rows. `.select()` lets us detect that and return
+    // 404 instead of a misleading success. The WHERE clause IS the authz check.
+    const { data, error } = await supabase
       .from("investment_holdings")
-      .select("id")
+      .delete()
       .eq("id", id)
       .eq("user_id", user.id)
-      .single();
+      .select("id");
 
-    if (fetchError || !existing) {
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
       return NextResponse.json(
         { success: false, error: "Holding not found" },
         { status: 404 },
       );
     }
-
-    const { error } = await supabase
-      .from("investment_holdings")
-      .delete()
-      .eq("id", id);
-
-    if (error) throw error;
 
     return NextResponse.json({ success: true, message: "Holding deleted" });
   } catch (_error) {
