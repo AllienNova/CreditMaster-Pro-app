@@ -277,9 +277,13 @@ describe("Auth Middleware – requirePermission", () => {
 //  validateAPIKey
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Auth Middleware – validateAPIKey", () => {
-  it("should succeed with correct API key", async () => {
+  // FND-002 (TASK-AUTH-05): the AIML provider key is an OUTBOUND credential.
+  // Presenting its value as an inbound request credential must NOT authenticate.
+  it("should NOT authenticate the AIML provider key value", async () => {
+    process.env.AIML_API_KEY = "test-api-key";
     const result = await validateAPIKey("test-api-key");
-    expect(result.authenticated).toBe(true);
+    expect(result.authenticated).toBe(false);
+    expect(result.user).toBeUndefined();
   });
 
   it("should fail with incorrect API key", async () => {

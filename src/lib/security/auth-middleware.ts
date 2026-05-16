@@ -278,36 +278,20 @@ async function validateToken(token: string): Promise<User | null> {
 
 /**
  * API Key authentication
+ *
+ * SECURITY (FND-002 / TASK-AUTH-05): There is currently no legitimate inbound
+ * API-key auth. The previous implementation authenticated any caller who
+ * presented the value of process.env.AIML_API_KEY — but that key is an
+ * OUTBOUND credential for the AI provider, never an inbound auth credential.
+ * Inbound API-key auth, when needed, must validate the presented key against a
+ * dedicated hashed `api_keys` table — not against any provider key.
+ * Until that table exists, this always returns unauthenticated.
  */
-export async function validateAPIKey(apiKey: string): Promise<AuthResult> {
-  try {
-    // In production, validate against database
-    // For now, check against environment variable
-    const validKey = process.env.AIML_API_KEY;
-
-    if (apiKey === validKey) {
-      return {
-        authenticated: true,
-        user: {
-          id: "api-user",
-          email: "api@system",
-          role: "premium",
-          permissions: [],
-          createdAt: new Date(),
-        },
-      };
-    }
-
-    return {
-      authenticated: false,
-      error: "Invalid API key",
-    };
-  } catch (error) {
-    return {
-      authenticated: false,
-      error: "API key validation failed",
-    };
-  }
+export async function validateAPIKey(_apiKey: string): Promise<AuthResult> {
+  return {
+    authenticated: false,
+    error: "Invalid API key",
+  };
 }
 
 /**
