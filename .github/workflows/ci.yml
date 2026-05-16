@@ -34,6 +34,11 @@ jobs:
       - name: ESLint
         run: npm run lint
 
+      - name: Mock-data scan (report only, TASK-PRE-05)
+        continue-on-error: true
+        run: |
+          rg -n 'Math\.random\(|faker\.|mockData|MOCK_' src/ --glob '!**/__tests__/**' --glob '!**/*.test.*' || true
+
   test:
     name: Tests & Coverage
     runs-on: ubuntu-latest

@@ -20,12 +20,14 @@
     "e2e:headed": "playwright test --headed",
     "e2e:report": "playwright show-report",
     "e2e:ui": "playwright test --ui",
-    "lint": "next lint",
+    "lint": "next lint --rulesdir eslint-rules",
     "start": "next start",
     "test": "jest",
     "test:coverage": "jest --coverage",
     "test:coverage:changed": "node scripts/check-changed-coverage.js",
     "test:watch": "jest --watch",
+    "test:auth-negative": "jest --testPathPattern='api/.*/__tests__/.*route\\.test\\.ts$' -t 'negative-auth'",
+    "audit:auth": "tsx scripts/verify-auth-coverage.ts",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
