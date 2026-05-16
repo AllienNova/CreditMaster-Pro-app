@@ -72,15 +72,17 @@ export async function POST(request: NextRequest) {
       body._creditContext = { userId: user.id, action: disputeAction };
     }
 
-    // Route to appropriate handler based on mode
+    // Route to appropriate handler based on mode.
+    // `await` is required so handler rejections are caught by the outer
+    // try/catch and returned as 500 instead of escaping as unhandled rejections.
     switch (mode) {
       case "template":
-        return handleTemplateGeneration(body);
+        return await handleTemplateGeneration(body);
       case "strategy":
-        return handleStrategyGeneration(body);
+        return await handleStrategyGeneration(body);
       case "ai":
       default:
-        return handleAIGeneration(body);
+        return await handleAIGeneration(body);
     }
   } catch (error) {
     console.error("Dispute generation error:", error);
