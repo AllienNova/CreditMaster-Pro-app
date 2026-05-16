@@ -5,19 +5,15 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 
 // ============================================================================
 // POST - Scan for patterns
 // ============================================================================
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(
+  async (request: NextRequest, _user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await request.json();
     const { symbol, timeframe = "1d", data } = body;
 
@@ -89,13 +85,15 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+  },
+);
 
 // ============================================================================
 // GET - Get pattern info
 // ============================================================================
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(
+  async (request: NextRequest, _user: AuthedUser) => {
   try {
     const { searchParams } = new URL(request.url);
     const patternType = searchParams.get("type");
@@ -131,4 +129,5 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+  },
+);

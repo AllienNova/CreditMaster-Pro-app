@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
@@ -15,17 +15,9 @@ import type {
   HoldingCreateInput,
 } from "@/lib/investments/types/portfolio.types";
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user?.id) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
-
-    const userId = validation.user.id;
+    const userId = user.id;
     const searchParams = request.nextUrl.searchParams;
     const sortBy = searchParams.get("sortBy") || "symbol";
     const sortDir = searchParams.get("sortDir") || "asc";
@@ -93,19 +85,11 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user?.id) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
-
-    const userId = validation.user.id;
+    const userId = user.id;
     const body: HoldingCreateInput = await request.json();
 
     // Validate required fields
@@ -184,7 +168,7 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 function transformHolding(h: Record<string, unknown>): Holding {
   const shares = h.shares as number;

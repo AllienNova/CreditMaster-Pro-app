@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { z } from "zod";
 import { getInvestmentAnalysisEngine } from "@/lib/investments/services/InvestmentAnalysisEngine";
 import { getMarketDataService } from "@/lib/investments/services/MarketDataService";
@@ -54,19 +54,11 @@ type PortfolioAnalysisRequest = z.infer<typeof PortfolioAnalysisRequestSchema>;
 // POST HANDLER
 // ============================================================================
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(
+  async (request: NextRequest, _user: AuthedUser) => {
   const startTime = Date.now();
 
   try {
-    // Validate authentication
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
-
     // Parse and validate request body
     const body = await request.json();
     const validationResult = PortfolioAnalysisRequestSchema.safeParse(body);
@@ -239,13 +231,15 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+  },
+);
 
 // ============================================================================
 // GET HANDLER - API Documentation
 // ============================================================================
 
-export async function GET() {
+export const GET = withAuth(
+  async (_request: NextRequest, _user: AuthedUser) => {
   return NextResponse.json({
     endpoint: "/api/investments/portfolio-analysis",
     method: "POST",
@@ -301,4 +295,5 @@ export async function GET() {
       timeframe: "1d",
     },
   });
-}
+  },
+);

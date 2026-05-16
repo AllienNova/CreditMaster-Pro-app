@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { getDividendTrackingService } from "@/lib/investments/services/DividendTrackingService";
 import type {
   DividendStock,
@@ -45,17 +45,9 @@ function mapStockToResponse(stock: DividendStock): DividendHoldingResponse {
   };
 }
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user?.id) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
-
-    const userId = validation.user.id;
+    const userId = user.id;
     const service = getDividendTrackingService();
 
     const dividendStocks = await service.getDividendStocks(userId);
@@ -101,4 +93,4 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { getSupabase } from "@/lib/supabase/client";
 
 const supabase = getSupabase();
@@ -18,18 +18,9 @@ import type {
 import { marketDataService } from "@/lib/investments/market-data-service";
 import { AssetType, TimeInterval } from "@/lib/investments/types/market-data.types";
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Validate JWT token
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user?.id) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
-
-    const userId = validation.user.id;
+    const userId = user.id;
     const searchParams = request.nextUrl.searchParams;
     const period = searchParams.get("period") || "1M"; // 1M, 3M, 6M, 1Y, ALL
 
@@ -126,7 +117,7 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 function formatAssetType(type: string): string {
   const map: Record<string, string> = {

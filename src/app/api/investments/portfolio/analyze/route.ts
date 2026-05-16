@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -17,13 +17,9 @@ const supabase = createClient(
 // POST - Analyze Portfolio
 // ============================================================================
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(
+  async (request: NextRequest, _user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await request.json();
     const {
       holdings,
@@ -92,19 +88,16 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+  },
+);
 
 // ============================================================================
 // GET - Get user's portfolio analysis
 // ============================================================================
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (_request: NextRequest, user: AuthedUser) => {
   try {
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    const userId = validation.user.id;
+    const userId = user.id;
 
     // Fetch user's holdings from database
     const { data: holdingsData, error } = await supabase
@@ -165,4 +158,4 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

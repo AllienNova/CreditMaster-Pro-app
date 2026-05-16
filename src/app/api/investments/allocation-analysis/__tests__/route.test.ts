@@ -7,6 +7,16 @@
 import { NextRequest } from "next/server";
 
 // Mock dependencies BEFORE importing modules that use them
+const mockValidateFromHeaders = jest.fn();
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: unknown[]) =>
+      mockValidateFromHeaders(...args),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: jest.fn().mockResolvedValue("user"),
+}));
 jest.mock("@/lib/investments/services/AssetAllocationService");
 
 // Import after mocks are set up
@@ -106,6 +116,11 @@ describe("Asset Allocation Analysis API", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // allocation-analysis routes are wrapped in withAuth (TASK-AUTH-03e)
+    mockValidateFromHeaders.mockResolvedValue({
+      valid: true,
+      user: { id: "user-123", email: "test@example.com" },
+    });
     (getAssetAllocationService as jest.Mock).mockReturnValue(
       mockAllocationService,
     );
@@ -426,6 +441,31 @@ describe("Asset Allocation Analysis API", () => {
       expect(response.status).toBe(200);
       expect(data.success).toBe(true);
       expect(mockAllocationService.analyzeAllocation).toHaveBeenCalled();
+    });
+  });
+
+  describe("negative-auth – /api/investments/allocation-analysis", () => {
+    beforeEach(() => {
+      mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
+    });
+
+    it("POST returns 401 when the request is not authenticated (TASK-AUTH-03e)", async () => {
+      const res = await POST(
+        createMockRequest(
+          "http://localhost:3000/api/investments/allocation-analysis",
+          { method: "POST", body: {} },
+        ),
+      );
+      expect(res.status).toBe(401);
+    });
+
+    it("GET returns 401 when the request is not authenticated (TASK-AUTH-03e)", async () => {
+      const res = await GET(
+        createMockRequest(
+          "http://localhost:3000/api/investments/allocation-analysis",
+        ),
+      );
+      expect(res.status).toBe(401);
     });
   });
 });
