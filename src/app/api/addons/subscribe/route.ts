@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { ADDON_BUNDLES } from "@/lib/credits/credit-costs";
 import { stripeService } from "@/lib/payment/stripe-service";
@@ -26,18 +26,8 @@ function getAddonPriceId(bundleType: AddonBundleType): string {
   return priceMap[bundleType];
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await request.json();
     const { bundleType } = body as { bundleType: unknown };
 
@@ -75,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     if (!stripeCustomerId) {
       const customer = await stripeService.createCustomer(
-        user.email!,
+        user.email,
         profile?.full_name || undefined,
         { userId: user.id },
       );
@@ -124,4 +114,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
