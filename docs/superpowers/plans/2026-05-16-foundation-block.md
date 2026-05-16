@@ -19,7 +19,8 @@
 | File | Responsibility | Action |
 |------|----------------|--------|
 | `src/lib/auth/roles.ts` | **New.** Single source of role types + hierarchy. Replaces the 3 conflicting definitions. | Create |
-| `src/lib/auth/resolve-role.ts` | **New.** `resolveRoleFromDb(userId)` — the one trusted role lookup (`profiles.role`). | Create |
+| `src/lib/auth/resolve-role.ts` | **New.** `resolveRoleFromDb(userId)` — the one trusted role lookup (`profiles.role`); module-level client + short-TTL cache. | Create |
+| `src/lib/auth/api-guard.ts` (`AuthedUser`) | **New exported type** `{ id; email; role: Role }` — the shape handlers receive after AUTH-01. | Create (in api-guard) |
 | `src/lib/auth/session.ts` | `getUser`/`getUserRole` — role via `resolveRoleFromDb`, not `user_metadata`. | Modify |
 | `src/lib/auth/api-guard.ts` | `withAuth`/`withRole`/`withPermission` resolve role from DB per-request, not from the JWT claim. | Modify |
 | `src/lib/auth/rbac.ts` | RBAC permission model; imports `Role` from `roles.ts`; internal `getUserRole` drops claim fallbacks. | Modify |
@@ -267,14 +268,15 @@ export function isRole(v: unknown): v is Role { return typeof v === "string" && 
 /** @jest-environment node */
 const mockFrom = jest.fn();
 jest.mock("@supabase/supabase-js", () => ({ createClient: () => ({ from: mockFrom }) }));
-import { resolveRoleFromDb } from "../resolve-role";
+import { resolveRoleFromDb, __clearRoleCache, __setNow } from "../resolve-role";
 
 const profile = (role: string | null) => ({
   select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: { role }, error: null }) }) }),
 });
 
 describe("resolveRoleFromDb", () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => { jest.clearAllMocks(); __clearRoleCache(); __setNow(() => 1_000); });
+
   it("returns the role from the profiles table", async () => {
     mockFrom.mockReturnValue(profile("admin"));
     expect(await resolveRoleFromDb("u1")).toBe("admin");
@@ -287,24 +289,58 @@ describe("resolveRoleFromDb", () => {
     mockFrom.mockReturnValue(profile("hacker"));
     expect(await resolveRoleFromDb("u1")).toBe("user");
   });
+  it("caches per userId within the TTL (one DB call for repeated lookups)", async () => {
+    mockFrom.mockReturnValue(profile("admin"));
+    await resolveRoleFromDb("u1");
+    __setNow(() => 6_000);                       // +5s, within 15s TTL
+    await resolveRoleFromDb("u1");
+    expect(mockFrom).toHaveBeenCalledTimes(1);
+  });
+  it("re-reads after the TTL expires (bounds demotion staleness)", async () => {
+    mockFrom.mockReturnValue(profile("admin"));
+    await resolveRoleFromDb("u1");
+    __setNow(() => 20_000);                      // +19s, past 15s TTL
+    await resolveRoleFromDb("u1");
+    expect(mockFrom).toHaveBeenCalledTimes(2);
+  });
 });
 ```
 - [ ] **Step 2: Run — expect FAIL.**
-- [ ] **Step 3: Implement `resolve-role.ts`:**
+- [ ] **Step 3: Implement `resolve-role.ts`** — module-level client (not re-constructed per request) + a 15s per-`userId` cache so an authenticated request does ~1 lookup, not N:
 ```ts
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { isRole, type Role } from "./roles";
 
+const ROLE_CACHE_TTL_MS = 15_000;
+const cache = new Map<string, { role: Role; at: number }>();
+let client: SupabaseClient | null = null;
+let now: () => number = () => Date.now();
+
+export function __clearRoleCache(): void { cache.clear(); }
+export function __setNow(fn: () => number): void { now = fn; }
+
+function getClient(): SupabaseClient {
+  if (!client) {
+    client = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,   // service-role: bypasses RLS
+    );
+  }
+  return client;
+}
+
 export async function resolveRoleFromDb(userId: string): Promise<Role> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  );
-  const { data } = await supabase.from("profiles").select("role").eq("id", userId).single();
-  return isRole(data?.role) ? data!.role : "user";
+  const hit = cache.get(userId);
+  if (hit && now() - hit.at < ROLE_CACHE_TTL_MS) return hit.role;
+  const { data } = await getClient().from("profiles").select("role").eq("id", userId).single();
+  const role: Role = isRole(data?.role) ? data!.role : "user";
+  cache.set(userId, { role, at: now() });
+  return role;
 }
 ```
-- [ ] **Step 4: Run — expect PASS.**
+**Accepted tradeoff:** a role demotion takes effect within ≤15s (the TTL), not instantly. This is strictly better than the status quo (JWT claim stale until token expiry, ~1h) and acceptable for this app. Document it in `SECURITY.md`.
+
+- [ ] **Step 4: Run — expect PASS** (5 passing, incl. the two cache tests).
 
 - [ ] **Step 5: Write the failing `api-guard` test** (`api-guard.test.ts`) — the actual FND-005 attack: a JWT that *claims* admin must be denied admin when `profiles` says `user`:
 ```ts
@@ -313,7 +349,7 @@ import * as jwtValidation from "@/lib/auth/jwt-validation";
 jest.mock("@/lib/auth/jwt-validation");
 const mockResolve = jest.fn();
 jest.mock("@/lib/auth/resolve-role", () => ({ resolveRoleFromDb: (...a: unknown[]) => mockResolve(...a) }));
-import { withRole } from "../api-guard";
+import { withRole, withPermission } from "../api-guard";
 import { NextResponse } from "next/server";
 
 const handler = withRole("admin", async () => NextResponse.json({ ok: true }));
@@ -340,10 +376,37 @@ describe("withRole — DB-sourced role", () => {
     expect((await handler(req())).status).toBe(401);
   });
 });
-```
-- [ ] **Step 6: Run — expect FAIL** (current `withRole` ranks `validation.user.role` — the claim — so the forged-admin test returns 200).
 
-- [ ] **Step 7: Rewrite `api-guard.ts`.** After `validateFromHeaders` confirms `valid` + `user.id`, **discard the JWT `role` claim** and call `resolveRoleFromDb(user.id)`. `withAuth` passes the handler a `user` whose `role` is the DB role; `withRole` compares the DB role via `isAtLeast`; `withPermission` passes the DB role to `rbac`. The JWT is identity-only.
+// withPermission must also use the DB role — real rbac, no rbac mock.
+describe("withPermission — DB-sourced role", () => {
+  const permHandler = withPermission("admin:read", async () => NextResponse.json({ ok: true }));
+  beforeEach(() => jest.clearAllMocks());
+
+  it("DENIES (403) a JWT claiming admin when profiles.role is 'user'", async () => {
+    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+      valid: true, user: { id: "u1", email: "e", role: "admin" },
+    });
+    mockResolve.mockResolvedValue("user");
+    expect((await permHandler(req())).status).toBe(403);
+  });
+  it("ALLOWS (200) when profiles.role grants the permission", async () => {
+    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+      valid: true, user: { id: "u1", email: "e", role: "user" },
+    });
+    mockResolve.mockResolvedValue("admin");
+    expect((await permHandler(req())).status).toBe(200);
+  });
+});
+```
+(Use a real admin-category permission name from `rbac.ts` for `"admin:read"` — verify it exists.)
+
+- [ ] **Step 6: Run — expect FAIL** (current `withRole`/`withPermission` rank `validation.user.role` — the claim — so the forged-admin tests return 200).
+
+- [ ] **Step 7: Rewrite `api-guard.ts`.**
+  - **Define and export the handler-facing user type:** `export type AuthedUser = { id: string; email: string; role: Role };` (`Role` from `roles.ts`). Change `AuthenticatedHandler`'s second parameter from `JWTUser` to `AuthedUser`.
+  - After `validateFromHeaders` confirms `valid` + `user.id`, **discard the JWT `role` claim** and call `const role = await resolveRoleFromDb(user.id)`. Build `const authedUser: AuthedUser = { id: user.id, email: user.email, role }`.
+  - `withAuth` passes `authedUser` to the handler. `withRole(required, ...)` compares `isAtLeast(authedUser.role, required)` → 403 on fail. `withPermission(perm, ...)` calls `rbac.hasPermission(authedUser, perm)` — **passing `authedUser` (DB role), never `validation.user` (JWT claim)**; this ordering is load-bearing for FND-005 on the `withPermission` path.
+  - `withOptionalAuth`: when a valid JWT is present it must also resolve the DB role into `authedUser` (so optional-auth routes that branch on role are not claim-trusting); when absent it passes `null`.
 
 - [ ] **Step 8: Fix `session.ts` and `rbac.ts`.** `session.ts` `getUser()` stops setting `role` from `user_metadata` (line 59); `getUserRole()` delegates to `resolveRoleFromDb`. In `rbac.ts:304-327`, delete the `user.role` / `app_metadata.role` / `user_metadata.role` fallbacks — `rbac` receives the DB-resolved role only.
 
@@ -394,7 +457,11 @@ describe("withRole — DB-sourced role", () => {
 
 > 294 route files / 466 HTTP-method handlers. Per-route auth is heterogeneous (bare `getUser()` ×87, `requireRole` ×25, inline `validateFromHeaders`, 3 already on `withAuth`, ~180 unguarded). This task first **classifies** every route, then wraps in batches.
 
-- [ ] **Step 1: Build the route inventory.** Generate `docs/superpowers/auth-route-inventory.csv` — one row per `src/app/api/**/route.ts`: `path, methods, current_auth_mechanism, proposed_guard`. `proposed_guard` ∈ `withAuth` | `withRole(<role>)` | `PUBLIC`. **SEC reviews and signs off the CSV before any wrapping** — this is the classification decision, made once, not per-file judgement by the executor.
+- [ ] **Step 1: Build the route inventory.** Generate `docs/superpowers/auth-route-inventory.csv` — one row per `src/app/api/**/route.ts` with columns: `path, methods, current_authn, current_authz, proposed_guard`.
+  - `current_authn` = the existing *authentication* mechanism (bare `getUser()`, inline `validateFromHeaders`, `requireRole`, `withAuth`, none).
+  - `current_authz` = any existing *authorization* check — most importantly inline `rbac.hasPermission(...)` calls or `requireRole` role checks. **This column is mandatory** — an inline permission check is NOT redundant with `withAuth` and must not be lost.
+  - `proposed_guard` ∈ `withAuth` (authenticated, any role) | `withRole(<role>)` | `withPermission(<perm>)` (when `current_authz` has an inline `rbac.hasPermission`) | `PUBLIC`.
+  - **SEC reviews and signs off the CSV before any wrapping** — classification is decided once here, not per-file by the executor.
 
 **Per-route wrapping pattern** (apply per the CSV):
 
@@ -404,12 +471,11 @@ import { withAuth } from "@/lib/auth/api-guard";
 import type { AuthedUser } from "@/lib/auth/api-guard";
 
 export const GET = withAuth(async (req, user: AuthedUser) => {
-  // existing body. DELETE the route's old inline auth — bare getUser(),
-  // jwtValidation.validateFromHeaders, or requireRole(...) — and use `user`.
-  // Double-guarding (wrapper + leftover inline check) is a defect.
+  // existing body. DELETE the route's old inline *authentication* — bare
+  // getUser(), jwtValidation.validateFromHeaders, requireRole(...) — and use `user`.
 });
 ```
-Role-gated routes use `withRole("admin", ...)`. Genuinely public routes are **not** wrapped — they go in `PUBLIC_ROUTES.ts` (AUTH-04).
+**Preserve authorization — do not just delete it.** If the CSV's `current_authz` column shows an inline `rbac.hasPermission("x:y", ...)` or a role check, the route's `proposed_guard` must be `withPermission("x:y", ...)` or `withRole(<role>, ...)` — the inline authorization is *promoted into the wrapper*, never dropped. Deleting an inline `rbac.hasPermission` while wrapping in plain `withAuth` silently downgrades a premium/admin-gated route to any-authenticated-user — an authorization regression. Genuinely public routes are not wrapped — they go in `PUBLIC_ROUTES.ts` (AUTH-04).
 
 - [ ] **Step B: Write the negative-auth test** — co-located `__tests__/route.test.ts`, wrapped in `describe("negative-auth", ...)` so `npm run test:auth-negative` selects it:
 ```ts
@@ -476,9 +542,9 @@ export function isPublicApiRoute(p: string): boolean {
 - [ ] **Step 2: Write the failing middleware test** — `/api/*` not in the allowlist + no session → 401; public path → passes; and the admin-branch test: a page request whose session JWT *claims* admin but whose `profiles.role` is `user` does **not** get admin page access.
 - [ ] **Step 3: Run — expect FAIL.**
 - [ ] **Step 4: Rewrite the `/api/*` branch** (`middleware.ts:159-170`) — remove `pathname.startsWith("/api")` from the allow-all block; for `/api/*`, if `!isPublicApiRoute(pathname)` and no valid session → `401`. Gate the flip behind the flag: `if (await isFlagEnabled("auth.deny_by_default")) { ...enforce... }`.
-- [ ] **Step 5: Fix the admin-role branch** (`middleware.ts:186-239`, esp. line 213) — it currently reads `user.app_metadata?.role || user.user_metadata?.role`. Replace with the `profiles.role` lookup (reuse `resolveRoleFromDb`); never trust the JWT/metadata claim for the admin gate.
+- [ ] **Step 5: Fix the admin-role branch** (`middleware.ts:186-239`, esp. line 213). It currently reads `user.app_metadata?.role || user.user_metadata?.role` then falls back to a `profiles.role` query at 218-222. **Do not import `resolveRoleFromDb` here** — `middleware.ts` runs in the **Edge runtime** (no `runtime` export) and uses the Edge-safe `@supabase/ssr` cookie-scoped client at `:189`; `resolveRoleFromDb` uses the heavier `@supabase/supabase-js` + service-role key, which risks an Edge bundling/runtime break and widens service-role-key exposure. Instead: **delete the `app_metadata`/`user_metadata` read at line 213 and make the existing `:218-222` `profiles.role` query (via the existing `@supabase/ssr` client) the *only* path** for the admin gate.
 - [ ] **Step 6: Run — expect PASS.**
-- [ ] **Step 7: Write `scripts/verify-auth-coverage.ts`** — walks every `src/app/api/**/route.ts`, asserts each is `withAuth`/`withRole`-wrapped OR its path is in `PUBLIC_API_ROUTES`; exits non-zero otherwise. This is the `audit:auth` script (PRE-05). Add to CI.
+- [ ] **Step 7: Write `scripts/verify-auth-coverage.ts`** — walks every `src/app/api/**/route.ts` and **cross-checks each route's actual wrapper against the SEC-signed `auth-route-inventory.csv` `proposed_guard` column**: a route must be wrapped at the level the CSV specifies (`withAuth`/`withRole`/`withPermission`) or be in `PUBLIC_API_ROUTES`. A route downgraded from `withRole`/`withPermission` to plain `withAuth` **fails** the script — this catches the S9 under-authorization regression, not just missing authentication. Exits non-zero on any mismatch. This is the `audit:auth` script (PRE-05). Add to CI; the CSV becomes a durable committed artifact.
 - [ ] **Step 8: AUTH-04-staging** — deploy to staging with `auth.deny_by_default` ON; run synthetic monitoring over all webhooks (Stripe, Plaid, Affiliate), signup, login, OAuth callbacks for **24h green** before flipping the prod flag. Hard sub-gate.
 - [ ] **Step 9: Commit** — `feat: TASK-AUTH-04 middleware deny-by-default + admin role from profiles (FND-001)`.
 
@@ -509,3 +575,11 @@ Revised after an adversarial plan review. Blocking fixes:
 - **B2** — AUTH-03 negative-auth test scaffold rewritten to mock `validateFromHeaders`'s real `{ valid, user }` shape (was mocking a nonexistent `null`/bare-user return).
 - **B3** — AUTH-03 gains a route-inventory CSV classification step (SEC-signed) before wrapping; the pattern now explicitly removes pre-existing inline guards.
 Should-fix: `test:auth-negative`/`audit:auth` npm scripts created in PRE-05 (S1); ≥568 floor derived from 466 handlers (S2); TASK-DEFER-COMPILE created as an explicit standing task (S3); AUTH-05/AUTH-12 `enterprise` ordering noted (S4); AUTH-05 gains a caller-audit Step 0 (S5); PRE-03 cache test made deterministic via injectable clock (S6); PRE-03 gains a service-role-read note + boot-time reachability assertion (S7).
+
+**Second-pass fixes (iteration 3):**
+- **N1** — `resolve-role.ts` now uses a module-level Supabase client (not per-request `createClient`) and a 15s per-`userId` cache, so an authenticated request does ~1 role lookup, not N. The ≤15s demotion-staleness tradeoff is documented.
+- **N2** — AUTH-04 Step 5 no longer reuses `resolveRoleFromDb` inside `middleware.ts` (Edge runtime; `@supabase/supabase-js` + service-role key is unsafe there). The admin gate uses the existing Edge-safe `@supabase/ssr` cookie client's `profiles.role` query as its only path.
+- **S8** — `AuthedUser` type is now explicitly defined and exported by AUTH-01 Step 7; `AuthenticatedHandler` takes it.
+- **S9** — the AUTH-03 route-inventory CSV gains a mandatory `current_authz` column; inline `rbac.hasPermission` checks are promoted into `withPermission`, never deleted — preventing silent authorization downgrades.
+- **S10** — AUTH-01 Step 7 specifies how `withPermission` feeds the DB role to `rbac` (build `authedUser`, pass that); a `withPermission` forged-JWT bypass test is added.
+- **S11** — `verify-auth-coverage.ts` cross-checks each route's wrapper against the CSV `proposed_guard`, catching under-authorization (downgrade to plain `withAuth`), not just missing authentication.
