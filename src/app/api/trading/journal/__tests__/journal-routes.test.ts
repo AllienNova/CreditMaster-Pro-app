@@ -4,9 +4,18 @@
  * Tests for journal CRUD, close trade, and stats endpoints.
  */
 
-// Mock Supabase before imports
-jest.mock("@/lib/supabase/server", () => ({
-  createClient: jest.fn(),
+// Mock auth guard dependencies before imports
+const mockValidateFromHeaders = jest.fn();
+const mockResolveRoleFromDb = jest.fn();
+
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: unknown[]) =>
+      mockValidateFromHeaders(...args),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: (...args: unknown[]) => mockResolveRoleFromDb(...args),
 }));
 
 jest.mock("@/lib/trading/services/TradingJournalService", () => ({
@@ -14,7 +23,6 @@ jest.mock("@/lib/trading/services/TradingJournalService", () => ({
 }));
 
 import { NextRequest } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { getTradingJournalService } from "@/lib/trading/services/TradingJournalService";
 
 // Import route handlers
@@ -29,15 +37,18 @@ import { GET as statsGET } from "../stats/route";
 
 const mockUser = { id: "user_123", email: "test@test.com" };
 
-function createMockSupabase(user: typeof mockUser | null = mockUser) {
-  return {
-    auth: {
-      getUser: jest.fn().mockResolvedValue({
-        data: { user },
-        error: user ? null : { message: "Unauthorized" },
-      }),
-    },
-  };
+// Journal routes are wrapped in withAuth; auth is mocked at the guard layer.
+function setupAuth(authenticated: boolean) {
+  if (authenticated) {
+    mockValidateFromHeaders.mockResolvedValue({ valid: true, user: mockUser });
+    mockResolveRoleFromDb.mockResolvedValue("user");
+  } else {
+    mockValidateFromHeaders.mockResolvedValue({
+      valid: false,
+      user: null,
+      error: "Unauthorized",
+    });
+  }
 }
 
 function createRequest(
@@ -91,7 +102,7 @@ const mockStats = {
 describe("Trading Journal - List & Create", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (createClient as jest.Mock).mockResolvedValue(createMockSupabase());
+    setupAuth(true);
   });
 
   // --------------------------------------------------------------------------
@@ -100,7 +111,7 @@ describe("Trading Journal - List & Create", () => {
 
   describe("GET /api/trading/journal", () => {
     it("returns 401 when not authenticated", async () => {
-      (createClient as jest.Mock).mockResolvedValue(createMockSupabase(null));
+      setupAuth(false);
 
       const req = createRequest("/api/trading/journal");
       const res = await journalListGET(req);
@@ -173,7 +184,7 @@ describe("Trading Journal - List & Create", () => {
 
   describe("POST /api/trading/journal", () => {
     it("returns 401 when not authenticated", async () => {
-      (createClient as jest.Mock).mockResolvedValue(createMockSupabase(null));
+      setupAuth(false);
 
       const req = createRequest("/api/trading/journal", "POST", {
         symbol: "AAPL",
@@ -251,11 +262,10 @@ describe("Trading Journal - List & Create", () => {
 // ============================================================================
 
 describe("Trading Journal - Single Entry", () => {
-  const makeParams = (id: string) => Promise.resolve({ id });
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (createClient as jest.Mock).mockResolvedValue(createMockSupabase());
+    setupAuth(true);
   });
 
   // --------------------------------------------------------------------------
@@ -264,10 +274,10 @@ describe("Trading Journal - Single Entry", () => {
 
   describe("GET /api/trading/journal/[id]", () => {
     it("returns 401 when not authenticated", async () => {
-      (createClient as jest.Mock).mockResolvedValue(createMockSupabase(null));
+      setupAuth(false);
 
       const req = createRequest("/api/trading/journal/trade_1");
-      const res = await journalGetGET(req, { params: makeParams("trade_1") });
+      const res = await journalGetGET(req);
 
       expect(res.status).toBe(401);
     });
@@ -279,7 +289,7 @@ describe("Trading Journal - Single Entry", () => {
       (getTradingJournalService as jest.Mock).mockReturnValue(mockService);
 
       const req = createRequest("/api/trading/journal/trade_999");
-      const res = await journalGetGET(req, { params: makeParams("trade_999") });
+      const res = await journalGetGET(req);
       const data = await res.json();
 
       expect(res.status).toBe(404);
@@ -293,7 +303,7 @@ describe("Trading Journal - Single Entry", () => {
       (getTradingJournalService as jest.Mock).mockReturnValue(mockService);
 
       const req = createRequest("/api/trading/journal/trade_1");
-      const res = await journalGetGET(req, { params: makeParams("trade_1") });
+      const res = await journalGetGET(req);
 
       expect(res.status).toBe(403);
     });
@@ -305,7 +315,7 @@ describe("Trading Journal - Single Entry", () => {
       (getTradingJournalService as jest.Mock).mockReturnValue(mockService);
 
       const req = createRequest("/api/trading/journal/trade_1");
-      const res = await journalGetGET(req, { params: makeParams("trade_1") });
+      const res = await journalGetGET(req);
       const data = await res.json();
 
       expect(res.status).toBe(200);
@@ -328,7 +338,7 @@ describe("Trading Journal - Single Entry", () => {
       const req = createRequest("/api/trading/journal/trade_999", "PUT", {
         notes: "updated",
       });
-      const res = await journalPUT(req, { params: makeParams("trade_999") });
+      const res = await journalPUT(req);
 
       expect(res.status).toBe(404);
     });
@@ -342,7 +352,7 @@ describe("Trading Journal - Single Entry", () => {
       const req = createRequest("/api/trading/journal/trade_1", "PUT", {
         notes: "updated",
       });
-      const res = await journalPUT(req, { params: makeParams("trade_1") });
+      const res = await journalPUT(req);
 
       expect(res.status).toBe(403);
     });
@@ -358,7 +368,7 @@ describe("Trading Journal - Single Entry", () => {
       const req = createRequest("/api/trading/journal/trade_1", "PUT", {
         notes: "updated notes",
       });
-      const res = await journalPUT(req, { params: makeParams("trade_1") });
+      const res = await journalPUT(req);
       const data = await res.json();
 
       expect(res.status).toBe(200);
@@ -382,7 +392,7 @@ describe("Trading Journal - Single Entry", () => {
         createdAt: "HACKED_DATE",
         notes: "legit update",
       });
-      const res = await journalPUT(req, { params: makeParams("trade_1") });
+      const res = await journalPUT(req);
 
       expect(res.status).toBe(200);
       const updateCall = mockService.updateTrade.mock.calls[0][1];
@@ -405,7 +415,7 @@ describe("Trading Journal - Single Entry", () => {
       (getTradingJournalService as jest.Mock).mockReturnValue(mockService);
 
       const req = createRequest("/api/trading/journal/trade_999", "DELETE");
-      const res = await journalDELETE(req, { params: makeParams("trade_999") });
+      const res = await journalDELETE(req);
 
       expect(res.status).toBe(404);
     });
@@ -417,7 +427,7 @@ describe("Trading Journal - Single Entry", () => {
       (getTradingJournalService as jest.Mock).mockReturnValue(mockService);
 
       const req = createRequest("/api/trading/journal/trade_1", "DELETE");
-      const res = await journalDELETE(req, { params: makeParams("trade_1") });
+      const res = await journalDELETE(req);
 
       expect(res.status).toBe(403);
     });
@@ -430,7 +440,7 @@ describe("Trading Journal - Single Entry", () => {
       (getTradingJournalService as jest.Mock).mockReturnValue(mockService);
 
       const req = createRequest("/api/trading/journal/trade_1", "DELETE");
-      const res = await journalDELETE(req, { params: makeParams("trade_1") });
+      const res = await journalDELETE(req);
       const data = await res.json();
 
       expect(res.status).toBe(200);
@@ -446,22 +456,21 @@ describe("Trading Journal - Single Entry", () => {
 // ============================================================================
 
 describe("Trading Journal - Close Trade", () => {
-  const makeParams = (id: string) => Promise.resolve({ id });
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (createClient as jest.Mock).mockResolvedValue(createMockSupabase());
+    setupAuth(true);
   });
 
   it("returns 401 when not authenticated", async () => {
-    (createClient as jest.Mock).mockResolvedValue(createMockSupabase(null));
+    setupAuth(false);
 
     const req = createRequest("/api/trading/journal/trade_1/close", "POST", {
       exitPrice: 160,
       exitQuantity: 10,
       exitReason: "target hit",
     });
-    const res = await closePOST(req, { params: makeParams("trade_1") });
+    const res = await closePOST(req);
 
     expect(res.status).toBe(401);
   });
@@ -470,7 +479,7 @@ describe("Trading Journal - Close Trade", () => {
     const req = createRequest("/api/trading/journal/trade_1/close", "POST", {
       exitPrice: 160,
     });
-    const res = await closePOST(req, { params: makeParams("trade_1") });
+    const res = await closePOST(req);
     const data = await res.json();
 
     expect(res.status).toBe(400);
@@ -488,7 +497,7 @@ describe("Trading Journal - Close Trade", () => {
       exitQuantity: 10,
       exitReason: "target hit",
     });
-    const res = await closePOST(req, { params: makeParams("trade_999") });
+    const res = await closePOST(req);
 
     expect(res.status).toBe(404);
   });
@@ -504,7 +513,7 @@ describe("Trading Journal - Close Trade", () => {
       exitQuantity: 10,
       exitReason: "target hit",
     });
-    const res = await closePOST(req, { params: makeParams("trade_1") });
+    const res = await closePOST(req);
 
     expect(res.status).toBe(403);
   });
@@ -520,7 +529,7 @@ describe("Trading Journal - Close Trade", () => {
       exitQuantity: 10,
       exitReason: "target hit",
     });
-    const res = await closePOST(req, { params: makeParams("trade_1") });
+    const res = await closePOST(req);
     const data = await res.json();
 
     expect(res.status).toBe(400);
@@ -550,7 +559,7 @@ describe("Trading Journal - Close Trade", () => {
       emotionalStateAfter: "confident",
       lessonsLearned: "Good patience on the hold",
     });
-    const res = await closePOST(req, { params: makeParams("trade_1") });
+    const res = await closePOST(req);
     const data = await res.json();
 
     expect(res.status).toBe(200);
@@ -574,11 +583,11 @@ describe("Trading Journal - Close Trade", () => {
 describe("Trading Journal - Stats", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (createClient as jest.Mock).mockResolvedValue(createMockSupabase());
+    setupAuth(true);
   });
 
   it("returns 401 when not authenticated", async () => {
-    (createClient as jest.Mock).mockResolvedValue(createMockSupabase(null));
+    setupAuth(false);
 
     const req = createRequest("/api/trading/journal/stats");
     const res = await statsGET(req);
