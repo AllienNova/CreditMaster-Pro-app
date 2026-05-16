@@ -7,19 +7,13 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import {
-  requireRole,
-  createAuthResponse,
-} from "@/lib/security/auth-middleware";
+import { withRole } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
-export async function GET(request: NextRequest) {
-  // SECURITY: Require admin role for dispute data
-  const authResult = await requireRole(request, "admin");
-  if (!authResult.authenticated || !authResult.user) {
-    return createAuthResponse(authResult);
-  }
-
-  try {
+export const GET = withRole(
+  "admin",
+  async (_request: NextRequest, _user: AuthedUser) => {
+    try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -137,19 +131,22 @@ export async function GET(request: NextRequest) {
       disputes: enrichedDisputes || [],
       total: disputes?.length || 0,
     });
-  } catch (_error) {
-    // AdminDisputesRoute error: Admin disputes operation failed
-    void _error;
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
-  }
-}
+    } catch (_error) {
+      // AdminDisputesRoute error: Admin disputes operation failed
+      void _error;
+      return NextResponse.json(
+        { error: "Internal server error" },
+        { status: 500 },
+      );
+    }
+  },
+);
 
-export async function PATCH(request: Request) {
-  try {
-    const { disputeId, updates } = await request.json();
+export const PATCH = withRole(
+  "admin",
+  async (request: NextRequest, _user: AuthedUser) => {
+    try {
+      const { disputeId, updates } = await request.json();
 
     if (!disputeId || !updates) {
       return NextResponse.json(
@@ -182,13 +179,14 @@ export async function PATCH(request: Request) {
       );
     }
 
-    return NextResponse.json({ success: true });
-  } catch (_error) {
-    // AdminDisputesRoute error: Dispute update failed
-    void _error;
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
-  }
-}
+      return NextResponse.json({ success: true });
+    } catch (_error) {
+      // AdminDisputesRoute error: Dispute update failed
+      void _error;
+      return NextResponse.json(
+        { error: "Internal server error" },
+        { status: 500 },
+      );
+    }
+  },
+);

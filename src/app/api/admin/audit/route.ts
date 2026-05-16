@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import {
-  requireRole,
-  createAuthResponse,
-} from "@/lib/security/auth-middleware";
+import { withRole } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
 function getSupabaseClient() {
   return createClient(
@@ -12,15 +10,11 @@ function getSupabaseClient() {
   );
 }
 
-export async function GET(request: NextRequest) {
-  // SECURITY: Require admin role for audit logs
-  const authResult = await requireRole(request, "admin");
-  if (!authResult.authenticated || !authResult.user) {
-    return createAuthResponse(authResult);
-  }
-
-  const supabase = getSupabaseClient();
-  try {
+export const GET = withRole(
+  "admin",
+  async (request: NextRequest, _user: AuthedUser) => {
+    const supabase = getSupabaseClient();
+    try {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "50");
@@ -80,22 +74,25 @@ export async function GET(request: NextRequest) {
       limit,
       totalPages: Math.ceil((count || 0) / limit),
     });
-  } catch (_error) {
-    // Error silently caught
-    return NextResponse.json({
-      logs: generateMockAuditLogs(50),
-      total: 100,
-      page: 1,
-      limit: 50,
-      totalPages: 2,
-    });
-  }
-}
+    } catch (_error) {
+      // Error silently caught
+      return NextResponse.json({
+        logs: generateMockAuditLogs(50),
+        total: 100,
+        page: 1,
+        limit: 50,
+        totalPages: 2,
+      });
+    }
+  },
+);
 
-export async function POST(request: NextRequest) {
-  const supabase = getSupabaseClient();
-  try {
-    const { action, userId, details, ipAddress } = await request.json();
+export const POST = withRole(
+  "admin",
+  async (request: NextRequest, _user: AuthedUser) => {
+    const supabase = getSupabaseClient();
+    try {
+      const { action, userId, details, ipAddress } = await request.json();
 
     const { data, error } = await supabase
       .from("audit_logs")
@@ -109,17 +106,18 @@ export async function POST(request: NextRequest) {
       .select()
       .single();
 
-    if (error) throw error;
+      if (error) throw error;
 
-    return NextResponse.json({ log: data });
-  } catch (_error) {
-    // Error silently caught
-    return NextResponse.json(
-      { error: "Failed to create audit log" },
-      { status: 500 },
-    );
-  }
-}
+      return NextResponse.json({ log: data });
+    } catch (_error) {
+      // Error silently caught
+      return NextResponse.json(
+        { error: "Failed to create audit log" },
+        { status: 500 },
+      );
+    }
+  },
+);
 
 function generateMockAuditLogs(count: number) {
   const actions = [

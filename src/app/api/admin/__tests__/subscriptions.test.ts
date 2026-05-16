@@ -4,11 +4,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
-const mockRequireRole = jest.fn();
-const mockCreateAuthResponse = jest.fn();
-jest.mock("@/lib/security/auth-middleware", () => ({
-  requireRole: mockRequireRole,
-  createAuthResponse: mockCreateAuthResponse,
+// Routes wrapped in withRole("admin") (TASK-AUTH-03a); guard resolves auth via
+// jwtValidation.validateFromHeaders + resolveRoleFromDb.
+const mockValidate = jest.fn();
+const mockResolveRole = jest.fn();
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: any[]) => mockValidate(...args),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: (...args: any[]) => mockResolveRole(...args),
 }));
 
 const mockFrom = jest.fn();
@@ -53,24 +59,27 @@ function makeRequest(
 function makeDeleteRequest(body: Record<string, unknown>) {
   return {
     json: jest.fn().mockResolvedValue(body),
-  } as unknown as Request;
+  } as unknown as NextRequest;
 }
 
 function authenticatedAdmin() {
-  mockRequireRole.mockResolvedValue({
-    authenticated: true,
-    user: { id: "admin-1", email: "admin@fynvita.com", role: "admin" },
+  mockValidate.mockResolvedValue({
+    valid: true,
+    user: { id: "admin-1", email: "admin@fynvita.com" },
   });
+  mockResolveRole.mockResolvedValue("admin");
 }
 
-function unauthenticated(errorMsg = "Not authenticated") {
-  mockRequireRole.mockResolvedValue({
-    authenticated: false,
-    error: errorMsg,
+function unauthenticated() {
+  mockValidate.mockResolvedValue({ valid: false, user: null });
+}
+
+function authenticatedNonAdmin() {
+  mockValidate.mockResolvedValue({
+    valid: true,
+    user: { id: "user-1", email: "user@example.com" },
   });
-  mockCreateAuthResponse.mockReturnValue(
-    new Response(JSON.stringify({ error: errorMsg }), { status: 401 }),
-  );
+  mockResolveRole.mockResolvedValue("user");
 }
 
 // ── Setup / Teardown ─────────────────────────────────────────────────────────
@@ -88,18 +97,16 @@ describe("Admin Subscriptions API – GET /api/admin/subscriptions", () => {
       const res = await GET(
         makeRequest("http://localhost:3000/api/admin/subscriptions"),
       );
-      expect(mockRequireRole).toHaveBeenCalled();
-      expect(mockCreateAuthResponse).toHaveBeenCalled();
+      expect(mockValidate).toHaveBeenCalled();
       expect(res.status).toBe(401);
     });
 
-    it("should call requireRole with 'admin'", async () => {
-      unauthenticated();
-      const req = makeRequest(
-        "http://localhost:3000/api/admin/subscriptions",
+    it("should return 403 when authenticated user is not admin", async () => {
+      authenticatedNonAdmin();
+      const res = await GET(
+        makeRequest("http://localhost:3000/api/admin/subscriptions"),
       );
-      await GET(req);
-      expect(mockRequireRole).toHaveBeenCalledWith(req, "admin");
+      expect(res.status).toBe(403);
     });
   });
 
@@ -301,6 +308,27 @@ describe("Admin Subscriptions API – GET /api/admin/subscriptions", () => {
 //  DELETE /api/admin/subscriptions
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Admin Subscriptions API – DELETE /api/admin/subscriptions", () => {
+  // DELETE is wrapped in withRole("admin") (TASK-AUTH-03a, FND-050).
+  beforeEach(() => {
+    authenticatedAdmin();
+  });
+
+  describe("Authentication", () => {
+    it("should return 401 when user is not authenticated", async () => {
+      unauthenticated();
+      const req = makeDeleteRequest({ subscriptionId: "sub_1234" });
+      const res = await DELETE(req);
+      expect(res.status).toBe(401);
+    });
+
+    it("should return 403 when authenticated user is not admin", async () => {
+      authenticatedNonAdmin();
+      const req = makeDeleteRequest({ subscriptionId: "sub_1234" });
+      const res = await DELETE(req);
+      expect(res.status).toBe(403);
+    });
+  });
+
   describe("Validation", () => {
     it("should return 400 when subscriptionId is missing", async () => {
       const req = makeDeleteRequest({});
@@ -408,7 +436,7 @@ describe("Admin Subscriptions API – DELETE /api/admin/subscriptions", () => {
     it("should return 500 when request.json() throws", async () => {
       const req = {
         json: jest.fn().mockRejectedValue(new Error("Parse error")),
-      } as unknown as Request;
+      } as unknown as NextRequest;
 
       const res = await DELETE(req);
       const body = await res.json();

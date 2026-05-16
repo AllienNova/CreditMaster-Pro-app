@@ -7,19 +7,13 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import {
-  requireRole,
-  createAuthResponse,
-} from "@/lib/security/auth-middleware";
+import { withRole } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
-export async function GET(request: NextRequest) {
-  // SECURITY: Require admin role for subscription data
-  const authResult = await requireRole(request, "admin");
-  if (!authResult.authenticated || !authResult.user) {
-    return createAuthResponse(authResult);
-  }
-
-  try {
+export const GET = withRole(
+  "admin",
+  async (_request: NextRequest, _user: AuthedUser) => {
+    try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -127,19 +121,22 @@ export async function GET(request: NextRequest) {
       subscriptions: enrichedSubscriptions || [],
       total: subscriptions?.length || 0,
     });
-  } catch (_error) {
-    // AdminSubscriptionsRoute error: Admin subscriptions operation failed
-    void _error;
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
-  }
-}
+    } catch (_error) {
+      // AdminSubscriptionsRoute error: Admin subscriptions operation failed
+      void _error;
+      return NextResponse.json(
+        { error: "Internal server error" },
+        { status: 500 },
+      );
+    }
+  },
+);
 
-export async function DELETE(request: Request) {
-  try {
-    const { subscriptionId } = await request.json();
+export const DELETE = withRole(
+  "admin",
+  async (request: NextRequest, _user: AuthedUser) => {
+    try {
+      const { subscriptionId } = await request.json();
 
     if (!subscriptionId) {
       return NextResponse.json(
@@ -175,13 +172,14 @@ export async function DELETE(request: Request) {
       );
     }
 
-    return NextResponse.json({ success: true });
-  } catch (_error) {
-    // AdminSubscriptionsRoute error: Subscription cancel failed
-    void _error;
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
-  }
-}
+      return NextResponse.json({ success: true });
+    } catch (_error) {
+      // AdminSubscriptionsRoute error: Subscription cancel failed
+      void _error;
+      return NextResponse.json(
+        { error: "Internal server error" },
+        { status: 500 },
+      );
+    }
+  },
+);

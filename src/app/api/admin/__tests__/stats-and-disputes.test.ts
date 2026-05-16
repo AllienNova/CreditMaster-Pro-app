@@ -3,11 +3,17 @@
  */
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
-const mockRequireRole = jest.fn();
-const mockCreateAuthResponse = jest.fn();
-jest.mock("@/lib/security/auth-middleware", () => ({
-  requireRole: mockRequireRole,
-  createAuthResponse: mockCreateAuthResponse,
+// Routes wrapped in withRole("admin") (TASK-AUTH-03a); guard resolves auth via
+// jwtValidation.validateFromHeaders + resolveRoleFromDb.
+const mockValidate = jest.fn();
+const mockResolveRole = jest.fn();
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: unknown[]) => mockValidate(...args),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: (...args: unknown[]) => mockResolveRole(...args),
 }));
 
 // Mock @supabase/supabase-js – stats and disputes routes create their own client
@@ -43,21 +49,23 @@ function makeRequest(
 }
 
 function authenticatedAdmin() {
-  mockRequireRole.mockResolvedValue({
-    authenticated: true,
-    user: { id: "admin-1", email: "admin@fynvita.com", role: "admin" },
+  mockValidate.mockResolvedValue({
+    valid: true,
+    user: { id: "admin-1", email: "admin@fynvita.com" },
   });
+  mockResolveRole.mockResolvedValue("admin");
 }
 
-function unauthenticated(errorMsg = "Not authenticated") {
-  mockRequireRole.mockResolvedValue({
-    authenticated: false,
-    error: errorMsg,
+function unauthenticated() {
+  mockValidate.mockResolvedValue({ valid: false, user: null });
+}
+
+function authenticatedNonAdmin() {
+  mockValidate.mockResolvedValue({
+    valid: true,
+    user: { id: "user-1", email: "user@example.com" },
   });
-  mockCreateAuthResponse.mockReturnValue({
-    status: 401,
-    json: async () => ({ error: errorMsg }),
-  });
+  mockResolveRole.mockResolvedValue("user");
 }
 
 // ── Setup / Teardown ─────────────────────────────────────────────────────────
@@ -75,16 +83,16 @@ describe("Admin Stats API – GET /api/admin/stats", () => {
       const res = await getStats(
         makeRequest("http://localhost:3000/api/admin/stats"),
       );
-      expect(mockRequireRole).toHaveBeenCalled();
-      expect(mockCreateAuthResponse).toHaveBeenCalled();
+      expect(mockValidate).toHaveBeenCalled();
       expect(res.status).toBe(401);
     });
 
-    it("should call requireRole with 'admin'", async () => {
-      unauthenticated();
-      const req = makeRequest("http://localhost:3000/api/admin/stats");
-      await getStats(req);
-      expect(mockRequireRole).toHaveBeenCalledWith(req, "admin");
+    it("should return 403 when authenticated user is not admin", async () => {
+      authenticatedNonAdmin();
+      const res = await getStats(
+        makeRequest("http://localhost:3000/api/admin/stats"),
+      );
+      expect(res.status).toBe(403);
     });
   });
 
@@ -236,6 +244,14 @@ describe("Admin Disputes API – GET /api/admin/disputes", () => {
         makeRequest("http://localhost:3000/api/admin/disputes"),
       );
       expect(res.status).toBe(401);
+    });
+
+    it("should return 403 when authenticated user is not admin", async () => {
+      authenticatedNonAdmin();
+      const res = await getDisputes(
+        makeRequest("http://localhost:3000/api/admin/disputes"),
+      );
+      expect(res.status).toBe(403);
     });
   });
 
@@ -411,14 +427,38 @@ describe("Admin Disputes API – GET /api/admin/disputes", () => {
 //  DISPUTES – PATCH /api/admin/disputes
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Admin Disputes API – PATCH /api/admin/disputes", () => {
-  // PATCH does NOT use requireRole -- it uses plain Request, not NextRequest
-  // We need to provide a standard Request-like object with a json() method.
-
+  // PATCH is wrapped in withRole("admin") (TASK-AUTH-03a, FND-051).
   function makePatchRequest(body: Record<string, unknown>) {
     return {
       json: jest.fn().mockResolvedValue(body),
-    } as unknown as Request;
+    } as unknown as NextRequest;
   }
+
+  beforeEach(() => {
+    authenticatedAdmin();
+  });
+
+  describe("Authentication", () => {
+    it("should return 401 when user is not authenticated", async () => {
+      unauthenticated();
+      const req = makePatchRequest({
+        disputeId: "d1",
+        updates: { status: "resolved" },
+      });
+      const res = await patchDispute(req);
+      expect(res.status).toBe(401);
+    });
+
+    it("should return 403 when authenticated user is not admin", async () => {
+      authenticatedNonAdmin();
+      const req = makePatchRequest({
+        disputeId: "d1",
+        updates: { status: "resolved" },
+      });
+      const res = await patchDispute(req);
+      expect(res.status).toBe(403);
+    });
+  });
 
   describe("Validation", () => {
     it("should return 400 when disputeId is missing", async () => {
@@ -524,7 +564,7 @@ describe("Admin Disputes API – PATCH /api/admin/disputes", () => {
     it("should return 500 when request.json() throws", async () => {
       const req = {
         json: jest.fn().mockRejectedValue(new Error("Parse error")),
-      } as unknown as Request;
+      } as unknown as NextRequest;
 
       const res = await patchDispute(req);
       const body = await res.json();

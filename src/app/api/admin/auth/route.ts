@@ -8,18 +8,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
-import {
-  requireRole,
-  createAuthResponse,
-} from "@/lib/security/auth-middleware";
+import { withRole } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
-export async function GET(request: NextRequest) {
-  // SECURITY: Require admin role to check admin status
-  const authResult = await requireRole(request, "admin");
-  if (!authResult.authenticated || !authResult.user) {
-    return createAuthResponse(authResult);
-  }
-  try {
+export const GET = withRole(
+  "admin",
+  async (_request: NextRequest, _user: AuthedUser) => {
+    try {
     const cookieStore = await cookies();
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -81,11 +76,12 @@ export async function GET(request: NextRequest) {
         role,
       },
     });
-  } catch (_error) {
-    // Error silently caught
-    return NextResponse.json(
-      { isAdmin: false, error: "Authentication failed" },
-      { status: 500 },
-    );
-  }
-}
+    } catch (_error) {
+      // Error silently caught
+      return NextResponse.json(
+        { isAdmin: false, error: "Authentication failed" },
+        { status: 500 },
+      );
+    }
+  },
+);

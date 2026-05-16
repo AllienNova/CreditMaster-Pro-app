@@ -3,11 +3,17 @@
  */
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
-const mockRequireRole = jest.fn();
-const mockCreateAuthResponse = jest.fn();
-jest.mock("@/lib/security/auth-middleware", () => ({
-  requireRole: mockRequireRole,
-  createAuthResponse: mockCreateAuthResponse,
+// Routes wrapped in withRole("admin") (TASK-AUTH-03a); guard resolves auth via
+// jwtValidation.validateFromHeaders + resolveRoleFromDb.
+const mockValidate = jest.fn();
+const mockResolveRole = jest.fn();
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: unknown[]) => mockValidate(...args),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: (...args: unknown[]) => mockResolveRole(...args),
 }));
 
 // Mock @supabase/supabase-js
@@ -39,21 +45,15 @@ function makePostRequest(url: string, body: Record<string, unknown>) {
 }
 
 function authenticatedAdmin() {
-  mockRequireRole.mockResolvedValue({
-    authenticated: true,
-    user: { id: "admin-1", email: "admin@fynvita.com", role: "admin" },
+  mockValidate.mockResolvedValue({
+    valid: true,
+    user: { id: "admin-1", email: "admin@fynvita.com" },
   });
+  mockResolveRole.mockResolvedValue("admin");
 }
 
-function unauthenticated(errorMsg = "Not authenticated") {
-  mockRequireRole.mockResolvedValue({
-    authenticated: false,
-    error: errorMsg,
-  });
-  mockCreateAuthResponse.mockReturnValue({
-    status: 401,
-    json: async () => ({ error: errorMsg }),
-  });
+function unauthenticated() {
+  mockValidate.mockResolvedValue({ valid: false, user: null });
 }
 
 // ── Setup / Teardown ─────────────────────────────────────────────────────────
@@ -78,15 +78,20 @@ describe("Admin Audit API – GET /api/admin/audit", () => {
       const res = await getAudit(
         makeRequest("http://localhost:3000/api/admin/audit"),
       );
-      expect(mockRequireRole).toHaveBeenCalled();
+      expect(mockValidate).toHaveBeenCalled();
       expect(res.status).toBe(401);
     });
 
-    it("should call requireRole with 'admin'", async () => {
-      unauthenticated();
-      const req = makeRequest("http://localhost:3000/api/admin/audit");
-      await getAudit(req);
-      expect(mockRequireRole).toHaveBeenCalledWith(req, "admin");
+    it("should return 403 when authenticated user is not admin", async () => {
+      mockValidate.mockResolvedValue({
+        valid: true,
+        user: { id: "user-1", email: "user@example.com" },
+      });
+      mockResolveRole.mockResolvedValue("user");
+      const res = await getAudit(
+        makeRequest("http://localhost:3000/api/admin/audit"),
+      );
+      expect(res.status).toBe(403);
     });
   });
 
@@ -233,7 +238,36 @@ describe("Admin Audit API – GET /api/admin/audit", () => {
 //  AUDIT – POST /api/admin/audit
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Admin Audit API – POST /api/admin/audit", () => {
-  // NOTE: POST on audit does NOT check auth – it's meant to be called internally
+  // POST is now wrapped in withRole("admin") (TASK-AUTH-03a, FND-050).
+  beforeEach(() => {
+    authenticatedAdmin();
+  });
+
+  describe("Authentication", () => {
+    it("should return 401 when user is not authenticated", async () => {
+      unauthenticated();
+      const req = makePostRequest("http://localhost:3000/api/admin/audit", {
+        action: "login",
+        userId: "u1",
+      });
+      const res = await postAudit(req);
+      expect(res.status).toBe(401);
+    });
+
+    it("should return 403 when authenticated user is not admin", async () => {
+      mockValidate.mockResolvedValue({
+        valid: true,
+        user: { id: "user-1", email: "user@example.com" },
+      });
+      mockResolveRole.mockResolvedValue("user");
+      const req = makePostRequest("http://localhost:3000/api/admin/audit", {
+        action: "login",
+        userId: "u1",
+      });
+      const res = await postAudit(req);
+      expect(res.status).toBe(403);
+    });
+  });
 
   describe("Successful log creation", () => {
     it("should insert an audit log entry and return it", async () => {
@@ -353,6 +387,18 @@ describe("Admin Logs API – GET /api/admin/logs", () => {
         makeRequest("http://localhost:3000/api/admin/logs"),
       );
       expect(res.status).toBe(401);
+    });
+
+    it("should return 403 when authenticated user is not admin", async () => {
+      mockValidate.mockResolvedValue({
+        valid: true,
+        user: { id: "user-1", email: "user@example.com" },
+      });
+      mockResolveRole.mockResolvedValue("user");
+      const res = await getLogs(
+        makeRequest("http://localhost:3000/api/admin/logs"),
+      );
+      expect(res.status).toBe(403);
     });
   });
 

@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import {
-  requireRole,
-  createAuthResponse,
-} from "@/lib/security/auth-middleware";
+import { withRole } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
 function getSupabaseClient() {
   return createClient(
@@ -51,14 +49,11 @@ const AdminUserUpdateSchema = z.object({
     .strict(),
 });
 
-export async function GET(request: NextRequest) {
-  const authResult = await requireRole(request, "admin");
-  if (!authResult.authenticated || !authResult.user) {
-    return createAuthResponse(authResult);
-  }
-
-  const supabase = getSupabaseClient();
-  try {
+export const GET = withRole(
+  "admin",
+  async (request: NextRequest, _user: AuthedUser) => {
+    const supabase = getSupabaseClient();
+    try {
     const { searchParams } = new URL(request.url);
     const params = AdminUserListSchema.parse({
       page: searchParams.get("page") ?? undefined,
@@ -101,28 +96,26 @@ export async function GET(request: NextRequest) {
       limit: params.limit,
       totalPages: Math.ceil((count || 0) / params.limit),
     });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return NextResponse.json(
+          { error: "Invalid query parameters", details: error.issues },
+          { status: 400 },
+        );
+      }
       return NextResponse.json(
-        { error: "Invalid query parameters", details: error.issues },
-        { status: 400 },
+        { error: "Failed to fetch users" },
+        { status: 500 },
       );
     }
-    return NextResponse.json(
-      { error: "Failed to fetch users" },
-      { status: 500 },
-    );
-  }
-}
+  },
+);
 
-export async function PATCH(request: NextRequest) {
-  const authResult = await requireRole(request, "admin");
-  if (!authResult.authenticated || !authResult.user) {
-    return createAuthResponse(authResult);
-  }
-
-  const supabase = getSupabaseClient();
-  try {
+export const PATCH = withRole(
+  "admin",
+  async (request: NextRequest, _user: AuthedUser) => {
+    const supabase = getSupabaseClient();
+    try {
     const body = await request.json();
     const { userId, updates } = AdminUserUpdateSchema.parse(body);
 
@@ -137,16 +130,17 @@ export async function PATCH(request: NextRequest) {
     if (error) throw error;
 
     return NextResponse.json({ user: data });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return NextResponse.json(
+          { error: "Invalid request body", details: error.issues },
+          { status: 400 },
+        );
+      }
       return NextResponse.json(
-        { error: "Invalid request body", details: error.issues },
-        { status: 400 },
+        { error: "Failed to update user" },
+        { status: 500 },
       );
     }
-    return NextResponse.json(
-      { error: "Failed to update user" },
-      { status: 500 },
-    );
-  }
-}
+  },
+);

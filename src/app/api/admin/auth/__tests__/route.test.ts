@@ -6,12 +6,18 @@
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
-const mockRequireRole = jest.fn();
-const mockCreateAuthResponse = jest.fn();
+// Route wrapped in withRole("admin") (TASK-AUTH-03a); guard resolves auth via
+// jwtValidation.validateFromHeaders + resolveRoleFromDb.
+const mockValidate = jest.fn();
+const mockResolveRole = jest.fn();
 
-jest.mock("@/lib/security/auth-middleware", () => ({
-  requireRole: (...args: any[]) => mockRequireRole(...args),
-  createAuthResponse: (...args: any[]) => mockCreateAuthResponse(...args),
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: any[]) => mockValidate(...args),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: (...args: any[]) => mockResolveRole(...args),
 }));
 
 const mockCookies = jest.fn();
@@ -51,8 +57,12 @@ beforeEach(() => {
   process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
 
-  // Default: auth passes
-  mockRequireRole.mockResolvedValue({ authenticated: true, user: { role: "admin" } });
+  // Default: auth passes (admin)
+  mockValidate.mockResolvedValue({
+    valid: true,
+    user: { id: "user-1", email: "admin@fynvita.com" },
+  });
+  mockResolveRole.mockResolvedValue("admin");
 
   // Default: cookies return access token
   mockCookies.mockReturnValue({
@@ -93,18 +103,24 @@ afterAll(() => {
 //  GET /api/admin/auth
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Admin Auth API – GET /api/admin/auth", () => {
-  it("should return auth response when requireRole fails", async () => {
-    mockRequireRole.mockResolvedValue({
-      authenticated: false,
-      error: "Forbidden",
-    });
-    mockCreateAuthResponse.mockReturnValue(
-      new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 }),
-    );
+  describe("negative-auth", () => {
+    it("should return 401 when the request is not authenticated", async () => {
+      mockValidate.mockResolvedValue({ valid: false, user: null });
 
-    const res = await GET(makeRequest());
-    expect(res.status).toBe(403);
-    expect(mockCreateAuthResponse).toHaveBeenCalled();
+      const res = await GET(makeRequest());
+      expect(res.status).toBe(401);
+    });
+
+    it("should return 403 when the authenticated user is not an admin", async () => {
+      mockValidate.mockResolvedValue({
+        valid: true,
+        user: { id: "user-1", email: "user@example.com" },
+      });
+      mockResolveRole.mockResolvedValue("user");
+
+      const res = await GET(makeRequest());
+      expect(res.status).toBe(403);
+    });
   });
 
   it("should return 500 when env vars are missing", async () => {

@@ -6,11 +6,17 @@
 // ── Mocks ────────────────────────────────────────────────────────────────────
 // Must be defined BEFORE imports
 
-const mockRequireRole = jest.fn();
-const mockCreateAuthResponse = jest.fn();
-jest.mock("@/lib/security/auth-middleware", () => ({
-  requireRole: mockRequireRole,
-  createAuthResponse: mockCreateAuthResponse,
+// Route wrapped in withRole("admin") (TASK-AUTH-03a); guard resolves auth via
+// jwtValidation.validateFromHeaders + resolveRoleFromDb.
+const mockValidate = jest.fn();
+const mockResolveRole = jest.fn();
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: any[]) => mockValidate(...args),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: (...args: any[]) => mockResolveRole(...args),
 }));
 
 const mockGetUser = jest.fn();
@@ -57,20 +63,23 @@ function makeRequest(
 }
 
 function authenticatedAdmin() {
-  mockRequireRole.mockResolvedValue({
-    authenticated: true,
-    user: { id: "admin-1", email: "admin@fynvita.com", role: "admin" },
+  mockValidate.mockResolvedValue({
+    valid: true,
+    user: { id: "admin-1", email: "admin@fynvita.com" },
   });
+  mockResolveRole.mockResolvedValue("admin");
 }
 
-function unauthenticated(errorMsg = "Not authenticated") {
-  mockRequireRole.mockResolvedValue({
-    authenticated: false,
-    error: errorMsg,
+function unauthenticated() {
+  mockValidate.mockResolvedValue({ valid: false, user: null });
+}
+
+function authenticatedNonAdmin() {
+  mockValidate.mockResolvedValue({
+    valid: true,
+    user: { id: "user-1", email: "user@example.com" },
   });
-  mockCreateAuthResponse.mockReturnValue(
-    new Response(JSON.stringify({ error: errorMsg }), { status: 401 }),
-  );
+  mockResolveRole.mockResolvedValue("user");
 }
 
 function setupSupabaseClient(
@@ -108,20 +117,18 @@ afterEach(() => {
 
 // ── Tests ────────────────────────────────────────────────────────────────────
 describe("Admin Auth API – GET /api/admin/auth", () => {
-  describe("Authentication gate (requireRole)", () => {
+  describe("Authentication gate (withRole)", () => {
     it("should return 401 when user is not authenticated", async () => {
       unauthenticated();
       const res = await GET(makeRequest());
-      expect(mockRequireRole).toHaveBeenCalled();
-      expect(mockCreateAuthResponse).toHaveBeenCalled();
+      expect(mockValidate).toHaveBeenCalled();
       expect(res.status).toBe(401);
     });
 
-    it("should call requireRole with 'admin'", async () => {
-      unauthenticated();
-      const req = makeRequest();
-      await GET(req);
-      expect(mockRequireRole).toHaveBeenCalledWith(req, "admin");
+    it("should return 403 when authenticated user is not admin", async () => {
+      authenticatedNonAdmin();
+      const res = await GET(makeRequest());
+      expect(res.status).toBe(403);
     });
   });
 

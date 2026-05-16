@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import {
-  requireRole,
-  createAuthResponse,
-} from "@/lib/security/auth-middleware";
+import { withRole } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
 function getSupabaseClient() {
   return createClient(
@@ -12,15 +10,11 @@ function getSupabaseClient() {
   );
 }
 
-export async function GET(request: NextRequest) {
-  // SECURITY: Require admin role for platform metrics
-  const authResult = await requireRole(request, "admin");
-  if (!authResult.authenticated || !authResult.user) {
-    return createAuthResponse(authResult);
-  }
-
-  const supabase = getSupabaseClient();
-  try {
+export const GET = withRole(
+  "admin",
+  async (request: NextRequest, _user: AuthedUser) => {
+    const supabase = getSupabaseClient();
+    try {
     const { searchParams } = new URL(request.url);
     const period = searchParams.get("period") || "30d";
 
@@ -114,14 +108,15 @@ export async function GET(request: NextRequest) {
         ),
       },
     });
-  } catch (_error) {
-    // Error silently caught
-    return NextResponse.json(
-      { error: "Failed to fetch metrics" },
-      { status: 500 },
-    );
-  }
-}
+    } catch (_error) {
+      // Error silently caught
+      return NextResponse.json(
+        { error: "Failed to fetch metrics" },
+        { status: 500 },
+      );
+    }
+  },
+);
 
 interface TrendDataItem {
   [key: string]: string | number | undefined;

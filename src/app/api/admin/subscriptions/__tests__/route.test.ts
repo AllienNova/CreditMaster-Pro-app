@@ -6,12 +6,18 @@
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
-const mockRequireRole = jest.fn();
-const mockCreateAuthResponse = jest.fn();
+// Routes wrapped in withRole("admin") (TASK-AUTH-03a); guard resolves auth via
+// jwtValidation.validateFromHeaders + resolveRoleFromDb.
+const mockValidate = jest.fn();
+const mockResolveRole = jest.fn();
 
-jest.mock("@/lib/security/auth-middleware", () => ({
-  requireRole: (...args: any[]) => mockRequireRole(...args),
-  createAuthResponse: (...args: any[]) => mockCreateAuthResponse(...args),
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: any[]) => mockValidate(...args),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: (...args: any[]) => mockResolveRole(...args),
 }));
 
 const mockSelect = jest.fn();
@@ -58,11 +64,12 @@ beforeEach(() => {
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
   process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-key";
 
-  // Default: auth passes
-  mockRequireRole.mockResolvedValue({
-    authenticated: true,
-    user: { role: "admin" },
+  // Default: auth passes (admin)
+  mockValidate.mockResolvedValue({
+    valid: true,
+    user: { id: "admin-1", email: "admin@fynvita.com" },
   });
+  mockResolveRole.mockResolvedValue("admin");
 });
 
 afterAll(() => {
@@ -73,18 +80,24 @@ afterAll(() => {
 //  GET /api/admin/subscriptions
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Admin Subscriptions API – GET", () => {
-  it("should return auth response when requireRole fails", async () => {
-    mockRequireRole.mockResolvedValue({
-      authenticated: false,
-      error: "Forbidden",
-    });
-    mockCreateAuthResponse.mockReturnValue(
-      new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 }),
-    );
+  describe("negative-auth", () => {
+    it("should return 401 when the request is not authenticated", async () => {
+      mockValidate.mockResolvedValue({ valid: false, user: null });
 
-    const res = await GET(makeRequest());
-    expect(res.status).toBe(403);
-    expect(mockCreateAuthResponse).toHaveBeenCalled();
+      const res = await GET(makeRequest());
+      expect(res.status).toBe(401);
+    });
+
+    it("should return 403 when the authenticated user is not an admin", async () => {
+      mockValidate.mockResolvedValue({
+        valid: true,
+        user: { id: "user-1", email: "user@example.com" },
+      });
+      mockResolveRole.mockResolvedValue("user");
+
+      const res = await GET(makeRequest());
+      expect(res.status).toBe(403);
+    });
   });
 
   it("should return mock data when env vars are missing", async () => {
@@ -167,22 +180,36 @@ describe("Admin Subscriptions API – GET", () => {
 //  DELETE /api/admin/subscriptions
 // ═══════════════════════════════════════════════════════════════════════════════
 describe("Admin Subscriptions API – DELETE", () => {
-  it("should parse body and proceed without auth check", async () => {
-    // DELETE handler does not call requireRole — verify it still works
-    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
-    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+  describe("negative-auth", () => {
+    it("should return 401 when the request is not authenticated", async () => {
+      mockValidate.mockResolvedValue({ valid: false, user: null });
 
-    const req = makeRequest(undefined, {
-      method: "DELETE",
-      body: { subscriptionId: "sub-1" },
+      const req = makeRequest(undefined, {
+        method: "DELETE",
+        body: { subscriptionId: "sub-1" },
+      });
+      req.json = jest.fn().mockResolvedValue({ subscriptionId: "sub-1" });
+
+      const res = await DELETE(req);
+      expect(res.status).toBe(401);
     });
-    req.json = jest.fn().mockResolvedValue({ subscriptionId: "sub-1" });
 
-    const res = await DELETE(req);
-    const body = await res.json();
+    it("should return 403 when the authenticated user is not an admin", async () => {
+      mockValidate.mockResolvedValue({
+        valid: true,
+        user: { id: "user-1", email: "user@example.com" },
+      });
+      mockResolveRole.mockResolvedValue("user");
 
-    expect(res.status).toBe(200);
-    expect(body.success).toBe(true);
+      const req = makeRequest(undefined, {
+        method: "DELETE",
+        body: { subscriptionId: "sub-1" },
+      });
+      req.json = jest.fn().mockResolvedValue({ subscriptionId: "sub-1" });
+
+      const res = await DELETE(req);
+      expect(res.status).toBe(403);
+    });
   });
 
   it("should return 400 when subscriptionId is missing", async () => {

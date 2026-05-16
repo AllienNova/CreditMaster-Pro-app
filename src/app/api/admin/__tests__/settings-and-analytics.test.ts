@@ -3,11 +3,18 @@
  */
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
-const mockRequireRole = jest.fn();
-const mockCreateAuthResponse = jest.fn();
-jest.mock("@/lib/security/auth-middleware", () => ({
-  requireRole: mockRequireRole,
-  createAuthResponse: mockCreateAuthResponse,
+// Routes are wrapped in withRole("admin") (TASK-AUTH-03a). The guard resolves
+// auth via jwtValidation.validateFromHeaders + resolveRoleFromDb, so the test
+// mocks that path rather than the removed requireRole middleware.
+const mockValidate = jest.fn();
+const mockResolveRole = jest.fn();
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: unknown[]) => mockValidate(...args),
+  },
+}));
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: (...args: unknown[]) => mockResolveRole(...args),
 }));
 
 // Import AFTER mocks are registered
@@ -32,21 +39,15 @@ function makeRequest(
 }
 
 function authenticatedAdmin() {
-  mockRequireRole.mockResolvedValue({
-    authenticated: true,
-    user: { id: "admin-1", email: "admin@fynvita.com", role: "admin" },
+  mockValidate.mockResolvedValue({
+    valid: true,
+    user: { id: "admin-1", email: "admin@fynvita.com" },
   });
+  mockResolveRole.mockResolvedValue("admin");
 }
 
-function unauthenticated(errorMsg = "Not authenticated") {
-  mockRequireRole.mockResolvedValue({
-    authenticated: false,
-    error: errorMsg,
-  });
-  mockCreateAuthResponse.mockReturnValue({
-    status: 401,
-    json: async () => ({ error: errorMsg }),
-  });
+function unauthenticated() {
+  mockValidate.mockResolvedValue({ valid: false, user: null });
 }
 
 // ── Setup / Teardown ─────────────────────────────────────────────────────────
@@ -64,16 +65,19 @@ describe("Admin Settings API – GET /api/admin/settings", () => {
       const res = await getSettings(
         makeRequest("http://localhost:3000/api/admin/settings"),
       );
-      expect(mockRequireRole).toHaveBeenCalled();
-      expect(mockCreateAuthResponse).toHaveBeenCalled();
+      expect(mockValidate).toHaveBeenCalled();
       expect(res.status).toBe(401);
     });
 
-    it("should call requireRole with 'admin' role", async () => {
-      unauthenticated();
+    it("should return 403 when authenticated user is not admin", async () => {
+      mockValidate.mockResolvedValue({
+        valid: true,
+        user: { id: "user-1", email: "user@example.com" },
+      });
+      mockResolveRole.mockResolvedValue("user");
       const req = makeRequest("http://localhost:3000/api/admin/settings");
-      await getSettings(req);
-      expect(mockRequireRole).toHaveBeenCalledWith(req, "admin");
+      const res = await getSettings(req);
+      expect(res.status).toBe(403);
     });
   });
 

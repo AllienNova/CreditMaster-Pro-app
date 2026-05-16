@@ -2,16 +2,16 @@ import type { NextRequest } from "next/server";
 import { GET } from "../route";
 
 // Mock dependencies
+// Route wrapped in withRole("admin") (TASK-AUTH-03a); guard resolves auth via
+// jwtValidation.validateFromHeaders + resolveRoleFromDb.
 jest.mock("@/lib/auth/jwt-validation", () => ({
   jwtValidation: {
     validateFromHeaders: jest.fn(),
   },
 }));
 
-jest.mock("@/lib/auth/rbac", () => ({
-  rbac: {
-    hasPermission: jest.fn(),
-  },
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: jest.fn(),
 }));
 
 jest.mock("@/lib/affiliate/revenue-tracker", () => ({
@@ -57,12 +57,12 @@ jest.mock("@/lib/affiliate/compliance-checker", () => ({
 }));
 
 import { jwtValidation } from "@/lib/auth/jwt-validation";
-import { rbac } from "@/lib/auth/rbac";
+import { resolveRoleFromDb } from "@/lib/auth/resolve-role";
 import { revenueTracker } from "@/lib/affiliate/revenue-tracker";
 import { revenueDashboardService } from "@/lib/affiliate/compliance-checker";
 
 const mockJwt = jwtValidation.validateFromHeaders as jest.Mock;
-const mockRbac = rbac.hasPermission as jest.Mock;
+const mockResolveRole = resolveRoleFromDb as jest.Mock;
 
 function createMockRequest(url: string) {
   const parsedUrl = new URL(url);
@@ -77,46 +77,48 @@ function createMockRequest(url: string) {
 
 const adminUser = {
   valid: true,
-  user: { id: "admin-1", email: "admin@example.com", role: "admin" },
+  user: { id: "admin-1", email: "admin@example.com" },
 };
 
 const regularUser = {
   valid: true,
-  user: { id: "user-1", email: "user@example.com", role: "user" },
+  user: { id: "user-1", email: "user@example.com" },
 };
 
 describe("GET /api/admin/affiliate/revenue", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockJwt.mockResolvedValue(adminUser);
-    mockRbac.mockReturnValue(true);
+    mockResolveRole.mockResolvedValue("admin");
   });
 
-  it("returns 401 when not authenticated", async () => {
-    mockJwt.mockResolvedValue({ valid: false, user: null });
+  describe("negative-auth", () => {
+    it("returns 401 when not authenticated", async () => {
+      mockJwt.mockResolvedValue({ valid: false, user: null });
 
-    const req = createMockRequest(
-      "http://localhost:3000/api/admin/affiliate/revenue",
-    );
-    const res = await GET(req);
-    const json = await res.json();
+      const req = createMockRequest(
+        "http://localhost:3000/api/admin/affiliate/revenue",
+      );
+      const res = await GET(req);
+      const json = await res.json();
 
-    expect(res.status).toBe(401);
-    expect(json.error).toBe("Unauthorized");
-  });
+      expect(res.status).toBe(401);
+      expect(json.error).toBe("Unauthorized");
+    });
 
-  it("returns 403 when user lacks admin:analytics permission", async () => {
-    mockJwt.mockResolvedValue(regularUser);
-    mockRbac.mockReturnValue(false);
+    it("returns 403 when authenticated user is not an admin", async () => {
+      mockJwt.mockResolvedValue(regularUser);
+      mockResolveRole.mockResolvedValue("user");
 
-    const req = createMockRequest(
-      "http://localhost:3000/api/admin/affiliate/revenue",
-    );
-    const res = await GET(req);
-    const json = await res.json();
+      const req = createMockRequest(
+        "http://localhost:3000/api/admin/affiliate/revenue",
+      );
+      const res = await GET(req);
+      const json = await res.json();
 
-    expect(res.status).toBe(403);
-    expect(json.error).toBe("Forbidden");
+      expect(res.status).toBe(403);
+      expect(json.error).toBe("Forbidden");
+    });
   });
 
   it("returns all views by default", async () => {

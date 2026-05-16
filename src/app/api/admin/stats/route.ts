@@ -7,19 +7,13 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import {
-  requireRole,
-  createAuthResponse,
-} from "@/lib/security/auth-middleware";
+import { withRole } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
-export async function GET(request: NextRequest) {
-  // SECURITY: Require admin role for platform stats
-  const authResult = await requireRole(request, "admin");
-  if (!authResult.authenticated || !authResult.user) {
-    return createAuthResponse(authResult);
-  }
-
-  try {
+export const GET = withRole(
+  "admin",
+  async (_request: NextRequest, _user: AuthedUser) => {
+    try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -106,15 +100,16 @@ export async function GET(request: NextRequest) {
       monthlyRevenue,
       userGrowth: Math.round(userGrowth * 10) / 10,
     });
-  } catch (_error) {
-    // Error silently caught - return mock data on error
-    return NextResponse.json({
-      totalUsers: 1247,
-      activeSubscriptions: 892,
-      totalDisputes: 3456,
-      resolvedDisputes: 2891,
-      monthlyRevenue: 45670,
-      userGrowth: 12.5,
-    });
-  }
-}
+    } catch (_error) {
+      // Error silently caught - return mock data on error
+      return NextResponse.json({
+        totalUsers: 1247,
+        activeSubscriptions: 892,
+        totalDisputes: 3456,
+        resolvedDisputes: 2891,
+        monthlyRevenue: 45670,
+        userGrowth: 12.5,
+      });
+    }
+  },
+);

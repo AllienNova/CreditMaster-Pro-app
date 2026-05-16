@@ -6,19 +6,13 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import {
-  requireRole,
-  createAuthResponse,
-} from "@/lib/security/auth-middleware";
+import { withRole } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 
-export async function GET(request: NextRequest) {
-  // SECURITY: Require admin role for analytics data
-  const authResult = await requireRole(request, "admin");
-  if (!authResult.authenticated || !authResult.user) {
-    return createAuthResponse(authResult);
-  }
-
-  try {
+export const GET = withRole(
+  "admin",
+  async (request: NextRequest, _user: AuthedUser) => {
+    try {
     const searchParams = request.nextUrl.searchParams;
     const range = searchParams.get("range") || "30d";
 
@@ -111,11 +105,12 @@ export async function GET(request: NextRequest) {
       topFeatures,
       timeRange: range,
     });
-  } catch (_error) {
-    // Error silently caught
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
-  }
-}
+    } catch (_error) {
+      // Error silently caught
+      return NextResponse.json(
+        { error: "Internal server error" },
+        { status: 500 },
+      );
+    }
+  },
+);
