@@ -15,7 +15,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import { db } from "@/lib/credit-repair/db";
 import { auditLogger } from "@/lib/security/audit-logging";
 
@@ -23,16 +24,8 @@ import { auditLogger } from "@/lib/security/audit-logging";
  * GET /api/credit-repair/cards
  * Get all credit cards for authenticated user
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = validation.user;
-
     // 2. Parse query parameters
     const { searchParams } = new URL(request.url);
     const minUtilization = searchParams.get("minUtilization");
@@ -98,22 +91,14 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * POST /api/credit-repair/cards
  * Add new credit card
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = validation.user;
-
     // 2. Parse and validate input
     const body = await request.json();
     const {
@@ -218,4 +203,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

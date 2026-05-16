@@ -16,7 +16,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import { db } from "@/lib/credit-repair/db";
 import { auditLogger } from "@/lib/security/audit-logging";
 
@@ -33,19 +34,9 @@ interface CardUpdatePayload {
  * GET /api/credit-repair/cards/[id]
  * Get single credit card by ID
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = validation.user;
-    const { id: cardId } = await params;
+    const cardId = request.nextUrl.pathname.split("/").pop() as string;
 
     // 2. Get credit card from database
     const card = await db.creditCards.getCreditCard(cardId, user.id);
@@ -79,25 +70,15 @@ export async function GET(
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * PUT /api/credit-repair/cards/[id]
  * Update credit card (utilization is auto-calculated)
  */
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export const PUT = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = validation.user;
-    const { id: cardId } = await params;
+    const cardId = request.nextUrl.pathname.split("/").pop() as string;
 
     // 2. Parse and validate input
     const body = await request.json();
@@ -186,25 +167,16 @@ export async function PUT(
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * DELETE /api/credit-repair/cards/[id]
  * Delete credit card
  */
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export const DELETE = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = validation.user;
-    const { id: cardId } = await params;
+    const cardId = request.nextUrl.pathname.split("/").pop() as string;
 
     // 2. Delete credit card from database
     const deleted = await db.creditCards.deleteCreditCard(cardId, user.id);
@@ -238,4 +210,4 @@ export async function DELETE(
       { status: 500 },
     );
   }
-}
+});

@@ -4,7 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import { db } from "@/lib/credit-repair/db";
 import { auditLogger } from "@/lib/security/audit-logging";
 
@@ -14,15 +15,8 @@ const VALID_BUREAUS = ["experian", "equifax", "transunion"];
  * GET /api/credit-repair/reports
  * Get credit reports for authenticated user
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Validate authentication
-    const authResult = await jwtValidation.validateFromHeaders(request);
-    if (!authResult.valid || !authResult.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = authResult.user;
     const { searchParams } = request.nextUrl;
     const bureau = searchParams.get("bureau");
     const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 100);
@@ -61,7 +55,7 @@ export async function GET(request: NextRequest) {
 
     // Log access
     auditLogger.logAIInteraction({
-      userId: authResult.user.id,
+      userId: user.id,
       action: "credit_reports_viewed",
       input: { bureau },
       output: { count: reports.length },
@@ -87,20 +81,14 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * POST /api/credit-repair/reports
  * Upload a new credit report
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // Validate authentication
-    const authResult = await jwtValidation.validateFromHeaders(request);
-    if (!authResult.valid || !authResult.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await request.json();
     const { bureau, reportDate, score, reportData } = body;
 
@@ -127,7 +115,7 @@ export async function POST(request: NextRequest) {
 
     // Create the report
     const report = await db.creditReports.createCreditReport({
-      userId: authResult.user.id,
+      userId: user.id,
       bureau,
       reportDate: new Date(reportDate),
       score,
@@ -136,7 +124,7 @@ export async function POST(request: NextRequest) {
 
     // Log upload
     auditLogger.logAIInteraction({
-      userId: authResult.user.id,
+      userId: user.id,
       action: "credit_report_uploaded",
       input: { bureau, score },
       output: { reportId: report.id },
@@ -157,4 +145,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

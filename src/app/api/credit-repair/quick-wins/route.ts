@@ -11,7 +11,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import { creditRepairService } from "@/lib/credit-repair";
 import { db } from "@/lib/credit-repair/db";
 import { auditLogger } from "@/lib/security/audit-logging";
@@ -31,16 +32,9 @@ const mapQuickWinToActionType = (id: string): ActionType =>
  * GET /api/credit-repair/quick-wins
  * Get 30-day quick win actions from database or calculate new ones
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(
+  async (_request: NextRequest, user: AuthedUser) => {
   try {
-    // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = validation.user;
-
     // 2. Get quick wins from service
     const quickWins = await creditRepairService.getQuickWins(user.id);
 
@@ -111,4 +105,4 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

@@ -11,6 +11,9 @@ import { NextRequest } from "next/server";
 
 // Mock dependencies BEFORE importing modules that use them
 jest.mock("@/lib/auth/jwt-validation");
+jest.mock("@/lib/auth/resolve-role", () => ({
+  resolveRoleFromDb: jest.fn().mockResolvedValue("user"),
+}));
 jest.mock("@/lib/credit-repair/db", () => ({
   db: {
     negotiations: {
@@ -63,7 +66,6 @@ describe("/api/credit-repair/negotiate/[id]", () => {
     createdAt: new Date(),
     updatedAt: new Date(),
   };
-  const mockParams = { params: Promise.resolve({ id: "negotiation-123" }) };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -86,7 +88,7 @@ describe("/api/credit-repair/negotiate/[id]", () => {
       const request = createMockRequest(
         "http://localhost:3000/api/credit-repair/negotiate/negotiation-123",
       );
-      const response = await GET(request, mockParams);
+      const response = await GET(request);
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -104,7 +106,7 @@ describe("/api/credit-repair/negotiate/[id]", () => {
       const request = createMockRequest(
         "http://localhost:3000/api/credit-repair/negotiate/negotiation-123",
       );
-      const response = await GET(request, mockParams);
+      const response = await GET(request);
       const data = await response.json();
 
       expect(response.status).toBe(404);
@@ -120,7 +122,7 @@ describe("/api/credit-repair/negotiate/[id]", () => {
       const request = createMockRequest(
         "http://localhost:3000/api/credit-repair/negotiate/negotiation-123",
       );
-      const response = await GET(request, mockParams);
+      const response = await GET(request);
       const data = await response.json();
 
       expect(response.status).toBe(401);
@@ -154,7 +156,7 @@ describe("/api/credit-repair/negotiate/[id]", () => {
           body: updates,
         },
       );
-      const response = await PUT(request, mockParams);
+      const response = await PUT(request);
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -174,7 +176,7 @@ describe("/api/credit-repair/negotiate/[id]", () => {
           body: invalidUpdates,
         },
       );
-      const response = await PUT(request, mockParams);
+      const response = await PUT(request);
       const data = await response.json();
 
       expect(response.status).toBe(400);
@@ -196,7 +198,7 @@ describe("/api/credit-repair/negotiate/[id]", () => {
           body: updates,
         },
       );
-      const response = await PUT(request, mockParams);
+      const response = await PUT(request);
       const data = await response.json();
 
       expect(response.status).toBe(401);
@@ -217,7 +219,7 @@ describe("/api/credit-repair/negotiate/[id]", () => {
           body: updates,
         },
       );
-      const response = await PUT(request, mockParams);
+      const response = await PUT(request);
       const data = await response.json();
 
       expect(response.status).toBe(500);
@@ -242,7 +244,7 @@ describe("/api/credit-repair/negotiate/[id]", () => {
           method: "DELETE",
         },
       );
-      const response = await DELETE(request, mockParams);
+      const response = await DELETE(request);
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -263,7 +265,7 @@ describe("/api/credit-repair/negotiate/[id]", () => {
           method: "DELETE",
         },
       );
-      const response = await DELETE(request, mockParams);
+      const response = await DELETE(request);
       const data = await response.json();
 
       expect(response.status).toBe(404);
@@ -282,11 +284,44 @@ describe("/api/credit-repair/negotiate/[id]", () => {
           method: "DELETE",
         },
       );
-      const response = await DELETE(request, mockParams);
+      const response = await DELETE(request);
       const data = await response.json();
 
       expect(response.status).toBe(401);
       expect(data.error).toBe("Unauthorized");
     });
   });
+});
+
+describe("negative-auth – /api/credit-repair/negotiate/[id] (withAuth)", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+    it("GET returns 401 when the request is not authenticated (TASK-AUTH-03c)", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+      const res = await GET(createMockRequest("http://localhost:3000/api/credit-repair/negotiate/negotiation-123"));
+      expect(res.status).toBe(401);
+    });
+
+    it("PUT returns 401 when the request is not authenticated (TASK-AUTH-03c)", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+      const res = await PUT(createMockRequest("http://localhost:3000/api/credit-repair/negotiate/negotiation-123", { method: "PUT" }));
+      expect(res.status).toBe(401);
+    });
+
+    it("DELETE returns 401 when the request is not authenticated (TASK-AUTH-03c)", async () => {
+      (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+        valid: false,
+        user: null,
+      });
+      const res = await DELETE(createMockRequest("http://localhost:3000/api/credit-repair/negotiate/negotiation-123", { method: "DELETE" }));
+      expect(res.status).toBe(401);
+    });
 });

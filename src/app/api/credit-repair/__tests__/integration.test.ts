@@ -233,9 +233,7 @@ describe("Credit Repair API - Integration Tests", () => {
       const getRequest = createMockRequest(
         `http://localhost:3000/api/credit-repair/disputes/${disputeId}`,
       );
-      const getResponse = await getDispute(getRequest, {
-        params: Promise.resolve({ id: disputeId }),
-      });
+      const getResponse = await getDispute(getRequest);
       const getData = await getResponse.json();
 
       expect(getResponse.status).toBe(200);
@@ -256,9 +254,7 @@ describe("Credit Repair API - Integration Tests", () => {
           body: { status: "sent", version: 1 },
         },
       );
-      const updateResponse = await updateDispute(updateRequest, {
-        params: Promise.resolve({ id: disputeId }),
-      });
+      const updateResponse = await updateDispute(updateRequest);
       const updateData = await updateResponse.json();
 
       expect(updateResponse.status).toBe(200);
@@ -276,9 +272,7 @@ describe("Credit Repair API - Integration Tests", () => {
           method: "DELETE",
         },
       );
-      const deleteResponse = await deleteDispute(deleteRequest, {
-        params: Promise.resolve({ id: disputeId }),
-      });
+      const deleteResponse = await deleteDispute(deleteRequest);
       const deleteData = await deleteResponse.json();
 
       expect(deleteResponse.status).toBe(200);
@@ -319,9 +313,7 @@ describe("Credit Repair API - Integration Tests", () => {
           body: { status: "sent", version: 1 }, // Old version
         },
       );
-      const updateResponse = await updateDispute(updateRequest, {
-        params: Promise.resolve({ id: disputeId }),
-      });
+      const updateResponse = await updateDispute(updateRequest);
       const updateData = await updateResponse.json();
 
       expect(updateResponse.status).toBe(409);
@@ -394,9 +386,7 @@ describe("Credit Repair API - Integration Tests", () => {
           body: { currentBalance: 1000, version: 1 },
         },
       );
-      const updateResponse = await updateCard(updateRequest, {
-        params: Promise.resolve({ id: cardId }),
-      });
+      const updateResponse = await updateCard(updateRequest);
       const updateData = await updateResponse.json();
 
       expect(updateResponse.status).toBe(200);
@@ -436,9 +426,7 @@ describe("Credit Repair API - Integration Tests", () => {
           method: "DELETE",
         },
       );
-      const deleteResponse = await deleteCard(deleteRequest, {
-        params: Promise.resolve({ id: cardId }),
-      });
+      const deleteResponse = await deleteCard(deleteRequest);
       const deleteData = await deleteResponse.json();
 
       expect(deleteResponse.status).toBe(200);
@@ -507,9 +495,7 @@ describe("Credit Repair API - Integration Tests", () => {
           body: { status: "sent", version: 1 },
         },
       );
-      const updateResponse = await updateGoodwill(updateRequest, {
-        params: Promise.resolve({ id: goodwillId }),
-      });
+      const updateResponse = await updateGoodwill(updateRequest);
       const updateData = await updateResponse.json();
 
       expect(updateResponse.status).toBe(200);
@@ -585,9 +571,7 @@ describe("Credit Repair API - Integration Tests", () => {
           body: { status: "negotiating", settlementAmount: 3000, version: 1 },
         },
       );
-      const updateResponse = await updateNegotiation(updateRequest, {
-        params: Promise.resolve({ id: negotiationId }),
-      });
+      const updateResponse = await updateNegotiation(updateRequest);
       const updateData = await updateResponse.json();
 
       expect(updateResponse.status).toBe(200);
@@ -615,9 +599,7 @@ describe("Credit Repair API - Integration Tests", () => {
           body: { status: "accepted", version: 2 },
         },
       );
-      const acceptResponse = await updateNegotiation(acceptRequest, {
-        params: Promise.resolve({ id: negotiationId }),
-      });
+      const acceptResponse = await updateNegotiation(acceptRequest);
       const acceptData = await acceptResponse.json();
 
       expect(acceptResponse.status).toBe(200);
@@ -836,9 +818,7 @@ describe("Credit Repair API - Integration Tests", () => {
         version: 2,
       });
 
-      const response1 = await updateDispute(request1, {
-        params: Promise.resolve({ id: disputeId }),
-      });
+      const response1 = await updateDispute(request1);
       const data1 = await response1.json();
 
       expect(response1.status).toBe(200);
@@ -850,9 +830,7 @@ describe("Credit Repair API - Integration Tests", () => {
           "Dispute has been modified by another process. Please refresh and try again.",
         ),
       );
-      const response2 = await updateDispute(request2, {
-        params: Promise.resolve({ id: disputeId }),
-      });
+      const response2 = await updateDispute(request2);
       const data2 = await response2.json();
 
       expect(response2.status).toBe(409);

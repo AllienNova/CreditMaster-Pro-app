@@ -12,7 +12,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { jwtValidation } from "@/lib/auth/jwt-validation";
+import { withAuth } from "@/lib/auth/api-guard";
+import type { AuthedUser } from "@/lib/auth/api-guard";
 import { db } from "@/lib/credit-repair/db";
 import { auditLogger } from "@/lib/security/audit-logging";
 
@@ -20,19 +21,9 @@ import { auditLogger } from "@/lib/security/audit-logging";
  * GET /api/credit-repair/reports/[id]
  * Get single credit report by ID
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export const GET = withAuth(async (request: NextRequest, user: AuthedUser) => {
   try {
-    // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = validation.user;
-    const { id: reportId } = await params;
+    const reportId = request.nextUrl.pathname.split("/").pop() as string;
 
     // 2. Get credit report from database
     const report = await db.creditReports.getCreditReport(reportId, user.id);
@@ -65,25 +56,16 @@ export async function GET(
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * DELETE /api/credit-repair/reports/[id]
  * Delete credit report
  */
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export const DELETE = withAuth(
+  async (request: NextRequest, user: AuthedUser) => {
   try {
-    // 1. Authenticate
-    const validation = await jwtValidation.validateFromHeaders(request);
-    if (!validation.valid || !validation.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const user = validation.user;
-    const { id: reportId } = await params;
+    const reportId = request.nextUrl.pathname.split("/").pop() as string;
 
     // 2. Delete credit report from database
     const deleted = await db.creditReports.deleteCreditReport(
@@ -119,4 +101,4 @@ export async function DELETE(
       { status: 500 },
     );
   }
-}
+});

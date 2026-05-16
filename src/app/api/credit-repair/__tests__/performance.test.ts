@@ -151,7 +151,7 @@ describe("Credit Repair API - Performance Tests", () => {
       const request = createMockRequest(
         "http://localhost:3000/api/credit-repair/disputes",
       );
-      const { duration } = await measureTime(() => getDisputes(request));
+      const { duration } = await measureTime(() => Promise.resolve(getDisputes(request)));
 
       expect(duration).toBeLessThan(100); // Should respond within 100ms
     });
@@ -186,7 +186,7 @@ describe("Credit Repair API - Performance Tests", () => {
           body: newDispute,
         },
       );
-      const { duration } = await measureTime(() => createDispute(request));
+      const { duration } = await measureTime(() => Promise.resolve(createDispute(request)));
 
       expect(duration).toBeLessThan(200); // Should respond within 200ms
     });
@@ -207,7 +207,7 @@ describe("Credit Repair API - Performance Tests", () => {
       const request = createMockRequest(
         "http://localhost:3000/api/credit-repair/quick-wins",
       );
-      const { duration } = await measureTime(() => getQuickWins(request));
+      const { duration } = await measureTime(() => Promise.resolve(getQuickWins(request)));
 
       expect(duration).toBeLessThan(150); // Should respond within 150ms
     });
@@ -424,7 +424,7 @@ describe("Credit Repair API - Performance Tests", () => {
       const request = createMockRequest(
         "http://localhost:3000/api/credit-repair/disputes",
       );
-      const { duration } = await measureTime(() => getDisputes(request));
+      const { duration } = await measureTime(() => Promise.resolve(getDisputes(request)));
 
       // Should handle large dataset within 150ms
       expect(duration).toBeLessThan(150);
@@ -449,7 +449,7 @@ describe("Credit Repair API - Performance Tests", () => {
       const request = createMockRequest(
         "http://localhost:3000/api/credit-repair/disputes?status=draft",
       );
-      const { duration } = await measureTime(() => getDisputes(request));
+      const { duration } = await measureTime(() => Promise.resolve(getDisputes(request)));
 
       // Should handle filtering within 200ms (adjusted for realistic performance)
       expect(duration).toBeLessThan(200);
