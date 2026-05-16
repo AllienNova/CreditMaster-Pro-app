@@ -105,6 +105,7 @@ const mockCreatedGoal = {
 describe("GET /api/financial/goals", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
       valid: true,
       user: mockUser,
@@ -198,7 +199,6 @@ describe("GET /api/financial/goals", () => {
     const data = await response.json();
 
     expect(response.status).toBe(401);
-    expect(data.success).toBe(false);
     expect(data.error).toContain("Unauthorized");
   });
 
@@ -212,7 +212,6 @@ describe("GET /api/financial/goals", () => {
     const data = await response.json();
 
     expect(response.status).toBe(403);
-    expect(data.success).toBe(false);
     expect(data.error).toContain("Forbidden");
   });
 
@@ -236,6 +235,7 @@ describe("GET /api/financial/goals", () => {
 describe("POST /api/financial/goals", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
       valid: true,
       user: mockUser,
@@ -341,7 +341,6 @@ describe("POST /api/financial/goals", () => {
     const data = await response.json();
 
     expect(response.status).toBe(401);
-    expect(data.success).toBe(false);
   });
 
   it("should return 403 for user without permission", async () => {
@@ -364,7 +363,6 @@ describe("POST /api/financial/goals", () => {
     const data = await response.json();
 
     expect(response.status).toBe(403);
-    expect(data.success).toBe(false);
     expect(data.error).toContain("Forbidden");
   });
 

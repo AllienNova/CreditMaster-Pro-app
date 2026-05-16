@@ -56,6 +56,7 @@ const mockSmartBudgetEngine = {
 describe("POST /api/financial/budgets/generate", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     // Re-set nested mock implementations (resetMocks: true strips them)
     mockSmartBudgetEngine.generateBudget.mockResolvedValue(mockBudget);
     (applyFinancialAPIMiddleware as jest.Mock).mockResolvedValue({

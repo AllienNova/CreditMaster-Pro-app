@@ -47,6 +47,7 @@ const mockInsightsResult = {
 describe("GET /api/financial/ai-insights", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
       valid: true,
       user: mockUser,
@@ -95,7 +96,9 @@ describe("GET /api/financial/ai-insights", () => {
   });
 
   it("should return fallback data on error instead of 500", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockRejectedValue(
+    // TASK-AUTH-03c: auth is now handled by the withAuth guard; a service
+    // failure (not an auth failure) is what triggers the route's fallback.
+    (smartInsightsEngine.generateInsights as jest.Mock).mockRejectedValue(
       new Error("Unexpected error"),
     );
     const request = createMockRequest(

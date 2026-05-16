@@ -11,14 +11,13 @@
 
 import { NextRequest } from "next/server";
 
+const mockValidateFromHeaders = jest.fn();
 jest.mock("@/lib/financial/spending-forecast-service");
 // TASK-AUTH-03c: route is now wrapped in withAuth.
 jest.mock("@/lib/auth/jwt-validation", () => ({
   jwtValidation: {
-    validateFromHeaders: jest.fn().mockResolvedValue({
-      valid: true,
-      user: { id: "user-123", email: "test@example.com" },
-    }),
+    validateFromHeaders: (...args: unknown[]) =>
+      mockValidateFromHeaders(...args),
   },
 }));
 jest.mock("@/lib/auth/resolve-role", () => ({
@@ -60,6 +59,10 @@ const mockSummary = {
 describe("GET /api/financial/spending/forecast", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockValidateFromHeaders.mockResolvedValue({
+      valid: true,
+      user: { id: "user-123", email: "test@example.com" },
+    });
     (spendingForecastService.generateForecast as jest.Mock).mockResolvedValue(mockForecast);
   });
 
@@ -74,7 +77,7 @@ describe("GET /api/financial/spending/forecast", () => {
     expect(data.generatedAt).toBeDefined();
     expect(data.forecastPeriod).toBeDefined();
     expect(spendingForecastService.generateForecast).toHaveBeenCalledWith(
-      "demo-user",
+      "user-123",
       expect.objectContaining({
         months: 3,
         includeCategories: true,
@@ -92,7 +95,7 @@ describe("GET /api/financial/spending/forecast", () => {
     await GET(request);
 
     expect(spendingForecastService.generateForecast).toHaveBeenCalledWith(
-      "demo-user",
+      "user-123",
       expect.objectContaining({
         months: 6,
         confidenceLevel: 0.8,
@@ -153,6 +156,10 @@ describe("GET /api/financial/spending/forecast", () => {
 describe("POST /api/financial/spending/forecast", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockValidateFromHeaders.mockResolvedValue({
+      valid: true,
+      user: { id: "user-123", email: "test@example.com" },
+    });
     (spendingForecastService.getForecastSummary as jest.Mock).mockResolvedValue(mockSummary);
   });
 
@@ -166,7 +173,7 @@ describe("POST /api/financial/spending/forecast", () => {
 
     expect(response.status).toBe(200);
     expect(data).toEqual(mockSummary);
-    expect(spendingForecastService.getForecastSummary).toHaveBeenCalledWith("demo-user");
+    expect(spendingForecastService.getForecastSummary).toHaveBeenCalledWith("user-123");
   });
 
   it("should return 400 for invalid action", async () => {

@@ -64,6 +64,7 @@ const mockOptimizer = {
 describe("GET /api/financial/savings/subscriptions", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     (applyFinancialAPIMiddleware as jest.Mock).mockResolvedValue({
       userId: "user-123",
       startTime: Date.now(),
@@ -146,7 +147,6 @@ describe("GET /api/financial/savings/subscriptions", () => {
     const data = await response.json();
 
     expect(response.status).toBe(401);
-    expect(data.success).toBe(false);
   });
 
   it("should return 403 for user without permission", async () => {

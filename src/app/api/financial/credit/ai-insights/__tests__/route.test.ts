@@ -4,9 +4,10 @@
 
 import { NextRequest } from "next/server";
 
+const mockResolveRoleFromDb = jest.fn();
 jest.mock("@/lib/auth/jwt-validation");
 jest.mock("@/lib/auth/resolve-role", () => ({
-  resolveRoleFromDb: jest.fn().mockResolvedValue("premium"),
+  resolveRoleFromDb: (...args: unknown[]) => mockResolveRoleFromDb(...args),
 }));
 jest.mock("@/lib/auth/rbac");
 
@@ -29,6 +30,8 @@ function createMockRequest(url: string) {
 describe("GET /api/financial/credit/ai-insights", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockResolveRoleFromDb.mockResolvedValue("premium");
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
       valid: true,
       user: mockUser,
@@ -79,14 +82,12 @@ describe("GET /api/financial/credit/ai-insights", () => {
 
   it("should return fallback data on error instead of 500", async () => {
     // This route returns fallback data on error rather than 500
-    (jwtValidation.validateFromHeaders as jest.Mock).mockRejectedValue(
-      new Error("Unexpected error"),
-    );
+    mockResolveRoleFromDb.mockRejectedValue(
+        new Error("Role resolution failed"),
+      );
     const request = createMockRequest("http://localhost:3000/api/financial/credit/ai-insights");
     const response = await GET(request);
-    const data = await response.json();
-    // The route catches errors and returns fallback data with success: true
-    expect(data.success).toBe(true);
-    expect(data._meta.fallback).toBe(true);
+    // TASK-AUTH-03c: withAuth guard fails closed with 503 when role resolution fails.
+    expect(response.status).toBe(503);
   });
 });

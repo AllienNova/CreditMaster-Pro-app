@@ -12,9 +12,10 @@
 
 import { NextRequest } from "next/server";
 
+const mockResolveRoleFromDb = jest.fn();
 jest.mock("@/lib/auth/jwt-validation");
 jest.mock("@/lib/auth/resolve-role", () => ({
-  resolveRoleFromDb: jest.fn().mockResolvedValue("premium"),
+  resolveRoleFromDb: (...args: unknown[]) => mockResolveRoleFromDb(...args),
 }));
 jest.mock("@/lib/auth/rbac");
 
@@ -69,6 +70,8 @@ function createMockPostRequest(
 describe("/api/financial/credit/simulator", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockResolveRoleFromDb.mockResolvedValue("premium");
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
       valid: true,
       user: mockUser,
@@ -224,18 +227,17 @@ describe("/api/financial/credit/simulator", () => {
     });
 
     it("should return 500 on unexpected error", async () => {
-      (jwtValidation.validateFromHeaders as jest.Mock).mockRejectedValue(
-        new Error("Unexpected error"),
+      mockResolveRoleFromDb.mockRejectedValue(
+        new Error("Role resolution failed"),
       );
 
       const request = createMockGetRequest(
         "http://localhost:3000/api/financial/credit/simulator?type=optimal_path",
       );
       const response = await GET(request);
-      const data = await response.json();
 
-      expect(response.status).toBe(500);
-      expect(data.error).toBe("Failed to run simulation");
+      // TASK-AUTH-03c: withAuth guard fails closed with 503 when role resolution fails.
+      expect(response.status).toBe(503);
     });
   });
 
@@ -689,8 +691,8 @@ describe("/api/financial/credit/simulator", () => {
     });
 
     it("should return 500 on unexpected error", async () => {
-      (jwtValidation.validateFromHeaders as jest.Mock).mockRejectedValue(
-        new Error("Database connection failed"),
+      mockResolveRoleFromDb.mockRejectedValue(
+        new Error("Role resolution failed"),
       );
 
       const request = createMockPostRequest(
@@ -701,11 +703,9 @@ describe("/api/financial/credit/simulator", () => {
         },
       );
       const response = await POST(request);
-      const data = await response.json();
 
-      expect(response.status).toBe(500);
-      expect(data.error).toBe("Failed to run simulation");
-      expect(data.message).toBe("Database connection failed");
+      // TASK-AUTH-03c: withAuth guard fails closed with 503 when role resolution fails.
+      expect(response.status).toBe(503);
     });
   });
 });

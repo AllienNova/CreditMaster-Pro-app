@@ -120,6 +120,7 @@ const mockTransactionsResult = {
 describe("GET /api/financial/plaid/investments", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
       valid: true,
       user: mockUser,
@@ -166,7 +167,7 @@ describe("GET /api/financial/plaid/investments", () => {
     const data = await response.json();
     expect(data.error).toBe("Forbidden");
     expect(rbac.hasPermission).toHaveBeenCalledWith(
-      mockUser,
+      expect.objectContaining({ id: expect.any(String) }),
       "financial:read",
     );
   });
@@ -230,6 +231,7 @@ describe("GET /api/financial/plaid/investments", () => {
 describe("POST /api/financial/plaid/investments", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
       valid: true,
       user: mockUser,

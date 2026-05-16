@@ -70,6 +70,7 @@ const mockBudget = {
 describe("GET /api/financial/budgets", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
   });
 
   it("should return budgets for authenticated user", async () => {
@@ -194,6 +195,7 @@ describe("GET /api/financial/budgets", () => {
 describe("POST /api/financial/budgets", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
   });
 
   it("should create budget successfully", async () => {

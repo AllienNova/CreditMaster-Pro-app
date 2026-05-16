@@ -7,9 +7,10 @@
 
 import { NextRequest } from "next/server";
 
+const mockResolveRoleFromDb = jest.fn();
 jest.mock("@/lib/auth/jwt-validation");
 jest.mock("@/lib/auth/resolve-role", () => ({
-  resolveRoleFromDb: jest.fn().mockResolvedValue("premium"),
+  resolveRoleFromDb: (...args: unknown[]) => mockResolveRoleFromDb(...args),
 }));
 jest.mock("@/lib/auth/rbac");
 jest.mock("@/lib/financial/plaid-client");
@@ -59,10 +60,14 @@ const mockHostedLinkResponse = {
 describe("POST /api/financial/plaid/hosted-link", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
       valid: true,
       user: mockUser,
     });
+    // Default DB-resolved role: a regular user. Tests needing admin override
+    // this explicitly — the inline ownership check trusts ONLY this DB role.
+    mockResolveRoleFromDb.mockResolvedValue("premium");
     (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     mockLinkTokenCreate.mockResolvedValue(mockHostedLinkResponse);
     (getPlaidClient as jest.Mock).mockReturnValue({
@@ -124,6 +129,8 @@ describe("POST /api/financial/plaid/hosted-link", () => {
       valid: true,
       user: mockAdminUser,
     });
+    // The DB confirms this user is genuinely an admin.
+    mockResolveRoleFromDb.mockResolvedValue("admin");
     const request = createMockRequest(
       "http://localhost:3000/api/financial/plaid/hosted-link",
       { userId: "user-123" },
@@ -135,6 +142,27 @@ describe("POST /api/financial/plaid/hosted-link", () => {
     expect(data.data.hostedLinkUrl).toBe(
       "https://hosted.plaid.com/link/session-abc123",
     );
+  });
+
+  it("rejects a forged/stale admin JWT — DB role governs the ownership check (TASK-AUTH-03c CRITICAL)", async () => {
+    // The JWT *claims* admin, but the database resolves the user as a plain
+    // "user". The inline ownership check must use the DB-resolved role, so a
+    // forged or stale admin token cannot link another user's bank account.
+    (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
+      valid: true,
+      user: { id: "attacker-789", email: "attacker@example.com", role: "admin" },
+    });
+    mockResolveRoleFromDb.mockResolvedValue("user");
+
+    const request = createMockRequest(
+      "http://localhost:3000/api/financial/plaid/hosted-link",
+      { userId: "victim-123" },
+    );
+    const response = await POST(request);
+
+    expect(response.status).toBe(403);
+    const data = await response.json();
+    expect(data.error).toContain("does not match");
   });
 
   it("should generate hosted link URL with default redirect URI", async () => {
@@ -251,7 +279,7 @@ describe("POST /api/financial/plaid/hosted-link", () => {
     await POST(request);
 
     expect(rbac.hasPermission).toHaveBeenCalledWith(
-      mockUser,
+      expect.objectContaining({ id: expect.any(String) }),
       "financial:link_accounts",
     );
   });

@@ -73,6 +73,7 @@ const mockParams = Promise.resolve({ id: "budget-123" });
 describe("GET /api/financial/budgets/[id]", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
   });
 
   it("should return budget by ID", async () => {
@@ -153,6 +154,7 @@ describe("GET /api/financial/budgets/[id]", () => {
 describe("PATCH /api/financial/budgets/[id]", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
   });
 
   it("should update budget successfully", async () => {
@@ -282,6 +284,7 @@ describe("PATCH /api/financial/budgets/[id]", () => {
 describe("DELETE /api/financial/budgets/[id]", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
   });
 
   it("should delete budget successfully", async () => {

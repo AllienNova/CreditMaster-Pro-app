@@ -11,15 +11,14 @@
 
 import { NextRequest } from "next/server";
 
+const mockValidateFromHeaders = jest.fn();
 jest.mock("@/lib/supabase/server");
 jest.mock("@/lib/financial/gig-income-service");
 
 jest.mock("@/lib/auth/jwt-validation", () => ({
   jwtValidation: {
-    validateFromHeaders: jest.fn().mockResolvedValue({
-      valid: true,
-      user: { id: "user-123", email: "test@example.com" },
-    }),
+    validateFromHeaders: (...args: unknown[]) =>
+      mockValidateFromHeaders(...args),
   },
 }));
 jest.mock("@/lib/auth/resolve-role", () => ({
@@ -78,6 +77,10 @@ const mockIncome = [
 describe("GET /api/financial/income/gig", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockValidateFromHeaders.mockResolvedValue({
+      valid: true,
+      user: { id: "user-123", email: "test@example.com" },
+    });
     (createClient as jest.Mock).mockResolvedValue(mockSupabase);
     mockSupabase.auth.getUser.mockResolvedValue({
       data: { user: mockUser },
@@ -130,10 +133,7 @@ describe("GET /api/financial/income/gig", () => {
   });
 
   it("should return 401 for unauthenticated request", async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "Not authenticated" },
-    });
+    mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
 
     const request = createMockRequest(
       "http://localhost:3000/api/financial/income/gig",
@@ -164,6 +164,10 @@ describe("GET /api/financial/income/gig", () => {
 describe("POST /api/financial/income/gig", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockValidateFromHeaders.mockResolvedValue({
+      valid: true,
+      user: { id: "user-123", email: "test@example.com" },
+    });
     (createClient as jest.Mock).mockResolvedValue(mockSupabase);
     mockSupabase.auth.getUser.mockResolvedValue({
       data: { user: mockUser },
@@ -317,10 +321,7 @@ describe("POST /api/financial/income/gig", () => {
   });
 
   it("should return 401 for unauthenticated request", async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "Not authenticated" },
-    });
+    mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
 
     const request = createMockRequest(
       "http://localhost:3000/api/financial/income/gig",

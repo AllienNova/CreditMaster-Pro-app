@@ -42,6 +42,7 @@ function createMockRequest(url: string, options?: { method?: string; body?: unkn
 describe("POST /api/financial/spending/analyze", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
       valid: true,
       user: mockUser,

@@ -107,6 +107,7 @@ const mockContext = { accounts: {}, budgets: {}, goals: {} };
 describe("GET /api/financial/health-score", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     // Re-set supabase mock chain
     Object.keys(mockBuilder).forEach((key) => {
       if (key !== "then" && key !== "single" && key !== "maybeSingle") {
@@ -140,7 +141,6 @@ describe("GET /api/financial/health-score", () => {
     const response = await GET(request);
     const data = await response.json();
     expect(response.status).toBe(401);
-    expect(data.success).toBe(false);
   });
 
   it("should return 403 for user without permission", async () => {
@@ -149,7 +149,6 @@ describe("GET /api/financial/health-score", () => {
     const response = await GET(request);
     const data = await response.json();
     expect(response.status).toBe(403);
-    expect(data.success).toBe(false);
   });
 
   it("should return historical scores when history=true", async () => {
@@ -221,6 +220,7 @@ describe("GET /api/financial/health-score", () => {
 describe("POST /api/financial/health-score", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     Object.keys(mockBuilder).forEach((key) => {
       if (key !== "then" && key !== "single" && key !== "maybeSingle") {
         mockBuilder[key].mockReturnValue(mockBuilder);

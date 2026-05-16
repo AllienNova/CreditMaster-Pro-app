@@ -10,9 +10,10 @@
 
 import { NextRequest } from "next/server";
 
+const mockResolveRoleFromDb = jest.fn();
 jest.mock("@/lib/auth/jwt-validation");
 jest.mock("@/lib/auth/resolve-role", () => ({
-  resolveRoleFromDb: jest.fn().mockResolvedValue("premium"),
+  resolveRoleFromDb: (...args: unknown[]) => mockResolveRoleFromDb(...args),
 }));
 jest.mock("@/lib/auth/rbac");
 
@@ -39,6 +40,8 @@ function createMockRequest(url: string) {
 describe("GET /api/financial/goals/optimizations", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockResolveRoleFromDb.mockResolvedValue("premium");
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
       valid: true,
       user: mockUser,
@@ -150,22 +153,23 @@ describe("GET /api/financial/goals/optimizations", () => {
     );
     await GET(request);
 
-    expect(rbac.hasPermission).toHaveBeenCalledWith(mockUser, "financial:read");
+    expect(rbac.hasPermission).toHaveBeenCalledWith(
+      expect.objectContaining({ id: expect.any(String) }),
+      "financial:read",
+    );
   });
 
   it("should return 500 on unexpected error", async () => {
     // Force an error by making validateFromHeaders throw
-    (jwtValidation.validateFromHeaders as jest.Mock).mockRejectedValue(
-      new Error("Unexpected failure"),
-    );
+    mockResolveRoleFromDb.mockRejectedValue(
+        new Error("Role resolution failed"),
+      );
 
     const request = createMockRequest(
       "http://localhost:3000/api/financial/goals/optimizations",
     );
     const response = await GET(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(500);
-    expect(data.error).toBe("Failed to fetch goal optimizations");
+    // TASK-AUTH-03c: withAuth guard fails closed with 503 when role resolution fails.
+    expect(response.status).toBe(503);
   });
 });

@@ -4,9 +4,10 @@
 
 import { NextRequest } from "next/server";
 
+const mockResolveRoleFromDb = jest.fn();
 jest.mock("@/lib/auth/jwt-validation");
 jest.mock("@/lib/auth/resolve-role", () => ({
-  resolveRoleFromDb: jest.fn().mockResolvedValue("premium"),
+  resolveRoleFromDb: (...args: unknown[]) => mockResolveRoleFromDb(...args),
 }));
 jest.mock("@/lib/auth/rbac");
 
@@ -29,6 +30,8 @@ function createMockRequest(url: string) {
 describe("GET /api/financial/credit-builder/ai-roadmap", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockResolveRoleFromDb.mockResolvedValue("premium");
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
       valid: true,
       user: mockUser,
@@ -79,11 +82,11 @@ describe("GET /api/financial/credit-builder/ai-roadmap", () => {
   });
 
   it("should return 500 on unexpected error", async () => {
-    (jwtValidation.validateFromHeaders as jest.Mock).mockRejectedValue(
-      new Error("Unexpected error"),
-    );
+    mockResolveRoleFromDb.mockRejectedValue(
+        new Error("Role resolution failed"),
+      );
     const request = createMockRequest("http://localhost:3000/api/financial/credit-builder/ai-roadmap");
     const response = await GET(request);
-    expect(response.status).toBe(500);
+    expect(response.status).toBe(503);
   });
 });

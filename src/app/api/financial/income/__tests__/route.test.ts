@@ -13,15 +13,14 @@
 
 import { NextRequest } from "next/server";
 
+const mockValidateFromHeaders = jest.fn();
 jest.mock("@/lib/supabase/server");
 jest.mock("@/lib/financial/income-tracking-service");
 
 jest.mock("@/lib/auth/jwt-validation", () => ({
   jwtValidation: {
-    validateFromHeaders: jest.fn().mockResolvedValue({
-      valid: true,
-      user: { id: "user-123", email: "test@example.com" },
-    }),
+    validateFromHeaders: (...args: unknown[]) =>
+      mockValidateFromHeaders(...args),
   },
 }));
 jest.mock("@/lib/auth/resolve-role", () => ({
@@ -66,6 +65,10 @@ const mockCountdown = { nextPayday: "2025-01-15", daysUntil: 5 };
 describe("GET /api/financial/income", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockValidateFromHeaders.mockResolvedValue({
+      valid: true,
+      user: { id: "user-123", email: "test@example.com" },
+    });
     (createClient as jest.Mock).mockResolvedValue(mockSupabase);
     mockSupabase.auth.getUser.mockResolvedValue({
       data: { user: mockUser },
@@ -90,10 +93,7 @@ describe("GET /api/financial/income", () => {
   });
 
   it("should return 401 for unauthenticated request", async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "Not authenticated" },
-    });
+    mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
 
     const response = await GET();
     const data = await response.json();
@@ -118,6 +118,10 @@ describe("GET /api/financial/income", () => {
 describe("POST /api/financial/income", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockValidateFromHeaders.mockResolvedValue({
+      valid: true,
+      user: { id: "user-123", email: "test@example.com" },
+    });
     (createClient as jest.Mock).mockResolvedValue(mockSupabase);
     mockSupabase.auth.getUser.mockResolvedValue({
       data: { user: mockUser },
@@ -217,10 +221,7 @@ describe("POST /api/financial/income", () => {
   });
 
   it("should return 401 for unauthenticated request", async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "Not authenticated" },
-    });
+    mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
 
     const request = createMockRequest(
       "http://localhost:3000/api/financial/income",
@@ -269,6 +270,10 @@ describe("POST /api/financial/income", () => {
 describe("PUT /api/financial/income", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockValidateFromHeaders.mockResolvedValue({
+      valid: true,
+      user: { id: "user-123", email: "test@example.com" },
+    });
     (createClient as jest.Mock).mockResolvedValue(mockSupabase);
     mockSupabase.auth.getUser.mockResolvedValue({
       data: { user: mockUser },
@@ -355,10 +360,7 @@ describe("PUT /api/financial/income", () => {
   });
 
   it("should return 401 for unauthenticated request", async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "Not authenticated" },
-    });
+    mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
 
     const request = createMockRequest(
       "http://localhost:3000/api/financial/income",
@@ -397,6 +399,10 @@ describe("PUT /api/financial/income", () => {
 describe("DELETE /api/financial/income", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockValidateFromHeaders.mockResolvedValue({
+      valid: true,
+      user: { id: "user-123", email: "test@example.com" },
+    });
     (createClient as jest.Mock).mockResolvedValue(mockSupabase);
     mockSupabase.auth.getUser.mockResolvedValue({
       data: { user: mockUser },
@@ -432,10 +438,7 @@ describe("DELETE /api/financial/income", () => {
   });
 
   it("should return 401 for unauthenticated request", async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "Not authenticated" },
-    });
+    mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
 
     const request = createMockRequest(
       "http://localhost:3000/api/financial/income?id=src-1",

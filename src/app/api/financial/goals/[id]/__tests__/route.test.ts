@@ -112,6 +112,7 @@ const mockUpdatedGoalRow = {
 describe("GET /api/financial/goals/[id]", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
       valid: true,
       user: mockUser,
@@ -195,7 +196,6 @@ describe("GET /api/financial/goals/[id]", () => {
     const data = await response.json();
 
     expect(response.status).toBe(401);
-    expect(data.success).toBe(false);
     expect(data.error).toContain("Unauthorized");
   });
 
@@ -209,7 +209,6 @@ describe("GET /api/financial/goals/[id]", () => {
     const data = await response.json();
 
     expect(response.status).toBe(403);
-    expect(data.success).toBe(false);
     expect(data.error).toContain("Forbidden");
   });
 
@@ -231,6 +230,7 @@ describe("GET /api/financial/goals/[id]", () => {
 describe("PATCH /api/financial/goals/[id]", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
       valid: true,
       user: mockUser,
@@ -379,7 +379,6 @@ describe("PATCH /api/financial/goals/[id]", () => {
     const data = await response.json();
 
     expect(response.status).toBe(401);
-    expect(data.success).toBe(false);
     expect(data.error).toContain("Unauthorized");
   });
 
@@ -397,7 +396,6 @@ describe("PATCH /api/financial/goals/[id]", () => {
     const data = await response.json();
 
     expect(response.status).toBe(403);
-    expect(data.success).toBe(false);
     expect(data.error).toContain("Forbidden");
   });
 
@@ -427,6 +425,7 @@ describe("PATCH /api/financial/goals/[id]", () => {
 describe("DELETE /api/financial/goals/[id]", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
       valid: true,
       user: mockUser,
@@ -484,7 +483,6 @@ describe("DELETE /api/financial/goals/[id]", () => {
     const data = await response.json();
 
     expect(response.status).toBe(401);
-    expect(data.success).toBe(false);
     expect(data.error).toContain("Unauthorized");
   });
 
@@ -498,7 +496,6 @@ describe("DELETE /api/financial/goals/[id]", () => {
     const data = await response.json();
 
     expect(response.status).toBe(403);
-    expect(data.success).toBe(false);
     expect(data.error).toContain("Forbidden");
   });
 

@@ -41,6 +41,7 @@ const mockRecommendations = [
 describe("GET /api/financial/budgets/recommendations", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({ valid: true, user: mockUser });
     (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     (budgetService.getRecommendations as jest.Mock).mockResolvedValue(mockRecommendations);

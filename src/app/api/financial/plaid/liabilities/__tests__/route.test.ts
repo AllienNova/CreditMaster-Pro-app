@@ -110,6 +110,7 @@ const mockAllLiabilities = {
 describe("GET /api/financial/plaid/liabilities", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({
       valid: true,
       user: mockUser,
@@ -167,7 +168,7 @@ describe("GET /api/financial/plaid/liabilities", () => {
     const data = await response.json();
     expect(data.error).toBe("Forbidden");
     expect(rbac.hasPermission).toHaveBeenCalledWith(
-      mockUser,
+      expect.objectContaining({ id: expect.any(String) }),
       "financial:read",
     );
   });

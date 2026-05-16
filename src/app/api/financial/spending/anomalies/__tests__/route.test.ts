@@ -10,9 +10,15 @@
 
 import { NextRequest } from "next/server";
 
+const mockValidateFromHeaders = jest.fn();
 jest.mock("@/lib/api/financial-api-middleware");
 jest.mock("@/lib/financial/spending-analyzer");
-jest.mock("@/lib/auth/jwt-validation");
+jest.mock("@/lib/auth/jwt-validation", () => ({
+  jwtValidation: {
+    validateFromHeaders: (...args: unknown[]) =>
+      mockValidateFromHeaders(...args),
+  },
+}));
 jest.mock("@/lib/auth/resolve-role", () => ({
   resolveRoleFromDb: jest.fn().mockResolvedValue("premium"),
 }));
@@ -53,6 +59,10 @@ const mockAnalyzer = {
 describe("GET /api/financial/spending/anomalies", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockValidateFromHeaders.mockResolvedValue({
+      valid: true,
+      user: { id: "user-123", email: "test@example.com" },
+    });
     (applyFinancialAPIMiddleware as jest.Mock).mockResolvedValue({
       userId: "user-123",
       startTime: Date.now(),

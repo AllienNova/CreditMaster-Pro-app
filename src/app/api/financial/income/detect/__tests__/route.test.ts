@@ -14,15 +14,14 @@
 
 import { NextRequest } from "next/server";
 
+const mockValidateFromHeaders = jest.fn();
 jest.mock("@/lib/supabase/server");
 jest.mock("@/lib/financial/income-tracking-service");
 
 jest.mock("@/lib/auth/jwt-validation", () => ({
   jwtValidation: {
-    validateFromHeaders: jest.fn().mockResolvedValue({
-      valid: true,
-      user: { id: "user-123", email: "test@example.com" },
-    }),
+    validateFromHeaders: (...args: unknown[]) =>
+      mockValidateFromHeaders(...args),
   },
 }));
 jest.mock("@/lib/auth/resolve-role", () => ({
@@ -78,6 +77,10 @@ const mockPatterns = [
 describe("POST /api/financial/income/detect", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockValidateFromHeaders.mockResolvedValue({
+      valid: true,
+      user: { id: "user-123", email: "test@example.com" },
+    });
     (createClient as jest.Mock).mockResolvedValue(mockSupabase);
     mockSupabase.auth.getUser.mockResolvedValue({
       data: { user: mockUser },
@@ -167,10 +170,7 @@ describe("POST /api/financial/income/detect", () => {
   });
 
   it("should return 401 for unauthenticated request", async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: "Not authenticated" },
-    });
+    mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
 
     const request = createMockRequest(
       "http://localhost:3000/api/financial/income/detect",
@@ -213,6 +213,10 @@ describe("POST /api/financial/income/detect", () => {
 describe("GET /api/financial/income/detect", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockValidateFromHeaders.mockResolvedValue({
+      valid: true,
+      user: { id: "user-123", email: "test@example.com" },
+    });
 
     const queryChain = createChainableQuery([
       { id: "tx1", date: "2025-01-15", amount: 3500, merchant_name: "Employer", category: "income", account_id: "acc-1" },
@@ -297,17 +301,11 @@ describe("GET /api/financial/income/detect", () => {
   });
 
   it("should return 401 for unauthenticated request", async () => {
-    const supabaseUnauth = {
-      auth: {
-        getUser: jest.fn().mockResolvedValue({
-          data: { user: null },
-          error: { message: "Not authenticated" },
-        }),
-      },
-    };
-    (createClient as jest.Mock).mockResolvedValue(supabaseUnauth);
+    mockValidateFromHeaders.mockResolvedValue({ valid: false, user: null });
 
-    const response = await GET();
+    const response = await GET(
+      createMockRequest("http://localhost:3000/api/financial/income/detect"),
+    );
     const data = await response.json();
 
     expect(response.status).toBe(401);

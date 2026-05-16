@@ -42,6 +42,7 @@ const mockAlerts = [
 describe("GET /api/financial/budgets/alerts", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({ valid: true, user: mockUser });
     (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     (budgetService.getAlerts as jest.Mock).mockResolvedValue(mockAlerts);
@@ -95,6 +96,7 @@ describe("GET /api/financial/budgets/alerts", () => {
 describe("PATCH /api/financial/budgets/alerts", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     (jwtValidation.validateFromHeaders as jest.Mock).mockResolvedValue({ valid: true, user: mockUser });
     (rbac.hasPermission as jest.Mock).mockReturnValue(true);
     (budgetService.markAlertAsRead as jest.Mock).mockResolvedValue(undefined);
