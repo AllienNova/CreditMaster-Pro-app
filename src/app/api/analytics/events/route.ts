@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { withAuth, type AuthedUser } from "@/lib/auth/api-guard";
+import { withAuth, withRole, type AuthedUser } from "@/lib/auth/api-guard";
 
 function getSupabaseClient() {
   return createClient(
@@ -71,9 +71,15 @@ export const POST = withAuth(async (request: NextRequest, user: AuthedUser) => {
 });
 
 /**
- * GET - Retrieve analytics summary
+ * GET - Retrieve analytics summary (admin only).
+ *
+ * Returns platform-wide aggregates (total events, unique users, unique
+ * sessions, events-by-type) read via the service-role client with no
+ * per-user filter. This is inherently admin-scope data, so the route is
+ * gated with withRole("admin") — matching the sibling admin-analytics
+ * routes /api/analytics/reports and /api/analytics/timeseries.
  */
-export const GET = withAuth(async (request: NextRequest) => {
+export const GET = withRole("admin", async (request: NextRequest) => {
   const supabase = getSupabaseClient();
   try {
     const { searchParams } = new URL(request.url);

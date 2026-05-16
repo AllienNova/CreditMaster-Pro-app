@@ -54,4 +54,15 @@ describe("negative-auth – /api/analytics/events", () => {
     expect(res.status).toBe(401);
   });
 
+  it("GET returns 403 when the role is not admin (platform-aggregate data)", async () => {
+    mockResolveRoleFromDb.mockResolvedValue("user");
+    const res = await GET(createMockRequest("GET"));
+    expect(res.status).toBe(403);
+  });
+
+  it("GET returns 403 for a premium (non-admin) caller", async () => {
+    mockResolveRoleFromDb.mockResolvedValue("premium");
+    const res = await GET(createMockRequest("GET"));
+    expect(res.status).toBe(403);
+  });
 });
