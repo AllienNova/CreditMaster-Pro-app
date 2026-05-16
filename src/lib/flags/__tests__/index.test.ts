@@ -1,4 +1,6 @@
 /** @jest-environment node */
+process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
+process.env.SUPABASE_SERVICE_ROLE_KEY = "test-service-role-key";
 const mockFrom = jest.fn();
 jest.mock("@supabase/supabase-js", () => ({ createClient: () => ({ from: mockFrom }) }));
 import { isFlagEnabled, __clearFlagCache, __setNow } from "../index";
@@ -18,6 +20,11 @@ describe("isFlagEnabled", () => {
     mockFrom.mockReturnValue({ select: () => ({ eq: () => ({ single: () =>
       Promise.resolve({ data: null, error: { code: "PGRST116" } }) }) }) });
     expect(await isFlagEnabled("auth.deny_by_default")).toBe(false);
+  });
+  it("throws when the database returns a non-PGRST116 error", async () => {
+    mockFrom.mockReturnValue({ select: () => ({ eq: () => ({ single: () =>
+      Promise.resolve({ data: null, error: { code: "42501", message: "permission denied" } }) }) }) });
+    await expect(isFlagEnabled("auth.deny_by_default")).rejects.toMatchObject({ code: "42501" });
   });
   it("caches within the TTL (second call does not hit the database)", async () => {
     mockFrom.mockReturnValue(ok(true));
